@@ -410,6 +410,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "Q_TRANS_DECEL": transition_decel,
             "WP_LOITER_RAD": max_radius,
             "RTL_RADIUS": max_radius,
+            "Q_OPTIONS": int(self.get_parameter("Q_OPTIONS")) & ~(1 << 15),
             # The return leg is southbound, so wind from the north is a
             # tailwind. The QRTL plan must account for the resulting closing
             # speed without depending on the entry turn direction.
@@ -660,6 +661,107 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(-5, 1, relative=True, timeout=240)
         self.wait_disarmed(timeout=60)
 
+    def QRTLPrePosition2Altitude(self):
+        '''check QRTL reaches and holds Q_RTL_ALT before position2'''
+        qrtl_alt = 20
+        rtl_altitude = 100
+        self.set_parameters({
+            "Q_RTL_ALT": qrtl_alt,
+            "RTL_ALTITUDE": rtl_altitude,
+            "TECS_SINK_MAX": 2.5,
+            "Q_TRANS_DECEL": 2.0,
+            "WP_LOITER_RAD": 30,
+            "RTL_RADIUS": 30,
+            "Q_OPTIONS": int(self.get_parameter("Q_OPTIONS")) & ~(1 << 15),
+            "SIM_WIND_SPD": 5,
+            "SIM_WIND_DIR": 0,
+        })
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, rtl_altitude),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1700, 0, rtl_altitude),
+        ])
+        self.wait_current_waypoint(2)
+        self.wait_distance_to_home(1200, 1300, timeout=180)
+
+        class MonitorQRTLAltitudeFloor(vehicle_test_suite.TestSuite.MessageHook):
+            def __init__(self, suite):
+                super(MonitorQRTLAltitudeFloor, self).__init__(suite)
+                self.alt = None
+                self.airbrake = False
+                self.position2 = False
+                self.minimum_alt = None
+                self.minimum_target = None
+                self.airbrake_alt = None
+                self.position1_alt = None
+                self.position2_alt = None
+
+            def process(self, mav, m):
+                m_type = m.get_type()
+                if m_type == 'GLOBAL_POSITION_INT':
+                    self.alt = m.relative_alt * 0.001
+                    if self.airbrake and not self.position2:
+                        if self.minimum_alt is None:
+                            self.minimum_alt = self.alt
+                        else:
+                            self.minimum_alt = min(self.minimum_alt, self.alt)
+                    return
+                if m_type == 'NAV_CONTROLLER_OUTPUT':
+                    if self.airbrake and not self.position2 and self.alt is not None:
+                        target = self.alt + m.alt_error
+                        if self.minimum_target is None:
+                            self.minimum_target = target
+                        else:
+                            self.minimum_target = min(self.minimum_target, target)
+                    return
+                if m_type != 'STATUSTEXT':
+                    return
+                if 'VTOL airbrake' in m.text:
+                    self.airbrake = True
+                    self.airbrake_alt = self.alt
+                elif 'VTOL position1' in m.text:
+                    self.position1_alt = self.alt
+                elif 'VTOL position2 started' in m.text:
+                    self.position2 = True
+                    self.position2_alt = self.alt
+
+        self.context_push()
+        monitor = MonitorQRTLAltitudeFloor(self)
+        self.install_message_hook_context(monitor)
+        self.change_mode('QRTL')
+        self.wait_statustext('VTOL position2 started', timeout=300)
+        self.context_pop()
+
+        if (not monitor.airbrake or monitor.minimum_alt is None or
+                monitor.minimum_target is None or monitor.airbrake_alt is None or
+                monitor.position1_alt is None or monitor.position2_alt is None):
+            raise NotAchievedException("No QRTL altitude was available before position2")
+        self.progress("Minimum QRTL target/altitude before position2 was %.1f/%.1fm" %
+                      (monitor.minimum_target, monitor.minimum_alt))
+        if monitor.minimum_target < qrtl_alt - 1:
+            raise NotAchievedException(
+                "QRTL target descended to %.1fm before position2, below Q_RTL_ALT %.1fm" %
+                (monitor.minimum_target, qrtl_alt))
+        if monitor.minimum_alt < qrtl_alt - 2:
+            raise NotAchievedException(
+                "QRTL descended to %.1fm before position2, below Q_RTL_ALT %.1fm" %
+                (monitor.minimum_alt, qrtl_alt))
+        if abs(monitor.airbrake_alt - qrtl_alt) > 3:
+            raise NotAchievedException(
+                "QRTL altitude %.1fm was not near Q_RTL_ALT %.1fm at airbrake" %
+                (monitor.airbrake_alt, qrtl_alt))
+        if abs(monitor.position1_alt - qrtl_alt) > 5:
+            raise NotAchievedException(
+                "QRTL altitude %.1fm was not near Q_RTL_ALT %.1fm at position1" %
+                (monitor.position1_alt, qrtl_alt))
+        if abs(monitor.position2_alt - qrtl_alt) > 3:
+            raise NotAchievedException(
+                "QRTL altitude %.1fm was not near Q_RTL_ALT %.1fm at position2" %
+                (monitor.position2_alt, qrtl_alt))
+
+        self.wait_altitude(-5, 1, relative=True, timeout=240)
+        self.wait_disarmed(timeout=60)
+
     def QRTLShortApproachDescent(self):
         '''check a short QRTL approach does not compress its descent profile'''
         qrtl_alt = 20
@@ -676,6 +778,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "Q_TRANS_DECEL": 2.0,
             "WP_LOITER_RAD": max_radius,
             "RTL_RADIUS": max_radius,
+            "Q_OPTIONS": int(self.get_parameter("Q_OPTIONS")) & ~(1 << 15),
         })
 
         self.start_flying_simple_relhome_mission([
@@ -683,7 +786,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 600, 0, rtl_altitude),
         ])
         self.wait_current_waypoint(2)
-        self.wait_distance_to_home(300, 350, timeout=120)
+        self.wait_distance_to_home(200, 250, timeout=120)
 
         entry_alt = self.get_altitude(relative=True)
 
@@ -698,7 +801,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.position1_alt = None
                 self.position1_target = None
                 self.airbrake_speed = None
-                self.airbrake_plan = None
+                self.airbrake_distance = None
+                self.airbrake_stopping_distance = None
+                self.thrust_loss_text = None
 
             def process(self, mav, m):
                 m_type = m.get_type()
@@ -706,10 +811,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                     self.alt = m.relative_alt * 0.001
                     return
                 if m_type == 'STATUSTEXT':
+                    if 'thrust loss' in m.text.lower():
+                        self.thrust_loss_text = m.text
                     if 'VTOL airbrake' in m.text:
                         fields = dict(field.split('=', 1) for field in m.text.split() if '=' in field)
                         self.airbrake_speed = float(fields['v'])
-                        self.airbrake_plan = float(fields['sd'])
+                        self.airbrake_distance = float(fields['d'])
+                        self.airbrake_stopping_distance = float(fields['sd'])
                     elif 'VTOL position1' in m.text:
                         self.position1_alt = self.alt
                         self.position1_target = self.target
@@ -745,19 +853,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         if not monitor.started or monitor.position1_target is None:
             raise NotAchievedException("Did not observe the short QRTL altitude profile")
-        if monitor.airbrake_plan is None:
+        if monitor.airbrake_distance is None or monitor.airbrake_stopping_distance is None:
             raise NotAchievedException("Short QRTL never entered airbrake")
-        geometric_distance = 2 * max_radius
-        stopping_distance = (monitor.airbrake_speed * monitor.airbrake_speed /
-                             (2 * self.get_parameter("Q_TRANS_DECEL")) + 2 * monitor.airbrake_speed)
-        if stopping_distance > geometric_distance - 20:
+        if monitor.airbrake_stopping_distance > monitor.airbrake_distance + 10:
             raise NotAchievedException(
-                "Short QRTL stopping distance %.1fm was not smaller than geometry %.1fm" %
-                (stopping_distance, geometric_distance))
-        if abs(monitor.airbrake_plan - geometric_distance) > 1:
-            raise NotAchievedException(
-                "Short QRTL airbrake plan %.1fm did not use geometry %.1fm" %
-                (monitor.airbrake_plan, geometric_distance))
+                "Short QRTL entered airbrake at %.1fm with %.1fm required to stop" %
+                (monitor.airbrake_distance, monitor.airbrake_stopping_distance))
         if monitor.position1_target < qrtl_alt + 20:
             raise NotAchievedException(
                 "Short QRTL compressed target to %.1fm near Q_RTL_ALT %.1fm" %
@@ -768,6 +869,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "Short QRTL descended to %.1fm before position1 instead of retaining altitude" %
                 (monitor.position1_alt))
+        if monitor.thrust_loss_text is not None:
+            raise NotAchievedException(
+                "Short QRTL reported thrust loss during braking: %s" % monitor.thrust_loss_text)
 
         # Existing VTOL QRTL descent completes the altitude still remaining
         # after the fixed wing approach and lands normally.
@@ -775,49 +879,66 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(timeout=60)
 
     def QRTLWindApproaches(self):
-        '''check QRTL descent behavior in calm, headwind and crosswind conditions'''
-        qrtl_alt = 30
-        rtl_altitude = 80
+        '''check QRTL descent behavior across the flight-test wind matrix'''
+        rtl_altitude = 100
         self.set_parameters({
-            "Q_RTL_ALT": qrtl_alt,
             "RTL_ALTITUDE": rtl_altitude,
             "Q_RTL_SINK_MAX": 2.5,
             "TECS_SINK_MAX": 8,
             "Q_TRANS_DECEL": 2.0,
             "WP_LOITER_RAD": 40,
             "RTL_RADIUS": 40,
+            "Q_OPTIONS": int(self.get_parameter("Q_OPTIONS")) & ~(1 << 15),
         })
 
-        # The mission flies north, then each QRTL begins while still flying
-        # outbound and requires a 180-degree turn onto the southbound return.
-        for name, wind_speed, wind_dir in [
-                ("calm", 0, 0),
-                ("headwind", 5, 180),
-                ("crosswind", 5, 90),
+        # The long light-wind and tailwind cases begin on the southbound
+        # return so their descent-start distances can be compared with the
+        # wind already established. The other wind cases enter QRTL while
+        # still outbound, exercising the 180-degree turn onto the return.
+        results = {}
+        for name, qrtl_alt, wind_speed, wind_dir, enter_outbound in [
+                ("light wind at 45m", 45, 0, 0, False),
+                ("light wind at 20m", 20, 0, 0, False),
+                ("tailwind at 20m", 20, 5, 0, False),
+                ("headwind turn at 20m", 20, 5, 180, True),
+                ("crosswind turn at 20m", 20, 5, 90, True),
         ]:
             self.start_subtest("QRTL %s approach" % name)
             self.set_parameters({
+                "Q_RTL_ALT": qrtl_alt,
                 "SIM_WIND_SPD": wind_speed,
                 "SIM_WIND_DIR": wind_dir,
             })
-            self.start_flying_simple_relhome_mission([
-                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
-                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1400, 0, 100),
-            ])
-            self.wait_current_waypoint(2)
-            self.wait_distance_to_home(1000, 1100, timeout=180)
+            mission = [
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 130),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 130),
+            ]
+            if not enter_outbound:
+                mission.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 130))
+            self.start_flying_simple_relhome_mission(mission)
+            if enter_outbound:
+                self.wait_current_waypoint(2)
+                self.wait_distance_to_home(1200, 1300, timeout=180)
+            else:
+                self.wait_current_waypoint(3, timeout=240)
+                self.wait_distance_to_home(1500, 1550, timeout=180)
             entry_alt = self.get_altitude(relative=True)
+            home = self.home_position_as_location()
 
             class MonitorQRTLWindApproach(vehicle_test_suite.TestSuite.MessageHook):
-                def __init__(self, suite, entry_alt):
+                def __init__(self, suite, entry_alt, home):
                     super(MonitorQRTLWindApproach, self).__init__(suite)
                     self.entry_alt = entry_alt
+                    self.home = home
                     self.started = False
                     self.alt = None
+                    self.distance = None
                     self.target = None
                     self.last_descent_target = None
+                    self.descent_start_distance = None
                     self.airbrake = False
                     self.airbrake_alt = None
+                    self.airbrake_target = None
                     self.position1_alt = None
                     self.position2_alt = None
                     self.min_vtol_approach_alt = None
@@ -826,6 +947,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                     m_type = m.get_type()
                     if m_type == 'GLOBAL_POSITION_INT':
                         self.alt = m.relative_alt * 0.001
+                        here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+                        self.distance = self.suite.get_distance(self.home, here)
                         if self.airbrake and self.position2_alt is None:
                             if self.min_vtol_approach_alt is None:
                                 self.min_vtol_approach_alt = self.alt
@@ -836,6 +959,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                         if 'VTOL airbrake' in m.text:
                             self.airbrake = True
                             self.airbrake_alt = self.alt
+                            self.airbrake_target = self.target
                         elif 'VTOL position1' in m.text:
                             self.position1_alt = self.alt
                         elif 'VTOL position2 started' in m.text:
@@ -855,6 +979,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                             "%s QRTL target %.1fm went below Q_RTL_ALT %.1fm before airbrake" %
                             (name, self.target, qrtl_alt))
                     if self.target < rtl_altitude - 2:
+                        if self.descent_start_distance is None:
+                            self.descent_start_distance = self.distance
                         if (self.last_descent_target is not None and
                                 self.target > self.last_descent_target + 0.5):
                             raise NotAchievedException(
@@ -863,7 +989,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                         self.last_descent_target = self.target
 
             self.context_push()
-            monitor = MonitorQRTLWindApproach(self, entry_alt)
+            monitor = MonitorQRTLWindApproach(self, entry_alt, home)
             self.install_message_hook_context(monitor)
             self.change_mode('QRTL')
             self.wait_statustext('VTOL position2 started', timeout=300)
@@ -885,9 +1011,26 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     "%s QRTL descended to %.1fm before position2" %
                     (name, monitor.min_vtol_approach_alt or -1))
+            if monitor.descent_start_distance is None:
+                raise NotAchievedException("No descent start distance for %s QRTL" % name)
+            if (monitor.airbrake_target is None or
+                    abs(monitor.airbrake_target - qrtl_alt) > 1):
+                raise NotAchievedException(
+                    "%s QRTL target %.1fm was not at Q_RTL_ALT %.1fm at airbrake" %
+                    (name, monitor.airbrake_target or -1, qrtl_alt))
+            results[name] = monitor.descent_start_distance
 
             self.wait_altitude(-5, 1, relative=True, timeout=240)
             self.wait_disarmed(timeout=60)
+
+        calm_start = results["light wind at 20m"]
+        tailwind_start = results["tailwind at 20m"]
+        self.progress("QRTL descent started at %.1fm in light wind and %.1fm with tailwind" %
+                      (calm_start, tailwind_start))
+        if tailwind_start < calm_start + 50:
+            raise NotAchievedException(
+                "Tailwind QRTL descent did not move materially outward: "
+                "light-wind=%.1fm tailwind=%.1fm" % (calm_start, tailwind_start))
 
     def QRTLZeroSinkRate(self):
         '''check zero Q_RTL_SINK_MAX defers descent to the VTOL controller'''
@@ -898,6 +1041,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "RTL_ALTITUDE": rtl_altitude,
             "Q_RTL_SINK_MAX": 0,
             "SIM_WIND_SPD": 0,
+            "Q_OPTIONS": int(self.get_parameter("Q_OPTIONS")) & ~(1 << 15),
         })
         self.start_flying_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, rtl_altitude),
@@ -997,6 +1141,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "Q_RTL_ALT": qrtl_alt,
             "RTL_ALTITUDE": rtl_altitude,
             "Q_TRANS_DECEL": 0.6,
+            "Q_OPTIONS": int(self.get_parameter("Q_OPTIONS")) & ~(1 << 15),
         })
 
         # move home to CMAC: the default QuadPlane test location is very
@@ -4931,6 +5076,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.ParameterChecks,
             self.TestLogDownload,
             self.QRTLGradualAltDescent,
+            self.QRTLPrePosition2Altitude,
             self.QRTLShortApproachDescent,
             self.QRTLWindApproaches,
             self.QRTLZeroSinkRate,
