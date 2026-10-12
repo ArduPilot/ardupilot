@@ -75,7 +75,7 @@ float NavEKF3_core::errorScore() const
         if (assume_zero_sideslip()) {
             const auto *arsp = dal.airspeed();
             if (arsp != nullptr && arsp->get_num_sensors() >= 2 && (frontend->_affinity & EKF_AFFINITY_ARSP)) {
-                score = MAX(score, 0.3f * tasTestRatio);
+                score = MAX(score, 0.3f * tas.testRatio);
             }
         }
         // Check magnetometer fusion performance - need this when magnetometer affinity is enabled to override the inherent compass
@@ -204,13 +204,13 @@ bool NavEKF3_core::getAirSpdVec(Vector3f &vel) const
 // returns false if the data is unavailable
 bool NavEKF3_core::getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const
 {
-    if (tasDataDelayed.time_ms == 0) {
+    if (tas.dataDelayed.time_ms == 0) {
         // no data has been processed since startup
         return false;
     }
-    innovation = (float)innovVtas;
-    innovationVariance = (float)varInnovVtas;
-    age_ms = imuSampleTime_ms - tasDataDelayed.time_ms;
+    innovation = (float)tas.innov;
+    innovationVariance = (float)tas.varInnov;
+    age_ms = imuSampleTime_ms - tas.dataDelayed.time_ms;
     return true;
 }
 
@@ -458,7 +458,7 @@ bool NavEKF3_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector
     magInnov.x = 1e3f*innovMag[0]; // Convert back to sensor units
     magInnov.y = 1e3f*innovMag[1]; // Convert back to sensor units
     magInnov.z = 1e3f*innovMag[2]; // Convert back to sensor units
-    tasInnov   = innovVtas;
+    tasInnov   = tas.innov;
     yawInnov   = innovYaw;
     return true;
 }
@@ -485,7 +485,7 @@ bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vec
     magVar.x = sqrtF(MAX(magTestRatio.x,yawTestRatio));
     magVar.y = sqrtF(MAX(magTestRatio.y,yawTestRatio));
     magVar.z = sqrtF(MAX(magTestRatio.z,yawTestRatio));
-    tasVar   = sqrtF(tasTestRatio);
+    tasVar   = sqrtF(tas.testRatio);
     offset   = posResetNE.tofloat();
 
     return true;

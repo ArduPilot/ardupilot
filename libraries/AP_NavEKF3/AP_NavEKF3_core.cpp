@@ -118,7 +118,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedBaro.init(obs_buffer_length)) {
         return false;
     }
-    if(dal.airspeed() && !storedTAS.init(obs_buffer_length)) {
+    if(dal.airspeed() && !tas.stored.init(obs_buffer_length)) {
         return false;
     }
     if(dal.opticalflow_enabled() && !storedOF.init(flow_buffer_length)) {
@@ -204,13 +204,12 @@ void NavEKF3_core::InitialiseVariables()
 
     // initialise time stamps
     imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
-    prevTasStep_ms = imuSampleTime_ms;
+    tas.InitialiseVariables(imuSampleTime_ms);
     prevBetaDragStep_ms = imuSampleTime_ms;
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
     lastGpsPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
-    lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
     lastTimeGpsReceived_ms = 0;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
@@ -222,7 +221,6 @@ void NavEKF3_core::InitialiseVariables()
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
-    timeTasReceived_ms = 0;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
     posNEResetCount = 0;
     posDResetCount = 0;
@@ -380,7 +378,7 @@ void NavEKF3_core::InitialiseVariables()
     storedIMU.reset();
     storedGPS.reset();
     storedBaro.reset();
-    storedTAS.reset();
+    tas.stored.reset();
 #if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     storedRange.reset();
 #endif
@@ -1096,7 +1094,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 }
             }
 	        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
-	        if (!tasDataDelayed.allowFusion) {
+	        if (!tas.dataDelayed.allowFusion) {
 	            // Allow wind states to recover faster when using sideslip fusion with a failed airspeed sesnor
 	            windVelVar *= 10.0f;
 	        }

@@ -6,6 +6,14 @@
 
 #define P (const_cast<const Matrix24 &>(Pmut))
 
+// initialise state:
+void NavEKF3_core::AirspeedFusion::InitialiseVariables(uint32_t now_ms)
+{
+    prevStepTime_ms = now_ms;
+    lastPassTime_ms = 0;
+    receivedTime_ms = 0;
+}
+
 /********************************************************
 *                   RESET FUNCTIONS                     *
 ********************************************************/
@@ -39,7 +47,7 @@ void NavEKF3_core::FuseAirspeed()
     if (VtasPred > 1.0f)
     {
         // calculate observation innovation and variance
-        innovVtas = VtasPred - tasDataDelayed.tas;
+        tas.innov = VtasPred - tas.dataDelayed.tas;
 
         // calculate observation jacobians
         SH_TAS[0] = 1.0f/VtasPred;
@@ -51,8 +59,8 @@ void NavEKF3_core::FuseAirspeed()
         H_TAS[22] = -SH_TAS[2];
         H_TAS[23] = -SH_TAS[1];
         // calculate Kalman gains
-        ftype temp = (tasDataDelayed.tasVariance + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
-        if (temp >= tasDataDelayed.tasVariance) {
+        ftype temp = (tas.dataDelayed.tasVariance + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
+        if (temp >= tas.dataDelayed.tasVariance) {
             SK_TAS[0] = 1.0f / temp;
             faultStatus.bad_airspeed = false;
         } else {
@@ -66,15 +74,15 @@ void NavEKF3_core::FuseAirspeed()
 
         uint32_t kalman_mask = 0; // values to calculate in Kfusion (others are set to zero)
 
-        if (tasDataDelayed.allowFusion && !airDataFusionWindOnly) {
+        if (tas.dataDelayed.allowFusion && !airDataFusionWindOnly) {
             kalman_mask = (1<<10)-1;
         }
 
-        if (tasDataDelayed.allowFusion && !inhibitDelAngBiasStates && !airDataFusionWindOnly) {
+        if (tas.dataDelayed.allowFusion && !inhibitDelAngBiasStates && !airDataFusionWindOnly) {
             kalman_mask |= (1<<10) | (1<<11) | (1<<12);
         }
 
-        if (tasDataDelayed.allowFusion && !inhibitDelVelBiasStates && !airDataFusionWindOnly) {
+        if (tas.dataDelayed.allowFusion && !inhibitDelVelBiasStates && !airDataFusionWindOnly) {
             for (uint8_t index = 0; index < 3; index++) {
                 const uint8_t stateIndex = index + 13;
                 if (!dvelBiasAxisInhibit[index]) {
@@ -84,11 +92,11 @@ void NavEKF3_core::FuseAirspeed()
         }
 
         // zero Kalman gains to inhibit magnetic field state estimation
-        if (tasDataDelayed.allowFusion && !inhibitMagStates && !airDataFusionWindOnly) {
+        if (tas.dataDelayed.allowFusion && !inhibitMagStates && !airDataFusionWindOnly) {
             kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
         }
 
-        if (tasDataDelayed.allowFusion && !inhibitWindStates && !treatWindStatesAsTruth) {
+        if (tas.dataDelayed.allowFusion && !inhibitWindStates && !treatWindStatesAsTruth) {
             kalman_mask |= (1<<22) | (1<<23);
         }
 
@@ -101,24 +109,24 @@ void NavEKF3_core::FuseAirspeed()
         }
 
         // calculate measurement innovation variance
-        varInnovVtas = 1.0f/SK_TAS[0];
+        tas.varInnov = 1.0f/SK_TAS[0];
 
         // calculate the innovation consistency test ratio
-        tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
+        tas.testRatio = sq(tas.innov) / (sq(MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f)) * tas.varInnov);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
-        const bool isConsistent = (tasTestRatio < 1.0f) || badIMUdata;
-        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
+        const bool isConsistent = (tas.testRatio < 1.0f) || badIMUdata;
+        tasTimeout = (imuSampleTime_ms - tas.lastPassTime_ms) > frontend->tasRetryTime_ms;
         if (!isConsistent) {
-            lastTasFailTime_ms = imuSampleTime_ms;
+            tas.lastFailTime_ms = imuSampleTime_ms;
         } else {
-            lastTasFailTime_ms = 0;
+            tas.lastFailTime_ms = 0;
         }
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
-        if (tasDataDelayed.allowFusion && (isConsistent || (tasTimeout && posTimeout))) {
+        if (tas.dataDelayed.allowFusion && (isConsistent || (tasTimeout && posTimeout))) {
             // restart the counter
-            lastTasPassTime_ms = imuSampleTime_ms;
+            tas.lastPassTime_ms = imuSampleTime_ms;
 
             // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
             // the zero elements of H to reduce the number of operations.
@@ -137,7 +145,7 @@ void NavEKF3_core::FuseAirspeed()
             }
 
             // finish fusion from KHP and Kfusion
-            FinishFusion(innovVtas, true); // forcing fusion is probably a bug
+            FinishFusion(tas.innov, true); // forcing fusion is probably a bug
         }
     }
 }
@@ -160,10 +168,10 @@ void NavEKF3_core::SelectTasFusion()
 
     // if the filter is initialised, wind states are not inhibited and we have data to fuse, then perform TAS fusion
 
-    if (tasDataToFuse && statesInitialised && !inhibitWindStates) {
+    if (tas.dataToFuse && statesInitialised && !inhibitWindStates) {
         FuseAirspeed();
-        tasDataToFuse = false;
-        prevTasStep_ms = imuSampleTime_ms;
+        tas.dataToFuse = false;
+        tas.prevStepTime_ms = imuSampleTime_ms;
     }
 }
 
