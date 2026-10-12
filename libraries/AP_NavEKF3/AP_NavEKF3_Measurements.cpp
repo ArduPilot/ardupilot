@@ -743,7 +743,7 @@ void NavEKF3_core::readGpsYawData()
     uint32_t yaw_time_ms;
     if (gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D &&
         dal.gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg, yaw_time_ms) &&
-        yaw_time_ms != yawMeasTime_ms) {
+        yaw_time_ms != gpsYaw.measTime_ms) {
         // GPS modules are rather too optimistic about their
         // accuracy. Set to min of 5 degrees here to prevent
         // the user constantly receiving warnings about high
@@ -1050,16 +1050,16 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
 {
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - yawMeasTime_ms) < frontend->sensorIntervalMin_ms) || !statesInitialised) {
+    if (((timeStamp_ms - gpsYaw.measTime_ms) < frontend->sensorIntervalMin_ms) || !statesInitialised) {
         return;
     }
 
-    yawAngDataNew.yawAng = yawAngle;
-    yawAngDataNew.yawAngErr = yawAngleErr;
+    gpsYaw.dataNew.yawAng = yawAngle;
+    gpsYaw.dataNew.yawAngErr = yawAngleErr;
     if (type == 2) {
-        yawAngDataNew.order = rotationOrder::TAIT_BRYAN_321;
+        gpsYaw.dataNew.order = rotationOrder::TAIT_BRYAN_321;
     } else if (type == 1) {
-        yawAngDataNew.order = rotationOrder::TAIT_BRYAN_312;
+        gpsYaw.dataNew.order = rotationOrder::TAIT_BRYAN_312;
     } else {
         return;
     }
@@ -1067,15 +1067,15 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     // this a configured delay larger than the fusion time horizon leaves every
     // measurement outside the recall window and the yaw source silently stops
     // fusing. The raw timestamp is still used for new-measurement detection and
-    // rate limiting via yawMeasTime_ms
-    yawAngDataNew.time_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
+    // rate limiting via gpsYaw.measTime_ms
+    gpsYaw.dataNew.time_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
 #if EK3_FEATURE_MOVING_BASELINE
-    yawAngDataNew.antOffset = antOffset.toftype();
+    gpsYaw.dataNew.antOffset = antOffset.toftype();
 #endif
 
-    storedYawAng.push(yawAngDataNew);
+    gpsYaw.stored.push(gpsYaw.dataNew);
 
-    yawMeasTime_ms = timeStamp_ms;
+    gpsYaw.measTime_ms = timeStamp_ms;
 }
 
 // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.

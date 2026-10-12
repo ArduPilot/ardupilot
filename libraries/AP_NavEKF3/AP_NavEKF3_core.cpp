@@ -133,7 +133,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #endif // EK3_FEATURE_BODY_ODOM
-    if(frontend->sources.gps_yaw_enabled() && !storedYawAng.init(obs_buffer_length)) {
+    if(frontend->sources.gps_yaw_enabled() && !gpsYaw.stored.init(obs_buffer_length)) {
         return false;
     }
 #if AP_RANGEFINDER_ENABLED
@@ -378,9 +378,7 @@ void NavEKF3_core::InitialiseVariables()
     bodyOdm.InitialiseVariables();
 
     // yaw sensor fusion
-    yawMeasTime_ms = 0;
-    memset((void *)&yawAngDataNew, 0, sizeof(yawAngDataNew));
-    memset((void *)&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
+    gpsYaw.InitialiseVariables();
 
 #if EK3_FEATURE_EXTERNAL_NAV
     // external nav data fusion
@@ -452,7 +450,7 @@ void NavEKF3_core::InitialiseVariablesMag()
     quatAtLastMagReset = stateStruct.quat;
     magFieldLearned = false;
     storedMag.reset();
-    storedYawAng.reset();
+    gpsYaw.stored.reset();
 #if EK3_FEATURE_EXTERNAL_NAV
     storedExtNavYawAng.reset();
 #endif

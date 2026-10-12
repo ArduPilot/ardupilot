@@ -16,6 +16,14 @@
 
 #define P (const_cast<const Matrix24 &>(Pmut))
 
+// initialise state:
+void NavEKF3_core::GpsYawFusion::InitialiseVariables()
+{
+    measTime_ms = 0;
+    memset((void *)&dataNew, 0, sizeof(dataNew));
+    memset((void *)&dataDelayed, 0, sizeof(dataDelayed));
+}
+
 /********************************************************
 *                   RESET FUNCTIONS                     *
 ********************************************************/
@@ -155,10 +163,10 @@ void NavEKF3_core::realignYawGPS(bool emergency_reset)
         ftype velYaw = atan2F(stateStruct.velocity.y,stateStruct.velocity.x);
 
         // calculate course yaw angle from GPS velocity
-        ftype gpsYaw = atan2F(gpsDataDelayed.vel.y,gpsDataDelayed.vel.x);
+        ftype gpsCourseYaw = atan2F(gpsDataDelayed.vel.y,gpsDataDelayed.vel.x);
 
         // Check the yaw angles for consistency
-        ftype yawErr = MAX(fabsF(wrap_PI(gpsYaw - velYaw)),fabsF(wrap_PI(gpsYaw - eulerAngles.z)));
+        ftype yawErr = MAX(fabsF(wrap_PI(gpsCourseYaw - velYaw)),fabsF(wrap_PI(gpsCourseYaw - eulerAngles.z)));
 
         // If the angles disagree by more than 45 degrees and GPS innovations are large or no previous yaw alignment, we declare the magnetic yaw as bad
         bool badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f) && (PV_AidingMode == AID_ABSOLUTE)) || !yawAlignComplete;
@@ -186,7 +194,7 @@ void NavEKF3_core::realignYawGPS(bool emergency_reset)
                 // keep roll and pitch and reset yaw
                 rotationOrder order;
                 bestRotationOrder(order);
-                resetQuatStateYawOnly(gpsYaw, gps_yaw_variance, order);
+                resetQuatStateYawOnly(gpsCourseYaw, gps_yaw_variance, order);
 
                 // reset the velocity and position states as they will be inaccurate due to bad yaw
                 ResetVelocity(resetDataSource::GPS);
@@ -390,38 +398,38 @@ void NavEKF3_core::SelectMagFusion()
         bool have_fused_gps_yaw = false;
         // correct the measurement for vehicle attitude using this core's own attitude
         // estimate. This is done once per recalled measurement, before all consumers of
-        // yawAngDataDelayed (alignYawAngle, fuseEulerYaw and learnMagBiasFromGPS).
+        // gpsYaw.dataDelayed (alignYawAngle, fuseEulerYaw and learnMagBiasFromGPS).
         // A measurement with no usable yaw information is treated the same as no
         // measurement: it is not fused or used for alignment (which matters most for
         // alignYawAngle as it accepts the measurement without an innovation check), it
-        // does not refresh last_gps_yaw_ms (so the compass fallback and the yaw source
+        // does not refresh gpsYaw.lastUseTime_ms (so the compass fallback and the yaw source
         // health reporting see the loss of usable yaw) and it does not block the
         // synthetic yaw fusion and yaw source reset recovery branches below
 #if EK3_FEATURE_MOVING_BASELINE
-        if (storedYawAng.recall(yawAngDataDelayed,imuDataDelayed.time_ms) &&
-            correctGPSYawForAntennaOffset(yawAngDataDelayed)) {
+        if (gpsYaw.stored.recall(gpsYaw.dataDelayed,imuDataDelayed.time_ms) &&
+            correctGPSYawForAntennaOffset(gpsYaw.dataDelayed)) {
 #else
-        if (storedYawAng.recall(yawAngDataDelayed,imuDataDelayed.time_ms)) {
+        if (gpsYaw.stored.recall(gpsYaw.dataDelayed,imuDataDelayed.time_ms)) {
 #endif
             if (tiltAlignComplete && (!yawAlignComplete || yaw_source_reset)) {
-                alignYawAngle(yawAngDataDelayed);
+                alignYawAngle(gpsYaw.dataDelayed);
                 yaw_source_reset = false;
                 have_fused_gps_yaw = true;
                 lastSynthYawTime_ms = imuSampleTime_ms;
-                last_gps_yaw_fuse_ms = imuSampleTime_ms;
+                gpsYaw.lastFuseTime_ms = imuSampleTime_ms;
                 recordYawResetsCompleted();
             } else if (tiltAlignComplete && yawAlignComplete) {
                 have_fused_gps_yaw = fuseEulerYaw(yawFusionMethod::GPS) && !faultStatus.bad_yaw;
                 if (have_fused_gps_yaw) {
-                    last_gps_yaw_fuse_ms = imuSampleTime_ms;
+                    gpsYaw.lastFuseTime_ms = imuSampleTime_ms;
                 }
             }
-            last_gps_yaw_ms = imuSampleTime_ms;
+            gpsYaw.lastUseTime_ms = imuSampleTime_ms;
         } else if (tiltAlignComplete && !yawAlignComplete) {
             // External yaw sources can take significant time to start providing yaw data so
             // wuile waiting, fuse a 'fake' yaw observation at 7Hz to keeop the filter stable
             if (imuSampleTime_ms - lastSynthYawTime_ms > 140) {
-                yawAngDataDelayed.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
+                gpsYaw.dataDelayed.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
                 // update the yaw angle using the last estimate which will be used as a static yaw reference when movement stops
                 if (!onGroundNotMoving) {
                     // prevent uncontrolled yaw variance growth by fusing a zero innovation
@@ -432,7 +440,7 @@ void NavEKF3_core::SelectMagFusion()
                 }
                 lastSynthYawTime_ms = imuSampleTime_ms;
             }
-        } else if (tiltAlignComplete && yawAlignComplete && onGround && imuSampleTime_ms - last_gps_yaw_fuse_ms > 10000) {
+        } else if (tiltAlignComplete && yawAlignComplete && onGround && imuSampleTime_ms - gpsYaw.lastFuseTime_ms > 10000) {
             // handle scenario where we were using GPS yaw previously, but the yaw fusion has timed out.
             yaw_source_reset = true;
         }
@@ -446,22 +454,22 @@ void NavEKF3_core::SelectMagFusion()
         readMagData();
 
         if (have_fused_gps_yaw) {
-            if (gps_yaw_mag_fallback_active) {
-                gps_yaw_mag_fallback_active = false;
+            if (gpsYaw.magFallbackActive) {
+                gpsYaw.magFallbackActive = false;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw external",(unsigned)imu_index);
             }
             // update mag bias from GPS yaw
-            gps_yaw_mag_fallback_ok = learnMagBiasFromGPS();
+            gpsYaw.magFallbackOk = learnMagBiasFromGPS();
             return;
         }
 
         // we don't have GPS yaw data and are configured for
         // fallback. If we've only just lost GPS yaw
-        if (imuSampleTime_ms - last_gps_yaw_ms < 10000) {
+        if (imuSampleTime_ms - gpsYaw.lastUseTime_ms < 10000) {
             // don't fallback to magnetometer fusion for 10s
             return;
         }
-        if (!gps_yaw_mag_fallback_ok) {
+        if (!gpsYaw.magFallbackOk) {
             // mag was not consistent enough with GPS to use it as
             // fallback
             return;
@@ -470,8 +478,8 @@ void NavEKF3_core::SelectMagFusion()
             // don't fall back if not flying but reset to GPS yaw if it becomes available
             return;
         }
-        if (!gps_yaw_mag_fallback_active) {
-            gps_yaw_mag_fallback_active = true;
+        if (!gpsYaw.magFallbackActive) {
+            gpsYaw.magFallbackActive = true;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw fallback active",(unsigned)imu_index);
         }
         // fall through to magnetometer fusion
@@ -972,7 +980,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     ftype R_YAW;
     switch (method) {
     case yawFusionMethod::GPS:
-        R_YAW = sq(yawAngDataDelayed.yawAngErr);
+        R_YAW = sq(gpsYaw.dataDelayed.yawAngErr);
         break;
 
     case yawFusionMethod::GSF:
@@ -1000,7 +1008,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     rotationOrder order;
     switch (method) {
     case yawFusionMethod::GPS:
-        order = yawAngDataDelayed.order;
+        order = gpsYaw.dataDelayed.order;
         break;
 
     case yawFusionMethod::STATIC:
@@ -1160,7 +1168,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     }
 
     case yawFusionMethod::GPS:
-        innovYaw = wrap_PI(yawAngPredicted - yawAngDataDelayed.yawAng);
+        innovYaw = wrap_PI(yawAngPredicted - gpsYaw.dataDelayed.yawAng);
         break;
 
     case yawFusionMethod::STATIC:
@@ -1431,13 +1439,13 @@ bool NavEKF3_core::learnMagBiasFromGPS(void)
 
     // combine yaw with current quaternion to get yaw corrected quaternion
     QuaternionF quat = stateStruct.quat;
-    if (yawAngDataDelayed.order == rotationOrder::TAIT_BRYAN_321) {
+    if (gpsYaw.dataDelayed.order == rotationOrder::TAIT_BRYAN_321) {
         Vector3F euler321;
         quat.to_euler(euler321.x, euler321.y, euler321.z);
-        quat.from_euler(euler321.x, euler321.y, yawAngDataDelayed.yawAng);
-    } else if (yawAngDataDelayed.order == rotationOrder::TAIT_BRYAN_312) {
+        quat.from_euler(euler321.x, euler321.y, gpsYaw.dataDelayed.yawAng);
+    } else if (gpsYaw.dataDelayed.order == rotationOrder::TAIT_BRYAN_312) {
         Vector3F euler312 = quat.to_vector312();
-        quat.from_vector312(euler312.x, euler312.y, yawAngDataDelayed.yawAng);
+        quat.from_vector312(euler312.x, euler312.y, gpsYaw.dataDelayed.yawAng);
     } else {
         // rotation order not supported
         return false;
@@ -1464,11 +1472,11 @@ bool NavEKF3_core::learnMagBiasFromGPS(void)
     const uint8_t fallback_count_threshold = 50;
 
     if (err_length > EK3_GPS_MAG_LEARN_LIMIT) {
-        gps_yaw_fallback_good_counter = 0;
-    } else if (gps_yaw_fallback_good_counter < fallback_count_threshold) {
-        gps_yaw_fallback_good_counter++;
+        gpsYaw.fallbackGoodCounter = 0;
+    } else if (gpsYaw.fallbackGoodCounter < fallback_count_threshold) {
+        gpsYaw.fallbackGoodCounter++;
     }
-    bool ok = gps_yaw_fallback_good_counter >= fallback_count_threshold;
+    bool ok = gpsYaw.fallbackGoodCounter >= fallback_count_threshold;
     if (ok) {
         // mark mag healthy to prevent a magTimeout when we start using it
         lastHealthyMagTime_ms = imuSampleTime_ms;
