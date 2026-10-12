@@ -1419,10 +1419,22 @@ private:
     } bodyOdm;
 
     // GPS yaw sensor fusion
-    uint32_t yawMeasTime_ms;            // system time GPS yaw angle was last input to the data buffer
-    EKF_obs_buffer_t<yaw_elements> storedYawAng;    // GPS yaw angle buffer
-    yaw_elements yawAngDataNew;         // GPS yaw angle at the current time horizon
-    yaw_elements yawAngDataDelayed;     // GPS yaw angle at the fusion time horizon
+    class GpsYawFusion {
+    public:
+        void InitialiseVariables();
+
+        uint32_t measTime_ms;            // system time GPS yaw angle was last input to the data buffer
+        EKF_obs_buffer_t<yaw_elements> stored;    // GPS yaw angle buffer
+        yaw_elements dataNew;         // GPS yaw angle at the current time horizon
+        yaw_elements dataDelayed;     // GPS yaw angle at the fusion time horizon
+
+        uint32_t lastUseTime_ms; // last time the EKF attempted to use the GPS yaw
+        uint32_t lastFuseTime_ms; // last time the EKF successfully fused the GPS yaw
+        bool magFallbackOk;
+        bool magFallbackActive;
+        uint8_t fallbackGoodCounter;
+    } gpsYaw;
+
     yaw_elements yawAngDataStatic;      // yaw angle (regardless of yaw source) when the vehicle was last on ground and not moving
 
     // Range Beacon Sensor Fusion
@@ -1642,12 +1654,6 @@ private:
       yaw to use it for fallback
     */
     bool learnMagBiasFromGPS(void);
-
-    uint32_t last_gps_yaw_ms; // last time the EKF attempted to use the GPS yaw
-    uint32_t last_gps_yaw_fuse_ms; // last time the EKF successfully fused the GPS yaw
-    bool gps_yaw_mag_fallback_ok;
-    bool gps_yaw_mag_fallback_active;
-    uint8_t gps_yaw_fallback_good_counter;
 
     /*
     Update the on ground and not moving check.

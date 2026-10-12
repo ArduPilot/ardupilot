@@ -63,8 +63,8 @@ void NavEKF3_core::setWindMagStateLearningMode()
 {
     const bool recentGpsYawFusion = (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS ||
                                      yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
-                                    last_gps_yaw_fuse_ms != 0 &&
-                                    imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000;
+                                    gpsYaw.lastFuseTime_ms != 0 &&
+                                    imuSampleTime_ms - gpsYaw.lastFuseTime_ms < 5000;
     const bool yawInitialised = recentGpsYawFusion || finalInflightYawInit;
     const bool canEstimateWind = ((yawInitialised && dragFusionEnabled) || assume_zero_sideslip()) &&
                                  !onGround &&
@@ -646,7 +646,7 @@ bool NavEKF3_core::use_compass(void) const
 // return true if GPS, compass or external nav yaw has been fused within the last 5 seconds
 bool NavEKF3_core::recentYawFusion(void) const
 {
-    if (last_gps_yaw_fuse_ms != 0 && imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000) {
+    if (gpsYaw.lastFuseTime_ms != 0 && imuSampleTime_ms - gpsYaw.lastFuseTime_ms < 5000) {
         return true;
     }
     if (last_mag_yaw_fuse_ms != 0 && imuSampleTime_ms - last_mag_yaw_fuse_ms < 5000) {
@@ -670,7 +670,7 @@ bool NavEKF3_core::using_noncompass_for_yaw(void) const
 #endif
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
         yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
-        return imuSampleTime_ms - last_gps_yaw_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
+        return imuSampleTime_ms - gpsYaw.lastUseTime_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
     return false;
 }
