@@ -176,6 +176,14 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GLTV",       21, GPSParms, vel_glitch, 0),
 
+    // @Param: GLT_N
+    // @DisplayName: GPS glitch length in samples
+    // @Description: Number of GPS samples the next glitch (GLTCH or GLTV) lasts. Set it before the glitch: it stays armed until a glitch is set, the count starts at the first sample sent with a 3D or better fix and a non-zero glitch, and after this many samples GLTCH, GLTV and this parameter are set back to zero and saved. This makes the glitch length independent of how quickly the parameters arrive. Write the glitch once, without a verify-and-retry: a retry after the glitch has cleared would set it again with no limit. The fix type is taken from FIXTYPE, which only some simulated GPS types send; with the others keep FIXTYPE at 3 or more, or no sample is counted. The count is of samples the simulator sends, so a glitch armed at boot is used up before the autopilot has detected the GPS. 0 means a glitch lasts until it is cleared
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("GLT_N",      22, GPSParms, glitch_samples, 0),
+
     AP_GROUPEND
 };
 }
@@ -611,6 +619,20 @@ void GPS::update()
 
     if (params.jam == 1) {
         simulate_jamming(d);
+    }
+
+    // an armed glitch lasts SIM_GPSn_GLT_N samples sent with a 3D or better fix (the EKF
+    // uses no other), then clears itself
+    // non-const, unlike params above: the clear writes the parameters
+    auto &glitch_params = _sitl->gps[instance];
+    if (glitch_params.glitch_samples <= 0 || (glitch_offsets.is_zero() && vel_glitch.is_zero())) {
+        glitch_samples_sent = 0;
+    } else if (d.have_lock && d.fix_type >= 3 && ++glitch_samples_sent >= glitch_params.glitch_samples) {
+        glitch_samples_sent = 0;
+        // saved as well as set, so a reboot does not restore the glitch
+        glitch_params.glitch.set_and_save(Vector3f());
+        glitch_params.vel_glitch.set_and_save(Vector3f());
+        glitch_params.glitch_samples.set_and_save(0);
     }
 
     backend->publish(&d);
