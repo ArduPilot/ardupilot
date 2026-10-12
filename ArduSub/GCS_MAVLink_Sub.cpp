@@ -463,6 +463,9 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_
     case MAV_CMD_NAV_LAND:
         return handle_MAV_CMD_NAV_LAND(packet);
 
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        return handle_MAV_CMD_NAV_RETURN_TO_LAUNCH(packet);
+
     }
 
     return GCS_MAVLINK::handle_command_int_packet(packet, msg);
@@ -478,6 +481,16 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_LOITER_UNLIM(const mavlink_comman
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_LAND(const mavlink_command_int_t &packet)
 {
+        if (!sub.set_mode(Mode::Number::SURFACE, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_RETURN_TO_LAUNCH(const mavlink_command_int_t &packet)
+{
+        // ArduSub has no RTL mode (no position fix underwater); SURFACE is the
+        // closest equivalent, matching the MAV_CMD_NAV_LAND handling above.
         if (!sub.set_mode(Mode::Number::SURFACE, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
