@@ -478,15 +478,15 @@ void NavEKF3_core::setAidingMode()
                 // we are commencing aiding using external nav
                 posResetSource = resetDataSource::EXTNAV;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u is using external nav data",(unsigned)imu_index);
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
-                if (useExtNavVel) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNav.dataDelayed.pos.x,(double)extNav.dataDelayed.pos.y,(double)extNav.dataDelayed.pos.z);
+                if (extNav.useVel) {
                     velResetSource = resetDataSource::EXTNAV;
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNavVelDelayed.vel.x,(double)extNavVelDelayed.vel.y,(double)extNavVelDelayed.vel.z);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNav.velDelayed.vel.x,(double)extNav.velDelayed.vel.y,(double)extNav.velDelayed.vel.z);
                 }
                 // handle height reset as special case
                 if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::EXTNAV) {
-                    hgtMea = -extNavDataDelayed.pos.z;
-                    posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                    hgtMea = -extNav.dataDelayed.pos.z;
+                    posDownObsNoise = sq(constrain_ftype(extNav.dataDelayed.posErr, 0.1f, 10.0f));
                     ResetHeight();
                 }
 #endif // EK3_FEATURE_EXTERNAL_NAV
@@ -623,7 +623,7 @@ bool NavEKF3_core::readyToUseExtNav(void) const
         return false;
     }
 
-    return tiltAlignComplete && extNavDataToFuse;
+    return tiltAlignComplete && extNav.dataToFuse;
 #else
     return false;
 #endif // EK3_FEATURE_EXTERNAL_NAV
@@ -653,7 +653,7 @@ bool NavEKF3_core::recentYawFusion(void) const
         return true;
     }
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (last_extnav_yaw_fuse_ms != 0 && imuSampleTime_ms - last_extnav_yaw_fuse_ms < 5000) {
+    if (extNav.lastYawFuseTime_ms != 0 && imuSampleTime_ms - extNav.lastYawFuseTime_ms < 5000) {
         return true;
     }
 #endif
@@ -665,7 +665,7 @@ bool NavEKF3_core::using_noncompass_for_yaw(void) const
 {
 #if EK3_FEATURE_EXTERNAL_NAV
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
-        return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
+        return ((imuSampleTime_ms - extNav.lastYawUseTime_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
 #endif
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
@@ -680,7 +680,7 @@ bool NavEKF3_core::using_extnav_for_yaw() const
 {
 #if EK3_FEATURE_EXTERNAL_NAV
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
-        return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
+        return ((imuSampleTime_ms - extNav.lastYawUseTime_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
 #endif
     return false;
@@ -792,7 +792,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     bool doingFlowNav = (PV_AidingMode != AID_NONE) && flowDataValid;
     bool doingWindRelNav = (!tasTimeout && assume_zero_sideslip()) || !dragTimeout;
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-    bool someVertRefData = (!velTimeout && (useGpsVertVel || useExtNavVel)) || !hgtTimeout;
+    bool someVertRefData = (!velTimeout && (useGpsVertVel || extNav.useVel)) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout && dragTimeout) || doingFlowNav || doingBodyVelNav;
     bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
 

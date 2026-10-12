@@ -487,19 +487,19 @@ void NavEKF3_core::SelectMagFusion()
 
 #if EK3_FEATURE_EXTERNAL_NAV
     // Handle case where we are using an external nav for yaw
-    const bool extNavYawDataToFuse = storedExtNavYawAng.recall(extNavYawAngDataDelayed, imuDataDelayed.time_ms);
+    const bool extNavYawDataToFuse = extNav.storedYawAng.recall(extNav.yawAngDataDelayed, imuDataDelayed.time_ms);
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
         if (extNavYawDataToFuse) {
             if (tiltAlignComplete && (!yawAlignComplete || yaw_source_reset)) {
-                alignYawAngle(extNavYawAngDataDelayed);
+                alignYawAngle(extNav.yawAngDataDelayed);
                 yaw_source_reset = false;
-                last_extnav_yaw_fuse_ms = imuSampleTime_ms;
+                extNav.lastYawFuseTime_ms = imuSampleTime_ms;
             } else if (tiltAlignComplete && yawAlignComplete) {
                 if (fuseEulerYaw(yawFusionMethod::EXTNAV) && !faultStatus.bad_yaw) {
-                    last_extnav_yaw_fuse_ms = imuSampleTime_ms;
+                    extNav.lastYawFuseTime_ms = imuSampleTime_ms;
                 }
             }
-            last_extnav_yaw_fusion_ms = imuSampleTime_ms;
+            extNav.lastYawUseTime_ms = imuSampleTime_ms;
         } else if (tiltAlignComplete && !yawAlignComplete) {
             // External yaw sources can take significant time to start providing yaw data so
             // while waiting, fuse a 'fake' yaw observation at 7Hz to keep the filter stable
@@ -999,7 +999,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 
 #if EK3_FEATURE_EXTERNAL_NAV
     case yawFusionMethod::EXTNAV:
-        R_YAW = sq(MAX(extNavYawAngDataDelayed.yawAngErr, 0.05f));
+        R_YAW = sq(MAX(extNav.yawAngDataDelayed.yawAngErr, 0.05f));
         break;
 #endif
     }
@@ -1025,7 +1025,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 
 #if EK3_FEATURE_EXTERNAL_NAV
     case yawFusionMethod::EXTNAV:
-        order = extNavYawAngDataDelayed.order;
+        order = extNav.yawAngDataDelayed.order;
         break;
 #endif
     }
@@ -1186,7 +1186,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 
 #if EK3_FEATURE_EXTERNAL_NAV
     case yawFusionMethod::EXTNAV:
-        innovYaw = wrap_PI(yawAngPredicted - extNavYawAngDataDelayed.yawAng);
+        innovYaw = wrap_PI(yawAngPredicted - extNav.yawAngDataDelayed.yawAng);
         break;
 #endif
     }

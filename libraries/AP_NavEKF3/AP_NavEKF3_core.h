@@ -1559,27 +1559,32 @@ private:
     bool dvelBiasAxisInhibit[3] {};		// true when IMU delta velocity bias states for a specific axis is de-activated
 	Vector3F dvelBiasAxisVarPrev;		// saved delta velocity XYZ bias variances (m/sec)**2
 
-#if EK3_FEATURE_EXTERNAL_NAV
     // external navigation fusion
-    EKF_obs_buffer_t<ext_nav_elements> storedExtNav; // external navigation data buffer
-    ext_nav_elements extNavDataDelayed; // External nav at the fusion time horizon
-    uint32_t extNavMeasTime_ms;         // time external measurements were accepted for input to the data buffer (msec)
-    uint32_t extNavLastPosResetTime_ms; // last time the external nav systen performed a position reset (msec)
-    bool extNavDataToFuse;              // true when there is new external nav data to fuse
-    bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
-    EKF_obs_buffer_t<ext_nav_vel_elements> storedExtNavVel;    // external navigation velocity data buffer
-    ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
-    uint32_t extNavVelMeasTime_ms;      // time external navigation velocity measurements were accepted for input to the data buffer (msec)
-    bool extNavVelToFuse;               // true when there is new external navigation velocity to fuse
-    Vector3F extNavVelInnov;            // external nav velocity innovations
-    Vector3F extNavVelVarInnov;         // external nav velocity innovation variances
-    uint32_t extNavVelInnovTime_ms;     // system time that external nav velocity innovations were recorded (to detect timeouts)
-    EKF_obs_buffer_t<yaw_elements> storedExtNavYawAng;  // external navigation yaw angle buffer
-    yaw_elements extNavYawAngDataDelayed;   // external navigation yaw angle at the fusion time horizon
-    uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
-    uint32_t last_extnav_yaw_fuse_ms;   // system time that external nav yaw last passed its innovation check and was fused
+    class ExternalNavFusion {
+    public:
+#if EK3_FEATURE_EXTERNAL_NAV
+        void InitialiseVariables();
+
+        EKF_obs_buffer_t<ext_nav_elements> stored; // external navigation data buffer
+        ext_nav_elements dataDelayed;       // External nav at the fusion time horizon
+        uint32_t measTime_ms;               // time external measurements were accepted for input to the data buffer (msec)
+        uint32_t lastPosResetTime_ms;       // last time the external nav systen performed a position reset (msec)
+        bool dataToFuse;                    // true when there is new external nav data to fuse
+        bool usedForPos;                    // true when the external nav data is being used as a position reference.
+        EKF_obs_buffer_t<ext_nav_vel_elements> storedVel;    // external navigation velocity data buffer
+        ext_nav_vel_elements velDelayed;    // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
+        uint32_t velMeasTime_ms;            // time external navigation velocity measurements were accepted for input to the data buffer (msec)
+        bool velToFuse;                     // true when there is new external navigation velocity to fuse
+        Vector3F velInnov;                  // external nav velocity innovations
+        Vector3F velVarInnov;               // external nav velocity innovation variances
+        uint32_t velInnovTime_ms;           // system time that external nav velocity innovations were recorded (to detect timeouts)
+        EKF_obs_buffer_t<yaw_elements> storedYawAng;  // external navigation yaw angle buffer
+        yaw_elements yawAngDataDelayed;     // external navigation yaw angle at the fusion time horizon
+        uint32_t lastYawUseTime_ms;         // system time that external nav yaw was last fused
+        uint32_t lastYawFuseTime_ms;        // system time that external nav yaw last passed its innovation check and was fused
 #endif // EK3_FEATURE_EXTERNAL_NAV
-    bool useExtNavVel;                  // true if external nav velocity should be used
+        bool useVel;                        // true if external nav velocity should be used
+    } extNav;
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {

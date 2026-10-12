@@ -1099,17 +1099,17 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) || !statesInitialised) {
+    if (((timeStamp_ms - extNav.measTime_ms) < frontend->extNavIntervalMin_ms) || !statesInitialised) {
         return;
     } else {
-        extNavMeasTime_ms = timeStamp_ms;
+        extNav.measTime_ms = timeStamp_ms;
     }
 
     ext_nav_elements extNavDataNew {};
 
-    if (resetTime_ms != extNavLastPosResetTime_ms) {
+    if (resetTime_ms != extNav.lastPosResetTime_ms) {
         extNavDataNew.posReset = true;
-        extNavLastPosResetTime_ms = resetTime_ms;
+        extNav.lastPosResetTime_ms = resetTime_ms;
     } else {
         extNavDataNew.posReset = false;
     }
@@ -1126,7 +1126,7 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     extNavDataNew.time_ms = timeStamp_ms;
 
     // store position data to buffer
-    storedExtNav.push(extNavDataNew);
+    extNav.stored.push(extNavDataNew);
 
     // protect against attitude or angle being NaN
     if (!quat.is_nan() && !isnan(angErr)) {
@@ -1138,7 +1138,7 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         extNavYawAngDataNew.yawAngErr = MAX(angErr, radians(5.0f)); // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
         extNavYawAngDataNew.order = rotationOrder::TAIT_BRYAN_321; // Euler rotation order is 321 (ZYX)
         extNavYawAngDataNew.time_ms = timeStamp_ms;
-        storedExtNavYawAng.push(extNavYawAngDataNew);
+        extNav.storedYawAng.push(extNavYawAngDataNew);
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
 }
@@ -1151,12 +1151,12 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
         return;
     }
 
-    if ((timeStamp_ms - extNavVelMeasTime_ms) < frontend->extNavIntervalMin_ms) {
+    if ((timeStamp_ms - extNav.velMeasTime_ms) < frontend->extNavIntervalMin_ms) {
         return;
     }
 
-    extNavVelMeasTime_ms = timeStamp_ms;
-    useExtNavVel = true;
+    extNav.velMeasTime_ms = timeStamp_ms;
+    extNav.useVel = true;
     // calculate timestamp
     timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter updaterate
@@ -1170,7 +1170,7 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
     extNavVelNew.err = err;
     extNavVelNew.corrected = false;
 
-    storedExtNavVel.push(extNavVelNew);
+    extNav.storedVel.push(extNavVelNew);
 #endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
