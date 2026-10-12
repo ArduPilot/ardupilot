@@ -1293,12 +1293,16 @@ void NavEKF3_core::selectHeightForFusion()
         // altitude on baro through cruise/hover. When the IMU-aided AGL KF is enabled
         // and valid it provides a de-glitched height above ground that does not carry
         // baro error directly, so let it act as a stable terrain reference here too.
-        // Not while armed with no horizontal velocity measured, constant position mode
-        // included, as the speed gate below then has nothing to test.
+        // Not while armed with no horizontal velocity measured, as the speed gate below then has
+        // nothing to test: in constant position mode, or from the start of relative aiding, which
+        // zeroes the velocity, until every axis of flow or odometry has passed its innovation check.
+        // One axis is not enough: across the direction of flight it passes at any speed.
         bool terrainStable = terrainHgtStable;
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-        if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
-            (onGround || (filterStatus.flags.horiz_vel && (PV_AidingMode != AID_NONE)))) {
+        const bool relVelFused = (flowFusedAxes == 0x03) || (bodyVelFusedAxes == 0x07);
+        const bool horizVelMeasured = filterStatus.flags.horiz_vel &&
+                                      ((PV_AidingMode == AID_ABSOLUTE) || ((PV_AidingMode == AID_RELATIVE) && relVelFused));
+        if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid && (onGround || horizVelMeasured)) {
             terrainStable = true;
         }
 #endif
@@ -2075,6 +2079,7 @@ void NavEKF3_core::FuseBodyVel()
         if ((bodyVelTestRatio[obsIndex]) < 1.0f) {
             // record the last time observations were accepted for fusion
             prevBodyVelFuseTime_ms = imuSampleTime_ms;
+            bodyVelFusedAxes |= 1U << obsIndex;
             // notify first time only
             if (!bodyVelFusionActive) {
                 bodyVelFusionActive = true;
