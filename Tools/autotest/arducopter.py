@@ -18304,84 +18304,89 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     raise NotAchievedException("'%s' after a LOITER landing below the focus floor" % text)
             self.context_stop_collecting('STATUSTEXT')
 
-        # the ground reading is learned only from a stored flow sample, so a sensor that stores none
-        # from touchdown to the next takeoff must not leave the last flight's reading in place:
-        # learned at 0.8 m and carried to ground that reads 0 m, it would call a hover under
-        # 0.85 m at rest and fuse zero flow there.  A 5 rad/s flow rate, over the EKF's limit for
-        # corrupt data, stands in for quality 0: the EKF stores neither.  No reboot between flights.
-        self.start_subtest("Second flight without a reboot: the first flight's ground reading is not used")
-        self.set_parameters({
-            "SIM_BARO_GEFF_M": 0,
-            "DISARM_DELAY": 0,
-            "SIM_SONAR_OFFSET": 0.8,
-            "FLOW_HGT_MIN": 1.0,
-        })
-        self.reboot_sitl()
-        ground_m = self.get_altitude(altitude_source="SIM_STATE.alt")
-        self.wait_ready_to_arm(require_absolute=False)
-        first_rng_m = self.poll_message('RANGEFINDER').distance
-        self.takeoff(2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
-        self.set_rc(3, 1000)
-        self.wait_altitude(ground_m - 1, ground_m + 0.1, altitude_source="SIM_STATE.alt", timeout=60)
-        self.context_collect('STATUSTEXT')
-        self.set_parameter("SIM_FLOW_OFS_X", 5)
-        no_flow_start_us = self.get_sim_time() * 1e6
-        self.disarm_vehicle(force=True)
-        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
-        self.set_parameter("SIM_SONAR_OFFSET", 0)
-        second_rng_m = self.poll_message('RANGEFINDER').distance
-        self.arm_vehicle()
-        no_flow_end_us = self.get_sim_time() * 1e6
-        self.set_parameter("SIM_FLOW_OFS_X", 0)
-        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
-        self.context_clear_collection('STATUSTEXT')
-        self.set_rc(3, 1650)
-        self.wait_altitude(ground_m + 0.25, ground_m + 0.5, altitude_source="SIM_STATE.alt", timeout=30)
-        self.set_rc(3, 1500)
-        hover_start_us = self.get_sim_time() * 1e6
-        self.delay_sim_time(7, reason="hover under the first flight's ground reading")
-        hover_end_us = self.get_sim_time() * 1e6
-        hover_m = self.get_altitude(altitude_source="SIM_STATE.alt") - ground_m
-        stopped = self.statustext_in_collections("EKF3 IMU0 stopped aiding")
-        self.context_stop_collecting('STATUSTEXT')
-        self.set_rc(3, 1000)
-        self.wait_altitude(ground_m - 1, ground_m + 0.1, altitude_source="SIM_STATE.alt", timeout=60)
-        self.disarm_vehicle(force=True)
+        # the ground reading is learned only from a stored flow sample, so a sensor that stops storing
+        # them must not leave an old reading in place: learned at 0.8 m and carried to ground that
+        # reads 0 m, it would call a hover under 0.85 m at rest and fuse zero flow there.  A 5 rad/s
+        # flow rate, over the EKF's limit for corrupt data, stands in for quality 0: the EKF stores
+        # neither.  Once with a first flight whose touchdown stops the samples, no reboot before the
+        # second, and once with the samples stopped after boot, before the first arming
+        for first_flight in True, False:
+            self.start_subtest("Ground reading taken %s, then no flow sample stored until armed" %
+                               ("before a first flight" if first_flight else "after boot"))
+            self.set_parameters({
+                "SIM_BARO_GEFF_M": 0,
+                "DISARM_DELAY": 0,
+                "SIM_SONAR_OFFSET": 0.8,
+                "FLOW_HGT_MIN": 1.0,
+            })
+            self.reboot_sitl()
+            ground_m = self.get_altitude(altitude_source="SIM_STATE.alt")
+            self.wait_ready_to_arm(require_absolute=False)
+            learned_rng_m = self.poll_message('RANGEFINDER').distance
+            if first_flight:
+                self.takeoff(2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+                self.set_rc(3, 1000)
+                self.wait_altitude(ground_m - 1, ground_m + 0.1, altitude_source="SIM_STATE.alt", timeout=60)
+            else:
+                self.change_mode('ALT_HOLD')
+            self.context_collect('STATUSTEXT')
+            self.set_parameter("SIM_FLOW_OFS_X", 5)
+            no_flow_start_us = self.get_sim_time() * 1e6
+            if first_flight:
+                self.disarm_vehicle(force=True)
+            self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+            self.set_parameter("SIM_SONAR_OFFSET", 0)
+            armed_rng_m = self.poll_message('RANGEFINDER').distance
+            self.arm_vehicle()
+            no_flow_end_us = self.get_sim_time() * 1e6
+            self.set_parameter("SIM_FLOW_OFS_X", 0)
+            self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+            self.context_clear_collection('STATUSTEXT')
+            climb_to_low_hover(ground_m)
+            hover_start_us = self.get_sim_time() * 1e6
+            self.delay_sim_time(7, reason="hover under the old ground reading")
+            hover_end_us = self.get_sim_time() * 1e6
+            hover_m = self.get_altitude(altitude_source="SIM_STATE.alt") - ground_m
+            stopped = self.statustext_in_collections("EKF3 IMU0 stopped aiding")
+            self.context_stop_collecting('STATUSTEXT')
+            self.set_rc(3, 1000)
+            self.wait_altitude(ground_m - 1, ground_m + 0.1, altitude_source="SIM_STATE.alt", timeout=60)
+            self.disarm_vehicle(force=True)
 
-        dfreader = self.dfreader_for_current_onboard_log()
-        last = None
-        ground_updates = 0
-        hover_updates = 0
-        hover_rng_max_m = 0
-        while True:
-            m = dfreader.recv_match(type=['XKF5', 'RFND'])
-            if m is None:
-                break
-            if m.get_type() == 'RFND':
-                if hover_start_us < m.TimeUS < hover_end_us:
-                    hover_rng_max_m = max(hover_rng_max_m, m.Dist)
-                continue
-            if m.C != 0:
-                continue
-            innov = (m.FIX, m.FIY, m.NI)
-            if last is not None and innov != last:
-                if no_flow_start_us + 1e6 < m.TimeUS < no_flow_end_us:
-                    ground_updates += 1
-                elif hover_start_us + 1e6 < m.TimeUS < hover_end_us:
-                    hover_updates += 1
-            last = innov
-        self.progress("ground range %.2f m then %.2f m, hover at %.2f m reading up to %.2f m: "
-                      "%u flow fusions between the flights, %u in the hover" %
-                      (first_rng_m, second_rng_m, hover_m, hover_rng_max_m, ground_updates, hover_updates))
-        if not first_rng_m - 0.05 > second_rng_m:
-            raise NotAchievedException("the second flight's ground reads no closer than the first's")
-        if not 0.25 < hover_m < 0.9 or hover_rng_max_m > first_rng_m + 0.05:
-            raise NotAchievedException("hover not within 0.05 of the first flight's ground reading")
-        if ground_updates != 0:
-            raise NotAchievedException("flow fused between the flights, so a ground reading could be learned")
-        if hover_updates != 0 or not stopped:
-            raise NotAchievedException("zero flow fused in a hover below the floor on the last flight's "
-                                       "ground reading (%u updates)" % hover_updates)
+            dfreader = self.dfreader_for_current_onboard_log()
+            last = None
+            ground_updates = 0
+            hover_updates = 0
+            hover_rng_max_m = 0
+            while True:
+                m = dfreader.recv_match(type=['XKF5', 'RFND'])
+                if m is None:
+                    break
+                if m.get_type() == 'RFND':
+                    if hover_start_us < m.TimeUS < hover_end_us:
+                        hover_rng_max_m = max(hover_rng_max_m, m.Dist)
+                    continue
+                if m.C != 0:
+                    continue
+                innov = (m.FIX, m.FIY, m.NI)
+                if last is not None and innov != last:
+                    if no_flow_start_us + 1e6 < m.TimeUS < no_flow_end_us:
+                        ground_updates += 1
+                    elif hover_start_us + 1e6 < m.TimeUS < hover_end_us:
+                        hover_updates += 1
+                last = innov
+            self.progress("ground range %.2f m then %.2f m, hover at %.2f m reading up to %.2f m: "
+                          "%u flow fusions with no sample stored, %u in the hover" %
+                          (learned_rng_m, armed_rng_m, hover_m, hover_rng_max_m, ground_updates, hover_updates))
+            if not learned_rng_m - 0.05 > armed_rng_m:
+                raise NotAchievedException("the ground reads no closer at arming than when the reading was taken")
+            if not 0.25 < hover_m < 0.9 or hover_rng_max_m > learned_rng_m + 0.05:
+                raise NotAchievedException("hover not within 0.05 of the old ground reading")
+            if ground_updates != 0:
+                raise NotAchievedException("flow fused with no sample stored, so a ground reading could be learned")
+            if hover_updates != 0 or not stopped:
+                raise NotAchievedException("zero flow fused in a hover below the floor on an old "
+                                           "ground reading (%u updates)" % hover_updates)
         self.set_parameters({
             "SIM_SONAR_OFFSET": 0,
             "FLOW_HGT_MIN": 0,
