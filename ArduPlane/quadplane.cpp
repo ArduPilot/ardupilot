@@ -581,7 +581,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: RTL_SINK_MAX
     // @DisplayName: QRTL approach maximum sink rate
-    // @Description: Maximum planned sink rate during the fixed wing portion of a QRTL approach from RTL_ALTITUDE to Q_RTL_ALT. The effective value is limited to TECS_SINK_MAX, so set it to TECS_SINK_MAX or higher to use the full TECS descent capability. A value of 0 disables the fixed wing descent, holding altitude until POSITION1, after which the VTOL controller completes the descent. This parameter controls the QRTL altitude trajectory and does not change the aircraft's TECS descent capability.
+    // @Description: Maximum planned sink rate during the fixed wing portion of a QRTL approach from RTL_ALTITUDE to Q_RTL_ALT. The effective value is limited to TECS_SINK_MAX, so set it to TECS_SINK_MAX or higher to use the full TECS descent capability. A value of 0 disables this final fixed wing descent. The separate gradual entry descent to RTL_ALTITUDE is not limited by this parameter. If a short or high approach cannot complete the planned descent, the VTOL controller completes it after POSITION1. This parameter controls the QRTL altitude trajectory and does not change the aircraft's TECS descent capability.
     // @Units: m/s
     // @Range: 0 10
     // @Increment: 0.1
@@ -4434,9 +4434,10 @@ Vector2f QuadPlane::landing_closing_velocity_NE_ms()
     return ahrs.groundspeed_vector() - landing_velocity_ne_m;
 }
 
-bool QuadPlane::landing_target_velocity_match_set() const
+bool QuadPlane::landing_target_velocity_match_active() const
 {
-    return poscontrol.last_velocity_match_ms != 0;
+    return poscontrol.last_velocity_match_ms != 0 &&
+           AP_HAL::millis() - poscontrol.last_velocity_match_ms < 1000;
 }
 
 /*

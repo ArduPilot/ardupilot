@@ -14,7 +14,7 @@ bool ModeQRTL::_enter()
     submode = SubMode::RTL;
     approach_start.valid = false;
     approach_start.planned_closing_speed_ms = 0;
-    approach_start.velocity_match_seen = false;
+    approach_start.velocity_match_active = false;
     approach_start.closing_speed_latch_start_ms = AP_HAL::millis();
     plane.prev_WP_loc = plane.current_loc;
 
@@ -250,8 +250,8 @@ void ModeQRTL::update_target_altitude()
 
     const Vector2f desired_closing_velocity_ne_ms = plane.quadplane.landing_desired_closing_velocity_NE_ms();
     const float desired_closing_speed_ms = desired_closing_velocity_ne_ms.length();
-    approach_start.velocity_match_seen |= plane.quadplane.landing_target_velocity_match_set();
-    if (approach_start.velocity_match_seen) {
+    approach_start.velocity_match_active = plane.quadplane.landing_target_velocity_match_active();
+    if (approach_start.velocity_match_active) {
         // Moving-target scripts continuously update both the destination and
         // its velocity, so retain their existing desired-speed approach plan.
         approach_start.planned_closing_speed_ms = desired_closing_speed_ms;
@@ -297,6 +297,7 @@ void ModeQRTL::update_target_altitude()
         // cycle rather than latching a bogus zero delta that would silently
         // disable the ramp for the rest of the approach
         if (calc_alt_delta_m(approach_start.alt_delta_m)) {
+            approach_start.dist_m = dist;
             approach_start.target_alt_delta_m = approach_start.alt_delta_m;
             approach_start.last_update_ms = AP_HAL::millis();
             approach_start.valid = true;
@@ -310,10 +311,28 @@ void ModeQRTL::update_target_altitude()
     float target_sink_rate_ms = qrtl_sink_rate_ms;
     const bool target_above_rtl_altitude = approach_start.valid &&
                                            approach_start.target_alt_delta_m > rtl_alt_delta;
-    if (dist > descent_start_distance_m || target_above_rtl_altitude) {
-        // Descend from the QRTL entry altitude to RTL_ALTITUDE using the TECS
-        // sink capability, then hold RTL_ALTITUDE until the planned QRTL
-        // descent starts.
+    const float alt_excess = approach_start.valid ? approach_start.alt_delta_m - rtl_alt_delta : 0;
+    const bool use_entry_ramp = approach_start.valid &&
+                                plane.g.alt_slope_min > 0 &&
+                                alt_excess >= plane.g.alt_slope_min &&
+                                approach_start.dist_m > descent_start_distance_m;
+    if (use_entry_ramp && dist > descent_start_distance_m) {
+        // Preserve the normal gradual QRTL entry ramp, reaching RTL_ALTITUDE
+        // where the separately planned final QRTL descent begins.
+        alt = linear_interpolate(rtl_alt_delta, approach_start.alt_delta_m,
+                                 dist,
+                                 descent_start_distance_m, approach_start.dist_m);
+        float current_alt_delta_m;
+        if (calc_alt_delta_m(current_alt_delta_m)) {
+            // Do not command a climb back to the ramp if the aircraft has
+            // already descended below it.
+            alt = MIN(alt, MAX(rtl_alt_delta, current_alt_delta_m));
+        }
+        target_sink_rate_ms = plane.TECS_controller.get_max_sinkrate();
+    } else if (dist > descent_start_distance_m || target_above_rtl_altitude) {
+        // ALT_SLOPE_MIN disabled the entry ramp, or there was insufficient
+        // distance to fit it. Move toward RTL_ALTITUDE within TECS capability
+        // and retain any altitude still remaining at POSITION1.
         alt = rtl_alt_delta;
         target_sink_rate_ms = plane.TECS_controller.get_max_sinkrate();
     } else if (descent_start_distance_m > descent_end_distance_m) {
@@ -328,12 +347,11 @@ void ModeQRTL::update_target_altitude()
 
     if (approach_start.valid) {
         // Keep changes in closing speed and airbrake geometry from producing
-        // an altitude target step. Before the QRTL descent starts, use the
-        // TECS sink capability to reach RTL_ALTITUDE. Apply Q_RTL_SINK_MAX
-        // only to the final descent from RTL_ALTITUDE to Q_RTL_ALT. If QRTL
-        // was entered too close to complete that profile, this leaves the
-        // target above Q_RTL_ALT at POSITION1; the existing VTOL position
-        // controller then completes the remaining descent.
+        // an altitude target step. Apply Q_RTL_SINK_MAX only to the final
+        // descent from RTL_ALTITUDE to Q_RTL_ALT. If QRTL was entered too
+        // close to complete either profile, this leaves the target above
+        // Q_RTL_ALT at POSITION1; the existing VTOL position controller then
+        // completes the remaining descent.
         const uint32_t now_ms = AP_HAL::millis();
         const float dt = (now_ms - approach_start.last_update_ms) * 0.001;
         alt = constrain_float(alt,
@@ -345,7 +363,7 @@ void ModeQRTL::update_target_altitude()
 
     // LAND_DESCEND owns any fixed-target demand below Q_RTL_ALT. Moving-target
     // scripts retain their existing altitude profile.
-    if (!approach_start.velocity_match_seen && qpos_state < QuadPlane::QPOS_POSITION2) {
+    if (!approach_start.velocity_match_active && qpos_state < QuadPlane::QPOS_POSITION2) {
         alt = MAX(alt, 0.0);
     }
 
