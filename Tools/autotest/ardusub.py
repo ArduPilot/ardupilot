@@ -749,7 +749,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         for cmd in self.run_cmd, self.run_cmd_int:
             self.change_mode('CIRCLE')
             cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
-            self.assert_mode('SURFACE')
+            self.assert_mode('GUIDED')
 
     def MAV_CMD_MISSION_START(self):
         '''test handling of MAV_CMD_MISSION_START received via mavlink'''
