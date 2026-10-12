@@ -340,14 +340,14 @@ public:
     void send_mcu_status(void);
 #endif
     void send_battery_status(const uint8_t instance) const;
-    bool send_battery_status();
-    bool send_distance_sensor();
+    bool send_battery_status() WARN_IF_UNUSED;
+    bool send_distance_sensor() WARN_IF_UNUSED;
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
 #if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     virtual void send_rangefinder() const;
 #endif
-    bool send_proximity();
+    bool send_proximity() WARN_IF_UNUSED;
     virtual void send_nav_controller_output() const = 0;
     virtual void send_pid_tuning() = 0;
     void send_ahrs2();
@@ -378,9 +378,9 @@ public:
     void send_local_position() const;
     void send_vfr_hud();
     void send_vibration() const;
-    bool send_gimbal_device_attitude_status() const;
-    bool send_gimbal_manager_information() const;
-    bool send_gimbal_manager_status() const;
+    bool send_gimbal_device_attitude_status() const WARN_IF_UNUSED;
+    bool send_gimbal_manager_information() const WARN_IF_UNUSED;
+    bool send_gimbal_manager_status() const WARN_IF_UNUSED;
     void send_named_float(const char *name, float value) const;
     void send_named_int(const char *name, int32_t value) const;
     void send_home_position() const;
@@ -755,7 +755,7 @@ protected:
     // default empty handling of LANDING_TARGET
     virtual void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) { }
     // vehicle-overridable message send function
-    virtual bool try_send_message(enum ap_message id);
+    virtual bool try_send_message(enum ap_message id) WARN_IF_UNUSED;
     virtual void send_global_position_int();
 
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
@@ -763,7 +763,7 @@ protected:
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
 
     // message sending functions:
-    bool try_send_mission_message(enum ap_message id);
+    bool try_send_mission_message(enum ap_message id) WARN_IF_UNUSED;
     void handle_data_packet(const mavlink_message_t &msg);
 
     // these two methods are called after current_loc is updated:
@@ -864,7 +864,7 @@ private:
     void service_statustext(void);
 
     MAV_RESULT handle_servorelay_message(const mavlink_command_int_t &packet);
-    bool send_relay_status() const;
+    bool send_relay_status() const WARN_IF_UNUSED;
 
     static bool command_long_stores_location(const MAV_CMD command);
 
@@ -1136,8 +1136,8 @@ private:
         // Sent in AVAILABLE_MODES_MONITOR msg
         uint8_t available_modes_sequence;
     } available_modes;
-    bool send_available_modes();
-    bool send_available_mode_monitor();
+    bool send_available_modes() WARN_IF_UNUSED;
+    bool send_available_mode_monitor() WARN_IF_UNUSED;
     void available_modes_changed();
 
 };
