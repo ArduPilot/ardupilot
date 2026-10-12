@@ -65,6 +65,18 @@ SITL_START_LOCATION = Location(
 )
 SITL_START_HEADING = 270
 
+
+class PTYMAVLink(mavutil.mavfile):
+    '''a MAVLink connection on the non-blocking master side of a pty'''
+    def recv(self, n=None):
+        try:
+            return os.read(self.fd, n or 4096)
+        except BlockingIOError:
+            return b''
+
+    def write(self, buf):
+        return os.write(self.fd, buf)
+
 # Flight mode switch positions are set-up in arducopter.param to be
 #   switch 1 = Circle
 #   switch 2 = Land
@@ -10161,16 +10173,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         os.set_blocking(master, False)
         saved_mavfile_global = mavutil.mavfile_global
 
-        class PTYMAVLink(mavutil.mavfile):
-            def recv(self, n=None):
-                try:
-                    return os.read(self.fd, n or 4096)
-                except BlockingIOError:
-                    return b''
-
-            def write(self, buf):
-                return os.write(self.fd, buf)
-
         try:
             # A SITL uart device has a 1 KiB TX buffer. Sixteen full stream
             # records cannot fit, so this exercises scheduler retries.
@@ -10249,6 +10251,89 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                            for m in self.context_collection('VIDEO_STREAM_INFORMATION')]
                 if primary != expected:
                     raise NotAchievedException("Stream reply cursors interfered across links: %s" % primary)
+        finally:
+            mavutil.mavfile_global = saved_mavfile_global
+            os.close(master)
+            os.close(slave)
+
+    def MAVLinkCameraInformationSlowLink(self):
+        '''request CAMERA_INFORMATION for all cameras over a saturated link'''
+        self.set_parameters({
+            "CAM1_TYPE": 1,
+            "CAM2_TYPE": 1,
+            "SERIAL5_PROTOCOL": 2,
+            "SERIAL5_BAUD": 1,
+        })
+        self.reboot_sitl()
+        # SERIAL5 is the fourth MAVLink port
+        self.set_parameters({
+            "MAV4_OPTIONS": 2,
+            "MAV4_RAW_SENS": 50,
+            "MAV4_EXT_STAT": 50,
+            "MAV4_POSITION": 50,
+            "MAV4_EXTRA1": 50,
+            "MAV4_EXTRA2": 50,
+            "MAV4_EXTRA3": 50,
+            "MAV4_RC_CHAN": 50,
+            "SIM_BAUDLIMIT_EN": 1,
+        })
+        master, slave = os.openpty()
+        tty.setraw(slave)
+        os.set_blocking(master, False)
+        saved_mavfile_global = mavutil.mavfile_global
+        try:
+            # the streams keep the 1200 baud link's tx buffer nearly full,
+            # so there is rarely space for both CAMERA_INFORMATION messages
+            self.customise_SITL_commandline(["--serial5=uart:%s:1200" % os.ttyname(slave)])
+            slow = PTYMAVLink(master, None, source_system=251)
+            mavutil.mavfile_global = saved_mavfile_global
+
+            def request_camera_information(instance):
+                slow.mav.command_long_send(
+                    self.sysid_thismav(), 1, mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 0,
+                    mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_INFORMATION, instance, 0, 0, 0, 0, 0)
+
+            def collect_camera_information(duration, check_streams=True):
+                camera_device_ids = []
+                stream_count = 0
+                tstart = self.get_sim_time_cached()
+                while self.get_sim_time_cached() - tstart < duration:
+                    self.mav.recv_match(blocking=True, timeout=0.1)
+                    while (msg := slow.recv_match()) is not None:
+                        if msg.get_type() == 'CAMERA_INFORMATION':
+                            camera_device_ids.append(msg.camera_device_id)
+                        elif msg.get_type() not in ('HEARTBEAT', 'COMMAND_ACK', 'STATUSTEXT', 'BAD_DATA'):
+                            stream_count += 1
+                self.progress("CAMERA_INFORMATION from %s, %u stream messages" % (camera_device_ids, stream_count))
+                if check_streams and stream_count == 0:
+                    raise NotAchievedException("Streams stopped")
+                return camera_device_ids
+
+            # the timings below use the cached sim time
+            self.get_sim_time()
+            interrupted = 0
+            for _ in range(3):
+                # a request for one camera, arriving after the first
+                # camera has been sent for a request for all of them,
+                # must not stop the rest of that request being sent
+                request_camera_information(0)
+                camera_device_ids = collect_camera_information(3.5, check_streams=False)
+                request_camera_information(1)
+                camera_device_ids += collect_camera_information(20)
+                if 2 not in camera_device_ids:
+                    raise NotAchievedException(
+                        "Request for camera 1 stopped camera 2 being sent: %s" % camera_device_ids)
+                # [1, 2] or [1, 2, 1] mean the request for one camera
+                # came before or after the window
+                if camera_device_ids == [1, 1, 2]:
+                    interrupted += 1
+                request_camera_information(0)
+                camera_device_ids = set(collect_camera_information(20))
+                if camera_device_ids != {1, 2}:
+                    raise NotAchievedException(
+                        "Expected CAMERA_INFORMATION for cameras 1 and 2, got %s" % sorted(camera_device_ids))
+            if interrupted == 0:
+                raise NotAchievedException("Request for one camera never interrupted a request for all of them")
         finally:
             mavutil.mavfile_global = saved_mavfile_global
             os.close(master)
@@ -19606,6 +19691,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAVLinkCameraComponentIDs,
             self.MAVLinkCameraMixed,
             self.MAVLinkCameraStreams,
+            self.MAVLinkCameraInformationSlowLink,
             self.MT11MAVFTP,
             self.MT11MAVFTP32bit,
             self.MountMT11,
