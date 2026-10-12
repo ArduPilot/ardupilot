@@ -48,7 +48,7 @@ public:
     void update();
 
     // send mavlink AIS message; returns false if there was no space
-    bool send(mavlink_channel_t chan);
+    bool send(mavlink_channel_t chan) WARN_IF_UNUSED;
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
