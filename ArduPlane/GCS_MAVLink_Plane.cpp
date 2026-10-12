@@ -406,8 +406,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
 #if HAL_LANDING_DEEPSTALL_ENABLED
     case MSG_LANDING:
-        plane.landing.send_landing_message(chan);
-        break;
+        return plane.landing.send_landing_message(chan);
 #endif  // HAL_LANDING_DEEPSTALL_ENABLED
 
     case MSG_HYGROMETER:
