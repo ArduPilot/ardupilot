@@ -235,14 +235,20 @@ public:
     void handle_param_value(const mavlink_message_t &msg);
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
-    // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
-    void send_gimbal_device_attitude_status(mavlink_channel_t chan);
+    // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS for each
+    // mount; returns false if there was no space, and the next call
+    // resumes with the mounts not yet sent
+    bool send_gimbal_device_attitude_status(mavlink_channel_t chan);
 
-    // send a GIMBAL_MANAGER_INFORMATION message to GCS
-    void send_gimbal_manager_information(mavlink_channel_t chan);
+    // send a GIMBAL_MANAGER_INFORMATION message to GCS for each mount;
+    // returns false if there was no space, and the next call resumes
+    // with the mounts not yet sent
+    bool send_gimbal_manager_information(mavlink_channel_t chan);
 
-    // send a GIMBAL_MANAGER_STATUS message to GCS
-    void send_gimbal_manager_status(mavlink_channel_t chan);
+    // send a GIMBAL_MANAGER_STATUS message to GCS for each mount;
+    // returns false if there was no space, and the next call resumes
+    // with the mounts not yet sent
+    bool send_gimbal_manager_status(mavlink_channel_t chan);
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
@@ -371,6 +377,21 @@ private:
     AP_Mount_Backend *mount_device_from_mavlink_gimbal_id(float gimbal_device_id) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
+
+#if HAL_GCS_ENABLED
+    // send a message of message_size bytes from each mount in pending
+    // using send; returns false if there was no space, leaving the
+    // mounts not yet sent in pending.  An empty pending means every
+    // mount.
+    bool send_to_pending_backends(mavlink_channel_t chan, uint8_t &pending, uint16_t message_size,
+                                  void (AP_Mount_Backend::*send)(mavlink_channel_t chan)) WARN_IF_UNUSED;
+    // bitmasks of mounts still to be sent each message on each link
+    struct {
+        uint8_t gimbal_device_attitude_status;
+        uint8_t gimbal_manager_information;
+        uint8_t gimbal_manager_status;
+    } _send_pending[MAVLINK_COMM_NUM_BUFFERS];
+#endif
 
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);

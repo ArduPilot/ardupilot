@@ -24,6 +24,7 @@
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
@@ -623,36 +624,56 @@ void AP_Mount::handle_global_position_int(const mavlink_message_t &msg)
 
 #if HAL_GCS_ENABLED
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
-void AP_Mount::send_gimbal_device_attitude_status(mavlink_channel_t chan)
+bool AP_Mount::send_gimbal_device_attitude_status(mavlink_channel_t chan)
 {
-    // call send_gimbal_device_attitude_status for each instance
-    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_gimbal_device_attitude_status(chan);
-        }
-    }
+    return send_to_pending_backends(chan, _send_pending[chan].gimbal_device_attitude_status,
+                                    PAYLOAD_SIZE(chan, GIMBAL_DEVICE_ATTITUDE_STATUS),
+                                    &AP_Mount_Backend::send_gimbal_device_attitude_status);
 }
 
 // send a GIMBAL_MANAGER_INFORMATION message to GCS
-void AP_Mount::send_gimbal_manager_information(mavlink_channel_t chan)
+bool AP_Mount::send_gimbal_manager_information(mavlink_channel_t chan)
 {
-    // call send_gimbal_device_attitude_status for each instance
-    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_gimbal_manager_information(chan);
-        }
-    }
+    return send_to_pending_backends(chan, _send_pending[chan].gimbal_manager_information,
+                                    PAYLOAD_SIZE(chan, GIMBAL_MANAGER_INFORMATION),
+                                    &AP_Mount_Backend::send_gimbal_manager_information);
 }
 
 // send a GIMBAL_MANAGER_STATUS message to GCS
-void AP_Mount::send_gimbal_manager_status(mavlink_channel_t chan)
+bool AP_Mount::send_gimbal_manager_status(mavlink_channel_t chan)
 {
-    // call send_gimbal_device_attitude_status for each instance
-    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_gimbal_manager_status(chan);
-        }
+    return send_to_pending_backends(chan, _send_pending[chan].gimbal_manager_status,
+                                    PAYLOAD_SIZE(chan, GIMBAL_MANAGER_STATUS),
+                                    &AP_Mount_Backend::send_gimbal_manager_status);
+}
+
+static_assert(AP_MOUNT_MAX_INSTANCES <= 8, "_send_pending bitmasks are too small");
+
+// send a message of message_size bytes from each mount in pending
+// using send; returns false if there was no space, leaving the mounts
+// not yet sent in pending.  An empty pending means every mount.
+bool AP_Mount::send_to_pending_backends(mavlink_channel_t chan, uint8_t &pending, uint16_t message_size,
+                                        void (AP_Mount_Backend::*send)(mavlink_channel_t chan))
+{
+    if (pending == 0) {
+        pending = (1U << AP_MOUNT_MAX_INSTANCES) - 1;
     }
+    // a retry resumes with the mounts still pending
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        const uint8_t mask = 1U << instance;
+        if ((pending & mask) == 0) {
+            continue;
+        }
+        if (_backends[instance] != nullptr) {
+            if (comm_get_txspace(chan) < message_size) {
+                gcs_out_of_space_to_send(chan);
+                return false;
+            }
+            (_backends[instance]->*send)(chan);
+        }
+        pending &= ~mask;
+    }
+    return true;
 }
 #endif  // HAL_GCS_ENABLED
 
