@@ -6824,6 +6824,63 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # follows this one, so lose it:
         self.reboot_sitl()
 
+    def CommandForNonAutopilotComponentUnicast(self):
+        '''commands for all systems and another component on a unicast link are acted on only if MAV_OPTIONS says so'''
+        # a unicast link does not forward broadcasts, but whether one is
+        # processed locally must be decided just as for any other link
+        non_autopilot_compid = 142
+        request_message = mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE
+
+        # MAVLink instances are one-based and assigned in serial-port
+        # order, so SERIAL2 is MAV3:
+        self.set_parameter("MAV3_OPTIONS", 16)  # unicast
+        self.reboot_sitl()
+
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
+                                          robust_parsing=True,
+                                          source_system=42,
+                                          source_component=100)
+
+        def send_poll():
+            mav2.mav.command_long_send(
+                0,
+                non_autopilot_compid,
+                request_message,
+                0,
+                mavutil.mavlink.MAVLINK_MSG_ID_AUTOPILOT_VERSION,
+                0, 0, 0, 0, 0, 0)
+
+        mav2.mav.heartbeat_send(
+            mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+            mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+            0,
+            0,
+            0)
+
+        self.context_collect('STATUSTEXT')
+        self.expire_other_component_warning_rate_limit()
+
+        self.progress("Default: not acted upon")
+        self.drain_mav(mav2)
+        send_poll()
+        self.assert_not_receive_message('AUTOPILOT_VERSION', mav=mav2, timeout=5)
+        self.wait_statustext("ignoring cmd %u for compid %u" % (request_message, non_autopilot_compid),
+                             timeout=5,
+                             check_context=True)
+
+        self.progress("ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS: acted upon")
+        self.set_parameter("MAV_OPTIONS", 1 << 1)  # ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS
+        self.drain_mav(mav2)
+        send_poll()
+        self.assert_receive_message('AUTOPILOT_VERSION', mav=mav2, timeout=5)
+        self.context_stop_collecting('STATUSTEXT')
+
+        mav2.close()
+        # the unicast link and the learned route would change the
+        # behaviour of any test which follows this one, so lose them:
+        self.set_parameter("MAV3_OPTIONS", 0)
+        self.reboot_sitl()
+
     def ParamSetForNonAutopilotComponent(self):
         '''ensure a PARAM_SET addressed to a non-autopilot component is ignored'''
         # a PARAM_SET is not a command, so this shows the component gating
@@ -8708,6 +8765,7 @@ return update()
             self.CommandForNonAutopilotComponentIgnored,
             self.CommandForNonAutopilotComponentBroadcastSystem,
             self.CommandForNonAutopilotComponentOnAnotherSystem,
+            self.CommandForNonAutopilotComponentUnicast,
             self.ParamSetForNonAutopilotComponent,
             self.ComponentAgnosticCommandRouting,
             self.GCSFailsafe,
