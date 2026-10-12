@@ -875,7 +875,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_canvas(sbuf_t *dst)
     const AP_OSD *osd = AP::osd();
     const AP_MSP *msp = AP::msp();
     if (osd != nullptr && msp != nullptr) {
-        switch (osd->screen[msp->_msp_status.current_screen].get_txt_resolution()) {
+        // the MSP thread that tracks _msp_status.current_screen is not running
+        // when DisplayPort is the only MSP backend, so follow the OSD directly
+        const uint8_t screen = osd->is_readonly_screen() ? osd->get_current_screen() : msp->_msp_status.current_screen;
+        switch (osd->screen[screen].get_txt_resolution()) {
         case 1:
             canvas = { 50, 18 };
             break;
