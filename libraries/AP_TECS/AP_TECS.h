@@ -86,7 +86,12 @@ public:
     float get_max_sinkrate(void) const {
         return _maxSinkRate;
     }
-    
+
+    // return height demand filter time constant in seconds
+    float get_hgt_dem_tconst(void) const {
+        return _hgt_dem_tconst;
+    }
+
     // added to let SoaringContoller reset pitch integrator to zero
     void reset_pitch_I(void) {
         _integSEBdot = 0.0f;
