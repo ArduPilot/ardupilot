@@ -825,9 +825,13 @@ bool NavEKF3_core::aboveFlowHgtLimit(ftype hagl) const
 
 void NavEKF3_core::updateFlatGroundAssumed(void)
 {
-    // range data arrives at about 20 Hz, so a 500 ms gap is a break in it. The measurement time
-    // is used rather than the terrain update time, which a range height source holds still
-    if (imuSampleTime_ms - rngValidMeaTime_ms >= 500) {
+    // range data arrives at about 20 Hz, so a 500 ms gap is a break in it. Only readings the
+    // terrain innovation gate accepts measure the ground again, or an obstacle fused briefly
+    // and followed by readings that disagree with it would be kept. A range height source
+    // fuses none into the terrain state, so there every valid reading counts
+    const uint32_t rngTime_ms = (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) ?
+                                rngValidMeaTime_ms : terrainRngFuseTime_ms;
+    if (imuSampleTime_ms - rngTime_ms >= 500) {
         flatGndRngResumeTime_ms = 0;
         // a snapshot from before a landing belongs to the last flight, so it is dropped, not restored
         if (flatGndSaved.valid && gndOffsetMeasured) {
@@ -860,8 +864,9 @@ void NavEKF3_core::updateFlatGroundAssumed(void)
             }
         }
         flatGndSaved.valid = false;
-    } else if (flatGndRngResumeTime_ms == 0) {
-        flatGndRngResumeTime_ms = rngValidMeaTime_ms;
+    } else if ((flatGndRngResumeTime_ms == 0) || (rngTime_ms < flatGndRngResumeTime_ms)) {
+        // the time can go back where a change of height source switches between the two above
+        flatGndRngResumeTime_ms = rngTime_ms;
     }
     if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index) ||
         !gndOffsetMeasured || !flowScaleHgtUsable()) {
@@ -870,7 +875,7 @@ void NavEKF3_core::updateFlatGroundAssumed(void)
         // of one cannot leave the obstacle's height behind as the ground. A landing, which clears
         // gndOffsetMeasured, ends it
         if (!gndOffsetMeasured ||
-            ((flatGndRngResumeTime_ms != 0) && (rngValidMeaTime_ms - flatGndRngResumeTime_ms >= 2000))) {
+            ((flatGndRngResumeTime_ms != 0) && (rngTime_ms - flatGndRngResumeTime_ms >= 2000))) {
             flatGndSaved.valid = false;
         }
         return;
@@ -897,7 +902,7 @@ void NavEKF3_core::updateFlatGroundAssumed(void)
     // pass those checks afresh. A shorter return, from something passed over, leaves it engaged.
     // Timed to the latest sample, as a break is only seen 500 ms after it
     if (gndOffsetValid) {
-        if ((flatGndRngResumeTime_ms != 0) && (rngValidMeaTime_ms - flatGndRngResumeTime_ms >= 2000)) {
+        if ((flatGndRngResumeTime_ms != 0) && (rngTime_ms - flatGndRngResumeTime_ms >= 2000)) {
             flatGndEngaged = false;
             flatGndSaved.valid = false;
         }
