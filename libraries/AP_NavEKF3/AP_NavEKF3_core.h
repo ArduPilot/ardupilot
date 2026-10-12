@@ -51,6 +51,15 @@
 // initial accel bias uncertainty as a fraction of the state limit
 #define ACCEL_BIAS_LIM_SCALER 0.2f
 
+// ceiling applied to the gyro bias state 1-sigma uncertainty (rad/sec) to
+// keep the covariance matrix well conditioned
+#define EK3_GYRO_BIAS_VAR_LIMIT_RADS 0.175
+
+// gyro bias 1-sigma uncertainty (deg/sec) at or below which the bias is
+// taken to be learned.  Far tighter than the covariance ceiling above, and
+// in different units, so the two are not interchangeable
+#define EK3_GYRO_BIAS_LEARNED_LIMIT_DPS 0.15
+
 // target update time for the EKF in msec and sec
 #define EKF_TARGET_DT_MS 12
 #define EKF_TARGET_DT    0.012f
