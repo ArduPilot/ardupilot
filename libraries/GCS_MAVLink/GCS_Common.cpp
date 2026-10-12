@@ -289,12 +289,16 @@ void GCS_MAVLINK::send_mcu_status(void)
         // avoid unnecessary errors being reported to user
         return;
     }
+    // not all boards can measure every field, report those as zero
+    const auto scaled = [](float v, float scale) {
+        return isnan(v) ? 0.0f : v * scale;
+    };
     mavlink_msg_mcu_status_send(chan,
                                 0, // only one MCU
-                                hal.analogin->mcu_temperature() * 100,
-                                hal.analogin->mcu_voltage() * 1000,
-                                hal.analogin->mcu_voltage_min() * 1000,
-                                hal.analogin->mcu_voltage_max() * 1000);
+                                scaled(hal.util->get_cpu_temperature_c(), 100),
+                                scaled(hal.analogin->mcu_voltage(), 1000),
+                                scaled(hal.analogin->mcu_voltage_min(), 1000),
+                                scaled(hal.analogin->mcu_voltage_max(), 1000));
 }
 #endif
 
