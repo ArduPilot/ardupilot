@@ -72,6 +72,15 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BRK_DELAY",  6, AC_Loiter, _brake_delay_s, LOITER_BRAKE_START_DELAY_DEFAULT),
 
+    // @Param: TERM
+    // @DisplayName: Loiter terminal speed
+    // @Description: Horizontal speed in cm/s the aircraft reaches in still air at LOIT_ANG_MAX. Set to zero to use LOIT_SPEED as the terminal speed.
+    // @Units: cm/s
+    // @Range: 0 3500
+    // @Increment: 50
+    // @User: Advanced
+    AP_GROUPINFO("TERM", 7, AC_Loiter, _speed_terminal_ne_cms, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -226,6 +235,8 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     gnd_speed_limit_cms = MAX(gnd_speed_limit_cms, LOITER_SPEED_MIN);
 
     float pilot_acceleration_max = angle_rad_to_accel_mss(get_angle_max_rad()) * 100;
+    const float shaping_speed_cms = MAX(_speed_max_ne_cms, LOITER_SPEED_MIN);
+    const float terminal_speed_cms = is_positive(_speed_terminal_ne_cms) ? _speed_terminal_ne_cms : shaping_speed_cms;
 
     // range check dt
     if (is_negative(dt)) {
@@ -239,12 +250,16 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     desired_vel += _predicted_accel_ne_cmss * dt;
 
     Vector2f loiter_accel_brake;
+    Vector2f loiter_accel_shaping;
+    Vector2f loiter_accel_limit;
     float desired_speed = desired_vel.length();
     if (!is_zero(desired_speed)) {
         Vector2f desired_vel_norm = desired_vel / desired_speed;
 
         // calculate a drag acceleration based on the desired speed.
-        float drag_decel = pilot_acceleration_max * desired_speed / gnd_speed_limit_cms;
+        const float drag_decel = pilot_acceleration_max * desired_speed / shaping_speed_cms;
+        const float aero_decel = pilot_acceleration_max * desired_speed / terminal_speed_cms;
+        loiter_accel_shaping = desired_vel_norm * (drag_decel - aero_decel);
 
         // calculate a braking acceleration if sticks are at zero
         float loiter_brake_accel = 0.0f;
@@ -265,14 +280,20 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         desired_vel = desired_vel_norm * desired_speed;
     }
 
-    // add braking to the desired acceleration
-    _desired_accel_ne_cmss -= loiter_accel_brake;
-
     // Apply EKF limit to desired velocity -  this limit is calculated by the EKF and adjusted as required to ensure certain sensor limits are respected (eg optical flow sensing)
     float horizSpdDem = desired_vel.length();
     if (horizSpdDem > gnd_speed_limit_cms) {
+        if (is_positive(dt)) {
+            const float limit_decel = MIN((horizSpdDem - gnd_speed_limit_cms) / dt, pilot_acceleration_max);
+            loiter_accel_limit = desired_vel * (limit_decel / horizSpdDem);
+        }
         desired_vel = desired_vel * gnd_speed_limit_cms / horizSpdDem;
     }
+
+    // remove artificial trajectory shaping, braking and velocity-limit acceleration
+    // from the feed-forward acceleration. What remains is the desired velocity
+    // rate of change plus aerodynamic drag compensation.
+    _desired_accel_ne_cmss -= loiter_accel_brake + loiter_accel_limit + loiter_accel_shaping;
 
 #if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (avoidance_on) {

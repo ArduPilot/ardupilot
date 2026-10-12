@@ -258,6 +258,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def LoiterSpeedLimit(self):
+        """Test Loiter speed limit with an explicit terminal speed."""
+        loiter_speed_ms = 3.0
+        self.set_parameters({
+            "LOIT_ANG_MAX": 25,
+            "LOIT_SPEED": loiter_speed_ms * 100,
+            "LOIT_TERM": 900,
+        })
+        self.takeoff(20, mode="LOITER")
+
+        self.start_subtest("Half stick remains proportional to LOIT_SPEED")
+        self.set_rc(2, 1750)
+        self.wait_groundspeed(1.0, 2.0, timeout=20)
+        self.delay_sim_time(5)
+        half_stick_speed = 0.0
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            half_stick_speed = max(half_stick_speed,
+                                   math.sqrt(m.vx**2 + m.vy**2) * 0.01)
+        if half_stick_speed < 1.2 or half_stick_speed > 1.8:
+            raise NotAchievedException(
+                "Half-stick Loiter speed was %.2fm/s" % half_stick_speed)
+
+        self.start_subtest("Full stick remains limited to LOIT_SPEED")
+        self.set_rc(2, 1000)
+        self.wait_groundspeed(2.4, 3.4, timeout=20)
+        self.delay_sim_time(5)
+        max_speed = 0.0
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            max_speed = max(max_speed, math.sqrt(m.vx**2 + m.vy**2) * 0.01)
+        if max_speed > 3.3:
+            raise NotAchievedException(
+                "Full-stick Loiter speed exceeded LOIT_SPEED: %.2fm/s" % max_speed)
+
+        self.start_subtest("Loiter braking after stick release")
+        self.set_rc(2, 1500)
+        self.wait_groundspeed(0, 1.0, timeout=20)
+        self.do_RTL()
+
     def ModeAltHold(self):
         '''Test AltHold Mode'''
         self.takeoff(10, mode="ALT_HOLD")
@@ -12293,6 +12335,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.GPSGlitchAuto,
              self.ModeAltHold,
              self.ModeLoiter,
+             self.LoiterSpeedLimit,
              self.SimpleMode,
              self.SuperSimpleCircle,
              self.ModeCircle,
