@@ -61,6 +61,10 @@ public:
     // Get the testing order for the motors, this is used for AP_Motors_test
     uint8_t get_motor_test_order(uint8_t i);
 
+    // yaw is controlled by an external mechanism such as vectoring,
+    // so the tail servo is not used
+    void disable_yaw_torque(void) override { _yaw_torque_disabled = true; }
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
@@ -86,6 +90,7 @@ protected:
     // reverse pitch
     bool _pitch_reversed;
     bool _have_tail_servo;
+    bool _yaw_torque_disabled;
 };
 
 #endif  // AP_MOTORS_TRI_ENABLED
