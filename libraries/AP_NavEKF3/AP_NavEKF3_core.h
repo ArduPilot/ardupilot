@@ -1393,25 +1393,30 @@ private:
 #endif
 
     // body frame odometry fusion
-#if EK3_FEATURE_BODY_ODOM
-    EKF_obs_buffer_t<vel_odm_elements> storedBodyOdm;    // body velocity data buffer
-    vel_odm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
-    vel_odm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
-#endif
-    uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
-    Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements
-    Vector3 varInnovBodyVel;            // Body velocity XYZ innovation variances (m/sec)^2
-    Vector3 innovBodyVel;               // Body velocity XYZ innovations (m/sec)
-    uint32_t prevBodyVelFuseTime_ms;    // previous time all body velocity measurement components passed their innovation consistency checks (msec)
-    uint32_t bodyOdmMeasTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
-    bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
-    bool bodyVelFusionActive;           // true when body frame velocity fusion is active
+    class BodyOdomFusion {
+    public:
+        void InitialiseVariables();
 
 #if EK3_FEATURE_BODY_ODOM
-    // wheel sensor fusion
-    EKF_obs_buffer_t<wheel_odm_elements> storedWheelOdm;    // body velocity data buffer
-    wheel_odm_elements wheelOdmDataDelayed;   // Body  frame odometry data at the fusion time horizon
+        EKF_obs_buffer_t<vel_odm_elements> stored;    // body velocity data buffer
+        vel_odm_elements dataNew;       // Body frame odometry data at the current time horizon
+        vel_odm_elements dataDelayed;  // Body  frame odometry data at the fusion time horizon
 #endif
+        uint32_t lastPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
+        Vector3 testRatio;           // Innovation test ratios for body velocity XYZ measurements
+        Vector3 varInnov;            // Body velocity XYZ innovation variances (m/sec)^2
+        Vector3 innov;               // Body velocity XYZ innovations (m/sec)
+        uint32_t prevFuseTime_ms;    // previous time all body velocity measurement components passed their innovation consistency checks (msec)
+        uint32_t measTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
+        bool fusionDelayed;          // true when body frame velocity fusion has been delayed
+        bool fusionActive;           // true when body frame velocity fusion is active
+
+#if EK3_FEATURE_BODY_ODOM
+        // wheel sensor fusion
+        EKF_obs_buffer_t<wheel_odm_elements> storedWheel;    // body velocity data buffer
+        wheel_odm_elements wheelDataDelayed;   // Body  frame odometry data at the fusion time horizon
+#endif
+    } bodyOdm;
 
     // GPS yaw sensor fusion
     uint32_t yawMeasTime_ms;            // system time GPS yaw angle was last input to the data buffer

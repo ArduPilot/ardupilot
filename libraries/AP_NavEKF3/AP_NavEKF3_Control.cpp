@@ -309,7 +309,7 @@ void NavEKF3_core::setAidingMode()
             // Check if the fusion has timed out (flow measurements have been rejected for too long)
             bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
             // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
-            bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
+            bool bodyOdmFusionTimeout = ((imuSampleTime_ms - bodyOdm.prevFuseTime_ms) > 5000);
             // Enable switch to absolute position mode if GPS or range beacon data is available
             // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
             if (readyToUseGPS() || readyToUseRangeBeacon() || readyToUseExtNav()) {
@@ -327,7 +327,7 @@ void NavEKF3_core::setAidingMode()
             bool optFlowUsed = (imuSampleTime_ms - prevFlowFuseTime_ms <= minTestTime_ms);
 
             // Check if body odometry data is being used
-            bool bodyOdmUsed = (imuSampleTime_ms - prevBodyVelFuseTime_ms <= minTestTime_ms);
+            bool bodyOdmUsed = (imuSampleTime_ms - bodyOdm.prevFuseTime_ms <= minTestTime_ms);
 
             // Check if airspeed data is being used
             bool airSpdUsed = (imuSampleTime_ms - lastTasPassTime_ms <= minTestTime_ms);
@@ -437,7 +437,7 @@ void NavEKF3_core::setAidingMode()
             lastKnownPositionD = stateStruct.position.z;
             // reset relative aiding sensor fusion activity status
             flowFusionActive = false;
-            bodyVelFusionActive = false;
+            bodyOdm.fusionActive = false;
             break;
 
         case AID_RELATIVE:
@@ -452,8 +452,8 @@ void NavEKF3_core::setAidingMode()
 #endif
                 if (readyToUseBodyOdm()) {
                  // Reset time stamps
-                lastbodyVelPassTime_ms = imuSampleTime_ms;
-                prevBodyVelFuseTime_ms = imuSampleTime_ms;
+                bodyOdm.lastPassTime_ms = imuSampleTime_ms;
+                bodyOdm.prevFuseTime_ms = imuSampleTime_ms;
             }
             posTimeout = true;
             velTimeout = true;
@@ -576,10 +576,10 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
     }
 
     // Check for fresh visual odometry data that meets the accuracy required for alignment
-    bool visoDataGood = (imuSampleTime_ms - bodyOdmMeasTime_ms < 200) && (bodyOdmDataNew.velErr < 1.0f);
+    bool visoDataGood = (imuSampleTime_ms - bodyOdm.measTime_ms < 200) && (bodyOdm.dataNew.velErr < 1.0f);
 
     // Check for fresh wheel encoder data
-    bool wencDataGood = (imuDataDelayed.time_ms - wheelOdmDataDelayed.time_ms < 200);
+    bool wencDataGood = (imuDataDelayed.time_ms - bodyOdm.wheelDataDelayed.time_ms < 200);
 
     // We require stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use odometry measurements
     // because they are in a body frame of reference
@@ -788,7 +788,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     // init return value
     nav_filter_status status;
     status.value = 0;
-    bool doingBodyVelNav = (PV_AidingMode != AID_NONE) && (imuSampleTime_ms - prevBodyVelFuseTime_ms < 5000);
+    bool doingBodyVelNav = (PV_AidingMode != AID_NONE) && (imuSampleTime_ms - bodyOdm.prevFuseTime_ms < 5000);
     bool doingFlowNav = (PV_AidingMode != AID_NONE) && flowDataValid;
     bool doingWindRelNav = (!tasTimeout && assume_zero_sideslip()) || !dragTimeout;
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);

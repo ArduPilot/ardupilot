@@ -125,10 +125,10 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #if EK3_FEATURE_BODY_ODOM
-    if(frontend->sources.ext_nav_enabled() && !storedBodyOdm.init(obs_buffer_length)) {
+    if(frontend->sources.ext_nav_enabled() && !bodyOdm.stored.init(obs_buffer_length)) {
         return false;
     }
-    if(frontend->sources.wheel_encoder_enabled() && !storedWheelOdm.init(imu_buffer_length)) {
+    if(frontend->sources.wheel_encoder_enabled() && !bodyOdm.storedWheel.init(imu_buffer_length)) {
         // initialise to same length of IMU to allow for multiple wheel sensors
         return false;
     }
@@ -374,19 +374,8 @@ void NavEKF3_core::InitialiseVariables()
     rngBcn.InitialiseVariables();
 #endif  // EK3_FEATURE_BEACON_FUSION
 
-#if EK3_FEATURE_BODY_ODOM
     // body frame displacement fusion
-    memset((void *)&bodyOdmDataNew, 0, sizeof(bodyOdmDataNew));
-    memset((void *)&bodyOdmDataDelayed, 0, sizeof(bodyOdmDataDelayed));
-#endif
-    lastbodyVelPassTime_ms = 0;
-    ZERO_FARRAY(bodyVelTestRatio);
-    ZERO_FARRAY(varInnovBodyVel);
-    ZERO_FARRAY(innovBodyVel);
-    prevBodyVelFuseTime_ms = 0;
-    bodyOdmMeasTime_ms = 0;
-    bodyVelFusionDelayed = false;
-    bodyVelFusionActive = false;
+    bodyOdm.InitialiseVariables();
 
     // yaw sensor fusion
     yawMeasTime_ms = 0;
@@ -419,8 +408,8 @@ void NavEKF3_core::InitialiseVariables()
     rngBcn.storedRange.reset();
 #endif
 #if EK3_FEATURE_BODY_ODOM
-    storedBodyOdm.reset();
-    storedWheelOdm.reset();
+    bodyOdm.stored.reset();
+    bodyOdm.storedWheel.reset();
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
     storedExtNav.reset();
