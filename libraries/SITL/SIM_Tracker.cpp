@@ -68,8 +68,18 @@ void Tracker::update(const struct sitl_input &input)
 
     float yaw_rate = 0.0f, pitch_rate = 0.0f;
 
-    yaw_input = (input.servos[0]-1500)/500.0f;
-    pitch_input = (input.servos[1]-1500)/500.0f;
+    // a zero PWM means the channel is not being driven at all, which is what
+    // the vehicle code emits while the servos are not being output to.  Taking
+    // that as a demand normalises it to -3.0, commanding the axis hard to one
+    // end of its range; hold position instead, as an undriven servo would
+    const bool yaw_driven = input.servos[0] != 0;
+    const bool pitch_driven = input.servos[1] != 0;
+    if (yaw_driven) {
+        yaw_input = (input.servos[0]-1500)/500.0f;
+    }
+    if (pitch_driven) {
+        pitch_input = (input.servos[1]-1500)/500.0f;
+    }
 
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
@@ -88,6 +98,13 @@ void Tracker::update(const struct sitl_input &input)
         update_onoff_servos(yaw_rate, pitch_rate);
     } else {
         update_position_servos(delta_time, yaw_rate, pitch_rate);
+    }
+
+    if (!yaw_driven) {
+        yaw_rate = 0;
+    }
+    if (!pitch_driven) {
+        pitch_rate = 0;
     }
 
     // implement the yaw and pitch limits.  These must be applied after the
