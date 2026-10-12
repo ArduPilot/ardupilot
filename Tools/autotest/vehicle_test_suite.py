@@ -16979,7 +16979,11 @@ switch value'''
         debug = False
         while True:
             now = self.get_sim_time_cached()
-            if not start_done or now - last_parameter_received > 10:
+            # simulated-time gap after which the whole download is
+            # restarted.  Only four attempts are allowed, so leaving
+            # this at ten seconds spends them all on a host which
+            # merely stalls the stream rather than losing the request.
+            if not start_done or now - last_parameter_received > 30:
                 start_done = True
                 if attempt_count > 3:
                     raise AutoTestTimeoutException("Failed to download parameters  (have %s/%s) (seen_ids-count=%u)" %
@@ -16995,7 +16999,13 @@ switch value'''
                 expected_count = None
                 seen_ids = {}
                 id_seq = {}
-            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
+            # wall-clock gap tolerance between consecutive parameters.
+            # While the download streams, the gap is 0.000s at the
+            # median and 0.175s at the 99th percentile; a loaded host
+            # stalls it for far longer - 23 to 29 seconds observed in
+            # one session at --parallel=17 on sixteen threads - so ten
+            # seconds fails a download that was going to finish.
+            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=60)
             if m is None:
                 raise AutoTestTimeoutException("tardy PARAM_VALUE (have %s/%s)" % (
                     str(count), str(expected_count)))
