@@ -524,11 +524,11 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
 #if EK3_FEATURE_EXTERNAL_NAV
     case AP_NavEKF_Source::SourceXY::EXTNAV:
         // check for timeouts
-        if (dal.millis() - extNavVelInnovTime_ms > 500) {
+        if (dal.millis() - extNav.velInnovTime_ms > 500) {
             return false;
         }
-        innovations = extNavVelInnov.tofloat();
-        variances = extNavVelVarInnov.tofloat();
+        innovations = extNav.velInnov.tofloat();
+        variances = extNav.velVarInnov.tofloat();
         return true;
 #endif // EK3_FEATURE_EXTERNAL_NAV
     case AP_NavEKF_Source::SourceXY::OPTFLOW:

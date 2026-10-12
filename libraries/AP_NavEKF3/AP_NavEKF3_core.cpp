@@ -149,13 +149,13 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     }
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (frontend->sources.ext_nav_enabled() && !storedExtNav.init(extnav_buffer_length)) {
+    if (frontend->sources.ext_nav_enabled() && !extNav.stored.init(extnav_buffer_length)) {
         return false;
     }
-    if (frontend->sources.ext_nav_enabled() && !storedExtNavVel.init(extnav_buffer_length)) {
+    if (frontend->sources.ext_nav_enabled() && !extNav.storedVel.init(extnav_buffer_length)) {
         return false;
     }
-    if(frontend->sources.ext_nav_enabled() && !storedExtNavYawAng.init(extnav_buffer_length)) {
+    if(frontend->sources.ext_nav_enabled() && !extNav.storedYawAng.init(extnav_buffer_length)) {
         return false;
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
@@ -373,15 +373,7 @@ void NavEKF3_core::InitialiseVariables()
 
 #if EK3_FEATURE_EXTERNAL_NAV
     // external nav data fusion
-    extNavDataDelayed = {};
-    extNavMeasTime_ms = 0;
-    extNavLastPosResetTime_ms = 0;
-    extNavDataToFuse = false;
-    extNavUsedForPos = false;
-    extNavVelDelayed = {};
-    extNavVelToFuse = false;
-    useExtNavVel = false;
-    extNavVelMeasTime_ms = 0;
+    extNav.InitialiseVariables();
 #endif
 
     // zero data buffers
@@ -401,8 +393,8 @@ void NavEKF3_core::InitialiseVariables()
     bodyOdm.storedWheel.reset();
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
-    storedExtNav.reset();
-    storedExtNavVel.reset();
+    extNav.stored.reset();
+    extNav.storedVel.reset();
 #endif
 
     // initialise pre-arm message
@@ -443,7 +435,7 @@ void NavEKF3_core::InitialiseVariablesMag()
     storedMag.reset();
     gpsYaw.stored.reset();
 #if EK3_FEATURE_EXTERNAL_NAV
-    storedExtNavYawAng.reset();
+    extNav.storedYawAng.reset();
 #endif
     needMagBodyVarReset = false;
     needEarthBodyVarReset = false;
@@ -1893,8 +1885,8 @@ void NavEKF3_core::ConstrainVariances()
 
             // set the variances to the measurement variance
         #if EK3_FEATURE_EXTERNAL_NAV
-            if (useExtNavVel) {
-                Pmut[6][6] = sq(extNavVelDelayed.err);
+            if (extNav.useVel) {
+                Pmut[6][6] = sq(extNav.velDelayed.err);
             } else
         #endif
             {
