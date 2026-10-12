@@ -7008,7 +7008,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_AIS_VESSEL: {
         AP_AIS *ais = AP_AIS::get_singleton();
         if (ais) {
-            ais->send(chan);
+            ret = ais->send(chan);
         }
         break;
     }
