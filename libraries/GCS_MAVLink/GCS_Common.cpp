@@ -6302,31 +6302,31 @@ void GCS_MAVLINK::send_utm_global_position() const
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
 
 #if HAL_MOUNT_ENABLED
-void GCS_MAVLINK::send_gimbal_device_attitude_status() const
+bool GCS_MAVLINK::send_gimbal_device_attitude_status() const
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
-        return;
+        return true;
     }
-    mount->send_gimbal_device_attitude_status(chan);
+    return mount->send_gimbal_device_attitude_status(chan);
 }
 
-void GCS_MAVLINK::send_gimbal_manager_information() const
+bool GCS_MAVLINK::send_gimbal_manager_information() const
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
-        return;
+        return true;
     }
-    mount->send_gimbal_manager_information(chan);
+    return mount->send_gimbal_manager_information(chan);
 }
 
-void GCS_MAVLINK::send_gimbal_manager_status() const
+bool GCS_MAVLINK::send_gimbal_manager_status() const
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
-        return;
+        return true;
     }
-    mount->send_gimbal_manager_status(chan);
+    return mount->send_gimbal_manager_status(chan);
 }
 #endif
 
@@ -6785,7 +6785,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #if HAL_MOUNT_ENABLED
     case MSG_GIMBAL_DEVICE_ATTITUDE_STATUS:
         CHECK_PAYLOAD_SIZE(GIMBAL_DEVICE_ATTITUDE_STATUS);
-        send_gimbal_device_attitude_status();
+        ret = send_gimbal_device_attitude_status();
         break;
     case MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE:
         CHECK_PAYLOAD_SIZE(AUTOPILOT_STATE_FOR_GIMBAL_DEVICE);
@@ -6793,11 +6793,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
     case MSG_GIMBAL_MANAGER_INFORMATION:
         CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_INFORMATION);
-        send_gimbal_manager_information();
+        ret = send_gimbal_manager_information();
         break;
     case MSG_GIMBAL_MANAGER_STATUS:
         CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_STATUS);
-        send_gimbal_manager_status();
+        ret = send_gimbal_manager_status();
         break;
 #endif  // HAL_MOUNT_ENABLED
 

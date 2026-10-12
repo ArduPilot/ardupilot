@@ -378,9 +378,9 @@ public:
     void send_local_position() const;
     void send_vfr_hud();
     void send_vibration() const;
-    void send_gimbal_device_attitude_status() const;
-    void send_gimbal_manager_information() const;
-    void send_gimbal_manager_status() const;
+    bool send_gimbal_device_attitude_status() const;
+    bool send_gimbal_manager_information() const;
+    bool send_gimbal_manager_status() const;
     void send_named_float(const char *name, float value) const;
     void send_named_int(const char *name, int32_t value) const;
     void send_home_position() const;
