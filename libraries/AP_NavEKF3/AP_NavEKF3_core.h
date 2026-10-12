@@ -1119,7 +1119,25 @@ private:
     EKF_obs_buffer_t<gps_elements> storedGPS;      // GPS data buffer
     EKF_obs_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
     EKF_obs_buffer_t<baro_elements> storedBaro;    // Baro data buffer
-    EKF_obs_buffer_t<tas_elements> storedTAS;      // TAS data buffer
+
+    // true airspeed fusion
+    class AirspeedFusion {
+    public:
+        void InitialiseVariables(uint32_t now_ms);
+
+        EKF_obs_buffer_t<tas_elements> stored;      // TAS data buffer
+        tas_elements dataNew;           // TAS data at the current time horizon
+        tas_elements dataDelayed;       // TAS data at the fusion time horizon
+        bool dataToFuse;                // true when new airspeed data is waiting to be fused
+        ftype innov;                    // innovation output from fusion of airspeed measurements
+        ftype varInnov;                 // innovation variance output from fusion of airspeed measurements
+        ftype testRatio;                // sum of squares of true airspeed innovation divided by fail threshold
+        uint32_t prevStepTime_ms;       // time stamp of last TAS fusion step
+        uint32_t lastPassTime_ms;       // time stamp when airspeed measurement last passed innovation consistency check (msec)
+        uint32_t lastFailTime_ms;       // time stamp when airspeed measurement last failed innovation consistency check (msec)
+        uint32_t receivedTime_ms;       // time last TAS data was received (msec)
+    } tas;
+
 #if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     EKF_obs_buffer_t<range_elements> storedRange;  // Range finder data buffer
 #endif
@@ -1147,13 +1165,10 @@ private:
     bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
     Vector3F innovMag;              // innovation output from fusion of X,Y,Z compass measurements
     Vector3F varInnovMag;           // innovation variance output from fusion of X,Y,Z compass measurements
-    ftype innovVtas;                // innovation output from fusion of airspeed measurements
-    ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
     ftype defaultAirSpeed;          // default equivalent airspeed in m/s to be used if the measurement is unavailable. Do not use if not positive.
     ftype defaultAirSpeedVariance;  // default equivalent airspeed variance in (m/s)**2 to be used when defaultAirSpeed is specified. 
     bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
     MagCal effectiveMagCal;         // the actual mag calibration being used as the default
-    uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
     uint32_t prevBetaDragStep_ms;   // time stamp of last synthetic sideslip fusion step
     ftype innovBeta;                // synthetic sideslip innovation (rad)
     uint32_t lastMagUpdate_us;      // last time compass was updated in usec
@@ -1161,14 +1176,11 @@ private:
     Vector3F velDotNED;             // rate of change of velocity in NED frame
     Vector3F velDotNEDfilt;         // low pass filtered velDotNED
     uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
-    bool tasDataToFuse;             // true when new airspeed data is waiting to be fused
     uint32_t lastBaroReceived_ms;   // time last time we received baro height data
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime_ms;    // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
     uint32_t lastGpsPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
-    uint32_t lastTasPassTime_ms;    // time stamp when airspeed measurement last passed innovation consistency check (msec)
-    uint32_t lastTasFailTime_ms;    // time stamp when airspeed measurement last failed innovation consistency check (msec)
     uint32_t lastTimeGpsReceived_ms;// last time we received GPS data
     uint32_t timeAtLastAuxEKF_ms;   // last time the auxiliary filter was run to fuse range or optical flow measurements
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
@@ -1183,7 +1195,6 @@ private:
     ftype posTestRatio;             // sum of squares of GPS position innovation divided by fail threshold
     ftype hgtTestRatio;             // sum of squares of baro height innovation divided by fail threshold
     Vector3F magTestRatio;          // sum of squares of magnetometer innovations divided by fail threshold
-    ftype tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances should not be used
     ftype lastAirspeedEstimate;     // last true airspeed estimate (m/s)
     bool lastAspdEstIsValid;        // true when the last true airspeed estimate is valid (m/s)
@@ -1221,8 +1232,6 @@ private:
     baro_elements baroDataDelayed;  // Baro data at the fusion time horizon
     range_elements rangeDataNew;    // Range finder data at the current time horizon
     range_elements rangeDataDelayed;// Range finder data at the fusion time horizon
-    tas_elements tasDataNew;        // TAS data at the current time horizon
-    tas_elements tasDataDelayed;    // TAS data at the fusion time horizon
     mag_elements magDataDelayed;    // Magnetometer data at the fusion time horizon
     gps_elements gpsDataNew;        // GPS data at the current time horizon
     gps_elements gpsDataDelayed;    // GPS data at the fusion time horizon
@@ -1234,7 +1243,6 @@ private:
     Vector3F posErrintegral;        // integral of output predictor NED position tracking error (m.sec)
     ftype badImuVelErrIntegral;     // integral of output predictor D velocity tracking error when bad IMU data is detected (m)
     ftype innovYaw;                 // compass yaw angle innovation (rad)
-    uint32_t timeTasReceived_ms;    // time last TAS data was received (msec)
     bool gpsGoodToAlign;            // true when the GPS quality can be used to initialise the navigation system
     uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
     bool consistentMagData;         // true when the magnetometers are passing consistency checks

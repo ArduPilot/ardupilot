@@ -85,10 +85,10 @@ void NavEKF3_core::setWindMagStateLearningMode()
             Vector3F tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
             ftype trueAirspeedVariance;
-            const bool haveAirspeedMeasurement = (tasDataDelayed.allowFusion && (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500) && useAirspeed());
+            const bool haveAirspeedMeasurement = (tas.dataDelayed.allowFusion && (imuDataDelayed.time_ms - tas.dataDelayed.time_ms < 500) && useAirspeed());
             if (haveAirspeedMeasurement) {
-                trueAirspeedVariance = constrain_ftype(tasDataDelayed.tasVariance, WIND_VEL_VARIANCE_MIN, WIND_VEL_VARIANCE_MAX);
-                const ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
+                trueAirspeedVariance = constrain_ftype(tas.dataDelayed.tasVariance, WIND_VEL_VARIANCE_MIN, WIND_VEL_VARIANCE_MAX);
+                const ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tas.dataDelayed.tas;
                 stateStruct.wind_vel.x = windSpeed * cosF(tempEuler.z);
                 stateStruct.wind_vel.y = windSpeed * sinF(tempEuler.z);
             } else {
@@ -330,7 +330,7 @@ void NavEKF3_core::setAidingMode()
             bool bodyOdmUsed = (imuSampleTime_ms - bodyOdm.prevFuseTime_ms <= minTestTime_ms);
 
             // Check if airspeed data is being used
-            bool airSpdUsed = (imuSampleTime_ms - lastTasPassTime_ms <= minTestTime_ms);
+            bool airSpdUsed = (imuSampleTime_ms - tas.lastPassTime_ms <= minTestTime_ms);
 
             // check if drag data is being used
             bool dragUsed = (imuSampleTime_ms - drag.lastPassTime_ms <= minTestTime_ms);
@@ -368,7 +368,7 @@ void NavEKF3_core::setAidingMode()
             bool attAidLossCritical = false;
             if (!attAiding) {
             	attAidLossCritical = (imuSampleTime_ms - prevFlowFuseTime_ms > frontend->tiltDriftTimeMax_ms) &&
-                		(imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                		(imuSampleTime_ms - tas.lastPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
 #if EK3_FEATURE_BEACON_FUSION
                         (imuSampleTime_ms - rngBcn.lastPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
 #endif
@@ -824,9 +824,9 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
     status.flags.gps_quality_good = gpsGoodToAlign;
     // for reporting purposes we report rejecting airspeed after 3s of not fusing when we want to fuse the data
-    status.flags.rejecting_airspeed = lastTasFailTime_ms != 0 &&
-                                            (imuSampleTime_ms - lastTasFailTime_ms) < 1000 &&
-                                            (imuSampleTime_ms - lastTasPassTime_ms) > 3000;
+    status.flags.rejecting_airspeed = tas.lastFailTime_ms != 0 &&
+                                            (imuSampleTime_ms - tas.lastFailTime_ms) < 1000 &&
+                                            (imuSampleTime_ms - tas.lastPassTime_ms) > 3000;
     status.flags.initalized = status.flags.initalized || healthy();
     status.flags.dead_reckoning = (PV_AidingMode != AID_NONE) && doingWindRelNav && !((doingFlowNav && gndOffsetValid) || doingNormalGpsNav || doingBodyVelNav);
 
@@ -847,8 +847,8 @@ void NavEKF3_core::runYawEstimatorPrediction()
     }
 
     ftype trueAirspeed;
-    if (tasDataDelayed.allowFusion && assume_zero_sideslip()) {
-        trueAirspeed = MAX(tasDataDelayed.tas, 0.0f);
+    if (tas.dataDelayed.allowFusion && assume_zero_sideslip()) {
+        trueAirspeed = MAX(tas.dataDelayed.tas, 0.0f);
     } else {
         trueAirspeed = 0.0f;
     }
