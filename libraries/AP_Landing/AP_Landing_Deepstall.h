@@ -98,7 +98,7 @@ private:
     bool terminate(void);
     void Log(void) const;
 
-    bool send_deepstall_message(mavlink_channel_t chan) const;
+    bool send_deepstall_message(mavlink_channel_t chan) const WARN_IF_UNUSED;
 
     const AP_PIDInfo& get_pid_info(void) const;
 
