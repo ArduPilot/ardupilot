@@ -248,7 +248,7 @@ ssize_t GPS::write_to_autopilot(const char *p, size_t size) const
 
     size_t ret = 0;
     while (size--) {
-        float r = ((((unsigned)random()) % 1000000)) / 1.0e4;
+        float r = ((((unsigned)rand()) % 1000000)) / 1.0e4;
         if (r < byteloss) {
             // lose the byte
             p++;

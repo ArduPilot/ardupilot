@@ -214,7 +214,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     // calculate a random time offset to the time sent in the message
     // simulates a time difference between the remote computer and autopilot
     if (time_offset_us == 0) {
-        time_offset_us = (unsigned(random()) % 7000) * 1000000ULL;
+        time_offset_us = (unsigned(rand()) % 7000) * 1000000ULL;
         printf("time_offset_us %llu\n", (long long unsigned)time_offset_us);
     }
 
@@ -305,7 +305,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     yaw = wrap_PI(yaw + radians(_sitl->vicon.yaw_error.get()));
 
     // 25ms to 124ms delay before sending
-    uint32_t delay_ms = 25 + unsigned(random()) % 100;
+    uint32_t delay_ms = 25 + unsigned(rand()) % 100;
     uint64_t time_send_us = now_us + delay_ms * 1000UL;
 
 

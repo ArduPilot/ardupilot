@@ -72,6 +72,7 @@
  */
 
 #include <sys/unistd.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -175,6 +176,23 @@ int _kill( int pid, int sig )
     (void)pid;
     (void)sig;
     return -1;
+}
+
+/*
+  replace newlib's rand(), which asserts, and so aborts, if allocating its
+  state fails. This is the same generator
+ */
+static uint64_t rand_next = 1;
+
+void srand(unsigned int seed)
+{
+    rand_next = seed;
+}
+
+int rand(void)
+{
+    rand_next = rand_next * 6364136223846793005ULL + 1;
+    return (int)((rand_next >> 32) & RAND_MAX);
 }
 
 /*** EOF ***/

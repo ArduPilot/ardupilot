@@ -29,6 +29,9 @@
 #include <ch.h>
 #include "hal.h"
 #include <hrt.h>
+#if AP_SIM_ENABLED
+#include <bits/functexcept.h>
+#endif
 
 // we rely on systimestamp_t for 64 bit timestamps
 static_assert(sizeof(uint64_t) == sizeof(systimestamp_t), "unexpected systimestamp_t size");
@@ -405,3 +408,36 @@ __FASTRAMFUNC__ uint64_t millis64()
 
 
 } // namespace AP_HAL
+
+#if AP_SIM_ENABLED
+// The SOHW JSON model loader uses std::string and std::vector.
+// Container error handlers are forbidden in non-simulation firmware.
+namespace std {
+
+void __throw_bad_alloc()
+{
+    AP_HAL::panic("std::bad_alloc");
+}
+
+void __throw_logic_error(const char *message)
+{
+    AP_HAL::panic("std::logic_error: %s", message);
+}
+
+void __throw_length_error(const char *message)
+{
+    AP_HAL::panic("std::length_error: %s", message);
+}
+
+void __throw_out_of_range_fmt(const char *format, ...)
+{
+    char message[128];
+    va_list ap;
+    va_start(ap, format);
+    hal.util->vsnprintf(message, sizeof(message), format, ap);
+    va_end(ap);
+    AP_HAL::panic("std::out_of_range: %s", message);
+}
+
+} // namespace std
+#endif // AP_SIM_ENABLED

@@ -1298,7 +1298,6 @@ class ChibiOSHWDef(hwdef.HWDef):
                 self.env_vars['CPU_FLAGS'].append('-DARM_MATH_CM7')
 
         if not self.mcu_series.startswith("STM32F1") and not self.is_bootloader_fw():
-            self.env_vars['CPU_FLAGS'].append('-u_printf_float')
             build_info['ENV_UDEFS'] = "-DCHPRINTF_USE_FLOAT=1"
 
         # setup build variables
