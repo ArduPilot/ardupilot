@@ -74,11 +74,14 @@ void ModeVelAltHold::alt_hold_run_flying(float &target_roll_rad, float &target_p
 
     // Snap pos_desired towards the estimate so the position P loop does not
     // fight the pilot's stick input.  VALT_POS_EXPO weights the snap with
-    // stick deflection; 0 keeps the original hard cutoff.
+    // stick deflection; 0 keeps the original hard cutoff.  The target is
+    // pos_desired plus the position offset and the (Down-positive) terrain
+    // offset, so those come off too or they would sit in the error.
+    const float pos_snap_m = pos_control->get_pos_estimate_U_m() - pos_control->get_pos_offset_U_m() + pos_control->get_pos_terrain_D_m();
     const float expo = g2.valt_pos_expo;
     if (!is_positive(expo)) {
         if (!is_zero(target_climb_rate_ms)) {
-            pos_control->set_pos_desired_U_m(pos_control->get_pos_estimate_U_m());
+            pos_control->set_pos_desired_U_m(pos_snap_m);
         }
         return;
     }
@@ -96,11 +99,12 @@ void ModeVelAltHold::alt_hold_run_flying(float &target_roll_rad, float &target_p
 
     // position-authority weight: a valley in deflection, 1 at centre and edge.
     // expo at or below 1 leaves this at 1 throughout, i.e. full position
-    // authority everywhere (see VALT_POS_EXPO)
-    const float w_pos = constrain_float(powf(1.0f - deflection, expo) + powf(deflection, expo), 0.0f, 1.0f);
-    const float pos_est_m = pos_control->get_pos_estimate_U_m();
+    // authority everywhere (see VALT_POS_EXPO).  It is the error kept per
+    // 400 Hz loop, so it is scaled to the loop period
+    const float w_pos_400hz = constrain_float(powf(1.0f - deflection, expo) + powf(deflection, expo), 0.0f, 1.0f);
+    const float w_pos = powf(w_pos_400hz, 400.0f * G_Dt);
     const float pos_des_m = pos_control->get_pos_desired_U_m();
-    pos_control->set_pos_desired_U_m(pos_est_m + w_pos * (pos_des_m - pos_est_m));
+    pos_control->set_pos_desired_U_m(pos_snap_m + w_pos * (pos_des_m - pos_snap_m));
 }
 
 #endif  // MODE_VALT_ENABLED
