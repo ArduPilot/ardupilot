@@ -23,7 +23,9 @@ parameter list without the source tree present.
 ```
 
 Top-level keys are vehicle names: `ArduCopter`, `ArduPlane`, `Rover`,
-`ArduSub`, `AntennaTracker`, `Helicopter`, `Blimp`, `sitl_periph_universal`.
+`ArduSub`, `AntennaTracker`, `Helicopter`, `Blimp`, `sitl_periph_universal`,
+`sitl_periph_PPP`. Every vehicle except the `sitl_periph_*` boards needs a
+`default_frame`, which `sim_vehicle.py` uses when started without `-f`.
 
 ## Per-frame fields
 
@@ -77,9 +79,21 @@ parameters. When `-f` is given and SITL can't resolve `--model` this way,
 
 ## Editing
 
-Edit `vehicleinfo.json` directly. Whitespace is `indent=4`. Run
-`python3 -c "import json; json.load(open('Tools/autotest/pysim/vehicleinfo.json'))"`
-to validate.
+Edit `vehicleinfo.json` directly. Whitespace is `indent=4`. Then run, from
+the ArduPilot root:
+
+```sh
+python3 -m pytest Tools/autotest/pysim/test_vehicleinfo.py
+```
+
+`test_vehicleinfo.py` checks that the file is strict JSON with no duplicate
+keys, that each vehicle's `default_frame` exists and has a `waf_target`, that
+frames only use the fields documented above with their documented types,
+that every vehicle is listed above, that the parameter files, periph boards
+and example scripts it names exist, and that every `default_params_filename`
+is one SITL embeds in ROMFS. It also checks how `vehicleinfo.py` looks frames
+up. A new field or vehicle needs adding to this document, and a new field to
+the test's `FIELD_TYPES`. CI runs it in the `pre-commit` workflow.
 
 After editing, rebuild SITL so the embedded copy in
 `build/sitl/ap_romfs_embedded.h` picks up the change.
