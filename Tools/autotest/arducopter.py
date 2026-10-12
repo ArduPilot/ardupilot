@@ -17891,8 +17891,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''the range finder height switch keeps out of flight with no velocity estimate'''
         # With optical flow lost the EKF holds a constant position, so its speed reads zero
         # however fast the vehicle flies, and the switch's speed gate has nothing to test.
-        # Flying faster than EK3_RNG_USE_SPD onto ground 1 m higher, the EKF height must stay
-        # with the simulator's rather than follow the range finder down.
+        # Flow coming back at speed is the same: relative aiding starts from zero velocity,
+        # and flow along the track fails its innovation check until the vehicle slows.
+        # Flying faster than EK3_RNG_USE_SPD onto ground 1 m higher, each time, the EKF
+        # height must stay with the simulator's rather than follow the range finder down.
         self.set_parameters({
             "SIM_FLOW_ENABLE": 1,
             "FLOW_TYPE": 10,
@@ -17906,33 +17908,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_analog_rangefinder_parameters()
         self.reboot_sitl()
         self.context_collect('STATUSTEXT')
-        self.takeoff(2, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+        # GUIDED stops the climb at the target, so a late altitude report cannot overshoot it
+        self.takeoff(2, mode='GUIDED', require_absolute=False, altitude_max=2.5, alt_minimum_duration=2)
         # no position controller, so losing flow does not end the flight
+        self.set_rc(3, 1500)
         self.change_mode('ALT_HOLD')
         self.set_rc(2, 1300)
         self.wait_groundspeed(3, 100, timeout=30)
         tlost = self.get_sim_time()
+        self.context_clear_collection('STATUSTEXT')
         self.set_parameter("SIM_FLOW_ENABLE", 0)
         self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
         tstep = self.get_sim_time()
         self.set_parameter("SIM_SONAR_OFFSET", -1.0)
         self.delay_sim_time(5, reason="fly on over the higher ground")
         tend = self.get_sim_time()
-        self.set_parameters({
-            "SIM_SONAR_OFFSET": 0,
-            "SIM_FLOW_ENABLE": 1,
-        })
-        self.set_rc(2, 1500)
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(2, reason="back over the lower ground before flow returns")
+        # flow comes back with the vehicle still fast
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
         self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        tregain = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", -1.0)
+        self.delay_sim_time(5, reason="fly on over the higher ground with flow back")
+        tend2 = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.set_rc(2, 1500)
         self.zero_throttle()
         self.wait_disarmed(timeout=120)
 
         dfreader = self.dfreader_for_current_onboard_log()
         truth = None
+        legs = [(tstep, tend), (tregain, tend2)]
+        errs = [[] for _ in legs]
+        speeds = [[] for _ in legs]
+        rngs = [[] for _ in legs]
         err_before = []
-        err_after = []
-        speeds = []
-        rngs = []
+        err_regain = []
         while True:
             m = dfreader.recv_match(type=['SIM', 'SIM2', 'XKF1', 'RFND'])
             if m is None:
@@ -17941,27 +17954,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             mtype = m.get_type()
             if mtype == 'SIM':
                 truth = m.Alt
-            elif mtype == 'SIM2' and tstep <= t <= tend:
-                speeds.append(math.hypot(m.VN, m.VE))
-            elif mtype == 'RFND' and m.Instance == 0 and tstep <= t <= tend:
-                rngs.append(m.Dist)
-            elif mtype == 'XKF1' and m.C == 0 and truth is not None:
+                continue
+            for i, (t0, t1) in enumerate(legs):
+                if not t0 <= t <= t1:
+                    continue
+                if mtype == 'SIM2':
+                    speeds[i].append(math.hypot(m.VN, m.VE))
+                elif mtype == 'RFND' and m.Instance == 0:
+                    rngs[i].append(m.Dist)
+            if mtype == 'XKF1' and m.C == 0 and truth is not None:
+                e = -m.PD - truth
                 if tlost - 3 <= t <= tlost:
-                    err_before.append(-m.PD - truth)
-                elif tstep <= t <= tend:
-                    err_after.append(-m.PD - truth)
-        if len(err_before) < 20 or len(err_after) < 50 or len(speeds) < 50 or len(rngs) < 20:
-            raise NotAchievedException("too few samples: %u/%u heights, %u speeds, %u ranges" %
-                                       (len(err_before), len(err_after), len(speeds), len(rngs)))
-        # the vehicle must have been fast enough for the gate, and low enough for the switch
-        if min(speeds) < 2 or max(rngs) > 3.3:
-            raise NotAchievedException("speed down to %.1f m/s and range up to %.1f m: not a test of the switch" %
-                                       (min(speeds), max(rngs)))
-        ref = sum(err_before) / len(err_before)
-        worst = max(abs(e - ref) for e in err_after)
-        self.progress("EKF height moved up to %.2f m against the simulator's over the higher ground" % worst)
-        if worst > 0.4:
-            raise NotAchievedException("EKF height moved %.2f m against the simulator's with no velocity estimate" % worst)
+                    err_before.append(e)
+                elif tregain - 1.5 <= t <= tregain:
+                    err_regain.append(e)
+                for i, (t0, t1) in enumerate(legs):
+                    if t0 <= t <= t1:
+                        errs[i].append(e)
+        # measured from just before each leg, so the second does not inherit the first's error
+        refs = [err_before, err_regain]
+        names = ["with flow lost", "after flow came back"]
+        for i in range(len(legs)):
+            if len(refs[i]) < 10 or len(errs[i]) < 50 or len(speeds[i]) < 50 or len(rngs[i]) < 20:
+                raise NotAchievedException("too few samples %s: %u/%u heights, %u speeds, %u ranges" %
+                                           (names[i], len(refs[i]), len(errs[i]), len(speeds[i]), len(rngs[i])))
+            # the vehicle must have been fast enough for the gate, and low enough for the switch
+            if min(speeds[i]) < 2 or max(rngs[i]) > 3.3:
+                raise NotAchievedException("speed down to %.1f m/s and range up to %.1f m %s: not a test of the switch" %
+                                           (min(speeds[i]), max(rngs[i]), names[i]))
+            ref = sum(refs[i]) / len(refs[i])
+            worst = max(abs(e - ref) for e in errs[i])
+            self.progress("EKF height moved up to %.2f m against the simulator's over the higher ground %s" %
+                          (worst, names[i]))
+            if worst > 0.4:
+                raise NotAchievedException("EKF height moved %.2f m against the simulator's %s" % (worst, names[i]))
 
         self.set_parameter("RNGFND1_TYPE", 0)
         self.reboot_sitl()
