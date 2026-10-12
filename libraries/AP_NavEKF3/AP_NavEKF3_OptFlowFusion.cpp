@@ -75,6 +75,9 @@ void NavEKF3_core::SelectFlowFusion()
         // carries the floor
         if (onGround && flowDataToFuse) {
             flowFocusRestRng = (rngGood && (rngSensor->distance() < ofDataDelayed.minHeight)) ? rngSensor->distance() : 0;
+        } else if (onGround && (imuSampleTime_ms - flowValidMeaTime_ms > 1000)) {
+            // with no sample stored for a second it is no longer refreshed, and the ground may have changed
+            flowFocusRestRng = 0;
         }
     } else if (flowDataToFuse && tiltOK && flowFocusRngValid) {
         // Within 5 cm of the range finder ground clearance the vehicle is on or at the ground,
