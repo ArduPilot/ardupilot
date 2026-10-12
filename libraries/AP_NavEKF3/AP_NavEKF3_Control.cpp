@@ -66,7 +66,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
                                     gpsYaw.lastFuseTime_ms != 0 &&
                                     imuSampleTime_ms - gpsYaw.lastFuseTime_ms < 5000;
     const bool yawInitialised = recentGpsYawFusion || finalInflightYawInit;
-    const bool canEstimateWind = ((yawInitialised && dragFusionEnabled) || assume_zero_sideslip()) &&
+    const bool canEstimateWind = ((yawInitialised && drag.fusionEnabled) || assume_zero_sideslip()) &&
                                  !onGround &&
                                  PV_AidingMode != AID_NONE;
     if (!inhibitWindStates && !canEstimateWind) {
@@ -74,7 +74,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
         lastAspdEstIsValid = false;
         updateStateIndexLim();
     } else if (inhibitWindStates && canEstimateWind &&
-               (sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f) || dragFusionEnabled)) {
+               (sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f) || drag.fusionEnabled)) {
         inhibitWindStates = false;
         updateStateIndexLim();
         // set states and variances
@@ -333,7 +333,7 @@ void NavEKF3_core::setAidingMode()
             bool airSpdUsed = (imuSampleTime_ms - lastTasPassTime_ms <= minTestTime_ms);
 
             // check if drag data is being used
-            bool dragUsed = (imuSampleTime_ms - lastDragPassTime_ms <= minTestTime_ms);
+            bool dragUsed = (imuSampleTime_ms - drag.lastPassTime_ms <= minTestTime_ms);
 
 #if EK3_FEATURE_BEACON_FUSION
             // Check if range beacon data is being used

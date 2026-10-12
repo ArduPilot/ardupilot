@@ -467,8 +467,8 @@ bool NavEKF3_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector
 void NavEKF3_core::getSynthAirDataInnovations(Vector2f &dragInnov, float &betaInnov) const
 {
 #if EK3_FEATURE_DRAG_FUSION
-    dragInnov.x = innovDrag[0];
-    dragInnov.y = innovDrag[1];
+    dragInnov.x = drag.innov[0];
+    dragInnov.y = drag.innov[1];
     betaInnov   = innovBeta;
 #endif
 }

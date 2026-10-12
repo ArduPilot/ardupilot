@@ -1503,38 +1503,38 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
     const bool using_mcoef = mcoef > 0.001f;
     if (!using_bcoef_x && !using_bcoef_y && !using_mcoef) {
         // nothing to do
-        dragFusionEnabled = false;
+        drag.fusionEnabled = false;
         return;
     }
 
-    dragFusionEnabled = true;
+    drag.fusionEnabled = true;
 
     // down-sample the drag specific force data by accumulating and calculating the mean when
     // sufficient samples have been collected
 
-    dragSampleCount ++;
+    drag.sampleCount ++;
 
     // note acceleration is accumulated as a delta velocity
-    dragDownSampled.accelXY.x += imu.delVel.x;
-    dragDownSampled.accelXY.y += imu.delVel.y;
-    dragDownSampled.time_ms += imu.time_ms;
-    dragSampleTimeDelta += imu.delVelDT;
+    drag.downSampled.accelXY.x += imu.delVel.x;
+    drag.downSampled.accelXY.y += imu.delVel.y;
+    drag.downSampled.time_ms += imu.time_ms;
+    drag.sampleTimeDelta += imu.delVelDT;
 
     // calculate and store means from accumulated values
-    if (dragSampleTimeDelta > 0.2f - 0.5f * EKF_TARGET_DT) {
+    if (drag.sampleTimeDelta > 0.2f - 0.5f * EKF_TARGET_DT) {
         // note conversion from accumulated delta velocity to acceleration
-        dragDownSampled.accelXY.x /= dragSampleTimeDelta;
-        dragDownSampled.accelXY.y /= dragSampleTimeDelta;
-        dragDownSampled.time_ms /= dragSampleCount;
+        drag.downSampled.accelXY.x /= drag.sampleTimeDelta;
+        drag.downSampled.accelXY.y /= drag.sampleTimeDelta;
+        drag.downSampled.time_ms /= drag.sampleCount;
 
         // write to buffer
-        storedDrag.push(dragDownSampled);
+        drag.stored.push(drag.downSampled);
 
         // reset accumulators
-        dragSampleCount = 0;
-        dragDownSampled.accelXY.zero();
-        dragDownSampled.time_ms = 0;
-        dragSampleTimeDelta = 0.0f;
+        drag.sampleCount = 0;
+        drag.downSampled.accelXY.zero();
+        drag.downSampled.time_ms = 0;
+        drag.sampleTimeDelta = 0.0f;
     }
 #endif // EK3_FEATURE_DRAG_FUSION
 }
