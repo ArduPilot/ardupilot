@@ -208,6 +208,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
                 // record the time we last updated the terrain offset state
                 gndHgtValidTime_ms = imuSampleTime_ms;
                 lastGoodRngMeas = rangeDataDelayed.rng;
+                terrainRngFuseTime_ms = imuSampleTime_ms;
             }
         }
 

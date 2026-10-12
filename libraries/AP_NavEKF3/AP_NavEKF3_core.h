@@ -1405,8 +1405,9 @@ private:
     bool terrainAnchorValid;        // true when terrainAnchorOffset was measured during this flight
     Vector2F gndKnownNE;            // NE position where the ground height was last measured or anchored (m)
     ftype lastGoodRngMeas;          // last range measurement fused into the terrain estimator (m)
+    uint32_t terrainRngFuseTime_ms; // time a range measurement was last fused into the terrain estimator (msec)
     bool flatGndEngaged;            // true while flow navigation continues on the flat-ground assumption
-    uint32_t flatGndRngResumeTime_ms; // start of the current unbroken run of valid range measurements, or 0
+    uint32_t flatGndRngResumeTime_ms; // start of the current unbroken run of range measurements of the ground, or 0
     // the terrain estimate the flat-ground fallback was using when range data returned, put
     // back if the return ends before it ends the fallback
     struct {
