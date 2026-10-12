@@ -24,15 +24,6 @@ enum AutoSubMode {
     Auto_TerrainRecover
 };
 
-// RTL states
-enum RTLState {
-    RTL_InitialClimb,
-    RTL_ReturnHome,
-    RTL_LoiterAtHome,
-    RTL_FinalDescent,
-    RTL_Land
-};
-
 class Mode
 {
 
