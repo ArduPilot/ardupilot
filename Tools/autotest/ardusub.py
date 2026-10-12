@@ -744,6 +744,13 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             cmd(mavutil.mavlink.MAV_CMD_NAV_LAND)
             self.assert_mode('SURFACE')
 
+    def MAV_CMD_NAV_RETURN_TO_LAUNCH(self):
+        '''test handling of MAV_CMD_NAV_RETURN_TO_LAUNCH received via mavlink'''
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
+            self.assert_mode('SURFACE')
+
     def MAV_CMD_MISSION_START(self):
         '''test handling of MAV_CMD_MISSION_START received via mavlink'''
         self.upload_simple_relhome_mission([
@@ -1861,6 +1868,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.TestLogDownloadLogRestart,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_LAND,
+            self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
             self.MAV_CMD_MISSION_START,
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_CONDITION_YAW,
