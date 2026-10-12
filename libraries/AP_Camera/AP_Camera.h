@@ -94,8 +94,10 @@ public:
     // send the message, true otherwise
     bool send_mavlink_message(class GCS_MAVLINK &link, const enum ap_message id);
 
-    // send camera information for a specific instance (0-based) to GCS
-    void send_camera_information(uint8_t instance, mavlink_channel_t chan);
+    // queue CAMERA_INFORMATION on chan for the camera with
+    // mavlink-style instance_id (0 meaning all cameras); returns false
+    // if there is no such camera
+    bool request_camera_information(mavlink_channel_t chan, float instance_id);
 #endif  // HAL_GCS_ENABLED
 
 #if HAL_MAVLINK_BINDINGS_ENABLED
@@ -114,9 +116,6 @@ public:
     MAV_RESULT handle_mav_SET_CAMERA_ZOOM(uint8_t instance_id, CAMERA_ZOOM_TYPE mav_zoom_type, float zoom_value);
     MAV_RESULT handle_mav_SET_CAMERA_FOCUS(uint8_t instance_id, SET_FOCUS_TYPE mav_focus_type, float focus_value);
 #endif  // HAL_MAVLINK_BINDINGS_ENABLED
-
-    // select which instance to send on the next deferred MSG_CAMERA_INFORMATION send
-    void set_camera_information_send_instance(int16_t instance) { _camera_information_send_instance = instance; }
 
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time);
@@ -268,11 +267,25 @@ private:
     void convert_runcam_params();
 #endif // AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
 
-    // send camera feedback message to GCS
-    void send_feedback(mavlink_channel_t chan);
-
-    // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan);
+    // send a message of message_size bytes from each camera in
+    // pending using send; returns false if there was no space, leaving
+    // the cameras not yet sent in pending.  An empty pending means
+    // every camera.
+    bool send_to_pending_backends(mavlink_channel_t chan, uint8_t &pending, uint16_t message_size,
+                                  void (AP_Camera_Backend::*send)(mavlink_channel_t chan) const) WARN_IF_UNUSED;
+    // bitmasks of cameras still to be sent each message on each link
+    struct {
+        uint8_t feedback;
+        uint8_t information;
+        uint8_t settings;
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+        uint8_t fov_status;
+#endif
+        uint8_t capture_status;
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+        uint8_t thermal_range;
+#endif
+    } _send_pending[MAVLINK_COMM_NUM_BUFFERS];
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     bool send_video_stream_information(mavlink_channel_t chan);
@@ -282,31 +295,11 @@ private:
     } _video_stream_send[MAVLINK_COMM_NUM_BUFFERS];
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
-    // send camera settings message to GCS
-    void send_camera_settings(mavlink_channel_t chan);
-
-#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
-    // send camera field of view status
-    void send_camera_fov_status(mavlink_channel_t chan);
-#endif
-
-    // send camera capture status message to GCS
-    void send_camera_capture_status(mavlink_channel_t chan);
-
-#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
-    // send camera thermal range message to GCS
-    void send_camera_thermal_range(mavlink_channel_t chan);
-#endif
-
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed
     bool _is_in_auto_mode;              // true if in AUTO mode
     uint32_t log_camera_bit;            // logging bit (from LOG_BITMASK) to enable camera logging
     AP_Camera_Backend *_backends[AP_CAMERA_MAX_INSTANCES];  // pointers to instantiated backends
-    // Stashes the 0-based instance requested by MAV_CMD_REQUEST_MESSAGE(CAMERA_INFORMATION, param2).
-    // Used to pass the target instance through the deferred-message path so that COMMAND_ACK is
-    // transmitted before the CAMERA_INFORMATION response.  -1 means send for all instances.
-    int16_t _camera_information_send_instance = -1;
 };
 
 namespace AP {

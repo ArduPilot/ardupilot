@@ -117,7 +117,7 @@ public:
     void set_trigger_distance(float distance_m) { _params.trigg_dist.set(distance_m); }
 
     // send camera feedback message to GCS
-    void send_camera_feedback(mavlink_channel_t chan);
+    void send_camera_feedback(mavlink_channel_t chan) const;
 
     // send camera information message to GCS
     virtual void send_camera_information(mavlink_channel_t chan) const;
