@@ -6917,6 +6917,87 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "(%s changed %f -> %f)" %
                 (non_autopilot_compid, param, original, current))
 
+    def ParamForComponentOnArrivingLink(self):
+        '''parameter messages for a component on the link they arrive on are not acted upon'''
+        # e.g. a VIO and a GCS sharing one link to the autopilot, such
+        # as a broadcast network.  The autopilot never forwards a message
+        # back out of the link it arrived on, as the VIO has already been
+        # sent it by the link itself; but it must still not answer for
+        # the VIO with its own parameters, nor set them
+        vio_compid = mavutil.mavlink.MAV_COMP_ID_VISUAL_INERTIAL_ODOMETRY
+        param = "CRUISE_SPEED"
+        self.context_preserve_parameters([param])
+        original = self.get_parameter(param)
+
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
+                                          robust_parsing=True,
+                                          source_system=self.sysid_thismav(),
+                                          source_component=vio_compid)
+
+        # the autopilot forwards the VIO's heartbeat to us once it has
+        # learned the route to it:
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("No route learned to VIO")
+            mav2.mav.heartbeat_send(
+                mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                0,
+                0,
+                0)
+            m = self.mav.recv_match(type='HEARTBEAT', blocking=True, timeout=1)
+            if m is not None and m.get_srcComponent() == vio_compid:
+                break
+        self.progress("Route to VIO learned")
+
+        # now be a GCS on the VIO's link:
+        mav2.mav.srcSystem = self.mav.mav.srcSystem
+        mav2.mav.srcComponent = self.mav.mav.srcComponent
+
+        self.context_collect('STATUSTEXT')
+        self.expire_other_component_warning_rate_limit()
+
+        self.drain_mav(mav2)
+        mav2.mav.param_request_read_send(
+            self.sysid_thismav(),
+            vio_compid,
+            param.encode('ascii'),
+            -1)
+        self.assert_not_receive_message(
+            'PARAM_VALUE',
+            mav=mav2,
+            timeout=5,
+            condition="PARAM_VALUE.param_id=='%s'" % param)
+
+        mav2.mav.param_set_send(
+            self.sysid_thismav(),
+            vio_compid,
+            param.encode('ascii'),
+            original + 1,
+            mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+        self.delay_sim_time(2, reason="any PARAM_SET to be acted upon")
+        current = self.get_parameter(param)
+        if abs(current - original) > 0.0001:
+            raise NotAchievedException(
+                "PARAM_SET addressed to component %u was acted upon "
+                "(%s changed %f -> %f)" %
+                (vio_compid, param, original, current))
+
+        # the VIO has been sent both messages by the link itself, so
+        # they have not been discarded and there is nothing to warn
+        # about:
+        for msgid in (mavutil.mavlink.MAVLINK_MSG_ID_PARAM_REQUEST_READ,
+                      mavutil.mavlink.MAVLINK_MSG_ID_PARAM_SET):
+            if self.statustext_in_collections("msg %u for compid %u" % (msgid, vio_compid)):
+                raise NotAchievedException("Warned about msg %u for compid %u" % (msgid, vio_compid))
+        self.context_stop_collecting('STATUSTEXT')
+
+        mav2.close()
+        # the learned route would change the behaviour of any test which
+        # follows this one, so lose it:
+        self.reboot_sitl()
+
     def ComponentAgnosticCommandRouting(self):
         '''safety commands for another component are acted on only when we have no route to that component'''
         # parachute and flight-termination commands addressed to another
@@ -8767,6 +8848,7 @@ return update()
             self.CommandForNonAutopilotComponentOnAnotherSystem,
             self.CommandForNonAutopilotComponentUnicast,
             self.ParamSetForNonAutopilotComponent,
+            self.ParamForComponentOnArrivingLink,
             self.ComponentAgnosticCommandRouting,
             self.GCSFailsafe,
             self.RoverInitialMode,
