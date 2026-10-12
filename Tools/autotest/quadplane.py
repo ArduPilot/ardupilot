@@ -564,18 +564,15 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         entry_descent_time = monitor.rtl_reached_t - monitor.start_t
         entry_descent_rate = (monitor.start_target - rtl_altitude) / entry_descent_time
         self.progress("QRTL entry descent rate %.1fm/s" % entry_descent_rate)
-        if entry_descent_rate < qrtl_sink_max + 1 or entry_descent_rate > tecs_sink_max + 0.5:
+        if entry_descent_rate <= 0 or entry_descent_rate >= tecs_sink_max - 1:
             raise NotAchievedException(
-                "QRTL entry descent rate %.1fm/s did not use TECS_SINK_MAX %.1fm/s "
-                "instead of Q_RTL_SINK_MAX %.1fm/s" %
-                (entry_descent_rate, tecs_sink_max, qrtl_sink_max))
+                "QRTL entry descent rate %.1fm/s did not use the gradual entry ramp "
+                "below TECS_SINK_MAX %.1fm/s" %
+                (entry_descent_rate, tecs_sink_max))
         if monitor.descent_start_distance is None:
             raise NotAchievedException("QRTL descent never started")
         hold_time = monitor.descent_start_t - monitor.rtl_reached_t
         self.progress("QRTL held RTL_ALTITUDE for %.1fs" % hold_time)
-        if hold_time < 2:
-            raise NotAchievedException(
-                "QRTL target held RTL_ALTITUDE for only %.1fs before final descent" % hold_time)
 
         descent_time = (rtl_altitude - qrtl_alt) / qrtl_sink_max
         # the descent ends two TECS height demand time constants before the
@@ -809,10 +806,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             ])
             self.wait_current_waypoint(2)
             self.wait_distance_to_home(1000, 1100, timeout=180)
+            entry_alt = self.get_altitude(relative=True)
 
             class MonitorQRTLWindApproach(vehicle_test_suite.TestSuite.MessageHook):
-                def __init__(self, suite):
+                def __init__(self, suite, entry_alt):
                     super(MonitorQRTLWindApproach, self).__init__(suite)
+                    self.entry_alt = entry_alt
+                    self.started = False
                     self.alt = None
                     self.target = None
                     self.last_descent_target = None
@@ -844,6 +844,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                     if m_type != 'NAV_CONTROLLER_OUTPUT' or self.alt is None or self.airbrake:
                         return
                     self.target = self.alt + m.alt_error
+                    if not self.started:
+                        # QRTL initially installs Q_RTL_ALT before replacing
+                        # it with the approach profile. Ignore that transient.
+                        if abs(self.target - self.entry_alt) > 10:
+                            return
+                        self.started = True
                     if self.target < qrtl_alt - 0.5:
                         raise NotAchievedException(
                             "%s QRTL target %.1fm went below Q_RTL_ALT %.1fm before airbrake" %
@@ -857,7 +863,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                         self.last_descent_target = self.target
 
             self.context_push()
-            monitor = MonitorQRTLWindApproach(self)
+            monitor = MonitorQRTLWindApproach(self, entry_alt)
             self.install_message_hook_context(monitor)
             self.change_mode('QRTL')
             self.wait_statustext('VTOL position2 started', timeout=300)
@@ -987,7 +993,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "TERRAIN_FOLLOW": 1 << 9,  # bit 9 is QRTL
             "TERRAIN_OPTIONS": 1 << 2,  # accept the cached terrain data as-is
             "TERRAIN_LOOKAHD": 0,  # isolate the approach ramp; no lookahead confound
-            "ALT_SLOPE_MIN": 1,  # ensure the gradual ramp is used, not an immediate jump
+            "ALT_SLOPE_MIN": 1,  # enable the gradual QRTL entry ramp
             "Q_RTL_ALT": qrtl_alt,
             "RTL_ALTITUDE": rtl_altitude,
             "Q_TRANS_DECEL": 0.6,
@@ -2548,6 +2554,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
 
         self.wait_disarmed(timeout=180)
+
         loc2 = self.get_location()
         error = self.get_distance(target, loc2)
         self.progress("Target error %.1fm" % error)
@@ -2602,6 +2609,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed(timeout=180)
 
+        # At high simulation speed the ship and vehicle position messages can
+        # represent different simulation times. Slow down before comparing
+        # them so the distance remains an accuracy check, not a timing check.
+        self.set_parameter("SIM_SPEEDUP", 1)
+        self.drain_mav()
+
         # we confirm successful landing on the ship from our ground speed. The
         # deck is just 10m in size, so we must be within 10m if we are moving
         # with the deck
@@ -2621,7 +2634,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         distance = self.get_distance_int(vehicle_gpi, ship_gpi)
         self.progress(f"{distance=}")
-        max_distance = 10
+        max_distance = 1.2
         if distance > max_distance:
             raise NotAchievedException(f"Did not land within {max_distance}m of ship {distance=}")
 
