@@ -47,8 +47,8 @@ public:
     // update AIS, expected to be called at 20hz
     void update();
 
-    // send mavlink AIS message
-    void send(mavlink_channel_t chan);
+    // send mavlink AIS message; returns false if there was no space
+    bool send(mavlink_channel_t chan);
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
