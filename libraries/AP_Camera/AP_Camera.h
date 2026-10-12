@@ -92,7 +92,7 @@ public:
 
     // send a mavlink message; returns false if there was not space to
     // send the message, true otherwise
-    bool send_mavlink_message(class GCS_MAVLINK &link, const enum ap_message id);
+    bool send_mavlink_message(class GCS_MAVLINK &link, const enum ap_message id) WARN_IF_UNUSED;
 
     // send camera information for a specific instance (0-based) to GCS
     void send_camera_information(uint8_t instance, mavlink_channel_t chan);
@@ -278,11 +278,11 @@ private:
     // send camera information message to GCS for each camera;
     // returns false if there was no space, and the next call resumes
     // from the camera which did not fit
-    bool send_camera_information(mavlink_channel_t chan);
+    bool send_camera_information(mavlink_channel_t chan) WARN_IF_UNUSED;
     uint8_t _camera_information_send_next[MAVLINK_COMM_NUM_BUFFERS];
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
-    bool send_video_stream_information(mavlink_channel_t chan);
+    bool send_video_stream_information(mavlink_channel_t chan) WARN_IF_UNUSED;
     struct {
         uint8_t instance;
         uint8_t stream;
