@@ -237,15 +237,15 @@ public:
 
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS for each
     // mount; returns false if there was no space for them
-    bool send_gimbal_device_attitude_status(mavlink_channel_t chan);
+    bool send_gimbal_device_attitude_status(mavlink_channel_t chan) WARN_IF_UNUSED;
 
     // send a GIMBAL_MANAGER_INFORMATION message to GCS for each mount;
     // returns false if there was no space for them
-    bool send_gimbal_manager_information(mavlink_channel_t chan);
+    bool send_gimbal_manager_information(mavlink_channel_t chan) WARN_IF_UNUSED;
 
     // send a GIMBAL_MANAGER_STATUS message to GCS for each mount;
     // returns false if there was no space for them
-    bool send_gimbal_manager_status(mavlink_channel_t chan);
+    bool send_gimbal_manager_status(mavlink_channel_t chan) WARN_IF_UNUSED;
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
