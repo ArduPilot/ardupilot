@@ -166,7 +166,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #if EK3_FEATURE_DRAG_FUSION
-    if (!storedDrag.init(obs_buffer_length)) {
+    if (!drag.stored.init(obs_buffer_length)) {
         return false;
     }
 #endif

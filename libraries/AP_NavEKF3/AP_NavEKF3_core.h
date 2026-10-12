@@ -1500,19 +1500,22 @@ private:
     } rngBcn{dal};
 #endif  // if EK3_FEATURE_BEACON_FUSION
 
-#if EK3_FEATURE_DRAG_FUSION
     // drag fusion for multicopter wind estimation
-    EKF_obs_buffer_t<drag_elements> storedDrag;
-    drag_elements dragSampleDelayed;
-    drag_elements dragDownSampled;	    // down sampled from filter prediction rate to observation rate
-    uint8_t dragSampleCount;	        // number of drag specific force samples accumulated at the filter prediction rate
-    ftype dragSampleTimeDelta;	        // time integral across all samples used to form _drag_down_sampled (sec)
-    Vector2F innovDrag;		            // multirotor drag measurement innovation (m/sec**2)
-	Vector2F innovDragVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
-	Vector2F dragTestRatio;		        // drag innovation consistency check ratio
+    class DragFusion {
+    public:
+#if EK3_FEATURE_DRAG_FUSION
+        EKF_obs_buffer_t<drag_elements> stored;
+        drag_elements sampleDelayed;
+        drag_elements downSampled;	    // down sampled from filter prediction rate to observation rate
+        uint8_t sampleCount;	        // number of drag specific force samples accumulated at the filter prediction rate
+        ftype sampleTimeDelta;	        // time integral across all samples used to form _drag_down_sampled (sec)
+        Vector2F innov;		            // multirotor drag measurement innovation (m/sec**2)
+        Vector2F innovVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
+        Vector2F testRatio;		        // drag innovation consistency check ratio
 #endif
-	uint32_t lastDragPassTime_ms;       // system time that drag samples were last successfully fused
-    bool dragFusionEnabled;
+        uint32_t lastPassTime_ms;       // system time that drag samples were last successfully fused
+        bool fusionEnabled;
+    } drag;
 
     // height source selection logic
     AP_NavEKF_Source::SourceZ activeHgtSource;  // active height source

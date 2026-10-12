@@ -212,10 +212,10 @@ void NavEKF3_core::SelectBetaDragFusion()
 
 #if EK3_FEATURE_DRAG_FUSION
     // fusion of XY body frame aero specific forces is done at a slower rate and only if alternative methods of wind estimation are not available
-    if (!inhibitWindStates && storedDrag.recall(dragSampleDelayed,imuDataDelayed.time_ms)) {
+    if (!inhibitWindStates && drag.stored.recall(drag.sampleDelayed,imuDataDelayed.time_ms)) {
         FuseDragForces();
     }
-    dragTimeout = (imuSampleTime_ms - lastDragPassTime_ms) > frontend->dragFailTimeLimit_ms;
+    dragTimeout = (imuSampleTime_ms - drag.lastPassTime_ms) > frontend->dragFailTimeLimit_ms;
 #endif
 }
 
@@ -418,7 +418,7 @@ void NavEKF3_core::FuseDragForces()
     // perform sequential fusion of XY specific forces
     for (uint8_t axis_index = 0; axis_index < 2; axis_index++) {
         // correct accel data for bias
-        const ftype mea_acc = dragSampleDelayed.accelXY[axis_index]  - stateStruct.accel_bias[axis_index] / dtEkfAvg;
+        const ftype mea_acc = drag.sampleDelayed.accelXY[axis_index]  - stateStruct.accel_bias[axis_index] / dtEkfAvg;
 
         // Acceleration in m/s/s predicted using vehicle and wind velocity estimates
         // Initialised to measured value and updated later using available drag model
@@ -486,11 +486,11 @@ void NavEKF3_core::FuseDragForces()
             // const ftype HK32 = Kaccx/(-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
 
             // calculate innovation variance and exit if badly conditioned
-            innovDragVar.x = (-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
-            if (innovDragVar.x < R_ACC) {
+            drag.innovVar.x = (-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
+            if (drag.innovVar.x < R_ACC) {
                 return;
             }
-            const ftype HK32 = Kaccx / innovDragVar.x;
+            const ftype HK32 = Kaccx / drag.innovVar.x;
 
             // Observation Jacobians
             Hfusion[0] = -HK2*HK3;
@@ -568,12 +568,12 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK31 = HK12*P[3][6] + HK13*P[3][22] - HK13*P[3][4] + HK14*P[2][3] + HK15*P[0][3] + HK16*P[1][3] - HK17*P[3][3] - HK9*P[3][23] + HK9*P[3][5];
             // const ftype HK32 = Kaccy/(HK12*HK19*HK20 + HK14*HK19*HK29 + HK15*HK18*HK19 + HK16*HK19*HK30 - HK17*HK19*HK31 + HK22*HK23 - HK23*HK24 + HK26*HK27 - HK27*HK28 + R_ACC);
 
-            innovDragVar.y = (HK12*HK19*HK20 + HK14*HK19*HK29 + HK15*HK18*HK19 + HK16*HK19*HK30 - HK17*HK19*HK31 + HK22*HK23 - HK23*HK24 + HK26*HK27 - HK27*HK28 + R_ACC);
-            if (innovDragVar.y < R_ACC) {
+            drag.innovVar.y = (HK12*HK19*HK20 + HK14*HK19*HK29 + HK15*HK18*HK19 + HK16*HK19*HK30 - HK17*HK19*HK31 + HK22*HK23 - HK23*HK24 + HK26*HK27 - HK27*HK28 + R_ACC);
+            if (drag.innovVar.y < R_ACC) {
                 // calculation is badly conditioned
                 return;
             }
-            const ftype HK32 = Kaccy / innovDragVar.y;
+            const ftype HK32 = Kaccy / drag.innovVar.y;
 
             // Observation Jacobians
             Hfusion[0] = -HK2*HK3;
@@ -593,11 +593,11 @@ void NavEKF3_core::FuseDragForces()
             Kfusion[23] = -HK28*HK32;
         }
 
-        innovDrag[axis_index] = predAccel - mea_acc;
-        dragTestRatio[axis_index] = sq(innovDrag[axis_index]) / (25.0f * innovDragVar[axis_index]);
+        drag.innov[axis_index] = predAccel - mea_acc;
+        drag.testRatio[axis_index] = sq(drag.innov[axis_index]) / (25.0f * drag.innovVar[axis_index]);
 
         // if the innovation consistency check fails then don't fuse the sample
-        if (dragTestRatio[axis_index] > 1.0f) {
+        if (drag.testRatio[axis_index] > 1.0f) {
             return;
         }
 
@@ -622,11 +622,11 @@ void NavEKF3_core::FuseDragForces()
         }
 
         // finish fusion from KHP and Kfusion
-        FinishFusion(innovDrag[axis_index], true); // forcing fusion is probably a bug
+        FinishFusion(drag.innov[axis_index], true); // forcing fusion is probably a bug
     }
 
     // record time of successful fusion
-    lastDragPassTime_ms = imuSampleTime_ms;
+    drag.lastPassTime_ms = imuSampleTime_ms;
 }
 #endif // EK3_FEATURE_DRAG_FUSION
 
