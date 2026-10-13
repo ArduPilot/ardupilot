@@ -3535,10 +3535,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''EKF failsafe returns to Loiter once it clears'''
         restore_delay = 3      # EKF_FAILSAFE_RESTORE_DELAY_MS
         self.set_rc(9, 1000)
+        self.set_rc(10, 1000)
         self.set_parameters({
             "FS_EKF_ACTION": 2,   # AltHold
             "FS_OPTIONS": 64,     # return to Loiter or PosHold when the failsafe clears
             "RC9_OPTION": 56,     # Loiter
+            "RC10_OPTION": 90,    # EKF source set
+            # source set 2 has no horizontal position or velocity source
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 0,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
             "BATT_LOW_VOLT": 11.5,
             "BATT_FS_LOW_ACT": 0,
             "SIM_BATT_VOLTAGE": 12.5,
@@ -3682,6 +3690,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         lose_gps()
         regain_gps()
         assert_restored(mode='POSHOLD')
+
+        self.start_subtest("on a source set with no position the restore waits for one")
+        self.change_mode('LOITER')
+        self.set_rc(10, 1500)
+        self.wait_mode('ALT_HOLD', timeout=30)
+        self.context_clear_collection('STATUSTEXT')
+        assert_not_restored()
+        if self.statustext_in_collections("requires position"):
+            raise NotAchievedException("restore attempted without a position")
+        self.set_rc(10, 1000)
+        self.wait_statustext("EKF Failsafe: restored", check_context=True, timeout=30)
+        self.wait_mode('LOITER')
 
         self.start_subtest("landing during the failsafe cancels the restore")
         self.change_mode('LOITER')
