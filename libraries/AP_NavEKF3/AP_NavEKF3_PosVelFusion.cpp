@@ -2123,9 +2123,9 @@ void NavEKF3_core::FuseBodyVel()
         } else {
             bodyVelFusedAxes &= ~(1U << obsIndex);
         }
-        if (bodyVelFusedAxes == 0x07) {
-            allAxesFusedTime_ms = imuSampleTime_ms;
-        }
+    }
+    if (bodyVelFusedAxes == 0x07) {
+        allAxesFusedTime_ms = imuSampleTime_ms;
     }
 }
 #endif // EK3_FEATURE_BODY_ODOM
