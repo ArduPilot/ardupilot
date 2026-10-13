@@ -345,6 +345,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 #endif
     notify_mode(*control_mode);
     gcs().send_message(MSG_HEARTBEAT);
+    gcs().send_message(MSG_CURRENT_MODE);
 
     // make happy noise
     if (reason != ModeReason::INITIALISED) {

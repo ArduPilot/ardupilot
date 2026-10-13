@@ -1373,7 +1373,7 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
         chan,
         mode_count,
         index,
-        MAV_STANDARD_MODE::MAV_STANDARD_MODE_NON_STANDARD,
+        standard_mode_from_mode_number((uint8_t)mode_number),
         (uint8_t)mode_number,
         // MAV_MODE_PROPERTY bitmask,
         user_selectable ? 0 : MAV_MODE_PROPERTY_NOT_USER_SELECTABLE,
@@ -1381,4 +1381,92 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
     );
 
     return mode_count;
+}
+
+// Standard modes protocol: map the active vehicle mode to a MAV_STANDARD_MODE
+MAV_STANDARD_MODE GCS_MAVLINK_Plane::standard_mode_from_mode_number(uint8_t mode_number) const
+{
+    switch ((Mode::Number)mode_number) {
+    case Mode::Number::CRUISE:
+        return MAV_STANDARD_MODE_CRUISE;
+    case Mode::Number::FLY_BY_WIRE_B:
+        return MAV_STANDARD_MODE_ALTITUDE_HOLD;
+    case Mode::Number::LOITER:
+        return MAV_STANDARD_MODE_ORBIT;
+    case Mode::Number::RTL:
+        return MAV_STANDARD_MODE_SAFE_RECOVERY;
+    case Mode::Number::AUTO:
+        return MAV_STANDARD_MODE_MISSION;
+    case Mode::Number::TAKEOFF:
+        return MAV_STANDARD_MODE_TAKEOFF;
+#if MODE_AUTOLAND_ENABLED
+    case Mode::Number::AUTOLAND:
+#if HAL_QUADPLANE_ENABLED
+        if (plane.quadplane.available()) {
+            // QLAND is the standard land mode on a quadplane
+            return MAV_STANDARD_MODE_NON_STANDARD;
+        }
+#endif
+        return MAV_STANDARD_MODE_LAND;
+#endif
+#if HAL_QUADPLANE_ENABLED
+    case Mode::Number::QLOITER:
+        return MAV_STANDARD_MODE_POSITION_HOLD;
+    case Mode::Number::QLAND:
+        return MAV_STANDARD_MODE_LAND;
+#endif
+    default:
+        break;
+    }
+    return MAV_STANDARD_MODE_NON_STANDARD;
+}
+
+// Standard modes protocol: find the vehicle mode which implements a MAV_STANDARD_MODE
+bool GCS_MAVLINK_Plane::mode_number_from_standard_mode(MAV_STANDARD_MODE standard_mode, uint8_t &mode_number) const
+{
+    switch (standard_mode) {
+    case MAV_STANDARD_MODE_CRUISE:
+        mode_number = (uint8_t)Mode::Number::CRUISE;
+        return true;
+    case MAV_STANDARD_MODE_ALTITUDE_HOLD:
+        mode_number = (uint8_t)Mode::Number::FLY_BY_WIRE_B;
+        return true;
+    case MAV_STANDARD_MODE_ORBIT:
+        mode_number = (uint8_t)Mode::Number::LOITER;
+        return true;
+    case MAV_STANDARD_MODE_SAFE_RECOVERY:
+        mode_number = (uint8_t)Mode::Number::RTL;
+        return true;
+    case MAV_STANDARD_MODE_MISSION:
+        mode_number = (uint8_t)Mode::Number::AUTO;
+        return true;
+    case MAV_STANDARD_MODE_TAKEOFF:
+        mode_number = (uint8_t)Mode::Number::TAKEOFF;
+        return true;
+    case MAV_STANDARD_MODE_LAND:
+#if HAL_QUADPLANE_ENABLED
+        if (plane.quadplane.available()) {
+            mode_number = (uint8_t)Mode::Number::QLAND;
+            return true;
+        }
+#endif
+#if MODE_AUTOLAND_ENABLED
+        mode_number = (uint8_t)Mode::Number::AUTOLAND;
+        return true;
+#else
+        return false;
+#endif
+    case MAV_STANDARD_MODE_POSITION_HOLD:
+#if HAL_QUADPLANE_ENABLED
+        // only a quadplane can hold position; set_mode rejects Q modes if quadplane is not available
+        mode_number = (uint8_t)Mode::Number::QLOITER;
+        return true;
+#else
+        return false;
+#endif
+    case MAV_STANDARD_MODE_NON_STANDARD:
+    default:
+        break;
+    }
+    return false;
 }
