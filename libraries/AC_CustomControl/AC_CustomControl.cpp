@@ -7,6 +7,7 @@
 #include "AC_CustomControl_Backend.h"
 // #include "AC_CustomControl_Empty.h"
 #include "AC_CustomControl_PID.h"
+#include "AC_CustomControl_INDI.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Scheduler/AP_Scheduler.h>
@@ -16,7 +17,7 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Custom control type
     // @Description: Custom control type to be used
-    // @Values: 0:None, 1:Empty, 2:PID
+    // @Values: 0:None, 1:Empty, 2:PID, 3:INDI
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_TYPE", 1, AC_CustomControl, _controller_type, 0, AP_PARAM_FLAG_ENABLE),
@@ -34,6 +35,12 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
     // @Group: 2_
     // @Path: AC_CustomControl_PID.cpp
     AP_SUBGROUPVARPTR(_backend, "2_", 7, AC_CustomControl, _backend_var_info[1]),
+
+#if AP_COPTER_CUSTOMCONTROL_INDI_ENABLED
+    // @Group: 3_
+    // @Path: AC_CustomControl_INDI.cpp
+    AP_SUBGROUPVARPTR(_backend, "3_", 8, AC_CustomControl, _backend_var_info[2]),
+#endif
 
     AP_GROUPEND
 };
@@ -65,6 +72,12 @@ void AC_CustomControl::init(void)
             _backend = NEW_NOTHROW AC_CustomControl_PID(*this, _ahrs, _att_control, _motors, _dt);
             _backend_var_info[get_type()] = AC_CustomControl_PID::var_info;
             break;
+#if AP_COPTER_CUSTOMCONTROL_INDI_ENABLED
+        case CustomControlType::CONT_INDI:
+            _backend = NEW_NOTHROW AC_CustomControl_INDI(*this, _ahrs, _att_control, _motors, _dt);
+            _backend_var_info[get_type()] = AC_CustomControl_INDI::var_info;
+            break;
+#endif
         default:
             return;
     }
@@ -82,21 +95,43 @@ void AC_CustomControl::update(void)
 
         motor_out_rpy = _backend->update();
 
-        motor_set(motor_out_rpy);
+        // a backend may hand axes back to the main controller. The main
+        // rate PID ran this loop with a zero integrator, so seed it with
+        // the custom output on the axes that just switched over to keep
+        // the handover bumpless.
+        const uint8_t fallback = _backend->get_fallback_mask() & _custom_controller_mask;
+        const uint8_t newly = fallback & ~_fallback_mask;
+        if (newly & (uint8_t)CustomControlOption::ROLL) {
+            _att_control->get_rate_roll_pid().set_integrator(motor_out_rpy.x);
+        }
+        if (newly & (uint8_t)CustomControlOption::PITCH) {
+            _att_control->get_rate_pitch_pid().set_integrator(motor_out_rpy.y);
+        }
+        if (newly & (uint8_t)CustomControlOption::YAW) {
+            _att_control->get_rate_yaw_pid().set_integrator(motor_out_rpy.z);
+        }
+        if (fallback != _fallback_mask) {
+            _fallback_mask = fallback;
+            log_switch();
+        }
+
+        motor_set(motor_out_rpy, fallback);
     }
 }
 
-// choose which axis to apply custom controller output
-void AC_CustomControl::motor_set(Vector3f rpy) {
-    if (_custom_controller_mask & (uint8_t)CustomControlOption::ROLL) {
+// choose which axis to apply custom controller output; axes in
+// skip_mask are left to the main controller
+void AC_CustomControl::motor_set(Vector3f rpy, uint8_t skip_mask) {
+    const uint8_t mask = _custom_controller_mask & ~skip_mask;
+    if (mask & (uint8_t)CustomControlOption::ROLL) {
         _motors->set_roll(rpy.x);
         _att_control->get_rate_roll_pid().set_integrator(0.0);
     }
-    if (_custom_controller_mask & (uint8_t)CustomControlOption::PITCH) {
+    if (mask & (uint8_t)CustomControlOption::PITCH) {
         _motors->set_pitch(rpy.y);
         _att_control->get_rate_pitch_pid().set_integrator(0.0);
     }
-    if (_custom_controller_mask & (uint8_t)CustomControlOption::YAW) {
+    if (mask & (uint8_t)CustomControlOption::YAW) {
         _motors->set_yaw(rpy.z);
         _att_control->get_rate_yaw_pid().set_integrator(0.0);
     }
@@ -163,6 +198,7 @@ void AC_CustomControl::set_custom_controller(bool enabled)
     }
 
     _custom_controller_active = enabled;
+    _fallback_mask = 0;
 
     // log successful switch
     log_switch();
@@ -187,10 +223,13 @@ void AC_CustomControl::log_switch(void) {
     // @Field: Type: controller type
     // @FieldValueEnum: Type: AC_CustomControl::CustomControlType
     // @Field: Act: true if controller is active
-    AP::logger().Write("CC", "TimeUS,Type,Act","QBB",
+    // @Field: Fb: axes handed back to the main controller
+    // @FieldBitmaskEnum: Fb: AC_CustomControl::CustomControlOption
+    AP::logger().Write("CC", "TimeUS,Type,Act,Fb","QBBB",
                             AP_HAL::micros64(),
                             _controller_type,
-                            _custom_controller_active);
+                            _custom_controller_active,
+                            _fallback_mask);
 }
 
 void AC_CustomControl::set_notch_sample_rate(float sample_rate)
