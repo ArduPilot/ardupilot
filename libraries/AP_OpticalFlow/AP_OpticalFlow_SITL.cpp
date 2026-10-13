@@ -62,13 +62,15 @@ void AP_OpticalFlow_SITL::update(void)
     // sensor position offset in body frame
     Vector3f posRelSensorBF = _sitl->optflow_pos_offset;
 
-    // estimate range to centre of image
-    float range;
-    if (rotmat.c.z > 0.05f && _sitl->state.height_agl > 0) {
-        Vector3f relPosSensorEF = rotmat * posRelSensorBF;
-        range = (_sitl->state.height_agl - relPosSensorEF.z) / rotmat.c.z;
-    } else {
-        range = 1e38f;
+    // estimate range to centre of image, from the sensor's own height so that a sensor mounted
+    // above a vehicle on the ground still sees it move
+    float range = 1e38f;
+    if (rotmat.c.z > 0.05f) {
+        const Vector3f relPosSensorEF = rotmat * posRelSensorBF;
+        const float sensor_height = _sitl->state.height_agl - relPosSensorEF.z;
+        if (is_positive(sensor_height)) {
+            range = sensor_height / rotmat.c.z;
+        }
     }
 
     // Calculate relative velocity in sensor frame assuming no misalignment between sensor and vehicle body axes
