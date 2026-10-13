@@ -592,6 +592,99 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # let it continue home, transition and land normally
         self.wait_disarmed(timeout=300)
 
+    def QRTLRTLAltitudeMinusOne(self):
+        '''check RTL_ALTITUDE=-1 returns at the current altitude in QRTL'''
+        qrtl_alt = 20
+        self.set_parameters({
+            "Q_RTL_ALT": qrtl_alt,
+            # -1 is the fixed wing magic value meaning "return at the
+            # current altitude"
+            "RTL_ALTITUDE": -1,
+            "Q_TRANS_DECEL": 0.6,
+        })
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, 60),
+        ])
+
+        self.wait_current_waypoint(2)
+
+        # get well away from home, so QRTL's approach is still a long way
+        # from where it should start descending towards Q_RTL_ALT
+        self.wait_distance_to_home(900, 1000, timeout=180)
+
+        entry_alt = self.get_altitude(relative=True)
+        self.progress("Entering QRTL at altitude %.1fm" % entry_alt)
+        self.change_mode('QRTL')
+
+        # With RTL_ALTITUDE=-1 the approach must return at the altitude we
+        # entered at, only descending to Q_RTL_ALT near home.  Reconstruct
+        # the altitude the fixed wing controller is chasing from
+        # NAV_CONTROLLER_OUTPUT.alt_error and insist it holds while still
+        # far from home; without the fix the target starts ramping down
+        # towards Q_RTL_ALT as soon as the approach starts.
+        hold_travel = 300     # m travelled towards home while target must hold
+        max_drop = 8          # m, allowed target droop over that window
+
+        class MonitorQRTLHoldAlt(vehicle_test_suite.TestSuite.MessageHook):
+            '''watches the reconstructed QRTL target altitude and makes sure
+            it is held (rather than ramped down to Q_RTL_ALT) over the first
+            part of the return'''
+            def __init__(self, suite, entry_alt, hold_travel, max_drop):
+                super(MonitorQRTLHoldAlt, self).__init__(suite)
+                self.entry_alt = entry_alt
+                self.hold_travel = hold_travel
+                self.max_drop = max_drop
+                self.alt = entry_alt
+                self.start_dist = None
+                self.start_target = None
+                self.last_dist = None
+                self.worst_target = None
+                self.seen = False
+
+            def process(self, mav, m):
+                m_type = m.get_type()
+                if m_type == 'GLOBAL_POSITION_INT':
+                    self.alt = m.relative_alt * 0.001
+                    return
+                if m_type != 'NAV_CONTROLLER_OUTPUT':
+                    return
+                target = self.alt + m.alt_error
+                self.last_dist = m.wp_dist
+                if self.start_dist is None:
+                    self.start_dist = m.wp_dist
+                    self.start_target = target
+                if m.wp_dist < self.start_dist - self.hold_travel:
+                    return
+                self.seen = True
+                if self.worst_target is None or target < self.worst_target:
+                    self.worst_target = target
+                self.progress("QRTL hold: d=%.1f alt=%.1f target=%.1f" %
+                              (m.wp_dist, self.alt, target))
+
+        self.context_push()
+        monitor = MonitorQRTLHoldAlt(self, entry_alt, hold_travel, max_drop)
+        self.install_message_hook_context(monitor)
+        # 300m at cruise speed takes well under 35s; the hook stops checking
+        # once that window has passed
+        self.delay_sim_time(35, reason="check QRTL holds entry altitude")
+        self.context_pop()
+
+        if not monitor.seen:
+            raise NotAchievedException("Never saw a NAV_CONTROLLER_OUTPUT sample")
+        if monitor.worst_target < monitor.start_target - max_drop:
+            raise NotAchievedException(
+                "QRTL target altitude dropped from %.1fm to %.1fm while "
+                "%.0fm from home; RTL_ALTITUDE=-1 should return at the "
+                "current altitude" %
+                (monitor.start_target, monitor.worst_target,
+                 monitor.last_dist))
+
+        # let it continue home, transition and land normally
+        self.wait_altitude(-5, 1, relative=True, timeout=240)
+        self.wait_disarmed(timeout=60)
+
     def QAUTOTUNE(self):
         '''test Plane QAutoTune mode'''
 
@@ -4502,6 +4595,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
             self.QRTLGradualAltDescentTerrain,
+            self.QRTLRTLAltitudeMinusOne,
             self.Mission,
             self.Weathervane,
             self.GyroFFT,
