@@ -3036,12 +3036,12 @@ function gcs:set_message_interval(port_num, msg_id, interval_us) end
 ---| '16' # MAV_TYPE_FLAPPING_WING=16, /* Flapping wing | */
 ---| '17' # MAV_TYPE_KITE=17, /* Kite | */
 ---| '18' # MAV_TYPE_ONBOARD_CONTROLLER=18, /* Onboard companion controller | */
----| '19' # MAV_TYPE_VTOL_DUOROTOR=19, /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
----| '20' # MAV_TYPE_VTOL_QUADROTOR=20, /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
+---| '19' # MAV_TYPE_VTOL_TAILSITTER_DUOROTOR=19, /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
+---| '20' # MAV_TYPE_VTOL_TAILSITTER_QUADROTOR=20, /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
 ---| '21' # MAV_TYPE_VTOL_TILTROTOR=21, /* Tiltrotor VTOL | */
----| '22' # MAV_TYPE_VTOL_RESERVED2=22, /* VTOL reserved 2 | */
----| '23' # MAV_TYPE_VTOL_RESERVED3=23, /* VTOL reserved 3 | */
----| '24' # MAV_TYPE_VTOL_RESERVED4=24, /* VTOL reserved 4 | */
+---| '22' # MAV_TYPE_VTOL_FIXEDROTOR=22, /* VTOL with separate fixed rotors for hover and cruise flight | */
+---| '23' # MAV_TYPE_VTOL_TAILSITTER=23, /* Tailsitter VTOL | */
+---| '24' # MAV_TYPE_VTOL_TILTWING=24, /* Tiltwing VTOL | */
 ---| '25' # MAV_TYPE_VTOL_RESERVED5=25, /* VTOL reserved 5 | */
 ---| '26' # MAV_TYPE_GIMBAL=26, /* Gimbal | */
 ---| '27' # MAV_TYPE_ADSB=27, /* ADSB system | */
@@ -3060,7 +3060,14 @@ function gcs:set_message_interval(port_num, msg_id, interval_us) end
 ---| '40' # MAV_TYPE_IMU=40, /* IMU | */
 ---| '41' # MAV_TYPE_GPS=41, /* GPS | */
 ---| '42' # MAV_TYPE_WINCH=42, /* Winch | */
----| '43' # MAV_TYPE_ENUM_END=43, /*  | */
+---| '43' # MAV_TYPE_GENERIC_MULTIROTOR=43, /* Generic multirotor that does not fit into a specific type or whose type is unknown | */
+---| '44' # MAV_TYPE_ILLUMINATOR=44, /* Illuminator. An illuminator is a light source that is used for lighting up dark areas external to the system: e.g. a torch or searchlight (as opposed to a light source for illuminating the system itself, e.g. an indicator light). | */
+---| '45' # MAV_TYPE_SPACECRAFT_ORBITER=45, /* Orbiter spacecraft. Includes satellites orbiting terrestrial and extra-terrestrial bodies. Follows NASA Spacecraft Classification. | */
+---| '46' # MAV_TYPE_GROUND_QUADRUPED=46, /* A generic four-legged ground vehicle (e.g., a robot dog). | */
+---| '47' # MAV_TYPE_VTOL_GYRODYNE=47, /* VTOL hybrid of helicopter and autogyro. It has a main rotor for lift and separate propellers for forward flight. The rotor must be powered for hover but can autorotate in cruise flight. See: https://en.wikipedia.org/wiki/Gyrodyne | */
+---| '48' # MAV_TYPE_GRIPPER=48, /* Gripper | */
+---| '49' # MAV_TYPE_RADIO=49, /* Radio | */
+---| '50' # MAV_TYPE_ENUM_END=50, /*  | */
 function gcs:frame_type() end
 
 -- get the throttle value in %

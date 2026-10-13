@@ -71,16 +71,15 @@ public:
     // read a frame from the buffer
     bool read_frame(AP_HAL::CANFrame &frame);
 
-    // recursively add frame to buffer
+    // add frame to buffer
     void handle_frame(AP_HAL::CANFrame &frame);
-
-    // recursively add new buffer
-    void add_buffer(ScriptingCANBuffer* new_buff);
 
     // Add a filter to this buffer
     bool add_filter(uint32_t mask, uint32_t value);
 
 private:
+
+    friend class ScriptingCANSensor;
 
     ObjectBuffer<AP_HAL::CANFrame> buffer;
 

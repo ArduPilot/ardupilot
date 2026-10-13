@@ -45,7 +45,7 @@ public:
     // handler for outgoing frames
     bool write_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us);
 
-#ifdef HAL_BUILD_AP_PERIPH
+#if !HAL_CANMANAGER_ENABLED
     static void set_periph(const uint8_t i, const AP_CAN::Protocol protocol, AP_HAL::CANIface* iface) {
         if (i < ARRAY_SIZE(_periph)) {
             _periph[i].protocol = protocol;
@@ -83,7 +83,7 @@ private:
     HAL_BinarySemaphore sem_handle;
     AP_HAL::CANIface* _can_iface;
 
-#ifdef HAL_BUILD_AP_PERIPH
+#if !HAL_CANMANAGER_ENABLED
     void register_driver_periph(const AP_CAN::Protocol dtype);
     
     struct CANSensor_Periph {

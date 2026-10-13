@@ -311,38 +311,79 @@ class upload_fw_blueos(Task.Task):
           return "Uploading to BlueOS"
 
 class check_elf_symbols(Task.Task):
+    # Recheck an unchanged binary when the symbol policy or inspection tool changes.
+    vars = ['SYMBOLS_BLACKLIST', 'CHECK_MALLOC_WRAPPING', 'CHECK_SYMBOLS',
+            'vehicle_binary', 'SIM_ENABLED', 'LINKFLAGS', 'DEST_OS', 'NM']
     color='CYAN'
     def keyword(self):
         return "checking symbols"
 
     def run(self):
         '''
-        check for disallowed symbols in elf file, such as C++ exceptions
+        check allocator wrapping and disallowed symbols in the linked binary
         '''
         elfpath = self.inputs[0].abspath()
 
-        if not self.env.CHECK_SYMBOLS:
-            # checking symbols disabled on this build
+        # Allocator/wrapper checks also apply to simulator builds and must not
+        # depend on the optional C++ exception/new checking.
+        check_cxx = self.env.CHECK_SYMBOLS and self.env.vehicle_binary and not self.env.SIM_ENABLED
+        check_malloc = self.env.CHECK_MALLOC_WRAPPING and self.env.vehicle_binary
+        if not (check_cxx or check_malloc or self.env.SYMBOLS_BLACKLIST):
             return
-
-        if not self.env.vehicle_binary or self.env.SIM_ENABLED:
-            # we only want to check symbols for vehicle binaries, allowing examples
-            # to use C++ exceptions. We also allow them in simulator builds
-            return
-
-        # we use string find on these symbols, so this catches all types of throw
-        # calls this should catch all uses of exceptions unless the compiler
-        # manages to inline them
-        blacklist = ['std::__throw',
-                     'operator new[](unsigned int)',
-                     'operator new[](unsigned long)',
-                     'operator new(unsigned int)',
-                     'operator new(unsigned long)']
 
         nmout = subprocess.check_output(self.env.NM + ['-C', elfpath], text=True)
-        for b in blacklist:
-            if nmout.find(b) != -1:
-                raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
+        symbols = []
+        for line in nmout.splitlines():
+            fields = line.split(None, 2)
+            if len(fields) == 3:
+                # Defined symbols: address, type, name (possibly demangled).
+                symbols.append((fields[2], fields[1]))
+            elif len(fields) == 2:
+                # Undefined symbols have no address.
+                symbols.append((fields[1], fields[0]))
+
+        # --wrap only redirects undefined references. Calls resolved within a
+        # libc object can bypass it, so reject the original symbols as well.
+        for symbol, symbol_type in symbols:
+            # Local data cannot satisfy a reference to a libc function. Keep
+            # checking global symbols, code and undefined/weak references.
+            if symbol_type in ('b', 'd', 'g', 'r', 's'):
+                continue
+            name = symbol.split('@', 1)[0].split('.', 1)[0]
+            if name in self.env.SYMBOLS_BLACKLIST:
+                raise Errors.WafError("Disallowed unwrapped symbol in %s: %s" % (elfpath, symbol))
+
+        defined_functions = {name for name, kind in symbols if kind in ('T', 't')}
+        if check_malloc and self.env.DEST_OS == 'darwin':
+            # no --wrap on Darwin; AP_Common defines malloc in the executable
+            if '_malloc' not in defined_functions:
+                raise Errors.WafError("Missing defined zero-filling malloc in %s" % elfpath)
+        elif check_malloc:
+            # The wrapper may remain in the binary even if --wrap was lost.
+            # Check both the link option and its definition, not just its name.
+            flags = [part for flag in self.env.LINKFLAGS for part in flag.split(',')
+                     if part not in ('-Wl', '-Xlinker')]
+            wrapped = '--wrap=malloc' in flags or any(
+                flags[i:i+2] == ['--wrap', 'malloc'] for i in range(len(flags)-1))
+            if not wrapped:
+                raise Errors.WafError("Missing malloc wrapping in %s: the zero-filling allocator requires --wrap=malloc." % elfpath)
+            # a binary that never calls malloc doesn't pull in the wrapper
+            names = {symbol.split('@', 1)[0] for symbol, _ in symbols}
+            uses_malloc = 'malloc' in names or '__wrap_malloc' in names
+            if uses_malloc and '__wrap_malloc' not in defined_functions:
+                raise Errors.WafError("Missing defined zero-filling __wrap_malloc in %s" % elfpath)
+
+        if check_cxx:
+            # Use substring matching to catch all exception helpers and the
+            # throwing new overloads, while allowing std::nothrow overloads.
+            blacklist = ['std::__throw',
+                         'operator new[](unsigned int)',
+                         'operator new[](unsigned long)',
+                         'operator new(unsigned int)',
+                         'operator new(unsigned long)']
+            for b in blacklist:
+                if b in nmout:
+                    raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
 
 @feature('post_link')
 @after_method('process_source')

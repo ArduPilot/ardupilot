@@ -1,0 +1,7 @@
+$type * new_$identifier(lua_State *L) {
+    void *ud = lua_newuserdata(L, sizeof($type));
+    if (!ud) { __builtin_unreachable(); } // elide constructor null check
+    new (ud) $type();
+    set_userdata_metatable(L, "$lua_name");
+    return ($type *)ud;
+}

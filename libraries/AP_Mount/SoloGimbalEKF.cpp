@@ -81,7 +81,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
 
         const auto &_ahrs = AP::ahrs();
 
-        if (_ahrs.get_filter_status(main_ekf_status)) {
+        if (_ahrs.get_filter_status_for_configured_backend(main_ekf_status)) {
             if (main_ekf_status.flags.attitude) {
                 main_ekf_healthy = true;
             }
@@ -622,7 +622,7 @@ void SoloGimbalEKF::fuseVelocity()
             Vector3f measVelNED;
             nav_filter_status main_ekf_status;
 
-            if (_ahrs.get_filter_status(main_ekf_status)) {
+            if (_ahrs.get_filter_status_for_configured_backend(main_ekf_status)) {
                 if (main_ekf_status.flags.horiz_vel) {
                     UNUSED_RESULT(_ahrs.get_velocity_NED(measVelNED));
                 }
