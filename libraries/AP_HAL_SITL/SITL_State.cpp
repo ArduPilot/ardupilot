@@ -102,7 +102,9 @@ void SITL_State::_fdm_input_step(void)
 
     /* make sure we die if our parent dies */
 #if !defined(__EMSCRIPTEN__) // No parent process for Emscripten
-    if (kill(_parent_pid, 0) != 0) {
+    // EPERM means the parent exists but is not ours to signal, as with
+    // zygote on Android
+    if (kill(_parent_pid, 0) != 0 && errno != EPERM) {
         exit(1);
     }
 #endif
