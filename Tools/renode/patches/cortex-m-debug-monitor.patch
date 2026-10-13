@@ -1,0 +1,283 @@
+--- a/src/Emulator/Cores/Arm-M/CortexM.cs
++++ b/src/Emulator/Cores/Arm-M/CortexM.cs
+@@ -76,6 +76,22 @@
+                 throw new ConstructionException("Exception occurred when attaching NVIC: ", e);
+             }
+         }
++
++        public void SetDebugMonitorControl(uint value) => tlibSetDebugMonitorControl(value);
++        public uint DebugFaultStatus => tlibGetDebugFaultStatus();
++        public void ClearDebugFaultStatus(uint value) => tlibClearDebugFaultStatus(value);
++        public uint DebugHardFaultStatus => tlibGetDebugHardfaultStatus();
++        public void ClearDebugHardFaultStatus(uint value) => tlibClearDebugHardfaultStatus(value);
++        public void SetFPBControl(uint value) => tlibSetFpbControl(value);
++        public void SetFPBComparator(uint index, uint value) => tlibSetFpbComparator(index, value);
++
++        [Import] private Action<uint> tlibSetDebugMonitorControl;
++        [Import] private Func<uint> tlibGetDebugFaultStatus;
++        [Import] private Action<uint> tlibClearDebugFaultStatus;
++        [Import] private Func<uint> tlibGetDebugHardfaultStatus;
++        [Import] private Action<uint> tlibClearDebugHardfaultStatus;
++        [Import] private Action<uint> tlibSetFpbControl;
++        [Import] private Action<uint, uint> tlibSetFpbComparator;
+
+         public override void Reset()
+         {
+--- a/src/Emulator/Cores/Arm-M/NVIC.cs
++++ b/src/Emulator/Cores/Arm-M/NVIC.cs
+@@ -160,10 +160,12 @@
+                 {
+                     this.NoisyLog("Waking up from deep sleep");
+                 }
+-                systick.NonSecureVal.Enabled |= value;
++                systick.NonSecureVal.Enabled |= systickSuspendedNonSecure;
++                systickSuspendedNonSecure = false;
+                 if(cpu.TrustZoneEnabled)
+                 {
+-                    systick.SecureVal.Enabled |= value;
++                    systick.SecureVal.Enabled |= systickSuspendedSecure;
++                    systickSuspendedSecure = false;
+                 }
+             }
+         }
+@@ -537,6 +539,8 @@
+             activeIRQs.Clear();
+             systick.NonSecureVal.Reset();
+             systick.SecureVal?.Reset();
++            systickSuspendedNonSecure = false;
++            systickSuspendedSecure = false;
+
+             IRQ.Unset();
+             currentSevOnPending.Reset();
+@@ -953,7 +957,15 @@
+                 .WithTaggedFlag("VECTTBL", 1)
+                 .WithReservedBits(2, 28)
+                 .WithTaggedFlag("FORCED", 30)
+-                .WithTaggedFlag("DEBUGEVT", 31);
++                .WithFlag(31, FieldMode.Read | FieldMode.WriteOneToClear,
++                    valueProviderCallback: _ => (cpu.DebugHardFaultStatus & (1u << 31)) != 0,
++                    writeCallback: (_, value) => { if(value) cpu.ClearDebugHardFaultStatus(1u << 31); }, name: "DEBUGEVT");
++
++            Registers.DebugFaultStatus.Define(RegisterCollection)
++                .WithValueField(0, 5, FieldMode.Read | FieldMode.WriteOneToClear,
++                    valueProviderCallback: _ => cpu.DebugFaultStatus,
++                    writeCallback: (_, value) => cpu.ClearDebugFaultStatus((uint)value), name: "DFSR")
++                .WithReservedBits(5, 27);
+
+             Registers.CacheSizeSelection.Define(RegisterCollection)
+                 .WithTaggedFlag("InD (Instruction or Data Selection)", 0)
+@@ -980,15 +992,23 @@
+                 .WithTaggedFlag("VC_INTERR (Debug trap on interrupt/exception service errors)", 9)
+                 .WithTaggedFlag("VC_HARDERR (Debug trap on Hard Fault)", 10)
+                 .WithReservedBits(11, 5)
+-                .WithTaggedFlag("MON_EN (Monitor Enable)", 16)
+-                .WithTaggedFlag("MON_PEND (Monitor Pend)", 17)
+-                .WithTaggedFlag("MON_STEP (Monitor Step)", 18)
+-                .WithTaggedFlag("MON_REQ (Monitor Request)", 19)
++                .WithFlag(16, name: "MON_EN")
++                .WithFlag(17, name: "MON_PEND")
++                .WithFlag(18, name: "MON_STEP")
++                .WithFlag(19, name: "MON_REQ")
+                 .WithReservedBits(20, 4)
+                 // The trace flag only store written data.
+                 // Changing it doesn't change the behavior of the model.
+                 .WithFlag(24, name: "TRCENA (Trace Enable)")
+-                .WithReservedBits(25, 7);
++                .WithReservedBits(25, 7)
++                .WithWriteCallback((_, value) =>
++                {
++                    cpu.SetDebugMonitorControl((uint)value);
++                    if((value & (3u << 16)) == (3u << 16))
++                    {
++                        SetPendingIRQ((int)SystemException.DebugMonitor);
++                    }
++                });
+
+             Registers.SecureFaultStatus.Define(RegisterCollection)
+                 .WithValueField(0, 8, writeCallback: (_, value) =>
+@@ -1358,9 +1378,11 @@
+         {
+             if(enteredWfi && DeepSleepEnabled && HaltSystickOnDeepSleep)
+             {
++                systickSuspendedNonSecure = systick.NonSecureVal.Enabled;
+                 systick.NonSecureVal.Enabled = false;
+                 if(cpu.TrustZoneEnabled)
+                 {
++                    systickSuspendedSecure = systick.SecureVal.Enabled;
+                     systick.SecureVal.Enabled = false;
+                 }
+                 this.NoisyLog("Entering deep sleep");
+@@ -1770,6 +1792,7 @@
+         // for other exceptions, this will be completely ignored
+         private readonly InterruptTargetSecurityState[] targetInterruptSecurityState;
+
++        private bool systickSuspendedNonSecure, systickSuspendedSecure;
+         private readonly bool defaultHaltSystickOnDeepSleep;
+         private readonly SecurityBanked<SysTick> systick;
+         private readonly byte priorityMask;
+--- a/src/Emulator/Cores/tlib/arch/arm/arch_exports.c
++++ b/src/Emulator/Cores/tlib/arch/arm/arch_exports.c
+@@ -873,3 +873,36 @@
+ EXC_INT_2(uint32_t, tlib_get_pmsav8_mair, uint32_t, index, bool, secure)
+
+ #endif
++
++#ifdef TARGET_PROTO_ARM_M
++void tlib_set_debug_monitor_control(uint32_t value)
++{
++    if((cpu->v7m.debug_monitor_control ^ value) & (1u << 18)) {
++        cpu->v7m.monitor_step_seen = 0;
++        tb_flush(cpu);
++    }
++    cpu->v7m.debug_monitor_control = value;
++}
++EXC_VOID_1(tlib_set_debug_monitor_control, uint32_t, value)
++
++uint32_t tlib_get_debug_fault_status(void) { return cpu->v7m.debug_fault_status; }
++EXC_INT_0(uint32_t, tlib_get_debug_fault_status)
++void tlib_clear_debug_fault_status(uint32_t value) { cpu->v7m.debug_fault_status &= ~value; }
++EXC_VOID_1(tlib_clear_debug_fault_status, uint32_t, value)
++uint32_t tlib_get_debug_hardfault_status(void) { return cpu->v7m.debug_hardfault_status; }
++EXC_INT_0(uint32_t, tlib_get_debug_hardfault_status)
++void tlib_clear_debug_hardfault_status(uint32_t value) { cpu->v7m.debug_hardfault_status &= ~value; }
++EXC_VOID_1(tlib_clear_debug_hardfault_status, uint32_t, value)
++
++void tlib_set_fpb_control(uint32_t value) { cpu->v7m.fpb_control = value; }
++EXC_VOID_1(tlib_set_fpb_control, uint32_t, value)
++void tlib_set_fpb_comparator(uint32_t index, uint32_t value)
++{
++    if(index < 8 && cpu->v7m.fpb_comparator[index] != value) {
++        cpu->v7m.fpb_comparator[index] = value;
++        tb_flush(cpu);
++    }
++}
++EXC_VOID_2(tlib_set_fpb_comparator, uint32_t, index, uint32_t, value)
++
++#endif /* TARGET_PROTO_ARM_M */
+--- a/src/Emulator/Cores/tlib/arch/arm/arch_exports.h
++++ b/src/Emulator/Cores/tlib/arch/arm/arch_exports.h
+@@ -74,3 +74,11 @@
+ uint32_t tlib_get_idau_region_base_address_register(uint32_t index);
+ uint32_t tlib_get_idau_region_limit_address_register(uint32_t index);
+ #endif
++
++void tlib_set_debug_monitor_control(uint32_t value);
++uint32_t tlib_get_debug_fault_status(void);
++void tlib_clear_debug_fault_status(uint32_t value);
++uint32_t tlib_get_debug_hardfault_status(void);
++void tlib_clear_debug_hardfault_status(uint32_t value);
++void tlib_set_fpb_control(uint32_t value);
++void tlib_set_fpb_comparator(uint32_t index, uint32_t value);
+--- a/src/Emulator/Cores/tlib/arch/arm/cpu.h
++++ b/src/Emulator/Cores/tlib/arch/arm/cpu.h
+@@ -53,6 +53,8 @@
+ #define EXCP_STREX          10
+ #define EXCP_NOCP           17 /* NOCP usage fault */
+ #define EXCP_INVSTATE       18 /* INVSTATE usage fault */
++#define EXCP_MON_STEP       20
++#define EXCP_FPB            21
+ #define EXCP_SECURE         19 /* TrustZone Secure fault */
+
+ /* These ones are M-profile only */
+@@ -344,6 +346,12 @@
+         uint32_t secure_fault_status;  /* SFSR */
+         uint32_t secure_fault_address; /* SFAR. It can be shared with MMFAR, but it's more hassle, so let's keep it separate */
+         uint32_t memory_fault_address[M_REG_NUM_BANKS];
++        uint32_t debug_monitor_control;
++        uint32_t debug_fault_status;
++        uint32_t debug_hardfault_status;
++        uint32_t monitor_step_seen;
++        uint32_t fpb_control;
++        uint32_t fpb_comparator[8];
+         uint32_t exception;
+         uint32_t primask[M_REG_NUM_BANKS];
+         uint32_t faultmask[M_REG_NUM_BANKS];
+--- a/src/Emulator/Cores/tlib/arch/arm/helper.c
++++ b/src/Emulator/Cores/tlib/arch/arm/helper.c
+@@ -1284,8 +1284,17 @@
+                 env->regs[0] = tlib_do_semihosting();
+                 return;
+             }
+-            /* Banked DEBUG, but it's not exactly true, see below */
+-            tlib_nvic_set_pending_irq(env->secure ? BANKED_SECURE_EXCP(ARMV7M_EXCP_DEBUG) : ARMV7M_EXCP_DEBUG);
++            /* A BKPT instruction and FPB match report DFSR.BKPT. */
++            /* fall through */
++        case EXCP_FPB:
++        case EXCP_MON_STEP:
++            env->v7m.debug_fault_status |= env->exception_index == EXCP_MON_STEP ? 1u : 2u;
++            if(!(env->v7m.debug_monitor_control & (1u << 16)) || env->v7m.primask[env->secure]) {
++                env->v7m.debug_hardfault_status |= 1u << 31;
++                tlib_nvic_set_pending_irq(ARMV7M_EXCP_HARD);
++            } else {
++                tlib_nvic_set_pending_irq(ARMV7M_EXCP_DEBUG);
++            }
+             return;
+         case EXCP_SECURE:
+             /* Secure Fault address and status bits should be set by respective routines. This only raises the fault to be handled
+--- a/src/Emulator/Cores/tlib/arch/arm/helper.h
++++ b/src/Emulator/Cores/tlib/arch/arm/helper.h
+@@ -11,6 +11,7 @@
+
+ #include "def-helper.h"
+
++DEF_HELPER_1(debug_monitor_check, void, i32)
+ DEF_HELPER_1(clz, i32, i32)
+ DEF_HELPER_1(sxtb16, i32, i32)
+ DEF_HELPER_1(uxtb16, i32, i32)
+--- a/src/Emulator/Cores/tlib/arch/arm/op_helper.c
++++ b/src/Emulator/Cores/tlib/arch/arm/op_helper.c
+@@ -420,3 +420,32 @@
+         return ((uint32_t)x >> shift) | (x << (32 - shift));
+     }
+ }
++
++/* Guest DebugMonitor events are independent of the host debugger. */
++void HELPER(debug_monitor_check)(uint32_t address)
++{
++#ifdef TARGET_PROTO_ARM_M
++    int exception = 0;
++    if(env->v7m.fpb_control & 1) {
++        for(unsigned i = 0; i < 8; i++) {
++            uint32_t comp = env->v7m.fpb_comparator[i];
++            if((comp & 1) && (comp & ~1u) == address) {
++                exception = EXCP_FPB;
++                break;
++            }
++        }
++    }
++    if(!exception && (env->v7m.debug_monitor_control & (1u << 18)) && !env->v7m.exception) {
++        if(env->v7m.monitor_step_seen) {
++            exception = EXCP_MON_STEP;
++        } else {
++            env->v7m.monitor_step_seen = 1;
++        }
++    }
++    if(exception) {
++        env->regs[15] = address;
++        env->exception_index = exception;
++        cpu_loop_exit_without_hook(env);
++    }
++#endif
++}
+--- a/src/Emulator/Cores/tlib/arch/arm/translate.c
++++ b/src/Emulator/Cores/tlib/arch/arm/translate.c
+@@ -13335,6 +13335,19 @@
+     DisasContext *dc = (DisasContext *)base;
+     bool was_in_it_block = dc->thumb && dc->condexec_mask;
+
++#ifdef TARGET_PROTO_ARM_M
++    bool monitor_check = (env->v7m.debug_monitor_control & (1u << 18)) != 0;
++    for(unsigned i = 0; i < 8 && !monitor_check; i++) {
++        uint32_t comp = env->v7m.fpb_comparator[i];
++        monitor_check = (comp & 1) && (comp & ~1u) == base->pc;
++    }
++    if(monitor_check) {
++        gen_set_condexec(dc);
++        TCGv pc = tcg_const_i32(base->pc);
++        gen_helper_debug_monitor_check(pc);
++        tcg_temp_free_i32(pc);
++    }
++#endif
+     base->tb->size += disas_insn(env, (DisasContext *)base);
+
+     if(dc->condjmp && !dc->base.is_jmp) {

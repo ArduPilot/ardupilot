@@ -17,7 +17,7 @@
 class AP_OADijkstra {
 public:
 
-    AP_OADijkstra(AP_Int16 &options);
+    AP_OADijkstra(AP_UInt16 &options);
 
     CLASS_NO_COPY(AP_OADijkstra);  /* Do not allow copies */
 
@@ -221,7 +221,7 @@ private:
     uint8_t _log_visgraph_version;
 
     // reference to AP_OAPathPlanner options param
-    AP_Int16 &_options;
+    AP_UInt16 &_options;
 };
 
 #endif  // AP_OAPATHPLANNER_DIJKSTRA_ENABLED

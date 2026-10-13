@@ -37,7 +37,7 @@ void AP_Mount_Backend::init()
 // set device id of this instance, for MNTx_DEVID parameter
 void AP_Mount_Backend::set_dev_id(uint32_t id)
 {
-    _params.dev_id.set_and_save(int32_t(id));
+    _params.dev_id.set_and_save(id);
 }
 
 // base implementation should be called from derived classes for common functionality
@@ -372,8 +372,12 @@ void AP_Mount_Backend::clear_roi_target()
     // clear the target GPS location
     _roi_target.zero();
 
-    // reset the mode if in GPS tracking mode
-    if (get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+    // reset the mode if in GPS or next waypoint tracking mode
+    bool mode_has_roi = (get_mode() == MAV_MOUNT_MODE_GPS_POINT);
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    mode_has_roi |= (get_mode() == MAV_MOUNT_MODE_WPNEXT_OFFSET);
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    if (mode_has_roi) {
         MAV_MOUNT_MODE default_mode = (MAV_MOUNT_MODE)_params.default_mode.get();
         set_mode(default_mode);
     }
@@ -395,7 +399,7 @@ void AP_Mount_Backend::set_roi_target_wpnext_offset(const Vector3f &rpy)
 #endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
 // set_sys_target - sets system that mount should attempt to point towards
-void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
+void AP_Mount_Backend::set_target_sysid(uint32_t sysid)
 {
     if (sysid != _target_sysid) {
         // forget the previous target's location so it isn't briefly
@@ -544,7 +548,7 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
                                            AP_HAL::millis(),    // autopilot system time
                                            flags,               // bitmap of gimbal manager flags
                                            get_mavlink_device_id(), // gimbal device id
-                                           mavlink_control_id.sysid,    // primary control system id
+                                           mavlink_control_id.sysid > 255 ? 0 : mavlink_control_id.sysid,    // primary control system id (8 bit only in this message)
                                            mavlink_control_id.compid,   // primary control component id
                                            0,                           // secondary control system id
                                            0);                          // secondary control component id
@@ -615,16 +619,18 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
 MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     // sanity check param1 and param2 values
-    if ((packet.param1 < -3) || (packet.param1 > UINT8_MAX) || (packet.param2 < -3) || (packet.param2 > UINT8_MAX)) {
+    // UINT32_MAX rounds up to 2^32 as a float, so the upper bound is exclusive.
+    if ((packet.param1 < -3) || (packet.param1 >= float(UINT32_MAX)) ||
+        (packet.param2 < -3) || (packet.param2 > UINT8_MAX)) {
         return MAV_RESULT_FAILED;
     }
 
     // backup the current values so we can detect a change
     mavlink_control_id_t prev_control_id = mavlink_control_id;
 
-    // convert negative packet1 and packet2 values
-    int16_t new_sysid = packet.param1;
-    switch (new_sysid) {
+    // Decode negative sentinels without narrowing positive system IDs to int32.
+    const int8_t special_sysid = packet.param1 < 0 ? int8_t(packet.param1) : 0;
+    switch (special_sysid) {
         case -1:
             // leave unchanged
             break;
@@ -641,8 +647,9 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
             }
             break;
         default:
-            mavlink_control_id.sysid = packet.param1;
-            mavlink_control_id.compid = packet.param2;
+            mavlink_control_id.sysid = uint32_t(packet.param1);
+            // Preserve legacy component conversion through a signed integer.
+            mavlink_control_id.compid = int16_t(packet.param2);
             break;
     }
 
@@ -655,7 +662,7 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
 }
 
 // handle a GLOBAL_POSITION_INT message
-bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet)
+bool AP_Mount_Backend::handle_global_position_int(uint32_t msg_sysid, const mavlink_global_position_int_t &packet)
 {
     if (_target_sysid != msg_sysid) {
         return false;

@@ -391,6 +391,7 @@ nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
 
 // CYCCNT for ChibiOS polled delays
 dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
+    cpu: cpu
     frequency: 480000000
 
 crc: CRC.STM32_CRC @ sysbus 0x58024C00

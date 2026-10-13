@@ -33,6 +33,7 @@ import time
 import traceback
 import zlib
 
+from contextlib import contextmanager
 from datetime import datetime
 from inspect import currentframe
 from inspect import getframeinfo
@@ -2696,7 +2697,7 @@ class TestSuite(abc.ABC):
             if time.time() - tstart > timeout:
                 raise NotAchievedException("Failed to set streamrate")
             self.mav.mav.request_data_stream_send(
-                1,
+                self.sysid_thismav(),
                 1,
                 stream,
                 streamrate,
@@ -3863,7 +3864,8 @@ class TestSuite(abc.ABC):
             tstart = time.time()
         else:
             tstart = self.get_sim_time()
-        self.mav.mav.timesync_send(0, self.timesync_number * 1000 + self.mav.source_system)
+        timesync_cookie = (self.timesync_number << 32) | self.mav.source_system
+        self.mav.mav.timesync_send(0, timesync_cookie)
         while True:
             if timeout_in_wallclock:
                 now = time.time()
@@ -3876,15 +3878,11 @@ class TestSuite(abc.ABC):
                 self.progress("Received: %s" % str(m))
             if m is None:
                 continue
-            if m.ts1 % 1000 != self.mav.source_system:
-                self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
-                continue
             if m.tc1 == 0:
-                # this should also not happen:
                 self.progress("this is a timesync request, which we don't answer")
                 continue
-            if int(m.ts1 / 1000) != self.timesync_number:
-                self.progress("this isn't the one we just sent")
+            if m.ts1 != timesync_cookie:
+                self.progress("this isn't the timesync request we just sent")
                 continue
             if m.get_srcSystem() != self.mav.target_system:
                 self.progress("response from system other than our target (want=%u got=%u" %
@@ -5427,11 +5425,11 @@ class TestSuite(abc.ABC):
             install_name = modulename
         self.context_get().installed_modules.append(os.path.basename(install_name))
 
-    def install_mavlink_module_context(self):
+    def install_mavlink_module_context(self, modulename="mavlink"):
         '''installs mavlink module which will be removed when the context goes
         away'''
-        self.install_mavlink_module()
-        self.context_get().installed_modules.append("mavlink")
+        self.install_mavlink_module(modulename)
+        self.context_get().installed_modules.append(modulename)
 
     def install_applet_script_context(self, scriptname, install_name=None):
         '''installs an applet script which will be removed when the context goes
@@ -7386,6 +7384,24 @@ class TestSuite(abc.ABC):
         def __exit__(self, type, value, traceback):
             self.testsuite.context_pop()
             return False # re-raise any exception
+
+    @contextmanager
+    def mavlink_target_system_context(self):
+        """Use the connection's current target as sysid_thismav within this scope.
+
+        Tests remain responsible for changing/restoring vehicle parameters and
+        connection IDs. Preserve any enclosing override, including on failure.
+        """
+        had_override = 'sysid_thismav' in self.__dict__
+        previous = self.__dict__.get('sysid_thismav')
+        self.sysid_thismav = lambda: self.mav.target_system
+        try:
+            yield
+        finally:
+            if had_override:
+                self.sysid_thismav = previous
+            else:
+                del self.sysid_thismav
 
     def sysid_thismav(self):
         return 1
@@ -9730,8 +9746,8 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Copying (%s) to (%s)" % (source, dest))
         shutil.copytree(source, dest)
 
-    def install_mavlink_module(self):
-        dest = os.path.join("scripts", "modules", "mavlink")
+    def install_mavlink_module(self, modulename="mavlink"):
+        dest = os.path.join("scripts", "modules", modulename)
         ardupilotmega_xml = os.path.join(self.rootdir(), "modules", "mavlink",
                                          "message_definitions", "v1.0", "ardupilotmega.xml")
         mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua', validate=False), [ardupilotmega_xml])
@@ -18514,6 +18530,125 @@ switch value'''
                 finally:
                     if self.sitl_is_running():
                         self.ftp_reset_sessions()
+
+    def MAVFTPParamUploadBounds(self) -> None:
+        '''reject truncated parameter records and unsupported upload types'''
+
+        def record(ptype: int, suffix: bytes, value: bytes, common_len: int = 0) -> bytes:
+            return bytes([ptype, ((len(suffix) - 1) << 4) | common_len]) + suffix + value
+
+        seq = self.ftp_reset_sessions()
+
+        def upload(label: str, records: bytes, num_params: int, valid: bool) -> None:
+            nonlocal seq
+            self.start_subtest(label)
+            # Upload headers store the file length, not the available parameter count.
+            data = struct.pack('<HHH', 0x671b, num_params, 6 + len(records)) + records
+            reply = self.ftp_op(seq, mavftp_op.OP_CreateFile, self.ftp_path_bytes('@PARAM/param.pck'))
+            self.assert_ftp_ack(reply, 'CreateFile')
+            for offset in range(0, len(data), FTP_MAX_PAYLOAD):
+                reply = self.ftp_op(reply.seq, mavftp_op.OP_WriteFile,
+                                    data[offset:offset + FTP_MAX_PAYLOAD], offset=offset)
+                self.assert_ftp_ack(reply, 'WriteFile')
+            # Parsing happens on close, so accepting WriteFile is not sufficient.
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession)
+            seq = reply.seq
+            if valid:
+                self.assert_ftp_ack(reply, label)
+            else:
+                self.assert_ftp_nack(reply, FtpError.FailErrno, label)
+                if len(reply.payload) != 2 or reply.payload[1] != errno.EINVAL:
+                    raise NotAchievedException(f'{label}: expected EINVAL, got {reply.payload}')
+
+        # AP_PARAM_INT8, INT16, INT32 and FLOAT respectively.
+        cases = [
+            (1, 'RC7_REVERSED', '<b', 0, 1),
+            (2, 'RC7_MIN', '<h', 1100, 1200),
+            (3, 'SERIAL5_BAUD', '<i', 57, 115),
+            (4, 'AHRS_RP_P', '<f', 0.125, 0.25),
+        ]
+        self.context_push()
+        try:
+            self.context_preserve_parameters([case[1] for case in cases] + ['RC7_MAX'])
+            self.set_parameters({case[1]: case[3] for case in cases})
+
+            for ptype, name, fmt, initial, value in cases:
+                complete = record(ptype, name.encode('ascii'), struct.pack(fmt, value))
+                # Every shorter prefix: missing/partial record header, name or value.
+                # The file header still matches the actual uploaded length.
+                for length in range(len(complete)):
+                    upload(f'{name}: truncated at {length}/{len(complete)} bytes',
+                           complete[:length], 1, valid=False)
+                    self.assert_parameter_value(name, initial)
+
+                upload(f'{name}: exact fit after rejected uploads', complete, 1, valid=True)
+                self.assert_parameter_value(name, value)
+
+            # Unknown names are skipped, but their records must still fit.
+            for ptype, _, fmt, _, value in cases:
+                complete = record(ptype, b'NO_SUCH_PARAM', struct.pack(fmt, value))
+                upload(f'unknown parameter: truncated type {ptype}', complete[:-1], 1, valid=False)
+
+            for ptype in [0] + list(range(5, 16)):
+                for name in (b'RC7_MIN', b'NO_SUCH_PARAM'):
+                    # A Vector3f-sized value, so type 5 is rejected for its
+                    # type and not for being truncated.
+                    bad = record(ptype, name, bytes(12))
+                    upload(f'unsupported type {ptype}: {name.decode()}', bad, 1, valid=False)
+            self.assert_parameter_value('RC7_MIN', 1200)
+
+            bad_prefix = record(2, b'RC7_MIN', struct.pack('<h', 1300), common_len=1)
+            upload('first record cannot reuse a previous name', bad_prefix, 1, valid=False)
+            self.assert_parameter_value('RC7_MIN', 1200)
+
+            previous = record(2, b'RC7_MIN', struct.pack('<h', 1200))
+            bad_prefix = record(2, b'X', struct.pack('<h', 1300), common_len=8)
+            upload('prefix longer than previous name', previous + bad_prefix, 2, valid=False)
+            self.assert_parameter_value('RC7_MIN', 1200)
+
+            longest_name = record(2, b'NO_SUCH_PARAM_AB', struct.pack('<h', 123))
+            complete = record(2, b'RC7_MIN', struct.pack('<h', 1250))
+            upload('maximum length name', longest_name + complete, 2, valid=True)
+            self.assert_parameter_value('RC7_MIN', 1250)
+            self.set_parameter('RC7_MIN', 1200)
+            too_long = record(2, b'DE', struct.pack('<h', 123), common_len=15)
+            upload('compressed name exceeds maximum length', longest_name + too_long, 2, valid=False)
+
+            prefix = record(2, b'NO_SUCH_PARAM', struct.pack('<h', 123))
+            complete = record(2, b'RC7_MIN', struct.pack('<h', 1250))
+            for length in (0, 1, 2, len(complete) - 1):
+                upload(f'second record: truncated at {length}/{len(complete)} bytes',
+                       prefix + complete[:length], 2, valid=False)
+                self.assert_parameter_value('RC7_MIN', 1200)
+
+            # Each supported skipped value must leave the following record aligned.
+            for ptype, _, fmt, _, value in cases:
+                self.set_parameter('RC7_MIN', 1200)
+                skipped = record(ptype, b'NO_SUCH_PARAM', struct.pack(fmt, value))
+                upload(f'skip unknown type {ptype}, then apply a known parameter',
+                       skipped + complete, 2, valid=True)
+                self.assert_parameter_value('RC7_MIN', 1250)
+
+            # Reuse RC7_ from the previous name; only MAX is stored in the next record.
+            compressed = record(2, b'RC7_MIN', struct.pack('<h', 1150))
+            compressed += record(2, b'MAX', struct.pack('<h', 1850), common_len=4)
+            upload('valid compressed names', compressed, 2, valid=True)
+            self.assert_parameter_values({'RC7_MIN': 1150, 'RC7_MAX': 1850})
+
+            compressed = record(2, b'RC7_', struct.pack('<h', 0))
+            compressed += record(2, b'MIN', struct.pack('<h', 1190), common_len=4)
+            upload('reuse the entire previous name', compressed, 2, valid=True)
+            self.assert_parameter_value('RC7_MIN', 1190)
+
+            converted = record(4, b'RC7_MIN', struct.pack('<f', 1175.0))
+            upload('valid value type conversion', converted, 1, valid=True)
+            self.assert_parameter_value('RC7_MIN', 1175)
+            upload('empty parameter list', b'', 0, valid=True)
+        finally:
+            try:
+                self.ftp_reset_sessions()
+            finally:
+                self.context_pop()
 
     def MAVFTPBadReadOffset(self):
         '''ask for a very large offset'''

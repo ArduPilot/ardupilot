@@ -565,8 +565,8 @@ public:
 
     AP_Int8 osd_type;
     AP_Int8 osd_type2; // additional backend active in parallel
-    AP_Int8 font_num;
-    AP_Int32 options;
+    AP_UInt8 font_num;
+    AP_UInt32 options;
 
 #if OSD_ENABLED
     AP_Int8 rc_channel;

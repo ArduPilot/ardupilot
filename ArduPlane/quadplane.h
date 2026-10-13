@@ -321,7 +321,7 @@ private:
             QLAND,
             QRTL
         };
-        AP_Int16 timeout;
+        AP_UInt16 timeout;
         AP_Enum<ACTION> action;
         bool warned;
     } transition_failure;
@@ -434,8 +434,6 @@ private:
 
     float q_fwd_throttle; // forward throttle used in q modes
     float q_fwd_pitch_lim_cd; // forward pitch limit applied when using q_fwd_throttle
-    float q_bck_pitch_lim_cd; // backward pitch limit applied when using Q_BCK_PIT_LIM
-    uint32_t q_pitch_limit_update_ms; // last time the backward pitch limit was updated
 
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
@@ -581,7 +579,7 @@ private:
     void set_alt_target_current(void);
 
     // additional options
-    AP_Int32 options;
+    AP_UInt32 options;
     enum class Option {
         LEVEL_TRANSITION=(1<<0),
         ALLOW_FW_TAKEOFF=(1<<1),
@@ -752,7 +750,7 @@ private:
         uint16_t counter;
 
         // Options parameter and helper
-        AP_Int32 options;
+        AP_UInt32 options;
         enum class Option {
             DISABLED = (1<<0),
             VTOL_ONLY = (1<<1),

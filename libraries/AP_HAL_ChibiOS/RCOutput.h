@@ -792,7 +792,7 @@ private:
 };
 
 #if RCOU_DSHOT_TIMING_DEBUG
-#define TOGGLE_PIN_DEBUG(pin) do { palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
+#define TOGGLE_PIN_DEBUG(pin) do { stm32_toggle_line(HAL_GPIO_LINE_GPIO ## pin); } while (0)
 #else
 #define TOGGLE_PIN_DEBUG(pin) do {} while (0)
 #endif

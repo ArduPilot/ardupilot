@@ -1,6 +1,6 @@
 ArduPilot Sub Release Notes:
 ------------------------------------------------------------------
-Release 4.7.2-beta1 29-Sep-2026
+Release 4.7.2 11-October-2026 / 4.7.2-beta1 29-Sep-2026
 
 Changes from 4.7.1
 

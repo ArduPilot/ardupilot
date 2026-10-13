@@ -625,7 +625,7 @@ def renode_cpu_threads(root_pid):
     return threads
 
 
-def stop_renode_process(process):
+def stop_renode_process(process, timeout=5):
     if process.poll() is not None:
         return
     if os.name == 'posix':
@@ -633,7 +633,7 @@ def stop_renode_process(process):
     else:
         process.terminate()
     try:
-        process.wait(timeout=5)
+        process.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
         if os.name == 'posix':
             os.killpg(process.pid, signal.SIGKILL)
@@ -644,10 +644,26 @@ def stop_renode_process(process):
 
 def run_renode(cmd, env, cpusel):
     '''Run Renode, optionally pinning only its emulated CPU thread.'''
-    process = subprocess.Popen(
-        cmd, env=env, start_new_session=(os.name == 'posix'))
+    process = None
+    # a signal while Popen runs is deferred so the child is always reaped
+    launching = True
+    pending = []
+    if os.name == 'posix':
+        # Renode runs in its own session, so stop it if we are terminated
+        def terminate(signum, frame):
+            if launching:
+                pending.append(signum)
+                return
+            raise SystemExit(128 + signum)
+        signal.signal(signal.SIGTERM, terminate)
+        signal.signal(signal.SIGHUP, terminate)
     pinned = set()
     try:
+        process = subprocess.Popen(
+            cmd, env=env, start_new_session=(os.name == 'posix'))
+        launching = False
+        if pending:
+            raise SystemExit(128 + pending[0])
         if cpusel is None:
             return process.wait()
         while process.poll() is None:
@@ -663,8 +679,11 @@ def run_renode(cmd, env, cpusel):
                       (thread_id, cpusel))
             time.sleep(0.05 if not pinned else 0.5)
         return process.returncode
-    except BaseException:
-        stop_renode_process(process)
+    except BaseException as error:
+        if process is not None:
+            # our parent typically SIGKILLs us 5s after SIGTERM, so be quicker
+            stop_renode_process(
+                process, timeout=1 if isinstance(error, SystemExit) else 5)
         raise
 
 

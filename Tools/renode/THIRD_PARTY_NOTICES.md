@@ -9,11 +9,20 @@ The following files are adapted from Renode or its predecessor, Emul8:
 - `platforms/stm32f746_ap_base.repl`
 - `platforms/stm32h743_base.repl`
 - `patches/usbip-device-state.patch`
+- `patches/usbip-unlink.patch`
 
 Copyright (c) Antmicro <www.antmicro.com>. These files are distributed under
 the [MIT licence](https://github.com/antmicro/renode/blob/v1.16.1/LICENSE).
 The platform sources came from Renode 1.16.1 and
 [ArduPilot's Renode fork](https://github.com/ArduPilot/renode/tree/2a060779f4e2b87d1ae7238a041d858369818805).
+
+## Cortex-M debugger patch
+
+`patches/cortex-m-debug-monitor.patch` modifies Renode Infrastructure and its
+QEMU-derived tlib ARM core. The managed Infrastructure portions retain the MIT
+licence above; the tlib portions retain their upstream LGPL-2.0-or-later terms
+and upstream copyright notices (including CodeSourcery and Antmicro).
+See the licences and file headers in the corresponding Renode/tlib checkout.
 
 ## pyfatfs
 

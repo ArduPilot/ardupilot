@@ -1024,7 +1024,7 @@ public:
     AP_Int16 final_wp_alt;
     AP_Int16 final_wp_dist;
     AP_Int16 landing_dir_off;
-    AP_Int8  options;
+    AP_UInt8 options;
     AP_Int16 terrain_alt_min;
 
     // Bitfields of AUTOLAND_OPTIONS

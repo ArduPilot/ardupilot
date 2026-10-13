@@ -310,6 +310,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_TEMPCALIBRATION_ENABLED')
             feature_define_whitelist.add('AC_PAYLOAD_PLACE_ENABLED')
             feature_define_whitelist.add('AP_AVOIDANCE_ENABLED')
+            feature_define_whitelist.add('AP_GROUNDEFFECT_ENABLED')
             feature_define_whitelist.add('AP_WINCH_ENABLED')
             feature_define_whitelist.add('AP_WINCH_DAIWA_ENABLED')
             feature_define_whitelist.add('AP_WINCH_PWM_ENABLED')

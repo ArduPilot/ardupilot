@@ -214,8 +214,8 @@ public:
         INCLUSION_UNION = 1U << 1,
         NOTIFY_MARGIN_BREACH = 1U << 2,
     };
-    static bool option_enabled(OPTIONS opt, const AP_Int16 &options) {
-        return (options.get() & int16_t(opt)) != 0;
+    static bool option_enabled(OPTIONS opt, const AP_UInt16 &options) {
+        return (options & uint16_t(opt)) != 0;
     }
     bool option_enabled(OPTIONS opt) const {
         return option_enabled(opt, _options);
@@ -287,7 +287,7 @@ private:
     AP_Int8         _enabled;           // overall feature control
     AP_Int8         _auto_enabled;      // top level flag for auto enabling fence
     uint8_t         _last_auto_enabled; // value of auto_enabled last time we checked
-    AP_Int8         _configured_fences; // bit mask holding which fences are enabled
+    AP_UInt8        _configured_fences; // bit mask holding which fences are enabled
     AP_Enum<Action> _action;            // recovery action specified by user
     AP_Float        _alt_max_m;         // altitude upper limit in meters
     AP_Float        _alt_min_m;         // altitude lower limit in meters
@@ -297,7 +297,7 @@ private:
     AP_Int8         _total;             // number of polygon points saved in eeprom
     AP_Int8         _ret_rally;         // return to fence return point or rally point/home
     AP_Int16        _ret_altitude;      // return to this altitude
-    AP_Int16        _options;           // options bitmask, see OPTIONS enum
+    AP_UInt16       _options;           // options bitmask, see OPTIONS enum
     AP_Float        _notify_freq;       // margin notification frequency
     AP_Enum<Location::AltFrame> _alt_max_type;  // altitude max frame type
     AP_Enum<Location::AltFrame> _alt_min_type;  // altitude min frame type

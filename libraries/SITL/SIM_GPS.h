@@ -29,6 +29,7 @@ param set SERIAL5_PROTOCOL 5
 
 #include <sys/time.h>
 #include "SIM_SerialDevice.h"
+#include <AP_Math/AP_Math.h>
 
 namespace SITL {
 
@@ -164,6 +165,10 @@ private:
         double latitude;
         double longitude;
     } jamming[2];
+
+    // position offset accumulated from the velocity glitch (NED, metres)
+    Vector3f vel_glitch_pos_ofs;
+    uint32_t last_vel_glitch_ms;
 
     bool _gps_has_basestation_position;
     GPS_Data _gps_basestation_data;

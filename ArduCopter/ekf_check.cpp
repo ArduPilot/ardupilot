@@ -116,7 +116,7 @@ bool Copter::ekf_over_threshold()
     // use EKF to get variance
     float position_var, vel_var, height_var, tas_variance;
     Vector3f mag_variance;
-    variances_valid = ahrs.get_variances(vel_var, position_var, height_var, mag_variance, tas_variance);
+    variances_valid = ahrs.get_variances_for_configured_backend(vel_var, position_var, height_var, mag_variance, tas_variance);
 
     if (!variances_valid) {
         return false;

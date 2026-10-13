@@ -211,7 +211,7 @@ public:
 
     // get proximity address (for AP_Periph CAN)
     uint8_t get_address(uint8_t id) const {
-        return id >= AP_PROXIMITY_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
+        return id >= AP_PROXIMITY_MAX_INSTANCES? 0 : params[id].address.get();
     }
 
 protected:

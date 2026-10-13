@@ -24,15 +24,6 @@ enum AutoSubMode {
     Auto_TerrainRecover
 };
 
-// RTL states
-enum RTLState {
-    RTL_InitialClimb,
-    RTL_ReturnHome,
-    RTL_LoiterAtHome,
-    RTL_FinalDescent,
-    RTL_Land
-};
-
 class Mode
 {
 
@@ -84,14 +75,6 @@ protected:
 
     // navigation support functions
     virtual void run_autopilot() {}
-
-    // helper functions
-    bool is_disarmed_or_landed() const;
-
-    // functions to control landing
-    // in modes that support landing
-    void land_run_horizontal_control();
-    void land_run_vertical_control(bool pause_descent = false);
 
     // convenience references to avoid code churn in conversion:
     Parameters &g;
@@ -294,7 +277,6 @@ private:
     void guided_vel_control_run();
     void guided_posvelaccel_control_run();
     void guided_angle_control_run();
-    void guided_takeoff_run();
     void guided_pos_control_start();
     void guided_vel_control_start();
     void guided_posvelaccel_control_start();

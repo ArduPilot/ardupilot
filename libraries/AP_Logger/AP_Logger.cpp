@@ -219,7 +219,7 @@ AP_Logger::AP_Logger()
     _singleton = this;
 }
 
-void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
+void AP_Logger::init(const AP_UInt32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
 {
     _log_bitmask = &log_bitmask;
 
@@ -662,7 +662,7 @@ bool AP_Logger::should_log(const uint32_t mask) const
  */
 bool AP_Logger::in_log_download() const
 {
-    if (uint8_t(_params.backend_types) & uint8_t(Backend_Type::BLOCK)) {
+    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         // when we have a BLOCK backend then listing completely prevents logging
         return transfer_activity != TransferActivity::IDLE;
     }
@@ -857,9 +857,9 @@ uint16_t AP_Logger::get_num_logs(void) {
 uint16_t AP_Logger::get_max_num_logs() {
     const auto max_logs = constrain_uint16(_params.max_log_files.get(), MIN_LOG_FILES, MAX_LOG_FILES);
     if (_params.max_log_files.get() != max_logs) {
-        _params.max_log_files.set_and_save_ifchanged(static_cast<int16_t>(max_logs));
+        _params.max_log_files.set_and_save_ifchanged(max_logs);
     }
-    return static_cast<uint16_t>(_params.max_log_files.get());
+    return _params.max_log_files;
 }
 
 /* we're started if any of the backends are started */
@@ -914,7 +914,7 @@ void AP_Logger::Write_Message(const char *message)
 {
     FOR_EACH_BACKEND(Write_Message(message));
 }
-void AP_Logger::Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq)
+void AP_Logger::Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq)
 {
     FOR_EACH_BACKEND(Write_MessageChunk(id, messagechunk, chunk_seq));
 }

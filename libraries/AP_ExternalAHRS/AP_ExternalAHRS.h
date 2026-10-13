@@ -186,7 +186,7 @@ public:
 
     // check if a sensor type is enabled
     bool has_sensor(AvailableSensor sensor) const {
-        return (uint16_t(sensors.get()) & uint16_t(sensor)) != 0;
+        return (sensors & uint16_t(sensor)) != 0;
     }
 
 protected:
@@ -204,8 +204,8 @@ private:
     AP_Enum<DevType> devtype;
     AP_Int16         rate;
     AP_Int16         log_rate;
-    AP_Int16         options;
-    AP_Int16         sensors;
+    AP_UInt16        options;
+    AP_UInt16        sensors;
 
     static AP_ExternalAHRS *_singleton;
 

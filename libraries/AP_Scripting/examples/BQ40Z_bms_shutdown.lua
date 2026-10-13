@@ -72,19 +72,24 @@ local function update()
         ack.result = MAV_RESULT_ACCEPTED
         ack.progress = 0
         ack.result_param2 = 0
-        ack.target_system = parsed_msg.sysid
+        ack.target_system = 0 -- send_chan supplies the full target below
         ack.target_component = parsed_msg.compid
+
+        local function send_ack()
+            local msgid, payload = mavlink_msgs.encode("COMMAND_ACK", ack)
+            mavlink:send_chan(chan, msgid, payload, parsed_msg.sysid)
+        end
 
         -- Don't shutdown if armed
         if arming:is_armed() and parsed_msg.param1 == 2 then
             gcs:send_text(1, "Not sutting down BQ40Z as vehicle is armed")
             ack.result = MAV_RESULT_FAILED
-            mavlink:send_chan(chan, mavlink_msgs.encode("COMMAND_ACK", ack))
+            send_ack()
 
         -- Shutdown
         elseif parsed_msg.param1 == 2 then
             gcs:send_text(1, "Shutting down BQ40Z!!!")
-            mavlink:send_chan(chan, mavlink_msgs.encode("COMMAND_ACK", ack))
+            send_ack()
             return shutdown_loop, 0
 
         -- Pass through the command if it isn't requesting shutdown
@@ -97,7 +102,7 @@ local function update()
             }
             local result = gcs:run_command_int(MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, command_int)
             ack.result = result
-            mavlink:send_chan(chan, mavlink_msgs.encode("COMMAND_ACK", ack))
+            send_ack()
         end
     end
 

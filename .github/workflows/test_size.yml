@@ -20,7 +20,6 @@ on:
       - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
-      - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
       # Remove generic tools
@@ -71,7 +70,6 @@ on:
       - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
-      - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
       # Remove generic tools

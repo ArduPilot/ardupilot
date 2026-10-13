@@ -199,6 +199,7 @@ void AP_DAL::log_event2(AP_DAL::Event event)
 void AP_DAL::log_SetOriginLLH2(const Location &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    end_frame();
     struct log_RSO2 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
@@ -233,6 +234,7 @@ void AP_DAL::log_event3(AP_DAL::Event event)
 void AP_DAL::log_SetOriginLLH3(const Location &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    end_frame();
     struct log_RSO3 pkt{
         lat            : loc.lat,
         lng            : loc.lng,

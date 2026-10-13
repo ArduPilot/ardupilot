@@ -8,12 +8,15 @@ import argparse
 import contextlib
 import math
 import os
+import socket
+import struct
 import subprocess
 import sys
 import time
 
 from pathlib import Path
 
+from pyfatfs.PyFatFS import PyFatFS
 from pymavlink import DFReader
 from pymavlink import mavutil
 
@@ -27,6 +30,9 @@ CANBERRA = (-35.363261, 149.165230, 584.0, 353.0)
 PHYSICS_RATE_HZ = 400
 F405_PHYSICS_RATE_HZ = 125
 FIRMWARE_SUFFIXES = ('.apj', '.bin', '.elf', '.hex')
+CAN_MCAST_MAGIC = 0x2934
+CAN_MCAST_GROUP = '239.65.82.0'
+CAN_MCAST_PORT = 57732
 
 
 def is_elf(path):
@@ -945,6 +951,63 @@ def check_sensor_ids(connection, renode, renode_log, deadline, expected):
     print('sensor IDs match real hardware', flush=True)
 
 
+def crc16_ccitt(data):
+    crc = 0xFFFF
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF
+            else:
+                crc = (crc << 1) & 0xFFFF
+    return crc
+
+
+def scripting_can_packet(identifier=0x123, data=b'\x5a'):
+    body = struct.pack('<HI', 0, identifier) + data
+    return struct.pack('<HH', CAN_MCAST_MAGIC, crc16_ccitt(body)) + body
+
+
+def install_scripting_can_test(root, state_dir):
+    image = fat_image.create_image(
+        state_dir / 'sdcard.img', 512 * 1024 * 1024,
+        sectors_per_cluster=fat_image.FAT32_SECTORS_PER_CLUSTER)
+    script = root / 'Tools' / 'renode' / 'tests' / 'scripting_can_stack.lua'
+    with PyFatFS(str(image)) as filesystem:
+        filesystem.makedirs('/APM/scripts')
+        filesystem.writebytes('/APM/scripts/scripting_can_stack.lua', script.read_bytes())
+
+
+def run_scripting_can_stack_test(connection, renode, renode_log, physics,
+                                 physics_log, deadline):
+    transmitter = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
+                                socket.IPPROTO_UDP)
+    transmitter.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
+    injected = False
+    test_deadline = min(deadline, time.monotonic() + 45)
+    try:
+        while time.monotonic() < test_deadline:
+            message = recv_any(
+                connection, renode, renode_log, physics, physics_log,
+                test_deadline)
+            if message.get_type() != 'STATUSTEXT':
+                continue
+            print('vehicle: %s' % message.text, flush=True)
+            if message.text == 'CAN stack test ready 256' and not injected:
+                transmitter.sendto(
+                    scripting_can_packet(), (CAN_MCAST_GROUP, CAN_MCAST_PORT))
+                injected = True
+                print('injected scripting CAN stack test frame', flush=True)
+            elif message.text == 'CAN stack test passed 256':
+                print('scripting CAN stack test passed', flush=True)
+                return
+        if not injected:
+            raise RuntimeError('scripting CAN stack test did not become ready')
+        raise RuntimeError('scripting CAN stack test did not receive the frame')
+    finally:
+        transmitter.close()
+
+
 def run_quadplane(args, root, output_dir):
     if not args.skip_build:
         build_physics(root)
@@ -959,6 +1022,7 @@ def run_quadplane(args, root, output_dir):
 
     state_dir = output_dir / 'state'
     state_dir.mkdir()
+    install_scripting_can_test(root, state_dir)
     physics_log = output_dir / 'physics.log'
     renode_log = output_dir / 'renode.log'
     telemetry_log = output_dir / 'flight.tlog'
@@ -992,6 +1056,7 @@ def run_quadplane(args, root, output_dir):
             '--state-dir', str(state_dir),
             '--uart-port', str(uart_port),
             '--port', str(monitor_port),
+            '--can',
             '--imu', 'icm42688_ext',
             '--imu', 'icm20948_ext',
             '--imu', 'icm20649',
@@ -1036,6 +1101,8 @@ def run_quadplane(args, root, output_dir):
             2,
             1,
         )
+        run_scripting_can_stack_test(
+            connection, renode, renode_log, physics, physics_log, deadline)
         home = wait_ready(
             connection, renode, renode_log, physics, physics_log, deadline)
         home_lat = home.lat * 1.0e-7

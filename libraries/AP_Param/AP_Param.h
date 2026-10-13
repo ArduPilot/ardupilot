@@ -875,6 +875,7 @@ private:
         bool force_save;
     };
     static ObjectBuffer_TS<struct param_save> save_queue;
+    static HAL_Semaphore save_sem;
     static bool registered_save_handler;
 
     // background function for saving parameters
@@ -1108,6 +1109,16 @@ AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float, requires spec
 AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
+
+// unsigned types share the storage type of the signed type of the same size
+AP_PARAMDEF(uint8_t, UInt8, AP_PARAM_INT8);    // defines AP_UInt8
+AP_PARAMDEF(uint16_t, UInt16, AP_PARAM_INT16); // defines AP_UInt16
+AP_PARAMDEF(uint32_t, UInt32, AP_PARAM_INT32); // defines AP_UInt32
+
+// generic code accesses unsigned params via the signed type of the same size
+static_assert(sizeof(AP_UInt8) == sizeof(AP_Int8), "AP_UInt8 size");
+static_assert(sizeof(AP_UInt16) == sizeof(AP_Int16), "AP_UInt16 size");
+static_assert(sizeof(AP_UInt32) == sizeof(AP_Int32), "AP_UInt32 size");
 
 // declare a non-scalar type
 // this is used in AP_Math.h

@@ -14,6 +14,7 @@ import pathlib
 import re
 import shutil
 import socket
+import subprocess
 import tempfile
 import time
 import tty
@@ -1138,6 +1139,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(1, 1500)
         self.do_RTL()
 
+    def CirclePilotRadiusZero(self):
+        '''Circle pitch stick can reduce the radius to zero'''
+        # holding pitch-up shrinks the radius at WP_SPD.  Once the radius
+        # target reached zero it used to snap back to CIRCLE_RADIUS_M, so the
+        # vehicle could never be brought in to rotate in place.
+        self.set_parameters({
+            "CIRCLE_RADIUS_M": 10,
+            "CIRCLE_RATE": 20,
+            "WP_SPD": 2,
+        })
+        self.takeoff(10, mode='LOITER')
+        self.hover()  # circle mode uses throttle input
+        self.change_mode('CIRCLE')
+        # orbit speed is limited to WP_SPD:
+        self.wait_groundspeed(1.5, 2.5, minimum_duration=5, timeout=30)
+        # hold pitch-up well past the time needed to reach zero radius:
+        self.set_rc(2, 1100)
+        self.delay_sim_time(10, reason="radius shrinking to zero")
+        self.wait_groundspeed(0, 0.3, minimum_duration=5, timeout=30)
+        # the radius must stay at zero once the stick is released:
+        self.set_rc(2, 1500)
+        self.wait_groundspeed(0, 0.3, minimum_duration=10, timeout=30)
+        # pitch-down grows the radius again from zero:
+        self.set_rc(2, 1900)
+        self.wait_groundspeed(1, 10, timeout=30)
+        self.set_rc(2, 1500)
+        self.do_RTL()
+
     # test copter-circle-speed lua script:
     def LuaCopterCircleSpeed(self):
         '''test the consistent-ground-speed-circling works'''
@@ -2038,6 +2067,47 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_altitude(-5, 2, timeout=50, relative=True)
 
         # force disarm of vehicle (it will likely not automatically disarm)
+        self.disarm_vehicle(force=True)
+
+        # revert simulated accel bias and reboot to restore EKF health
+        self.context_pop()
+        self.reboot_sitl()
+
+    def VibrationCompensationThrottle(self):
+        '''check throttle does not oscillate while vibration compensation is active'''
+        self.context_push()
+
+        self.takeoff(20, mode="LOITER")
+
+        # simulate accel bias caused by high vibration
+        self.set_parameters({
+            'SIM_ACC1_BIAS_Z': 2,
+            'SIM_ACC2_BIAS_Z': 2,
+            'SIM_ACC3_BIAS_Z': 2,
+        })
+        self.wait_statustext("Vibration compensation ON", timeout=30)
+
+        # count large sample-to-sample throttle changes.  A stable
+        # controller only sees these when the EKF resets its height
+        # estimate; an over-gained one swings the throttle continuously
+        self.set_message_rate_hz('VFR_HUD', 10)
+        samples = []
+
+        def collect_throttle(mav, m):
+            if m.get_type() == 'VFR_HUD':
+                samples.append(m.throttle)
+        self.install_message_hook_context(collect_throttle)
+
+        self.delay_sim_time(30, "collect throttle samples")
+
+        steps = [abs(a - b) for a, b in zip(samples, samples[1:])]
+        if len(steps) < 200:
+            raise NotAchievedException("insufficient samples (%u throttle steps)" % len(steps))
+        large_steps = len([s for s in steps if s > 15])
+        self.progress("%u of %u throttle steps over 15%%" % (large_steps, len(steps)))
+        if large_steps > 20:
+            raise NotAchievedException("Throttle oscillating under vibration compensation (%u large steps)" % large_steps)
+
         self.disarm_vehicle(force=True)
 
         # revert simulated accel bias and reboot to restore EKF health
@@ -3578,6 +3648,52 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # re-arming is problematic because the GPS is glitching!
         self.reboot_sitl()
 
+    def GPSGlitchVelocity(self):
+        '''check SIM_GPS1_GLTV offsets the GPS velocity and moves the reported position with it'''
+        self.wait_ready_to_arm()
+        # the vehicle sits disarmed, so SIMSTATE stays the true position throughout
+        truth = self.get_location('SIMSTATE')
+
+        def gps_state():
+            '''GPS_RAW_INT position relative to truth (metres north, east), speed (m/s), course (deg), sim time'''
+            m = self.assert_receive_message('GPS_RAW_INT')
+            north = math.radians(m.lat * 1e-7 - truth.lat) * 6378137
+            east = math.radians(m.lon * 1e-7 - truth.lng) * 6378137 * math.cos(math.radians(truth.lat))
+            return north, east, m.vel * 0.01, m.cog * 0.01, self.get_sim_time_cached()
+
+        self.progress("Applying GPS velocity glitch of 1m/s north, 2m/s east")
+        self.set_parameters({
+            "SIM_GPS1_GLTV_X": 1,
+            "SIM_GPS1_GLTV_Y": 2,
+        })
+        self.delay_sim_time(2, reason="let the glitch reach the GPS output")
+        (n0, e0, speed, course, t0) = gps_state()
+        self.progress(f"GPS speed={speed:.2f}m/s course={course:.1f}deg")
+        if abs(speed - math.sqrt(5)) > 0.3:
+            raise NotAchievedException(f"GPS speed {speed:.2f}m/s, expected {math.sqrt(5):.2f}m/s")
+        if abs(course - math.degrees(math.atan2(2, 1))) > 5:
+            raise NotAchievedException(f"GPS course {course:.1f}deg, expected {math.degrees(math.atan2(2, 1)):.1f}deg")
+
+        # the reported position must move consistently with the offset velocity
+        self.delay_sim_time(10, reason="let the position drift")
+        (n1, e1, _, _, t1) = gps_state()
+        dt = t1 - t0
+        self.progress(f"GPS moved north={n1 - n0:.2f}m east={e1 - e0:.2f}m in {dt:.1f}s")
+        if abs((n1 - n0) - 1 * dt) > 1.5 or abs((e1 - e0) - 2 * dt) > 1.5:
+            raise NotAchievedException("GPS position did not drift with the velocity glitch")
+
+        # zeroing every component clears the accumulated position offset
+        self.progress("Removing GPS velocity glitch")
+        self.set_parameters({
+            "SIM_GPS1_GLTV_X": 0,
+            "SIM_GPS1_GLTV_Y": 0,
+        })
+        self.delay_sim_time(2, reason="let the cleared glitch reach the GPS output")
+        (n2, e2, speed, _, _) = gps_state()
+        self.progress(f"GPS offset from truth={math.hypot(n2, e2):.2f}m speed={speed:.2f}m/s")
+        if math.hypot(n2, e2) > 1.5 or speed > 0.3:
+            raise NotAchievedException("GPS velocity glitch offset did not clear")
+
     def GPSFixTypes(self):
         '''Test that SIM_GPS1_FIXTYPE maps correctly to GPS_RAW_INT.fix_type'''
         self.change_mode('LOITER')
@@ -3727,6 +3843,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("CIRCLE OK for %u seconds" % holdtime)
 
         self.do_RTL()
+
+    def CompassMotFastRate(self):
+        '''test compassmot with the rate thread driving the motors'''
+        self.set_parameter("FSTRATE_ENABLE", 1)
+        self.reboot_sitl()
+        self.CompassMot()
 
     def CompassMot(self):
         '''test code that adjust mag field for motor interference'''
@@ -7872,6 +7994,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         items.append(self.mission_item_do_cmd_roi_set_wpnext_offset(y=45))
         items.append(self.mission_item_waypoint(loc.lat, loc.lng, alt))
 
+        # clear the ROI; the mount must return to its default mode
+        loc = self.offset_location_ne(loc, 100, 0)
+        items.append(self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_SET_ROI_NONE))
+        items.append(self.mission_item_waypoint(loc.lat, loc.lng, alt))
+
         # now RTL
         items.append(self.mission_item_rtl())
 
@@ -7895,6 +8022,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_current_waypoint(7)
         self.wait_mount_roll_pitch_yaw_deg(y=45)
+
+        # the ROI should have been cleared now
+        # default mode is RC_TARGETING with neutral RC input
+        self.wait_current_waypoint(9)
+        self.wait_mount_roll_pitch_yaw_deg(r=0, p=0, y=0)
 
         self.wait_disarmed()
 
@@ -10442,6 +10574,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             vehicle.close()
             mavutil.mavfile_global = saved_mavfile_global
 
+    def MT11MAVFTP32bit(self):
+        """Camera discovery, telemetry and FTP with wide vehicle and GCS IDs."""
+        old_source = self.mav.source_system
+        old_sysid = self.sysid_thismav()
+        self.send_set_parameter_direct("MAV_SYSID", 100000)
+        self.mav.target_system = 100000
+        with self.mavlink_target_system_context():
+            try:
+                self.wait_heartbeat(timeout=60)
+                self.mav.source_system = 70000
+                self.mav.mav.srcSystem = 70000
+                self.MT11MAVFTP()
+            finally:
+                self.mav.source_system = old_source
+                self.mav.mav.srcSystem = old_source
+                self.send_set_parameter_direct("MAV_SYSID", old_sysid)
+                self.mav.target_system = old_sysid
+                self.wait_heartbeat(timeout=60)
+
     def MT11MAVFTP(self):
         '''list and download the simulated camera definition through a unicast link'''
         self.set_parameters({
@@ -11325,15 +11476,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "primary_control_compid": 38,
             })
 
-            # ardupilot currently handles this incorrectly:
-            # self.start_subtest("self-controlled")
-            # method(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE, p1=-2)
-            # self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
-            #     "gimbal_device_id": 1,
-            #     "primary_control_sysid": 1,
-            #     "primary_control_compid": 1,
-            # })
-
             self.start_subtest("release control")
             method(
                 mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
@@ -11351,6 +11493,60 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "primary_control_sysid": 0,
                 "primary_control_compid": 0,
             })
+
+            def check_control(sysid, compid):
+                self.drain_mav()
+                self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+                    "primary_control_sysid": sysid if sysid <= 255 else 0,
+                    "primary_control_compid": compid,
+                })
+
+            command = mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE
+            self.start_subtest("fractional IDs retain truncation")
+            method(command, p1=37.9, p2=38.9)
+            check_control(37, 38)
+            method(command, p1=-1.9)
+            check_control(37, 38)
+            method(command, p1=-0.9, p2=38.9)
+            check_control(0, 38)
+
+            self.start_subtest("full-range IDs and sender sentinels")
+            old_source = self.mav.source_system
+            old_component = self.mav.source_component
+            try:
+                for sysid in (16777216, 16777218, 0x80000000, 0xFFFFFF00):
+                    method(command, p1=sysid, p2=old_component)
+                    check_control(sysid, old_component)
+                    # Status has only an 8-bit sysid. Prove exact ownership by
+                    # attempting release from a neighbour, then the actual ID.
+                    self.mav.source_system = sysid + 1
+                    self.mav.mav.srcSystem = sysid + 1
+                    method(command, p1=-3)
+                    check_control(sysid, old_component)
+                    self.mav.source_system = sysid
+                    self.mav.mav.srcSystem = sysid
+                    method(command, p1=-3)
+                    check_control(0, 0)
+
+                self.mav.source_system = 0xFFFFFFFF
+                self.mav.mav.srcSystem = 0xFFFFFFFF
+                method(command, p1=-2.9)
+                check_control(0xFFFFFFFF, old_component)
+                method(command, p1=-3)
+                check_control(0, 0)
+            finally:
+                self.mav.source_system = old_source
+                self.mav.mav.srcSystem = old_source
+
+            self.start_subtest("out-of-range IDs leave ownership unchanged")
+            method(command, p1=37, p2=38)
+            # Legacy range comparisons trap on NaN with SITL float exceptions enabled.
+            for value in (float('inf'), float('-inf'), -3.1, 0xFFFFFFFF, 2**32, 2**40):
+                method(command, p1=value, p2=38, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+                check_control(37, 38)
+            for value in (float('inf'), float('-inf'), -3.1, 256):
+                method(command, p1=37, p2=value, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+                check_control(37, 38)
 
         self.context_pop()
         self.reboot_sitl()
@@ -11894,6 +12090,64 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Notch-per-motor had a peak of %fdB there should be none" % esc_peakdb2)
         self.context_pop()
         self.reboot_sitl()
+
+    def RateThreadPostFilterGyroLog(self):
+        """Check post-filter gyro logging records every sample while the rate thread decimates."""
+        self.set_parameters({
+            "FSTRATE_ENABLE": 3,    # fixed divisor: the rate loop takes one gyro sample in FSTRATE_DIV
+            "FSTRATE_DIV": 3,
+            "INS_RAW_LOG_OPT": 5,   # primary gyro, post-filter only
+            "LOG_FILE_RATEMAX": 0,  # GYR is rate limited otherwise
+            "LOG_DARM_RATEMAX": 0,
+        })
+        self.reboot_sitl()
+
+        self.takeoff(5, mode="ALT_HOLD")
+        self.land_and_disarm()
+
+        log = self.current_onboard_log_filepath()
+        self.assert_log_has_no_dropped_blocks(log)
+        dfreader = self.dfreader_for_path(log)
+        prev = None
+        repeats = 0
+        sample_dts = []
+        loop_dts = []
+        gyro_rates = []
+        while True:
+            m = dfreader.recv_match(type=['GYR', 'IMU', 'RTDT'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'RTDT':
+                loop_dts.append(m.dtAvg)
+                continue
+            if m.I != 0:
+                continue
+            if mtype == 'IMU':
+                gyro_rates.append(m.GHz)
+                continue
+            if prev is not None:
+                sample_dts.append((m.SampleUS - prev.SampleUS) * 1.0e-6)
+                if (m.GyrX, m.GyrY, m.GyrZ) == (prev.GyrX, prev.GyrY, prev.GyrZ):
+                    repeats += 1
+            prev = m
+        steps = len(sample_dts)
+        if steps < 1000 or len(loop_dts) == 0 or len(gyro_rates) == 0:
+            raise NotAchievedException("Logged %u GYR steps, %u RTDT and %u IMU" % (steps, len(loop_dts), len(gyro_rates)))
+        gyro_dt = 1.0 / sorted(gyro_rates)[len(gyro_rates) // 2]
+        sample_dt = sorted(sample_dts)[steps // 2]
+        loop_dt = sorted(loop_dts)[len(loop_dts) // 2]
+        self.progress("gyro %.2f ms, logged %.2f ms, rate loop %.2f ms, %u of %u samples repeat" %
+                      (gyro_dt * 1000, sample_dt * 1000, loop_dt * 1000, repeats, steps))
+        # a held value can only appear while the rate loop is taking a subset of the samples
+        if loop_dt < 2 * gyro_dt:
+            raise NotAchievedException("Rate loop at %.2f ms is not decimating" % (loop_dt * 1000))
+        # every filtered sample must be logged, not just the ones the rate loop took
+        if sample_dt > 1.5 * gyro_dt:
+            raise NotAchievedException("Post-filter gyro logged every %.2f ms" % (sample_dt * 1000))
+        # and each must be new; a value held for the rate loop repeats in most steps
+        if repeats > steps * 0.1:
+            raise NotAchievedException("Post-filter gyro log repeats %u of %u samples" % (repeats, steps))
 
     def hover_and_check_matched_frequency(self, *, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         '''do a simple up-and-down test flight with current vehicle state.
@@ -17033,6 +17287,176 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.context_pop()
 
+    def truncate_log_message(self, src, dst, name, drop_fields, drop_bytes):
+        '''copy dataflash log src to dst, removing the last drop_fields
+        fields (drop_bytes bytes) from every message called name.
+        Returns the original payload length of that message'''
+        data = open(src, 'rb').read()
+        out = bytearray()
+        FMT_TYPE = 128
+        lengths = {FMT_TYPE: 89}
+        target_type = None
+        payload_len = None
+        offset = 0
+        while offset + 3 <= len(data):
+            if data[offset] != 0xA3 or data[offset+1] != 0x95:
+                raise ValueError("Bad message header at offset %u in %s" % (offset, src))
+            msg_type = data[offset+2]
+            if msg_type not in lengths:
+                raise ValueError("Message type %u before its format at offset %u in %s" % (msg_type, offset, src))
+            length = lengths[msg_type]
+            if offset + length > len(data):
+                break
+            msg = bytearray(data[offset:offset+length])
+            if msg_type == FMT_TYPE:
+                lengths[msg[3]] = msg[4]
+                if bytes(msg[5:9]).rstrip(b'\0').decode() == name:
+                    target_type = msg[3]
+                    payload_len = msg[4] - 3
+                    msg[4] -= drop_bytes
+                    fmt = bytes(msg[9:25]).rstrip(b'\0')[:-drop_fields]
+                    msg[9:25] = fmt.ljust(16, b'\0')
+                    columns = bytes(msg[25:89]).rstrip(b'\0').split(b',')[:-drop_fields]
+                    msg[25:89] = b','.join(columns).ljust(64, b'\0')
+            elif msg_type == target_type:
+                msg = msg[:-drop_bytes]
+            out += msg
+            offset += length
+        if target_type is None:
+            raise NotAchievedException("No %s in %s" % (name, src))
+        open(dst, 'wb').write(out)
+        return payload_len
+
+    def ReplayShortMessage(self):
+        '''test replay of a log whose message is shorter than Replay's structure'''
+        # This checks Replay warns and still replays such a log.  The
+        # truncated RSLL data is refused by the EKF while GPS is good,
+        # so reading past the end of the message would not change the
+        # replay; only a sanitizer build of Replay detects that.
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            # Replay needs every message
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+            "LOG_FILE_BUFSIZE": 32767,
+        })
+        self.reboot_sitl()
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+        self.wait_ready_to_arm()
+        log_filepath = self.current_onboard_log_filepath()
+
+        # position estimates are refused while GPS is good, but they
+        # are still recorded in RSLL for Replay:
+        loc = self.get_location()
+        for accuracy in range(1, 11):
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+                p1=self.get_sim_time()-0.5,  # transmit time
+                p2=0.1,  # processing delay
+                p3=accuracy,
+                p5=int(loc.lat * 1e7),
+                p6=int(loc.lng * 1e7),
+                p7=float("NaN"),  # alt
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+                want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            )
+        self.delay_sim_time(5, reason="log some more")
+        # stop logging so Replay's output is the only new log
+        self.set_parameters({
+            "LOG_REPLAY": 0,
+            "LOG_DISARMED": 0,
+        })
+        self.reboot_sitl()
+
+        # a log from firmware whose RSLL lacked its last field; kept
+        # out of the logs directory so later tests don't see it:
+        short_log_filepath = self.buildlogs_path("ReplayShortMessage-short.BIN")
+        rsll_len = self.truncate_log_message(log_filepath, short_log_filepath, "RSLL", drop_fields=1, drop_bytes=4)
+
+        self.build_replay()
+        old_logs = set(self.log_list())
+        replay = subprocess.run(
+            ['build/sitl/tool/Replay', short_log_filepath],
+            cwd=util.topdir(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        output = replay.stdout.decode('utf-8', errors='replace')
+        if replay.returncode != 0:
+            raise NotAchievedException("Replay failed (%d): %s" % (replay.returncode, output[-1000:]))
+        warnings = [line for line in output.splitlines() if line.startswith("Warning: RSLL is")]
+        self.progress("Replay warnings: %s" % str(warnings))
+        expected = "Warning: RSLL is %u bytes in the log but %u bytes in Replay" % (rsll_len - 4, rsll_len)
+        if warnings != [expected]:
+            raise NotAchievedException("Expected one RSLL length warning")
+
+        # RSLL is not used while GPS is good, so the replay must still
+        # match despite the missing field
+        check_replay = util.load_local_module("Tools/Replay/check_replay.py")
+        new_logs = [x for x in self.log_list() if x not in old_logs]
+        if len(new_logs) != 1:
+            raise NotAchievedException("Expected one new log from Replay, got %s" % str(new_logs))
+        replay_log_filepath = new_logs[0]
+        if not check_replay.check_log(replay_log_filepath, self.progress, verbose=True):
+            raise NotAchievedException("check_replay (%s) failed" % replay_log_filepath)
+
+    def ReplayOriginFrame(self):
+        '''check an EKF origin set from a GCS is logged after the current replay frame'''
+        # Replay runs each frame's EKF update when it reaches the
+        # frame's RFRF.  An origin set after the update must be
+        # logged after that RFRF, or Replay applies it before the
+        # update, which the origin can change (e.g. the earth
+        # magnetic field used by magnetometer fusion).
+        self.wait_ready_to_arm()
+        origin = self.assert_receive_message('GLOBAL_POSITION_INT')
+
+        # with no GPS the vehicle has no origin until we set one
+        self.set_parameters({
+            "GPS1_TYPE": 0,
+            "EK2_ENABLE": 1,
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+        log_filepath = self.current_onboard_log_filepath()
+
+        # without a GPS or some sort of external prompting, AP
+        # doesn't send system_time messages.  So prompt it:
+        self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
+        self.delay_sim_time(5, reason="EKFs to initialise")
+        self.mav.mav.set_gps_global_origin_send(1, origin.lat, origin.lon, origin.alt)
+        self.wait_statustext("EKF3 IMU0 origin set", check_context=True)
+        self.wait_statustext("EKF2 IMU0 origin set", check_context=True)
+        self.delay_sim_time(5, reason="log to be written")
+        self.reboot_sitl()
+
+        dfreader = self.dfreader_for_path(log_filepath)
+        frame_open = False
+        counts = {}
+        in_frame = {}
+        while True:
+            m = dfreader.recv_match(type=['RFRH', 'RFRF', 'RSO2', 'RSO3'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'RFRH':
+                frame_open = True
+            elif mtype == 'RFRF':
+                frame_open = False
+            else:
+                counts[mtype] = counts.get(mtype, 0) + 1
+                if frame_open:
+                    in_frame[mtype] = in_frame.get(mtype, 0) + 1
+        self.progress("Origin messages: %s, logged inside a frame: %s" % (str(counts), str(in_frame)))
+        for mtype in 'RSO2', 'RSO3':
+            if counts.get(mtype, 0) == 0:
+                raise NotAchievedException("No %s in log" % mtype)
+        if len(in_frame):
+            raise NotAchievedException("Origin logged before the end of the current frame: %s" % str(in_frame))
+
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
@@ -19034,6 +19458,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FenceRelativeToHomeCliff,
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.DynamicRpmNotchesRateThread,
+            self.RateThreadPostFilterGyroLog,
             self.DynamicRpmNotchesESCMask,
             self.WPYawBehaviour1RTL,
             self.AHRSSwitchBackendPositionNEReset,
@@ -19078,6 +19503,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrottleFailsafePassthrough,
             self.BatteryMissing,
             self.VibrationFailsafe,
+            self.VibrationCompensationThrottle,
             self.EK3_AccelBiasInhibitOnGroundMoving,
             self.EK3_ZeroVelFusionNotUsedWithGPS,
             self.OBSTACLE_DISTANCE_3D,
@@ -19116,6 +19542,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAVLinkCameraMixed,
             self.MAVLinkCameraStreams,
             self.MT11MAVFTP,
+            self.MT11MAVFTP32bit,
             self.MountMT11,
             self.MountMT11Telemetry,
             self.IMUConsistency,
@@ -19278,6 +19705,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.RCOverridesClearByPilotInput,
             self.ScriptMountDriver,
             self.CircleManualControlEntryRight,
+            self.CirclePilotRadiusZero,
             self.MissionIndexValidity,
             self.RPLidarA2,
             self.MAV_CMD_NAV_TAKEOFF_no_location,
@@ -22762,6 +23190,63 @@ RTL_ALT_M 111
 
         self.do_RTL()
 
+    def LuaMAVLinkTarget(self):
+        """Lua sends legacy, broadcast and full-width targets without mutating payloads."""
+        self.set_parameter('SCR_ENABLE', 1)
+        self.install_mavlink_module_context('MAVLink')
+        self.install_script_content_context('mavlink-target.lua', """
+local msgs = require('MAVLink/mavlink_msgs')
+mavlink:init(4, 1)
+mavlink:register_rx_msgid(76)
+mavlink:block_command(31000)
+local targets = {false, false, 0, 7, 255, 256, 70000, 0x7fffffff,
+                 0x80000000, 0xffffffff, uint32_t(0xffffffff), 256}
+local function update()
+    local raw, chan = mavlink:receive_chan()
+    if raw then
+        local msg = msgs.decode(raw, {[76]='COMMAND_LONG'})
+        if msg and msg.command == 31000 then
+            local case = math.floor(msg.param1)
+            local payload = string.pack('<HBBi4BB', 31000, 0, 0, case, 99, 190)
+            if case == 12 then payload = payload:sub(1, 8) end
+            local saved = payload
+            -- Messages without a target field cannot use this override.
+            assert(not pcall(mavlink.send_chan, mavlink, chan, 0, string.rep('x', 9), 256))
+            local sent
+            if case == 1 then
+                sent = mavlink:send_chan(chan, 77, payload)
+            elseif case == 2 then
+                sent = mavlink:send_chan(chan, 77, payload, nil)
+            else
+                sent = mavlink:send_chan(chan, 77, payload, targets[case])
+            end
+            assert(sent and payload == saved)
+        end
+    end
+    return update, 20
+end
+return update()
+""")
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        targets = (99, 99, 0, 7, 255, 256, 70000, 0x7FFFFFFF,
+                   0x80000000, 0xFFFFFFFF, 0xFFFFFFFF, 256)
+        for case, target in enumerate(targets, 1):
+            self.start_subtest("Lua target case %u: %u" % (case, target))
+            self.mav.mav.command_long_send(self.sysid_thismav(), 1, 31000, 0, case, 0, 0, 0, 0, 0, 0)
+            reply = self.assert_received_message_field_values('COMMAND_ACK', {
+                'command': 31000,
+                'result': mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                'result_param2': case,
+                'target_system': target,
+                'target_component': 0 if case == 12 else 190,
+            })
+            wide = target > 255
+            if bool(reply.get_header().incompat_flags & mavutil.mavlink.MAVLINK_IFLAG_TARGET32) != wide:
+                raise NotAchievedException("Incorrect Lua target header")
+            if reply.get_payload().ljust(10, b'\0')[8] != (255 if wide else target):
+                raise NotAchievedException("Incorrect Lua payload target")
+
     def LuaParamLockdown(self):
         '''test param-lockdown.lua applet'''
         self.set_parameters({
@@ -22770,6 +23255,7 @@ RTL_ALT_M 111
 
         self.context_push()
 
+        self.install_mavlink_module_context("MAVLink")
         self.install_applet_script_context("param-lockdown.lua")
         self.reboot_sitl()
 
@@ -22810,6 +23296,28 @@ RTL_ALT_M 111
         }, check_context=True, very_verbose=True)
         self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
         self.context_pop()
+
+        original_source = self.mav.mav.srcSystem
+        try:
+            for source in (255, 256, 70000, 0x80000000, 0xFFFFFFFF):
+                self.start_subtest("PARAM_ERROR reply to source %u" % source)
+                self.context_push()
+                self.context_collect('PARAM_ERROR')
+                self.mav.mav.srcSystem = source
+                self.send_set_parameter_direct('DISARM_DELAY', 78)
+                reply = self.assert_received_message_field_values('PARAM_ERROR', {
+                    "target_system": source,
+                    "target_component": 250,
+                    "param_id": 'DISARM_DELAY',
+                    "param_index": -1,
+                    "error": mavutil.mavlink.MAV_PARAM_ERROR_PERMISSION_DENIED,
+                }, check_context=True)
+                if bool(reply.get_header().incompat_flags & mavutil.mavlink.MAVLINK_IFLAG_TARGET32) != (source > 255):
+                    raise NotAchievedException("Incorrect PARAM_ERROR target header")
+                self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
+                self.context_pop()
+        finally:
+            self.mav.mav.srcSystem = original_source
 
         self.start_subtest("Disabling applet via parameter should allow freely setting DISARM_DELAY")
         self.set_parameter("PARAM_LOCK_ENAB", 0)
@@ -23007,6 +23515,7 @@ RTL_ALT_M 111
             [],
             **self.callisto_sitl_kwargs()
         )
+        self.install_mavlink_module_context("MAVLink")
         self.install_example_script_context("config_profiles.lua")
         self.set_parameters({
             'SCR_ENABLE': 1,
@@ -23331,6 +23840,8 @@ return update, 1000
             self.SMART_RTL_Repeat,
             self.RTL_TO_RALLY,
             self.Replay,
+            self.ReplayShortMessage,
+            self.ReplayOriginFrame,
             self.GroundEffectCompensation_touchDownExpected,
             self.GroundEffectCompensation_takeOffExpected,
             self.RTLStoppingDistanceSpeed,
@@ -23351,6 +23862,7 @@ return update, 1000
             self.LoiterToGuidedHomeVSOrigin,
             self.GuidedModeThrust,
             self.CompassMot,
+            self.CompassMotFastRate,
             self.FarOrigin,
             self.GuidedForceArm,
             self.AHRSOriginRecorded,
@@ -23372,6 +23884,7 @@ return update, 1000
             self.FenceFloorAutoDisableLanding,
             self.FenceMargin,
             self.GPSGlitchAuto,
+            self.GPSGlitchVelocity,
             self.MotorFail,
             self.ModeFlip,
             self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
@@ -23384,6 +23897,7 @@ return update, 1000
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
             self.mission_NAV_LOITER_TURNS_direction,
+            self.LuaMAVLinkTarget,
             self.LuaParamLockdown,
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),

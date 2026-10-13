@@ -504,7 +504,7 @@ void AP_Generator_Loweheiser::command_generator()
             "TimeUS," "SI," "CI," "C," "I," "ES," "GS," "Thr," "Strtr",
             "s"       "-"   "-"   "-"  "#"  "-"   "-"   "-"    "-"     ,
             "F"       "-"   "-"   "-"  "-"  "-"   "-"   "-"    "-"     ,
-            "Q"       "B"   "B"   "I"  "B"  "B"   "B"   "f"    "B"     ,
+            "Q"       "I"   "B"   "I"  "B"  "B"   "B"   "f"    "B"     ,
             AP_HAL::micros64(),
             sysid,
             compid,

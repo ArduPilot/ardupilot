@@ -116,6 +116,7 @@ uint16_t AP_Param::num_read_only;
 bool AP_Param::eeprom_full;
 
 ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
+HAL_Semaphore AP_Param::save_sem;
 bool AP_Param::registered_save_handler;
 
 bool AP_Param::done_all_default_params;
@@ -1301,7 +1302,12 @@ void AP_Param::save(bool force_save)
 void AP_Param::save_io_handler(void)
 {
     struct param_save p;
-    while (save_queue.pop(p)) {
+    while (true) {
+        // Cover the pop as well as the write so flush() cannot miss an in-flight save.
+        WITH_SEMAPHORE(save_sem);
+        if (!save_queue.pop(p)) {
+            break;
+        }
         p.param->save_sync(p.force_save, true);
     }
     if (hal.scheduler->is_system_initialized()) {
@@ -1316,7 +1322,11 @@ void AP_Param::save_io_handler(void)
 void AP_Param::flush(void)
 {
     uint16_t counter = 200; // 2 seconds max
-    while (counter-- && save_queue.available()) {
+    while (counter--) {
+        if (save_queue.available() == 0 && save_sem.take_nonblocking()) {
+            save_sem.give();
+            break;
+        }
         hal.scheduler->expect_delay_ms(10);
         hal.scheduler->delay(10);
         hal.scheduler->expect_delay_ms(0);

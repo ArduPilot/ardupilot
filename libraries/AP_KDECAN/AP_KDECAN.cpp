@@ -74,7 +74,7 @@ void AP_KDECAN::update()
     if (_driver == nullptr) {
         return;
     }
-    _driver->update((uint8_t)_num_poles.get());
+    _driver->update(_num_poles);
 }
 
 AP_KDECAN_Driver::AP_KDECAN_Driver() : CANSensor("KDECAN")

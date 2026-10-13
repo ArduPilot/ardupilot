@@ -409,7 +409,7 @@ protected:
     float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
 
     // motor options
-    AP_Int16            _options;
+    AP_UInt16           _options;
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
 

@@ -110,7 +110,7 @@ bool Plane::suppress_throttle(void)
          auto_state.takeoff_complete == false) ||
         control_mode == &mode_takeoff) {
 
-        uint32_t launch_duration_ms = ((int32_t)g.takeoff_throttle_delay)*100 + 2000;
+        uint32_t launch_duration_ms = g.takeoff_throttle_delay*100 + 2000;
         if (is_flying() &&
             millis() - started_flying_ms > MAX(launch_duration_ms, 5000U) && // been flying >5s in any mode
             adjusted_relative_altitude_cm() > 500 && // are >5m above AGL/home
@@ -1058,7 +1058,7 @@ void Plane::servos_output(void)
 
     // support MANUAL_RCMASK
     if (g2.manual_rc_mask.get() != 0 && control_mode == &mode_manual) {
-        SRV_Channels::copy_radio_in_out_mask(uint32_t(g2.manual_rc_mask.get()));
+        SRV_Channels::copy_radio_in_out_mask(g2.manual_rc_mask);
     }
 
     SRV_Channels::calc_pwm();

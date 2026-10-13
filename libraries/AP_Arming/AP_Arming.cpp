@@ -829,16 +829,8 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
         return true;
     }
 
-    bool check_passed = true;
-    // ensure all rc channels have different functions
-    if (rc().duplicate_options_exist()) {
-        check_failed(Check::PARAMETERS, true, "Duplicate Aux Switch Options");
-        check_passed = false;
-    }
-    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
-        check_failed(Check::PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
-        check_passed = false;
-    }
+    // not skippable via the PARAMETERS check bit
+    bool check_passed = rc_option_checks(true);
     {
         if (!rc().option_is_enabled(RC_Channels::Option::ARMING_SKIP_CHECK_RPY)) {
             const struct {
@@ -877,6 +869,25 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
                 }
             }
         }
+    }
+    return check_passed;
+}
+
+// check RCn_OPTION configuration, independent of RC input
+bool AP_Arming::rc_option_checks(bool report)
+{
+    if (!check_enabled(Check::RC)) {
+        return true;
+    }
+    bool check_passed = true;
+    // ensure all rc channels have different functions
+    if (rc().duplicate_options_exist()) {
+        check_failed(Check::PARAMETERS, report, "Duplicate Aux Switch Options");
+        check_passed = false;
+    }
+    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
+        check_failed(Check::PARAMETERS, report, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
+        check_passed = false;
     }
     return check_passed;
 }
@@ -1726,6 +1737,7 @@ bool AP_Arming::pre_arm_checks(bool report)
 #endif
 #if AP_RC_CHANNEL_ENABLED
         &  manual_transmitter_checks(report)
+        &  rc_option_checks(report)
 #endif
 #if AP_MISSION_ENABLED
         &  mission_checks(report)

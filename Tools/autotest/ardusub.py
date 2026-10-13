@@ -181,6 +181,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def AltitudeHold(self):
         """Test ALT_HOLD mode"""
+        # a context so the simulated buoyancy set below is put back:
+        # MotorThrustHoverParameterIgnore calls this twice, and the second
+        # dive starts at the surface, where the extra lift stops it
+        self.context_push()
         self.dive(-5, mode='ALT_HOLD')
         self.watch_altitude_maintained()
 
@@ -224,6 +228,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
         self.watch_altitude_maintained()
         self.disarm_vehicle()
+        self.context_pop()
 
     def RngfndQuality(self):
         """Check lua Range Finder quality information flow"""

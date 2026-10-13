@@ -325,9 +325,6 @@ private:
     // pointer to transport's communication structure
     uxrCommunication *comm{nullptr};
 
-    // client key prefix
-    static constexpr uint32_t key_base = 0xAD000000;
-
     // DDS constants
     static constexpr const char *dds_pubsub_prefix = "rt";
     static constexpr const char *dds_service_prefix = "rs";
@@ -335,7 +332,7 @@ private:
     static constexpr const char *dds_service_reply_prefix = "rr";
     static constexpr const char *participant_name_prefix = "ap";
 
-    static void dds_format_name(char* buf, const char* dds_prefix, uint8_t sysid, const char* name, bool use_sysid_ns);
+    static void dds_format_name(char* buf, const char* dds_prefix, uint32_t sysid, const char* name, bool use_sysid_ns);
 
 
 public:
@@ -367,7 +364,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     //! @brief ROS_DOMAIN_ID
-    AP_Int32 domain_id;
+    AP_UInt32 domain_id;
 
     //! @brief Timeout in milliseconds when pinging the XRCE agent
     AP_Int32 ping_timeout_ms;

@@ -245,11 +245,11 @@ private:
     // parameters
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
-    AP_Int8 _buzzer_type;
+    AP_UInt8 _buzzer_type;
     AP_Int8 _display_type;
     AP_Int8 _oreo_theme;
     AP_Int8 _buzzer_pin;
-    AP_Int32 _led_type;
+    AP_UInt32 _led_type;
     AP_Int8 _buzzer_level;
     AP_Int8 _buzzer_volume;
     AP_Int8 _led_len;

@@ -225,7 +225,7 @@ class BoardList(object):
                 "KakuteH7Miniv2",
 
                 # renamed to AtomRCF405NAVI
-                "AtomRCF405"
+                "AtomRCF405",
 
                 # other
                 "crazyflie2",

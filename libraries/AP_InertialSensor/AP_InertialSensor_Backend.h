@@ -207,7 +207,8 @@ protected:
     void _publish_gyro(uint8_t instance, const Vector3f &gyro) __RAMFUNC__; /* front end */
 
     // apply notch and lowpass gyro filters and sample for FFT
-    void apply_gyro_filters(const uint8_t instance, const Vector3f &gyro);
+    // returns this sample filtered, which _gyro_filtered skips when decimating for the rate loop
+    Vector3f apply_gyro_filters(const uint8_t instance, const Vector3f &gyro);
     void save_gyro_window(const uint8_t instance, const Vector3f &gyro, uint8_t phase);
 
     // this should be called every time a new gyro raw sample is
@@ -361,7 +362,7 @@ protected:
 
     // if fast sampling is enabled, the rate to use in kHz
     uint8_t get_fast_sampling_rate() const {
-        return (1 << uint8_t(_imu._fast_sampling_rate));
+        return (1 << _imu._fast_sampling_rate);
     }
 
     // called by subclass when data is received from the sensor, thus

@@ -445,7 +445,7 @@ void AP_Airspeed::allocate()
 #endif  // AP_AIRSPEED_ASP5033_ENABLED
 #if AP_AIRSPEED_DRONECAN_ENABLED
         case TYPE_UAVCAN:
-            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, param[i].bus_id);
             break;
 #endif  // AP_AIRSPEED_DRONECAN_ENABLED
 #if AP_AIRSPEED_NMEA_ENABLED

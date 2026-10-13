@@ -390,7 +390,7 @@ void SPIBus::stop_peripheral(void)
         // Clock polarity is 1, so we need to set the clock line high before spi reset
         palSetLine(sbus.sck_line);
     }
-    palSetLineMode(sbus.sck_line, PAL_MODE_OUTPUT_PUSHPULL);
+    stm32_set_line_mode(sbus.sck_line, PAL_MODE_OUTPUT_PUSHPULL);
 #endif
     spiStop(sbus.driver);
     spi_started = false;
@@ -409,7 +409,7 @@ void SPIBus::start_peripheral(void)
     spiStart(spi_devices[bus].driver, &spicfg);
 #if HAL_SPI_SCK_SAVE_RESTORE
     // restore sck pin mode from stop_peripheral()
-    palSetLineMode(spi_devices[bus].sck_line, sck_mode);
+    stm32_set_line_mode(spi_devices[bus].sck_line, sck_mode);
 #endif
     spi_started = true;
 }

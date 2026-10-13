@@ -546,7 +546,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return _mode == SubMode::NAVGUIDED || _mode == SubMode::NAV_SCRIPT_TIME; }
+    bool in_guided_mode() const override { return _mode == SubMode::NAV_GUIDED || _mode == SubMode::NAV_SCRIPT_TIME; }
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
 #endif
@@ -562,13 +562,14 @@ public:
 
     // Auto modes
     enum class SubMode : uint8_t {
+        STARTING,       // initial submode; holds position until the mission dispatches the first navigation submode
         TAKEOFF,
         WP,
         LAND,
         RTL,
         CIRCLE_MOVE_TO_EDGE,
         CIRCLE,
-        NAVGUIDED,
+        NAV_GUIDED,
         LOITER,
         LOITER_TO_ALT,
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
@@ -578,22 +579,13 @@ public:
         NAV_ATTITUDE_TIME,
     };
 
-    // set submode.  returns true on success, false on failure
+    // set the auto submode (rechecks the EKF failsafe when leaving NAV_ATTITUDE_TIME)
     void set_submode(SubMode new_submode);
 
     // pause continue in auto mode
     bool pause() override;
     bool resume() override;
     bool paused() const;
-
-    bool loiter_start();
-    void rtl_start();
-    void takeoff_start(const Location& dest_loc);
-    bool wp_start(const Location& dest_loc);
-    void land_start();
-    void circle_movetoedge_start(const Location &circle_center, float radius_m);
-    void circle_start();
-    void nav_guided_start();
 
     bool is_landing() const override;
 
@@ -669,6 +661,15 @@ private:
 
     bool check_for_mission_change();    // detect external changes to mission
 
+    bool loiter_start();
+    void rtl_start();
+    void takeoff_start(const Location& dest_loc);
+    bool wp_start(const Location& dest_loc);
+    void land_start();
+    void circle_movetoedge_start(const Location &circle_center, float radius_m);
+    void circle_start();
+    void nav_guided_start();
+
     void takeoff_run();
     void wp_run();
     void land_run();
@@ -682,7 +683,7 @@ private:
     // returns false if the location cannot be determined which only happens if the terrain data is unavailable
     bool get_loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& loc) const WARN_IF_UNUSED;
 
-    SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
+    SubMode _mode = SubMode::STARTING;   // controls which auto controller is run
 
     // subtract position controller offsets from target location
     // should be used when the location will be used as a target for the position controller
@@ -766,11 +767,11 @@ private:
     uint32_t condition_start;
 
     // Land within Auto state
-    enum class State {
+    enum class LandState {
         FlyToLocation = 0,
         Descending = 1
     };
-    State state = State::FlyToLocation;
+    LandState land_state = LandState::FlyToLocation;
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
 

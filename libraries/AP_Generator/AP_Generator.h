@@ -97,7 +97,7 @@ private:
 
     // Parameters
     AP_Int8 _type; // Select which generator to use
-    AP_Int32 _options; // Select which generator to use
+    AP_UInt32 _options; // Select which generator to use
 
     enum class Type {
         GEN_DISABLED = 0,
