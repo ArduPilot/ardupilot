@@ -429,6 +429,13 @@ void AP_Vehicle::setup()
 
     BoardConfig.init();
 
+    // a defaults file setting a removed parameter would not configure
+    // the vehicle as it intends
+    const char *removed_param = AP_Param::removed_param_in_defaults();
+    if (removed_param != nullptr) {
+        AP_BoardConfig::config_error("%s in defaults file", removed_param);
+    }
+
 #if HAL_CANMANAGER_ENABLED
     can_mgr.init();
 #endif
