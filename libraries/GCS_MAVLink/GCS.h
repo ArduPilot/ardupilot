@@ -413,6 +413,14 @@ public:
     // Index starts at 1
     virtual uint8_t send_available_mode(uint8_t index) const = 0;
 
+    // Standard modes protocol (https://mavlink.io/en/services/standard_modes.html)
+    // Map between MAV_STANDARD_MODE and this vehicle's mode number.  A
+    // vehicle mode maps to at most one standard mode and vice-versa,
+    // and the mapping must be the same in both directions.
+    virtual MAV_STANDARD_MODE standard_mode_from_mode_number(uint8_t mode_number) const { return MAV_STANDARD_MODE_NON_STANDARD; }
+    virtual bool mode_number_from_standard_mode(MAV_STANDARD_MODE standard_mode, uint8_t &mode_number) const { return false; }
+    bool send_current_mode();
+
 #if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
     struct {
         MAV_LANDED_STATE last_landed_state;
@@ -730,6 +738,7 @@ protected:
     MAV_RESULT handle_command_do_gripper(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_sprayer(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_set_standard_mode(const mavlink_command_int_t &packet);
 #if AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
     MAV_RESULT handle_command_get_home_position(const mavlink_command_int_t &packet);
 #endif  // AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED

@@ -1201,6 +1201,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
         { MAVLINK_MSG_ID_AVAILABLE_MODES, MSG_AVAILABLE_MODES},
         { MAVLINK_MSG_ID_AVAILABLE_MODES_MONITOR, MSG_AVAILABLE_MODES_MONITOR},
+        { MAVLINK_MSG_ID_CURRENT_MODE, MSG_CURRENT_MODE},
 #if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
         { MAVLINK_MSG_ID_FLIGHT_INFORMATION, MSG_FLIGHT_INFORMATION},
 #endif  // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
@@ -5039,6 +5040,23 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_int_t &
     return _set_mode_common(_base_mode, _custom_mode);
 }
 
+// MAV_CMD_DO_SET_STANDARD_MODE: enter the vehicle mode which implements
+// the requested MAV_STANDARD_MODE.  The standard modes protocol
+// requires MAV_RESULT_FAILED if the standard mode is not supported.
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_standard_mode(const mavlink_command_int_t &packet)
+{
+    const MAV_STANDARD_MODE standard_mode = (MAV_STANDARD_MODE)(uint8_t)packet.param1;
+
+    uint8_t mode_number;
+    if (!mode_number_from_standard_mode(standard_mode, mode_number)) {
+        // this vehicle (or its current configuration) has no mode
+        // which implements the requested standard mode
+        return MAV_RESULT_FAILED;
+    }
+
+    return _set_mode_common(MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, mode_number);
+}
+
 #if AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_int_t &packet)
 {
@@ -5716,6 +5734,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_SET_MODE:
         return handle_command_do_set_mode(packet);
+
+    case MAV_CMD_DO_SET_STANDARD_MODE:
+        return handle_command_do_set_standard_mode(packet);
 
 #if HAL_SPRAYER_ENABLED
     case MAV_CMD_DO_SPRAYER:
@@ -6581,6 +6602,25 @@ bool GCS_MAVLINK::send_available_mode_monitor()
     return true;
 }
 
+// send CURRENT_MODE: the active mode as both a standard mode (if the
+// active mode implements one) and the vehicle mode number.
+bool GCS_MAVLINK::send_current_mode()
+{
+#if AP_VEHICLE_ENABLED
+    CHECK_PAYLOAD_SIZE(CURRENT_MODE);
+
+    const uint8_t mode_number = AP::vehicle()->get_mode();
+
+    mavlink_msg_current_mode_send(
+        chan,
+        standard_mode_from_mode_number(mode_number),
+        mode_number,
+        0  // intended_custom_mode: 0 means unknown/not supplied
+    );
+#endif
+    return true;
+}
+
 void GCS_MAVLINK::available_modes_changed()
 {
     // Only increment the counter if this channel is tracking modes
@@ -7019,6 +7059,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_AVAILABLE_MODES_MONITOR:
         ret = send_available_mode_monitor();
+        break;
+
+    case MSG_CURRENT_MODE:
+        ret = send_current_mode();
         break;
 
 #if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
