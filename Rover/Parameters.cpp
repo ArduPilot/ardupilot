@@ -813,10 +813,12 @@ void Rover::load_parameters(void)
     // walking robot roll and pitch inputs move to their own options as
     // ROLL and PITCH now select the steering and pitch control
     // channels.  This must precede the RCMAP_ conversion, which puts
-    // ROLL on the steering channel, and shares its once-only flag
-    if (!rc().rcmap_conversion_done()) {
+    // ROLL on the steering channel, and must not be retried after it,
+    // so has its own flag
+    if (!rc().conversion_done(RC_Channels::Conversion::WALKING_OPTIONS)) {
         rc().convert_options(RC_Channel::AUX_FUNC::ROLL, RC_Channel::AUX_FUNC::WALKING_ROLL);
         rc().convert_options(RC_Channel::AUX_FUNC::PITCH, RC_Channel::AUX_FUNC::WALKING_PITCH);
+        rc().mark_conversion_done(RC_Channels::Conversion::WALKING_OPTIONS);
     }
 
     // PARAMETER_CONVERSION - Added: Oct-2026 for ArduPilot-4.8
