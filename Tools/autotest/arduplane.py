@@ -10654,6 +10654,22 @@ return update()
         self.context_pop()
         self.fly_home_land_and_disarm()
 
+    def JSONAirData(self):
+        '''check SITL uses the airspeed and wind sent by a JSON physics backend'''
+        with self.JSON_physics() as physics:
+            # the simulator AHRS reports the wind SIM_JSON received
+            self.set_parameters({
+                "ARSPD_TYPE": 100,
+                "AHRS_EKF_TYPE": 10,
+            })
+            self.reboot_sitl()
+
+            # wind from the east at 5m/s, then from the north at 6m/s
+            for airspeed, wind, direction, speed in (12, [0, -5, 0], 90, 5), (20, [-6, 0, 0], 0, 6):
+                physics.set(airspeed=airspeed, velocity_wind=wind)
+                self.wait_message_field_values('VFR_HUD', {'airspeed': airspeed}, epsilon=0.5)
+                self.wait_message_field_values('WIND', {'direction': direction, 'speed': speed}, epsilon=0.1)
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -11139,6 +11155,7 @@ return update()
             self.PPPPeriph,
             self.steplessAHRSSwitch,
             self.DO_REPOSITION_mode_change_refused,
+            self.JSONAirData,
         ])
         return ret
 
