@@ -7391,6 +7391,50 @@ return update()
         self.context_pop()
         self.reboot_sitl()
 
+    def OpticalFlowRangefinderOnGround(self):
+        '''flow-only Rover keeps its speed over a range finder at its ground clearance'''
+        # both sensors sit 1.5 m up, so the range finder reads its ground clearance throughout
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "FLOW_HGT_OVR": 1.5,
+            "SIM_FLOW_POS_Z": -1.5,
+            "RNGFND1_TYPE": 100,
+            "RNGFND1_ORIENT": 25,
+            "RNGFND1_MIN": 0.1,
+            "RNGFND1_MAX": 10,
+            "RNGFND1_GNDCLR": 1.5,
+            "SIM_SONAR_POS_Z": -1.5,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 5,
+            "EK3_SRC1_VELZ": 0,
+        })
+        self.reboot_sitl()
+        self.change_mode('MANUAL')
+        self.wait_ready_to_arm(require_absolute=False)
+        self.arm_vehicle()
+        # drive a circle, as the EKF counts the first turn as a takeoff
+        self.set_rc_from_map({1: 1700, 3: 1540})
+        self.delay_sim_time(20, "into the circle")
+        ekf_speed = []
+        true_speed = []
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 20:
+            ekf = self.assert_receive_message('LOCAL_POSITION_NED')
+            # the simulated GPS is still running, though the EKF does not use it
+            gps = self.assert_receive_message('GPS_RAW_INT')
+            ekf_speed.append(math.hypot(ekf.vx, ekf.vy))
+            true_speed.append(gps.vel * 0.01)
+        self.set_rc_from_map({1: 1500, 3: 1500})
+        self.disarm_vehicle()
+        ekf_mean = sum(ekf_speed) / len(ekf_speed)
+        true_mean = sum(true_speed) / len(true_speed)
+        self.progress("EKF speed %.2f m/s, true speed %.2f m/s" % (ekf_mean, true_mean))
+        if true_mean < 0.2:
+            raise NotAchievedException("drove at only %.2f m/s: not a test of the flow" % true_mean)
+        if ekf_mean < 0.7 * true_mean:
+            raise NotAchievedException("EKF speed %.2f m/s against %.2f m/s" % (ekf_mean, true_mean))
+
     def RCDuplicateOptionsExist(self):
         '''ensure duplicate RC option detection works'''
         self.wait_ready_to_arm()
@@ -8210,6 +8254,7 @@ return update()
             self.FenceFullAndPartialTransfer,
             self.MissionPolyEnabledPreArm,
             self.OpticalFlow,
+            self.OpticalFlowRangefinderOnGround,
             self.RCDuplicateOptionsExist,
             self.ClearMission,
             self.JammingSimulation,
