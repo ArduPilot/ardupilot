@@ -135,6 +135,11 @@ public:
                       float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor,
                       float _true_prop_area, float _momentum_drag_coefficient);
 
+    // extra first-order lag on the command, seconds; 0 disables
+    void set_lag_tc(float tc) {
+        lag_tc = tc;
+    }
+
     // override slew limit
     void set_slew_max(float _slew_max) {
         slew_max = _slew_max;
@@ -154,6 +159,8 @@ private:
     float mot_spin_max;
     float mot_expo;
     float slew_max;
+    float lag_tc = 0;
+    float lag_command = 0;
     float current;
     float power_factor;
     float voltage_max;

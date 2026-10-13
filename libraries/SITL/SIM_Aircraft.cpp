@@ -720,10 +720,56 @@ void Aircraft::update_model(const struct sitl_input &input)
 /*
   update the simulation attitude and relative position
  */
-void Aircraft::update_dynamics(const Vector3f &rot_accel)
+/*
+  control effectiveness test aids. Scale and/or reverse the rotational
+  acceleration the vehicle model produced, so a controller can be tested
+  against an airframe that differs from its prior, and add a fixed
+  angular acceleration for a set time after liftoff so identification
+  can be tested against a disturbance that arrives in its first strokes.
+ */
+Vector3f Aircraft::apply_ce_test_aids(const Vector3f &rot_accel_in)
+{
+    Vector3f rot_accel = rot_accel_in;
+    const Vector3f &ce_scale = sitl->ce_scale.get();
+    if (!is_zero(ce_scale.x) && !is_equal(ce_scale.x, 1.0f)) {
+        rot_accel.x *= ce_scale.x;
+    }
+    if (!is_zero(ce_scale.y) && !is_equal(ce_scale.y, 1.0f)) {
+        rot_accel.y *= ce_scale.y;
+    }
+    if (!is_zero(ce_scale.z) && !is_equal(ce_scale.z, 1.0f)) {
+        rot_accel.z *= ce_scale.z;
+    }
+    if (sitl->ce_rev_mask & (1U << 0)) {
+        rot_accel.x = -rot_accel.x;
+    }
+    if (sitl->ce_rev_mask & (1U << 1)) {
+        rot_accel.y = -rot_accel.y;
+    }
+    if (sitl->ce_rev_mask & (1U << 2)) {
+        rot_accel.z = -rot_accel.z;
+    }
+
+    if (on_ground()) {
+        ce_liftoff_time_us = 0;
+    } else if (ce_liftoff_time_us == 0) {
+        ce_liftoff_time_us = time_now_us;
+    }
+    if (ce_liftoff_time_us != 0 && is_positive(sitl->ce_gust_dur)) {
+        const float t_since_liftoff = (time_now_us - ce_liftoff_time_us) * 1.0e-6f;
+        if (t_since_liftoff >= sitl->ce_gust_t &&
+            t_since_liftoff < sitl->ce_gust_t + sitl->ce_gust_dur) {
+            rot_accel += sitl->ce_gust.get();
+        }
+    }
+    return rot_accel;
+}
+
+void Aircraft::update_dynamics(const Vector3f &rot_accel_in)
 {
     WITH_SEMAPHORE(pose_sem);
 
+    const Vector3f rot_accel = apply_ce_test_aids(rot_accel_in);
     const float delta_time = frame_time_us * 1.0e-6f;
 
     // update eas2tas and air density

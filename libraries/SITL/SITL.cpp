@@ -526,6 +526,73 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
 // third table of user settable parameters for SITL. 
 const AP_Param::GroupInfo SIM::var_info3[] = {
+    // @Param: CE_SCALE_X
+    // @DisplayName: Roll control effectiveness scale
+    // @Description: Multiplier on the roll acceleration the vehicle model produces, to emulate an airframe more or less effective than the controller's prior. Applies to every SITL vehicle model. 1 or 0 means unchanged.
+    // @Range: 0.1 10
+    // @User: Advanced
+
+    // @Param: CE_SCALE_Y
+    // @DisplayName: Pitch control effectiveness scale
+    // @Description: Multiplier on the pitch acceleration the vehicle model produces, see SIM_CE_SCALE_X. 1 or 0 means unchanged.
+    // @Range: 0.1 10
+    // @User: Advanced
+
+    // @Param: CE_SCALE_Z
+    // @DisplayName: Yaw control effectiveness scale
+    // @Description: Multiplier on the yaw acceleration the vehicle model produces, see SIM_CE_SCALE_X. 1 or 0 means unchanged.
+    // @Range: 0.1 10
+    // @User: Advanced
+    AP_GROUPINFO("CE_SCALE", 2, SIM, ce_scale, 0),
+
+    // @Param: CE_REV_MSK
+    // @DisplayName: Control effectiveness reversal mask
+    // @Description: Axes on which the vehicle model reverses the rotational acceleration it produces, emulating a reversed actuator or mixer entry. Applies to every SITL vehicle model.
+    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+    // @User: Advanced
+    AP_GROUPINFO("CE_REV_MSK", 3, SIM, ce_rev_mask, 0),
+
+    // @Param: CE_MOT_TC
+    // @DisplayName: Extra motor lag time constant
+    // @Description: First-order lag added to every multicopter motor command in the frame model, to emulate slow actuators. 0 disables.
+    // @Units: s
+    // @Range: 0 0.5
+    // @User: Advanced
+    AP_GROUPINFO("CE_MOT_TC", 4, SIM, ce_mot_tc, 0),
+
+    // @Param: CE_GUST_X
+    // @DisplayName: Roll gust disturbance
+    // @Description: Angular acceleration disturbance applied about the roll axis for SIM_CE_GUST_DUR seconds starting SIM_CE_GUST_T seconds after the vehicle leaves the ground. Applies to every SITL vehicle model.
+    // @Units: rad/s/s
+    // @User: Advanced
+
+    // @Param: CE_GUST_Y
+    // @DisplayName: Pitch gust disturbance
+    // @Description: Angular acceleration disturbance applied about the pitch axis, see SIM_CE_GUST_X
+    // @Units: rad/s/s
+    // @User: Advanced
+
+    // @Param: CE_GUST_Z
+    // @DisplayName: Yaw gust disturbance
+    // @Description: Angular acceleration disturbance applied about the yaw axis, see SIM_CE_GUST_X
+    // @Units: rad/s/s
+    // @User: Advanced
+    AP_GROUPINFO("CE_GUST", 5, SIM, ce_gust, 0),
+
+    // @Param: CE_GUST_T
+    // @DisplayName: Gust disturbance start
+    // @Description: Seconds after the vehicle leaves the ground that the SIM_CE_GUST disturbance starts
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("CE_GUST_T", 6, SIM, ce_gust_t, 0),
+
+    // @Param: CE_GUST_DUR
+    // @DisplayName: Gust disturbance duration
+    // @Description: How long the SIM_CE_GUST disturbance lasts. 0 disables it.
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("CE_GUST_DUR", 7, SIM, ce_gust_dur, 0),
+
     // @Param: ODOM_ENABLE
     // @DisplayName: Odometry enable
     // @Description: SITL odometry enabl
