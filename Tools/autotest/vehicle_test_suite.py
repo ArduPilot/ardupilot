@@ -19461,6 +19461,23 @@ switch value'''
         if abs(new_gpi_alt2 - m.alt) > 100:
             raise NotAchievedException("Failover not detected")
 
+    def ftp_wrote_bytes_pattern(self, length=None, local_name=None):
+        """pexpect pattern matching a completed MAVProxy "ftp get".
+
+        MAVProxy used to print this message itself ("Wrote N bytes to
+        ..."); it now delegates to pymavlink's mavftp, which also prints
+        the size it asked for ("Wrote N/N bytes to ...").  Accept either
+        shape, while still requiring the length we expect - which is the
+        whole point of waiting for this message.  The length matched is
+        the transfer size the client was working to, so a gap-filling
+        client which reads some bytes twice still matches.
+        """
+        total = r"\d+" if length is None else "%u" % length
+        pattern = r"Wrote (?:\d+/)?%s bytes to " % total
+        if local_name is not None:
+            pattern += re.escape(local_name)
+        return pattern
+
     def fetch_file_via_ftp(self, path, timeout=20):
         '''returns the content of the FTP'able file at path'''
         self.progress("Retrieving (%s) using MAVProxy" % path)
@@ -19471,7 +19488,7 @@ switch value'''
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
             mavproxy.send("ftp set debug 1\n")  # so we get the "Terminated session" message
-            # Completion is detected by MAVProxy's own success message
+            # Completion is detected by the client's success message
             # ("Wrote N bytes to ...", printed only when the whole file
             # has been written).  "No transfer in progress" cannot tell
             # a completed transfer from one not yet started or aborted.
@@ -19481,7 +19498,7 @@ switch value'''
                 mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
                 mavproxy.expect("Getting")
                 try:
-                    mavproxy.expect(r"Wrote \d+ bytes to ", timeout=timeout)
+                    mavproxy.expect(self.ftp_wrote_bytes_pattern(), timeout=timeout)
                     break
                 except pexpect.TIMEOUT:
                     self.progress("Transfer did not complete (attempt=%u)" % attempt)
@@ -20982,7 +20999,7 @@ switch value'''
             mavproxy.send("ftp get %s %s\n" % (remote_name, local_name))
             mavproxy.expect("Gap read of", timeout=60)
             mavproxy.send("ftp set pkt_loss_rx 0\n")
-            mavproxy.expect("Wrote %u bytes to %s" % (len(content), local_name), timeout=120)
+            mavproxy.expect(self.ftp_wrote_bytes_pattern(len(content), local_name), timeout=120)
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
@@ -21090,7 +21107,7 @@ switch value'''
             # both commands in one write, so the download is under way before
             # the first page of the listing comes back
             mavproxy.send("ftp list %s\nftp get %s %s\n" % (dirname, remote_name, local_name))
-            mavproxy.expect("Wrote %u bytes to %s" % (len(content), local_name), timeout=60)
+            mavproxy.expect(self.ftp_wrote_bytes_pattern(len(content), local_name), timeout=60)
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
