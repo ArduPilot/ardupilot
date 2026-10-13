@@ -17941,7 +17941,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # by the shorter range the EKF speed settles near 0.6 of the vehicle's: at 4 m/s that
         # is below the 3 m/s at which a 3 m/s gate lets go, so a switch taken in the turn holds.
         self.set_parameter("EK3_RNG_USE_SPD", 3)
-        self.set_rc(2, 1350)
+        self.set_rc(2, 1320)
         self.context_clear_collection('STATUSTEXT')
         self.set_parameter("SIM_FLOW_ENABLE", 0)
         self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
@@ -17959,8 +17959,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("turned only %.0f degrees" % turned)
             # lean along the track as the nose comes round
             self.set_rc_from_map({
-                1: int(1500 - 150 * math.sin(math.radians(turned))),
-                2: int(1500 - 150 * math.cos(math.radians(turned))),
+                1: int(1500 - 180 * math.sin(math.radians(turned))),
+                2: int(1500 - 180 * math.cos(math.radians(turned))),
             }, timeout=None)
         self.set_rc_from_map({4: 1500}, timeout=None)
         self.set_parameter("SIM_SONAR_OFFSET", -1.0)
@@ -18011,12 +18011,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # measured from just before each leg, so a leg does not inherit an earlier one's error
         refs = [err_before, err_regain, err_turn]
         names = ["with flow lost", "after flow came back", "after flow came back and the nose turned"]
+        speed_gates = [2, 2, 3]
         for i in range(len(legs)):
             if len(refs[i]) < 10 or len(errs[i]) < 50 or len(speeds[i]) < 50 or len(rngs[i]) < 20:
                 raise NotAchievedException("too few samples %s: %u/%u heights, %u speeds, %u ranges" %
                                            (names[i], len(refs[i]), len(errs[i]), len(speeds[i]), len(rngs[i])))
             # the vehicle must have been fast enough for the gate, and low enough for the switch
-            if min(speeds[i]) < 2 or max(rngs[i]) > 3.3:
+            if min(speeds[i]) < speed_gates[i] or max(rngs[i]) > 3.3:
                 raise NotAchievedException("speed down to %.1f m/s and range up to %.1f m %s: not a test of the switch" %
                                            (min(speeds[i]), max(rngs[i]), names[i]))
             ref = sum(refs[i]) / len(refs[i])
