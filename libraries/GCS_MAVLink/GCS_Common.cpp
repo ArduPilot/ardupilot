@@ -1924,6 +1924,43 @@ void GCS_MAVLINK::raw_packetReceived(uint8_t framing_status,
     handle_message(msg);
 }
 
+/*
+  Receive only the MAVLink messages needed to recover from a fatal board
+  configuration error.  This deliberately avoids the normal vehicle message
+  dispatcher, which can run mission and mode handling on a partially
+  initialised vehicle.
+ */
+void GCS_MAVLINK::update_receive_config_error(uint32_t max_time_us)
+{
+    if (locked()) {
+        return;
+    }
+
+    mavlink_message_t msg;
+    mavlink_status_t status;
+    const uint32_t tstart_us = AP_HAL::micros();
+
+    status.packet_rx_drop_count = 0;
+
+    const uint16_t nbytes = _port->available();
+    for (uint16_t i = 0; i < nbytes; i++) {
+        const uint8_t c = (uint8_t)_port->read();
+        const uint8_t framing = mavlink_frame_char_buffer(channel_buffer(), channel_status(), c, &msg, &status);
+        if (framing == MAVLINK_FRAMING_OK) {
+            hal.util->persistent_data.last_mavlink_msgid = msg.msgid;
+            GCS_MAVLINK::packetReceived(status, msg);
+            handle_config_error_message(status, msg);
+            hal.util->persistent_data.last_mavlink_msgid = 0;
+        }
+
+        if (framing == MAVLINK_FRAMING_OK || i % 100 == 0) {
+            if (AP_HAL::micros() - tstart_us > max_time_us) {
+                break;
+            }
+        }
+    }
+}
+
 void
 GCS_MAVLINK::update_receive(uint32_t max_time_us)
 {
@@ -2801,6 +2838,13 @@ void GCS::update_receive(void)
     update_passthru();
 }
 
+void GCS::update_receive_config_error(void)
+{
+    for (uint8_t i = 0; i < num_gcs(); i++) {
+        chan(i)->update_receive_config_error();
+    }
+}
+
 void GCS::send_mission_item_reached_message(uint16_t mission_index)
 {
     for (uint8_t i=0; i<num_gcs(); i++) {
@@ -3606,6 +3650,12 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
     }
 #endif
 
+    return reboot_vehicle(packet, msg, reboot_to_bootloader);
+}
+
+MAV_RESULT GCS_MAVLINK::reboot_vehicle(const mavlink_command_int_t &packet, const mavlink_message_t &msg,
+                                       bool reboot_to_bootloader)
+{
     // send ack before we reboot
     mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED,
                                  0, 0,
@@ -5362,6 +5412,83 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
     out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
     out.z = in.param7;
+}
+
+void GCS_MAVLINK::handle_config_error_message(const mavlink_status_t &status, const mavlink_message_t &msg)
+{
+    mavlink_command_int_t command_int{};
+
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_HEARTBEAT:
+    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
+    case MAVLINK_MSG_ID_PARAM_SET:
+    case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+        break;
+
+    case MAVLINK_MSG_ID_COMMAND_LONG: {
+        mavlink_command_long_t command_long;
+        mavlink_msg_command_long_decode(&msg, &command_long);
+        if (command_long.command != MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN) {
+            return;
+        }
+        GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(command_long, command_int);
+        break;
+    }
+
+    case MAVLINK_MSG_ID_COMMAND_INT:
+        mavlink_msg_command_int_decode(&msg, &command_int);
+        if (command_int.command != MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN) {
+            return;
+        }
+        break;
+
+    default:
+        return;
+    }
+
+    // Preserve normal target matching and source-system enforcement, but only
+    // after excluding messages which are unsafe during partial initialisation.
+    if (!routing.check_and_forward(MAVLINK_FRAMING_OK, *this, msg) ||
+        !accept_packet(status, msg)) {
+        return;
+    }
+
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_HEARTBEAT:
+        handle_heartbeat(msg);
+        return;
+
+    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
+    case MAVLINK_MSG_ID_PARAM_SET:
+    case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+        handle_common_param_message(msg);
+        return;
+
+    case MAVLINK_MSG_ID_COMMAND_LONG:
+    case MAVLINK_MSG_ID_COMMAND_INT:
+        break;
+
+    default:
+        return;
+    }
+
+    MAV_RESULT result = MAV_RESULT_DENIED;
+    if (is_equal(command_int.param1, static_cast<float>(REBOOT_SHUTDOWN_ACTION_REBOOT))) {
+        if ((command_int.target_component == MAV_COMP_ID_ALL) ||
+            (command_int.target_component == mavlink_system.compid)) {
+            result = MAV_RESULT_FAILED;
+            const uint32_t magic_force_reboot_value = 20190226;
+            if (!hal.util->get_soft_armed() || command_int.y == magic_force_reboot_value) {
+                hal.util->persistent_data.last_mavlink_cmd = command_int.command;
+                result = reboot_vehicle(command_int, msg, false);
+                hal.util->persistent_data.last_mavlink_cmd = 0;
+            }
+        }
+    }
+    mavlink_msg_command_ack_send(chan, command_int.command, result,
+                                 0, 0,
+                                 msg.sysid,
+                                 msg.compid);
 }
 
 void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
