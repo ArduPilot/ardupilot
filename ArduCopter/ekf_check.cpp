@@ -262,8 +262,8 @@ void Copter::failsafe_ekf_off_event(void)
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
-// return to the mode the EKF failsafe changed from once the EKF checks have passed, with the pilot
-// hands-off and no failsafe active, for EKF_FAILSAFE_RESTORE_DELAY_MS. One attempt per failsafe
+// return to the mode the EKF failsafe changed from once the EKF checks have passed with a position,
+// the pilot hands-off and no failsafe active, for EKF_FAILSAFE_RESTORE_DELAY_MS. One attempt per failsafe
 void Copter::failsafe_ekf_restore_mode()
 {
     if (!ekf_check_state.restore_pending) {
@@ -282,7 +282,7 @@ void Copter::failsafe_ekf_restore_mode()
     const bool hands_off = rc().has_valid_input() &&
                            is_zero(channel_roll->norm_input_dz()) &&
                            is_zero(channel_pitch->norm_input_dz());
-    if (any_failsafe_triggered() || ekf_check_state.fail_count != 0 || !hands_off) {
+    if (any_failsafe_triggered() || ekf_check_state.fail_count != 0 || !position_ok() || !hands_off) {
         ekf_check_state.restore_start_ms = 0;
         return;
     }
