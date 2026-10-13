@@ -7219,6 +7219,82 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # which follows this one, so lose them:
         self.reboot_sitl()
 
+    def ComponentAgnosticCommandPassthrough(self):
+        '''safety commands for a component whose link is in serial passthrough are acted on'''
+        # nothing we write to a port in serial passthrough is sent,
+        # however much space it has, so a parachute or termination
+        # command for a component on that port has not been sent on to
+        # it and we must act on it
+        non_autopilot_compid = 142
+        command = mavutil.mavlink.MAV_CMD_DO_PARACHUTE
+
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
+                                          robust_parsing=True,
+                                          source_system=self.sysid_thismav(),
+                                          source_component=non_autopilot_compid)
+
+        # the autopilot forwards the component's heartbeat to us once it
+        # has learned the route to it:
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("No route learned to component %u" % non_autopilot_compid)
+            mav2.mav.heartbeat_send(
+                mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                0,
+                0,
+                0)
+            m = self.mav.recv_match(type='HEARTBEAT', blocking=True, timeout=1)
+            if m is not None and m.get_srcComponent() == non_autopilot_compid:
+                break
+        self.progress("Route to component %u learned" % non_autopilot_compid)
+
+        self.progress("Link up: forwarded, not acted upon")
+        self.drain_mav()
+        self.drain_mav(mav2)
+        self.send_cmd(command, target_compid=non_autopilot_compid)
+        self.assert_receive_message(
+            'COMMAND_LONG',
+            mav=mav2,
+            timeout=5,
+            condition='COMMAND_LONG.command==%u' % command)
+        self.assert_not_receive_message(
+            'COMMAND_ACK',
+            timeout=5,
+            condition='COMMAND_ACK.command==%u' % command)
+
+        # put the component's port into passthrough with SERIAL1:
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SERIAL_PASSTIMO": 0,
+            "SERIAL_PASS1": 2,
+            "SERIAL_PASS2": 1,
+        })
+        self.wait_statustext("Passthru enabled", timeout=10, check_context=True)
+        self.delay_sim_time(3, reason="passthrough to lock the ports")
+
+        for target_sysid in [self.sysid_thismav(), 0]:
+            self.progress("Port in passthrough: acted upon (target %u/%u)" %
+                          (target_sysid, non_autopilot_compid))
+            self.expire_other_component_warning_rate_limit()
+            self.drain_mav()
+            self.send_cmd(command, target_sysid=target_sysid, target_compid=non_autopilot_compid)
+            self.assert_receive_message(
+                'COMMAND_ACK',
+                timeout=5,
+                condition='COMMAND_ACK.command==%u' % command)
+            self.wait_statustext("acting on cmd %u for compid %u" % (command, non_autopilot_compid),
+                                 timeout=5,
+                                 check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+
+        mav2.close()
+        # the passthrough and the learned route would change the
+        # behaviour of any test which follows this one, so lose them:
+        self.set_parameter("SERIAL_PASS2", -1)
+        self.reboot_sitl()
+
     def MAV_CMD_DO_SET_REVERSE(self):
         '''test MAV_CMD_DO_SET_REVERSE command'''
         self.change_mode('GUIDED')
@@ -8850,6 +8926,7 @@ return update()
             self.ParamSetForNonAutopilotComponent,
             self.ParamForComponentOnArrivingLink,
             self.ComponentAgnosticCommandRouting,
+            self.ComponentAgnosticCommandPassthrough,
             self.GCSFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
