@@ -973,7 +973,7 @@ uint8_t GCS_MAVLINK_Rover::send_available_mode(uint8_t index) const
         chan,
         mode_count,
         index,
-        MAV_STANDARD_MODE::MAV_STANDARD_MODE_NON_STANDARD,
+        standard_mode_from_mode_number((uint8_t)mode_number),
         (uint8_t)mode_number,
         // MAV_MODE_PROPERTY bitmask,
         user_selectable ? 0 : MAV_MODE_PROPERTY_NOT_USER_SELECTABLE,
@@ -981,4 +981,36 @@ uint8_t GCS_MAVLINK_Rover::send_available_mode(uint8_t index) const
     );
 
     return mode_count;
+}
+
+// Standard modes protocol: map the active vehicle mode to a MAV_STANDARD_MODE
+MAV_STANDARD_MODE GCS_MAVLINK_Rover::standard_mode_from_mode_number(uint8_t mode_number) const
+{
+    switch ((Mode::Number)mode_number) {
+    case Mode::Number::RTL:
+        return MAV_STANDARD_MODE_SAFE_RECOVERY;
+    case Mode::Number::AUTO:
+        return MAV_STANDARD_MODE_MISSION;
+    default:
+        break;
+    }
+    return MAV_STANDARD_MODE_NON_STANDARD;
+}
+
+// Standard modes protocol: find the vehicle mode which implements a MAV_STANDARD_MODE
+// The position hold, orbit, cruise, altitude hold, land and takeoff
+// standard modes are defined for flying vehicles only.
+bool GCS_MAVLINK_Rover::mode_number_from_standard_mode(MAV_STANDARD_MODE standard_mode, uint8_t &mode_number) const
+{
+    switch (standard_mode) {
+    case MAV_STANDARD_MODE_SAFE_RECOVERY:
+        mode_number = (uint8_t)Mode::Number::RTL;
+        return true;
+    case MAV_STANDARD_MODE_MISSION:
+        mode_number = (uint8_t)Mode::Number::AUTO;
+        return true;
+    default:
+        break;
+    }
+    return false;
 }

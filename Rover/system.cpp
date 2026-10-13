@@ -284,6 +284,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
     logger.Write_Mode((uint8_t)control_mode->mode_number(), control_mode_reason);
 #endif
     gcs().send_message(MSG_HEARTBEAT);
+    gcs().send_message(MSG_CURRENT_MODE);
 
     notify_mode(control_mode);
     return true;
