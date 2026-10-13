@@ -22,7 +22,7 @@ def checker(monkeypatch):
     env = waf.ConfigSet.ConfigSet()
     env.NM = [shutil.which("nm") or "nm"]
     env.vehicle_binary = True
-    env.SIM_ENABLED = True
+    env.SIM_ENABLED = False
     env.CHECK_MALLOC_WRAPPING = True
     env.LINKFLAGS = ["-Wl,--wrap,malloc"]
     task = waf.check_elf_symbols(env=env)
@@ -75,11 +75,174 @@ def test_darwin_defined_malloc(checker, monkeypatch):
     task.run()
 
 
-@pytest.mark.parametrize("symbol", ["_malloc_r", "_malloc_r.constprop.0", "printf", "printf@@LIBC_1.0"])
+def test_unused_sitl_picolibc_parsers(checker, monkeypatch):
+    waf, task = checker
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "sitl"
+    task.env.CHECK_MALLOC_WRAPPING = False
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "00001000 T main\n")
+    task.run()
+
+
+@pytest.mark.parametrize("public, implementation", [
+    ("atof", "ap_picolibc_atof"),
+    ("strtod", "ap_picolibc_strtod"),
+    ("strtof", "ap_picolibc_strtof"),
+])
+def test_sitl_parser_requires_picolibc_pair(checker, monkeypatch, public, implementation):
+    waf, task = checker
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "sitl"
+    task.env.CHECK_MALLOC_WRAPPING = False
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: " U %s\n" % public)
+    with pytest.raises(waf.Errors.WafError, match="Missing Picolibc SITL symbols.*%s" % implementation):
+        task.run()
+
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw:
+                        "00001000 T %s\n00002000 T %s\n" % (public, implementation))
+    task.run()
+
+
+def test_emscripten_skips_elf_symbol_check(checker, monkeypatch):
+    _, task = checker
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "sitl"
+    task.env.TOOLCHAIN = "emscripten"
+    task.env.CHECK_MALLOC_WRAPPING = False
+    monkeypatch.setattr(subprocess, "check_output", lambda *a, **kw:
+                        pytest.fail("WASM output is not an ELF file"))
+    task.run()
+
+
+@pytest.mark.parametrize("map_contents, error", [
+    ("", "Picolibc archive missing"),
+    ("/build/modules/picolibc/libc.a(strtod.o)\n", None),
+    ("/build/modules/picolibc/libc.a(strtod.o)\n"
+     "/toolchain/lib/libstdc++_nano.a(string.o)\n", None),
+    ("/build/modules/picolibc/libc.a(strtod.o)\n"
+     " *libc_nano.a:*memcpy*(.text*)\n", None),
+    ("/toolchain/lib/libc.a(strtod.o)\n", "Unexpected libc archive"),
+    ("/toolchain/lib/libc_nano.a(strtod.o)\n", "Forbidden toolchain archive"),
+    ("/toolchain/lib/libm.a(sin.o)\n", "Forbidden toolchain archive"),
+    ("/toolchain/lib/libstdc++.a(string.o)\n", "Forbidden toolchain archive"),
+])
+def test_chibios_picolibc_archive_check(checker, monkeypatch, tmp_path, map_contents, error):
+    waf, task = checker
+    elf = tmp_path / "build" / "bin" / "firmware"
+    elf.parent.mkdir(parents=True)
+    map_path = tmp_path / "build" / "Linker.map"
+    map_path.write_text(map_contents)
+    task.inputs = [SimpleNamespace(abspath=lambda: str(elf))]
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "chibios"
+    task.env.PICOLIBC_LIB = "/build/modules/picolibc/libc.a"
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.SYMBOLS_BLACKLIST = []
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "00001000 T main\n")
+    if error:
+        with pytest.raises(waf.Errors.WafError, match=error):
+            task.run()
+    else:
+        task.run()
+
+
+def test_chibios_picolibc_uses_program_map(checker, monkeypatch, tmp_path):
+    waf, task = checker
+    elf = tmp_path / "build" / "bin" / "firmware"
+    elf.parent.mkdir(parents=True)
+    (tmp_path / "build" / "Linker.map").write_text("/toolchain/lib/libc.a(strtod.o)\n")
+    program_map = tmp_path / "firmware.map"
+    program_map.write_text("/build/modules/picolibc/libc.a(strtod.o)\n")
+    task.inputs = [SimpleNamespace(abspath=lambda: str(elf))]
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "chibios"
+    task.env.PICOLIBC_LIB = "/build/modules/picolibc/libc.a"
+    task.env.PICOLIBC_MAP_PATH = str(program_map)
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.SYMBOLS_BLACKLIST = []
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "00001000 T main\n")
+    task.run()
+
+
+@pytest.mark.parametrize("helper", [
+    "std::__throw_bad_alloc()",
+    "std::__throw_bad_function_call()",
+    "std::__throw_future_error(int)",
+    "std::__throw_ios_failure(char const*, int)",
+    "std::__throw_regex_error(std::regex_constants::error_type)",
+    "std::__throw_system_error(int)",
+])
+def test_chibios_picolibc_rejects_libstdcxx_error_helpers(checker, monkeypatch, tmp_path, helper):
+    waf, task = checker
+    elf = tmp_path / "build" / "bin" / "firmware"
+    elf.parent.mkdir(parents=True)
+    map_path = tmp_path / "firmware.map"
+    map_path.write_text("/build/modules/picolibc/libc.a(strtod.o)\n")
+    task.inputs = [SimpleNamespace(abspath=lambda: str(elf))]
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "chibios"
+    task.env.PICOLIBC_LIB = "/build/modules/picolibc/libc.a"
+    task.env.PICOLIBC_MAP_PATH = str(map_path)
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.CHECK_SYMBOLS = False
+    task.env.vehicle_binary = True
+    task.env.SIM_ENABLED = False
+    task.env.SYMBOLS_BLACKLIST = []
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw:
+                        "00001000 T %s\n" % helper)
+    with pytest.raises(waf.Errors.WafError, match="Disallowed symbol.*std::__throw_"):
+        task.run()
+
+
+def test_chibios_picolibc_allows_libstdcxx_error_helpers_in_sohw(checker, monkeypatch, tmp_path):
+    waf, task = checker
+    elf = tmp_path / "build" / "bin" / "firmware"
+    elf.parent.mkdir(parents=True)
+    map_path = tmp_path / "firmware.map"
+    map_path.write_text("/build/modules/picolibc/libc.a(strtod.o)\n")
+    task.inputs = [SimpleNamespace(abspath=lambda: str(elf))]
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "chibios"
+    task.env.PICOLIBC_LIB = "/build/modules/picolibc/libc.a"
+    task.env.PICOLIBC_MAP_PATH = str(map_path)
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.CHECK_SYMBOLS = False
+    task.env.vehicle_binary = True
+    task.env.SIM_ENABLED = True
+    task.env.SYMBOLS_BLACKLIST = ["abort"]
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw:
+                        "00001000 T std::__throw_bad_alloc()\n00002000 T abort\n")
+    task.run()
+
+
+def test_chibios_picolibc_allows_libstdcxx_error_helpers_in_examples(checker, monkeypatch, tmp_path):
+    waf, task = checker
+    elf = tmp_path / "build" / "examples" / "example"
+    elf.parent.mkdir(parents=True)
+    map_path = tmp_path / "example.map"
+    map_path.write_text("/build/modules/picolibc/libc.a(strtod.o)\n")
+    task.inputs = [SimpleNamespace(abspath=lambda: str(elf))]
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "chibios"
+    task.env.PICOLIBC_LIB = "/build/modules/picolibc/libc.a"
+    task.env.PICOLIBC_MAP_PATH = str(map_path)
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.CHECK_SYMBOLS = False
+    task.env.vehicle_binary = False
+    task.env.SIM_ENABLED = False
+    task.env.SYMBOLS_BLACKLIST = ["abort"]
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw:
+                        "00001000 T std::__throw_bad_alloc()\n00002000 T abort\n")
+    task.run()
+
+
+@pytest.mark.parametrize("symbol", ["_malloc_r", "_malloc_r.constprop.0", "printf", "printf@@LIBC_1.0",
+                                    "malloc", "calloc", "free", "read", "lseek", "write", "close", "fstat"])
 def test_unwrapped_symbol_rejected_without_cxx_checks(checker, monkeypatch, symbol):
     waf, task = checker
     task.env.CHECK_MALLOC_WRAPPING = False
-    task.env.SYMBOLS_BLACKLIST = ["_malloc_r", "printf"]
+    task.env.SYMBOLS_BLACKLIST = ["_malloc_r", "printf", "malloc", "calloc", "free",
+                                  "read", "lseek", "write", "close", "fstat"]
     monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "00001000 T %s\n" % symbol)
     with pytest.raises(waf.Errors.WafError, match="Disallowed unwrapped symbol"):
         task.run()

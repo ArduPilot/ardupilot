@@ -313,7 +313,9 @@ class upload_fw_blueos(Task.Task):
 class check_elf_symbols(Task.Task):
     # Recheck an unchanged binary when the symbol policy or inspection tool changes.
     vars = ['SYMBOLS_BLACKLIST', 'CHECK_MALLOC_WRAPPING', 'CHECK_SYMBOLS',
-            'vehicle_binary', 'SIM_ENABLED', 'LINKFLAGS', 'DEST_OS', 'NM']
+            'vehicle_binary', 'SIM_ENABLED', 'LINKFLAGS', 'DEST_OS', 'NM',
+            'PICOLIBC', 'PICOLIBC_LIB', 'PICOLIBC_MAP_PATH', 'PICOLIBC_MODE',
+            'TOOLCHAIN']
     color='CYAN'
     def keyword(self):
         return "checking symbols"
@@ -328,7 +330,9 @@ class check_elf_symbols(Task.Task):
         # depend on the optional C++ exception/new checking.
         check_cxx = self.env.CHECK_SYMBOLS and self.env.vehicle_binary and not self.env.SIM_ENABLED
         check_malloc = self.env.CHECK_MALLOC_WRAPPING and self.env.vehicle_binary
-        if not (check_cxx or check_malloc or self.env.SYMBOLS_BLACKLIST):
+        check_blacklist = self.env.SYMBOLS_BLACKLIST and self.env.vehicle_binary and not self.env.SIM_ENABLED
+        check_picolibc = self.env.PICOLIBC and self.env.TOOLCHAIN != 'emscripten'
+        if not (check_cxx or check_malloc or check_blacklist or check_picolibc):
             return
 
         nmout = subprocess.check_output(self.env.NM + ['-C', elfpath], text=True)
@@ -350,10 +354,56 @@ class check_elf_symbols(Task.Task):
             if symbol_type in ('b', 'd', 'g', 'r', 's'):
                 continue
             name = symbol.split('@', 1)[0].split('.', 1)[0]
-            if name in self.env.SYMBOLS_BLACKLIST:
+            if check_blacklist and name in self.env.SYMBOLS_BLACKLIST:
                 raise Errors.WafError("Disallowed unwrapped symbol in %s: %s" % (elfpath, symbol))
 
+        if self.env.PICOLIBC_MODE == 'chibios':
+            map_path = self.env.PICOLIBC_MAP_PATH
+            if not map_path:
+                map_path = os.path.join(os.path.dirname(os.path.dirname(elfpath)), 'Linker.map')
+            with open(map_path, 'r', encoding='utf-8', errors='replace') as map_file:
+                map_contents = map_file.read()
+            picolibc_archive = os.path.realpath(self.env.PICOLIBC_LIB)
+            forbidden_archives = (
+                'libc_nano.a', 'libm.a', 'libm_nano.a', 'libnosys.a',
+                'libstdc++.a',
+            )
+            for archive in forbidden_archives:
+                # Linker scripts name archives in section patterns. An archive
+                # contributed code only when the map names one of its members.
+                if archive + '(' in map_contents:
+                    raise Errors.WafError("Forbidden toolchain archive in %s: %s" % (map_path, archive))
+            found_picolibc = False
+            for line in map_contents.splitlines():
+                libc_start = line.find('libc.a(')
+                if libc_start == -1:
+                    continue
+                archive_start = line.rfind(' ', 0, libc_start) + 1
+                archive = os.path.realpath(line[archive_start:libc_start + len('libc.a')])
+                if archive != picolibc_archive:
+                    raise Errors.WafError("Unexpected libc archive in %s: %s" % (map_path, archive))
+                found_picolibc = True
+            if not found_picolibc:
+                raise Errors.WafError("Picolibc archive missing from %s" % map_path)
+
         defined_functions = {name for name, kind in symbols if kind in ('T', 't')}
+        if self.env.PICOLIBC_MODE == 'sitl' and check_picolibc:
+            symbol_prefix = '_' if self.env.DEST_OS == 'darwin' else ''
+            parser_pairs = {
+                'atof': 'ap_picolibc_atof',
+                'strtod': 'ap_picolibc_strtod',
+                'strtof': 'ap_picolibc_strtof',
+            }
+            names = {name.split('@', 1)[0] for name, _ in symbols}
+            required = set()
+            for public, implementation in parser_pairs.items():
+                pair = {symbol_prefix + public, symbol_prefix + implementation}
+                if pair & names:
+                    required.update(pair)
+            missing = required - defined_functions
+            if missing:
+                raise Errors.WafError("Missing Picolibc SITL symbols in %s: %s" %
+                                      (elfpath, ', '.join(sorted(missing))))
         if check_malloc and self.env.DEST_OS == 'darwin':
             # no --wrap on Darwin; AP_Common defines malloc in the executable
             if '_malloc' not in defined_functions:
@@ -373,17 +423,23 @@ class check_elf_symbols(Task.Task):
             if uses_malloc and '__wrap_malloc' not in defined_functions:
                 raise Errors.WafError("Missing defined zero-filling __wrap_malloc in %s" % elfpath)
 
+        cxx_blacklist = []
+        if (self.env.PICOLIBC_MODE == 'chibios' and
+                self.env.vehicle_binary and not self.env.SIM_ENABLED):
+            # libstdc++ error helpers end in abort and may pull newlib
+            # diagnostics into an otherwise Picolibc-only binary.
+            cxx_blacklist.append('std::__throw_')
         if check_cxx:
-            # Use substring matching to catch all exception helpers and the
-            # throwing new overloads, while allowing std::nothrow overloads.
-            blacklist = ['std::__throw',
-                         'operator new[](unsigned int)',
-                         'operator new[](unsigned long)',
-                         'operator new(unsigned int)',
-                         'operator new(unsigned long)']
-            for b in blacklist:
-                if b in nmout:
-                    raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
+            # Reject throwing new overloads while allowing std::nothrow.
+            cxx_blacklist += ['operator new[](unsigned int)',
+                              'operator new[](unsigned long)',
+                              'operator new(unsigned int)',
+                              'operator new(unsigned long)']
+        # Prefix/substring matching covers every __throw helper supplied by
+        # current or future libstdc++ versions.
+        for symbol in cxx_blacklist:
+            if symbol in nmout:
+                raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, symbol))
 
 @feature('post_link')
 @after_method('process_source')
@@ -393,7 +449,20 @@ def post_link(self):
     '''
     link_output = self.link_task.outputs[0]
 
+    map_path = None
+    if self.env.BOARD_CLASS == 'ChibiOS':
+        map_path = link_output.abspath() + '.map'
+        map_prefix = '-Wl,-Map,Linker.map,'
+        self.link_task.env = self.link_task.env.derive()
+        self.link_task.env.LINKFLAGS = [
+            flag.replace(map_prefix, '-Wl,-Map,%s,' % map_path)
+            for flag in self.link_task.env.LINKFLAGS
+        ]
+
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
+    if map_path is not None:
+        check_elf_task.env = check_elf_task.env.derive()
+        check_elf_task.env.PICOLIBC_MAP_PATH = map_path
     check_elf_task.set_run_after(self.link_task)
     if self.bld.options.upload_blueos and self.env["BOARD_CLASS"] == "LINUX":
         _upload_task = self.create_task('upload_fw_blueos', src=link_output)

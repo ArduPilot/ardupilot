@@ -549,6 +549,9 @@ def configure(cfg):
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
 
+    if cfg.env.BOARD_CLASS in ('ChibiOS', 'SITL'):
+        cfg.load('picolibc')
+
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('dronecangen')

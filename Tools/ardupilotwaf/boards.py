@@ -688,6 +688,8 @@ class Board:
             self.embed_ROMFS_files(bld)
 
     def build(self, bld):
+        if bld.env.PICOLIBC:
+            bld.load('picolibc')
         git_hash_ext = bld.git_head_hash(short=True, hash_abbrev=16)
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True), "abcdef")
         bld.ap_version_append_str('GIT_VERSION_EXTENDED', git_hash_ext, "0123456789abcdef")
@@ -1222,7 +1224,9 @@ class chibios(Board):
         # make board name available for USB IDs
         env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
         env.HAL_MAX_STACK_FRAME_SIZE = 'HAL_MAX_STACK_FRAME_SIZE=%d' % 1300 # set per Wframe-larger-than, ensure its same
-        env.CFLAGS += cfg.env.CPU_FLAGS + [
+        cpu_flags = [flag for flag in cfg.env.CPU_FLAGS if flag != '-u_printf_float']
+        libc_specs = []
+        env.CFLAGS += cpu_flags + [
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
             '-Wno-attributes',
@@ -1255,12 +1259,10 @@ class chibios(Board):
             '-fno-math-errno',
             '-mno-thumb-interwork',
             '-mthumb',
-            '--specs=nano.specs',
-            '--specs=nosys.specs',
             '-D__USE_CMSIS',
             '-Werror=deprecated-declarations',
             '-DNDEBUG=1'
-        ]
+        ] + libc_specs
         if not cfg.options.Werror:
             env.CFLAGS += [
             '-Wno-error=double-promotion',
@@ -1283,29 +1285,26 @@ class chibios(Board):
         bldnode = cfg.bldnode.make_node(self.name)
         env.BUILDROOT = bldnode.make_node('').abspath()
 
-        env.LINKFLAGS = cfg.env.CPU_FLAGS + [
+        env.LINKFLAGS = cpu_flags + [
             '-fomit-frame-pointer',
             '-falign-functions=16',
             '-ffunction-sections',
             '-fdata-sections',
             '-u_port_lock',
             '-u_port_unlock',
-            '-u_exit',
-            '-u_kill',
-            '-u_getpid',
-            '-u_errno',
             '-uchThdExit',
             '-fno-common',
             '-nostartfiles',
             '-mno-thumb-interwork',
             '-mthumb',
-            '--specs=nano.specs',
-            '--specs=nosys.specs',
             '-L%s' % env.BUILDROOT,
             '-L%s' % cfg.srcnode.make_node('modules/ChibiOS/os/common/startup/ARMCMx/compilers/GCC/ld/').abspath(),
             '-L%s' % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/common/').abspath(),
             '-Wl,-Map,Linker.map,%s--cref,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=ldscript.ld,--defsym=__process_stack_size__=%s,--defsym=__main_stack_size__=%s' % ("--print-memory-usage," if cfg.env.EXT_FLASH_SIZE_MB > 0 and cfg.env.INT_FLASH_PRIMARY == 0 else "", cfg.env.PROCESS_STACK, cfg.env.MAIN_STACK)
-        ]
+        ] + libc_specs
+
+        env.LINKFLAGS += ['-nostdlib', '-Wl,--start-group']
+        env.LDFLAGS += ['-Wl,--end-group']
 
         if cfg.env.DEBUG:
             env.CFLAGS += [
@@ -1366,7 +1365,7 @@ class chibios(Board):
                 AP_SIM_ENABLED = 0,
             )
 
-        env.LIB += ['gcc', 'm']
+        env.LIB += ['gcc']
 
         env.GIT_SUBMODULES += [
             'ChibiOS',
