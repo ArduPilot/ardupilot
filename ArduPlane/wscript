@@ -11,6 +11,7 @@ def build(bld):
             'AP_Avoidance',
             'AP_Camera',
             'AP_CustomControl',
+            'AP_INDI',
             'AP_L1_Control',
             'AP_Navigation',
             'AP_TECS',
