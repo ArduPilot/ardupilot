@@ -1031,6 +1031,9 @@ private:
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
 
+    // ground speed below which the range finder height switch takes hold; it lets go above EK3_RNG_USE_SPD
+    ftype rngSwitchInSpeed() const;
+
     // record all requested yaw resets completed
     void recordYawResetsCompleted();
 
@@ -1385,7 +1388,7 @@ private:
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active
-    uint8_t flowFusedAxes;          // bit per flow axis whose latest sample since relative aiding started passed its innovation check
+    uint8_t flowFusedAxes;          // bit per flow axis whose latest sample since relative aiding started passed its innovation check with a speed error inside the range height switch's hysteresis
     uint32_t allAxesFusedTime_ms;   // last time every flow axis, or every body velocity axis, had its bit set
 
     Vector3F accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
