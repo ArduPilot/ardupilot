@@ -22056,6 +22056,18 @@ RTL_ALT_M 111
         self.assert_parameter_value("RTL_ALT_M", 750)
         self.assert_parameter_value("DISARM_DELAY", 20)
 
+    def RCMAPInDefaultsFile(self):
+        '''test that RCMAP_ parameters in a defaults file are a config error'''
+        defaults_file = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults_file.write("RCMAP_ROLL 2\nRCMAP_PITCH 1\n")
+        defaults_file.close()
+        # wipe so a previous RCMAP_ conversion can't mask the problem
+        self.customise_SITL_commandline([],
+                                        defaults_filepath=defaults_file.name,
+                                        wipe=True)
+        # SYSTEM_TIME is not sent in the config error loop
+        self.wait_statustext("Config Error: RCMAP_ROLL in defaults file", wallclock_timeout=True)
+
     def ScriptingFlipMode(self):
         '''test adding custom mode from scripting'''
         # Really it would be nice to check for the AVAILABLE_MODES message, but pymavlink does not understand them yet.
@@ -23843,6 +23855,7 @@ return update, 1000
             self.LoweheiserManual,
             self.Weathervane,
             self.ReadOnlyDefaults,
+            self.RCMAPInDefaultsFile,
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
             self.mission_NAV_LOITER_TURNS_direction,
