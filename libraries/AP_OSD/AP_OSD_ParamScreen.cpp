@@ -185,7 +185,7 @@ static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SC
 AP_OSD_ParamScreen::AP_OSD_ParamScreen(uint8_t index)
 {
     for (uint8_t i = 0; i < NUM_PARAMS; i++) {
-        params[i] = PARAM_DEFAULTS[index][i];
+        params[i].set_defaults(PARAM_DEFAULTS[index][i]);
     }
     AP_Param::setup_object_defaults(this, var_info);
 }
