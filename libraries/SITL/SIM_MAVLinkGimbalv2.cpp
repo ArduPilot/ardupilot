@@ -45,7 +45,7 @@ void MAVLinkGimbalv2::update_input()
     for (ssize_t i = 0; i < nread; i++) {
         mavlink_message_t msg;
         mavlink_status_t status;
-        if (mavlink_frame_char_buffer(&mav.rxmsg, &mav.status,
+        if (mavlink_parse_char_buffer(&mav.rxmsg, &mav.status,
                                       buf[i], &msg, &status) == MAVLINK_FRAMING_OK) {
             handle_message(msg);
         }
