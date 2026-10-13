@@ -886,6 +886,7 @@ void NavEKF3_core::updateFlatGroundAssumed(void)
         const ftype hagl = terrainState - stateStruct.position.z;
         // trust the ground height only near where it was last known: over sloping ground the
         // error grows with distance flown, relative to height above it
+        // a horizontal position reset does not move gndKnownNE, so the jump counts as distance flown
         const ftype flatGndDistFactor = 10;
         if ((stateStruct.position.xy() - gndKnownNE).length() > flatGndDistFactor * MAX(hagl, 1)) {
             flatGndEngaged = false;
