@@ -269,6 +269,9 @@ endif
 # List all user directories here
 UINCDIR =
 
+USE_COPT += $(PICOLIBC_C_INCLUDE_FLAGS)
+USE_CPPOPT += $(PICOLIBC_CXX_INCLUDE_FLAGS)
+
 # List the user directory to look for the libraries here
 ULIBDIR =
 
