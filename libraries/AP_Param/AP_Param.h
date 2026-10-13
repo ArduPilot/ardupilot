@@ -456,6 +456,12 @@ public:
     ///
     static void reload_defaults_file(bool last_pass);
 
+    // name of a parameter in a defaults file which has been removed
+    // from the firmware, or nullptr if there is none
+    static const char *removed_param_in_defaults() {
+        return _removed_param_in_defaults[0] != 0 ? _removed_param_in_defaults : nullptr;
+    }
+
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
 
     // set a AP_Param variable to a specified value
@@ -792,6 +798,10 @@ private:
     static float get_default_value(const AP_Param *object_ptr, const struct Info &info);
 
     static bool parse_param_line(char *line, char **vname, float &value, bool &read_only);
+
+    // record pname if it is a parameter removed from the firmware
+    static void check_removed_param(const char *pname);
+    static char _removed_param_in_defaults[AP_MAX_NAME_SIZE+1];
 
     /*
       load a parameter defaults file. This happens as part of load_all()
