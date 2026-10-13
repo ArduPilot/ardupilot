@@ -79,6 +79,10 @@ void NavEKF3_core::SelectFlowFusion()
             // with no sample stored for a second it is no longer refreshed, and the ground may have changed
             flowFocusRestRng = 0;
         }
+    } else if (flowDataToFuse && is_positive(ofDataDelayed.heightOverride)) {
+        // a sensor at a declared height (FLOW_HGT_OVR) drives on the ground, so no reading is a landing
+        flowFocusBelow = false;
+        flowFocusResting = false;
     } else if (flowDataToFuse && tiltOK && flowFocusRngValid) {
         // Within 5 cm of the range finder ground clearance the vehicle is on or at the ground,
         // where the range is clamped and the flow is not motion, whatever the sensor's focus height.
