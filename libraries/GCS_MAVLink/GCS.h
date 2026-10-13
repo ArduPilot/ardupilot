@@ -214,6 +214,7 @@ public:
     mavlink_status_t *channel_status() { return &_channel_status; }
 
     void        update_receive(uint32_t max_time_us=1000);
+    void        update_receive_config_error(uint32_t max_time_us=1000);
     void        update_send();
     bool        init(uint8_t instance);
     void        send_message(enum ap_message id);
@@ -641,6 +642,7 @@ protected:
     void handle_osd_param_config(const mavlink_message_t &msg) const;
 
     void handle_common_param_message(const mavlink_message_t &msg);
+    void handle_config_error_message(const mavlink_status_t &status, const mavlink_message_t &msg);
     void handle_param_set(const mavlink_message_t &msg);
     void handle_param_request_list(const mavlink_message_t &msg);
     void handle_param_request_read(const mavlink_message_t &msg);
@@ -667,7 +669,10 @@ protected:
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
 #endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     void handle_setup_signing(const mavlink_message_t &msg) const;
+    virtual MAV_RESULT check_preflight_reboot() { return MAV_RESULT_ACCEPTED; }
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    MAV_RESULT reboot_vehicle(const mavlink_command_int_t &packet, const mavlink_message_t &msg,
+                              bool reboot_to_bootloader);
 #if AP_MAVLINK_FAILURE_CREATION_ENABLED
     struct {
         HAL_Semaphore sem;
@@ -1267,6 +1272,7 @@ public:
 
     void update_send();
     void update_receive();
+    void update_receive_config_error();
 
     // minimum amount of time (in microseconds) that must remain in
     // the main scheduler loop before we are allowed to send any
