@@ -124,6 +124,10 @@
 // maximum GPs ground course uncertainty allowed for yaw alignment (deg)
 #define GPS_VEL_YAW_ALIGN_MAX_ANG_ERR 15.0F
 
+// time relative aiding still counts as a measured velocity for the range finder height switch
+// after every optical flow or body odometry axis last passed its innovation check together (msec)
+#define ALL_AXES_FUSED_HOLD_MS 500
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
@@ -1381,7 +1385,8 @@ private:
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active
-    uint8_t flowFusedAxes;          // bit per flow axis that has passed its innovation check since relative aiding started
+    uint8_t flowFusedAxes;          // bit per flow axis whose latest sample since relative aiding started passed its innovation check
+    uint32_t allAxesFusedTime_ms;   // last time every flow axis, or every body velocity axis, had its bit set
 
     Vector3F accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
 
@@ -1410,7 +1415,7 @@ private:
     uint32_t bodyOdmMeasTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
     bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
     bool bodyVelFusionActive;           // true when body frame velocity fusion is active
-    uint8_t bodyVelFusedAxes;           // bit per body velocity axis that has passed its innovation check since relative aiding started
+    uint8_t bodyVelFusedAxes;           // bit per body velocity axis whose latest sample since relative aiding started passed its innovation check
 
 #if EK3_FEATURE_BODY_ODOM
     // wheel sensor fusion

@@ -339,6 +339,7 @@ void NavEKF3_core::InitialiseVariables()
 #endif
     flowFusionActive = false;
     flowFusedAxes = 0;
+    allAxesFusedTime_ms = 0;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
     airDataFusionWindOnly = false;

@@ -1294,12 +1294,13 @@ void NavEKF3_core::selectHeightForFusion()
         // and valid it provides a de-glitched height above ground that does not carry
         // baro error directly, so let it act as a stable terrain reference here too.
         // Not while armed with no horizontal velocity measured, as the speed gate below then has
-        // nothing to test: in constant position mode, or from the start of relative aiding, which
-        // zeroes the velocity, until every axis of flow or odometry has passed its innovation check.
-        // One axis is not enough: across the direction of flight it passes at any speed.
+        // nothing to test: in constant position mode, or in relative aiding, which starts from zero
+        // velocity, unless every axis of flow or odometry has passed its latest innovation check
+        // within ALL_AXES_FUSED_HOLD_MS. One axis is not enough: across the direction of flight it
+        // passes at any speed, and an axis that passed before a turn can be failing after it.
         bool terrainStable = terrainHgtStable;
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-        const bool relVelFused = (flowFusedAxes == 0x03) || (bodyVelFusedAxes == 0x07);
+        const bool relVelFused = (imuSampleTime_ms - allAxesFusedTime_ms) < ALL_AXES_FUSED_HOLD_MS;
         const bool horizVelMeasured = filterStatus.flags.horiz_vel &&
                                       ((PV_AidingMode == AID_ABSOLUTE) || ((PV_AidingMode == AID_RELATIVE) && relVelFused));
         if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid && (onGround || horizVelMeasured)) {
@@ -2115,6 +2116,11 @@ void NavEKF3_core::FuseBodyVel()
                     faultStatus.bad_zvel = true;
                 }
             }
+        } else {
+            bodyVelFusedAxes &= ~(1U << obsIndex);
+        }
+        if (bodyVelFusedAxes == 0x07) {
+            allAxesFusedTime_ms = imuSampleTime_ms;
         }
     }
 }
