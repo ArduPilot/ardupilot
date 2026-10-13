@@ -12724,6 +12724,42 @@ Also, ignores heartbeats not from our target system'''
             raise NotAchievedException(f"Unexpected modes: want {expected_modes} got {got_modes}")
         return modes
 
+    def assert_current_mode(self, standard_mode, custom_mode, timeout=10):
+        '''wait for a CURRENT_MODE message reporting standard_mode and
+        custom_mode.  Returns the message'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(f"Did not get CURRENT_MODE standard_mode={standard_mode} custom_mode={custom_mode}")
+            m = self.assert_receive_message('CURRENT_MODE', timeout=timeout)
+            if m.standard_mode == standard_mode and m.custom_mode == custom_mode:
+                self.progress(str(m))
+                return m
+
+    def assert_available_standard_modes(self, expected_standard_modes):
+        '''request every mode with AVAILABLE_MODES and check the
+        standard_mode reported for each custom_mode matches
+        expected_standard_modes, a dict of custom_mode: MAV_STANDARD_MODE.
+        Modes not in the dict must be reported as non-standard, and each
+        standard mode must be reported exactly once.'''
+        modes = self.request_available_modes()
+        if len(modes) == 0:
+            raise NotAchievedException("Did not receive any AVAILABLE_MODES")
+        non_standard = mavutil.mavlink.MAV_STANDARD_MODE_NON_STANDARD
+        seen = set()
+        for m in modes.values():
+            want = expected_standard_modes.get(m.custom_mode, non_standard)
+            if m.standard_mode != want:
+                raise NotAchievedException(f"{m.mode_name}: want standard_mode={want} got {m.standard_mode}")
+            if m.standard_mode == non_standard:
+                continue
+            if m.standard_mode in seen:
+                raise NotAchievedException(f"standard_mode {m.standard_mode} reported twice")
+            seen.add(m.standard_mode)
+        if seen != set(expected_standard_modes.values()):
+            raise NotAchievedException(f"Want standard modes {set(expected_standard_modes.values())} got {seen}")
+        return modes
+
     def get_messages_frame(self, msg_names, timeout=None):
         '''try to get a "frame" of named messages - a set of messages as close
         in time as possible.  timeout is in seconds of simulation time;

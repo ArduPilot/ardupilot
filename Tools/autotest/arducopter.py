@@ -19598,6 +19598,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MissionRTLYawBehaviour,
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingFlipMode,
+            self.StandardModes,
             self.UTMGlobalPosition,
         ])
         return ret
@@ -23723,6 +23724,50 @@ return update, 1000
         for pname in ["TST_A"]:
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
+
+    def StandardModes(self):
+        '''test the MAVLink standard modes protocol'''
+        mm = mavutil.mavlink
+        expected_standard_modes = {
+            self.get_mode_from_mode_mapping("LOITER"): mm.MAV_STANDARD_MODE_POSITION_HOLD,
+            self.get_mode_from_mode_mapping("CIRCLE"): mm.MAV_STANDARD_MODE_ORBIT,
+            self.get_mode_from_mode_mapping("ALT_HOLD"): mm.MAV_STANDARD_MODE_ALTITUDE_HOLD,
+            self.get_mode_from_mode_mapping("RTL"): mm.MAV_STANDARD_MODE_SAFE_RECOVERY,
+            self.get_mode_from_mode_mapping("AUTO"): mm.MAV_STANDARD_MODE_MISSION,
+            self.get_mode_from_mode_mapping("LAND"): mm.MAV_STANDARD_MODE_LAND,
+        }
+
+        self.start_subtest("AVAILABLE_MODES reports the standard modes")
+        # when every mode is requested the firmware paces AVAILABLE_MODES
+        # on the PARAMS stream, which Copter defaults to 0Hz, so ask for
+        # the message at a rate before requesting the full list:
+        self.set_message_rate_hz("AVAILABLE_MODES", 10)
+        self.assert_available_standard_modes(expected_standard_modes)
+        self.set_message_rate_hz("AVAILABLE_MODES", 0)
+
+        self.start_subtest("MAV_CMD_DO_SET_STANDARD_MODE changes mode and CURRENT_MODE reports it")
+        self.wait_ready_to_arm()
+        for standard_mode, mode in [
+                (mm.MAV_STANDARD_MODE_POSITION_HOLD, "LOITER"),
+                (mm.MAV_STANDARD_MODE_ALTITUDE_HOLD, "ALT_HOLD"),
+        ]:
+            self.run_cmd(mm.MAV_CMD_DO_SET_STANDARD_MODE, p1=standard_mode)
+            self.wait_mode(mode)
+            self.assert_current_mode(standard_mode, self.get_mode_from_mode_mapping(mode))
+
+        self.start_subtest("unsupported standard modes are rejected with MAV_RESULT_FAILED")
+        for standard_mode in mm.MAV_STANDARD_MODE_TAKEOFF, mm.MAV_STANDARD_MODE_CRUISE:
+            self.run_cmd(
+                mm.MAV_CMD_DO_SET_STANDARD_MODE,
+                p1=standard_mode,
+                want_result=mm.MAV_RESULT_FAILED,
+            )
+        self.assert_mode("ALT_HOLD")
+
+        self.start_subtest("CURRENT_MODE reports a non-standard mode and can be requested")
+        self.change_mode("STABILIZE")
+        self.run_cmd(mm.MAV_CMD_REQUEST_MESSAGE, p1=mm.MAVLINK_MSG_ID_CURRENT_MODE)
+        self.assert_current_mode(mm.MAV_STANDARD_MODE_NON_STANDARD, self.get_mode_from_mode_mapping("STABILIZE"))
 
     def tests2b(self):
         '''return list of all tests'''

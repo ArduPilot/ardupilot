@@ -9530,9 +9530,38 @@ return update()
         }
         initialising = self.get_mode_from_mode_mapping("INITIALISING")
         modes = self.assert_available_modes(expected_modes, not_user_selectable=[initialising])
-        for m in modes.values():
-            if m.standard_mode != mavutil.mavlink.MAV_STANDARD_MODE_NON_STANDARD:
-                raise NotAchievedException(f"{m.mode_name}: unexpected standard_mode {m.standard_mode}")
+
+        self.start_subtest("standard modes are reported")
+        mm = mavutil.mavlink
+        expected_standard_modes = {
+            6: mm.MAV_STANDARD_MODE_ALTITUDE_HOLD,  # FBWB
+            7: mm.MAV_STANDARD_MODE_CRUISE,
+            10: mm.MAV_STANDARD_MODE_MISSION,  # Auto
+            11: mm.MAV_STANDARD_MODE_SAFE_RECOVERY,  # RTL
+            12: mm.MAV_STANDARD_MODE_ORBIT,  # Loiter
+            13: mm.MAV_STANDARD_MODE_TAKEOFF,
+            26: mm.MAV_STANDARD_MODE_LAND,  # Autoland
+        }
+        self.assert_available_standard_modes(expected_standard_modes)
+
+        self.start_subtest("MAV_CMD_DO_SET_STANDARD_MODE changes mode and CURRENT_MODE reports it")
+        self.wait_ready_to_arm()
+        for standard_mode, mode in [
+                (mm.MAV_STANDARD_MODE_CRUISE, "CRUISE"),
+                (mm.MAV_STANDARD_MODE_ALTITUDE_HOLD, "FBWB"),
+        ]:
+            self.run_cmd(mm.MAV_CMD_DO_SET_STANDARD_MODE, p1=standard_mode)
+            self.wait_mode(mode)
+            self.assert_current_mode(standard_mode, self.get_mode_from_mode_mapping(mode))
+
+        self.start_subtest("a fixed-wing cannot hold position")
+        self.run_cmd(
+            mm.MAV_CMD_DO_SET_STANDARD_MODE,
+            p1=mm.MAV_STANDARD_MODE_POSITION_HOLD,
+            want_result=mm.MAV_RESULT_FAILED,
+        )
+        self.assert_mode("FBWB")
+        self.change_mode("MANUAL")
 
         self.start_subtest("modes blocked by FLTMODE_GCSBLOCK are not user-selectable")
         circle = self.get_mode_from_mode_mapping("CIRCLE")
