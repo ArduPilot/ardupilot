@@ -1,8 +1,14 @@
 #include <AP_gtest.h>
 
-#include <AP_INDI/AP_INDI_Ident.h>
+#include <AP_INDI/AP_INDI_config.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+// the library is only built for boards that enable it (SITL by default);
+// elsewhere this file compiles to an empty test binary
+#if AP_INDI_ENABLED
+
+#include <AP_INDI/AP_INDI_Ident.h>
 
 static constexpr uint8_t N = 4;  // a quadrotor: four motors
 static constexpr uint8_t MAXA = AP_INDI_Ident::MAX_ACTUATORS;
@@ -155,6 +161,43 @@ TEST(INDIIdent, LearnsCouplingFromZeroPrior)
     EXPECT_NEAR(id.get_effectiveness(2, 3), -15.0f, 1.5f);
 }
 
+// A cross-coupling term learned from a zero prior is bounded. The
+// regressors move together in a coordinated manoeuvre and least squares
+// then splits the response among them arbitrarily: in SITL a plane's
+// pitch row credited the rudder with ten times the elevator's effect and
+// a quad's yaw row credited roll with eight times the yaw's, and the
+// sign test, reading the response through those couplings, failed both
+// axes. The bound keeps such a term at coupling_max of the axis's
+// reference even when the data say otherwise (here a coupling four times
+// the reference, driven with independent strokes so the fit is exact),
+// while the primary still converges and the axis is not failed.
+TEST(INDIIdent, BoundsCouplingLearnedFromZeroPrior)
+{
+    float prior[AP_INDI_Ident::NUM_AXES][MAXA];
+    make_prior(prior, G_PRIOR);
+    // declare no yaw effect from motors 2 and 3
+    prior[2][2] = 0;
+    prior[2][3] = 0;
+    const float rel_sigma[3] = { 0.7f, 0.7f, 0.7f };
+    AP_INDI_Ident::Config cfg;
+    // the controller's bound: half of the reference
+    cfg.coupling_max = 0.5f;
+    AP_INDI_Ident id;
+    id.init(N, prior, rel_sigma, cfg);
+
+    // motor 2 moves yaw four times as much as the reference motor's 15:
+    // not an airframe, a fit gone wrong
+    const float g_true[N] = { 15, -15, 60, 0 };
+    LCG rng;
+    drive(id, 2, g_true, STROKE, 0.02f, 300, rng);
+    EXPECT_NE(id.get_state(2), AP_INDI_Ident::AxisState::FAILED);
+    // the coupling is capped at half the reference, 7.5
+    EXPECT_LE(fabsf(id.get_effectiveness(2, 2)), 0.5f * 15.0f * 1.001f);
+    // the primary keeps the prior's sign and the fit's band
+    EXPECT_GT(id.get_effectiveness(2, 0), 0.0f);
+    EXPECT_LE(id.get_effectiveness(2, 0), cfg.band_hi * 15.0f * 1.001f);
+}
+
 // A reversed actuator (wrong servo direction, mirrored motor order) is the
 // single most dangerous setup error, since a controller that trusts the
 // prior sign drives the vehicle harder the wrong way. The sign test must
@@ -238,10 +281,10 @@ TEST(INDIIdent, RejectsSmallAndSaturatedStrokes)
 // An airframe far outside its class band (10x the prior) cannot be
 // identified safely: the inversion would command strokes sized for the
 // wrong vehicle. The estimate must be clamped at the band edge rather than
-// run away, and repeated clamping must mark the axis failed so the caller
-// drops to the fixed-gain fallback (SPEC.md section 8). A clamped,
-// failed axis is the good outcome here; a "converged" estimate at 10x
-// would be the dangerous one.
+// run away, and the unclamped shadow passing the edge by a clear margin
+// must mark the axis failed so the caller drops to the fixed-gain
+// fallback (SPEC.md section 8). A clamped, failed axis is the good
+// outcome here; a "converged" estimate at 10x would be the dangerous one.
 TEST(INDIIdent, ClampsOutOfBandAndFails)
 {
     float prior[AP_INDI_Ident::NUM_AXES][MAXA];
@@ -297,5 +340,7 @@ TEST(INDIIdent, CovarianceStaysBoundedUnderLongNoisyRun)
     // within 5% of the true value
     EXPECT_NEAR(id.get_effectiveness(0, 0), G_PRIOR, 0.05f * G_PRIOR);
 }
+
+#endif // AP_INDI_ENABLED
 
 AP_GTEST_MAIN()

@@ -30,6 +30,13 @@
   one with the largest |prior|; its ratio carries the sign test, the
   band check and the relative-sigma convergence measure.
 
+  A reversed actuator is caught two ways: the fitted primary ratio
+  going confidently negative (3 sigma), and, faster, a run of
+  sign_fail_count consecutive samples whose measured response opposes
+  the prior's sign by more than the noise. The second is what stops a
+  reversed axis within a few windows, before the covariance has
+  shrunk enough for the first.
+
   See SPEC.md in this directory for the full design.
  */
 class AP_INDI_Ident
@@ -50,10 +57,37 @@ public:
         float sign_margin_sigma = 3.0f;    // sigma margin required to confirm the sign
         float explained_min = 0.5f;        // fraction of |delta_omega_dot| the fit must explain once usable
         float offdiag_rel_sigma = 0.3f;    // prior relative sigma for zero-prior actuators
-        float noise_rel_init = 0.1f;       // initial guess of measurement noise, as a fraction of g_ref
+        float noise_rel_init = 0.02f;      // initial guess of measurement noise, as a fraction of g_ref; pessimistic so one sample cannot swing the estimate
+        float sign_resp_min = 0.02f;       // response, as a fraction of g_ref, below which the fast sign test ignores a sample
         float noise_rel_floor = 0.005f;    // floor on the estimated measurement noise
-        uint8_t noise_window = 50;         // samples over which the noise estimate averages
+        uint8_t noise_window = 15;         // samples over which the noise estimate averages
+        uint8_t noise_prior_weight = 5;    // samples' worth of weight the initial noise guess carries against the first residuals
         uint8_t max_clamps = 2;            // clamps on one axis before it is marked failed
+        uint8_t band_min_samples = 10;     // no band verdict before this many accepted samples, while the estimate is still raw
+        float band_margin = 0.35f;         // the unclamped shadow estimate must be this far beyond an edge, relative, to fail the axis
+        // the shadow must also be beyond the edge by this many of its own standard
+        // deviations before the band verdict is given (3: a 0.3% false verdict)
+        float band_sigmas = 3.0f;
+        uint8_t sign_fail_count = 6;       // consecutive probe samples opposing the prior's sign that fail the axis
+        // an actuator with a zero prior is never credited with more than this
+        // fraction of the axis's own reference effectiveness: the regressors move
+        // together in a coordinated manoeuvre and least squares splits the response
+        // among them arbitrarily (a SITL plane's pitch row credited the rudder with
+        // 88 rad/s^2 per unit against an elevator of 6; a quad's yaw row credited
+        // roll with 48 against a yaw of 6). With motors as actuators every motor
+        // yaws as much as the reference one, so the identifier's own bound is the
+        // reference itself; a controller with axis commands as actuators sets it
+        // lower (AP_INDI: half, no airframe is cross-coupled by more than that)
+        float coupling_max = 1.0f;
+        // the fast sign test reads a window only while the other actuators' strokes
+        // sum to at most this fraction of the primary's own stroke, so the verdict
+        // rests on the raw response and not on the coupling estimates: at half, with
+        // couplings bounded to half of the reference, the other strokes account for
+        // at most a quarter of the primary's predicted response, which is the test's
+        // own margin. With motors as actuators every stroke moves all of them and
+        // the test never applies; the slow test on the estimate carries the sign
+        // verdict there
+        float sign_other_frac = 0.5f;
     };
 
     enum class AxisState : uint8_t {
@@ -64,19 +98,32 @@ public:
         FAILED = 4,     // sign test failed or band left repeatedly
     };
 
+    // why an axis entered AxisState::FAILED; the caller's response
+    // differs (mirror the prior for SIGN, fall back for BAND)
+    enum class FailReason : uint8_t {
+        NONE = 0,
+        SIGN = 1,       // primary ratio confidently negative
+        BAND = 2,       // primary ratio clamped max_clamps times
+    };
+
     AP_INDI_Ident() {}
     CLASS_NO_COPY(AP_INDI_Ident);
 
     // prior[axis][actuator] is the effectiveness prior in rad/s^2 per
     // unit command; prior_rel_sigma[axis] is how much it is trusted.
+    // change the stroke gate after init (the command scale changed)
+    void set_stroke_min(float du_min) { _cfg.du_min = du_min; }
     void init(uint8_t num_actuators,
               const float prior[NUM_AXES][MAX_ACTUATORS],
               const float prior_rel_sigma[NUM_AXES],
               const Config &cfg);
 
     // feed one increment sample for one axis. Returns true if the sample
-    // was accepted and the estimate updated.
-    bool update(uint8_t axis, const float delta_u[MAX_ACTUATORS], float delta_omega_dot, bool saturated);
+    // was accepted and the estimate updated. probe says the stroke was
+    // deliberate excitation rather than the loop's own reaction; only
+    // probe samples may fail the sign test, since a loop countering a
+    // disturbance also produces strokes that oppose the response.
+    bool update(uint8_t axis, const float delta_u[MAX_ACTUATORS], float delta_omega_dot, bool saturated, bool probe = true);
 
     // restart an axis from its prior, optionally with the sign of the
     // prior mirrored (the sign-reversal response)
@@ -94,12 +141,25 @@ public:
     // relative standard deviation of the primary ratio on an axis
     float get_rel_sigma(uint8_t axis) const;
 
+    // whether a cross-axis estimate is distinguishable from zero by the
+    // sign-test margin (sign_margin_sigma standard deviations)
+    bool coupling_significant(uint8_t axis, uint8_t actuator) const;
+
     // estimated measurement noise on an axis, rad/s^2
     float get_noise_sigma(uint8_t axis) const;
 
     AxisState get_state(uint8_t axis) const
     {
         return axis < NUM_AXES ? _axis[axis].state : AxisState::FAILED;
+    }
+    FailReason get_fail_reason(uint8_t axis) const
+    {
+        return axis < NUM_AXES ? _axis[axis].fail_reason : FailReason::NONE;
+    }
+    // the prior currently in use (mirrored after restart_axis(axis, true))
+    float get_prior(uint8_t axis, uint8_t actuator) const
+    {
+        return (axis < NUM_AXES && actuator < _n) ? _axis[axis].prior[actuator] : 0;
     }
     uint8_t get_clamp_count(uint8_t axis) const
     {
@@ -118,14 +178,17 @@ private:
     struct Axis {
         float prior[MAX_ACTUATORS];          // effectiveness prior per actuator
         float theta[MAX_ACTUATORS];          // ratio state, see class comment
+        float theta_raw;                     // primary ratio without the band clamp, for the band verdict
         float P[MAX_ACTUATORS][MAX_ACTUATORS]; // covariance of theta
         float P0_diag[MAX_ACTUATORS];        // initial covariance diagonal, cap on growth
         float g_ref;                         // largest |prior| on the axis
         float r;                             // estimated measurement noise variance, normalised units
         uint8_t primary;                     // actuator with the largest |prior|
         uint8_t clamp_count;
+        uint8_t sign_disagree;               // consecutive samples whose response opposed the prior's sign
         uint32_t accepted;
         AxisState state;
+        FailReason fail_reason;
     };
 
     void reset_axis(Axis &a, float prior_rel_sigma);
