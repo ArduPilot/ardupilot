@@ -17934,18 +17934,53 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(5, reason="fly on over the higher ground with flow back")
         tend2 = self.get_sim_time()
         self.set_parameter("SIM_SONAR_OFFSET", 0)
-        self.set_rc(2, 1500)
+        # Once more, turning the nose 80 degrees while holding the track: the flow axis that
+        # passed across the track swings onto it and fails, and the other comes across and
+        # passes while the EKF speed is still far short of the vehicle's.  The ground rises as
+        # the turn ends.  SIM_SONAR_OFFSET moves only the range finder, so once flow is scaled
+        # by the shorter range the EKF speed settles near 0.6 of the vehicle's: at 4 m/s that
+        # is below the 3 m/s at which a 3 m/s gate lets go, so a switch taken in the turn holds.
+        self.set_parameter("EK3_RNG_USE_SPD", 3)
+        self.set_rc(2, 1350)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        tregain3 = self.get_sim_time()
+        track = math.degrees(self.assert_receive_message('ATTITUDE').yaw)
+        self.set_rc(4, 1650)
+        while True:
+            turned = self.heading_delta(math.degrees(self.assert_receive_message('ATTITUDE').yaw), track)
+            if turned >= 78:
+                break
+            if self.get_sim_time_cached() - tregain3 > 20:
+                raise NotAchievedException("turned only %.0f degrees" % turned)
+            # lean along the track as the nose comes round
+            self.set_rc_from_map({
+                1: int(1500 - 150 * math.sin(math.radians(turned))),
+                2: int(1500 - 150 * math.cos(math.radians(turned))),
+            }, timeout=None)
+        self.set_rc_from_map({4: 1500}, timeout=None)
+        self.set_parameter("SIM_SONAR_OFFSET", -1.0)
+        self.progress("turned %.0f degrees in %.1f s" % (turned, self.get_sim_time() - tregain3))
+        self.delay_sim_time(4, reason="fly on over the higher ground after the turn")
+        tend3 = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.set_rc_from_map({1: 1500, 2: 1500})
         self.zero_throttle()
         self.wait_disarmed(timeout=120)
 
         dfreader = self.dfreader_for_current_onboard_log()
         truth = None
-        legs = [(tstep, tend), (tregain, tend2)]
+        legs = [(tstep, tend), (tregain, tend2), (tregain3, tend3)]
         errs = [[] for _ in legs]
         speeds = [[] for _ in legs]
         rngs = [[] for _ in legs]
         err_before = []
         err_regain = []
+        err_turn = []
         while True:
             m = dfreader.recv_match(type=['SIM', 'SIM2', 'XKF1', 'RFND'])
             if m is None:
@@ -17968,12 +18003,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     err_before.append(e)
                 elif tregain - 1.5 <= t <= tregain:
                     err_regain.append(e)
+                elif tregain3 - 1.5 <= t <= tregain3:
+                    err_turn.append(e)
                 for i, (t0, t1) in enumerate(legs):
                     if t0 <= t <= t1:
                         errs[i].append(e)
-        # measured from just before each leg, so the second does not inherit the first's error
-        refs = [err_before, err_regain]
-        names = ["with flow lost", "after flow came back"]
+        # measured from just before each leg, so a leg does not inherit an earlier one's error
+        refs = [err_before, err_regain, err_turn]
+        names = ["with flow lost", "after flow came back", "after flow came back and the nose turned"]
         for i in range(len(legs)):
             if len(refs[i]) < 10 or len(errs[i]) < 50 or len(speeds[i]) < 50 or len(rngs[i]) < 20:
                 raise NotAchievedException("too few samples %s: %u/%u heights, %u speeds, %u ranges" %
