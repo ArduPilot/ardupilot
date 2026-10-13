@@ -17,6 +17,7 @@ import time
 
 from pymavlink import mavextra
 from pymavlink import mavutil
+from pymavlink import quaternion
 from pymavlink.mavftp import MAVFTP
 
 import vehicle_test_suite
@@ -8130,6 +8131,155 @@ return update()
                 (atc_decel_cap, time_uncapped_decel, time_capped_decel))
         self.disarm_vehicle(force=True)
 
+    def JSONLockstep(self):
+        '''check SITL runs in lockstep with a JSON physics backend'''
+        # physics time far from zero, as a backend sending wall-clock time
+        start_time = 1760000000.0
+        with self.JSON_physics(start_time=start_time, dt=0.0025) as physics:
+            self.wait_ready_to_arm()
+
+            # SITL time is physics time, counted from the first frame
+            sim_time = self.get_sim_time()
+            physics_time = physics.timestamp - start_time
+            self.progress("sim_time=%f physics_time=%f" % (sim_time, physics_time))
+            if abs(sim_time - physics_time) > 1:
+                raise NotAchievedException("SITL time %f is not physics time %f" % (sim_time, physics_time))
+
+            # SITL matches its frame rate to the physics step
+            if abs(physics.frame_rate - 400) > 2:
+                raise NotAchievedException("frame_rate %u, expected 400" % physics.frame_rate)
+
+            # SITL waits for its physics, only resending the frame about once a second
+            physics.paused = True
+            packets = physics.packets
+            time.sleep(3)
+            physics.paused = False
+            if physics.packets - packets > 5:
+                raise NotAchievedException("SITL sent %u frames without physics" % (physics.packets - packets))
+            self.wait_heartbeat()
+
+            # servo outputs reach the physics backend
+            self.change_mode('MANUAL')
+            self.arm_vehicle()
+            self.set_rc(3, 1700)
+            self.wait_servo_channel_in_range(3, 1600, 2000)
+            servo3 = self.assert_receive_message('SERVO_OUTPUT_RAW').servo3_raw
+            if physics.pwm[2] != servo3:
+                raise NotAchievedException("physics got throttle %u, expected %u" % (physics.pwm[2], servo3))
+            self.set_rc(3, 1500)
+            self.disarm_vehicle()
+
+    def JSONNoLockstep(self):
+        '''check SITL follows a free-running JSON physics backend using no_lockstep'''
+        with self.JSON_physics(dt=0.005, free_run=True, fields={'no_lockstep': True}) as physics:
+            self.wait_heartbeat()
+
+            # the physics paces SITL, in real time whatever the speedup
+            wall_start = time.time()
+            sim_start = self.get_sim_time()
+            self.delay_sim_time(5, reason="physics running")
+            ratio = (self.get_sim_time() - sim_start) / (time.time() - wall_start)
+            physics_time = physics.timestamp
+            sim_time = self.get_sim_time()
+            self.progress("sim/wall=%f sim_time=%f physics_time=%f" % (ratio, sim_time, physics_time))
+            if not 0.5 < ratio < 1.5:
+                raise NotAchievedException("SITL ran at %fx, expected the physics real time" % ratio)
+            if abs(sim_time - physics_time) > 0.5:
+                raise NotAchievedException("SITL time %f is not physics time %f" % (sim_time, physics_time))
+
+            # frame rate is not forced to the physics step
+            sim_rate = self.get_parameter("SIM_RATE_HZ")
+            if physics.frame_rate != sim_rate:
+                raise NotAchievedException("frame_rate %u, expected SIM_RATE_HZ %u" % (physics.frame_rate, sim_rate))
+
+            # SITL keeps running its loop without physics
+            physics.paused = True
+            packets = physics.packets
+            time.sleep(2)
+            physics.paused = False
+            if physics.packets - packets < 10:
+                raise NotAchievedException("SITL sent only %u frames without physics" % (physics.packets - packets))
+            self.wait_heartbeat()
+
+    def JSONNoTimeSync(self):
+        '''check SITL runs as fast as a JSON physics backend using no_time_sync'''
+        self.context_set_speedup(1)
+        with self.JSON_physics(fields={'no_time_sync': True}) as physics:
+            # SIM_JSON makes the simulator AHRS the default
+            self.assert_parameter_value("AHRS_EKF_TYPE", 10)
+
+            # not held to the speedup
+            wall_start = time.time()
+            sim_start = self.get_sim_time()
+            time.sleep(2)
+            ratio = (self.get_sim_time() - sim_start) / (time.time() - wall_start)
+            self.progress("sim/wall=%f" % ratio)
+            if ratio < 5:
+                raise NotAchievedException("SITL ran at %fx with SIM_SPEEDUP=1, expected no time sync" % ratio)
+
+            # frame rate is not forced to the physics step
+            sim_rate = self.get_parameter("SIM_RATE_HZ")
+            if physics.frame_rate != sim_rate:
+                raise NotAchievedException("frame_rate %u, expected SIM_RATE_HZ %u" % (physics.frame_rate, sim_rate))
+
+    def JSONSensors(self):
+        '''check SITL uses the sensor data sent by a JSON physics backend'''
+        with self.JSON_physics() as physics:
+            physics.set(attitude=[0, 0, math.radians(90)])
+            self.set_parameters({
+                "RNGFND1_TYPE": 100,
+                "BATT_MONITOR": 4,
+                "WNDVN_TYPE": 11,
+                "WNDVN_SPEED_TYPE": 11,
+            })
+            self.reboot_sitl()
+            self.wait_heading(90)
+            self.set_message_rate_hz('WIND', 10)
+
+            # two sets of values, so each field is seen to follow a change
+            for rng, volt, amp, wind_dir, wind_spd in (3.5, 11.1, 2.5, 45, 5), (6.0, 12.3, 4.0, 120, 8):
+                physics.set(rng_1=rng,
+                            battery={'voltage': volt, 'current': amp},
+                            windvane={'direction': math.radians(wind_dir), 'speed': wind_spd})
+                self.wait_rangefinder_distance(rng - 0.1, rng + 0.1)
+                self.wait_message_field_values('SYS_STATUS', {
+                    'voltage_battery': volt * 1000,
+                    'current_battery': amp * 100,
+                }, epsilon=20)
+                self.wait_and_maintain("AppWndDir", wind_dir,
+                                       lambda: self.assert_receive_named_value_float('AppWndDir').value,
+                                       accuracy=1)
+                self.wait_and_maintain("AppWndSpd", wind_spd,
+                                       lambda: self.assert_receive_named_value_float('AppWndSpd').value,
+                                       accuracy=0.1)
+
+            # the backend moves the vehicle east, then north
+            self.wait_ready_to_arm()
+            for velocity, speed in ([0, 1, 0], 1), ([2, 0, 0], 2):
+                physics.set(velocity=velocity)
+                self.wait_groundspeed(speed - 0.1, speed + 0.1)
+                start = self.get_location()
+                self.delay_sim_time(10, reason="vehicle moving")
+                dist = self.get_distance(start, self.get_location())
+                if abs(dist - 10 * speed) > 1:
+                    raise NotAchievedException("moved %fm in 10s, expected %fm" % (dist, 10 * speed))
+            physics.set(velocity=[0, 0, 0])
+
+            # euler attitude, then quaternion which takes precedence over it
+            for field, euler in (('attitude', (-5, 0, -90)),
+                                 ('quaternion', (10, 0, 90)),
+                                 ('quaternion', (-20, 5, 45))):
+                roll, pitch, yaw = [math.radians(a) for a in euler]
+                if field == 'quaternion':
+                    physics.set(quaternion=quaternion.Quaternion([roll, pitch, yaw]).q.tolist())
+                else:
+                    physics.set(attitude=[roll, pitch, yaw])
+                self.wait_message_field_values('SIMSTATE', {
+                    'roll': roll,
+                    'pitch': pitch,
+                    'yaw': yaw,
+                }, epsilon=0.01)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -8265,6 +8415,10 @@ return update()
             self.WP_SPEED,
             self.AutoModeAccelChanges,
             self.AutoModeAccelLimiting,
+            self.JSONLockstep,
+            self.JSONNoLockstep,
+            self.JSONNoTimeSync,
+            self.JSONSensors,
         ])
         return ret
 
