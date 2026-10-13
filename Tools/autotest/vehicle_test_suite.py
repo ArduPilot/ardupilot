@@ -16916,7 +16916,6 @@ switch value'''
             from pymavlink import mavftp
         except ImportError:
             return None
-        tmp = None
         if os.environ.get('AUTOTEST_NO_FTP_PARAMS'):
             # operator escape hatch: force the streaming download
             return None
@@ -16933,17 +16932,30 @@ switch value'''
             ftp = mavftp.MAVFTP(self.mav,
                                 target_system=target_system,
                                 target_component=target_component)
-            tmp = tempfile.NamedTemporaryFile(delete=False)
-            tmp.close()
-            ret = ftp.cmd_get(['@PARAM/param.pck', tmp.name])
+            # take delivery through a callback rather than naming a
+            # local file.  mavftp refuses to publish a download which
+            # arrives smaller than the size the remote stat() gave,
+            # and AP_Filesystem_Param::stat() deliberately returns an
+            # over-estimate - count_parameters() * 12, while parameters
+            # pack into fewer bytes than that - so a transfer to a
+            # filename is always refused:
+            #     FTP: refusing to publish short download: expected 17544, got 16356
+            # the in-memory path treats EOF as authoritative, which is
+            # what a generated file needs.
+            data = bytearray()
+
+            def gather(fh):
+                # called with None if the transfer is abandoned
+                if fh is not None:
+                    data.extend(fh.read())
+
+            ret = ftp.cmd_get(['@PARAM/param.pck'], callback=gather)
             if ret.error_code != 0:
                 return None
             ret = ftp.process_ftp_reply('OpenFileRO', timeout=30)
             if ret.error_code != 0:
                 return None
-            with open(tmp.name, 'rb') as f:
-                data = f.read()
-            pdata = mavftp.MAVFTP.ftp_param_decode(data)
+            pdata = mavftp.MAVFTP.ftp_param_decode(bytes(data))
             if pdata is None:
                 return None
             seen_ids = {}
@@ -16958,12 +16970,6 @@ switch value'''
         except Exception as e:  # noqa: BLE001 - any failure falls back
             self.progress("FTP parameter download failed (%s)" % str(e))
             return None
-        finally:
-            if tmp is not None:
-                try:
-                    os.unlink(tmp.name)
-                except OSError:
-                    pass
 
     # download parameters tries to cope with its download being
     # interrupted or broken by simply retrying the download a few
