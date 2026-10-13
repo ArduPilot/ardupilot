@@ -2202,8 +2202,7 @@ void RC_Channels::convert_options(const RC_Channel::AUX_FUNC old_option, const R
 // PARAMETER_CONVERSION - Added: Oct-2026 for ArduPilot-4.8
 void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
 {
-    if (_conversion & 0b1) {
-        // conversion has already been done
+    if (conversion_done(Conversion::RCMAP)) {
         return;
     }
 
@@ -2316,7 +2315,7 @@ void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
 
     // mark conversion as having been done.  This is saved last so an
     // interrupted conversion is retried on the next boot:
-    _conversion.set_and_save(_conversion | 0b1);
+    mark_conversion_done(Conversion::RCMAP);
 
     // we need to flush here to prevent a later set_default_by_name()
     // causing a save to be done on a converted parameter
