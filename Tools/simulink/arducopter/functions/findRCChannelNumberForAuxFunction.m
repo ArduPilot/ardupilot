@@ -22,6 +22,19 @@ for chan = 1:16
     end
 end
 
+% Logs from before the RCn_OPTION change carry the RCMAP_ parameter instead
+rcmapNames = {201, 'RCMAP_ROLL'; 202, 'RCMAP_PITCH'; 203, 'RCMAP_THROTTLE'; 204, 'RCMAP_YAW'};
+for i = 1:size(rcmapNames, 1)
+    if rcmapNames{i, 1} == functionNumber
+        paramIdx = strcmp(param_names, rcmapNames{i, 2});
+        paramVal = obj.PARM.Value(paramIdx);
+        if ~isempty(paramVal)
+            RCChannelNumberForAuxFunction = paramVal(1);
+            return;
+        end
+    end
+end
+
 error(['No RC channel has option ' num2str(functionNumber) ' assigned.']);
 
 end
