@@ -59,6 +59,8 @@ protected:
     // Send the mode with the given index (not mode number!) return the total number of modes
     // Index starts at 1
     uint8_t send_available_mode(uint8_t index) const override;
+    MAV_STANDARD_MODE standard_mode_from_mode_number(uint8_t mode_number) const override;
+    bool mode_number_from_standard_mode(MAV_STANDARD_MODE standard_mode, uint8_t &mode_number) const override;
 
 private:
 

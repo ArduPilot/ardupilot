@@ -444,6 +444,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     logger.Write_Mode((uint8_t)flightmode->mode_number(), reason);
 #endif
     gcs().send_message(MSG_HEARTBEAT);
+    gcs().send_message(MSG_CURRENT_MODE);
 
 #if HAL_ADSB_ENABLED
     adsb.set_is_auto_mode((mode == Mode::Number::AUTO) || (mode == Mode::Number::RTL) || (mode == Mode::Number::GUIDED));
