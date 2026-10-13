@@ -794,7 +794,6 @@ public:
         WALKING_OPTIONS = 1U << 1,  // Rover walking roll/pitch to their own options
     };
     bool conversion_done(Conversion c) const { return _conversion & uint8_t(c); }
-    bool rcmap_conversion_done() const { return conversion_done(Conversion::RCMAP); }
     void mark_conversion_done(Conversion c) { _conversion.set_and_save(_conversion | uint8_t(c)); }
 
     // convert option parameter from old to new
@@ -897,7 +896,6 @@ private:
     // the channel returned for a control input no RC channel provides;
     // it reads as neutral
     static RC_Channel &dummy_channel();
-
 
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
