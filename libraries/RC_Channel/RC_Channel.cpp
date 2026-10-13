@@ -2267,15 +2267,15 @@ void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
 
         AP_Int16 &option = c->option;
 
-        if (!option.configured_in_storage() &&
-            RC_Channel::AUX_FUNC(option.get()) == map.func) {
-            // don't over-write default values
-            continue;
+        if (option.configured_in_storage() ||
+            RC_Channel::AUX_FUNC(option.get()) != map.func) {
+            // force-overwrite the value.  Any aux function on this
+            // channel is lost, but a control stick doubling as a
+            // switch was never sane.  A default already holding the
+            // function is left as a default, but still displaces the
+            // function from other channels below
+            option.set_and_save((uint16_t)map.func);
         }
-
-        // force-overwrite the value.  Any aux function on this channel
-        // is lost, but a control stick doubling as a switch was never sane:
-        option.set_and_save((uint16_t)map.func);
 
         // remove the function from any channel which only has it by
         // default.  A channel explicitly set to this function, whether
