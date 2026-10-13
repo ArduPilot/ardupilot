@@ -1,5 +1,36 @@
 ArduPilot Plane Release Notes:
 ------------------------------------------------------------------
+Release 4.7.3-beta1 13-Oct-2026
+
+Changes from 4.7.2
+
+1) Board specific changes
+
+- AEDROXH7 board updated for new pinout (@Aedrox-UAx, PR:34751)
+- SVehicle-E2-mini board support (@yannis-zhi, PR:33328)
+- TBS_LUCID_H7 variants support DPS368 or BMP390 baro (@andyp1per, PR:34431)
+- TBS_LUCID_H7_WING variant with MPU6000 IMUs (@andyp1per, PR:34629)
+
+2) Library/Driver changes
+
+- Aeron Systems PLX3 external AHRS driver (@VinayakPundhir, PR:33041, PR:34280)
+- BLHeli pass-through interrupt storm lockup and corruption fixed (@tridge, PR:34598)
+- CADDX gimbal holds body-frame lock mode for 5 seconds after first packet (@Hwurzburg, PR:34524)
+- Camera servo zoom and focus speeds configurable with CAMx_ZOM_RAT_MAX and CAMx_FOC_RAT_MAX parameters (@Williangalvani, PR:34428)
+- Inertial sensor logs every filtered gyro sample when the rate thread is decimating (@andyp1per, PR:34601)
+
+3) Copter specific fixes and minor enhancements
+
+- CONDITION_YAW with absolute angle fixed when WP_YAW_BEHAVIOR = 0 (@tzi4, PR:33942)
+- PosHold brake-entry threshold units fixed (@FurkanKY, PR:34624)
+- Vibration compensation throttle response fixed (@peterbarker, PR:34607)
+- Loiter coordinated turns disabled by default (@rmackay9, PR:34542)
+
+4) Sub specific changes
+
+- Joystick roll and pitch input scaling fixed (@ES-Alexander, PR:34551)
+
+------------------------------------------------------------------
 Release 4.7.2 11-October-2026 / 4.7.2-beta1 29-Sep-2026
 
 Changes from 4.7.1
