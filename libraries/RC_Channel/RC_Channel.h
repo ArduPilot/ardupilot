@@ -795,6 +795,14 @@ public:
     // returns true when pilot input should clear an active MAVLink override; vehicles override to define which axes count
     virtual bool has_pilot_input_for_override_clear();
 
+    // name of a control input the vehicle uses but no RC channel
+    // provides, or nullptr
+    const char *missing_control_channel() const;
+
+    // name of a control input whose RCn_OPTION has moved since it was
+    // bound at boot, or nullptr; a reboot is needed to pick it up
+    const char *changed_control_channel() const;
+
 protected:
 
     void new_override_received() {
@@ -856,6 +864,32 @@ private:
 
     const RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const;
     RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func);
+
+    // a control input is bound to its RC channel when the vehicle
+    // first asks for it, at boot.  A later RCn_OPTION change does not
+    // move it; a pre-arm check asks for a reboot instead, so the
+    // arming checks and the flight code can't disagree on a channel
+    struct ControlBinding {
+        RC_Channel::AUX_FUNC func;
+        const char *name;
+        RC_Channel *channel;
+        bool requested;   // the vehicle uses this control input
+    };
+    ControlBinding control_bindings[6] {
+        { RC_Channel::AUX_FUNC::ROLL,        "Roll" },
+        { RC_Channel::AUX_FUNC::PITCH,       "Pitch" },
+        { RC_Channel::AUX_FUNC::THROTTLE,    "Throttle" },
+        { RC_Channel::AUX_FUNC::YAW,         "Yaw" },
+        { RC_Channel::AUX_FUNC::FORWARD_THR, "Forward" },
+        { RC_Channel::AUX_FUNC::LATERAL_THR, "Lateral" },
+    };
+    ControlBinding *control_binding(RC_Channel::AUX_FUNC func);
+    const ControlBinding *control_binding(RC_Channel::AUX_FUNC func) const;
+
+    // the channel returned for a control input no RC channel provides;
+    // it reads as neutral
+    static RC_Channel &dummy_channel();
+
 
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
