@@ -122,6 +122,7 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
     logger.Write_Mode((uint8_t)control_mode, reason);
 #endif
     gcs().send_message(MSG_HEARTBEAT);
+    gcs().send_message(MSG_CURRENT_MODE);
 
     // update notify object
     notify_flight_mode();
