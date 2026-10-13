@@ -403,6 +403,7 @@ public:
         LATERAL_THR =        221,  // RC throttle command for sideways movement
         WALKING_ROLL =       222, // walking robot roll input
         WALKING_PITCH =      223, // walking robot pitch input
+        FORWARD_THR =        225, // RC throttle command for forward movement
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot

@@ -466,11 +466,11 @@ RC_Channel &RC_Channels::get_yaw_channel()
 };
 const RC_Channel &RC_Channels::get_forward_channel() const
 {
-    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FWD_THR);
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FORWARD_THR);
 };
 RC_Channel &RC_Channels::get_forward_channel()
 {
-    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FWD_THR);
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FORWARD_THR);
 };
 const RC_Channel &RC_Channels::get_lateral_channel() const
 {
