@@ -8735,9 +8735,21 @@ return update()
         self.wait_text("Auto disarmed", check_context=True, timeout=200)
 
     def BadRollChannelDefined(self):
-        '''ensure we don't die with no Roll channel defined'''
+        '''ensure a missing or moved Roll channel is a pre-arm failure'''
+        self.wait_ready_to_arm()
         self.set_parameter("RC1_OPTION", 0)
-        self.delay_sim_time(5, reason="vehicle to notice it has no roll channel")
+        self.wait_not_ready_to_arm()
+        self.assert_prearm_failure("No RC channel for Roll")
+
+        self.progress("Roll moved to another channel needs a reboot")
+        self.set_parameter("RC10_OPTION", 201)
+        self.assert_prearm_failure("Roll channel changed; reboot required")
+
+        self.set_parameters({
+            "RC10_OPTION": 0,
+            "RC1_OPTION": 201,
+        })
+        self.wait_ready_to_arm()
 
     def MAV_CMD_NAV_LOITER_TO_ALT(self):
         '''test loiter to alt mission item'''
