@@ -1426,9 +1426,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # window this test then asserts.  TAKEOFF levels off at TKOFF_ALT.
         self.takeoff(takeoff_alt, mode="TAKEOFF")
         self.set_rc(12, 2000)
-        self.delay_sim_time(1, reason="camera trigger to register")
+        # wait for the feedback this trigger produces.  Reading the
+        # cached message instead races the vehicle: the only
+        # CAMERA_FEEDBACK cached at this point is the one from the
+        # trigger on the ground, so if the new one has not arrived yet
+        # the altitudes below are asserted against a message taken
+        # before the takeoff.
+        x = self.assert_receive_message('CAMERA_FEEDBACK')
         self.set_rc(12, 1000)
-        x = self.mav.messages.get("CAMERA_FEEDBACK", None)
         if abs(x.alt_rel - takeoff_alt) > 10:
             raise NotAchievedException("Bad relalt (want=%f vs got=%f)" % (takeoff_alt, x.alt_rel))
         if abs(x.alt_msl - (original_alt+30)) > 10:
