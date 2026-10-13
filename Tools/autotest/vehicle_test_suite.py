@@ -14081,6 +14081,138 @@ switch value'''
                     "Insufficient %s/truth samples compared (%u)" % (key, ncompared))
             self.progress("Compared %u %s samples against simulator truth" % (ncompared, key))
 
+    def indi_launches_from_log(self, start_time_us=0):
+        """Parse the onboard log into one record per launch.
+
+        Shared by the Copter and Plane INDI validation tests.
+
+        Each record has: usable_ms and converged_ms per axis (None if
+        not reached), fallback (bool), triggers (bitwise OR of INDS.Trg),
+        sign_flip_ms (first TRIG_SIGN_FLIP), gust_rejects (records with
+        the gust trigger set), pulses,
+        and g (final G diagonal per axis).
+        """
+        dfreader = self.dfreader_for_current_onboard_log()
+        launches = []
+        cur = None
+        last_tms = None
+        while True:
+            m = dfreader.recv_match(type=['INDS', 'INDG'])
+            if m is None:
+                break
+            if m.TimeUS < start_time_us:
+                continue
+            if m.get_type() == 'INDS':
+                tms = m.TMs
+                if tms == 0:
+                    last_tms = 0
+                    cur = None
+                    continue
+                if cur is None or (last_tms is not None and tms < last_tms):
+                    cur = {
+                        'usable_ms': [None, None, None],
+                        'converged_ms': [None, None, None],
+                        'fallback': False,
+                        'fallback_ms': None,
+                        'triggers': 0,
+                        'sign_flip_ms': None,
+                        'gust_rejects': 0,
+                        'pulses': 0,
+                        'g': [None, None, None],
+                        'start_us': m.TimeUS,
+                        'last_tms': tms,
+                    }
+                    launches.append(cur)
+                last_tms = tms
+                cur['triggers'] |= m.Trg
+                if m.Fb != 0 and not cur['fallback']:
+                    cur['fallback'] = True
+                    cur['fallback_ms'] = tms
+                if (m.Trg & 1) and cur['sign_flip_ms'] is None:
+                    cur['sign_flip_ms'] = tms
+                if m.Trg & (1 << 6):
+                    cur['gust_rejects'] += 1
+                cur['pulses'] = max(cur['pulses'], m.Pls)
+                cur['last_tms'] = tms
+            else:
+                if cur is None:
+                    continue
+                tms = cur['last_tms']
+                i = m.I
+                if m.St >= 2 and cur['usable_ms'][i] is None:
+                    cur['usable_ms'][i] = tms
+                if m.St >= 3 and cur['converged_ms'][i] is None:
+                    cur['converged_ms'][i] = tms
+                cur['g'][i] = [m.G0, m.G1, m.G2][i]
+        return launches
+
+    def indi_report_launches(self, launches, label):
+        for n, L in enumerate(launches):
+            self.progress("%s launch %u: usable %s converged %s fallback=%s trg=0x%02x flip=%s pulses=%u rej=%u G=%s" % (
+                label, n, L['usable_ms'], L['converged_ms'], L['fallback'], L['triggers'],
+                L['sign_flip_ms'], L['pulses'], L['gust_rejects'],
+                ["%.0f" % g if g is not None else "-" for g in L['g']]))
+
+    def indi_flight_report(self, start_time_us, label, axis_mask=7):
+        """Judge whether INDI flew the vehicle from start_time_us to the end
+        of the onboard log: how long any axis in axis_mask was handed back to
+        the stock controller (INDS.Fb; axes the backend never controls
+        carry the bit permanently), which triggers fired, and how well the
+        attitude followed its target (ATT desired minus actual). Returns a
+        dict; prints one summary line."""
+        dfreader = self.dfreader_for_current_onboard_log()
+        fb_records = 0
+        inds_records = 0
+        fb_mask = 0
+        triggers = 0
+        fb_first_us = None
+        roll_err_sq = 0.0
+        pitch_err_sq = 0.0
+        roll_err_max = 0.0
+        pitch_err_max = 0.0
+        att_records = 0
+        while True:
+            m = dfreader.recv_match(type=['INDS', 'ATT'])
+            if m is None:
+                break
+            if m.TimeUS < start_time_us:
+                continue
+            if m.get_type() == 'INDS':
+                inds_records += 1
+                triggers |= m.Trg
+                if (m.Fb & axis_mask) != 0:
+                    fb_records += 1
+                    fb_mask |= m.Fb & axis_mask
+                    if fb_first_us is None:
+                        fb_first_us = m.TimeUS
+            else:
+                att_records += 1
+                roll_err = m.DesRoll - m.Roll
+                pitch_err = m.DesPitch - m.Pitch
+                roll_err_sq += roll_err * roll_err
+                pitch_err_sq += pitch_err * pitch_err
+                roll_err_max = max(roll_err_max, abs(roll_err))
+                pitch_err_max = max(pitch_err_max, abs(pitch_err))
+        report = {
+            'inds_records': inds_records,
+            'fallback_records': fb_records,
+            'fallback_mask': fb_mask,
+            'fallback_first_s': None if fb_first_us is None else (fb_first_us - start_time_us) * 1e-6,
+            'triggers': triggers,
+            'roll_rms_deg': math.sqrt(roll_err_sq / att_records) if att_records else None,
+            'pitch_rms_deg': math.sqrt(pitch_err_sq / att_records) if att_records else None,
+            'roll_max_deg': roll_err_max,
+            'pitch_max_deg': pitch_err_max,
+            'att_records': att_records,
+        }
+        self.progress("%s: INDS records %u, handed back on %u (mask 0x%x, first at %s s), triggers 0x%02x, "
+                      "attitude error rms roll %.2f pitch %.2f deg, max roll %.1f pitch %.1f deg over %u ATT records" % (
+                          label, inds_records, fb_records, fb_mask,
+                          "-" if report['fallback_first_s'] is None else "%.1f" % report['fallback_first_s'],
+                          triggers, report['roll_rms_deg'] or 0, report['pitch_rms_deg'] or 0,
+                          roll_err_max, pitch_err_max, att_records))
+        return report
+
     def dfreader_for_current_onboard_log(self):
         return self.dfreader_for_path(self.current_onboard_log_filepath())
 
