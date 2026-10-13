@@ -13438,6 +13438,11 @@ switch value'''
                             "device": "MicroStrain7",
                             "eahrs_type": 7,
                         },
+                        {
+                            "name": "Aeron",
+                            "device": "Aeron-PLX3",
+                            "eahrs_type": 10,
+                        },
                     ]
 
                     for config in external_ahrs_configs:
