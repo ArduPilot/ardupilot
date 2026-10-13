@@ -410,28 +410,101 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
 }
 #endif // AP_SCRIPTING_ENABLED
 
-// these methods return an RC_Channel reference based on which
-// channel has been assigned the relevant RCn_OPTION.  The return
-// value is guaranteed to be a valid channel to allow use without
-// checking for null-ness.  If no channel has been assigned the
-// option then the returned channel will be a dummy channel.
-static RC_Channel dummy_rcchannel;
+// these methods return an RC_Channel reference for a control input,
+// bound to the channel assigned the relevant RCn_OPTION the first time
+// the vehicle asks for it.  The return value is guaranteed to be a
+// valid channel to allow use without checking for null-ness; if no
+// channel has the option a dummy channel reading neutral is returned,
+// and a pre-arm check reports the problem
+RC_Channel &RC_Channels::dummy_channel()
+{
+    static RC_Channel dummy_rcchannel;
+    // a missing control input must read as neutral, not as a stick
+    // held at one end
+    dummy_rcchannel.raw_radio_in = dummy_rcchannel.get_radio_trim();
+    dummy_rcchannel.radio_in = dummy_rcchannel.raw_radio_in;
+    return dummy_rcchannel;
+}
+
+RC_Channels::ControlBinding *RC_Channels::control_binding(RC_Channel::AUX_FUNC func)
+{
+    for (auto &binding : control_bindings) {
+        if (binding.func == func) {
+            return &binding;
+        }
+    }
+    return nullptr;
+}
+
+const RC_Channels::ControlBinding *RC_Channels::control_binding(RC_Channel::AUX_FUNC func) const
+{
+    for (const auto &binding : control_bindings) {
+        if (binding.func == func) {
+            return &binding;
+        }
+    }
+    return nullptr;
+}
+
 const RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const
 {
-    const RC_Channel *ret = find_channel_for_option(func);
+    const ControlBinding *binding = control_binding(func);
+    const RC_Channel *ret = (binding != nullptr) ? binding->channel : nullptr;
+    if (ret == nullptr) {
+        // not bound yet; look it up but leave binding to the
+        // non-const getter the vehicle uses
+        ret = find_channel_for_option(func);
+    }
     if (ret != nullptr) {
         return *ret;
     }
-    return dummy_rcchannel;
+    return dummy_channel();
 }
 RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func)
 {
-    RC_Channel *ret = find_channel_for_option(func);
-    if (ret != nullptr) {
-        return *ret;
+    ControlBinding *binding = control_binding(func);
+    if (binding == nullptr) {
+        // not a control input
+        RC_Channel *ret = find_channel_for_option(func);
+        return (ret != nullptr) ? *ret : dummy_channel();
     }
-    return dummy_rcchannel;
+    binding->requested = true;
+    if (binding->channel == nullptr) {
+        binding->channel = find_channel_for_option(func);
+    }
+    if (binding->channel != nullptr) {
+        return *binding->channel;
+    }
+    return dummy_channel();
 }
+
+const char *RC_Channels::missing_control_channel() const
+{
+    for (const auto &binding : control_bindings) {
+        if (binding.requested &&
+            binding.channel == nullptr &&
+            find_channel_for_option(binding.func) == nullptr) {
+            return binding.name;
+        }
+    }
+    return nullptr;
+}
+
+const char *RC_Channels::changed_control_channel() const
+{
+    for (const auto &binding : control_bindings) {
+        if (!binding.requested) {
+            continue;
+        }
+        const RC_Channel *now = find_channel_for_option(binding.func);
+        if (now != nullptr && now != binding.channel) {
+            // moved, or provided since the vehicle bound to nothing
+            return binding.name;
+        }
+    }
+    return nullptr;
+}
+
 const RC_Channel &RC_Channels::get_roll_channel() const
 {
     return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::ROLL);
