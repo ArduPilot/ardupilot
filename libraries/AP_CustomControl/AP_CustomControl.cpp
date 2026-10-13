@@ -5,6 +5,7 @@
 #include "AP_CustomControl.h"
 #include "AP_CustomControl_Backend.h"
 #include "AP_CustomControl_PID.h"
+#include "AP_CustomControl_INDI.h"
 #include "SRV_Channel/SRV_Channel.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -15,7 +16,7 @@ const AP_Param::GroupInfo AP_CustomControl::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Custom control type
     // @Description: Custom control type to be used
-    // @Values: 0:None, 1:Empty, 2:PID
+    // @Values: 0:None, 1:Empty, 2:PID, 3:INDI
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_CustomControl, _controller_type, 0, AP_PARAM_FLAG_ENABLE),
@@ -36,6 +37,12 @@ const AP_Param::GroupInfo AP_CustomControl::var_info[] = {
     // @Path: ./AP_CustomControl_PID.cpp
     AP_SUBGROUPVARPTR(_backend, "2_", 7, AP_CustomControl, _backend_var_info[1]),
 #endif // AP_PLANE_CUSTOMCONTROL_PID_ENABLED
+
+#if AP_PLANE_CUSTOMCONTROL_INDI_ENABLED
+    // @Group: 3_
+    // @Path: AP_CustomControl_INDI.cpp
+    AP_SUBGROUPVARPTR(_backend, "3_", 8, AP_CustomControl, _backend_var_info[2]),
+#endif // AP_PLANE_CUSTOMCONTROL_INDI_ENABLED
 
     AP_GROUPEND
 };
@@ -67,6 +74,12 @@ void AP_CustomControl::init(void)
         _backend_var_info[get_type()] = AP_CustomControl_PID::var_info;
         break;
 #endif // AP_PLANE_CUSTOMCONTROL_PID_ENABLED
+#if AP_PLANE_CUSTOMCONTROL_INDI_ENABLED
+    case CustomControlType::INDI:
+        _backend = NEW_NOTHROW AP_CustomControl_INDI(*this, _dt);
+        _backend_var_info[get_type()] = AP_CustomControl_INDI::var_info;
+        break;
+#endif // AP_PLANE_CUSTOMCONTROL_INDI_ENABLED
     default:
         break;
     }

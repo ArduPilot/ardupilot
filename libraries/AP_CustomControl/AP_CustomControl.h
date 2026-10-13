@@ -16,7 +16,7 @@
 #include <Filter/AP_Filter.h>
 
 #ifndef AP_PLANE_CUSTOMCONTROL_MAX_TYPES
-#define AP_PLANE_CUSTOMCONTROL_MAX_TYPES 2
+#define AP_PLANE_CUSTOMCONTROL_MAX_TYPES 3
 #endif
 
 #ifndef AP_PLANE_CUSTOMCONTROL_FUNCTIONS_MAX
@@ -79,6 +79,7 @@ private:
         NONE            = 0,
         EMPTY           = 1,
         PID             = 2,
+        INDI            = 3,
     };            // controller that should be used
 
     struct FunctionInfo {
