@@ -787,7 +787,15 @@ public:
 
     bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
     void convert_rcmap_parameters(uint32_t param_key);
-    bool rcmap_conversion_done() const { return _conversion & 0b1; }
+
+    // one-time parameter conversions recorded in RC_CONVERSION
+    enum class Conversion : uint8_t {
+        RCMAP           = 1U << 0,  // RCMAP_ parameters to RCn_OPTION
+        WALKING_OPTIONS = 1U << 1,  // Rover walking roll/pitch to their own options
+    };
+    bool conversion_done(Conversion c) const { return _conversion & uint8_t(c); }
+    bool rcmap_conversion_done() const { return conversion_done(Conversion::RCMAP); }
+    void mark_conversion_done(Conversion c) { _conversion.set_and_save(_conversion | uint8_t(c)); }
 
     // convert option parameter from old to new
     void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
