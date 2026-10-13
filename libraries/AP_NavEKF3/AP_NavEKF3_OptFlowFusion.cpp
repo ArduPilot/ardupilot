@@ -696,7 +696,14 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         if (really_fuse && (flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
-            flowFusedAxes |= 1U << obsIndex;
+            // the innovation is a rate, so the speed error it lets through grows with the range. The
+            // axis counts only while that error on both axes together fits between the speeds at which
+            // the range height switch takes hold and lets go, so a speed it takes hold at is one it keeps
+            if (fabsF(flowInnov[obsIndex]) * range < M_SQRT1_2 * (frontend->_useRngSwSpd - rngSwitchInSpeed())) {
+                flowFusedAxes |= 1U << obsIndex;
+            } else {
+                flowFusedAxes &= ~(1U << obsIndex);
+            }
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;
