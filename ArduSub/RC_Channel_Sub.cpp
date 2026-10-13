@@ -88,7 +88,7 @@ void RC_Channels_Sub::set_control_channel_defaults()
 
     set_control_channel_default(0, RC_Channel::AUX_FUNC::PITCH);
     set_control_channel_default(1, RC_Channel::AUX_FUNC::ROLL);
-    set_control_channel_default(4, RC_Channel::AUX_FUNC::FWD_THR);
+    set_control_channel_default(4, RC_Channel::AUX_FUNC::FORWARD_THR);
     set_control_channel_default(5, RC_Channel::AUX_FUNC::LATERAL_THR);
 }
 
