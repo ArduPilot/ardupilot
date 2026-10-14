@@ -210,13 +210,6 @@ SUPPRESSIONS = [
     # False positive (same sizeof-VLA imprecision as SPL06).
     ('libraries/SITL/SIM_PS_LightWare_SF45B.h', {14: '727a3c693086fc17de2df6605049bae9', 15: '727a3c693086fc17de2df6605049bae9', 16: '727a3c693086fc17de2df6605049bae9', 17: '727a3c693086fc17de2df6605049bae9', 18: '727a3c693086fc17de2df6605049bae9', 19: '727a3c693086fc17de2df6605049bae9', 20: '727a3c693086fc17de2df6605049bae9'}, 'sizeof(T) treated as symbolic zero'),  # noqa:E501
 
-    # GPS_UBlox::send_ubx() accumulates a checksum by iterating over buf for
-    # i < size.  The analyser models the uint16_t size parameter as possibly
-    # zero, concludes the loop may not run, and reports chk[0] as garbage on
-    # the next use.  Every caller passes sizeof(msg), a positive compile-time
-    # constant.  False positive (same sizeof symbolic-zero pattern as SPL06).
-    ('libraries/SITL/SIM_GPS_UBLOX.cpp', {14: '17e039c0f2fd5426d06d77711fcb8b1a', 15: '17e039c0f2fd5426d06d77711fcb8b1a', 16: '17e039c0f2fd5426d06d77711fcb8b1a', 17: '17e039c0f2fd5426d06d77711fcb8b1a', 18: '17e039c0f2fd5426d06d77711fcb8b1a', 19: '17e039c0f2fd5426d06d77711fcb8b1a', 20: '17e039c0f2fd5426d06d77711fcb8b1a'}, 'size=sizeof(msg) always >0'),  # noqa:E501
-
     # update() fills motor_pwm[] then calls escs_set_values(); pack_fast_throttle_command()
     # reads motor_values[0] unconditionally. The analyser treats _esc_count as
     # possibly 0, so it thinks the fill loop may not run and motor_values[0] is
