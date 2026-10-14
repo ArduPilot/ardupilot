@@ -16169,6 +16169,40 @@ return update, 1000
             self.reboot_sitl()
             self.fly_rangefinder_drivers_fly([x.name for x in do_drivers])
 
+    def RangeFinderTeraRangerDefaults(self):
+        '''check TeraRanger backends supply RNGFNDx_MIN/RNGFNDx_MAX defaults'''
+        # an earlier test may have saved RNGFND1_MIN/MAX, which would
+        # stop the backends' set_default() applying
+        self.customise_SITL_commandline([], wipe=True)
+        self.progress("TeraRanger Evo (I2C address 0x31) keeps the generic default")
+        self.set_parameters({
+            "RNGFND1_TYPE": 14,
+            "RNGFND1_ADDR": 0x31,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.assert_parameter_value("RNGFND1_MAX", 7, epsilon=0.001)
+
+        self.progress("TeraRanger Neo (serial) supplies a 30m default")
+        self.set_parameters({
+            "SERIAL4_PROTOCOL": 9,
+            "RNGFND1_TYPE": 35,
+        })
+        self.customise_SITL_commandline([
+            "--serial4=sim:teraranger_serial",
+        ])
+        self.wait_ready_to_arm()
+        self.assert_parameter_values({
+            "RNGFND1_MAX": 30,
+            "RNGFND1_MIN": 0.2,
+        }, epsilon=0.001)
+
+        self.progress("Ensure a user-set value is not overridden")
+        self.set_parameter("RNGFND1_MAX", 10)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.assert_parameter_value("RNGFND1_MAX", 10, epsilon=0.001)
+
     def RangeFinderDriversMaxAlt_FlyDriver(self,
                                            name : str,
                                            rngfnd_type : int,
@@ -16277,6 +16311,8 @@ return update, 1000
         self.customise_SITL_commandline([
             "--serial4=sim:benewake_tf02",
         ])
+        # set this once the driver has supplied its own default:
+        self.set_parameter("RNGFND1_MAX", 7)
 
         text_good = "GOOD"
         text_out_of_range_high = "OUT_OF_RANGE_HIGH"
@@ -19683,6 +19719,7 @@ return update, 1000
             self.ModeZigZag,
             self.ModeFollow,
             self.RangeFinderDrivers,
+            self.RangeFinderTeraRangerDefaults,
             self.RichenPower,
             self.MAV_CMD_NAV_VTOL_LAND,
             self.FenceRelativeToHomeMinAltOriginAbove,
