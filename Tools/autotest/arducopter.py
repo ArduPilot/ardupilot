@@ -4880,12 +4880,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("flow vel reset", check_context=True, timeout=30)
         self.set_parameter("SIM_FLOW_OFS_X", 0)
         self.disarm_vehicle(force=True)
+        # the speed error a height difference puts into a reset is the flow rate times that
+        # difference, and it may be no more than EK3_FLOW_M_NSE times the height
+        flow_noise = self.get_parameter("EK3_FLOW_M_NSE")
         dfreader = self.dfreader_for_current_onboard_log()
         hagl = None
         dist = None
+        flow_rate = None
         resets = 0
         while True:
-            m = dfreader.recv_match(type=['XKFA', 'RFND', 'XKF7'])
+            m = dfreader.recv_match(type=['XKFA', 'RFND', 'XKF7', 'OF'])
             if m is None:
                 break
             mtype = m.get_type()
@@ -4893,13 +4897,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 hagl = m.HAgl
             elif mtype == 'RFND' and m.Instance == 0:
                 dist = m.Dist
+            elif mtype == 'OF':
+                flow_rate = math.hypot(m.flowX - m.bodyX, m.flowY - m.bodyY)
             elif mtype == 'XKF7' and m.C == 0 and m.FVC > resets:
                 resets = m.FVC
                 if m.TimeUS * 1e-6 < tstep:
                     continue
-                # the deferral's 20% plus 5 cm, and 0.1 m for the logging rate
-                if hagl is None or dist is None or abs(hagl - dist) > 0.2 * dist + 0.15:
-                    raise NotAchievedException("reset with the AGL KF at %s m and the range at %s m" % (hagl, dist))
+                if hagl is None or dist is None or flow_rate is None:
+                    raise NotAchievedException("reset with no AGL KF, range or flow logged before it")
+                # 0.15 m/s for the logging rate
+                spd_err = flow_rate * abs(hagl - dist)
+                if spd_err > flow_noise * hagl + 0.15:
+                    raise NotAchievedException("reset with %.2f m/s from the height step (AGL KF %.2f m, range %.2f m)" %
+                                               (spd_err, hagl, dist))
         if resets == 0:
             raise NotAchievedException("no reset once the heights agreed again")
 
