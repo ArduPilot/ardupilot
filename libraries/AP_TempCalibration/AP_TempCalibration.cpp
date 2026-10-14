@@ -24,6 +24,10 @@
 #include <stdio.h>
 #include <AP_Baro/AP_Baro.h>
 
+#if defined(APM_BUILD_TYPE)
+//  - this is just here to encourage the build system to supply the "legacy build defines".  The actual dependency is in the AP_TempCalibration_config.h header
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 #define TCAL_DEBUG 0
