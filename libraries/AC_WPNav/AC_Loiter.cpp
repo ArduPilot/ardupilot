@@ -161,6 +161,7 @@ void AC_Loiter::init_target()
     _predicted_euler_rate.zero();
     _predicted_euler_accel.zero();
     _brake_accel_mss = 0.0f;
+    _pilot_accel_ne_mss.zero();
 }
 
 // Reduces loiter responsiveness for smoother descent during landing.
