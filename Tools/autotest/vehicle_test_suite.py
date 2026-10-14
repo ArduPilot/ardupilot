@@ -5668,11 +5668,6 @@ class TestSuite(abc.ABC):
                 continue
             return m
 
-    def assert_receive_named_value_float_value(self, name, value, epsilon=0.0001, timeout=10):
-        m = self.assert_receive_named_value_float_value(name, timeout=timeout)
-        if abs(m.value - value) > epsilon:
-            raise NotAchievedException("Bad %s want=%f got=%f" % (name, value, m.value))
-
     def assert_rally_files_same(self, file1, file2):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
         f1 = open(file1)
