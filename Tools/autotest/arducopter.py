@@ -22,6 +22,7 @@ import xml.etree.ElementTree as ET
 
 import numpy
 
+from MAVProxy.modules.lib import mp_util
 from pymavlink import mavextra
 from pymavlink import mavftp_op
 from pymavlink import mavutil
@@ -19087,6 +19088,187 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         middle = Location(0.000001, 0.000001, 1, AltFrame.ABSOLUTE)
         self.fly_square_mission_around_location(middle, 45)
 
+    @staticmethod
+    def great_circle_distance(loc1, loc2):
+        '''great-circle (haversine) distance in metres between two
+        Locations.  Unlike get_distance(), which follows a rhumb line,
+        this stays accurate at the poles'''
+        lat1 = math.radians(loc1.lat)
+        lat2 = math.radians(loc2.lat)
+        dlat = lat2 - lat1
+        dlng = math.radians(loc2.lng - loc1.lng)
+        h = (math.sin(dlat / 2) ** 2 +
+             math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2) ** 2)
+        return 2 * mp_util.radius_of_earth * math.asin(min(1, math.sqrt(h)))
+
+    def fly_square_and_diagonal_mission(self, home, centre, corners):
+        '''start SITL at home, then fly takeoff, the four corners (each 20m
+        from centre), back to the first corner, straight across centre
+        to the opposite corner, then RTL.  The simulator's position is
+        checked against each waypoint, and against centre, using
+        great-circle distances.  SITL's physics converts its position
+        to lat/lng with the same AP_Common Location code the firmware
+        uses, so it agrees with the firmware rather than checking it;
+        these great-circle checks are what is independent of that
+        code'''
+        for corner in corners:
+            corner_distance = self.great_circle_distance(centre, corner)
+            if abs(corner_distance - 20) > 0.1:
+                raise ValueError("Corner (%.9f,%.9f) is %fm from centre, not 20m" %
+                                 (corner.lat, corner.lng, corner_distance))
+
+        self.context_push()
+        ex = None
+        try:
+            self.customise_SITL_commandline(
+                [],
+                home=self.sitl_home_string(home),
+            )
+            self.set_parameter('AUTO_OPTIONS', 3)  # arm and takeoff in AUTO
+            self.set_message_rate_hz('SIMSTATE', 10)
+
+            alt = 20
+            items = [(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt)]
+            waypoints = corners + [corners[0], corners[2]]
+            for loc in waypoints:
+                items.append(self.create_MISSION_ITEM_INT(
+                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                    frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                    x=int(loc.lat * 1e7),
+                    y=int(loc.lng * 1e7),
+                    z=alt,
+                ))
+            items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
+            self.upload_simple_relhome_mission(items)
+            rtl_seq = len(items)  # mission item 0 is home
+
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+
+            leg_time_max = 30  # longest leg is 40m
+            max_distance_allowed = 40  # corners are 20m from centre
+            reached_radius = 3  # WPNAV_RADIUS is 2m
+            first_wp_seq = 2  # after home and takeoff
+            diagonal_seq = rtl_seq - 1  # corners[0] to corners[2]
+            max_distance = 0
+            diagonal_min_distance = math.inf  # from centre
+            closest = {}  # seq -> closest approach to that waypoint
+            simstate_count = 0
+            current_seq = None
+            pos = None
+            wp_dist = None
+            tstart = self.get_sim_time()
+            leg_tstart = tstart
+            while self.armed(cached=True):
+                now = self.get_sim_time_cached()
+                if now - tstart > 300:
+                    raise AutoTestTimeoutException("Mission did not complete")
+                if (current_seq is not None and
+                        current_seq < rtl_seq and
+                        now - leg_tstart > leg_time_max):
+                    msg = "Mission item %u not reached within %fs" % (current_seq, leg_time_max)
+                    if current_seq >= 2 and pos is not None:
+                        # items 2 onwards are the waypoints
+                        target = waypoints[current_seq - first_wp_seq]
+                        msg += "; it is %fm away but ArduPilot reports wp_dist=%sm" % (
+                            self.great_circle_distance(pos, target), str(wp_dist))
+                    raise NotAchievedException(msg)
+                m = self.mav.recv_match(
+                    type=['SIMSTATE', 'MISSION_CURRENT', 'NAV_CONTROLLER_OUTPUT'],
+                    blocking=True,
+                    timeout=1,
+                )
+                if m is None:
+                    continue
+                if m.get_type() == 'MISSION_CURRENT':
+                    if m.seq != current_seq:
+                        if current_seq in closest and closest[current_seq] > reached_radius:
+                            raise NotAchievedException(
+                                "Mission moved on from item %u but the vehicle only got within %fm of it" %
+                                (current_seq, closest[current_seq]))
+                        self.progress("Mission item %u is current" % m.seq)
+                        current_seq = m.seq
+                        leg_tstart = now
+                    continue
+                if m.get_type() == 'NAV_CONTROLLER_OUTPUT':
+                    wp_dist = m.wp_dist
+                    continue
+                simstate_count += 1
+                pos = Location.latlon_only(m.lat * 1e-7, m.lng * 1e-7)
+                distance = self.great_circle_distance(centre, pos)
+                max_distance = max(max_distance, distance)
+                if current_seq == diagonal_seq:
+                    diagonal_min_distance = min(diagonal_min_distance, distance)
+                if current_seq is not None and first_wp_seq <= current_seq < rtl_seq:
+                    target = waypoints[current_seq - first_wp_seq]
+                    closest[current_seq] = min(
+                        closest.get(current_seq, math.inf),
+                        self.great_circle_distance(pos, target))
+                if distance > max_distance_allowed:
+                    raise NotAchievedException(
+                        "Vehicle at (%.9f,%.9f) is %fm from centre (max %fm)" %
+                        (pos.lat, pos.lng, distance, max_distance_allowed))
+
+            self.progress("Max distance from centre: %fm" % max_distance)
+            if simstate_count == 0:
+                raise NotAchievedException("No SIMSTATE received")
+            self.progress("Closest approach to each waypoint: %s" %
+                          ", ".join("%u=%.2fm" % (seq, closest[seq]) for seq in sorted(closest)))
+            for seq in range(first_wp_seq, rtl_seq):
+                if seq not in closest:
+                    raise NotAchievedException("Mission item %u was never seen as current" % seq)
+                if closest[seq] > reached_radius:
+                    raise NotAchievedException(
+                        "Vehicle only got within %fm of mission item %u" % (closest[seq], seq))
+            self.progress("Closest approach to centre on the diagonal: %fm" % diagonal_min_distance)
+            if diagonal_min_distance > reached_radius:
+                raise NotAchievedException(
+                    "Vehicle only got within %fm of centre on the diagonal" % diagonal_min_distance)
+            landed_distance = self.great_circle_distance(home, self.get_location('SIMSTATE'))
+            if landed_distance > 5:
+                raise NotAchievedException(
+                    "Vehicle landed %fm from home" % landed_distance)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
+    def NorthPole(self):
+        '''fly a square around the North Pole, then across it'''
+        # the corners are written out rather than offset from the pole
+        # because offsetting from the pole is the geometry under test
+        # (and mp_util.gps_offset breaks there too).  Each is 20m from
+        # the pole, 90 degrees of longitude apart, making a 28.3m square
+        centre = Location(90, 0, 0, AltFrame.ABSOLUTE)
+        corner_lat = 90 - math.degrees(20 / mp_util.radius_of_earth)
+        corners = [
+            Location(corner_lat, lng, 0, AltFrame.ABSOLUTE)
+            for lng in (45, 135, -135, -45)
+        ]
+        # start a little way off the pole, where north and east are
+        # still defined:
+        home = Location(90 - math.degrees(5 / mp_util.radius_of_earth),
+                        0,
+                        0,
+                        AltFrame.ABSOLUTE)
+        self.fly_square_and_diagonal_mission(home, centre, corners)
+
+    def NorthPoleControl(self):
+        '''fly NorthPole's mission shape at 60N, where it works'''
+        centre = Location(60, 10, 0, AltFrame.ABSOLUTE)
+        d = 20 / math.sqrt(2)
+        corners = [
+            self.offset_location_ne(centre, n, e)
+            for (n, e) in ((d, d), (-d, d), (-d, -d), (d, -d))
+        ]
+        home = self.offset_location_ne(centre, -5, 0)
+        self.fly_square_and_diagonal_mission(home, centre, corners)
+
     def ATTITUDE_FAST(self):
         '''ensure that when ATTITUDE_FAST is set we get many messages'''
 
@@ -19627,6 +19809,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.Equator,
             self.CMAC,
             self.Rabi,
+            self.NorthPole,
+            self.NorthPoleControl,
         ])
         return ret
 
@@ -24228,6 +24412,7 @@ return update, 1000
             "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
             "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
             "ScriptingOSD": "Requires SFML which is not available in CI",
+            "NorthPole": "ArduPilot's Location maths breaks down near the poles",
         }
 
 
