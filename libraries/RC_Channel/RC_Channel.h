@@ -802,6 +802,10 @@ public:
     // returns true when pilot input should clear an active MAVLink override; vehicles override to define which axes count
     virtual bool has_pilot_input_for_override_clear();
 
+    // returns true if the vehicle needs an RC channel for this
+    // control input; the pre-arm checks require one to provide it
+    virtual bool control_input_required(RC_Channel::AUX_FUNC func) const;
+
     // name of a control input the vehicle uses but no RC channel
     // provides, or nullptr
     const char *missing_control_channel() const;
@@ -823,6 +827,9 @@ protected:
     // returns true if throttle moved beyond deadzone since override start
     bool throttle_moved_since_override_start() const;
 
+    // set each channel's number; this is what makes ch() work
+    void init_channel_numbers();
+
 private:
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
@@ -840,9 +847,6 @@ private:
     AP_Float _fs_timeout;
 
     AP_Int8 _conversion;
-
-    // set each channel's number; this is what makes ch() work
-    void init_channel_numbers();
 
     // channels whose RCn_OPTION was stored as DO_NOTHING before the
     // RCMAP_ conversion; only populated while that conversion runs
@@ -872,15 +876,16 @@ private:
     const RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const;
     RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func);
 
-    // a control input is bound to its RC channel when the vehicle
-    // first asks for it, at boot.  A later RCn_OPTION change does not
-    // move it; a pre-arm check asks for a reboot instead, so the
-    // arming checks and the flight code can't disagree on a channel
+    // control inputs are bound to their RC channels when the vehicle
+    // first asks for one, at boot.  A later RCn_OPTION change does not
+    // move them; a pre-arm check asks for a reboot instead, so the
+    // arming checks and the flight code can't disagree on a channel.
+    // Vehicles take their channel pointers once, so an input with no
+    // channel at boot stays unbound until reboot
     struct ControlBinding {
         RC_Channel::AUX_FUNC func;
         const char *name;
         RC_Channel *channel;
-        bool requested;   // the vehicle uses this control input
     };
     ControlBinding control_bindings[6] {
         { RC_Channel::AUX_FUNC::ROLL,        "Roll" },
@@ -890,6 +895,8 @@ private:
         { RC_Channel::AUX_FUNC::FORWARD_THR, "Forward" },
         { RC_Channel::AUX_FUNC::LATERAL_THR, "Lateral" },
     };
+    bool control_channels_bound;
+    void bind_control_channels();
     ControlBinding *control_binding(RC_Channel::AUX_FUNC func);
     const ControlBinding *control_binding(RC_Channel::AUX_FUNC func) const;
 

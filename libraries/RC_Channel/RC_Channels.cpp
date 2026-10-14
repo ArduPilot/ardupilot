@@ -412,7 +412,7 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
 
 // these methods return an RC_Channel reference for a control input,
 // bound to the channel assigned the relevant RCn_OPTION the first time
-// the vehicle asks for it.  The return value is guaranteed to be a
+// the vehicle asks for any control input.  The return value is guaranteed to be a
 // valid channel to allow use without checking for null-ness; if no
 // channel has the option a dummy channel reading neutral is returned,
 // and a pre-arm check reports the problem
@@ -446,11 +446,21 @@ const RC_Channels::ControlBinding *RC_Channels::control_binding(RC_Channel::AUX_
     return nullptr;
 }
 
+void RC_Channels::bind_control_channels()
+{
+    for (auto &binding : control_bindings) {
+        binding.channel = find_channel_for_option(binding.func);
+    }
+    control_channels_bound = true;
+}
+
 const RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const
 {
     const ControlBinding *binding = control_binding(func);
-    const RC_Channel *ret = (binding != nullptr) ? binding->channel : nullptr;
-    if (ret == nullptr) {
+    const RC_Channel *ret;
+    if (binding != nullptr && control_channels_bound) {
+        ret = binding->channel;
+    } else {
         // not bound yet; look it up but leave binding to the
         // non-const getter the vehicle uses
         ret = find_channel_for_option(func);
@@ -468,9 +478,8 @@ RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func)
         RC_Channel *ret = find_channel_for_option(func);
         return (ret != nullptr) ? *ret : dummy_channel();
     }
-    binding->requested = true;
-    if (binding->channel == nullptr) {
-        binding->channel = find_channel_for_option(func);
+    if (!control_channels_bound) {
+        bind_control_channels();
     }
     if (binding->channel != nullptr) {
         return *binding->channel;
@@ -478,11 +487,23 @@ RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func)
     return dummy_channel();
 }
 
+bool RC_Channels::control_input_required(RC_Channel::AUX_FUNC func) const
+{
+    switch (func) {
+    case RC_Channel::AUX_FUNC::ROLL:
+    case RC_Channel::AUX_FUNC::PITCH:
+    case RC_Channel::AUX_FUNC::THROTTLE:
+    case RC_Channel::AUX_FUNC::YAW:
+        return true;
+    default:
+        return false;
+    }
+}
+
 const char *RC_Channels::missing_control_channel() const
 {
     for (const auto &binding : control_bindings) {
-        if (binding.requested &&
-            binding.channel == nullptr &&
+        if (control_input_required(binding.func) &&
             find_channel_for_option(binding.func) == nullptr) {
             return binding.name;
         }
@@ -492,8 +513,11 @@ const char *RC_Channels::missing_control_channel() const
 
 const char *RC_Channels::changed_control_channel() const
 {
+    if (!control_channels_bound) {
+        return nullptr;
+    }
     for (const auto &binding : control_bindings) {
-        if (!binding.requested) {
+        if (!control_input_required(binding.func)) {
             continue;
         }
         const RC_Channel *now = find_channel_for_option(binding.func);
