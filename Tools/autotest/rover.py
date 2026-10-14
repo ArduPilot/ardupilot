@@ -543,6 +543,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''maximum distance allowed from home at end'''
         return 6.5
 
+    def AuxFunctionOnUnusedControlChannel(self):
+        '''aux functions on control channels Rover doesn't use do not stop arming'''
+        self.context_push()
+        # a pistol-grip setup: throttle on 2, aux functions on 3 and 4
+        self.set_parameters({
+            "RC2_OPTION": 203,
+            "RC3_OPTION": 28,
+            "RC4_OPTION": 34,
+        })
+        # the second boot catches an input first asked for on arming
+        for i in range(2):
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        self.context_pop()
+        self.reboot_sitl()
+
     def DriveRTL(self, timeout=120):
         '''Drive an RTL Mission'''
         self.wait_ready_to_arm()
@@ -8141,6 +8159,7 @@ return update()
             self.MAVProxy_SetModeUsingMode,
             self.ModeSwitch,
             self.AuxModeSwitch,
+            self.AuxFunctionOnUnusedControlChannel,
             self.DriveRTL,
             self.SmartRTL,
             self.DriveSquare,

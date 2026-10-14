@@ -22068,6 +22068,40 @@ RTL_ALT_M 111
         # SYSTEM_TIME is not sent in the config error loop
         self.wait_statustext("Config Error: RCMAP_ROLL in defaults file", wallclock_timeout=True)
 
+    def ControlChannelBinding(self):
+        '''control inputs are bound at boot; a missing or moved one is a pre-arm failure'''
+        self.context_push()
+        self.wait_ready_to_arm()
+
+        self.start_subtest("Pitch removed without a reboot")
+        self.set_parameter("RC2_OPTION", 0)
+        self.assert_prearm_failure("No RC channel for Pitch")
+
+        self.start_subtest("Pitch missing at boot")
+        self.set_rc(10, 1500)
+        self.reboot_sitl()
+        # sensors may still be settling after the reboot
+        self.assert_prearm_failure("No RC channel for Pitch", timeout=30, other_prearm_failures_fatal=False)
+
+        self.start_subtest("Pitch provided after boot needs a reboot")
+        self.set_parameter("RC10_OPTION", 202)
+        # repeated checks must not bind the input late; sensors may
+        # still be settling after the reboot
+        for i in range(3):
+            self.assert_prearm_failure("Pitch channel changed; reboot required",
+                                       other_prearm_failures_fatal=False)
+
+        self.start_subtest("Pitch flies from its new channel after a reboot")
+        self.reboot_sitl()
+        self.takeoff(10, mode='ALT_HOLD')
+        self.set_rc(10, 1900)
+        self.wait_pitch(30, 5)
+        self.set_rc(10, 1500)
+        self.do_RTL()
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def ScriptingFlipMode(self):
         '''test adding custom mode from scripting'''
         # Really it would be nice to check for the AVAILABLE_MODES message, but pymavlink does not understand them yet.
@@ -23856,6 +23890,7 @@ return update, 1000
             self.Weathervane,
             self.ReadOnlyDefaults,
             self.RCMAPInDefaultsFile,
+            self.ControlChannelBinding,
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
             self.mission_NAV_LOITER_TURNS_direction,
