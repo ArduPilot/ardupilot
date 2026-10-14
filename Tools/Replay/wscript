@@ -23,4 +23,5 @@ def build(bld):
     bld.ap_program(
         program_groups=['tool','replay'],
         use=vehicle + '_libs',
+        allow_nonflight_symbols=True,
     )
