@@ -179,7 +179,11 @@ private:
         float prior[MAX_ACTUATORS];          // effectiveness prior per actuator
         float theta[MAX_ACTUATORS];          // ratio state, see class comment
         float theta_raw;                     // primary ratio without the band clamp, for the band verdict
-        float P[MAX_ACTUATORS][MAX_ACTUATORS]; // covariance of theta
+        // covariance of theta in UD factorised form, P = U D U': U is unit
+        // upper triangular, of which only the part above the diagonal is
+        // stored, and D is diagonal
+        float U[MAX_ACTUATORS][MAX_ACTUATORS];
+        float D[MAX_ACTUATORS];
         float P0_diag[MAX_ACTUATORS];        // initial covariance diagonal, cap on growth
         float g_ref;                         // largest |prior| on the axis
         float r;                             // estimated measurement noise variance, normalised units
@@ -193,6 +197,10 @@ private:
 
     void reset_axis(Axis &a, float prior_rel_sigma);
     void update_state(Axis &a);
+    // diagonal element j of the covariance P = U D U'
+    float covariance(const Axis &a, uint8_t j) const;
+    // hold the diagonal of P between the floor and the cap
+    void bound_covariance(Axis &a) const;
 
     Config _cfg;
     Axis _axis[NUM_AXES];

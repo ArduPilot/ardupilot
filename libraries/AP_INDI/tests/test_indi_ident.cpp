@@ -9,6 +9,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 #if AP_INDI_ENABLED
 
 #include <AP_INDI/AP_INDI_Ident.h>
+#include <AP_Math/AP_Math.h>
 
 static constexpr uint8_t N = 4;  // a quadrotor: four motors
 static constexpr uint8_t MAXA = AP_INDI_Ident::MAX_ACTUATORS;
@@ -339,6 +340,167 @@ TEST(INDIIdent, CovarianceStaysBoundedUnderLongNoisyRun)
     EXPECT_GE(id.get_rel_sigma(0), cfg.rel_sigma_floor * 0.99f);
     // within 5% of the true value
     EXPECT_NEAR(id.get_effectiveness(0, 0), G_PRIOR, 0.05f * G_PRIOR);
+}
+
+// The covariance is kept in UD factorised form (SPEC.md, Numerics, f32).
+// That is the textbook RLS covariance recursion rearranged, not a
+// different estimator: in exact arithmetic both give the same P. This
+// replays a run in which the prior is exactly right and the data are
+// noise-free, so the estimate never moves and the noise estimate stays on
+// its floor, and compares the primary's relative sigma with the textbook
+// recursion run in double precision on the same accepted samples.
+// Agreement to 1% (the f32 against f64 criterion of the validation plan's
+// stage 5) shows the factorised update, its forgetting and its use of the
+// noise variance are right; a wrong gain or a misplaced forgetting factor
+// is off by far more. The covariance bounds are set out of reach so the
+// comparison sees the recursion alone.
+TEST(INDIIdent, CovarianceMatchesDoublePrecisionReference)
+{
+    float prior[AP_INDI_Ident::NUM_AXES][MAXA];
+    make_prior(prior, G_PRIOR);
+    const float rel_sigma[3] = { 0.7f, 0.7f, 0.7f };
+    AP_INDI_Ident::Config cfg;
+    // start the noise estimate on its floor: with noise-free data the
+    // residuals are zero and it stays there, a constant the reference can
+    // use
+    cfg.noise_rel_init = cfg.noise_rel_floor;
+    // a relative sigma floor of 0.1%, below the 0.3% this run settles at,
+    // so the floor never acts
+    cfg.rel_sigma_floor = 0.001f;
+    AP_INDI_Ident id;
+    id.init(N, prior, rel_sigma, cfg);
+
+    // the reference recursion, P = (P - P phi phi' P / (lambda r + phi' P phi)) / lambda,
+    // from the prior variance on the diagonal
+    double P[N][N] = {};
+    for (uint8_t j = 0; j < N; j++) {
+        P[j][j] = sq(double(rel_sigma[0]));
+    }
+    const double r = sq(double(cfg.noise_rel_floor));
+    const double lambda = cfg.lambda_launch;
+
+    const float g_true[N] = { G_PRIOR, -G_PRIOR, G_PRIOR, -G_PRIOR };
+    LCG rng;
+    // 1000 samples is five times the 200-sample memory of the launch
+    // forgetting factor, so the recursion has reached its steady state
+    for (uint32_t k = 0; k < 1000; k++) {
+        float du[MAXA] = {};
+        float dw = 0;
+        for (uint8_t j = 0; j < N; j++) {
+            du[j] = STROKE * rng.symmetric();
+            dw += g_true[j] * du[j];
+        }
+        if (!id.update(0, du, dw, false)) {
+            continue;
+        }
+        // the identifier's regressor scaling, du_j prior_j / g_ref
+        double phi[N];
+        for (uint8_t j = 0; j < N; j++) {
+            phi[j] = double(du[j]) * prior[0][j] / G_PRIOR;
+        }
+        double Pphi[N] = {};
+        double denom = lambda * r;
+        for (uint8_t j = 0; j < N; j++) {
+            for (uint8_t m = 0; m < N; m++) {
+                Pphi[j] += P[j][m] * phi[m];
+            }
+            denom += phi[j] * Pphi[j];
+        }
+        for (uint8_t j = 0; j < N; j++) {
+            for (uint8_t m = 0; m < N; m++) {
+                P[j][m] = (P[j][m] - Pphi[j] * Pphi[m] / denom) / lambda;
+            }
+        }
+    }
+    // the primary ratio stays at one, so its relative sigma is sqrt(P[0][0])
+    const double expected = sqrt(P[0][0]);
+    EXPECT_NEAR(id.get_rel_sigma(0), expected, 0.01 * expected);
+}
+
+// Why the covariance bounds keep the factorised form. In a coordinated
+// manoeuvre the roll and pitch commands move together, so the data
+// determine only their combined effect on the axis: the covariance
+// shrinks along that one direction with every sample, while across it the
+// forgetting factor grows it until the prior variance caps it. Capping
+// the diagonal of P element by element, as this identifier did before the
+// UD form, leaves the off-diagonal terms where they were, and P stops
+// being positive definite (in double precision as much as in single); the
+// innovation variance it computes then goes negative, every later sample
+// is refused, and the estimate stays wherever it was when that happened.
+// On this run that version accepted 10962 samples, about 13 s of them,
+// refused every one after, and ended with the combined effect 11% high.
+// This drives the identifier as the controller configures it (the three
+// axis commands as actuators, a diagonal prior, couplings bounded at half
+// the reference) through 20 s of cruise with the roll and pitch strokes
+// equal, and checks that it keeps learning and that the combined effect
+// is right.
+TEST(INDIIdent, KeepsLearningUnderCoordinatedStrokes)
+{
+    // roll, pitch and yaw command effectiveness priors, rad/s^2 per unit:
+    // the roll prior used throughout, the same for pitch and a tenth of it
+    // for yaw as in make_prior(), and no coupling expected
+    float prior[AP_INDI_Ident::NUM_AXES][MAXA] = {};
+    prior[0][0] = G_PRIOR;
+    prior[1][1] = G_PRIOR;
+    prior[2][2] = 0.1f * G_PRIOR;
+    const float rel_sigma[3] = { 0.7f, 0.7f, 0.7f };
+    AP_INDI_Ident::Config cfg;
+    // the controller's coupling bound, half of the reference
+    cfg.coupling_max = 0.5f;
+    AP_INDI_Ident id;
+    // three actuators: the roll, pitch and yaw commands
+    const uint8_t n = 3;
+    id.init(n, prior, rel_sigma, cfg);
+
+    // the roll axis is 1.2x as effective as its prior, a typical class
+    // prior error, and the pitch command couples into roll at 20 rad/s^2
+    // per unit, well inside the bound
+    const float g_true[n] = { 1.2f * G_PRIOR, 20, 0 };
+    // noise of 1% of the response to a full roll stroke
+    const float noise = 0.01f * g_true[0] * STROKE;
+    LCG rng;
+    // the launch: 300 independent strokes, so the axis has converged
+    // before the coordinated cruise starts
+    for (uint16_t k = 0; k < 300; k++) {
+        float du[MAXA] = {};
+        float dw = noise * rng.symmetric();
+        for (uint8_t j = 0; j < n; j++) {
+            du[j] = STROKE * rng.symmetric();
+            dw += g_true[j] * du[j];
+        }
+        id.update(0, du, dw, false);
+    }
+    id.set_cruise(true);
+    const uint32_t launch_accepted = id.get_accepted_count(0);
+
+    // 20000 samples is 20 s at 1 kHz, ten times the 2000-sample cruise
+    // memory
+    const uint32_t samples = 20000;
+    for (uint32_t k = 0; k < samples; k++) {
+        float du[MAXA] = {};
+        du[0] = STROKE * rng.symmetric();
+        du[1] = du[0];
+        const float dw = g_true[0] * du[0] + g_true[1] * du[1] + noise * rng.symmetric();
+        id.update(0, du, dw, false);
+    }
+    // the stroke gate passes 82% of these samples (|du| of the pair above
+    // du_min, so a roll stroke above 0.035 of the 0.2 range) and the fit
+    // explains every one of them; the version with P gone indefinite
+    // accepted 55%
+    EXPECT_GE(id.get_accepted_count(0) - launch_accepted, samples * 3 / 4);
+    EXPECT_NE(id.get_state(0), AP_INDI_Ident::AxisState::FAILED);
+    // the combined effect of a coordinated stroke, which is all the data
+    // determine, within 1% of the truth (200 rad/s^2 per unit)
+    const float combined = id.get_effectiveness(0, 0) + id.get_effectiveness(0, 1);
+    EXPECT_NEAR(combined, g_true[0] + g_true[1], 0.01f * (g_true[0] + g_true[1]));
+    // the coupling stays within its bound (0.1% of float slack)
+    EXPECT_LE(fabsf(id.get_effectiveness(0, 1)), cfg.coupling_max * G_PRIOR * 1.001f);
+    // finite, at or above its floor (1% slack for float rounding) and no
+    // larger than the prior's
+    const float rs = id.get_rel_sigma(0);
+    EXPECT_TRUE(isfinite(rs));
+    EXPECT_GE(rs, cfg.rel_sigma_floor * 0.99f);
+    EXPECT_LE(rs, rel_sigma[0]);
 }
 
 #endif // AP_INDI_ENABLED

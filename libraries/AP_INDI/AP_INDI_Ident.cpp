@@ -44,8 +44,9 @@ void AP_INDI_Ident::reset_axis(Axis &a, float prior_rel_sigma)
     a.r = sq(_cfg.noise_rel_init);
     for (uint8_t j = 0; j < MAX_ACTUATORS; j++) {
         for (uint8_t k = 0; k < MAX_ACTUATORS; k++) {
-            a.P[j][k] = 0;
+            a.U[j][k] = 0;
         }
+        a.D[j] = 0;
         if (j >= _n || is_zero(a.g_ref)) {
             a.theta[j] = 0;
             a.P0_diag[j] = 0;
@@ -61,7 +62,7 @@ void AP_INDI_Ident::reset_axis(Axis &a, float prior_rel_sigma)
             a.theta[j] = 0;
             a.P0_diag[j] = sq(_cfg.offdiag_rel_sigma);
         }
-        a.P[j][j] = a.P0_diag[j];
+        a.D[j] = a.P0_diag[j];
     }
 }
 
@@ -157,21 +158,54 @@ bool AP_INDI_Ident::update(uint8_t axis, const float delta_u[MAX_ACTUATORS], flo
     // weighted RLS: k = P phi / (lambda r + phi' P phi), where r is the
     // measurement noise variance. Without r the covariance would only be
     // known up to the noise scale and the gain would be wrong.
-    float Pphi[MAX_ACTUATORS];
-    float phiPphi = 0;
+    // P is held as P = U D U' and updated by Bierman's method (G. J.
+    // Bierman, Factorization Methods for Discrete Sequential Estimation,
+    // 1977, chapter V) with measurement variance lambda r, then D is
+    // divided by lambda. That is exactly the recursion
+    // P = (P - P phi phi' P / (lambda r + phi' P phi)) / lambda, but each
+    // element of D is only ever scaled by a ratio of positive sums, so P
+    // stays positive definite whatever the rounding, and the bounds keep
+    // it so (bound_covariance()). Clamping the diagonal of P element by
+    // element did not: under coordinated strokes P went indefinite and
+    // every later sample was refused (SPEC.md, Numerics, f32).
+    float f[MAX_ACTUATORS];  // U' phi
+    float g[MAX_ACTUATORS];  // D U' phi
+    float denom = lambda * a.r;
     for (uint8_t j = 0; j < _n; j++) {
-        Pphi[j] = 0;
-        for (uint8_t k = 0; k < _n; k++) {
-            Pphi[j] += a.P[j][k] * phi[k];
+        f[j] = phi[j];
+        for (uint8_t i = 0; i < j; i++) {
+            f[j] += a.U[i][j] * phi[i];
         }
-        phiPphi += phi[j] * Pphi[j];
+        g[j] = a.D[j] * f[j];
+        denom += f[j] * g[j];
     }
-    const float innovation = y - y_hat;
-
-    const float denom = lambda * a.r + phiPphi;
+    // positive by construction; this refuses a non-finite regressor
+    // before it reaches the state
     if (!is_positive(denom)) {
         return false;
     }
+    // the update also accumulates P phi, with the covariance as it was
+    // before this sample, for the gain
+    float Pphi[MAX_ACTUATORS];
+    float alpha = lambda * a.r;
+    for (uint8_t j = 0; j < _n; j++) {
+        const float alpha_prev = alpha;
+        alpha += f[j] * g[j];
+        a.D[j] *= alpha_prev / alpha;
+        Pphi[j] = g[j];
+        const float mu = -f[j] / alpha_prev;
+        for (uint8_t i = 0; i < j; i++) {
+            const float u = a.U[i][j];
+            a.U[i][j] = u + Pphi[i] * mu;
+            Pphi[i] += u * g[j];
+        }
+    }
+    for (uint8_t j = 0; j < _n; j++) {
+        a.D[j] /= lambda;
+    }
+    bound_covariance(a);
+
+    const float innovation = y - y_hat;
     for (uint8_t j = 0; j < _n; j++) {
         a.theta[j] += (Pphi[j] / denom) * innovation;
         if (is_zero(a.prior[j])) {
@@ -206,19 +240,6 @@ bool AP_INDI_Ident::update(uint8_t axis, const float delta_u[MAX_ACTUATORS], flo
     a.r = MIN((1.0f - w) * a.r + w * r_sample, 4.0f * a.r);
     a.r = MAX(a.r, sq(_cfg.noise_rel_floor));
 
-    // P = (P - k phi' P) / lambda, with the result kept symmetric and bounded.
-    // TODO: move to a UD factorised update (spec section 9) before flight use.
-    for (uint8_t j = 0; j < _n; j++) {
-        for (uint8_t k = j; k < _n; k++) {
-            float v = (a.P[j][k] - Pphi[j] * Pphi[k] / denom) / lambda;
-            if (j == k) {
-                v = constrain_float(v, sq(_cfg.rel_sigma_floor), a.P0_diag[j]);
-            }
-            a.P[j][k] = v;
-            a.P[k][j] = v;
-        }
-    }
-
     // keep the primary ratio inside its band. A negative ratio is left
     // to the sign test rather than clamped up to the band, otherwise a
     // reversed actuator would be reported as merely weak. The band verdict
@@ -249,7 +270,7 @@ bool AP_INDI_Ident::update(uint8_t axis, const float delta_u[MAX_ACTUATORS], flo
     // clamp keeps the estimate in band, the inversion floor carries the
     // loop, and a degraded actuator is the divergence watch's case
     const bool judged = !_cruise;
-    const float sigma = sqrtf(MAX(a.P[a.primary][a.primary], 0.0f));
+    const float sigma = sqrtf(covariance(a, a.primary));
     if (judged && a.accepted >= _cfg.band_min_samples &&
         ((a.theta_raw > _cfg.band_hi * (1.0f + _cfg.band_margin) &&
           a.theta_raw - _cfg.band_hi > _cfg.band_sigmas * sigma) ||
@@ -267,7 +288,7 @@ bool AP_INDI_Ident::update(uint8_t axis, const float delta_u[MAX_ACTUATORS], flo
 
 void AP_INDI_Ident::update_state(Axis &a)
 {
-    const float sigma = sqrtf(a.P[a.primary][a.primary]);
+    const float sigma = sqrtf(covariance(a, a.primary));
     const float tp = a.theta[a.primary];
 
     // sign test: the primary ratio must be positive by a clear margin.
@@ -291,13 +312,66 @@ void AP_INDI_Ident::update_state(Axis &a)
     }
 }
 
+float AP_INDI_Ident::covariance(const Axis &a, uint8_t j) const
+{
+    // P_jj = sum over k >= j of U_jk^2 D_k, with U_jj = 1
+    float p = a.D[j];
+    for (uint8_t k = j + 1; k < _n; k++) {
+        p += sq(a.U[j][k]) * a.D[k];
+    }
+    return p;
+}
+
+void AP_INDI_Ident::bound_covariance(Axis &a) const
+{
+    // the floor: an estimate is never more certain than rel_sigma_floor.
+    // Each short P_jj is raised by adding the shortfall to D_j, which adds
+    // a positive semidefinite term to P. P_jj depends only on D_k for
+    // k >= j, so working from the last element back each is set once
+    const float floor_var = sq(_cfg.rel_sigma_floor);
+    float diag[MAX_ACTUATORS] {};
+    for (int8_t j = _n - 1; j >= 0; j--) {
+        diag[j] = covariance(a, j);
+        if (diag[j] < floor_var) {
+            a.D[j] += floor_var - diag[j];
+            diag[j] = floor_var;
+        }
+    }
+    // the cap: the forgetting factor grows P in directions the data do not
+    // excite, and the prior variance is the most it may grow to. P becomes
+    // S P S with S diagonal, s_j = sqrt(cap_j / P_jj) where P_jj is over
+    // the cap and one elsewhere, which keeps the correlations and positive
+    // definiteness and in factorised form is D_j *= s_j^2,
+    // U_ij *= s_i / s_j. The cap is never below the floor, which wins
+    // where a prior variance is configured below it
+    float s[MAX_ACTUATORS];
+    bool capped = false;
+    for (uint8_t j = 0; j < _n; j++) {
+        const float cap = MAX(a.P0_diag[j], floor_var);
+        s[j] = 1;
+        if (diag[j] > cap) {
+            s[j] = sqrtf(cap / diag[j]);
+            capped = true;
+        }
+    }
+    if (!capped) {
+        return;
+    }
+    for (uint8_t j = 0; j < _n; j++) {
+        a.D[j] *= sq(s[j]);
+        for (uint8_t i = 0; i < j; i++) {
+            a.U[i][j] *= s[i] / s[j];
+        }
+    }
+}
+
 bool AP_INDI_Ident::coupling_significant(uint8_t axis, uint8_t actuator) const
 {
     if (axis >= NUM_AXES || actuator >= _n) {
         return false;
     }
     const Axis &a = _axis[axis];
-    const float sigma = sqrtf(MAX(a.P[actuator][actuator], 0.0f));
+    const float sigma = sqrtf(covariance(a, actuator));
     return fabsf(a.theta[actuator]) > _cfg.sign_margin_sigma * sigma;
 }
 
@@ -331,7 +405,7 @@ float AP_INDI_Ident::get_rel_sigma(uint8_t axis) const
     if (!is_positive(tp)) {
         return 0;
     }
-    return sqrtf(a.P[a.primary][a.primary]) / tp;
+    return sqrtf(covariance(a, a.primary)) / tp;
 }
 
 #endif // AP_INDI_ENABLED
