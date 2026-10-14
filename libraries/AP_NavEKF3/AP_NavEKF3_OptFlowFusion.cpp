@@ -767,15 +767,19 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                                  (MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) &&
                                  (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS);
         const bool rangeCurrent = (imuSampleTime_ms - lastAglRngFuseTime_ms) < FLOW_RESET_RANGE_MAX_AGE_MS;
-        if (axisLockout && !rangeCurrent) {
+        // after a step in the ground, a car bonnet say, the AGL KF height the reset scales the flow by
+        // lags the range for a while, and the velocity it adopts is wrong in proportion
+        const ftype rngHgt = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+        const bool rangeSettled = fabsF(aglKfH - rngHgt) < (0.2f * rngHgt + 0.05f);
+        if (axisLockout && !(rangeCurrent && rangeSettled)) {
             // deferred, not refused: the axis timers are left alone so the first sample after a
             // range fusion returns still recovers, and nothing latches on a lockout this path
             // could not have acted on. Report it, because otherwise the divergence is silent.
             if (flowVelResetDeferTime_ms == 0 ||
                 (imuSampleTime_ms - flowVelResetDeferTime_ms) > FLOW_RESET_DEFER_REPORT_MS) {
                 flowVelResetDeferTime_ms = imuSampleTime_ms;
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow recovery deferred, range stale",
-                              (unsigned)imu_index);
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow recovery deferred, range %s",
+                              (unsigned)imu_index, rangeCurrent ? "step" : "stale");
             }
         } else if (axisLockout &&
                    (frontend->_flowQualMin > 0) && (ofDataDelayed.quality < frontend->_flowQualMin)) {
