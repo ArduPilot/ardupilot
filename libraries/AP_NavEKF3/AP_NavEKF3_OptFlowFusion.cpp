@@ -768,9 +768,12 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                                  (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS);
         const bool rangeCurrent = (imuSampleTime_ms - lastAglRngFuseTime_ms) < FLOW_RESET_RANGE_MAX_AGE_MS;
         // after a step in the ground, a car bonnet say, the AGL KF height the reset scales the flow by
-        // lags the range for a while, and the velocity it adopts is wrong in proportion
+        // lags the range for a while. The speed error that puts into the reset, the flow rate times the
+        // height difference taken along the sensor axis as range is, may be no more than the flow noise
+        // term the reset already allows for
         const ftype rngHgt = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
-        const bool rangeSettled = fabsF(aglKfH - rngHgt) < (0.2f * rngHgt + 0.05f);
+        const ftype stepSpdErr = ofDataDelayed.flowRadXYcomp.length() * fabsF(aglKfH - rngHgt) / prevTnb.c.z;
+        const bool rangeSettled = stepSpdErr < MAX(frontend->_flowNoise, 0.05f) * range;
         if (axisLockout && !(rangeCurrent && rangeSettled)) {
             // deferred, not refused: the axis timers are left alone so the first sample after a
             // range fusion returns still recovers, and nothing latches on a lockout this path
