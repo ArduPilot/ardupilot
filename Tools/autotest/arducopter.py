@@ -3853,6 +3853,30 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.ublox_sim_reset_saved_config()
         self.reboot_sitl()
 
+    def UBloxVersionBanner(self):
+        '''check the u-blox version banner is sent once per boot'''
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        for (model, name) in [
+                (self.UBX_MODEL_UBLOX6, "u-blox 6 FW 7.03"),
+                (self.UBX_MODEL_M8N_FW201, "NEO-M8N FW 2.01"),
+                (self.UBX_MODEL_M8_ROM301, "M8 ROM CORE 3.01"),
+                (self.UBX_MODEL_M8N_SPG301, "NEO-M8N SPG 3.01"),
+                (self.UBX_MODEL_M9N_SPG404, "NEO-M9N SPG 4.04"),
+                (self.UBX_MODEL_M10_SPG510, "M10 ROM SPG 5.10"),
+        ]:
+            self.start_subtest(name)
+            self.set_parameter("SIM_GPS1_UBXMDL", model)
+            self.ublox_sim_reset_saved_config()
+            texts = self.ublox_sim_boot(settle_time=20)
+            banners = len([t for t in texts if re.match(r"u-blox .*HW: ", t)])
+            self.progress("%u version banners" % banners)
+            if banners != 1:
+                raise NotAchievedException("Expected one u-blox version banner, got %u" % banners)
+        self.context_pop()
+        self.ublox_sim_reset_saved_config()
+        self.reboot_sitl()
+
     #   SimpleMode - test simple mode flies North regardless of vehicle heading
     def SimpleMode(self):
         '''Fly in SIMPLE mode'''
@@ -24017,6 +24041,7 @@ return update, 1000
             self.GPSFixTypes,
             self.UBloxNoSaveEveryBoot,
             self.UBloxNavSolInSavedConfig,
+            self.UBloxVersionBanner,
             self.AirModeLanding,
             self.TestLocalHomePosition,
             self.TestGripperMission,
