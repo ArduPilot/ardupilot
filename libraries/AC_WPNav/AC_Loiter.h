@@ -107,6 +107,16 @@ protected:
     // - Resulting velocity and acceleration are sent to the position controller.
     void calc_desired_velocity(bool avoidance_on = true);
 
+    // Returns the largest horizontal acceleration the pilot can command, in m/s².
+    // The lower of the LOIT_ANG_MAX lean-angle acceleration and LOIT_ACC_MAX_M.
+    float get_pilot_accel_max_mss() const;
+
+    // Limits the pilot's requested NE acceleration in m/s² and returns the limited request.
+    // - Full stick is scaled to get_pilot_accel_max_mss() and the magnitude is capped at LOIT_ACC_MAX_M.
+    // - A component opposing the desired velocity is braking: it is capped at LOIT_BRK_ACC_M and
+    //   slewed at LOIT_BRK_JRK_M. Every other change is slewed at LOIT_JRK_M (0 disables).
+    Vector2f limit_pilot_accel_NE_mss(const Vector2f& request_ne_mss, float dt_s);
+
     // references and pointers to external libraries
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
@@ -118,6 +128,7 @@ protected:
     AP_Float    _accel_max_ne_mss;      // Maximum horizontal acceleration (in m/s²) applied during normal loiter corrections.
     AP_Float    _brake_accel_max_mss;   // Maximum braking acceleration (in m/s²) applied when pilot sticks are released.
     AP_Float    _brake_jerk_max_msss;   // Maximum braking jerk (in m/s³) applied during braking transitions after pilot release.
+    AP_Float    _jerk_max_ne_msss;      // Maximum jerk (in m/s³) of pilot-commanded acceleration that is not braking. Zero disables.
     AP_Float    _brake_delay_s;         // Delay in seconds before braking begins after sticks are centered. Prevents premature deceleration during brief pauses.
     AP_UInt8    _options;               // Loiter options bit mask
 
@@ -135,4 +146,6 @@ protected:
     Vector2f    _predicted_euler_accel;     // Predicted roll/pitch angular rates (in rad/s) for pilot acceleration shaping.
     uint32_t    _brake_timer_ms;            // Timestamp (in ms) when braking logic was last triggered (sticks released).
     float       _brake_accel_mss;           // Current braking acceleration in m/s², updated using jerk limits over time.
+    Vector2f    _pilot_accel_ne_mss;        // Pilot-requested NE acceleration in m/s² after the acceleration and jerk limits.
+    uint32_t    _pilot_accel_update_ms;     // Timestamp (in ms) of the last pilot acceleration update, used to reset stale limiter state.
 };
