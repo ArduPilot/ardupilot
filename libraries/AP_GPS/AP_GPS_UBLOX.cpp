@@ -2112,12 +2112,23 @@ AP_GPS_UBLOX::_save_cfg()
       saveMask: SAVE_CFG_ALL,
       loadMask: 0
     };
+    // send both messages or neither
+    const uint16_t ubx_overhead = sizeof(struct ubx_header) + 2;
+    uint16_t space_needed = ubx_overhead + sizeof(save_cfg);
+    if (havePvtMsg) {
+        space_needed += ubx_overhead + sizeof(ubx_cfg_msg_rate);
+    }
+    if (port->txspace() < space_needed) {
+        return;
+    }
     // don't save the NAV-SOL enabled by the initialisation blob; we
     // may not yet have polled its rate and turned it off
     if (havePvtMsg && !_configure_message_rate(CLASS_NAV, MSG_SOL, 0)) {
         return;
     }
-    _send_message(CLASS_CFG, MSG_CFG_CFG, &save_cfg, sizeof(save_cfg));
+    if (!_send_message(CLASS_CFG, MSG_CFG_CFG, &save_cfg, sizeof(save_cfg))) {
+        return;
+    }
     _last_cfg_sent_time = AP_HAL::millis();
     _num_cfg_save_tries++;
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,
