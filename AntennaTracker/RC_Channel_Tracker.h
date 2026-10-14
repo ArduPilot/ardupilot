@@ -34,6 +34,11 @@ public:
     // we always trust our RC inputs ATM:
     bool in_rc_failsafe() const override { return false; }
 
+    // Tracker reads its yaw and pitch inputs from fixed channels, so
+    // has no use for control channel options
+    void set_control_channel_defaults() override { init_channel_numbers(); }
+    bool control_input_required(RC_Channel::AUX_FUNC func) const override { return false; }
+
 protected:
 
     // note that these callbacks are not presently used on Tracker:
