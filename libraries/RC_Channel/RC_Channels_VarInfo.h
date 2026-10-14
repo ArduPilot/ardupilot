@@ -81,6 +81,87 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Path: RC_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[15], "16_", 16, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
 
+#if NUM_RC_CHANNELS > 16
+    // @Group: 17_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[16], "17_", 17, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 17
+    // @Group: 18_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[17], "18_", 18, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 18
+    // @Group: 19_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[18], "19_", 19, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 19
+    // @Group: 20_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[19], "20_", 20, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 20
+    // @Group: 21_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[20], "21_", 21, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 21
+    // @Group: 22_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[21], "22_", 22, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 22
+    // @Group: 23_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[22], "23_", 23, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 23
+    // @Group: 24_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[23], "24_", 24, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 24
+    // @Group: 25_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[24], "25_", 25, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 25
+    // @Group: 26_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[25], "26_", 26, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 26
+    // @Group: 27_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[26], "27_", 27, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 27
+    // @Group: 28_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[27], "28_", 28, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 28
+    // @Group: 29_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[28], "29_", 29, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 29
+    // @Group: 30_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[29], "30_", 30, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 30
+    // @Group: 31_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[30], "31_", 31, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS),
+#endif
+#if NUM_RC_CHANNELS > 31
+    // @Group: 32_
+    // @Path: RC_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[31], "32_", 36, RC_CHANNELS_SUBCLASS, RC_CHANNEL_SUBCLASS), // ATTENTION: is 36, not 32, as 32 was already occupied
+#endif
+
     // @Param: _OVERRIDE_TIME
     // @DisplayName: RC override timeout
     // @Description: Timeout after which RC overrides will no longer be used, and RC input will resume, 0 will disable RC overrides, -1 will never timeout, and continue using overrides until they are disabled
