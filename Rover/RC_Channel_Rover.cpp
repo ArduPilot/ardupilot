@@ -96,6 +96,21 @@ bool RC_Channels_Rover::has_pilot_input_for_override_clear()
     return false;
 }
 
+// Rover steers with the roll input and uses the yaw input only for
+// lateral movement on omni vehicles; it has no use for pitch
+bool RC_Channels_Rover::control_input_required(RC_Channel::AUX_FUNC func) const
+{
+    switch (func) {
+    case RC_Channel::AUX_FUNC::ROLL:
+    case RC_Channel::AUX_FUNC::THROTTLE:
+        return true;
+    case RC_Channel::AUX_FUNC::YAW:
+        return rover.g2.motors.is_omni();
+    default:
+        return false;
+    }
+}
+
 void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
         const AuxSwitchPos ch_flag)
 {

@@ -39,6 +39,8 @@ public:
 
     bool has_pilot_input_for_override_clear() override;
 
+    bool control_input_required(RC_Channel::AUX_FUNC func) const override;
+
     RC_Channel_Rover obj_channels[NUM_RC_CHANNELS];
 
     RC_Channel_Rover *channel(const uint8_t chan) override {
