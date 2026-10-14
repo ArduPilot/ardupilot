@@ -307,7 +307,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Board type
     // @Description: This allows selection of a PX4 or VRBRAIN board type. If set to zero then the board type is auto-detected (PX4)
-    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Cube/Pixhawk2,5:PixhawkMini,6:Pixhawk2Slim,14:Pixhawk Pro,20:AUAV2.1,100:PX4 OLDDRIVERS
+    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Cube/Pixhawk2,5:PixhawkMini,6:Pixhawk2Slim,20:AUAV2.1,100:PX4 OLDDRIVERS
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, state.board_type, BOARD_TYPE_DEFAULT),
@@ -512,7 +512,7 @@ void AP_BoardConfig::init()
         hal.scheduler->delay(delay_ms);
     }
     
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(USE_POSIX)
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && HAL_OS_POSIX_IO
     uint8_t slowdown = constrain_int16(_sdcard_slowdown.get(), 0, 32);
     const uint8_t max_slowdown = 8;
     do {

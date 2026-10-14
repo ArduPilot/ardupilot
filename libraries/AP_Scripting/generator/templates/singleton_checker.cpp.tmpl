@@ -1,0 +1,8 @@
+$type * check_$identifier(lua_State *L) {
+    $type * ud = $get;
+    if (ud == nullptr) {
+        // This error will never return, so there is no danger of returning a nullptr
+        not_supported_error(L, 1, "$lua_name");
+    }
+    return ud;
+}

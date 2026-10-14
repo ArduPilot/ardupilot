@@ -665,7 +665,7 @@ void Tiltrotor::vectoring(void)
  */
 void Tiltrotor::bicopter_output(void)
 {
-    if (type != TILT_TYPE_BICOPTER || quadplane.motor_test.running) {
+    if (!enabled() || type != TILT_TYPE_BICOPTER || quadplane.motor_test.running) {
         // don't override motor test with motors_output
         return;
     }
