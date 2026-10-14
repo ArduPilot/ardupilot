@@ -54,6 +54,10 @@ Flight mode number to change to when the HEARTBEAT is lost. The default
 is 9 (LAND). Other useful values are 5 (LOITER), 6 (RTL), 17 (BRAKE)
 and 21 (SmartRTL).
 
+If the vehicle refuses this mode, for example RTL without a home
+position, the script changes to LAND instead. The mode change is tried
+once per GUIDED flight and not repeated.
+
 ## Operation
 
 Install the script in the APM/scripts folder on the flight controller's
@@ -71,7 +75,7 @@ master.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
 ```
 
 The script reports "Companion FS: companion heartbeat detected" when the
-HEARTBEAT is first seen, and "Companion FS: companion heartbeat lost, mode 9"
+HEARTBEAT is first seen, and "Companion FS: heartbeat lost, mode 9"
 when it changes mode.
 
 Test the behaviour in SITL, or on the ground with propellers removed,

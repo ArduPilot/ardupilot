@@ -16,6 +16,7 @@ local PARAM_TABLE_PREFIX = "CC_FS_"
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local HEARTBEAT_ID = mavlink_msgs.get_msgid("HEARTBEAT")
 local MODE_GUIDED = 4
+local MODE_LAND = 9
 local UPDATE_MS = 100
 
 -- add a parameter and bind it to a variable
@@ -67,7 +68,7 @@ local CC_FS_COMPID = bind_add_param('COMPID', 4, 191)
 --[[
   // @Param: CC_FS_MODE
   // @DisplayName: Companion failsafe flight mode
-  // @Description: Flight mode to change to when the companion HEARTBEAT is lost
+  // @Description: Flight mode to change to when the companion HEARTBEAT is lost. If this mode is refused the vehicle changes to LAND
   // @Values: 5:Loiter,6:RTL,9:Land,17:Brake,21:SmartRTL
   // @User: Standard
 --]]
@@ -104,8 +105,21 @@ local function read_heartbeats(now)
    end
 end
 
--- called through protected_wrapper() below, which reschedules every UPDATE_MS,
--- so update() itself returns nothing
+-- change to CC_FS_MODE, falling back to LAND if that mode is refused.
+-- Called once per GUIDED flight, so a refusal is reported once rather than retried.
+local function trigger_failsafe()
+   local mode = math.floor(CC_FS_MODE:get())
+   if vehicle:set_mode(mode) then
+      gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("Companion FS: heartbeat lost, mode %d", mode))
+      return
+   end
+   if mode ~= MODE_LAND and vehicle:set_mode(MODE_LAND) then
+      gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("Companion FS: lost, mode %d refused, using LAND", mode))
+      return
+   end
+   gcs:send_text(MAV_SEVERITY.CRITICAL, "Companion FS: heartbeat lost, mode change refused")
+end
+
 local function update()
    local now = millis()
    read_heartbeats(now)
@@ -121,7 +135,7 @@ local function update()
       was_guided = false
       monitoring = false
       triggered = false
-      return
+      return update, UPDATE_MS
    end
    if not was_guided then
       -- only start monitoring once the companion has been seen, so that
@@ -129,35 +143,14 @@ local function update()
       was_guided = true
       monitoring = present
    end
-   if CC_FS_ENABLE:get() < 1 then
-      return
-   end
-
    if present then
       monitoring = true
-      return
-   end
-
-   if monitoring and not triggered then
+   elseif monitoring and not triggered and CC_FS_ENABLE:get() >= 1 then
       triggered = true
-      local mode = math.floor(CC_FS_MODE:get())
-      if vehicle:set_mode(mode) then
-         gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("Companion FS: companion heartbeat lost, mode %d", mode))
-      else
-         gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("Companion FS: companion heartbeat lost, mode %d refused", mode))
-         triggered = false -- try again on the next update
-      end
+      trigger_failsafe()
    end
-end
 
--- wrapper around update() so a script error does not go unnoticed in flight
-local function protected_wrapper()
-   local success, err = pcall(update)
-   if not success then
-      gcs:send_text(MAV_SEVERITY.ERROR, "Companion FS: internal error: " .. err)
-      return protected_wrapper, 1000
-   end
-   return protected_wrapper, UPDATE_MS
+   return update, UPDATE_MS
 end
 
 if FWVersion:type() ~= 2 then
@@ -167,4 +160,4 @@ end
 
 gcs:send_text(MAV_SEVERITY.INFO, "Companion FS: loaded")
 
-return protected_wrapper()
+return update()
