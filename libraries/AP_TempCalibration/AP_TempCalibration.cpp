@@ -23,6 +23,7 @@
 #include "AP_TempCalibration.h"
 #include <stdio.h>
 #include <AP_Baro/AP_Baro.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if defined(APM_BUILD_TYPE)
 //  - this is just here to encourage the build system to supply the "legacy build defines".  The actual dependency is in the AP_TempCalibration_config.h header
@@ -80,6 +81,14 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_BARO_EXP", 5, AP_TempCalibration, baro_exponent, HAL_TCAL_BARO_EXP_DEFAULT),
     
+    // @Param: _BARO_EX_SET
+    // @DisplayName: Temperature Calibration barometer exponent override
+    // @Description: If non-zero, this exponent is used for the barometer temperature correction instead of TCAL_BARO_EXP, and the correction is applied from 0 degC instead of 25 degC. Learning (TCAL_ENABLED=2) still updates TCAL_BARO_EXP but it is not used while this is set. Changes take effect when disarmed, and while armed the correction is limited to within 5m of altitude of its value at arming. Only the first barometer is corrected.
+    // @Range: 0 2
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("_BARO_EX_SET", 6, AP_TempCalibration, baro_exponent_set, 0),
+
     AP_GROUPEND
 };
 
@@ -220,8 +229,42 @@ void AP_TempCalibration::apply_calibration(void)
     if (!baro.healthy(0)) {
         return;
     }
+    // only pick up a change in the override while disarmed, as it
+    // steps the baro altitude, or on the first call in case we boot
+    // armed after a watchdog reset
+    const bool latch = !hal.util->get_soft_armed() || is_negative(active_exponent_set);
+    if (latch) {
+        active_exponent_set = MAX(baro_exponent_set.get(), 0.0f);
+    }
     float temp = baro.get_temperature(0);
-    float correction = calculate_correction(temp, baro_exponent);
+    float correction;
+    if (is_positive(active_exponent_set)) {
+        // user set exponent, applied from 0 degC
+        correction = powf(MAX(temp, 0), active_exponent_set);
+        // limit the change in correction since arming to the pressure
+        // difference of max_set_alt_change metres
+        if (latch) {
+            latch_correction = correction;
+            limit_reported = false;
+        } else {
+            const float air_density = baro.get_pressure(0) / (ISA_GAS_CONSTANT * C_TO_KELVIN(baro.get_external_temperature(0)));
+            const float pa_per_m = air_density * GRAVITY_MSS;
+            const float max_change = pa_per_m * max_set_alt_change;
+            const float change = fabsf(correction - latch_correction);
+            if (change > max_change) {
+                if (!limit_reported) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL: baro correction limited to %.0fm", max_set_alt_change);
+                    limit_reported = true;
+                }
+            } else if (change < max_change - pa_per_m) {
+                // 1m of hysteresis so temperature noise at the limit doesn't repeat the message
+                limit_reported = false;
+            }
+            correction = constrain_float(correction, latch_correction - max_change, latch_correction + max_change);
+        }
+    } else {
+        correction = calculate_correction(temp, baro_exponent);
+    }
     baro.set_pressure_correction(0, correction);
 }
 
