@@ -32,6 +32,8 @@ public:
     // set defaults for control channels.  Called *before* init!
     void set_control_channel_defaults() override;
 
+    bool control_input_required(RC_Channel::AUX_FUNC func) const override;
+
     RC_Channel_Sub obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Sub *channel(const uint8_t chan) override {
         if (chan >= ARRAY_SIZE(obj_channels)) {
@@ -72,6 +74,8 @@ public:
 
     // set defaults for control channels.  Called *before* init!
     void set_control_channel_defaults() override;
+
+    bool control_input_required(RC_Channel::AUX_FUNC func) const override;
 
     RC_Channel_Sub obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Sub *channel(const uint8_t chan) override {
