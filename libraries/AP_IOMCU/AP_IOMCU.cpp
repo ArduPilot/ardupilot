@@ -466,7 +466,7 @@ void AP_IOMCU::read_telem()
     if (!read_registers(page, 0, sizeof(page_dshot_telem)/2, r)) {
         return;
     }
-    for (uint i = 0; i<4; i++) {
+    for (uint8_t i = 0; i<4; i++) {
         TelemetryData t {
             .temperature_cdeg = int16_t(telem->temperature_cdeg[i]),
             .voltage = float(telem->voltage_cvolts[i]) * 0.01,
