@@ -28,4 +28,4 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install --yes build-essential binutils
-    - run: PYTHONPATH="." pytest tests/ Tools/ardupilotwaf/tests/
+    - run: PYTHONPATH="." pytest tests/ Tools/ardupilotwaf/tests/ Tools/autotest/pysim/tests/
