@@ -895,7 +895,7 @@ def start_MAVProxy_SITL(atype,
                         setup=False,
                         master=None,
                         options: list | None = None,
-                        sitl_rcin_port=5501,
+                        sitl_rcin_port: int | str = 5501,
                         pexpect_timeout=60,
                         logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
