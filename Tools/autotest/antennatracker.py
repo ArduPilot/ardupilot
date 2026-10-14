@@ -141,6 +141,73 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
                 )
                 self.wait_servo_channel_value(channel, value)
 
+    def sim_relative_yaw_pitch(self):
+        '''return the simulated tracker's yaw and pitch in degrees,
+        relative to the 270 degree yaw and 10 degree pitch at the centre
+        of its range'''
+        m = self.assert_receive_message('SIMSTATE')
+        return (mavextra.wrap_180(math.degrees(m.yaw) - 270),
+                math.degrees(m.pitch) - 10)
+
+    def wait_sim_relative_yaw_pitch(self, yaw, pitch, tolerance=1, timeout=120):
+        '''wait for the simulated tracker to reach a relative yaw and pitch.
+        Pitch moves at only 1 degree/second, so this can take a while'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(f"Did not reach yaw={yaw} pitch={pitch}")
+            (current_yaw, current_pitch) = self.sim_relative_yaw_pitch()
+            if (abs(mavextra.wrap_180(current_yaw - yaw)) < tolerance and
+                    abs(current_pitch - pitch) < tolerance):
+                return
+
+    def UndrivenServosHoldPosition(self):
+        '''check the simulated tracker does not move while its servos are not driven'''
+        self.change_mode(0) # "MANUAL"
+        # centre the tracker so that it has room to move in either direction
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+        self.wait_sim_relative_yaw_pitch(0, 0)
+        self.disarm_vehicle()
+        for channel in 1, 2:
+            self.wait_servo_channel_value(channel, 0)
+        (start_yaw, start_pitch) = self.sim_relative_yaw_pitch()
+        self.delay_sim_time(12, reason="tracker to hold position")
+        (end_yaw, end_pitch) = self.sim_relative_yaw_pitch()
+        self.progress(f"yaw {start_yaw:.1f} -> {end_yaw:.1f}, pitch {start_pitch:.1f} -> {end_pitch:.1f}")
+        if abs(mavextra.wrap_180(end_yaw - start_yaw)) > 1:
+            raise NotAchievedException("Tracker yawed while undriven")
+        if abs(end_pitch - start_pitch) > 1:
+            raise NotAchievedException("Tracker pitched while undriven")
+        self.arm_vehicle()
+
+    def ServoRangeLimits(self):
+        '''check the simulated tracker stops at the limits of its range'''
+        self.set_parameters({
+            "SERVO1_MAX": 2200,
+            "SERVO2_MAX": 2200,
+        })
+        self.change_mode(0) # "MANUAL"
+        # 2200 asks for 1.4 times the model's +/-170 degree yaw range
+        # and +/-45 degree pitch range
+        for channel in 1, 2:
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+                p1=channel,
+                p2=2200,
+            )
+            self.wait_servo_channel_value(channel, 2200)
+
+        self.wait_sim_relative_yaw_pitch(170, 45)
+
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 10:
+            (yaw, pitch) = self.sim_relative_yaw_pitch()
+            if not 169 < yaw < 171:
+                raise NotAchievedException(f"Tracker yaw {yaw:.1f} not held at limit")
+            if not 44 < pitch < 46:
+                raise NotAchievedException(f"Tracker pitch {pitch:.1f} not held at limit")
+
     def MAV_CMD_MISSION_START(self):
         '''test MAV_CMD_MISSION_START mavlink command'''
         for method in self.run_cmd, self.run_cmd_int:
@@ -268,5 +335,7 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
             self.GPSForYaw,
             self.LoggerMsgChunks,
             self.StationaryGlobalPositionIntAlt,
+            self.UndrivenServosHoldPosition,
+            self.ServoRangeLimits,
         ])
         return ret
