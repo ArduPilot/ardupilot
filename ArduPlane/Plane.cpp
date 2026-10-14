@@ -126,6 +126,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if AP_TERRAIN_AVAILABLE
     SCHED_TASK_CLASS(AP_Terrain, &plane.terrain, update, 10, 200, 132),
 #endif // AP_TERRAIN_AVAILABLE
+#if AP_TEMPCALIBRATION_ENABLED
+    SCHED_TASK_CLASS(AP_TempCalibration, &plane.g2.temp_calibration, update, 10, 100, 133),
+#endif
     SCHED_TASK(update_is_flying_5Hz,    5,    100, 135),
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Logger,         &plane.logger, periodic_tasks, 400, 300, 138),
