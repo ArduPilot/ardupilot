@@ -325,6 +325,11 @@ class TestNewBoards(BuildScriptBase):
                 self.progress(f"Skipping Emscripten board {board.name}")
                 continue
 
+            # Skip Android board - CI machine doesn't have the NDK
+            if board.name == "android":
+                self.progress(f"Skipping Android board {board.name}")
+                continue
+
             self.progress(f"Building board {board.name}")
             if boards_to_test[board_name].test_vehicles:
                 self.build_board(board)
