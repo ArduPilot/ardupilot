@@ -625,7 +625,9 @@
 ** leave 'lua_strx2number' undefined and Lua will provide its own
 ** implementation.
 */
-#if !defined(LUA_USE_C89)
+#if !defined(LUA_USE_C89) && \
+    CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS && \
+    !(defined(AP_PICOLIBC_SITL_ENABLED) && AP_PICOLIBC_SITL_ENABLED)
 #define lua_strx2number(s,p)		lua_str2number(s,p)
 #endif
 
