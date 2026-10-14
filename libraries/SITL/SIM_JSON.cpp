@@ -290,6 +290,44 @@ uint64_t JSON::parse_sensors(const char *json)
                 //printf("%s/%s = %i\n", key.section, key.key, *((unit8_t *)key.ptr));
                 break;
             }
+
+            case FLOAT_ARRAY32: {
+                // variable length array of up to 32 numbers, e.g. [1000.0,1000.0,-1]
+                auto *arr = static_cast<decltype(state.rpm) *>(key.ptr);
+                arr->count = 0;
+                while (*p == ' ') {
+                    p++;
+                }
+                if (*p != '[') {
+                    printf("Failed to parse array for %s/%s\n", key.section, key.key);
+                    return received_bitmask;
+                }
+                p++;
+                while (arr->count < ARRAY_SIZE(arr->value)) {
+                    while (*p == ' ') {
+                        p++;
+                    }
+                    if (*p == ']') {
+                        break;
+                    }
+                    char *end = nullptr;
+                    const float v = strtof(p, &end);
+                    if (end == p) {
+                        printf("Failed to parse array for %s/%s\n", key.section, key.key);
+                        return received_bitmask;
+                    }
+                    arr->value[arr->count++] = v;
+                    p = end;
+                    while (*p == ' ') {
+                        p++;
+                    }
+                    if (*p != ',') {
+                        break;
+                    }
+                    p++;
+                }
+                break;
+            }
         }
     }
 
@@ -501,6 +539,21 @@ void JSON::recv_fdm(const struct sitl_input &input)
     }
     // (temperature is not part of the protocol, just set it explicitly here)
     battery_temperature_degC = 0.0f;
+
+    // update motor RPM: element i is servo output i+1, a negative value
+    // marks an output that is not a motor
+    if ((received_bitmask & RPM) != 0) {
+        static_assert(ARRAY_SIZE(state.rpm.value) <= ARRAY_SIZE(rpm), "JSON rpm size mismatch");
+        motor_mask = 0;
+        for (uint8_t i=0; i<ARRAY_SIZE(rpm); i++) {
+            if (i < state.rpm.count && state.rpm.value[i] >= 0) {
+                rpm[i] = state.rpm.value[i];
+                motor_mask |= 1U << i;
+            } else {
+                rpm[i] = 0;
+            }
+        }
+    }
 
     double deltat;
     if (state.timestamp_s < last_timestamp_s) {
