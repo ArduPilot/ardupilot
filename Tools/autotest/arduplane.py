@@ -4,11 +4,15 @@ Fly ArduPlane in SITL
 AP_FLAKE8_CLEAN
 '''
 
+import json
 import math
 import operator
 import os
 import re
 import signal
+import socket
+import struct
+import threading
 import time
 
 from pymavlink import mavextra
@@ -1356,6 +1360,90 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         }, check_context=True, epsilon=5.0)
 
         self.fly_home_land_and_disarm()
+
+    def FDMRCFailsafe(self):
+        '''Exercise receiver failure modes through the external FDM input path.'''
+        # A stationary JSON model exercises the same FDM receiver as FlightAxis,
+        # without requiring a commercial simulator in the autotest environment.
+        stop = threading.Event()
+        errors = []
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.bind(('127.0.0.1', 0))
+        sock.settimeout(0.1)
+        port = sock.getsockname()[1]
+
+        def serve_fdm():
+            timestamp = 0.0
+            while not stop.is_set():
+                try:
+                    packet, address = sock.recvfrom(1024)
+                except socket.timeout:
+                    continue
+                try:
+                    magic, rate, frame = struct.unpack_from('<HHI', packet)
+                    if magic not in (18458, 29569) or rate == 0:
+                        raise ValueError('Invalid JSON servo packet')
+                    timestamp += 1.0 / rate
+                    state = {
+                        'timestamp': timestamp,
+                        'imu': {'gyro': [0, 0, 0], 'accel_body': [0, 0, -9.80665]},
+                        'position': [0, 0, 0],
+                        'velocity': [0, 0, 0],
+                        'attitude': [0, 0, 0],
+                        'rc': {'rc_1': 1250, 'rc_2': 1500, 'rc_3': 1100, 'rc_4': 1750},
+                    }
+                    sock.sendto(('\n' + json.dumps(state) + '\n').encode('ascii'), address)
+                except Exception as ex:
+                    errors.append(ex)
+                    return
+
+        worker = threading.Thread(target=serve_fdm, daemon=True)
+        worker.start()
+        try:
+            self.customise_SITL_commandline(
+                ['--sim-port-out=%u' % port], model='JSON:127.0.0.1')
+            self.set_parameters({
+                'RC_PROTOCOLS': 1 << 19,  # FDM only; exclude the harness UDP receiver
+                'RC_OPTIONS': 0,
+                'THR_FAILSAFE': 1,
+                'THR_FS_VALUE': 960,
+                'SIM_RC_FAIL': 0,
+            })
+            receiver = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER
+
+            def check_recovery():
+                self.set_parameter('SIM_RC_FAIL', 0)
+                for channel, pwm in enumerate((1250, 1500, 1100, 1750), start=1):
+                    self.wait_rc_channel_value(channel, pwm, timeout=10)
+                self.wait_sensor_state(receiver, True, True, True)
+
+            check_recovery()
+            self.start_subtest('FDM throttle-to-950')
+            self.set_parameter('SIM_RC_FAIL', 2)
+            self.wait_rc_channel_value(3, 950, timeout=10)
+            self.wait_sensor_state(receiver, True, True, False)
+            check_recovery()
+
+            self.start_subtest('FDM protocol failsafe bit')
+            self.set_parameter('SIM_RC_FAIL', 3)
+            self.wait_sensor_state(receiver, True, True, False)
+            check_recovery()
+
+            self.start_subtest('FDM no pulses')
+            self.set_parameter('SIM_RC_FAIL', 1)
+            self.wait_sensor_state(receiver, True, True, False)
+            check_recovery()
+            if errors:
+                raise errors[0]
+        finally:
+            # Keep the model responding until SITL has been stopped, including
+            # when an assertion fails, so teardown cannot block on JSON input.
+            try:
+                self.reset_SITL_commandline()
+            finally:
+                stop.set()
+                worker.join(timeout=5)
+                sock.close()
 
     def ThrottleFailsafe(self):
         '''Fly throttle failsafe'''
@@ -10741,6 +10829,7 @@ return update()
         ret = ([
             self.TestRCRelay,
             self.ThrottleFailsafe,
+            self.FDMRCFailsafe,
             self.NeedEKFToArm,
             self.SoaringClimbRate,
             self.TestAutoSpeedFlaps,
