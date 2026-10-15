@@ -168,6 +168,9 @@ private:
         LOCAL_FRD = 1,    // forward-right-down where forward is aligned with front of the vehicle in the horizontal plane
     };
 
+    // converts old parameters to new ones
+    void convert_params();
+
     // check the status of the target
     void check_target_status(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
