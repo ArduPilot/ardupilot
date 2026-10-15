@@ -1,0 +1,40 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/AttitudeTarget.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Quaternion.idl"
+#include "geometry_msgs/msg/Vector3.idl"
+#include "std_msgs/msg/Header.idl"
+
+module ardupilot_msgs {
+  module msg {
+    module AttitudeTarget_Constants {
+      @verbatim (language="comment", text=
+        "body_rate.x")
+      const uint8 IGNORE_ROLL_RATE = 1;
+      @verbatim (language="comment", text=
+        "body_rate.y")
+      const uint8 IGNORE_PITCH_RATE = 2;
+      @verbatim (language="comment", text=
+        "body_rate.z")
+      const uint8 IGNORE_YAW_RATE = 4;
+      const uint8 IGNORE_THRUST = 64;
+      @verbatim (language="comment", text=
+        "orientation field")
+      const uint8 IGNORE_ATTITUDE = 128;
+    };
+    @verbatim (language="comment", text=
+      "Control the attitude of the vehicle")
+    struct AttitudeTarget {
+      std_msgs::msg::Header header;
+
+      uint8 type_mask;
+
+      geometry_msgs::msg::Quaternion orientation;
+
+      geometry_msgs::msg::Vector3 body_rate;
+
+      float thrust;
+    };
+  };
+};
