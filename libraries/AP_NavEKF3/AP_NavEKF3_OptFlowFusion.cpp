@@ -774,6 +774,8 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         const ftype rngHgt = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
         const ftype stepSpdErr = ofDataDelayed.flowRadXYcomp.length() * fabsF(aglKfH - rngHgt) / prevTnb.c.z;
         const bool rangeSettled = stepSpdErr < MAX(frontend->_flowNoise, 0.05f) * range;
+        // a fast rotation can corrupt both axes at once, so reset only on a sample the other axis passed
+        const bool otherAxisPassed = MIN(stale0, stale1) == 0;
         if (axisLockout && !(rangeCurrent && rangeSettled)) {
             // deferred, not refused: the axis timers are left alone so the first sample after a
             // range fusion returns still recovers, and nothing latches on a lockout this path
@@ -792,7 +794,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             flowQualRecoverStart_ms = 0;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow quality %u too low to recover",
                           (unsigned)imu_index, (unsigned)ofDataDelayed.quality);
-        } else if (axisLockout && ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
+        } else if (axisLockout && otherAxisPassed && ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
             flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
             if (flowVelResetCount < UINT8_MAX) {
                 flowVelResetCount++;
