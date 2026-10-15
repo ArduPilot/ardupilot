@@ -723,6 +723,27 @@ def test_heater_mag_offsets_are_parsed():
     }
 
 
+def test_bootloader_follows_shared_and_included_boards():
+    root = launch.ROOT
+    assert gen_board.bootloader_hwdef(root, 'MatekH743').parent.name == 'MatekH743'
+    # USE_BOOTLOADER_FROM_BOARD
+    assert gen_board.bootloader_board(root, 'ARKV6X-bdshot') == 'ARKV6X'
+    assert gen_board.bootloader_hwdef(root, 'ARKV6X-bdshot').parent.name == 'ARKV6X'
+    # an included board's hwdef-bl.dat, the outermost one
+    assert gen_board.bootloader_hwdef(root, 'fmuv2').parent.name == 'fmuv3'
+    assert gen_board.bootloader_hwdef(
+        root, 'CubeOrangePlus-SimOnHardWare').parent.name == 'CubeOrangePlus'
+    assert launch.default_bootloader('CubeOrangePlus-SimOnHardWare').name == \
+        'CubeOrangePlus_bl.bin'
+    assert launch.default_bootloader('ARKV6X-bdshot').name == 'ARKV6X_bl.bin'
+
+    boards = gen_board.supported_boards(root)
+    for board in ('ARKV6X-bdshot', 'fmuv2', 'CubeOrangePlus-SimOnHardWare'):
+        assert board in boards
+    # coprocessor firmware is run through --real-iomcu instead
+    assert 'iomcu-f103' not in boards
+
+
 def test_unknown_named_imu_is_rejected(tmp_path):
     with pytest.raises(ValueError, match='unknown IMU device: absent'):
         gen_board.generate(

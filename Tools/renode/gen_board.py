@@ -471,16 +471,77 @@ def _resolved_env(path, name, seen=None):
     return value
 
 
+def _resolved_config(path, name, seen=None, includes=None):
+    '''Find an inherited plain "NAME value" hwdef line, collecting includes.'''
+    if seen is None:
+        seen = set()
+    path = path.resolve()
+    if path in seen:
+        return None
+    seen.add(path)
+    value = None
+    try:
+        lines = path.read_text().splitlines()
+    except OSError:
+        return None
+    for raw in lines:
+        line = raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        fields = shlex.split(line)
+        if fields[0] == 'include' and len(fields) == 2:
+            included_path = (path.parent / fields[1]).resolve()
+            if includes is not None:
+                includes.append(included_path)
+            included = _resolved_config(included_path, name, seen, includes)
+            if included is not None:
+                value = included
+        elif fields[0] == name and len(fields) >= 2:
+            value = fields[1]
+        elif fields[0] == 'undef' and len(fields) == 2 and fields[1] == name:
+            value = None
+    return value
+
+
+def bootloader_board(root, board):
+    '''Board whose Tools/bootloaders/<name>_bl.bin the firmware embeds.'''
+    return _resolved_config(
+        _hwdef_root(root) / board / 'hwdef.dat', 'USE_BOOTLOADER_FROM_BOARD') or board
+
+
+def bootloader_hwdef(root, board):
+    '''The board's bootloader hwdef, else its USE_BOOTLOADER_FROM_BOARD one,
+    else that of a board whose hwdef it includes.'''
+    hwdef_root = _hwdef_root(root)
+    own = hwdef_root / board / 'hwdef-bl.dat'
+    if own.is_file():
+        return own
+    includes = []
+    shared = _resolved_config(
+        hwdef_root / board / 'hwdef.dat', 'USE_BOOTLOADER_FROM_BOARD',
+        includes=includes)
+    if shared is not None and (hwdef_root / shared / 'hwdef-bl.dat').is_file():
+        return hwdef_root / shared / 'hwdef-bl.dat'
+    # the outermost included board, so CubeOrangePlus wins over CubeOrange
+    for included in includes:
+        candidate = included.parent / 'hwdef-bl.dat'
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def supported_boards(root):
     '''Board name -> MCU for targets with enough hwdef data to run directly.'''
     found = {}
     for board_dir in sorted(_hwdef_root(root).iterdir()):
         app = board_dir / 'hwdef.dat'
-        bootloader = board_dir / 'hwdef-bl.dat'
         if not app.is_file():
             continue
         is_periph = _resolved_env(app, 'AP_PERIPH') == '1'
-        if not bootloader.is_file() and not is_periph:
+        if bootloader_hwdef(root, board_dir.name) is None and not is_periph:
+            continue
+        # IOMCU firmware runs beside a flight controller with --real-iomcu
+        if _resolved_config(app, 'IOMCU_FW') is not None:
             continue
         mcu = _resolved_mcu(app)
         if mcu in FAMILIES:
@@ -2699,10 +2760,10 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     outdir.mkdir(parents=True, exist_ok=True)
     app = _compile_hwdef(root, board_dir / 'hwdef.dat', outdir / 'hwdef')
     app_defines = _defines(outdir / 'hwdef' / 'hwdef.h')
-    bootloader_hwdef = board_dir / 'hwdef-bl.dat'
+    bootloader_dat = bootloader_hwdef(root, board)
     bootloader = (_compile_hwdef(
-        root, bootloader_hwdef, outdir / 'hwdef-bl', bootloader=True)
-        if bootloader_hwdef.is_file() else app)
+        root, bootloader_dat, outdir / 'hwdef-bl', bootloader=True)
+        if bootloader_dat is not None else app)
     if app.mcu_type != boards[board] or bootloader.mcu_type != app.mcu_type:
         raise ValueError('application and bootloader MCU definitions disagree')
 
