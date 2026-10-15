@@ -313,6 +313,8 @@ private:
         bool close_on_recv_error;
         uint32_t last_udp_srv_recv_time_ms;
 
+        void tcp_disconnect(const char *reason);
+
         // statistics
         uint32_t tx_stats_bytes;
         uint32_t rx_stats_bytes;
