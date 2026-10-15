@@ -7393,47 +7393,61 @@ return update()
 
     def OpticalFlowRangefinderOnGround(self):
         '''flow-only Rover keeps its speed over a range finder at its ground clearance'''
-        # both sensors sit 1.5 m up, so the range finder reads its ground clearance throughout
-        self.set_parameters({
-            "SIM_FLOW_ENABLE": 1,
-            "FLOW_TYPE": 10,
-            "FLOW_HGT_OVR": 1.5,
-            "SIM_FLOW_POS_Z": -1.5,
-            "RNGFND1_TYPE": 100,
-            "RNGFND1_ORIENT": 25,
-            "RNGFND1_MIN": 0.1,
-            "RNGFND1_MAX": 10,
-            "RNGFND1_GNDCLR": 1.5,
-            "SIM_SONAR_POS_Z": -1.5,
-            "EK3_SRC1_POSXY": 0,
-            "EK3_SRC1_VELXY": 5,
-            "EK3_SRC1_VELZ": 0,
-        })
-        self.reboot_sitl()
-        self.change_mode('MANUAL')
-        self.wait_ready_to_arm(require_absolute=False)
-        self.arm_vehicle()
-        # drive a circle, as the EKF counts the first turn as a takeoff
-        self.set_rc_from_map({1: 1700, 3: 1540})
-        self.delay_sim_time(20, "into the circle")
-        ekf_speed = []
-        true_speed = []
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() - tstart < 20:
-            ekf = self.assert_receive_message('LOCAL_POSITION_NED')
-            # the simulated GPS is still running, though the EKF does not use it
-            gps = self.assert_receive_message('GPS_RAW_INT')
-            ekf_speed.append(math.hypot(ekf.vx, ekf.vy))
-            true_speed.append(gps.vel * 0.01)
-        self.set_rc_from_map({1: 1500, 3: 1500})
-        self.disarm_vehicle()
-        ekf_mean = sum(ekf_speed) / len(ekf_speed)
-        true_mean = sum(true_speed) / len(true_speed)
-        self.progress("EKF speed %.2f m/s, true speed %.2f m/s" % (ekf_mean, true_mean))
-        if true_mean < 0.2:
-            raise NotAchievedException("drove at only %.2f m/s: not a test of the flow" % true_mean)
-        if ekf_mean < 0.7 * true_mean:
-            raise NotAchievedException("EKF speed %.2f m/s against %.2f m/s" % (ekf_mean, true_mean))
+        # the range finder reads its ground clearance throughout, which a flying vehicle's EKF
+        # takes as resting on the ground; a Rover must still use the flow, declared height or not
+        legs = (
+            ("sensors 1.5 m up, height declared", 1.5, 1.5, 1.5),
+            ("sensors 1.5 m up, no declared height", 0, 1.5, 1.5),
+            ("sensors 0.14 m up, default ground clearance", 0, 0.14, 0.10),
+        )
+        for (name, hgt_ovr, sensor_height, gndclr) in legs:
+            self.start_subtest(name)
+            self.set_parameters({
+                "SIM_FLOW_ENABLE": 1,
+                "FLOW_TYPE": 10,
+                "FLOW_HGT_OVR": hgt_ovr,
+                "SIM_FLOW_POS_Z": -sensor_height,
+                "RNGFND1_TYPE": 100,
+                "RNGFND1_ORIENT": 25,
+                "RNGFND1_MIN": 0.1,
+                "RNGFND1_MAX": 10,
+                "RNGFND1_GNDCLR": gndclr,
+                "SIM_SONAR_POS_Z": -sensor_height,
+                "EK3_SRC1_POSXY": 0,
+                "EK3_SRC1_VELXY": 5,
+                "EK3_SRC1_VELZ": 0,
+            })
+            self.reboot_sitl()
+            self.change_mode('MANUAL')
+            self.wait_ready_to_arm(require_absolute=False)
+            self.arm_vehicle()
+            # drive a circle, as the EKF counts the first turn as a takeoff
+            self.set_rc_from_map({1: 1700, 3: 1540})
+            self.delay_sim_time(20, "into the circle")
+            ekf_speed = []
+            true_speed = []
+            ranges = []
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 20:
+                ekf = self.assert_receive_message('LOCAL_POSITION_NED', timeout=5)
+                # the simulated GPS is still running, though the EKF does not use it
+                gps = self.assert_receive_message('GPS_RAW_INT', timeout=5)
+                ekf_speed.append(math.hypot(ekf.vx, ekf.vy))
+                true_speed.append(gps.vel * 0.01)
+                ranges.append(self.assert_receive_message('DISTANCE_SENSOR', timeout=5).current_distance * 0.01)
+            self.set_rc_from_map({1: 1500, 3: 1500})
+            self.disarm_vehicle()
+            # the case under test: the range within 5 cm of the ground clearance, where a vehicle that flies is on the ground
+            worst = max(abs(r - gndclr) for r in ranges)
+            if worst > 0.05:
+                raise NotAchievedException("%s: range %.2f m off the ground clearance of %.2f m" % (name, worst, gndclr))
+            ekf_mean = sum(ekf_speed) / len(ekf_speed)
+            true_mean = sum(true_speed) / len(true_speed)
+            self.progress("%s: EKF speed %.2f m/s, true speed %.2f m/s" % (name, ekf_mean, true_mean))
+            if true_mean < 0.2:
+                raise NotAchievedException("%s: drove at only %.2f m/s, not a test of the flow" % (name, true_mean))
+            if ekf_mean < 0.7 * true_mean:
+                raise NotAchievedException("%s: EKF speed %.2f m/s against %.2f m/s" % (name, ekf_mean, true_mean))
 
     def RCDuplicateOptionsExist(self):
         '''ensure duplicate RC option detection works'''
