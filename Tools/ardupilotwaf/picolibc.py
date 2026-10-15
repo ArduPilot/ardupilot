@@ -5,7 +5,6 @@
 Build the pinned Picolibc sources directly with Waf.
 """
 
-import fnmatch
 import os
 import subprocess
 
@@ -14,129 +13,223 @@ from waflib import Utils
 from waflib.TaskGen import after_method
 from waflib.TaskGen import feature
 
-PICOLIBC_SOURCE_DIRS = (
-    'libc/argz',
-    'libc/ctype',
-    'libc/errno',
-    'libc/iconv',
-    'libc/locale',
-    'libc/misc',
-    'libc/posix',
-    'libc/search',
-    'libc/signal',
-    'libc/ssp',
-    'libc/stdio',
-    'libc/stdlib',
-    'libc/string',
-    'libc/time',
-    'libc/uchar',
-    'libc/ubsan',
-    'libc/xdr',
-    'libm/common',
-    'libm/complex',
-    'libm/fenv',
-    'libm/ld',
-    'libm/math',
-    'libm/math_two',
+# Sources available to all ChibiOS firmware. This intentionally excludes
+# process termination, signals and direct stdio output so accidental use in
+# flight firmware fails at link time. Use the AP_HAL interfaces instead.
+PICOLIBC_CHIBIOS_BASE_SOURCES = (
+    # libc/ctype
+    'libc/ctype/ctype_.c',
+    'libc/ctype/isalnum.c',
+    'libc/ctype/isalpha.c',
+    'libc/ctype/isprint.c',
+    'libc/ctype/isspace.c',
+    'libc/ctype/tolower.c',
+    'libc/ctype/toupper.c',
+    # libc/locale
+    'libc/locale/localeconv.c',
+    # libc/machine/arm
+    'libc/machine/arm/memchr.S',
+    'libc/machine/arm/memchr.c',
+    'libc/machine/arm/memcmp.c',
+    'libc/machine/arm/memcpy.c',
+    'libc/machine/arm/memmove.c',
+    'libc/machine/arm/memset.c',
+    'libc/machine/arm/setjmp.S',
+    'libc/machine/arm/strcmp.S',
+    'libc/machine/arm/strcpy.S',
+    'libc/machine/arm/strlen.S',
+    # libc/misc
+    'libc/misc/dso_handle.c',
+    # libc/stdio
+    'libc/stdio/atod_ryu.c',
+    'libc/stdio/atof_ryu.c',
+    'libc/stdio/ryu_divpow2.c',
+    'libc/stdio/ryu_log2pow5.c',
+    'libc/stdio/ryu_pow5bits.c',
+    'libc/stdio/ryu_table.c',
+    'libc/stdio/ryu_umul128.c',
+    'libc/stdio/strtod.c',
+    'libc/stdio/strtof.c',
+    'libc/stdio/strtol.c',
+    'libc/stdio/strtoul.c',
+    # libc/stdlib
+    'libc/stdlib/_findenv.c',
+    'libc/stdlib/atof.c',
+    'libc/stdlib/atoi.c',
+    'libc/stdlib/atol.c',
+    'libc/stdlib/cxa-atexit.c',
+    'libc/stdlib/environ.c',
+    'libc/stdlib/exitprocs.c',
+    'libc/stdlib/getenv.c',
+    'libc/stdlib/rand.c',
+    'libc/stdlib/random.c',
+    'libc/stdlib/srand.c',
+    'libc/stdlib/srandom.c',
+    # libc/string
+    'libc/string/memmem.c',
+    'libc/string/strcasecmp.c',
+    'libc/string/strchr.c',
+    'libc/string/strcoll.c',
+    'libc/string/strcspn.c',
+    'libc/string/strdup.c',
+    'libc/string/strerror.c',
+    'libc/string/strncasecmp.c',
+    'libc/string/strncat.c',
+    'libc/string/strncmp.c',
+    'libc/string/strncpy.c',
+    'libc/string/strndup.c',
+    'libc/string/strnlen.c',
+    'libc/string/strpbrk.c',
+    'libc/string/strrchr.c',
+    'libc/string/strspn.c',
+    'libc/string/strstr.c',
+    'libc/string/strtok.c',
+    'libc/string/strtok_r.c',
+    'libc/string/swab.c',
+    # libc/time
+    'libc/time/gmtime_r.c',
+    # libm/common
+    'libm/common/math_err_divzero.c',
+    'libm/common/math_err_invalid.c',
+    'libm/common/math_err_oflow.c',
+    'libm/common/math_err_uflow.c',
+    'libm/common/math_errf_divzerof.c',
+    'libm/common/math_errf_invalidf.c',
+    'libm/common/math_errf_oflowf.c',
+    'libm/common/math_errf_uflowf.c',
+    'libm/common/math_inexact.c',
+    'libm/common/math_inexactf.c',
+    'libm/common/s_fmax.c',
+    'libm/common/s_fmin.c',
+    'libm/common/s_fpclassify.c',
+    'libm/common/s_isinf.c',
+    'libm/common/s_isnan.c',
+    'libm/common/s_issignaling.c',
+    'libm/common/s_modf.c',
+    'libm/common/s_scalbn.c',
+    'libm/common/sf_fmax.c',
+    'libm/common/sf_fmin.c',
+    'libm/common/sf_fpclassify.c',
+    'libm/common/sf_isinf.c',
+    'libm/common/sf_isnan.c',
+    'libm/common/sf_issignaling.c',
+    'libm/common/sf_lrint.c',
+    'libm/common/sf_modf.c',
+    'libm/common/sf_nan.c',
+    'libm/common/sf_scalbn.c',
+    # libm/machine/arm
+    'libm/machine/arm/s_ceil.c',
+    'libm/machine/arm/s_floor.c',
+    'libm/machine/arm/s_sqrt.c',
+    'libm/machine/arm/sf_ceil.c',
+    'libm/machine/arm/sf_floor.c',
+    'libm/machine/arm/sf_round.c',
+    'libm/machine/arm/sf_sqrt.c',
+    # libm/math
+    'libm/math/k_cos.c',
+    'libm/math/k_rem_pio2.c',
+    'libm/math/k_sin.c',
+    'libm/math/kf_cos.c',
+    'libm/math/kf_sin.c',
+    'libm/math/kf_tan.c',
+    'libm/math/s_acos.c',
+    'libm/math/s_asin.c',
+    'libm/math/s_atan.c',
+    'libm/math/s_atan2.c',
+    'libm/math/s_cos.c',
+    'libm/math/s_fmod.c',
+    'libm/math/s_log.c',
+    'libm/math/s_pow.c',
+    'libm/math/s_rem_pio2.c',
+    'libm/math/s_sin.c',
+    'libm/math/sf_acos.c',
+    'libm/math/sf_asin.c',
+    'libm/math/sf_atan.c',
+    'libm/math/sf_atan2.c',
+    'libm/math/sf_cos.c',
+    'libm/math/sf_exp.c',
+    'libm/math/sf_fmod.c',
+    'libm/math/sf_frexp.c',
+    'libm/math/sf_log.c',
+    'libm/math/sf_log10.c',
+    'libm/math/sf_log2.c',
+    'libm/math/sf_pow.c',
+    'libm/math/sf_rem_pio2.c',
+    'libm/math/sf_sin.c',
+    'libm/math/sf_tan.c',
 )
 
-# These are the sources omitted by the pinned Picolibc configuration. Keep the
-# source count checks below in sync when updating the submodule revision.
-PICOLIBC_COMMON_EXCLUDES = frozenset((
-    'libc/locale/posix_locale.c',
-    'libc/posix/engine.c',
-    'libc/stdio/atod_engine.c',
-    'libc/stdio/atof_engine.c',
-    'libc/stdio/conv_flt.c',
-    'libc/stdio/dtoa_engine.c',
-    'libc/stdio/ftoa_engine.c',
-    'libc/stdio/ultoa_invert.c',
-    'libc/stdio/vfprintf_char.c',
-    'libc/stdio/vfprintf_float.c',
-    'libc/stdio/vfprintf_int.c',
-    'libc/stdio/vfprintf_n.c',
-    'libc/stdio/vfprintf_str.c',
-    'libc/stdlib/calloc.c',
-    'libc/stdlib/free.c',
-    'libc/stdlib/free_aligned_sized.c',
-    'libc/stdlib/free_sized.c',
-    'libc/stdlib/getpagesize.c',
-    'libc/stdlib/mallinfo.c',
-    'libc/stdlib/malloc-error.c',
-    'libc/stdlib/malloc-stats.c',
-    'libc/stdlib/malloc-usable-size.c',
-    'libc/stdlib/malloc.c',
-    'libc/stdlib/mallopt.c',
-    'libc/stdlib/memalign.c',
-    'libc/stdlib/posix-memalign.c',
-    'libc/stdlib/pvalloc.c',
-    'libc/stdlib/realloc.c',
-    'libc/stdlib/valloc.c',
-    'libc/string/memchr.c',
-    'libc/string/memcmp.c',
-    'libc/string/memcpy.c',
-    'libc/string/memmove.c',
-    'libc/string/memset.c',
-    'libc/string/strlen.c',
-    'libc/xdr/xdr_float_vax.c',
-    'libm/common/cosf.c',
-    'libm/common/exp.c',
-    'libm/common/exp2.c',
-    'libm/common/isgreater.c',
-    'libm/common/log.c',
-    'libm/common/log2.c',
-    'libm/common/nexttowardl.c',
-    'libm/common/pow.c',
-    'libm/common/scalbnl.c',
-    'libm/common/sf_exp.c',
-    'libm/common/sf_exp2.c',
-    'libm/common/sf_log.c',
-    'libm/common/sf_log2.c',
-    'libm/common/sf_pow.c',
-    'libm/common/sincosf.c',
-    'libm/common/sinf.c',
-    'libm/math/s_gamma.c',
-    'libm/math/sf_gamma.c',
+# Additional sources used by simulation-on-hardware, Replay, tools, examples
+# and tests. This includes the complete Picolibc dependency closure for those paths.
+PICOLIBC_CHIBIOS_NONFLIGHT_SOURCES = (
+    # libc/locale
+    'libc/locale/locale_names.c',
+    'libc/locale/localedata.c',
+    'libc/locale/setlocale.c',
+    'libc/locale/timedata.c',
+    # libc/misc
+    'libc/misc/fini.c',
+    # libc/stdio
+    'libc/stdio/asprintf.c',
+    'libc/stdio/dtoa_ryu.c',
+    'libc/stdio/dtox_engine.c',
+    'libc/stdio/fgetc.c',
+    'libc/stdio/filestrget.c',
+    'libc/stdio/filestrput.c',
+    'libc/stdio/filestrputalloc.c',
+    'libc/stdio/printf.c',
+    'libc/stdio/ryu_log10.c',
+    'libc/stdio/snprintf.c',
+    'libc/stdio/snprintfd.c',
+    'libc/stdio/sprintf.c',
+    'libc/stdio/sscanf.c',
+    'libc/stdio/ungetc.c',
+    'libc/stdio/vasprintf.c',
+    'libc/stdio/vfprintf.c',
+    'libc/stdio/vfscanf.c',
+    'libc/stdio/vprintf.c',
+    'libc/stdio/vsnprintf.c',
+    # libc/stdlib
+    'libc/stdlib/abort.c',
+    'libc/stdlib/div.c',
+    'libc/stdlib/exit.c',
+    'libc/stdlib/system.c',
+    # libc/time
+    'libc/time/clock.c',
+    'libc/time/difftime.c',
+    'libc/time/lcltime_r.c',
+    'libc/time/mktime.c',
+    'libc/time/month_lengths.c',
+    'libc/time/strftime.c',
+    'libc/time/time.c',
+    'libc/time/tzcalc_limits.c',
+    'libc/time/tzset.c',
+    'libc/time/tzvars.c',
+    # libos/dummyhost
+    'libos/dummyhost/_exit.c',
+    # libos/fallback
+    'libos/fallback/raise.c',
+    'libos/fallback/signal.c',
+)
+
+PICOLIBC_CHIBIOS_NONFLIGHT_COMMANDS = frozenset((
+    'all',
+    'benchmarks',
+    'check',
+    'check-all',
+    'examples',
+    'replay',
+    'tests',
+    'tool',
 ))
 
-PICOLIBC_ARM_EXCLUDES = frozenset((
-    'libc/machine/arm/memcpy-armv7a.S',
-    'libc/machine/arm/memcpy-armv7m.S',
-    'libc/machine/arm/memset-arm.S',
-    'libc/machine/arm/memset-thumb.S',
-    'libc/machine/arm/memset-thumb2.S',
-    'libc/machine/arm/strcmp-arm-tiny.S',
-    'libc/machine/arm/strcmp-armv4.S',
-    'libc/machine/arm/strcmp-armv4t.S',
-    'libc/machine/arm/strcmp-armv6.S',
-    'libc/machine/arm/strcmp-armv6m.S',
-    'libc/machine/arm/strcmp-armv7.S',
-    'libc/machine/arm/strcmp-armv7m.S',
-    'libc/machine/arm/strlen-armv7.S',
-    'libc/machine/arm/strlen-thumb1-Os.S',
-    'libc/machine/arm/strlen-thumb2-Os.S',
-    'libc/stdio/posixiob_stderr.c',
-    'libc/stdio/posixiob_stdin.c',
-    'libc/stdio/posixiob_stdout.c',
-    'libc/string/bzero.c',
-    'libc/string/strcmp.c',
-    'libc/string/strcpy.c',
-    'libm/common/s_nearbyint.c',
-    'libm/common/s_rint.c',
-    'libm/common/s_round.c',
-    'libm/common/s_trunc.c',
-    'libm/common/sf_nearbyint.c',
-    'libm/common/sf_rint.c',
-    'libm/common/sf_round.c',
-    'libm/common/sf_trunc.c',
-    'libm/math/s_ceil.c',
-    'libm/math/s_fabs.c',
-    'libm/math/s_floor.c',
-    'libm/math/s_sqrt.c',
-    'libm/math/sf_ceil.c',
-    'libm/math/sf_fabs.c',
-    'libm/math/sf_floor.c',
-    'libm/math/sf_sqrt.c',
+PICOLIBC_CHIBIOS_NONFLIGHT_GROUPS = frozenset((
+    'all',
+    'benchmarks',
+    'examples',
+    'replay',
+    'tests',
+    'tool',
 ))
 
 PICOLIBC_SITL_SOURCES = (
@@ -149,12 +242,6 @@ PICOLIBC_SITL_SOURCES = (
     'libc/stdio/strtod.c',
     'libc/stdio/strtof.c',
     'libc/stdlib/atof.c',
-)
-
-PICOLIBC_CHIBIOS_PORT_SOURCES = (
-    # Build-only examples and SITL-on-hardware may call exit(). Production firmware
-    # rejects the resulting symbols in the post-link check.
-    'libos/dummyhost/_exit.c',
 )
 
 # Namespace every global defined by the SITL source closure, along with the
@@ -427,44 +514,32 @@ def configure(cfg):
     cfg.msg('Picolibc source build', revision[:12])
 
 
+def _chibios_nonflight_build(bld):
+    if bld.env.SIM_ENABLED or bld.cmd in PICOLIBC_CHIBIOS_NONFLIGHT_COMMANDS:
+        return True
+    groups = set(Utils.to_list(bld.options.program_group))
+    if groups & PICOLIBC_CHIBIOS_NONFLIGHT_GROUPS:
+        return True
+    targets = [target.strip().lower() for target in (bld.targets or '').split(',')]
+    prefixes = ('benchmarks/', 'examples/', 'tests/', 'tool/')
+    return any(target.startswith(prefixes) or target == 'replay'
+               for target in targets)
+
+
 def _source_nodes(bld, source):
     mode = bld.env.PICOLIBC_MODE
     if mode == 'chibios':
-        directories = PICOLIBC_SOURCE_DIRS + (
-            'libc/machine/arm',
-            'libm/machine/arm',
-            'libos/fallback',
-        )
-        excludes = PICOLIBC_COMMON_EXCLUDES | PICOLIBC_ARM_EXCLUDES
-        expected_count = 1216
+        source_paths = PICOLIBC_CHIBIOS_BASE_SOURCES
+        if _chibios_nonflight_build(bld):
+            source_paths += PICOLIBC_CHIBIOS_NONFLIGHT_SOURCES
+        source_paths = sorted(source_paths)
     else:
-        nodes = [source.find_node(path) for path in PICOLIBC_SITL_SOURCES]
-        missing = [path for path, node in zip(PICOLIBC_SITL_SOURCES, nodes) if node is None]
-        if missing:
-            bld.fatal('Missing Picolibc SITL sources: %s' % ', '.join(missing))
-        return nodes
-
-    nodes = []
-    for path in directories:
-        directory = source.find_dir(path)
-        if directory is None:
-            bld.fatal('Missing Picolibc source directory %s' % path)
-        nodes.extend(directory.ant_glob('*.c', quiet=True))
-        nodes.extend(directory.ant_glob('*.S', quiet=True))
-    nodes = [node for node in nodes
-             if node.path_from(source) not in excludes and
-             not fnmatch.fnmatch(node.path_from(source), 'libm/math_two/*_inc.c')]
-    port_nodes = [source.find_node(path) for path in PICOLIBC_CHIBIOS_PORT_SOURCES]
-    missing = [path for path, node in zip(PICOLIBC_CHIBIOS_PORT_SOURCES, port_nodes)
-               if node is None]
+        source_paths = PICOLIBC_SITL_SOURCES
+    nodes = [source.find_node(path) for path in source_paths]
+    missing = [path for path, node in zip(source_paths, nodes) if node is None]
     if missing:
-        bld.fatal('Missing Picolibc ChibiOS port sources: %s' % ', '.join(missing))
-    nodes.extend(port_nodes)
-    expected_count += len(PICOLIBC_CHIBIOS_PORT_SOURCES)
-    nodes.sort(key=lambda node: node.path_from(source))
-    if len(nodes) != expected_count:
-        bld.fatal('Picolibc source manifest has %u files, expected %u; review the pinned source revision' %
-                  (len(nodes), expected_count))
+        bld.fatal('Missing Picolibc %s sources: %s' %
+                  (mode, ', '.join(missing)))
     return nodes
 
 
