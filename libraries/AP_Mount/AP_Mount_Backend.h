@@ -72,14 +72,11 @@ public:
     // get angular velocity of mount. Only available on some backends
     virtual bool get_angular_velocity(Vector3f& rates) { return false; }
 
-    // returns true if mode is a valid mode, false otherwise:
-    bool valid_mode(MAV_MOUNT_MODE mode) const;
-
-    // get mount's mode
-    enum MAV_MOUNT_MODE get_mode() const { return _mode; }
+    using Mode = AP_Mount_Params::Mode;
+    Mode get_mode() const { return _mode; }
 
     // set mount's mode
-    bool set_mode(enum MAV_MOUNT_MODE mode);
+    bool set_mode(Mode mode);
 
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
@@ -422,7 +419,7 @@ protected:
     AP_Mount_Params &_params; // parameters for this backend
     uint8_t     _instance;  // this instance's number
 
-    MAV_MOUNT_MODE  _mode;          // current mode (see MAV_MOUNT_MODE enum)
+    Mode  _mode;          // current mode (see Mode enum)
 
     // structure for MAVLink Targeting angle and rate targets
     struct {
@@ -481,7 +478,8 @@ private:
 
     // mount mode saved here entering poi lock for 
     // switching poi lock back to previous mode with aux function middle position
-    MAV_MOUNT_MODE saved_mount_mode = MAV_MOUNT_MODE_ENUM_END;
+    Mode saved_mount_mode;
+    bool have_saved_mount_mode;
 #endif // AP_MOUNT_POI_LOCK_ENABLED
 
 #if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
