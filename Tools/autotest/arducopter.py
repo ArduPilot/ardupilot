@@ -4856,6 +4856,53 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("started relative aiding", check_context=True, timeout=10)
         self.disarm_vehicle(force=True)
 
+        # Flying onto something higher, a car bonnet say, the range drops at once while the AGL
+        # KF height the reset scales the flow by follows it down over a second or more, and a
+        # reset in that window adopts a velocity wrong in proportion.  The recovery must wait
+        # until the two agree, so every reset over the step is checked against them in the log.
+        # The step is bonnet-like, to 0.5 m: a step of a third of the height is followed inside
+        # the 500 ms a lockout takes to declare.
+        self.start_subtest("Step in the ground: the recovery waits for the height to settle")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        rng = self.assert_receive_message('DISTANCE_SENSOR').current_distance * 0.01
+        tstep = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 0.5 - rng)
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("recovery deferred, range step", check_context=True, timeout=4)
+        self.delay_sim_time(3, "hold the lockout over the step")
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(3, "back over the ground, let the heights agree")
+        # the step may have ended the first lockout on its own, so start a fresh one: recovery
+        # must still go ahead once the heights agree
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_OFS_X", -1.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        dfreader = self.dfreader_for_current_onboard_log()
+        hagl = None
+        dist = None
+        resets = 0
+        while True:
+            m = dfreader.recv_match(type=['XKFA', 'RFND', 'XKF7'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'XKFA' and m.C == 0:
+                hagl = m.HAgl
+            elif mtype == 'RFND' and m.Instance == 0:
+                dist = m.Dist
+            elif mtype == 'XKF7' and m.C == 0 and m.FVC > resets:
+                resets = m.FVC
+                if m.TimeUS * 1e-6 < tstep:
+                    continue
+                # the deferral's 20% plus 5 cm, and 0.1 m for the logging rate
+                if hagl is None or dist is None or abs(hagl - dist) > 0.2 * dist + 0.15:
+                    raise NotAchievedException("reset with the AGL KF at %s m and the range at %s m" % (hagl, dist))
+        if resets == 0:
+            raise NotAchievedException("no reset once the heights agreed again")
+
         # The recovery scales the recovered velocity by the AGL KF height, and aglKfValid
         # outlives the last range fusion by 5 s - long enough for that height to coast metres
         # low.  Take the range finder out of range first and inject into that window: a fault
