@@ -129,6 +129,7 @@ protected:
     AP_Float    _brake_accel_max_mss;   // Maximum braking acceleration (in m/s²) applied when pilot sticks are released.
     AP_Float    _brake_jerk_max_msss;   // Maximum braking jerk (in m/s³) applied during braking transitions after pilot release.
     AP_Float    _jerk_max_ne_msss;      // Maximum jerk (in m/s³) of pilot-commanded acceleration that is not braking. Zero disables.
+    AP_Float    _stop_jerk_max_msss;    // Jerk (in m/s³) with which braking finishes as the vehicle comes to rest. Zero keeps the default stop.
     AP_Float    _brake_delay_s;         // Delay in seconds before braking begins after sticks are centered. Prevents premature deceleration during brief pauses.
     AP_UInt8    _options;               // Loiter options bit mask
 
