@@ -86,7 +86,7 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
     // @Param: BRK_JRK_M
     // @DisplayName: Loiter braking jerk
-    // @Description: Loiter braking jerk in m/s/s/s. Higher values will remove braking faster if the pilot moves the sticks during a braking maneuver. Also limits how quickly pilot-commanded deceleration builds when the stick is moved against the direction of travel.
+    // @Description: Loiter braking jerk in m/s/s/s. Sets how quickly braking builds, both after the stick is centered and when the stick is moved against the direction of travel, and how quickly stick-commanded braking hands over to the centered-stick brake when the stick is released. Stick input that is not braking removes braking at LOIT_JRK_M instead.
     // @Units: m/s/s/s
     // @Range: 5 50
     // @Increment: 0.01
@@ -95,7 +95,7 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
     // @Param: JRK_M
     // @DisplayName: Loiter pilot jerk
-    // @Description: Loiter maximum jerk of pilot-commanded acceleration in m/s/s/s, for every change that is not braking against the direction of travel (that uses LOIT_BRK_JRK_M). Lower values make the response to stick input smoother. Set to zero to disable.
+    // @Description: Loiter maximum jerk of pilot-commanded acceleration in m/s/s/s, for every change that is not braking against the direction of travel (that uses LOIT_BRK_JRK_M). Acceleration across the direction of travel always uses this jerk, even while braking. Also sets how quickly braking is removed when the stick is moved in a direction that is not braking. Lower values make the response to stick input smoother. Set to zero to disable, which applies these changes at once.
     // @Units: m/s/s/s
     // @Range: 0 50
     // @Increment: 0.01
@@ -145,6 +145,7 @@ void AC_Loiter::init_target_m(const Vector2p& position_ne_m)
     _predicted_euler_angle_rad.zero();
     _brake_accel_mss = 0.0f;
     _pilot_accel_ne_mss.zero();
+    reset_pilot_brake_state();
 
     // Set position target for stationary loiter
     _pos_control.set_pos_desired_NE_m(position_ne_m);
@@ -171,6 +172,16 @@ void AC_Loiter::init_target()
     _predicted_euler_accel.zero();
     _brake_accel_mss = 0.0f;
     _pilot_accel_ne_mss.zero();
+    reset_pilot_brake_state();
+}
+
+// Clears the stick and braking hand-off state used by limit_pilot_accel_NE_mss() and calc_desired_velocity().
+void AC_Loiter::reset_pilot_brake_state()
+{
+    _pilot_stick_active = false;
+    _pilot_request_braking = false;
+    _pilot_accel_braking = false;
+    _brake_skip_delay = false;
 }
 
 // Reduces loiter responsiveness for smoother descent during landing.
@@ -201,9 +212,17 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
 
     // Reset brake timer if there is pilot input. This tests the stick request rather than the
     // limited acceleration, so a jerk-limited ramp-down does not delay the start of braking.
-    if (!request_ne_mss.is_zero()) {
+    const bool stick_active = !request_ne_mss.is_zero();
+    if (stick_active) {
         _brake_timer_ms = AP_HAL::millis();
+        _brake_skip_delay = false;
+    } else if (_pilot_stick_active && _pilot_accel_braking) {
+        // The stick was centered while the pilot was braking. Start the centered-stick brake now rather
+        // than after LOIT_BRK_DELAY: it builds at LOIT_BRK_JRK_M while the pilot braking fades at the
+        // same jerk, so braking carries on through the release instead of dropping out.
+        _brake_skip_delay = true;
     }
+    _pilot_stick_active = stick_active;
 
     // Apply the pilot acceleration, braking and jerk limits
     _desired_accel_ne_mss = limit_pilot_accel_NE_mss(request_ne_mss, dt_s);
@@ -388,30 +407,54 @@ Vector2f AC_Loiter::limit_pilot_accel_NE_mss(const Vector2f& request_ne_mss, flo
         target_ne_mss.limit_length(_accel_max_ne_mss);
     }
 
-    // A component opposing the desired velocity is braking: cap it at LOIT_BRK_ACC_M
-    bool braking = false;
+    const float pilot_jerk_msss = _jerk_max_ne_msss.get();
+    _pilot_request_braking = false;
+    _pilot_accel_braking = false;
+
     const Vector2f vel_desired_ne_ms = _pos_control.get_vel_desired_NED_ms().xy();
     const float speed_ms = vel_desired_ne_ms.length();
     if (speed_ms > LOITER_SPEED_MIN_MS) {
+        // Split the request and the current pilot acceleration into components along and across the
+        // direction of travel, and slew each separately so that braking never slows acceleration across it.
         const Vector2f vel_unit_ne = vel_desired_ne_ms / speed_ms;
-        float accel_along_mss = target_ne_mss * vel_unit_ne;
-        if (is_negative(accel_along_mss)) {
-            braking = true;
+        float target_along_mss = target_ne_mss * vel_unit_ne;
+        const Vector2f target_cross_ne_mss = target_ne_mss - vel_unit_ne * target_along_mss;
+        const float accel_along_mss = _pilot_accel_ne_mss * vel_unit_ne;
+        const Vector2f accel_cross_ne_mss = _pilot_accel_ne_mss - vel_unit_ne * accel_along_mss;
+
+        // An along-track request against the direction of travel is braking: cap it at LOIT_BRK_ACC_M
+        if (is_negative(target_along_mss)) {
+            _pilot_request_braking = true;
             if (is_positive(_brake_accel_max_mss)) {
-                const Vector2f accel_cross_ne_mss = target_ne_mss - vel_unit_ne * accel_along_mss;
-                accel_along_mss = MAX(accel_along_mss, -_brake_accel_max_mss.get());
-                target_ne_mss = accel_cross_ne_mss + vel_unit_ne * accel_along_mss;
+                target_along_mss = MAX(target_along_mss, -_brake_accel_max_mss.get());
             }
         }
-    }
 
-    // Slew toward the target: braking uses LOIT_BRK_JRK_M, everything else LOIT_JRK_M
-    const float jerk_max_msss = braking ? _brake_jerk_max_msss.get() : _jerk_max_ne_msss.get();
-    Vector2f delta_ne_mss = target_ne_mss - _pilot_accel_ne_mss;
-    if (is_positive(jerk_max_msss) && is_positive(dt_s) && delta_ne_mss.limit_length(jerk_max_msss * dt_s)) {
-        _pilot_accel_ne_mss += delta_ne_mss;
+        // Along the direction of travel, braking builds and changes at LOIT_BRK_JRK_M, and fades at that jerk
+        // once the stick is centered, while the centered-stick brake builds in its place. Every other change,
+        // including releasing braking for a stick request that is not braking, uses LOIT_JRK_M.
+        const bool along_braking = _pilot_request_braking || (request_ne_mss.is_zero() && is_negative(accel_along_mss));
+        const float along_jerk_msss = along_braking ? _brake_jerk_max_msss.get() : pilot_jerk_msss;
+        float new_along_mss = target_along_mss;
+        if (is_positive(along_jerk_msss) && is_positive(dt_s)) {
+            new_along_mss = accel_along_mss + constrain_float(target_along_mss - accel_along_mss, -along_jerk_msss * dt_s, along_jerk_msss * dt_s);
+        }
+
+        // Across the direction of travel, always LOIT_JRK_M
+        Vector2f cross_delta_ne_mss = target_cross_ne_mss - accel_cross_ne_mss;
+        if (is_positive(pilot_jerk_msss) && is_positive(dt_s)) {
+            cross_delta_ne_mss.limit_length(pilot_jerk_msss * dt_s);
+        }
+
+        _pilot_accel_ne_mss = vel_unit_ne * new_along_mss + accel_cross_ne_mss + cross_delta_ne_mss;
+        _pilot_accel_braking = is_negative(new_along_mss);
     } else {
-        _pilot_accel_ne_mss = target_ne_mss;
+        // Too slow for a direction of travel: nothing is braking
+        Vector2f delta_ne_mss = target_ne_mss - _pilot_accel_ne_mss;
+        if (is_positive(pilot_jerk_msss) && is_positive(dt_s)) {
+            delta_ne_mss.limit_length(pilot_jerk_msss * dt_s);
+        }
+        _pilot_accel_ne_mss += delta_ne_mss;
     }
 
     return _pilot_accel_ne_mss;
@@ -460,7 +503,9 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         float loiter_brake_accel_mss = 0.0f;
         const bool jerk_shaped_stop = is_positive(_stop_jerk_max_msss);
         bool stopping = false;
-        if ((AP_HAL::millis() - _brake_timer_ms) > MAX(_brake_delay_s, dt_s) * 1000.0) {
+        const bool brake_delay_done = ((AP_HAL::millis() - _brake_timer_ms) > MAX(_brake_delay_s, dt_s) * 1000.0)
+                                      || (!_pilot_stick_active && _brake_skip_delay);
+        if (brake_delay_done) {
             if (jerk_shaped_stop) {
                 // hold braking until a ramp at LOIT_STOP_JRK_M reaches zero braking at zero speed
                 loiter_brake_accel_mss = MIN(safe_sqrt(2.0f * _stop_jerk_max_msss * desired_speed_ms), _brake_accel_max_mss.get());
@@ -474,10 +519,21 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
             }
         }
 
-        // Integrate jerk-limited brake acceleration. Braking builds at LOIT_BRK_JRK_M; as the vehicle comes to
-        // rest it is released at LOIT_STOP_JRK_M, while pilot input still removes it at LOIT_BRK_JRK_M.
-        const float release_jerk_msss = stopping ? _stop_jerk_max_msss.get() : _brake_jerk_max_msss.get();
-        _brake_accel_mss += constrain_float(loiter_brake_accel_mss - _brake_accel_mss, -release_jerk_msss * dt_s, _brake_jerk_max_msss * dt_s);
+        // Integrate jerk-limited brake acceleration. Braking builds at LOIT_BRK_JRK_M. With the stick centered it
+        // is released at LOIT_STOP_JRK_M as the vehicle comes to rest when that is set, otherwise at LOIT_BRK_JRK_M.
+        // Stick input that is itself braking cross-fades with it at LOIT_BRK_JRK_M; any other stick input removes
+        // it at LOIT_JRK_M, at once when that is zero, so the old brake does not act against the new request.
+        float release_jerk_msss = stopping ? _stop_jerk_max_msss.get() : _brake_jerk_max_msss.get();
+        bool release_at_once = false;
+        if (_pilot_stick_active && !_pilot_request_braking) {
+            release_jerk_msss = _jerk_max_ne_msss.get();
+            release_at_once = !is_positive(release_jerk_msss);
+        }
+        if (release_at_once) {
+            _brake_accel_mss = MIN(_brake_accel_mss, loiter_brake_accel_mss);
+        } else {
+            _brake_accel_mss += constrain_float(loiter_brake_accel_mss - _brake_accel_mss, -release_jerk_msss * dt_s, _brake_jerk_max_msss * dt_s);
+        }
         loiter_accel_brake_mss = desired_vel_norm * _brake_accel_mss;
 
         // Update desired speed based on braking and drag

@@ -117,6 +117,9 @@ protected:
     //   slewed at LOIT_BRK_JRK_M. Every other change is slewed at LOIT_JRK_M (0 disables).
     Vector2f limit_pilot_accel_NE_mss(const Vector2f& request_ne_mss, float dt_s);
 
+    // Clears the stick and braking hand-off state.
+    void reset_pilot_brake_state();
+
     // references and pointers to external libraries
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
@@ -149,4 +152,8 @@ protected:
     float       _brake_accel_mss;           // Current braking acceleration in m/s², updated using jerk limits over time.
     Vector2f    _pilot_accel_ne_mss;        // Pilot-requested NE acceleration in m/s² after the acceleration and jerk limits.
     uint32_t    _pilot_accel_update_ms;     // Timestamp (in ms) of the last pilot acceleration update, used to reset stale limiter state.
+    bool        _pilot_stick_active;        // True while the pilot's stick request is non-zero.
+    bool        _pilot_request_braking;     // True while the stick request has a component against the direction of travel.
+    bool        _pilot_accel_braking;       // True while the limited pilot acceleration has a component against the direction of travel.
+    bool        _brake_skip_delay;          // True when the stick was centered mid-brake, so the centered-stick brake starts without LOIT_BRK_DELAY.
 };
