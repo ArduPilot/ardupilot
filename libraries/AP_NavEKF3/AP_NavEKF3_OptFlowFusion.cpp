@@ -52,7 +52,8 @@ void NavEKF3_core::SelectFlowFusion()
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
     }
-#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    // not on a Rover, which drives at its range finder ground clearance where this fuses zero flow
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS && !APM_BUILD_TYPE(APM_BUILD_Rover)
     // In flight the sensor cannot focus below the height it reports, so discard the sample rather
     // than let an unfocused reading drive a phantom velocity. The rangefinder is used rather than
     // terrainState because the range keeps more margin on the ground, and terrainState on the
@@ -120,7 +121,7 @@ void NavEKF3_core::SelectFlowFusion()
             flowDataToFuse = false;
         }
     }
-#endif  // EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+#endif  // EK3_FEATURE_RANGEFINDER_MEASUREMENTS && !APM_BUILD_TYPE(APM_BUILD_Rover)
 
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
     if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
