@@ -112,9 +112,19 @@ def build_examples(**kwargs):
     return True
 
 
+def unit_test_boards(asan):
+    """Boards to build and run the unit tests for."""
+    if asan:
+        # --asan is only implemented for the sitl board, so building the
+        # linux tests here would just run them uninstrumented a second
+        # time - the unit-tests job already covers them
+        return ['sitl']
+    return ['linux', 'sitl']
+
+
 def build_unit_tests(**kwargs):
     """Build tests."""
-    for target in ['linux', 'sitl']:
+    for target in unit_test_boards(kwargs.get('asan')):
         print("Running build.unit_tests for %s" % target)
         try:
             util.build_tests(target, **kwargs)
@@ -136,11 +146,11 @@ def run_unit_test(test):
     subprocess.check_call([test], env=env)
 
 
-def run_unit_tests():
+def run_unit_tests(asan=False):
     """Run all unit tests files."""
     success = True
     fail_list = []
-    for target in ['linux', 'sitl']:
+    for target in unit_test_boards(asan):
         binary_dir = util.reltopdir(os.path.join('build',
                                                  target,
                                                  'tests',
@@ -601,7 +611,7 @@ def run_step(step):
         return build_unit_tests(**build_opts)
 
     if step == 'run.unit_tests':
-        return run_unit_tests()
+        return run_unit_tests(asan=opts.asan)
 
     if step == 'clang-scan-build':
         return run_clang_scan_build()
