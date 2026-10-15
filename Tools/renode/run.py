@@ -1323,6 +1323,8 @@ def main():
     else:
         print('serial:  SERIAL%s/%s on tcp:localhost:%u' %
               (generated['serial_index'], generated['serial'], args.uart_port))
+    if generated['serial'] is not None and not generated['serial_mavlink']:
+        print('serial:  no UART speaks MAVLink by default')
     print('time:    %s' % ('unthrottled' if args.unthrottled else 'paced at 1x'))
     if args.watchdog:
         print('watchdog: reset enforced')
