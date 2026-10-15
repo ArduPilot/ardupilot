@@ -1039,6 +1039,21 @@ Tools/renode/test_all.py 'HolybroG4*' --parallel 2
 Tools/renode/test_all.py 'CubeBlack/arducopter'
 ```
 
+`test_boards.py` tests every supported target, resumably, without needing
+local builds: flight controllers boot the latest ArduPlane ELF from
+firmware.ardupilot.org and must deliver their full parameter table over
+MAVLink, and AP_Periph targets must answer DroneCAN parameter requests.
+Firmware and Renode model data are cached in the results directory, so after
+`--fetch` testing works offline; boards without a published ELF are built from
+this tree. Interrupt it with control-C and run it again to continue, and use
+`--status` to see progress:
+
+```sh
+Tools/renode/test_boards.py --fetch
+Tools/renode/test_boards.py --parallel 4
+Tools/renode/test_boards.py --status
+```
+
 Flight-controller tests wait for a MAVProxy-detected heartbeat and then run
 `param ftp`, requiring a complete non-empty parameter download. AP_Periph
 tests allocate a DroneCAN node ID and issue indexed parameter GetSet requests
