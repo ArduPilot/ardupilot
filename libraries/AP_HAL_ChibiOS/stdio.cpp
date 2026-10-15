@@ -125,7 +125,7 @@ int printf(const char *fmt, ...)
   we assume stdout or stderr. For output to files use the AP_Fileystem
   posix_compat headers
  */
-int fprintf(struct __sFILE *f, const char *fmt, ...)
+int fprintf(struct __file *f, const char *fmt, ...)
 {
 #ifndef HAL_NO_PRINTF
    va_list arg;
@@ -151,7 +151,6 @@ int scanf(const char *fmt, ...)
 
 extern "C" {
     // empty function fiprintf(), saves flash space for unused code path
-    // used as only newlib references it, via --wrap
     int __wrap_fiprintf(const char *fmt, ...);
     __attribute__((used)) int __wrap_fiprintf(const char *fmt, ...) { return -1; }
 }

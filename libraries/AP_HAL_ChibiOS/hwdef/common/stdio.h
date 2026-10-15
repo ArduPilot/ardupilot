@@ -36,8 +36,8 @@ int vprintf(const char *fmt, va_list arg) __asm__("__wrap_vprintf");
 int printf(const char *fmt, ...) __asm__("__wrap_printf");
 int scanf(const char *fmt, ...) __asm__("__wrap_scanf");
 int sscanf(const char *buf, const char *fmt, ...) __asm__("__wrap_sscanf");
-struct __sFILE;
-int fprintf(struct __sFILE *f, const char *fmt, ...) __asm__("__wrap_fprintf");
+struct __file;
+int fprintf(struct __file *f, const char *fmt, ...) __asm__("__wrap_fprintf");
 
 void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
