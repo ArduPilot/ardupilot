@@ -213,6 +213,7 @@ void RGBLed::update()
         update_override();
         return; // note this is a return not a break!
     case Source::standard:
+    case Source::split_standard:
         current_colour_sequence = get_colour_sequence();
         break;
     case Source::obc:
