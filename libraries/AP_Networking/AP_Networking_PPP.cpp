@@ -26,6 +26,11 @@
 #define PPP_BUFSIZE_TX 8192
 #endif
 
+// largest escaped frame: payload, header and FCS can all double in
+// size, plus the two flag bytes
+#define PPP_MAX_FRAME_SIZE (2U*(PPP_MAXMRU+8U))
+static_assert(PPP_BUFSIZE_TX >= PPP_MAX_FRAME_SIZE, "PPP TX buffer must hold a maximum size frame");
+
 extern const AP_HAL::HAL& hal;
 
 #if LWIP_TCPIP_CORE_LOCKING
@@ -50,38 +55,111 @@ extern const AP_HAL::HAL& hal;
 #define PPP_ESCAPE_BYTE 0x7D
 
 /*
-  output some data to the uart
+  true if an escaped PPP frame carries a control protocol (LCP, IPCP
+  etc), which always have a protocol number of 0x8000 or above
+ */
+static bool ppp_frame_is_control(const uint8_t *ptr, uint32_t len)
+{
+    uint8_t hdr[3] {};
+    uint8_t n = 0;
+    for (uint32_t i = 0; i < len && n < sizeof(hdr); i++) {
+        uint8_t c = ptr[i];
+        if (c == PPP_FRAME_BYTE) {
+            // leading flag
+            continue;
+        }
+        if (c == PPP_ESCAPE_BYTE) {
+            if (++i >= len) {
+                break;
+            }
+            c = ptr[i] ^ 0x20;
+        }
+        hdr[n++] = c;
+    }
+    // the address and control bytes may be omitted on data frames
+    const uint8_t proto = (hdr[0] == 0xFF) ? hdr[2] : hdr[0];
+    return (proto & 0x80) != 0;
+}
+
+/*
+  output callback from lwip. A frame arrives in chunks, so stage them
+  and only write complete frames to the uart. A frame that does not
+  fit waits for space in update_instance() rather than being partly
+  sent
  */
 uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32_t len, void *ctx)
 {
     auto &driver = *(AP_Networking_PPP::PPP_Instance *)ctx;
-    LWIP_UNUSED_ARG(pcb);
     const uint8_t *ptr = (const uint8_t *)data;
+    auto &tx = driver.tx;
+
+    WITH_SEMAPHORE(tx.sem);
 
     if (pcb->phase == PPP_PHASE_TERMINATE) {
         // don't output while terminating
+        tx.len = 0;
+        tx.pending = false;
         return 0;
     }
 
-    if (driver.uart->txspace() < len) {
-        /*
-          if we can't send the whole frame then don't send any of it. This
-          minimises issues with the PPP state machine
-         */
+    if (tx.buf == nullptr || len == 0) {
         return 0;
     }
 
+    if (tx.pending) {
+        // a data frame is waiting for uart space. Let a complete
+        // control frame past it so the link stays up, refuse the rest
+        // and lwip will retry them
+        if (ptr[len-1] == PPP_FRAME_BYTE && ppp_frame_is_control(ptr, len) &&
+            driver.uart->txspace() >= len) {
+#if AP_NETWORKING_CAPTURE_ENABLED
+            if (driver.backend->frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+                driver.capture_data(ptr, len);
+            }
+#endif
+            driver.uart->write(ptr, len);
+            return len;
+        }
+        return 0;
+    }
+
+    if (tx.len + len > PPP_MAX_FRAME_SIZE) {
+        tx.len = 0;
+        return 0;
+    }
+
+    memcpy(&tx.buf[tx.len], ptr, len);
+    tx.len += len;
+
+    if (ptr[len-1] != PPP_FRAME_BYTE) {
+        // more chunks of this frame to come
+        return len;
+    }
 
 #if AP_NETWORKING_CAPTURE_ENABLED
-    /*
-      capture outgoing data
-     */
     if (driver.backend->frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
-        driver.capture_data(ptr, len);
+        driver.capture_data(tx.buf, tx.len);
     }
 #endif
 
-    return driver.uart->write(ptr, len);
+    if (!driver.write_frame()) {
+        tx.pending = true;
+    }
+    return len;
+}
+
+/*
+  write the staged frame to the uart if there is space for all of it
+ */
+bool AP_Networking_PPP::PPP_Instance::write_frame(void)
+{
+    if (uart->txspace() < tx.len) {
+        return false;
+    }
+    uart->write(tx.buf, tx.len);
+    tx.len = 0;
+    tx.pending = false;
+    return true;
 }
 
 #if AP_NETWORKING_CAPTURE_ENABLED
@@ -212,7 +290,8 @@ bool AP_Networking_PPP::init()
         }
 
         inst.pppif = NEW_NOTHROW netif;
-        if (inst.pppif == nullptr) {
+        inst.tx.buf = NEW_NOTHROW uint8_t[PPP_MAX_FRAME_SIZE];
+        if (inst.pppif == nullptr || inst.tx.buf == nullptr) {
             break;
         }
 
@@ -388,6 +467,12 @@ void AP_Networking_PPP::ppp_loop(void)
 void AP_Networking_PPP::restart_instance(const uint8_t idx)
 {
     auto &inst = iface[idx];
+    {
+        // drop any frame left over from the old link
+        WITH_SEMAPHORE(inst.tx.sem);
+        inst.tx.len = 0;
+        inst.tx.pending = false;
+    }
     // connect and set as default route
     LWIP_TCPIP_LOCK();
 
@@ -539,6 +624,13 @@ bool AP_Networking_PPP::update_instance(const uint8_t idx)
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: reconnecting", unsigned(idx));
 
         restart_instance(idx);
+    }
+
+    {
+        WITH_SEMAPHORE(inst.tx.sem);
+        if (inst.tx.pending) {
+            inst.write_frame();
+        }
     }
 
     const uint32_t now_ms = AP_HAL::millis();
