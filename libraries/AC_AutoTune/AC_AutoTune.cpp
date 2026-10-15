@@ -343,6 +343,18 @@ bool AC_AutoTune::currently_level()
         // is slewing towards arrives there; the rate check above does
         // not cover a shaped re-point's slow tails
         level_start_time_ms = now_ms;
+        last_yaw_slew_ms = now_ms;
+    }
+    // the airframe lags its target, so a re-point overshoots desired
+    // yaw and swings back: allow the time to arrest a full-rate yaw
+    // before the timeout starts counting
+    const float yaw_accel_radss = attitude_control->get_accel_yaw_max_radss();
+    if (may_defer_timeout && is_positive(yaw_accel_radss)) {
+        const uint32_t settle_ms = MIN(1000.0 * attitude_control->get_slew_yaw_max_rads() / yaw_accel_radss,
+                                       (float)AUTOTUNE_LEVEL_DEFER_MAX_MS);
+        if (now_ms - last_yaw_slew_ms < settle_ms) {
+            level_start_time_ms = now_ms;
+        }
     }
     if (now_ms - level_start_time_ms > 3 * AUTOTUNE_LEVEL_TIMEOUT_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Failed to level, please tune manually");
