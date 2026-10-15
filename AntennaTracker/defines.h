@@ -22,7 +22,7 @@ enum class PWMDisarmed {
 
 //  Filter
 #define SERVO_OUT_FILT_HZ               0.1f
-#define G_Dt                            0.02f
+#define SERVO_G_Dt                      0.02f
 
 //  Logging parameters
 #define MASK_LOG_ATTITUDE               (1<<0)
@@ -32,6 +32,7 @@ enum class PWMDisarmed {
 #define MASK_LOG_RCOUT                  (1<<4)
 #define MASK_LOG_COMPASS                (1<<5)
 #define MASK_LOG_CURRENT                (1<<6)
+#define MASK_LOG_RADIO                  (1<<7)
 #define MASK_LOG_ANY                    0xFFFF
 
 //  Logging messages - only 32 messages are available to the vehicle here.
