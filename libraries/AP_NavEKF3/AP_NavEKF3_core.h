@@ -1442,7 +1442,7 @@ private:
         wheel_odm_elements wheelDataDelayed;   // Body  frame odometry data at the fusion time horizon
 #endif
     } bodyOdm;
-    uint8_t bodyVelFusedAxes;           // bit per body velocity axis whose latest sample since relative aiding started passed its innovation check
+    uint8_t bodyVelFusedAxes;           // bit per body velocity axis whose latest sample since relative aiding started passed its innovation check with an error inside 1/sqrt(3) of the range height switch's hysteresis
 
     // GPS yaw sensor fusion
     class GpsYawFusion {
