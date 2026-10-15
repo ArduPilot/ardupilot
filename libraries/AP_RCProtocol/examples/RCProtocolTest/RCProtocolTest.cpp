@@ -16,6 +16,9 @@
   test for RC input protocols
  */
 
+#if defined(__SANITIZE_ADDRESS__) // ASan inflates stack frames
+#pragma GCC diagnostic ignored "-Wframe-larger-than="
+#endif
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -330,7 +333,9 @@ static void test_random(void)
 #if defined(__clang_major__)
 // clang doesn't understand -Wframe-larger-than=
 #else
+#if !defined(__SANITIZE_ADDRESS__) // ASan inflates stack frames
 #pragma GCC diagnostic error "-Wframe-larger-than=2000"
+#endif
 #endif
 void loop()
 {
