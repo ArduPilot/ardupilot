@@ -18,8 +18,8 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 
-// Maximum number of WheelEncoder measurement instances available on this platform
-#define WHEELENCODER_MAX_INSTANCES      2
+#include "AP_WheelEncoder_config.h"
+
 #define WHEELENCODER_CPR_DEFAULT        3200    // default encoder counts per full revolution of the wheel
 #define WHEELENCODER_RADIUS_DEFAULT     0.05f   // default wheel radius of 5cm (0.05m)
 
