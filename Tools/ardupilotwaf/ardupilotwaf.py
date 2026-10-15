@@ -9,6 +9,7 @@ from waflib.TaskGen import before_method, after_method, feature
 import os.path, os
 from pathlib import Path
 from collections import OrderedDict
+import re
 import subprocess
 
 SOURCE_EXTS = [
@@ -350,7 +351,10 @@ class check_elf_symbols(Task.Task):
             # checking global symbols, code and undefined/weak references.
             if symbol_type in ('b', 'd', 'g', 'r', 's'):
                 continue
-            name = symbol.split('@', 1)[0].split('.', 1)[0]
+            name = symbol.split('@', 1)[0]
+            # Strip function-clone suffixes, not LTO debug symbols such as
+            # time.cpp.<hash>, which nm reports as weak symbols.
+            name = re.split(r'\.(?:constprop|isra|part|cold|lto_priv|llvm)(?:\.|$)', name, maxsplit=1)[0]
             if check_blacklist and name in self.env.SYMBOLS_BLACKLIST:
                 raise Errors.WafError("Disallowed unwrapped symbol in %s: %s" % (elfpath, symbol))
 
