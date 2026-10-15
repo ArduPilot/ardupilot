@@ -353,6 +353,26 @@ bool AC_AutoTune::currently_level()
         // AUTOTUNE_LEVEL_RATE_Y_CD still failed the low-acceleration
         // repro 2 runs in 4).
         level_start_time_ms = now_ms;
+        last_yaw_slew_ms = now_ms;
+    }
+    // the airframe lags the target it is given, so the yaw is not
+    // settled the moment the target arrives at desired_yaw_rad: a
+    // shaped re-point leaves the vehicle still turning, and it swings
+    // through desired and back before it is level.  Measured on the
+    // QAUTOTUNEYawRepoint repro: 12 degrees of overshoot taking 6s to
+    // decay, against the 6s timeout, which aborted the tune while the
+    // vehicle was still converging.  Allow the time it takes to arrest
+    // a full-rate yaw before the timeout starts counting; that is a
+    // fraction of a second on a normally-configured vehicle, and is
+    // only long where the yaw acceleration limit is low, which is
+    // exactly where the overshoot is slow to decay.
+    const float yaw_accel_radss = attitude_control->get_accel_yaw_max_radss();
+    if (may_defer_timeout && is_positive(yaw_accel_radss)) {
+        const uint32_t settle_ms = MIN(1000.0 * attitude_control->get_slew_yaw_max_rads() / yaw_accel_radss,
+                                       (float)AUTOTUNE_LEVEL_DEFER_MAX_MS);
+        if (now_ms - last_yaw_slew_ms < settle_ms) {
+            level_start_time_ms = now_ms;
+        }
     }
     if (now_ms - level_start_time_ms > 3 * AUTOTUNE_LEVEL_TIMEOUT_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Failed to level, please tune manually");
