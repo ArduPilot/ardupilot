@@ -276,6 +276,7 @@ protected:
     uint32_t step_timeout_ms;       // time limit of current autotune process
     uint32_t level_start_time_ms;   // start time of waiting for level
     uint32_t level_wait_start_ms;   // start time of waiting for level, not moved by the yaw-slew deferrals
+    uint32_t last_yaw_slew_ms;      // last time the yaw target was away from desired_yaw_rad
     int8_t   success_counter;       // counter for tuning gains
     float    start_angle;           // start angle
     float    start_rate;            // start rate - parent and multi
