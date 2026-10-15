@@ -888,9 +888,9 @@ private:
         DESCENT_RATE_LOW     = 1U <<  6,
         ACCEL_STATIONARY     = 1U <<  7,
         LARGE_ANGLE_ERROR    = 1U <<  8,
-        LARGE_ANGLE_REQUEST  = 1U <<  8,
         MOTOR_AT_LOWER_LIMIT = 1U <<  9,
         THROTTLE_MIX_AT_MIN  = 1U << 10,
+        LARGE_ANGLE_REQUEST  = 1U << 11,
     };
     struct {
         uint32_t last_logged_ms;
