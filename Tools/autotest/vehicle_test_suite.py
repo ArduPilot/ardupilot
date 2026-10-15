@@ -3840,7 +3840,6 @@ class TestSuite(abc.ABC):
             extra_configure_args=configure_args,
             artefact_dst=new_binary if new_binary is not None else self.binary,
             periph_artefact_dst=periph_artefact,
-            isolation_tag=self.instance,
             **build_opts,
         )
 
@@ -19136,14 +19135,17 @@ switch value'''
         build_opts = copy.copy(self.build_opts)
         build_opts["clean"] = False
         build_opts["configure"] = True
-        # a directory and tool of this instance's own: two Replay tests
-        # can run at once in a unified pool - Copter alone has two of
-        # them, registered next to each other - and the build
-        # directory, its waf lock and a shared tool path would all
-        # collide
+        # a tool of this instance's own, from a build directory shared
+        # by every instance running this vehicle's suite: two Replay
+        # tests can run at once in a unified pool - Copter alone has
+        # two of them, registered next to each other - so a shared tool
+        # path would collide, while a per-instance build directory
+        # would make each of them a build from scratch.  Concurrent
+        # builds in the shared directory are prevented by
+        # util.isolated_build_lock().
         self.replay_tool = os.path.join(os.getcwd(), 'Replay-tool')
         util.build_SITL('tool/Replay', board='sitl',
-                        isolated='build-replay-tool-%s-%u' % (self.log_name(), self.instance),
+                        isolated='build-replay-tool-%s' % self.log_name(),
                         artefact_dst=self.replay_tool,
                         **build_opts)
 
