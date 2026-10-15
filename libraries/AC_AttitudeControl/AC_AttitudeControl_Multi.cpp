@@ -348,11 +348,19 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 
     // @Param: THR_PD_ATT
     // @DisplayName: Throttle PD attenuation
-    // @Description: Fraction by which the rate controller P and D terms are reduced at full throttle. Above ATC_THR_PD_BRK the reduction ramps linearly from zero at the breakpoint to this value at full throttle; 0.5 leaves P and D at 50% at full throttle.
+    // @Description: Fraction by which the rate controller P and D terms are reduced at ATC_THR_PD_END throttle and above. Above ATC_THR_PD_BRK the reduction ramps linearly from zero at the breakpoint to this value at ATC_THR_PD_END; 0.5 leaves P and D at 50%.
     // @Range: 0 0.9
     // @Increment: 0.05
     // @User: Advanced
     AP_GROUPINFO("THR_PD_ATT", 10, AC_AttitudeControl_Multi, _thr_pd_atten, 0.5f),
+
+    // @Param: THR_PD_END
+    // @DisplayName: Throttle PD attenuation end
+    // @Description: Throttle output (as logged in CTUN.ThO) at which the full ATC_THR_PD_ATT attenuation is reached. Above it P and D stay at (1 - ATC_THR_PD_ATT). Set it at the throttle where the gains need the full cut, e.g. a loaded hover, so that P and D do not keep falling at higher throttle. 1 ramps all the way to full throttle. Values at or below ATC_THR_PD_BRK are treated as 1.
+    // @Range: 0.05 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("THR_PD_END", 11, AC_AttitudeControl_Multi, _thr_pd_end, 1.0f),
 
     AP_GROUPEND
 };
@@ -453,7 +461,7 @@ void AC_AttitudeControl_Multi::update_throttle_gain_boost()
 // rise with throttle (thrust-curve mismatch, ESC response, loaded hover far
 // above empty hover). Gains tuned at a light hover then run out of margin
 // higher up. This scales P and D down linearly from 1 at ATC_THR_PD_BRK to
-// (1 - ATC_THR_PD_ATT) at full throttle. I, FF and D_FF are unchanged: they
+// (1 - ATC_THR_PD_ATT) at ATC_THR_PD_END, and holds it above. I, FF and D_FF are unchanged: they
 // set tracking, not the loop's high-frequency gain.
 // Returned rather than applied with set_PD_scale_mult(): with the rate thread
 // rate_controller_run_dt() runs several times per main loop while _pd_scale
@@ -471,7 +479,13 @@ Vector3f AC_AttitudeControl_Multi::get_throttle_pd_attenuation() const
     if (throttle <= brk) {
         return VECTORF_111;
     }
-    const float scale = 1.0f - atten * (throttle - brk) / (1.0f - brk);
+    // the ramp ends at ATC_THR_PD_END; an end at or below the breakpoint falls back to full throttle
+    float end = constrain_float(_thr_pd_end, 0.0f, 1.0f);
+    if (end <= brk + 0.01f) {
+        end = 1.0f;
+    }
+    const float ramp = MIN((throttle - brk) / (end - brk), 1.0f);
+    const float scale = 1.0f - atten * ramp;
     return Vector3f{(axes & 1U) ? scale : 1.0f,
                     (axes & 2U) ? scale : 1.0f,
                     (axes & 4U) ? scale : 1.0f};
