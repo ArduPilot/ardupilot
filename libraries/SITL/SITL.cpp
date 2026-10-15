@@ -58,7 +58,10 @@ extern const AP_HAL::HAL& hal;
 #define SIM_DEFAULT_ENABLED_RELAY_CHANNELS 0
 #else
 // For SITL, set allowed relay channels to the full mask.
-#define SIM_DEFAULT_ENABLED_RELAY_CHANNELS UINT16_MAX
+// all 16 bits set. Written as -1 rather than UINT16_MAX because the default is
+// stored through a float into an AP_Int16: converting 65535.0f to int16_t is
+// undefined behaviour (caught by UBSan on SITL startup); -1 yields the same bits.
+#define SIM_DEFAULT_ENABLED_RELAY_CHANNELS -1
 #endif
 
 #if APM_BUILD_TYPE(APM_BUILD_Heli)
