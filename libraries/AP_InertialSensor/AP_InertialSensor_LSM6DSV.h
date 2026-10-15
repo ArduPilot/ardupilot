@@ -28,6 +28,8 @@ class AP_InertialSensor_LSM6DSV : public AP_InertialSensor_Backend {
 public:
     enum class LSM6DSV_Type : uint8_t {
         LSM6DSV16X,
+        LSM6DSV32X,
+        LSM6DSK320X,
     };
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
