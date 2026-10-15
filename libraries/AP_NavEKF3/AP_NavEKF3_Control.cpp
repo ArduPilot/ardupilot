@@ -22,6 +22,8 @@ void NavEKF3_core::controlFilterModes()
     if (!motorsArmed) {
         // give flow aiding a fresh start for the next flight, whether or not the flow sensor is sending
         flowVelResetUnhealthy = false;
+        // a release run cut short by disarming must not carry into the next latch
+        flowQualRecoverStart_ms = 0;
         memset(flowVelResetTimes_ms, 0, sizeof(flowVelResetTimes_ms));
         flowVelResetNext = 0;
         flowVelResetPauseStart_ms = 0;
