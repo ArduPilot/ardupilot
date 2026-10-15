@@ -4970,6 +4970,82 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if resets[5] - resets[4] < 4.9 or resets[10] - resets[9] < 9.9:
             raise NotAchievedException("resets not paused for 5 s then 10 s: %s" % str(resets))
 
+        # In a fast rotation the flow lags its own gyro, and the sample a recovery would adopt can be
+        # wrong on both axes; a reset to it then puts a jump on the axis that was right.  Lock out X
+        # and hold an offset on Y across the moment the lockout is declared, so Y is rejected there
+        # but has passed within the last 500 ms.  Y measures the forward speed, so a reset that waits
+        # for a sample Y passed leaves it alone, where one taken during the burst jumps it by about
+        # the offset times the height.
+        self.start_subtest("Both axes wrong: the recovery waits for a sample the other axis passed")
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        # the harness only sees sim time move when SYSTEM_TIME arrives, and at the default rate and
+        # speedup a 0.2 s delay came out at 0.4-0.6 s, longer than the gap the Y burst must fall in
+        self.set_parameters({"SIM_FLOW_OFS_Y": 0, "SIM_SPEEDUP": 1})
+        self.set_message_rate_hz('SYSTEM_TIME', 50)
+        self.delay_sim_time(1, "SYSTEM_TIME at its new rate")
+        for i in range(3):
+            self.context_clear_collection('STATUSTEXT')
+            # send_set_parameter, as set_parameter's read-back takes over a second of sim time
+            self.send_set_parameter("SIM_FLOW_OFS_X", 1.0 if i % 2 == 0 else -1.0)
+            self.delay_sim_time(0.3, "X passing its last samples")
+            self.send_set_parameter("SIM_FLOW_OFS_Y", 1.0)
+            self.delay_sim_time(1.0, "Y rejected across the 500 ms lockout mark")
+            self.send_set_parameter("SIM_FLOW_OFS_Y", 0)
+            self.wait_statustext("flow vel reset", check_context=True, timeout=10)
+            self.delay_sim_time(3, "settle before the next lockout")
+        self.set_message_rate_hz('SYSTEM_TIME', 0)
+        self.set_parameters({"SIM_FLOW_OFS_X": 0, "SIM_SPEEDUP": self.speedup})
+        self.disarm_vehicle(force=True)
+        fwd = {}
+        reset_times = []
+        last = {}
+        x_flips = []
+        y_on = []
+        y_off = []
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'XKF7', 'PARM'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            mtype = m.get_type()
+            if mtype == 'PARM':
+                if m.Name == 'SIM_FLOW_OFS_X' and m.Value != 0:
+                    x_flips.append(t)
+                elif m.Name == 'SIM_FLOW_OFS_Y':
+                    (y_on if m.Value != 0 else y_off).append(t)
+            elif mtype == 'XKF1':
+                yaw = math.radians(m.Yaw)
+                fwd.setdefault(m.C, []).append((t, m.VN * math.cos(yaw) + m.VE * math.sin(yaw)))
+            elif m.FVC != last.get(m.C, 0):
+                reset_times.append((m.C, t))
+                last[m.C] = m.FVC
+        if not reset_times:
+            raise NotAchievedException("no reset logged")
+        # at the 10 Hz SITL flow rate a burst starting under 0.2 s after its X flip leaves Y over
+        # 500 ms stale when X's lockout is declared, and one starting over 0.5 s after it begins once
+        # that lockout is recovered: either way the recovery never needs the other axis check
+        # each set is logged twice, a few ms apart
+        flips = [t for (i, t) in enumerate(x_flips) if i == 0 or t - x_flips[i - 1] > 0.1] + [float('inf')]
+        for (tx, tnext) in zip(flips, flips[1:]):
+            y_start = min((t for t in y_on if tx < t < tnext), default=None)
+            y_end = min((t for t in y_off if tx < t < tnext), default=None)
+            if y_start is None or y_end is None or not 0.2 <= y_start - tx <= 0.5:
+                raise NotAchievedException("Y burst after the X flip at %.1f s missed the window" % tx)
+            early = [t for (_, t) in reset_times if tx < t < y_end]
+            if early:
+                raise NotAchievedException("reset at %.1f s, inside the Y burst" % early[0])
+        for (core, t) in reset_times:
+            # XKF1 is written before XKF7 in a frame, so step clear of the reset frame on both sides
+            before = [v for (tv, v) in fwd[core] if tv < t - 0.05]
+            after = [v for (tv, v) in fwd[core] if tv > t + 0.05]
+            if not before or not after:
+                raise NotAchievedException("no XKF1 either side of the reset at %.1f s" % t)
+            jump = after[0] - before[-1]
+            self.progress("core %u reset at %.1f s: forward speed %.2f -> %.2f m/s" % (core, t, before[-1], after[0]))
+            if abs(jump) > 1.0:
+                raise NotAchievedException("core %u reset at %.1f s jumped the forward speed %.2f m/s" % (core, t, jump))
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
