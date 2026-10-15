@@ -10923,7 +10923,14 @@ Also, ignores heartbeats not from our target system'''
 
         # HOME_POSITION is used as a surrogate for origin until we
         # start emitting GPS_GLOBAL_ORIGIN
-        self.wait_ekf_happy()
+        #
+        # the filter will not use GPS until the gyro bias is learned,
+        # which on Tracker takes 43 to 45.7 simulated seconds from
+        # boot.  This budget is counted from here rather than from
+        # boot, so the default 45 leaves only whatever the test spent
+        # getting this far - under four seconds in the tightest case
+        # measured.
+        self.wait_ekf_happy(timeout=120)
         orig_home = self.poll_home_position()
         if orig_home is None:
             raise AutoTestTimeoutException()
