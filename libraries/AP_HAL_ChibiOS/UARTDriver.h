@@ -42,6 +42,7 @@ public:
 
     bool is_initialized() override;
     bool tx_pending() override;
+    bool is_usb() const override { return sdef.is_usb; }
     uint32_t get_usb_baud() const override;
     uint8_t get_usb_parity() const override;
 
