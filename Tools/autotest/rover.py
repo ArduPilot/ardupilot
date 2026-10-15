@@ -8222,6 +8222,43 @@ return update()
             if physics.frame_rate != sim_rate:
                 raise NotAchievedException("frame_rate %u, expected SIM_RATE_HZ %u" % (physics.frame_rate, sim_rate))
 
+    def JSONClock(self):
+        '''check SITL time follows JSON physics time without drift and across a physics reset'''
+        # wall-clock physics time, with a step SITL used to truncate by 1us each frame
+        start_time = 1760000000.0
+        with self.JSON_physics(start_time=start_time, dt=0.0009999995) as physics:
+            self.wait_heartbeat()
+
+            def sim_and_physics_time():
+                '''SITL time, and the physics time just before and after reading it'''
+                before = physics.timestamp
+                sim_time = self.get_sim_time()
+                return sim_time, before, physics.timestamp
+
+            def assert_elapsed_equal(start, end):
+                (sim0, before0, after0) = start
+                (sim1, before1, after1) = end
+                sim = sim1 - sim0
+                self.progress("sim elapsed %f, physics elapsed %f-%f" % (sim, before1 - after0, after1 - before0))
+                if not before1 - after0 - 0.05 <= sim <= after1 - before0 + 0.05:
+                    raise NotAchievedException("SITL time drifted from physics time")
+
+            # SITL time counts from the first frame, without drift
+            first = (0, start_time, start_time)
+            assert_elapsed_equal(first, sim_and_physics_time())
+            self.delay_sim_time(200, reason="clock drift")
+            assert_elapsed_equal(first, sim_and_physics_time())
+
+            # the physics restarts its clock, SITL time carries on following it
+            before_reset = sim_and_physics_time()
+            with physics.lock:
+                physics.timestamp = 1.0
+            after_reset = sim_and_physics_time()
+            if after_reset[0] < before_reset[0]:
+                raise NotAchievedException("SITL time went back on physics reset")
+            self.delay_sim_time(20, reason="after physics reset")
+            assert_elapsed_equal(after_reset, sim_and_physics_time())
+
     def JSONSensors(self):
         '''check SITL uses the sensor data sent by a JSON physics backend'''
         with self.JSON_physics() as physics:
@@ -8418,6 +8455,7 @@ return update()
             self.JSONLockstep,
             self.JSONNoLockstep,
             self.JSONNoTimeSync,
+            self.JSONClock,
             self.JSONSensors,
         ])
         return ret
