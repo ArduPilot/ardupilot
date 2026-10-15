@@ -591,8 +591,17 @@ def firmware_choices(board):
 
 
 def default_bootloader(board):
-    path = ROOT / 'Tools' / 'bootloaders' / ('%s_bl.bin' % board)
-    return path if path.is_file() else None
+    import gen_board
+    # as embedded by the build, else that of the board providing hwdef-bl.dat
+    names = [gen_board.bootloader_board(ROOT, board)]
+    hwdef = gen_board.bootloader_hwdef(ROOT, board)
+    if hwdef is not None:
+        names.append(hwdef.parent.name)
+    for name in names:
+        path = ROOT / 'Tools' / 'bootloaders' / ('%s_bl.bin' % name)
+        if path.is_file():
+            return path
+    return None
 
 
 def parse_elapsed(value):

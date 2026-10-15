@@ -18,9 +18,13 @@ before the application and starts from its vector table.
 
 `Tools/renode/run.py --list` shows the hwdef targets accepted by the generator.
 Support is MCU-family driven rather than maintained as a board allowlist. The
-current generation audit covers 404 targets, including all 109 STM32
-AP_Periph hwdefs. AP_Periph can run without a separate bootloader hwdef because
-Renode loads its application ELF directly. The AP_Periph targets by exact MCU
+current generation audit covers 416 targets, including all 109 STM32
+AP_Periph hwdefs. A flight controller's bootloader hwdef is its own
+`hwdef-bl.dat`, that of its `USE_BOOTLOADER_FROM_BOARD` board, or that of a
+board whose hwdef it includes, so variants such as `ARKV6X-bdshot` and `fmuv2`
+are covered; IOMCU firmware runs through `--real-iomcu` instead. AP_Periph can
+run without a separate bootloader hwdef because Renode loads its application
+ELF directly. The AP_Periph targets by exact MCU
 class are:
 
 | MCU hwdef | Targets | Shared platform |
