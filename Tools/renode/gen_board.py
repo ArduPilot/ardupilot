@@ -2435,7 +2435,32 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
             emulated_imus, spi_sdcard, resolved_attachments)
 
 
-def _serial_device(app, family, serial_index, excluded=None):
+# AP_SerialManager defaults: SERIAL0-2 MAVLink2, SERIAL3-4 GPS, others none
+SERIAL_DEFAULT_PROTOCOLS = {0: 2, 1: 2, 2: 2, 3: 5, 4: 5}
+
+
+def _mavlink_serials(defines, defaults):
+    '''SERIALn indexes whose default protocol is MAVLink.'''
+    names = {'SerialProtocol_MAVLink': 1, 'SerialProtocol_MAVLink2': 2}
+    result = set()
+    for index in range(10):
+        protocol = SERIAL_DEFAULT_PROTOCOLS.get(index, -1)
+        define = defines.get('DEFAULT_SERIAL%u_PROTOCOL' % index)
+        if define is not None:
+            try:
+                protocol = names[define] if define in names else int(define)
+            except ValueError:
+                protocol = -1
+        try:
+            protocol = int(float(defaults.get('SERIAL%u_PROTOCOL' % index, protocol)))
+        except ValueError:
+            pass
+        if protocol in (1, 2):
+            result.add(index)
+    return result
+
+
+def _serial_device(app, family, serial_index, excluded=None, mavlink=None):
     order = app.get_config('SERIAL_ORDER', required=False, aslist=True) or []
     excluded = set(excluded or ())
     requested_index = serial_index
@@ -2444,9 +2469,12 @@ def _serial_device(app, family, serial_index, excluded=None):
             raise ValueError('SERIAL%d is outside SERIAL_ORDER' % serial_index)
         device = order[serial_index]
     else:
-        serial_index = next((index for index, entry in enumerate(order)
-                             if (entry in family['uarts'] and
-                                 entry not in excluded)), None)
+        candidates = [index for index, entry in enumerate(order)
+                      if entry in family['uarts'] and entry not in excluded]
+        # the first UART that speaks MAVLink by default, else the first UART
+        serial_index = next((index for index in candidates
+                             if index in (mavlink or ())),
+                            candidates[0] if candidates else None)
         device = order[serial_index] if serial_index is not None else None
     if device is None and requested_index is None:
         return None, None
@@ -2462,7 +2490,8 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             battery_samples, rangefinder_uart, rangefinder_type, warnings,
             gpio_pins, sigrok_capture=None, quiet_peripherals=True,
             sigrok_channels=None, spi_sdcard=None, real_iomcu=False,
-            attachments=None, system_timer=None, uart_socket_dir=None):
+            attachments=None, system_timer=None, uart_socket_dir=None,
+            mavlink_serials=None):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     boot_kb = bootloader.get_config(
@@ -2478,7 +2507,8 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     ]
     serial_index, serial = _serial_device(
         app, family, serial_index,
-        excluded=(gps_uart, rangefinder_uart, iomcu_uart, *attached_uarts))
+        excluded=(gps_uart, rangefinder_uart, iomcu_uart, *attached_uarts),
+        mavlink=mavlink_serials)
     uart_socket = (uart_socket_dir / ('APM-UDS-serial%u' % serial_index)
                    if uart_socket_dir is not None and serial is not None else None)
     tick = app.get_config(
@@ -2716,6 +2746,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         'has_sdcard': has_sdcard,
         'serial_index': serial_index,
         'serial': serial,
+        'serial_mavlink': serial_index in (mavlink_serials or ()),
         'iomcu_uart': iomcu_uart,
         'family': family['name'],
         'mcu_type': app.mcu_type,
@@ -2784,7 +2815,9 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         battery_samples, rangefinder_uart, rangefinder_type, warnings,
         gpio_pins, sigrok_capture, quiet_peripherals, sigrok_channels,
         spi_sdcard, real_iomcu, resolved_attachments,
-        app_defines.get('STM32_ST_USE_TIMER'), state_dir if uds else None)
+        app_defines.get('STM32_ST_USE_TIMER'), state_dir if uds else None,
+        _mavlink_serials(app_defines, _default_parameters(
+            outdir / 'hwdef' / 'processed_defaults.parm')))
     resc.write_text(script)
     iomcu_peripherals = None
     if real_iomcu and iomcu_uart is not None:
