@@ -5,6 +5,8 @@ AP_FLAKE8_CLEAN
 from __future__ import annotations
 
 import atexit
+import contextlib
+import fcntl
 import math
 import os
 import re
@@ -178,6 +180,34 @@ def waf_build(target=None):
     run_cmd(cmd, directory=topdir(), checkfail=True)
 
 
+@contextlib.contextmanager
+def isolated_build_lock():
+    """serialise the mid-test builds against each other, machine-wide.
+
+    An isolated build is a full build of an output directory of its
+    own, started by one worker while the others are running tests, and
+    waf is left to use the whole machine.  Two at once starve every
+    SITL on the box: a --parallel run which had a frame rebuild and a
+    Replay tool build compiling together lost three unrelated tests at
+    the same instant, two to timesync timeouts and one to dropped log
+    blocks.  Running them one at a time, each at full width, is both
+    kinder and no slower overall.
+    """
+    lockpath = os.path.join(topdir(), '.lock-autotest-isolated-build')
+    with open(lockpath, 'w') as lockfile:
+        tstart = time.time()
+        try:
+            fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            print("Waiting for the isolated-build lock")
+            fcntl.flock(lockfile, fcntl.LOCK_EX)
+            print("Took the isolated-build lock after %us" % (time.time() - tstart))
+        try:
+            yield
+        finally:
+            fcntl.flock(lockfile, fcntl.LOCK_UN)
+
+
 def build_SITL(
         build_target,
         board='sitl',
@@ -288,56 +318,58 @@ def build_SITL(
         if not configure:
             print("Configuration for %s unchanged; not reconfiguring" % board)
 
-    # first configure
-    if configure:
-        waf_configure(board,
-                      j=j,
-                      debug=debug,
-                      debug_symbols=debug_symbols,
-                      math_check_indexes=math_check_indexes,
-                      ekf_single=ekf_single,
-                      postype_single=postype_single,
-                      coverage=coverage,
-                      force_32bit=force_32bit,
-                      ubsan=ubsan,
-                      ubsan_abort=ubsan_abort,
-                      extra_defines=extra_defines,
-                      num_aux_imus=num_aux_imus,
-                      dronecan_tests=dronecan_tests,
-                      extra_args=extra_configure_args,
-                      asan=asan,
-                      waflock=waflock,)
-        if stampfile is not None:
-            os.makedirs(os.path.dirname(stampfile), exist_ok=True)
-            with open(stampfile, "w") as f:
-                f.write(wanted + "\n" + lock_fingerprint())
-        elif waflock is None and not isolated:
-            # an explicitly-requested configure of the default tree may
-            # differ from the stamped one; forget the stamp so the next
-            # auto build re-checks.  Isolated/waflocked configures do
-            # not touch the default tree's configuration.
-            try:
-                os.unlink(os.path.join(topdir(), "build",
-                                       ".autotest-configure-%s" % board))
-            except OSError:
-                pass
+    # one isolated build at a time, machine-wide: see isolated_build_lock()
+    with isolated_build_lock() if isolated else contextlib.nullcontext():
+        # first configure
+        if configure:
+            waf_configure(board,
+                          j=j,
+                          debug=debug,
+                          debug_symbols=debug_symbols,
+                          math_check_indexes=math_check_indexes,
+                          ekf_single=ekf_single,
+                          postype_single=postype_single,
+                          coverage=coverage,
+                          force_32bit=force_32bit,
+                          ubsan=ubsan,
+                          ubsan_abort=ubsan_abort,
+                          extra_defines=extra_defines,
+                          num_aux_imus=num_aux_imus,
+                          dronecan_tests=dronecan_tests,
+                          extra_args=extra_configure_args,
+                          asan=asan,
+                          waflock=waflock,)
+            if stampfile is not None:
+                os.makedirs(os.path.dirname(stampfile), exist_ok=True)
+                with open(stampfile, "w") as f:
+                    f.write(wanted + "\n" + lock_fingerprint())
+            elif waflock is None and not isolated:
+                # an explicitly-requested configure of the default tree may
+                # differ from the stamped one; forget the stamp so the next
+                # auto build re-checks.  Isolated/waflocked configures do
+                # not touch the default tree's configuration.
+                try:
+                    os.unlink(os.path.join(topdir(), "build",
+                                           ".autotest-configure-%s" % board))
+                except OSError:
+                    pass
 
-    # then clean
-    if clean:
-        waf_clean(waflock=waflock)
+        # then clean
+        if clean:
+            waf_clean(waflock=waflock)
 
-    # then build
-    cmd_make = [relwaf(), "build", "--target", build_target]
-    if j is not None:
-        cmd_make.extend(['-j', str(j)])
-    build_env = None
-    if waflock is not None:
-        build_env = dict(os.environ)
-        build_env['WAFLOCK'] = waflock
-    run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True, env=build_env)
-    if isolated:
-        _copy_frame_artefact(isolated_builddir, board, build_target,
-                             dst=artefact_dst)
+        # then build
+        cmd_make = [relwaf(), "build", "--target", build_target]
+        if j is not None:
+            cmd_make.extend(['-j', str(j)])
+        build_env = None
+        if waflock is not None:
+            build_env = dict(os.environ)
+            build_env['WAFLOCK'] = waflock
+        run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True, env=build_env)
+        if isolated:
+            _copy_frame_artefact(isolated_builddir, board, build_target,
+                                 dst=artefact_dst)
     return True
 
 
@@ -347,7 +379,6 @@ def build_SITL_frame(
         extra_configure_args: list | None = None,
         artefact_dst=None,
         periph_artefact_dst=None,
-        isolation_tag=None,
         **build_kwargs,
 ):
     '''Build the main vehicle SITL plus (when defined) the AP_Periph
@@ -380,12 +411,12 @@ def build_SITL_frame(
     # each frame gets its own isolation directory and lockfile: under
     # a unified multi-suite pool two frame-building tests can run at
     # once (CircuitStatusScript and PPPPeriph did, and their builds
-    # destroyed each other in a shared build-frame)
-    # ... and per caller, not just per frame: two tests can want the same
-    # frame at once, as the generated FlyFrame_nexus and NexusIMUs do
+    # destroyed each other in a shared build-frame).  Per frame and no
+    # finer: two tests wanting the same frame at once (the generated
+    # FlyFrame_nexus and NexusIMUs do) are kept apart by
+    # isolated_build_lock() instead, so that the second finds the
+    # objects the first built rather than an empty directory.
     frame_isolation_dir = 'build-frame-%s' % frame
-    if isolation_tag is not None:
-        frame_isolation_dir += '-%s' % isolation_tag
     build_kwargs.setdefault('waflock', '.lock-waf-%s' % frame_isolation_dir)
 
     configure_args = list(frame_opts.get('configure_args', []))
