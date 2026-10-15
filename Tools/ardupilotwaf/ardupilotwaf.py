@@ -759,10 +759,11 @@ arducopter and upload it to my board".
 
     g.add_option('--asan',
         action='store_true',
-        help='''Build using the clang Address Sanitizer (Linux and macOS). Requires
-clang to be selected via the CXX/CC environment variables, e.g.:
-  CXX=clang++-19 CC=clang-19 ./waf configure --board sitl --asan
-llvm-symbolizer must be on the PATH for symbolised reports.
+        help='''Build using AddressSanitizer (Linux and macOS) with either gcc
+or clang, e.g.:
+  CXX=g++ CC=gcc ./waf configure --board sitl --debug --asan
+  CXX=clang++-19 CC=clang-19 ./waf configure --board sitl --debug --asan
+With clang, llvm-symbolizer must be on the PATH for symbolised reports.
 ''')
 
     g.add_option('--ubsan',

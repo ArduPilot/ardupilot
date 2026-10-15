@@ -940,7 +940,7 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
             env.LINKFLAGS += ['-fsanitize=address']
 
         env.AP_LIBRARIES += [
