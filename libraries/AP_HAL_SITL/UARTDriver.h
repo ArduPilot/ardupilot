@@ -26,6 +26,10 @@ public:
         _listen_fd = -1;
     }
 
+    // SERIAL0 (TCP port 5760 by default) stands in for the USB port in
+    // SITL, matching the MAVLink2 signing documentation
+    bool is_usb() const override { return _portNumber == 0; }
+
     bool is_initialized() override {
         return true;
     }
