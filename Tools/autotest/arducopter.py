@@ -18113,6 +18113,117 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("RNGFND1_TYPE", 0)
         self.reboot_sitl()
 
+    def EK3_RngHgtSwitchRegainOdometry(self):
+        '''the range finder height switch waits for the EKF speed when body odometry returns'''
+        # Body odometry is accepted on a 5-sigma innovation gate, wide when relative aiding
+        # restarts: low-confidence odometry coming back passes every axis on its first sample,
+        # with the EKF speed still near zero, so the range finder would be taken at a true speed
+        # above EK3_RNG_USE_SPD and held until the EKF speed caught up. Over ground that rises
+        # 3 m as the odometry returns, the EKF height must stay with the simulator's rather than
+        # follow the range finder down.
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+        self.set_parameters({
+            "GPS1_TYPE": 0,
+            "SIM_TERRAIN": 0,
+            "VISO_TYPE": 1,
+            "SERIAL5_PROTOCOL": 1,
+            "SIM_VICON_TMASK": 8,    # VISION_POSITION_DELTA, sent with confidence 0
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_POSZ": 1,
+            "EK3_SRC1_VELZ": 0,
+            "EK3_OPTIONS": 1 << 3,   # AglKfForOptflow
+            "EK3_RNG_USE_HGT": 50,   # 20 m of the 40 m range finder
+            "EK3_RNG_USE_SPD": 2,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+        self.takeoff(altitude_min=4.5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1400)
+        self.delay_sim_time(20, reason="settle at speed")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_VICON_FAIL", 1)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+        self.delay_sim_time(5, reason="fly on with odometry lost")
+        # in real time from here, so the step lands inside the second or two the switch would hold
+        self.set_parameter("SIM_SPEEDUP", 1)
+        self.context_clear_collection('STATUSTEXT')
+        self.send_set_parameter("SIM_VICON_FAIL", 0)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        tregain = self.get_sim_time()
+        self.send_set_parameter("SIM_SONAR_OFFSET", -3.0)
+        self.delay_sim_time(5, reason="fly on over the higher ground with odometry back")
+        tend = self.get_sim_time()
+        self.set_parameters({"SIM_SONAR_OFFSET": 0, "SIM_SPEEDUP": self.speedup})
+        self.set_rc(2, 1500)
+        self.zero_throttle()
+        self.wait_disarmed(timeout=120)
+
+        # times from the log, not the harness: the regain, and the first range reading of the step
+        dfreader = self.dfreader_for_current_onboard_log()
+        truth = None
+        regain = None
+        rows = []
+        while True:
+            m = dfreader.recv_match(type=['SIM', 'SIM2', 'XKF1', 'RFND', 'MSG'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            mtype = m.get_type()
+            if mtype == 'MSG':
+                if 'EKF3 IMU0 started relative aiding' in m.Message and t > tregain - 5:
+                    regain = t
+            elif mtype == 'SIM':
+                truth = m.Alt
+            elif mtype == 'SIM2':
+                rows.append((t, 'speed', math.hypot(m.VN, m.VE)))
+            elif mtype == 'RFND' and m.Instance == 0:
+                rows.append((t, 'range', m.Dist))
+            elif mtype == 'XKF1' and m.C == 0 and truth is not None:
+                rows.append((t, 'height', -m.PD - truth))
+                rows.append((t, 'ekfspeed', math.hypot(m.VN, m.VE)))
+        if regain is None:
+            raise NotAchievedException("no relative aiding restart in the log")
+
+        def values(kind, t0, t1):
+            return [v for (t, k, v) in rows if k == kind and t0 <= t <= t1]
+        before = values('range', regain - 1, regain)
+        if not before:
+            raise NotAchievedException("no range reading before the regain")
+        step = [t for (t, k, v) in rows if k == 'range' and t > regain and v < before[-1] - 2]
+        after = values('range', step[0], step[0] + 0.5) if step else []
+        if not after or abs(sum(after) / len(after) - (before[-1] - 3)) > 0.3:
+            raise NotAchievedException("the range finder did not see the 3 m step")
+        tstep = step[0]
+        ekf_speed = values('ekfspeed', regain, tstep)
+        speeds = values('speed', regain, regain + 1.5)
+        err_regain = values('height', regain - 1.5, regain)
+        errs = values('height', regain, tend)
+        if len(err_regain) < 10 or len(errs) < 40 or len(speeds) < 10 or not ekf_speed:
+            raise NotAchievedException("too few samples: %u/%u heights, %u speeds" %
+                                       (len(err_regain), len(errs), len(speeds)))
+        ref = sum(err_regain) / len(err_regain)
+        worst = max(abs(e - ref) for e in errs)
+        self.progress("step %.2f s after the regain at EKF speed %.2f m/s; EKF height moved up to %.2f m against "
+                      "the simulator's, %.1f-%.1f m/s" % (tstep - regain, ekf_speed[-1], worst, min(speeds), max(speeds)))
+        # the regain must leave the EKF speed under 1 m/s, where the switch can take hold, and the step
+        # land before it reaches EK3_RNG_USE_SPD, where a switch that had taken hold lets go; the true
+        # speed above that but not so far that the EKF speed passes it at once
+        if ekf_speed[0] > 1:
+            raise NotAchievedException("EKF speed %.2f m/s at the regain: not a test of the switch" % ekf_speed[0])
+        if tstep - regain > 1.0 or ekf_speed[-1] > 2:
+            raise NotAchievedException("step %.2f s after the regain at EKF speed %.2f m/s: not a test of the switch" %
+                                       (tstep - regain, ekf_speed[-1]))
+        if min(speeds) < 2.1 or max(speeds) > 3.2:
+            raise NotAchievedException("speed %.1f-%.1f m/s: not a test of the switch" % (min(speeds), max(speeds)))
+        if worst > 0.5:
+            raise NotAchievedException("EKF height moved %.2f m against the simulator's" % worst)
+
+        self.set_parameter("RNGFND1_TYPE", 0)
+        self.reboot_sitl()
+
     def EK3_OptflowTerrainScaleHeight(self):
         '''optical flow scale height from the terrain database is right over slopes'''
         # Above the rangefinder range with EK3_OPTIONS bit 2 the optical flow scale
@@ -19979,6 +20090,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EK3_RngHgtSwitchStepUp,
             self.EK3_RngHgtSwitchNoVelocity,
             self.EK3_RngHgtSwitchRegainHigh,
+            self.EK3_RngHgtSwitchRegainOdometry,
             self.EK3_AccelBiasZeroVelOptFlow,
             self.ThrowDoubleDrop,
             self.HorizontalFence,
