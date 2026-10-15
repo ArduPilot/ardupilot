@@ -3996,6 +3996,31 @@ class TestSuite(abc.ABC):
         util.pexpect_close(self.sitl)
         self.sitl = None
 
+    @contextmanager
+    def SITL_stopped(self, reason):
+        """stop the SITL for the duration of a long blocking operation.
+
+        A running SITL whose MAVLink nobody reads fills its serial0
+        output queue and then wedges in the outqueue-full loop in
+        SITL_State::wait_clock(), which stops simulated time - and so
+        heartbeats - until we start reading again.  Anything which
+        blocks the test for minutes is long enough to do it: a
+        mid-test build of the Replay tool left the SITL unread for
+        8 minutes on a slow host, after which it never answered
+        another heartbeat and the harness dumped a core of the stalled
+        process (ReplayShortMessage, 3 runs of 6).
+        """
+        self.progress("Stopping SITL for %s" % reason)
+        self.mav.close()
+        self.stop_SITL()
+        try:
+            yield
+        finally:
+            self.start_SITL(wipe=False)
+            self.mav.do_connect()
+            self.wait_heartbeat(drain_mav=True)
+            self.set_streamrate(self.sitl_streamrate())
+
     def start_test(self, description):
         self.progress("##################################################################################")
         self.progress("########## %s  ##########" % description)
@@ -19144,10 +19169,13 @@ switch value'''
         # builds in the shared directory are prevented by
         # util.isolated_build_lock().
         self.replay_tool = os.path.join(os.getcwd(), 'Replay-tool')
-        util.build_SITL('tool/Replay', board='sitl',
-                        isolated='build-replay-tool-%s' % self.log_name(),
-                        artefact_dst=self.replay_tool,
-                        **build_opts)
+        # the SITL is not needed for the build and must not be left
+        # running through it; see SITL_stopped()
+        with self.SITL_stopped("the Replay tool build"):
+            util.build_SITL('tool/Replay', board='sitl',
+                            isolated='build-replay-tool-%s' % self.log_name(),
+                            artefact_dst=self.replay_tool,
+                            **build_opts)
 
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''
@@ -19157,32 +19185,25 @@ switch value'''
         # left running there are two writers in there and no way to tell
         # afterwards which of the new logs is Replay's: "the latest log"
         # can just as easily be the one the SITL is still appending to.
-        self.mav.close()
-        self.stop_SITL()
-
-        logs_before = set(self.log_list())
-        # run it in our own working directory, not the top of the tree:
-        # Replay writes into logs/ relative to where it runs, and
-        # log_list() reads the logs/ of this instance's directory.  Those
-        # are the same place only at instance zero, so anywhere else the
-        # log lands somewhere we never look:
-        #     Expected exactly one new log from Replay, got ([])
-        util.run_cmd(
-            [self.replay_tool, filepath],
-            directory=os.getcwd(),
-            checkfail=True,
-            show=True,
-            output=True,
-        )
-        # with the SITL stopped Replay is the only writer, so its output
-        # is simply the log which appeared while it ran.  Work this out
-        # before restarting the SITL, which opens a log of its own:
-        new_logs = sorted(set(self.log_list()) - logs_before)
-
-        self.start_SITL(wipe=False)
-        self.mav.do_connect()
-        self.wait_heartbeat(drain_mav=True)
-        self.set_streamrate(self.sitl_streamrate())
+        with self.SITL_stopped("the replay"):
+            logs_before = set(self.log_list())
+            # run it in our own working directory, not the top of the tree:
+            # Replay writes into logs/ relative to where it runs, and
+            # log_list() reads the logs/ of this instance's directory.  Those
+            # are the same place only at instance zero, so anywhere else the
+            # log lands somewhere we never look:
+            #     Expected exactly one new log from Replay, got ([])
+            util.run_cmd(
+                [self.replay_tool, filepath],
+                directory=os.getcwd(),
+                checkfail=True,
+                show=True,
+                output=True,
+            )
+            # with the SITL stopped Replay is the only writer, so its output
+            # is simply the log which appeared while it ran.  Work this out
+            # before restarting the SITL, which opens a log of its own:
+            new_logs = sorted(set(self.log_list()) - logs_before)
 
         if len(new_logs) != 1:
             raise NotAchievedException(
