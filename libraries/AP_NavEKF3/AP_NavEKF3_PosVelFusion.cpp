@@ -2084,7 +2084,14 @@ void NavEKF3_core::FuseBodyVel()
         if ((bodyVelTestRatio[obsIndex]) < 1.0f) {
             // record the last time observations were accepted for fusion
             prevBodyVelFuseTime_ms = imuSampleTime_ms;
-            bodyVelFusedAxes |= 1U << obsIndex;
+            // as for flow, the axis counts only while the speed error it lets through fits between the
+            // speeds at which the range height switch takes hold and lets go, 1/sqrt(3) of it per axis as a
+            // tilt can put the errors on all three body axes into the horizontal together
+            if (fabsF(innovBodyVel[obsIndex]) < 0.577f * (frontend->_useRngSwSpd - rngSwitchInSpeed())) {
+                bodyVelFusedAxes |= 1U << obsIndex;
+            } else {
+                bodyVelFusedAxes &= ~(1U << obsIndex);
+            }
             // notify first time only
             if (!bodyVelFusionActive) {
                 bodyVelFusionActive = true;

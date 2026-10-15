@@ -1418,7 +1418,7 @@ private:
     uint32_t bodyOdmMeasTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
     bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
     bool bodyVelFusionActive;           // true when body frame velocity fusion is active
-    uint8_t bodyVelFusedAxes;           // bit per body velocity axis whose latest sample since relative aiding started passed its innovation check
+    uint8_t bodyVelFusedAxes;           // bit per body velocity axis whose latest sample since relative aiding started passed its innovation check with an error inside 1/sqrt(3) of the range height switch's hysteresis
 
 #if EK3_FEATURE_BODY_ODOM
     // wheel sensor fusion
