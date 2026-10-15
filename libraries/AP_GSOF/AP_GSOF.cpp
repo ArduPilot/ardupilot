@@ -78,6 +78,23 @@ AP_GSOF::parse(const uint8_t temp, MsgTypes& parsed_msgs)
     return NO_GSOF_DATA;
 }
 
+// minimum number of record bytes each parse_* method reads; other record
+// types are skipped so any length is acceptable for them
+uint8_t AP_GSOF::min_record_length(uint8_t output_type)
+{
+    switch (output_type) {
+    case POS_TIME:     return 9;   // reads up to a+8 (pos_flags2)
+    case POS:          return 24;  // reads up to a+16 +8 (altitude double)
+    case VEL:          return 13;  // reads up to a+9 +4 (vertical_velocity)
+    case DOP:          return 8;   // reads up to a+4 +4 (hdop)
+    case POS_SIGMA:    return 20;  // reads up to a+16 +4 (sigma_up)
+    case INS_FULL_NAV: return 104; // reads up to a+100 +4 (acc_z)
+    case INS_RMS:      return 44;  // reads up to a+40 +4 (yaw_rms_deg)
+    case LLH_MSL:      return 24 + sizeof(llh_msl.model);
+    default:           return 0;
+    }
+}
+
 bool
 AP_GSOF::process_message(MsgTypes& parsed_msgs)
 {
@@ -95,11 +112,22 @@ AP_GSOF::process_message(MsgTypes& parsed_msgs)
 #endif
             }
 
-            parsed_msgs.set(output_type);
             a++;
+            if (a >= msg.length) {
+                // output_type with no output_length byte: truncated/corrupt record
+                return false;
+            }
             const uint8_t output_length = msg.data[a];
             a++;
-            // TODO handle corruption on output_length causing buffer overrun?
+            // the record must fit inside the received DATA bytes and be at least
+            // as long as the fixed layout each parse_* method reads. Without
+            // this a short record makes parse_* read past msg.data[].
+            if (output_length == 0 ||
+                a + output_length > msg.length ||
+                output_length < min_record_length(output_type)) {
+                return false;
+            }
+            parsed_msgs.set(output_type);
 
             switch (output_type) {
             case POS_TIME:
