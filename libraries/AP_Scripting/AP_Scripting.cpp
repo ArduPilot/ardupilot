@@ -271,7 +271,7 @@ void AP_Scripting::init_serialdevice_ports(void) {
 }
 #endif
 
-#if HAL_GCS_ENABLED
+#if HAL_MAVLINK_BINDINGS_ENABLED
 MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &packet) {
     switch ((SCRIPTING_CMD)packet.param1) {
         case SCRIPTING_CMD_REPL_START:
@@ -473,7 +473,7 @@ void AP_Scripting::restart_all()
     _stop = true;
 }
 
-#if HAL_GCS_ENABLED
+#if HAL_MAVLINK_BINDINGS_ENABLED
 void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan) {
     if (mavlink_data.rx_buffer == nullptr) {
         return;
@@ -508,7 +508,7 @@ bool AP_Scripting::is_handling_command(uint16_t cmd_id)
 
     return false;
 }
-#endif // HAL_GCS_ENABLED
+#endif // HAL_MAVLINK_BINDINGS_ENABLED
 
 // Update called at 1Hz from AP_Vehicle
 void AP_Scripting::update() {
