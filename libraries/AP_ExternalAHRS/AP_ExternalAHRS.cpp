@@ -258,16 +258,6 @@ Vector2f AP_ExternalAHRS::get_groundspeed_vector()
     return vec;
 }
 
-bool AP_ExternalAHRS::get_velocity_NED(Vector3f &vel)
-{
-    if (!state.have_velocity) {
-        return false;
-    }
-    WITH_SEMAPHORE(state.sem);
-    vel = state.velocity;
-    return true;
-}
-
 bool AP_ExternalAHRS::get_velocity_NED(Vector3f &vel, uint32_t &last_update_us)
 {
     WITH_SEMAPHORE(state.sem);

@@ -127,9 +127,8 @@ public:
     bool set_origin(const Location &loc);
     bool get_location(Location &loc);
     Vector2f get_groundspeed_vector();
-    bool get_velocity_NED(Vector3f &vel);
-    // as above, but also returns the time the velocity was last
-    // updated, captured atomically with the velocity:
+    // returns the velocity and the time it was last updated,
+    // captured atomically:
     bool get_velocity_NED(Vector3f &vel, uint32_t &last_update_us);
     bool get_speed_down(float &speedD);
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
