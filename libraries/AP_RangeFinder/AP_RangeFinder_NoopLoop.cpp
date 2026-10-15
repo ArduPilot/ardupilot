@@ -27,7 +27,6 @@ extern const AP_HAL::HAL& hal;
 #define NOOPLOOP_FRAME_HEADER 0x57
 #define NOOPLOOP_FRAME_HEADER_1 0x00
 #define NOOPLOOP_FRAME_LENGTH 16
-#define NOOPLOOP_DIST_MAX_MM 8000
 
 // format of serial packets received from NoopLoop TOF Sense P and F lidar
 //
@@ -86,7 +85,7 @@ bool AP_RangeFinder_NoopLoop::get_reading(float &reading_m)
                     // calculate distance
                     const int32_t dist = (int32_t)(linebuf[8] << 8 | linebuf[9] << 16 | linebuf[10] << 24) / 256;
                     const uint8_t valid = (linebuf[11]);
-                    if (dist > 0 && reading_m < NOOPLOOP_DIST_MAX_MM && valid < 255) {
+                    if (dist > 0 && valid < 255) {
                         reading_m = dist * 0.001f;
                         linebuf_len = 0;
                         uart->discard_input();
