@@ -27,7 +27,7 @@ local MIN_RADIUS = 10.0
 function create_WP(i, center, radius, angle)
    local item = mavlink_mission_item_int_t()
    local loc = center:copy()
-   loc:offset_bearing(radius, angle)
+   loc:offset_bearing(angle, radius)
 
    item:seq(i)
    item:frame(FRAME_GLOBAL)
