@@ -9076,22 +9076,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("; ".join(unmet))
             self.mav.recv_match(type='CAMERA_SETTINGS', blocking=True, timeout=0.1)
 
-    def camera_capture_statuses(self, count, timeout=10):
-        '''request capture status and return image_status ordered by native camera component'''
+    def camera_capture_statuses(self, count, timeout=10, settle=1):
+        '''request capture status and return image_status ordered by native camera component.
+
+        A MAVLink camera is a component of its own, and the status it
+        sends unprompted is routed through to us unchanged.  Only the
+        status the flight controller sends in reply to our request
+        carries the interval state, which ArduPilot implements by
+        sending the camera individual shots and the camera therefore
+        knows nothing about (AP_Camera_MAVLinkCamV2::send_camera_capture_status()).
+        Returning the first status to arrive from each component hands
+        back the camera's own view whenever a routed copy lands between
+        the request and the reply - which is what MountAVTCM62DualMission
+        did, 3ms before the reply it was waiting for.  Collect for
+        `settle` seconds instead and report each component's highest
+        image_status: the reply only ever adds bits to the camera's.
+        '''
         self.context_clear_collection('CAMERA_CAPTURE_STATUS')
         self.send_poll_message('CAMERA_CAPTURE_STATUS')
         tstart = self.get_sim_time()
         first_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA
+        complete_time = None
         while True:
-            collection = {m.get_srcComponent(): m for m in self.context_collection('CAMERA_CAPTURE_STATUS')
-                          if m.get_srcSystem() == self.sysid_thismav() and
-                          first_compid <= m.get_srcComponent() < first_compid + count}
-            if len(collection) == count:
-                return [collection[compid].image_status for compid in sorted(collection)]
-            if self.get_sim_time_cached() - tstart > timeout:
+            statuses = {}
+            for m in self.context_collection('CAMERA_CAPTURE_STATUS'):
+                if m.get_srcSystem() != self.sysid_thismav():
+                    continue
+                compid = m.get_srcComponent()
+                if not first_compid <= compid < first_compid + count:
+                    continue
+                statuses[compid] = max(statuses.get(compid, 0), m.image_status)
+            now = self.get_sim_time_cached()
+            if len(statuses) == count:
+                if complete_time is None:
+                    complete_time = now
+                if now - complete_time >= settle:
+                    return [statuses[compid] for compid in sorted(statuses)]
+            if now - tstart > timeout:
                 raise NotAchievedException(
                     "Got %u CAMERA_CAPTURE_STATUS, wanted %u" %
-                    (len(collection), count))
+                    (len(statuses), count))
             self.mav.recv_match(type='CAMERA_CAPTURE_STATUS', blocking=True, timeout=0.1)
 
     def camera_feedback_img_idx(self, cam_idx):
