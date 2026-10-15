@@ -446,7 +446,15 @@ Vector2f AC_Loiter::limit_pilot_accel_NE_mss(const Vector2f& request_ne_mss, flo
             cross_delta_ne_mss.limit_length(pilot_jerk_msss * dt_s);
         }
 
-        _pilot_accel_ne_mss = vel_unit_ne * new_along_mss + accel_cross_ne_mss + cross_delta_ne_mss;
+        // Keep the total within LOIT_ACC_MAX_M. The two components slew separately, so while braking is still
+        // slewing along the track the cross-track part could otherwise push the total past the limit: clamp
+        // the cross-track part to what the along-track part leaves.
+        Vector2f new_cross_ne_mss = accel_cross_ne_mss + cross_delta_ne_mss;
+        if (is_positive(_accel_max_ne_mss)) {
+            new_cross_ne_mss.limit_length(safe_sqrt(MAX(sq(_accel_max_ne_mss.get()) - sq(new_along_mss), 0.0f)));
+        }
+
+        _pilot_accel_ne_mss = vel_unit_ne * new_along_mss + new_cross_ne_mss;
         _pilot_accel_braking = is_negative(new_along_mss);
     } else {
         // Too slow for a direction of travel: nothing is braking
