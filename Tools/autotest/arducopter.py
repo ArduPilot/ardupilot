@@ -8569,10 +8569,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def assert_mount_retracted(self, retracted):
+        '''assert whether GIMBAL_DEVICE_ATTITUDE_STATUS reports the mount retracted'''
+        self.drain_mav()
+        m = self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=5)
+        is_retracted = bool(m.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_RETRACT)
+        if is_retracted != retracted:
+            raise NotAchievedException(f"Expected retracted={retracted} got flags={m.flags}")
+
+    def test_mount_configure_invalid_modes(self):
+        '''check DO_MOUNT_CONFIGURE denies invalid modes without changing mode'''
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+        self.assert_mount_retracted(False)
+        # 256 would truncate to RETRACT if converted to uint8_t unchecked
+        for mode in 8, 255, 256, -1, float('nan'), float('inf'), float('-inf'):
+            for run_cmd in self.run_cmd, self.run_cmd_int:
+                run_cmd(
+                    mavutil.mavlink.MAV_CMD_DO_MOUNT_CONFIGURE,
+                    p1=mode,
+                    want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+                )
+        self.assert_mount_retracted(False)
+        # make sure the check above can detect a retracted mount
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_RETRACT)
+        self.assert_mount_retracted(True)
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+
     def Mount(self):
         '''test servo mount'''
         self.setup_servo_mount()
         self.reboot_sitl() # to handle MNT_TYPE changing
+        self.test_mount_configure_invalid_modes()
         self.mount_test_body()
 
     def MountRCFailAngle(self):
