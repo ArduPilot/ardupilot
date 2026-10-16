@@ -155,6 +155,10 @@
   #error Brake mode requires AltHold; disable MODE_BRAKE_ENABLED or enable MODE_ALTHOLD_ENABLED
 #endif
 
+#if MODE_VALT_ENABLED && !MODE_ALTHOLD_ENABLED
+  #error VALT mode requires AltHold; disable MODE_VALT_ENABLED or enable MODE_ALTHOLD_ENABLED
+#endif
+
 #if AP_AVOIDANCE_ENABLED && !AP_FENCE_ENABLED
   #error AC_Avoidance relies on AP_FENCE_ENABLED which is disabled
 #endif
@@ -226,6 +230,7 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
+    friend class ModeVelAltHold;
 
     friend class _AutoTakeoff;
 
@@ -276,6 +281,9 @@ private:
         bool get_target_dist_for_logging(float &target_dist_m) const;
         float get_dist_for_logging() const;
         void invalidate_for_logging() { valid_for_logging = false; }
+
+        // re-initialise the offset on the next update instead of slewing to it
+        void reset_target_on_next_update() { reset_target = true; }
 
         // surface tracking surface
         enum class Surface {
@@ -1120,6 +1128,9 @@ private:
 #endif
 #if MODE_TURTLE_ENABLED
     ModeTurtle mode_turtle;
+#endif
+#if MODE_VALT_ENABLED
+    ModeVelAltHold mode_valt;
 #endif
 
     // mode.cpp
