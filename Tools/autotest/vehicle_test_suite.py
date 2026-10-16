@@ -16310,6 +16310,10 @@ switch value'''
 
         self.result_queue = mp.Queue()
         self.request_queue = mp.Queue()
+        # Valgrind/ASAN findings travel separately: they are not test
+        # results, and the dispatcher counts result_queue entries
+        # against the tests it is waiting for
+        self.sanitiser_queue = mp.Queue()
 
         # the dispatcher assigns tests to workers on request rather
         # than loading a shared queue: it has the full picture, so it
@@ -16547,6 +16551,14 @@ switch value'''
         return results
 
     def finalise_worker_results(self, results, worker_failures):
+        while True:
+            try:
+                result = self.sanitiser_queue.get(block=False)
+            except queue.Empty:
+                break
+            self.progress("Received sanitiser result (%s)" % str(result))
+            results.append(result)
+
         if worker_failures:
             self.progress("%u worker(s) exited non-zero; the run was short of "
                           "workers and may have taken longer than it looks:" %
@@ -16815,6 +16827,12 @@ switch value'''
         if active is not None:
             active.stop_worker_session()
 
+        # the serial run scans for these in its tail; a worker has to do
+        # it for itself, or --valgrind and --asan under --parallel pass
+        # with errors sitting in the logs
+        for result in (active if active is not None else self).sanitiser_results():
+            self.sanitiser_queue.put(result)
+
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
         if self.run_tests_called:
@@ -16871,6 +16889,19 @@ switch value'''
 
         self.stop_SITL()
 
+        result_list += self.sanitiser_results()
+
+        return result_list
+
+    def sanitiser_results(self):
+        '''move any non-empty Valgrind/ASAN logs this session produced into
+        the buildlogs directory and return a Result for each tool which
+        reported something.  Called at the end of a serial run and at the
+        end of each parallel worker's session - the logs are written in
+        the working directory, which under --parallel is the worker's own,
+        so whoever ran the SITL has to look for them.'''
+        results = []
+
         valgrind_log = util.valgrind_log_filepath(binary=self.binary,
                                                   model=self.frame)
         files = glob.glob("*" + valgrind_log)
@@ -16885,7 +16916,7 @@ switch value'''
                 shutil.move(valgrind_log, target)
                 valgrind_failed = True
         if valgrind_failed:
-            result_list.append(ValgrindFailedResult())
+            results.append(ValgrindFailedResult())
 
         if self.asan:
             asan_log_base = util.asan_log_filepath(binary=self.binary, model=self.frame)
@@ -16899,9 +16930,9 @@ switch value'''
                     shutil.move(f, target)
                     asan_failed = True
             if asan_failed:
-                result_list.append(ASANFailedResult())
+                results.append(ASANFailedResult())
 
-        return result_list
+        return results
 
     def dictdiff(self, dict1, dict2):
         fred = copy.copy(dict1)
