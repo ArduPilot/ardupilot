@@ -44,6 +44,9 @@ void NavEKF3_core::readRangeFinder(void)
             if (sensor == nullptr) {
                 continue;
             }
+            if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow)) {
+                rngOutOfRangeLowTime_ms[sensorIndex] = imuSampleTime_ms;
+            }
             if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == AP_DAL_RangeFinder::Status::Good)) {
                 rngMeasIndex[sensorIndex] ++;
                 if (rngMeasIndex[sensorIndex] > 2) {
@@ -85,6 +88,7 @@ void NavEKF3_core::readRangeFinder(void)
 
                 // limit the measured range to be no less than the on-ground range
                 rangeDataNew.rng = MAX(storedRngMeas[sensorIndex][midIndex],rngOnGnd);
+                rangeDataNew.onFloor = storedRngMeas[sensorIndex][midIndex] <= rngOnGnd;
 
                 // get position in body frame for the current sensor
                 rangeDataNew.sensor_idx = sensorIndex;
@@ -99,6 +103,7 @@ void NavEKF3_core::readRangeFinder(void)
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
+                rangeDataNew.onFloor = true;
 
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
