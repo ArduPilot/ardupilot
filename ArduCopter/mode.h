@@ -21,6 +21,12 @@ public:
     void run();
     void start_m(float complete_alt_m, bool is_terrain_alt);
     bool get_completion_pos_ned_m(Vector3p& pos_ned_m);
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // altitude still to climb, as a part of the whole climb
+    void get_progress(AP_Mission::ItemProgress &progress) const;
+    // the point above the vehicle at the takeoff altitude
+    bool get_target(Location &target) const;
+#endif
 
     bool complete;          // true when takeoff is complete
 
@@ -33,6 +39,9 @@ private:
     float complete_alt_m;          // completion altitude expressed in m above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
     bool is_terrain_alt;            // true if altitudes are above terrain
     Vector3p complete_pos_ned_m;   // target takeoff position as offset from ekf origin in m
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    float start_alt_u_m;            // altitude above ekf origin when the takeoff started
+#endif
 };
 
 #if AC_PAYLOAD_PLACE_ENABLED
@@ -41,6 +50,10 @@ public:
     void run();
     void start_descent();
     bool verify();
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // progress of the descent and ascent, e.g. distance still to descend
+    void get_progress(AP_Mission::ItemProgress &progress) const;
+#endif
 
     enum class State : uint8_t {
         FlyToLocation,
@@ -172,6 +185,15 @@ public:
     virtual float wp_bearing_deg() const { return 0; }
     virtual float wp_distance_m() const { return 0.0f; }
     virtual float crosstrack_error_m() const { return 0.0f;}
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // progress towards this mode's navigation target, for NAV_CONTROLLER_PROGRESS.
+    // target is the target of the current navigation task, left uninitialised if there is none.
+    // Returns false if the mode has no progress to report.
+    virtual bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const;
+    // the target of the current navigation task, e.g. the waypoint being flown to.
+    // Returns false if there is none.
+    virtual bool get_nav_target(Location &target) const;
+#endif
 
     // functions to support MAV_CMD_DO_CHANGE_SPEED
     virtual bool set_speed_NE_ms(float speed_ne_ms) {return false;}
@@ -295,6 +317,12 @@ protected:
         bool triggered_ms(float target_climb_rate_ms) const;
 
         bool running() const { return _running; }
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        // altitude still to climb, as a part of the whole climb
+        void get_progress(AP_Mission::ItemProgress &progress) const;
+        // the point above the vehicle at the takeoff altitude
+        bool get_target(Location &target) const;
+#endif
     private:
         bool _running;
         float take_off_start_alt_m;
@@ -302,6 +330,19 @@ protected:
     };
 
     static _TakeOff takeoff;
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // distance remaining to the waypoint controller's destination, as a part of the leg from its origin
+    void get_wp_progress(AP_Mission::ItemProgress &progress) const;
+    // altitude remaining from the current location to target, as a part of the change from start
+    void get_alt_progress(AP_Mission::ItemProgress &progress, const Location &start, const Location &target) const;
+    // height above ground remaining, as a part of the height when the descent started
+    void get_descent_progress(AP_Mission::ItemProgress &progress, float start_alt_above_ground_m) const;
+    // the destination of the waypoint controller's leg, ignoring any object avoidance
+    bool get_wp_target(Location &target) const { return wp_nav->get_wp_leg_destination_loc(target); }
+    // the ground below the vehicle, for a landing
+    bool get_land_target(Location &target) const;
+#endif
 
     virtual bool do_user_takeoff_start_m(float takeoff_alt_m);
 
@@ -641,6 +682,10 @@ protected:
     float wp_bearing_deg() const override;
     float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
     bool get_wp(Location &loc) const override;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+public:
+    bool get_nav_target(Location &target) const override;
+#endif
 
 private:
 
@@ -724,13 +769,13 @@ private:
 #endif
     void do_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
 
-    bool verify_takeoff();
-    bool verify_land();
+    bool verify_takeoff(const AP_Mission::Mission_Command& cmd);
+    bool verify_land(const AP_Mission::Mission_Command& cmd);
     bool verify_payload_place();
-    bool verify_loiter_unlimited();
+    bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
-    bool verify_RTL();
+    bool verify_RTL(const AP_Mission::Mission_Command& cmd);
     bool verify_wait_delay();
     bool verify_within_distance();
     bool verify_yaw();
@@ -742,9 +787,13 @@ private:
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 #if AP_SCRIPTING_ENABLED
-    bool verify_nav_script_time();
+    bool verify_nav_script_time(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    void set_item_progress_wp_distance(const AP_Mission::Mission_Command& cmd);
+#endif
 
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
@@ -756,6 +805,9 @@ private:
         bool reached_alt : 1;
         float alt_error_m;
         float alt_m;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        float initial_alt_error_m;  // altitude still to climb or descend when the command started
+#endif
     } loiter_to_alt;
 
     // Delay the next navigation command
@@ -772,6 +824,9 @@ private:
         Descending = 1
     };
     LandState land_state = LandState::FlyToLocation;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    float land_descent_start_alt_m;     // height above ground when the landing descent started
+#endif
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
 
@@ -1140,6 +1195,10 @@ public:
     bool set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) const override;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+    bool get_nav_target(Location &target) const override;
+#endif
     void set_accel_NED_mss(const Vector3f& accel_ned_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_vel_NED_ms(const Vector3f& vel_ned_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_vel_accel_NED_m(const Vector3f& vel_ned_ms, const Vector3f& accel_ned_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
@@ -1329,6 +1388,10 @@ public:
     bool controlling_position() const { return control_position; }
 
     void set_land_pause(bool new_value) { land_pause = new_value; }
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+    bool get_nav_target(Location &target) const override;
+#endif
     bool use_pilot_yaw() const override;
 
     // parameter accessors
@@ -1361,6 +1424,9 @@ private:
 
     uint32_t land_start_time;
     bool land_pause;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    float land_start_alt_m;     // height above ground when the landing started
+#endif
 };
 
 
@@ -1535,6 +1601,10 @@ public:
 
     // for reporting to GCS
     bool get_wp(Location &loc) const override;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+    bool get_nav_target(Location &target) const override;
+#endif
 
     bool use_pilot_yaw() const override;
 
@@ -1597,6 +1667,14 @@ protected:
 
     void set_descent_target_alt(uint32_t alt) { rtl_path.descent_target.alt = alt; }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // record where a stage started, for reporting its progress
+    void record_stage_start();
+    // progress of the final descent and of the landing
+    void get_final_descent_progress(AP_Mission::ItemProgress &progress) const;
+    void get_land_progress(AP_Mission::ItemProgress &progress) const;
+#endif
+
 private:
 
     // advance_state - move to the next stage when the current one is complete
@@ -1640,6 +1718,10 @@ private:
 
     // time the current stage was entered (set by set_submode); used by the hold timer
     uint32_t _stage_start_ms;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    Location _stage_start_loc;               // where the current stage started
+    float _stage_start_alt_above_ground_m;   // height above ground when the current stage started
+#endif
 
     bool terrain_following_allowed;
 
@@ -1696,6 +1778,11 @@ protected:
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
     float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+public:
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+    bool get_nav_target(Location &target) const override;
+#endif
 
 private:
 
@@ -1713,6 +1800,10 @@ private:
     // backup last popped point so that it can be restored to the path
     // if vehicle exits SmartRTL mode before reaching home. invalid if zero
     Vector3p dest_NED_backup;
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    uint16_t path_follow_start_points;  // number of path points when following the path started
+#endif
 };
 
 
