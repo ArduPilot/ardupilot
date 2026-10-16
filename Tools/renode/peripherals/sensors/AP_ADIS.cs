@@ -11,10 +11,12 @@ namespace Antmicro.Renode.Peripherals.Sensors
 {
     public class AP_ADIS1647x : ISPIPeripheral, IGPIOReceiver
     {
-        public AP_ADIS1647x(ushort productId = ProductId16470)
+        // the generator passes every IMU its hwdef rotation
+        public AP_ADIS1647x(ushort productId = ProductId16470, byte rotation = 0)
         {
             registers = new byte[RegisterCount];
             this.productId = productId;
+            this.rotation = rotation;
             Reset();
         }
 
@@ -87,12 +89,14 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte RegisterMask = 0x7F;
         private const byte ProductIdRegister = 0x72;
         private const ushort ProductId16470 = 0x4056;
+        private readonly byte rotation;
     }
 
     public class AP_ADIS16607 : ISPIPeripheral, IGPIOReceiver
     {
-        public AP_ADIS16607()
+        public AP_ADIS16607(byte rotation = 0)
         {
+            this.rotation = rotation;
             registers = new ushort[RegisterCount];
             Reset();
         }
@@ -157,5 +161,6 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte DeviceId = 0x00;
         private const byte WriteLock = 0x7F;
         private const ushort DeviceIdValue = 0x6000;
+        private readonly byte rotation;
     }
 }
