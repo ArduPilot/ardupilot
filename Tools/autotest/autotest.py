@@ -44,7 +44,8 @@ from vehicle_test_suite import validate_max_instance
 
 tester = None
 
-autotest_start_time = time.monotonic()
+# wall-clock, not monotonic: this is compared against file mtimes
+autotest_start_time = time.time()
 
 
 def buildlogs_dirpath():
