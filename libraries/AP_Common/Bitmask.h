@@ -151,6 +151,18 @@ public:
         return -1;
     }
 
+    // return last bit set, or -1 if none set
+    int16_t last_set() const {
+        for (int16_t i=NUMWORDS-1; i>=0; i--) {
+            if (bits[i] == 0) {
+                continue;
+            }
+            const uint8_t zeroes_count = __builtin_clz(bits[i]);
+            return i*32 + 31 - zeroes_count;
+        }
+        return -1;
+    }
+
     // return number of bits available
     uint16_t size() const {
         return NUMBITS;
