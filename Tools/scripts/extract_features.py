@@ -261,6 +261,7 @@ class ExtractFeatures(BuildScriptBase):
 
             ('AP_FILESYSTEM_{type}_ENABLED', r'AP_Filesystem_(?P<type>.*)::open'),
             ('AP_FILESYSTEM_MAVLOG_ENABLED', ExtractFeatures.FindString('@MAV_LOG')),
+            ('AP_FILESYSTEM_SYS_EVENTS_METADATA_ENABLED', 'AP_Filesystem_Sys::events_metadata'),
 
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_FLASH_ENABLED', 'crashdump_flash_start'),
@@ -288,6 +289,8 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED', 'GCS_MAVLINK::handle_command_get_home_position'),  # noqa
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
             ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
+            ('AP_MAVLINK_COMPONENT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_component_information'),
+            ('AP_LOGGER_MAVLINK_EVENTS_ENABLED', 'AP_Logger::handle_message_request_event'),
             ('AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', r'GCS_MAVLINK::send_rangefinder'),
             ('AP_MAVLINK_SIGNING_ENABLED', r'GCS_MAVLINK::load_signing_key'),
 
