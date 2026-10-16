@@ -46,7 +46,7 @@ bool AP_Arming_Plane::terrain_database_required() const
  */
 bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 {
-    if (armed || require == (uint8_t)Required::NO) {
+    if (armed || arming_required() == Required::NO) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
