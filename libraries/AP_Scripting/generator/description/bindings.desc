@@ -706,6 +706,10 @@ singleton hal.gpio method get_mode alias getPinFullMode
 singleton hal.gpio method set_mode void uint8_t'skip_check uint32_t'skip_check
 singleton hal.gpio method set_mode alias setPinFullMode
 
+singleton hal.util rename util
+singleton hal.util literal
+singleton hal.util method was_watchdog_armed boolean
+
 singleton hal.analogin depends !defined(HAL_DISABLE_ADC_DRIVER)
 singleton hal.analogin rename analog
 singleton hal.analogin literal
