@@ -199,6 +199,9 @@ void ModeRTL::set_submode(SubMode submode)
     _state = submode;
     _state_complete = false;
     _stage_start_ms = millis();
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    record_stage_start();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     switch (submode) {
     case SubMode::STARTING:
@@ -607,6 +610,90 @@ void ModeRTL::compute_return_target()
     // ensure we do not descend
     rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt_m * 100.0);
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// record where a stage started, for reporting its progress
+void ModeRTL::record_stage_start()
+{
+    _stage_start_loc = copter.current_loc;
+    _stage_start_alt_above_ground_m = get_alt_above_ground_m();
+}
+
+// progress of the descent to the final altitude
+void ModeRTL::get_final_descent_progress(AP_Mission::ItemProgress &progress) const
+{
+    float start_u_m;
+    if (!_stage_start_loc.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, start_u_m)) {
+        return;
+    }
+    // descent_run() treats the descent target's altitude as above the ekf origin
+    const float target_u_m = rtl_path.descent_target.alt * 0.01;
+    const float current_u_m = pos_control->get_pos_estimate_U_m();
+    progress.set_distance_remaining(fabsf(target_u_m - current_u_m), fabsf(target_u_m - start_u_m));
+}
+
+// progress of the landing
+void ModeRTL::get_land_progress(AP_Mission::ItemProgress &progress) const
+{
+    get_descent_progress(progress, _stage_start_alt_above_ground_m);
+}
+
+bool ModeRTL::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    switch (_state) {
+    case SubMode::STARTING:
+        // the return path has not been built yet
+        return false;
+    case SubMode::INITIAL_CLIMB:
+        get_alt_progress(progress, _stage_start_loc, rtl_path.climb_target);
+        break;
+    case SubMode::FLY_TO_RETURN_POINT:
+        get_wp_progress(progress);
+        break;
+    case SubMode::HOLD_AT_RETURN_POINT: {
+        const float hold_s = g.rtl_loiter_time * 0.001f;
+        const float elapsed_s = (millis() - _stage_start_ms) * 0.001f;
+        if (is_positive(hold_s)) {
+            progress.set_time_elapsed(elapsed_s, hold_s);
+        } else {
+            progress.set_time_remaining(0);
+        }
+        break;
+    }
+    case SubMode::FINAL_DESCENT:
+        get_final_descent_progress(progress);
+        break;
+    case SubMode::LAND:
+        get_land_progress(progress);
+        break;
+    }
+    UNUSED_RESULT(get_nav_target(target));
+    return true;
+}
+
+// the target of the current stage of the return
+bool ModeRTL::get_nav_target(Location &target) const
+{
+    switch (_state) {
+    case SubMode::STARTING:
+        return false;
+    case SubMode::INITIAL_CLIMB:
+        target = rtl_path.climb_target;
+        return true;
+    case SubMode::FLY_TO_RETURN_POINT:
+    case SubMode::HOLD_AT_RETURN_POINT:
+        target = rtl_path.return_target;
+        return true;
+    case SubMode::FINAL_DESCENT:
+        target = rtl_path.descent_target;
+        return true;
+    case SubMode::LAND:
+        target = Location(rtl_path.return_target.lat, rtl_path.return_target.lng, 0, Location::AltFrame::ABOVE_TERRAIN);
+        return true;
+    }
+    return false;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
 bool ModeRTL::get_wp(Location& destination) const
 {

@@ -8,6 +8,29 @@
 
 static Vector3p guided_pos_target_ned_m;        // position target (used by posvel controller only)
 static bool guided_is_terrain_alt;              // true if guided_pos_target_ned_m.z should be offset by the terrain altitude
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+static Vector3p guided_pos_leg_origin_ned_m;    // where the vehicle was when the position target last changed, in the target's altitude frame
+static bool guided_pos_leg_origin_valid;        // false until guided_pos_leg_origin_ned_m is recorded after position control starts
+
+// the vehicle's position in the altitude frame of a position target
+static Vector3p guided_pos_in_target_frame(const AC_PosControl &pos_control, bool is_terrain_alt)
+{
+    Vector3p pos_ned_m = pos_control.get_pos_estimate_NED_m();
+    if (is_terrain_alt) {
+        pos_ned_m.z -= pos_control.get_pos_terrain_D_m();
+    }
+    return pos_ned_m;
+}
+
+// record where the vehicle is if the position target is changing, so progress towards it can be reported
+static void guided_pos_target_changing(const Vector3p &new_pos_target_ned_m, bool new_is_terrain_alt, const AC_PosControl &pos_control)
+{
+    if (!guided_pos_leg_origin_valid || new_pos_target_ned_m != guided_pos_target_ned_m || new_is_terrain_alt != guided_is_terrain_alt) {
+        guided_pos_leg_origin_ned_m = guided_pos_in_target_frame(pos_control, new_is_terrain_alt);
+        guided_pos_leg_origin_valid = true;
+    }
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 static Vector3f guided_vel_target_ned_ms;       // velocity target (used by pos_vel_accel controller and vel_accel controller)
 static Vector3f guided_accel_target_ned_mss;    // acceleration target (used by pos_vel_accel controller vel_accel controller and accel controller)
 static uint32_t update_time_ms;                 // system time of last target update to pos_vel_accel, vel_accel or accel controller
@@ -276,6 +299,11 @@ void ModeGuided::pos_control_start()
     // set to position control mode
     guided_mode = SubMode::Pos;
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // the first target starts a new leg, even if it matches the last one
+    guided_pos_leg_origin_valid = false;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // initialise position controller
     pva_control_start();
 }
@@ -425,6 +453,9 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
     set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
 
     // set position target and zero velocity and acceleration
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    guided_pos_target_changing(pos_ned_m, is_terrain_alt, *pos_control);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     guided_pos_target_ned_m = pos_ned_m;
     guided_is_terrain_alt = is_terrain_alt;
     guided_vel_target_ned_ms.zero();
@@ -440,6 +471,57 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
 
     return true;
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+bool ModeGuided::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    switch (guided_mode) {
+    case SubMode::TakeOff:
+        auto_takeoff.get_progress(progress);
+        UNUSED_RESULT(get_nav_target(target));
+        return true;
+    case SubMode::WP:
+        get_wp_progress(progress);
+        UNUSED_RESULT(get_nav_target(target));
+        return true;
+    case SubMode::Pos: {
+        // the leg runs from where the vehicle was when the target last changed, and may climb or descend
+        const Vector3p pos_ned_m = guided_pos_in_target_frame(*pos_control, guided_is_terrain_alt);
+        progress.set_distance_remaining((guided_pos_target_ned_m - pos_ned_m).tofloat().length(),
+                                        (guided_pos_target_ned_m - guided_pos_leg_origin_ned_m).tofloat().length());
+        UNUSED_RESULT(get_nav_target(target));
+        return true;
+    }
+    case SubMode::PosVelAccel:
+    case SubMode::VelAccel:
+    case SubMode::Accel:
+    case SubMode::Angle:
+        break;
+    }
+    return false;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// the target of the current navigation task
+bool ModeGuided::get_nav_target(Location &target) const
+{
+    switch (guided_mode) {
+    case SubMode::TakeOff:
+        return auto_takeoff.get_target(target);
+    case SubMode::WP:
+        return get_wp_target(target);
+    case SubMode::Pos:
+        return get_wp(target);
+    case SubMode::PosVelAccel:
+    case SubMode::VelAccel:
+    case SubMode::Accel:
+    case SubMode::Angle:
+        break;
+    }
+    return false;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
 bool ModeGuided::get_wp(Location& destination) const
 {
@@ -534,6 +616,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         pos_control->init_pos_terrain_D_m(0.0);
     }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    guided_pos_target_changing(pos_target_ned_m, is_terrain_alt, *pos_control);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     guided_pos_target_ned_m = pos_target_ned_m;
     guided_is_terrain_alt = is_terrain_alt;
     guided_vel_target_ned_ms.zero();
