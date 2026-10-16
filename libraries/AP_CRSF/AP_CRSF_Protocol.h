@@ -60,6 +60,8 @@ public:
         // Custom Telemetry Frames 0x7F,0x80
         CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY = 0x7F,   // as suggested by Remo Masina for fw < 4.06
         CRSF_FRAMETYPE_AP_CUSTOM_TELEM = 0x80,          // reserved for ArduPilot by TBS, requires fw >= 4.06
+        // MAVLink envelope
+        CRSF_FRAMETYPE_MAVLINK_ENVELOPE = 0xAA,
     };
 
     // Command IDs for CRSF_FRAMETYPE_COMMAND
@@ -187,6 +189,18 @@ public:
         uint8_t destination;
         uint8_t origin;
         uint8_t payload[58];   // largest possible frame is 60
+    };
+
+    // CRSF_FRAMETYPE_MAVLINK_ENVELOPE
+    // Chunk fields are zero-based indexes per the CRSF spec (tbs-crsf-spec):
+    // high nibble is the last chunk index, low nibble is the current chunk
+    // index. A single unchunked message is encoded as chunk_info == 0x00.
+    struct PACKED MavlinkEnvelopeFrame {
+        uint8_t chunk_info;
+        uint8_t data_size;    // size of data in this chunk (max 58)
+        uint8_t data[58];
+        uint8_t total_chunks() const { return (chunk_info >> 4) & 0x0F; }
+        uint8_t current_chunk() const { return chunk_info & 0x0F; }
     };
 
     // get printable name for frame type (for debug)
