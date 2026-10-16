@@ -257,6 +257,24 @@ bool ModeGuided::reached_destination() const
     return true;
 }
 
+bool ModeGuided::is_stopping() const
+{
+    switch (_guided_mode) {
+    case SubMode::WP:
+        return g2.wp_nav.reached_destination();
+    case SubMode::HeadingAndSpeed:
+    case SubMode::TurnRateAndSpeed:
+        return !have_attitude_target;
+    case SubMode::Loiter:
+        return rover.mode_loiter.is_stopping();
+    case SubMode::SteeringAndThrottle:
+        return !_have_strthr;
+    case SubMode::Stop:
+        return true;
+    }
+    return false;
+}
+
 // set desired speed in m/s
 bool ModeGuided::set_desired_speed(float speed_ms)
 {
