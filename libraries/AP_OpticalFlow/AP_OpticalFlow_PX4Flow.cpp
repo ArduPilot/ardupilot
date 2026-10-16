@@ -103,17 +103,21 @@ bool AP_OpticalFlow_PX4Flow::setup_sensor(void)
 }
 
 
-// update - read latest values from sensor and fill in x,y and totals.
+// update - publish the latest frame read by the I2C timer
 void AP_OpticalFlow_PX4Flow::update(void)
 {
-}
-
-// timer to read sensor
-void AP_OpticalFlow_PX4Flow::timer(void)
-{
     struct i2c_integral_frame frame;
-    if (!dev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame))) {
-        return;
+    {
+        WITH_SEMAPHORE(_sem);
+        if (!new_frame) {
+            return;
+        }
+        new_frame = false;
+        // a sample is timed when it is published, so drop one a stalled loop has left a sensor period old
+        if (AP_HAL::millis() - latest_frame_ms > 100) {
+            return;
+        }
+        frame = latest_frame;
     }
     struct AP_OpticalFlow::OpticalFlow_state state {};
 
@@ -133,6 +137,19 @@ void AP_OpticalFlow_PX4Flow::timer(void)
     }
 
     _update_frontend(state);
+}
+
+// timer to read sensor
+void AP_OpticalFlow_PX4Flow::timer(void)
+{
+    struct i2c_integral_frame frame;
+    if (!dev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame))) {
+        return;
+    }
+    WITH_SEMAPHORE(_sem);
+    latest_frame = frame;
+    latest_frame_ms = AP_HAL::millis();
+    new_frame = true;
 }
 
 #endif  // AP_OPTICALFLOW_PX4FLOW_ENABLED
