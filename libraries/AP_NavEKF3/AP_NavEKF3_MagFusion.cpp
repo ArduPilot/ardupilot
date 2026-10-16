@@ -166,10 +166,19 @@ void NavEKF3_core::realignYawGPS(bool emergency_reset)
         // get yaw variance from GPS speed uncertainty
         const ftype gpsVelAcc = fmaxF(gpsSpdAccuracy, ftype(frontend->_gpsHorizVelNoise));
         const ftype gps_yaw_variance = sq(asinF(constrain_float(gpsVelAcc/gpsDataDelayed.vel.xy().length(), -1.0F, 1.0F)));
-        if (gps_yaw_variance < sq(radians(GPS_VEL_YAW_ALIGN_MAX_ANG_ERR))) {
-            yawAlignGpsValidCount++;
-        } else {
-            yawAlignGpsValidCount = 0;
+        // this is called every EKF step, so only count each GPS sample
+        // once, and only count consecutive samples that agree on badMagYaw
+        if (gpsDataDelayed.time_ms != lastYawAlignGpsTime_ms) {
+            lastYawAlignGpsTime_ms = gpsDataDelayed.time_ms;
+            if (gps_yaw_variance < sq(radians(GPS_VEL_YAW_ALIGN_MAX_ANG_ERR))) {
+                if (badMagYaw != yawAlignGpsBadMagYaw) {
+                    yawAlignGpsValidCount = 0;
+                    yawAlignGpsBadMagYaw = badMagYaw;
+                }
+                yawAlignGpsValidCount++;
+            } else {
+                yawAlignGpsValidCount = 0;
+            }
         }
 
         // correct yaw angle using GPS ground course if compass yaw bad
