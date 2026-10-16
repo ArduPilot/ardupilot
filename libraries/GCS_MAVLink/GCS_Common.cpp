@@ -6524,34 +6524,57 @@ void GCS_MAVLINK::send_flight_information()
 #if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 void GCS_MAVLINK::send_nav_controller_progress() const
 {
+#if AP_MISSION_ENABLED
 #if AP_VEHICLE_ENABLED
     const bool mission_mode = AP::vehicle()->current_mode_requires_mission();
 #else
     const bool mission_mode = false;
 #endif // AP_VEHICLE_ENABLED
 
+    AP_Mission::ItemProgress progress;
+    uint16_t seq = 0;
+    // navigation which is not part of a mission or rally plan is reported as MAV_MISSION_TYPE_ALL
+    uint8_t mission_type = MAV_MISSION_TYPE_ALL;
+    Location target;
+
     if (mission_mode) {
-#if AP_MISSION_ENABLED
-        const AP_Mission &mission = AP::mission();
-
-        const uint16_t index = mission.get_current_nav_index();
-        const AP_Mission::ItemProgress progress = mission.get_item_progress(index);
-
-        mavlink_msg_nav_controller_progress_send(
-            chan,
-            progress.percentage_complete,
-            progress.distance_remaining_m,
-            progress.time_remaining_s,
-            progress.count_remaining,
-            MAV_MISSION_TYPE_MISSION,
-            index,
-            // Setting location to invalid. GCS can extract the location (if any) from the mission item.
-            INT32_MAX, INT32_MAX, NAN, MAV_FRAME_GLOBAL
-        );
-#endif // AP_MISSION_ENABLED
+        seq = AP::mission().get_current_nav_index();
+        progress = AP::mission().get_item_progress(seq);
+        mission_type = MAV_MISSION_TYPE_MISSION;
+        if (!get_mission_nav_target(target)) {
+            target = Location();
+        }
+    } else if (get_mode_nav_progress(progress, target)) {
+        if (progress.index != AP_Mission::ItemProgress{}.index) {
+            seq = progress.index;
+            mission_type = MAV_MISSION_TYPE_MISSION;
+        }
     } else {
-        // TODO: Progress for other modes...
+        return;
     }
+
+    int32_t x = INT32_MAX;
+    int32_t y = INT32_MAX;
+    float z = NAN;
+    if (target.initialised()) {
+        x = target.lat;
+        y = target.lng;
+        if (!target.get_alt_m(Location::AltFrame::ABSOLUTE, z)) {
+            z = NAN;
+        }
+    }
+
+    mavlink_msg_nav_controller_progress_send(
+        chan,
+        progress.percentage_complete,
+        progress.distance_remaining_m,
+        progress.time_remaining_s,
+        progress.count_remaining,
+        mission_type,
+        seq,
+        x, y, z, MAV_FRAME_GLOBAL
+    );
+#endif // AP_MISSION_ENABLED
 }
 #endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
