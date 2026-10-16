@@ -46,6 +46,17 @@
 typedef uint16_t  sys_cpu_load_t;   /**< @brief CPU load in percent * 100.  */
 
 /**
+ * @brief Independent readers of windowed load statistics.
+ * @note  Each reader observes the average and peak load accumulated over its
+ *        own window, delimited by its own calls to sysReadResetCPULoad().
+ */
+typedef enum {
+  SYS_LOAD_READER_LOG = 0,          /**< @brief PM2 dataflash logging.     */
+  SYS_LOAD_READER_TAKEOFF,          /**< @brief vehicle takeoff load check.*/
+  SYS_LOAD_READER_COUNT
+} sys_load_reader_t;
+
+/**
  * @brief Load measurement control structure
  */
 typedef struct {
@@ -88,7 +99,10 @@ extern "C" {
   bool            sysStartLoadMeasure(void);
   bool            sysStopLoadMeasure(void);
   sys_cpu_load_t  sysGetCPUPeakLoad(void);
+  void            sysClearCPUPeakLoad(void);
   sys_cpu_load_t  sysGetCPUAverageLoad(void);
+  bool            sysReadResetCPULoad(sys_load_reader_t reader,
+                                      sys_cpu_load_t *avg, sys_cpu_load_t *peak);
   msg_t           sysGetCPULoadStatistics(sys_load_stats_t *stats);
 #endif /* HAL_USE_LOAD_MEASURE == TRUE */
   void            sysIdleEnterMeasure(void);
