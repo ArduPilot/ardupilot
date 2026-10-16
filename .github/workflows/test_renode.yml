@@ -54,9 +54,6 @@ jobs:
         with:
           key-suffix: renode-quadplane
       - name: Fetch Renode
-        env:
-          RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
-          RENODE_PACKAGE_SHA256: 0f090820a222acbef7e80168c955feccf1759b69bc891b2ad821bacc19c4bcae
         run: Tools/renode/tests/fetch_renode.sh
       - name: Run Renode unit tests
         env:
