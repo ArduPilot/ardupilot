@@ -7952,6 +7952,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_altitude(10, 3000, relative=True)
         self.do_RTL()
 
+    def SplineNavDelay(self):
+        '''Test spline waypoint followed by NAV_DELAY with ignored time fields'''
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT, 30, 20, 25),
+            (mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT, 30, 60, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT, 0, 80, 15),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_DELAY,
+                p1=3,
+                p2=-1,
+                p3=-1,
+                p4=-1,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        self.wait_current_waypoint(2, timeout=60)
+        self.context_push()
+        saw_altitude_sample = False
+        min_alt = 12
+
+        def check_altitude(_, message):
+            nonlocal saw_altitude_sample
+            if message.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            saw_altitude_sample = True
+            alt = message.relative_alt * 0.001
+            if alt < min_alt:
+                raise NotAchievedException(
+                    f"Spline descended to {alt:.1f}m (want >= {min_alt}m)")
+
+        self.install_message_hook_context(check_altitude)
+        self.wait_current_waypoint(5, timeout=120)
+        self.context_pop()
+
+        if not saw_altitude_sample:
+            raise NotAchievedException("Did not observe GLOBAL_POSITION_INT during spline test")
+        self.wait_disarmed(timeout=120)
+
     def ManualThrottleModeChange(self):
         '''Check manual throttle mode changes denied on high throttle'''
         self.set_parameter("FS_GCS_ENABLE", 0) # avoid GUIDED instant disarm
@@ -19520,6 +19560,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ret = ([
             self.NavDelayTakeoffAbsTime,
             self.NavDelay,
+            self.SplineNavDelay,
             self.MAV_CMD_CONDITION_YAW,
             self.SetModesViaAuxSwitch,
             self.AuxSwitchOptions,
