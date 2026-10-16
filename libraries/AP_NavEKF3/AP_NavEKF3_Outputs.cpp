@@ -75,7 +75,7 @@ float NavEKF3_core::errorScore() const
         if (assume_zero_sideslip()) {
             const auto *arsp = dal.airspeed();
             if (arsp != nullptr && arsp->get_num_sensors() >= 2 && (frontend->_affinity & EKF_AFFINITY_ARSP)) {
-                score = MAX(score, 0.3f * tasTestRatio);
+                score = MAX(score, 0.3f * tas.testRatio);
             }
         }
         // Check magnetometer fusion performance - need this when magnetometer affinity is enabled to override the inherent compass
@@ -204,13 +204,13 @@ bool NavEKF3_core::getAirSpdVec(Vector3f &vel) const
 // returns false if the data is unavailable
 bool NavEKF3_core::getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const
 {
-    if (tasDataDelayed.time_ms == 0) {
+    if (tas.dataDelayed.time_ms == 0) {
         // no data has been processed since startup
         return false;
     }
-    innovation = (float)innovVtas;
-    innovationVariance = (float)varInnovVtas;
-    age_ms = imuSampleTime_ms - tasDataDelayed.time_ms;
+    innovation = (float)tas.innov;
+    innovationVariance = (float)tas.varInnov;
+    age_ms = imuSampleTime_ms - tas.dataDelayed.time_ms;
     return true;
 }
 
@@ -293,8 +293,8 @@ bool NavEKF3_core::getPosD(postype_t &posD) const
 bool NavEKF3_core::getHAGL(float &HAGL) const
 {
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
-        HAGL = aglKfH;
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKf.valid) {
+        HAGL = aglKf.hgt;
         return healthy();
     }
 #endif
@@ -370,7 +370,7 @@ bool NavEKF3_core::getGPSLLH(Location &loc) const
 void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
     // If in the last 10 seconds we have received flow data and no odometry data, then we are relying on optical flow
-    bool relyingOnFlowData = (imuSampleTime_ms - prevBodyVelFuseTime_ms > 1000)
+    bool relyingOnFlowData = (imuSampleTime_ms - bodyOdm.prevFuseTime_ms > 1000)
             && (imuSampleTime_ms - flowValidMeaTime_ms <= 10000);
 
     // If relying on optical flow, limit speed to prevent sensor limit being exceeded and adjust
@@ -458,7 +458,7 @@ bool NavEKF3_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector
     magInnov.x = 1e3f*innovMag[0]; // Convert back to sensor units
     magInnov.y = 1e3f*innovMag[1]; // Convert back to sensor units
     magInnov.z = 1e3f*innovMag[2]; // Convert back to sensor units
-    tasInnov   = innovVtas;
+    tasInnov   = tas.innov;
     yawInnov   = innovYaw;
     return true;
 }
@@ -467,8 +467,8 @@ bool NavEKF3_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector
 void NavEKF3_core::getSynthAirDataInnovations(Vector2f &dragInnov, float &betaInnov) const
 {
 #if EK3_FEATURE_DRAG_FUSION
-    dragInnov.x = innovDrag[0];
-    dragInnov.y = innovDrag[1];
+    dragInnov.x = drag.innov[0];
+    dragInnov.y = drag.innov[1];
     betaInnov   = innovBeta;
 #endif
 }
@@ -485,7 +485,7 @@ bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vec
     magVar.x = sqrtF(MAX(magTestRatio.x,yawTestRatio));
     magVar.y = sqrtF(MAX(magTestRatio.y,yawTestRatio));
     magVar.z = sqrtF(MAX(magTestRatio.z,yawTestRatio));
-    tasVar   = sqrtF(tasTestRatio);
+    tasVar   = sqrtF(tas.testRatio);
     offset   = posResetNE.tofloat();
 
     return true;
@@ -524,11 +524,11 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
 #if EK3_FEATURE_EXTERNAL_NAV
     case AP_NavEKF_Source::SourceXY::EXTNAV:
         // check for timeouts
-        if (dal.millis() - extNavVelInnovTime_ms > 500) {
+        if (dal.millis() - extNav.velInnovTime_ms > 500) {
             return false;
         }
-        innovations = extNavVelInnov.tofloat();
-        variances = extNavVelVarInnov.tofloat();
+        innovations = extNav.velInnov.tofloat();
+        variances = extNav.velVarInnov.tofloat();
         return true;
 #endif // EK3_FEATURE_EXTERNAL_NAV
     case AP_NavEKF_Source::SourceXY::OPTFLOW:

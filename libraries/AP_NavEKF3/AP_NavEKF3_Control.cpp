@@ -63,10 +63,10 @@ void NavEKF3_core::setWindMagStateLearningMode()
 {
     const bool recentGpsYawFusion = (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS ||
                                      yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
-                                    last_gps_yaw_fuse_ms != 0 &&
-                                    imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000;
+                                    gpsYaw.lastFuseTime_ms != 0 &&
+                                    imuSampleTime_ms - gpsYaw.lastFuseTime_ms < 5000;
     const bool yawInitialised = recentGpsYawFusion || finalInflightYawInit;
-    const bool canEstimateWind = ((yawInitialised && dragFusionEnabled) || assume_zero_sideslip()) &&
+    const bool canEstimateWind = ((yawInitialised && drag.fusionEnabled) || assume_zero_sideslip()) &&
                                  !onGround &&
                                  PV_AidingMode != AID_NONE;
     if (!inhibitWindStates && !canEstimateWind) {
@@ -74,7 +74,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
         lastAspdEstIsValid = false;
         updateStateIndexLim();
     } else if (inhibitWindStates && canEstimateWind &&
-               (sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f) || dragFusionEnabled)) {
+               (sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f) || drag.fusionEnabled)) {
         inhibitWindStates = false;
         updateStateIndexLim();
         // set states and variances
@@ -85,10 +85,10 @@ void NavEKF3_core::setWindMagStateLearningMode()
             Vector3F tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
             ftype trueAirspeedVariance;
-            const bool haveAirspeedMeasurement = (tasDataDelayed.allowFusion && (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500) && useAirspeed());
+            const bool haveAirspeedMeasurement = (tas.dataDelayed.allowFusion && (imuDataDelayed.time_ms - tas.dataDelayed.time_ms < 500) && useAirspeed());
             if (haveAirspeedMeasurement) {
-                trueAirspeedVariance = constrain_ftype(tasDataDelayed.tasVariance, WIND_VEL_VARIANCE_MIN, WIND_VEL_VARIANCE_MAX);
-                const ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
+                trueAirspeedVariance = constrain_ftype(tas.dataDelayed.tasVariance, WIND_VEL_VARIANCE_MIN, WIND_VEL_VARIANCE_MAX);
+                const ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tas.dataDelayed.tas;
                 stateStruct.wind_vel.x = windSpeed * cosF(tempEuler.z);
                 stateStruct.wind_vel.y = windSpeed * sinF(tempEuler.z);
             } else {
@@ -309,7 +309,7 @@ void NavEKF3_core::setAidingMode()
             // Check if the fusion has timed out (flow measurements have been rejected for too long)
             bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
             // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
-            bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
+            bool bodyOdmFusionTimeout = ((imuSampleTime_ms - bodyOdm.prevFuseTime_ms) > 5000);
             // Enable switch to absolute position mode if GPS or range beacon data is available
             // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
             if (readyToUseGPS() || readyToUseRangeBeacon() || readyToUseExtNav()) {
@@ -327,13 +327,13 @@ void NavEKF3_core::setAidingMode()
             bool optFlowUsed = (imuSampleTime_ms - prevFlowFuseTime_ms <= minTestTime_ms);
 
             // Check if body odometry data is being used
-            bool bodyOdmUsed = (imuSampleTime_ms - prevBodyVelFuseTime_ms <= minTestTime_ms);
+            bool bodyOdmUsed = (imuSampleTime_ms - bodyOdm.prevFuseTime_ms <= minTestTime_ms);
 
             // Check if airspeed data is being used
-            bool airSpdUsed = (imuSampleTime_ms - lastTasPassTime_ms <= minTestTime_ms);
+            bool airSpdUsed = (imuSampleTime_ms - tas.lastPassTime_ms <= minTestTime_ms);
 
             // check if drag data is being used
-            bool dragUsed = (imuSampleTime_ms - lastDragPassTime_ms <= minTestTime_ms);
+            bool dragUsed = (imuSampleTime_ms - drag.lastPassTime_ms <= minTestTime_ms);
 
 #if EK3_FEATURE_BEACON_FUSION
             // Check if range beacon data is being used
@@ -368,7 +368,7 @@ void NavEKF3_core::setAidingMode()
             bool attAidLossCritical = false;
             if (!attAiding) {
             	attAidLossCritical = (imuSampleTime_ms - prevFlowFuseTime_ms > frontend->tiltDriftTimeMax_ms) &&
-                		(imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                		(imuSampleTime_ms - tas.lastPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
 #if EK3_FEATURE_BEACON_FUSION
                         (imuSampleTime_ms - rngBcn.lastPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
 #endif
@@ -437,7 +437,7 @@ void NavEKF3_core::setAidingMode()
             lastKnownPositionD = stateStruct.position.z;
             // reset relative aiding sensor fusion activity status
             flowFusionActive = false;
-            bodyVelFusionActive = false;
+            bodyOdm.fusionActive = false;
             break;
 
         case AID_RELATIVE:
@@ -452,8 +452,8 @@ void NavEKF3_core::setAidingMode()
 #endif
                 if (readyToUseBodyOdm()) {
                  // Reset time stamps
-                lastbodyVelPassTime_ms = imuSampleTime_ms;
-                prevBodyVelFuseTime_ms = imuSampleTime_ms;
+                bodyOdm.lastPassTime_ms = imuSampleTime_ms;
+                bodyOdm.prevFuseTime_ms = imuSampleTime_ms;
             }
             posTimeout = true;
             velTimeout = true;
@@ -478,15 +478,15 @@ void NavEKF3_core::setAidingMode()
                 // we are commencing aiding using external nav
                 posResetSource = resetDataSource::EXTNAV;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u is using external nav data",(unsigned)imu_index);
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
-                if (useExtNavVel) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNav.dataDelayed.pos.x,(double)extNav.dataDelayed.pos.y,(double)extNav.dataDelayed.pos.z);
+                if (extNav.useVel) {
                     velResetSource = resetDataSource::EXTNAV;
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNavVelDelayed.vel.x,(double)extNavVelDelayed.vel.y,(double)extNavVelDelayed.vel.z);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNav.velDelayed.vel.x,(double)extNav.velDelayed.vel.y,(double)extNav.velDelayed.vel.z);
                 }
                 // handle height reset as special case
                 if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::EXTNAV) {
-                    hgtMea = -extNavDataDelayed.pos.z;
-                    posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                    hgtMea = -extNav.dataDelayed.pos.z;
+                    posDownObsNoise = sq(constrain_ftype(extNav.dataDelayed.posErr, 0.1f, 10.0f));
                     ResetHeight();
                 }
 #endif // EK3_FEATURE_EXTERNAL_NAV
@@ -576,10 +576,10 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
     }
 
     // Check for fresh visual odometry data that meets the accuracy required for alignment
-    bool visoDataGood = (imuSampleTime_ms - bodyOdmMeasTime_ms < 200) && (bodyOdmDataNew.velErr < 1.0f);
+    bool visoDataGood = (imuSampleTime_ms - bodyOdm.measTime_ms < 200) && (bodyOdm.dataNew.velErr < 1.0f);
 
     // Check for fresh wheel encoder data
-    bool wencDataGood = (imuDataDelayed.time_ms - wheelOdmDataDelayed.time_ms < 200);
+    bool wencDataGood = (imuDataDelayed.time_ms - bodyOdm.wheelDataDelayed.time_ms < 200);
 
     // We require stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use odometry measurements
     // because they are in a body frame of reference
@@ -623,7 +623,7 @@ bool NavEKF3_core::readyToUseExtNav(void) const
         return false;
     }
 
-    return tiltAlignComplete && extNavDataToFuse;
+    return tiltAlignComplete && extNav.dataToFuse;
 #else
     return false;
 #endif // EK3_FEATURE_EXTERNAL_NAV
@@ -646,14 +646,14 @@ bool NavEKF3_core::use_compass(void) const
 // return true if GPS, compass or external nav yaw has been fused within the last 5 seconds
 bool NavEKF3_core::recentYawFusion(void) const
 {
-    if (last_gps_yaw_fuse_ms != 0 && imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000) {
+    if (gpsYaw.lastFuseTime_ms != 0 && imuSampleTime_ms - gpsYaw.lastFuseTime_ms < 5000) {
         return true;
     }
     if (last_mag_yaw_fuse_ms != 0 && imuSampleTime_ms - last_mag_yaw_fuse_ms < 5000) {
         return true;
     }
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (last_extnav_yaw_fuse_ms != 0 && imuSampleTime_ms - last_extnav_yaw_fuse_ms < 5000) {
+    if (extNav.lastYawFuseTime_ms != 0 && imuSampleTime_ms - extNav.lastYawFuseTime_ms < 5000) {
         return true;
     }
 #endif
@@ -665,12 +665,12 @@ bool NavEKF3_core::using_noncompass_for_yaw(void) const
 {
 #if EK3_FEATURE_EXTERNAL_NAV
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
-        return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
+        return ((imuSampleTime_ms - extNav.lastYawUseTime_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
 #endif
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
         yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
-        return imuSampleTime_ms - last_gps_yaw_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
+        return imuSampleTime_ms - gpsYaw.lastUseTime_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
     return false;
 }
@@ -680,7 +680,7 @@ bool NavEKF3_core::using_extnav_for_yaw() const
 {
 #if EK3_FEATURE_EXTERNAL_NAV
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
-        return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
+        return ((imuSampleTime_ms - extNav.lastYawUseTime_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
 #endif
     return false;
@@ -788,11 +788,11 @@ void  NavEKF3_core::updateFilterStatus(void)
     // init return value
     nav_filter_status status;
     status.value = 0;
-    bool doingBodyVelNav = (PV_AidingMode != AID_NONE) && (imuSampleTime_ms - prevBodyVelFuseTime_ms < 5000);
+    bool doingBodyVelNav = (PV_AidingMode != AID_NONE) && (imuSampleTime_ms - bodyOdm.prevFuseTime_ms < 5000);
     bool doingFlowNav = (PV_AidingMode != AID_NONE) && flowDataValid;
     bool doingWindRelNav = (!tasTimeout && assume_zero_sideslip()) || !dragTimeout;
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-    bool someVertRefData = (!velTimeout && (useGpsVertVel || useExtNavVel)) || !hgtTimeout;
+    bool someVertRefData = (!velTimeout && (useGpsVertVel || extNav.useVel)) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout && dragTimeout) || doingFlowNav || doingBodyVelNav;
     bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
 
@@ -824,9 +824,9 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
     status.flags.gps_quality_good = gpsGoodToAlign;
     // for reporting purposes we report rejecting airspeed after 3s of not fusing when we want to fuse the data
-    status.flags.rejecting_airspeed = lastTasFailTime_ms != 0 &&
-                                            (imuSampleTime_ms - lastTasFailTime_ms) < 1000 &&
-                                            (imuSampleTime_ms - lastTasPassTime_ms) > 3000;
+    status.flags.rejecting_airspeed = tas.lastFailTime_ms != 0 &&
+                                            (imuSampleTime_ms - tas.lastFailTime_ms) < 1000 &&
+                                            (imuSampleTime_ms - tas.lastPassTime_ms) > 3000;
     status.flags.initalized = status.flags.initalized || healthy();
     status.flags.dead_reckoning = (PV_AidingMode != AID_NONE) && doingWindRelNav && !((doingFlowNav && gndOffsetValid) || doingNormalGpsNav || doingBodyVelNav);
 
@@ -847,8 +847,8 @@ void NavEKF3_core::runYawEstimatorPrediction()
     }
 
     ftype trueAirspeed;
-    if (tasDataDelayed.allowFusion && assume_zero_sideslip()) {
-        trueAirspeed = MAX(tasDataDelayed.tas, 0.0f);
+    if (tas.dataDelayed.allowFusion && assume_zero_sideslip()) {
+        trueAirspeed = MAX(tas.dataDelayed.tas, 0.0f);
     } else {
         trueAirspeed = 0.0f;
     }

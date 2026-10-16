@@ -1119,7 +1119,25 @@ private:
     EKF_obs_buffer_t<gps_elements> storedGPS;      // GPS data buffer
     EKF_obs_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
     EKF_obs_buffer_t<baro_elements> storedBaro;    // Baro data buffer
-    EKF_obs_buffer_t<tas_elements> storedTAS;      // TAS data buffer
+
+    // true airspeed fusion
+    class AirspeedFusion {
+    public:
+        void InitialiseVariables(uint32_t now_ms);
+
+        EKF_obs_buffer_t<tas_elements> stored;      // TAS data buffer
+        tas_elements dataNew;           // TAS data at the current time horizon
+        tas_elements dataDelayed;       // TAS data at the fusion time horizon
+        bool dataToFuse;                // true when new airspeed data is waiting to be fused
+        ftype innov;                    // innovation output from fusion of airspeed measurements
+        ftype varInnov;                 // innovation variance output from fusion of airspeed measurements
+        ftype testRatio;                // sum of squares of true airspeed innovation divided by fail threshold
+        uint32_t prevStepTime_ms;       // time stamp of last TAS fusion step
+        uint32_t lastPassTime_ms;       // time stamp when airspeed measurement last passed innovation consistency check (msec)
+        uint32_t lastFailTime_ms;       // time stamp when airspeed measurement last failed innovation consistency check (msec)
+        uint32_t receivedTime_ms;       // time last TAS data was received (msec)
+    } tas;
+
 #if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     EKF_obs_buffer_t<range_elements> storedRange;  // Range finder data buffer
 #endif
@@ -1147,13 +1165,10 @@ private:
     bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
     Vector3F innovMag;              // innovation output from fusion of X,Y,Z compass measurements
     Vector3F varInnovMag;           // innovation variance output from fusion of X,Y,Z compass measurements
-    ftype innovVtas;                // innovation output from fusion of airspeed measurements
-    ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
     ftype defaultAirSpeed;          // default equivalent airspeed in m/s to be used if the measurement is unavailable. Do not use if not positive.
     ftype defaultAirSpeedVariance;  // default equivalent airspeed variance in (m/s)**2 to be used when defaultAirSpeed is specified. 
     bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
     MagCal effectiveMagCal;         // the actual mag calibration being used as the default
-    uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
     uint32_t prevBetaDragStep_ms;   // time stamp of last synthetic sideslip fusion step
     ftype innovBeta;                // synthetic sideslip innovation (rad)
     uint32_t lastMagUpdate_us;      // last time compass was updated in usec
@@ -1161,14 +1176,11 @@ private:
     Vector3F velDotNED;             // rate of change of velocity in NED frame
     Vector3F velDotNEDfilt;         // low pass filtered velDotNED
     uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
-    bool tasDataToFuse;             // true when new airspeed data is waiting to be fused
     uint32_t lastBaroReceived_ms;   // time last time we received baro height data
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime_ms;    // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
     uint32_t lastGpsPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
-    uint32_t lastTasPassTime_ms;    // time stamp when airspeed measurement last passed innovation consistency check (msec)
-    uint32_t lastTasFailTime_ms;    // time stamp when airspeed measurement last failed innovation consistency check (msec)
     uint32_t lastTimeGpsReceived_ms;// last time we received GPS data
     uint32_t timeAtLastAuxEKF_ms;   // last time the auxiliary filter was run to fuse range or optical flow measurements
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
@@ -1183,7 +1195,6 @@ private:
     ftype posTestRatio;             // sum of squares of GPS position innovation divided by fail threshold
     ftype hgtTestRatio;             // sum of squares of baro height innovation divided by fail threshold
     Vector3F magTestRatio;          // sum of squares of magnetometer innovations divided by fail threshold
-    ftype tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances should not be used
     ftype lastAirspeedEstimate;     // last true airspeed estimate (m/s)
     bool lastAspdEstIsValid;        // true when the last true airspeed estimate is valid (m/s)
@@ -1221,8 +1232,6 @@ private:
     baro_elements baroDataDelayed;  // Baro data at the fusion time horizon
     range_elements rangeDataNew;    // Range finder data at the current time horizon
     range_elements rangeDataDelayed;// Range finder data at the fusion time horizon
-    tas_elements tasDataNew;        // TAS data at the current time horizon
-    tas_elements tasDataDelayed;    // TAS data at the fusion time horizon
     mag_elements magDataDelayed;    // Magnetometer data at the fusion time horizon
     gps_elements gpsDataNew;        // GPS data at the current time horizon
     gps_elements gpsDataDelayed;    // GPS data at the fusion time horizon
@@ -1234,7 +1243,6 @@ private:
     Vector3F posErrintegral;        // integral of output predictor NED position tracking error (m.sec)
     ftype badImuVelErrIntegral;     // integral of output predictor D velocity tracking error when bad IMU data is detected (m)
     ftype innovYaw;                 // compass yaw angle innovation (rad)
-    uint32_t timeTasReceived_ms;    // time last TAS data was received (msec)
     bool gpsGoodToAlign;            // true when the GPS quality can be used to initialise the navigation system
     uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
     bool consistentMagData;         // true when the magnetometers are passing consistency checks
@@ -1329,12 +1337,17 @@ private:
     // ---- 2-state AGL Kalman Filter ----
     // Uses bias-corrected IMU delta-velocity for prediction and downward rangefinder
     // as measurement, decoupled from the main filter's vertical position state.
-    // State: x = [aglKfH (m, +up), aglKfV (m/s, +up)]
-    ftype aglKfH;                   // AGL height estimate (m, positive up from ground)
-    ftype aglKfV;                   // AGL velocity estimate (m/s, positive = climbing)
-    ftype aglKfP[2][2];             // 2x2 covariance matrix (upper triangle, symmetric)
-    bool  aglKfValid;               // true when RF has been fused within the last 5 s
-    uint32_t lastAglRngFuseTime_ms; // timestamp of last successful RF fusion into AGL KF
+    // State: x = [hgt (m, +up), vel (m/s, +up)]
+    class AglKalmanFilter {
+    public:
+        void InitialiseVariables(ftype initialHgt);
+
+        ftype hgt;                      // AGL height estimate (m, positive up from ground)
+        ftype vel;                      // AGL velocity estimate (m/s, positive = climbing)
+        ftype cov[2][2];                // 2x2 covariance matrix (upper triangle, symmetric)
+        bool  valid;                    // true when RF has been fused within the last 5 s
+        uint32_t lastRngFuseTime_ms;    // timestamp of last successful RF fusion into AGL KF
+    } aglKf;
 #endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
@@ -1393,31 +1406,48 @@ private:
 #endif
 
     // body frame odometry fusion
-#if EK3_FEATURE_BODY_ODOM
-    EKF_obs_buffer_t<vel_odm_elements> storedBodyOdm;    // body velocity data buffer
-    vel_odm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
-    vel_odm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
-#endif
-    uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
-    Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements
-    Vector3 varInnovBodyVel;            // Body velocity XYZ innovation variances (m/sec)^2
-    Vector3 innovBodyVel;               // Body velocity XYZ innovations (m/sec)
-    uint32_t prevBodyVelFuseTime_ms;    // previous time all body velocity measurement components passed their innovation consistency checks (msec)
-    uint32_t bodyOdmMeasTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
-    bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
-    bool bodyVelFusionActive;           // true when body frame velocity fusion is active
+    class BodyOdomFusion {
+    public:
+        void InitialiseVariables();
 
 #if EK3_FEATURE_BODY_ODOM
-    // wheel sensor fusion
-    EKF_obs_buffer_t<wheel_odm_elements> storedWheelOdm;    // body velocity data buffer
-    wheel_odm_elements wheelOdmDataDelayed;   // Body  frame odometry data at the fusion time horizon
+        EKF_obs_buffer_t<vel_odm_elements> stored;    // body velocity data buffer
+        vel_odm_elements dataNew;       // Body frame odometry data at the current time horizon
+        vel_odm_elements dataDelayed;  // Body  frame odometry data at the fusion time horizon
 #endif
+        uint32_t lastPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
+        Vector3 testRatio;           // Innovation test ratios for body velocity XYZ measurements
+        Vector3 varInnov;            // Body velocity XYZ innovation variances (m/sec)^2
+        Vector3 innov;               // Body velocity XYZ innovations (m/sec)
+        uint32_t prevFuseTime_ms;    // previous time all body velocity measurement components passed their innovation consistency checks (msec)
+        uint32_t measTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
+        bool fusionDelayed;          // true when body frame velocity fusion has been delayed
+        bool fusionActive;           // true when body frame velocity fusion is active
+
+#if EK3_FEATURE_BODY_ODOM
+        // wheel sensor fusion
+        EKF_obs_buffer_t<wheel_odm_elements> storedWheel;    // body velocity data buffer
+        wheel_odm_elements wheelDataDelayed;   // Body  frame odometry data at the fusion time horizon
+#endif
+    } bodyOdm;
 
     // GPS yaw sensor fusion
-    uint32_t yawMeasTime_ms;            // system time GPS yaw angle was last input to the data buffer
-    EKF_obs_buffer_t<yaw_elements> storedYawAng;    // GPS yaw angle buffer
-    yaw_elements yawAngDataNew;         // GPS yaw angle at the current time horizon
-    yaw_elements yawAngDataDelayed;     // GPS yaw angle at the fusion time horizon
+    class GpsYawFusion {
+    public:
+        void InitialiseVariables();
+
+        uint32_t measTime_ms;            // system time GPS yaw angle was last input to the data buffer
+        EKF_obs_buffer_t<yaw_elements> stored;    // GPS yaw angle buffer
+        yaw_elements dataNew;         // GPS yaw angle at the current time horizon
+        yaw_elements dataDelayed;     // GPS yaw angle at the fusion time horizon
+
+        uint32_t lastUseTime_ms; // last time the EKF attempted to use the GPS yaw
+        uint32_t lastFuseTime_ms; // last time the EKF successfully fused the GPS yaw
+        bool magFallbackOk;
+        bool magFallbackActive;
+        uint8_t fallbackGoodCounter;
+    } gpsYaw;
+
     yaw_elements yawAngDataStatic;      // yaw angle (regardless of yaw source) when the vehicle was last on ground and not moving
 
     // Range Beacon Sensor Fusion
@@ -1483,19 +1513,22 @@ private:
     } rngBcn{dal};
 #endif  // if EK3_FEATURE_BEACON_FUSION
 
-#if EK3_FEATURE_DRAG_FUSION
     // drag fusion for multicopter wind estimation
-    EKF_obs_buffer_t<drag_elements> storedDrag;
-    drag_elements dragSampleDelayed;
-    drag_elements dragDownSampled;	    // down sampled from filter prediction rate to observation rate
-    uint8_t dragSampleCount;	        // number of drag specific force samples accumulated at the filter prediction rate
-    ftype dragSampleTimeDelta;	        // time integral across all samples used to form _drag_down_sampled (sec)
-    Vector2F innovDrag;		            // multirotor drag measurement innovation (m/sec**2)
-	Vector2F innovDragVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
-	Vector2F dragTestRatio;		        // drag innovation consistency check ratio
+    class DragFusion {
+    public:
+#if EK3_FEATURE_DRAG_FUSION
+        EKF_obs_buffer_t<drag_elements> stored;
+        drag_elements sampleDelayed;
+        drag_elements downSampled;	    // down sampled from filter prediction rate to observation rate
+        uint8_t sampleCount;	        // number of drag specific force samples accumulated at the filter prediction rate
+        ftype sampleTimeDelta;	        // time integral across all samples used to form _drag_down_sampled (sec)
+        Vector2F innov;		            // multirotor drag measurement innovation (m/sec**2)
+        Vector2F innovVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
+        Vector2F testRatio;		        // drag innovation consistency check ratio
 #endif
-	uint32_t lastDragPassTime_ms;       // system time that drag samples were last successfully fused
-    bool dragFusionEnabled;
+        uint32_t lastPassTime_ms;       // system time that drag samples were last successfully fused
+        bool fusionEnabled;
+    } drag;
 
     // height source selection logic
     AP_NavEKF_Source::SourceZ activeHgtSource;  // active height source
@@ -1534,27 +1567,32 @@ private:
     bool dvelBiasAxisInhibit[3] {};		// true when IMU delta velocity bias states for a specific axis is de-activated
 	Vector3F dvelBiasAxisVarPrev;		// saved delta velocity XYZ bias variances (m/sec)**2
 
-#if EK3_FEATURE_EXTERNAL_NAV
     // external navigation fusion
-    EKF_obs_buffer_t<ext_nav_elements> storedExtNav; // external navigation data buffer
-    ext_nav_elements extNavDataDelayed; // External nav at the fusion time horizon
-    uint32_t extNavMeasTime_ms;         // time external measurements were accepted for input to the data buffer (msec)
-    uint32_t extNavLastPosResetTime_ms; // last time the external nav systen performed a position reset (msec)
-    bool extNavDataToFuse;              // true when there is new external nav data to fuse
-    bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
-    EKF_obs_buffer_t<ext_nav_vel_elements> storedExtNavVel;    // external navigation velocity data buffer
-    ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
-    uint32_t extNavVelMeasTime_ms;      // time external navigation velocity measurements were accepted for input to the data buffer (msec)
-    bool extNavVelToFuse;               // true when there is new external navigation velocity to fuse
-    Vector3F extNavVelInnov;            // external nav velocity innovations
-    Vector3F extNavVelVarInnov;         // external nav velocity innovation variances
-    uint32_t extNavVelInnovTime_ms;     // system time that external nav velocity innovations were recorded (to detect timeouts)
-    EKF_obs_buffer_t<yaw_elements> storedExtNavYawAng;  // external navigation yaw angle buffer
-    yaw_elements extNavYawAngDataDelayed;   // external navigation yaw angle at the fusion time horizon
-    uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
-    uint32_t last_extnav_yaw_fuse_ms;   // system time that external nav yaw last passed its innovation check and was fused
+    class ExternalNavFusion {
+    public:
+#if EK3_FEATURE_EXTERNAL_NAV
+        void InitialiseVariables();
+
+        EKF_obs_buffer_t<ext_nav_elements> stored; // external navigation data buffer
+        ext_nav_elements dataDelayed;       // External nav at the fusion time horizon
+        uint32_t measTime_ms;               // time external measurements were accepted for input to the data buffer (msec)
+        uint32_t lastPosResetTime_ms;       // last time the external nav systen performed a position reset (msec)
+        bool dataToFuse;                    // true when there is new external nav data to fuse
+        bool usedForPos;                    // true when the external nav data is being used as a position reference.
+        EKF_obs_buffer_t<ext_nav_vel_elements> storedVel;    // external navigation velocity data buffer
+        ext_nav_vel_elements velDelayed;    // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
+        uint32_t velMeasTime_ms;            // time external navigation velocity measurements were accepted for input to the data buffer (msec)
+        bool velToFuse;                     // true when there is new external navigation velocity to fuse
+        Vector3F velInnov;                  // external nav velocity innovations
+        Vector3F velVarInnov;               // external nav velocity innovation variances
+        uint32_t velInnovTime_ms;           // system time that external nav velocity innovations were recorded (to detect timeouts)
+        EKF_obs_buffer_t<yaw_elements> storedYawAng;  // external navigation yaw angle buffer
+        yaw_elements yawAngDataDelayed;     // external navigation yaw angle at the fusion time horizon
+        uint32_t lastYawUseTime_ms;         // system time that external nav yaw was last fused
+        uint32_t lastYawFuseTime_ms;        // system time that external nav yaw last passed its innovation check and was fused
 #endif // EK3_FEATURE_EXTERNAL_NAV
-    bool useExtNavVel;                  // true if external nav velocity should be used
+        bool useVel;                        // true if external nav velocity should be used
+    } extNav;
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
@@ -1637,12 +1675,6 @@ private:
       yaw to use it for fallback
     */
     bool learnMagBiasFromGPS(void);
-
-    uint32_t last_gps_yaw_ms; // last time the EKF attempted to use the GPS yaw
-    uint32_t last_gps_yaw_fuse_ms; // last time the EKF successfully fused the GPS yaw
-    bool gps_yaw_mag_fallback_ok;
-    bool gps_yaw_mag_fallback_active;
-    uint8_t gps_yaw_fallback_good_counter;
 
     /*
     Update the on ground and not moving check.
