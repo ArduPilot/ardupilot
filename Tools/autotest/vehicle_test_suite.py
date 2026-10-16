@@ -16871,6 +16871,17 @@ switch value'''
             result = Result(test)
             result.passed = False
             result.reason = "Failed with timeout"
+            # as the success path does: test.function has been resolved
+            # to a bound method of the tester by now, and a tester does
+            # not pickle (its RC thread holds a _thread.lock).  Left in
+            # place the result never reaches the dispatcher, which then
+            # reports the test as having exited without returning one -
+            # the right verdict for the wrong reason.
+            if result.test is not None:
+                try:
+                    del result.test.function
+                except AttributeError:
+                    pass
             self.result_queue.put(result)
             logsrc = active if active is not None else self
             if logsrc.logs_dir:
