@@ -2241,7 +2241,7 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
 
     adcs = family.get('adcs', {})
     battery_samples = []
-    if is_periph and _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
+    if not is_periph or _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
         analog_pins = _analog_pins(hwdef_h)
         battery_inputs = []
         adc_disabled = any(
@@ -2260,11 +2260,11 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
                     parameter + 'MONITOR', defines.get(
                         compile_default + 'MONITOR_DEFAULT', '0')))
                 for kind, types, pin_suffix, scale_suffix, fallback_pin, \
-                        fallback_scale, desired in (
+                        fallback_scale in (
                             ('voltage', (3, 4, 25), 'VOLT_PIN', 'VOLT_SCALE',
-                             '4', '10.1', 24.0),
+                             '4', '10.1'),
                             ('current', (4, 31), 'CURR_PIN', 'CURR_SCALE',
-                             '3', '17.0', 10.0)):
+                             '3', '17.0')):
                     runtime_pin = parameter + pin_suffix
                     compile_pin = compile_default + pin_suffix
                     enabled = (battery_type in types or runtime_pin in defaults or
@@ -2285,32 +2285,37 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
                                 'AP_BATT%s_CURR_AMP_OFFSET_DEFAULT' % instance,
                                 '0')))
                     battery_inputs.append((
-                        kind + instance, pin_value, scale_value, desired, offset))
+                        kind + instance, pin_value, scale_value, offset))
 
         if battery_inputs and 'ADC1' not in adcs:
-            warnings.append('battery ADC is not modelled for %s' % app.mcu_type)
+            if is_periph:
+                warnings.append('battery ADC is not modelled for %s' %
+                                app.mcu_type)
         elif battery_inputs:
-            for name, pin_value, scale_value, desired, offset in battery_inputs:
+            for name, pin_value, scale_value, offset in battery_inputs:
                 logical_pin = _constant_integer(pin_value)
                 if logical_pin < 0:
                     continue
                 analog = analog_pins.get(logical_pin)
                 if analog is None:
-                    warnings.append('battery %s selects unmapped analog pin %d' %
-                                    (name, logical_pin))
+                    if is_periph:
+                        warnings.append('battery %s selects unmapped analog pin %d' %
+                                        (name, logical_pin))
                     continue
                 channel, volts_per_count = analog
                 multiplier = _constant_number(scale_value)
-                sensor_voltage = desired / multiplier + offset
+                if multiplier <= 0:
+                    continue
+                # the sample follows physics battery truth
+                maximum = 4095
                 if name.startswith('voltage'):
-                    sensor_voltage = min(sensor_voltage, 2.5)
-                raw = round(sensor_voltage / volts_per_count)
-                if not 0 <= raw <= 4095:
-                    warnings.append('simulated battery %s is outside ADC range' %
-                                    name)
-                    raw = min(4095, max(0, raw))
-                raw <<= family.get('adc_sample_shift', 0)
-                battery_samples.append((name, adcs['ADC1'], channel, raw))
+                    maximum = min(maximum, round(2.5 / volts_per_count))
+                feed = (
+                    'voltage' if name.startswith('voltage') else 'current',
+                    1.0 / (multiplier * volts_per_count),
+                    offset / volts_per_count, maximum,
+                    family.get('adc_sample_shift', 0))
+                battery_samples.append((name, adcs['ADC1'], channel, feed))
 
     board_voltage_pin = defines.get('ANALOG_VCC_5V_PIN')
     if board_voltage_pin is not None and 'ADC1' in adcs:
@@ -2576,6 +2581,16 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             'include $repo/Tools/renode/peripherals/storage/AP_SPI_SDCard.cs')
     lines += ['include @%s' % common, '']
     for name, adc, channel, raw in battery_samples:
+        if isinstance(raw, tuple):
+            quantity, counts_per_unit, offset_counts, maximum, shift = raw
+            lines += [
+                '# simulated %s input' % name,
+                'sysbus.physics FeedAnalog "sysbus.%s" %u "%s" %.9g %.9g %u %u' % (
+                    adc, channel, quantity, counts_per_unit, offset_counts,
+                    maximum, shift),
+                '',
+            ]
+            continue
         lines += [
             '# simulated %s input' % name,
             'sysbus.%s FeedSample %u %u -1' % (adc, raw, channel),
