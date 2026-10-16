@@ -882,7 +882,15 @@ void AP_Logger_File::start_new_log(void)
         return;
     }
     _last_write_ms = AP_HAL::millis();
-    _open_error_ms = 0;
+    if (wrote_lastlog) {
+        // only clear the error if there is no error left to report.  A
+        // LASTLOG.TXT we failed to write is still wrong even though the
+        // log file itself opened, and clearing here discarded the only
+        // record of it: find_oldest_log() decides a log number has
+        // wrapped by comparing it against LASTLOG.TXT, so a stale one
+        // makes it compute - and then cache - the wrong oldest log.
+        _open_error_ms = 0;
+    }
     _write_offset = 0;
     write_fd_semaphore.give();
 }
