@@ -36,6 +36,7 @@
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_InertialLabs.h>
+#include <SITL/SIM_Aeron.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -213,6 +214,11 @@ private:
 
     // simulated InertialLabs INS-U
     SITL::InertialLabs *inertiallabs;
+
+#if AP_SIM_AERON_ENABLED
+    // simulated Aeron INS PLX3
+    SITL::Aeron *aeron;
+#endif  // AP_SIM_AERON_ENABLED
 
 #if AP_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend

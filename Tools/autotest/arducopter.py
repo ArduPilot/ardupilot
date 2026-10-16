@@ -1643,6 +1643,47 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def VibrationCompensationThrottle(self):
+        '''check throttle does not oscillate while vibration compensation is active'''
+        self.context_push()
+
+        self.takeoff(20, mode="LOITER")
+
+        # simulate accel bias caused by high vibration
+        self.set_parameters({
+            'SIM_ACC1_BIAS_Z': 2,
+            'SIM_ACC2_BIAS_Z': 2,
+            'SIM_ACC3_BIAS_Z': 2,
+        })
+        self.wait_statustext("Vibration compensation ON", timeout=30)
+
+        # count large sample-to-sample throttle changes.  A stable
+        # controller only sees these when the EKF resets its height
+        # estimate; an over-gained one swings the throttle continuously
+        self.set_message_rate_hz('VFR_HUD', 10)
+        samples = []
+
+        def collect_throttle(mav, m):
+            if m.get_type() == 'VFR_HUD':
+                samples.append(m.throttle)
+        self.install_message_hook_context(collect_throttle)
+
+        self.delay_sim_time(30, "collect throttle samples")
+
+        steps = [abs(a - b) for a, b in zip(samples, samples[1:])]
+        if len(steps) < 200:
+            raise NotAchievedException("insufficient samples (%u throttle steps)" % len(steps))
+        large_steps = len([s for s in steps if s > 15])
+        self.progress("%u of %u throttle steps over 15%%" % (large_steps, len(steps)))
+        if large_steps > 20:
+            raise NotAchievedException("Throttle oscillating under vibration compensation (%u large steps)" % large_steps)
+
+        self.disarm_vehicle(force=True)
+
+        # revert simulated accel bias and reboot to restore EKF health
+        self.context_pop()
+        self.reboot_sitl()
+
     # Tests the motor failsafe
     def TakeoffCheck(self):
         '''Test takeoff check'''
@@ -7029,6 +7070,78 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "--serial6=sim:avt_cm62_gimbal:",
         ])
 
+    def CameraServoZoomFocusSpeed(self):
+        '''test CAM1_ZOM_RAT_MAX and CAM1_FOC_RAT_MAX set the servo camera zoom and focus rates'''
+        zoom_chan = 9
+        focus_chan = 10
+        zoom_function = 180  # CameraZoom
+        focus_function = 92   # CameraFocus
+        zoom_speed = 25  # %/s
+        focus_speed = 40  # %/s
+        start_pct = 0
+        sample_s = 1
+        rate_tolerance = 1.5  # %/s
+
+        self.set_parameters({
+            "CAM1_TYPE": 1,  # servo
+            "CAM1_ZOM_RAT_MAX": zoom_speed,
+            "CAM1_FOC_RAT_MAX": focus_speed,
+            "SERVO%u_FUNCTION" % zoom_chan: zoom_function,
+            "SERVO%u_FUNCTION" % focus_chan: focus_function,
+        })
+        self.reboot_sitl()  # needed for CAM1_TYPE to take effect
+
+        pwm_min = self.get_parameter("SERVO%u_MIN" % zoom_chan)
+        pwm_max = self.get_parameter("SERVO%u_MAX" % zoom_chan)
+        pwm_span = pwm_max - pwm_min
+
+        # start at 0% so a slightly long sample cannot hit a limit
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM,
+            p1=mavutil.mavlink.ZOOM_TYPE_RANGE,
+            p2=start_pct,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_FOCUS,
+            p1=mavutil.mavlink.FOCUS_TYPE_RANGE,
+            p2=start_pct,
+        )
+
+        # zoom in and focus out at full speed
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM,
+            p1=mavutil.mavlink.ZOOM_TYPE_CONTINUOUS,
+            p2=1,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_FOCUS,
+            p1=mavutil.mavlink.FOCUS_TYPE_CONTINUOUS,
+            p2=1,
+        )
+
+        # SERVO_OUTPUT_RAW.time_usec is AP_HAL::micros(), so the check does
+        # not depend on how promptly the commands were handled
+        self.drain_mav()
+        first = self.assert_receive_message('SERVO_OUTPUT_RAW')
+        self.delay_sim_time(sample_s, "camera zoom and focus to move")
+        self.drain_mav()
+        second = self.assert_receive_message('SERVO_OUTPUT_RAW')
+        dt = (second.time_usec - first.time_usec) * 1.0e-6
+        if dt < 0.8 * sample_s:
+            raise NotAchievedException(
+                "SERVO_OUTPUT_RAW samples too close together: want>=%fs got=%fs" % (0.8 * sample_s, dt))
+
+        zoom_rate = (getattr(second, "servo%u_raw" % zoom_chan) -
+                     getattr(first, "servo%u_raw" % zoom_chan)) * 100.0 / (pwm_span * dt)
+        focus_rate = (getattr(second, "servo%u_raw" % focus_chan) -
+                      getattr(first, "servo%u_raw" % focus_chan)) * 100.0 / (pwm_span * dt)
+        if abs(zoom_rate - zoom_speed) > rate_tolerance:
+            raise NotAchievedException(
+                "zoom rate want=%f%%/s got=%f%%/s" % (zoom_speed, zoom_rate))
+        if abs(focus_rate - focus_speed) > rate_tolerance:
+            raise NotAchievedException(
+                "focus rate want=%f%%/s got=%f%%/s" % (focus_speed, focus_rate))
+
     def assert_mount_rpy(self, r, p, y, tolerance=1):
         '''assert mount atttiude in degrees'''
         got_r, got_p, got_y, yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
@@ -7703,6 +7816,64 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Notch-per-motor had a peak of %fdB there should be none" % esc_peakdb2)
         self.context_pop()
         self.reboot_sitl()
+
+    def RateThreadPostFilterGyroLog(self):
+        """Check post-filter gyro logging records every sample while the rate thread decimates."""
+        self.set_parameters({
+            "FSTRATE_ENABLE": 3,    # fixed divisor: the rate loop takes one gyro sample in FSTRATE_DIV
+            "FSTRATE_DIV": 3,
+            "INS_RAW_LOG_OPT": 5,   # primary gyro, post-filter only
+            "LOG_FILE_RATEMAX": 0,  # GYR is rate limited otherwise
+            "LOG_DARM_RATEMAX": 0,
+        })
+        self.reboot_sitl()
+
+        self.takeoff(5, mode="ALT_HOLD")
+        self.land_and_disarm()
+
+        log = self.current_onboard_log_filepath()
+        self.assert_log_has_no_dropped_blocks(log)
+        dfreader = self.dfreader_for_path(log)
+        prev = None
+        repeats = 0
+        sample_dts = []
+        loop_dts = []
+        gyro_rates = []
+        while True:
+            m = dfreader.recv_match(type=['GYR', 'IMU', 'RTDT'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'RTDT':
+                loop_dts.append(m.dtAvg)
+                continue
+            if m.I != 0:
+                continue
+            if mtype == 'IMU':
+                gyro_rates.append(m.GHz)
+                continue
+            if prev is not None:
+                sample_dts.append((m.SampleUS - prev.SampleUS) * 1.0e-6)
+                if (m.GyrX, m.GyrY, m.GyrZ) == (prev.GyrX, prev.GyrY, prev.GyrZ):
+                    repeats += 1
+            prev = m
+        steps = len(sample_dts)
+        if steps < 1000 or len(loop_dts) == 0 or len(gyro_rates) == 0:
+            raise NotAchievedException("Logged %u GYR steps, %u RTDT and %u IMU" % (steps, len(loop_dts), len(gyro_rates)))
+        gyro_dt = 1.0 / sorted(gyro_rates)[len(gyro_rates) // 2]
+        sample_dt = sorted(sample_dts)[steps // 2]
+        loop_dt = sorted(loop_dts)[len(loop_dts) // 2]
+        self.progress("gyro %.2f ms, logged %.2f ms, rate loop %.2f ms, %u of %u samples repeat" %
+                      (gyro_dt * 1000, sample_dt * 1000, loop_dt * 1000, repeats, steps))
+        # a held value can only appear while the rate loop is taking a subset of the samples
+        if loop_dt < 2 * gyro_dt:
+            raise NotAchievedException("Rate loop at %.2f ms is not decimating" % (loop_dt * 1000))
+        # every filtered sample must be logged, not just the ones the rate loop took
+        if sample_dt > 1.5 * gyro_dt:
+            raise NotAchievedException("Post-filter gyro logged every %.2f ms" % (sample_dt * 1000))
+        # and each must be new; a value held for the rate loop repeats in most steps
+        if repeats > steps * 0.1:
+            raise NotAchievedException("Post-filter gyro log repeats %u of %u samples" % (repeats, steps))
 
     def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         '''do a simple up-and-down test flight with current vehicle state.
@@ -13614,6 +13785,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryFailsafe,
              self.BatteryMissing,
              self.VibrationFailsafe,
+             self.VibrationCompensationThrottle,
              self.EK3AccelBias,
              self.EK3_OptflowTerrainScaleHeight,
              self.StabilityPatch,
@@ -16624,6 +16796,7 @@ return update, 1000
             self.PositionWhenGPSIsZero,
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.DynamicRpmNotchesRateThread,
+            self.RateThreadPostFilterGyroLog,
             self.PIDNotches,
             self.mission_NAV_LOITER_TURNS,
             self.mission_NAV_LOITER_TURNS_off_center,
@@ -16705,6 +16878,7 @@ return update, 1000
             self.MountViewPro,
             self.MountAVTCM62,
             self.MountAVTCM62Dual,
+            self.CameraServoZoomFocusSpeed,
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,
             self.MissionIndexValidity,
