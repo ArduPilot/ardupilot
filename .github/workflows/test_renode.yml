@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/actions/**'
       - '.github/workflows/test_renode.yml'
+      - 'ArduCopter/**'
       - 'ArduPlane/**'
       - 'libraries/**'
       - 'modules/**'
@@ -17,6 +18,7 @@ on:
     paths:
       - '.github/actions/**'
       - '.github/workflows/test_renode.yml'
+      - 'ArduCopter/**'
       - 'ArduPlane/**'
       - 'libraries/**'
       - 'modules/**'
@@ -32,11 +34,13 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: write
-  contents: read
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
 
 jobs:
   cubeorangeplus-quadplane:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
     runs-on: ubuntu-22.04
     container:
       image: ardupilot/ardupilot-dev-chibios:v0.2.0
@@ -78,3 +82,85 @@ jobs:
         with:
           name: renode-CubeOrangePlus-quadplane
           path: build/renode-test/
+
+  rpi-uavfc-copter:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    container:
+      image: ardupilot/ardupilot-dev-chibios:v0.2.0
+      options: --user root
+    steps:
+      - name: Install Renode runtime dependencies
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y curl dosfstools python3-pytest
+          # matplotlib and pillow draw the flight GIF
+          python3 -m pip install --no-cache-dir 'numpy<2' pyfatfs==1.1.0 matplotlib pillow
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: renode-rpi-uavfc
+      - name: Fetch Renode
+        env:
+          RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
+          RENODE_PACKAGE_SHA256: 0f090820a222acbef7e80168c955feccf1759b69bc891b2ad821bacc19c4bcae
+        run: Tools/renode/tests/fetch_renode.sh
+      # dual-core RP2350, both cores emulated; see Tools/renode/scripts/ardupilot_rp2350.resc
+      - name: Fly RPI_UAVFC copter mission
+        env:
+          PYTHONPATH: ${{ github.workspace }}/modules/mavlink
+        shell: bash
+        run: |
+          set -o pipefail
+          Tools/renode/tests/test_physics_flight.py rpi-uavfc-copter \
+            --renode build/renode/renode --timeout 3600 2>&1 | tee flight.log
+      - name: Flight summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '```'
+            grep -E 'Copter mission passed|landing was inaccurate|did not fly|unstable|sensors were not healthy|ready at|flight failed' \
+              flight.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      # a GIF of the track is the quickest way to see what a failed flight did
+      - name: Plot the flight
+        if: always()
+        shell: bash
+        run: |
+          # newest flight.tlog, one directory deep
+          tlog=$(find build/renode-test -mindepth 2 -maxdepth 2 -name flight.tlog \
+                   -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+          if [ -z "$tlog" ]; then
+            echo "no flight.tlog to plot" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          mkdir -p artifacts
+          ./Tools/scripts/plot_flight_gif.py "$tlog" --label "RPI_UAVFC" \
+            -o artifacts/flight.rpi_uavfc.gif || {
+              echo '::warning title=flight plot failed::could not render the flight GIF'
+              exit 0
+            }
+          echo '### Flight track' >> "$GITHUB_STEP_SUMMARY"
+          echo "\`artifacts/flight.rpi_uavfc.gif\` - 10 s of flight per frame, with launch, waypoints, path and live position." >> "$GITHUB_STEP_SUMMARY"
+      - name: ccache statistics
+        if: always()
+        run: ccache -s
+      - uses: ./.github/actions/save-ccache
+        if: always()
+        with:
+          key-suffix: renode-rpi-uavfc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: renode-RPI_UAVFC-copter
+          path: |
+            build/renode-test/
+            flight.log
+            artifacts/
