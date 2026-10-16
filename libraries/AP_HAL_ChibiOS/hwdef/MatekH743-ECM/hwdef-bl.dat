@@ -1,0 +1,2 @@
+# Bootloader for MatekH743-ECM lab board: same as MatekH743 (ACM only, no ECM)
+include ../MatekH743/hwdef-bl.dat
