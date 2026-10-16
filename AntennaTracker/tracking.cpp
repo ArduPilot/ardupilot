@@ -93,21 +93,23 @@ void Tracker::update_tracking(void)
     // update bearing and distance to vehicle
     update_bearing_and_distance();
 
-    // do not perform any servo updates until startup delay has passed
+    auto &srv = AP::srv();
+    srv.cork();
+
+    // do not perform any servo updates until startup delay has passed,
+    // but keep outputting the trim set by prepare_servos() and push so
+    // output drivers (e.g. DroneCAN) see the safety state.  The outputs
+    // must be written while corked, as a push copies the corked values
     if (g.startup_delay > 0 &&
         AP_HAL::millis() - start_time_ms < g.startup_delay*1000) {
+        SRV_Channels::output_ch_all();
+        srv.push();
         return;
     }
 
-    // do not perform updates if safety switch is disarmed (i.e. servos can't be moved)
-    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        return;
-    }
-
-    hal.rcout->cork();
-
-    // do not move if we are not armed:
-    if (!hal.util->get_soft_armed()) {
+    // do not move if we are not armed or the safety switch is engaged:
+    if (!hal.util->get_soft_armed() ||
+        hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         switch ((PWMDisarmed)g.disarm_pwm.get()) {
         case PWMDisarmed::TRIM:
             SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, 0);
@@ -127,7 +129,7 @@ void Tracker::update_tracking(void)
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
 
-    hal.rcout->push();
+    srv.push();
 
     return;
 }
