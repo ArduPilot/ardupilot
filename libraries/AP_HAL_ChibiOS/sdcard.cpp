@@ -137,6 +137,10 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
             mmcStop(&MMCD1);
             continue;
         }
+#if AP_FILESYSTEM_FATFS_ENABLED
+        // no bounce buffer to size here, the MMC driver moves one block at a time
+        AP_Filesystem_FATFS::set_io_size(AP_FATFS_MAX_IO_SIZE);
+#endif
         sdcard_running = true;
         return true;
     }

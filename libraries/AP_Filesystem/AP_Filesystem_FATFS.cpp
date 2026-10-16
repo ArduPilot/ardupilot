@@ -156,7 +156,7 @@ static int fatfs_to_errno(FRESULT Result)
         return ENXIO;      /* POSIX No such device or address (POSIX.1) */
 
     case FR_NOT_ENABLED:     /* FatFS (12) The volume has no work area */
-        return ENOSPC;     /* POSIX No space left on device (POSIX.1) */
+        return ENODEV;     /* POSIX No such device -- filesystem not mounted */
 
     case FR_NO_FILESYSTEM:   /* FatFS (13) There is no valid FAT volume */
         return ENXIO;      /* POSIX No such device or address (POSIX.1) */
