@@ -395,6 +395,13 @@ protected:
     const char *name4() const override { return "SURF"; }
     Mode::Number number() const override { return Mode::Number::SURFACE; }
     bool nobaro_mode;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+public:
+    // depth still to ascend, as a part of the depth when the ascent started
+    void get_progress(AP_Mission::ItemProgress &progress) const;
+private:
+    float start_depth_m;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 };
 
 
