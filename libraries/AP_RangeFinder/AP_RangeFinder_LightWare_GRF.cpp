@@ -24,6 +24,9 @@ AP_RangeFinder_LightWareGRF::AP_RangeFinder_LightWareGRF(RangeFinder::RangeFinde
     AP_LightWareSerial(AP_RangeFinder_Backend_Serial::uart)
 {
     state.var_info = var_info;
+
+    // GRF250 reaches 250m; the GRF500 is not distinguished
+    params.max_distance.set_default(250.0f);
 }
 
 // Parses config responses and advances setup step

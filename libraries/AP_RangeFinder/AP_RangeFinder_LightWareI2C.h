@@ -37,7 +37,13 @@ private:
     int currentStreamSequenceIndex = 0;
 
     // constructor
-    using AP_RangeFinder_Backend_I2C::AP_RangeFinder_Backend_I2C;
+    AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params,
+                                AP_HAL::I2CDevice &_dev) :
+        AP_RangeFinder_Backend_I2C(_state, _params, _dev)
+    {
+        // the shortest-range model served (SF10/A) reaches 25m
+        params.max_distance.set_default(25.0f);
+    }
 
     bool write_bytes(uint8_t *write_buf_u8, uint32_t len_u8);
     void sf20_disable_address_tagging();
