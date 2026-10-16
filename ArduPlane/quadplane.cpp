@@ -722,6 +722,10 @@ bool QuadPlane::setup(void)
 
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
+    // the tailsitter enable flag selects the rotation of the attitude view,
+    // so set it from the legacy parameters before the view is created
+    tailsitter.setup_enable();
+
     // create the attitude view used by the VTOL code
     ahrs_view = ahrs.create_view((tailsitter.enable > 0) ? ROTATION_PITCH_90 : ROTATION_NONE, ahrs_trim_pitch);
     if (ahrs_view == nullptr) {

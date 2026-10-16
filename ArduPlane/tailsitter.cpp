@@ -199,13 +199,17 @@ Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):qu
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void Tailsitter::setup()
+// Set tailsitter enable flag based on old heuristics. This must be called
+// before the VTOL AHRS view is created, as its rotation depends on the flag
+void Tailsitter::setup_enable()
 {
-    // Set tailsitter enable flag based on old heuristics
     if (!enable.configured() && (((quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (motor_mask != 0)) && (quadplane.tiltrotor.type != Tiltrotor::TILT_TYPE_BICOPTER))) {
         enable.set_and_save(1);
     }
+}
 
+void Tailsitter::setup()
+{
     if (enable <= 0) {
         return;
     }
