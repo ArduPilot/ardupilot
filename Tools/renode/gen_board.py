@@ -1270,6 +1270,20 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                     'fram', 'Miscellaneous.AP_RAMTRON', bus, cs,
                     ['    fileName: %s' % json.dumps(str(fram_path))]))
 
+    device = spi_devices.get('osd')
+    if device is not None:
+        bus, cs_label = device[1], device[3]
+        cs = config.bylabel.get(cs_label)
+        if bus not in family['spis']:
+            warnings.append('%s OSD bus is not present in the current MCU base' % bus)
+        elif cs is None:
+            warnings.append('cannot resolve OSD chip select %s' % cs_label)
+        else:
+            spi_children.append((
+                'osd', 'Miscellaneous.AP_MAX7456', bus, cs,
+                ['    fileName: %s' % json.dumps(
+                    str(Path(fram_path).with_name('max7456-font.img')))]))
+
     spi_sdcard = None
     if defines.get('HAL_USE_MMC_SPI', 'FALSE') == 'TRUE':
         device = spi_devices.get('sdcard')
