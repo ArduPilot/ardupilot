@@ -318,31 +318,42 @@ void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_end(arg_list);
 }
 
-void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
+bool GCS_MAVLINK::eligible_for_active_channel_sends() const
+{
+    if (is_private() || option_enabled(Option::UNICAST)) {
+        return false;
+    }
+    if (!is_active()) {
+        return false;
+    }
+#if HAL_HIGH_LATENCY2_ENABLED
+    if (is_high_latency_link) {
+        return false;
+    }
+#endif
+    return true;
+}
+
+void GCS::send_to_active_channels(uint32_t msgid, const char *pkt, mavlink_channel_mask_t chan_mask)
 {
     const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
     if (entry == nullptr) {
         return;
     }
     for (uint8_t i=0; i<num_gcs(); i++) {
+        if ((chan_mask & (1U<<i)) == 0) {
+            continue;
+        }
         GCS_MAVLINK &c = *chan(i);
-        if (c.is_private() || c.option_enabled(GCS_MAVLINK::Option::UNICAST)) {
+        if (!c.eligible_for_active_channel_sends()) {
             continue;
         }
-        if (!c.is_active()) {
-            continue;
-        }
-#if HAL_HIGH_LATENCY2_ENABLED
-        if (c.is_high_latency_link) {
-            continue;
-        }
-#endif
         // size checks done by this method:
         c.send_message(pkt, entry);
     }
 }
 
-void GCS::send_named_float(const char *name, float value) const
+void GCS::send_named_float(const char *name, float value, mavlink_channel_mask_t chan_mask) const
 {
 
     mavlink_named_value_float_t packet {};
@@ -351,7 +362,8 @@ void GCS::send_named_float(const char *name, float value) const
     memcpy(packet.name, name, MIN(strlen(name), (uint8_t)MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN));
 
     gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_FLOAT,
-                                  (const char *)&packet);
+                                  (const char *)&packet,
+                                  chan_mask);
 
 #if HAL_LOGGING_ENABLED
 // @LoggerMessage: NVF
@@ -372,7 +384,7 @@ void GCS::send_named_float(const char *name, float value) const
 #endif  // HAL_LOGGING_ENABLED
 }
 
-void GCS::send_named_int(const char *name, int32_t value) const
+void GCS::send_named_int(const char *name, int32_t value, mavlink_channel_mask_t chan_mask) const
 {
     mavlink_named_value_int_t packet {};
     packet.time_boot_ms = AP_HAL::millis();
@@ -380,7 +392,8 @@ void GCS::send_named_int(const char *name, int32_t value) const
     memcpy(packet.name, name, MIN(strlen(name), (uint8_t)MAVLINK_MSG_NAMED_VALUE_INT_FIELD_NAME_LEN));
 
     gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_INT,
-                                  (const char *)&packet);
+                                  (const char *)&packet,
+                                  chan_mask);
 #if HAL_LOGGING_ENABLED
 // @LoggerMessage: NVI
 // @Description: Named Value Int messages; messages sent to GCS via NAMED_VALUE_INT
@@ -392,7 +405,7 @@ void GCS::send_named_int(const char *name, int32_t value) const
         "TimeUS," "Name," "Value",
         "s"       "#"     "-",
         "F"       "-"     "-",
-        "Q"       "N"     "f",
+        "Q"       "N"     "i",
         AP_HAL::micros64(),
         name,
         value
@@ -400,7 +413,7 @@ void GCS::send_named_int(const char *name, int32_t value) const
 #endif  // HAL_LOGGING_ENABLED
 }
 
-void GCS::send_named_string(const char *name, const char *value) const
+void GCS::send_named_string(const char *name, const char *value, mavlink_channel_mask_t chan_mask) const
 {
     mavlink_named_value_string_t packet {};
     packet.time_boot_ms = AP_HAL::millis();
@@ -408,7 +421,8 @@ void GCS::send_named_string(const char *name, const char *value) const
     strncpy_noterm(packet.value, value, ARRAY_SIZE(packet.value));
 
     gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_STRING,
-                                  (const char *)&packet);
+                                  (const char *)&packet,
+                                  chan_mask);
 
 #if HAL_LOGGING_ENABLED
 // NVS is also emitted in GCS_Common.cpp

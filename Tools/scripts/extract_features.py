@@ -290,6 +290,7 @@ class ExtractFeatures(BuildScriptBase):
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
             ('HAL_BUTTON_ENABLED', 'AP_Button::update'),
             ('HAL_LOGGING_ENABLED', 'AP_Logger::init'),
+            ('AP_LOGGER_SEND_NAMED_VALUES_ENABLED', 'AP_Logger::stream_named_value'),
             ('AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED', 'Compass::mag_cal_fixed_yaw'),
             ('COMPASS_LEARN_ENABLED', 'CompassLearn::update'),
             ('AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED', 'Compass::save_ekf_learned_offsets'),
