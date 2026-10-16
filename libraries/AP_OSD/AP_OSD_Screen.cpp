@@ -1074,7 +1074,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 #if AP_OSD_EKF_LANES_ENABLED
     // @Param: EKF0_EN
     // @DisplayName: EKF0_EN
-    // @Description: Displays EKF core 0: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength and which flow axes it is fusing
+    // @Description: Displays EKF core 0: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength, scaled so the lane's EK3_FLOW_QMIN floor reads 50 and flashing below it, and which flow axes it is fusing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF0_X
@@ -1090,7 +1090,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF1_EN
     // @DisplayName: EKF1_EN
-    // @Description: Displays EKF core 1: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength and which flow axes it is fusing
+    // @Description: Displays EKF core 1: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength, scaled so the lane's EK3_FLOW_QMIN floor reads 50 and flashing below it, and which flow axes it is fusing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF1_X
@@ -1106,7 +1106,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF2_EN
     // @DisplayName: EKF2_EN
-    // @Description: Displays EKF core 2: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength and which flow axes it is fusing
+    // @Description: Displays EKF core 2: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength, scaled so the lane's EK3_FLOW_QMIN floor reads 50 and flashing below it, and which flow axes it is fusing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF2_X
@@ -1682,7 +1682,11 @@ void AP_OSD_Screen::draw_ekf_lane(uint8_t lane, uint8_t x, uint8_t y)
     // the flow sensor's signal strength, shown as the RSSI item shows the receiver's
     const AP_OpticalFlow *optflow = AP::opticalflow();
     if (!no_flow_data && optflow != nullptr) {
-        backend->write(x + 6, y, false, "%c%2u", SYMBOL(SYM_RSSI), unsigned(MIN(optflow->quality() * 100U / 255U, 99U)));
+        // the lane's quality floor, when it has one, reads 50
+        const uint8_t quality = optflow->quality();
+        const uint8_t qmin = status.flow_quality_min;
+        const uint32_t strength = (qmin > 0) ? quality * 50U / qmin : quality * 100U / 255U;
+        backend->write(x + 6, y, quality < qmin, "%c%2u", SYMBOL(SYM_RSSI), unsigned(MIN(strength, 99U)));
     } else {
         backend->write(x + 6, y, true, "%c--", SYMBOL(SYM_RSSI));
     }
