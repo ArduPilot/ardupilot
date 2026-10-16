@@ -22527,8 +22527,11 @@ RTL_ALT_M 111
         # 0xEA is the right arrow marking the lane flying the vehicle
         self.wait_osd_ekf_lane(msp, 9, b"C0\xeaABS")
         texts = self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
-        # a forward and a sideways arrow straight after the position type
-        arrows = texts[-1][7:9]
+        # the flow signal strength after the RSSI symbol (0x01 in both symbol
+        # tables), then a forward and a sideways arrow
+        if re.fullmatch(rb"\x01[ 0-9][0-9]", texts[-1][7:10]) is None:
+            raise NotAchievedException("flow lane shows no signal strength: %s" % texts[-1])
+        arrows = texts[-1][10:12]
         if len(arrows) != 2 or b" " in arrows:
             raise NotAchievedException("flow lane shows no flow arrows: %s" % texts[-1])
 
@@ -22536,8 +22539,10 @@ RTL_ALT_M 111
         self.set_parameter("SIM_FLOW_ENABLE", 0)
         self.wait_osd_ekf_lane(msp, 10, b"C1 REL", flashing=True)
         texts = [s[10] for s in self.osd_displayport_rows(msp, [10], 2)]
-        if any(len(t) > 7 for t in texts):
+        if any(len(t) > 10 for t in texts):
             raise NotAchievedException("flow arrows shown with no flow data: %s" % texts)
+        if not any(t[7:10] == b"\x01--" for t in texts):
+            raise NotAchievedException("no flow data not shown as -- signal strength: %s" % texts)
         self.set_parameter("SIM_FLOW_ENABLE", 1)
         self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
 
@@ -22552,7 +22557,7 @@ RTL_ALT_M 111
         msp = self.msp_connect(port)
         texts = self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
         # Betaflight's north and east direction arrows
-        if texts[-1][7:9] != bytes([0x68, 0x64]):
+        if texts[-1][10:12] != bytes([0x68, 0x64]):
             raise NotAchievedException("flow arrows not mapped to the Betaflight font: %s" % texts[-1])
 
         self.reboot_sitl()
