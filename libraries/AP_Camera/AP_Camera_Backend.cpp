@@ -176,6 +176,19 @@ void AP_Camera_Backend::stop_capture()
     time_interval_settings = {0, 0};
 }
 
+uint16_t AP_Camera_Backend::total_image_cap()
+{
+    if (time_interval_settings.num_remaining < 0) {
+        return 0;
+    }
+    return time_interval_settings.num_remaining;
+}
+
+uint16_t AP_Camera_Backend::image_current_seq()
+{
+    return image_index;
+}
+
 // handle camera control
 void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id)
 {
