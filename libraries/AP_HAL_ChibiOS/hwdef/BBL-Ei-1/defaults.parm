@@ -1,0 +1,2 @@
+# enable DroneCAN on CAN1 for the power module on Power C
+CAN_P1_DRIVER 1
