@@ -2875,6 +2875,10 @@ bool GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
 
 void GCS::setup_uarts()
 {
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    setup_component_metadata();
+#endif
+
 #if AP_FRSKY_TELEM_ENABLED
     if (frsky == nullptr) {
         frsky = NEW_NOTHROW AP_Frsky_Telem();
@@ -6681,12 +6685,11 @@ void GCS_MAVLINK::send_component_information() const
     // the mavlink send function copies the full field length:
     static const char general_metadata_url[sizeof(mavlink_component_information_t::general_metadata_uri)] = "mftp://@SYS/general_metadata.json";
     static const char peripherals_metadata_url[sizeof(mavlink_component_information_t::peripherals_metadata_uri)] {};
-    const uint32_t general_metadata_checksum = 133761337;
 
     mavlink_msg_component_information_send(
         chan,
         AP_HAL::millis(),
-        general_metadata_checksum,
+        gcs().general_metadata_crc(),
         general_metadata_url,
         0,  // -1?
         peripherals_metadata_url
