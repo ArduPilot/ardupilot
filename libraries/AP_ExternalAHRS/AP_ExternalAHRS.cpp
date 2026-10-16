@@ -30,6 +30,7 @@
 #include "AP_ExternalAHRS_SBG.h"
 #include "AP_ExternalAHRS_GSOF.h"
 #include "AP_ExternalAHRS_SensAItion.h"
+#include "AP_ExternalAHRS_Xsens.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -62,7 +63,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: AHRS type
     // @Description: Type of AHRS device
-    // @Values: 0:None,1:VectorNav,2:MicroStrain5,5:InertialLabs,6:Trimble GSOF,7:MicroStrain7,8:SBG,10:Aeron,11:SensAItion
+    // @Values: 0:None,1:VectorNav,2:MicroStrain5,5:InertialLabs,6:Trimble GSOF,7:MicroStrain7,8:SBG,10:Aeron,11:SensAItion,12:Xsens
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_ExternalAHRS, devtype, HAL_EXTERNAL_AHRS_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
@@ -76,7 +77,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: External AHRS options
     // @Description: External AHRS options bitmask
-    // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag, 1:SBG uses EKF as GNSS, 2:SensAItion used as AHRS
+    // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag, 1:SBG uses EKF as GNSS, 2:SensAItion used as AHRS, 3:Xsens sensor mounted downward, 4:Xsens use SPI
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 3, AP_ExternalAHRS, options, 0),
 
@@ -156,6 +157,12 @@ void AP_ExternalAHRS::init(void)
         backend = NEW_NOTHROW AP_ExternalAHRS_Aeron_plx(this, state);
         return;
 #endif  // AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
+
+#if AP_EXTERNAL_AHRS_XSENS_ENABLED
+    case DevType::Xsens:
+        backend = NEW_NOTHROW AP_ExternalAHRS_Xsens(this, state);
+        return;
+#endif
 
     }
 
