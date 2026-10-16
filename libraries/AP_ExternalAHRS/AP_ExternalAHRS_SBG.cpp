@@ -45,6 +45,7 @@ AP_ExternalAHRS_SBG::AP_ExternalAHRS_SBG(AP_ExternalAHRS *_frontend,
                                                            AP_ExternalAHRS::state_t &_state) :
     AP_ExternalAHRS_backend(_frontend, _state)
 {
+    rest_sbg = nullptr;   // rest is in-class initialised to nullptr; RAM allocated on first use
     auto &sm = AP::serialmanager();
     uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
     if (uart == nullptr) {
@@ -83,8 +84,29 @@ void AP_ExternalAHRS_SBG::update_thread()
     setup_complete = true;
 
     while (true) {
-        
-        if (check_uart()) {
+
+        // Once the main thread has created the RestState (on the first REST command),
+        // acquire our cached view and point the parser's oversized-frame buffer at it.
+        // The atomic-acquire load pairs with the release store in rest_alloc(), so we
+        // see a fully-constructed RestState; the fast path (rest still null) is a plain
+        // atomic load with no lock.
+        if (rest_sbg == nullptr) {
+            RestState *r = rest.load(std::memory_order_acquire);
+            if (r != nullptr) {
+                rest_sbg = r;
+                _inbound_state.big_buf = r->rx_frame;
+                _inbound_state.big_buf_cap = SBG_API_FRAME_MAX;
+            }
+        }
+
+        const bool had_data = check_uart();
+
+        // Service the REST transaction every loop (even under a continuous SBG stream)
+        // so a queued command is sent promptly and an active command's timeout still fires.
+        const uint32_t now_ms = AP_HAL::millis();
+        service_rest(now_ms);
+
+        if (had_data) {
             // we've parsed something. There might be more so lets come back quickly
             hal.scheduler->delay_microseconds(100);
             continue;
@@ -93,7 +115,6 @@ void AP_ExternalAHRS_SBG::update_thread()
         // uart is idle, lets snooze a little more and then do some housekeeping
         hal.scheduler->delay_microseconds(250);
 
-        const uint32_t now_ms = AP_HAL::millis();
         if (cached.sbg.deviceInfo.firmwareRev == 0 && now_ms - version_check_ms >= 5000) {
             // request Device Info every few seconds until we get a response
             version_check_ms = now_ms;
@@ -158,7 +179,17 @@ bool AP_ExternalAHRS_SBG::check_uart()
         }
 
         if (parse_byte(b, _inbound_state.msg, _inbound_state)) {
-            handle_msg(_inbound_state.msg);
+            // small frames live in msg.data, oversized ones in big_buf; both share the
+            // packed [id, class, len(2), data...] layout so the dispatch is size-agnostic.
+            const bool oversized = _inbound_state.msg.len > sizeof(_inbound_state.msg.data);
+            const uint8_t *frame = oversized ? _inbound_state.big_buf
+                                             : (const uint8_t *)&_inbound_state.msg;
+            if (is_api_frame(frame)) {
+                handle_api_reply(frame);      // sbgInsRestApi reply of any size
+            } else if (!oversized) {
+                handle_msg(_inbound_state.msg);  // ordinary log/command
+            }
+            // oversized non-API frame: nothing we handle -> ignore
         }
     }
     return true;
@@ -225,22 +256,42 @@ bool AP_ExternalAHRS_SBG::parse_byte(const uint8_t data, sbgMessage &msg, SBG_PA
 
         case SBG_PACKET_PARSE_STATE::LEN2:
             msg.len |= uint16_t(data) << 8;
-            if (msg.len > sizeof(msg.data)) {
-                // we can't handle this packet, it's larger than the rx buffer which is larger than the largest packet we care about
+            // Route purely by size (the parser knows nothing about REST/API): frames that
+            // fit msg.data take the normal path; larger frames spill into big_buf if the
+            // owner supplied one (mirroring [id, class, len(2)] up front so the struct CRC
+            // still applies); otherwise the frame is dropped.
+            inbound_state.data_count = 0;
+            if (msg.len <= sizeof(msg.data)) {
+                inbound_state.parser = (msg.len > 0) ? SBG_PACKET_PARSE_STATE::DATA : SBG_PACKET_PARSE_STATE::CRC1;
+            } else if (inbound_state.big_buf != nullptr && uint32_t(msg.len) + 4u <= inbound_state.big_buf_cap) {
+                inbound_state.big_buf[0] = msg.msgid;
+                inbound_state.big_buf[1] = msg.msgclass;
+                inbound_state.big_buf[2] = msg.len & 0xFF;
+                inbound_state.big_buf[3] = msg.len >> 8;
+                inbound_state.parser = SBG_PACKET_PARSE_STATE::DATA;
+            } else {
+                // larger than any buffer we have: skip the payload and resync
                 inbound_state.data_count_skip = msg.len;
                 inbound_state.parser = SBG_PACKET_PARSE_STATE::DROP_THIS_PACKET;
-            } else {
-                inbound_state.data_count = 0;
-                inbound_state.parser = (msg.len > 0) ? SBG_PACKET_PARSE_STATE::DATA : SBG_PACKET_PARSE_STATE::CRC1;
             }
             break;
 
         case SBG_PACKET_PARSE_STATE::DATA:
-            msg.data[inbound_state.data_count++] = data;
-            if (inbound_state.data_count >= sizeof(msg.data)) {
-                inbound_state.parser = SBG_PACKET_PARSE_STATE::SYNC1;
-            } else if (inbound_state.data_count >= msg.len) {
-                inbound_state.parser = SBG_PACKET_PARSE_STATE::CRC1;
+            if (msg.len > sizeof(msg.data)) {
+                // oversized frame -> big_buf (capacity checked at LEN2: 4 + msg.len <= cap)
+                inbound_state.big_buf[4 + inbound_state.data_count++] = data;
+                if (inbound_state.data_count >= msg.len) {
+                    inbound_state.parser = SBG_PACKET_PARSE_STATE::CRC1;
+                }
+            } else {
+                msg.data[inbound_state.data_count++] = data;
+                // check the declared length first so a frame of exactly sizeof(msg.data)
+                // completes instead of being abandoned
+                if (inbound_state.data_count >= msg.len) {
+                    inbound_state.parser = SBG_PACKET_PARSE_STATE::CRC1;
+                } else if (inbound_state.data_count >= sizeof(msg.data)) {
+                    inbound_state.parser = SBG_PACKET_PARSE_STATE::SYNC1;  // safety net (LEN2 caps small frames)
+                }
             }
             break;
 
@@ -253,8 +304,10 @@ bool AP_ExternalAHRS_SBG::parse_byte(const uint8_t data, sbgMessage &msg, SBG_PA
             inbound_state.crc |= uint16_t(data) << 8;
             inbound_state.parser = SBG_PACKET_PARSE_STATE::SYNC1; // skip ETX and go directly to SYNC1. Do not pass Go.
             {
-                // CRC field is computed on [MSG(1), CLASS(1), LEN(2), DATA(msg.len)] fields
-                const uint16_t crc = crc16_ccitt_r((const uint8_t*)&msg, msg.len+4, 0, 0);
+                // CRC field is computed on [MSG(1), CLASS(1), LEN(2), DATA(msg.len)] fields.
+                // Oversized frames mirror that layout at the front of big_buf.
+                const uint8_t *crc_buf = (msg.len > sizeof(msg.data)) ? inbound_state.big_buf : (const uint8_t*)&msg;
+                const uint16_t crc = crc16_ccitt_r(crc_buf, msg.len+4, 0, 0);
                 if (crc == inbound_state.crc) {
                     return true;
                 }
@@ -796,6 +849,440 @@ bool AP_ExternalAHRS_SBG::get_variances(float &velVar, float &posVar, float &hgt
     magVar.zero(); // Not provided, set to 0.
     tasVar = 0;
     return true;
+}
+
+// main thread: send a single-segment reply carrying only flags/status (BUSY, error, empty ack)
+void AP_ExternalAHRS_SBG::rest_send_status(uint8_t chan, uint8_t sysid, uint8_t compid,
+                                           uint8_t session, uint8_t flags, uint16_t status)
+{
+    const mavlink_channel_t mchan = (mavlink_channel_t)chan;
+    if (!HAVE_PAYLOAD_SPACE(mchan, TUNNEL)) {
+        return;
+    }
+    uint8_t payload[128] {};
+    payload[0] = flags;
+    payload[1] = session;
+    payload[2] = status & 0xFF;
+    payload[3] = status >> 8;
+    payload[6] = 1;  // total = 1 segment (seq stays 0)
+    mavlink_msg_tunnel_send(mchan, sysid, compid, REST_TUNNEL_PAYLOAD_TYPE, REST_SEG_HDR, payload);
+}
+
+// main thread: lazily allocate the RestState on first use and publish it with a
+// release store so the SBG thread's acquire load sees it fully built. nullptr on OOM.
+AP_ExternalAHRS_SBG::RestState *AP_ExternalAHRS_SBG::rest_alloc()
+{
+    // main thread is the only writer, so no lock is needed - just publish the
+    // fully-constructed state with a release store for the SBG thread to acquire.
+    RestState *r = rest.load(std::memory_order_relaxed);
+    if (r != nullptr) {
+        return r;
+    }
+    r = NEW_NOTHROW RestState();
+    if (r != nullptr && r->req_queue.get_size() == 0) {
+        // RestState was created but the queue's internal ByteBuffer failed to allocate;
+        // a later push() would dereference null. Treat the whole thing as OOM.
+        delete r;
+        r = nullptr;
+    }
+    if (r != nullptr) {
+        rest.store(r, std::memory_order_release);
+    }
+    return r;
+}
+
+// main thread (GCS receive context): decode the TUNNEL, ignore payload_types that
+// aren't ours, then reassemble a REST request and hand it to the SBG thread via the
+// queue. The reply goes back to the requester, so the source ids come from msg
+// (packet.target_* is the addressee, not the sender).
+void AP_ExternalAHRS_SBG::handle_tunnel(const mavlink_channel_t chan_in, const mavlink_message_t &msg)
+{
+    // the reassembly bitmask is 16-bit, so every request must fit in <= 16 segments
+    static_assert(REST_REQ_MAX <= 16 * REST_SEG_DATA, "REST reassembly mask is 16-bit");
+
+    mavlink_tunnel_t packet;
+    mavlink_msg_tunnel_decode(&msg, &packet);
+    if (packet.payload_type != REST_TUNNEL_PAYLOAD_TYPE) {
+        return;  // not an SBG REST tunnel
+    }
+
+    const uint8_t chan = (uint8_t)chan_in;
+    const uint8_t sysid = msg.sysid;
+    const uint8_t compid = msg.compid;
+    const uint8_t *payload = packet.payload;
+    const uint8_t len = packet.payload_length;
+
+    if (len < REST_SEG_HDR) {
+        return;  // malformed segment
+    }
+    const uint8_t flags = payload[0];
+    if (flags & REST_FLAG_REPLY) {
+        return;  // we only accept requests
+    }
+    const uint8_t session = payload[1];
+    const bool is_post = (flags & REST_FLAG_POST) != 0;
+    const uint16_t seq   = payload[4] | (uint16_t(payload[5]) << 8);
+    const uint16_t total = payload[6] | (uint16_t(payload[7]) << 8);
+    const uint8_t *seg = &payload[REST_SEG_HDR];
+    const uint16_t seglen = len - REST_SEG_HDR;
+
+    // No worker thread runs without a UART (and none replies until setup completes),
+    // so a request would queue and wedge busy forever. Reject before allocating anything.
+    if (uart == nullptr || !setup_complete) {
+        rest_send_status(chan, sysid, compid, session, REST_FLAG_REPLY | REST_FLAG_ERROR, 0);
+        return;
+    }
+
+    const uint16_t max_segs = (REST_REQ_MAX + REST_SEG_DATA - 1) / REST_SEG_DATA;
+    const uint32_t off = uint32_t(seq) * REST_SEG_DATA;
+    const bool is_final = (seq + 1 == total);
+    // Reject malformed segments up front. A non-final segment must be exactly full so
+    // there are no gaps of stale buffer data; only the final segment may be short.
+    if (total == 0 || total > max_segs || seq >= total ||
+        off + seglen > REST_REQ_MAX || (!is_final && seglen != REST_SEG_DATA)) {
+        rest_send_status(chan, sysid, compid, session, REST_FLAG_REPLY | REST_FLAG_ERROR, 0);
+        return;
+    }
+
+    RestState *r = rest_alloc();
+    if (r == nullptr) {
+        rest_send_status(chan, sysid, compid, session, REST_FLAG_REPLY | REST_FLAG_ERROR, 0);
+        return;  // out of memory
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // (re)start reassembly on a new transaction or if the previous one went stale
+    if (!r->rx.active || r->rx.sysid != sysid || r->rx.session != session ||
+        now_ms - r->rx.last_ms > 3000) {
+        r->rx.active  = true;
+        r->rx.sysid   = sysid;
+        r->rx.compid  = compid;
+        r->rx.chan    = chan;
+        r->rx.session = session;
+        r->rx.is_post = is_post;
+        r->rx.total   = total;
+        r->rx.mask    = 0;
+        r->rx.len     = 0;
+    } else if (total != r->rx.total || is_post != r->rx.is_post ||
+               compid != r->rx.compid || chan != r->rx.chan) {
+        // a later segment disagrees with the transaction it belongs to -> abort it
+        r->rx.active = false;
+        rest_send_status(chan, sysid, compid, session, REST_FLAG_REPLY | REST_FLAG_ERROR, 0);
+        return;
+    }
+    r->rx.last_ms = now_ms;
+
+    memcpy(&r->rx.buf[off], seg, seglen);
+    r->rx.mask |= (1U << seq);
+    r->rx.len = MAX(r->rx.len, uint16_t(off + seglen));
+
+    // complete only when every segment of the recorded total has arrived
+    const uint16_t full_mask = (r->rx.total >= 16) ? 0xFFFF : uint16_t((1U << r->rx.total) - 1);
+    if (r->rx.mask != full_mask) {
+        return;  // still waiting for more segments
+    }
+
+    // full request received
+    r->rx.active = false;
+
+    // enforce a single end-to-end transaction: reject until the previous request's reply
+    // has been fully transmitted, so a later completion can't clobber an unsent reply.
+    if (r->busy) {
+        rest_send_status(chan, sysid, compid, session, REST_FLAG_REPLY | REST_FLAG_BUSY, 0);
+        return;
+    }
+
+    rest_request_t req {};
+    req.chan = chan;
+    req.target_system = sysid;
+    req.target_component = compid;
+    req.session = session;
+    req.is_post = r->rx.is_post;
+    req.len = r->rx.len;
+    memcpy(req.data, r->rx.buf, r->rx.len);
+
+    if (r->req_queue.push(req)) {
+        r->busy = true;   // cleared by service_rest_tx once the reply is fully sent
+    } else {
+        rest_send_status(chan, sysid, compid, session, REST_FLAG_REPLY | REST_FLAG_BUSY, 0);
+    }
+}
+
+// main thread: pump outbound reply segments to the GCS. Called from update().
+void AP_ExternalAHRS_SBG::service_rest_tx()
+{
+    RestState *r = rest.load(std::memory_order_relaxed);  // main thread wrote it
+    if (r == nullptr) {
+        return;
+    }
+    if (!r->tx_active) {
+        // pick up a finished reply from the SBG thread
+        {
+            WITH_SEMAPHORE(r->reply_sem);
+            if (!r->reply_ready) {
+                return;
+            }
+            r->tx = r->pending_reply;   // transfers the heap data pointer
+            r->pending_reply.data = nullptr;
+            r->reply_ready = false;
+        }
+        r->tx_active = true;
+        r->tx_seq = 0;
+        const uint16_t nseg = (r->tx.len + REST_SEG_DATA - 1) / REST_SEG_DATA;
+        r->tx_total = MAX(nseg, uint16_t(1));  // always at least one segment (carries status)
+    }
+
+    const mavlink_channel_t mchan = (mavlink_channel_t)r->tx.chan;
+
+    // Send at most ONE segment per update() so a large (up to ~137-segment) reply never
+    // monopolises the channel's TX buffer at the expense of flight telemetry.
+    if (r->tx_seq < r->tx_total) {
+        if (!HAVE_PAYLOAD_SPACE(mchan, TUNNEL)) {
+            return;  // no room this loop; retry next update()
+        }
+        uint8_t flags = REST_FLAG_REPLY;
+        if (r->tx.error) {
+            flags |= REST_FLAG_ERROR;
+        }
+        const uint32_t off = uint32_t(r->tx_seq) * REST_SEG_DATA;
+        uint16_t seglen = 0;
+        if (r->tx.len > off) {
+            seglen = MIN(uint16_t(REST_SEG_DATA), uint16_t(r->tx.len - off));
+        }
+        uint8_t payload[128] {};
+        payload[0] = flags;
+        payload[1] = r->tx.session;
+        payload[2] = r->tx.status & 0xFF;
+        payload[3] = r->tx.status >> 8;
+        payload[4] = r->tx_seq & 0xFF;
+        payload[5] = r->tx_seq >> 8;
+        payload[6] = r->tx_total & 0xFF;
+        payload[7] = r->tx_total >> 8;
+        if (seglen > 0 && r->tx.data != nullptr) {
+            memcpy(&payload[REST_SEG_HDR], &r->tx.data[off], seglen);
+        }
+        mavlink_msg_tunnel_send(mchan, r->tx.target_system, r->tx.target_component,
+                                REST_TUNNEL_PAYLOAD_TYPE, REST_SEG_HDR + seglen, payload);
+        r->tx_seq++;
+    }
+
+    if (r->tx_seq >= r->tx_total) {
+        // reply fully sent - end the transaction and accept new requests again
+        if (r->tx.data != nullptr) {
+            delete[] r->tx.data;
+            r->tx.data = nullptr;
+        }
+        r->tx_active = false;
+        r->busy = false;
+    }
+}
+
+// SBG thread: drive one REST transaction at a time; send or time out
+void AP_ExternalAHRS_SBG::service_rest(uint32_t now_ms)
+{
+    RestState *r = rest_sbg;
+    if (r == nullptr) {
+        return;
+    }
+    if (r->api_cmd_active) {
+        if (now_ms - r->api_cmd_sent_ms > SBG_API_TIMEOUT_MS) {
+            if (r->reply_buf != nullptr) {
+                delete[] r->reply_buf;
+                r->reply_buf = nullptr;
+            }
+            r->reply_len = 0;
+            finish_api_reply(0, true);  // timed out waiting for the device reply
+        }
+        return;
+    }
+    rest_request_t req;
+    if (!r->req_queue.pop(req)) {
+        return;
+    }
+    r->api_cmd_chan    = req.chan;
+    r->api_cmd_sysid   = req.target_system;
+    r->api_cmd_compid  = req.target_component;
+    r->api_cmd_session = req.session;
+    r->api_cmd_msgid   = req.is_post ? SBG_ECOM_CMD_API_POST : SBG_ECOM_CMD_API_GET;
+    if (r->reply_buf != nullptr) {   // discard any stale partial from an aborted txn
+        delete[] r->reply_buf;
+        r->reply_buf = nullptr;
+    }
+    r->reply_len = 0;
+    r->reply_pages_got = 0;
+    r->reply_pages_expected = 0;
+    if (!build_and_send_api_cmd(req)) {
+        finish_api_reply(0, true);  // could not send
+        return;
+    }
+    r->api_cmd_active = true;
+    r->api_cmd_sent_ms = now_ms;
+}
+
+// SBG thread: build and transmit an SBG_ECOM_CMD_API_GET/POST frame.
+// req.data is already the sbgECom request encoding: "path\0query\0[body\0]".
+bool AP_ExternalAHRS_SBG::build_and_send_api_cmd(const rest_request_t &req)
+{
+    RestState *r = rest_sbg;
+    if (uart == nullptr || r == nullptr || req.len > REST_REQ_MAX) {
+        return false;
+    }
+    const uint8_t msgid = req.is_post ? SBG_ECOM_CMD_API_POST : SBG_ECOM_CMD_API_GET;
+    const uint16_t datalen = req.len;
+    const uint16_t frame_len = SBG_PACKET_OVERHEAD + datalen;
+
+    uint8_t *buffer = r->tx_frame;   // heap scratch (SBG_PACKET_OVERHEAD + REST_REQ_MAX)
+    buffer[0] = SBG_PACKET_SYNC1;
+    buffer[1] = SBG_PACKET_SYNC2;
+    buffer[2] = msgid;
+    buffer[3] = SBG_ECOM_CLASS_LOG_CMD_0;
+    buffer[4] = datalen & 0xFF;
+    buffer[5] = datalen >> 8;
+    memcpy(&buffer[6], req.data, datalen);
+
+    // CRC covers [id, class, len(2), data] == buffer[2 .. 2+4+datalen)
+    const uint16_t crc = crc16_ccitt_r(&buffer[2], datalen + 4, 0, 0);
+    buffer[6 + datalen]     = crc & 0xFF;
+    buffer[6 + datalen + 1] = crc >> 8;
+    buffer[6 + datalen + 2] = SBG_PACKET_ETX;
+
+    const uint32_t sent = uart->write(buffer, frame_len);
+    uart->flush();
+    return sent == frame_len;
+}
+
+// dispatch predicate (check_uart): is this frame an sbgInsRestApi command reply
+// (GET/POST), standard or paged (class MSB set)? Layout: [0]=msgid, [1]=class.
+bool AP_ExternalAHRS_SBG::is_api_frame(const uint8_t *frame)
+{
+    const uint8_t base_class = frame[1] & ~uint8_t(SBG_PACKET_EXT_CLASS_BIT);
+    return base_class == SBG_ECOM_CLASS_LOG_CMD_0 &&
+           (frame[0] == SBG_ECOM_CMD_API_GET || frame[0] == SBG_ECOM_CMD_API_POST);
+}
+
+// SBG thread: accumulate an API reply frame [id, class, len(2), data...] (already
+// confirmed to be an API frame by the dispatcher) into the possibly-paged reply.
+void AP_ExternalAHRS_SBG::handle_api_reply(const uint8_t *frame)
+{
+    RestState *r = rest_sbg;
+    if (r == nullptr || !r->api_cmd_active) {
+        return;  // unsolicited or stale reply
+    }
+    // Correlate with the command we actually sent: a GET reply must not complete an
+    // active POST (or vice-versa), and a late reply for a different command is ignored.
+    // Ignore (don't abort) so the real reply can still arrive.
+    if (frame[0] != r->api_cmd_msgid) {
+        return;
+    }
+    const uint8_t  msgclass = frame[1];
+    const uint16_t len = frame[2] | (uint16_t(frame[3]) << 8);
+    const uint8_t *data = &frame[4];
+    const bool extended = (msgclass & SBG_PACKET_EXT_CLASS_BIT) != 0;
+
+    uint16_t page_idx = 0, nr_pages = 1;
+    uint8_t  txid = 0;
+    const uint8_t *payload = data;
+    uint16_t payload_len = len;
+    if (extended) {
+        if (len < SBG_PACKET_EXT_HEADER_LEN) {
+            finish_api_reply(0, true);
+            return;
+        }
+        // extended sub-header: txId(1), pageIndex(2 LE), nrPages(2 LE), then payload
+        txid     = data[0];
+        page_idx = data[1] | (uint16_t(data[2]) << 8);
+        nr_pages = data[3] | (uint16_t(data[4]) << 8);
+        payload  = &data[SBG_PACKET_EXT_HEADER_LEN];
+        payload_len = len - SBG_PACKET_EXT_HEADER_LEN;
+    }
+    if (nr_pages == 0) {
+        nr_pages = 1;
+    }
+    if (page_idx == 0) {
+        // (re)start: right-size the reply buffer to this transfer, capped
+        uint32_t cap = uint32_t(nr_pages) * SBG_API_FRAME_MAX;
+        if (cap > SBG_API_REPLY_CAP) {
+            cap = SBG_API_REPLY_CAP;
+        }
+        if (r->reply_buf != nullptr) {
+            delete[] r->reply_buf;
+        }
+        r->reply_buf = NEW_NOTHROW uint8_t[cap];
+        if (r->reply_buf == nullptr) {
+            r->reply_cap = 0;
+            finish_api_reply(0, true);  // out of memory
+            return;
+        }
+        r->reply_cap = cap;
+        r->reply_len = 0;
+        r->reply_pages_got = 0;
+        r->reply_pages_expected = nr_pages;
+        r->reply_txid = txid;   // fix the transfer id from page 0
+    }
+    // pages must arrive in order, agree on the total, and (paged) share one transfer id
+    if (r->reply_buf == nullptr || page_idx != r->reply_pages_got ||
+        r->reply_pages_expected != nr_pages || (extended && txid != r->reply_txid)) {
+        finish_api_reply(0, true);
+        return;
+    }
+    if (uint32_t(r->reply_len) + payload_len > r->reply_cap) {
+        finish_api_reply(0, true);  // overflow
+        return;
+    }
+    memcpy(&r->reply_buf[r->reply_len], payload, payload_len);
+    r->reply_len += payload_len;
+    r->reply_pages_got++;
+
+    if (r->reply_pages_got >= r->reply_pages_expected) {
+        // reply payload = u16 status (LE) then the null-terminated JSON
+        uint16_t status = 0;
+        if (r->reply_len >= 2) {
+            status = r->reply_buf[0] | (uint16_t(r->reply_buf[1]) << 8);
+        }
+        finish_api_reply(status, false);
+    }
+}
+
+// SBG thread: finalise the transaction and stage the reply for the frontend to send
+void AP_ExternalAHRS_SBG::finish_api_reply(uint16_t status, bool error)
+{
+    RestState *r = rest_sbg;
+    if (r == nullptr) {
+        return;
+    }
+    // Strip the 2-byte status prefix in place: reply_buf itself becomes the JSON
+    // handed to the pump (no second allocation/copy). Empty body -> free, hand null.
+    uint8_t *buf = r->reply_buf;
+    uint16_t json_len = 0;
+    if (buf != nullptr && r->reply_len > 2) {
+        json_len = r->reply_len - 2;
+        memmove(buf, buf + 2, json_len);
+    } else {
+        if (buf != nullptr) {
+            delete[] buf;
+            buf = nullptr;
+        }
+    }
+    r->reply_buf = nullptr;   // ownership moved to pending_reply (or freed above)
+    r->reply_len = 0;
+    r->reply_cap = 0;
+
+    WITH_SEMAPHORE(r->reply_sem);
+    if (r->pending_reply.data != nullptr) {
+        delete[] r->pending_reply.data;  // previous reply never picked up
+        r->pending_reply.data = nullptr;
+    }
+    r->pending_reply.chan = r->api_cmd_chan;
+    r->pending_reply.target_system = r->api_cmd_sysid;
+    r->pending_reply.target_component = r->api_cmd_compid;
+    r->pending_reply.session = r->api_cmd_session;
+    r->pending_reply.status = status;
+    r->pending_reply.error = error;
+    r->pending_reply.len = json_len;
+    r->pending_reply.data = buf;   // may be nullptr
+    r->reply_ready = true;
+    r->api_cmd_active = false;
 }
 
 #endif  // AP_EXTERNAL_AHRS_SBG_ENABLED

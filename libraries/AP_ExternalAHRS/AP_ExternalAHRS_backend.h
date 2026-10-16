@@ -51,6 +51,10 @@ public:
     // Return the number of GPS sensors sharing data to AP_GPS.
     virtual uint8_t num_gps_sensors(void) const = 0;
 
+    // Handle a MAVLink TUNNEL message forwarded from the GCS. Default: ignore.
+    // A backend that owns a TUNNEL payload_type overrides this.
+    virtual void handle_tunnel(const mavlink_channel_t, const mavlink_message_t &) {}
+
 protected:
     AP_ExternalAHRS::state_t &state;
     uint16_t get_rate(void) const;
