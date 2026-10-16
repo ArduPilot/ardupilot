@@ -669,6 +669,10 @@ exact alternative directory. Depending on the hwdef, this contains:
 - `fram.img`: the SPI RAMTRON/FRAM contents on boards with
   `HAL_WITH_RAMTRON` and a `SPIDEV ramtron` entry. Writes are committed on the
   real chip-select deassertion forwarded by the generated SPI multiplexer.
+- `max7456-font.img`: the font NVM of the emulated MAX7456 OSD on boards with
+  a `SPIDEV osd` entry, so the firmware uploads its font only on the first
+  launch. The monitor command `sysbus.<spi>.<spi>Mux.osd Screen` prints the
+  OSD display memory as text.
 - `mcu_id.txt`: the persistent random 96-bit STM32 unique-device ID, encoded
   as 24 hexadecimal characters. It is created on the first launch and used by
   firmware logs, bootloader identification, and USB serial-number descriptors,
