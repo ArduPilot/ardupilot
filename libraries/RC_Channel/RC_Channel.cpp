@@ -2199,6 +2199,15 @@ void RC_Channels::convert_options(const RC_Channel::AUX_FUNC old_option, const R
     }
 }
 
+void RC_Channels::mark_conversion_done(Conversion c)
+{
+    _conversion.set_and_save(_conversion | uint8_t(c));
+    // the save queue holds a pointer to the parameter, so without a
+    // flush a later conversion's bit could be written before that
+    // conversion's own parameters, and a power cut would then skip it
+    AP_Param::flush();
+}
+
 // PARAMETER_CONVERSION - Added: Oct-2026 for ArduPilot-4.8
 void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
 {
