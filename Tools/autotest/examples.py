@@ -33,6 +33,7 @@ def run_example(name, filepath, valgrind=False, gdb=False):
             'Scheduler_test',
             'StorageRace',
             'TransferFunctionCheck',
+            'AccumulatorTransferFunction',
             'XPlane',
     ]:
         expect_exit = True
