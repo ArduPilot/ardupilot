@@ -1178,7 +1178,21 @@ void AP_TECS::_initialise_states(float hgt_afe)
     // Initialise states and variables if DT > 0.2 second or TECS is getting overridden or in climbout.
     _flags.reset = false;
 
-    if (_DT > 0.2f || _need_reset) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    /*
+      SIMULATION ONLY: accelerated simulation can legitimately deliver
+      update intervals above 0.2s of simulated time (a stretched clock
+      makes a 10Hz scheduler-table task arrive at 0.1-0.3s of sim
+      time). Resetting on every such call re-anchored the height
+      demand to the current altitude each cycle and TECS converted the
+      resulting overspeed into an unbounded climb. Real hardware keeps
+      the 0.2s threshold unchanged.
+    */
+    const float reset_DT_threshold = 2.0f;
+#else
+    const float reset_DT_threshold = 0.2f;
+#endif
+    if (_DT > reset_DT_threshold || _need_reset) {
         _SKE_weighting        = 1.0f;
         _integTHR_state       = 0.0f;
         _integSEBdot          = 0.0f;
