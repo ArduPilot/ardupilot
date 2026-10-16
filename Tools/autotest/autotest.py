@@ -1686,9 +1686,30 @@ if __name__ == "__main__":
         os.environ["BUILDLOGS"] = os.path.abspath(buildlogs)
 
     try:
+        derived_parallel = not str(opts.parallel).strip().isdigit()
         opts.parallel = evaluate_parallel(opts.parallel)
     except ValueError as e:
         parser.error(str(e))
+
+    # a count worked out from the machine's size has to fit the
+    # per-instance port allocation, and on a host with more logical CPUs
+    # than MAX_AUTOTEST_INSTANCE admits it does not.  Clamp it: the
+    # caller asked for "as many as this machine can take", so give it
+    # that rather than refusing to run.  An explicit --parallel=N too
+    # big is still an error, because the number asked for cannot be
+    # delivered.
+    if derived_parallel and opts.parallel > 1:
+        # never below one: the parallel pass uses base+1..base+parallel,
+        # so at -I MAX_AUTOTEST_INSTANCE there is no room for a worker at
+        # all, and clamping to the bare subtraction asked for a run with
+        # zero of them.  One means a serial run (see autotest()), which
+        # is the right thing to degrade to.
+        room = max(MAX_AUTOTEST_INSTANCE - opts.instance, 1)
+        if opts.parallel > room:
+            print("Note: clamping --parallel from %u to %u (instances above "
+                  "%u are not available at -I %u)" %
+                  (opts.parallel, room, MAX_AUTOTEST_INSTANCE, opts.instance))
+            opts.parallel = room
 
     # canonicalise on opts.debug:
     if opts.debug is None and opts.no_debug is None:
