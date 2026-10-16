@@ -4826,6 +4826,148 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 raise NotAchievedException("wheel distance incorrect")
         self.disarm_vehicle()
 
+    def MAVLinkWheelEncoders(self):
+        '''test wheel encoders fed by WHEEL_DISTANCE messages'''
+        radius = 0.05
+        # one encoder on each of four wheels, told apart by position
+        wheel_positions = [(0.1, -0.1), (0.1, 0.1), (-0.1, -0.1), (-0.1, 0.1)]
+        params = {
+            "LOG_DISARMED": 1,
+            "LOG_REPLAY": 1,  # RWOH records each sample sent to EKF3
+        }
+        for i, (x, y) in enumerate(wheel_positions):
+            prefix = "WENC" if i == 0 else "WENC%u" % (i+1)
+            params[prefix + "_TYPE"] = 2
+            params[prefix + "_RADIUS"] = radius
+            params[prefix + "_POS_X"] = x
+            params[prefix + "_POS_Y"] = y
+        self.set_parameters(params)
+        self.reboot_sitl()
+
+        # the encoder board is a component on this vehicle
+        board = mavutil.mavlink_connection(
+            self.sitl_serial_endpoint(2),
+            source_system=self.sysid_thismav(),
+            source_component=mavutil.mavlink.MAV_COMP_ID_PERIPHERAL,
+        )
+
+        def send_wheel_distance(conn, distances):
+            conn.mav.wheel_distance_send(
+                int(self.get_sim_time_cached() * 1e6),
+                len(distances),
+                distances + [0] * (16 - len(distances)),
+            )
+
+        # the board sends at 5Hz, slower than the vehicle's 50Hz wheel
+        # encoder loop, with all wheels optionally moving at speed
+        board_distances = [1.5, -2.25, 3.0, -0.75]
+        speed = 0.5
+        motion = {"start": None, "stop": None, "paused": False}
+        last_sent = [0]
+
+        def send_from_board(mav, m):
+            now = self.get_sim_time_cached()
+            if motion["paused"] or now - last_sent[0] < 0.2:
+                return
+            last_sent[0] = now
+            travelled = 0
+            if motion["start"] is not None:
+                travelled = speed * (now - motion["start"])
+            send_wheel_distance(board, [d + travelled for d in board_distances])
+
+        def wait_reported_distances(distances, timeout=10):
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < timeout:
+                m = self.assert_receive_message('WHEEL_DISTANCE', timeout=5)
+                if m.get_srcComponent() != mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1:
+                    # the board's own messages are routed to us too
+                    continue
+                if (m.count == len(distances) and
+                        all(abs(m.distance[i] - d) < 0.001 for i, d in enumerate(distances))):
+                    return
+            raise NotAchievedException("Vehicle did not report wheel distances %s" % str(distances))
+
+        self.context_push()
+        try:
+            self.install_message_hook_context(send_from_board)
+
+            self.start_subtest("Distances from the vehicle's own encoder board are used")
+            wait_reported_distances(board_distances)
+
+            self.start_subtest("Distances from another vehicle are ignored")
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 5:
+                # our GCS connection has a different system ID
+                send_wheel_distance(self.mav, [99.0] * 4)
+                m = self.assert_receive_message('WHEEL_DISTANCE', timeout=5)
+                if (m.get_srcComponent() == mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1 and
+                        abs(m.distance[0] - 99.0) < 1):
+                    raise NotAchievedException("Accepted wheel distance from another system")
+
+            self.start_subtest("Stream wheels moving at %.1fm/s, with a gap in the stream" % speed)
+            motion["start"] = self.get_sim_time()
+            self.delay_sim_time(5, reason="let the wheels turn")
+            motion["paused"] = True
+            pause_start = self.get_sim_time()
+            self.delay_sim_time(1.5, reason="gap in the stream")
+            motion["paused"] = False
+            pause_stop = self.get_sim_time()
+            self.delay_sim_time(5, reason="let the wheels turn")
+            motion["stop"] = self.get_sim_time()
+        finally:
+            self.context_pop()
+            board.close()
+
+        self.start_subtest("All four wheels are logged and EKF3 is sent the true wheel speed")
+        # ignore samples straddling the start or end of motion
+        window_start = motion["start"] + 1
+        window_stop = motion["stop"] - 1
+        dfreader = self.dfreader_for_current_onboard_log()
+        logged_stationary_distances = False
+        samples = {}  # wheel position -> samples sent to EKF3
+        while True:
+            m = dfreader.recv_match(type=['WENC', 'RWOH'])
+            if m is None:
+                break
+            if m.get_type() == 'WENC':
+                if all(abs(getattr(m, "Dist%u" % i) - d) < 0.001 for i, d in enumerate(board_distances)):
+                    logged_stationary_distances = True
+            elif window_start < m.TS * 0.001 < window_stop:
+                samples.setdefault((round(m.PX, 1), round(m.PY, 1)), []).append(m)
+        if not logged_stationary_distances:
+            raise NotAchievedException("WENC never logged distances %s" % str(board_distances))
+        if sorted(samples.keys()) != sorted(wheel_positions):
+            raise NotAchievedException("Expected samples from all four wheels, got %s" % str(samples.keys()))
+
+        expected_coverage = (window_stop - window_start) - (pause_stop - pause_start)
+        for wheel, wheel_samples in samples.items():
+            # the stream's timing is jittery in SITL, so allow a wide
+            # margin per sample; stale readings fed as zero rotation, a
+            # reading divided by a too-short interval, or one spanning the
+            # gap in the stream, fall well outside
+            for m in wheel_samples:
+                sample_speed = m.DA * m.R / m.DT
+                if m.DT > 0.5 or not 0.25 * speed < sample_speed < 2 * speed:
+                    raise NotAchievedException(
+                        "Wheel at %s sent EKF3 speed %.3fm/s (DA=%f DT=%f), want %.1fm/s" %
+                        (str(wheel), sample_speed, m.DA, m.DT, speed))
+            # readings must resume after the gap
+            if not any(m.TS * 0.001 > pause_stop + 1 for m in wheel_samples):
+                raise NotAchievedException("Wheel at %s not sent to EKF3 after the gap" % str(wheel))
+            # and apart from the gap no readings may be lost
+            covered = sum(m.DT for m in wheel_samples)
+            travelled = sum(m.DA * m.R for m in wheel_samples)
+            if covered < 0.85 * expected_coverage:
+                raise NotAchievedException(
+                    "Wheel at %s samples cover only %.1fs of %.1fs" %
+                    (str(wheel), covered, expected_coverage))
+            if abs(travelled / covered - speed) > 0.05 * speed:
+                raise NotAchievedException(
+                    "Wheel at %s mean speed %.3fm/s, want %.1fm/s" %
+                    (str(wheel), travelled / covered, speed))
+            self.progress("Wheel at %s: %u samples, mean speed %.3fm/s over %.1fs" %
+                          (str(wheel), len(wheel_samples), travelled / covered, covered))
+
     def test_poly_fence_object_avoidance_guided_two_squares(self, target_system=1, target_component=1):
         self.start_subtest("Ensure we can steer around obstacles in guided mode")
         here = self.get_location()
@@ -8182,6 +8324,7 @@ return update()
             # self.GCSRally,  # enable me in 2026, needs MAVProxy fixes
             self.MotorTest,
             self.WheelEncoders,
+            self.MAVLinkWheelEncoders,
             self.DataFlashOverMAVLink,
             self.DataFlash,
             self.SkidSteer,
