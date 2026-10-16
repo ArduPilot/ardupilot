@@ -401,6 +401,12 @@ void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
         getsockopt(pfd.fd, SOL_SOCKET, SO_ERROR, reinterpret_cast<void*>(&error), &errlen);
 
         _down= error == ENETDOWN || error == ENODEV;
+        if (_down) {
+            // The kernel drops frames still queued when the iface goes down
+            // and never loops them back, so they would pin the TX count.
+            _frames_in_socket_tx_queue = 0;
+            _pending_loopback_ids.clear();
+        }
         stats.num_downs++;
     }
 }
