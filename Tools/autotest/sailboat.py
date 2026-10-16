@@ -15,11 +15,10 @@ from vehicle_test_suite import PreconditionFailedException
 testdir = os.path.dirname(os.path.realpath(__file__))
 
 
-def log_name(self):
-    return "Sailboat"
-
-
 class AutoTestSailboat(AutoTestRover):
+
+    def log_name(self):
+        return "Sailboat"
 
     def vehicleinfo_key(self):
         return "Rover"
