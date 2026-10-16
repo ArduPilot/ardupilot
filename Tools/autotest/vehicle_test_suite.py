@@ -12033,6 +12033,12 @@ Also, ignores heartbeats not from our target system'''
             pexpect_timeout=pexpect_timeout,
             sitl_rcin_port=sitl_rcin_port,
         )
+        # adopt it now, before anything below which can throw.  The
+        # post-test cleanup closes whatever _mavproxy holds, so a
+        # timeout in one of the expects here used to leave the child
+        # running for the rest of the worker.  The 180s parameter wait
+        # below makes that a wide window.
+        self._mavproxy = mavproxy
         mavproxy.expect(r'Telemetry log: (\S+)\r\n')
         self.logfile = mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
@@ -12061,7 +12067,6 @@ Also, ignores heartbeats not from our target system'''
         # pexpect's default 60s under the same load.
         mavproxy.expect("Saved [0-9]+ parameters to", timeout=180)
 
-        self._mavproxy = mavproxy  # so we can clean up after tests....
         return mavproxy
 
     def stop_mavproxy(self, mavproxy):
