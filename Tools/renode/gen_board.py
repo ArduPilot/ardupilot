@@ -556,6 +556,17 @@ def is_periph_board(root, board):
     return _resolved_env(_hwdef_root(root) / board / 'hwdef.dat', 'AP_PERIPH') == '1'
 
 
+# Pixhawk1 sensor lines, as in its hwdef.dat
+FMUV3_AUTODETECT_SENSORS = (
+    'IMU Invensense SPI:mpu6000 ROTATION_ROLL_180',
+    'IMU LSM9DS0 SPI:lsm9ds0_g SPI:lsm9ds0_am ROTATION_ROLL_180 '
+    'ROTATION_ROLL_180_YAW_270 ROTATION_PITCH_180',
+    'BARO MS5611 SPI:ms5611',
+    'COMPASS HMC5843 SPI:hmc5843 false ROTATION_PITCH_180',
+    'COMPASS LSM303D SPI:lsm9ds0_am ROTATION_NONE',
+)
+
+
 def _load_compiler(root):
     scripts = _hwdef_root(root) / 'scripts'
     if str(scripts) not in sys.path:
@@ -2847,6 +2858,15 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     outdir.mkdir(parents=True, exist_ok=True)
     app = _compile_hwdef(root, board_dir / 'hwdef.dat', outdir / 'hwdef')
     app_defines = _defines(outdir / 'hwdef' / 'hwdef.h')
+    if not app.imu_list and _define_enabled(app_defines, 'HAL_CHIBIOS_ARCH_FMUV3'):
+        # board_autodetect looks for the Pixhawk1 sensors; add the kinds
+        # the hwdef does not list
+        existing = {'IMU': app.imu_list, 'BARO': app.baro_list,
+                    'COMPASS': app.compass_list}
+        for kind in [kind for kind, found in existing.items() if not found]:
+            for line in FMUV3_AUTODETECT_SENSORS:
+                if line.split()[0] == kind:
+                    app.process_line(line, 0)
     bootloader_dat = bootloader_hwdef(root, board)
     bootloader = (_compile_hwdef(
         root, bootloader_dat, outdir / 'hwdef-bl', bootloader=True)
