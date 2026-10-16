@@ -16575,6 +16575,15 @@ switch value'''
                         # uninterruptible state ignores the latter
                         t.kill()
 
+        # tell every worker to stop before joining it.  A worker puts its
+        # result and then immediately asks for more work; this loop
+        # handles requests before it drains results, so the last result
+        # can end the loop with that worker's request still pending.  The
+        # worker is then sitting in its 600s assign-queue get(), and the
+        # join below waits the whole timeout out.  Costs time, not
+        # correctness - but it is ten minutes of it.
+        for q in self.assign_queues.values():
+            q.put(None)
         for t in self.workers:
             t.join()
         reap_finished_workers()
