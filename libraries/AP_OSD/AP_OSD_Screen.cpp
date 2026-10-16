@@ -42,6 +42,7 @@
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_MSP/AP_MSP.h>
@@ -1070,7 +1071,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF0_EN
     // @DisplayName: EKF0_EN
-    // @Description: Displays EKF core 0 as C0, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
+    // @Description: Displays EKF core 0 as C0, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows the flow sensor's signal strength after the RSSI symbol, 0 to 99, and a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes and the signal strength reads --, flashing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF0_X
@@ -1086,7 +1087,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF1_EN
     // @DisplayName: EKF1_EN
-    // @Description: Displays EKF core 1 as C1, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
+    // @Description: Displays EKF core 1 as C1, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows the flow sensor's signal strength after the RSSI symbol, 0 to 99, and a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes and the signal strength reads --, flashing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF1_X
@@ -1102,7 +1103,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF2_EN
     // @DisplayName: EKF2_EN
-    // @Description: Displays EKF core 2 as C2, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
+    // @Description: Displays EKF core 2 as C2, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows the flow sensor's signal strength after the RSSI symbol, 0 to 99, and a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes and the signal strength reads --, flashing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF2_X
@@ -1669,10 +1670,22 @@ void AP_OSD_Screen::draw_ekf_lane(uint8_t lane, uint8_t x, uint8_t y)
     const char marker = (ahrs.get_primary_core_index() == lane) ? SYMBOL(SYM_ROLLR) : ' ';
     backend->write(x, y, pos_flash, "C%u%c%s", unsigned(lane), marker, postype);
 
-    if (!status.flow_configured || no_flow_data) {
+    if (!status.flow_configured) {
         return;
     }
-    const uint8_t flow_x = x + 6;
+#if AP_OPTICALFLOW_ENABLED
+    // the flow sensor's signal strength, shown as the RSSI item shows the receiver's
+    const AP_OpticalFlow *optflow = AP::opticalflow();
+    if (!no_flow_data && optflow != nullptr) {
+        backend->write(x + 6, y, false, "%c%2u", SYMBOL(SYM_RSSI), unsigned(MIN(optflow->quality() * 100U / 255U, 99U)));
+    } else {
+        backend->write(x + 6, y, true, "%c--", SYMBOL(SYM_RSSI));
+    }
+#endif
+    if (no_flow_data) {
+        return;
+    }
+    const uint8_t flow_x = x + 9;
     if (status.flow_x_fused || status.flow_y_fused) {
         // flow Y comes from forward motion and flow X from sideways motion;
         // an arrow flashes when its axis is not fusing while the other is
