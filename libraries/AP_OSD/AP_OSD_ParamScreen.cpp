@@ -185,7 +185,7 @@ static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SC
 AP_OSD_ParamScreen::AP_OSD_ParamScreen(uint8_t index)
 {
     for (uint8_t i = 0; i < NUM_PARAMS; i++) {
-        params[i] = PARAM_DEFAULTS[index][i];
+        params[i].set_defaults(PARAM_DEFAULTS[index][i]);
     }
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -354,8 +354,12 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
         param = AP_Param::next_scalar(&setting._current_token, &setting._param_type);
     } else {
         // going backwards is somewhat convoluted as the param code is geared for going forward
-        ap_var_type type = AP_PARAM_NONE, prev_type = AP_PARAM_NONE, prev_prev_type = AP_PARAM_NONE;
-        AP_Param::ParamToken token {}, prev_token, prev_prev_token;
+        ap_var_type type = AP_PARAM_NONE;
+        ap_var_type prev_type = AP_PARAM_NONE;
+        ap_var_type prev_prev_type = AP_PARAM_NONE;
+        AP_Param::ParamToken token {};
+        AP_Param::ParamToken prev_token {};
+        AP_Param::ParamToken prev_prev_token {};
 
         for (param = AP_Param::first(&token, &type);
             param && (setting._current_token.key != token.key

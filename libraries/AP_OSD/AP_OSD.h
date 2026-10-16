@@ -416,7 +416,9 @@ public:
 
     AP_OSD_ParamSetting() {};
     AP_OSD_ParamSetting(uint8_t param_number);
-    AP_OSD_ParamSetting(const Initializer& initializer);
+
+    // set the defaults from a compact static initializer structure
+    void set_defaults(const Initializer& initializer);
 
     // initialize the setting from the configured information
     void update();

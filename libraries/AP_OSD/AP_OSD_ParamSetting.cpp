@@ -271,16 +271,17 @@ AP_OSD_ParamSetting::AP_OSD_ParamSetting(uint8_t param_number) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// construct a setting from a compact static initializer structure
-AP_OSD_ParamSetting::AP_OSD_ParamSetting(const Initializer& initializer) :
-    _param_number(initializer.index),
-    default_enabled(true),
-    default_ypos(initializer.index + 1),
-    default_param_group(initializer.token.group_element),
-    default_param_idx(initializer.token.idx),
-    default_param_key(initializer.token.key),
-    default_type(float(initializer.type))
+// set the defaults from a compact static initializer structure. This is
+// done in place so the remaining members keep their zeroed state
+void AP_OSD_ParamSetting::set_defaults(const Initializer& initializer)
 {
+    _param_number = initializer.index;
+    default_enabled = true;
+    default_ypos = initializer.index + 1;
+    default_param_group = initializer.token.group_element;
+    default_param_idx = initializer.token.idx;
+    default_param_key = initializer.token.key;
+    default_type = float(initializer.type);
     AP_Param::setup_object_defaults(this, var_info);
 }
 
