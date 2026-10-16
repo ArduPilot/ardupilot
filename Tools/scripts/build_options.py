@@ -485,6 +485,7 @@ BUILD_OPTIONS = [
     Feature('MAVLink', 'MAVLINK_MSG_FLIGHT_INFORMATION', 'AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'Enable FLIGHT_INFORMATION MAVLink message', 0, None),  # noqa
     Feature('MAVLink', 'MAVLINK_COMPONENT_INFORMATION', 'AP_MAVLINK_COMPONENT_INFORMATION_ENABLED', 'Enable COMPONENT_INFORMATION MAVLink message', 0, 'AP_MAVLINK_FTP_ENABLED,FILESYSTEM_SYS'),  # noqa
     Feature('MAVLink', 'MAVLINK_EVENTS', 'AP_LOGGER_MAVLINK_EVENTS_ENABLED', 'Enable MAVLink events interface', 0, 'Logging'),  # noqa
+    Feature('MAVLink', 'MAVLINK_EVENTS_METADATA_ROMFS', 'AP_LOGGER_MAVLINK_EVENTS_METADATA_ROMFS_ENABLED', 'Embed MAVLink events metadata in ROMFS', 0, 'MAVLINK_EVENTS,MAVLINK_COMPONENT_INFORMATION,FILESYSTEM_ROMFS'),  # noqa
     Feature('MAVLink', 'RANGEFINDER_SENDING', 'AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', 'Enable sending of RANGEFINDER mavlink message', 0, "RANGEFINDER"),  # noqa
     Feature('MAVLink', 'MAVLINK_SIGNING', 'AP_MAVLINK_SIGNING_ENABLED', 'Enable MAVLink2 packet signing and validation', 0, None),  # noqa
     Feature('MAVLink', 'MAVLINK_GET_HOME_POSITION', 'AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED', 'Enable superseded MAV_CMD_GET_HOME_POSITION', 0, None),  # noqa
@@ -545,7 +546,6 @@ BUILD_OPTIONS = [
     #    Feature('Filesystem', 'FILESYSTEM_POSIX', 'AP_FILESYSTEM_POSIX_ENABLED', 'Enable POSIX filesystem', 0, None),
     Feature('Filesystem', 'FILESYSTEM_ROMFS', 'AP_FILESYSTEM_ROMFS_ENABLED', 'Enable @ROMFS/ filesystem', 0, None),
     Feature('Filesystem', 'FILESYSTEM_SYS', 'AP_FILESYSTEM_SYS_ENABLED', 'Enable @SYS/ filesystem', 0, None),
-    Feature('Filesystem', 'FILESYSTEM_SYS_EVENTS_METADATA', 'AP_FILESYSTEM_SYS_EVENTS_METADATA_ENABLED', 'Enable @SYS/events_metadata.json', 0, 'FILESYSTEM_SYS,MAVLINK_EVENTS'),  # noqa
     Feature('Filesystem', 'APJ_TOOL_PARAMETERS', 'FORCE_APJ_DEFAULT_PARAMETERS', 'Enable apj_tool parameter area', 0, None),
 
     Feature('Networking', 'Networking', 'AP_NETWORKING_ENABLED', 'Enable networking', 0, None),
