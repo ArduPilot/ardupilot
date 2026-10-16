@@ -490,16 +490,16 @@ void AP_IOMCU::read_status()
     uint16_t *r = (uint16_t *)&reg_status;
     if (!read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r)) {
         read_status_errors++;
-        if (read_status_errors == 20 && last_iocmu_timestamp_ms != 0) {
+        read_status_errors_since_last_success++;
+        if (read_status_errors_since_last_success == 20 && last_iocmu_timestamp_ms != 0) {
             // the IOMCU has stopped responding to status requests
             INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
         }
         return;
     }
-    if (read_status_ok == 0) {
-        // reset error count on first good read
-        read_status_errors = 0;
-    }
+
+    // reset recent error count on first good read
+    read_status_errors_since_last_success = 0;
     read_status_ok++;
 
     check_iomcu_reset();
@@ -544,7 +544,7 @@ void AP_IOMCU::write_log()
 // @Field: NDel: Number of delayed packets received by MCU
             AP::logger().WriteStreaming("IOMC", "TimeUS,RSErr,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHHIIIII",
                                AP_HAL::micros64(),
-                               read_status_errors,
+                               read_status_errors_since_last_success,
                                reg_status.freemem,
                                reg_status.timestamp_ms,
                                reg_status.total_pkts,
