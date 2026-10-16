@@ -362,6 +362,15 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_PD_END", 11, AC_AttitudeControl_Multi, _thr_pd_end, 1.0f),
 
+    // @Param: THR_PD_TC
+    // @DisplayName: Throttle PD attenuation time constant
+    // @Description: Time constant of the first-order filter on the throttle that drives throttle PD attenuation. The P and D scale then follows sustained throttle changes, such as a loaded hover or sustained fast flight, but not throttle swings faster than this, which would otherwise modulate P and D at the frequency of the swing. 0 uses the throttle without extra smoothing.
+    // @Units: s
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("THR_PD_TC", 12, AC_AttitudeControl_Multi, _thr_pd_tc, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -466,16 +475,27 @@ void AC_AttitudeControl_Multi::update_throttle_gain_boost()
 // Returned rather than applied with set_PD_scale_mult(): with the rate thread
 // rate_controller_run_dt() runs several times per main loop while _pd_scale
 // is only reset once per main loop, so a multiplier applied here would compound.
-Vector3f AC_AttitudeControl_Multi::get_throttle_pd_attenuation() const
+// The throttle is smoothed with time constant ATC_THR_PD_TC, so the scale follows
+// sustained throttle but not fast swings; dt is the rate loop's time step.
+Vector3f AC_AttitudeControl_Multi::get_throttle_pd_attenuation(float dt)
 {
+    // filtered throttle (CTUN.ThO), smoothed further by ATC_THR_PD_TC. Disarmed, the filter
+    // tracks the throttle directly so it starts each flight from the current value.
+    const float throttle_now = _motors.get_throttle();
+    const float tc = MAX(_thr_pd_tc.get(), 0.0f);
+    if (!_motors.armed() || !is_positive(tc) || !is_positive(dt)) {
+        _thr_pd_throttle_filt = throttle_now;
+    } else {
+        _thr_pd_throttle_filt += (dt / (tc + dt)) * (throttle_now - _thr_pd_throttle_filt);
+    }
+
     const uint8_t axes = uint8_t(_thr_pd_axes.get());
     const float atten = constrain_float(_thr_pd_atten, 0.0f, 0.9f);
     if (axes == 0 || !is_positive(atten)) {
         return VECTORF_111;
     }
     const float brk = constrain_float(_thr_pd_brk, 0.0f, 0.95f);
-    // filtered throttle (CTUN.ThO), so the gains do not follow motor-output noise
-    const float throttle = _motors.get_throttle();
+    const float throttle = _thr_pd_throttle_filt;
     if (throttle <= brk) {
         return VECTORF_111;
     }
@@ -528,7 +548,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
     update_throttle_gain_boost();
 
     // attenuate rate P and D at high throttle, on top of any other PD scaling
-    const Vector3f thr_pd = get_throttle_pd_attenuation();
+    const Vector3f thr_pd = get_throttle_pd_attenuation(dt);
     const Vector3f pd_scale{_pd_scale.x * thr_pd.x, _pd_scale.y * thr_pd.y, _pd_scale.z * thr_pd.z};
 
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)

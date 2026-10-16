@@ -95,7 +95,7 @@ protected:
     void update_throttle_gain_boost();
 
     // per-axis rate P and D multiplier, reducing them above a throttle breakpoint
-    Vector3f get_throttle_pd_attenuation() const;
+    Vector3f get_throttle_pd_attenuation(float dt);
 
     // Slews the current throttle-to-attitude mix ratio toward the target (_throttle_rpy_mix_desired)
     void update_throttle_rpy_mix();
@@ -161,4 +161,6 @@ protected:
     AP_Float              _thr_pd_brk;       // throttle above which rate P and D are attenuated
     AP_Int8               _thr_pd_axes;      // axes the attenuation applies to (bit 0 roll, 1 pitch, 2 yaw)
     AP_Float              _thr_pd_end;       // throttle at which the full attenuation is reached
+    AP_Float              _thr_pd_tc;        // time constant (s) of the throttle filter driving the attenuation
+    float                 _thr_pd_throttle_filt; // throttle after the ATC_THR_PD_TC filter
 };
