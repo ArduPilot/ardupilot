@@ -116,6 +116,7 @@ struct nav_lane_status {
     bool flow_y_fused;          // flow Y, from forward motion, fused within the last 500 ms
     bool flow_x_reset;          // velocity reset within the last 250 ms to recover flow X locked out alone
     bool flow_y_reset;          // velocity reset within the last 250 ms to recover flow Y locked out alone
+    uint8_t flow_quality_min;   // flow sensor quality below which the lane will not re-anchor velocity to flow, 0 if it has no floor
     // why neither flow axis is fusing, when flow is configured
     enum class FlowStop : uint8_t {
         NONE,
