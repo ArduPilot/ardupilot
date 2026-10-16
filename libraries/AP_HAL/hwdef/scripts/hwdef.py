@@ -363,11 +363,42 @@ class HWDef:
                         relpath = relpath[len(dirname)+1:]
                     self.romfs[relpath] = fullpath
 
+    def events_metadata_romfs_enabled(self):
+        '''true if the MAVLink events metadata should be embedded in ROMFS.
+        Only defines given in the hwdef or build options are visible here,
+        so this checks the features AP_LOGGER_MAVLINK_EVENTS_METADATA_ROMFS_ENABLED
+        depends on as well as the define itself'''
+        if self.is_periph_fw() or int(self.env_vars.get('AP_PERIPH', 0)) != 0:
+            return False
+        if self.is_bootloader_fw() or self.is_io_fw():
+            return False
+        for name in ('AP_LOGGER_MAVLINK_EVENTS_METADATA_ROMFS_ENABLED',
+                     'AP_LOGGER_MAVLINK_EVENTS_ENABLED',
+                     'AP_MAVLINK_COMPONENT_INFORMATION_ENABLED',
+                     'AP_MAVLINK_FTP_ENABLED',
+                     'AP_FILESYSTEM_SYS_ENABLED',
+                     'AP_FILESYSTEM_ROMFS_ENABLED',
+                     'HAL_LOGGING_ENABLED',
+                     'HAL_GCS_ENABLED'):
+            if not self.intdefines.get(name, 1):
+                return False
+        return True
+
+    def add_events_metadata_to_ROMFS(self):
+        '''add the MAVLink events metadata to ROMFS.  The file is written
+        by Board.pre_build in Tools/ardupilotwaf/boards.py, using
+        Tools/ardupilotwaf/events_metadata.py, on every build, so it is
+        not a configure output'''
+        if not self.events_metadata_romfs_enabled():
+            return
+        self.romfs['events.json.xz'] = os.path.join(self.outdir, 'events.json.xz')
+
     def write_ROMFS(self):
         '''publish ROMFS file list to env_vars so the waf build embeds them
         via process_hwdef_results. Safe to call multiple times; subclasses
         that need it at a specific point in their run() should call it
         directly. Does nothing if no ROMFS files have been registered.'''
+        self.add_events_metadata_to_ROMFS()
         if not self.romfs:
             return
         romfs_list = []
@@ -432,6 +463,12 @@ class HWDef:
             self.error(self.stale_defines[name])
 
     def is_periph_fw(self):
+        return False
+
+    def is_bootloader_fw(self):
+        return False
+
+    def is_io_fw(self):
         return False
 
     def validate_periph_defines(self):
