@@ -41,8 +41,8 @@ and SHA-256 against `latest.json` before extracting it. Set
 `RENODE_PACKAGE_BASE_URL` to use another package mirror, or set
 `RENODE_SOURCE_REVISION` to require a specific 40-character source revision.
 `RENODE_PACKAGE_SHA256` additionally requires the package checksum to match a
-trusted value. CI pins both values in `test_renode.yml`; update both when
-changing the Renode package.
+trusted value. CI sets neither, so it tests the published package that
+`launch.py` users get, and logs its source revision.
 
 `run.py` downloads the SVD matching the exact MCU in the compiled `hwdef.dat`
 from `https://firmware.ardupilot.org/Tools/Renode/data/SVD/`, verifies its size
