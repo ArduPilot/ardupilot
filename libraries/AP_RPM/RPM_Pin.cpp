@@ -45,6 +45,14 @@ void AP_RPM_Pin::irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp)
 
 void AP_RPM_Pin::update(void)
 {
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // Rate Limiter to keep pin RPM update rate at 50Hz
+    if (now_ms - last_pubished_ms < 20) {
+        return;
+    }
+    last_pubished_ms = now_ms;
+    
     if (last_pin != get_pin()) {
         // detach from last pin
         if (interrupt_attached) {
