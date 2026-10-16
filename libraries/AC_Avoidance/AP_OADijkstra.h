@@ -22,7 +22,7 @@ public:
     CLASS_NO_COPY(AP_OADijkstra);  /* Do not allow copies */
 
     // set fence margin (in meters) used when creating "safe positions" within the polygon fence
-    void set_fence_margin(float margin) { _polyfence_margin = MAX(margin, 0.0f); }
+    void set_fence_margin(float margin);
 
     // trigger Dijkstra's to recalculate shortest path based on current location 
     void recalculate_path() { _shortest_path_ok = false; }
@@ -146,11 +146,13 @@ private:
     AP_ExpandingArray<Vector2f> _inclusion_polygon_pts; // array of nodes corresponding to inclusion polygon points plus a margin
     uint8_t _inclusion_polygon_numpoints;   // number of points held in above array
     uint32_t _inclusion_polygon_update_ms;  // system time of boundary update from AC_Fence (used to detect changes to polygon fence)
+    float _inclusion_polygon_failed_margin_cm = -1; // margin for retry suppression; -1 after success
 
     // exclusion polygon related variables
     AP_ExpandingArray<Vector2f> _exclusion_polygon_pts; // array of nodes corresponding to exclusion polygon points plus a margin
     uint8_t _exclusion_polygon_numpoints;   // number of points held in above array
     uint32_t _exclusion_polygon_update_ms;  // system time exclusion polygon was updated (used to detect changes)
+    float _exclusion_polygon_failed_margin_cm = -1; // margin for retry suppression; -1 after success
 
     // exclusion circle related variables
     AP_ExpandingArray<Vector2f> _exclusion_circle_pts; // array of nodes surrounding exclusion circles plus a margin
