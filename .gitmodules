@@ -42,3 +42,6 @@
 [submodule "modules/littlefs"]
 	path = modules/littlefs
 	url = https://github.com/ArduPilot/littlefs.git
+[submodule "modules/picolibc"]
+	path = modules/picolibc
+	url = https://github.com/ArduPilot/picolibc.git

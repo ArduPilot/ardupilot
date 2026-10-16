@@ -686,6 +686,25 @@ class ChibiOSHWDef(hwdef.HWDef):
                     self.error("Badly formed config value %s (got %s)" % (name, ret))
         return ret
 
+    def get_boolean_define(self, name):
+        '''return an explicit boolean hwdef define, or None if absent'''
+        if name in self.build_option_defines:
+            value = str(self.build_option_defines[name])
+        else:
+            value = None
+            for line in reversed(self.alllines):
+                fields = self.split_line(line, posix=False)
+                if len(fields) >= 3 and fields[0] == 'define' and fields[1] == name:
+                    value = fields[2]
+                    break
+        if value is None:
+            return None
+        if value in ('1', 'TRUE'):
+            return True
+        if value in ('0', 'FALSE'):
+            return False
+        self.error("define %s must be a boolean value" % name)
+
     def get_mcu_config(self, name, required=False):
         '''get a value from the mcu dictionary'''
         lib = self.get_mcu_lib(self.mcu_type)
@@ -1305,6 +1324,8 @@ class ChibiOSHWDef(hwdef.HWDef):
         for v in build_info.keys():
             self.build_flags.append('%s=%s' % (v, build_info[v]))
 
+        heap_enabled = self.get_boolean_define('CH_CFG_USE_HEAP')
+
         # setup for bootloader build
         if self.is_bootloader_fw():
             f.write('''
@@ -1373,6 +1394,13 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define CH_CFG_USE_HEAP FALSE
 #endif
 ''')
+                if heap_enabled is None:
+                    heap_enabled = False
+        if heap_enabled is None:
+            # chconf.h enables the heap by default.
+            heap_enabled = True
+        self.env_vars['CH_CFG_USE_HEAP'] = int(heap_enabled)
+
         if self.env_vars.get('ROMFS_UNCOMPRESSED', False):
             f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
 

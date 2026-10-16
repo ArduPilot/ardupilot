@@ -126,8 +126,11 @@ public:
     {}
 
     ~ObjectBuffer(void) {
-        if (!external_buf)
+#if !defined(CH_CFG_USE_HEAP) || CH_CFG_USE_HEAP == TRUE
+        if (!external_buf) {
             delete buffer;
+        }
+#endif
     }
 
     // return size of ringbuffer
@@ -291,7 +294,9 @@ public:
         buffer = NEW_NOTHROW ByteBuffer(((_size+1) * sizeof(T)));
     }
     ~ObjectBuffer_TS(void) {
+#if !defined(CH_CFG_USE_HEAP) || CH_CFG_USE_HEAP == TRUE
         delete buffer;
+#endif
     }
 
     // return size of ringbuffer
