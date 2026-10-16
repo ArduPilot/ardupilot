@@ -82,6 +82,7 @@ const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57
 // right mode.
 const char AP_GPS::_initialisation_blob[] =
 #if AP_GPS_UBLOX_ENABLED
+    // enables NAV_SOL at rate 1 as well as setting 230400 baud
     UBLOX_SET_BINARY_230400
 #endif
 #if AP_GPS_SIRF_ENABLED
@@ -518,6 +519,7 @@ void AP_GPS::send_blob_start(uint8_t instance)
 
 #if AP_GPS_UBLOX_ENABLED
     if (type == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
+        // enables NAV_SOL at rate 1 as well as setting 115200 baud
         static const char blob[] = UBLOX_SET_BINARY_115200;
         send_blob_start(instance, blob, sizeof(blob));
         return;
@@ -531,7 +533,8 @@ void AP_GPS::send_blob_start(uint8_t instance)
         // we use 460800 when doing moving baseline as we need
         // more bandwidth. We don't do this if using UART2, as
         // in that case the RTCMv3 data doesn't go over the
-        // link to the flight controller
+        // link to the flight controller.  This blob also enables
+        // NAV_SOL at rate 1
         static const char blob[] = UBLOX_SET_BINARY_460800;
         send_blob_start(instance, blob, sizeof(blob));
         return;
