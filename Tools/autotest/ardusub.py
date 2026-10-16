@@ -1320,6 +1320,63 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             elif m.chan == 2:
                 chan2_last_timestamp_us = att_ts_us
 
+    def AsymmetricThrustCoupling(self):
+        """Confirm thruster asymmetry effects, and that compensation negates them.
+        Asymmetric thrust causes unintentionally coupled motion axes, like altitude change when
+        commanding roll using vertically-oriented thrusters (as is present in the default Sub frame).
+        This test confirms that behaviour, and its removal when asymmetry compensation is applied.
+        """
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('STABILIZE')
+        self.set_parameter("SIM_BUOYANCY", 0)
+
+        # dive to 5m with symmetric thrust and stabilize
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=-6, altitude_max=-5, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.wait_climbrate(-0.02, 0.02, timeout=10)
+
+        # threshold for validation of altitude change
+        altitude_change_threshold = 0.2
+
+        # verify that roll causes depth change without compensation
+        self.set_parameter("SIM_THST_ASYM", 0.8)
+        self.set_parameter("MOT_THST_ASYM", 1.0)
+        alt_before = self.assert_receive_message('VFR_HUD').alt
+        self.set_rc(Joystick.Roll, 1700)
+        self.delay_sim_time(5, reason="wait for roll change to take effect")
+        self.set_rc(Joystick.Roll, 1500)
+        alt_after = self.assert_receive_message('VFR_HUD').alt
+        alt_delta = abs(alt_after - alt_before)
+        self.progress(f"Uncompensated altitude change: {alt_delta:.2f} m")
+        if alt_delta < altitude_change_threshold:
+            raise NotAchievedException(
+                f"Expected altitude change without compensation, got only {alt_delta:.2f} m")
+
+        # test compensation across a range of asymmetry factors
+        for asymmetry in [0.5, 0.8, 1.0, 1.5, 2.0]:
+            self.progress(f"Testing asymmetry factor {asymmetry:.1f}")
+            self.set_parameter("SIM_THST_ASYM", asymmetry)
+            self.set_parameter("MOT_THST_ASYM", asymmetry)
+
+            self.set_rc(Joystick.Throttle, 1500)
+            self.wait_climbrate(-0.005, 0.005, timeout=50)
+
+            alt_before = self.assert_receive_message('VFR_HUD').alt
+            self.set_rc(Joystick.Roll, 1700)
+            self.delay_sim_time(5, reason="wait for roll change to take effect")
+            self.set_rc(Joystick.Roll, 1500)
+            alt_after = self.assert_receive_message('VFR_HUD').alt
+            alt_delta = abs(alt_after - alt_before)
+            self.progress(f"Compensated altitude change (asymmetry {asymmetry:.1f}): {alt_delta:.2f} m")
+            if alt_delta > altitude_change_threshold:
+                raise NotAchievedException(
+                    f"Expected altitude to be maintained with compensation (asymmetry {asymmetry:.1f}), "
+                    f"got {alt_delta:.2f} m change")
+
+        self.disarm_vehicle()
+
     def SurfaceSensorless(self):
         """Test surface mode with sensorless thrust"""
         # this drives the throttle down and waits to arrive at 9.5m, so
@@ -1878,6 +1935,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.PosHoldBounceBack,
             self.SHT3X,
             self.SurfaceSensorless,
+            self.AsymmetricThrustCoupling,
             self.GPSForYaw,
             self.WaterDepth,
             self.VisoForYaw,
