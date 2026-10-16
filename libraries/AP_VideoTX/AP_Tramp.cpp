@@ -118,21 +118,16 @@ char AP_Tramp::handle_response(void)
             // update the vtx
             AP_VideoTX& vtx = AP::vtx();
             bool update_pending = vtx.have_params_changed();
-            vtx.set_frequency_mhz(freq);
-
-            AP_VideoTX::VideoBand band;
-            uint8_t channel;
-            if (vtx.get_band_and_channel(freq, band, channel)) {
-                vtx.set_band(band);
-                vtx.set_channel(channel);
-            }
+            vtx.set_reported_frequency(freq);
 
             vtx.set_power_mw(power);
             vtx.set_actual_power_mw(cur_act_power);
 
             // VTX-reported rf_power_max is unreliable, so warn on the user cap instead
             if (!_act_power_warned && cur_act_power != 0) {
-                const uint16_t user_cap = vtx.get_max_power_mw();
+                // the cap is the top user power table entry when that table is
+                // in use, otherwise VTX_MAX_POWER
+                const uint16_t user_cap = vtx.get_power_cap_mw();
                 const bool over_cap = (user_cap != 0 && cur_act_power > user_cap);
                 const bool over_request = (power != 0 && cur_act_power > power + (power / 2));
                 if (over_cap || over_request) {
@@ -355,10 +350,31 @@ void AP_Tramp::process_requests()
         // Note after config a status update request is made, a new status
         // request is made, this request is handled above and should prevent
         // subsequent config updates if the config is now correct
-        if (retry_count > 0 && ((now - last_time_us) >= TRAMP_MIN_REQUEST_PERIOD_US)) {
-            AP_VideoTX& vtx = AP::vtx();
-            // Config retries remain and min request period exceeded, check freq
-            if (!is_race_lock_enabled() && vtx.update_frequency()) {
+        AP_VideoTX& vtx = AP::vtx();
+        // with the VTX disabled nothing is commanded, pit mode included
+        const bool pitmode_disagreed = vtx.get_enabled() && is_pitmode_disagreed();
+        const uint32_t now_ms = AP_HAL::millis();
+
+        // A pit mode change is prioritised over every other pending change
+        // and retried on its own schedule so a refused or missed value can
+        // neither strand the VTX in pit mode nor burn the retry budget armed
+        // for frequency/power changes
+        if (pitmode_disagreed) {
+            if ((now_ms - _last_pitmode_send_ms) >= VTX_TRAMP_PITMODE_RETRY_MS) {
+                debug("Changing pitmode");
+                // intentionally ignores race lock: a race-locked VTX would
+                // ignore the request anyway
+                send_command('I', vtx.has_option(AP_VideoTX::VideoOptions::VTX_PITMODE) ? 0 : 1);
+                _last_pitmode_send_ms = now_ms;
+
+                // Update last time
+                last_time_us = now;
+
+                // Advance state
+                set_status(TrampStatus::TRAMP_STATUS_ONLINE_CONFIG);
+            }
+        } else if (retry_count > 0 && ((now - last_time_us) >= TRAMP_MIN_REQUEST_PERIOD_US)) {
+            if (!is_race_lock_enabled() && vtx.update_frequency() && vtx.configured_selectable()) {
                 debug("Updating frequency to %uMhz", vtx.get_configured_frequency_mhz());
                 // Freq can be and needs to be updated, issue request
                 send_command('F', vtx.get_configured_frequency_mhz());
@@ -396,7 +412,7 @@ void AP_Tramp::process_requests()
         }
 
         /* Was a config update made? */
-        if (!configUpdateRequired) {
+        if (!configUpdateRequired && !pitmode_disagreed) {
             /* No, look to continue monitoring */
             if ((now - last_time_us) >= TRAMP_STATUS_REQUEST_PERIOD_US) {
                 // Request period exceeded, issue freq/power/pit query
@@ -450,6 +466,13 @@ void AP_Tramp::process_requests()
     }
 }
 
+// the reported and configured pit modes disagree
+bool AP_Tramp::is_pitmode_disagreed() const
+{
+    const AP_VideoTX& vtx = AP::vtx();
+    return vtx.get_pitmode() != vtx.get_configured_pitmode();
+}
+
 bool AP_Tramp::is_device_ready()
 {
     return status >= TrampStatus::TRAMP_STATUS_ONLINE_MONITOR_FREQPWRPIT;
@@ -485,19 +508,88 @@ void AP_Tramp::update()
 
     AP_VideoTX& vtx = AP::vtx();
 
-    if (vtx.have_params_changed() && retry_count == 0) {
+    // with the VTX disabled nothing is commanded, pit mode included
+    const bool pitmode_disagreed = vtx.get_enabled() && is_pitmode_disagreed();
+    const uint32_t now_ms = AP_HAL::millis();
+
+    if (pitmode_disagreed) {
+        if (!_pitmode_disagreement_started) {
+            _pitmode_disagreement_started = true;
+            _pitmode_disagree_ms = now_ms;
+        }
+        // a VTX that is still starting up takes the request well inside this,
+        // so only complain once one has been refusing for a while
+        if (!_pitmode_warned
+            && now_ms - _pitmode_disagree_ms >= VTX_TRAMP_OPTIONS_WARN_MS) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                          "VTX: pitmode change not accepted");
+            _pitmode_warned = true;
+        }
+    } else {
+        // no disagreement, so forget the history: a later episode starts from
+        // scratch rather than warning immediately
+        _pitmode_disagreement_started = false;
+        _pitmode_disagree_ms = 0;
+        _pitmode_warned = false;
+    }
+
+    if (vtx.have_params_changed() && retry_count == 0 && !pitmode_disagreed) {
         // check changes in the order they will be processed; re-arm retries
         // only on real changes so a VTX rejecting a value can't loop forever
         if (vtx.update_frequency() || vtx.update_band() || vtx.update_channel()) {
-            if (vtx.update_frequency()) {
-                vtx.update_configured_channel_and_band();
-            } else {
+            // the retries ran out without the VTX taking the frequency last
+            // requested (many VTXs only accept their own channel
+            // frequencies): drop it, or it would override every later
+            // band/channel change. Follow VTX_BAND/VTX_CHANNEL if they have
+            // moved on to an enabled channel, otherwise return to the
+            // frequency the VTX is on
+            bool returned = false;
+            if (!vtx.configured_selectable() && vtx.get_frequency_mhz() != 0) {
+                // a band parameter change has disabled the selected
+                // channel: there is nothing to command, so stay on the
+                // frequency the VTX is on, without a warning
+                vtx.set_configured_frequency_mhz(vtx.get_frequency_mhz());
+                _last_conf_freq = vtx.get_frequency_mhz();
+                returned = true;
+            } else if (vtx.update_frequency() && vtx.get_configured_frequency_mhz() == _last_conf_freq &&
+                vtx.get_frequency_mhz() != 0) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: rejected frequency %uMHz", unsigned(_last_conf_freq));
                 vtx.update_configured_frequency();
+                const uint16_t next_freq = vtx.get_configured_frequency_mhz();
+                if (next_freq == _last_conf_freq || next_freq == 0) {
+                    // stay on the VTX's frequency, and on its slot if the
+                    // table has one. Without a slot, return VTX_BAND and
+                    // VTX_CHANNEL to the last slot the VTX was on: left on
+                    // the refused slot they would bring the refused
+                    // frequency straight back
+                    const uint16_t vtx_freq = vtx.get_frequency_mhz();
+                    vtx.set_configured_frequency_mhz(vtx_freq);
+                    uint8_t band, channel;
+                    if (vtx.table().band_and_channel_for_frequency(vtx_freq, band, channel)) {
+                        vtx.update_configured_channel_and_band();
+                    } else {
+                        vtx.set_configured_band(vtx.get_band());
+                        vtx.set_configured_channel(vtx.get_channel());
+                    }
+                    // nothing to send; selecting the refused frequency
+                    // again sends it again
+                    _last_conf_freq = vtx_freq;
+                    returned = true;
+                }
             }
-            const uint16_t conf_freq = vtx.get_configured_frequency_mhz();
-            if (conf_freq != _last_conf_freq) {
-                _last_conf_freq = conf_freq;
-                set_frequency(conf_freq);
+            if (!returned) {
+                if (vtx.update_frequency()) {
+                    vtx.update_configured_channel_and_band();
+                } else {
+                    vtx.update_configured_frequency();
+                }
+                const uint16_t conf_freq = vtx.get_configured_frequency_mhz();
+                // a band parameter change may have disabled the selected channel,
+                // leaving nothing to command
+                if (vtx.configured_selectable() && conf_freq != _last_conf_freq) {
+                    _last_conf_freq = conf_freq;
+                    set_frequency(conf_freq);
+                }
             }
         }
         else if (vtx.update_power()) {
@@ -506,10 +598,19 @@ void AP_Tramp::update()
                 _last_conf_power = conf_power;
                 retry_count = VTX_TRAMP_MAX_RETRIES;
                 _power_warn_pending = true;
+                _last_power_rearm_ms = now_ms;
             } else if (_power_warn_pending) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
                               "VTX: rejected power %umW", unsigned(conf_power));
                 _power_warn_pending = false;
+            }
+            // keep asking: giving up strands the VTX at the old power until a
+            // different level is requested, so re-arm the request budget
+            // periodically while the VTX keeps reporting a different power
+            if (retry_count == 0
+                && (now_ms - _last_power_rearm_ms) >= VTX_TRAMP_POWER_RETRY_MS) {
+                _last_power_rearm_ms = now_ms;
+                retry_count = VTX_TRAMP_MAX_RETRIES;
             }
         }
         else if (vtx.update_options()) {
