@@ -313,7 +313,8 @@ class upload_fw_blueos(Task.Task):
 class check_elf_symbols(Task.Task):
     # Recheck an unchanged binary when the symbol policy or inspection tool changes.
     vars = ['SYMBOLS_BLACKLIST', 'CHECK_MALLOC_WRAPPING', 'CHECK_SYMBOLS',
-            'vehicle_binary', 'SIM_ENABLED', 'LINKFLAGS', 'DEST_OS', 'NM',
+            'vehicle_binary', 'ALLOW_NONFLIGHT_SYMBOLS', 'SIM_ENABLED',
+            'LINKFLAGS', 'DEST_OS', 'NM',
             'PICOLIBC', 'PICOLIBC_LIB', 'PICOLIBC_MAP_PATH', 'PICOLIBC_MODE',
             'TOOLCHAIN']
     color='CYAN'
@@ -330,7 +331,8 @@ class check_elf_symbols(Task.Task):
         # depend on the optional C++ exception/new checking.
         check_cxx = self.env.CHECK_SYMBOLS and self.env.vehicle_binary and not self.env.SIM_ENABLED
         check_malloc = self.env.CHECK_MALLOC_WRAPPING and self.env.vehicle_binary
-        check_blacklist = self.env.SYMBOLS_BLACKLIST and self.env.vehicle_binary and not self.env.SIM_ENABLED
+        check_blacklist = (self.env.SYMBOLS_BLACKLIST and self.env.vehicle_binary and
+                           not self.env.ALLOW_NONFLIGHT_SYMBOLS and not self.env.SIM_ENABLED)
         check_picolibc = self.env.PICOLIBC and self.env.TOOLCHAIN != 'emscripten'
         if not (check_cxx or check_malloc or check_blacklist or check_picolibc):
             return
@@ -425,7 +427,8 @@ class check_elf_symbols(Task.Task):
 
         cxx_blacklist = []
         if (self.env.PICOLIBC_MODE == 'chibios' and
-                self.env.vehicle_binary and not self.env.SIM_ENABLED):
+                self.env.vehicle_binary and not self.env.ALLOW_NONFLIGHT_SYMBOLS and
+                not self.env.SIM_ENABLED):
             # libstdc++ error helpers end in abort and may pull newlib
             # diagnostics into an otherwise Picolibc-only binary.
             cxx_blacklist.append('std::__throw_')
@@ -475,6 +478,7 @@ def ap_program(bld,
                use_legacy_defines=True,
                program_name=None,
                vehicle_binary=True,
+               allow_nonflight_symbols=False,
                **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
@@ -515,6 +519,7 @@ def ap_program(bld,
     )
 
     tg.env.vehicle_binary = vehicle_binary
+    tg.env.ALLOW_NONFLIGHT_SYMBOLS = allow_nonflight_symbols
 
     if 'use' in kw and bld.env.STATIC_LINKING:
         # ensure we link against vehicle library

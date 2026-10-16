@@ -236,6 +236,16 @@ def test_chibios_picolibc_allows_libstdcxx_error_helpers_in_examples(checker, mo
     task.run()
 
 
+def test_nonflight_vehicle_keeps_malloc_check(checker, monkeypatch):
+    waf, task = checker
+    task.env.ALLOW_NONFLIGHT_SYMBOLS = True
+    task.env.LINKFLAGS = []
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw:
+                        "00001000 T abort\n U malloc\n")
+    with pytest.raises(waf.Errors.WafError, match="Missing malloc wrapping"):
+        task.run()
+
+
 @pytest.mark.parametrize("symbol", ["_malloc_r", "_malloc_r.constprop.0", "printf", "printf@@LIBC_1.0",
                                     "malloc", "calloc", "free", "read", "lseek", "write", "close", "fstat"])
 def test_unwrapped_symbol_rejected_without_cxx_checks(checker, monkeypatch, symbol):
