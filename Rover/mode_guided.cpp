@@ -460,3 +460,23 @@ uint32_t ModeGuided::get_timeout_ms() const
 {
     return MAX(g2.guided_timeout, 0.1) * 1000;
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+bool ModeGuided::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    if (_guided_mode != SubMode::WP) {
+        return false;
+    }
+    get_wp_progress(progress);
+    UNUSED_RESULT(get_nav_target(target));
+    return true;
+}
+
+bool ModeGuided::get_nav_target(Location &target) const
+{
+    if (_guided_mode != SubMode::WP) {
+        return false;
+    }
+    return get_wp_target(target);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED

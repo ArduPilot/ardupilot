@@ -77,6 +77,18 @@ bool GCS_MAVLINK_Rover::get_target_location(Location &target) const
     return rover.control_mode->get_desired_location(target);
 }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+bool GCS_MAVLINK_Rover::get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    return rover.control_mode->get_nav_progress(progress, target);
+}
+
+bool GCS_MAVLINK_Rover::get_mission_nav_target(Location &target) const
+{
+    return rover.control_mode->get_nav_target(target);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+
 void GCS_MAVLINK_Rover::send_nav_controller_output() const
 {
     if (!rover.control_mode->is_autopilot_mode()) {
