@@ -859,10 +859,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
     }
 
     // SPI Bosch BMI055/BMI088 (accel and gyro dies), BMI160, BMI270 and ST
-    // LSM9DS0 (gyro and accel/mag dies) and LSM6DSV, selected by whoAmI.
+    // LSM9DS0 (gyro and accel/mag dies) and LSM6DSV, selected by whoAmI, on
+    // SPI or, for the Bosch dies, I2C.
     // Each FIFO or status poll latches one physics sample in the register
     // and FIFO layout the ArduPilot backend decodes.
-    public class AP_RegisterIMU : ISPIPeripheral, IGPIOReceiver
+    public class AP_RegisterIMU : ISPIPeripheral, II2CPeripheral, IGPIOReceiver
     {
         // the generator passes every IMU its hwdef rotation
         public AP_RegisterIMU(IMachine machine, byte whoAmI, byte rotation = 0)
@@ -916,9 +917,32 @@ namespace Antmicro.Renode.Peripherals.Sensors
             {
                 WriteRegister(currentRegister, value);
             }
-            if(!IsStreamRegister(currentRegister))
+            Advance();
+            return result;
+        }
+
+        public void Write(byte[] data)
+        {
+            if(data.Length == 0)
             {
-                currentRegister = (byte)((currentRegister + 1) & AddressMask);
+                return;
+            }
+            currentRegister = (byte)(data[0] & AddressMask);
+            for(var index = 1; index < data.Length; index++)
+            {
+                WriteRegister(currentRegister, data[index]);
+                Advance();
+            }
+        }
+
+        public byte[] Read(int count = 1)
+        {
+            // I2C reads have no SPI dummy byte
+            var result = new byte[count];
+            for(var index = 0; index < count; index++)
+            {
+                result[index] = ReadRegister(currentRegister);
+                Advance();
             }
             return result;
         }
@@ -933,6 +957,14 @@ namespace Antmicro.Renode.Peripherals.Sensors
             if(value)
             {
                 FinishTransmission();
+            }
+        }
+
+        private void Advance()
+        {
+            if(!IsStreamRegister(currentRegister))
+            {
+                currentRegister = (byte)((currentRegister + 1) & AddressMask);
             }
         }
 
