@@ -4751,6 +4751,325 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # just reboot.
         self.reboot_sitl()
 
+    def EK3_FlowAxisLockoutRecovery(self):
+        '''Recover horizontal velocity from a single-axis optical-flow innovation lockout'''
+        # A rate offset on one flow axis is rejected by that axis's innovation gate while the
+        # other keeps passing, so the shared flow-fusion timer stays fresh and the 5 s
+        # AID_RELATIVE timeout never fires.  An accel bias reaches the same state only
+        # indirectly - the vehicle drifts until the flow agrees again - and did not provoke it
+        # reliably, so the fault is injected at the sensor.  XKF5.NI hits its 100 ceiling while
+        # an axis is being rejected and XKF7.FVC counts the resets, so both halves can be shown
+        # to see the same lockout with only the recovery differing.
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        def fly_with_stuck_flow_axis(options, qmin=0, quality=51, inject=True):
+            self.set_parameters({"EK3_OPTIONS": options, "SIM_FLOW_OFS_X": 0,
+                                 "EK3_FLOW_QMIN": qmin, "SIM_FLOW_QUAL": quality})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            # ALT_HOLD leaves horizontal position uncontrolled, so nothing fights the estimate
+            self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+            self.delay_sim_time(5, "let the AGL KF converge before injecting the fault")
+            if inject:
+                self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+
+        self.start_subtest("AGL KF gate on: single-axis lockout is recovered")
+        self.context_collect('STATUSTEXT')
+        fly_with_stuck_flow_axis(8)  # AglKfForOptflow
+        self.wait_statustext("flow vel reset", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        # the reset re-anchors velocity to the faulty axis, so don't expect a graceful landing
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("no flow axis lockout was provoked")
+        if self.max_dfreader_field('XKF7', 'FVC') == 0:
+            raise NotAchievedException("recovery announced but XKF7 logged no reset")
+
+        self.start_subtest("AGL KF gate off: same lockout, no recovery")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(0)  # clear AglKfForOptflow
+        self.delay_sim_time(30, "give the recovery the window it used with the gate on")
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("gate-off half did not reproduce the lockout")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("flow vel reset fired without the AGL KF gate")
+
+        # EK3_FLOW_QMIN declines to re-anchor to a sample the sensor calls poor.  Same
+        # lockout again, but now the sensor reports it is unhappy, as a defocused or
+        # poor-surface sensor does - so the recovery must stop flow aiding rather than
+        # adopt a measurement that is as likely to be the fault as the cure.
+        self.start_subtest("Low flow quality: lockout is not recovered by a reset")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, qmin=40, quality=10)
+        self.wait_statustext("flow quality", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("low-quality half did not reproduce the lockout")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("re-anchored to a flow sample below EK3_FLOW_QMIN")
+        if self.max_dfreader_field('XKF7', 'FVC') != 0:
+            raise NotAchievedException("XKF7 logged a reset below EK3_FLOW_QMIN")
+
+        # That latch is held until disarm or until the sensor recovers.  A sensor that sends
+        # nothing between landing and the next arm must not carry it into the next flight,
+        # where it would refuse flow-only relative aiding from the start.
+        self.start_subtest("Low flow quality: the latch ends with the flight, sensor silent or not")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, qmin=40, quality=10)
+        self.wait_statustext("flow quality", check_context=True, timeout=60)
+        self.set_parameters({"SIM_FLOW_OFS_X": 0, "SIM_FLOW_ENABLE": 0})
+        self.set_rc(3, 1000)
+        self.wait_disarmed()  # landed and auto-disarmed with no flow sample arriving
+        # stay armed on the ground: an auto-disarm would end the latch and meet the wait below
+        self.set_parameters({"SIM_FLOW_QUAL": 51, "DISARM_DELAY": 0})
+        self.arm_vehicle()
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+        fvu = None
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type=['ARM', 'XKF7'])
+            if m is None:
+                break
+            if m.get_type() == 'ARM':
+                if m.ArmState == 1:
+                    fvu = []
+            elif fvu is not None:
+                fvu.append(m.FVU)
+        if not fvu:
+            raise NotAchievedException("no XKF7 logged after the second arm")
+        if max(fvu) != 0:
+            raise NotAchievedException("the low-quality latch carried into the next flight")
+
+        # Outdoors a sensor drops out over a bad patch and comes back good, so the latch lets go
+        # after a long run of samples 10% clear of EK3_FLOW_QMIN, and not at the threshold itself.
+        self.start_subtest("Low flow quality: the latch lets go once the sensor recovers")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, qmin=40, quality=10)
+        self.wait_statustext("too low to recover", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.set_parameter("SIM_FLOW_QUAL", 42)
+        self.delay_sim_time(5, "quality above EK3_FLOW_QMIN but inside the release margin")
+        if self.statustext_in_collections("flow quality recovered"):
+            raise NotAchievedException("latch let go at quality 42, inside the 10% margin over 40")
+        # a dropout flickering between nothing and good is not a recovery: the run must be unbroken.
+        # send_set_parameter, as set_parameter's read-back takes over a second of sim time
+        for i in range(12):
+            self.send_set_parameter("SIM_FLOW_QUAL", 60 if i % 2 == 0 else 0)
+            self.delay_sim_time(0.5, "half a second of the flicker")
+        if self.statustext_in_collections("flow quality recovered"):
+            raise NotAchievedException("latch let go while quality flickered to 0")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_QUAL", 60)
+        self.wait_statustext("flow quality recovered", check_context=True, timeout=10)
+        self.wait_statustext("started relative aiding", check_context=True, timeout=10)
+        self.disarm_vehicle(force=True)
+
+        # Flying onto something higher, a car bonnet say, the range drops at once while the AGL
+        # KF height the reset scales the flow by follows it down over a second or more, and a
+        # reset in that window adopts a velocity wrong in proportion.  The recovery must wait
+        # until the two agree, so every reset over the step is checked against them in the log.
+        # The step is bonnet-like, to 0.5 m: a step of a third of the height is followed inside
+        # the 500 ms a lockout takes to declare.
+        self.start_subtest("Step in the ground: the recovery waits for the height to settle")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        rng = self.assert_receive_message('DISTANCE_SENSOR').current_distance * 0.01
+        tstep = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 0.5 - rng)
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("recovery deferred, range step", check_context=True, timeout=4)
+        self.delay_sim_time(3, "hold the lockout over the step")
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(3, "back over the ground, let the heights agree")
+        # the step may have ended the first lockout on its own, so start a fresh one: recovery
+        # must still go ahead once the heights agree
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_OFS_X", -1.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        # the speed error a height difference puts into a reset is the flow rate times that
+        # difference, and it may be no more than EK3_FLOW_M_NSE times the height
+        flow_noise = self.get_parameter("EK3_FLOW_M_NSE")
+        dfreader = self.dfreader_for_current_onboard_log()
+        hagl = None
+        dist = None
+        flow_rate = None
+        resets = 0
+        while True:
+            m = dfreader.recv_match(type=['XKFA', 'RFND', 'XKF7', 'OF'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'XKFA' and m.C == 0:
+                hagl = m.HAgl
+            elif mtype == 'RFND' and m.Instance == 0:
+                dist = m.Dist
+            elif mtype == 'OF':
+                flow_rate = math.hypot(m.flowX - m.bodyX, m.flowY - m.bodyY)
+            elif mtype == 'XKF7' and m.C == 0 and m.FVC > resets:
+                resets = m.FVC
+                if m.TimeUS * 1e-6 < tstep:
+                    continue
+                if hagl is None or dist is None or flow_rate is None:
+                    raise NotAchievedException("reset with no AGL KF, range or flow logged before it")
+                # 0.15 m/s for the logging rate
+                spd_err = flow_rate * abs(hagl - dist)
+                if spd_err > flow_noise * hagl + 0.15:
+                    raise NotAchievedException("reset with %.2f m/s from the height step (AGL KF %.2f m, range %.2f m)" %
+                                               (spd_err, hagl, dist))
+        if resets == 0:
+            raise NotAchievedException("no reset once the heights agreed again")
+
+        # The recovery scales the recovered velocity by the AGL KF height, and aglKfValid
+        # outlives the last range fusion by 5 s - long enough for that height to coast metres
+        # low.  Take the range finder out of range first and inject into that window: a fault
+        # injected while the range is fresh is recovered by one reset, and that reset
+        # re-anchors velocity to the faulty flow and ends the lockout, leaving nothing to
+        # defer.  The recovery must then resume with the range rather than be cancelled by it.
+        self.start_subtest("Stale range: the recovery is deferred, not taken")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("recovery deferred", check_context=True, timeout=4)
+        self.context_clear_collection('STATUSTEXT')
+        self.delay_sim_time(2, "hold the lockout with the range stale")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("re-anchored to a height with no current range")
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+
+        # A steady offset is reset once and then agreed with, so flip its sign every 4 s: each
+        # flip is a fresh lockout and a fresh reset, as repeated hard manoeuvres would give.  Five
+        # resets within 20 s pause the resets, for 5 s and then 10 s, while flow aiding carries on.
+        self.start_subtest("Repeated lockouts: bursts of resets pause them, for longer each time")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        t0 = self.get_sim_time()
+        for i in range(1, 17):
+            self.delay_sim_time(t0 + 4 * i - self.get_sim_time(), "the next flip")
+            self.set_parameter("SIM_FLOW_OFS_X", 1.0 if i % 2 == 0 else -1.0)
+        self.delay_sim_time(4, "the last flip and its reset")
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        stopped = self.statustext_in_collections("stopped aiding")
+        paused = [self.statustext_in_collections("EKF3 IMU0 flow vel resets paused %us" % s) for s in (5, 10)]
+        self.disarm_vehicle(force=True)
+        resets = []
+        dfreader = self.dfreader_for_current_onboard_log()
+        last = 0
+        while True:
+            m = dfreader.recv_match(type='XKF7')
+            if m is None:
+                break
+            if m.C == 0 and m.FVC != last:
+                resets.append(m.TimeUS * 1e-6)
+                last = m.FVC
+        self.progress("reset times: %s" % ' '.join('%.1f' % t for t in resets))
+        if stopped:
+            raise NotAchievedException("flow aiding stopped through the bursts of resets")
+        if not all(paused):
+            raise NotAchievedException("expected pauses of 5 s then 10 s to be reported")
+        if self.max_dfreader_field('XKF7', 'FVU') != 0:
+            raise NotAchievedException("a burst of resets latched flow aiding off")
+        if len(resets) < 11:
+            raise NotAchievedException("resets did not resume after the pauses (%u)" % len(resets))
+        if resets[5] - resets[4] < 4.9 or resets[10] - resets[9] < 9.9:
+            raise NotAchievedException("resets not paused for 5 s then 10 s: %s" % str(resets))
+
+        # In a fast rotation the flow lags its own gyro, and the sample a recovery would adopt can be
+        # wrong on both axes; a reset to it then puts a jump on the axis that was right.  Lock out X
+        # and hold an offset on Y across the moment the lockout is declared, so Y is rejected there
+        # but has passed within the last 500 ms.  Y measures the forward speed, so a reset that waits
+        # for a sample Y passed leaves it alone, where one taken during the burst jumps it by about
+        # the offset times the height.
+        self.start_subtest("Both axes wrong: the recovery waits for a sample the other axis passed")
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        # the harness only sees sim time move when SYSTEM_TIME arrives, and at the default rate and
+        # speedup a 0.2 s delay came out at 0.4-0.6 s, longer than the gap the Y burst must fall in
+        self.set_parameters({"SIM_FLOW_OFS_Y": 0, "SIM_SPEEDUP": 1})
+        self.set_message_rate_hz('SYSTEM_TIME', 50)
+        self.delay_sim_time(1, "SYSTEM_TIME at its new rate")
+        for i in range(3):
+            self.context_clear_collection('STATUSTEXT')
+            # send_set_parameter, as set_parameter's read-back takes over a second of sim time
+            self.send_set_parameter("SIM_FLOW_OFS_X", 1.0 if i % 2 == 0 else -1.0)
+            self.delay_sim_time(0.3, "X passing its last samples")
+            self.send_set_parameter("SIM_FLOW_OFS_Y", 1.0)
+            self.delay_sim_time(1.0, "Y rejected across the 500 ms lockout mark")
+            self.send_set_parameter("SIM_FLOW_OFS_Y", 0)
+            self.wait_statustext("flow vel reset", check_context=True, timeout=10)
+            self.delay_sim_time(3, "settle before the next lockout")
+        self.set_message_rate_hz('SYSTEM_TIME', 0)
+        self.set_parameters({"SIM_FLOW_OFS_X": 0, "SIM_SPEEDUP": self.speedup})
+        self.disarm_vehicle(force=True)
+        fwd = {}
+        reset_times = []
+        last = {}
+        x_flips = []
+        y_on = []
+        y_off = []
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'XKF7', 'PARM'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            mtype = m.get_type()
+            if mtype == 'PARM':
+                if m.Name == 'SIM_FLOW_OFS_X' and m.Value != 0:
+                    x_flips.append(t)
+                elif m.Name == 'SIM_FLOW_OFS_Y':
+                    (y_on if m.Value != 0 else y_off).append(t)
+            elif mtype == 'XKF1':
+                yaw = math.radians(m.Yaw)
+                fwd.setdefault(m.C, []).append((t, m.VN * math.cos(yaw) + m.VE * math.sin(yaw)))
+            elif m.FVC != last.get(m.C, 0):
+                reset_times.append((m.C, t))
+                last[m.C] = m.FVC
+        if not reset_times:
+            raise NotAchievedException("no reset logged")
+        # at the 10 Hz SITL flow rate a burst starting under 0.2 s after its X flip leaves Y over
+        # 500 ms stale when X's lockout is declared, and one starting over 0.5 s after it begins once
+        # that lockout is recovered: either way the recovery never needs the other axis check
+        # each set is logged twice, a few ms apart
+        flips = [t for (i, t) in enumerate(x_flips) if i == 0 or t - x_flips[i - 1] > 0.1] + [float('inf')]
+        for (tx, tnext) in zip(flips, flips[1:]):
+            y_start = min((t for t in y_on if tx < t < tnext), default=None)
+            y_end = min((t for t in y_off if tx < t < tnext), default=None)
+            if y_start is None or y_end is None or not 0.2 <= y_start - tx <= 0.5:
+                raise NotAchievedException("Y burst after the X flip at %.1f s missed the window" % tx)
+            early = [t for (_, t) in reset_times if tx < t < y_end]
+            if early:
+                raise NotAchievedException("reset at %.1f s, inside the Y burst" % early[0])
+        for (core, t) in reset_times:
+            # XKF1 is written before XKF7 in a frame, so step clear of the reset frame on both sides
+            before = [v for (tv, v) in fwd[core] if tv < t - 0.05]
+            after = [v for (tv, v) in fwd[core] if tv > t + 0.05]
+            if not before or not after:
+                raise NotAchievedException("no XKF1 either side of the reset at %.1f s" % t)
+            jump = after[0] - before[-1]
+            self.progress("core %u reset at %.1f s: forward speed %.2f -> %.2f m/s" % (core, t, before[-1], after[0]))
+            if abs(jump) > 1.0:
+                raise NotAchievedException("core %u reset at %.1f s jumped the forward speed %.2f m/s" % (core, t, jump))
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -19575,6 +19894,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
+            self.EK3_FlowAxisLockoutRecovery,
         ])
         return ret
 
