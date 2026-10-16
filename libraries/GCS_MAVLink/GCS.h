@@ -424,6 +424,21 @@ public:
 
 #if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     void send_nav_controller_progress() const;
+#if AP_MISSION_ENABLED
+    // Progress towards the navigation target of a mode which is not
+    // running a mission, e.g. a guided reposition or a return to launch.
+    // target is the target of the current navigation task, left
+    // uninitialised if there is none.
+    // progress.index is reported as the mission item if it is set, for
+    // vehicles whose mission modes are not reported by
+    // current_mode_requires_mission().
+    // Returns false if the mode has no progress to report.
+    virtual bool get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const { return false; }
+    // The target of the current navigation task of a mission item, e.g.
+    // the waypoint being flown to or the centre of the circle being flown.
+    // Returns false if there is none.
+    virtual bool get_mission_nav_target(Location &target) const { return false; }
+#endif // AP_MISSION_ENABLED
 #endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     // lock a channel, preventing use by MAVLink
