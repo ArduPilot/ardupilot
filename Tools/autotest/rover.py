@@ -5954,6 +5954,144 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.disarm_vehicle()
 
+    def NAV_CONTROLLER_PROGRESS(self):
+        '''test NAV_CONTROLLER_PROGRESS reports progress through mission items'''
+        wp_hold_s = 4
+        loiter_time_s = 5
+        delay_s = 3
+        # long enough to still be running throughout item 3
+        condition_delay_s = 60
+        home = self.home_position_as_location()
+        circle_centre = self.offset_location_ne(home, 0, 40)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 0, {"p1": wp_hold_s}),      # 1
+            (mavutil.mavlink.MAV_CMD_CONDITION_DELAY, 0, 0, 0, {                      # 2
+                "p1": condition_delay_s,
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL,
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME, 40, 40, 0, {                    # 3
+                "p1": loiter_time_s,
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            }),
+            self.create_MISSION_ITEM_INT(                                             # 4
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                p1=1,
+                p3=10,
+                x=int(circle_centre.lat * 1e7),
+                y=int(circle_centre.lng * 1e7),
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_DELAY, 0, 0, 0, {                            # 5
+                "p1": delay_s,
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL,
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),                  # 6
+        ])
+        self.context_push()
+        self.context_set_message_rate_hz('NAV_CONTROLLER_PROGRESS', 10)
+        self.context_collect('NAV_CONTROLLER_PROGRESS')
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(6, timeout=180)
+        self.wait_distance_to_home(0, 3, timeout=60)
+        self.delay_sim_time(2, reason="report the final progress")
+        msgs = self.context_collection('NAV_CONTROLLER_PROGRESS')
+        self.context_pop()
+        self.disarm_vehicle()
+
+        # item 2 is a condition, so has no progress of its own
+        by_seq = self.nav_progress_by_seq(msgs, 6, skip=(2,))
+
+        def phases(seq, want):
+            return self.assert_nav_progress_phases(by_seq[seq], f"item {seq}", want)
+
+        self.start_subtest("WAYPOINT reports distance then hold time")
+        (approach, hold) = phases(1, ['distance_remaining', 'time_remaining'])
+        self.assert_nav_progress_distance_closes("item 1", approach, 35, leg=40, close=3)
+        self.assert_nav_progress_countdown("item 1", hold, 'time_remaining', wp_hold_s)
+        self.assert_nav_progress_target("item 1", approach + hold, loc=self.offset_location_ne(home, 40, 0))
+
+        self.start_subtest("LOITER_TIME reports distance then loiter time, while a condition runs")
+        (approach, hold) = phases(3, ['distance_remaining', 'time_remaining'])
+        self.assert_nav_progress_distance_closes("item 3", approach, 35, leg=40, close=3)
+        self.assert_nav_progress_countdown("item 3", hold, 'time_remaining', loiter_time_s)
+
+        self.start_subtest("LOITER_TURNS reports turns")
+        (turns, ) = phases(4, ['count_remaining'])
+        self.assert_nav_progress_countdown("item 4", turns, 'count_remaining', 1)
+        self.assert_nav_progress_target("item 4", turns, loc=circle_centre)
+
+        self.start_subtest("NAV_DELAY reports time")
+        (delay, ) = phases(5, ['time_remaining'])
+        self.assert_nav_progress_countdown("item 5", delay, 'time_remaining', delay_s)
+
+        self.start_subtest("RTL reports distance home")
+        (approach, ) = phases(6, ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("item 6", approach, 20, close=3)
+        self.assert_nav_progress_target("item 6", approach, loc=home)
+
+    def NAV_CONTROLLER_PROGRESS_Modes(self):
+        '''test NAV_CONTROLLER_PROGRESS reports progress towards the targets of modes other than AUTO'''
+        self.context_push()
+        self.context_set_message_rate_hz('NAV_CONTROLLER_PROGRESS', 10)
+        home = self.home_position_as_location()
+
+        def collect(description, fn):
+            self.context_collect('NAV_CONTROLLER_PROGRESS')
+            fn()
+            msgs = self.context_stop_collecting('NAV_CONTROLLER_PROGRESS')
+            if len(msgs) == 0:
+                raise NotAchievedException(f"{description}: no NAV_CONTROLLER_PROGRESS")
+            self.assert_nav_progress_not_mission(description, msgs)
+            return msgs
+
+        def reposition(loc):
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                x=int(loc.lat * 1e7),
+                y=int(loc.lng * 1e7),
+                z=0,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            )
+            self.wait_location(loc, accuracy=3, height_accuracy=None, timeout=60)
+
+        self.start_subtest("GUIDED reports distance to its destination")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        dest = self.offset_location_ne(home, 50, 0)
+        msgs = collect("guided", lambda: reposition(dest))
+        (approach, ) = self.assert_nav_progress_phases(msgs, "guided", ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("guided", approach, 45, leg=50, close=4)
+        self.assert_nav_progress_target("guided", approach, loc=dest)
+
+        self.start_subtest("RTL reports distance home")
+        msgs = collect("RTL", lambda: (self.change_mode('RTL'), self.wait_distance_to_home(0, 3, timeout=60)))
+        msgs = self.nav_progress_from_distance(msgs, "RTL", 40)
+        (approach, ) = self.assert_nav_progress_phases(msgs, "RTL", ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("RTL", approach, 40, leg=50, close=4)
+        self.assert_nav_progress_target("RTL", approach, loc=home)
+
+        self.start_subtest("SmartRTL reports path points still to drive to")
+        self.change_mode('GUIDED')
+        for (n, e) in (30, 0), (30, 30):
+            reposition(self.offset_location_ne(home, n, e))
+        # the path ends where the vehicle armed, which is no longer home
+        self.set_home(self.offset_location_ne(home, -30, 0))
+        msgs = collect("SmartRTL", lambda: (
+            self.change_mode('SMART_RTL'),
+            self.wait_location(home, accuracy=3, height_accuracy=None, timeout=60),
+        ))
+        msgs = [m for m in msgs if m.count_remaining == m.count_remaining]  # drop GUIDED's distances
+        path = self.assert_nav_progress_phases(msgs, "SmartRTL", ['count_remaining'])[0]
+        if path[-1].count_remaining >= path[0].count_remaining:
+            raise NotAchievedException(f"SmartRTL: path count went {path[0].count_remaining} -> {path[-1].count_remaining}")
+        self.assert_nav_progress_target("SmartRTL", path, loc=home)
+
+        self.disarm_vehicle()
+        self.context_pop()
+
     def MAVProxyParam(self):
         '''Test MAVProxy parameter handling'''
         mavproxy = self.start_mavproxy()
@@ -8142,6 +8280,8 @@ return update()
             self.AuxModeSwitch,
             self.DriveRTL,
             self.SmartRTL,
+            self.NAV_CONTROLLER_PROGRESS,
+            self.NAV_CONTROLLER_PROGRESS_Modes,
             self.DriveSquare,
             self.SIMCompare,
             self.DriveMission,
