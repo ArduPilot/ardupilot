@@ -692,6 +692,65 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
 /*
   get a height above ground estimate for landing
  */
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+bool Mode::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    // modes which allow a pilot takeoff report its climb
+    if (!takeoff.running()) {
+        return false;
+    }
+    takeoff.get_progress(progress);
+    UNUSED_RESULT(get_nav_target(target));
+    return true;
+}
+
+bool Mode::get_nav_target(Location &target) const
+{
+    if (!takeoff.running()) {
+        return false;
+    }
+    return takeoff.get_target(target);
+}
+
+// the ground below the vehicle, for a landing
+bool Mode::get_land_target(Location &target) const
+{
+    if (!copter.current_loc.initialised()) {
+        return false;
+    }
+    target = Location(copter.current_loc.lat, copter.current_loc.lng, 0, Location::AltFrame::ABOVE_TERRAIN);
+    return true;
+}
+
+// distance remaining to the waypoint controller's destination, as a part of the leg from its origin
+void Mode::get_wp_progress(AP_Mission::ItemProgress &progress) const
+{
+    // get_wp_distance_to_destination_m() also measures to the leg's destination when avoiding objects
+    const float distance_m = wp_nav->get_wp_distance_to_destination_m();
+    const float leg_m = (wp_nav->get_wp_leg_destination_NED_m().xy() - wp_nav->get_wp_leg_origin_NED_m().xy()).tofloat().length();
+    progress.set_distance_remaining(distance_m, leg_m);
+}
+
+// altitude remaining from the current location to target, as a part of the change from start
+void Mode::get_alt_progress(AP_Mission::ItemProgress &progress, const Location &start, const Location &target) const
+{
+    float start_m, target_m, current_m;
+    if (!start.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, start_m) ||
+        !target.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, target_m) ||
+        !copter.current_loc.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, current_m)) {
+        // progress unknown, e.g. without terrain data
+        return;
+    }
+    progress.set_distance_remaining(fabsf(target_m - current_m), fabsf(target_m - start_m));
+}
+
+// height above ground remaining, as a part of the height when the descent started
+void Mode::get_descent_progress(AP_Mission::ItemProgress &progress, float start_alt_above_ground_m) const
+{
+    progress.set_distance_remaining(MAX(get_alt_above_ground_m(), 0.0f), start_alt_above_ground_m);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
 float Mode::get_alt_above_ground_m(void) const
 {
     float alt_above_ground_m;
