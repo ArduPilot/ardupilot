@@ -62,6 +62,7 @@ include $repo/Tools/renode/peripherals/sensors/AP_DevoOutput.cs
 include $repo/Tools/renode/peripherals/sensors/AP_FrSkyDOutput.cs
 include $repo/Tools/renode/peripherals/storage/AP_RAMTRON.cs
 
+include $repo/Tools/renode/peripherals/sensors/AP_SPIBarometer.cs
 mach create "ardupilot"
 machine LoadPlatformDescription $platform
 sysbus ApplySVD $mcu_svd
