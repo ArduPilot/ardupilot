@@ -645,6 +645,23 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
 }
 #endif  // HAL_MAVLINK_BINDINGS_ENABLED
 
+// returns true if chan has space for a message of message_size bytes
+// from each camera
+bool AP_Camera::have_space_for_each_backend(mavlink_channel_t chan, uint16_t message_size) const
+{
+    uint16_t space_required = 0;
+    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            space_required += message_size;
+        }
+    }
+    if (comm_get_txspace(chan) >= space_required) {
+        return true;
+    }
+    gcs_out_of_space_to_send(chan);
+    return false;
+}
+
 // send a mavlink message; returns false if there was not space to
 // send the message, true otherwise
 bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message msg_id)
@@ -653,36 +670,48 @@ bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message ms
 
     switch (msg_id) {
     case MSG_CAMERA_FEEDBACK:
-        CHECK_PAYLOAD_SIZE2(CAMERA_FEEDBACK);
+        if (!have_space_for_each_backend(chan, PAYLOAD_SIZE(chan, CAMERA_FEEDBACK))) {
+            return false;
+        }
         send_feedback(chan);
         break;
     case MSG_CAMERA_INFORMATION:
-        CHECK_PAYLOAD_SIZE2(CAMERA_INFORMATION);
         if (_camera_information_send_instance >= 0) {
+            CHECK_PAYLOAD_SIZE2(CAMERA_INFORMATION);
             const int16_t instance = _camera_information_send_instance;
             _camera_information_send_instance = -1;
+            // this request replaces any partly-sent all-cameras one
+            _camera_information_send_next[chan] = 0;
             send_camera_information((uint8_t)instance, chan);
-        } else {
-            send_camera_information(chan);
+        } else if (!send_camera_information(chan)) {
+            return false;
         }
         break;
     case MSG_CAMERA_SETTINGS:
-        CHECK_PAYLOAD_SIZE2(CAMERA_SETTINGS);
+        if (!have_space_for_each_backend(chan, PAYLOAD_SIZE(chan, CAMERA_SETTINGS))) {
+            return false;
+        }
         send_camera_settings(chan);
         break;
 #if AP_CAMERA_SEND_FOV_STATUS_ENABLED
     case MSG_CAMERA_FOV_STATUS:
-        CHECK_PAYLOAD_SIZE2(CAMERA_FOV_STATUS);
+        if (!have_space_for_each_backend(chan, PAYLOAD_SIZE(chan, CAMERA_FOV_STATUS))) {
+            return false;
+        }
         send_camera_fov_status(chan);
         break;
 #endif
     case MSG_CAMERA_CAPTURE_STATUS:
-        CHECK_PAYLOAD_SIZE2(CAMERA_CAPTURE_STATUS);
+        if (!have_space_for_each_backend(chan, PAYLOAD_SIZE(chan, CAMERA_CAPTURE_STATUS))) {
+            return false;
+        }
         send_camera_capture_status(chan);
         break;
 #if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
     case MSG_CAMERA_THERMAL_RANGE:
-        CHECK_PAYLOAD_SIZE2(CAMERA_THERMAL_RANGE);
+        if (!have_space_for_each_backend(chan, PAYLOAD_SIZE(chan, CAMERA_THERMAL_RANGE))) {
+            return false;
+        }
         send_camera_thermal_range(chan);
         break;
 #endif
@@ -790,17 +819,27 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
     }
 }
 
-// send camera information message to GCS
-void AP_Camera::send_camera_information(mavlink_channel_t chan)
+// send camera information message to GCS for each camera; returns
+// false if there was no space
+bool AP_Camera::send_camera_information(mavlink_channel_t chan)
 {
     WITH_SEMAPHORE(_rsem);
 
-    // call each instance
-    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_camera_information(chan);
+    // Resume at the unsent camera on this link when the scheduler
+    // retries.  Two of these messages do not fit in a 512 byte tx
+    // buffer, so they cannot be checked for together.
+    uint8_t &instance = _camera_information_send_next[chan];
+    for (; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
+        if (_backends[instance] == nullptr) {
+            continue;
         }
+        if (!HAVE_PAYLOAD_SPACE(chan, CAMERA_INFORMATION)) {
+            return false;
+        }
+        _backends[instance]->send_camera_information(chan);
     }
+    instance = 0;
+    return true;
 }
 
 // send camera information for a specific instance to GCS

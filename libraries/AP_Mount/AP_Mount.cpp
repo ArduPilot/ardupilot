@@ -24,6 +24,7 @@
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
@@ -623,36 +624,68 @@ void AP_Mount::handle_global_position_int(const mavlink_message_t &msg)
 
 #if HAL_GCS_ENABLED
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
-void AP_Mount::send_gimbal_device_attitude_status(mavlink_channel_t chan)
+bool AP_Mount::send_gimbal_device_attitude_status(mavlink_channel_t chan)
 {
+    if (!have_space_for_each_backend(chan, PAYLOAD_SIZE(chan, GIMBAL_DEVICE_ATTITUDE_STATUS))) {
+        return false;
+    }
+
     // call send_gimbal_device_attitude_status for each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_gimbal_device_attitude_status(chan);
         }
     }
+    return true;
 }
 
 // send a GIMBAL_MANAGER_INFORMATION message to GCS
-void AP_Mount::send_gimbal_manager_information(mavlink_channel_t chan)
+bool AP_Mount::send_gimbal_manager_information(mavlink_channel_t chan)
 {
-    // call send_gimbal_device_attitude_status for each instance
+    if (!have_space_for_each_backend(chan, PAYLOAD_SIZE(chan, GIMBAL_MANAGER_INFORMATION))) {
+        return false;
+    }
+
+    // call send_gimbal_manager_information for each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_gimbal_manager_information(chan);
         }
     }
+    return true;
 }
 
 // send a GIMBAL_MANAGER_STATUS message to GCS
-void AP_Mount::send_gimbal_manager_status(mavlink_channel_t chan)
+bool AP_Mount::send_gimbal_manager_status(mavlink_channel_t chan)
 {
-    // call send_gimbal_device_attitude_status for each instance
+    if (!have_space_for_each_backend(chan, PAYLOAD_SIZE(chan, GIMBAL_MANAGER_STATUS))) {
+        return false;
+    }
+
+    // call send_gimbal_manager_status for each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_gimbal_manager_status(chan);
         }
     }
+    return true;
+}
+
+// returns true if chan has space for a message of message_size bytes
+// from each mount
+bool AP_Mount::have_space_for_each_backend(mavlink_channel_t chan, uint16_t message_size) const
+{
+    uint16_t space_required = 0;
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            space_required += message_size;
+        }
+    }
+    if (comm_get_txspace(chan) >= space_required) {
+        return true;
+    }
+    gcs_out_of_space_to_send(chan);
+    return false;
 }
 #endif  // HAL_GCS_ENABLED
 

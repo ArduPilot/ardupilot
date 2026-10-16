@@ -235,14 +235,17 @@ public:
     void handle_param_value(const mavlink_message_t &msg);
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
-    // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
-    void send_gimbal_device_attitude_status(mavlink_channel_t chan);
+    // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS for each
+    // mount; returns false if there was no space for them
+    bool send_gimbal_device_attitude_status(mavlink_channel_t chan) WARN_IF_UNUSED;
 
-    // send a GIMBAL_MANAGER_INFORMATION message to GCS
-    void send_gimbal_manager_information(mavlink_channel_t chan);
+    // send a GIMBAL_MANAGER_INFORMATION message to GCS for each mount;
+    // returns false if there was no space for them
+    bool send_gimbal_manager_information(mavlink_channel_t chan) WARN_IF_UNUSED;
 
-    // send a GIMBAL_MANAGER_STATUS message to GCS
-    void send_gimbal_manager_status(mavlink_channel_t chan);
+    // send a GIMBAL_MANAGER_STATUS message to GCS for each mount;
+    // returns false if there was no space for them
+    bool send_gimbal_manager_status(mavlink_channel_t chan) WARN_IF_UNUSED;
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
@@ -371,6 +374,12 @@ private:
     AP_Mount_Backend *mount_device_from_mavlink_gimbal_id(float gimbal_device_id) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
+
+#if HAL_GCS_ENABLED
+    // returns true if chan has space for a message of message_size
+    // bytes from each mount
+    bool have_space_for_each_backend(mavlink_channel_t chan, uint16_t message_size) const;
+#endif
 
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);

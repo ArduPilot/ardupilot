@@ -46,7 +46,10 @@ private:
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     bool try_send_message(enum ap_message id) override;
 
-    bool send_info(void);
+    // sends the NAMED_VALUE_FLOAT values; returns false if there was
+    // no space, and the next call resumes from the value which did not fit
+    bool send_info(void) WARN_IF_UNUSED;
+    uint8_t send_info_index;
 
     uint8_t base_mode() const override;
     MAV_STATE vehicle_system_status() const override;
