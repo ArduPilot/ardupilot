@@ -51,6 +51,10 @@ include $repo/Tools/renode/peripherals/sensors/AP_LTMOutput.cs
 include $repo/Tools/renode/peripherals/sensors/AP_DevoOutput.cs
 include $repo/Tools/renode/peripherals/sensors/AP_FrSkyDOutput.cs
 
+include $repo/Tools/renode/peripherals/sensors/AP_BMP280.cs
+include $repo/Tools/renode/peripherals/sensors/AP_BMP388.cs
+include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
+include $repo/Tools/renode/peripherals/sensors/AP_SPIBarometer.cs
 mach create "ardupilot"
 machine LoadPlatformDescription $platform
 sysbus ApplySVD $mcu_svd
