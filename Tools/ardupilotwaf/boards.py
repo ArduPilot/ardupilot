@@ -369,6 +369,7 @@ class Board:
             '-Werror=format-extra-args',
             '-Werror=ignored-qualifiers',
             '-Werror=undef',
+            '-Werror=null-dereference',
             '-DARDUPILOT_BUILD',
         ]
 
@@ -453,6 +454,7 @@ class Board:
             '-Werror=reorder',
             '-Werror=cast-align',
             '-Werror=attributes',
+            '-Werror=null-dereference',
             '-Werror=format-security',
             '-Werror=format-extra-args',
             '-Werror=enum-compare',

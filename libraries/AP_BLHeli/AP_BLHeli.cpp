@@ -513,6 +513,10 @@ void AP_BLHeli::msp_process_command(void)
         debug("MSP_MOTOR_CONFIG(n=%u, p=%u)", num_motors, motor_poles.get());
         uint8_t buf[10];
         SRV_Channel* channel = SRV_Channels::srv_channel(blheli_chan_to_output_chan(0));
+        if (channel == nullptr) {
+            // no reply, the same as for an unhandled command
+            break;
+        }
         putU16(&buf[0], channel->get_output_min()); // min throttle
         putU16(&buf[2], channel->get_output_max()); // max throttle
         putU16(&buf[4], channel->get_output_min()); // min command
