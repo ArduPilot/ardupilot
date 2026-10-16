@@ -30,7 +30,6 @@ extern const AP_HAL::HAL& hal;
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "RC_Channel.h"
@@ -50,14 +49,49 @@ RC_Channels::RC_Channels(void) :
         AP_HAL::panic("RC_Channels must be singleton");
     }
     _singleton = this;
+
+}
+
+void RC_Channels::init_channel_numbers()
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        channel(i)->ch_in = i;
+    }
+}
+
+void RC_Channels::set_control_channel_defaults()
+{
+    // Plane needs the channel numbers early!
+    init_channel_numbers();
+
+    set_control_channel_default(0, RC_Channel::AUX_FUNC::ROLL);
+    set_control_channel_default(1, RC_Channel::AUX_FUNC::PITCH);
+    set_control_channel_default(2, RC_Channel::AUX_FUNC::THROTTLE);
+    set_control_channel_default(3, RC_Channel::AUX_FUNC::YAW);
+}
+
+void RC_Channels::set_control_channel_default(uint8_t chan, RC_Channel::AUX_FUNC func)
+{
+    RC_Channel *c = channel(chan);
+    if (c == nullptr) {
+        return;
+    }
+    if (_conversion_stale_do_nothing.get(chan)) {
+        // an RCn_OPTION stored as DO_NOTHING before the RCMAP_
+        // conversion said nothing about control inputs, but stops
+        // set_default() applying.  Apply the default regardless;
+        // convert_rcmap_parameters() saves it if it survives
+        c->option.set((uint16_t)func);
+        return;
+    }
+    c->option.set_default((uint16_t)func);
 }
 
 void RC_Channels::init(void)
 {
-    // setup ch_in on channels
-    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        channel(i)->ch_in = i;
-    }
+    // vehicles have done this in set_control_channel_defaults();
+    // examples call only init()
+    init_channel_numbers();
 
     init_aux_all();
 }
@@ -376,78 +410,173 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
 }
 #endif // AP_SCRIPTING_ENABLED
 
-#if AP_RCMAPPER_ENABLED
-// these methods return an RC_Channel pointers based on values from
-// AP_::rcmap().  The return value is guaranteed to be not-null to
-// allow use of the pointer without checking it for null-ness.  If an
-// invalid option has been chosen somehow then the returned channel
-// will be a dummy channel.
-static RC_Channel dummy_rcchannel;
-const RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number) const
+// these methods return an RC_Channel reference for a control input,
+// bound to the channel assigned the relevant RCn_OPTION the first time
+// the vehicle asks for any control input.  The return value is guaranteed to be a
+// valid channel to allow use without checking for null-ness; if no
+// channel has the option a dummy channel reading neutral is returned,
+// and a pre-arm check reports the problem
+RC_Channel &RC_Channels::dummy_channel()
 {
-    const RC_Channel *ret = channel(rcmap_number-1);
+    static RC_Channel dummy_rcchannel;
+    // a missing control input must read as neutral, not as a stick
+    // held at one end
+    dummy_rcchannel.raw_radio_in = dummy_rcchannel.get_radio_trim();
+    dummy_rcchannel.radio_in = dummy_rcchannel.raw_radio_in;
+    return dummy_rcchannel;
+}
+
+RC_Channels::ControlBinding *RC_Channels::control_binding(RC_Channel::AUX_FUNC func)
+{
+    for (auto &binding : control_bindings) {
+        if (binding.func == func) {
+            return &binding;
+        }
+    }
+    return nullptr;
+}
+
+const RC_Channels::ControlBinding *RC_Channels::control_binding(RC_Channel::AUX_FUNC func) const
+{
+    for (const auto &binding : control_bindings) {
+        if (binding.func == func) {
+            return &binding;
+        }
+    }
+    return nullptr;
+}
+
+void RC_Channels::bind_control_channels()
+{
+    for (auto &binding : control_bindings) {
+        binding.channel = find_channel_for_option(binding.func);
+    }
+    control_channels_bound = true;
+}
+
+const RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const
+{
+    const ControlBinding *binding = control_binding(func);
+    const RC_Channel *ret;
+    if (binding != nullptr && control_channels_bound) {
+        ret = binding->channel;
+    } else {
+        // not bound yet; look it up but leave binding to the
+        // non-const getter the vehicle uses
+        ret = find_channel_for_option(func);
+    }
     if (ret != nullptr) {
         return *ret;
     }
-    return dummy_rcchannel;
+    return dummy_channel();
 }
-RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number)
+RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func)
 {
-    RC_Channel *ret = channel(rcmap_number-1);
-    if (ret != nullptr) {
-        return *ret;
+    ControlBinding *binding = control_binding(func);
+    if (binding == nullptr) {
+        // not a control input
+        RC_Channel *ret = find_channel_for_option(func);
+        return (ret != nullptr) ? *ret : dummy_channel();
     }
-    return dummy_rcchannel;
+    if (!control_channels_bound) {
+        bind_control_channels();
+    }
+    if (binding->channel != nullptr) {
+        return *binding->channel;
+    }
+    return dummy_channel();
 }
+
+bool RC_Channels::control_input_required(RC_Channel::AUX_FUNC func) const
+{
+    switch (func) {
+    case RC_Channel::AUX_FUNC::ROLL:
+    case RC_Channel::AUX_FUNC::PITCH:
+    case RC_Channel::AUX_FUNC::THROTTLE:
+    case RC_Channel::AUX_FUNC::YAW:
+        return true;
+    default:
+        return false;
+    }
+}
+
+const char *RC_Channels::missing_control_channel() const
+{
+    for (const auto &binding : control_bindings) {
+        if (control_input_required(binding.func) &&
+            find_channel_for_option(binding.func) == nullptr) {
+            return binding.name;
+        }
+    }
+    return nullptr;
+}
+
+const char *RC_Channels::changed_control_channel() const
+{
+    if (!control_channels_bound) {
+        return nullptr;
+    }
+    for (const auto &binding : control_bindings) {
+        if (!control_input_required(binding.func)) {
+            continue;
+        }
+        const RC_Channel *now = find_channel_for_option(binding.func);
+        if (now != nullptr && now != binding.channel) {
+            // moved, or provided since the vehicle bound to nothing
+            return binding.name;
+        }
+    }
+    return nullptr;
+}
+
 const RC_Channel &RC_Channels::get_roll_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->roll());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::ROLL);
 };
 RC_Channel &RC_Channels::get_roll_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->roll());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::ROLL);
 };
 const RC_Channel &RC_Channels::get_pitch_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::PITCH);
 };
 RC_Channel &RC_Channels::get_pitch_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::PITCH);
 };
 const RC_Channel &RC_Channels::get_throttle_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::THROTTLE);
 };
 RC_Channel &RC_Channels::get_throttle_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::THROTTLE);
 };
 const RC_Channel &RC_Channels::get_yaw_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::YAW);
 };
 RC_Channel &RC_Channels::get_yaw_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::YAW);
 };
 const RC_Channel &RC_Channels::get_forward_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FORWARD_THR);
 };
 RC_Channel &RC_Channels::get_forward_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FORWARD_THR);
 };
 const RC_Channel &RC_Channels::get_lateral_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::LATERAL_THR);
 };
 RC_Channel &RC_Channels::get_lateral_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::LATERAL_THR);
 };
-#endif  // AP_RCMAPPER_ENABLED
 
 
 /*

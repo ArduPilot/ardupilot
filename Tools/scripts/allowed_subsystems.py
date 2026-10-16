@@ -13,8 +13,9 @@ This is the single source of truth used by:
 
 A subsystem is "allowed" if it is:
   - the name of a directory in libraries/ (dynamic; e.g. AP_GPS, GCS_MAVLink),
-  - a directory created by the commit under libraries/ (a brand-new library may
-    be its own subsystem), or
+  - a directory created or removed by the commit under libraries/ (a brand-new
+    library may be its own subsystem; a removed one is still the prefix for the
+    commit removing it), or
   - one of the CURATED_SUBSYSTEMS below (vehicles, tooling and other prefixes
     that are not backed by a libraries/ directory).
 
@@ -173,7 +174,8 @@ class AllowedSubsystems(object):
         '''return the full set of allowed subsystem names.
 
         created_dirs is an iterable of libraries/ subdirectory names that a
-        commit creates; they are allowed even if they do not yet exist on disk.
+        commit creates or removes; they are allowed even if they do not exist
+        on disk.
         '''
         special_subsystems = {
             sub_prefix

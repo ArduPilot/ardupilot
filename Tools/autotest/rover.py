@@ -85,8 +85,9 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
     def is_rover(self):
         return True
 
-    def get_stick_arming_channel(self):
-        return int(self.get_parameter("RCMAP_ROLL"))
+    def rc_option_value_for_arming_channel(self):
+        # Rover uses the "roll" channel for arming
+        return 201
 
     ##########################################################
     #   TESTS DRIVE
@@ -541,6 +542,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def drive_rtl_mission_max_distance_from_home(self):
         '''maximum distance allowed from home at end'''
         return 6.5
+
+    def AuxFunctionOnUnusedControlChannel(self):
+        '''aux functions on control channels Rover doesn't use do not stop arming'''
+        self.context_push()
+        # a pistol-grip setup: throttle on 2, aux functions on 3 and 4
+        self.set_parameters({
+            "RC2_OPTION": 203,
+            "RC3_OPTION": 28,
+            "RC4_OPTION": 34,
+        })
+        # the second boot catches an input first asked for on arming
+        for i in range(2):
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        self.context_pop()
+        self.reboot_sitl()
 
     def DriveRTL(self, timeout=120):
         '''Drive an RTL Mission'''
@@ -8140,6 +8159,7 @@ return update()
             self.MAVProxy_SetModeUsingMode,
             self.ModeSwitch,
             self.AuxModeSwitch,
+            self.AuxFunctionOnUnusedControlChannel,
             self.DriveRTL,
             self.SmartRTL,
             self.DriveSquare,

@@ -168,7 +168,7 @@ public:
         k_param_failsafe_throttle = 170,
         k_param_failsafe_throttle_value,
         k_param_failsafe_gcs = 193,
-        k_param_rcmap,
+        k_param_rcmap_old,
 
         //
         // 200: flight modes

@@ -79,9 +79,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def is_plane(self):
         return True
 
-    def get_stick_arming_channel(self):
-        return int(self.get_parameter("RCMAP_YAW"))
-
     def get_disarm_delay(self):
         return int(self.get_parameter("LAND_DISARMDELAY"))
 
@@ -8738,8 +8735,31 @@ return update()
         self.wait_text("Auto disarmed", check_context=True, timeout=200)
 
     def BadRollChannelDefined(self):
-        '''ensure we don't die with a  bad Roll channel defined'''
-        self.set_parameter("RCMAP_ROLL", 17)
+        '''ensure a missing or moved Roll channel is a pre-arm failure'''
+        self.wait_ready_to_arm()
+        self.set_parameter("RC1_OPTION", 0)
+        self.wait_not_ready_to_arm()
+        self.assert_prearm_failure("No RC channel for Roll")
+
+        self.progress("Roll moved to another channel needs a reboot")
+        self.set_parameter("RC10_OPTION", 201)
+        self.assert_prearm_failure("Roll channel changed; reboot required")
+
+        self.set_parameters({
+            "RC10_OPTION": 0,
+            "RC1_OPTION": 201,
+        })
+        self.wait_ready_to_arm()
+
+    def RudderOnlyRollChannel(self):
+        '''a rudder-only Plane steers with yaw and needs no Roll channel'''
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "RUDDER_ONLY": 1,
+            "RC1_OPTION": 24,  # Auto Mission Reset
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
 
     def MAV_CMD_NAV_LOITER_TO_ALT(self):
         '''test loiter to alt mission item'''
@@ -10726,6 +10746,7 @@ return update()
             self.CompassLearnInFlight,
             self.GPSPreArms,
             self.BadRollChannelDefined,
+            self.RudderOnlyRollChannel,
             self.mavlink_AIRSPEED,
             self.AirspeedEAS2TAS,
             self.LoggedNamedValueInt,

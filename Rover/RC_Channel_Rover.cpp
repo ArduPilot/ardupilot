@@ -41,8 +41,8 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::LOITER:
     case AUX_FUNC::MAINSAIL:
     case AUX_FUNC::MANUAL:
-    case AUX_FUNC::PITCH:
-    case AUX_FUNC::ROLL:
+    case AUX_FUNC::WALKING_PITCH:
+    case AUX_FUNC::WALKING_ROLL:
     case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::RTL:
     case AUX_FUNC::SAILBOAT_TACK:
@@ -90,10 +90,25 @@ bool RC_Channels_Rover::has_pilot_input_for_override_clear()
     if (throttle_moved_since_override_start()) {
         return true;
     }
-    if (rover.g2.motors.is_omni() && channel_outside_trim_dz(get_lateral_channel())) {
+    if (rover.g2.motors.is_omni() && channel_outside_trim_dz(get_yaw_channel())) {  // lateral
         return true;
     }
     return false;
+}
+
+// Rover steers with the roll input and uses the yaw input only for
+// lateral movement on omni vehicles; it has no use for pitch
+bool RC_Channels_Rover::control_input_required(RC_Channel::AUX_FUNC func) const
+{
+    switch (func) {
+    case RC_Channel::AUX_FUNC::ROLL:
+    case RC_Channel::AUX_FUNC::THROTTLE:
+        return true;
+    case RC_Channel::AUX_FUNC::YAW:
+        return rover.g2.motors.is_omni();
+    default:
+        return false;
+    }
 }
 
 void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
@@ -264,8 +279,8 @@ bool RC_Channel_Rover::do_aux_function(const AuxFuncTrigger &trigger)
 
     // manual input, nothing to do
     case AUX_FUNC::MAINSAIL:
-    case AUX_FUNC::PITCH:
-    case AUX_FUNC::ROLL:
+    case AUX_FUNC::WALKING_PITCH:
+    case AUX_FUNC::WALKING_ROLL:
     case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::WIND_VANE_DIR_OFSSET:
         break;

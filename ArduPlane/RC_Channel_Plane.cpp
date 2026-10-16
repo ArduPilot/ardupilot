@@ -11,6 +11,15 @@
 
 #include <RC_Channel/RC_Channels_VarInfo.h>
 
+// a rudder-only Plane takes roll from the yaw input
+bool RC_Channels_Plane::control_input_required(RC_Channel::AUX_FUNC func) const
+{
+    if (func == RC_Channel::AUX_FUNC::ROLL && plane.g.rudder_only) {
+        return false;
+    }
+    return RC_Channels::control_input_required(func);
+}
+
 // note that this callback is not presently used on Plane:
 int8_t RC_Channels_Plane::flight_mode_channel_number() const
 {
