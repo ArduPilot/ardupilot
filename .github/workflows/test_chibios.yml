@@ -171,6 +171,7 @@ jobs:
             signing,
             CubeOrange-PPP,
             CubeOrange-EKF2,
+            stack-analysis,
             SOHW,
             Pixhawk6X-PPPGW,
             new-check,

@@ -247,9 +247,10 @@ uint32_t Plane::get_available_mode_enabled_mask() const
     return ~flight_mode_GCS_block;
 }
 
+// @StackMaxRecursion: 5
+// Four active mode changes are allowed; a fifth invocation returns at the depth guard.
 bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 {
-
     if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
         // only make happy noise if using a different method to switch, this stops beeping for repeated change mode requests from GCS
@@ -257,6 +258,14 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
             AP_Notify::events.user_mode_change = 1;
         }
         return true;
+    }
+
+    WITH_DEPTH_GUARD(mode_change_depth);
+
+    if (WithDepthGuard::value(mode_change_depth) > 4) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode change to %s denied, recursion limit", new_mode.name());
+        AP_Notify::events.user_mode_change_failed = 1;
+        return false;
     }
 
 #if HAL_QUADPLANE_ENABLED

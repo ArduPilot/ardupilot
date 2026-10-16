@@ -315,6 +315,8 @@ uint32_t Copter::get_available_mode_enabled_mask() const
 // returns true if mode was successfully set
 // compiled-in ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT modes can always be set successfully,
 // but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+// @StackMaxRecursion: 2
+// AUTO_RTL may make one nested mode change to AUTO, which cannot redirect again.
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
     // update last reason
