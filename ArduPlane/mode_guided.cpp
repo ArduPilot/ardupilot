@@ -200,3 +200,12 @@ void ModeGuided::update_target_altitude()
         Mode::update_target_altitude();
     }
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// progress towards the guided target
+bool ModeGuided::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target)
+{
+    plane.get_loiter_point_progress(progress, target);
+    return true;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
