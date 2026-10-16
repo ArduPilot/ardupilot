@@ -888,19 +888,11 @@ void AP_Logger::handle_message_request_event(GCS_MAVLINK &link, const mavlink_me
     mavlink_request_event_t packet;
     mavlink_msg_request_event_decode(&msg, &packet);
 
-    // if (packet.target_system != gcs().sysid_this_mav()) {
-    //     return;
-    // }
-
-    // if (packet.target_component != gcs().compid_this_mav()) {
-    //     return;
-    // }
-
-    if (packet.target_system != 1) {
-        return;
-    }
-
-    if (packet.target_component != 1) {
+    // MAVLink routing only passes us requests for this system (or
+    // broadcast), but also passes requests for components it has no
+    // route to
+    if (packet.target_component != MAV_COMP_ID_ALL &&
+        packet.target_component != mavlink_system.compid) {
         return;
     }
 
