@@ -15,6 +15,12 @@ namespace Antmicro.Renode.Peripherals.Sensors
 {
     public class AP_SCHA63T : ISPIPeripheral, IGPIOReceiver
     {
+        // the generator passes every IMU part its hwdef rotation
+        public AP_SCHA63T(byte rotation = 0)
+        {
+            this.rotation = rotation;
+        }
+
         public byte Transmit(byte value)
         {
             if(transferByte == 0)
@@ -81,6 +87,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private byte response2;
 
         private const byte SummaryStatus = 0x0E;
+        private readonly byte rotation;
     }
 
     public class AP_I2CRegisterIMU : II2CPeripheral
@@ -795,9 +802,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
     public class AP_RegisterIMU : ISPIPeripheral, IGPIOReceiver
     {
-        public AP_RegisterIMU(byte whoAmI)
+        // the generator passes every IMU its hwdef rotation
+        public AP_RegisterIMU(byte whoAmI, byte rotation = 0)
         {
             this.whoAmI = whoAmI;
+            this.rotation = rotation;
             registers = new byte[RegisterCount];
             Reset();
         }
@@ -879,6 +888,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             registers[register] = value;
         }
 
+        private readonly byte rotation;
         private readonly byte whoAmI;
         private readonly byte[] registers;
         private int transferByte;

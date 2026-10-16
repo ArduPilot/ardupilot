@@ -744,6 +744,20 @@ def test_bootloader_follows_shared_and_included_boards():
     assert 'iomcu-f103' not in boards
 
 
+def test_every_imu_model_accepts_its_rotation():
+    # the generator passes each IMU its hwdef rotation; Renode cannot build a
+    # platform whose model has no constructor taking it
+    import re
+    sources = '\n'.join(
+        path.read_text() for path in (launch.HERE / 'peripherals').rglob('*.cs'))
+    for model in set(gen_board.IMU_MODELS.values()):
+        name = model.rsplit('.', 1)[1]
+        constructors = re.findall(r'public %s\(([^)]*)\)' % name, sources)
+        assert constructors, name
+        assert any(re.search(r'\bbyte rotation\b', parameters)
+                   for parameters in constructors), name
+
+
 def test_unknown_named_imu_is_rejected(tmp_path):
     with pytest.raises(ValueError, match='unknown IMU device: absent'):
         gen_board.generate(
