@@ -3718,6 +3718,147 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if math.hypot(n2, e2) > 1.5 or speed > 0.3:
             raise NotAchievedException("GPS velocity glitch offset did not clear")
 
+    def GPSGlitchSamples(self):
+        '''check SIM_GPS1_GLT_N makes a glitch last exactly that many GPS samples'''
+        n = 2
+        self.set_parameters({
+            "SIM_GPS1_HZ": 5,
+            "LOG_DISARMED": 1,
+            # log every GPS sample: the disarmed rate limit drops a
+            # sample that arrives a little early
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+            # unlimited, the log grows about 70kB per simulated second, so
+            # the default buffer loses rows if the log writer stalls for a
+            # few simulated seconds; this one holds the whole test
+            "LOG_FILE_BUFSIZE": 32767,
+        })
+        self.reboot_sitl()  # the buffer is allocated at boot
+        self.wait_ready_to_arm()
+        # the vehicle sits disarmed, so SIMSTATE stays the true position throughout
+        truth = self.get_location('SIMSTATE')
+
+        def logged_samples(since_s, fix_only=True):
+            '''GPS1 samples logged after since_s'''
+            dfreader = self.dfreader_for_current_onboard_log()
+            # a sample without a 3D fix carries no position
+            condition = 'GPS.I==0 and GPS.Status>=3' if fix_only else 'GPS.I==0'
+            samples = []
+            while True:
+                m = dfreader.recv_match(type='GPS', condition=condition)
+                if m is None:
+                    return samples
+                if m.TimeUS > since_s * 1e6:
+                    samples.append(m)
+
+        def wait_logged_samples(count, since_s, fix_only=True):
+            '''wait until count GPS1 samples are logged after since_s'''
+            tstart = self.get_sim_time()
+            while len(logged_samples(since_s, fix_only=fix_only)) < count:
+                if self.get_sim_time_cached() - tstart > 30:
+                    raise NotAchievedException(f"fewer than {count} GPS samples logged")
+                self.delay_sim_time(0.2, reason="GPS log poll interval")
+
+        def glitched_samples(glitched, since_s):
+            '''GPS week-ms of the logged GPS1 samples with a 3D fix after since_s that show the glitch'''
+            # a logger that falls behind drops whole blocks, which can hide
+            # glitched samples at either end of the window
+            self.assert_log_has_no_dropped_blocks(self.current_onboard_log_filepath())
+            samples = logged_samples(since_s)
+            for (a, b) in zip(samples, samples[1:]):
+                if b.GMS - a.GMS != 200:
+                    raise NotAchievedException(f"GPS sample missing from the log after GPS ms {a.GMS}")
+            hits = [i for i, m in enumerate(samples) if glitched(m)]
+            if hits and hits != list(range(hits[0], hits[0] + len(hits))):
+                raise NotAchievedException(f"glitched GPS samples not consecutive: {hits}")
+            return [samples[i].GMS for i in hits]
+
+        def wait_cleared(name):
+            '''wait for the vehicle to tell the GCS, unasked, that the glitch and GLT_N are 0;
+            returns the sim time it did'''
+            tstart = self.get_sim_time()
+            while True:
+                if all(any(m.param_id == p and m.param_value == 0
+                           for m in self.context_collection('PARAM_VALUE'))
+                       for p in (name, "SIM_GPS1_GLT_N")):
+                    return self.get_sim_time_cached()
+                if self.get_sim_time_cached() - tstart > 30:
+                    raise NotAchievedException(f"GCS was not sent {name}=0 and SIM_GPS1_GLT_N=0")
+                self.delay_sim_time(0.1, reason="PARAM_VALUE poll interval")
+
+        def send_glitch_and_count(name, value, glitched, since_s):
+            '''send the glitch once, wait for it to clear and return the glitched samples'''
+            self.context_push()
+            self.context_collect('PARAM_VALUE')
+            # sent once without waiting: the length must not depend on when the
+            # reply arrives, and a verify-and-retry could set the glitch again
+            # after it has cleared itself
+            self.send_set_parameter(name, value)
+            tcleared = wait_cleared(name)
+            self.context_pop()
+            self.assert_parameter_value(name, 0)
+            self.assert_parameter_value("SIM_GPS1_GLT_N", 0)
+            # the last glitched sample is sent as the glitch clears
+            wait_logged_samples(2, tcleared)
+            return glitched_samples(glitched, since_s)
+
+        def wait_gps_fix_type(want):
+            '''wait until the autopilot reports a fix type that satisfies want'''
+            tstart = self.get_sim_time()
+            while True:
+                m = self.assert_receive_message('GPS_RAW_INT')
+                if want(m.fix_type):
+                    return
+                if self.get_sim_time_cached() - tstart > 30:
+                    raise NotAchievedException(f"GPS fix type stayed at {m.fix_type}")
+
+        for (name, value, glitched) in [
+                # 10m/s north in velocity
+                ("SIM_GPS1_GLTV_X", 10, lambda m: m.Spd > 5),
+                # 0.001 degrees (about 111m) north in position
+                ("SIM_GPS1_GLTCH_X", 0.001, lambda m: abs(m.Lat - truth.lat) > 0.0005),
+        ]:
+            self.start_subtest(f"{name} with SIM_GPS1_GLT_N {n}")
+            tstart = self.get_sim_time()
+            self.set_parameter("SIM_GPS1_GLT_N", n)
+            wait_logged_samples(5, tstart)
+            self.assert_parameter_value("SIM_GPS1_GLT_N", n)
+            if glitched_samples(glitched, tstart):
+                raise NotAchievedException("GPS glitched before a glitch was set")
+
+            hits = send_glitch_and_count(name, value, glitched, tstart)
+            self.progress(f"{name} glitched {len(hits)} samples (GPS ms {hits})")
+            if len(hits) != n:
+                raise NotAchievedException(f"{name} glitched {len(hits)} GPS samples, expected {n}")
+
+        self.start_subtest("only samples with a 3D fix count")
+        self.set_parameter("SIM_GPS1_GLT_N", n)
+        self.set_parameter("SIM_GPS1_FIXTYPE", 1)  # u-blox sends samples without a fix
+        # the fix type sent lags the parameter by a sample, the glitch does not
+        wait_gps_fix_type(lambda t: t < 3)
+        self.send_set_parameter("SIM_GPS1_GLTV_X", 10)
+        tsent = self.get_sim_time()
+        wait_logged_samples(5, tsent, fix_only=False)
+        self.assert_parameter_value("SIM_GPS1_GLTV_X", 10)
+        self.assert_parameter_value("SIM_GPS1_GLT_N", n)
+        tstart = self.get_sim_time()
+        self.context_push()
+        self.context_collect('PARAM_VALUE')
+        self.set_parameter("SIM_GPS1_FIXTYPE", 6)
+        tcleared = wait_cleared("SIM_GPS1_GLTV_X")
+        self.context_pop()
+        wait_logged_samples(2, tcleared)
+        hits = glitched_samples(lambda m: m.Spd > 5, tstart)
+        self.progress(f"after the fix returned, glitched {len(hits)} samples (GPS ms {hits})")
+        if len(hits) != n:
+            raise NotAchievedException(f"glitched {len(hits)} GPS samples with a fix, expected {n}")
+
+        self.start_subtest("cleared glitch stays cleared after a reboot")
+        self.reboot_sitl()
+        self.assert_parameter_value("SIM_GPS1_GLTV_X", 0)
+        self.assert_parameter_value("SIM_GPS1_GLTCH_X", 0)
+        self.assert_parameter_value("SIM_GPS1_GLT_N", 0)
+
     def GPSFixTypes(self):
         '''Test that SIM_GPS1_FIXTYPE maps correctly to GPS_RAW_INT.fix_type'''
         self.change_mode('LOITER')
@@ -23837,6 +23978,7 @@ return update, 1000
             self.FenceMargin,
             self.GPSGlitchAuto,
             self.GPSGlitchVelocity,
+            self.GPSGlitchSamples,
             self.MotorFail,
             self.ModeFlip,
             self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,

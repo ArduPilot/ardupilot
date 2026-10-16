@@ -369,6 +369,7 @@ public:
         AP_Int8 fix_type; // GPS fix type
         AP_Float noise_horizontal; // horizontal noise radius in meters
         AP_Vector3f vel_glitch; // glitch offsets in NED velocity (m/s)
+        AP_Int16 glitch_samples; // number of samples the next glitch lasts, 0 = until cleared
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
