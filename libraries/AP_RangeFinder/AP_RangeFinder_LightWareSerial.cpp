@@ -32,7 +32,8 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
         return false;
     }
 
-    float sum = 0;              // sum of all readings taken
+    const bool no_avg = params.no_average;
+    float sum = 0;              // sum of all readings taken (or last valid reading when no_avg is set)
     uint16_t valid_count = 0;   // number of valid readings
     uint16_t invalid_count = 0; // number of invalid readings
 
@@ -51,7 +52,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                 linebuf[linebuf_len] = 0;
                 const float dist = strtof(linebuf, nullptr);
                 if (!is_negative(dist) && !is_lost_signal_distance(dist * 100, distance_cm_max)) {
-                    sum += dist;
+                    sum = no_avg ? dist : sum + dist;
                     valid_count++;
                     // if still determining protocol update legacy valid count
                     if (protocol_state == ProtocolState::UNKNOWN) {
@@ -82,7 +83,7 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
                 if (high_byte_received) {
                     const int16_t dist = (high_byte & 0x7f) << 7 | (c & 0x7f);
                     if (dist >= 0 && !is_lost_signal_distance(dist, distance_cm_max)) {
-                        sum += dist * 0.01f;
+                        sum = no_avg ? dist * 0.01f : sum + dist * 0.01f;
                         valid_count++;
                         // if still determining protocol update binary valid count
                         if (protocol_state == ProtocolState::UNKNOWN) {
@@ -119,9 +120,9 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
         uart->write('d');
     }
 
-    // return average of all valid readings
+    // return average of all valid readings, or the last valid reading if NOAVG is set
     if (valid_count > 0) {
-        reading_m = sum / valid_count;
+        reading_m = no_avg ? sum : sum / valid_count;
         no_signal = false;
         return true;
     }
