@@ -24,9 +24,11 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
+#ifndef HAVE_AP_BLHELI_SUPPORT
 #define HAVE_AP_BLHELI_SUPPORT HAL_SUPPORT_RCOUT_SERIAL
+#endif
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#if HAVE_AP_BLHELI_SUPPORT
 
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
@@ -295,4 +297,4 @@ private:
     bool protocol_handler(uint8_t , AP_HAL::UARTDriver *);
 };
 
-#endif // HAL_SUPPORT_RCOUT_SERIAL
+#endif // HAVE_AP_BLHELI_SUPPORT
