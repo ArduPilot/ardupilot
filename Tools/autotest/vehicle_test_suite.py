@@ -16633,6 +16633,10 @@ switch value'''
         directory = os.path.join("parallel-autotest", str(self.instance))
         os.makedirs(directory, exist_ok=True)
         os.chdir(directory)
+        # the UDS directory was captured in __init__, which runs before
+        # this chdir: SITL would bind its relative socket paths in the
+        # new directory while we connected to them under the old one
+        self.unix_domain_socket_dir = os.getcwd()
         # give this instance's simulation-state multicast bus its own
         # port: the compiled-in default has no per-instance offset -
         # unlike every other SITL port - so concurrent workers'

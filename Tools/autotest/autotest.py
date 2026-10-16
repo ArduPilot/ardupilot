@@ -1676,6 +1676,15 @@ if __name__ == "__main__":
 
     opts, args = parser.parse_args()
 
+    # resolve BUILDLOGS once, here in the parent, before anything
+    # chdirs.  buildlogs_dirpath() hands the environment variable back
+    # untouched, and both parallel workers and serial "-I" runs chdir
+    # into parallel-autotest/<instance>: a relative BUILDLOGS then
+    # points somewhere else in each of them.
+    buildlogs = os.getenv("BUILDLOGS")
+    if buildlogs is not None and not os.path.isabs(buildlogs):
+        os.environ["BUILDLOGS"] = os.path.abspath(buildlogs)
+
     try:
         opts.parallel = evaluate_parallel(opts.parallel)
     except ValueError as e:
