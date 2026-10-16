@@ -538,6 +538,9 @@ public:
                                         const struct AP_Param::GroupInfo *group_info,
                                         uint16_t old_index, bool is_top_level, bool recurse_sub_groups = false);
 
+    // return true if the parameter is configured in EEPROM/FRAM
+    bool configured_in_storage(void) const;
+
     /*
       fetch a parameter value based on the index within a group. This
       is used to find the old value of a parameter that has been
@@ -576,6 +579,9 @@ public:
 
     // return true if the parameter is configured
     bool configured(void) const;
+
+    // return true if the parameter is configured in the defaults file
+    bool configured_in_defaults_file(bool &read_only) const;
 
     // return true if the parameter is read-only
     bool is_read_only(void) const;
@@ -807,12 +813,6 @@ private:
      */
     static bool count_embedded_param_defaults(uint16_t &count);
     static void load_embedded_param_defaults(bool last_pass);
-
-    // return true if the parameter is configured in the defaults file
-    bool configured_in_defaults_file(bool &read_only) const;
-
-    // return true if the parameter is configured in EEPROM/FRAM
-    bool configured_in_storage(void) const;
 
     /*
       convert width of a parameter, allowing update to wider scalar

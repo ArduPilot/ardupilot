@@ -58,8 +58,4 @@ public:
     void do_aux_function_ahrs_auto_trim(const RC_Channel::AuxSwitchPos ch_flag);
 #endif  // AP_COPTER_AHRS_AUTO_TRIM_ENABLED
 
-protected:
-
-    int8_t flight_mode_channel_number() const override;
-
 };

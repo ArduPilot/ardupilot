@@ -53,8 +53,4 @@ public:
         }
         return &obj_channels[chan];
     }
-
-private:
-
-    int8_t flight_mode_channel_number() const override;
 };
