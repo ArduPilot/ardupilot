@@ -1497,11 +1497,12 @@ def _gpio_routes(family_name, chip_selects, sigrok_pins=None,
     return lines
 
 
-def _f405_dma_wiring(defines, family, alloc, warnings):
+def _f405_dma_wiring(defines, family, alloc, warnings, is_periph=True):
     lines = []
     rx_uarts = []
 
-    if _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
+    # flight controllers sample battery and board voltage through the ADC
+    if not is_periph or _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
         for peripheral, model in family.get('adcs', {}).items():
             value = defines.get('STM32_ADC_%s_DMA_STREAM' % peripheral)
             stream = _dma_stream(value) if value else None
@@ -2397,7 +2398,7 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
             '',
         ]
     if family['name'] in ('f405', 'f407', 'f427'):
-        lines += _f405_dma_wiring(defines, family, alloc, warnings)
+        lines += _f405_dma_wiring(defines, family, alloc, warnings, is_periph)
     elif family['name'] == 'f767':
         lines += _f767_dma_wiring(defines, family, alloc, warnings)
     elif family['name'] == 'g474':
