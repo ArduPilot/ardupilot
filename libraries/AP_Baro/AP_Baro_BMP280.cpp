@@ -79,23 +79,9 @@ bool AP_Baro_BMP280::_init()
     }
 
     // read the calibration data
-    uint8_t buf[24];
-    if (!_dev->read_registers(BMP280_REG_CALIB, buf, sizeof(buf))) {
+    if (!_dev->read_registers(BMP280_REG_CALIB, (uint8_t *)&_calib, sizeof(_calib))) {
         return false;
     }
-
-    _t1 = ((int16_t)buf[1] << 8) | buf[0];
-    _t2 = ((int16_t)buf[3] << 8) | buf[2];
-    _t3 = ((int16_t)buf[5] << 8) | buf[4];
-    _p1 = ((int16_t)buf[7] << 8) | buf[6];
-    _p2 = ((int16_t)buf[9] << 8) | buf[8];
-    _p3 = ((int16_t)buf[11] << 8) | buf[10];
-    _p4 = ((int16_t)buf[13] << 8) | buf[12];
-    _p5 = ((int16_t)buf[15] << 8) | buf[14];
-    _p6 = ((int16_t)buf[17] << 8) | buf[16];
-    _p7 = ((int16_t)buf[19] << 8) | buf[18];
-    _p8 = ((int16_t)buf[21] << 8) | buf[20];
-    _p9 = ((int16_t)buf[23] << 8) | buf[22];
 
     // SPI write needs bit mask
     uint8_t mask = 0xFF;
@@ -156,8 +142,8 @@ void AP_Baro_BMP280::_update_temperature(int32_t temp_raw)
     int32_t var1, var2, t;
 
     // according to datasheet page 22
-    var1 = ((((temp_raw >> 3) - ((int32_t)_t1 << 1))) * ((int32_t)_t2)) >> 11;
-    var2 = (((((temp_raw >> 4) - ((int32_t)_t1)) * ((temp_raw >> 4) - ((int32_t)_t1))) >> 12) * ((int32_t)_t3)) >> 14;
+    var1 = ((((temp_raw >> 3) - ((int32_t)_calib.t1 << 1))) * ((int32_t)_calib.t2)) >> 11;
+    var2 = (((((temp_raw >> 4) - ((int32_t)_calib.t1)) * ((temp_raw >> 4) - ((int32_t)_calib.t1))) >> 12) * ((int32_t)_calib.t3)) >> 14;
     _t_fine = var1 + var2;
     t = (_t_fine * 5 + 128) >> 8;
 
@@ -175,11 +161,11 @@ void AP_Baro_BMP280::_update_pressure(int32_t press_raw)
 
     // according to datasheet page 22
     var1 = ((int64_t)_t_fine) - 128000;
-    var2 = var1 * var1 * (int64_t)_p6;
-    var2 = var2 + ((var1 * (int64_t)_p5) << 17);
-    var2 = var2 + (((int64_t)_p4) << 35);
-    var1 = ((var1 * var1 * (int64_t)_p3) >> 8) + ((var1 * (int64_t)_p2) << 12);
-    var1 = (((((int64_t)1) << 47) + var1)) * ((int64_t)_p1) >> 33;
+    var2 = var1 * var1 * (int64_t)_calib.p6;
+    var2 = var2 + ((var1 * (int64_t)_calib.p5) << 17);
+    var2 = var2 + (((int64_t)_calib.p4) << 35);
+    var1 = ((var1 * var1 * (int64_t)_calib.p3) >> 8) + ((var1 * (int64_t)_calib.p2) << 12);
+    var1 = (((((int64_t)1) << 47) + var1)) * ((int64_t)_calib.p1) >> 33;
 
     if (var1 == 0) {
         return;
@@ -187,9 +173,9 @@ void AP_Baro_BMP280::_update_pressure(int32_t press_raw)
 
     p = 1048576 - press_raw;
     p = (((p << 31) - var2) * 3125) / var1;
-    var1 = (((int64_t)_p9) * (p >> 13) * (p >> 13)) >> 25;
-    var2 = (((int64_t)_p8) * p) >> 19;
-    p = ((p + var1 + var2) >> 8) + (((int64_t)_p7) << 4);
+    var1 = (((int64_t)_calib.p9) * (p >> 13) * (p >> 13)) >> 25;
+    var2 = (((int64_t)_calib.p8) * p) >> 19;
+    p = ((p + var1 + var2) >> 8) + (((int64_t)_calib.p7) << 4);
 
 
     const float press = (float)p / 256.0f;
