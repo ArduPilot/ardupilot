@@ -1104,10 +1104,13 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                     if imu[0] == 'Invensense':
                         whoami = 0x68
                     resolved_i2c.append((bus, address, whoami))
+                # the register IMU model serves the Bosch dies on I2C too
+                i2c_model = ('Sensors.AP_I2CRegisterIMU' if imu[0] == 'Invensense'
+                             else 'Sensors.AP_RegisterIMU')
                 for device_index, (bus, address, whoami) in enumerate(resolved_i2c):
                     declarations += [
-                        'imu%dI2C%d: Sensors.AP_I2CRegisterIMU @ %s 0x%02X' %
-                        (index, device_index, bus.lower(), address),
+                        'imu%dI2C%d: %s @ %s 0x%02X' %
+                        (index, device_index, i2c_model, bus.lower(), address),
                         '    whoAmI: 0x%02X' % whoami,
                     ]
                     if rotation is not None:
