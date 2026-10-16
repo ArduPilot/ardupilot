@@ -400,6 +400,9 @@ AP_HW_SPARKNAVI_F405                 1364
 AP_HW_SPARKNAVI_H743_R45             1365
 AP_HW_SPARKNAVI_ETH                  1366
 
+# IDs 1380-1389 reserved for Skandavel Dynamics
+AP_HW_Kao1                           1380
+
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
 AP_HW_PIXRACER_PERIPH                1402

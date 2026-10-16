@@ -183,6 +183,9 @@ void AP_Logger::end_log_transfer()
 {
     transfer_activity = TransferActivity::IDLE;
     _log_sending_link = nullptr;
+    if (_next_backend == 0) {
+        return;
+    }
     backends[0]->end_log_transfer();
 }
 
