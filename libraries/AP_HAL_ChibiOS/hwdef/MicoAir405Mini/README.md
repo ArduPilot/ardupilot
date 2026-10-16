@@ -76,13 +76,13 @@ The default battery parameters are:
 
 The MicoAir405Mini does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL connector.
 
-## Mechanical
+## Physical
 
 - Mounting: 20 x 20mm, Φ3.5mm
 - Dimensions: 30 x 30 x 8 mm
 - Weight: 6g
 
-## Ports Connector
+## Pinout
 
 ![MicoAir F405 Mini V2.1 Ports Connection](MicoAir405Mini_PortsConnection.jpg)
 

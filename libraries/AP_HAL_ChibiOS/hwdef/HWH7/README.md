@@ -14,7 +14,7 @@ The **HWH7** is a flight controller designed and produced by HW.
 - Power (board hardware): 4S–8S LiPo input (12–35.6 V), on-board 5V/3A and 12V/3A BECs.
 - Other hardware (board option): 512Mb blackbox flash.
 
-## Pinout / Connectors
+## Pinout
 
 ![image](HWH7.png)
 
@@ -63,7 +63,7 @@ The HWH7 supports up to 12 PWM or DShot outputs. These outputs are organized int
 - **Bi-directional DShot:** Support is available for **PWM 1 through 8** (Groups 1 and 2).
 - **Timer Grouping Warning:** Be cautious when mixing different types of servos, ESCs, or other timer-based outputs. For example, if PWM 9 is used for a standard servo and PWM 10 is used for a NeoPixel LED, they will conflict because they share **Group 3 (TIM15)**. In typical setups, PE5 and PE6 are used together as servo outputs by default.
 
-## Battery Monitor (ADC)
+## Battery Monitoring
 
 The board has a built-in voltage sensor and external current sensor input.
 
@@ -73,7 +73,7 @@ The board has a built-in voltage sensor and external current sensor input.
 - **BATT_VOLT_MULT** = 11.0
 - **BATT_AMP_PERVLT** = 5.882 (or specify your sensor sensitivity like 170mV/A)
 
-## User GPIOs
+## GPIOs
 
 - GPIO 62 (PD10): Status LED.
 - GPIO 80 (PE2) controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO high switches the video output from CAM1 to CAM2. By default, RELAY1 is configured to control this pin and sets the GPIO high (CAM1).

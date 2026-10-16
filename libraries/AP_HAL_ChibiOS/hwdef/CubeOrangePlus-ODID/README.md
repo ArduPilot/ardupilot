@@ -1,4 +1,4 @@
-# CubeOrangePlus Flight Controller
+# CubeOrangePlus Flight Controller (ODID)
 
 The CubePilot CubeOrangePlus flight controller is sold by a range of resellers
 listed on the

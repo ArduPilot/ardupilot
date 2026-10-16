@@ -291,6 +291,6 @@ The RadiolinkPIX6 has 3 analog inputs, one 6V tolerant and two 3.3V tolerant
 - ADC Pin13 -> ADC IN2 3.3V Sense
 - Analog 3.3V RSSI input pin = 103
 
-## Connectors
+## Pinout
 
 Unless noted otherwise all connectors are JST GH
