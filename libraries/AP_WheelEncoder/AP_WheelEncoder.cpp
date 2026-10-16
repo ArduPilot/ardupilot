@@ -16,6 +16,7 @@
 #include "AP_WheelEncoder.h"
 #include "WheelEncoder_Quadrature.h"
 #include "WheelEncoder_SITL_Quadrature.h"
+#include "WheelEncoder_MAV.h"
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
@@ -25,7 +26,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: WheelEncoder type
     // @Description: What type of WheelEncoder is connected
-    // @Values: 0:None,1:Quadrature,10:SITL Quadrature
+    // @Values: 0:None,1:Quadrature,2:MAVLink,10:SITL Quadrature
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_WheelEncoder, _type[0], 0, AP_PARAM_FLAG_ENABLE),
@@ -90,7 +91,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second WheelEncoder type
     // @Description: What type of WheelEncoder sensor is connected
-    // @Values: 0:None,1:Quadrature,10:SITL Quadrature
+    // @Values: 0:None,1:Quadrature,2:MAVLink,10:SITL Quadrature
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("2_TYPE",   6, AP_WheelEncoder, _type[1], 0),
@@ -156,7 +157,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Param: 3_TYPE
     // @DisplayName: Third WheelEncoder type
     // @Description: What type of WheelEncoder sensor is connected
-    // @Values: 0:None,1:Quadrature,10:SITL Quadrature
+    // @Values: 0:None,1:Quadrature,2:MAVLink,10:SITL Quadrature
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("3_TYPE",   12, AP_WheelEncoder, _type[2], 0),
@@ -222,7 +223,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Param: 4_TYPE
     // @DisplayName: Fourth WheelEncoder type
     // @Description: What type of WheelEncoder sensor is connected
-    // @Values: 0:None,1:Quadrature,10:SITL Quadrature
+    // @Values: 0:None,1:Quadrature,2:MAVLink,10:SITL Quadrature
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("4_TYPE",   18, AP_WheelEncoder, _type[3], 0),
@@ -310,6 +311,12 @@ void AP_WheelEncoder::init(void)
 #endif
             break;
 
+        case WheelEncoder_TYPE_MAVLINK:
+#if AP_WHEELENCODER_MAV_ENABLED
+            drivers[i] = NEW_NOTHROW AP_WheelEncoder_MAV(*this, i, state[i]);
+#endif
+            break;
+
         case WheelEncoder_TYPE_SITL_QUADRATURE:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             drivers[i] = NEW_NOTHROW AP_WheelEncoder_SITL_Quadrature(*this, i, state[i]);
@@ -338,6 +345,23 @@ void AP_WheelEncoder::update(void)
         }
     }
 }
+
+#if AP_WHEELENCODER_MAV_ENABLED
+// pass an incoming MAVLink message to all instances
+void AP_WheelEncoder::handle_msg(const mavlink_message_t &msg)
+{
+    // only accept data from components on this vehicle, as other
+    // vehicles on the same network may stream their own wheel data
+    if (msg.sysid != mavlink_system.sysid) {
+        return;
+    }
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (drivers[i] != nullptr && _type[i] != WheelEncoder_TYPE_NONE) {
+            drivers[i]->handle_msg(msg);
+        }
+    }
+}
+#endif
 
 #if HAL_LOGGING_ENABLED
 // log wheel encoder information
@@ -375,10 +399,19 @@ void AP_WheelEncoder::Log_Write() const
 // check if an instance is healthy
 bool AP_WheelEncoder::healthy(uint8_t instance) const
 {
-    if (instance >= num_instances) {
+    if (instance >= num_instances || drivers[instance] == nullptr) {
         return false;
     }
-    return true;
+    return drivers[instance]->healthy();
+}
+
+// check if readings from an instance are pushed to us by an external device
+bool AP_WheelEncoder::streamed(uint8_t instance) const
+{
+    if (instance >= num_instances || drivers[instance] == nullptr) {
+        return false;
+    }
+    return drivers[instance]->streamed();
 }
 
 // check if an instance is activated
