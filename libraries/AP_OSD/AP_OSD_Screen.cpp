@@ -1640,7 +1640,8 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 // gives, and if it uses optical flow, which flow axes it is fusing
 void AP_OSD_Screen::draw_ekf_lane(uint8_t lane, uint8_t x, uint8_t y)
 {
-    const AP_AHRS &ahrs = AP::ahrs();
+    AP_AHRS &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
     nav_lane_status status;
     if (!ahrs.get_ekf_lane_status(lane, status)) {
         return;
