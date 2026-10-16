@@ -15899,7 +15899,13 @@ switch value'''
 
     def current_onboard_log_filepath(self):
         '''return filepath to currently open dataflash log.'''
-        logs_dirpath = pathlib.Path("logs")
+        # ask where SITL is logging rather than assuming "logs":
+        # customise_SITL_log_directory() points it somewhere else, and
+        # this would then read the LASTLOG.TXT of the default directory
+        # and hand back a path in it - a stale log, or none at all.  No
+        # test combines the two today; the next one to try should not
+        # have to find this out.
+        logs_dirpath = pathlib.Path(self.sitl_log_dir())
         lastlog_filepath = logs_dirpath / "LASTLOG.TXT"
 
         with lastlog_filepath.open(newline="") as f:
