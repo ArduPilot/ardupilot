@@ -193,6 +193,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_WINCH_ENABLED', 'AP_Winch::AP_Winch',),
             ('AP_WINCH_{type}_ENABLED', r'AP_Winch_(?P<type>.*)::update\b',),
             ('AP_RELAY_ENABLED', 'AP_Relay::init',),
+            ('AP_ACTUATORS_ENABLED', 'AP_Actuators::set_actuator',),
             ('AP_SERVORELAYEVENTS_ENABLED', 'AP_ServoRelayEvents::update_events',),
 
             ('AP_RCPROTOCOL_ENABLED', r'AP_RCProtocol::init\b',),
