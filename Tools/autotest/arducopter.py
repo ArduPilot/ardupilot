@@ -3731,6 +3731,123 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_parameter("SIM_GPS1_FIXTYPE", 6)
             self.wait_ready_to_arm()
 
+    def GPSTypeSITLFaults(self):
+        '''Test SIM_GPS1_ fault parameters reach the vehicle through GPS1_TYPE 100'''
+        # start with no SIM_GPS1_ENABLE in storage, as on a fresh
+        # sitl-on-hardware board; an earlier test may have stored it
+        self.customise_SITL_commandline([], wipe=True)
+        self.set_parameters({
+            "GPS1_TYPE": 100,  # AP_GPS_SITL backend, as used by sitl-on-hardware
+            "SIM_GPS1_TYPE": 0,  # no simulated serial GPS, as on sitl-on-hardware
+            "SCR_ENABLE": 1,
+        })
+        # a script write that is not saved, as param:set() does; the
+        # MAVLink writes below always save, so they cannot catch an
+        # override that puts SIM_GPS1_ENABLE back to 1
+        self.install_script_content_context("gps1-disable.lua", """
+local done = false
+local function update()
+    if not done and param:get('SCR_USER1') == 1 then
+        assert(param:set('SIM_GPS1_ENABLE', 0), 'could not set SIM_GPS1_ENABLE')
+        gcs:send_text(6, 'GPS1 disabled by script')
+        done = true
+    end
+    return update, 100
+end
+return update()
+""")
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # the backend enables SIM_GPS1_ENABLE, which unhides the other
+        # SIM_GPS1_ parameters; the parameter count must include them
+        self.start_subtest("parameter count includes the SIM_GPS1_ parameters")
+        (parameters, _) = self.download_parameters(self.sysid_thismav(), 1)
+        count = len(parameters)
+        # with a stale count there is a parameter past the end of the
+        # list; with a correct count reading that index gives
+        # PARAM_ERROR.  Parameter replies come at the link's pace, so
+        # wait in wall-clock time
+        self.mav.mav.param_request_read_send(self.sysid_thismav(), 1, b"", count)
+        tstart = time.time()
+        while True:
+            if time.time() - tstart > 10:
+                raise NotAchievedException(f"No reply to a read of parameter index {count}")
+            m = self.mav.recv_match(type=['PARAM_VALUE', 'PARAM_ERROR'], blocking=True, timeout=1)
+            if m is None:
+                continue
+            if m.get_type() == 'PARAM_VALUE':
+                if m.param_index != 65535 and m.param_index >= count:
+                    raise NotAchievedException(
+                        f"{m.param_id} is at index {m.param_index} but param_count is {m.param_count}")
+                continue
+            if m.param_index == count:
+                break
+
+        def wait_gps_raw(predicate, description, timeout=15):
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Timeout waiting for %s" % description)
+                m = self.assert_receive_message('GPS_RAW_INT', timeout=2)
+                if predicate(m):
+                    self.progress("Got %s" % description)
+                    return m
+
+        # must run before any MAVLink write of SIM_GPS1_ENABLE, which
+        # would store the parameter
+        self.start_subtest("SIM_GPS1_ENABLE set by a script without saving removes the fix")
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SCR_USER1", 1)
+        self.wait_statustext("GPS1 disabled by script", check_context=True)
+        self.wait_message_field_values('GPS_RAW_INT', {"fix_type": 1}, timeout=10)
+        self.delay_sim_time(2, reason="the fix must stay off")
+        # the backend reports 3 satellites without a lock, as the serial
+        # simulated GPS devices do
+        self.assert_message_field_values(self.assert_receive_message('GPS_RAW_INT'), {
+            "fix_type": 1,
+            "satellites_visible": 3,
+        })
+        self.assert_parameter_value("SIM_GPS1_ENABLE", 0)
+        self.set_parameter("SCR_USER1", 0)  # so the script does nothing after the reboot below
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.wait_gps_fix_type_gte(3, timeout=10)
+
+        self.start_subtest("SIM_GPS1_ENABLE removes the fix")
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_message_field_values('GPS_RAW_INT', {"fix_type": 1}, timeout=10)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.wait_gps_fix_type_gte(3, timeout=10)
+
+        self.start_subtest("SIM_GPS1_GLTCH moves the reported position")
+        lat0 = self.assert_receive_message('GPS_RAW_INT').lat
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0.001)  # degrees, about 111m
+        wait_gps_raw(lambda m: abs(m.lat - lat0) > 9000, "glitched latitude")
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0)
+        wait_gps_raw(lambda m: abs(m.lat - lat0) < 1000, "latitude back")
+
+        self.start_subtest("SIM_GPS1_VERR adds velocity error")
+        self.set_parameter("SIM_GPS1_VERR_X", 5)  # m/s
+        wait_gps_raw(lambda m: m.vel > 100, "velocity error over 1m/s")
+        self.set_parameter("SIM_GPS1_VERR_X", 0)
+        wait_gps_raw(lambda m: m.vel < 20, "velocity error removed")
+
+        self.start_subtest("SIM_GPS1_JAM loses the fix")
+        self.set_parameter("SIM_GPS1_JAM", 1)
+        wait_gps_raw(lambda m: m.fix_type < 3, "fix lost while jammed")
+        self.set_parameter("SIM_GPS1_JAM", 0)
+        self.wait_gps_fix_type_gte(3, timeout=10)
+
+        self.start_subtest("SIM_GPS1_LCKTIME delays the first fix")
+        self.set_parameter("SIM_GPS1_LCKTIME", 20)  # seconds
+        self.reboot_sitl(check_position=False)
+        wait_gps_raw(lambda m: m.fix_type == 1, "no fix after boot", timeout=10)
+        tstart = self.get_sim_time()
+        self.wait_gps_fix_type_gte(3, timeout=30)
+        if self.get_sim_time() < 15:
+            raise NotAchievedException("Fix arrived %fs after boot, wanted about 20s" % self.get_sim_time())
+        self.progress("Fix arrived %.1fs after boot (wait started %.1fs)" % (self.get_sim_time(), tstart))
+
     #   SimpleMode - test simple mode flies North regardless of vehicle heading
     def SimpleMode(self):
         '''Fly in SIMPLE mode'''
@@ -23894,6 +24011,7 @@ return update, 1000
             self.FenceFloorAutoEnableOnArming,
             self.AutoTuneSwitch,
             self.GPSFixTypes,
+            self.GPSTypeSITLFaults,
             self.AirModeLanding,
             self.TestLocalHomePosition,
             self.TestGripperMission,
