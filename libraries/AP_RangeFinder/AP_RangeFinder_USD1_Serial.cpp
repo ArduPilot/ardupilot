@@ -135,8 +135,8 @@ bool AP_RangeFinder_USD1_Serial::get_reading(float &reading_m)
         if (hdr_found) {
             _linebuf[_linebuf_len++] = c;
 
-            if ((_linebuf_len < (sizeof(_linebuf)/sizeof(_linebuf[0]))) ||
-                (_version == 0 && _linebuf_len < 3)) {
+            const uint8_t required_len = (_version == 0 && _header != USD1_HDR) ? 3 : sizeof(_linebuf);
+            if (_linebuf_len < required_len) {
                 /* don't process _linebuf until we've collected six bytes of data
                  * (or 3 bytes for Version 0 firmware)
                  */
