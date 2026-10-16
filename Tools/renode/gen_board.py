@@ -82,7 +82,7 @@ FAMILIES = {
         'sd_buses': {'SDIO': 'sdmmc'},
         'sd_fifo': {'SDIO': 0x40012C80},
         'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
-        'timers': {1, 2, 3, 4, 5, 8},
+        'timers': {1, 2, 3, 4, 5, 8, 9, 12},
         'uart_irq': {
             'USART1': 37, 'USART2': 38, 'USART3': 39,
             'UART4': 52, 'UART5': 53, 'USART6': 71,
@@ -102,7 +102,7 @@ FAMILIES = {
         'sd_buses': {'SDIO': 'sdmmc'},
         'sd_fifo': {'SDIO': 0x40012C80},
         'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
-        'timers': {1, 2, 3, 4, 5, 8},
+        'timers': {1, 2, 3, 4, 5, 8, 9, 12},
         'uart_irq': {
             'USART1': 37, 'USART2': 38, 'USART3': 39,
             'UART4': 52, 'UART5': 53, 'USART6': 71,
@@ -125,7 +125,7 @@ FAMILIES = {
         'sd_buses': {'SDIO': 'sdmmc'},
         'sd_fifo': {'SDIO': 0x40012C80},
         'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
-        'timers': {1, 2, 3, 4, 5, 8, 12},
+        'timers': {1, 2, 3, 4, 5, 8, 9, 12},
         'uart_irq': {
             'USART1': 37, 'USART2': 38, 'USART3': 39,
             'UART4': 52, 'UART5': 53, 'USART6': 71,
@@ -409,6 +409,9 @@ SPI_BARO_IDENTITIES = {
     'LPS2XH': (0xB1, 0x0F),
     'SPL06': (0x10, 0x0D),
 }
+
+
+EXT_FLASH_BASE = 0x90000000
 
 
 def _hwdef_root(root):
@@ -1748,6 +1751,9 @@ def _h743_dma_wiring(root, defines, family, alloc, warnings):
             '    DMARecieve -> dmamux1@%d' % request,
             '',
         ]
+    if defines.get('STM32_SPI_USE_SPI6') == 'TRUE':
+        # SPI6 always uses BDMA through DMAMUX2 (request 11 is SPI6_RX)
+        lines += ['spi6:', '    DMARecieve -> dmamux2@11', '']
 
     for name, channel in sorted(defines.items()):
         match = re.fullmatch(r'STM32_TIM_TIM(\d+)_UP_DMA_CHAN', name)
@@ -2039,6 +2045,14 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
                 '    size: 0x%X' % (hi - lo),
                 '',
             ]
+    ext_flash_mb = app.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
+    if ext_flash_mb:
+        # the bootloader leaves QSPI flash memory-mapped; the ELF loader fills it
+        lines += [
+            'extFlash: Memory.MappedMemory @ sysbus 0x%08X' % EXT_FLASH_BASE,
+            '    size: 0x%X' % (ext_flash_mb << 20),
+            '',
+        ]
     if family['name'] in (
             'f103', 'f105', 'f303', 'f405', 'f407', 'f427', 'f767',
             'h743', 'h757', 'l4', 'g474'):

@@ -13,6 +13,7 @@ include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_FlashController.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_ADC_v3.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32DMA_Circular.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32G4_DMA.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_PWR.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_RCC.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_Ethernet.cs
