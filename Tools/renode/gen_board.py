@@ -910,7 +910,9 @@ def _imu_children(imu, resolved_devices, defines, name):
     rotation = ROTATIONS.get(rotation_name)
     rotation_property = [] if rotation is None else ['    rotation: %u' % rotation]
     if driver == 'SCHA63T':
-        return [('%sPart%d' % (name, index), model, bus, cs, rotation_property)
+        # the probe takes the UNO die first, then the DUE die
+        return [('%sPart%d' % (name, index), model, bus, cs,
+                 rotation_property + (['    Due: true'] if index else []))
                 for index, (_, bus, cs) in enumerate(resolved_devices)]
     if driver in ('BMI055', 'BMI088', 'LSM9DS0'):
         children = []
