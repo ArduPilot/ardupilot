@@ -51,12 +51,13 @@
  * the uBlox into 230400 no matter what rate it is configured
  * for.
  */
+// NAV_SOL at rate 1, then 115200 baudrate
 #define UBLOX_SET_BINARY_115200 "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,115200,0*1C\r\n"
 
-// a variant with 230400 baudrate
+// a variant with 230400 baudrate, also enabling NAV_SOL at rate 1
 #define UBLOX_SET_BINARY_230400 "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,230400,0*1E\r\n"
 
-// a variant with 460800 baudrate
+// a variant with 460800 baudrate, also enabling NAV_SOL at rate 1
 #define UBLOX_SET_BINARY_460800 "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,460800,0*11\r\n"
 
 #if AP_GPS_UBLOX_CFGV2_ENABLED

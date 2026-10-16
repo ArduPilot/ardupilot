@@ -511,7 +511,12 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
     // coming in at wrong rate; try to configure it
     _configure_message_rate(msg_class, msg_id, desired_rate);
     _unconfigured_messages |= config_msg_id;
-    _cfg_needs_save = true;
+    // the initialisation blob enables NAV-SOL on every boot, so its
+    // rate being wrong doesn't mean the saved configuration is.
+    // _save_cfg() disables NAV-SOL before saving
+    if (config_msg_id != CONFIG_RATE_SOL) {
+        _cfg_needs_save = true;
+    }
 }
 
 // Requests the ublox driver to identify what port we are using to communicate
@@ -2107,7 +2112,23 @@ AP_GPS_UBLOX::_save_cfg()
       saveMask: SAVE_CFG_ALL,
       loadMask: 0
     };
-    _send_message(CLASS_CFG, MSG_CFG_CFG, &save_cfg, sizeof(save_cfg));
+    // send both messages or neither
+    const uint16_t ubx_overhead = sizeof(struct ubx_header) + 2;
+    uint16_t space_needed = ubx_overhead + sizeof(save_cfg);
+    if (havePvtMsg) {
+        space_needed += ubx_overhead + sizeof(ubx_cfg_msg_rate);
+    }
+    if (port->txspace() < space_needed) {
+        return;
+    }
+    // don't save the NAV-SOL enabled by the initialisation blob; we
+    // may not yet have polled its rate and turned it off
+    if (havePvtMsg && !_configure_message_rate(CLASS_NAV, MSG_SOL, 0)) {
+        return;
+    }
+    if (!_send_message(CLASS_CFG, MSG_CFG_CFG, &save_cfg, sizeof(save_cfg))) {
+        return;
+    }
     _last_cfg_sent_time = AP_HAL::millis();
     _num_cfg_save_tries++;
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,
