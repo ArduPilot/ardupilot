@@ -1,3 +1,4 @@
+#include "AP_Compass/AP_Compass.h"
 #include "Tracker.h"
 
 /**
@@ -35,6 +36,10 @@ void Tracker::update_tracker_position()
 
     // REVISIT: what if we lose lock during a mission and the antenna is moving?
     if (ahrs.get_location(temp_loc)) {
+        // If we were stationary before, reset the compass auto-declination logic
+        if (stationary) {
+            AP::compass().unset_initial_location();
+        }
         stationary = false;
         current_loc = temp_loc;
     }
