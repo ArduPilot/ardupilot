@@ -14,6 +14,8 @@
  */
 #include "Display_SH1106_I2C.h"
 
+#if AP_NOTIFY_DISPLAY_SH1106_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 
@@ -128,3 +130,5 @@ void Display_SH1106_I2C::clear_screen()
 {
     memset(_displaybuffer, 0, SH1106_COLUMNS * SH1106_ROWS_PER_PAGE);
 }
+
+#endif // AP_NOTIFY_DISPLAY_SH1106_ENABLED
