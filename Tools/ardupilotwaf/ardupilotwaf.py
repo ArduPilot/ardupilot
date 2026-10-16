@@ -449,7 +449,7 @@ def ap_program(bld,
 
     if 'use' in kw and bld.env.STATIC_LINKING:
         # ensure we link against vehicle library
-        tg.env.STLIB += [kw['use']]
+        tg.env.append_value('STLIB', [kw['use']])
 
     for group in program_groups:
         _grouped_programs.setdefault(group, {}).update({tg.name : tg})

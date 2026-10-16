@@ -256,11 +256,19 @@ def custom_flags_check(tgen):
     '''
     if not tgen.name.startswith("objs/"):
         return
-    libname = tgen.name[5:]
+    # vehicle-dependent sources are in objs/<library>/<vehicle>, and
+    # wildcard library names (e.g. modules/DroneCAN/libcanard/*.c) contain '/'
+    name = tgen.name[5:]
+    libname = name
+    if (libname not in tgen.env.AP_LIB_EXTRA_CXXFLAGS and
+            libname not in tgen.env.AP_LIB_EXTRA_CFLAGS):
+        libname = name.rsplit('/', 1)[0]
+    # use append_value rather than extending the list in place, as the
+    # list may be shared with the env this tgen's env was derived from
     if libname in tgen.env.AP_LIB_EXTRA_CXXFLAGS:
-        tgen.env.CXXFLAGS.extend(tgen.env.AP_LIB_EXTRA_CXXFLAGS[libname])
+        tgen.env.append_value('CXXFLAGS', tgen.env.AP_LIB_EXTRA_CXXFLAGS[libname])
     if libname in tgen.env.AP_LIB_EXTRA_CFLAGS:
-        tgen.env.CFLAGS.extend(tgen.env.AP_LIB_EXTRA_CFLAGS[libname])
+        tgen.env.append_value('CFLAGS', tgen.env.AP_LIB_EXTRA_CFLAGS[libname])
 
 
 def double_precision_check(tasks):
@@ -291,13 +299,13 @@ def gsoap_library_check(bld, tasks):
                 gsoap_tasks.append(bld.bldnode.find_or_declare(os.path.join('libraries', "AP_ONVIF", s)))
 
             if t.inputs[0] in gsoap_tasks:
-                t.env.CXXFLAGS += [
+                t.env.append_value('CXXFLAGS', [
                     '-Wno-shadow',
-                ]
+                ])
                 if 'clang++' not in t.env.COMPILER_CXX:
-                    t.env.CXXFLAGS += [
+                    t.env.append_value('CXXFLAGS', [
                         '-Wno-suggest-override',
-                    ]
+                    ])
 
 
 @feature('ap_library_object')
