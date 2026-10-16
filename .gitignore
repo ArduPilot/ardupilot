@@ -9,6 +9,7 @@
 /Tools/autotest/param_metadata/Parameters.md
 /Tools/autotest/param_metadata/apm.pdef.xml
 /Tools/autotest/param_metadata/apm.pdef.json
+/Tools/autotest/param_metadata/parameters.json
 /Tools/autotest/jsb_sim/fgout.xml
 /Tools/autotest/jsb_sim/rascal_test.xml
 /Tools/autotest/jsbsim_fgout_0.xml
@@ -129,6 +130,7 @@ ParameterMetaData.xml
 apm.pdef.xml
 apm.pdef.json
 parameters.edn
+parameters.json
 LogMessages.html
 LogMessages.rst
 LogMessages.xml
