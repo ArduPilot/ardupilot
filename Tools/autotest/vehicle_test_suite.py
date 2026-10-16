@@ -22553,11 +22553,22 @@ SERIAL5_BAUD 128
             case = TestCase(f"{test.name}", f"{test.function}")
             case.result = [Skipped(f"Skipped : {reason}")]
 
-        suite.add_property("Firmware Version Major", self.fcu_firmware_version[0])
-        suite.add_property("Firmware Version Minor", self.fcu_firmware_version[1])
-        suite.add_property("Firmware Version Rev", self.fcu_firmware_version[2])
-        suite.add_property("Firmware hash", self.fcu_firmware_hash)
-        suite.add_property("Git hash", self.githash)
+        # these come off the results, and under --parallel only the
+        # suite which conducted the run has them: a worker's tester
+        # collected them, and the dispatcher copies them onto itself as
+        # the first result arrives.  Every other suite in a multi-suite
+        # pool reaches here without them, and reporting the run is no
+        # place to fall over - the tests have already finished.
+        fcu_firmware_version = getattr(self, "fcu_firmware_version", None)
+        if fcu_firmware_version is not None:
+            suite.add_property("Firmware Version Major", fcu_firmware_version[0])
+            suite.add_property("Firmware Version Minor", fcu_firmware_version[1])
+            suite.add_property("Firmware Version Rev", fcu_firmware_version[2])
+        for (name, attribute) in (("Firmware hash", "fcu_firmware_hash"),
+                                  ("Git hash", "githash")):
+            value = getattr(self, attribute, None)
+            if value is not None:
+                suite.add_property(name, value)
         mavproxy_version = util.MAVProxy_version()
         suite.add_property("Mavproxy Version Major", mavproxy_version[0])
         suite.add_property("Mavproxy Version Minor", mavproxy_version[1])
