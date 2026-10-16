@@ -86,7 +86,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
     // update body conversion
-    _rotation_vehicle_body_to_autopilot_body = ahrs.get_rotation_vehicle_body_to_autopilot_body();
+    _quat_vehicle_body_to_autopilot_body = ahrs.get_quat_vehicle_body_to_autopilot_body();
 
     _ins.start_frame();
     _baro.start_frame();
