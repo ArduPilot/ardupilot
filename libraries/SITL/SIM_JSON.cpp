@@ -508,10 +508,13 @@ void JSON::recv_fdm(const struct sitl_input &input)
         printf("Detected physics reset\n");
         deltat = 0;
         last_received_bitmask = 0;
+        base_time_us = time_now_us;
+        base_timestamp_s = state.timestamp_s;
     } else {
         deltat = state.timestamp_s - last_timestamp_s;
     }
-    time_now_us += deltat * 1.0e6;
+    time_now_us = base_time_us +
+                  uint64_t(llround((state.timestamp_s - base_timestamp_s) * 1.0e6));
 
     if (is_positive(deltat) && deltat < 0.1) {
         // Only adjust frame time if we want lockstep
