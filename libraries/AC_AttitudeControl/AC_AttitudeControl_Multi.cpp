@@ -331,6 +331,46 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_G_BOOST", 7, AC_AttitudeControl_Multi, _throttle_gain_boost, 0.0f),
 
+    // @Param: THR_PD_AXES
+    // @DisplayName: Throttle PD attenuation axes
+    // @Description: Rate controller axes whose P and D terms are attenuated at high throttle. 0 disables throttle PD attenuation. Use where the rate loops oscillate at high throttle but are well tuned at hover, e.g. heavy-lift aircraft whose loaded hover throttle is much higher than their empty hover throttle. With the default ATC_THR_PD_BRK and ATC_THR_PD_ATT, P and D are at 100% up to 50% throttle and fall linearly to 50% at full throttle.
+    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+    // @User: Advanced
+    AP_GROUPINFO("THR_PD_AXES", 8, AC_AttitudeControl_Multi, _thr_pd_axes, 0),
+
+    // @Param: THR_PD_BRK
+    // @DisplayName: Throttle PD attenuation breakpoint
+    // @Description: Throttle output (as logged in CTUN.ThO) above which the rate controller P and D terms are attenuated. Set it at or just above the throttle at which the rate gains were tuned.
+    // @Range: 0 0.95
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("THR_PD_BRK", 9, AC_AttitudeControl_Multi, _thr_pd_brk, 0.5f),
+
+    // @Param: THR_PD_ATT
+    // @DisplayName: Throttle PD attenuation
+    // @Description: Fraction by which the rate controller P and D terms are reduced at ATC_THR_PD_END throttle and above. Above ATC_THR_PD_BRK the reduction ramps linearly from zero at the breakpoint to this value at ATC_THR_PD_END; 0.5 leaves P and D at 50%.
+    // @Range: 0 0.9
+    // @Increment: 0.05
+    // @User: Advanced
+    AP_GROUPINFO("THR_PD_ATT", 10, AC_AttitudeControl_Multi, _thr_pd_atten, 0.5f),
+
+    // @Param: THR_PD_END
+    // @DisplayName: Throttle PD attenuation end
+    // @Description: Throttle output (as logged in CTUN.ThO) at which the full ATC_THR_PD_ATT attenuation is reached. Above it P and D stay at (1 - ATC_THR_PD_ATT). Set it at the throttle where the gains need the full cut, e.g. a loaded hover, so that P and D do not keep falling at higher throttle. 1 ramps all the way to full throttle. Values at or below ATC_THR_PD_BRK are treated as 1.
+    // @Range: 0.05 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("THR_PD_END", 11, AC_AttitudeControl_Multi, _thr_pd_end, 1.0f),
+
+    // @Param: THR_PD_TC
+    // @DisplayName: Throttle PD attenuation time constant
+    // @Description: Time constant of the first-order filter on the throttle that drives throttle PD attenuation. The P and D scale then follows sustained throttle changes, such as a loaded hover or sustained fast flight, but not throttle swings faster than this, which would otherwise modulate P and D at the frequency of the swing. 0 uses the throttle without extra smoothing.
+    // @Units: s
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("THR_PD_TC", 12, AC_AttitudeControl_Multi, _thr_pd_tc, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -425,6 +465,52 @@ void AC_AttitudeControl_Multi::update_throttle_gain_boost()
     }
 }
 
+// get_throttle_pd_attenuation - per-axis rate P and D multiplier for the current throttle
+// Thrust per unit of motor command, and so the rate loops' plant gain, can
+// rise with throttle (thrust-curve mismatch, ESC response, loaded hover far
+// above empty hover). Gains tuned at a light hover then run out of margin
+// higher up. This scales P and D down linearly from 1 at ATC_THR_PD_BRK to
+// (1 - ATC_THR_PD_ATT) at ATC_THR_PD_END, and holds it above. I, FF and D_FF are unchanged: they
+// set tracking, not the loop's high-frequency gain.
+// Returned rather than applied with set_PD_scale_mult(): with the rate thread
+// rate_controller_run_dt() runs several times per main loop while _pd_scale
+// is only reset once per main loop, so a multiplier applied here would compound.
+// The throttle is smoothed with time constant ATC_THR_PD_TC, so the scale follows
+// sustained throttle but not fast swings; dt is the rate loop's time step.
+Vector3f AC_AttitudeControl_Multi::get_throttle_pd_attenuation(float dt)
+{
+    // filtered throttle (CTUN.ThO), smoothed further by ATC_THR_PD_TC. Disarmed, the filter
+    // tracks the throttle directly so it starts each flight from the current value.
+    const float throttle_now = _motors.get_throttle();
+    const float tc = MAX(_thr_pd_tc.get(), 0.0f);
+    if (!_motors.armed() || !is_positive(tc) || !is_positive(dt)) {
+        _thr_pd_throttle_filt = throttle_now;
+    } else {
+        _thr_pd_throttle_filt += (dt / (tc + dt)) * (throttle_now - _thr_pd_throttle_filt);
+    }
+
+    const uint8_t axes = uint8_t(_thr_pd_axes.get());
+    const float atten = constrain_float(_thr_pd_atten, 0.0f, 0.9f);
+    if (axes == 0 || !is_positive(atten)) {
+        return VECTORF_111;
+    }
+    const float brk = constrain_float(_thr_pd_brk, 0.0f, 0.95f);
+    const float throttle = _thr_pd_throttle_filt;
+    if (throttle <= brk) {
+        return VECTORF_111;
+    }
+    // the ramp ends at ATC_THR_PD_END; an end at or below the breakpoint falls back to full throttle
+    float end = constrain_float(_thr_pd_end, 0.0f, 1.0f);
+    if (end <= brk + 0.01f) {
+        end = 1.0f;
+    }
+    const float ramp = MIN((throttle - brk) / (end - brk), 1.0f);
+    const float scale = 1.0f - atten * ramp;
+    return Vector3f{(axes & 1U) ? scale : 1.0f,
+                    (axes & 2U) ? scale : 1.0f,
+                    (axes & 4U) ? scale : 1.0f};
+}
+
 // update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
 void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
 {
@@ -461,6 +547,10 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
     // boost angle_p/pd each cycle on high throttle slew
     update_throttle_gain_boost();
 
+    // attenuate rate P and D at high throttle, on top of any other PD scaling
+    const Vector3f thr_pd = get_throttle_pd_attenuation(dt);
+    const Vector3f pd_scale{_pd_scale.x * thr_pd.x, _pd_scale.y * thr_pd.y, _pd_scale.z * thr_pd.z};
+
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
 
@@ -469,16 +559,16 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
     _rate_gyro_rads = gyro_rads;
     _rate_gyro_time_us = AP_HAL::micros64();
 
-    _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, _pd_scale.x, _i_scale.x) + _actuator_sysid.x);
+    _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, pd_scale.x, _i_scale.x) + _actuator_sysid.x);
     _motors.set_roll_ff(get_rate_roll_pid().get_ff());
 
-    _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, _pd_scale.y, _i_scale.y) + _actuator_sysid.y);
+    _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, pd_scale.y, _i_scale.y) + _actuator_sysid.y);
     _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
 
-    _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, _pd_scale.z, _i_scale.z) + _actuator_sysid.z);
+    _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, pd_scale.z, _i_scale.z) + _actuator_sysid.z);
     _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
 
-    _pd_scale_used = _pd_scale;
+    _pd_scale_used = pd_scale;   // logged in ATSC.PDx/y/z
     _i_scale_used = _i_scale;
     _angle_P_scale_used = _angle_P_scale;
 }
