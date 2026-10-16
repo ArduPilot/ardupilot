@@ -15,6 +15,10 @@ static void failsafe_check_static()
 
 void Copter::init_ardupilot()
 {
+    // a watchdog reset while armed leaves no disarm to record that the
+    // vehicle was flying, so assume it was until the land detector clears it
+    ap.disarmed_in_air = hal.util->was_watchdog_armed();
+
     // init winch
 #if AP_WINCH_ENABLED
     g2.winch.init();

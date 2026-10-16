@@ -405,6 +405,8 @@ void AP_Baro::update_calibration()
         if (healthy(i)) {
             float corrected_pressure = get_sealevel_pressure(get_pressure(i) + sensors[i].p_correction, _field_elevation_active);
             sensors[i].ground_pressure.set(corrected_pressure);
+            // make the new datum visible before the next update()
+            sensors[i].altitude = _alt_offset_active;
         }
 
         // don't notify the GCS too rapidly or we flood the link
