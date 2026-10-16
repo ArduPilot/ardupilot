@@ -755,6 +755,11 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     // output lowest possible value to motors
     copter.motors->output_min();
 
+    // a takeoff command is only accepted while the motors are armed, so one
+    // still pending now was left over from before a disarm (e.g. the end of
+    // a motor test) and must not resume
+    copter.flightmode->takeoff_cancel();
+
     // finally actually arm the motors
     copter.motors->armed(true);
 
