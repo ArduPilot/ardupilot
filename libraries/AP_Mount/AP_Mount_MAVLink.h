@@ -30,6 +30,9 @@ public:
 
     // update mount position
     void update() override;
+    bool set_mode(MAV_MOUNT_MODE mode) override;
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet,
+                                                          const mavlink_message_t &msg) override;
 
     // return true if healthy
     bool healthy() const override;
@@ -102,6 +105,10 @@ private:
     void send_target_location(const Location &roi_loc) override;
 
     void send_target_message(uint32_t msgid, const char *pkt, uint8_t len);
+
+    void release_device_control();
+    uint32_t _device_control_ms;
+    bool _device_control;
 
     // internal variables
     bool _got_device_info;          // true once gimbal has provided device info

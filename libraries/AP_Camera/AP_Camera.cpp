@@ -412,6 +412,7 @@ float AP_Camera::command_camera_id(const mavlink_command_int_t &packet)
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_SOURCE:
+    case MAV_CMD_SET_CAMERA_MODE:
         return packet.param1;
     case MAV_CMD_CAMERA_STOP_TRACKING:
         return isnan(packet.param1) ? 0 : packet.param1;
@@ -519,6 +520,25 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
             is_equal(packet.param3, 1.0f),  // trigger
             packet.param1                   // distance
         );
+    case MAV_CMD_SET_CAMERA_MODE: {
+        if (!isfinite(packet.param2) || packet.param2 < 0 || packet.param2 > float(CAMERA_MODE_IMAGE_SURVEY) ||
+            packet.param2 > floorf(packet.param2)) {
+            return MAV_RESULT_DENIED;
+        }
+        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
+        bool found = false;
+        for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+            if (_backends[i] == nullptr || (instance_id != 0 && instance_id != i+1)) {
+                continue;
+            }
+            const MAV_RESULT r = _backends[i]->set_camera_mode(uint8_t(packet.param2));
+            if (!found || r != MAV_RESULT_ACCEPTED) {
+                result = r;
+            }
+            found = true;
+        }
+        return result;
+    }
     case MAV_CMD_SET_CAMERA_ZOOM:
         return handle_mav_SET_CAMERA_ZOOM(
             instance_id,                     // instance
