@@ -113,6 +113,13 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     AP_GROUPINFO("CAN_OVRIDE", 9, AP_GPS::Params, override_node_id, 0),
 #endif
 
+    // @Param: OPTIONS
+    // @DisplayName: GPS options
+    // @Description: When bit 0 is set the baud rate is fixed to the configured serial port rate for serial-based GPSs
+    // @Bitmask: 0:Disable auto-bauding
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 10, AP_GPS::Params, options, 0),
+
     AP_GROUPEND
 };
 
