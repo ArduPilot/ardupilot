@@ -22571,6 +22571,18 @@ RTL_ALT_M 111
         self.set_parameter("SIM_FLOW_ENABLE", 1)
         self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
 
+        self.start_subtest("EK3_FLOW_QMIN reads 50 on the signal strength, flashing below it")
+        # SITL's flow sensor always reports quality 51
+        self.set_parameter("EK3_FLOW_QMIN", 51)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL\x0150")
+        texts = [s[10] for s in self.osd_displayport_rows(msp, [10], 2)]
+        if not all(b"C1 REL\x0150" in t for t in texts):
+            raise NotAchievedException("signal strength at the quality floor flashes: %s" % texts)
+        self.set_parameter("EK3_FLOW_QMIN", 102)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL\x0125", flashing=True)
+        self.set_parameter("EK3_FLOW_QMIN", 0)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL\x0120")
+
         self.start_subtest("A GPS lane coasting on its last fix reads CST, flashing")
         self.set_parameter("SIM_GPS1_ENABLE", 0)
         self.wait_osd_ekf_lane(msp, 9, b"CST", flashing=True)
