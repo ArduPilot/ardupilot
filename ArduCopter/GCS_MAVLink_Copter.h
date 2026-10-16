@@ -77,6 +77,14 @@ protected:
     // sends NAV_CONTROLLER_OUTPUT with the target attitude and the current mode's bearing, distance and errors
     void send_nav_controller_output() const override;
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+    // returns the current flight mode's progress towards its navigation task's target, for NAV_CONTROLLER_PROGRESS
+    bool get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+
+    // returns the target of the current mission item's navigation task
+    bool get_mission_nav_target(Location &target) const override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+
     // returns the MAVLink protocol capabilities Copter supports
     uint64_t capabilities() const override;
 
