@@ -7206,7 +7206,9 @@ return update()
         self.context_get().sitl_commandline_customised = True
 
         self.progress("Starting PPP daemon")
-        pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
+        pppd = util.start_PPP_daemon(
+            "192.168.14.15:192.168.14.13",
+            '127.0.0.1:%u' % self.adjust_ardupilot_port(5765))
 
         self.context_push()
         self.context_collect('STATUSTEXT')
@@ -7630,10 +7632,10 @@ return update()
         self.wait_statustext("hello, world")
         conns = {}
         endpoints = [
-            "tcp:localhost:5761",
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5761),
             self.sitl_serial_endpoint(1),
             self.sitl_serial_endpoint(2),
-            "tcp:localhost:5764",
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5764),
             self.sitl_serial_endpoint(5),
             self.sitl_serial_endpoint(6),
             self.sitl_serial_endpoint(7),
