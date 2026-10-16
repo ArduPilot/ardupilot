@@ -19253,12 +19253,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def NoRCOnBootPreArmFailure(self):
         '''Ensure we can't arm with no RC on boot if THR_FS_VALUE set'''
         self.context_push()
-        for rc_failure_mode in 1, 2:
+        for rc_failure_mode in 1, 2, 3:
             self.set_parameters({
                 "SIM_RC_FAIL": rc_failure_mode,
             })
             self.reboot_sitl()
-            if rc_failure_mode == 1:
+            if rc_failure_mode in (1, 3):
+                # a receiver which says it is in failsafe is no more a
+                # source of input than one which says nothing at all:
                 self.assert_prearm_failure("RC not found",
                                            other_prearm_failures_fatal=False)
             elif rc_failure_mode == 2:
@@ -19726,6 +19728,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.DO_WINCH,
             self.DefaultIntervalsFromFiles,
             self.RCOverridesNoRCReceiver,
+            self.RCOverrideThrottleFailsafe,
+            self.RCOverrideAuxOnlyReceiverFailsafe,
+            self.RCOverrideThrottleFailsafeReenable,
             self.RCOverridesClearByPilotInput,
             self.ScriptMountDriver,
             self.CircleManualControlEntryRight,
@@ -22932,6 +22937,107 @@ RTL_ALT_M 111
         self.do_set_mode_via_command_int('RTL')
         self.wait_disarmed()
 
+    def RCOverrideThrottleFailsafe(self):
+        '''test that a low-throttle RC override triggers the radio failsafe'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": 250,
+            "SIM_RC_FAIL": 1,  # no-pulses; the overrides are the only input
+            "FS_THR_ENABLE": 1,
+        })
+        self.reboot_sitl()
+
+        rc3_value = 1500
+
+        # register a hook which sends rc3_value as an override
+        def rc_override_sender(mav, message):
+            if message.get_type() == 'ATTITUDE':
+                self.mav.mav.rc_channels_override_send(
+                    mav.target_system, # target system
+                    1, # target component
+                    1500, # chan1_raw
+                    1500, # chan2_raw
+                    rc3_value, # chan3_raw
+                    1500, # chan4_raw
+                    65535, # chan5_raw
+                    65535, # chan6_raw
+                    65535, # chan7_raw
+                    65535  # chan8_raw
+                )
+        self.install_message_hook_context(rc_override_sender)
+        self.wait_ready_to_arm()
+
+        self.context_collect('STATUSTEXT')
+        self.progress("Throttle override below FS_THR_VALUE")
+        rc3_value = 900
+        self.wait_statustext('Radio Failsafe', check_context=True)
+
+        self.progress("Throttle override back above FS_THR_VALUE")
+        rc3_value = 1500
+        self.wait_statustext('Radio Failsafe Cleared', check_context=True)
+
+    def RCOverrideAuxOnlyReceiverFailsafe(self):
+        '''check a stale aux-only override does not hold off the radio failsafe'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "FS_THR_ENABLE": 1,
+            "RC_FS_TIMEOUT": 1,
+            "RC_OVERRIDE_TIME": -1,  # an override never expires
+        })
+
+        sending = [True]
+
+        def rc_override_sender(mav, message):
+            if not sending[0]:
+                return
+            if message.get_type() == 'ATTITUDE':
+                self._rc_overrides_send_single(7, 1500)
+        self.install_message_hook_context(rc_override_sender)
+        self.wait_ready_to_arm()
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameter('SIM_RC_FAIL', 3)  # receiver reports failsafe
+        self.delay_sim_time(3, "overrides are input while they keep arriving")
+        if self.statustext_in_collections('Radio Failsafe') is not None:
+            raise NotAchievedException("Failsafe while overrides were arriving")
+
+        self.progress("stopping the overrides")
+        sending[0] = False
+        self.wait_statustext('Radio Failsafe', check_context=True, timeout=10)
+
+    def RCOverrideThrottleFailsafeReenable(self):
+        """check re-enabling the throttle failsafe does not declare one on good input"""
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "FS_THR_ENABLE": 1,
+        })
+
+        rc3_value = [1500]
+
+        def rc_override_sender(mav, message):
+            if message.get_type() == 'ATTITUDE':
+                self._rc_overrides_send_single(3, rc3_value[0])
+        self.install_message_hook_context(rc_override_sender)
+        self.wait_ready_to_arm()
+
+        self.context_collect('STATUSTEXT')
+        self.progress("declare a failsafe with a low throttle override")
+        rc3_value[0] = 900
+        self.wait_statustext('Radio Failsafe', check_context=True)
+
+        self.progress("disable the throttle failsafe while it is active")
+        self.set_parameter('FS_THR_ENABLE', 0)
+        self.wait_statustext('Radio Failsafe Cleared', check_context=True)
+
+        rc3_value[0] = 1500
+        self.delay_sim_time(1, "let the good throttle value be read")
+
+        self.progress("re-enable the throttle failsafe on good input")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter('FS_THR_ENABLE', 1)
+        self.delay_sim_time(2, "allow a failsafe to be declared if it is going to")
+        if self.statustext_in_collections('Radio Failsafe') is not None:
+            raise NotAchievedException("Failsafe declared on good input")
+
     def RCOverridesClearByPilotInput(self):
         '''Test RC_OPTIONS bit 14 on Copter: roll/pitch/yaw/throttle each clear overrides'''
         self.set_parameters({
@@ -23454,6 +23560,32 @@ return update()
         ret["AVOID_ENABLE"] = 0
         return ret
 
+    def ThrottleFailsafeRideThrough(self):
+        '''check a brief loss of RC is ridden out for RC_FS_TIMEOUT'''
+        self.set_parameters({
+            "FS_THR_ENABLE": 1,
+            "RC_FS_TIMEOUT": 5,
+        })
+        self.takeoff(10, mode='LOITER')
+
+        self.start_subtest("a blip shorter than RC_FS_TIMEOUT is ridden out")
+        # a receiver in failsafe supplies values of its own, which must
+        # not replace the last values the pilot gave us:
+        roll_before = self.get_rc_channel_value(1)
+        throttle_before = self.get_rc_channel_value(3)
+        self.set_parameter('SIM_RC_FAIL', 3)  # protocol failsafe
+        self.delay_sim_time(0.8, "RC lost for less than RC_FS_TIMEOUT")
+        self.assert_rc_channel_value(1, roll_before)
+        self.assert_rc_channel_value(3, throttle_before)
+        self.set_parameter('SIM_RC_FAIL', 0)
+        self.delay_sim_time(1, "allow the failsafe to trigger if it is going to")
+        self.assert_mode('LOITER')
+
+        self.start_subtest("a loss longer than RC_FS_TIMEOUT is a failsafe")
+        self.set_parameter('SIM_RC_FAIL', 3)
+        self.wait_mode('RTL')
+        self.wait_disarmed()
+
     def RCProtocolFailsafe(self):
         '''ensure we failsafe when the RC protocol failsafe is set'''
         self.takeoff(10, mode='LOITER')
@@ -23866,6 +23998,7 @@ return update, 1000
             self.DO_CHANGE_SPEED_in_guided,
             self.RPLidarA1,
             self.RCProtocolFailsafe,
+            self.ThrottleFailsafeRideThrough,
             self.MAV_CMD_DO_LAND_START,
             self.CameraLogMessages,
             self.EK3_OGN_HGT_MASK_climbing,

@@ -21,6 +21,8 @@
 
 #if AP_RCPROTOCOL_ENABLED
 
+#include "AP_RCProtocol_ThrottleFailsafe.h"
+
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_VideoTX/AP_VideoTX_config.h>
 
@@ -59,7 +61,8 @@ public:
         rc_frame_count = 0;
     }
 
-    // get number of frames, honoring failsafe
+    // get number of frames published as input, including those from a
+    // receiver in failsafe
     uint32_t get_rc_input_count(void) const {
         return rc_input_count;
     }
@@ -71,6 +74,11 @@ public:
     bool protocol_enabled(enum AP_RCProtocol::rcprotocol_t protocol) const {
         return frontend.protocol_enabled(protocol);
     }
+
+    // see the AP_RCProtocol methods of the same names:
+    bool failsafe_active() const { return _failsafe_active; }
+    bool input_in_failsafe() const { return _input_in_failsafe; }
+    bool input_valid() const { return _input_valid; }
 
     // get RSSI
     int16_t get_RSSI(void) const {
@@ -142,6 +150,18 @@ private:
     uint8_t  _num_channels;
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
+
+    bool _failsafe_active;
+    bool _input_in_failsafe;
+    bool _input_valid = true;
+
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // returns true if the throttle value in the current frame looks
+    // like a bind-time value.  Updates throttle_failsafe:
+    bool update_throttle_failsafe(uint8_t num_values);
+
+    AP_RCProtocol_ThrottleFailsafe throttle_failsafe;
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 };
 
 #endif  // AP_RCPROTOCOL_ENABLED

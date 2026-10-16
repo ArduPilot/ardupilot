@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#include <AP_RCProtocol/AP_RCProtocol.h>
+
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
 
@@ -118,6 +120,20 @@ void Plane::init_rc_out_aux()
 
 void Plane::read_radio()
 {
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // update in case failsafe values have changed:
+    if (g.throttle_fs_enabled == ThrFailsafe::Disabled) {
+        // set flag values to disable filtering in AP_RCProtocol:
+        AP::RC().set_throttle_channel_and_failsafe_value(UINT8_MAX, UINT16_MAX);
+    } else {
+        AP::RC().set_throttle_channel_and_failsafe_value(
+            channel_throttle->ch(),
+            g.throttle_fs_value,
+            channel_throttle->get_reverse()
+        );
+    }
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+
     if (!rc().read_input()) {
         control_failsafe();
         return;
@@ -128,7 +144,7 @@ void Plane::read_radio()
         failsafe.AFS_last_valid_rc_ms = millis();
     }
 
-    if (rc_throttle_value_ok()) {
+    if (rc().input_valid()) {
         failsafe.last_valid_rc_ms = millis();
     }
 
@@ -335,10 +351,13 @@ bool Plane::rc_throttle_value_ok(void) const
     if (g.throttle_fs_enabled == ThrFailsafe::Disabled) {
         return true;
     }
-    if (channel_throttle->get_reverse()) {
-        return channel_throttle->get_radio_in() < g.throttle_fs_value;
-    }
-    return channel_throttle->get_radio_in() > g.throttle_fs_value;
+    // suspected bind-time values count against us from the first such
+    // frame, as Plane's own comparison did, so the ten-frame debounce
+    // in control_failsafe() starts counting just as early.  A receiver
+    // which merely says it is in failsafe supplies no input at all, and
+    // is handled by the timeout in rc_failsafe_active(), as a silent
+    // receiver is:
+    return rc().input_valid();
 }
 
 /*
