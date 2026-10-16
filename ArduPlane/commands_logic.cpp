@@ -227,6 +227,11 @@ Return true if we do not recognize the command so that we move on to the next co
 
 bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Returns true if command complete
 {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // report progress as it stood before this check
+    update_mission_item_progress(cmd);
+#endif
+
     switch(cmd.id) {
 
     case MAV_CMD_NAV_TAKEOFF:
@@ -1354,3 +1359,189 @@ bool Plane::in_auto_mission_id(uint16_t command) const
     return control_mode == &mode_auto && mission.get_current_nav_id() == command;
 }
 
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// distance remaining to next_WP_loc, as a part of the leg from prev_WP_loc
+void Plane::get_wp_progress(AP_Mission::ItemProgress &progress) const
+{
+    progress.set_distance_remaining(current_loc.get_distance(next_WP_loc), prev_WP_loc.get_distance(next_WP_loc));
+}
+
+// true once the loiter around next_WP_loc has turned through a quarter
+// of a circle.  reached_loiter_target() can flicker, and can still be
+// set from a previous loiter, and not every mode resets the angle turned
+// when it sets a new target, so this measures the angle from when the
+// target changed, and latches.  Flying straight towards the target
+// changes the bearing to it little; circling it soon turns a quarter
+bool Plane::loiter_started()
+{
+    if (!loiter_progress.target.same_loc_as(next_WP_loc)) {
+        loiter_progress.target = next_WP_loc;
+        loiter_progress.start_sum_cd = loiter.sum_cd;
+        loiter_progress.started = false;
+    }
+    if (labs(loiter.sum_cd - loiter_progress.start_sum_cd) > 9000) {
+        loiter_progress.started = true;
+    }
+    return loiter_progress.started;
+}
+
+// true once the vehicle has come within a radius of the loiter circle
+// around next_WP_loc, latched until the target changes.  Used by modes,
+// which do not all reset the loiter angle when they set a new target,
+// so the angle turned cannot tell the approach from the loiter
+bool Plane::loiter_approached()
+{
+    if (!loiter_progress.approach_target.same_loc_as(next_WP_loc)) {
+        loiter_progress.approach_target = next_WP_loc;
+        loiter_progress.approached = false;
+    }
+    float radius = fabsf(loiter.radius);
+    if (!is_positive(radius)) {
+        radius = fabsf(aparm.loiter_radius);
+    }
+    if (current_loc.get_distance(next_WP_loc) < 2 * radius) {
+        loiter_progress.approached = true;
+    }
+    return loiter_progress.approached;
+}
+
+// altitude remaining to next_WP_loc, as a part of the change from prev_WP_loc
+void Plane::get_alt_change_progress(AP_Mission::ItemProgress &progress) const
+{
+    ftype remaining_m, total_m;
+    if (!current_loc.get_height_above(next_WP_loc, remaining_m) ||
+        !prev_WP_loc.get_height_above(next_WP_loc, total_m)) {
+        return;
+    }
+    progress.set_distance_remaining(fabsF(remaining_m), fabsF(total_m));
+}
+
+// altitude remaining to complete a takeoff, as a part of the takeoff altitude
+void Plane::get_takeoff_progress(AP_Mission::ItemProgress &progress)
+{
+    const float target_m = auto_state.takeoff_altitude_rel_cm * 0.01f;
+    const float alt_m = adjusted_relative_altitude_cm() * 0.01f;
+    progress.set_distance_remaining(MAX(target_m - alt_m, 0.0f), target_m);
+}
+
+// work out the progress of the current mission item from the navigation state
+void Plane::update_mission_item_progress(const AP_Mission::Mission_Command& cmd)
+{
+    AP_Mission::ItemProgress progress;
+
+    switch (cmd.id) {
+    case MAV_CMD_NAV_TAKEOFF:
+#if HAL_QUADPLANE_ENABLED
+        if (quadplane.is_vtol_takeoff(cmd.id)) {
+            break;
+        }
+#endif
+        if (!auto_state.takeoff_complete) {
+            get_takeoff_progress(progress);
+        }
+        break;
+
+    case MAV_CMD_NAV_WAYPOINT:
+        get_wp_progress(progress);
+        break;
+
+    case MAV_CMD_NAV_LAND:
+#if HAL_QUADPLANE_ENABLED
+        if (quadplane.is_vtol_land(cmd.id)) {
+            break;
+        }
+#endif
+        // distance to the touchdown point
+        get_wp_progress(progress);
+        break;
+
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        // only the approach has an end to report
+        if (!loiter_started()) {
+            get_wp_progress(progress);
+        }
+        break;
+
+    case MAV_CMD_NAV_LOITER_TIME:
+        if (loiter.start_time_ms == 0) {
+            get_wp_progress(progress);
+        } else if (loiter.time_max_ms > 0) {
+            // once the time is up the heading goal (if any) is all that remains
+            const float elapsed_s = condition_value != 0 ? (millis() - loiter.start_time_ms) * 0.001f : loiter.time_max_ms * 0.001f;
+            progress.set_time_elapsed(elapsed_s, loiter.time_max_ms * 0.001f);
+        }
+        break;
+
+    case MAV_CMD_NAV_LOITER_TURNS:
+        if (!loiter_started()) {
+            get_wp_progress(progress);
+        } else if (condition_value != 0) {
+            progress.set_count_completed(MAX(loiter.sum_cd, 0) / 36000.0f, cmd.get_loiter_turns());
+        } else {
+            // the turns are complete; the angle is reset for the heading goal (if any)
+            progress.set_count_remaining(0, cmd.get_loiter_turns());
+        }
+        break;
+
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+        // the altitude only has to be reached once
+        if (condition_value == 0) {
+            get_alt_change_progress(progress);
+        } else {
+            progress.set_distance_remaining(0, 1);
+        }
+        break;
+
+    case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
+        get_alt_change_progress(progress);
+        break;
+
+    case MAV_CMD_NAV_DELAY:
+        if (mode_auto.nav_delay.time_max_ms > 0) {
+            progress.set_time_elapsed((millis() - mode_auto.nav_delay.time_start_ms) * 0.001f, mode_auto.nav_delay.time_max_ms * 0.001f);
+        }
+        break;
+
+#if AP_SCRIPTING_ENABLED
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        // the timeout is the longest the command can take
+        if (cmd.content.nav_script_time.timeout_s > 0) {
+            progress.set_time_elapsed((AP_HAL::millis() - nav_scripting.start_ms) * 0.001f, cmd.content.nav_script_time.timeout_s);
+        }
+        break;
+#endif
+
+    default:
+        break;
+    }
+
+    mission.set_item_progress(cmd.index, progress);
+}
+
+// progress towards the navigation target of modes other than AUTO
+bool Plane::get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target)
+{
+    switch (control_mode->mode_number()) {
+    case Mode::Number::GUIDED:
+    case Mode::Number::RTL:
+        // only the approach to the loiter point has an end to report
+        if (!loiter_approached()) {
+            get_wp_progress(progress);
+        }
+        target = next_WP_loc;
+        return true;
+    case Mode::Number::TAKEOFF:
+        if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
+            get_takeoff_progress(progress);
+        } else if (!loiter_approached()) {
+            get_wp_progress(progress);
+        }
+        target = next_WP_loc;
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED

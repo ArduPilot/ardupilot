@@ -201,6 +201,21 @@ void GCS_MAVLINK_Plane::send_aoa_ssa()
         ahrs.getSSA());
 }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+bool GCS_MAVLINK_Plane::get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    return plane.get_mode_nav_progress(progress, target);
+}
+
+// Plane navigates each task of a mission item towards next_WP_loc,
+// e.g. the waypoint or the centre of the loiter
+bool GCS_MAVLINK_Plane::get_mission_nav_target(Location &target) const
+{
+    target = plane.next_WP_loc;
+    return target.initialised();
+}
+#endif
+
 void GCS_MAVLINK_Plane::send_nav_controller_output() const
 {
     if (plane.control_mode == &plane.mode_manual) {
