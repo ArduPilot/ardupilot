@@ -48,6 +48,8 @@ import fat_image
 import gen_board
 import renode_data
 
+EXT_FLASH_BASE = gen_board.EXT_FLASH_BASE
+SHF_ALLOC = 0x2
 IOMCU_FLASH_BASE = 0x08000000
 IOMCU_FLASH_SIZE = 64 * 1024
 IOMCU_APP_OFFSET = 4 * 1024
@@ -457,6 +459,22 @@ def _decode_apj(source, maximum_size, expected_board_id):
         sys.exit('failed to decode firmware %s: %s' % (source, error))
 
 
+def elf_sections_from(path, address):
+    '''Names of the allocated ELF sections at or above address.'''
+    data = Path(path).read_bytes()
+    shoff, = struct.unpack_from('<I', data, 0x20)
+    shentsize, shnum, shstrndx = struct.unpack_from('<HHH', data, 0x2E)
+    sections = [struct.unpack_from('<IIIII', data, shoff + i * shentsize)
+                for i in range(shnum)]
+    names = sections[shstrndx][4]
+    found = []
+    for name, _type, flags, addr, _offset in sections:
+        if flags & SHF_ALLOC and addr >= address:
+            end = data.index(b'\0', names + name)
+            found.append(data[names + name:end].decode())
+    return found
+
+
 def make_firmware_binary(source, destination, app_base=None, flash_size=None,
                          expected_board_id=None):
     '''Convert an APJ, BIN, HEX, or ELF firmware to a flash overlay.'''
@@ -503,10 +521,13 @@ def make_firmware_binary(source, destination, app_base=None, flash_size=None,
     objcopy = shutil.which('arm-none-eabi-objcopy') or shutil.which('objcopy')
     if objcopy is None:
         sys.exit('objcopy is required to make the Renode flash overlay')
+    # external flash sections are loaded from the ELF into their own memory
+    removed = ['--remove-section=%s' % name
+               for name in elf_sections_from(source, EXT_FLASH_BASE)]
     try:
         subprocess.check_call(
-            [objcopy, '-O', 'binary', '--gap-fill=0xff',
-             str(source), str(destination)],
+            [objcopy, '-O', 'binary', '--gap-fill=0xff'] + removed +
+            [str(source), str(destination)],
             stderr=subprocess.STDOUT,
         )
     except (OSError, subprocess.CalledProcessError) as error:
