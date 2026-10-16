@@ -1,13 +1,20 @@
 # SITL-on-HW notes
 
+## Hardware Requirements
+
+Running simulation on hardware (SimOnHW) executes both the full ArduPilot vehicle code and the 400Hz 6-DOF physics simulation engine directly on the microcontroller.
+
+- **Recommended MCU:** STM32H7 series (e.g. STM32H743, STM32H753) with hardware double-precision FPU (FPv5-D16) and >= 1MB RAM/Flash (e.g., MatekH743, CubeOrange, NucleoH743).
+- **Unsupported/Constrained MCUs:** STM32F4 / Cortex-M4 and STM32F7 / Cortex-M7 with single-precision FPUs are not recommended. They lack the computational power and double-precision hardware support required for the real-time simulation loops, causing CPU starvation, scheduling lag, and flight failure.
+
 ## Compiling and flashing
 
-Run the sitl-on-hw.sh script to compile and flash for MatekH743.  Adjust for your own board if required before running.  This script will configure a build ready for running SITL-on-hardware and attempt to upload it to a connected board.  It includes a set of embedded parameters to configure the simulated sensors appropriately.
+Run the `sitl-on-hw.py` script to compile and flash for MatekH743.  Adjust for your own board if required before running.  This script will configure a build ready for running SITL-on-hardware and attempt to upload it to a connected board.  It includes a set of embedded parameters to configure the simulated sensors appropriately.
 
 ::
 
     cd $HOME/ardupilot
-    ./Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board    MatekH743 --vehicle copter
+    ./Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board MatekH743 --vehicle copter
 
 Plane can also be simulated:
 
