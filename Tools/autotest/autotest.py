@@ -428,7 +428,24 @@ def expand_build_steps(steps):
         derived_build_opt_overrides[b] = {"clean": False}
     if builds:
         print("Derived build steps: %s" % " ".join(periph + sitl))
-    return periph + sitl + kept
+    # run the derived builds immediately before the first test step, not
+    # at the front of the whole run.  They have to come after every step
+    # which cleans the sitl build directory, and the default step list
+    # has six of those - build.Binaries, build.All, build.Parameters,
+    # build.Replay, build.unit_tests and build.examples.  Built first,
+    # the vehicle binaries are wiped by the next clean and every test
+    # step is left with nothing to run:
+    #     Binary "/.../build/sitl/bin/arduplane" does not exist
+    # CI never saw it because each of its jobs names one build step and
+    # one test step.  This also leaves 'prerequisites' where it belongs,
+    # at the front, which is what creates the buildlogs directory the
+    # builds write into.
+    insert_at = len(kept)
+    for i, step in enumerate(kept):
+        if step.startswith("test."):
+            insert_at = i
+            break
+    return kept[:insert_at] + periph + sitl + kept[insert_at:]
 
 
 def binary_path(step, debug=False):
