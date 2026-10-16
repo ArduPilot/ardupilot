@@ -2116,6 +2116,18 @@ class ValgrindFailedResult(Result):
         return "Valgrind error detected"
 
 
+class WorkerFailedResult(Result):
+    '''a custom Result for a parallel worker which exited non-zero'''
+    def __init__(self, name, exitcode):
+        super(WorkerFailedResult, self).__init__(None)
+        self.passed = False
+        self.name = name
+        self.exitcode = exitcode
+
+    def __str__(self):
+        return "Test runner %s exited with %s" % (self.name, self.exitcode)
+
+
 class ASANFailedResult(Result):
     '''a custom Result to allow passing of ASAN failures around'''
     def __init__(self):
@@ -16583,8 +16595,14 @@ switch value'''
                           len(worker_failures))
             for (name, code) in worker_failures:
                 self.progress("    %s exited with %s" % (name, code))
-
-        self.progress("run_tests_parallel returning success")
+            # ... and fail the run.  A worker which dies before returning
+            # a result already fails, because the dispatcher synthesises
+            # one for the test that went down with it.  One which dies
+            # *after* returning its last result - in its session
+            # teardown, say - used to be printed here and otherwise
+            # ignored, leaving a passing run.
+            for (name, code) in worker_failures:
+                results.append(WorkerFailedResult(name, code))
 
         return results
 
