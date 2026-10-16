@@ -393,7 +393,9 @@ bool CANIface::_wasInPendingLoopbackSet(const AP_HAL::CANFrame& frame)
 
 void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
 {
-    if (!_down && (pfd.revents & POLLERR)) {
+    // Read SO_ERROR even when already down: reading it clears the pending
+    // error, otherwise POLLERR stays raised and _down is never cleared.
+    if (pfd.revents & POLLERR) {
         int error = 0;
         socklen_t errlen = sizeof(error);
         getsockopt(pfd.fd, SOL_SOCKET, SO_ERROR, reinterpret_cast<void*>(&error), &errlen);
@@ -437,20 +439,37 @@ bool CANIface::select(bool &read_select, bool &write_select,
     }
 
     if (need_block) {
-        if (_down) {
-            return false;
-        } else {
-            _pollfd.fd = _fd;
-            _pollfd.events |= POLLIN;
-            stats.num_rx_poll_req++;
-            if (_hasReadyTx() && write_select) {
-                _pollfd.events |= POLLOUT;
-                stats.num_tx_poll_req++;
-            }
+        // Keep polling a down iface so a later result with no POLLERR
+        // clears the latch. The deadline is still waited out below:
+        // poll() returns at once on POLLERR, and skipping that wait
+        // spins CANSensor::loop.
+        _pollfd.fd = _fd;
+        _pollfd.events |= POLLIN;
+        stats.num_rx_poll_req++;
+        if (_hasReadyTx() && write_select) {
+            _pollfd.events |= POLLOUT;
+            stats.num_tx_poll_req++;
         }
         const uint64_t now_us = AP_HAL::micros64();
         if (sem_handle != nullptr && blocking_deadline > now_us) {
             IGNORE_RETURN(sem_handle->wait(blocking_deadline - now_us));
+        }
+        // sem_handle is only signalled by our own receive(), so the socket has
+        // to be polled here or nothing ever moves frames into the RX queue.
+        // Hold sem: _pollRead() races with send() on _frames_in_socket_tx_queue.
+        WITH_SEMAPHORE(sem);
+        stats.num_poll_waits++;
+        const int poll_ret = ::poll(&_pollfd, 1, 0);
+        if (poll_ret >= 0) {
+            if (_pollfd.revents & POLLERR) {
+                _updateDownStatusFromPollResult(_pollfd);
+            } else {
+                // A down iface stays down until a poll with no POLLERR.
+                _down = false;
+            }
+            if (poll_ret > 0 && !_down) {
+                _poll(_pollfd.revents & POLLIN, _pollfd.revents & POLLOUT);
+            }
         }
     }
 
