@@ -468,15 +468,32 @@ public:
     };
 
 #if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // Progress through a navigation item, as reported by NAV_CONTROLLER_PROGRESS.
+    // Used for mission items and, by vehicles, for navigation outside of a mission.
+    // Unknown values are NaN, or UINT8_MAX for the percentage complete.
     struct ItemProgress {
-        float distance_remaining_m;
-        float time_remaining_s;
-        float count_remaining;
-        uint16_t index;
-        uint8_t percentage_complete;
+        float distance_remaining_m = NAN;
+        float time_remaining_s = NAN;
+        float count_remaining = NAN;
+        uint16_t index = UINT16_MAX;
+        uint8_t percentage_complete = UINT8_MAX;
+
+        // Each of these sets one kind of progress, clearing the others.
+        // If total is 0 the percentage complete is left unknown.
+        void set_distance_remaining(float remaining_m, float total_m=0);
+        void set_time_remaining(float remaining_s, float total_s=0);
+        void set_count_remaining(float remaining, float total=0);
+
+        // These are converted to the amount remaining, so require a total greater than 0.
+        void set_distance_traveled(float traveled_m, float total_m);
+        void set_time_elapsed(float elapsed_s, float total_s);
+        void set_count_completed(float completed, float total);
+
+    private:
+        static uint8_t calc_percentage_complete(float completed, float total);
     };
 
-    void set_item_progress(uint16_t index, float distance_remaining_m, float time_remaining_s, float count_remaining, uint8_t percentage_complete);
+    void set_item_progress(uint16_t index, const ItemProgress &progress);
     ItemProgress get_item_progress(uint16_t index) const;
     void clear_item_progress(void);
 
@@ -1034,8 +1051,6 @@ private:
 #endif
 #if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     ItemProgress _current_item_progress;
-    const ItemProgress kInvalidProgress { NAN, NAN, NAN, UINT16_MAX, UINT8_MAX, };
-    uint8_t calc_item_percentage_complete(float completed, float total) const;
 #endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 };
 
