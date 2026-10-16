@@ -819,6 +819,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
     {
         public AP_ICP201XX(IMachine machine)
         {
+            this.machine = machine;
             physics = AP_PhysicsState.ForMachine(machine);
             Reset();
         }
@@ -831,16 +832,30 @@ namespace Antmicro.Renode.Peripherals.Sensors
             Registers[0xBF] = 0x01;
             Registers[0xCD] = 0x01;
             pressureSampleNumber = 0;
+            fifoCount = 0;
+            fifoFilledSeconds = NowSeconds;
             UpdateSample();
         }
 
+        // each FIFO packet is 3 bytes of pressure then 3 of temperature
         public override byte[] Read(int count = 1)
         {
-            if(Pointer == FifoBase && !SuppressData)
+            if(Pointer != FifoBase || SuppressData || count < PacketSize)
             {
-                UpdateSample();
+                return base.Read(count);
             }
-            return base.Read(count);
+            var result = new byte[count];
+            for(var index = 0; index < count; index++)
+            {
+                if(index % PacketSize == 0)
+                {
+                    UpdateSample();
+                }
+                result[index] = (byte)(Registers[FifoBase + index % PacketSize] ^ ReadXorMask);
+            }
+            FillFifo();
+            fifoCount = Math.Max(0, fifoCount - count / PacketSize);
+            return result;
         }
 
         public bool SuppressData { get; set; }
@@ -849,7 +864,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
             if(register == FifoFill)
             {
-                return SuppressData ? (byte)0 : (byte)1;
+                FillFifo();
+                return SuppressData ? (byte)0 : (byte)fifoCount;
             }
             if(SuppressData && register >= FifoBase)
             {
@@ -857,6 +873,32 @@ namespace Antmicro.Renode.Peripherals.Sensors
             }
             return base.ReadRegister(register);
         }
+
+        protected override void WriteRegister(int register, byte value)
+        {
+            base.WriteRegister(register, value);
+            if(register == FifoFill && (value & FifoFlush) != 0)
+            {
+                fifoCount = 0;
+                fifoFilledSeconds = NowSeconds;
+            }
+        }
+
+        // the FIFO fills at the 40Hz output data rate, up to 16 packets
+        private void FillFifo()
+        {
+            var now = NowSeconds;
+            var packets = (int)((now - fifoFilledSeconds) / SamplePeriodSeconds);
+            if(packets <= 0)
+            {
+                return;
+            }
+            fifoCount = Math.Min(FifoDepth, fifoCount + packets);
+            fifoFilledSeconds = fifoCount == FifoDepth ? now :
+                fifoFilledSeconds + packets * SamplePeriodSeconds;
+        }
+
+        private double NowSeconds => machine.ElapsedVirtualTime.TimeElapsed.TotalSeconds;
 
         private void UpdateSample()
         {
@@ -880,10 +922,17 @@ namespace Antmicro.Renode.Peripherals.Sensors
             Registers[register + 2] = (byte)((value >> 16) & 0x0F);
         }
 
+        private readonly IMachine machine;
         private readonly AP_PhysicsState physics;
         private uint pressureSampleNumber;
+        private int fifoCount;
+        private double fifoFilledSeconds;
 
         private const int FifoFill = 0xC4;
         private const int FifoBase = 0xFA;
+        private const byte FifoFlush = 0x80;
+        private const int FifoDepth = 16;
+        private const int PacketSize = 6;
+        private const double SamplePeriodSeconds = 0.025;
     }
 }
