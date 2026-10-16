@@ -791,19 +791,53 @@ void NavEKF3_core::UpdateAglKf()
     // Negate: downward acceleration reduces AGL rate.
     aglKfV -= velDotNED.z * imuDt;
 
-    // First-order decay of v_agl toward zero when RF is absent (tau = 2 s).
-    // Without range measurements v_agl is unobservable; accumulated IMU bias
-    // error will cause it to drift, pulling h_agl to the floor during
-    // subsequent climbs.  The decay limits that drift.
-    // At the aglKfRngTimeout_ms validity timeout (5 s), |v| is at most
-    // exp(-5/2) ~ 8% of its value at last RF fusion, so the hard reset finds v near zero.
-    if (!rangeDataToFuse) {
+    // First-order decay of v_agl toward zero once range finder fusion has lapsed
+    // (tau = 2 s): v_agl is then unobservable and IMU bias error makes it drift.
+    // Keyed on time since the last fusion, as rangeDataToFuse is false on most steps.
+    if (imuSampleTime_ms - lastAglRngFuseTime_ms > aglKfRngGapMax_ms) {
         const ftype tauV = 2.0f;
         aglKfV *= expf(-imuDt / tauV);
     }
 
-    // AGL cannot go below the on-ground sensor reading
-    aglKfH = MAX(aglKfH, rngOnGnd);
+    // AGL cannot go below the on-ground sensor reading, and resting on that floor holds
+    // the height innovation at zero, so a downward velocity there has nothing to correct it.
+    // Written so a NaN height is pulled back to the floor too
+    if (!(aglKfH >= rngOnGnd)) {
+        aglKfH = rngOnGnd;
+        aglKfV = MAX(aglKfV, 0.0f);
+    }
+
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    // A range finder below its minimum delivers no reading, so after a touchdown nothing corrects
+    // the velocity the landing left and the height coasts up off the ground. With the sensor
+    // reporting out of range low and no sample arriving, stop the coast. A main filter moving
+    // vertically faster than 0.25 m/s, up or down, is a liftoff or touchdown still below the
+    // sensor minimum, which is left to the IMU
+    const uint32_t rngLowTime_ms = rngOutOfRangeLowTime_ms[rangeDataDelayed.sensor_idx];
+    if ((rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < 500) &&
+        (imuSampleTime_ms - rngValidMeaTime_ms > 200) && (fabsF(stateStruct.velocity.z) < 0.25f)) {
+        aglKfV = 0.0f;
+    }
+    // That test trusts the main filter, which can believe it is climbing on the ground after a
+    // hard flight. A range last fused near the floor that has had no reading for a second is on
+    // the ground whatever the filter says, so a height well above that last reading is a coast:
+    // hold it on the floor until the range finder reads again or stops reporting too low.
+    // Known limit: a range finder that reads Good on the ground and then reports too low from
+    // liftoff while in range (one returning zero on a lost return) pins the height to the floor
+    // until the 5 s timeout
+    const bool rngLowNearFloor = (rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < 500) &&
+                                 (imuSampleTime_ms - rngValidMeaTime_ms > 1000) &&
+                                 (aglKfLastRngHgt < rngOnGnd + 0.5f);
+    if (!rngLowNearFloor) {
+        aglKfHeldOnFloor = false;
+    } else if (aglKfH > aglKfLastRngHgt + 0.3f) {
+        aglKfHeldOnFloor = true;
+    }
+    if (aglKfHeldOnFloor) {
+        aglKfH = rngOnGnd;
+        aglKfV = 0.0f;
+    }
+#endif
 
     // ----- Covariance prediction: P = F*P*F' + Q -----
     //
@@ -868,6 +902,7 @@ void NavEKF3_core::UpdateAglKf()
         aglKfP[0][1] = aglKfP[1][0] = 0.0f;
         aglKfP[1][1] = 1.0f;                    // 1 m/s velocity uncertainty after reset
         lastAglRngFuseTime_ms = imuSampleTime_ms;
+        aglKfLastRngHgt = aglKfH;
         aglKfValid = true;
         return;  // skip measurement update this cycle (just used the reading for reset)
     }
@@ -924,6 +959,7 @@ void NavEKF3_core::UpdateAglKf()
     aglKfP[1][1] = MAX(Pvv - 2.0f * Kv * Phv + sq(Kv) * innovVar, 0.0f);
 
     lastAglRngFuseTime_ms = imuSampleTime_ms;
+    aglKfLastRngHgt = hgtMeas;
     aglKfValid = true;
 }
 
