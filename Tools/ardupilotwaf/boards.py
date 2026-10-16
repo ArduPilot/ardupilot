@@ -1225,11 +1225,9 @@ class chibios(Board):
         env.CFLAGS += cfg.env.CPU_FLAGS + [
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
-            '-Wno-attributes',
             '-fno-exceptions',
             '-Wall',
             '-Wextra',
-            '-Wno-sign-compare',
             '-Wfloat-equal',
             '-Wpointer-arith',
             '-Wmissing-declarations',
@@ -1274,7 +1272,10 @@ class chibios(Board):
             '-fno-threadsafe-statics',
         ]
         env.CFLAGS += [
-            '-std=c11'
+            '-std=c11',
+            # C only, so C++ keeps -Werror=attributes and -Werror=sign-compare
+            '-Wno-attributes',
+            '-Wno-sign-compare',
         ]
 
         if Utils.unversioned_sys_platform() == 'cygwin':

@@ -763,7 +763,7 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
-            if (arg > sizeof(flash_buffer.c)) {
+            if (uint32_t(arg) > sizeof(flash_buffer.c)) {
                 goto cmd_bad;
             }
 
@@ -786,7 +786,7 @@ bootloader(unsigned timeout)
 #if BOOT_FROM_EXT_FLASH
             // save the first words and don't program it until everything else is done
             if (extf_address < sizeof(first_words)) {
-                uint8_t n = MIN(sizeof(first_words)-extf_address, arg);
+                uint8_t n = MIN(sizeof(first_words)-extf_address, uint32_t(arg));
                 memcpy(&first_words[extf_address/4], &flash_buffer.w[0], n);
                 // replace first words with 1 bits we can overwrite later
                 memset(&flash_buffer.w[0], 0xFF, n);
@@ -855,7 +855,7 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
-            if (arg > sizeof(flash_buffer.c)) {
+            if (uint32_t(arg) > sizeof(flash_buffer.c)) {
                 goto cmd_bad;
             }
 
@@ -876,7 +876,7 @@ bootloader(unsigned timeout)
             // save the first words and don't program it until everything else is done
 #if !BOOT_FROM_EXT_FLASH
             if (address < sizeof(first_words)) {
-                uint8_t n = MIN(sizeof(first_words)-address, arg);
+                uint8_t n = MIN(sizeof(first_words)-address, uint32_t(arg));
                 memcpy(&first_words[address/4], &flash_buffer.w[0], n);
                 // replace first words with 1 bits we can overwrite later
                 memset(&flash_buffer.w[0], 0xFF, n);
