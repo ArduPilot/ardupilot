@@ -16137,6 +16137,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.reboot_sitl()
             self.fly_rangefinder_drivers_fly([x.name for x in do_drivers])
 
+    def RangeFinderNoopLoopErrorStatus(self):
+        '''check NoopLoop TOFSense error statuses are not used as readings'''
+        self.set_parameters({
+            "SERIAL4_PROTOCOL": 9,
+            "RNGFND1_TYPE": 37,
+            "RNGFND1_MAX": 15,  # as recommended for TOFSense-F sensors
+        })
+        self.customise_SITL_commandline([
+            "--serial4=sim:nooploop_tofsense",
+        ])
+        rf_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION
+        self.takeoff(5, mode='GUIDED')
+        self.wait_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
+
+        self.progress("Climbing beyond 8m, where the simulator flags weak signal")
+        self.fly_guided_move_local(0, 0, 10)
+        self.wait_sensor_state(rf_bit, present=True, enabled=True, healthy=False, timeout=10)
+
+        self.disarm_vehicle(force=True)
+
     def RangeFinderDriversMaxAlt_FlyDriver(self,
                                            name : str,
                                            rngfnd_type : int,
@@ -16145,6 +16165,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                            sqalt : float | None = None,
                                            sq_at_sqalt : float | None = None,
                                            expected_statustext : str | None = None,
+                                           out_of_range_distance_cm : int | None = None,
                                            ):
         '''test max-height behaviour'''
         # lightwareserial goes to 130m when out of range
@@ -16179,6 +16200,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
 
         self.assert_distance_sensor_quality(1)
+        if out_of_range_distance_cm is not None:
+            m = self.assert_receive_message('DISTANCE_SENSOR', verbose=True)
+            if m.current_distance != out_of_range_distance_cm:
+                raise NotAchievedException(
+                    f"Expected out-of-range distance {out_of_range_distance_cm}cm got {m.current_distance}cm")
 
         self.progress("Test behaviour above 655.35 metres (UINT16_MAX cm)")
         self.context_push()
@@ -16204,6 +16230,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             sqalt=95,
             sq_at_sqalt=100,
             expected_statustext=None,
+            out_of_range_distance_cm=10000,
         )
 
     def RangeFinderDriversMaxAlt_AinsteinLRD1(self) -> None:
@@ -23772,6 +23799,7 @@ return update, 1000
             self.MANUAL_CONTROL,
             self.PosHoldDesiredAttitudeMonotonic,
             self.RangeFinderDriversMaxAlt_LightwareSerial,
+            self.RangeFinderNoopLoopErrorStatus,
             self.RangeFinderPowerDown,
             self.PAUSE_CONTINUE,
             self.MAV_CMD_AIRFRAME_CONFIGURATION,
