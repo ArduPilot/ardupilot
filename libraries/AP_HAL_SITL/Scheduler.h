@@ -21,6 +21,7 @@ public:
     void init() override;
     void delay(uint16_t ms) override;
     void delay_microseconds(uint16_t us) override;
+    void delay_microseconds_boost(uint16_t us) override;
 
     void register_timer_process(AP_HAL::MemberProc) override;
     void register_io_process(AP_HAL::MemberProc) override;
