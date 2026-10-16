@@ -39,6 +39,10 @@ protected:
     uint64_t capabilities() const override;
 
     void send_nav_controller_output() const override;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+    bool get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+    bool get_mission_nav_target(Location &target) const override;
+#endif
     void send_pid_tuning() override;
 
     void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
