@@ -121,8 +121,7 @@ int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_
     return idx;
 
 failed:
-    delete [] r.cursors;
-    r.open = false;
+    close(idx);
     errno = EINVAL;
     return -1;
 }
