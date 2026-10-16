@@ -12,33 +12,37 @@ using Antmicro.Renode.Peripherals.SPI;
 
 namespace Antmicro.Renode.Peripherals.Sensors
 {
+    // Murata SCHA63T UNO (accel, X gyro) or DUE (Y/Z gyro) die. Responses are
+    // off-frame: each 32-bit frame returns the reply to the previous command.
     public class AP_SCHA63T : ISPIPeripheral, IGPIOReceiver
     {
-        // the generator passes every IMU part its hwdef rotation
-        public AP_SCHA63T(byte rotation = 0)
+        public AP_SCHA63T(IMachine machine, byte rotation = 0)
         {
             this.rotation = rotation;
+            physics = AP_PhysicsState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
         }
+
+        // the second hwdef device is the DUE die
+        public bool Due { get; set; }
 
         public byte Transmit(byte value)
         {
             if(transferByte == 0)
             {
-                register = (byte)((value >> 2) & 0x1F);
-                response1 = register == SummaryStatus ? (byte)0x98 : (byte)0;
-                response2 = register == SummaryStatus ? (byte)0x02 : (byte)0;
+                current = pending;
+                pending = Response((byte)((value >> 2) & 0x1F));
             }
             byte result;
             switch(transferByte)
             {
+            case 0:
             case 1:
-                result = response1;
-                break;
             case 2:
-                result = response2;
+                result = current[transferByte];
                 break;
             case 3:
-                result = Crc(0, response1, response2);
+                result = Crc(current[0], current[1], current[2]);
                 break;
             default:
                 result = 0;
@@ -51,6 +55,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public void Reset()
         {
             transferByte = 0;
+            current = new byte[3];
+            pending = new byte[3];
         }
 
         public void FinishTransmission()
@@ -64,6 +70,50 @@ namespace Antmicro.Renode.Peripherals.Sensors
             {
                 FinishTransmission();
             }
+        }
+
+        private byte[] Response(byte register)
+        {
+            short data = 0;
+            switch(register)
+            {
+            case SummaryStatus:
+                return new byte[] { (byte)(register << 2), 0x98, 0x02 };
+            case RateXZ:
+                // the backend negates Z to change handedness
+                data = Due ? Scale(-Gyro()[2], GyroScale) : Scale(Gyro()[0], GyroScale);
+                break;
+            case RateY:
+                data = Scale(Gyro()[1], GyroScale);
+                break;
+            case AccelX:
+            case AccelY:
+                data = Scale(Accel()[register - AccelX], AccelScale);
+                break;
+            case AccelZ:
+                data = Scale(-Accel()[2], AccelScale);
+                break;
+            case Temperature:
+                // inverse of the backend's 0.5 * (25 + raw / 30) + 23 degC
+                data = Scale((float)(((thermal.TemperatureC - 23.0) * 2.0 - 25.0) * 30.0), 1.0);
+                break;
+            }
+            return new byte[] { (byte)(register << 2), (byte)(data >> 8), (byte)data };
+        }
+
+        private float[] Accel()
+        {
+            return AP_SensorOrientation.BodyToSensor(physics.Current.SpecificForceMS2, rotation);
+        }
+
+        private float[] Gyro()
+        {
+            return AP_SensorOrientation.BodyToSensor(physics.Current.GyroRadS, rotation);
+        }
+
+        private static short Scale(float value, double scale)
+        {
+            return (short)Math.Max(Int16.MinValue, Math.Min(Int16.MaxValue, Math.Round(value / scale)));
         }
 
         private static byte Crc(byte first, byte second, byte third)
@@ -80,13 +130,22 @@ namespace Antmicro.Renode.Peripherals.Sensors
             return (byte)(crc ^ 0xFF);
         }
 
-        private int transferByte;
-        private byte register;
-        private byte response1;
-        private byte response2;
-
-        private const byte SummaryStatus = 0x0E;
         private readonly byte rotation;
+        private readonly AP_PhysicsState physics;
+        private readonly AP_BoardThermalState thermal;
+        private int transferByte;
+        private byte[] current = new byte[3];
+        private byte[] pending = new byte[3];
+
+        private const byte RateXZ = 0x01;
+        private const byte RateY = 0x03;
+        private const byte AccelX = 0x04;
+        private const byte AccelY = 0x05;
+        private const byte AccelZ = 0x06;
+        private const byte Temperature = 0x07;
+        private const byte SummaryStatus = 0x0E;
+        private const double AccelScale = 9.80665 / 4905.0;
+        private const double GyroScale = Math.PI / 180.0 / 80.0;
     }
 
     public class AP_I2CRegisterIMU : II2CPeripheral
