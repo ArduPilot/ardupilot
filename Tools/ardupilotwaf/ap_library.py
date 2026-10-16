@@ -257,10 +257,12 @@ def custom_flags_check(tgen):
     if not tgen.name.startswith("objs/"):
         return
     libname = tgen.name[5:]
+    # append_value() copies the list into this task generator's env first,
+    # extend() would also change the list it shares with every other one
     if libname in tgen.env.AP_LIB_EXTRA_CXXFLAGS:
-        tgen.env.CXXFLAGS.extend(tgen.env.AP_LIB_EXTRA_CXXFLAGS[libname])
+        tgen.env.append_value('CXXFLAGS', tgen.env.AP_LIB_EXTRA_CXXFLAGS[libname])
     if libname in tgen.env.AP_LIB_EXTRA_CFLAGS:
-        tgen.env.CFLAGS.extend(tgen.env.AP_LIB_EXTRA_CFLAGS[libname])
+        tgen.env.append_value('CFLAGS', tgen.env.AP_LIB_EXTRA_CFLAGS[libname])
 
 
 def double_precision_check(tasks):
