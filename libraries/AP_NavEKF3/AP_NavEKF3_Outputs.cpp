@@ -590,6 +590,7 @@ void NavEKF3_core::getLaneStatus(nav_lane_status &status) const
     status.flow_y_fused = false;
     status.flow_x_reset = false;
     status.flow_y_reset = false;
+    status.flow_quality_min = 0;
     status.flow_stop = nav_lane_status::FlowStop::NONE;
 #if EK3_FEATURE_OPTFLOW_FUSION
     status.flow_configured = (frontend->_flowUse == FLOW_USE_NAV) &&
@@ -597,6 +598,7 @@ void NavEKF3_core::getLaneStatus(nav_lane_status &status) const
     if (!status.flow_configured) {
         return;
     }
+    status.flow_quality_min = constrain_int16(frontend->_flowQualMin, 0, 255);
     const uint32_t fused_within_ms = 500;
     status.flow_x_fused = (flowPassTimeAxis_ms[0] != 0) && (imuSampleTime_ms - flowPassTimeAxis_ms[0] < fused_within_ms);
     status.flow_y_fused = (flowPassTimeAxis_ms[1] != 0) && (imuSampleTime_ms - flowPassTimeAxis_ms[1] < fused_within_ms);
