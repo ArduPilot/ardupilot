@@ -93,18 +93,23 @@ void Tracker::update_tracking(void)
     // update bearing and distance to vehicle
     update_bearing_and_distance();
 
+    auto &srv = AP::srv();
+
+    // do not perform updates if safety switch is disarmed (i.e. servos can't be moved)
+    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        // still push so output drivers (e.g. DroneCAN) see the safety state
+        srv.cork();
+        srv.push();
+        return;
+    }
+
     // do not perform any servo updates until startup delay has passed
     if (g.startup_delay > 0 &&
         AP_HAL::millis() - start_time_ms < g.startup_delay*1000) {
         return;
     }
 
-    // do not perform updates if safety switch is disarmed (i.e. servos can't be moved)
-    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        return;
-    }
-
-    hal.rcout->cork();
+    srv.cork();
 
     // do not move if we are not armed:
     if (!hal.util->get_soft_armed()) {
@@ -127,7 +132,7 @@ void Tracker::update_tracking(void)
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
 
-    hal.rcout->push();
+    srv.push();
 
     return;
 }
