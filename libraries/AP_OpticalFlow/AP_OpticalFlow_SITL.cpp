@@ -62,13 +62,15 @@ void AP_OpticalFlow_SITL::update(void)
     // sensor position offset in body frame
     Vector3f posRelSensorBF = _sitl->optflow_pos_offset;
 
-    // estimate range to centre of image
-    float range;
-    if (rotmat.c.z > 0.05f && _sitl->state.height_agl > 0) {
-        Vector3f relPosSensorEF = rotmat * posRelSensorBF;
-        range = (_sitl->state.height_agl - relPosSensorEF.z) / rotmat.c.z;
-    } else {
-        range = 1e38f;
+    // estimate range to centre of image, from the sensor's own height so that a sensor mounted
+    // above a vehicle on the ground still sees it move
+    float range = 1e38f;
+    if (rotmat.c.z > 0.05f) {
+        const Vector3f relPosSensorEF = rotmat * posRelSensorBF;
+        const float sensor_height = _sitl->state.height_agl - relPosSensorEF.z;
+        if (is_positive(sensor_height)) {
+            range = sensor_height / rotmat.c.z;
+        }
     }
 
     // Calculate relative velocity in sensor frame assuming no misalignment between sensor and vehicle body axes
@@ -86,8 +88,8 @@ void AP_OpticalFlow_SITL::update(void)
     // optical rates relative to X and Y sensor axes assuming no misalignment or scale
     // factor error. Note - these are instantaneous values. The sensor sums these values across the interval from the last
     // poll to provide a delta angle across the interface
-    state.flowRate.x = (-relVelSensor.y/range + gyro.x + _sitl->flow_noise * rand_float()) * flowScaleFactorX;
-    state.flowRate.y =  (relVelSensor.x/range + gyro.y + _sitl->flow_noise * rand_float()) * flowScaleFactorY;
+    state.flowRate.x = (-relVelSensor.y/range + gyro.x + _sitl->flow_noise * rand_float()) * flowScaleFactorX + _sitl->flow_offset_x;
+    state.flowRate.y =  (relVelSensor.x/range + gyro.y + _sitl->flow_noise * rand_float()) * flowScaleFactorY + _sitl->flow_offset_y;
 
     // The flow sensors body rates are assumed to be the same as the vehicle body rates (ie no misalignment)
     // Note - these are instantaneous values. The sensor sums these values across the interval from the last

@@ -318,6 +318,12 @@ public:
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type_orient(enum Rotation orientation) const;
     RangeFinder::Status status_orient(enum Rotation orientation) const;
     bool has_data_orient(enum Rotation orientation) const;
+    // true if a reading puts the vehicle on the ground: within 5 cm of the ground clearance, or too close
+    // to measure, which is only the ground when the minimum distance is no more than the ground clearance
+    static bool reading_on_ground(Status status, float distance_m, float ground_clearance_m) {
+        return (status == Status::OutOfRangeLow) ||
+               ((status == Status::Good) && (distance_m <= ground_clearance_m + 0.05f));
+    }
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
     uint32_t last_reading_ms(enum Rotation orientation) const;
