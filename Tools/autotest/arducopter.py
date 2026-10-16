@@ -2445,6 +2445,412 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3_AglKfVelForVelD(self):
+        '''AGL KF vertical velocity fused as velD keeps the EKF velD on truth'''
+        # Indoor optical flow config: no GPS, no velocity-down source, and baro
+        # deweighted so the vertical channel depends on a velD observation. An
+        # uncompensated Z accel offset then integrates open loop into a velocity
+        # runaway. EK3_OPTIONS bit 4 fuses the range finder aided AGL KF velocity as
+        # a velD observation to bound it, which also makes the Z accel bias
+        # observable. Truth is SIM2.VD throughout, never the AGL KF, so no check here
+        # can be satisfied by the fusion driving its own innovation to zero.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,      # single core so the injected bias is not masked by a lane switch
+            "EK3_RNG_USE_HGT": -1,  # range finder must not become the height source
+            "EK3_ALT_M_NSE": 10,    # deweight baro so the vertical channel needs a velD observation
+        })
+        self.set_analog_rangefinder_parameters()
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        agl_kf_optflow = 1 << 3  # EK3_OPTIONS AglKfForOptflow, runs the AGL KF only
+        agl_kf_veld = 1 << 4     # EK3_OPTIONS AglKfVelForVelD, also fuses it as velD
+        hover_alt = 15           # m AGL, keeps the climb inside the rangefinder range
+
+        def measure(t_start, t_end, t_fused_after=None):
+            '''EKF and AGL KF vertical velocity error against SIM2 truth'''
+            dfreader = self.dfreader_for_current_onboard_log()
+            sim_vd = None
+            sim_pd = None
+            sim_gndspd = None
+            fusion_seen = False
+            fused_after = False
+            held_times = []
+            held_after = False
+            hgt_ref = None
+            hgt_err = []
+            ekf_err = []
+            agl_err = []
+            fused_gndspd = []
+            gndspd = []
+            while True:
+                m = dfreader.recv_match(type=["XKF1", "XKFA", "SIM2"])
+                if m is None:
+                    break
+                t = m.TimeUS * 1.0e-6
+                if t < t_start or t > t_end:
+                    continue
+                mtype = m.get_type()
+                if mtype == "SIM2":
+                    sim_vd = m.VD
+                    sim_pd = m.PD
+                    sim_gndspd = math.sqrt(m.VN**2 + m.VE**2)
+                    gndspd.append(sim_gndspd)
+                    continue
+                if getattr(m, "C", 0) != 0 or sim_vd is None:
+                    continue
+                if mtype == "XKFA":
+                    if m.VHold:
+                        held_times.append(t)
+                        if t_fused_after is not None and t > t_fused_after:
+                            held_after = True
+                    if m.VFuse:
+                        fusion_seen = True
+                        if t_fused_after is not None and t > t_fused_after:
+                            fused_after = True
+                        fused_gndspd.append(sim_gndspd)
+                        # the AGL KF velocity is +up and SIM2.VD is +down, so a correct
+                        # estimate sums to zero; only meaningful while actually moving
+                        if abs(sim_vd) > 0.4:
+                            agl_err.append(abs(m.VAgl + sim_vd))
+                    continue
+                ekf_err.append(abs(m.VD - sim_vd))
+                # height drift over the window, so the EKF and SIM2 origins do not matter
+                if hgt_ref is None:
+                    hgt_ref = m.PD - sim_pd
+                hgt_err.append(abs(m.PD - sim_pd - hgt_ref))
+            if len(ekf_err) < 20:
+                raise NotAchievedException(
+                    "Only %u velD samples in the measurement window" % len(ekf_err))
+            return {
+                "max_velD_err": max(ekf_err),
+                "max_hgt_err": max(hgt_err),
+                "mean_agl_err": sum(agl_err) / len(agl_err) if agl_err else 0.0,
+                "n_velD": len(ekf_err),
+                "n_agl": len(agl_err),
+                "fused": fusion_seen,
+                "fused_after": fused_after,
+                "held": len(held_times) > 0,
+                "hold_s": held_times[-1] - held_times[0] if held_times else 0.0,
+                "held_after": held_after,
+                "max_fused_gndspd": max(fused_gndspd) if fused_gndspd else 0.0,
+                "max_gndspd": max(gndspd) if gndspd else 0.0,
+            }
+
+        def fly_leg(options_value, bias_z=0.0, bias_hold=14, settle=4, vertical=False, fast=False, step=0.0,
+                    alt_noise=10):
+            self.set_parameters({
+                "EK3_OPTIONS": options_value,
+                "EK3_ALT_M_NSE": alt_noise,
+                "SIM_ACC1_BIAS_Z": 0,
+                "SIM_SONAR_OFFSET": 0,
+            })
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False)
+            self.takeoff(hover_alt, mode="ALT_HOLD", require_absolute=False)
+            # settle the hover so the EKF velD error is near zero before the stimulus
+            self.wait_climbrate(-0.3, 0.3, timeout=30, minimum_duration=3)
+            t_start = self.get_sim_time()
+            if bias_z != 0.0:
+                self.set_parameter("SIM_ACC1_BIAS_Z", bias_z)
+                self.delay_sim_time(bias_hold, reason="Z accel offset to integrate into velD")
+                window = (t_start + settle, self.get_sim_time() - 1)
+            if vertical:
+                self.set_rc(3, 1800)
+                self.delay_sim_time(4, reason="climb")
+                self.set_rc(3, 1200)
+                self.delay_sim_time(4, reason="descend")
+                self.set_rc(3, 1500)
+                self.delay_sim_time(2, reason="settle")
+                window = (t_start, self.get_sim_time() - 1)
+            if fast:
+                self.set_rc(2, 1250)
+                self.delay_sim_time(10, reason="accelerate past the fusion speed gate")
+                self.set_rc(2, 1500)
+                self.delay_sim_time(3, reason="settle")
+                window = (t_start, self.get_sim_time() - 1)
+            t_fused_after = None
+            if step != 0.0:
+                self.set_parameter("SIM_SONAR_OFFSET", step)
+                # the fusion is held off for 5 s after a step, so it should be back by 6 s
+                t_fused_after = self.get_sim_time() + 6
+                self.delay_sim_time(10, reason="hover over the step")
+                window = (t_start, self.get_sim_time() - 1)
+            self.disarm_vehicle(force=True)
+            return measure(*window, t_fused_after=t_fused_after)
+
+        # The off leg is deliberately short: the velD estimate runs open loop and the
+        # vehicle flies itself down, so a longer hold would just end on the ground.
+        self.start_subtest("Fusion off: EKF velD diverges from truth under a Z accel bias")
+        r = fly_leg(agl_kf_optflow, bias_z=0.4)
+        self.progress("fusion off: max velD error %.2f m/s over %u samples"
+                      % (r["max_velD_err"], r["n_velD"]))
+        if r["fused"]:
+            raise NotAchievedException("AGL KF velocity was fused with the option disabled")
+        if r["max_velD_err"] < 1.0:
+            raise NotAchievedException(
+                "Expected EKF velD to diverge with fusion off (got %.2f m/s)" % r["max_velD_err"])
+
+        # Same stimulus, same hold and the same measurement window as the off leg, so
+        # the only difference is the fusion. This is the leg to quote: the off leg
+        # cannot be run long enough to settle, because with the fusion off the vehicle
+        # flies itself down, so comparing it against a settled number would compare a
+        # transient against a steady state.
+        self.start_subtest("Fusion on, matched window: fusion bounds the velD runaway")
+        r = fly_leg(agl_kf_optflow | agl_kf_veld, bias_z=0.4)
+        self.progress("fusion on (matched window): max velD error %.2f m/s over %u samples"
+                      % (r["max_velD_err"], r["n_velD"]))
+        if not r["fused"]:
+            raise NotAchievedException("AGL KF velocity was never fused with the option enabled")
+        if r["max_velD_err"] > 2.0:
+            raise NotAchievedException(
+                "AGL KF velocity fusion failed to bound the velD runaway (got %.2f m/s)"
+                % r["max_velD_err"])
+
+        # Bit 4 alone is what the parameter documentation tells users to set, so it has
+        # to enable the AGL KF by itself. The longer hold lets the Z accel bias
+        # converge and the window skips that transient, so this measures the settled
+        # error rather than the speed of bias learning.
+        self.start_subtest("Fusion on: settled velD error with bit 4 alone")
+        r = fly_leg(agl_kf_veld, bias_z=0.4, bias_hold=45, settle=35)
+        self.progress("fusion on (settled): max velD error %.2f m/s over %u samples"
+                      % (r["max_velD_err"], r["n_velD"]))
+        if not r["fused"]:
+            raise NotAchievedException("AGL KF velocity was never fused with the option enabled")
+        if r["max_velD_err"] > 0.35:
+            raise NotAchievedException(
+                "AGL KF velocity fusion failed to keep velD on truth (got %.2f m/s)"
+                % r["max_velD_err"])
+
+        # Climb and descent, checking the AGL KF velocity itself against truth. This
+        # catches a velocity that is washed out toward zero, which would otherwise be
+        # invisible: in hover the true rate is zero and the washout has nothing to
+        # bite on. The mean is used rather than the peak because a throttle step
+        # produces a legitimate tracking transient.
+        self.start_subtest("Fusion on: AGL KF velocity tracks truth through a climb and descent")
+        r = fly_leg(agl_kf_veld, vertical=True)
+        self.progress("climb/descent: mean AGL KF velocity error %.2f m/s over %u samples, "
+                      "max velD error %.2f m/s" % (r["mean_agl_err"], r["n_agl"], r["max_velD_err"]))
+        if not r["fused"]:
+            raise NotAchievedException("AGL KF velocity was never fused during the climb")
+        if r["n_agl"] < 20:
+            raise NotAchievedException(
+                "Only %u samples with the vehicle moving vertically" % r["n_agl"])
+        # 0.02 m/s measured; skipping filter steps settled it at 0.20
+        if r["mean_agl_err"] > 0.1:
+            raise NotAchievedException(
+                "AGL KF velocity did not track truth through vertical motion "
+                "(mean error %.2f m/s)" % r["mean_agl_err"])
+        if r["max_velD_err"] > 1.0:
+            raise NotAchievedException(
+                "EKF velD did not track truth through vertical motion (got %.2f m/s)"
+                % r["max_velD_err"])
+
+        # A step in the ground moves the range in one sample. The AGL KF reads it as
+        # vertical motion and its velocity stays wrong for seconds while its height
+        # catches up, so the fusion is held off for a while after one.
+        for step, name in (1.0, "drops"), (-1.0, "rises"):
+            self.start_subtest("Fusion on: ground that %s 1 m does not drive the height" % name)
+            r = fly_leg(agl_kf_veld, step=step, alt_noise=1.0)
+            self.progress("ground %s 1 m: max velD error %.2f m/s, max height drift %.2f m, XKFA.VHold for %.1f s"
+                          % (name, r["max_velD_err"], r["max_hgt_err"], r["hold_s"]))
+            if not r["held"]:
+                raise NotAchievedException("XKFA.VHold never showed the step hold")
+            if r["held_after"]:
+                raise NotAchievedException("XKFA.VHold still set after the step hold")
+            if not r["fused_after"]:
+                raise NotAchievedException("AGL KF velocity fusion did not resume after the step")
+            # 0.23-0.24 m measured; 0.94 m with the AGL KF velocity fused through the step
+            if r["max_hgt_err"] > 0.6:
+                raise NotAchievedException(
+                    "A step in the ground drove the EKF height (drift %.2f m)" % r["max_hgt_err"])
+
+        # Terrain relative velocity stops approximating the inertial vertical velocity
+        # once the vehicle moves over the ground, so EK3_AGL_VD_SPD closes the gate.
+        # Without this leg no guard on the fusion is exercised at all.
+        self.start_subtest("Fusion on: the ground speed gate stops the fusion")
+        r = fly_leg(agl_kf_veld, fast=True)
+        gate_spd = self.get_parameter("EK3_RNG_USE_SPD")   # EK3_AGL_VD_SPD defaults to this
+        self.progress("speed gate: fused up to %.1f m/s, reached %.1f m/s, gate %.1f m/s"
+                      % (r["max_fused_gndspd"], r["max_gndspd"], gate_spd))
+        if r["max_gndspd"] < gate_spd + 2.5:
+            raise NotAchievedException(
+                "Did not fly fast enough to close the gate (reached %.1f m/s)" % r["max_gndspd"])
+        if not r["fused"]:
+            raise NotAchievedException("AGL KF velocity was never fused below the gate")
+        # allow for the 250ms XKFA reporting window while accelerating
+        if r["max_fused_gndspd"] > gate_spd + 1.5:
+            raise NotAchievedException(
+                "AGL KF velocity still fused at %.1f m/s ground speed, gate is %.1f m/s"
+                % (r["max_fused_gndspd"], gate_spd))
+
+        self.reboot_sitl()
+
+    def EK3_AglKfVelMixedSources(self):
+        '''AGL KF velD stays out of the GPS velocity consistency test'''
+        # GPS supplies horizontal velocity and position, external nav supplies velD.
+        # useExtNavVel stays set after external nav stops, so the combined GPS velocity
+        # test would still include velD once the AGL KF has claimed it. A range finder
+        # reading 3x high makes the AGL KF velocity 3x the truth in a climb. External nav
+        # holds the EKF velD on the truth until it stops mid-climb, so when the AGL KF
+        # claims velD a second later its innovation is twice the climb rate. If that
+        # reaches the combined test it pushes velTestRatio to the point where GPS velocity
+        # is rejected with nothing wrong with it.
+        self.set_parameters({
+            "VISO_TYPE": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_SRC1_VELZ": 6,     # external nav
+            "EK3_IMU_MASK": 1,      # one core, one XKF stream
+            "EK3_RNG_USE_HGT": -1,  # range finder must not become the height source
+            "EK3_OPTIONS": (1 << 3) | (1 << 4),  # AglKfForOptflow, AglKfVelForVelD
+        })
+        self.set_analog_rangefinder_parameters()
+        # the simulated sensor outputs 3x the voltage for its height, so the range finder
+        # and the AGL KF read 3x high, consistently, from boot
+        self.set_parameter("SIM_SONAR_SCALE", 12.1212 / 3)
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+
+        def climb_through_dropout():
+            self.takeoff(2, mode="LOITER", require_absolute=True, timeout=240)
+
+            # the range finder reads 3x, so its 40 m maximum is about 13 m true, and the
+            # whole climb has to fit under that. While the climb rate changes, a 3x range
+            # changes rate three times as fast as the IMU says, which the AGL KF takes for a
+            # step and holds its velocity out of velD for 5 s, so the climb is slow and
+            # steady and the dropout comes after that hold
+            self.set_parameter("PILOT_SPD_UP", 1.2)
+            self.set_rc(3, 2000)
+            self.delay_sim_time(5.5, reason="reach the climb rate with external nav on velD")
+            mark = self.get_sim_time()
+            self.set_parameter("SIM_VICON_FAIL", 1)
+            self.delay_sim_time(3, reason="climb on through the external nav dropout")
+            mark_end = self.get_sim_time()
+            self.set_rc(3, 1500)
+            self.set_parameter("SIM_VICON_FAIL", 0)
+            self.do_RTL()
+
+            dfreader = self.dfreader_for_current_onboard_log()
+            max_sv = 0
+            max_ivd = 0
+            sv_count = 0
+            while True:
+                m = dfreader.recv_match(type=["XKF3", "XKF4"])
+                if m is None:
+                    break
+                if m.C != 0:
+                    continue
+                t = m.TimeUS * 1.0e-6
+                if not (mark < t < mark_end):
+                    continue
+                if m.get_type() == "XKF4":
+                    max_sv = max(max_sv, m.SV)
+                    sv_count += 1
+                else:
+                    max_ivd = max(max_ivd, abs(m.IVD))
+            self.progress("climb with stale external nav: max SV %.2f, max |IVD| %.2f m/s" % (max_sv, max_ivd))
+            # IVD carries the AGL KF velD innovation whenever it claims velD, accepted or not,
+            # and only the 3x range finder can make it this large, so this shows it claimed
+            if sv_count < 10:
+                raise NotAchievedException("only %u XKF4 samples in the climb" % sv_count)
+            if max_ivd < 2:
+                raise NotAchievedException("AGL KF velD was never claimed in the climb (max |IVD| %.2f)" % max_ivd)
+            # SV is the square root of velTestRatio. With the AGL KF value kept out of the
+            # test it stays under 0.2 here; left in, it reached 0.9, and 1.4 when only the
+            # step the AGL KF claims velD on was excluded
+            if max_sv >= 0.5:
+                raise NotAchievedException("AGL KF velD reached the GPS velocity test (max SV %.2f)" % max_sv)
+
+        self.start_subtest("Baro height: GPS steps after the AGL KF claimed velD")
+        climb_through_dropout()
+
+        # with GPS as the height source the height and velocity arrive in the same GPS
+        # sample, so every step the AGL KF claims velD on is also a GPS velocity step
+        self.start_subtest("GPS height: GPS steps the AGL KF claims velD on")
+        self.set_parameter("EK3_SRC1_POSZ", 3)
+        self.reboot_sitl()
+        climb_through_dropout()
+
+    def EK3_AglKfVelYieldsToOtherVelD(self):
+        '''AGL KF velocity is not fused as velD while another velD source delivers'''
+        # Bit 4 claims velD only when no other source constrains it. GPS velD and body
+        # frame odometry, which fuses all three body axes, both do. XKFA.Valid in flight
+        # shows the AGL KF ran on range data, and VTR is only written when the AGL KF
+        # claims velD, so a VTR that stays 0 shows it never claimed it.
+        def fly_and_check(takeoff_kwargs):
+            self.takeoff(**takeoff_kwargs)
+            t_air = self.get_sim_time()
+            self.set_rc(3, 1700)
+            self.delay_sim_time(3, reason="climb")
+            self.set_rc(3, 1300)
+            self.delay_sim_time(3, reason="descend")
+            self.set_rc(3, 1500)
+            self.delay_sim_time(5, reason="hover")
+            self.disarm_vehicle(force=True)
+            dfreader = self.dfreader_for_current_onboard_log()
+            valid = 0
+            claimed = 0
+            odometry = 0
+            while True:
+                m = dfreader.recv_match(type=["XKFA", "XKFD"])
+                if m is None:
+                    break
+                if m.TimeUS * 1.0e-6 < t_air:
+                    continue
+                if m.get_type() == "XKFD":
+                    odometry += 1
+                    continue
+                if m.C != 0:
+                    continue
+                valid += m.Valid
+                if m.VFuse or m.VTR != 0:
+                    claimed += 1
+            return valid, claimed, odometry
+
+        self.set_parameters({
+            "EK3_IMU_MASK": 1,
+            "EK3_RNG_USE_HGT": -1,  # range finder must not become the height source
+            "EK3_OPTIONS": (1 << 3) | (1 << 4),  # AglKfForOptflow, AglKfVelForVelD
+        })
+        self.set_analog_rangefinder_parameters()
+
+        self.start_subtest("GPS velD delivering")
+        self.reboot_sitl()
+        valid, claimed, _ = fly_and_check({"altitude_min": 8, "mode": "LOITER", "altitude_max": 12})
+        self.progress("GPS: %u XKFA samples with the AGL KF valid, %u claimed" % (valid, claimed))
+        if valid < 50:
+            raise NotAchievedException("the AGL KF did not run, so the leg proves nothing")
+        if claimed:
+            raise NotAchievedException("AGL KF velocity claimed velD while GPS velD was delivering")
+
+        self.start_subtest("Body frame odometry delivering")
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        old_pos = self.assert_receive_message('GLOBAL_POSITION_INT')
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_POSZ": 1,
+            "EK3_SRC1_VELZ": 0,  # no velD source, so only the odometry can stand the AGL KF aside
+            "GPS1_TYPE": 0,
+            "VISO_TYPE": 1,
+            "SERIAL5_PROTOCOL": 1,
+            "SIM_VICON_TMASK": 8,  # send VISION_POSITION_DELTA
+        })
+        self.reboot_sitl()
+        self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
+        self.set_origin(old_pos)
+        valid, claimed, odometry = fly_and_check({"altitude_min": 8, "mode": "ALT_HOLD",
+                                                  "require_absolute": False, "altitude_max": 12})
+        self.progress("body odometry: %u XKFA samples with the AGL KF valid, %u claimed" % (valid, claimed))
+        if odometry < 10:
+            raise NotAchievedException("body frame odometry was not fused, so the leg proves nothing")
+        if valid < 50:
+            raise NotAchievedException("the AGL KF did not run, so the leg proves nothing")
+        if claimed:
+            raise NotAchievedException("AGL KF velocity claimed velD while body odometry was delivering")
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -19530,6 +19936,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.VibrationFailsafe,
             self.VibrationCompensationThrottle,
             self.EK3_AccelBiasInhibitOnGroundMoving,
+            self.EK3_AglKfVelForVelD,
+            self.EK3_AglKfVelMixedSources,
+            self.EK3_AglKfVelYieldsToOtherVelD,
             self.EK3_ZeroVelFusionNotUsedWithGPS,
             self.OBSTACLE_DISTANCE_3D,
             self.AC_Avoidance_Beacon,
