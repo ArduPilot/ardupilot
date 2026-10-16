@@ -1298,6 +1298,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("RNGFND_LND_DIST", 41, ParametersG2, rangefinder_land_engage_dist_m, 0),
 #endif
 
+    // @Param: FS_SERVO_MASK
+    // @DisplayName: Servo failsafe trigger mask
+    // @Description: Selects which failsafe conditions drive the per-output failsafe positions (SERVOn_FSPWM). While armed and any selected failsafe is active, each output with a non-zero SERVOn_FSPWM is driven to that PWM, returning to its normal output when the failsafe clears. Outputs that control the vehicle, and ignition and parachute release, are never moved (see SERVOn_FSPWM). Set to 0 to disable the failsafe positions entirely.
+    // @Bitmask: 0:Radio,1:Battery,2:GCS,5:ADSB
+    // @User: Standard
+    AP_GROUPINFO("FS_SERVO_MASK", 42, ParametersG2, fs_servo_mask, 7),
+
     AP_GROUPEND
 };
 

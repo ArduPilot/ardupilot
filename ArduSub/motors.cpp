@@ -19,6 +19,26 @@ void Sub::motors_output()
     if (control_mode == Mode::Number::MOTOR_DETECT){
         return;
     }
+    // drive the per-servo failsafe positions (SERVOn_FSPWM) when any
+    // failsafe selected by FS_SERVO_MASK is active, before the outputs are
+    // written. The flag is kept current during a motor test, although Sub
+    // only writes its outputs outside one
+    uint16_t fs_bits = 0;
+#if AP_SUB_RC_ENABLED
+    if (failsafe.radio)                { fs_bits |= (1U<<0); }
+#endif
+    if (battery.has_failsafed())       { fs_bits |= (1U<<1); }
+    if (failsafe.gcs)                  { fs_bits |= (1U<<2); }
+    if (failsafe.ekf)                  { fs_bits |= (1U<<3); }
+    if (failsafe.terrain)              { fs_bits |= (1U<<4); }
+    if (failsafe.pilot_input)          { fs_bits |= (1U<<7); }
+    if (failsafe.leak)                 { fs_bits |= (1U<<8); }
+    if (failsafe.internal_pressure)    { fs_bits |= (1U<<9); }
+    if (failsafe.internal_temperature) { fs_bits |= (1U<<10); }
+    if (failsafe.crash)                { fs_bits |= (1U<<11); }
+    if (failsafe.sensor_health)        { fs_bits |= (1U<<12); }
+    SRV_Channels::set_failsafe_active((fs_bits & uint16_t(g2.fs_servo_mask.get())) != 0);
+
     // check if we are performing the motor test
     if (ap.motor_test) {
         verify_motor_test();

@@ -1061,6 +1061,28 @@ void Plane::servos_output(void)
         SRV_Channels::copy_radio_in_out_mask(g2.manual_rc_mask);
     }
 
+    // drive the per-servo failsafe positions (SERVOn_FSPWM) when any failsafe
+    // selected by FS_SERVO_MASK is active, before the outputs are written
+    // below. failsafe.state holds only one of the radio and GCS failsafes, so
+    // each is checked on its own
+    const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
+    const uint32_t gcs_timeout_ms = uint32_t(g.fs_timeout_long * 1000);
+    const uint32_t remrssi_ms = gcs().chan(0) != nullptr ? gcs().chan(0)->last_radio_status_remrssi_ms() : 0;
+    const bool gcs_lost = failsafe.state == FAILSAFE_GCS ||
+        (g.gcs_heartbeat_fs_enabled != GCS_FAILSAFE_OFF &&
+         (g.gcs_heartbeat_fs_enabled != GCS_FAILSAFE_HB_AUTO || control_mode == &mode_auto) &&
+         gcs_last_seen_ms != 0 &&
+         (millis() - gcs_last_seen_ms) > gcs_timeout_ms) ||
+        (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI &&
+         remrssi_ms != 0 &&
+         (millis() - remrssi_ms) > gcs_timeout_ms);
+    uint16_t fs_bits = 0;
+    if (failsafe.rc_failsafe)    { fs_bits |= (1U<<0); }
+    if (battery.has_failsafed()) { fs_bits |= (1U<<1); }
+    if (gcs_lost)                { fs_bits |= (1U<<2); }
+    if (failsafe.adsb)           { fs_bits |= (1U<<5); }
+    SRV_Channels::set_failsafe_active((fs_bits & uint16_t(g2.fs_servo_mask.get())) != 0);
+
     SRV_Channels::calc_pwm();
 
     SRV_Channels::output_ch_all();
