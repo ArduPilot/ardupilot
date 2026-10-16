@@ -39,12 +39,19 @@ void AP_Gripper_Servo::grab()
     // move the servo to the grab position
     SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.grab_pwm);
     _last_grab_or_release = AP_HAL::millis();
+    _hold_requested = false;
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper load grabbing");
     LOGGER_WRITE_EVENT(LogEvent::GRIPPER_GRAB);
 }
 
 void AP_Gripper_Servo::release()
 {
+    // a release after a hold re-arms autoclose, timed from now
+    if (_hold_requested) {
+        _hold_requested = false;
+        _last_grab_or_release = AP_HAL::millis();
+    }
+
     // check if we are already releasing
     if (config.state == AP_Gripper::STATE_RELEASING) {
         // do nothing

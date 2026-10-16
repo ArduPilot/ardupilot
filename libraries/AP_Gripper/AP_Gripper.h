@@ -45,6 +45,9 @@ public:
     // release - move the servo output to the release position
     void release();
 
+    // hold - hold the current grip state/position
+    void hold();
+
     // released - returns true if currently in released position
     bool released() const;
 
