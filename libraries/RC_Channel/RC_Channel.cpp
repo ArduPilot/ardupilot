@@ -1443,7 +1443,7 @@ void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const
     }
     switch (ch_flag) {
     case AuxSwitchPos::HIGH:
-        mount->set_mode(instance,MAV_MOUNT_MODE_RETRACT);
+        mount->set_mode(instance, AP_Mount::Mode::RETRACT);
         break;
     case AuxSwitchPos::MIDDLE:
         // nothing

@@ -215,12 +215,12 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
 
     // check flags for change to RETRACT
     if ((cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        mount->set_mode(gimbal_instance, MAV_MOUNT_MODE_RETRACT);
+        mount->set_mode(gimbal_instance, AP_Mount::Mode::RETRACT);
         return true;
     }
     // check flags for change to NEUTRAL
     if ((cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        mount->set_mode(gimbal_instance, MAV_MOUNT_MODE_NEUTRAL);
+        mount->set_mode(gimbal_instance, AP_Mount::Mode::NEUTRAL);
         return true;
     }
 
