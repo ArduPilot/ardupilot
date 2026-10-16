@@ -356,4 +356,9 @@ define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
 # don't need so many servo outputs (~850 bytes!)
 define NUM_SERVO_CHANNELS 15
 
+# do not act on safety commands - parachute release, flight termination
+# - which were addressed at some other component; this vehicle has no
+# parachute and should only terminate when told to directly:
+define AP_MAVLINK_COMMANDS_FOR_OTHER_COMPONENTS_ENABLED 0
+
 AUTOBUILD_TARGETS Copter
