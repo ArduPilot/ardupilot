@@ -243,18 +243,38 @@ float AP_Baro::get_EAS2TAS_extended(float altitude) const
     return sqrtf(SSL_AIR_DENSITY / density);
 }
 
+#endif // AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED || AP_SIM_ENABLED
+
 /*
   Given the geometric altitude (m)
   return scale factor that converts from equivalent to true airspeed
-  used by SITL only
 */
 float AP_Baro::get_EAS2TAS_for_alt_amsl(float alt_amsl)
 {
+#if AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED
     const float density = get_air_density_for_alt_amsl(alt_amsl);
-    return sqrtf(SSL_AIR_DENSITY / MAX(0.00001,density));
-}
+#else
+    // estimate temperature at the given altitude using the standard lapse rate
+    float temp_at_alt_K = SSL_AIR_TEMPERATURE - ISA_LAPSE_RATE * alt_amsl;
 
-#endif // AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED || AP_SIM_ENABLED
+    // return if temperature is invalid
+    if (temp_at_alt_K <= 0.0f) {
+        return 1.0f;
+    }
+
+    // compute the pressure at the target altitude using the standard barometric
+    // formula for a gradient layer
+    float pressure_at_alt =
+        SSL_AIR_PRESSURE *
+        powf(temp_at_alt_K / SSL_AIR_TEMPERATURE,
+             GRAVITY_MSS / (ISA_GAS_CONSTANT * ISA_LAPSE_RATE));
+
+    // compute air density using ideal gas law
+    float density = pressure_at_alt / (ISA_GAS_CONSTANT * temp_at_alt_K);
+#endif
+
+    return sqrtf(SSL_AIR_DENSITY / MAX(0.00001, density));
+}
 
 /*
   return geometric altitude difference in meters between current pressure and a
