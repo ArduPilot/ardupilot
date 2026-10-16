@@ -11776,6 +11776,41 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
+    def FixedYawCalibrationTrim(self):
+        '''Test Fixed Yaw Calibration with AHRS_TRIM set'''
+        # AHRS_TRIM tilts the vehicle body frame, whose roll and pitch
+        # the AHRS reports, against the autopilot body frame the
+        # compasses report in.  The vehicle stays level, so the
+        # offsets must still match the simulated ones
+        self.context_push()
+        MAG_OFS_X = 100
+        MAG_OFS_Y = 200
+        MAG_OFS_Z = 300
+        self.set_parameters({
+            "SIM_MAG1_OFS_X": MAG_OFS_X,
+            "SIM_MAG1_OFS_Y": MAG_OFS_Y,
+            "SIM_MAG1_OFS_Z": MAG_OFS_Z,
+            "AHRS_TRIM_Y": math.radians(5),
+        })
+        self.zero_mag_offset_parameters()
+
+        # wait until we definitely know where we are:
+        self.poll_home_position(timeout=120)
+
+        ss = self.assert_receive_message('SIMSTATE', verbose=True)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_FIXED_MAG_CAL_YAW,
+            p1=math.degrees(ss.yaw),
+            p2=1,  # compass mask
+        )
+        self.verify_parameter_values({
+            "COMPASS_OFS_X": (MAG_OFS_X, 3.0),
+            "COMPASS_OFS_Y": (MAG_OFS_Y, 3.0),
+            "COMPASS_OFS_Z": (MAG_OFS_Z, 3.0),
+        })
+
+        self.context_pop()
+
     def DataFlashOverMAVLink(self):
         '''Test DataFlash over MAVLink'''
         self.context_push()
