@@ -915,15 +915,22 @@ def _imu_children(imu, resolved_devices, defines, name):
     if driver in ('BMI055', 'BMI088', 'LSM9DS0'):
         children = []
         for index, (device_name, bus, cs) in enumerate(resolved_devices):
-            is_accel = index == 0 or device_name.lower().endswith(('_a', 'accel'))
+            properties = rotation_property
             if driver == 'LSM9DS0':
-                whoami = 0x49 if index else 0xD4
+                # gyro die first; its rotation is the second ROTATION_ argument
+                is_accel = index != 0
+                whoami = 0x49 if is_accel else 0xD4
+                rotations = [ROTATIONS.get(argument) for argument in imu[1:]
+                             if argument.startswith('ROTATION_')]
+                if not is_accel and len(rotations) > 1 and rotations[1] is not None:
+                    properties = ['    rotation: %u' % rotations[1]]
             else:
+                is_accel = index == 0 or device_name.lower().endswith(('_a', 'accel'))
                 whoami = (0xFA if driver == 'BMI055' else 0x1E) if is_accel else 0x0F
             children.append((
                 '%s%s' % (name, 'Accel' if is_accel else 'Gyro'),
                 model, bus, cs,
-                ['    whoAmI: 0x%02X' % whoami] + rotation_property))
+                ['    whoAmI: 0x%02X' % whoami] + properties))
         return children
 
     device_name, bus, cs = resolved_devices[0]
@@ -1015,6 +1022,14 @@ def _icm20948_compass_rotations(config):
     return rotations
 
 
+def _lsm303d_compass_rotations(config):
+    '''Map SPI device name to the hwdef rotation of an LSM303D compass.'''
+    return {compass.devlist[0].name: ROTATIONS.get(compass.rotation, 0)
+            for compass in config.compass_list
+            if compass.driver == 'LSM303D' and compass.devlist and
+            hasattr(compass.devlist[0], 'name')}
+
+
 def _sensor_devices(config, family, defines, fram_path, warnings,
                     sigrok_bus=None, num_imus=None, imu_names=None):
     '''Return sensor declarations, CS routes and storage metadata.'''
@@ -1027,6 +1042,7 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
     emulated_imus = 0
     inv2_instance = 0
     icm20948_compass_rotations = _icm20948_compass_rotations(config)
+    lsm303d_compass_rotations = _lsm303d_compass_rotations(config)
     heater_mag_offsets = _heater_mag_offsets(defines)
     available_imu_names = set()
     selected_imu_names = None if imu_names is None else set(imu_names)
@@ -1143,6 +1159,11 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                             '    AuxiliaryCompassHeaterInterference: "%s"' %
                             ','.join('%g' % value for value in offset))
                 inv2_instance += 1
+            if imu[0] == 'LSM9DS0':
+                # the accel/mag die also serves the hwdef LSM303D compass
+                rotation = lsm303d_compass_rotations.get(resolved_devices[-1][0])
+                if rotation is not None:
+                    children[-1][4].append('    CompassRotation: %u' % rotation)
             spi_children += children
             emulated_imus += 1
 
