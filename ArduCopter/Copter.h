@@ -720,6 +720,7 @@ private:
     bool get_wp_distance_m(float &distance) const override;
 #if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     bool get_wp_location(Location &loc) const override;
+    bool get_wp_prev_location(Location &loc) const override;
 #endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;

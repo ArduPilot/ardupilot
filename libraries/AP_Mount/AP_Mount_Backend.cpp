@@ -1033,22 +1033,29 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountAn
         return false;
     }
 
-    // exit immediate if location is invalid
-    if (!loc.initialised()) {
+    return get_angle_target_to_location(current_loc, loc, angle_rad);
+}
+
+// get angle targets (in radians) from a start Location to a Location
+// returns true on success, false on failure
+bool AP_Mount_Backend::get_angle_target_to_location(const Location &start_loc, const Location &target_loc, MountAngleTarget& angle_rad) const
+{
+    // exit immediate if either location is invalid
+    if (!start_loc.initialised() || !target_loc.initialised()) {
         return false;
     }
 
-    const float GPS_vector_x = Location::diff_longitude(loc.lng, current_loc.lng)*cosf(radians((current_loc.lat + loc.lat) * 0.00000005f)) * 0.01113195f;
-    const float GPS_vector_y = (loc.lat - current_loc.lat) * 0.01113195f;
+    const float GPS_vector_x = Location::diff_longitude(target_loc.lng, start_loc.lng)*cosf(radians((start_loc.lat + target_loc.lat) * 0.00000005f)) * 0.01113195f;
+    const float GPS_vector_y = (target_loc.lat - start_loc.lat) * 0.01113195f;
     int32_t target_alt_cm = 0;
-    if (!loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt_cm)) {
+    if (!target_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt_cm)) {
         return false;
     }
-    int32_t current_alt_cm = 0;
-    if (!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, current_alt_cm)) {
+    int32_t start_alt_cm = 0;
+    if (!start_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, start_alt_cm)) {
         return false;
     }
-    float GPS_vector_z = target_alt_cm - current_alt_cm;
+    float GPS_vector_z = target_alt_cm - start_alt_cm;
     float target_distance = 100.0f*norm(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
 
     // calculate roll, pitch, yaw angles
@@ -1210,7 +1217,16 @@ bool AP_Mount_Backend::get_angle_target_to_wpnext_offset(MountAngleTarget& angle
         return false;
     }
 
-    if (!get_angle_target_to_location(wp_loc, angle_rad)) {
+    // use the start of the segment in place of the vehicle location, so
+    // that the angles follow the segment direction. Fall back to the
+    // vehicle location when the flight mode does not fly a segment:
+    Location wp_prev_loc;
+
+    if (AP::vehicle()->get_wp_prev_location(wp_prev_loc)) {
+        if (!get_angle_target_to_location(wp_prev_loc, wp_loc, angle_rad)) {
+            return false;
+        }
+    } else if (!get_angle_target_to_location(wp_loc, angle_rad)) {
         return false;
     }
 

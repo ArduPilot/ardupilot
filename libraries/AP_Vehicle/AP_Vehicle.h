@@ -286,6 +286,8 @@ public:
 #if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     // return the lat/lon/alt etc of waypoint location:
     virtual bool get_wp_location(Location &loc) const { return false; }
+    // return the lat/lon/alt etc of the start of the segment that ends at the waypoint location:
+    virtual bool get_wp_prev_location(Location &loc) const { return false; }
 #endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
     /*
