@@ -8751,6 +8751,16 @@ return update()
         })
         self.wait_ready_to_arm()
 
+    def RudderOnlyRollChannel(self):
+        '''a rudder-only Plane steers with yaw and needs no Roll channel'''
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "RUDDER_ONLY": 1,
+            "RC1_OPTION": 24,  # Auto Mission Reset
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
     def MAV_CMD_NAV_LOITER_TO_ALT(self):
         '''test loiter to alt mission item'''
         self.upload_simple_relhome_mission([
@@ -10736,6 +10746,7 @@ return update()
             self.CompassLearnInFlight,
             self.GPSPreArms,
             self.BadRollChannelDefined,
+            self.RudderOnlyRollChannel,
             self.mavlink_AIRSPEED,
             self.AirspeedEAS2TAS,
             self.LoggedNamedValueInt,
