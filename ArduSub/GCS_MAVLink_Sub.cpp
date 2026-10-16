@@ -434,6 +434,40 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_do_reposition(const mavlink_comma
     return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_HOME_ENABLED
+MAV_RESULT GCS_MAVLINK_Sub::handle_command_do_set_home(const mavlink_command_int_t &packet)
+{
+    const MAV_RESULT result = GCS_MAVLINK::handle_command_do_set_home(packet);
+    if (result != MAV_RESULT_ACCEPTED ||
+        is_equal(packet.param1, 1.0f) || (packet.x == 0 && packet.y == 0)) {
+        // home not set, or set from the current location at the surface
+        return result;
+    }
+
+    // TODO: remove these warnings once Sub no longer requires home
+    // altitude to be the water surface
+    Location::AltFrame alt_frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, alt_frame)) {
+        return result;
+    }
+    switch (alt_frame) {
+    case Location::AltFrame::ABSOLUTE:
+        // only at the surface if the sender knows the surface's AMSL
+        // altitude as we estimate it, including the GPS Z error in the EKF origin
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "HOME: ABSOLUTE altframe is not recommended");
+        break;
+    case Location::AltFrame::ABOVE_TERRAIN:
+        // resolved against the terrain database, not the seafloor or rangefinder
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "HOME: ABOVE_TERRAIN altframe is not recommended");
+        break;
+    case Location::AltFrame::ABOVE_HOME:
+    case Location::AltFrame::ABOVE_ORIGIN:
+        break;
+    }
+    return result;
+}
+#endif  // AP_HOME_ENABLED
+
 MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch(packet.command) {
