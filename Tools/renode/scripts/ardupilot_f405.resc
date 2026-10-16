@@ -22,6 +22,7 @@ include $repo/Tools/renode/peripherals/common/AP_I2CRegisterDevice.cs
 include $repo/Tools/renode/peripherals/common/AP_UARTFrameDevice.cs
 include $repo/Tools/renode/peripherals/common/AP_UARTPacer.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_Actuators.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_Waveform.cs
 include $repo/Tools/renode/peripherals/common/AP_IOMCU.cs
 include $repo/Tools/renode/peripherals/common/AP_SPIMultiplexer.cs
 include $repo/Tools/renode/peripherals/common/AP_CANMcast.cs
