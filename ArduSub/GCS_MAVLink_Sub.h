@@ -29,6 +29,9 @@ protected:
     void send_banner() override;
 
     void send_nav_controller_output() const override;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+    bool get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
     // returns a Location to which the vehicle is currently heading, or
     // would head to in an autonomous mode
     bool get_target_location(Location &loc) const override;

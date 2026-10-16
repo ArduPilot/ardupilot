@@ -13,6 +13,10 @@ bool ModeSurface::init(bool ignore_checks)
     // initialise position and desired velocity
     position_control->D_init_controller();
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    start_depth_m = MAX(-position_control->get_pos_estimate_U_m(), 0.0f);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     return true;
 
 }
@@ -62,3 +66,14 @@ void ModeSurface::run()
     motors.set_forward(channel_forward->norm_input());
     motors.set_lateral(channel_lateral->norm_input());
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// depth still to ascend, as a part of the depth when the ascent started
+bool ModeSurface::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target)
+{
+    progress.set_distance_remaining(MAX(-position_control->get_pos_estimate_U_m(), 0.0f), start_depth_m);
+    // the surface above the vehicle
+    target = Location(sub.current_loc.lat, sub.current_loc.lng, 0, Location::AltFrame::ABOVE_HOME);
+    return true;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
