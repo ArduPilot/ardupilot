@@ -17,6 +17,7 @@
   generic Baro driver test
  */
 
+#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/AP_HAL.h>
@@ -33,13 +34,17 @@ static AP_Baro barometer;
 // creating other objects
 #if HAL_LOGGING_ENABLED
 static AP_Logger logger;
-AP_Int32 logger_bitmask;
+AP_UInt32 logger_bitmask;
 static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES
 };
 #endif  // HAL_LOGGING_ENABLED
 
 static AP_AHRS ahrs;
+
+#if AP_AIRSPEED_ENABLED
+static AP_Airspeed airspeed;
+#endif  // AP_AIRSPEED_ENABLED
 
 #if AP_EXTERNAL_AHRS_ENABLED
  static AP_ExternalAHRS eAHRS;

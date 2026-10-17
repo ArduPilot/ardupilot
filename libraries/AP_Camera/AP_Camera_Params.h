@@ -21,10 +21,16 @@ public:
     AP_Float trigg_dist;        // distance between trigger points (meters)
     AP_Int8 relay_on;           // relay value to trigger camera
     AP_Float interval_min;      // minimum time (in seconds) between shots required by camera
-    AP_Int8 options;            // whether to start recording when armed and stop when disarmed
+    AP_UInt8 options;            // whether to start recording when armed and stop when disarmed
     AP_Int8 mount_instance;     // mount instance to which camera is associated with
     AP_Float hfov;              // horizontal field of view in degrees
     AP_Float vfov;              // vertical field of view in degrees
+    AP_Int16 compid;            // MAVLink camera component ID, 0 for instance-based default
+    AP_Float zoom_speed;        // zoom speed for rate commands as a percentage of full travel per second
+    AP_Float focus_speed;       // focus speed for rate commands as a percentage of full travel per second
+
+    // configured component ID for a MAVLinkCamV2 camera in the given zero-based slot
+    int16_t mavlink_compid(uint8_t instance) const;
 
     // pin number for accurate camera feedback messages
     AP_Int8 feedback_pin;

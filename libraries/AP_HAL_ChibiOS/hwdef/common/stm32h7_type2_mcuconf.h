@@ -173,7 +173,7 @@
 
 #define STM32_PLL3_DIVN_VALUE               192
 #define STM32_PLL3_DIVQ_VALUE               2
-#define STM32_PLL3_DIVR_VALUE               4
+#define STM32_PLL3_DIVR_VALUE               12
 #endif // clock selection
 
 /*

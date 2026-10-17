@@ -23,6 +23,7 @@ import pytest
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / 'launch.py'
 sys.path.insert(0, str(MODULE_PATH.parent))
+import device_emulator  # noqa: E402
 import gen_board  # noqa: E402
 import process_utils  # noqa: E402
 
@@ -116,6 +117,19 @@ def test_dronecan_device_emulator_has_bounded_runtime():
     assert 'DroneCAN airspeed node 127 on mcast:9' in result.stdout
 
 
+def test_dronecan_airspeed_uses_physics_air_data():
+    packet = device_emulator.AIR_DATA.pack(b'APAD', 1, 123456, 20.0, 95000.0, 285.0)
+    sample = device_emulator.parse_air_data(packet)
+    assert sample == pytest.approx((20.0, 95000.0, 285.0))
+    density = 95000.0 / (287.05 * 285.0)
+    assert device_emulator.differential_pressure(*sample) == pytest.approx(
+        0.5 * density * 20.0 ** 2, rel=1e-6)
+    assert device_emulator.parse_air_data(packet[:-1]) is None
+    assert device_emulator.parse_air_data(b'XXXX' + packet[4:]) is None
+    assert device_emulator.parse_air_data(
+        device_emulator.AIR_DATA.pack(b'APAD', 1, 0, 20.0, 0.0, 285.0)) is None
+
+
 def test_build_command_contains_selected_options(tmp_path):
     args = SimpleNamespace(
         monitor_port=12390,
@@ -178,6 +192,94 @@ def test_build_command_contains_selected_options(tmp_path):
         {'device': 'ublox-gps', 'port': 'SERIAL2'},
         {'device': 'dronecan-airspeed', 'port': 'CAN2'},
     ]
+
+
+def rc_launcher(tmp_path, board='CubeOrangePlus'):
+    args = SimpleNamespace(
+        monitor_port=12390, uart_port=5762, usbip_port=3240,
+        renode=None, state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+    launcher.board = board
+    launcher.firmware = str(tmp_path / 'arduplane')
+    Path(launcher.firmware).touch()
+    launcher.bootloader = 'none'
+    return launcher
+
+
+def test_rc_transmitter_is_on_the_command_line_only_when_enabled(tmp_path):
+    launcher = rc_launcher(tmp_path)
+    assert '--rc-channels' not in launcher.build_command()
+
+    channels = launch.rc_defaults('Plane')
+    launcher.set_rc(enabled=True, channels=channels)
+    command = launcher.build_command()
+    assert command[command.index('--rc-channels') + 1] == ','.join(
+        str(value) for value in channels)
+    assert launcher.status_snapshot()['rc'] == {
+        'enabled': True, 'channels': channels}
+
+    with pytest.raises(ValueError, match='8 channels'):
+        launcher.set_rc(channels=[1500] * 7)
+    with pytest.raises(ValueError, match='from 1000 to 2000'):
+        launcher.set_rc(channels=[2100] + [1500] * 7)
+
+    periph = rc_launcher(tmp_path, 'HolybroG4_GPS')
+    periph.set_rc(enabled=True)
+    assert '--rc-channels' not in periph.build_command()
+
+
+def test_rc_changes_reach_a_running_board_once(tmp_path):
+    launcher = rc_launcher(tmp_path)
+    sent = []
+    client = SimpleNamespace(
+        command=lambda command, timeout: sent.append(command) or '(monitor)')
+    launcher.rc_sent = launcher.rc_state()
+    launcher._send_rc(client)
+    assert sent == []
+
+    launcher.set_rc(enabled=True, channels=[1600] + [1500] * 7)
+    assert launcher.monitor_wake.is_set()
+    launcher._send_rc(client)
+    launcher._send_rc(client)
+    assert sent == [
+        'rcInput SetChannels "1600,1500,1500,1500,1500,1500,1500,1500"',
+        'rcInput Enabled true',
+    ]
+
+    # switching the transmitter off is the in-flight failsafe test
+    launcher.set_rc(enabled=False)
+    launcher._send_rc(client)
+    assert sent[-1] == 'rcInput Enabled false'
+
+
+def test_rc_defaults_follow_the_vehicle():
+    assert launch.rc_defaults('Copter')[2] == 1000
+    # Plane's mode channel 8 low is RTL, so it starts in FBWA
+    assert launch.rc_defaults('Plane')[7] == 1500
+    assert launch.rc_defaults('Rover')[2] == 1500
+    assert launch.rc_defaults('Sub') == [1500] * 8
+    assert launch.rc_defaults('AP_Periph') == launch.rc_defaults('Copter')
+    for channels in launch.RC_DEFAULTS.values():
+        assert len(channels) == launch.RC_CHANNEL_COUNT
+    assert launch.firmware_vehicle_name('/x/build/CubeOrangePlus/bin/arduplane') == 'Plane'
+    assert launch.firmware_vehicle_name(
+        '/cache/firmware/Rover/MatekH743/abc/firmware.elf') == 'Rover'
+    assert launch.firmware_vehicle_name('/x/arducopter-heli') == 'Copter'
+    assert launch.firmware_vehicle_name('auto') is None
+
+
+def test_rc_input_is_generated_for_vehicles_only(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'MatekH743', tmp_path / 'matek', state_dir=tmp_path,
+        attachments=[{'port': 'SERIAL4', 'device': 'sbus-rc'}])
+    repl = generated['repl'].read_text()
+    assert 'rcInput: Miscellaneous.AP_RCInput' in repl
+    assert 'Sensors.AP_SBusInput' in repl
+
+    periph = gen_board.generate(
+        launch.ROOT, 'HolybroG4_GPS', tmp_path / 'periph', state_dir=tmp_path)
+    assert 'AP_RCInput' not in periph['repl'].read_text()
 
 
 def test_build_command_skips_disabled_and_keeps_device_configuration(tmp_path):
@@ -530,6 +632,130 @@ def test_named_imus_select_cubeorangeplus_sensor_set(tmp_path):
     assert 'imu4:' not in repl
     assert 'imu5:' not in repl
     assert 'imu6:' not in repl
+
+
+def test_cubeorangeplus_defaults_to_real_imu_set(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    assert generated['num_imus'] == 3
+    assert 'imu0: Sensors.AP_ICM42688 @ spi4Mux' in repl
+    assert 'imu2: Sensors.AP_InvensenseV2 @ spi4Mux' in repl
+    assert 'imu3: Sensors.AP_InvensenseV2 @ spi1Mux' in repl
+    assert repl.count('AuxiliaryCompassRotation') == 1
+    imu2 = repl[repl.index('imu2: Sensors.AP_InvensenseV2'):]
+    assert 'AuxiliaryCompassRotation' in imu2[:imu2.index('\n\n')]
+    for absent in ('imu1:', 'imu4:', 'imu5:', 'imu6:'):
+        assert absent not in repl
+
+
+def test_default_imus_follow_instance_probe_order(monkeypatch, tmp_path):
+    monkeypatch.setattr(gen_board, 'BOARD_IMUS', {})
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    # first fit for each INSTANCE slot, and no AUX alternatives
+    repl = generated['repl'].read_text()
+    assert generated['num_imus'] == 3
+    assert 'imu0: Sensors.AP_ICM42688 @ spi4Mux' in repl
+    assert 'imu1: Sensors.AP_ICM42688 @ spi4Mux' in repl
+    assert 'imu3: Sensors.AP_InvensenseV2 @ spi1Mux' in repl
+    for absent in ('imu2:', 'imu4:', 'imu5:', 'imu6:'):
+        assert absent not in repl
+
+
+def test_real_iomcu_outputs_feed_flight_controller_physics(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+        state_dir=tmp_path, real_iomcu=True)
+
+    assert 'iomcu: Miscellaneous.AP_IOMCU' not in generated['repl'].read_text()
+    actuators = generated['iomcu_peripherals'].read_text()
+    assert actuators.count('physicsMachine: "ardupilot"') == 3
+    assert 'iomcuSbus: Sensors.AP_SBusInput' in actuators
+    assert 'controlMachine: "ardupilot"' in actuators
+    # IOMCU PWM(1..8) are physics outputs 0..7
+    outputs = sorted(int(line.split(':')[1]) for line in actuators.splitlines()
+                     if line.strip().startswith('output'))
+    assert outputs == list(range(8))
+
+    synthetic = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'synthetic',
+        state_dir=tmp_path)
+    assert synthetic['iomcu_peripherals'] is None
+
+
+def test_heater_drives_board_temperature_and_compass_interference(tmp_path):
+    # CubeOrange IOMCU heater: the internal AK09916 sees the heater current
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'cube', state_dir=tmp_path,
+        real_iomcu=True)
+    repl = generated['repl'].read_text()
+    imu2 = repl[repl.index('imu2: Sensors.AP_InvensenseV2'):]
+    imu2 = imu2[:imu2.index('\n\n')]
+    assert 'AuxiliaryCompassHeaterInterference: "10,30,-235"' in imu2
+    iomcu = generated['iomcu_peripherals'].read_text()
+    assert 'iomcuHeater: Miscellaneous.AP_HeaterMonitor' in iomcu
+    # iofirmware_cube_highpolh drives the heater pin active high
+    assert '    activeHigh: true' in iomcu
+    assert '14 -> iomcuHeater@0 | afio#1@14' in iomcu
+
+    # FMU heater GPIO
+    generated = gen_board.generate(
+        launch.ROOT, 'Pixhawk6X', tmp_path / '6x', state_dir=tmp_path)
+    repl = generated['repl'].read_text()
+    assert 'heaterMonitor: Miscellaneous.AP_HeaterMonitor' in repl
+    assert '10 -> heaterMonitor@0 | syscfg#1@10' in repl
+
+
+def test_heater_mag_offsets_are_parsed():
+    offsets = gen_board._heater_mag_offsets({'HAL_HEATER_MAG_OFFSET': (
+        '{AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SPI,4,1,9),'
+        'Vector3f(10,30,-235)},'
+        '{AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C,0,0xe,0xa),'
+        'Vector3f(18,0,8)}')})
+    assert offsets == {
+        ('SPI', 4, 1, 9): [10.0, 30.0, -235.0],
+        ('I2C', 0, 0x0E, 0x0A): [18.0, 0.0, 8.0],
+    }
+
+
+def test_bootloader_follows_shared_and_included_boards():
+    root = launch.ROOT
+    assert gen_board.bootloader_hwdef(root, 'MatekH743').parent.name == 'MatekH743'
+    # USE_BOOTLOADER_FROM_BOARD
+    assert gen_board.bootloader_board(root, 'ARKV6X-bdshot') == 'ARKV6X'
+    assert gen_board.bootloader_hwdef(root, 'ARKV6X-bdshot').parent.name == 'ARKV6X'
+    # an included board's hwdef-bl.dat, the outermost one
+    assert gen_board.bootloader_hwdef(root, 'fmuv2').parent.name == 'fmuv3'
+    assert gen_board.bootloader_hwdef(
+        root, 'CubeOrangePlus-SimOnHardWare').parent.name == 'CubeOrangePlus'
+    assert launch.default_bootloader('CubeOrangePlus-SimOnHardWare').name == \
+        'CubeOrangePlus_bl.bin'
+    assert launch.default_bootloader('ARKV6X-bdshot').name == 'ARKV6X_bl.bin'
+
+    boards = gen_board.supported_boards(root)
+    for board in ('ARKV6X-bdshot', 'fmuv2', 'CubeOrangePlus-SimOnHardWare'):
+        assert board in boards
+    # coprocessor firmware is run through --real-iomcu instead
+    assert 'iomcu-f103' not in boards
+
+
+def test_every_imu_model_accepts_its_rotation():
+    # the generator passes each IMU its hwdef rotation; Renode cannot build a
+    # platform whose model has no constructor taking it
+    import re
+    sources = '\n'.join(
+        path.read_text() for path in (launch.HERE / 'peripherals').rglob('*.cs'))
+    for model in set(gen_board.IMU_MODELS.values()):
+        name = model.rsplit('.', 1)[1]
+        constructors = re.findall(r'public %s\(([^)]*)\)' % name, sources)
+        assert constructors, name
+        assert any(re.search(r'\bbyte rotation\b', parameters)
+                   for parameters in constructors), name
 
 
 def test_unknown_named_imu_is_rejected(tmp_path):

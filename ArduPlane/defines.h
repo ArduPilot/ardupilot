@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 

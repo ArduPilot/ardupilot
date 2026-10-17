@@ -524,7 +524,7 @@ public:
 
     // check if an option is set
     bool debug_option_is_set(const DebugOptions option) const {
-        return (uint8_t(g.debug.get()) & (1U<<uint8_t(option))) != 0;
+        return (g.debug & (1U<<uint8_t(option))) != 0;
     }
 
     enum class PeriphOptions {
@@ -533,7 +533,7 @@ public:
 
     // check if a periph option is set
     bool option_is_set(const PeriphOptions opt) const {
-        return (uint32_t(g.options.get()) & uint32_t(opt)) != 0;
+        return (g.options & uint32_t(opt)) != 0;
     }
 
     // show stack as DEBUG msgs

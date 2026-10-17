@@ -249,7 +249,7 @@ void AP_RCTelemetry::check_ekf_status(void)
     {
         AP_AHRS &_ahrs = AP::ahrs();
         WITH_SEMAPHORE(_ahrs.get_semaphore());
-        get_variance = _ahrs.get_variances(velVar, posVar, hgtVar, magVar, tasVar);
+        get_variance = _ahrs.get_variances_for_configured_backend(velVar, posVar, hgtVar, magVar, tasVar);
     }
     if (get_variance) {
         uint32_t now = AP_HAL::millis();

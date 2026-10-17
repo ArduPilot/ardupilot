@@ -125,7 +125,7 @@ public:
     void loop() override final;
 
     // set_mode *must* set control_mode_reason
-    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
+    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) WARN_IF_UNUSED = 0;
     virtual uint8_t get_mode() const = 0;
 
     ModeReason get_control_mode_reason() const {
@@ -367,9 +367,9 @@ protected:
 
 #if HAL_LOGGING_ENABLED
     AP_Logger logger;
-    AP_Int32 bitmask_unused;
+    AP_UInt32 bitmask_unused;
     // method supplied by vehicle to provide log bitmask:
-    virtual const AP_Int32 &get_log_bitmask() { return bitmask_unused; }
+    virtual const AP_UInt32 &get_log_bitmask() { return bitmask_unused; }
     virtual const struct LogStructure *get_log_structures() const { return nullptr; }
     virtual uint8_t get_num_log_structures() const { return 0; }
 #endif
@@ -574,7 +574,7 @@ protected:
 #endif // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
     // Bitmask of modes to disable from gcs
-    AP_Int32 flight_mode_GCS_block;
+    AP_UInt32 flight_mode_GCS_block;
 
 private:
 

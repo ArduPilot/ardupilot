@@ -19,8 +19,9 @@ bool AP_AHRS_SIM::get_location(Location &loc) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
+bool AP_AHRS_SIM::synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type)
 {
+    type = AirspeedEstimateType::SIM;
     if (_sitl == nullptr) {
         return false;
     }
@@ -28,11 +29,6 @@ bool AP_AHRS_SIM::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) c
     airspeed_ret = _sitl->state.airspeed;
 
     return true;
-}
-
-bool AP_AHRS_SIM::airspeed_EAS(bool have_velocity_source, uint8_t index, float &airspeed_ret) const
-{
-    return airspeed_EAS(have_velocity_source, airspeed_ret);
 }
 
 bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
@@ -281,6 +277,9 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
         }
     }
 #endif // HAL_NAVEKF3_AVAILABLE
+
+    // publish this backend's airspeed estimate from the results above:
+    fill_airspeed_estimate(results);
 }
 
 #endif // AP_AHRS_SIM_ENABLED

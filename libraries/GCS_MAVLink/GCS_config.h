@@ -77,7 +77,7 @@
 
 // allow removal of developer-centric mavlink commands
 #ifndef AP_MAVLINK_FAILURE_CREATION_ENABLED
-#define AP_MAVLINK_FAILURE_CREATION_ENABLED 1
+#define AP_MAVLINK_FAILURE_CREATION_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
 // this is for both read and write messages:

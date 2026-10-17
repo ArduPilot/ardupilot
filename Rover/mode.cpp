@@ -26,7 +26,7 @@ bool Mode::enter()
 
         // get EKF filter status
         nav_filter_status filt_status;
-        rover.ahrs.get_filter_status(filt_status);
+        rover.ahrs.get_filter_status_for_configured_backend(filt_status);
 
         // check position estimate.  requires origin and at least one horizontal position flag to be true
         const bool position_ok = rover.ekf_position_ok() && !rover.failsafe.ekf;

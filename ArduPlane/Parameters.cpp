@@ -406,7 +406,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_FAILSAFE
     // @DisplayName: Throttle and RC Failsafe Enable
-    // @Description: 0 disables the failsafe. 1 enables failsafe on loss of RC input. This is detected either by throttle values below THR_FS_VALUE, loss of receiver valid pulses/data, or by the FS bit in receivers that provide it, like SBUS. A programmable failsafe action will occur and RC inputs, if present, will be ignored. A value of 2 means that the RC inputs won't be used when RC failsafe is detected by any of the above methods, but it won't trigger an RC failsafe action.
+    // @Description: 0 disables the failsafe. 1 enables failsafe on loss of RC input. This is detected either by the throttle channel reaching THR_FS_VALUE (at or below it, or at or above it for a reversed throttle channel), loss of receiver valid pulses/data, or by the FS bit in receivers that provide it, like SBUS. A programmable failsafe action will occur and RC inputs, if present, will be ignored. A value of 2 means that the RC inputs won't be used when RC failsafe is detected by any of the above methods, but it won't trigger an RC failsafe action.
     // @Values: 0:Disabled,1:Enabled,2:EnabledNoFailsafe
     // @User: Standard
     GSCALAR(throttle_fs_enabled,    "THR_FAILSAFE",   int(ThrFailsafe::Enabled)),
@@ -414,7 +414,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_FS_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on the throttle input channel below which throttle failsafe triggers. Note that this should be well below the normal minimum for your throttle channel.
+    // @Description: The PWM level on the throttle input channel at or below which throttle failsafe triggers. Note that this should be well below the normal minimum for your throttle channel.
     // @Range: 925 2200
     // @Increment: 1
     // @User: Standard
@@ -988,6 +988,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(_gcs,           "MAV",  GCS),
 #endif
 
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    // @Group: CP
+    // @Path: ../libraries/AP_CustomControl/AP_CustomControl.cpp
+    GOBJECT(custom_control, "CP", AP_CustomControl),
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
+
     AP_VAREND
 };
 
@@ -1059,9 +1065,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
     // @Bitmask: 0: Rudder mixing in direct flight modes only (Manual/Stabilize/Acro)
-    // @Bitmask: 1: Use centered throttle in Cruise or FBWB to indicate trim airspeed
+    // @Bitmask: 1: Use centered throttle in Cruise or FBWB to indicate AIRSPEED_CRUISE
     // @Bitmask: 2: Disable attitude check for takeoff arming
-    // @Bitmask: 3: Force target airspeed to trim airspeed in Cruise or FBWB
+    // @Bitmask: 3: Force target airspeed to AIRSPEED_CRUISE in Cruise or FBWB
     // @Bitmask: 4: Climb to RTL_ALTITUDE before turning for RTL
     // @Bitmask: 5: Enable yaw damper in acro mode
     // @Bitmask: 6: Suppress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.
@@ -1325,6 +1331,11 @@ void Plane::load_parameters(void)
 #endif
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
+
+#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+    // convert Follow parameters
+    g2.follow.convert_params();
+#endif
 
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
     g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);

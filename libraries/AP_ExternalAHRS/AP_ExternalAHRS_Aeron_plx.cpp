@@ -107,10 +107,21 @@ void AP_ExternalAHRS_Aeron_plx::check_and_decode()
         return;
     }
 
-    // Drain buffer, stack-local. 256 B is ~3x the max bytes that arrive
-    // in one 1 ms tick at 921600 baud (~92 B), and still clears a full
-    // UART RX backlog within a few ticks if the thread is briefly
-    // preempted.
+    // Guards both callers. update_thread() sets this after uart->begin().
+    if (!setup_complete) {
+        return;
+    }
+
+    // available() stays inside the lock: on SITL it can reach a blocking
+    // accept() via _check_connection(), which two unserialised callers could
+    // race into.
+    WITH_SEMAPHORE(parse_sem);
+
+    // Drain buffer, stack-local. Sized for the 1 ms reader thread: ~92 B
+    // arrive per tick at 921600 baud, so 256 B is ~3x headroom and still
+    // clears a full UART RX backlog within a few ticks after a preemption.
+    // The main-thread caller shares the quantum, and normally finds the ring
+    // already drained by the reader thread.
     uint8_t chunk_buf[256];
     const uint16_t avail = MIN(uart->available(), uint16_t(sizeof(chunk_buf)));
     if (avail == 0) {
@@ -418,8 +429,6 @@ void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const SensParaPayload &data)
     }
     const bool imu_ok  = (hw & ((1U << uint8_t(AeronHwStatus::ACC)) |
                                 (1U << uint8_t(AeronHwStatus::GYR)))) == 0;
-    const bool baro_ok = (hw & (1U << uint8_t(AeronHwStatus::BARO))) == 0;
-    const bool mag_ok  = (hw & (1U << uint8_t(AeronHwStatus::MAG)))  == 0;
 
     const Vector3f accel {
         data.accel[0],
@@ -448,6 +457,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const SensParaPayload &data)
     }
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
+    const bool baro_ok = (hw & (1U << uint8_t(AeronHwStatus::BARO))) == 0;
     if (baro_ok) {
         const AP_ExternalAHRS::baro_data_message_t baro {
             0,                      // instance
@@ -459,6 +469,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const SensParaPayload &data)
 #endif  // AP_BARO_EXTERNALAHRS_ENABLED
 
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
+    const bool mag_ok = (hw & (1U << uint8_t(AeronHwStatus::MAG))) == 0;
     if (mag_ok) {
         const AP_ExternalAHRS::mag_data_message_t mag {
             Vector3f {
@@ -1041,15 +1052,22 @@ bool AP_ExternalAHRS_Aeron_plx::healthy() const
         return false;
     }
 
+    // Read the stamps before the clock. The higher-priority reader thread can
+    // stamp a newer millisecond between the two reads; sampled the other way,
+    // (now - stamp) underflows and health flickers false for a loop.
+    const uint32_t sens_ms = last_sens_ms;
+    const uint32_t nav1_ms = last_nav1_ms;
+    const uint32_t nav2_ms = last_nav2_ms;
+    const uint32_t gnss_ms = last_gnss_ms;
     const uint32_t now = AP_HAL::millis();
     // Both NAV streams are checked independently: NAV_PARA1 carries
     // position/velocity/attitude and NAV_PARA2 the quaternion + hw_status.
     // Losing either must trip unhealthy, otherwise stale data from the
     // lost stream would keep publishing at arbitrary age.
-    return (now - last_sens_ms)  < SENS_TIMEOUT_MS
-        && (now - last_nav1_ms)  < NAV_TIMEOUT_MS
-        && (now - last_nav2_ms)  < NAV_TIMEOUT_MS
-        && (now - last_gnss_ms)  < GNSS_TIMEOUT_MS;
+    return (now - sens_ms)  < SENS_TIMEOUT_MS
+        && (now - nav1_ms)  < NAV_TIMEOUT_MS
+        && (now - nav2_ms)  < NAV_TIMEOUT_MS
+        && (now - gnss_ms)  < GNSS_TIMEOUT_MS;
 }
 
 /*

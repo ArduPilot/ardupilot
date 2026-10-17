@@ -18,9 +18,13 @@ before the application and starts from its vector table.
 
 `Tools/renode/run.py --list` shows the hwdef targets accepted by the generator.
 Support is MCU-family driven rather than maintained as a board allowlist. The
-current generation audit covers 404 targets, including all 109 STM32
-AP_Periph hwdefs. AP_Periph can run without a separate bootloader hwdef because
-Renode loads its application ELF directly. The AP_Periph targets by exact MCU
+current generation audit covers 416 targets, including all 109 STM32
+AP_Periph hwdefs. A flight controller's bootloader hwdef is its own
+`hwdef-bl.dat`, that of its `USE_BOOTLOADER_FROM_BOARD` board, or that of a
+board whose hwdef it includes, so variants such as `ARKV6X-bdshot` and `fmuv2`
+are covered; IOMCU firmware runs through `--real-iomcu` instead. AP_Periph can
+run without a separate bootloader hwdef because Renode loads its application
+ELF directly. The AP_Periph targets by exact MCU
 class are:
 
 | MCU hwdef | Targets | Shared platform |
@@ -84,11 +88,16 @@ exactly as the `probe_ICM20948` compass driver expects. The generator reads
 `COMPASS AK09916:probe_ICM20948 <instance> <ROTATION>` hwdef lines and applies
 the rotation to the matching Invensense-v2 instance, so the resulting
 `COMPASS_DEV_ID` (SPI bus, ICM20948 chip select, devtype AK0991x) and field
-orientation match the real board. Cube boards compensate that internal compass
-for IMU heater interference in proportion to the heater duty cycle. Emulated
-IMUs report a fixed temperature, so the heater stays at full duty and the
-compensation adds a large fixed offset; set `BRD_HEAT_TARG -1` when the
-internal compass matters, as the QuadPlane test parameters do.
+orientation match the real board.
+
+IMU heaters are modelled. The heater duty cycle comes from the synthetic
+IOMCU's heater register, the real IOMCU's heater pin, or a flight-controller
+`HAL_HEATER_GPIO_PIN`, and drives a first-order board temperature (air
+temperature plus 10 C, rising up to 40 C more at full duty with a 40 s time
+constant) that the emulated IMUs report. The heater therefore regulates to
+`BRD_HEAT_TARG` as on hardware. Boards with a `HAL_HEATER_MAG_OFFSET`, such as
+the Cube's internal AK09916, see the matching heater-current interference, so
+the firmware's compensation cancels it rather than corrupting the field.
 
 A stock Pixhawk6X ArduCopter image boots from its alternate 0x24000000 AXI SRAM
 layout, mounts its microSD through SDMMC2, detects the Holybro FMUv6 sensor
@@ -101,7 +110,9 @@ a TAP and exchanges MAVLink through an emulated UDP server.
 CAN1 and CAN2 can be connected to the same UDP multicast transport used
 by ArduPilot SITL, DroneCAN tools, and the AM32 Renode harness. The bridge
 supports classic CAN and CAN FD and maps the two interfaces independently to
-`mcast:0` and `mcast:1`. H743/H757 boards with an `ETH1` hwdef receive the
+`mcast:0` and `mcast:1`. Each bridge also multicasts the physics airspeed,
+static pressure and temperature to its bus group on port 57733, which the
+host-side DroneCAN airspeed node publishes as `RawAirData`. H743/H757 boards with an `ETH1` hwdef receive the
 Renode Synopsys DWC QoS MAC and PHY; `run.py` can attach that MAC to a host
 TAP for an isolated network or an existing host LAN bridge.
 
@@ -154,7 +165,7 @@ every pause-at-a-breakpoint into a reboot).
   live Renode speed, PC and MIPS status panel. It delegates board construction
   and execution to `run.py`.
 - `device_emulator.py` — host-side device models for external transports,
-  initially a stationary DroneCAN airspeed node.
+  initially a physics-driven DroneCAN airspeed node.
 - `gen_board.py` — runs the same `ChibiOSHWDef` compiler used by
   `./waf configure`, then translates its expanded configuration and generated
   `hwdef.h` DMA assignments into a board overlay and launch script.
@@ -465,8 +476,8 @@ re-enabled later. Rangefinders expose their ArduPilot orientation and physics
 input, compasses expose their simulated sensor orientation, and DroneCAN nodes
 can use either an automatic or fixed node ID.
 
-Pressing **Start** or **Quit** writes the complete Target, Config, and Physics
-selection to `launch-settings.json` in the directory from which the launcher
+Pressing **Start** or **Quit** writes the complete Target, Config, Physics,
+and R/C selection to `launch-settings.json` in the directory from which the launcher
 was started. The launcher restores that file the next time it is started from
 the same directory, allowing separate working directories to retain different
 configurations. Runtime-only state such as generated device names and transient
@@ -474,7 +485,9 @@ connection status is not saved. The Config object can also contain an `imus`
 list of hwdef SPI device names, restricting emulation to the sensor variants
 that are fitted to a particular board revision.
 
-The initial device catalog provides u-blox GPS and Benewake/LightWare
+The emulated u-blox GPS reports itself as a NEO-M9N and answers the driver's
+configuration polls and writes, so `GPS_AUTO_CONFIG` completes and the receiver
+follows the configured rates. The initial device catalog provides u-blox GPS and Benewake/LightWare
 rangefinders on UARTs; IST8310 compass and MS4525, AUAV, and ASP5033 airspeed
 sensors on I2C; and a DroneCAN airspeed node on CAN. UART and I2C models run
 inside Renode. Host-side DroneCAN nodes use the same multicast transport as
@@ -497,7 +510,7 @@ The first reusable ArduPilot physics backend is built as a separate SITL tool:
 
 ```sh
 ./waf configure --board sitl
-./waf --targets tool/renode-physics
+./waf renode-physics
 build/sitl/tool/renode-physics --model quad --physics-port 9002
 ```
 
@@ -522,6 +535,28 @@ directory, in a local SITL build, or on `PATH`; `--physics-binary PATH`
 overrides discovery. This order lets a Windows installer place the Cygwin
 executable and its runtime DLLs alongside the launcher without exposing a
 source-tree path.
+
+### R/C input
+
+The launcher's **R/C** tab is an emulated transmitter with sliders for
+channels 1-8. When **Transmitter on** is ticked it feeds a real SBUS receiver
+model, so the firmware decodes SBUS as it would on hardware:
+
+- with a real IOMCU, SBUS frames reach the IOMCU's R/C UART and are decoded
+  by the unmodified iofirmware;
+- with the synthetic IOMCU, the IOMCU reports the channels as SBUS input;
+- on boards without an IOMCU, attach an **SBUS R/C receiver** to a SERIAL
+  port in the Config tab and set that port's `SERIALn_PROTOCOL` to 23.
+
+Unticking stops the receiver output, as when a receiver loses its link, so
+doing it in flight exercises R/C failsafe; it also leaves R/C free for another
+source. The sliders start at defaults for the vehicle type: throttle low (or
+centred for Rover and Sub) and the mode channel on a safe mode, for example
+FBWA for Plane. **Default positions** restores them. `run.py --rc-channels
+PWM,...` starts the transmitter from the command line, and the monitor
+commands `rcInput SetChannels "PWM,..."` and `rcInput Enabled true|false` drive
+it at runtime. `tests/test_rc_input.py` checks channel delivery and failsafe on
+the synthetic IOMCU, real IOMCU and UART paths.
 
 ### Installer runtime bundle
 
@@ -634,6 +669,10 @@ exact alternative directory. Depending on the hwdef, this contains:
 - `fram.img`: the SPI RAMTRON/FRAM contents on boards with
   `HAL_WITH_RAMTRON` and a `SPIDEV ramtron` entry. Writes are committed on the
   real chip-select deassertion forwarded by the generated SPI multiplexer.
+- `max7456-font.img`: the font NVM of the emulated MAX7456 OSD on boards with
+  a `SPIDEV osd` entry, so the firmware uploads its font only on the first
+  launch. The monitor command `sysbus.<spi>.<spi>Mux.osd Screen` prints the
+  OSD display memory as text.
 - `mcu_id.txt`: the persistent random 96-bit STM32 unique-device ID, encoded
   as 24 hexadecimal characters. It is created on the first launch and used by
   firmware logs, bootloader identification, and USB serial-number descriptors,
@@ -726,13 +765,19 @@ for reducing the peripheral workload on boards with several redundant IMUs:
 Tools/renode/run.py CubeOrange --num-imus 1
 ```
 
-Use repeated `--imu NAME` options when the hwdef contains alternative sensors
-for the same IMU instance. For example, this selects the devices fitted to a
-CubeOrangePlus rather than making every supported hardware variant present:
+By default the generator follows the firmware probe order: an IMU line with
+`INSTANCE:n` is only emulated when it would become backend n, and `AUX:` lines
+are skipped, so only one alternative is fitted per instance. Boards whose
+common production fit is not the first alternative are listed in `BOARD_IMUS`
+in `gen_board.py`; CubeOrangePlus gets its ICM42688, ICM20948 (with the
+AK09916 compass) and ICM20649.
+
+Use repeated `--imu NAME` options to choose a different set of alternatives,
+for example the ICM45686 CubeOrangePlus variant:
 
 ```sh
 Tools/renode/run.py CubeOrangePlus --imu icm42688_ext \
-    --imu icm20948_ext --imu icm20649
+    --imu icm42688_ext2 --imu icm45686
 ```
 
 Generated scripts set Renode to log errors only. Renode formats and queues
@@ -788,6 +833,10 @@ the normal FMU-to-IOMCU register path:
 arm safetyoff
 arm safetyon
 ```
+
+The IOMCU's PWM timers, from the shared `iomcu/hwdef.inc` outputs, drive
+physics actuators 1-8 just as the synthetic IOMCU does, so main outputs such
+as QuadPlane VTOL motors reach the physics model.
 
 The FMU's normal `IOMC` DataFlash message records the real IOMCU status once
 logging is active. Set `LOG_DISARMED=1` when collecting it without arming the
@@ -856,6 +905,9 @@ export listener available.
 
 Renode's USB/IP server listens on all host interfaces. Keep its TCP port
 firewalled from untrusted networks.
+
+For the STM32H7 firmware USB debugger, see [the local Renode patches](patches/README.md)
+and [the GDB launcher instructions](../debug/README.md#debugging-over-usb-on-stm32h7).
 
 ### Sigrok/PulseView
 
@@ -989,6 +1041,21 @@ zero. This is primarily useful for parallel automated tests.
 Tools/renode/test_all.py --parallel 4
 Tools/renode/test_all.py 'HolybroG4*' --parallel 2
 Tools/renode/test_all.py 'CubeBlack/arducopter'
+```
+
+`test_boards.py` tests every supported target, resumably, without needing
+local builds: flight controllers boot the latest ArduPlane ELF from
+firmware.ardupilot.org and must deliver their full parameter table over
+MAVLink, and AP_Periph targets must answer DroneCAN parameter requests.
+Firmware and Renode model data are cached in the results directory, so after
+`--fetch` testing works offline; boards without a published ELF are built from
+this tree. Interrupt it with control-C and run it again to continue, and use
+`--status` to see progress:
+
+```sh
+Tools/renode/test_boards.py --fetch
+Tools/renode/test_boards.py --parallel 4
+Tools/renode/test_boards.py --status
 ```
 
 Flight-controller tests wait for a MAVProxy-detected heartbeat and then run

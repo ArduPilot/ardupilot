@@ -1,6 +1,6 @@
 // Minimal ArduPilot IO-MCU register protocol peer. It represents a healthy
-// IO board with no RC input and keeps enough register state for FMU startup,
-// safety handling, and output writes. The firmware CRC is supplied from the
+// IO board with SBUS input from AP_RCInput and keeps enough register state for
+// FMU startup, safety handling, and output writes. The firmware CRC is supplied from the
 // board's hwdef ROMFS entry, so the FMU does not enter the bootloader uploader.
 //
 using System;
@@ -24,6 +24,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             setup = new ushort[SetupRegisterCount];
             servos = new ushort[MaxChannels];
             servoWritten = new bool[MaxChannels];
+            rcInput = AP_RCInputState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
             AP_PhysicsState.ForMachine(machine).RegisterActuatorSource(this);
             uart.CharReceived += WriteChar;
             Reset();
@@ -133,6 +135,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private ushort[] ReadRegisters(byte page, byte offset, int count)
         {
             var result = new ushort[count];
+            var rc = page == PageRawRcInput ? rcInput.Channels : null;
             for(var i = 0; i < count; i++)
             {
                 var register = offset + i;
@@ -150,12 +153,37 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 case PageServos:
                     result[i] = register < servos.Length ? servos[register] : (ushort)0;
                     break;
+                case PageRawRcInput:
+                    result[i] = ReadRcInput(register, rc);
+                    break;
                 default:
                     result[i] = 0;
                     break;
                 }
             }
             return result;
+        }
+
+        // struct page_rc_input: count, flags, protocol, pwm[16], rssi
+        private static ushort ReadRcInput(int register, ushort[] channels)
+        {
+            if(channels == null)
+            {
+                return register == RcInputRssiRegister ? (ushort)0xFFFF : (ushort)0;
+            }
+            if(register == 0)
+            {
+                return (ushort)(channels.Length | RcOkFlag);
+            }
+            if(register == 1)
+            {
+                return RcProtocolSbus;
+            }
+            if(register - RcInputPwmRegister < channels.Length)
+            {
+                return channels[register - RcInputPwmRegister];
+            }
+            return register == RcInputRssiRegister ? (ushort)0xFFFF : (ushort)0;
         }
 
         private ushort ReadConfig(int register)
@@ -223,6 +251,10 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     else if(register == ForceSafetyOnRegister && value == ForceSafetyMagic)
                     {
                         safetyOff = false;
+                    }
+                    else if(register == HeaterDutyRegister)
+                    {
+                        thermal.SetHeaterDuty(value);
                     }
                     else if(register == IgnoreSafetyRegister)
                     {
@@ -305,6 +337,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private readonly ushort[] setup;
         private readonly ushort[] servos;
         private readonly bool[] servoWritten;
+        private readonly AP_RCInputState rcInput;
+        private readonly AP_BoardThermalState thermal;
         private readonly object servoSync = new object();
         private volatile bool safetyOff;
         private ushort ignoreSafetyMask;
@@ -326,6 +360,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const byte PageConfig = 0;
         private const byte PageStatus = 1;
         private const byte PageServos = 3;
+        private const byte PageRawRcInput = 4;
         private const byte PageSetup = 50;
         private const byte PageDirectPwm = 54;
 
@@ -335,6 +370,11 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const int ForceSafetyOffRegister = 12;
         private const int ForceSafetyOnRegister = 14;
         private const int IgnoreSafetyRegister = 20;
+        private const int HeaterDutyRegister = 21;
+        private const int RcInputPwmRegister = 2;
+        private const int RcInputRssiRegister = 18;
+        private const ushort RcOkFlag = 1 << 9;
+        private const ushort RcProtocolSbus = 2;
         private const ushort ForceSafetyMagic = 22027;
         private const ushort ProtocolVersion = 4;
         private const ushort ProtocolVersion2 = 10;

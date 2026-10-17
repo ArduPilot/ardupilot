@@ -66,13 +66,16 @@ class HWDef:
             return line.split()
         return shlex.split(line, posix=posix)
 
-    def __init__(self, quiet=False, outdir=None, hwdef: list | None = None):
+    def __init__(self, quiet=False, outdir=None, hwdef: list | None = None,
+                 build_option_defines: dict | None = None):
         if hwdef is None:
             hwdef = []
 
         self.outdir = outdir
         self.hwdef = hwdef
         self.quiet = quiet
+        # {define: 0 or 1} for the build options given to waf configure
+        self.build_option_defines = build_option_defines or {}
 
         # dictionary of all config lines, indexed by first word
         self.config = {}
@@ -187,6 +190,19 @@ class HWDef:
     def write_define(self, f, name, value):
         f.write(f"#define {name} {value}\n")
 
+    def apply_build_option_defines(self):
+        '''use the build option values for the script's own decisions too,
+        like whether to embed the bootloader, not only in hwdef.h'''
+        self.intdefines.update(self.build_option_defines)
+
+    def define_line(self, line):
+        '''the #define for a "define NAME value" line. A build option given
+        for NAME replaces the value, so that it matches the option's -D'''
+        name = line.split()[1]
+        if name in self.build_option_defines:
+            return f"#define {name} {self.build_option_defines[name]}\n"
+        return f"#define {line[7:]}\n"
+
     def write_hwdef_header(self, outfilename):
         '''write hwdef header file'''
         self.progress("Writing hwdef setup in %s" % outfilename)
@@ -254,6 +270,7 @@ class HWDef:
     def run(self):
         # process input file
         self.process_hwdefs()
+        self.apply_build_option_defines()
 
         # write out hwdef.h
         self.write_hwdef_header(self.get_output_path("hwdef.h"))
@@ -378,6 +395,7 @@ class HWDef:
     def get_stale_defines(self):
         '''returns a map with a stale define and a comment as to what to do about it'''
         return {
+            'ALLOW_ARM_NO_COMPASS': 'ALLOW_ARM_NO_COMPASS is no longer used; remove it from your hwdef (use ARMING_SKIPCHK to skip compass checks)',  # noqa:E501
             'HAL_COMPASS_DEFAULT': 'HAL_COMPASS_DEFAULT is no longer used; remove it from your hwdef',
             'HAL_NO_GCS': 'HAL_NO_GCS is no longer used; try "define HAL_GCS_ENABLED 0"',
             'HAL_NO_LOGGING': 'HAL_NO_LOGGING is no longer used; try "define HAL_LOGGING_ENABLED 0"',

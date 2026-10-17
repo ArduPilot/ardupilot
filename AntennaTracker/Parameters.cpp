@@ -19,7 +19,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: SYSID_TARGET
     // @DisplayName: Target vehicle's MAVLink system ID
     // @Description: The identifier of the vehicle being tracked. This should be zero (to auto detect) or be the same as the MAV_SYSID parameter of the vehicle being tracked.
-    // @Range: 1 255
+    // @Range: 0 4294967295
     // @User: Advanced
     GSCALAR(sysid_target,           "SYSID_TARGET",    0),
 
@@ -536,6 +536,10 @@ const AP_Param::Info Tracker::var_info[] = {
 void Tracker::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
+
+    // Convert the target before startup delay callbacks can expose parameters.
+    // PARAMETER_CONVERSION - Added: Jul-2026 for ArduPilot-4.8 - 32 bit sysids
+    g.sysid_target.convert_parameter_width(AP_PARAM_INT16);
 
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024

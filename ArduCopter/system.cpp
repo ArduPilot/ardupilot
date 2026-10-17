@@ -233,20 +233,20 @@ bool Copter::ekf_has_absolute_position() const
 
     // if disarmed we accept a predicted horizontal position
     if (!motors->armed()) {
-        if (ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
+        if (ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
             return true;
         }
-        if (ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
+        if (ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
             return true;
         }
         return false;
     }
 
     // once armed we require a good absolute position and EKF must not be in const_pos_mode
-    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+    if (ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE)) {
         return false;
     }
-    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS);
+    return ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_ABS);
 }
 
 // ekf_has_relative_position - returns true if the EKF can provide a position estimate relative to it's starting position
@@ -278,13 +278,13 @@ bool Copter::ekf_has_relative_position() const
 
     // if disarmed we accept a predicted horizontal relative position
     if (!motors->armed()) {
-        return ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
+        return ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
     }
 
-    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+    if (ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE)) {
         return false;
     }
-    if (!ahrs.has_status(AP_AHRS::Status::HORIZ_POS_REL)) {
+    if (!ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_REL)) {
         return false;
     }
     return true;
@@ -299,10 +299,10 @@ bool Copter::ekf_alt_ok() const
     }
 
     // require both vertical velocity and position
-    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
+    if (!ahrs.configured_backend_has_status(AP_AHRS::Status::VERT_POS)) {
         return false;
     }
-    if (!ahrs.has_status(AP_AHRS::Status::VERT_VEL)) {
+    if (!ahrs.configured_backend_has_status(AP_AHRS::Status::VERT_VEL)) {
         return false;
     }
     return true;
@@ -358,49 +358,73 @@ void Copter::allocate_motors(void)
 {
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
 #if FRAME_CONFIG != HELI_FRAME
+#if AP_MOTORS_FRAME_QUAD_ENABLED
         case AP_Motors::MOTOR_FRAME_QUAD:
+#endif
+#if AP_MOTORS_FRAME_HEXA_ENABLED
         case AP_Motors::MOTOR_FRAME_HEXA:
+#endif
+#if AP_MOTORS_FRAME_Y6_ENABLED
         case AP_Motors::MOTOR_FRAME_Y6:
+#endif
+#if AP_MOTORS_FRAME_OCTA_ENABLED
         case AP_Motors::MOTOR_FRAME_OCTA:
+#endif
+#if AP_MOTORS_FRAME_OCTAQUAD_ENABLED
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+#endif
+#if AP_MOTORS_FRAME_DODECAHEXA_ENABLED
         case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+#endif
+#if AP_MOTORS_FRAME_DECA_ENABLED
         case AP_Motors::MOTOR_FRAME_DECA:
+#endif
+#if AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
         case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
+#endif  // AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
         default:
+#if AP_MOTORS_MATRIX_ENABLED
             motors = NEW_NOTHROW AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix::var_info;
+#endif  // AP_MOTORS_MATRIX_ENABLED
             break;
-#if AP_MOTORS_TRI_ENABLED
+#if AP_MOTORS_FRAME_TRI_ENABLED
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = NEW_NOTHROW AP_MotorsTri(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsTri::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
             break;
-#endif  // AP_MOTORS_TRI_ENABLED
+#endif  // AP_MOTORS_FRAME_TRI_ENABLED
+#if AP_MOTORS_FRAME_SINGLE_ENABLED
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = NEW_NOTHROW AP_MotorsSingle(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsSingle::var_info;
             break;
+#endif  // AP_MOTORS_FRAME_SINGLE_ENABLED
+#if AP_MOTORS_FRAME_COAX_ENABLED
         case AP_Motors::MOTOR_FRAME_COAX:
             motors = NEW_NOTHROW AP_MotorsCoax(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsCoax::var_info;
             break;
+#endif  // AP_MOTORS_FRAME_COAX_ENABLED
+#if AP_MOTORS_FRAME_TAILSITTER_ENABLED
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             motors = NEW_NOTHROW AP_MotorsTailsitter(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsTailsitter::var_info;
             break;
+#endif
+#if AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
         case AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING:
-#if AP_SCRIPTING_ENABLED
             motors = NEW_NOTHROW AP_MotorsMatrix_6DoF_Scripting(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_6DoF_Scripting::var_info;
-#endif // AP_SCRIPTING_ENABLED
             break;
+#endif  // AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
+#if AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
         case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
-#if AP_SCRIPTING_ENABLED
             motors = NEW_NOTHROW AP_MotorsMatrix_Scripting_Dynamic(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
-#endif // AP_SCRIPTING_ENABLED
             break;
+#endif  // AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
 #else // FRAME_CONFIG == HELI_FRAME
         case AP_Motors::MOTOR_FRAME_HELI_DUAL:
             motors = NEW_NOTHROW AP_MotorsHeli_Dual(copter.scheduler.get_loop_rate_hz());
@@ -433,12 +457,13 @@ void Copter::allocate_motors(void)
     }
 
 #if FRAME_CONFIG != HELI_FRAME
+#if AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
     if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING) {
-#if AP_SCRIPTING_ENABLED
         attitude_control = NEW_NOTHROW AC_AttitudeControl_Multi_6DoF(*ahrs_view, *motors);
         attitude_control_var_info = AC_AttitudeControl_Multi_6DoF::var_info;
-#endif // AP_SCRIPTING_ENABLED
-    } else {
+    } else
+#endif // AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
+    {
         attitude_control = NEW_NOTHROW AC_AttitudeControl_Multi(*ahrs_view, *motors);
         attitude_control_var_info = AC_AttitudeControl_Multi::var_info;
     }
@@ -490,6 +515,7 @@ void Copter::allocate_motors(void)
     
     // now setup some frame-class specific defaults
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
+#if AP_MOTORS_FRAME_Y6_ENABLED
     case AP_Motors::MOTOR_FRAME_Y6:
         attitude_control->get_rate_roll_pid().kP().set_default(0.1);
         attitude_control->get_rate_roll_pid().kD().set_default(0.006);
@@ -498,9 +524,12 @@ void Copter::allocate_motors(void)
         attitude_control->get_rate_yaw_pid().kP().set_default(0.15);
         attitude_control->get_rate_yaw_pid().kI().set_default(0.015);
         break;
+#endif
+#if AP_MOTORS_FRAME_TRI_ENABLED
     case AP_Motors::MOTOR_FRAME_TRI:
         attitude_control->get_rate_yaw_pid().filt_D_hz().set_default(100);
         break;
+#endif  // AP_MOTORS_FRAME_TRI_ENABLED
     default:
         break;
     }

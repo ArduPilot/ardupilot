@@ -165,6 +165,11 @@ public:
     virtual bool is_dma_enabled() const { return false; }
 
     /*
+      return true if this UART has DMA enabled on RX
+     */
+    virtual bool is_rx_dma_enabled() const { return is_dma_enabled(); }
+
+    /*
       return true if this port carries its data over a network
       connection (e.g. a NET_Pn port) rather than over a physical
       serial port.

@@ -82,7 +82,7 @@ static const struct LogStructure log_structure[] = {
     },
     // copied from LogStructure.h; this is important
     { LOG_MSG_MSG, sizeof(log_MSG),
-      "MSG",  "QBBZ",     "TimeUS,ID,Seq,Message", "s---", "F---"},
+      "MSG",  "QBHZ",     "TimeUS,ID,Seq,Message", "s---", "F---"},
 };
 
 // these are identical to the entries in the above log-structure.  Not
@@ -102,7 +102,7 @@ public:
 
 private:
 
-    AP_Int32 log_bitmask;
+    AP_UInt32 log_bitmask;
     AP_Logger logger;
     AP_Scheduler scheduler;
 
@@ -250,7 +250,7 @@ void AP_LoggerTest_AllTypes::setup(void)
 {
     hal.console->printf("Logger All Types 1.0\n");
 
-    log_bitmask.set((uint32_t)-1);
+    log_bitmask.set(UINT32_MAX);
     logger.init(log_bitmask, log_structure, ARRAY_SIZE(log_structure));
     logger.set_vehicle_armed(true);
     logger.Write_Message("AP_Logger Test");

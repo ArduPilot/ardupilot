@@ -361,10 +361,10 @@ public:
     
     // return maximum allowed compass offsets
     uint16_t get_offsets_max(void) const {
-        return (uint16_t)_offset_max.get();
+        return _offset_max;
     }
 
-    uint8_t get_filter_range() const { return uint8_t(_filter_range.get()); }
+    uint8_t get_filter_range() const { return _filter_range; }
 
 #if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
     /*
@@ -404,7 +404,7 @@ private:
     /// @param  dev_id                   Dev ID of compass to register against
     ///
     /// @return instance number saved against the dev id or first available empty instance number
-    bool register_compass(int32_t dev_id, uint8_t& instance) WARN_IF_UNUSED;
+    bool register_compass(uint32_t dev_id, uint8_t& instance) WARN_IF_UNUSED;
 
     // load backend drivers
     __INITFUNC__ void _probe_external_i2c_compasses(void);
@@ -524,6 +524,9 @@ private:
 #if AP_COMPASS_AF9838_ENABLED
         DRIVER_AF9838   =24,
 #endif
+#if AP_COMPASS_AK09940A_ENABLED
+        DRIVER_AK09940A =25,
+#endif
 };
 
     bool _driver_enabled(enum DriverType driver_type);
@@ -598,11 +601,11 @@ private:
         // device id detected at init.
         // saved to eeprom when offsets are saved allowing ram &
         // eeprom values to be compared as consistency check
-        AP_Int32    dev_id;
+        AP_UInt32   dev_id;
         // Initialised when compass is detected
-        int32_t detected_dev_id;
+        uint32_t detected_dev_id;
         // Initialised at boot from saved devid
-        int32_t expected_dev_id;
+        uint32_t expected_dev_id;
 
         // factors multiplied by throttle and added to compass outputs
         AP_Vector3f motor_compensation;
@@ -645,7 +648,7 @@ private:
 #endif
     // Update Priority List for Mags, by default, we just
     // load them as they come up the first time
-    Priority _update_priority_list(int32_t dev_id);
+    Priority _update_priority_list(uint32_t dev_id);
     
     // method to check if the mag with the devid 
     // is a replacement mag
@@ -658,11 +661,11 @@ private:
     //Create Arrays to be accessible by Priority only
     RestrictIDTypeArray<AP_Int8, COMPASS_MAX_INSTANCES, Priority> _use_for_yaw;
 #if COMPASS_MAX_INSTANCES > 1
-    RestrictIDTypeArray<AP_Int32, COMPASS_MAX_INSTANCES, Priority> _priority_did_stored_list;
-    RestrictIDTypeArray<int32_t, COMPASS_MAX_INSTANCES, Priority> _priority_did_list;
+    RestrictIDTypeArray<AP_UInt32, COMPASS_MAX_INSTANCES, Priority> _priority_did_stored_list;
+    RestrictIDTypeArray<uint32_t, COMPASS_MAX_INSTANCES, Priority> _priority_did_list;
 #endif
 
-    AP_Int16 _offset_max;
+    AP_UInt16 _offset_max;
 
     // bitmask of options
     enum class Option : uint16_t {
@@ -670,7 +673,7 @@ private:
         ALLOW_DRONECAN_AUTO_REPLACEMENT = (1U<<1),
     };
     bool option_set(Option opt) const { return (_options.get() & uint16_t(opt)) != 0; }
-    AP_Int16 _options;
+    AP_UInt16 _options;
 
 #if COMPASS_CAL_ENABLED
     RestrictIDTypeArray<CompassCalibrator*, COMPASS_MAX_INSTANCES, Priority> _calibrator;
@@ -684,15 +687,15 @@ private:
     AP_Float _calibration_threshold;
 
     // mask of driver types to not load. Bit positions match DEVTYPE_ in backend
-    AP_Int32 _driver_type_mask;
+    AP_UInt32 _driver_type_mask;
 
 #if COMPASS_MAX_UNREG_DEV
     // Put extra dev ids detected
-    AP_Int32 extra_dev_id[COMPASS_MAX_UNREG_DEV];
+    AP_UInt32 extra_dev_id[COMPASS_MAX_UNREG_DEV];
     uint32_t _previously_unreg_mag[COMPASS_MAX_UNREG_DEV];
 #endif
 
-    AP_Int8 _filter_range;
+    AP_UInt8 _filter_range;
 
     CompassLearn *learn;
     bool learn_allocated;

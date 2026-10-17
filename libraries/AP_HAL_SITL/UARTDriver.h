@@ -70,6 +70,12 @@ public:
 
     uint32_t get_baud_rate() const override { return _uart_baudrate; }
 
+#if HAL_SITL_WASM_ENABLED
+    size_t wasm_write(const uint8_t *buf, size_t len);
+    size_t wasm_read(uint8_t *buf, size_t max_len);
+    size_t wasm_read_available() const;
+#endif
+
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
     void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) override;
@@ -86,6 +92,9 @@ private:
     bool _connected = false; // true if a client has connected
     bool _use_send_recv = false;
     bool _is_unix_socket = false;
+#if HAL_SITL_WASM_ENABLED
+    bool _wasm = false;
+#endif
     int _listen_fd;  // socket we are listening on
     int _serial_port;
     static bool _console;

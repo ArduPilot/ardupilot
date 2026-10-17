@@ -97,8 +97,17 @@ adc3: Analog.STM32F0_ADC @ sysbus 0x58026000
     externalEventFrequency: 1000
     -> exti@75
 
-bdma: DMA.STM32LDMA @ sysbus 0x58025400
+// only SPI6 RX (channel 4) has a request; ADC3 and I2C4 have no DMA
+// request outputs, so their channels start when enabled
+bdma: DMA.AP_STM32G4_DMA @ sysbus 0x58025400
+    numberOfChannels: 8
+    requestChannels: 0x10
     [0-7] -> exti@[66-73]
+
+dmamux2: Miscellaneous.STM32_DMAMUX @ sysbus 0x58025800
+    numberOfOutputRequestChannels: 8
+    numberOfRequestGeneratorChannels: 8
+    [0-7] -> bdma@[1-8]
 
 gpioPortK: GPIOPort.STM32_GPIOPort @ sysbus <0x58022800, +0x400>
     numberOfAFs: 16
@@ -391,6 +400,7 @@ nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
 
 // CYCCNT for ChibiOS polled delays
 dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
+    cpu: cpu
     frequency: 480000000
 
 crc: CRC.STM32_CRC @ sysbus 0x58024C00
@@ -464,7 +474,6 @@ usbOtg: USB.AP_STM32_OTG @ sysbus 0x40080000
 sysbus:
     init:
         Tag <0x58027000, 0x580273FF> "RAMECC3"
-        Tag <0x58025800, 0x58025BFF> "DMAMUX2"
         Tag <0x58005400, 0x580057FF> "SAI4"
         Tag <0x58003C00, 0x58003FFF> "VREF"
         Tag <0x58003800, 0x58003BFF> "COMP1_-_COMP2"

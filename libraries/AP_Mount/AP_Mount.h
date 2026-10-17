@@ -134,6 +134,9 @@ public:
     // init - detect and initialise all mounts
     __INITFUNC__ void init();
 
+    // Run after parameter loading, before startup delay callbacks.
+    void convert_params();
+
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();
 
@@ -142,6 +145,10 @@ public:
 
     // return primary instance ID
     uint8_t get_primary_instance() const { return _primary; }
+
+    // MAVLink identity, with legacy numbered selectors accepted on input.
+    uint8_t get_device_id(uint8_t instance) const;
+    bool get_instance_from_device_id(float device_id, uint8_t &instance) const;
 
     // get_mount_type - returns the type of mount
     Type get_mount_type() const { return get_mount_type(_primary); }
@@ -208,8 +215,11 @@ public:
     void clear_roi_target(uint8_t instance);
 
     // point at system ID sysid
-    void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
-    void set_target_sysid(uint8_t instance, uint8_t sysid);
+    void set_target_sysid(uint32_t sysid) { set_target_sysid(_primary, sysid); }
+    void set_target_sysid(uint8_t instance, uint32_t sysid);
+
+    // Handle ROI_LOCATION/NONE addressed to a particular mount.
+    MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet, const Location &roi_loc);
 
     // handling of set_roi_sysid message
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);
@@ -312,17 +322,17 @@ public:
 #endif
 
     // send camera information message to GCS
-    void send_camera_information(uint8_t instance, mavlink_channel_t chan) const;
+    void send_camera_information(uint8_t instance, mavlink_channel_t chan, uint8_t camera_device_id) const;
 
     // send camera settings message to GCS
-    void send_camera_settings(uint8_t instance, mavlink_channel_t chan) const;
+    void send_camera_settings(uint8_t instance, mavlink_channel_t chan, uint8_t camera_device_id) const;
 
     // send camera capture status message to GCS
     void send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const;
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
     // send camera thermal range message to GCS
-    void send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan) const;
+    void send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan, uint8_t camera_device_id) const;
 #endif
 
     // change camera settings not normally used by autopilot
@@ -358,7 +368,7 @@ private:
     // Check if instance backend is ok
     AP_Mount_Backend *get_primary() const;
     AP_Mount_Backend *get_instance(uint8_t instance) const;
-    AP_Mount_Backend *mount_device_from_mavlink_gimbal_id(uint8_t gimbal_device_id) const;
+    AP_Mount_Backend *mount_device_from_mavlink_gimbal_id(float gimbal_device_id) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
 

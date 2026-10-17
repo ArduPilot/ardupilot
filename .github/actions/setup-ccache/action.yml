@@ -12,6 +12,15 @@ inputs:
       consume a build job's cache must pass the same suffix it saved with, and a
       job that saves must pass the same suffix to setup-ccache and save-ccache.
     required: true
+  max-size:
+    description: >
+      ccache max_size for this job. Raise it only for jobs measured to be
+      evicting mid-build ("Cleanups" in the ccache -s output): a larger cache
+      is a larger GitHub Actions cache entry, and the repository shares a
+      10GB limit above which GitHub evicts the least recently used entries.
+      Non-Windows runners only; Windows jobs configure ccache themselves.
+    required: false
+    default: 400M
 
 runs:
   using: composite
@@ -37,4 +46,6 @@ runs:
     - name: setup ccache
       if: runner.os != 'Windows'
       shell: bash
+      env:
+        SETUP_CCACHE_MAX_SIZE: ${{ inputs.max-size }}
       run: . "$GITHUB_WORKSPACE/.github/actions/setup-ccache/ccache.env"

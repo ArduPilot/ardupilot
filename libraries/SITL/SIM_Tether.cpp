@@ -57,7 +57,7 @@ const AP_Param::GroupInfo TetherSim::var_info[] = {
     // @Param: SYSID
     // @DisplayName: Tether Simulation MAVLink System ID
     // @Description: MAVLink system ID for the tether simulation, used to distinguish it from other systems on the network
-    // @Range: 0 255
+    // @Range: 0 4294967295
     // @User: Advanced
     AP_GROUPINFO("SYSID",   4, TetherSim,  sys_id, 2),
 
@@ -175,7 +175,7 @@ void TetherSim::send_report(void)
 
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
-            sys_id.get(),
+            sys_id,
             component_id,
             &mav_status,
             &msg,

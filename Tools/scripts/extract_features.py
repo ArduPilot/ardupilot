@@ -35,6 +35,8 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_ADVANCEDFAILSAFE_ENABLED', r'AP_AdvancedFailsafe::heartbeat\b',),
             ('AP_BOOTLOADER_FLASHING_ENABLED', 'ChibiOS::Util::flash_bootloader',),
             ('AP_REBOOT_MASS_STORAGE_ENABLED', r'ChibiOS::usb_msd_run',),
+            ('AP_USB_DEBUG_ENABLED', r'ChibiOS::usb_debug_poll\b',),
+            ('AP_USB_DEBUG_STARTUP_WAIT_ENABLED', r'ChibiOS::usb_debug_startup_wait\b',),
             ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
             ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
 
@@ -96,7 +98,14 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::(_calculate|update)\b',),
 
             ('AP_MOTORS_TRI_ENABLED', 'AP_MotorsTri::set_frame_class_and_type'),
+            ('AP_MOTORS_COAX_ENABLED', 'AP_MotorsCoax::output_armed_stabilizing'),
+            ('AP_MOTORS_SINGLE_ENABLED', 'AP_MotorsSingle::output_armed_stabilizing'),
+            ('AP_MOTORS_TAILSITTER_ENABLED', 'AP_MotorsTailsitter::output_armed_stabilizing'),
             ('AP_MOTORS_FRAME_{type}_ENABLED', r'AP_MotorsMatrix::setup_(?P<type>.*)_matrix\b',),
+            ('AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED', 'AP_MotorsMatrix_6DoF_Scripting::output_armed_stabilizing',),
+            ('AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED', 'AP_MotorsMatrix::set_throttle_factor',),
+            ('AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED', 'AP_MotorsMatrix_Scripting_Dynamic::add_motor',),
+            ('AP_PLANE_TAILSITTER_ENABLED', 'Tailsitter::speed_scaling',),
 
             ('HAL_MSP_ENABLED', r'AP_MSP::init\b',),
             ('HAL_MSP_{type}_ENABLED', r'AP_(?P<type>.*)_MSP::update\b',),
@@ -233,6 +242,7 @@ class ExtractFeatures(BuildScriptBase):
             ('EK3_FEATURE_OPTFLOW_FUSION', r'NavEKF3_core::FuseOptFlow'),
             ('EK3_FEATURE_OPTFLOW_SRTM', r'NavEKF3_core::writeTerrainData'),
             ('AP_AHRS_EKF_RESET_ENABLED', r'AP_AHRS::reset_configured_backend'),
+            ('AP_AHRS_POSITION_RESET_ENABLED', r'AP_AHRS::handle_external_position_estimate'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
             ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
@@ -248,6 +258,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_FILESYSTEM_FORMAT_ENABLED', r'AP_Filesystem::format'),
 
             ('AP_FILESYSTEM_{type}_ENABLED', r'AP_Filesystem_(?P<type>.*)::open'),
+            ('AP_FILESYSTEM_MAVLOG_ENABLED', ExtractFeatures.FindString('@MAV_LOG')),
 
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_FLASH_ENABLED', 'crashdump_flash_start'),
@@ -301,7 +312,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
             ('AP_ROVER_AUTO_ARM_ONCE_ENABLED', r'Rover::handle_auto_arm_once'),
             ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
-            ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'RC_Channels_Copter::auto_trim_run'),
+            ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'Copter::AHRSTrimming::auto_run'),
             ('AP_COPTER_CUSTOMCONTROL_ENABLED', r'AC_CustomControl::update'),
 
             ('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', r'GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands'),
@@ -310,6 +321,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
+            ('AP_PLANE_CUSTOMCONTROL_ENABLED', r'Plane::run_custom_controller'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
             ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
             ('AP_CPU_IDLE_STATS_ENABLED', r'AP_BoardConfig::use_idle_stats'),

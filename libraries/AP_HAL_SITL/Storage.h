@@ -48,6 +48,8 @@ private:
     void _mark_dirty(uint16_t loc, uint16_t length);
     uint8_t _buffer[HAL_STORAGE_SIZE] __attribute__((aligned(4)));
     Bitmask<STORAGE_NUM_LINES> _dirty_mask;
+    HAL_Semaphore _sem;
+    HAL_Semaphore _timer_sem;
 
     uint32_t _last_empty_ms;
 
@@ -60,7 +62,8 @@ private:
     bool _flash_failed;
     uint32_t _last_re_init_ms;
 
-    AP_FlashStorage _flash{_buffer,
+    uint8_t _flash_buffer[HAL_STORAGE_SIZE] __attribute__((aligned(4)));
+    AP_FlashStorage _flash{_flash_buffer,
             HAL_FLASH_SECTOR_SIZE,
             FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
@@ -68,7 +71,6 @@ private:
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_ok, bool)};
 
     void _flash_load(void);
-    void _flash_write(uint16_t line);
 #endif
 
 #if STORAGE_USE_POSIX

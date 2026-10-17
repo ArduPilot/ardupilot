@@ -82,7 +82,7 @@ FAMILIES = {
         'sd_buses': {'SDIO': 'sdmmc'},
         'sd_fifo': {'SDIO': 0x40012C80},
         'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
-        'timers': {1, 2, 3, 4, 5, 8},
+        'timers': {1, 2, 3, 4, 5, 8, 9, 12},
         'uart_irq': {
             'USART1': 37, 'USART2': 38, 'USART3': 39,
             'UART4': 52, 'UART5': 53, 'USART6': 71,
@@ -102,7 +102,7 @@ FAMILIES = {
         'sd_buses': {'SDIO': 'sdmmc'},
         'sd_fifo': {'SDIO': 0x40012C80},
         'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
-        'timers': {1, 2, 3, 4, 5, 8},
+        'timers': {1, 2, 3, 4, 5, 8, 9, 12},
         'uart_irq': {
             'USART1': 37, 'USART2': 38, 'USART3': 39,
             'UART4': 52, 'UART5': 53, 'USART6': 71,
@@ -125,7 +125,7 @@ FAMILIES = {
         'sd_buses': {'SDIO': 'sdmmc'},
         'sd_fifo': {'SDIO': 0x40012C80},
         'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
-        'timers': {1, 2, 3, 4, 5, 8, 12},
+        'timers': {1, 2, 3, 4, 5, 8, 9, 12},
         'uart_irq': {
             'USART1': 37, 'USART2': 38, 'USART3': 39,
             'UART4': 52, 'UART5': 53, 'USART6': 71,
@@ -318,6 +318,11 @@ IMU_MODELS = {
     'SCHA63T': 'Sensors.AP_SCHA63T',
 }
 
+# IMUs fitted to the production board where the hwdef probes alternatives
+BOARD_IMUS = {
+    'CubeOrangePlus': ('icm42688_ext', 'icm20948_ext', 'icm20649'),
+}
+
 WHOAMI_VALUES = {
     'MPU_WHOAMI_MPU60X0': 0x68,
     'MPU_WHOAMI_MPU9250': 0x71,
@@ -377,6 +382,8 @@ ROTATIONS = {
     ))
 }
 
+DEVTYPE_AK09916 = 9
+
 BARO_MODELS = {
     'AUAV': 'Sensors.AP_Baro_AUAV',
     'BMP085': 'Sensors.AP_BMP085',
@@ -402,6 +409,9 @@ SPI_BARO_IDENTITIES = {
     'LPS2XH': (0xB1, 0x0F),
     'SPL06': (0x10, 0x0D),
 }
+
+
+EXT_FLASH_BASE = 0x90000000
 
 
 def _hwdef_root(root):
@@ -464,16 +474,77 @@ def _resolved_env(path, name, seen=None):
     return value
 
 
+def _resolved_config(path, name, seen=None, includes=None):
+    '''Find an inherited plain "NAME value" hwdef line, collecting includes.'''
+    if seen is None:
+        seen = set()
+    path = path.resolve()
+    if path in seen:
+        return None
+    seen.add(path)
+    value = None
+    try:
+        lines = path.read_text().splitlines()
+    except OSError:
+        return None
+    for raw in lines:
+        line = raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        fields = shlex.split(line)
+        if fields[0] == 'include' and len(fields) == 2:
+            included_path = (path.parent / fields[1]).resolve()
+            if includes is not None:
+                includes.append(included_path)
+            included = _resolved_config(included_path, name, seen, includes)
+            if included is not None:
+                value = included
+        elif fields[0] == name and len(fields) >= 2:
+            value = fields[1]
+        elif fields[0] == 'undef' and len(fields) == 2 and fields[1] == name:
+            value = None
+    return value
+
+
+def bootloader_board(root, board):
+    '''Board whose Tools/bootloaders/<name>_bl.bin the firmware embeds.'''
+    return _resolved_config(
+        _hwdef_root(root) / board / 'hwdef.dat', 'USE_BOOTLOADER_FROM_BOARD') or board
+
+
+def bootloader_hwdef(root, board):
+    '''The board's bootloader hwdef, else its USE_BOOTLOADER_FROM_BOARD one,
+    else that of a board whose hwdef it includes.'''
+    hwdef_root = _hwdef_root(root)
+    own = hwdef_root / board / 'hwdef-bl.dat'
+    if own.is_file():
+        return own
+    includes = []
+    shared = _resolved_config(
+        hwdef_root / board / 'hwdef.dat', 'USE_BOOTLOADER_FROM_BOARD',
+        includes=includes)
+    if shared is not None and (hwdef_root / shared / 'hwdef-bl.dat').is_file():
+        return hwdef_root / shared / 'hwdef-bl.dat'
+    # the outermost included board, so CubeOrangePlus wins over CubeOrange
+    for included in includes:
+        candidate = included.parent / 'hwdef-bl.dat'
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def supported_boards(root):
     '''Board name -> MCU for targets with enough hwdef data to run directly.'''
     found = {}
     for board_dir in sorted(_hwdef_root(root).iterdir()):
         app = board_dir / 'hwdef.dat'
-        bootloader = board_dir / 'hwdef-bl.dat'
         if not app.is_file():
             continue
         is_periph = _resolved_env(app, 'AP_PERIPH') == '1'
-        if not bootloader.is_file() and not is_periph:
+        if bootloader_hwdef(root, board_dir.name) is None and not is_periph:
+            continue
+        # IOMCU firmware runs beside a flight controller with --real-iomcu
+        if _resolved_config(app, 'IOMCU_FW') is not None:
             continue
         mcu = _resolved_mcu(app)
         if mcu in FAMILIES:
@@ -483,6 +554,17 @@ def supported_boards(root):
 
 def is_periph_board(root, board):
     return _resolved_env(_hwdef_root(root) / board / 'hwdef.dat', 'AP_PERIPH') == '1'
+
+
+# Pixhawk1 sensor lines, as in its hwdef.dat
+FMUV3_AUTODETECT_SENSORS = (
+    'IMU Invensense SPI:mpu6000 ROTATION_ROLL_180',
+    'IMU LSM9DS0 SPI:lsm9ds0_g SPI:lsm9ds0_am ROTATION_ROLL_180 '
+    'ROTATION_ROLL_180_YAW_270 ROTATION_PITCH_180',
+    'BARO MS5611 SPI:ms5611',
+    'COMPASS HMC5843 SPI:hmc5843 false ROTATION_PITCH_180',
+    'COMPASS LSM303D SPI:lsm9ds0_am ROTATION_NONE',
+)
 
 
 def _load_compiler(root):
@@ -842,20 +924,29 @@ def _imu_children(imu, resolved_devices, defines, name):
     rotation = ROTATIONS.get(rotation_name)
     rotation_property = [] if rotation is None else ['    rotation: %u' % rotation]
     if driver == 'SCHA63T':
-        return [('%sPart%d' % (name, index), model, bus, cs, rotation_property)
+        # the probe takes the UNO die first, then the DUE die
+        return [('%sPart%d' % (name, index), model, bus, cs,
+                 rotation_property + (['    Due: true'] if index else []))
                 for index, (_, bus, cs) in enumerate(resolved_devices)]
     if driver in ('BMI055', 'BMI088', 'LSM9DS0'):
         children = []
         for index, (device_name, bus, cs) in enumerate(resolved_devices):
-            is_accel = index == 0 or device_name.lower().endswith(('_a', 'accel'))
+            properties = rotation_property
             if driver == 'LSM9DS0':
-                whoami = 0x49 if index else 0xD4
+                # gyro die first; its rotation is the second ROTATION_ argument
+                is_accel = index != 0
+                whoami = 0x49 if is_accel else 0xD4
+                rotations = [ROTATIONS.get(argument) for argument in imu[1:]
+                             if argument.startswith('ROTATION_')]
+                if not is_accel and len(rotations) > 1 and rotations[1] is not None:
+                    properties = ['    rotation: %u' % rotations[1]]
             else:
+                is_accel = index == 0 or device_name.lower().endswith(('_a', 'accel'))
                 whoami = (0xFA if driver == 'BMI055' else 0x1E) if is_accel else 0x0F
             children.append((
                 '%s%s' % (name, 'Accel' if is_accel else 'Gyro'),
                 model, bus, cs,
-                ['    whoAmI: 0x%02X' % whoami] + rotation_property))
+                ['    whoAmI: 0x%02X' % whoami] + properties))
         return children
 
     device_name, bus, cs = resolved_devices[0]
@@ -918,6 +1009,23 @@ def _i2c_device(expression):
     return int(match.group(1)), int(match.group(2), 0)
 
 
+def _heater_mag_offsets(defines):
+    '''Map (bus type, bus, address, devtype) to HAL_HEATER_MAG_OFFSET mGauss.'''
+    offsets = {}
+    for match in re.finditer(
+            r'make_bus_id\(\s*AP_HAL::Device::BUS_TYPE_(\w+)\s*,\s*(\w+)\s*,'
+            r'\s*(\w+)\s*,\s*(\w+)\s*\)\s*,\s*Vector3f\(([^)]*)\)',
+            defines.get('HAL_HEATER_MAG_OFFSET', '')):
+        try:
+            key = (match.group(1),) + tuple(
+                _constant_integer(value) for value in match.group(2, 3, 4))
+            offsets[key] = [_constant_number(value) for value in
+                            match.group(5).split(',')]
+        except (SyntaxError, ValueError):
+            continue
+    return offsets
+
+
 def _icm20948_compass_rotations(config):
     '''Map Invensense-v2 instance to the hwdef rotation of its AK09916.'''
     rotations = {}
@@ -928,6 +1036,14 @@ def _icm20948_compass_rotations(config):
             rotations[int(compass.devlist[0])] = ROTATIONS.get(
                 compass.rotation, 0)
     return rotations
+
+
+def _lsm303d_compass_rotations(config):
+    '''Map SPI device name to the hwdef rotation of an LSM303D compass.'''
+    return {compass.devlist[0].name: ROTATIONS.get(compass.rotation, 0)
+            for compass in config.compass_list
+            if compass.driver == 'LSM303D' and compass.devlist and
+            hasattr(compass.devlist[0], 'name')}
 
 
 def _sensor_devices(config, family, defines, fram_path, warnings,
@@ -942,6 +1058,8 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
     emulated_imus = 0
     inv2_instance = 0
     icm20948_compass_rotations = _icm20948_compass_rotations(config)
+    lsm303d_compass_rotations = _lsm303d_compass_rotations(config)
+    heater_mag_offsets = _heater_mag_offsets(defines)
     available_imu_names = set()
     selected_imu_names = None if imu_names is None else set(imu_names)
     for index, imu in enumerate(config.imu_list):
@@ -959,8 +1077,16 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                 if device_name in spi_devices and device_name not in device_names:
                     device_names.append(device_name)
         available_imu_names.update(device_names)
-        if (selected_imu_names is not None and
-                not selected_imu_names.intersection(device_names)):
+        if selected_imu_names is None:
+            # mirror the firmware probe: an INSTANCE:n line is only tried
+            # as backend n, and AUX lines are alternative fits
+            if any(argument.startswith('AUX:') for argument in imu[1:]):
+                continue
+            instance = next((int(argument[9:]) for argument in imu[1:]
+                             if argument.startswith('INSTANCE:')), None)
+            if instance is not None and instance != emulated_imus:
+                continue
+        elif not selected_imu_names.intersection(device_names):
             continue
         if num_imus is not None and emulated_imus >= num_imus:
             continue
@@ -992,10 +1118,13 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                     if imu[0] == 'Invensense':
                         whoami = 0x68
                     resolved_i2c.append((bus, address, whoami))
+                # the register IMU model serves the Bosch dies on I2C too
+                i2c_model = ('Sensors.AP_I2CRegisterIMU' if imu[0] == 'Invensense'
+                             else 'Sensors.AP_RegisterIMU')
                 for device_index, (bus, address, whoami) in enumerate(resolved_i2c):
                     declarations += [
-                        'imu%dI2C%d: Sensors.AP_I2CRegisterIMU @ %s 0x%02X' %
-                        (index, device_index, bus.lower(), address),
+                        'imu%dI2C%d: %s @ %s 0x%02X' %
+                        (index, device_index, i2c_model, bus.lower(), address),
                         '    whoAmI: 0x%02X' % whoami,
                     ]
                     if rotation is not None:
@@ -1037,7 +1166,23 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                 if rotation is not None:
                     children[0][4].append(
                         '    AuxiliaryCompassRotation: %u' % rotation)
+                    # heater current disturbs the AK09916 the firmware compensates
+                    _, bus, _ = resolved_devices[0]
+                    devid = re.fullmatch(r'DEVID(\d+)', spi_devices[
+                        resolved_devices[0][0]][2] or '')
+                    offset = heater_mag_offsets.get(
+                        ('SPI', int(bus[3:]), int(devid.group(1)), DEVTYPE_AK09916)
+                        if devid else None)
+                    if offset is not None:
+                        children[0][4].append(
+                            '    AuxiliaryCompassHeaterInterference: "%s"' %
+                            ','.join('%g' % value for value in offset))
                 inv2_instance += 1
+            if imu[0] == 'LSM9DS0':
+                # the accel/mag die also serves the hwdef LSM303D compass
+                rotation = lsm303d_compass_rotations.get(resolved_devices[-1][0])
+                if rotation is not None:
+                    children[-1][4].append('    CompassRotation: %u' % rotation)
             spi_children += children
             emulated_imus += 1
 
@@ -1124,6 +1269,20 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                 spi_children.append((
                     'fram', 'Miscellaneous.AP_RAMTRON', bus, cs,
                     ['    fileName: %s' % json.dumps(str(fram_path))]))
+
+    device = spi_devices.get('osd')
+    if device is not None:
+        bus, cs_label = device[1], device[3]
+        cs = config.bylabel.get(cs_label)
+        if bus not in family['spis']:
+            warnings.append('%s OSD bus is not present in the current MCU base' % bus)
+        elif cs is None:
+            warnings.append('cannot resolve OSD chip select %s' % cs_label)
+        else:
+            spi_children.append((
+                'osd', 'Miscellaneous.AP_MAX7456', bus, cs,
+                ['    fileName: %s' % json.dumps(
+                    str(Path(fram_path).with_name('max7456-font.img')))]))
 
     spi_sdcard = None
     if defines.get('HAL_USE_MMC_SPI', 'FALSE') == 'TRUE':
@@ -1213,7 +1372,8 @@ def _hwdef_gpios(app):
     return sorted(gpios.items())
 
 
-def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings):
+def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings,
+                            physics_machine=None):
     '''Map expanded hwdef PWM(n) pins onto protocol actuator channels.'''
     pins = list(app.bylabel.values())
     for alternate in app.altmap.values():
@@ -1258,6 +1418,8 @@ def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings):
             'sysbus 0x%08X' % (timer, alloc()),
             '    timer: timer%d' % timer,
         ]
+        if physics_machine is not None:
+            lines.append('    physicsMachine: %s' % json.dumps(physics_machine))
         for channel in range(1, 5):
             channel_config = timer_channels.get((timer, channel))
             if channel_config is not None:
@@ -1267,6 +1429,42 @@ def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings):
                     lines.append('    complementary%d: true' % channel)
         lines.append('')
     return lines
+
+
+def _iomcu_peripherals(root, outdir, firmware, warnings):
+    '''Real IOMCU outputs 1-8 for the physics, SBUS RC input and heater.'''
+    # every IOMCU variant shares the iomcu/hwdef.inc output pins
+    iomcu = _compile_hwdef(root, _hwdef_root(root) / 'iomcu' / 'hwdef.dat',
+                           outdir / 'hwdef-iomcu')
+    address = 0x60000008
+
+    def alloc(size=4):
+        nonlocal address
+        value = address
+        address += size
+        return value
+
+    lines = [
+        '// GENERATED by Tools/renode/gen_board.py.',
+        '// Real IOMCU peripherals driven by the flight controller machine.',
+        '',
+        # iofirmware decodes SBUS from USART3, connected through iomcuRcinHub
+        'iomcuSbus: Sensors.AP_SBusInput @ sysbus 0x%08X' % alloc(),
+        '    controlMachine: "ardupilot"',
+        '',
+        # PB14 heater; iofirmware_lowpolh drives it active low
+        'iomcuHeater: Miscellaneous.AP_HeaterMonitor @ sysbus 0x%08X' % alloc(),
+        '    activeHigh: %s' % ('false' if 'lowpolh' in firmware.name else 'true'),
+        '    boardMachine: "ardupilot"',
+        '',
+        'gpioPortB:',
+        '    14 -> iomcuHeater@0 | afio#1@14',
+        '',
+    ]
+    lines += _timer_actuator_devices(
+        iomcu, FAMILIES['STM32F103xB'], None, alloc, warnings,
+        physics_machine='ardupilot')
+    return '\n'.join(lines).rstrip() + '\n'
 
 
 def _power_status_inputs(app):
@@ -1327,11 +1525,12 @@ def _gpio_routes(family_name, chip_selects, sigrok_pins=None,
     return lines
 
 
-def _f405_dma_wiring(defines, family, alloc, warnings):
+def _f405_dma_wiring(defines, family, alloc, warnings, is_periph=True):
     lines = []
     rx_uarts = []
 
-    if _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
+    # flight controllers sample battery and board voltage through the ADC
+    if not is_periph or _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
         for peripheral, model in family.get('adcs', {}).items():
             value = defines.get('STM32_ADC_%s_DMA_STREAM' % peripheral)
             stream = _dma_stream(value) if value else None
@@ -1577,6 +1776,9 @@ def _h743_dma_wiring(root, defines, family, alloc, warnings):
             '    DMARecieve -> dmamux1@%d' % request,
             '',
         ]
+    if defines.get('STM32_SPI_USE_SPI6') == 'TRUE':
+        # SPI6 always uses BDMA through DMAMUX2 (request 11 is SPI6_RX)
+        lines += ['spi6:', '    DMARecieve -> dmamux2@11', '']
 
     for name, channel in sorted(defines.items()):
         match = re.fullmatch(r'STM32_TIM_TIM(\d+)_UP_DMA_CHAN', name)
@@ -1827,6 +2029,19 @@ def _sigrok_spi_capture(app, family):
     }
 
 
+def _mapped_memory(root, repl):
+    '''name -> (start, size) of the MappedMemory regions in a platform and
+    the platforms it uses, later definitions replacing earlier ones'''
+    regions = {}
+    text = repl.read_text()
+    for m in re.finditer(r'^using "([^"]+)"', text, re.M):
+        regions.update(_mapped_memory(root, root / m.group(1)))
+    for m in re.finditer(r'^(\w+): Memory\.MappedMemory @ sysbus (0x[0-9A-Fa-f]+)\s*\n\s+size: (0x[0-9A-Fa-f]+)',
+                         text, re.M):
+        regions[m.group(1)] = (int(m.group(2), 16), int(m.group(3), 16))
+    return regions
+
+
 def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
               sigrok=False, num_imus=None, imu_names=None, synthetic_iomcu=True,
               attachments=None):
@@ -1841,6 +2056,28 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
         'using "%s"' % base,
         '',
     ]
+    # RAM the firmware uses that the base platform doesn't map, such as
+    # the second 128K bank of the CKS32F407
+    mapped = sorted(_mapped_memory(root, base).values())
+    for start, size_kb, _ in app.get_ram_map():
+        end = start + size_kb * 1024
+        gaps = [(start, end)]
+        for s, n in mapped:
+            gaps = [g for lo, hi in gaps for g in ((lo, min(hi, s)), (max(lo, s + n), hi)) if g[0] < g[1]]
+        for lo, hi in gaps:
+            lines += [
+                'hwdefRam_%08X: Memory.MappedMemory @ sysbus 0x%08X' % (lo, lo),
+                '    size: 0x%X' % (hi - lo),
+                '',
+            ]
+    ext_flash_mb = app.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
+    if ext_flash_mb:
+        # the bootloader leaves QSPI flash memory-mapped; the ELF loader fills it
+        lines += [
+            'extFlash: Memory.MappedMemory @ sysbus 0x%08X' % EXT_FLASH_BASE,
+            '    size: 0x%X' % (ext_flash_mb << 20),
+            '',
+        ]
     if family['name'] in (
             'f103', 'f105', 'f303', 'f405', 'f407', 'f427', 'f767',
             'h743', 'h757', 'l4', 'g474'):
@@ -1862,6 +2099,12 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
         '',
     ]
     address += 0x100
+    if not is_periph:
+        lines += [
+            'rcInput: Miscellaneous.AP_RCInput @ sysbus 0x%08X' % address,
+            '',
+        ]
+        address += 4
     if sigrok_capture is not None:
         lines += [
             'sigrok: Miscellaneous.AP_Sigrok @ sysbus 0x%08X' % address,
@@ -2038,7 +2281,7 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
 
     adcs = family.get('adcs', {})
     battery_samples = []
-    if is_periph and _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
+    if not is_periph or _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
         analog_pins = _analog_pins(hwdef_h)
         battery_inputs = []
         adc_disabled = any(
@@ -2057,11 +2300,11 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
                     parameter + 'MONITOR', defines.get(
                         compile_default + 'MONITOR_DEFAULT', '0')))
                 for kind, types, pin_suffix, scale_suffix, fallback_pin, \
-                        fallback_scale, desired in (
+                        fallback_scale in (
                             ('voltage', (3, 4, 25), 'VOLT_PIN', 'VOLT_SCALE',
-                             '4', '10.1', 24.0),
+                             '4', '10.1'),
                             ('current', (4, 31), 'CURR_PIN', 'CURR_SCALE',
-                             '3', '17.0', 10.0)):
+                             '3', '17.0')):
                     runtime_pin = parameter + pin_suffix
                     compile_pin = compile_default + pin_suffix
                     enabled = (battery_type in types or runtime_pin in defaults or
@@ -2082,32 +2325,37 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
                                 'AP_BATT%s_CURR_AMP_OFFSET_DEFAULT' % instance,
                                 '0')))
                     battery_inputs.append((
-                        kind + instance, pin_value, scale_value, desired, offset))
+                        kind + instance, pin_value, scale_value, offset))
 
         if battery_inputs and 'ADC1' not in adcs:
-            warnings.append('battery ADC is not modelled for %s' % app.mcu_type)
+            if is_periph:
+                warnings.append('battery ADC is not modelled for %s' %
+                                app.mcu_type)
         elif battery_inputs:
-            for name, pin_value, scale_value, desired, offset in battery_inputs:
+            for name, pin_value, scale_value, offset in battery_inputs:
                 logical_pin = _constant_integer(pin_value)
                 if logical_pin < 0:
                     continue
                 analog = analog_pins.get(logical_pin)
                 if analog is None:
-                    warnings.append('battery %s selects unmapped analog pin %d' %
-                                    (name, logical_pin))
+                    if is_periph:
+                        warnings.append('battery %s selects unmapped analog pin %d' %
+                                        (name, logical_pin))
                     continue
                 channel, volts_per_count = analog
                 multiplier = _constant_number(scale_value)
-                sensor_voltage = desired / multiplier + offset
+                if multiplier <= 0:
+                    continue
+                # the sample follows physics battery truth
+                maximum = 4095
                 if name.startswith('voltage'):
-                    sensor_voltage = min(sensor_voltage, 2.5)
-                raw = round(sensor_voltage / volts_per_count)
-                if not 0 <= raw <= 4095:
-                    warnings.append('simulated battery %s is outside ADC range' %
-                                    name)
-                    raw = min(4095, max(0, raw))
-                raw <<= family.get('adc_sample_shift', 0)
-                battery_samples.append((name, adcs['ADC1'], channel, raw))
+                    maximum = min(maximum, round(2.5 / volts_per_count))
+                feed = (
+                    'voltage' if name.startswith('voltage') else 'current',
+                    1.0 / (multiplier * volts_per_count),
+                    offset / volts_per_count, maximum,
+                    family.get('adc_sample_shift', 0))
+                battery_samples.append((name, adcs['ADC1'], channel, feed))
 
     board_voltage_pin = defines.get('ANALOG_VCC_5V_PIN')
     if board_voltage_pin is not None and 'ADC1' in adcs:
@@ -2189,7 +2437,7 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
             '',
         ]
     if family['name'] in ('f405', 'f407', 'f427'):
-        lines += _f405_dma_wiring(defines, family, alloc, warnings)
+        lines += _f405_dma_wiring(defines, family, alloc, warnings, is_periph)
     elif family['name'] == 'f767':
         lines += _f767_dma_wiring(defines, family, alloc, warnings)
     elif family['name'] == 'g474':
@@ -2235,6 +2483,20 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
             for channel, (_, pin) in enumerate(
                 sigrok_capture['gpio_pins'], start=first_gpio_channel)
         })
+    heater_gpio = defines.get('HAL_HEATER_GPIO_PIN')
+    if heater_gpio is not None:
+        heater_pin = dict(gpio_pins).get(_constant_integer(heater_gpio))
+        if heater_pin is None:
+            warnings.append('HAL_HEATER_GPIO_PIN %s is not a hwdef GPIO' % heater_gpio)
+        else:
+            lines += [
+                'heaterMonitor: Miscellaneous.AP_HeaterMonitor @ sysbus 0x%08X' % alloc(),
+                '    activeHigh: %s' % (
+                    'false' if defines.get('HAL_HEATER_GPIO_ON', '1') == '0' else 'true'),
+                '',
+            ]
+            chip_selects.setdefault((heater_pin.port, heater_pin.pin), []).append(
+                'heaterMonitor@0')
     lines += _gpio_routes(
         family['name'], chip_selects, sigrok_pins, gpio_pins)
     return ('\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart,
@@ -2244,7 +2506,32 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
             emulated_imus, spi_sdcard, resolved_attachments)
 
 
-def _serial_device(app, family, serial_index, excluded=None):
+# AP_SerialManager defaults: SERIAL0-2 MAVLink2, SERIAL3-4 GPS, others none
+SERIAL_DEFAULT_PROTOCOLS = {0: 2, 1: 2, 2: 2, 3: 5, 4: 5}
+
+
+def _mavlink_serials(defines, defaults):
+    '''SERIALn indexes whose default protocol is MAVLink.'''
+    names = {'SerialProtocol_MAVLink': 1, 'SerialProtocol_MAVLink2': 2}
+    result = set()
+    for index in range(10):
+        protocol = SERIAL_DEFAULT_PROTOCOLS.get(index, -1)
+        define = defines.get('DEFAULT_SERIAL%u_PROTOCOL' % index)
+        if define is not None:
+            try:
+                protocol = names[define] if define in names else int(define)
+            except ValueError:
+                protocol = -1
+        try:
+            protocol = int(float(defaults.get('SERIAL%u_PROTOCOL' % index, protocol)))
+        except ValueError:
+            pass
+        if protocol in (1, 2):
+            result.add(index)
+    return result
+
+
+def _serial_device(app, family, serial_index, excluded=None, mavlink=None):
     order = app.get_config('SERIAL_ORDER', required=False, aslist=True) or []
     excluded = set(excluded or ())
     requested_index = serial_index
@@ -2253,9 +2540,12 @@ def _serial_device(app, family, serial_index, excluded=None):
             raise ValueError('SERIAL%d is outside SERIAL_ORDER' % serial_index)
         device = order[serial_index]
     else:
-        serial_index = next((index for index, entry in enumerate(order)
-                             if (entry in family['uarts'] and
-                                 entry not in excluded)), None)
+        candidates = [index for index, entry in enumerate(order)
+                      if entry in family['uarts'] and entry not in excluded]
+        # the first UART that speaks MAVLink by default, else the first UART
+        serial_index = next((index for index in candidates
+                             if index in (mavlink or ())),
+                            candidates[0] if candidates else None)
         device = order[serial_index] if serial_index is not None else None
     if device is None and requested_index is None:
         return None, None
@@ -2271,7 +2561,8 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             battery_samples, rangefinder_uart, rangefinder_type, warnings,
             gpio_pins, sigrok_capture=None, quiet_peripherals=True,
             sigrok_channels=None, spi_sdcard=None, real_iomcu=False,
-            attachments=None, system_timer=None, uart_socket_dir=None):
+            attachments=None, system_timer=None, uart_socket_dir=None,
+            mavlink_serials=None):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     boot_kb = bootloader.get_config(
@@ -2287,7 +2578,8 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     ]
     serial_index, serial = _serial_device(
         app, family, serial_index,
-        excluded=(gps_uart, rangefinder_uart, iomcu_uart, *attached_uarts))
+        excluded=(gps_uart, rangefinder_uart, iomcu_uart, *attached_uarts),
+        mavlink=mavlink_serials)
     uart_socket = (uart_socket_dir / ('APM-UDS-serial%u' % serial_index)
                    if uart_socket_dir is not None and serial is not None else None)
     tick = app.get_config(
@@ -2329,6 +2621,16 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             'include $repo/Tools/renode/peripherals/storage/AP_SPI_SDCard.cs')
     lines += ['include @%s' % common, '']
     for name, adc, channel, raw in battery_samples:
+        if isinstance(raw, tuple):
+            quantity, counts_per_unit, offset_counts, maximum, shift = raw
+            lines += [
+                '# simulated %s input' % name,
+                'sysbus.physics FeedAnalog "sysbus.%s" %u "%s" %.9g %.9g %u %u' % (
+                    adc, channel, quantity, counts_per_unit, offset_counts,
+                    maximum, shift),
+                '',
+            ]
+            continue
         lines += [
             '# simulated %s input' % name,
             'sysbus.%s FeedSample %u %u -1' % (adc, raw, channel),
@@ -2525,6 +2827,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         'has_sdcard': has_sdcard,
         'serial_index': serial_index,
         'serial': serial,
+        'serial_mavlink': serial_index in (mavlink_serials or ()),
         'iomcu_uart': iomcu_uart,
         'family': family['name'],
         'mcu_type': app.mcu_type,
@@ -2559,6 +2862,8 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
                  root / 'renode' / board).resolve()
     if num_imus is not None and num_imus < 0:
         raise ValueError('number of IMUs cannot be negative')
+    if imu_names is None:
+        imu_names = BOARD_IMUS.get(board)
     boards = supported_boards(root)
     if board not in boards:
         raise ValueError('%s is not a supported Renode target' % board)
@@ -2567,10 +2872,19 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     outdir.mkdir(parents=True, exist_ok=True)
     app = _compile_hwdef(root, board_dir / 'hwdef.dat', outdir / 'hwdef')
     app_defines = _defines(outdir / 'hwdef' / 'hwdef.h')
-    bootloader_hwdef = board_dir / 'hwdef-bl.dat'
+    if not app.imu_list and _define_enabled(app_defines, 'HAL_CHIBIOS_ARCH_FMUV3'):
+        # board_autodetect looks for the Pixhawk1 sensors; add the kinds
+        # the hwdef does not list
+        existing = {'IMU': app.imu_list, 'BARO': app.baro_list,
+                    'COMPASS': app.compass_list}
+        for kind in [kind for kind, found in existing.items() if not found]:
+            for line in FMUV3_AUTODETECT_SENSORS:
+                if line.split()[0] == kind:
+                    app.process_line(line, 0)
+    bootloader_dat = bootloader_hwdef(root, board)
     bootloader = (_compile_hwdef(
-        root, bootloader_hwdef, outdir / 'hwdef-bl', bootloader=True)
-        if bootloader_hwdef.is_file() else app)
+        root, bootloader_dat, outdir / 'hwdef-bl', bootloader=True)
+        if bootloader_dat is not None else app)
     if app.mcu_type != boards[board] or bootloader.mcu_type != app.mcu_type:
         raise ValueError('application and bootloader MCU definitions disagree')
 
@@ -2591,8 +2905,15 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         battery_samples, rangefinder_uart, rangefinder_type, warnings,
         gpio_pins, sigrok_capture, quiet_peripherals, sigrok_channels,
         spi_sdcard, real_iomcu, resolved_attachments,
-        app_defines.get('STM32_ST_USE_TIMER'), state_dir if uds else None)
+        app_defines.get('STM32_ST_USE_TIMER'), state_dir if uds else None,
+        _mavlink_serials(app_defines, _default_parameters(
+            outdir / 'hwdef' / 'processed_defaults.parm')))
     resc.write_text(script)
+    iomcu_peripherals = None
+    if real_iomcu and iomcu_uart is not None:
+        iomcu_peripherals = outdir / 'iomcu-peripherals.repl'
+        iomcu_peripherals.write_text(
+            _iomcu_peripherals(root, outdir, iomcu_firmware, warnings))
     metadata.update({
         'repl': repl,
         'resc': resc,
@@ -2602,6 +2923,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         'fram_size': 32 * 1024 if has_fram else 0,
         'gps_uart': gps_uart,
         'iomcu_firmware': iomcu_firmware,
+        'iomcu_peripherals': iomcu_peripherals,
         'num_imus': emulated_imus,
         'gpio_pins': {
             gpio: pin.portpin for gpio, pin in gpio_pins

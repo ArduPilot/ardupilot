@@ -119,7 +119,7 @@ public:
     void clear_roi_target();
 
     // set_sys_target - sets system that mount should attempt to point towards
-    void set_target_sysid(uint8_t sysid);
+    void set_target_sysid(uint32_t sysid);
 
 #if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     // set_roi_target_wpnext_offset - point to next waypoint, with offsets
@@ -133,8 +133,13 @@ public:
     // requires original message in order to extract caller's sysid and compid
     MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
+#if HAL_GCS_ENABLED
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
-    void send_gimbal_device_attitude_status(mavlink_channel_t chan);
+    virtual void send_gimbal_device_attitude_status(mavlink_channel_t chan);
+#endif  // HAL_GCS_ENABLED
+
+    // Command selector; numbered mount IDs remain accepted as legacy aliases.
+    virtual uint8_t get_mavlink_device_id() const { return _instance + 1; }
 
     // return gimbal capabilities sent to GCS in the GIMBAL_MANAGER_INFORMATION
     virtual uint32_t get_gimbal_manager_capability_flags() const;
@@ -152,7 +157,7 @@ public:
     virtual void handle_param_value(const mavlink_message_t &msg) {}
 
     // handle a GLOBAL_POSITION_INT message
-    bool handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet);
+    bool handle_global_position_int(uint32_t msg_sysid, const mavlink_global_position_int_t &packet);
 
     // handle GIMBAL_DEVICE_INFORMATION message
     virtual void handle_gimbal_device_information(const mavlink_message_t &msg) {}
@@ -217,7 +222,7 @@ public:
 #endif
 
     // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan) const;
+    void send_camera_information(mavlink_channel_t chan, uint8_t camera_device_id) const;
 
     // virtual methods supplying data for send_camera_information
     // backends that have no associated camera (e.g. pass-through gimbals like STorM32)
@@ -231,14 +236,14 @@ public:
     virtual uint32_t get_camera_cap_flags() const { return 0; }
 
     // send camera settings message to GCS
-    virtual void send_camera_settings(mavlink_channel_t chan) const {}
+    virtual void send_camera_settings(mavlink_channel_t chan, uint8_t camera_device_id) const {}
 
     // send camera capture status message to GCS
     virtual void send_camera_capture_status(mavlink_channel_t chan) const {}
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
     // send camera thermal status message to GCS
-    virtual void send_camera_thermal_range(mavlink_channel_t chan) const {}
+    virtual void send_camera_thermal_range(mavlink_channel_t chan, uint8_t camera_device_id) const {}
 #endif
 
     // change camera settings not normally used by autopilot
@@ -483,7 +488,7 @@ private:
     Vector3f _roi_wpnext_rpy;       // angular offsets for pointing-at-waypoint
 #endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
-    uint8_t _target_sysid;          // sysid to track
+    uint32_t _target_sysid;         // sysid to track
     Location _target_sysid_location;// sysid target location
     uint32_t _target_sysid_update_ms;// system time (ms) _target_sysid_location was last updated
 
@@ -500,7 +505,7 @@ private:
     // structure holding mavlink sysid and compid of controller of this gimbal
     // see MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE and GIMBAL_MANAGER_STATUS
     struct mavlink_control_id_t {
-        uint8_t sysid;
+        uint32_t sysid;
         uint8_t compid;
 
         // equality operators

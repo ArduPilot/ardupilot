@@ -149,8 +149,7 @@ void AP_DAL::init_sensors(void)
 #endif
 
 #if AP_AIRSPEED_ENABLED
-    auto *aspeed = AP::airspeed();
-    if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
+    if (AP::airspeed().get_num_sensors() > 0) {
         alloc_failed |= (_airspeed = NEW_NOTHROW AP_DAL_Airspeed) == nullptr;
     }
 #endif
@@ -200,6 +199,7 @@ void AP_DAL::log_event2(AP_DAL::Event event)
 void AP_DAL::log_SetOriginLLH2(const Location &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    end_frame();
     struct log_RSO2 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
@@ -234,6 +234,7 @@ void AP_DAL::log_event3(AP_DAL::Event event)
 void AP_DAL::log_SetOriginLLH3(const Location &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    end_frame();
     struct log_RSO3 pkt{
         lat            : loc.lat,
         lng            : loc.lng,

@@ -115,7 +115,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 3:Simple Mode
     // @Values{Copter, Rover, Plane}: 4:RTL
     // @Values{Copter}: 5:Save Trim
-    // @Values{Rover}: 5:Save Trim (4.1 and lower)
     // @Values{Copter, Rover}: 7:Save WP
     // @Values{Copter, Rover, Plane, Sub}: 9:Camera Trigger
     // @Values{Copter}: 10:RangeFinder Enable
@@ -147,7 +146,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Plane}: 38:ADSB Avoidance Enable
     // @Values{Copter}: 39:PrecLoiter Enable
     // @Values{Copter, Rover}: 40:Proximity Avoidance Enable
-    // @Values{Copter, Rover, Plane}: 41:ArmDisarm (4.1 and lower)
     // @Values{Copter, Rover}: 42:SMARTRTL Mode
     // @Values{Copter, Plane}: 43:InvertedFlight Enable
     // @Values{Copter}: 44:Winch Enable, 45:Winch Control
@@ -210,7 +208,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Rover, Plane}: 106:Disable Airspeed Use
     // @Values{Plane}: 107:Enable FW Autotune
     // @Values{Plane}: 108:QRTL Mode
-    // @Values{Copter}: 109:use Custom Controller
+    // @Values{Copter, Plane}: 109:use Custom Controller
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  110:KillIMU3
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  111:Loweheiser starter
     // @Values{Copter,Plane,Rover,Blimp,Sub,Tracker}: 112:SwitchExternalAHRS
@@ -218,10 +216,10 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 150:CRUISE Mode
     // @Values{Copter}: 151:TURTLE Mode
     // @Values{Copter}: 152:SIMPLE heading reset
-    // @Values{Copter, Rover, Plane, Sub}: 153:ArmDisarm (4.2 and higher)
+    // @Values{Copter, Rover, Plane, Sub}: 153:ArmDisarm
     // @Values{Blimp}: 153:ArmDisarm
-    // @Values{Copter}: 154:ArmDisarm with AirMode  (4.2 and higher)
-    // @Values{Plane}: 154:ArmDisarm with Quadplane AirMode (4.2 and higher)
+    // @Values{Copter}: 154:ArmDisarm with AirMode
+    // @Values{Plane}: 154:ArmDisarm with Quadplane AirMode
     // @Values{Rover}: 155:Set steering trim to current servo and RC
     // @Values{Plane}: 155:Set roll pitch and yaw trim to current servo and RC
     // @Values{Rover}: 156:Torqeedo Clear Err
@@ -1658,18 +1656,15 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 
 #if AP_AIRSPEED_ENABLED
     case AUX_FUNC::DISABLE_AIRSPEED_USE: {
-        AP_Airspeed *airspeed = AP::airspeed();
-        if (airspeed == nullptr) {
-            break;
-        }
+        AP_Airspeed &airspeed = AP::airspeed();
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
-            airspeed->force_disable_use(true);
+            airspeed.force_disable_use(true);
             break;
         case AuxSwitchPos::MIDDLE:
             break;
         case AuxSwitchPos::LOW:
-            airspeed->force_disable_use(false);
+            airspeed.force_disable_use(false);
             break;
         }
         break;

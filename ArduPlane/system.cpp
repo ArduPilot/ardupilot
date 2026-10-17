@@ -98,7 +98,7 @@ void Plane::init_ardupilot()
     // ALT_OFFSET always starts at zero, independently of FLIGHT_OPTIONS.
     reset_alt_offset(true);
 
-    set_mode(mode_initializing, ModeReason::INITIALISED);
+    IGNORE_RETURN(set_mode(mode_initializing, ModeReason::INITIALISED));
 
 #if (GROUND_START_DELAY > 0)
     gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
@@ -129,6 +129,10 @@ void Plane::init_ardupilot()
         );
 #endif
 
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    custom_control.init();
+#endif
+
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
     gcs().sysid_mygcs_seen(AP_HAL::millis());
@@ -142,7 +146,7 @@ void Plane::init_ardupilot()
     }
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
 
-    set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED);
+    IGNORE_RETURN(set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED));
 
     // set the correct flight mode
     // ---------------------------
@@ -240,7 +244,7 @@ uint32_t Plane::get_available_mode_enabled_mask() const
     // plane does not enable or disable modes at run-time.
     // This means that the FLTMODE_GCSBLOCK param is the only way modes will be disabled at runtime.
     // Rather than tracking modes we can just track the param itself for changes.
-    return ~uint32_t(flight_mode_GCS_block);
+    return ~flight_mode_GCS_block;
 }
 
 bool Plane::set_mode(Mode &new_mode, const ModeReason reason)

@@ -29,7 +29,7 @@ AP_Logger_MAVLink::AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLog
     AP_Logger_Backend(front, writer),
     _max_blocks_per_send_blocks(8)
 {
-    _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
+    _blockcount = 1024*_front._params.mav_bufsize / sizeof(struct dm_block);
     // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
 }
 
@@ -254,7 +254,7 @@ void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
             _next_seq_num = 0;
             start_new_log_reset_variables();
             _last_response_time = AP_HAL::millis();
-            Debug("Target: (%u/%u)", _target_system_id, _target_component_id);
+            Debug("Target: (%u/%u)", (unsigned)_target_system_id, _target_component_id);
         }
         return;
     }

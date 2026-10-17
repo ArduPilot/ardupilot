@@ -1,0 +1,107 @@
+{
+    "folders": [
+        {
+            "name": "ArduPilot",
+            "path": ".."
+        }
+    ],
+    "extensions": {
+        "recommendations": [
+            "ms-vscode.cpptools",
+            "ms-vscode-remote.remote-wsl"
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "USB: Attach through Windows bridge",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder:ArduPilot}/${input:elf}",
+                "cwd": "${workspaceFolder:ArduPilot}",
+                "MIMode": "gdb",
+                "targetArchitecture": "arm",
+                "miDebuggerPath": "${input:gdb}",
+                "miDebuggerArgs": "-nx",
+                "miDebuggerServerAddress": "127.0.0.1:3333",
+                "launchCompleteCommand": "None",
+                "stopAtConnect": true,
+                "setupCommands": [
+                    {
+                        "text": "set remotetimeout 35"
+                    }
+                ],
+                "externalConsole": false,
+                "sourceFileMap": {},
+                "preLaunchTask": "USB: Forward Windows bridge"
+            }
+        ],
+        "inputs": [
+            {
+                "id": "elf",
+                "type": "promptString",
+                "description": "Matching firmware ELF, relative to the ArduPilot folder (not .apj or .bin)",
+                "default": "build/CubeOrangePlus/bin/arduplane"
+            },
+            {
+                "id": "gdb",
+                "type": "promptString",
+                "description": "ARM GDB executable name or full path",
+                "default": "arm-none-eabi-gdb"
+            }
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "USB: Forward Windows bridge",
+                "type": "process",
+                "command": "ssh",
+                "args": [
+                    "-v",
+                    "-N",
+                    "-o",
+                    "ExitOnForwardFailure=yes",
+                    "-o",
+                    "ServerAliveInterval=15",
+                    "-o",
+                    "ServerAliveCountMax=3",
+                    "-L",
+                    "127.0.0.1:3333:127.0.0.1:3333",
+                    "${input:windowsHost}"
+                ],
+                "isBackground": true,
+                "problemMatcher": {
+                    "owner": "usb-debug-ssh",
+                    "pattern": {
+                        "regexp": "^(?!)()()$",
+                        "kind": "file",
+                        "file": 1,
+                        "message": 2
+                    },
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "^debug1: Connecting to ",
+                        "endsPattern": "^debug1: Entering interactive session\\."
+                    }
+                },
+                "presentation": {
+                    "reveal": "always",
+                    "panel": "dedicated"
+                },
+                "runOptions": {
+                    "instanceLimit": 1
+                }
+            }
+        ],
+        "inputs": [
+            {
+                "id": "windowsHost",
+                "type": "promptString",
+                "description": "Windows SSH destination or host alias configured inside WSL (for example user@WINDOWS-HOST)"
+            }
+        ]
+    }
+}

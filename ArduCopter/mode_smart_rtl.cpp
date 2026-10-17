@@ -31,11 +31,36 @@ bool ModeSmartRTL::init(bool ignore_checks)
         auto_yaw.set_mode_to_default(true);
 
         // wait for cleanup of return path
-        smart_rtl_state = SubMode::WAIT_FOR_PATH_CLEANUP;
+        set_submode(SubMode::WAIT_FOR_PATH_CLEANUP);
         return true;
     }
 
     return false;
+}
+
+// set_submode - the only writer of smart_rtl_state; runs the stage's entry init
+void ModeSmartRTL::set_submode(SubMode submode)
+{
+    smart_rtl_state = submode;
+
+    switch (submode) {
+    case SubMode::WAIT_FOR_PATH_CLEANUP:
+        // initialised in init()
+        break;
+    case SubMode::PATH_FOLLOW:
+        path_follow_last_pop_fail_ms = 0;
+        break;
+    case SubMode::PRELAND_POSITION:
+        // wp destination is data-dependent and set by the caller
+        break;
+    case SubMode::DESCEND:
+        set_descent_target_alt(get_alt_final_m() * 100);
+        descent_start();
+        break;
+    case SubMode::LAND:
+        land_start();
+        break;
+    }
 }
 
 // perform cleanup required when leaving smart_rtl
@@ -88,8 +113,7 @@ void ModeSmartRTL::wait_cleanup_run()
 
     // check if return path is computed and if yes, begin journey home
     if (g2.smart_rtl.request_thorough_cleanup()) {
-        path_follow_last_pop_fail_ms = 0;
-        smart_rtl_state = SubMode::PATH_FOLLOW;
+        set_submode(SubMode::PATH_FOLLOW);
     }
 }
 
@@ -111,7 +135,7 @@ void ModeSmartRTL::path_follow_run()
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
                 dest_NED.z -= 2.0f;
-                smart_rtl_state = SubMode::PRELAND_POSITION;
+                set_submode(SubMode::PRELAND_POSITION);
                 wp_nav->set_wp_destination_NED_m(dest_NED);
             } else {
                 // peek at the next point.  this can fail if the IO task currently has the path semaphore
@@ -134,7 +158,7 @@ void ModeSmartRTL::path_follow_run()
             // We should never get here; should always have at least
             // two points and the "zero points left" is handled above.
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            smart_rtl_state = SubMode::PRELAND_POSITION;
+            set_submode(SubMode::PRELAND_POSITION);
         } else if (path_follow_last_pop_fail_ms == 0) {
             // first time we've failed to pop off (ever, or after a success)
             path_follow_last_pop_fail_ms = AP_HAL::millis();
@@ -142,7 +166,7 @@ void ModeSmartRTL::path_follow_run()
             // we failed to pop a point off for 10 seconds.  This is
             // almost certainly a bug.
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            smart_rtl_state = SubMode::PRELAND_POSITION;
+            set_submode(SubMode::PRELAND_POSITION);
         }
     }
 
@@ -161,12 +185,9 @@ void ModeSmartRTL::pre_land_position_run()
     if (wp_nav->reached_wp_destination()) {
         // choose descend and hold, or land based on user parameter rtl_alt_final_cm
         if (get_alt_final_m() <= 0 || copter.failsafe.radio) {
-            land_start();
-            smart_rtl_state = SubMode::LAND;
+            set_submode(SubMode::LAND);
         } else {
-            set_descent_target_alt(get_alt_final_m() * 100);
-            descent_start();
-            smart_rtl_state = SubMode::DESCEND;
+            set_submode(SubMode::DESCEND);
         }
     }
 

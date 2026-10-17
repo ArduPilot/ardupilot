@@ -757,6 +757,20 @@ private:
     void run_custom_controller() { custom_control.update(); }
 #endif
 
+    // support for trimming AHRS using RC stick inputs, enabled via an
+    // aux function.  Also support for auto-trimming AHRS via
+    // controller outputs.
+    struct AHRSTrimming {
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+        void auto_start();
+        void auto_stop();
+        void auto_run();
+        void auto_cancel();
+        bool running;
+#endif  // AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+        void save_trim();
+    } ahrs_trimming;
+
     // avoidance.cpp
     void low_alt_avoidance();
 
@@ -779,6 +793,7 @@ private:
 
     // compassmot.cpp
     MAV_RESULT mavlink_compassmot(const GCS_MAVLINK &gcs_chan);
+    void compassmot_output();
 
     // crash_check.cpp
     void crash_check();
@@ -873,9 +888,9 @@ private:
         DESCENT_RATE_LOW     = 1U <<  6,
         ACCEL_STATIONARY     = 1U <<  7,
         LARGE_ANGLE_ERROR    = 1U <<  8,
-        LARGE_ANGLE_REQUEST  = 1U <<  8,
         MOTOR_AT_LOWER_LIMIT = 1U <<  9,
         THROTTLE_MIX_AT_MIN  = 1U << 10,
+        LARGE_ANGLE_REQUEST  = 1U << 11,
     };
     struct {
         uint32_t last_logged_ms;
@@ -895,7 +910,7 @@ private:
 
 #if HAL_LOGGING_ENABLED
     // methods for AP_Vehicle:
-    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const AP_UInt32 &get_log_bitmask() override { return g.log_bitmask; }
     const struct LogStructure *get_log_structures() const override {
         return log_structure;
     }

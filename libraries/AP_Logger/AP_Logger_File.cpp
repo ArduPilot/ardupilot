@@ -1054,7 +1054,7 @@ bool AP_Logger_File::io_thread_alive() const
 #else
     uint32_t timeout_ms = 5000;
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // the IO thread is working with hardware - writing to a physical
     // disk.  Unfortunately these hardware devices do not obey our
     // SITL speedup options, so we allow for it here.

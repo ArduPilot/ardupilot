@@ -61,7 +61,7 @@ private:
     uint32_t _last_run_ms;
 
     AP_Int16 _interval_ms;
-    AP_Int16 _message_enable_bitmask;
+    AP_UInt16 _message_enable_bitmask;
 };
 
 #endif  // !HAL_NMEA_OUTPUT_ENABLED

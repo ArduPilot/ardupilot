@@ -103,7 +103,7 @@ private:
     // parameters
     AP_Int8  _enable;
     AP_Float _baro_accuracy;    // Vertical accuracy of the barometer when installed
-    AP_Int16 _options;
+    AP_UInt16 _options;
     AP_Int8  _mav_port;
     AP_Int8  _can_driver;
 
@@ -112,7 +112,7 @@ private:
     size_t id_len;
     char id_str[21];
     bool bootloader_flashed;
-    enum Options : int16_t {
+    enum class Options : uint16_t {
         EnforcePreArmChecks = (1U << 0U),
         AllowNonGPSPosition = (1U << 1U),
         LockUASIDOnFirstBasicIDRx = (1U << 2U),
@@ -121,7 +121,7 @@ private:
     // check if an option is set
     bool option_enabled(const Options option) const
     {
-        return (uint8_t(_options.get()) & uint8_t(option)) != 0;
+        return (_options & uint16_t(option)) != 0;
     }
 
     mavlink_channel_t _chan; // MAVLink channel that communicates with the Remote ID Transceiver
@@ -143,6 +143,12 @@ private:
     mavlink_open_drone_id_system_t pkt_system;
     mavlink_open_drone_id_self_id_t pkt_self_id;
     mavlink_open_drone_id_operator_id_t pkt_operator_id;
+
+    // Payload structs only retain 8-bit targets; preserve the full IDs for sending.
+    uint32_t basic_id_target_system;
+    uint32_t system_target_system;
+    uint32_t self_id_target_system;
+    uint32_t operator_id_target_system;
 
     // last time we got a SYSTEM message
     uint32_t last_system_ms;

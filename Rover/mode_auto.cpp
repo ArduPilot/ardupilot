@@ -497,7 +497,7 @@ void ModeAuto::send_guided_position_target()
         guided_target.last_sent_ms = now_ms;
 
         // get system id and component id of offboard navigation system
-        uint8_t sysid;
+        uint32_t sysid;
         uint8_t compid;
         mavlink_channel_t chan;
         if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_ONBOARD_CONTROLLER, sysid, compid, chan)) {
@@ -575,9 +575,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI:
         if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
-            if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                rover.camera_mount.set_mode_to_default();
-            }
+            rover.camera_mount.clear_roi_target();
         } else {
             // send the command to the camera mount
             rover.camera_mount.set_roi_target(cmd.content.location);

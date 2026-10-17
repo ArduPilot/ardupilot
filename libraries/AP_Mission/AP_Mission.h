@@ -298,11 +298,14 @@ public:
     // MAV_CMD_VIDEO_START_CAPTURE support
     struct PACKED video_start_capture_Command {
         uint8_t video_stream_id;
+        uint8_t camera_id;
+        float status_frequency;
     };
 
     // MAV_CMD_VIDEO_STOP_CAPTURE support
     struct PACKED video_stop_capture_Command {
         uint8_t video_stream_id;
+        uint8_t camera_id;
     };
 
 #if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
@@ -929,7 +932,7 @@ private:
 
     // parameters
     AP_Int16                _cmd_total;  // total number of commands in the mission
-    AP_Int16                _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
+    AP_UInt16               _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
 
     // internal variables
@@ -980,6 +983,7 @@ private:
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
+    bool start_command_do_set_roi(const AP_Mission::Mission_Command &cmd);
     bool start_command_fence(const AP_Mission::Mission_Command& cmd);
 #if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
     bool start_command_do_set_roi_wpnext_offset(const AP_Mission::Mission_Command& cmd);

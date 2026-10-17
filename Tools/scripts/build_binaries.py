@@ -53,7 +53,7 @@ def topdir():
             "",
             ]:
         if os.path.exists(os.path.join(path, "libraries", "AP_HAL_ChibiOS")):
-            return path
+            return os.path.abspath(path)
     raise Exception("Unable to find ardupilot checkout dir")
 
 
@@ -225,7 +225,7 @@ class build_binaries(object):
             self.progress("Process failed (%s)" %
                           str(returncode))
             raise subprocess.CalledProcessError(
-                returncode, cmd_list)
+                os.waitstatus_to_exitcode(status), cmd_list)
         return output
 
     def run_make(self, args):
@@ -326,7 +326,7 @@ is bob we will attempt to checkout bob-AVR'''
     def skip_frame(self, board, frame):
         '''returns true if this board/frame combination should not be built'''
         if frame == "heli":
-            if board in ["bebop", "aerofc-v1", "skyviper-v2450", "CubeSolo", "CubeGreen-solo", 'skyviper-journey']:
+            if board in ["bebop", "skyviper-v2450", "CubeSolo", "CubeGreen-solo", 'skyviper-journey']:
                 self.progress("Skipping heli build for %s" % board)
                 return True
         return False
@@ -695,7 +695,6 @@ is bob we will attempt to checkout bob-AVR'''
         '''build Copter binaries'''
 
         boards = []
-        boards.extend(["aerofc-v1"])
         boards.extend(self.board_list.find_autobuild_boards('Copter'))
         self.build_vehicle(tag,
                            "ArduCopter",

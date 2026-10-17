@@ -14,13 +14,13 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_InertialSensor_Params);
 
-    AP_Int32 _accel_id;
+    AP_UInt32 _accel_id;
     AP_Vector3f _accel_scale;
     AP_Vector3f _accel_offset;
     AP_Vector3f _accel_pos;
     AP_Float caltemp_accel;
 
-    AP_Int32 _gyro_id;
+    AP_UInt32 _gyro_id;
     AP_Vector3f _gyro_offset;
     AP_Float caltemp_gyro;
 

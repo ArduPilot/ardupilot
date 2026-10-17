@@ -42,7 +42,7 @@ public:
 
 #if HAL_LOGGING_ENABLED
     // Write SWSH log for this instance of swashplate
-    void write_log(float cyclic_scaler, float col_ang_min, float col_ang_max, int16_t col_min, int16_t col_max) const;
+    void write_log(float col_ang_min, float col_ang_max, float cyc_ang_max, int16_t col_min, int16_t col_max, int16_t cyc_max) const;
 #endif
 
     // var_info
@@ -52,6 +52,8 @@ private:
 
     // linearize mechanical output of swashplate servo
     float get_linear_servo_output(float input) const;
+    // get_linear_servo_input - gets swashplate servo input when linearization is enabled.  This is the inverse of get_linear_servo_output()
+    float get_linear_servo_input(float input) const;
 
     // CCPM Mixers - calculate mixing scale factors by swashplate type
     void calculate_roll_pitch_collective_factors();
@@ -62,6 +64,10 @@ private:
 
     // write to a swash servo. output value is pwm
     void rc_write(uint8_t chan, float swash_in);
+
+    // get_actual_servo_input - retrieves the actual servo input for a swashplate servo.  This is the servo output pwm converted to a -1 to +1 range.
+    bool get_actual_servo_input(uint8_t chan, float &input) const;
+
 
     enum CollectiveDirection {
         COLLECTIVE_DIRECTION_NORMAL = 0,
@@ -85,9 +91,8 @@ private:
     const uint8_t        _instance;                                 // Swashplate instance. Used for logging.
 
     // Variables stored for logging
-    float _roll_input;
-    float _pitch_input;
-    float _collective_input_scaled;
+    Matrix3f _servo_to_swash_matrix;  // Matrix to convert servo frame to swash frame
+    bool _valid_swash_conv_inverse;    // True if the swash to servo matrix has a valid inverse
 
     // parameters
     AP_Int8  _swashplate_type;                   // Swash Type Setting

@@ -28,6 +28,7 @@ userdata Location method get_alt_frame uint8_t
 userdata Location method change_alt_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
 userdata Location method copy Location
 userdata Location method set_alt_m void float'skip_check Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
+userdata Location method get_alt_m boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN float'Null
 
 include AP_AHRS/AP_AHRS.h
 
@@ -70,7 +71,8 @@ singleton AP_AHRS method get_vibration Vector3f
 singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
 singleton AP_AHRS method get_EAS2TAS float
-singleton AP_AHRS method get_variances boolean float'Null float'Null float'Null Vector3f'Null float'Null
+singleton AP_AHRS method get_variances_for_configured_backend boolean float'Null float'Null float'Null Vector3f'Null float'Null
+singleton AP_AHRS method get_variances_for_configured_backend rename get_variances
 singleton AP_AHRS method set_posvelyaw_source_set void AP_NavEKF_Source::SourceSetSelection'enum AP_NavEKF_Source::SourceSetSelection::PRIMARY AP_NavEKF_Source::SourceSetSelection::TERTIARY
 singleton AP_AHRS method get_vel_innovations_and_variances_for_source boolean uint8_t 3 6 Vector3f'Null Vector3f'Null
 singleton AP_AHRS method set_home boolean Location
@@ -80,7 +82,7 @@ singleton AP_AHRS method initialised boolean
 singleton AP_AHRS method get_posvelyaw_source_set uint8_t
 singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 singleton AP_AHRS method handle_external_position_estimate boolean Location float'skip_check uint32_t'skip_check
-singleton AP_AHRS method handle_external_position_estimate depends AP_AHRS_EXTERNAL_ENABLED
+singleton AP_AHRS method handle_external_position_estimate depends AP_AHRS_POSITION_RESET_ENABLED
 
 include AP_Arming/AP_Arming.h
 
@@ -358,7 +360,7 @@ singleton AP_ONVIF method set_absolutemove boolean float'skip_check float'skip_c
 singleton AP_ONVIF method get_pan_tilt_limit_min Vector2f
 singleton AP_ONVIF method get_pan_tilt_limit_max Vector2f
 
-ap_object AP_Vehicle::custom_mode_state depends (!defined(HAL_BUILD_AP_PERIPH))
+ap_object AP_Vehicle::custom_mode_state depends AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 ap_object AP_Vehicle::custom_mode_state field allow_entry boolean read write
 
 include AP_Vehicle/AP_Vehicle.h
@@ -622,12 +624,14 @@ singleton Sub method get_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
 singleton Sub method set_rangefinder_target_cm boolean float'skip_check
 singleton Sub method set_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
 
-include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+include AP_Motors/AP_MotorsMatrix.h depends (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix rename MotorsMatrix
 singleton AP_MotorsMatrix method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
+singleton AP_MotorsMatrix method init depends (AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED || AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED || AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED)
 singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix method set_throttle_factor boolean int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float 0 FLT_MAX
+singleton AP_MotorsMatrix method set_throttle_factor depends AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
 singleton AP_MotorsMatrix method get_lost_motor uint8_t
 singleton AP_MotorsMatrix method get_thrust_boost boolean
 
@@ -638,7 +642,7 @@ singleton AP_Frsky_SPort method sport_telemetry_push boolean uint8_t'skip_check 
 singleton AP_Frsky_SPort method prep_number uint16_t int32_t'skip_check uint8_t'skip_check uint8_t'skip_check
 
 include AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter) && AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
 singleton AC_AttitudeControl_Multi_6DoF rename attitude_control
 singleton AC_AttitudeControl_Multi_6DoF method set_lateral_enable void boolean
 singleton AC_AttitudeControl_Multi_6DoF method set_forward_enable void boolean
@@ -646,7 +650,7 @@ singleton AC_AttitudeControl_Multi_6DoF method set_offset_roll_pitch void float'
 
 
 include AP_Motors/AP_MotorsMatrix_6DoF_Scripting.h  depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AP_MotorsMatrix_6DoF_Scripting depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+singleton AP_MotorsMatrix_6DoF_Scripting depends APM_BUILD_TYPE(APM_BUILD_ArduCopter) && AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
 singleton AP_MotorsMatrix_6DoF_Scripting rename Motors_6DoF
 singleton AP_MotorsMatrix_6DoF_Scripting method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_6DoF_Scripting method add_motor void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check float'skip_check float'skip_check float'skip_check boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
@@ -714,13 +718,13 @@ singleton hal.analogin method mcu_voltage float
 singleton hal.analogin method mcu_voltage depends HAL_WITH_MCU_MONITORING
 
 include AP_Motors/AP_MotorsMatrix_Scripting_Dynamic.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-singleton AP_MotorsMatrix_Scripting_Dynamic depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AP_MotorsMatrix_Scripting_Dynamic depends (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI) && AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
 singleton AP_MotorsMatrix_Scripting_Dynamic rename Motors_dynamic
 singleton AP_MotorsMatrix_Scripting_Dynamic method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method add_motor void uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method load_factors void AP_MotorsMatrix_Scripting_Dynamic::factor_table
 
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI) && AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table rename motor_factor_table
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
@@ -1070,7 +1074,7 @@ global manual print lua_print 1 0
 singleton mavlink depends (HAL_GCS_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
 singleton mavlink manual init lua_mavlink_init 2 0
 singleton mavlink manual register_rx_msgid lua_mavlink_register_rx_msgid 1 1
-singleton mavlink manual send_chan lua_mavlink_send_chan 3 1
+singleton mavlink manual send_chan lua_mavlink_send_chan 4 1
 singleton mavlink manual receive_chan lua_mavlink_receive_chan 0 3
 singleton mavlink manual block_command lua_mavlink_block_command 1 1
 

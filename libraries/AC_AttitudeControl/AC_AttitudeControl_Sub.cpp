@@ -364,6 +364,8 @@ void AC_AttitudeControl_Sub::update_althold_lean_angle_max(float throttle_in)
     _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt_s/(_dt_s+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max_rad);
 }
 
+// apply_angle_boost is ignored: throttle is centred on 0.5 (neutral), so a
+// 1/cos(tilt) scaling would command vertical thrust from tilt alone
 void AC_AttitudeControl_Sub::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
 {
     _throttle_in = throttle_in;
@@ -371,26 +373,6 @@ void AC_AttitudeControl_Sub::set_throttle_out(float throttle_in, bool apply_angl
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     _motors.set_throttle(throttle_in);
     _motors.set_throttle_avg_max(get_throttle_avg_max(MAX(throttle_in, _throttle_in)));
-}
-
-// returns a throttle including compensation for roll/pitch angle
-// throttle value should be 0 ~ 1
-float AC_AttitudeControl_Sub::get_throttle_boosted(float throttle_in)
-{
-    if (!_angle_boost_enabled) {
-        _angle_boost = 0;
-        return throttle_in;
-    }
-    // inverted_factor is 1 for tilt angles below 60 degrees
-    // inverted_factor reduces from 1 to 0 for tilt angles between 60 and 90 degrees
-
-    float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
-    float inverted_factor = constrain_float(2.0f*cos_tilt, 0.0f, 1.0f);
-    float boost_factor = 1.0f/constrain_float(cos_tilt, 0.5f, 1.0f);
-
-    float throttle_out = throttle_in*inverted_factor*boost_factor;
-    _angle_boost = constrain_float(throttle_out - throttle_in,-1.0f,1.0f);
-    return throttle_out;
 }
 
 // Returns a throttle value that accounts for the priority of attitude control over throttle.

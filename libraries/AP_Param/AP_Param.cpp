@@ -36,6 +36,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <stdio.h>
 #include <AP_ROMFS/AP_ROMFS.h>
+#include <AP_ROMFS/AP_ROMFS_config.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
@@ -116,6 +117,7 @@ uint16_t AP_Param::num_read_only;
 bool AP_Param::eeprom_full;
 
 ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
+HAL_Semaphore AP_Param::save_sem;
 bool AP_Param::registered_save_handler;
 
 bool AP_Param::done_all_default_params;
@@ -1301,7 +1303,12 @@ void AP_Param::save(bool force_save)
 void AP_Param::save_io_handler(void)
 {
     struct param_save p;
-    while (save_queue.pop(p)) {
+    while (true) {
+        // Cover the pop as well as the write so flush() cannot miss an in-flight save.
+        WITH_SEMAPHORE(save_sem);
+        if (!save_queue.pop(p)) {
+            break;
+        }
         p.param->save_sync(p.force_save, true);
     }
     if (hal.scheduler->is_system_initialized()) {
@@ -1316,7 +1323,11 @@ void AP_Param::save_io_handler(void)
 void AP_Param::flush(void)
 {
     uint16_t counter = 200; // 2 seconds max
-    while (counter-- && save_queue.available()) {
+    while (counter--) {
+        if (save_queue.available() == 0 && save_sem.take_nonblocking()) {
+            save_sem.give();
+            break;
+        }
         hal.scheduler->expect_delay_ms(10);
         hal.scheduler->delay(10);
         hal.scheduler->expect_delay_ms(0);
@@ -1627,7 +1638,7 @@ void AP_Param::reload_defaults_file(bool last_pass)
     if (default_file) {
 #if AP_FILESYSTEM_FILE_READING_ENABLED
         load_defaults_file_from_filesystem(default_file, last_pass);
-#elif defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#elif AP_ROMFS_ENABLED
         load_defaults_file_from_romfs(default_file, last_pass);
 #endif
     }
@@ -1662,7 +1673,7 @@ void AP_Param::load_defaults_file_from_filesystem(const char *default_file, bool
 }
 #endif  // AP_FILESYSTEM_FILE_READING_ENABLED
 
-#if defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#if AP_ROMFS_ENABLED
 void AP_Param::load_defaults_file_from_romfs(const char *default_file, bool last_pass)
 {
     const char *prefix = "@ROMFS/";
@@ -1685,7 +1696,7 @@ void AP_Param::load_defaults_file_from_romfs(const char *default_file, bool last
     AP_ROMFS::free(text);
 
 }
-#endif  // HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#endif  // AP_ROMFS_ENABLED
 
 /* 
    Load all variables from EEPROM for a particular object. This is
@@ -2522,7 +2533,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 }
 #endif // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
 /*
   count the number of parameter defaults present in supplied string
  */
@@ -2652,7 +2663,7 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
     purge_defaults_list_overrides();
 #endif
 }
-#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
 
 
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0

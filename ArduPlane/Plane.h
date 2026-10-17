@@ -116,6 +116,11 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#include <AP_CustomControl/AP_CustomControl_config.h>
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+#include <AP_CustomControl/AP_CustomControl.h>                  // Custom control library
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
+
 #include "RC_Channel_Plane.h"     // RC Channel Library
 #include "Parameters.h"
 #if AP_ADSB_AVOIDANCE_ENABLED
@@ -246,6 +251,10 @@ private:
     AP_PitchController pitchController{aparm};
     AP_YawController yawController{aparm};
     AP_SteerController steerController{};
+
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    AP_CustomControl custom_control{aparm};
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
 
     // Training mode
     bool training_manual_roll;  // user has manual roll control
@@ -946,7 +955,7 @@ private:
 #if HAL_LOGGING_ENABLED
 
     // methods for AP_Vehicle:
-    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const AP_UInt32 &get_log_bitmask() override { return g.log_bitmask; }
     const struct LogStructure *get_log_structures() const override {
         return log_structure;
     }
@@ -1142,9 +1151,9 @@ private:
 
     // system.cpp
     __INITFUNC__ void init_ardupilot() override;
-    bool set_mode(Mode& new_mode, const ModeReason reason);
-    bool set_mode(const uint8_t mode, const ModeReason reason) override;
-    bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
+    bool set_mode(Mode& new_mode, const ModeReason reason) WARN_IF_UNUSED;
+    bool set_mode(const uint8_t mode, const ModeReason reason) override WARN_IF_UNUSED;
+    bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason) WARN_IF_UNUSED;
     void check_long_failsafe();
     void check_short_rc_failsafe();
     void startup_INS(void);
@@ -1166,6 +1175,10 @@ private:
     void landing_gear_update(void);
     bool check_takeoff_timeout(void);
     bool check_takeoff_timeout_level_off(void);
+
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    void run_custom_controller();
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);

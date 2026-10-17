@@ -101,6 +101,7 @@ ArduPilot enforces style via [astyle](Tools/CodeStyle/astylerc). The key rules:
 - Use the singleton pattern with `get_singleton()` and `CLASS_NO_COPY()` where appropriate.
 - Use `extern const AP_HAL::HAL& hal;` at the top of `.cpp` files that need hardware access.
 - Prefer `is_zero()`, `is_positive()`, `is_negative()` over direct float comparisons.
+- ArduPilot overrides `new` and `malloc` to return zeroed memory. Do not initialise class members to zero/false/nullptr unless the object may be instantiated on the stack; redundant initialisers cost flash.
 - Use `GCS_SEND_TEXT()` for user-facing messages, not `printf` or 'gcs().send_text'.
 - Use `AP_HAL::millis()` / `AP_HAL::micros()` instead of platform-specific time functions.
 - Wrap feature code in `#if AP_<FEATURE>_ENABLED` / `#endif // AP_<FEATURE>_ENABLED` guards, and provide option for custom build server in Tools/scripts/build_options.py, if code increase is non-trivial.
@@ -255,6 +256,7 @@ what was changed, and why.
 - **No merge commits** — always rebase onto the target branch.
 - **No `fixup!` commits** — squash them before requesting review.
 - One logical change per commit. Split unrelated changes into separate commits.
+- Bisectability of commit ordering within a PR is not required. Order commits for readability; intermediate commits need not build on their own.
 - No emoji, no jokes
 - Only adjust codestyle and cleanup on what’s necessary and keep the file consistent with its current style.
 - Split large linting into separated commit but avoid them if possible.

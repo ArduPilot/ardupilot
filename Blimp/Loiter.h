@@ -83,7 +83,7 @@ public:
     AP_Float    max_pos_z;
     AP_Float    max_pos_yaw;
 
-    AP_Int16    dis_mask;
+    AP_UInt16   dis_mask;
     AP_Float    pid_dz;
     AP_Float    scaler_spd;
     AP_Float    pos_lag;

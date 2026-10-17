@@ -370,6 +370,7 @@ public:
         k_param_quicktune,
         k_param_mode_autoland,
         k_param__gcs,
+        k_param_custom_control,
 
     };
 
@@ -394,7 +395,7 @@ public:
     // Waypoints
     //
     AP_Int16 waypoint_radius;
-    AP_Int16 waypoint_max_radius;
+    AP_UInt16 waypoint_max_radius;
     AP_Int16 rtl_radius;
 
     // Fly-by-wire
@@ -409,7 +410,7 @@ public:
     AP_Enum<ThrFailsafe> throttle_fs_enabled;
     AP_Int16 throttle_fs_value;
     AP_Int8 throttle_nudge;
-    AP_Int32 use_reverse_thrust;
+    AP_UInt32 use_reverse_thrust;
 
     // Failsafe
     AP_Int8 fs_action_short;
@@ -437,7 +438,7 @@ public:
     AP_Float mixing_gain;
     AP_Int16 mixing_offset;
     AP_Int16 dspoiler_rud_rate;
-    AP_Int32 log_bitmask;
+    AP_UInt32 log_bitmask;
     AP_Float RTL_altitude;
     AP_Float pitch_trim;
     AP_Float cruise_alt_floor;
@@ -450,7 +451,7 @@ public:
     AP_Enum<StickMixing> stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
-    AP_Int8 takeoff_throttle_delay;
+    AP_UInt8 takeoff_throttle_delay;
     AP_Int8 takeoff_tdrag_elevator;
     AP_Float takeoff_tdrag_speed1;
     AP_Float takeoff_rotate_speed;
@@ -458,17 +459,17 @@ public:
     AP_Float takeoff_pitch_limit_reduction_sec;
     AP_Int8 level_roll_limit;
 #if AP_TERRAIN_AVAILABLE
-    AP_Int32 terrain_follow;
+    AP_UInt32 terrain_follow;
     AP_Int16 terrain_lookahead;
 #endif
     AP_Int16 alt_slope_min;
     AP_Float alt_slope_max_height;
-    AP_Int8 rangefinder_landing;
+    AP_UInt8 rangefinder_landing;
     AP_Int8 flap_slewrate;
 #if HAL_WITH_IO_MCU
     AP_Int8 override_channel;
 #endif
-    AP_Int16 gcs_pid_mask;
+    AP_UInt16 gcs_pid_mask;
 };
 
 /*
@@ -509,12 +510,12 @@ public:
     AP_Int8 rudd_dt_gain;
 
     // mask of channels to do manual pass-thru for
-    AP_Int32 manual_rc_mask;
+    AP_UInt32 manual_rc_mask;
 
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
 
-    AP_Int32 flight_options;
+    AP_UInt32 flight_options;
 
     AP_Int16 waypoint_climb_slope_height_min;
 
@@ -532,7 +533,7 @@ public:
     // crow flaps weighting
     AP_Int8 crow_flap_weight_outer;
     AP_Int8 crow_flap_weight_inner;
-    AP_Int8 crow_flap_options;
+    AP_UInt8 crow_flap_options;
     AP_Int8 crow_flap_aileron_matching;
 
     // Forward throttle battery voltage compensation
@@ -578,9 +579,9 @@ public:
     AP_Int8         man_expo_pitch;
     AP_Int8         man_expo_rudder;
 
-    AP_Int32        oneshot_mask;
+    AP_UInt32       oneshot_mask;
     
-    AP_Int8         axis_bitmask; // axes to be autotuned
+    AP_UInt8        axis_bitmask; // axes to be autotuned
 
 #if AP_RANGEFINDER_ENABLED
     // orientation of rangefinder to use for landing

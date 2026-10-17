@@ -289,7 +289,7 @@ public:
 
     // get rangefinder address (for AP_Periph CAN)
     uint8_t get_address(uint8_t id) const {
-        return id >= RANGEFINDER_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
+        return id >= RANGEFINDER_MAX_INSTANCES? 0 : params[id].address.get();
     }
 
     // methods to return a distance on a particular orientation from

@@ -8,6 +8,8 @@
 #include <AP_DAL/AP_DAL.h>
 #include <AP_InternalError/AP_InternalError.h>
 
+#define P (const_cast<const Matrix24 &>(Pmut))
+
 #if AP_RANGEFINDER_ENABLED
 /********************************************************
 *              OPT FLOW AND RANGE FINDER                *

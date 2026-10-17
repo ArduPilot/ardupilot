@@ -26,10 +26,12 @@ void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame
     _active_frame_class = frame_class;
     _active_frame_type = frame_type;
 
+#if AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
     if (frame_class == MOTOR_FRAME_SCRIPTING_MATRIX) {
         // if Scripting frame class, do nothing scripting must call its own dedicated init function
         return;
     }
+#endif  // AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
 
     // setup the motors
     setup_motors(frame_class, frame_type);
@@ -38,7 +40,7 @@ void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame
     set_update_rate(_speed_hz);
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
 // dedicated init for lua scripting
 bool AP_MotorsMatrix::init(uint8_t expected_num_motors)
 {
@@ -108,8 +110,7 @@ bool AP_MotorsMatrix::set_throttle_factor(int8_t motor_num, float throttle_facto
     _throttle_factor[motor_num] = throttle_factor;
     return true;
 }
-
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
 
 // set update rate to motors - a value in hertz
 void AP_MotorsMatrix::set_update_rate(uint16_t speed_hz)

@@ -228,7 +228,7 @@ void AP_InertialSensor_Backend::save_gyro_window(const uint8_t instance, const V
 /*
   apply harmonic notch and low pass gyro filters
  */
-void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const Vector3f &gyro)
+Vector3f AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const Vector3f &gyro)
 {
     uint8_t filter_phase = 0;
     save_gyro_window(instance, gyro, filter_phase++);
@@ -288,6 +288,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
 #else
     _imu._gyro_filtered[instance] = gyro_filtered;
 #endif
+    return gyro_filtered;
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
@@ -355,6 +356,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     delta_coning = delta_coning % delta_angle;
     delta_coning *= 0.5f;
 
+    Vector3f gyro_filtered;
     {
         WITH_SEMAPHORE(_sem);
 
@@ -381,13 +383,13 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._last_raw_gyro[instance] = gyro;
 
         // apply gyro filters and sample for FFT
-        apply_gyro_filters(instance, gyro);
+        gyro_filtered = apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
 
     // 5us
-    log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
+    log_gyro_raw(instance, sample_us, gyro, gyro_filtered);
     update_primary();
 }
 
@@ -446,6 +448,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
     delta_coning = delta_coning % delta_angle;
     delta_coning *= 0.5f;
 
+    Vector3f gyro_filtered;
     {
         WITH_SEMAPHORE(_sem);
         uint64_t now = AP_HAL::micros64();
@@ -470,12 +473,12 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
         _imu._last_raw_gyro[instance] = gyro;
 
         // apply gyro filters and sample for FFT
-        apply_gyro_filters(instance, gyro);
+        gyro_filtered = apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
 
-    log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
+    log_gyro_raw(instance, sample_us, gyro, gyro_filtered);
     update_primary();
 }
 

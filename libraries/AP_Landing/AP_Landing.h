@@ -130,7 +130,7 @@ private:
         bool in_progress:1;
     } flags;
 
-    AP_Int16 _options;    // user-configurable bitmask options, via a parameter, for landing
+    AP_UInt16 _options;    // user-configurable bitmask options, via a parameter, for landing
 
     // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
     float initial_slope;

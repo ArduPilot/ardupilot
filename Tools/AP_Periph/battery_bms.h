@@ -28,10 +28,8 @@ private:
 
     // display battery SOC percentage using LEDs
     // last_led_off allows blinking the last LED to indicate charging
-    void display_percentage(bool last_led_off = false);
-
-    // get battery SOC percentage (0-100). returns true on success
-    bool get_percentage(uint8_t &percentage);
+    // returns true on success
+    bool display_percentage(bool last_led_off = false);
 
     // set LED pattern based on 8-bit bitmask
     void set_led_pattern(uint8_t pattern);
@@ -82,7 +80,7 @@ private:
     uint32_t led_display_soc_start_ms;  // system time that SOC display started.  0 if not displaying SOC
     uint8_t led_charging_animation_step; // LED charging animation step
     static const uint32_t LED_UPDATE_INTERVAL_MS = 50;  // update LEDs at 20hz
-    static const uint32_t LED_DISPLAY_SOC_DURATION_MS = 1000;   // Display SOC percentage for 1 second
+    static const uint32_t LED_DISPLAY_SOC_DURATION_MS = 2000;   // Display SOC percentage for 1 second
     static const uint8_t led_gpios[];   // GPIO pins used for BMS LEDs
 };
 

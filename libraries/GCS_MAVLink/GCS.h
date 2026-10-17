@@ -149,13 +149,13 @@ public:
     Type task;
     MAV_CMD mav_cmd;
 
-    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint8_t sysid, uint8_t compid, mavlink_channel_t chan);
+    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan);
 
     static void check_tasks();
 
 private:
 
-    uint8_t requesting_sysid;
+    uint32_t requesting_sysid;
     uint8_t requesting_compid;
     mavlink_channel_t chan;
 
@@ -260,6 +260,10 @@ public:
                                         entry->max_msg_len,
                                         entry->crc_extra);
     }
+    // variant for raw payload structs with a target sysid over 255; the
+    // caller must have written the payload target_system byte as
+    // mavlink_msg_target_field(target_sysid)
+    void send_message_target(uint32_t msgid, const char *pkt, uint32_t target_sysid);
 
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
@@ -391,7 +395,7 @@ public:
     void send_accelcal_vehicle_position(uint32_t position);
     void send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag, int16_t temperature));
     void send_sys_status();
-    void send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc);
+    void send_set_position_target_global_int(uint32_t target_system, uint8_t target_component, const Location& loc);
     void send_rpm() const;
     void send_generator_status() const;
 #if AP_WINCH_ENABLED
@@ -449,6 +453,8 @@ public:
     // return true if channel is private
     bool is_private(void) const { return is_private(chan); }
 
+    bool is_unicast() const { return option_enabled(Option::UNICAST); }
+
 #if HAL_HIGH_LATENCY2_ENABLED
     // true if this is a high latency link
     bool is_high_latency_link;
@@ -469,16 +475,16 @@ public:
       search for a component in the routing table with given mav_type and retrieve it's sysid, compid and channel
       returns if a matching component is found
      */
-    static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
+    static bool find_by_mavtype(uint8_t mav_type, uint32_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
 
     /*
       search for the first vehicle or component in the routing table with given mav_type and component id and retrieve its sysid and channel
       returns true if a match is found
      */
-    static bool find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) { return routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel); }
+    static bool find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint32_t &sysid, mavlink_channel_t &channel) { return routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel); }
     // same as above, but returns a pointer to the GCS_MAVLINK object
     // corresponding to the channel
-    static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid);
+    static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint32_t &sysid);
 
 #if AP_MAVLINK_SIGNING_ENABLED
     // update signing timestamp on GPS lock
@@ -531,28 +537,29 @@ protected:
 
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
-    AP_Int32        devid;  // ID for device using this mavlink channel
+    AP_UInt32      devid;  // ID for device using this mavlink channel
 
     void handle_heartbeat(const mavlink_message_t &msg);
 
     virtual bool persist_streamrates() const { return false; }
     void handle_request_data_stream(const mavlink_message_t &msg);
 
-    AP_Int16 options;
+    AP_UInt16 options;
     enum class Option : uint16_t {
         MAVLINK2_SIGNING_DISABLED = (1U << 0),
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
         NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
         FORWARD_BAD_CRC           = (1U << 3),  // forward mavlink packets that don't pass CRC
+        UNICAST                   = (1U << 4),  // addressed forwarding only; no default telemetry streams
     };
     bool option_enabled(Option option) const {
         return options & static_cast<uint16_t>(option);
     }
     void enable_option(Option option) {
-        options.set_and_save(static_cast<uint16_t>(options) | static_cast<uint16_t>(option));
+        options.set_and_save(options | static_cast<uint16_t>(option));
     }
     void disable_option(Option option) {
-        options.set_and_save(static_cast<uint16_t>(options) & (~ static_cast<uint16_t>(option)));
+        options.set_and_save(options & (~ static_cast<uint16_t>(option)));
     }
     AP_Int8 options_were_converted;
 
@@ -638,6 +645,7 @@ protected:
         bool taken;
     } _deadlock_sem;
     void deadlock_sem(void);
+    MAV_RESULT handle_crash_trigger(const mavlink_command_int_t &packet);
 #endif
 
     MAV_RESULT handle_do_set_safety_switch_state(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
@@ -671,18 +679,17 @@ protected:
     void send_timesync();
     // returns the time a timesync message was most likely received:
     uint64_t timesync_receive_timestamp_ns() const;
-    // returns a timestamp suitable for packing into the ts1 field of TIMESYNC:
-    uint64_t timesync_timestamp_ns() const;
     void handle_timesync(const mavlink_message_t &msg);
     struct {
         int64_t sent_ts1;
+        uint64_t sent_time_ns;
         uint32_t last_sent_ms;
         const uint16_t interval_ms = 10000;
     }  _timesync_request;
 
     void handle_statustext(const mavlink_message_t &msg);
     struct {
-        uint8_t last_src_system;
+        uint32_t last_src_system;
         uint8_t last_src_component;
         uint8_t last_id; // ID from the mavlink packet
         uint8_t msg_id;  // ID used in our logs
@@ -718,6 +725,7 @@ protected:
 
     MAV_RESULT handle_command_camera(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_set_roi_location(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_do_set_roi(const Location &roi_loc);
     MAV_RESULT handle_command_do_gripper(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_sprayer(const mavlink_command_int_t &packet);
@@ -806,7 +814,10 @@ protected:
     // this method ensures the passed-in structure is entirely
     // initialised.
     virtual void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT);
-    virtual bool mav_frame_for_command_long(MAV_FRAME &fame, MAV_CMD packet_command) const;
+    bool mav_frame_for_command_long(MAV_FRAME &fame, MAV_CMD packet_command) const;
+    // returns true if the vehicle handles command only when sent via
+    // COMMAND_INT; COMMAND_LONG is refused with MAV_RESULT_COMMAND_INT_ONLY
+    virtual bool command_int_only(MAV_CMD command) const { return false; }
     MAV_RESULT try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
 #endif
 
@@ -984,7 +995,7 @@ private:
         mavlink_channel_t chan;
         int16_t param_index;
         char param_name[AP_MAX_NAME_SIZE+1];
-        uint8_t src_system_id;
+        uint32_t src_system_id;
         uint8_t src_component_id;
     };
 
@@ -995,7 +1006,7 @@ private:
         int16_t param_index;
         uint16_t count;
         char param_name[AP_MAX_NAME_SIZE+1];
-        uint8_t src_system_id;
+        uint32_t src_system_id;
         uint8_t src_component_id;
         MAV_PARAM_ERROR param_error;
     };
@@ -1182,7 +1193,7 @@ public:
     /*
       return true if a MAVLink system ID is a GCS
      */
-    bool sysid_is_gcs(uint8_t sysid) const;
+    bool sysid_is_gcs(uint32_t sysid) const;
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
@@ -1237,6 +1248,7 @@ public:
     }
 
     void init();
+    void convert_parameters();
     void setup_console();
     void setup_uarts();
 
@@ -1308,7 +1320,7 @@ public:
     bool get_high_latency_status();
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
-    uint8_t sysid_this_mav() const { return sysid; }
+    uint32_t sysid_this_mav() const { return sysid; }
     uint32_t telem_delay() const { return mav_telem_delay; }
 
 #if AP_SCRIPTING_ENABLED
@@ -1334,10 +1346,10 @@ protected:
     uint8_t _num_gcs;
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
 
-    // parameters
-    AP_Int16                 sysid;
-    AP_Int16                 mav_gcs_sysid;
-    AP_Int16                 mav_gcs_sysid_high;
+    // System ID parameters store unsigned IDs as their 32-bit bit patterns.
+    AP_UInt32               sysid;
+    AP_UInt32                mav_gcs_sysid;
+    AP_UInt32                mav_gcs_sysid_high;
     AP_Enum16<Option>        mav_options;
     AP_Int8                  mav_telem_delay;
 

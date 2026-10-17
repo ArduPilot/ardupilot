@@ -1,0 +1,6 @@
+<!-- WebAssembly logo from WebAssembly/website, Apache-2.0. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="97.43 0 107.62 107.62" role="img" aria-labelledby="title">
+  <title id="title">WebAssembly</title>
+  <path fill="#654ff0" d="M163.55 0v.58a12.34 12.34 0 0 1-24.68 0V0H97.43v107.62h107.62V0Zm-14.76 96.1-5.24-25.93h-.09l-5.67 25.93h-7.22L122.39 58h7.13l4.88 25.93h.09L140.37 58h6.67l5.28 26.25h.09L157.98 58h7l-9.09 38.1Zm39.26 0-2.43-8.48h-12.83l-1.87 8.48h-7.13l9.22-38.1h11.25l11.21 38.1Z"/>
+  <path fill="#654ff0" d="m177.3 67.39-3.11 13.98h9.68l-3.57-13.98z"/>
+</svg>

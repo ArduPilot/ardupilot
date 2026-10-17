@@ -161,7 +161,7 @@ float Plane::relative_ground_altitude(enum RangeFinderUse use_rangefinder, bool 
  */
 bool Plane::rangefinder_use(enum RangeFinderUse use_rangefinder) const
 {
-    const uint8_t use = uint8_t(g.rangefinder_landing.get());
+    const uint8_t use = g.rangefinder_landing;
     if (use == uint8_t(RangeFinderUse::NONE)) {
         return false;
     }
@@ -907,7 +907,7 @@ bool Plane::terrain_enabled_in_mode(Mode::Number num) const
     // Specific enable
     for (const struct TerrainLookupTable entry : Terrain_lookup) {
         if (entry.mode_num == num) {
-            if ((g.terrain_follow.get() & int32_t(entry.bitmask)) != 0) {
+            if ((g.terrain_follow & uint32_t(entry.bitmask)) != 0) {
                 return true;
             }
             break;

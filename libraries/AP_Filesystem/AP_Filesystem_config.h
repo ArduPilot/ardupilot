@@ -1,6 +1,20 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_ROMFS/AP_ROMFS_config.h>
+
+#ifndef HAL_OS_FATFS_IO
+#define HAL_OS_FATFS_IO 0
+#endif
+
+#ifndef HAL_OS_LITTLEFS_IO
+#define HAL_OS_LITTLEFS_IO 0
+#endif
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
+
 
 // backends:
 
@@ -25,7 +39,7 @@
 #endif
 
 #ifndef AP_FILESYSTEM_ROMFS_ENABLED
-#define AP_FILESYSTEM_ROMFS_ENABLED defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#define AP_FILESYSTEM_ROMFS_ENABLED AP_ROMFS_ENABLED
 #endif
 
 #ifndef AP_FILESYSTEM_SYS_ENABLED
@@ -56,3 +70,27 @@
 #include <AP_Mission/AP_Mission_config.h>
 #define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED
 #endif
+
+// true when AP_Filesystem.cpp picks LittleFS as the local filesystem.  an
+// alias can't sit on it; see AP_Filesystem.cpp
+#define AP_FILESYSTEM_LOCAL_IS_LITTLEFS (AP_FILESYSTEM_LITTLEFS_ENABLED && !AP_FILESYSTEM_FATFS_ENABLED && !AP_FILESYSTEM_ESP32_ENABLED)
+
+// @MAV_LOG is an alias for the directory this board writes its logs to,
+// where those logs are written to a filesystem
+#ifndef AP_FILESYSTEM_MAVLOG_ENABLED
+#define AP_FILESYSTEM_MAVLOG_ENABLED (AP_FILESYSTEM_FILE_WRITING_ENABLED && !AP_FILESYSTEM_LOCAL_IS_LITTLEFS && defined(HAL_BOARD_LOG_DIRECTORY) && HAL_LOGGING_FILESYSTEM_ENABLED)
+#endif  // AP_FILESYSTEM_MAVLOG_ENABLED
+
+// only @MAV_LOG uses the alias support
+#ifndef AP_FILESYSTEM_ALIAS_ENABLED
+#define AP_FILESYSTEM_ALIAS_ENABLED AP_FILESYSTEM_MAVLOG_ENABLED
+#endif  // AP_FILESYSTEM_ALIAS_ENABLED
+
+// longest alias path: root + '/' + 238 byte FTP request + '/' + 255 byte name
+#ifndef AP_FILESYSTEM_ALIAS_PATH_MAX
+#define AP_FILESYSTEM_ALIAS_PATH_MAX 544
+#endif  // AP_FILESYSTEM_ALIAS_PATH_MAX
+
+// last, for HAL_LOGGING_FILESYSTEM_ENABLED: AP_Logger_config.h includes this
+// header, so nothing above may test that value, only name it
+#include <AP_Logger/AP_Logger_config.h>

@@ -34,10 +34,10 @@ public:
         ins.init(100);
         ahrs.init();
     }
-    AP_Int32 unused_log_bitmask;
+    AP_UInt32 unused_log_bitmask;
     struct LogStructure log_structure[1] = {
     };
-    const AP_Int32 &get_log_bitmask() override { return unused_log_bitmask; }
+    const AP_UInt32 &get_log_bitmask() override { return unused_log_bitmask; }
 
     const struct LogStructure *get_log_structures() const override {
         return log_structure;

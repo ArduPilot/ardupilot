@@ -386,7 +386,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 #if HAL_ENABLE_THREAD_STATISTICS
     uint64_t cumulative_cycles = currcore->kernel_stats.m_crit_isr.cumulative;
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
-        if (tp->stats.best > 0) { // not run
+        if (tp->stats.n > 0) { // has run since the last read
             cumulative_cycles += (uint64_t)tp->stats.cumulative;
         }
     }
@@ -423,7 +423,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
         }
 #if HAL_ENABLE_THREAD_STATISTICS
         time_measurement_t stats = tp->stats;
-        if (tp->stats.best > 0) { // not run
+        if (stats.n > 0) { // has run since the last read
             str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
                         tp->name, unsigned(tp->realprio), tp->wabase,
                         unsigned(stack_free(tp->wabase)), unsigned(total_stack),
@@ -431,7 +431,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                         // more than a loop slice is bad for everyone else, warn on
                         // more than a 200Hz slice so that only the worst offenders are identified
                         // also don't do this for the main or idle threads
-                        tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
+                        tp != chThdGetSelfX() && unsigned(RTC2US(HAL_EXPECTED_SYSCLOCK, stats.worst)) > 5000
                             && tp != get_main_thread() && tp->realprio != 1 ? "*" : "");
         } else {
             str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",

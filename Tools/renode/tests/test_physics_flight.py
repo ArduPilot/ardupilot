@@ -8,12 +8,15 @@ import argparse
 import contextlib
 import math
 import os
+import socket
+import struct
 import subprocess
 import sys
 import time
 
 from pathlib import Path
 
+from pyfatfs.PyFatFS import PyFatFS
 from pymavlink import DFReader
 from pymavlink import mavutil
 
@@ -27,6 +30,9 @@ CANBERRA = (-35.363261, 149.165230, 584.0, 353.0)
 PHYSICS_RATE_HZ = 400
 F405_PHYSICS_RATE_HZ = 125
 FIRMWARE_SUFFIXES = ('.apj', '.bin', '.elf', '.hex')
+CAN_MCAST_MAGIC = 0x2934
+CAN_MCAST_GROUP = '239.65.82.0'
+CAN_MCAST_PORT = 57732
 
 
 def is_elf(path):
@@ -485,6 +491,7 @@ def wait_quadplane_mission(connection, renode, renode_log, physics, physics_log,
         'max_altitude': 0.0,
         'max_distance': 0.0,
         'max_airspeed': 0.0,
+        'max_diff_pressure': 0.0,
         'max_roll': 0.0,
         'max_pitch': 0.0,
         'vtol_states': set(),
@@ -520,6 +527,10 @@ def wait_quadplane_mission(connection, renode, renode_log, physics, physics_log,
                 result['max_pitch'], abs(math.degrees(message.pitch)))
         elif message_type == 'VFR_HUD':
             result['max_airspeed'] = max(result['max_airspeed'], message.airspeed)
+        elif message_type == 'SCALED_PRESSURE':
+            # airspeed sensor differential pressure in hPa
+            result['max_diff_pressure'] = max(
+                result['max_diff_pressure'], message.press_diff)
         elif message_type == 'EXTENDED_SYS_STATE':
             result['vtol_states'].add(message.vtol_state)
         elif message_type == 'MISSION_CURRENT' and message.seq != last_sequence:
@@ -550,6 +561,10 @@ def check_quadplane_result(result, home_lat, home_lon):
     if (result['max_altitude'] < 28 or result['max_distance'] < 100 or
             result['max_airspeed'] < 11):
         raise RuntimeError('QuadPlane did not fly the expected mission: %s' % result)
+    # 1hPa is about 13m/s, so the sensor itself saw cruise airspeed
+    if result['max_diff_pressure'] < 1.0:
+        raise RuntimeError('airspeed sensor did not measure flight: %.2fhPa' %
+                           result['max_diff_pressure'])
     if abs(final.relative_alt * 0.001) > 1 or final_distance > 10:
         raise RuntimeError(
             'QuadPlane landing was inaccurate: altitude %.1fm distance %.1fm' %
@@ -570,7 +585,7 @@ def check_quadplane_result(result, home_lat, home_lon):
 def build_physics(root):
     print('building standalone physics sidecar', flush=True)
     subprocess.run(['./waf', 'configure', '--board', 'sitl'], cwd=root, check=True)
-    subprocess.run(['./waf', '--targets', 'tool/renode-physics'], cwd=root, check=True)
+    subprocess.run(['./waf', 'renode-physics'], cwd=root, check=True)
 
 
 def build_plane(root, debug_symbols=False):
@@ -945,6 +960,63 @@ def check_sensor_ids(connection, renode, renode_log, deadline, expected):
     print('sensor IDs match real hardware', flush=True)
 
 
+def crc16_ccitt(data):
+    crc = 0xFFFF
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = ((crc << 1) ^ 0x1021) & 0xFFFF
+            else:
+                crc = (crc << 1) & 0xFFFF
+    return crc
+
+
+def scripting_can_packet(identifier=0x123, data=b'\x5a'):
+    body = struct.pack('<HI', 0, identifier) + data
+    return struct.pack('<HH', CAN_MCAST_MAGIC, crc16_ccitt(body)) + body
+
+
+def install_scripting_can_test(root, state_dir):
+    image = fat_image.create_image(
+        state_dir / 'sdcard.img', 512 * 1024 * 1024,
+        sectors_per_cluster=fat_image.FAT32_SECTORS_PER_CLUSTER)
+    script = root / 'Tools' / 'renode' / 'tests' / 'scripting_can_stack.lua'
+    with PyFatFS(str(image)) as filesystem:
+        filesystem.makedirs('/APM/scripts')
+        filesystem.writebytes('/APM/scripts/scripting_can_stack.lua', script.read_bytes())
+
+
+def run_scripting_can_stack_test(connection, renode, renode_log, physics,
+                                 physics_log, deadline):
+    transmitter = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
+                                socket.IPPROTO_UDP)
+    transmitter.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
+    injected = False
+    test_deadline = min(deadline, time.monotonic() + 45)
+    try:
+        while time.monotonic() < test_deadline:
+            message = recv_any(
+                connection, renode, renode_log, physics, physics_log,
+                test_deadline)
+            if message.get_type() != 'STATUSTEXT':
+                continue
+            print('vehicle: %s' % message.text, flush=True)
+            if message.text == 'CAN stack test ready 256' and not injected:
+                transmitter.sendto(
+                    scripting_can_packet(), (CAN_MCAST_GROUP, CAN_MCAST_PORT))
+                injected = True
+                print('injected scripting CAN stack test frame', flush=True)
+            elif message.text == 'CAN stack test passed 256':
+                print('scripting CAN stack test passed', flush=True)
+                return
+        if not injected:
+            raise RuntimeError('scripting CAN stack test did not become ready')
+        raise RuntimeError('scripting CAN stack test did not receive the frame')
+    finally:
+        transmitter.close()
+
+
 def run_quadplane(args, root, output_dir):
     if not args.skip_build:
         build_physics(root)
@@ -959,6 +1031,7 @@ def run_quadplane(args, root, output_dir):
 
     state_dir = output_dir / 'state'
     state_dir.mkdir()
+    install_scripting_can_test(root, state_dir)
     physics_log = output_dir / 'physics.log'
     renode_log = output_dir / 'renode.log'
     telemetry_log = output_dir / 'flight.tlog'
@@ -992,14 +1065,17 @@ def run_quadplane(args, root, output_dir):
             '--state-dir', str(state_dir),
             '--uart-port', str(uart_port),
             '--port', str(monitor_port),
-            '--imu', 'icm42688_ext',
-            '--imu', 'icm20948_ext',
-            '--imu', 'icm20649',
+            '--can',
             '--device', '{"device":"ublox-gps","port":"SERIAL2"}',
-            '--device', '{"device":"ms4525-airspeed","port":"I2C1"}',
+            '--device', (
+                '{"device":"dronecan-airspeed","port":"CAN1"}'
+                if args.dronecan_airspeed else
+                '{"device":"ms4525-airspeed","port":"I2C1"}'),
             '--exec', 'sysbus.physics Connect %u "quadplane" %.7f %.7f %.1f %.1f %u' % (
                 physics_port, *CANBERRA, PHYSICS_RATE_HZ),
         ]
+        if args.real_iomcu:
+            command.append('--real-iomcu')
         add_launch_options(command, args)
         env = os.environ.copy()
         env['XDG_CONFIG_HOME'] = str(state_dir)
@@ -1036,8 +1112,21 @@ def run_quadplane(args, root, output_dir):
             2,
             1,
         )
+        run_scripting_can_stack_test(
+            connection, renode, renode_log, physics, physics_log, deadline)
         home = wait_ready(
             connection, renode, renode_log, physics, physics_log, deadline)
+        if args.dronecan_airspeed:
+            # CAN1 runs the scripting CAN test until switched to DroneCAN
+            for name, value in (('ARSPD_TYPE', 8), ('CAN_D1_PROTOCOL', 1)):
+                common.set_parameter(connection, renode, renode_log, name, value)
+            common.send_command(
+                connection, renode, renode_log,
+                mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, (1,))
+            print('rebooting for DroneCAN airspeed', flush=True)
+            time.sleep(5)
+            home = wait_ready(
+                connection, renode, renode_log, physics, physics_log, deadline)
         home_lat = home.lat * 1.0e-7
         home_lon = home.lon * 1.0e-7
         print(
@@ -1099,6 +1188,12 @@ def main(argv=None):
     parser.add_argument(
         '--gdb', action='store_true',
         help='open GDB in an xterm with ELF firmware halted at reset')
+    parser.add_argument(
+        '--real-iomcu', action='store_true',
+        help='quadplane: run the real IOMCU firmware')
+    parser.add_argument(
+        '--dronecan-airspeed', action='store_true',
+        help='quadplane: use a DroneCAN airspeed sensor on CAN1')
     args = parser.parse_args(argv)
     if args.firmware is not None:
         args.firmware = args.firmware.expanduser().resolve()

@@ -138,6 +138,10 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
     }
     // if test has not started try to start it
     if (!ap.motor_test) {
+        // compassmot owns the motor output while it runs
+        if (ap.compass_mot) {
+            return MAV_RESULT_TEMPORARILY_REJECTED;
+        }
         /* perform checks that it is ok to start test
            The RC calibrated check can be skipped if direct pwm is
            supplied

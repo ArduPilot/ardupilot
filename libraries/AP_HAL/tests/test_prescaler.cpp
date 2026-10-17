@@ -38,7 +38,6 @@ protected:
         EXPECT_EQ(test_results[test_index].prescaler, prescaler);
         EXPECT_TRUE(at_least_freq ? test_results[test_index].type == DSHOT_S :
             (test_results[test_index].type == DSHOT || test_results[test_index].type == NONE));
-        test_index++;
         EXPECT_TRUE(rate_delta < expected_delta);
         if (test_results[test_index].type == DSHOT) {
             EXPECT_TRUE(fabs(clock/(prescaler+1.0f)-target_rate) < fabsf(clock/(prescaler+2.0f)-target_rate));
@@ -46,6 +45,7 @@ protected:
         } else if(test_results[test_index].type == DSHOT_S) {
             EXPECT_TRUE(fabs(clock/float(prescaler)) > target_rate);
         }
+        test_index++;
     }
 
     void test_prescaler_neopixel(uint32_t clock)

@@ -60,6 +60,9 @@ private:
     void setup_defaults(void);
     char displayport_write_buffer[DISPLAYPORT_WRITE_BUFFER_MAX_LEN]; // terminator
 
+    uint8_t _canvas_cols = 30;
+    uint8_t _canvas_rows = 16;
+
     AP_MSP_Telem_Backend* _displayport;
 
     // MSP DisplayPort symbols

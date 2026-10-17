@@ -27,14 +27,22 @@ Tools/renode/tests/test_physics_flight.py copter --renode build/renode/renode
 Tools/renode/tests/test_mission.py
 ```
 
+`test_rc_input.py` checks emulated SBUS R/C input and R/C failsafe through the
+synthetic IOMCU, the real IOMCU and a flight-controller UART. It uses
+CubeOrangePlus and MatekH743 ArduPlane builds, by default from `build/`:
+
+```sh
+Tools/renode/tests/test_rc_input.py --renode build/renode/renode
+```
+
 The fetch helper downloads the latest package for the host architecture from
 `https://firmware.ardupilot.org/Tools/Renode/`. It verifies the package size
 and SHA-256 against `latest.json` before extracting it. Set
 `RENODE_PACKAGE_BASE_URL` to use another package mirror, or set
 `RENODE_SOURCE_REVISION` to require a specific 40-character source revision.
 `RENODE_PACKAGE_SHA256` additionally requires the package checksum to match a
-trusted value. CI pins both values in `test_renode.yml`; update both when
-changing the Renode package.
+trusted value. CI sets neither, so it tests the published package that
+`launch.py` users get, and logs its source revision.
 
 `run.py` downloads the SVD matching the exact MCU in the compiled `hwdef.dat`
 from `https://firmware.ardupilot.org/Tools/Renode/data/SVD/`, verifies its size

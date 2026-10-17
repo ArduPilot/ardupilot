@@ -55,8 +55,18 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     return;
                 }
 
+                uint baudRate;
+                try
+                {
+                    baudRate = uart.BaudRate;
+                }
+                catch(DivideByZeroException)
+                {
+                    // input before the firmware sets the baud rate
+                    return;
+                }
                 var scheduledGeneration = ++generation;
-                var baudRate = Math.Max(uart.BaudRate, 1U);
+                baudRate = Math.Max(baudRate, 1U);
                 var delayUs = (uint)Math.Ceiling(IdleBits * 1000000.0 / baudRate);
                 machine.ScheduleAction(TimeInterval.FromMicroseconds(delayUs), _ =>
                 {

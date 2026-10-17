@@ -432,9 +432,11 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // 24: TAILSIT_RAT_FW
     // 25: TAILSIT_RAT_VT
 
+#if AP_PLANE_TAILSITTER_ENABLED
     // @Group: TAILSIT_
     // @Path: tailsitter.cpp
     AP_SUBGROUPINFO(tailsitter, "TAILSIT_", 26, QuadPlane, Tailsitter),
+#endif  // AP_PLANE_TAILSITTER_ENABLED
 
     // @Group: TILT_
     // @Path: tiltrotor.cpp
@@ -655,22 +657,37 @@ bool QuadPlane::setup(void)
       also saves memory when not in use
      */
     switch ((AP_Motors::motor_frame_class)frame_class) {
+#if AP_MOTORS_FRAME_QUAD_ENABLED
     case AP_Motors::MOTOR_FRAME_QUAD:
         setup_default_channels(4);
         break;
+#endif  // AP_MOTORS_FRAME_QUAD_ENABLED
+#if AP_MOTORS_FRAME_HEXA_ENABLED
     case AP_Motors::MOTOR_FRAME_HEXA:
         setup_default_channels(6);
         break;
+#endif  // AP_MOTORS_FRAME_HEXA_ENABLED
+#if AP_MOTORS_FRAME_OCTA_ENABLED || AP_MOTORS_FRAME_OCTAQUAD_ENABLED
+#if AP_MOTORS_FRAME_OCTA_ENABLED
     case AP_Motors::MOTOR_FRAME_OCTA:
+#endif  // AP_MOTORS_FRAME_OCTA_ENABLED
+#if AP_MOTORS_FRAME_OCTAQUAD_ENABLED
     case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+#endif  // AP_MOTORS_FRAME_OCTAQUAD_ENABLED
         setup_default_channels(8);
         break;
+#endif  // AP_MOTORS_FRAME_OCTA_ENABLED || AP_MOTORS_FRAME_OCTAQUAD_ENABLED
+#if AP_MOTORS_FRAME_Y6_ENABLED
     case AP_Motors::MOTOR_FRAME_Y6:
         setup_default_channels(7);
         break;
+#endif  // AP_MOTORS_FRAME_Y6_ENABLED
+#if AP_MOTORS_FRAME_DECA_ENABLED
     case AP_Motors::MOTOR_FRAME_DECA:
         setup_default_channels(10);
         break;
+#endif  // AP_MOTORS_FRAME_DECA_ENABLED
+#if AP_MOTORS_FRAME_TRI_ENABLED
     case AP_Motors::MOTOR_FRAME_TRI:
         SRV_Channels::set_default_function(CH_5, SRV_Channel::k_motor1);
         SRV_Channels::set_default_function(CH_6, SRV_Channel::k_motor2);
@@ -678,9 +695,16 @@ bool QuadPlane::setup(void)
         SRV_Channels::set_default_function(CH_11, SRV_Channel::k_motor7);
         AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
         break;
+#endif  // AP_MOTORS_FRAME_TRI_ENABLED
+#if AP_MOTORS_FRAME_TAILSITTER_ENABLED
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
+#endif  // AP_MOTORS_FRAME_TAILSITTER_ENABLED
+#if AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
     case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
+#endif  // AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
+#if AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
     case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
+#endif  // AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
         break;
     default:
         AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", (unsigned int)(frame_class.get()));
@@ -691,28 +715,40 @@ bool QuadPlane::setup(void)
         AP_BoardConfig::config_error("set TAILSIT_ENABLE 0 or TILT_ENABLE 0");
     }
 
+#if AP_MOTORS_FRAME_TAILSITTER_ENABLED && !AP_PLANE_TAILSITTER_ENABLED
+    // without tailsitter support only a bicopter tiltrotor may use the tailsitter frame
+    if (((AP_Motors::motor_frame_class)frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) &&
+        (tiltrotor.type != Tiltrotor::TILT_TYPE_BICOPTER)) {
+        AP_BoardConfig::config_error("Tailsitter support not compiled in");
+    }
+#endif  // AP_MOTORS_FRAME_TAILSITTER_ENABLED && !AP_PLANE_TAILSITTER_ENABLED
+
     switch ((AP_Motors::motor_frame_class)frame_class) {
-#if AP_MOTORS_TRI_ENABLED
+#if AP_MOTORS_FRAME_TRI_ENABLED
     case AP_Motors::MOTOR_FRAME_TRI:
         motors = NEW_NOTHROW AP_MotorsTri(rc_speed);
         motors_var_info = AP_MotorsTri::var_info;
         break;
-#endif  // AP_MOTORS_TRI_ENABLED
+#endif  // AP_MOTORS_FRAME_TRI_ENABLED
+#if AP_MOTORS_FRAME_TAILSITTER_ENABLED
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
         // this is a duo-motor tailsitter
         tailsitter.tailsitter_motors = NEW_NOTHROW AP_MotorsTailsitter(rc_speed);
         motors = tailsitter.tailsitter_motors;
         motors_var_info = AP_MotorsTailsitter::var_info;
         break;
+#endif  // AP_MOTORS_FRAME_TAILSITTER_ENABLED
+#if AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
     case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
-#if AP_SCRIPTING_ENABLED
             motors = NEW_NOTHROW AP_MotorsMatrix_Scripting_Dynamic(plane.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
-#endif // AP_SCRIPTING_ENABLED
             break;
+#endif  // AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
     default:
+#if AP_MOTORS_MATRIX_ENABLED
         motors = NEW_NOTHROW AP_MotorsMatrix(rc_speed);
         motors_var_info = AP_MotorsMatrix::var_info;
+#endif  // AP_MOTORS_MATRIX_ENABLED
         break;
     }
 
@@ -1502,12 +1538,13 @@ void SLT_Transition::update()
             } else {
                 switch (QuadPlane::TRANS_FAIL::ACTION(quadplane.transition_failure.action)) {
                     case QuadPlane::TRANS_FAIL::ACTION::QLAND:
-                        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TRANSITION);
+                        IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TRANSITION));
                         break;
 
                     case QuadPlane::TRANS_FAIL::ACTION::QRTL:
-                        plane.set_mode(plane.mode_qrtl, ModeReason::VTOL_FAILED_TRANSITION);
-                        quadplane.poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+                        if (plane.set_mode(plane.mode_qrtl, ModeReason::VTOL_FAILED_TRANSITION)) {
+                            quadplane.poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+                        }
                         break;
 
                     default:
@@ -2984,15 +3021,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
         nav_pitch_upper_limit_cd *= speed_scaler;
         nav_pitch_upper_limit_cd = MIN(nav_pitch_upper_limit_cd, angle_max_cd);
 
-        const float tconst = 0.5f;
-        const float dt = AP_HAL::millis() - q_pitch_limit_update_ms;
-        q_pitch_limit_update_ms = AP_HAL::millis();
-        if (is_positive(dt)) {
-            const float coef = dt / (dt + tconst);
-            q_bck_pitch_lim_cd = (1.0f - coef) * q_bck_pitch_lim_cd + coef * nav_pitch_upper_limit_cd;
-        }
-
-        plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, (int32_t)q_bck_pitch_lim_cd);
+        plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, (int32_t)nav_pitch_upper_limit_cd);
 
 #if HAL_LOGGING_ENABLED
         // @LoggerMessage: QBRK
@@ -3000,15 +3029,13 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
         // @Field: TimeUS: Time since system startup
         // @Field: SpdScaler: braking speed scaler
         // @Field: NPULCD: upper limit for navigation pitch
-        // @Field: QBPLCD: upper limit for back transition pitch
         // @Field: NPCD: demanded navigation pitch
         AP::logger().WriteStreaming("QBRK",
-                                "TimeUS,SpdScaler,NPULCD,QBPLCD,NPCD",  // labels
-                                "Qffii",    // fmt
+                                "TimeUS,SpdScaler,NPULCD,NPCD",  // labels
+                                "Qffi",    // fmt
                                 AP_HAL::micros64(),
                                 (double)speed_scaler,
                                 (double)nav_pitch_upper_limit_cd,
-                                (int32_t)q_bck_pitch_lim_cd,
                                 (int32_t)plane.nav_pitch_cd);
 #endif
     }
@@ -3494,14 +3521,14 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     // check for failure conditions
     if (is_positive(takeoff_failure_scalar) && ((now - takeoff_start_time_ms) > takeoff_time_limit_ms)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff within time limit");
-        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF);
+        IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF));
         return false;
     }
 
 #if AP_AIRSPEED_ENABLED
     if (is_positive(maximum_takeoff_airspeed_ms) && (plane.airspeed.get_airspeed() > maximum_takeoff_airspeed_ms)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff, excessive wind");
-        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF);
+        IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF));
         return false;
     }
 #endif
@@ -4103,11 +4130,11 @@ MAV_TYPE QuadPlane::get_mav_type(void) const
     if (tailsitter.enabled()) {
         // Tailsitter specific types
         switch (motors->get_frame_mav_type()) {
-        case MAV_TYPE_VTOL_DUOROTOR:
-            return MAV_TYPE_VTOL_DUOROTOR;
+        case MAV_TYPE_VTOL_TAILSITTER_DUOROTOR:
+            return MAV_TYPE_VTOL_TAILSITTER_DUOROTOR;
 
         case MAV_TYPE_QUADROTOR:
-            return MAV_TYPE_VTOL_QUADROTOR;
+            return MAV_TYPE_VTOL_TAILSITTER_QUADROTOR;
 
         default:
             break;

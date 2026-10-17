@@ -131,7 +131,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level in microseconds on channel 3 below which throttle failsafe triggers
+    // @Description: The PWM level in microseconds on the throttle input channel at or below which throttle failsafe triggers
     // @Range: 910 1100
     // @Units: PWM
     // @Increment: 1
@@ -1342,6 +1342,11 @@ void Copter::load_parameters(void)
 #if AP_AVOIDANCE_ENABLED
     // convert AC_Avoid parameters
     copter.avoid.convert_params();
+#endif
+
+#if MODE_FOLLOW_ENABLED
+    // convert Follow parameters
+    copter.g2.follow.convert_params();
 #endif
 
     // convert PILOT vertical speed and acceleration parameters

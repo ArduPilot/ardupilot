@@ -427,9 +427,10 @@ private:
     AP_Int8  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
     AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
+    AP_Float _flowNavGainHgt;       // height (m) up to which the optical-flow nav velocity gain is full scale
     AP_Float _rngNoise;             // Range finder noise : m
-    AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
-    AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF3 for
+    AP_UInt8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
+    AP_UInt8 _imuMask;               // Bitmask of IMUs to instantiate EKF3 for
     AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
     AP_Float _noaidHorizNoise;      // horizontal position measurement noise assumed when synthesised zero position measurements are used to constrain attitude drift : m
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
@@ -442,30 +443,30 @@ private:
     AP_Int8  _rngBcnDelay_ms;       // effective average delay of range beacon measurements rel to IMU (msec)
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
     AP_Float _accBiasLim;           // Accelerometer bias limit (m/s/s)
-    AP_Int8 _magMask;               // Bitmask forcing specific EKF core instances to use simple heading magnetometer fusion.
-    AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
+    AP_UInt8 _magMask;               // Bitmask forcing specific EKF core instances to use simple heading magnetometer fusion.
+    AP_UInt8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
     AP_Float _visOdmVelErrMax;      // Observation 1-STD velocity error assumed for visual odometry sensor at lowest reported quality (m/s)
     AP_Float _visOdmVelErrMin;      // Observation 1-STD velocity error assumed for visual odometry sensor at highest reported quality (m/s)
     AP_Float _wencOdmVelErr;        // Observation 1-STD velocity error assumed for wheel odometry sensor (m/s)
     AP_Int8  _flowUse;              // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
-    AP_Int8 _gsfRunMask;            // mask controlling which EKF3 instances run a separate EKF-GSF yaw estimator
-    AP_Int8 _gsfUseMask;            // mask controlling which EKF3 instances will use EKF-GSF yaw estimator data to assit with yaw resets
+    AP_UInt8 _gsfRunMask;            // mask controlling which EKF3 instances run a separate EKF-GSF yaw estimator
+    AP_UInt8 _gsfUseMask;            // mask controlling which EKF3 instances will use EKF-GSF yaw estimator data to assit with yaw resets
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
     AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
-    AP_Int32 _affinity;             // bitmask of sensor affinity options
+    AP_UInt32 _affinity;             // bitmask of sensor affinity options
     AP_Float _dragObsNoise;         // drag specific force observatoin noise (m/s/s)**2
     AP_Float _ballisticCoef_x;      // ballistic coefficient measured for flow in X body frame directions
     AP_Float _ballisticCoef_y;      // ballistic coefficient measured for flow in Y body frame directions
     AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
-    AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
+    AP_UInt8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
     AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
-    AP_Int8 _primary_core;          // initial core number
+    AP_UInt8 _primary_core;          // initial core number
     AP_Enum<LogLevel> _log_level;   // log verbosity level
     AP_Float _gpsVAccThreshold;     // vertical accuracy threshold to use GPS as an altitude source
-    AP_Int32 _options;              // bit mask of processing options
+    AP_UInt32 _options;              // bit mask of processing options
 
     // enum for processing options
     enum class Option {

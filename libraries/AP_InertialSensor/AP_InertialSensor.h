@@ -420,7 +420,7 @@ public:
         // Parameters
         AP_Int16 _required_count;
         uint16_t _real_required_count;
-        AP_Int8 _sensor_mask;
+        AP_UInt8 _sensor_mask;
         AP_Int8 _batch_options_mask;
 
         // Parameters controlling pushing data to AP_Logger:
@@ -432,7 +432,7 @@ public:
         // will loop back around to the first sensor after about
         // twenty seconds.
         AP_Int16 samples_per_msg;
-        AP_Int8 push_interval_ms;
+        AP_UInt8 push_interval_ms;
 
         // end Parameters
 
@@ -626,8 +626,8 @@ private:
 
     // IDs to uniquely identify each sensor: shall remain
     // the same across reboots
-    AP_Int32 _accel_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
-    AP_Int32 _gyro_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+    AP_UInt32 _accel_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+    AP_UInt32 _gyro_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
 
     // accelerometer scaling and offsets
     AP_Vector3f _accel_scale_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
@@ -700,13 +700,13 @@ private:
     INS_PARAM_WRAPPER(_use);
 
     // control enable of fast sampling
-    AP_Int8     _fast_sampling_mask;
+    AP_UInt8    _fast_sampling_mask;
 
     // control enable of fast sampling
-    AP_Int8     _fast_sampling_rate;
+    AP_UInt8    _fast_sampling_rate;
 
     // control enable of detected sensors
-    AP_Int8     _enable_mask;
+    AP_UInt8    _enable_mask;
     
     // board orientation from AHRS
     enum Rotation _board_orientation;
@@ -849,7 +849,7 @@ private:
     INS_PARAM_WRAPPER(caltemp_gyro);
     INS_PARAM_WRAPPER(tcal);
 
-    AP_Int32 tcal_options;
+    AP_UInt32 tcal_options;
     bool tcal_learning;
 #endif
 
@@ -860,7 +860,7 @@ private:
         POST_FILTER         = (1U<<2),
         PRE_AND_POST_FILTER = (1U<<3),
     };
-    AP_Int16 raw_logging_options;
+    AP_UInt16 raw_logging_options;
     bool raw_logging_option_set(RAW_LOGGING_OPTION option) const {
         return (raw_logging_options.get() & int32_t(option)) != 0;
     }

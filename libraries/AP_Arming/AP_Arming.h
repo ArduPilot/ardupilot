@@ -4,7 +4,7 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS_config.h>
-#include <AP_BoardConfig/AP_BoardConfig_config.h>
+#include <AP_BoardConfig/IMU_heater_config.h>
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
@@ -182,11 +182,11 @@ protected:
 
     // Parameters
     AP_Enum<Required>       require;
-    AP_Int32                checks_to_skip; // bitmask for which checks should be skipped
+    AP_UInt32               checks_to_skip; // bitmask for which checks should be skipped
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
-    AP_Int32                _required_mission_items;
-    AP_Int32                _arming_options;
+    AP_UInt32               _required_mission_items;
+    AP_UInt32               _arming_options;
     AP_Int16                magfield_error_threshold;
     AP_Enum<RequireLocation> require_location;
 
@@ -220,6 +220,8 @@ protected:
     bool rc_in_calibration_check(bool report);
 
     bool rc_arm_checks(AP_Arming::Method method);
+
+    bool rc_option_checks(bool report);
 
     bool manual_transmitter_checks(bool report);
 

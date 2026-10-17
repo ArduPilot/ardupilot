@@ -335,8 +335,6 @@ void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
     return result;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-truncation"
 struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
 {
     FS_CHECK_ALLOWED(nullptr);
@@ -367,16 +365,18 @@ struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
     pair->entry.d_seekoff++;
 #endif
 
-    strncpy(pair->entry.d_name, info.name, MIN(strlen(info.name)+1, sizeof(pair->entry.d_name)));
+    // a name as long as d_name would otherwise be left without its terminator
+    const size_t len = MIN(strlen(info.name), sizeof(pair->entry.d_name)-1);
+    memcpy(pair->entry.d_name, info.name, len);
+    pair->entry.d_name[len] = 0;
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    pair->entry.d_namlen = strlen(info.name);
+    pair->entry.d_namlen = len;
 #endif
 
     pair->entry.d_type = info.type == LFS_TYPE_DIR ? DT_DIR : DT_REG;
 
     return &pair->entry;
 }
-#pragma GCC diagnostic pop
 
 int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
 {

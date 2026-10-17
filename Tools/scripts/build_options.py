@@ -41,6 +41,9 @@ class Feature:
 # dependencies  : Comma-separated list of feature labels that this feature depends on
 #                 (a single string with commas and no spaces). e.g., 'dependency1,dependency2'.
 BUILD_OPTIONS = [
+    Feature('Other', 'USB debug startup wait', 'AP_USB_DEBUG_STARTUP_WAIT_ENABLED',
+            'Wait for USB GDB before vehicle setup', 0, 'USB debug'),
+    Feature('Other', 'USB debug', 'AP_USB_DEBUG_ENABLED', 'Enable STM32H7 USB GDB debugging', 0, None),
     Feature('AHRS', 'EKF3', 'HAL_NAVEKF3_AVAILABLE', 'Enable EKF3', 1, None),
     Feature('AHRS', 'EKF2', 'HAL_NAVEKF2_AVAILABLE', 'Enable EKF2', 0, None),
     Feature('AHRS', 'AHRS_EXT', 'AP_EXTERNAL_AHRS_ENABLED', 'Enable External AHRS', 0, None),
@@ -58,6 +61,7 @@ BUILD_OPTIONS = [
     Feature('AHRS', 'EKF3_OPTFLOW', 'EK3_FEATURE_OPTFLOW_FUSION', 'Enable OpticalFlow fusion for EKF3', 0, 'EKF3,OPTICALFLOW'),
     Feature('AHRS', 'EKF3_OPTFLOW_SRTM', 'EK3_FEATURE_OPTFLOW_SRTM', 'Enable OpticalFlow using SRTM for EKF3', 0, 'EKF3_OPTFLOW'),  # noqa: E501
     Feature('AHRS', 'EKF3_RESET', 'AP_AHRS_EKF_RESET_ENABLED', 'Enable EKF bootstrap reset aux function', 1, 'EKF3'),
+    Feature('AHRS', 'AHRS_POS_RESET', 'AP_AHRS_POSITION_RESET_ENABLED', 'Enable setting position from external position estimates', 0, 'EKF3'),  # noqa: E501
     Feature('AHRS', 'BARO_WIND_COMP', 'HAL_BARO_WIND_COMP_ENABLED', 'Enable Baro wind compensation', 0, None),
 
     Feature('Safety', 'PARACHUTE', 'HAL_PARACHUTE_ENABLED', 'Enable Parachute', 0, None),
@@ -74,7 +78,7 @@ BUILD_OPTIONS = [
     Feature('Battery', 'BATTERY_INA2XX', 'AP_BATTERY_INA2XX_ENABLED', 'Enable INA2XX battery monitor', 0, None),
     Feature('Battery', 'BATTERY_INA3221', 'AP_BATTERY_INA3221_ENABLED', 'Enable INA3221 battery monitor', 0, None),
     Feature('Battery', 'BATTERY_SYNTHETIC_CURRENT', 'AP_BATTERY_SYNTHETIC_CURRENT_ENABLED', 'Enable Synthetic Current monitor', 0, None), # noqa: E501
-    Feature('Battery', 'BATTERY_ESC_TELEM_OUT', 'AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', 'Enable Ability to put battery monitor data into ESC telem stream', 0, None), # noqa: E501
+    Feature('Battery', 'BATTERY_ESC_TELEM_OUT', 'AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', 'Enable Ability to put battery monitor data into ESC telem stream', 0, 'ESC_TELEM'), # noqa: E501
     Feature('Battery', 'BATTERY_SUM', 'AP_BATTERY_SUM_ENABLED', 'Enable Synthetic sum-of-other-batteries backend', 0, None), # noqa: E501
     Feature('Battery', 'BATTERY_WATT_MAX', 'AP_BATTERY_WATT_MAX_ENABLED', 'Enable BATT_WATT_MAX parameter', 0, None), # noqa: E501
 
@@ -148,7 +152,7 @@ BUILD_OPTIONS = [
     Feature('VTX', 'SMARTAUDIO', 'AP_SMARTAUDIO_ENABLED', 'Enable SmartAudio VTX contol', 0, "VIDEO_TX"),
     Feature('VTX', 'TRAMP', 'AP_TRAMP_ENABLED', 'Enable IRC Tramp VTX control', 0, "VIDEO_TX"),
 
-    Feature('ESC', 'PICCOLOCAN', 'AP_PICCOLOCAN_ENABLED', 'Enable PiccoloCAN', 0, 'DroneCAN'),
+    Feature('ESC', 'PICCOLOCAN', 'AP_PICCOLOCAN_ENABLED', 'Enable PiccoloCAN', 0, 'DroneCAN,ESC_TELEM'),
     Feature('ESC', 'TORQEEDO', 'HAL_TORQEEDO_ENABLED', 'Enable Torqeedo motors', 0, None),
 
     Feature('ESC', 'ESC_TELEM', 'HAL_WITH_ESC_TELEM', 'Enable ESC telemetry', 0, None),
@@ -215,6 +219,7 @@ BUILD_OPTIONS = [
 
     Feature('Compass', 'AF9838', 'AP_COMPASS_AF9838_ENABLED', 'Enable AF9838 compasses', 1, None),
     Feature('Compass', 'AK09916', 'AP_COMPASS_AK09916_ENABLED', 'Enable AK0991x compasses', 1, None),
+    Feature('Compass', 'AK09940A', 'AP_COMPASS_AK09940A_ENABLED', 'Enable AK09940A compasses', 1, None),
     Feature('Compass', 'AK8963', 'AP_COMPASS_AK8963_ENABLED', 'Enable AK8963 compasses', 1, None),
     Feature('Compass', 'BMM150', 'AP_COMPASS_BMM150_ENABLED', 'Enable BMM150 compasses', 1, None),
     Feature('Compass', 'BMM350', 'AP_COMPASS_BMM350_ENABLED', 'Enable BMM350 compasses', 1, None),
@@ -255,6 +260,11 @@ BUILD_OPTIONS = [
     Feature('Gimbal', 'POILOCK', 'AP_MOUNT_POI_LOCK_ENABLED', 'Enable Aux Switch POI lock', 0, "MOUNT"),
     Feature('Gimbal', 'MOUNT_WPNEXT_OFFSET', 'AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED', 'Enable tracking next waypoint with offset', 0, "MOUNT"),  # noqa
 
+    # note that while there's only one Frame for an AP_Motors backend
+    # subclass we can turn off the entire backend using the define for
+    # that subclass.  That simplifies the cbs interface, but it does
+    # mean we are mis-naming motor backends as frames in this list:
+    Feature('VTOL Frame', 'TAILSITTER', 'AP_MOTORS_TAILSITTER_ENABLED', 'Dual-motor tailsitter frame', 0, "QUADPLANE"),
     Feature('VTOL Frame', 'TRI', 'AP_MOTORS_TRI_ENABLED', 'TriCopters', 0, None),
     Feature('VTOL Frame', 'QUAD', 'AP_MOTORS_FRAME_QUAD_ENABLED', 'QUAD', 1, None),
     Feature('VTOL Frame', 'HEXA', 'AP_MOTORS_FRAME_HEXA_ENABLED', 'HEXA', 0, None),
@@ -263,6 +273,12 @@ BUILD_OPTIONS = [
     Feature('VTOL Frame', 'DODECAHEXA', 'AP_MOTORS_FRAME_DODECAHEXA_ENABLED', 'DODECAHEXA', 0, None),
     Feature('VTOL Frame', 'Y6', 'AP_MOTORS_FRAME_Y6_ENABLED', 'Y6', 0, None),
     Feature('VTOL Frame', 'OCTAQUAD', 'AP_MOTORS_FRAME_OCTAQUAD_ENABLED', 'OCTAQUAD', 0, None),
+    Feature('VTOL Frame', 'SINGLE', 'AP_MOTORS_SINGLE_ENABLED', 'SINGLE', 0, None),
+    Feature('VTOL Frame', 'COAX', 'AP_MOTORS_COAX_ENABLED', 'COAX', 0, None),
+    Feature('VTOL Frame', '6DOF_SCRIPTING', 'AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED', '6DOF_SCRIPTING', 0, 'SCRIPTING'),
+    Feature('VTOL Frame', 'DYNAMIC_SCRIPTING', 'AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED', 'DYNAMIC_SCRIPTING', 0, 'SCRIPTING'),  # noqa: E501
+    Feature('VTOL Frame', 'SCRIPTING_MATRIX', 'AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED', 'SCRIPTING_MATRIX', 0, 'SCRIPTING'),  # noqa: E501
+    # Feature('VTOL Frame', '6DOF', 'AP_MOTORS_FRAME_6DOF_ENABLED', 'Sub 6DOF', 0, None),  # Sub fails to build without this  # noqa: E501
 
     Feature('Payload', 'GRIPPER', 'AP_GRIPPER_ENABLED', 'Enable Gripper', 0, None),
     Feature('Payload', 'SPRAYER', 'HAL_SPRAYER_ENABLED', 'Enable Sprayer', 0, None),
@@ -286,6 +302,9 @@ BUILD_OPTIONS = [
     Feature('Plane', 'QUICKTUNE', 'AP_QUICKTUNE_ENABLED', 'Enable VTOL quicktune', 0, None),
     Feature('Plane', 'AUTOLAND_MODE', 'MODE_AUTOLAND_ENABLED', 'Enable Fixed Wing Autolanding mode', 0, None),
     Feature('Plane', 'PLANE_SYSTEMID', 'AP_PLANE_SYSTEMID_ENABLED', 'Enable systemID support', 0, 'QUADPLANE,Logging'),  # NOQA: E501
+    # PLANE_CUSTOM_CONTROL depends on scripting due to SRV_Channels::set_output_pwm_chan_timeout.
+    Feature('Plane', 'PLANE_CUSTOM_CONTROL', 'AP_PLANE_CUSTOMCONTROL_ENABLED', 'Enable custom plane controller', 0, "SCRIPTING"),  # NOQA: E501
+    Feature('Plane', 'PLANE_TAILSITTER', 'AP_PLANE_TAILSITTER_ENABLED', 'Enable quadplane tailsitter', 0, 'QUADPLANE'),  # NOQA: E501
 
     Feature('RC', 'RC_Protocol', 'AP_RCPROTOCOL_ENABLED', "Enable Serial RC Protocols", 0, None),   # NOQA: E501
     Feature('RC', 'RC_CRSF', 'AP_RCPROTOCOL_CRSF_ENABLED', "Enable CRSF", 0, "RC_Protocol"),   # NOQA: E501
@@ -395,7 +414,7 @@ BUILD_OPTIONS = [
 
     Feature('Sensors', 'RPM', 'AP_RPM_ENABLED', 'Enable RPM sensors', 0, None),
     Feature('Sensors', 'RPM_EFI', 'AP_RPM_EFI_ENABLED', 'Enable RPM EFI sensors', 0, 'RPM,EFI'),
-    Feature('Sensors', 'RPM_ESC_TELEM', 'AP_RPM_ESC_TELEM_ENABLED', 'Enable RPM ESC Telemetry sensors', 0, 'RPM'),
+    Feature('Sensors', 'RPM_ESC_TELEM', 'AP_RPM_ESC_TELEM_ENABLED', 'Enable RPM ESC Telemetry sensors', 0, 'RPM,ESC_TELEM'),
     Feature('Sensors', 'RPM_HARMONIC_NOTCH', 'AP_RPM_HARMONICNOTCH_ENABLED', 'Enable RPM Harmonic Notch sensors', 0, 'RPM,HarmonicNotches'),  # noqa
     Feature('Sensors', 'RPM_PIN', 'AP_RPM_PIN_ENABLED', 'Enable RPM Pin-based sensors', 0, 'RPM'),
     Feature('Sensors', 'RPM_GENERATOR', 'AP_RPM_GENERATOR_ENABLED', 'Enable Generator RPM sensors', 0, 'RPM,GENERATOR'),
@@ -513,6 +532,7 @@ BUILD_OPTIONS = [
 
     #    Feature('Filesystem', 'FILESYSTEM_ESP32_ENABLED', 'AP_FILESYSTEM_ESP32_ENABLED', 'Enable ESP32 Filesystem', 0, None),
     # Feature('Filesystem', 'FILESYSTEM_FATFS', 'AP_FILESYSTEM_FATFS_ENABLED', 'Enable FATFS Filesystem', 0, None),
+    Feature('Filesystem', 'FILESYSTEM_MAVLOG', 'AP_FILESYSTEM_MAVLOG_ENABLED', 'Enable @MAV_LOG/ filesystem', 0, 'Logging'),
     Feature('Filesystem', 'FILESYSTEM_MISSION', 'AP_FILESYSTEM_MISSION_ENABLED', 'Enable @MISSION/ filesystem', 0, None),
     Feature('Filesystem', 'FILESYSTEM_PARAM', 'AP_FILESYSTEM_PARAM_ENABLED', 'Enable @PARAM/ filesystem', 0, None),
     #    Feature('Filesystem', 'FILESYSTEM_POSIX', 'AP_FILESYSTEM_POSIX_ENABLED', 'Enable POSIX filesystem', 0, None),

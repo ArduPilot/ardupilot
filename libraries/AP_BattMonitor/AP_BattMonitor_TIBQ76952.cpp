@@ -424,6 +424,9 @@ extern const AP_HAL::HAL& hal;
 #define TIBQ769x2_SWAP_TO_SPI 0x7C35
 #define TIBQ769x2_SWAP_TO_HDQ 0x7C40
 
+// Manufacturing Status bits
+#define MFG_STATUS_FET_EN       (1 << 4)    // FET control enabled (0 = FET test mode, 1 = normal FET control)
+
 // Alarm Status bits
 #define ALARM_STATUS_WAKE       (1 << 0)    // device is wakened from sleep mode
 #define ALARM_STATUS_ADSCAN     (1 << 1)    // voltage ADC scan complete
@@ -446,6 +449,7 @@ extern const AP_HAL::HAL& hal;
 #define BATTERY_STATUS_PF       (1 << 12)   // Permanent Failure
 #define BATTERY_STATUS_SAFETY   (1 << 11)   // Safety alert
 #define BATTERY_STATUS_FUSE     (1 << 10)   // Fuse status
+#define BATTERY_STATUS_CFGUPDATE (1 << 0)   // device is in CONFIG_UPDATE mode
 
 /*
   TI bq76952 register definitions from datasheet SLUUBY2B
@@ -488,6 +492,17 @@ extern const AP_HAL::HAL& hal;
 #define HAL_BATTMON_BQ76952_DISCHARGE_THRESHOLD_V (AP_BATTMON_CELL_COUNT * 2)
 #endif
 
+// Charging current detection threshold in amps
+#ifndef HAL_BATTMON_BQ76952_CHARGING_THRESHOLD_A
+#define HAL_BATTMON_BQ76952_CHARGING_THRESHOLD_A 0.5
+#endif
+
+// Deep sleep wake delay in milliseconds
+// if the MCU remains powered for this long after the TIBQ device enters deep sleep it is woken
+#ifndef HAL_BATTMON_BQ76952_DEEPSLEEP_WAKE_MS
+#define HAL_BATTMON_BQ76952_DEEPSLEEP_WAKE_MS 2000
+#endif
+
 #define DEBUG_PRINT 1
 
 #if DEBUG_PRINT
@@ -524,10 +539,11 @@ AP_BattMonitor_TIBQ76952::AP_BattMonitor_TIBQ76952(AP_BattMonitor &mon,
 const AP_BattMonitor_TIBQ76952::ConfigurationSetting AP_BattMonitor_TIBQ76952::config_settings[] {
 
     // 'Power Config' - 0x9234 = 0x2980, b00101001 10000000
-    // bit 0~1: WKS_SPD, wake speeds set to zero for lower noise
+    // bit 0~1: WK_SPD, wake speeds set to zero for lower noise
     // bit 7: OTSD, over-temperature shutdown enabled (0 = disable shutdown, 1 = enable shutdown)
     // bit 8: SLEEP, default value of sleep mode: 0: disable sleep, 1: enable sleep
-    // bit 11: DPSLP_PD, determines if REG1, REG2 are disabled in deep sleep mode (0: disable REG1/2, 1:leave REG2, REG2 in current state)
+    // bit 10: DPSLP_LDO, determines if REG1, REG2 are disabled in deep sleep mode (0: disable REG1/2, 1: leave REG1/2 in current state)
+    // bit 11: DPSLP_PD, enables wake from deep sleep when a charger is attached (0: disabled, 1: rising edge on LD pin exits deep sleep)
     // bit 13: DPSLP_OT, enable transition from deep sleep to shutdown based on over-temp detection (0: in deepsleep, on-chip over temp is disabled, 1: On-chip over-temp enabled in deep sleep allowing shutdown)
     {TIBQ769x2_PowerConfig, 0x2980, 2},
 
@@ -655,7 +671,6 @@ void AP_BattMonitor_TIBQ76952::read(void)
     }
 
     // copy accumulated values to state
-    _state.last_time_micros = AP_HAL::micros();
     _state.voltage = accumulate.voltage / accumulate.count;
     _state.current_amps = -accumulate.current / accumulate.count;
     _state.temperature = accumulate.temp / accumulate.count;
@@ -664,25 +679,75 @@ void AP_BattMonitor_TIBQ76952::read(void)
         _state.cell_voltages.cells[i] = accumulate.cell_voltages_mv[i] / accumulate.count;
     }
 
+    // update total current drawn since startup
+    const uint32_t tnow = AP_HAL::micros();
+    const uint32_t dt_us = tnow - _state.last_time_micros;
+    update_consumed(_state, dt_us);
+
+    // ensure consumed capacity is not negative
+    _state.consumed_mah = MAX(_state.consumed_mah, 0.0f);
+    _state.consumed_wh = MAX(_state.consumed_wh, 0.0f);
+
+    // update state update timestamp
+    _state.last_time_micros = tnow;
+
+    // on first reading, estimate consumed capacity from cell voltages
+    // the consumed capacity is not retained while the MCU is powered down
+    if (!soc_initialised) {
+        float soc_pct;
+        if (estimate_soc_from_cell_voltage(soc_pct)) {
+            reset_remaining(soc_pct);
+            soc_initialised = true;
+        }
+    }
+
     // clear accumulate structure
     accumulate = {};
 }
 
 // set desired powered state (enabled/disabled) by enabling/disabling discharge FET
+// the requested state is sent to the TIBQ device from the timer thread
 void AP_BattMonitor_TIBQ76952::set_powered_state(bool power_on)
 {
-    if (!configured) {
-        return;
-    }
-    indirect_send_command(power_on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_DSG_PDSG_OFF);
+    power_state_req.on = power_on;
+    power_state_req.pending = true;
 }
 
 // periodic timer callback
 void AP_BattMonitor_TIBQ76952::timer(void)
 {
+    // handle deep sleep
+    // normally the MCU loses power shortly after the TIBQ device enters deep sleep
+    // if the MCU remains powered (e.g. via CAN) the TIBQ device is woken and the sleep timeout is increased
+    if (deep_sleep_req_ms != 0) {
+        // wake immediately if the user has requested power on
+        const bool power_on_pending = power_state_req.pending && power_state_req.on;
+        if (!power_on_pending && (AP_HAL::millis() - deep_sleep_req_ms < HAL_BATTMON_BQ76952_DEEPSLEEP_WAKE_MS)) {
+            // readings are not updated while the TIBQ device is in deep sleep
+            return;
+        }
+        deep_sleep_req_ms = 0;
+
+        // re-configure TIBQ device which includes waking, checking device ID, and restoring FET state
+        // extend sleep timout assuming the MCU will remain powered from the autopilot
+        configured = false;
+        sleep_timeout_extended = true;
+        Debug("BQ76952: MCU still powered, waking TIBQ from deep sleep");
+    }
+
     // configure device if required
     if (!configure()) {
         return;
+    }
+
+    // send requested power state to TIBQ device
+    // pending is cleared before sending so a request received during the send is not lost
+    if (power_state_req.pending) {
+        power_state_req.pending = false;
+        if (!indirect_send_command(power_state_req.on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_DSG_PDSG_OFF)) {
+            // retry on next iteration
+            power_state_req.pending = true;
+        }
     }
 
     // read data from device
@@ -700,25 +765,25 @@ bool AP_BattMonitor_TIBQ76952::configure()
         return true;
     }
 
-    // check device id, exit on failure
-    const uint32_t device_number = indirect_read_4bytes(TIBQ769x2_DEVICE_NUMBER);
-    if (device_number != DEVICE_ID_TIBQ7695) {
-        Debug("BQ76952: Unknown device detected - ID: 0x%08lX", (unsigned long)device_number);
-        return false;
-    }
-
-    // check device's firmware and hardware versions
-#if DEBUG_PRINT
-    const uint32_t fw_version = indirect_read_4bytes(TIBQ769x2_FW_VERSION);
-    const uint32_t hw_version = indirect_read_4bytes(TIBQ769x2_HW_VERSION);
-    Debug("BQ76952 detected, fw: 0x%08lX, hw: 0x%08lX", (unsigned long)fw_version, (unsigned long)hw_version);
-#endif
-
     // wake up device
     indirect_send_command(TIBQ769x2_EXIT_DEEPSLEEP);
     hal.scheduler->delay(10);
-    indirect_send_command(TIBQ769x2_SLEEP_DISABLE);
-    hal.scheduler->delay(10);
+
+    // check device id (2 bytes), exit on failure
+    uint8_t device_number[2] {};
+    if (!indirect_read(TIBQ769x2_DEVICE_NUMBER, device_number, sizeof(device_number)) ||
+        (UINT16_VALUE(device_number[1], device_number[0]) != DEVICE_ID_TIBQ7695)) {
+        Debug("BQ76952: Unknown device detected - ID: 0x%04X", (unsigned)UINT16_VALUE(device_number[1], device_number[0]));
+        return false;
+    }
+
+    // check device's firmware (4 of 6 bytes) and hardware (2 bytes) versions
+#if DEBUG_PRINT
+    const uint32_t fw_version = indirect_read_4bytes(TIBQ769x2_FW_VERSION);
+    uint8_t hw_version[2] {};
+    indirect_read(TIBQ769x2_HW_VERSION, hw_version, sizeof(hw_version));
+    Debug("BQ76952 detected, fw: 0x%08lX, hw: 0x%04X", (unsigned long)fw_version, (unsigned)UINT16_VALUE(hw_version[1], hw_version[0]));
+#endif
 
     // clear any remaining permanent failure alerts
     direct_command_write_1byte(TIBQ769x2_PFAlertA, 0xFF);
@@ -731,16 +796,33 @@ bool AP_BattMonitor_TIBQ76952::configure()
     if ((update_type == ConfigUpdateType::WRITE_ONCE) || (update_type == ConfigUpdateType::CHECK_AND_UPDATE && !check_configuration_ok())) {
         Debug("BQ76952: updating configuration");
 
-        // enter CONFIGUPDATE mode (Subcommand 0x0090) - required to program device RAM settings
-        indirect_send_command(TIBQ769x2_SET_CFGUPDATE);
+        // record if all writes succeeded
+        bool write_cfg_ok = true;
 
-        // write configuration settings to device registers
-        for (uint8_t i = 0; i < ARRAY_SIZE(config_settings); i++) {
-            indirect_write(config_settings[i].reg_addr, config_settings[i].reg_data, config_settings[i].len);
+        // enter CONFIGUPDATE mode (Subcommand 0x0090) - required to program device RAM settings
+        write_cfg_ok = indirect_send_command(TIBQ769x2_SET_CFGUPDATE) && wait_for_cfgupdate(true);
+
+        // write configuration settings to device registers, stop on the first failure
+        if (write_cfg_ok) {
+            for (uint8_t i = 0; i < ARRAY_SIZE(config_settings); i++) {
+                if (!indirect_write(config_settings[i].reg_addr, config_settings[i].reg_data, config_settings[i].len)) {
+                    Debug("BQ76952: failed to write configuration setting at reg 0x%04X", (unsigned)config_settings[i].reg_addr);
+                    write_cfg_ok = false;
+                    break;
+                }
+            }
         }
 
         // exit configuration mode
-        indirect_send_command(TIBQ769x2_EXIT_CFGUPDATE);
+        if (!indirect_send_command(TIBQ769x2_EXIT_CFGUPDATE) || !wait_for_cfgupdate(false)) {
+            Debug("BQ76952: failed to exit CONFIGUPDATE mode");
+            return false;
+        }
+
+        // retry if entering CONFIGUPDATE mode or any write failed
+        if (!write_cfg_ok) {
+            return false;
+        }
 
         // mode 1 is one-shot and auto-clears; mode 2 remains enabled for future auto-checks
         if (update_type == ConfigUpdateType::WRITE_ONCE) {
@@ -748,13 +830,45 @@ bool AP_BattMonitor_TIBQ76952::configure()
         }
     }
 
-    // enable charging FET only
-    indirect_send_command(TIBQ769x2_ALL_FETS_ON);
+    // disable sleep mode because the CHG FET is turned off in sleep mode
+    // this is done after the configuration update in case exiting CONFIG_UPDATE mode restores the default
+    if (!indirect_send_command(TIBQ769x2_SLEEP_DISABLE)) {
+        return false;
+    }
     hal.scheduler->delay(1);
-    indirect_send_command(TIBQ769x2_DSG_PDSG_OFF);
+
+    // enable charging FET, enable discharge FET only if power on has been requested
+    power_state_req.pending = false;
+    if (!indirect_send_command(TIBQ769x2_ALL_FETS_ON)) {
+        return false;
+    }
     hal.scheduler->delay(1);
-    indirect_send_command(TIBQ769x2_FET_ENABLE);
-    hal.scheduler->delay(1);
+    if (!power_state_req.on) {
+        if (!indirect_send_command(TIBQ769x2_DSG_PDSG_OFF)) {
+            return false;
+        }
+        hal.scheduler->delay(1);
+    }
+
+    // enable normal FET control
+    // FET_ENABLE toggles FET_EN so only send if FET_EN is not already set
+    // FET_EN persists across MCU reboots because the TIBQ device remains powered by the battery
+    uint8_t mfg_status[2] {};
+    if (!indirect_read(TIBQ769x2_MANUFACTURINGSTATUS, mfg_status, sizeof(mfg_status))) {
+        Debug("BQ76952: failed to read manufacturing status");
+        return false;
+    }
+    const bool fet_en = (mfg_status[0] & MFG_STATUS_FET_EN) != 0;
+    if (!fet_en) {
+        Debug("BQ76952: enabling FET control");
+        if (!indirect_send_command(TIBQ769x2_FET_ENABLE)) {
+            return false;
+        }
+        hal.scheduler->delay(1);
+    }
+
+    // restart sleep timeout
+    activity_timer_ms = AP_HAL::millis();
 
     // mark configuration as complete to prevent repeated attempts
     configured = true;
@@ -762,6 +876,20 @@ bool AP_BattMonitor_TIBQ76952::configure()
 
     // report success
     return true;
+}
+
+// wait for the device to enter (or exit) CONFIG_UPDATE mode, returns true on success
+bool AP_BattMonitor_TIBQ76952::wait_for_cfgupdate(bool in_cfgupdate) const
+{
+    for (uint8_t i = 0; i < 10; i++) {
+        hal.scheduler->delay(1);
+        uint16_t battery_status;
+        if (direct_command_read_2bytes(TIBQ769x2_BatteryStatus, battery_status) &&
+            (((battery_status & BATTERY_STATUS_CFGUPDATE) != 0) == in_cfgupdate)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // compare the current configuration against the desired settings
@@ -806,7 +934,7 @@ bool AP_BattMonitor_TIBQ76952::check_configuration_ok() const
 // returns true if the device is configured and responding to commands
 bool AP_BattMonitor_TIBQ76952::healthy() const
 {
-    if (!configured || bms_fault) {
+    if (!configured || bms_fault || (deep_sleep_req_ms != 0)) {
         return false;
     }
 
@@ -818,37 +946,58 @@ bool AP_BattMonitor_TIBQ76952::healthy() const
 bool AP_BattMonitor_TIBQ76952::read_voltage_current_temperature()
 {
     // exit immediately if full voltage scan has not completed (FULL_SCAN bit 7)
-    const uint16_t alarm_raw_status = direct_command_read_2bytes(TIBQ769x2_AlarmRawStatus);
-    if (!(alarm_raw_status & ALARM_STATUS_FULLSCAN)) {
+    uint16_t alarm_raw_status;
+    if (!direct_command_read_2bytes(TIBQ769x2_AlarmRawStatus, alarm_raw_status) ||
+        !(alarm_raw_status & ALARM_STATUS_FULLSCAN)) {
         return false;
     }
 
     // check for faults
-    const uint16_t battery_status = direct_command_read_2bytes(TIBQ769x2_BatteryStatus);
+    uint16_t battery_status;
+    if (!direct_command_read_2bytes(TIBQ769x2_BatteryStatus, battery_status)) {
+        return false;
+    }
     bms_fault = (battery_status & BATTERY_STATUS_PF) != 0 ||
                 (battery_status & BATTERY_STATUS_SAFETY) != 0 ||
                 (battery_status & BATTERY_STATUS_FUSE) != 0;
 
-    // get semaphore before updating accumulate structure
-    WITH_SEMAPHORE(accumulate_sem);
-
+    // read all values before accumulating so that a failed read does not corrupt the averages
     // read stack voltage (should equal sum of cell voltages)
     // we do not use the package voltage because this is floating when FETs are off
-    accumulate.voltage += direct_command_read_2bytes(TIBQ769x2_StackVoltage) * 0.01;
+    uint16_t stack_voltage_cv;
+    if (!direct_command_read_2bytes(TIBQ769x2_StackVoltage, stack_voltage_cv)) {
+        return false;
+    }
 
     // read individual cell voltages
+    uint16_t cell_voltages_mv[AP_BATTMON_CELL_COUNT];
     for (uint8_t i = 0; i < AP_BATTMON_CELL_COUNT; i++) {
-        const uint16_t cell_voltage_mv = direct_command_read_2bytes(TIBQ769x2_Cell1Voltage + i*2);
-        accumulate.cell_voltages_mv[i] += cell_voltage_mv;
+        if (!direct_command_read_2bytes(TIBQ769x2_Cell1Voltage + i*2, cell_voltages_mv[i])) {
+            return false;
+        }
     }
 
     // read current (positive values = charging, negative = discharging)
-    const int16_t cc2_current = direct_command_read_2bytes(TIBQ769x2_CC2Current);
-    accumulate.current += cc2_current * 0.001f; // convert to Amps
+    uint16_t cc2_current;
+    if (!direct_command_read_2bytes(TIBQ769x2_CC2Current, cc2_current)) {
+        return false;
+    }
 
     // read temperature
-    const int16_t temp_internal = direct_command_read_2bytes(TIBQ769x2_IntTemperature); // 0.1K
-    accumulate.temp += KELVIN_TO_C(temp_internal * 0.1f); // convert to degC
+    uint16_t temp_internal; // 0.1K
+    if (!direct_command_read_2bytes(TIBQ769x2_IntTemperature, temp_internal)) {
+        return false;
+    }
+
+    // get semaphore before updating accumulate structure
+    WITH_SEMAPHORE(accumulate_sem);
+
+    accumulate.voltage += stack_voltage_cv * 0.01;
+    for (uint8_t i = 0; i < AP_BATTMON_CELL_COUNT; i++) {
+        accumulate.cell_voltages_mv[i] += cell_voltages_mv[i];
+    }
+    accumulate.current += int16_t(cc2_current) * 0.001f; // convert to Amps
+    accumulate.temp += KELVIN_TO_C(int16_t(temp_internal) * 0.1f); // convert to degC
 
     // increment number of readings
     accumulate.count++;
@@ -861,27 +1010,29 @@ bool AP_BattMonitor_TIBQ76952::read_voltage_current_temperature()
 // read battery charging state (e.g. idle, charging, discharging)
 void AP_BattMonitor_TIBQ76952::read_charging_state()
 {
-    AP_BattMonitor::ChargingState new_state = _state.charging_state;
+    // take semaphore before accessing accumulate struct
+    WITH_SEMAPHORE(accumulate_sem);
 
-    const uint16_t alarm_raw_status = direct_command_read_2bytes(TIBQ769x2_AlarmRawStatus);
-    if (!(alarm_raw_status & ALARM_STATUS_WAKE)) {
-        new_state = AP_BattMonitor::ChargingState::IDLE;
+    // keep previous state if accumulated readings have just been consumed by read()
+    if (accumulate.count == 0) {
+        return;
+    }
+
+    AP_BattMonitor::ChargingState new_state = AP_BattMonitor::ChargingState::IDLE;
+
+    // Charging if average current is above threshold
+    if (accumulate.current / accumulate.count > HAL_BATTMON_BQ76952_CHARGING_THRESHOLD_A) {
+        new_state = AP_BattMonitor::ChargingState::CHARGING;
     } else {
-        // take semaphore before accessing accumulate struct
-        WITH_SEMAPHORE(accumulate_sem);
-
-        // Charging if current is positive
-        if (accumulate.current > 0) {
-            new_state = AP_BattMonitor::ChargingState::CHARGING;
-        } else {
-            // Discharging if pack voltage above threshold
-            // Note: after charging stops this will momentarily report discharging but this is unavoidable
-            const uint16_t pack_voltage = direct_command_read_2bytes(TIBQ769x2_PACKPinVoltage);
-            if (pack_voltage > (HAL_BATTMON_BQ76952_DISCHARGE_THRESHOLD_V * 100)) {
-                new_state = AP_BattMonitor::ChargingState::DISCHARGING;
-            } else {
-                new_state = AP_BattMonitor::ChargingState::IDLE;
-            }
+        // Discharging if pack voltage above threshold
+        // Note: after charging stops this will momentarily report discharging but this is unavoidable
+        // keep previous state if pack voltage cannot be read
+        uint16_t pack_voltage;
+        if (!direct_command_read_2bytes(TIBQ769x2_PACKPinVoltage, pack_voltage)) {
+            return;
+        }
+        if (pack_voltage > (HAL_BATTMON_BQ76952_DISCHARGE_THRESHOLD_V * 100)) {
+            new_state = AP_BattMonitor::ChargingState::DISCHARGING;
         }
     }
 
@@ -891,6 +1042,24 @@ void AP_BattMonitor_TIBQ76952::read_charging_state()
     }
 
     _state.charging_state = new_state;
+}
+
+// estimate state of charge (0-100%) from the average cell voltage
+// this is only accurate when the battery is at rest
+bool AP_BattMonitor_TIBQ76952::estimate_soc_from_cell_voltage(float &soc_pct) const
+{
+    uint32_t total_mv = 0;
+    for (uint8_t i = 0; i < AP_BATTMON_CELL_COUNT; i++) {
+        if (_state.cell_voltages.cells[i] == 0) {
+            return false;
+        }
+        total_mv += _state.cell_voltages.cells[i];
+    }
+    const float avg_cell_voltage = total_mv * 0.001f / AP_BATTMON_CELL_COUNT;
+
+    // linear mapping of 3.0V (0%) to 4.2V (100%)
+    soc_pct = constrain_float((avg_cell_voltage - 3.0f) * 100.0f / 1.2f, 0, 100);
+    return true;
 }
 
 // check if the BMS should sleep
@@ -908,8 +1077,9 @@ void AP_BattMonitor_TIBQ76952::check_sleep_timeout()
         return;
     }
 
-    // check for timeout
-    if (now_ms - activity_timer_ms > sleep_timeout_sec * 1000) {
+    // check for timeout, timeout is 10x longer if MCU remained powered after a previous deep sleep
+    const uint32_t timeout_ms = uint32_t(sleep_timeout_sec) * 1000 * (sleep_timeout_extended ? 10 : 1);
+    if (now_ms - activity_timer_ms > timeout_ms) {
         // reset activity counter to avoid resending sleep commands in case BMS decides not to sleep
         activity_timer_ms = now_ms;
 
@@ -919,6 +1089,7 @@ void AP_BattMonitor_TIBQ76952::check_sleep_timeout()
         // sleep mode commands must be sent twice
         indirect_send_command(TIBQ769x2_DEEPSLEEP);
         indirect_send_command(TIBQ769x2_DEEPSLEEP);
+        deep_sleep_req_ms = now_ms;
     }
 }
 
@@ -955,14 +1126,15 @@ bool AP_BattMonitor_TIBQ76952::write_register(uint8_t reg_addr, const uint8_t *r
     return true;
 }
 
-// send a direct command to read 2 bytes
-uint16_t AP_BattMonitor_TIBQ76952::direct_command_read_2bytes(uint16_t reg) const
+// send a direct command to read 2 bytes, returns true on success
+bool AP_BattMonitor_TIBQ76952::direct_command_read_2bytes(uint16_t reg, uint16_t &value) const
 {
     uint8_t rx_data[2];
-    if (read_register(reg, rx_data, 2)) {
-        return UINT16_VALUE(rx_data[1], rx_data[0]);
+    if (!read_register(reg, rx_data, 2)) {
+        return false;
     }
-    return 0;
+    value = UINT16_VALUE(rx_data[1], rx_data[0]);
+    return true;
 }
 
 // send a direct command to write 1byte
@@ -1021,7 +1193,7 @@ bool AP_BattMonitor_TIBQ76952::indirect_write(uint16_t addr, uint32_t data, uint
 bool AP_BattMonitor_TIBQ76952::indirect_read(uint16_t addr, uint8_t *rx_data, uint8_t len) const
 {
     // sanity check read buffer
-    if (rx_data == nullptr || len == 0) {
+    if (rx_data == nullptr || len == 0 || len > 32) {
         return false;
     }
 
@@ -1030,10 +1202,42 @@ bool AP_BattMonitor_TIBQ76952::indirect_read(uint16_t addr, uint8_t *rx_data, ui
     if (!write_register(0x3E, tx_reg, 2)) {
         return false;
     }
-    hal.scheduler->delay(2);
 
-    // read response into provided buffer
-    return read_register(0x40, rx_data, len);
+    // wait for the response to be ready, 0x3E and 0x3F read back as 0xFF until the device echoes the address
+    bool ready = false;
+    for (uint8_t i = 0; i < 10; i++) {
+        hal.scheduler->delay(1);
+        uint8_t echo[2];
+        if (read_register(0x3E, echo, sizeof(echo)) && (echo[0] == tx_reg[0]) && (echo[1] == tx_reg[1])) {
+            ready = true;
+            break;
+        }
+    }
+    if (!ready) {
+        return false;
+    }
+
+    // read response length which includes the address, checksum and length bytes
+    uint8_t resp_len;
+    if (!read_register(0x61, &resp_len, 1) || (resp_len < len + 4) || (resp_len > 36)) {
+        return false;
+    }
+
+    // read response data and checksum separately as reading them together may trigger an auto increment
+    uint8_t buff[2 + 32] {tx_reg[0], tx_reg[1]};
+    const uint8_t data_len = resp_len - 4;
+    uint8_t checksum;
+    if (!read_register(0x40, &buff[2], data_len) || !read_register(0x60, &checksum, 1)) {
+        return false;
+    }
+
+    // checksum is calculated over the address and response data
+    if (checksum != calculate_checksum(buff, data_len + 2)) {
+        return false;
+    }
+
+    memcpy(rx_data, &buff[2], len);
+    return true;
 }
 
 // read 4 bytes via the indirect mechanism (e.g. DEVICE_NUMBER, FW_VERSION, HW_VERSION)

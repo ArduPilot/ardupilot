@@ -384,6 +384,13 @@ class GitSubsystemsSplit(object):
         for commit in commits:
             subject = self.git(["log", "-n", "1", "--format=%s", commit])
             declared = self.declared_prefix(subject)
+            if declared is not None and declared.upper() == "DEBUG":
+                # leave DEBUG-labelled commits untouched: they are
+                # scaffolding not meant to accord with the subsystem rules
+                # and may touch files that map to no subsystem.  groups is
+                # None to mark the commit for verbatim replay.
+                plan.append((commit, subject, declared, None, []))
+                continue
             files = self.commit_files(commit)
             groups, unmatched = self.classify_files(files, subsystems,
                                                     declared)
@@ -394,6 +401,10 @@ class GitSubsystemsSplit(object):
         print(f"Plan for {len(commits)} commit(s) since {base[:12]}:")
         total_out = 0
         for commit, subject, declared, groups, unmatched in plan:
+            if groups is None:
+                total_out += 1
+                print(f"  {commit[:12]}  keep (DEBUG, unchanged): {subject}")
+                continue
             if unmatched:
                 print(f"  {commit[:12]}  UNMAPPED: {subject}")
                 for path in unmatched:
@@ -425,6 +436,12 @@ class GitSubsystemsSplit(object):
         self.git(["reset", "--hard", base], capture=False)
         try:
             for commit, subject, declared, groups, unmatched in plan:
+                if groups is None:
+                    # DEBUG-labelled commit: replay verbatim, keeping its
+                    # message and files exactly as they were
+                    self.git(["cherry-pick", "--allow-empty", commit],
+                             capture=False)
+                    continue
                 self.replay_commit(commit, groups, git_dir)
         except (subprocess.CalledProcessError, KeyboardInterrupt) as e:
             print(f"Error during rewrite ({e}); restoring...", file=sys.stderr)

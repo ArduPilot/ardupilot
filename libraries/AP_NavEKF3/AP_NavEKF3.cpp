@@ -648,7 +648,14 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("GSF_USE_MASK", 58, NavEKF3, _gsfUseMask, 3),
 
-    // 59 was GSF_DELAY which was never released in a stable version
+    // @Param: FLOW_GAIN_H
+    // @DisplayName: Optical flow nav gain full-scale height
+    // @Description: Height below which the navigation velocity gain is left at full scale while navigating on optical flow. Above it the gain falls as this value divided by the height above ground, to allow for flow velocity noise that grows with height. Larger values keep position hold more responsive at height, at more risk of a flow-driven oscillation. Values below 1 are treated as 1. Takes effect immediately.
+    // @Range: 1 40
+    // @Increment: 1
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("FLOW_GAIN_H", 59, NavEKF3, _flowNavGainHgt, 4.0f),
 
     // @Param: GSF_RST_MAX
     // @DisplayName: Maximum number of resets to the EKF-GSF yaw estimate allowed
@@ -875,7 +882,7 @@ bool NavEKF3::InitialiseFilter(void)
     resetCoreErrors();
 
     // Set the primary initially to be users selected primary
-    primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
+    primary = _primary_core < num_cores? _primary_core : 0;
 
     // invalidate shared origin
     common_origin_valid = false;
@@ -962,7 +969,7 @@ void NavEKF3::UpdateFilter(void)
         runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
     }
 
-    const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
+    const uint8_t user_primary = _primary_core < num_cores? _primary_core : 0;
     bool lane_switching_enabled = true;
     if (option_is_enabled(Option::ManualLaneSwitch)) {
         lane_switching_enabled = false;
@@ -1979,9 +1986,8 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
 
 // Do a reset and bootstrap alignment of all EKF cores
 // return true if successful for all cores
-// When on the ground and stationary, gyros are recalibrated first so
-// the filter bootstraps with clean offsets.  In flight the gyro
-// calibration is skipped and the filter resets with existing biases.
+// Gyros are not recalibrated here: the filter always resets with the
+// existing gyro biases, whether on the ground or in flight.
 bool NavEKF3::InitialiseFilterBootstrap()
 {
     // ignore any data if the EKF is not started

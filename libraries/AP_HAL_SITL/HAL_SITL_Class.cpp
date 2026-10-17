@@ -321,9 +321,14 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 
 void HAL_SITL::actually_reboot()
 {
+#if HAL_SITL_WASM_ENABLED
+    // Emscripten cannot exec; terminate so the host can recreate the Worker.
+    abort();
+#else
     SocketAPM_native::cleanup_unix_paths();
     execv(new_argv[0], new_argv);
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
+#endif
 }
 
 static HAL_SITL hal_sitl_inst;

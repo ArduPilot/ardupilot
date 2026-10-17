@@ -80,6 +80,7 @@ public:
         DEVTYPE_IIS2MDC = 0x18,
         // DEVTYPE_LIS2MDL = 0x19,  // DO NOT re-use this ID; same sensor as IIS2MDC
         DEVTYPE_AF9838 = 0x1A,
+        DEVTYPE_AK09940A = 0x1B,
     };
 
 #if AP_COMPASS_MSP_ENABLED
@@ -119,7 +120,7 @@ protected:
     void drain_accumulated_samples(const Vector3f *scale = NULL);
 
     // register compass instance with the frontend
-    bool register_compass(int32_t dev_id) WARN_IF_UNUSED;
+    bool register_compass(uint32_t dev_id) WARN_IF_UNUSED;
 
     // set dev_id for an instance
     void set_dev_id(uint32_t dev_id);

@@ -234,7 +234,7 @@ public:
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier
-    AP_Int32 engine_fail; // mask of engine/motor servo outputs to fail
+    AP_UInt32 engine_fail; // mask of engine/motor servo outputs to fail
 
     // initial offset on GPS lat/lon, used to shift origin
     AP_Float gps_init_lat_ofs;
@@ -250,7 +250,7 @@ public:
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
     AP_Int8  float_exception; // enable floating point exception checks
-    AP_Int32 can_servo_mask; // mask of servos/escs coming from CAN
+    AP_UInt32 can_servo_mask; // mask of servos/escs coming from CAN
 
 #if HAL_NUM_CAN_IFACES
     enum class CANTransport : uint8_t {
@@ -274,7 +274,7 @@ public:
     AP_Int8  imu_count; // number of simulated IMUs to create
     AP_Int32 loop_delay; // extra delay to add to every loop
     AP_Float mag_scaling[MAX_CONNECTED_MAGS]; // scaling factor
-    AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
+    AP_UInt32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
     AP_Float buoyancy; // submarine buoyancy in Newtons
     AP_Int16 loop_rate_hz;
     AP_Int16 loop_time_jitter_us;
@@ -365,9 +365,10 @@ public:
         AP_Vector3f vel_err; // Velocity error offsets in NED (x = N, y = E, z = D)
         AP_Int8 jam; // jamming simulation enable
         AP_Float heading_offset; // heading offset in degrees
-        AP_Int32 options; // GPS options bitmask
+        AP_UInt32 options; // GPS options bitmask
         AP_Int8 fix_type; // GPS fix type
         AP_Float noise_horizontal; // horizontal noise radius in meters
+        AP_Vector3f vel_glitch; // glitch offsets in NED velocity (m/s)
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
@@ -387,7 +388,7 @@ public:
         AP_Int8 fail;         // trigger vicon failure
         AP_Int16 yaw;         // vicon local yaw in degrees
         AP_Int16 yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
-        AP_Int8 type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
+        AP_UInt8 type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
         AP_Vector3f vel_glitch;   // velocity glitch in m/s in vicon's local frame
         AP_Int16 rate_hz;     // vicon data rate in Hz
         AP_Int8 quality;      // odometry quality [-1,100]

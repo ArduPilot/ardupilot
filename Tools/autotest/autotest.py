@@ -99,7 +99,11 @@ def build_examples(**kwargs):
     for target in 'Pixhawk1', 'navio', 'linux', 'sitl':
         print("Running build.examples for %s" % target)
         try:
-            util.build_examples(target, **kwargs)
+            # --asan is only implemented for the sitl board
+            board_kwargs = dict(kwargs)
+            if target != 'sitl':
+                board_kwargs['asan'] = False
+            util.build_examples(target, **board_kwargs)
         except Exception as e:  # noqa: BLE001
             print("Failed build_examples on board=%s" % target)
             print(str(e))
@@ -108,9 +112,19 @@ def build_examples(**kwargs):
     return True
 
 
+def unit_test_boards(asan):
+    """Boards to build and run the unit tests for."""
+    if asan:
+        # --asan is only implemented for the sitl board, so building the
+        # linux tests here would just run them uninstrumented a second
+        # time - the unit-tests job already covers them
+        return ['sitl']
+    return ['linux', 'sitl']
+
+
 def build_unit_tests(**kwargs):
     """Build tests."""
-    for target in ['linux', 'sitl']:
+    for target in unit_test_boards(kwargs.get('asan')):
         print("Running build.unit_tests for %s" % target)
         try:
             util.build_tests(target, **kwargs)
@@ -125,14 +139,18 @@ def build_unit_tests(**kwargs):
 def run_unit_test(test):
     """Run unit test file."""
     print("Running (%s)" % test)
-    subprocess.check_call([test])
+    env = os.environ.copy()
+    # stop llvm-symbolizer fetching debug info over the network; ignored
+    # by tests which were not built with --asan
+    env["DEBUGINFOD_URLS"] = ""
+    subprocess.check_call([test], env=env)
 
 
-def run_unit_tests():
+def run_unit_tests(asan=False):
     """Run all unit tests files."""
     success = True
     fail_list = []
-    for target in ['linux', 'sitl']:
+    for target in unit_test_boards(asan):
         binary_dir = util.reltopdir(os.path.join('build',
                                                  target,
                                                  'tests',
@@ -285,6 +303,8 @@ __bin_names = {
 
     "CopterTests2a": "arducopter",
     "CopterTests2b": "arducopter",
+    "CopterTests2c": "arducopter",
+    "CopterTests2d": "arducopter",
 
     "Plane": "arduplane",
     "PlaneTests1a": "arduplane",
@@ -295,6 +315,9 @@ __bin_names = {
     "Tracker": "antennatracker",
     "Helicopter": "arducopter-heli",
     "QuadPlane": "arduplane",
+    "QuadPlaneTests1a": "arduplane",
+    "QuadPlaneTests1b": "arduplane",
+    "QuadPlaneTests1c": "arduplane",
     "Sub": "ardusub",
     "Blimp": "blimp",
     "BalanceBot": "ardurover",
@@ -357,18 +380,23 @@ def find_specific_test_to_run(step):
 tester_class_map = {
     "test.Blimp": blimp.AutoTestBlimp,
     "test.Copter": arducopter.AutoTestCopter,
-    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
-    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s
-    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # 5m17s
-    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # 8m20s
-    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
-    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
-    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
+    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # ~14m on CI
+    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # ~15m on CI
+    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # ~14m on CI
+    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # ~14m on CI
+    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # ~14m on CI
+    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # ~14m on CI
+    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # ~14m on CI
+    "test.CopterTests2c": arducopter.AutoTestCopterTests2c, # ~14m on CI
+    "test.CopterTests2d": arducopter.AutoTestCopterTests2d, # ~14m on CI
     "test.Plane": arduplane.AutoTestPlane,
-    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
-    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
-    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c,
+    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a, # ~12m on CI
+    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b, # ~12m on CI
+    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c, # ~12m on CI
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
+    "test.QuadPlaneTests1a": quadplane.AutoTestQuadPlaneTests1a, # ~11m on CI
+    "test.QuadPlaneTests1b": quadplane.AutoTestQuadPlaneTests1b, # ~11m on CI
+    "test.QuadPlaneTests1c": quadplane.AutoTestQuadPlaneTests1c, # ~11m on CI
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
@@ -571,7 +599,7 @@ def run_step(step):
         return build_examples(**build_opts)
 
     if step == 'run.examples':
-        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
+        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False, asan=opts.asan)
 
     if step == 'build.Parameters':
         return build_parameters()
@@ -583,7 +611,7 @@ def run_step(step):
         return build_unit_tests(**build_opts)
 
     if step == 'run.unit_tests':
-        return run_unit_tests()
+        return run_unit_tests(asan=opts.asan)
 
     if step == 'clang-scan-build':
         return run_clang_scan_build()
@@ -1181,10 +1209,16 @@ if __name__ == "__main__":
 
         'test.CopterTests2a',
         'test.CopterTests2b',
+        'test.CopterTests2c',
+        'test.CopterTests2d',
 
         'test.PlaneTests1a',
         'test.PlaneTests1b',
         'test.PlaneTests1c',
+
+        'test.QuadPlaneTests1a',
+        'test.QuadPlaneTests1b',
+        'test.QuadPlaneTests1c',
 
         'clang-scan-build',
     ]
@@ -1216,6 +1250,8 @@ if __name__ == "__main__":
 
         "fly.ArduCopterTests2a": "test.CopterTests2a",
         "fly.ArduCopterTests2b": "test.CopterTests2b",
+        "fly.ArduCopterTests2c": "test.CopterTests2c",
+        "fly.ArduCopterTests2d": "test.CopterTests2d",
 
     }
 

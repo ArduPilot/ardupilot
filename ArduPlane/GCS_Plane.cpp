@@ -116,7 +116,7 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
     const RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder && rangefinder->has_orientation(plane.rangefinder_orientation())) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (uint16_t(plane.g.rangefinder_landing.get()) != 0) {
+        if (plane.g.rangefinder_landing != 0) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
         if (rangefinder->has_data_orient(plane.rangefinder_orientation())) {

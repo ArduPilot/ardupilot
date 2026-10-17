@@ -72,6 +72,7 @@ case ${RELEASE_DISTRIBUTOR} in
     linuxmint)
         # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
         case ${RELEASE_CODENAME} in
+            zara)     ;&
             zena)     ;&
             wilma)    ;&
             xia)      ;&
@@ -128,6 +129,7 @@ case "${RELEASE_CODENAME}" in
 
     bookworm) ;&
     trixie)   ;&
+    forky)    ;&
     jammy)    ;&
     noble)    ;&
     plucky)   ;&
@@ -152,6 +154,11 @@ elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
+    PYTHON_V="python3"
+    PIP=pip3
+elif [ ${RELEASE_CODENAME} == 'forky' ]; then
+    SITLFML_VERSION="3.1"
+    SITLCFML_VERSION="3.0"
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
@@ -232,6 +239,7 @@ ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 if false ||
    [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+   [ ${RELEASE_CODENAME} == 'forky' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
@@ -249,6 +257,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
     if false ||
        [ ${RELEASE_CODENAME} == 'trixie' ] ||
        [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+       [ ${RELEASE_CODENAME} == 'forky' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
@@ -339,6 +348,8 @@ elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
+elif [ ${RELEASE_CODENAME} == 'forky' ]; then
+    SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif true &&
      [ ${RELEASE_CODENAME} != 'noble' ] &&
      [ ${RELEASE_CODENAME} != 'plucky' ] &&
@@ -358,6 +369,9 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
+    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
+    # see below
+  elif [ ${RELEASE_CODENAME} == 'forky' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'noble' ]; then
@@ -384,7 +398,10 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   fi
 
   if false; then :
-  elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+  elif false ||
+       [ ${RELEASE_CODENAME} == 'trixie' ] ||
+       [ ${RELEASE_CODENAME} == 'forky' ] ||
+       false; then
       PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
@@ -453,6 +470,7 @@ PIP_USER_ARGUMENT="--user"
 if false ||
      [ ${RELEASE_CODENAME} == 'bookworm' ] ||
      [ ${RELEASE_CODENAME} == 'trixie' ] ||
+     [ ${RELEASE_CODENAME} == 'forky' ] ||
      [ ${RELEASE_CODENAME} == 'noble' ] ||
      [ ${RELEASE_CODENAME} == 'plucky' ] ||
      [ ${RELEASE_CODENAME} == 'questing' ] ||
@@ -505,6 +523,7 @@ fi
 if false ||
    [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+   [ ${RELEASE_CODENAME} == 'forky' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||

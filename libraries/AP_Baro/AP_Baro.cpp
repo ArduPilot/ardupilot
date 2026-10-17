@@ -463,12 +463,10 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
 #if AP_AIRSPEED_ENABLED
     // if we don't have an external temperature then try to use temperature
     // from the airspeed sensor
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        float temperature;
-        if (airspeed->healthy() && airspeed->get_temperature(temperature)) {
-            return temperature;
-        }
+    const AP_Airspeed &airspeed = AP::airspeed();
+    float temperature;
+    if (airspeed.healthy() && airspeed.get_temperature(temperature)) {
+        return temperature;
     }
 #endif
 #endif
@@ -504,7 +502,7 @@ bool AP_Baro::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
 {
     for (int i=0; i<_num_sensors; ++i) {
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
-            AP_HAL::Device::change_bus_id(uint32_t(sensors[i].bus_id.get()), 0)) {
+            AP_HAL::Device::change_bus_id(sensors[i].bus_id, 0)) {
             // device already has been defined.
             return true;
         }
@@ -675,7 +673,6 @@ void AP_Baro::init(void)
     case AP_BoardConfig::PX4_BOARD_PHMINI:
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
-    case AP_BoardConfig::PX4_BOARD_FMUV6:
 #if AP_BARO_MS5611_ENABLED
         probe_spi_dev(AP_Baro_MS5611::probe, HAL_BARO_MS5611_NAME);
         RETURN_IF_NO_SPACE;
@@ -689,15 +686,6 @@ void AP_Baro::init(void)
         probe_spi_dev(AP_Baro_MS5611::probe, HAL_BARO_MS5611_NAME);
         RETURN_IF_NO_SPACE;
 #endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_AEROFC:
-#if AP_BARO_MS5607_ENABLED
-#ifdef HAL_BARO_MS5607_I2C_BUS
-        probe_i2c_dev(AP_Baro_MS5607::probe, HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR);
-        RETURN_IF_NO_SPACE;
-#endif
-#endif  // AP_BARO_MS5607_ENABLED
         break;
 
     default:

@@ -1,0 +1,5 @@
+    static bool warned = false;
+    if (!warned) {
+        lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, "$object_name:$method_name $message");
+        warned = true;
+    }

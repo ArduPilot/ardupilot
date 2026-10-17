@@ -664,10 +664,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
     // only on plane and copter as others do not link AP_Airspeed
     if (GOT_MSG(DIFFERENTIAL_PRESSURE) &&
         GOT_MSG(TEMPERATURE)) {
-        auto *arsp = AP::airspeed();
-        if (arsp != nullptr) {
-            arsp->handle_external(airspeed_data);
-        }
+        AP::airspeed().handle_external(airspeed_data);
     }
 
 #endif // AP_AIRSPEED_EXTERNAL_ENABLED
