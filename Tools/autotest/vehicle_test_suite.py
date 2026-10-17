@@ -11592,6 +11592,61 @@ Also, ignores heartbeats not from our target system'''
 
         self.context_pop()
 
+    def CompassCalibrationAutoRotateSoftIron(self):
+        '''check a calibration that corrects the orientation keeps the soft-iron fit'''
+        # compass 1 has soft iron and is mounted yawed 90 degrees but
+        # configured as unrotated.  With COMPASS_AUTO_ROT=2 the
+        # calibration finds the mounting, rotates the samples and
+        # offsets and re-fits.  The soft-iron matrix must be rotated
+        # with them, otherwise the short re-fit starts from a matrix in
+        # the old frame and the calibration fails
+        self.context_push()
+        self.set_parameters({
+            "SIM_MAG1_ORIENT": 2,  # ROTATION_YAW_90
+            "SIM_MAG1_DIA_X": 1.2,
+            "SIM_MAG1_DIA_Y": 0.8,
+            "SIM_MAG1_DIA_Z": 1.0,
+            "COMPASS_ORIENT": 0,  # ROTATION_NONE
+            "COMPASS_AUTO_ROT": 2,  # check and fix
+        })
+        self.customise_SITL_commandline(["-M", "calibration"])
+        self.wait_statustext("is using GPS", timeout=60)
+
+        texts = []
+
+        def collect_text(mav, m):
+            if m.get_type() == 'STATUSTEXT' and m.text.startswith("Mag(0)"):
+                texts.append(m.text)
+        self.install_message_hook_context(collect_text)
+
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
+            p1=1,  # mag mask
+            p2=0,  # retry
+            p3=0,  # autosave
+            p4=0,  # delay
+        )
+        self.set_servo(5, 1250)  # calibration model: cycle through poses
+        report = self.assert_receive_message(
+            'MAG_CAL_REPORT',
+            condition='MAG_CAL_REPORT.compass_id==0',
+            timeout=300,
+            verbose=True,
+        )
+        self.set_servo(5, 1000)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CANCEL_MAG_CAL, p1=1)
+
+        self.progress("compass texts: %s" % str(texts))
+        if not any(t.startswith("Mag(0) new orientation: 2 was 0") for t in texts):
+            raise NotAchievedException("Orientation was not corrected: %s" % str(texts))
+        if report.cal_status != mavutil.mavlink.MAG_CAL_SUCCESS:
+            raise NotAchievedException("Calibration failed after orientation correction (status %u, fitness %f)" %
+                                       (report.cal_status, report.fitness))
+        if report.new_orientation != 2:
+            raise NotAchievedException("Unexpected new orientation %u" % report.new_orientation)
+
+        self.context_pop()
+
     def SixCompassCalibrationAndReordering(self):
         '''Test reordering of 6 simulated compasses by changing priority and appearance order'''
         self.context_push()
