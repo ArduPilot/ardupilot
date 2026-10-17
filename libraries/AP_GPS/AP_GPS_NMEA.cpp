@@ -459,9 +459,9 @@ bool AP_GPS_NMEA::_term_complete()
                 // atof() accepts nan, inf and any magnitude; the conversions
                 // to int32 below are undefined outside the int32 range, so
                 // ignore a position that cannot be one
-                if (!isfinite(_ksxt.fields[2]) || fabs(_ksxt.fields[2]) > 90 ||
-                    !isfinite(_ksxt.fields[1]) || fabs(_ksxt.fields[1]) > 180 ||
-                    !isfinite(_ksxt.fields[3]) || fabs(_ksxt.fields[3]) > 1.0e7) {
+                if (!isfinite(_ksxt.fields[2]) || _ksxt.fields[2] > 90 || _ksxt.fields[2] < -90 ||
+                    !isfinite(_ksxt.fields[1]) || _ksxt.fields[1] > 180 || _ksxt.fields[1] < -180 ||
+                    !isfinite(_ksxt.fields[3]) || _ksxt.fields[3] > 1.0e7 || _ksxt.fields[3] < -1.0e7) {
                     break;
                 }
                 state.location.lat     = _ksxt.fields[2]*1.0e7;
@@ -501,8 +501,8 @@ bool AP_GPS_NMEA::_term_complete()
                 const auto &ag = _agrica;
                 // strtof()/atof() accept nan and inf; a message carrying them
                 // (or a position outside the int32 range) is ignored whole
-                if (!isfinite(ag.lat) || fabs(ag.lat) > 90 ||
-                    !isfinite(ag.lng) || fabs(ag.lng) > 180 ||
+                if (!isfinite(ag.lat) || ag.lat > 90 || ag.lat < -90 ||
+                    !isfinite(ag.lng) || ag.lng > 180 || ag.lng < -180 ||
                     !isfinite(ag.alt) || fabsf(ag.alt) > 1.0e7f ||
                     !isfinite(ag.undulation) ||
                     ag.vel_NED.is_nan() || ag.vel_NED.is_inf() ||
