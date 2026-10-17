@@ -367,6 +367,19 @@ bool AC_WPNav::get_wp_destination_loc(Location& destination) const
     return true;
 }
 
+// Gets the destination of the current leg as a Location object, ignoring any
+// intermediate destination used to avoid objects.
+bool AC_WPNav::get_wp_leg_destination_loc(Location& destination) const
+{
+    // retrieve global origin for coordinate conversion
+    if (!AP::ahrs().get_origin(destination)) {
+        return false;
+    }
+
+    destination = Location::from_ekf_offset_NED_m(get_wp_leg_destination_NED_m(), leg_is_terrain_alt() ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+    return true;
+}
+
 // Sets waypoint destination using NEU position vector in centimeters from EKF origin.
 // See set_wp_destination_NED_m() for full details.
 bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
