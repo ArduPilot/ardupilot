@@ -46,6 +46,11 @@ public:
     // Ignores OA-adjusted targets and always calculates from original final destination.
     virtual float get_wp_bearing_to_destination_rad() const override;
 
+    // Returns the origin and destination of the original leg, ignoring OA-adjusted intermediate destinations.
+    const Vector3p &get_wp_leg_origin_NED_m() const override;
+    const Vector3p &get_wp_leg_destination_NED_m() const override;
+    bool leg_is_terrain_alt() const override;
+
     // Returns true if the vehicle has reached the final destination within radius threshold.
     // Ignores OA-adjusted intermediate destinations.
     bool reached_wp_destination() const override;
