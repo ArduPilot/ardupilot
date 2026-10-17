@@ -109,19 +109,19 @@ The CM switches are located on the top face next to the GPS2 connector, labeled 
 
 ## Flight Controller UART Mapping
 
-| Serial # | UART   | Protocol | Port    | Function                                     | Notes                                        |
-| -------- | ------ | -------- | ------- | -------------------------------------------- | -------------------------------------------- |
-| SERIAL0  | OTG1   | MAVLink2 | USB     | OTG                                          | USB Type-C 2.0                               |
-| SERIAL1  | UART7  | MAVLink2 | TELEM1  | Telemetry port                               | Hardware flow control                        |
-| SERIAL2  | UART5  | MAVLink2 | TELEM2  | Telemetry port                               | Hardware flow control                        |
-| SERIAL3  | USART1 | GPS      | GPS1    | GPS, Mag, Buzzer, Safety Switch, LED         | Full GPS port                                |
-| SERIAL4  | UART8  | GPS      | GPS2    | GPS, Mag                                     | GPS2                                         |
-| SERIAL5  | USART2 | MAVLink2 | TELEM3  | Bridged to CM5 UART3 by default              | Hardware flow control; CM5 UART bridge       |
-| SERIAL6  | UART4  | MAVLink2 | UART/I2C | External / I2C3 shared                       | Shared with I2C3                             |
-| SERIAL7  | USART3 | MAVLink2 | FMU DEBUG   | FMU Debug Console                            | FMU(H753) Debug port                         |
+| Serial # | UART   | Protocol | Port      | Function                                 | Notes                                        |
+| -------- | ------ | -------- | --------- | ---------------------------------------- | -------------------------------------------- |
+| SERIAL0  | OTG1   | MAVLink2 | USB       | OTG                                      | USB Type-C 2.0                               |
+| SERIAL1  | UART7  | MAVLink2 | TELEM1    | Telemetry port                           | Hardware flow control                        |
+| SERIAL2  | UART5  | MAVLink2 | TELEM2    | Telemetry port                           | Hardware flow control                        |
+| SERIAL3  | USART1 | GPS      | GPS1      | GPS, Mag, Buzzer, Safety Switch, LED     | Full GPS port                                |
+| SERIAL4  | UART8  | GPS      | GPS2      | GPS, Mag                                 | GPS2                                         |
+| SERIAL5  | USART2 | MAVLink2 | TELEM3    | Bridged to CM5 UART3 by default          | Hardware flow control; CM5 UART bridge       |
+| SERIAL6  | UART4  | MAVLink2 | UART/I2C  | External / I2C3 shared                   | Shared with I2C3                             |
+| SERIAL7  | USART3 | MAVLink2 | FMU DEBUG | FMU Debug Console                        | FMU(H753) Debug port                         |
 
 - USART6 provides the internal link between the FMU and the STM32F103 IO co-processor (IOMCU).
-- All UARTs are DMA capable.
+- All UARTs except SERIAL7 (USART3, FMU DEBUG) are DMA capable. SERIAL7 is configured without DMA.
 
 ## RC Input
 
@@ -162,24 +162,43 @@ IO outputs support PWM only. DShot is not supported on any IO output. All output
 
 FMU_CH 1-6 support DShot. FMU_CH 7-8 do not support DShot (TIM12 has no DMA). All outputs within the same timer group must use the same protocol and update rate.
 
-| FMU Channel | MCU Pin | Timer / Channel | DShot |
-| ----------- | ------- | --------------- | ----- |
-| FMU_CH 1    | PI0     | TIM5_CH4        | Yes   |
-| FMU_CH 2    | PH12    | TIM5_CH3        | Yes   |
-| FMU_CH 3    | PH11    | TIM5_CH2        | Yes   |
-| FMU_CH 4    | PH10    | TIM5_CH1        | Yes   |
-| FMU_CH 5    | PD13    | TIM4_CH2        | Yes   |
-| FMU_CH 6    | PD14    | TIM4_CH3        | Yes   |
-| FMU_CH 7    | PH6     | TIM12_CH1       | No    |
-| FMU_CH 8    | PH9     | TIM12_CH2       | No    |
+| FMU Channel | MCU Pin | Timer / Channel | DShot | Bi-dir DShot |
+| ----------- | ------- | --------------- | ----- | ------------ |
+| FMU_CH 1    | PI0     | TIM5_CH4        | Yes   | Yes          |
+| FMU_CH 2    | PH12    | TIM5_CH3        | Yes   | Yes          |
+| FMU_CH 3    | PH11    | TIM5_CH2        | Yes   | Yes          |
+| FMU_CH 4    | PH10    | TIM5_CH1        | Yes   | Yes          |
+| FMU_CH 5    | PD13    | TIM4_CH2        | Yes   | No           |
+| FMU_CH 6    | PD14    | TIM4_CH3        | Yes   | No           |
+| FMU_CH 7    | PH6     | TIM12_CH1       | No    | No           |
+| FMU_CH 8    | PH9     | TIM12_CH2       | No    | No           |
 
 ## Battery Monitoring
 
-The board defaults to an onboard INA238 I2C voltage sensor on I2C1. This provides voltage sensing only; it has no shunt for current sensing, and no ADC channel is available for battery voltage or current sensing.
+The board defaults to an onboard INA238 I2C voltage sensor on I2C1. It provides voltage sensing only; it has no shunt for current sensing.
 
-An external I2C-compatible power module providing both voltage and current sensing can be connected via the External Power Monitoring port (I2C2).
+The board also has an analog battery voltage input on PC3 (9.33:1 divider). It can be used instead of the INA238, or as a second, independent voltage monitor:
+
+- `BATT_MONITOR` (or `BATT2_MONITOR`) = 3 (Analog Voltage Only)
+- `BATT_VOLT_PIN` = 13
+- `BATT_VOLT_MULT` = 9.33
+
+There is no analog current sensing input.
+
+An external I2C-compatible power module providing both voltage and current sensing can be connected via the External Power Monitoring port (I2C1).
 
 Alternatively, a DroneCAN power monitor or smart battery can be connected via the CAN port for voltage and current sensing over CAN. The correct battery monitor parameters depend on the power module connected; see `BATT_MONITOR` and related `BATT_*` parameters.
+
+## I2C Bus Mapping
+
+| ArduPilot Bus | I2C  | Connected to                                    | Type     |
+| ------------- | ---- | ----------------------------------------------- | -------- |
+| 0             | I2C4 | BMP390, BMM350 (IMU-01 sensor board)            | Internal |
+| 1             | I2C1 | INA238 (onboard), PWR connector, GPS1 connector | External |
+| 2             | I2C2 | BMP390 (onboard), GPS2 connector                | External |
+| 3             | I2C3 | AT24C02D EEPROM, UART/I2C connector (shared)    | External |
+
+External compasses are probed on buses 1-3.
 
 ## Compass
 
@@ -187,7 +206,7 @@ There is no compass on the flight controller board itself. A BMM350 I2C magnetom
 
 ## IMU Heater
 
-The Lectron-01 Imu board has inbuild 2x 51Ohm Heater resistors. Those are driven by flight controllers heater signal. Those reistor provides 1W rated heating performance overall on imu board for certain temperature range.
+The Lectron IMU-01 sensor board has two built-in 51 Ohm heater resistors. Those are driven by flight controller’s heater signal. Those resistors provide 1W rated heating performance overall on imu board for certain temperature range.
 The IMU heater can be controlled with the `BRD_HEAT_TARG` parameter, in degrees C.
 
 ## GPIOs
