@@ -52,6 +52,31 @@ bool AC_WPNav_OA::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bo
     return ret;
 }
 
+// Returns the origin and destination of the original leg, ignoring OA-adjusted intermediate destinations.
+const Vector3p &AC_WPNav_OA::get_wp_leg_origin_NED_m() const
+{
+    if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
+        return AC_WPNav::get_wp_leg_origin_NED_m();
+    }
+    return _origin_oabak_ned_m;
+}
+
+const Vector3p &AC_WPNav_OA::get_wp_leg_destination_NED_m() const
+{
+    if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
+        return AC_WPNav::get_wp_leg_destination_NED_m();
+    }
+    return _destination_oabak_ned_m;
+}
+
+bool AC_WPNav_OA::leg_is_terrain_alt() const
+{
+    if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
+        return AC_WPNav::leg_is_terrain_alt();
+    }
+    return _is_terrain_alt_oabak;
+}
+
 // Returns the horizontal distance to the final destination in centimeters.
 // See get_wp_distance_to_destination_m() for full details.
 float AC_WPNav_OA::get_wp_distance_to_destination_cm() const

@@ -185,6 +185,18 @@ public:
     // Used to unify the AC_WPNav and AC_WPNav_OA interfaces.
     virtual bool get_oa_wp_destination(Location& destination) const { return get_wp_destination_loc(destination); }
 
+    // Returns the origin and destination of the current leg in NED frame, in meters from the EKF origin,
+    // ignoring any intermediate destination used to avoid objects.
+    // Z is relative to terrain or EKF origin, depending on leg_is_terrain_alt().
+    virtual const Vector3p &get_wp_leg_origin_NED_m() const { return _origin_ned_m; }
+    virtual const Vector3p &get_wp_leg_destination_NED_m() const { return _destination_ned_m; }
+    virtual bool leg_is_terrain_alt() const { return _is_terrain_alt; }
+
+    // Gets the destination of the current leg as a Location object, ignoring any
+    // intermediate destination used to avoid objects.
+    // Returns false if the EKF origin is not set.
+    bool get_wp_leg_destination_loc(Location& destination) const;
+
     // Sets waypoint destination using NEU position vector in centimeters from EKF origin.
     // See set_wp_destination_NED_m() for full details.
     virtual bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
