@@ -242,7 +242,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(gps_port, "GPS_PORT", HAL_PERIPH_GPS_PORT_DEFAULT),
 
 #if GPS_MOVING_BASELINE
-    // @Param: MB_CAN_PORT
+    // @Param: GPS_MB_ONLY_PORT
     // @DisplayName: Moving Baseline CAN Port option
     // @Description: Autoselect dedicated CAN port on which moving baseline data will be transmitted.
     // @Values: 0:Sends moving baseline data on all ports,1:auto select remaining port for transmitting Moving baseline Data
@@ -719,7 +719,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 
 #if AP_PERIPH_IMU_ENABLED
-    // @Param: IMU_SAMPLE_RATE
+    // @Param: INS_SAMPLE_RATE
     // @DisplayName: IMU Sample Rate
     // @Description: IMU Sample Rate
     // @Range: 0 1000
