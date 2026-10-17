@@ -2,6 +2,8 @@
 
 #include "MissionItemProtocol.h"
 
+#include <AP_Mission/AP_Mission.h>
+
 class MissionItemProtocol_Waypoints : public MissionItemProtocol {
 public:
     MissionItemProtocol_Waypoints(class AP_Mission &_mission) :
@@ -38,6 +40,15 @@ protected:
         return MSG_NEXT_MISSION_REQUEST_WAYPOINTS;
     }
 
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    uint16_t opaque_id_first_item() const override { return 1; }
+    uint32_t last_items_change_time_ms() const override {
+        return mission.last_change_time_ms();
+    }
+    HAL_Semaphore &get_items_semaphore() override { return mission.get_semaphore(); }
+
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+
 private:
     AP_Mission &mission;
 
@@ -57,6 +68,5 @@ private:
 
     // replace_item() replaces an item in the stored list
     MAV_MISSION_RESULT replace_item(const mavlink_mission_item_int_t &) override WARN_IF_UNUSED;
-
 };
 
