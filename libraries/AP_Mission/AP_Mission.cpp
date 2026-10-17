@@ -101,6 +101,10 @@ void AP_Mission::init()
         clear();
     }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    clear_item_progress();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     _last_change_time_ms = AP_HAL::millis();
 }
 
@@ -123,6 +127,9 @@ void AP_Mission::start()
 void AP_Mission::stop()
 {
     _flags.state = MISSION_STOPPED;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    clear_item_progress();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 }
 
 /// resume - continues the mission execution from where we last left off
@@ -271,6 +278,9 @@ void AP_Mission::reset()
     _prev_nav_cmd_id       = AP_MISSION_CMD_ID_NONE;
     init_jump_tracking();
     reset_wp_history();
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    clear_item_progress();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 }
 
 /// clear - clears out mission
@@ -3291,6 +3301,125 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
 }
 #endif // AP_SCRIPTING_ENABLED
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+uint8_t AP_Mission::ItemProgress::calc_percentage_complete(float completed, float total)
+{
+    if (isnan(total) || isnan(completed) || (total <= 0.0f)) {
+        return UINT8_MAX;
+    }
+    if (completed <= 0.0f) {
+        // e.g. still short of the start of a distance leg
+        return 0;
+    }
+    if (completed >= total) {
+        return 100;
+    }
+    return (completed * 100.0f) / total;
+}
+
+void AP_Mission::ItemProgress::set_distance_remaining(float remaining_m, float total_m)
+{
+    const uint16_t idx = index;
+    *this = ItemProgress{};
+    index = idx;
+    distance_remaining_m = remaining_m;
+    percentage_complete = calc_percentage_complete(total_m - remaining_m, total_m);
+}
+
+void AP_Mission::ItemProgress::set_time_remaining(float remaining_s, float total_s)
+{
+    const uint16_t idx = index;
+    *this = ItemProgress{};
+    index = idx;
+    time_remaining_s = remaining_s;
+    percentage_complete = calc_percentage_complete(total_s - remaining_s, total_s);
+}
+
+void AP_Mission::ItemProgress::set_count_remaining(float remaining, float total)
+{
+    const uint16_t idx = index;
+    *this = ItemProgress{};
+    index = idx;
+    count_remaining = remaining;
+    percentage_complete = calc_percentage_complete(total - remaining, total);
+}
+
+void AP_Mission::ItemProgress::set_distance_traveled(float traveled_m, float total_m)
+{
+    set_distance_remaining(MAX(total_m - traveled_m, 0.0f), total_m);
+}
+
+void AP_Mission::ItemProgress::set_time_elapsed(float elapsed_s, float total_s)
+{
+    set_time_remaining(MAX(total_s - elapsed_s, 0.0f), total_s);
+}
+
+void AP_Mission::ItemProgress::set_count_completed(float completed, float total)
+{
+    set_count_remaining(MAX(total - completed, 0.0f), total);
+}
+
+void AP_Mission::set_item_progress(uint16_t index, const ItemProgress &progress)
+{
+    _current_item_progress = progress;
+    _current_item_progress.index = index;
+}
+
+AP_Mission::ItemProgress AP_Mission::get_item_progress(uint16_t index) const
+{
+    if (index && (index == _current_item_progress.index)) {
+        return _current_item_progress;
+    }
+    return ItemProgress{};
+}
+
+void AP_Mission::clear_item_progress(void)
+{
+    _current_item_progress = ItemProgress{};
+}
+
+void AP_Mission::set_item_progress_distance_remaining(uint16_t index, float remaining_m, float total_m)
+{
+    ItemProgress progress;
+    progress.set_distance_remaining(remaining_m, total_m);
+    set_item_progress(index, progress);
+}
+
+void AP_Mission::set_item_progress_time_remaining(uint16_t index, float remaining_s, float total_s)
+{
+    ItemProgress progress;
+    progress.set_time_remaining(remaining_s, total_s);
+    set_item_progress(index, progress);
+}
+
+void AP_Mission::set_item_progress_count_remaining(uint16_t index, float remaining, float total)
+{
+    ItemProgress progress;
+    progress.set_count_remaining(remaining, total);
+    set_item_progress(index, progress);
+}
+
+void AP_Mission::set_item_progress_distance_traveled(uint16_t index, float traveled_m, float total_m)
+{
+    ItemProgress progress;
+    progress.set_distance_traveled(traveled_m, total_m);
+    set_item_progress(index, progress);
+}
+
+void AP_Mission::set_item_progress_time_elapsed(uint16_t index, float elapsed_s, float total_s)
+{
+    ItemProgress progress;
+    progress.set_time_elapsed(elapsed_s, total_s);
+    set_item_progress(index, progress);
+}
+
+void AP_Mission::set_item_progress_count_completed(uint16_t index, float completed, float total)
+{
+    ItemProgress progress;
+    progress.set_count_completed(completed, total);
+    set_item_progress(index, progress);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
 // singleton instance
 AP_Mission *AP_Mission::_singleton;
