@@ -103,14 +103,6 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: _STR_RAT_FILT
-    // @DisplayName: Steering control filter frequency
-    // @Description: Steering control input filter.  Lower values reduce noise but add delay.
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
-    // @User: Standard
-
     // @Param: _STR_RAT_FLTT
     // @DisplayName: Steering control Target filter frequency in Hz
     // @Description: Target filter frequency in Hz
@@ -202,14 +194,6 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Speed control feed forward
     // @Range: 0.000 0.500
     // @Increment: 0.001
-    // @User: Standard
-
-    // @Param: _SPEED_FILT
-    // @DisplayName: Speed control filter frequency
-    // @Description: Speed control input filter.  Lower values reduce noise but add delay.
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
     // @User: Standard
 
     // @Param: _SPEED_FLTT
@@ -365,14 +349,6 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: _BAL_FILT
-    // @DisplayName: Pitch control filter frequency
-    // @Description: Pitch control input filter.  Lower values reduce noise but add delay.
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
-    // @User: Standard
-
     // @Param: _BAL_FLTT
     // @DisplayName: Pitch control Target filter frequency in Hz
     // @Description: Pitch control Target filter frequency in Hz
@@ -472,14 +448,6 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Sail Heel control feed forward
     // @Range: 0.000 0.500
     // @Increment: 0.001
-    // @User: Standard
-
-    // @Param: _SAIL_FILT
-    // @DisplayName: Sail Heel control filter frequency
-    // @Description: Sail Heel control input filter.  Lower values reduce noise but add delay.
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
     // @User: Standard
 
     // @Param: _SAIL_FLTT
