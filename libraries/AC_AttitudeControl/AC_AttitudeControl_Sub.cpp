@@ -335,8 +335,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 };
 
 AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, AP_MotorsMulticopter& motors) :
-    AC_AttitudeControl(ahrs, motors),
-    _motors_multi(motors)
+    AC_AttitudeControl(ahrs, motors)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -348,28 +347,11 @@ AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, AP_MotorsMult
     _accel_yaw_max_degss.set_default(AC_ATC_SUB_ACCEL_Y_MAX_DEGSS);
 }
 
-// Update Alt_Hold angle maximum
-void AC_AttitudeControl_Sub::update_althold_lean_angle_max(float throttle_in)
-{
-    // calc maximum tilt angle based on throttle
-    float thr_max = _motors_multi.get_throttle_thrust_max();
-
-    // divide by zero check
-    if (is_zero(thr_max)) {
-        _althold_lean_angle_max_rad = 0.0f;
-        return;
-    }
-
-    float althold_lean_angle_max = acosf(constrain_float(throttle_in/(AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX * thr_max), 0.0f, 1.0f));
-    _althold_lean_angle_max_rad = _althold_lean_angle_max_rad + (_dt_s/(_dt_s+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max_rad);
-}
-
 // apply_angle_boost is ignored: throttle is centred on 0.5 (neutral), so a
 // 1/cos(tilt) scaling would command vertical thrust from tilt alone
 void AC_AttitudeControl_Sub::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
 {
     _throttle_in = throttle_in;
-    update_althold_lean_angle_max(throttle_in);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     _motors.set_throttle(throttle_in);
     _motors.set_throttle_avg_max(get_throttle_avg_max(MAX(throttle_in, _throttle_in)));
