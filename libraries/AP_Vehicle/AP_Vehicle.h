@@ -576,6 +576,19 @@ protected:
     // Bitmask of modes to disable from gcs
     AP_UInt32 flight_mode_GCS_block;
 
+#if AP_MAINLOOP_FAILSAFE_ENABLED
+    // record a main loop stall the failsafe has just detected, for
+    // one_Hz_update() to report.  The failsafe runs in the timer thread
+    // while the main loop is stopped, so it must not send the text
+    // itself: sending takes a semaphore the stalled main loop may be
+    // holding, and nothing is gained by trying, as a statustext is only
+    // transmitted by the main loop in any case.  Stalls from before the
+    // vehicle finished starting up are dropped - booting holds the main
+    // loop for longer than the failsafe threshold, the barometer
+    // calibration on its own does, and that is not a failsafe
+    void mainloop_failsafe_stalled(uint32_t stalled_ms);
+#endif
+
 private:
 
 #if AP_SCHEDULER_ENABLED
@@ -595,6 +608,15 @@ private:
     // decimation for 1Hz update
     uint8_t one_Hz_counter;
     void one_Hz_update();
+
+#if AP_MAINLOOP_FAILSAFE_ENABLED
+    // a main loop stall the failsafe has seen and not yet reported, in
+    // milliseconds; zero when there is nothing to report
+    uint32_t mainloop_failsafe_stalled_ms;
+
+    // report any stall recorded above.  Called from one_Hz_update()
+    void mainloop_failsafe_announce();
+#endif
 
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true

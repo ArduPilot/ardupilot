@@ -1088,9 +1088,41 @@ void AP_Vehicle::update_arming()
 /*
   one Hz checks common to all vehicles
  */
+#if AP_MAINLOOP_FAILSAFE_ENABLED
+void AP_Vehicle::mainloop_failsafe_stalled(uint32_t stalled_ms)
+{
+    if (!hal.scheduler->is_system_initialized()) {
+        // we are still starting up; see the header
+        return;
+    }
+    if (mainloop_failsafe_stalled_ms != 0) {
+        // one is already waiting to be reported
+        return;
+    }
+    mainloop_failsafe_stalled_ms = stalled_ms;
+}
+
+void AP_Vehicle::mainloop_failsafe_announce()
+{
+    const uint32_t stalled_ms = mainloop_failsafe_stalled_ms;
+    if (stalled_ms == 0) {
+        return;
+    }
+    // clear before sending, so a stall which happens while we are
+    // sending is still recorded
+    mainloop_failsafe_stalled_ms = 0;
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Main loop failsafe: stalled for %u ms",
+                  unsigned(stalled_ms));
+}
+#endif  // AP_MAINLOOP_FAILSAFE_ENABLED
+
 void AP_Vehicle::one_Hz_update(void)
 {
     one_Hz_counter++;
+
+#if AP_MAINLOOP_FAILSAFE_ENABLED
+    mainloop_failsafe_announce();
+#endif
 
     /*
       every 10s check if using a 2M firmware on a 1M board
@@ -1189,6 +1221,21 @@ bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
     if (!motors->armed()) {
         takeoff_check_state.warning_ms = now_ms;
         return false;
+    }
+
+    // once the motors have actually left ground idle the takeoff has
+    // been allowed; RPM is expected to leave the takeoff window, so
+    // the check is moot - and must not warn.  A blocked takeoff never
+    // advances the spool state, so this cannot mask a genuine block.
+    switch (motors->get_spool_state()) {
+    case AP_Motors::SpoolState::SHUT_DOWN:
+    case AP_Motors::SpoolState::GROUND_IDLE:
+        break;
+    case AP_Motors::SpoolState::SPOOLING_UP:
+    case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
+    case AP_Motors::SpoolState::SPOOLING_DOWN:
+        takeoff_check_state.warning_ms = now_ms;
+        return true;
     }
 
     // check ESCs are sending RPM at expected level
