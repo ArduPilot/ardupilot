@@ -71,6 +71,13 @@ bool SoftSerial::process_pulse(uint32_t width_high, uint32_t width_low, uint8_t 
         bits_high = 0;
     }
 
+    if (state.bit_ofs + bits_high >= 32) {
+        // more pending bits than fit in the 32-bit shift register: this
+        // can happen after a long low pulse. Shifting by >=32 is undefined
+        // behaviour, so treat it as a framing error.
+        goto reset;
+    }
+
     state.byte |= ((1U<<bits_high)-1) << state.bit_ofs;
 
     state.bit_ofs += bits_high + bits_low;
@@ -96,7 +103,9 @@ bool SoftSerial::process_pulse(uint32_t width_high, uint32_t width_low, uint8_t 
         state.bit_ofs -= byte_width;
         if (state.bit_ofs > byte_width) {
             state.byte = 0;
-            state.bit_ofs = bits_low;
+            // a low pulse longer than a byte cannot be valid data; clamp so
+            // bit_ofs can never exceed the shift register width
+            state.bit_ofs = (bits_low < byte_width) ? bits_low : byte_width;
         }
         // swallow idle bits
         while (state.bit_ofs > 0 && (state.byte & 1)) {
