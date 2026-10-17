@@ -14,7 +14,7 @@
 #include <AP_Motors/AP_MotorsMulticopter.h>
 
 #ifndef CUSTOMCONTROL_MAX_TYPES
-#define CUSTOMCONTROL_MAX_TYPES 2
+#define CUSTOMCONTROL_MAX_TYPES 3
 #endif
 
 class AC_CustomControl_Backend;
@@ -27,7 +27,7 @@ public:
 
     void init(void);
     void update(void);
-    void motor_set(Vector3f motor_out);
+    void motor_set(Vector3f motor_out, uint8_t skip_mask);
     void set_custom_controller(bool enabled);
     void reset_main_att_controller(void);
     bool is_safe_to_run(void);
@@ -49,6 +49,7 @@ protected:
         CONT_NONE            = 0,
         CONT_EMPTY           = 1,
         CONT_PID             = 2,
+        CONT_INDI            = 3,
     };            // controller that should be used     
 
     enum class  CustomControlOption {
@@ -60,6 +61,7 @@ protected:
     // Intersampling period in seconds
     float _dt;
     bool _custom_controller_active;
+    uint8_t _fallback_mask;     // axes the backend handed back to the main controller
 
     // References to external libraries
     AP_AHRS_View*& _ahrs;

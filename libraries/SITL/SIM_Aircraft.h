@@ -351,6 +351,11 @@ protected:
     // update attitude and relative position
     void update_dynamics(const Vector3f &rot_accel);
 
+    // control effectiveness test aids (SIM_CE_*): scale or reverse the
+    // rotational acceleration per axis and add a gust after liftoff
+    Vector3f apply_ce_test_aids(const Vector3f &rot_accel);
+    uint64_t ce_liftoff_time_us;
+
     // update wind vector
     void update_wind(const struct sitl_input &input);
 

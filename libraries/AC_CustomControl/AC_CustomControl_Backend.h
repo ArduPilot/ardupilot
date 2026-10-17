@@ -28,6 +28,10 @@ public:
     // set the PID notch sample rates
     virtual void set_notch_sample_rate(float sample_rate) {};
 
+    // axes the backend has given up on; the frontend leaves these to
+    // the main controller
+    virtual uint8_t get_fallback_mask() const { return 0; }
+
 protected:
     // References to external libraries
     AP_AHRS_View*& _ahrs;

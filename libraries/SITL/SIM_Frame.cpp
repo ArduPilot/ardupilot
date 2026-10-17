@@ -892,6 +892,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     const auto *_sitl = AP::sitl();
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mtorque, mthrust;
+        motors[i].set_lag_tc(_sitl->ce_mot_tc);
         motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf,
                                    gyro, air_density, aircraft.get_battery_voltage(), true);
         torque += mtorque;
@@ -906,6 +907,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     rot_accel.x = torque.x / moment_of_inertia.x;
     rot_accel.y = torque.y / moment_of_inertia.y;
     rot_accel.z = torque.z / moment_of_inertia.z;
+
 
     if (terminal_rotation_rate > 0) {
         // rotational air resistance

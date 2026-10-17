@@ -69,6 +69,14 @@ void Motor::calculate_forces(const struct sitl_input &input,
         float slew_max_change = slew_max * dt;
         command = constrain_float(command, last_command-slew_max_change, last_command+slew_max_change);
     }
+    // optional first-order lag (SIM_CE_MOT_TC) to emulate a slow actuator
+    if (last_calc_us != 0 && is_positive(lag_tc)) {
+        const float dt = (now_us - last_calc_us)*1.0e-6;
+        lag_command += constrain_float(dt / lag_tc, 0, 1) * (command - lag_command);
+        command = lag_command;
+    } else {
+        lag_command = command;
+    }
     last_calc_us = now_us;
     last_command = command;
 

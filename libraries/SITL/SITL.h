@@ -236,6 +236,14 @@ public:
     AP_Float engine_mul;  // engine multiplier
     AP_UInt32 engine_fail; // mask of engine/motor servo outputs to fail
 
+    // control effectiveness test aids, see SIM_CE_* parameters
+    AP_Vector3f ce_scale;   // multiplier on body torque per axis
+    AP_Int8 ce_rev_mask;    // axes whose torque is reversed
+    AP_Float ce_mot_tc;     // extra first-order lag on motor commands, seconds
+    AP_Vector3f ce_gust;    // angular acceleration disturbance, rad/s^2
+    AP_Float ce_gust_t;     // seconds after liftoff the disturbance starts
+    AP_Float ce_gust_dur;   // seconds it lasts
+
     // initial offset on GPS lat/lon, used to shift origin
     AP_Float gps_init_lat_ofs;
     AP_Float gps_init_lon_ofs;

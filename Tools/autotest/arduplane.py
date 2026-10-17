@@ -10531,6 +10531,174 @@ return update()
         )
         self.disarm_wait(timeout=120)
 
+    # INDI custom controller (libraries/AP_INDI/SPEC.md) validation on a
+    # fixed-wing aircraft, stages 2 and 3 of its validation plan
+    def indi_plane_setup(self):
+        """Select the INDI custom-control backend and reboot into it."""
+        self.set_parameters({
+            'CP_TYPE': 3,
+            # aileron and elevator; the rudder stays with the stock yaw
+            # damper (its strokes in a turn are coordination, not probes)
+            'CP_MASK': 3,
+            'RC6_OPTION': 109,  # custom controller switch
+            'LOG_DISARMED': 1,
+            'LOG_FILE_RATEMAX': 0,
+            # the identification needs 400 Hz (SPEC.md, sampling): at the
+            # plane's default 50 Hz its 7-tap derivative spans 140 ms
+            'SCHED_LOOP_RATE': 400,
+            # the landing mission the flight test flies home with carries a
+            # DO_LAND_START, which the arming check refuses without this
+            'RTL_AUTOLAND': 1,
+        })
+        self.set_rc(6, 1000)
+        self.reboot_sitl()
+        if self.get_parameter("CP_TYPE") != 3:
+            raise NotAchievedException("INDI backend not selected")
+        # the backend's own parameters exist once it is constructed
+        self.get_parameter("CP3_G_RLL")
+        self.set_parameters({
+            # the SITL servo is a first-order lag with SIM_SERVO_SPEED (0.14 s)
+            # as its time constant; the output reaches the simulator one loop
+            # (2.5 ms at 400 Hz) plus the simulator frame after it is written
+            'CP3_ACT_TAU': 0.14,
+            'CP3_ACT_DLY': 0.005,
+            # the backend caps the rate gain at 2/tau (14 here, see the cap's
+            # comment); the airframe's own roll and yaw damping (-12 1/s at
+            # 27 m/s) makes the roll loop over-damped even so, and at 5 the
+            # plane took two seconds to reverse a 60 degree bank. The attitude
+            # loop at 3 rad/s is a third of the rate loop's natural frequency,
+            # and 150 deg/s is above the stock controllers' 90 deg/s RMAX:
+            # the navigation demand swings through 100 degrees at the
+            # climb-to-loiter transition, and at 90 deg/s the attitude error
+            # peaked at the swing itself (54 to 92 degrees run to run). The launch
+            # over-drive is not applied: it multiplies the attitude gain,
+            # which this slow servo cannot carry
+            'CP3_RAT_GAIN': 15.0,
+            'CP3_ANG_BW': 3.0,
+            'CP3_RAT_MAX': 150.0,
+            'CP3_ODRV_MAX': 1.0,
+        })
+
+    def indi_plane_launch(self, alt=30):
+        """One launch: engage the controller, take off in TAKEOFF mode to
+        alt, return the launch records from this boot's log, then force
+        disarm and reboot so the next launch starts from the ground."""
+        self.context_collect('STATUSTEXT')
+        self.set_rc(6, 2000)
+        self.wait_statustext("Custom controller is ON", check_context=True, timeout=10)
+        self.takeoff_in_TAKEOFF(alt=alt, timeout=90)
+        self.delay_sim_time(2, "settle after takeoff")
+        launches = self.indi_launches_from_log()
+        self.set_rc(6, 1000)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        return launches
+
+    def INDIPlaneMatched(self, cycles=100, seed=20261013):
+        '''INDI validation stage 2 on a plane: matched airframe, repeated takeoffs with random wind'''
+        import random
+        self.indi_plane_setup()
+        rng = random.Random(seed)
+        all_launches = []
+        for n in range(cycles):
+            self.set_parameters({
+                'SIM_WIND_SPD': rng.uniform(0, 8),
+                'SIM_WIND_DIR': rng.uniform(0, 360),
+                'SIM_WIND_TURB': rng.uniform(0, 3),
+            })
+            self.progress("INDI plane matched launch %u/%u" % (n + 1, cycles))
+            launches = self.indi_plane_launch()
+            if len(launches) < 1:
+                raise NotAchievedException("launch %u: no identification launch in log" % n)
+            all_launches.append(launches[0])
+        self.set_parameters({'SIM_WIND_SPD': 0, 'SIM_WIND_TURB': 0})
+        self.indi_report_launches(all_launches, "plane matched")
+        fallbacks = [L for L in all_launches if L['fallback']]
+        if len(fallbacks) > 0:
+            raise NotAchievedException("Fallback engaged on %u of %u launches" % (len(fallbacks), len(all_launches)))
+        converged_300 = 0
+        for L in all_launches:
+            times = L['converged_ms']
+            if None not in times and max(times) <= 300:
+                converged_300 += 1
+        frac = converged_300 / float(len(all_launches))
+        self.progress("INDI plane matched: %u of %u launches converged on all axes within 300 ms (%.0f%%)" %
+                      (converged_300, len(all_launches), frac * 100))
+        if frac < 0.95:
+            raise NotAchievedException("Converged within 300 ms on only %.0f%% of launches, need 95%%" % (frac * 100))
+
+    def indi_plane_profile(self, label):
+        '''takeoff, a minute of loiter (two circles at the default radius),
+        fly home and land; returns the flight report from this boot's log'''
+        start_us = self.get_sim_time() * 1e6
+        self.takeoff_in_TAKEOFF(alt=50, timeout=120)
+        self.change_mode('LOITER')
+        self.delay_sim_time(60, "loiter with the loop turning the aircraft")
+        self.fly_home_land_and_disarm(timeout=240)
+        return self.indi_flight_report(start_us, label, axis_mask=3)
+
+    def INDIPlaneFlies(self):
+        '''INDI flies the plane: takeoff, loiter with turns, fly home and land, all axes INDI, no handback'''
+        self.indi_plane_setup()
+        # the same profile on the stock controllers sets the tracking bar
+        stock = self.indi_plane_profile("plane flight, stock controllers")
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+        self.set_rc(6, 2000)
+        self.wait_statustext("Custom controller is ON", check_context=True, timeout=10)
+        report = self.indi_plane_profile("plane flight, INDI")
+        failures = []
+        if report['fallback_records'] > 0:
+            failures.append("an axis was handed back to the stock controller (mask 0x%x at %.1f s)" %
+                            (report['fallback_mask'], report['fallback_first_s']))
+        # flies as well as the stock controllers: attitude error within 1.5x
+        # of theirs on the same profile (the loiter entry and the flare are
+        # the largest transients for both)
+        for axis in ['roll', 'pitch']:
+            if report['%s_rms_deg' % axis] > 1.5 * stock['%s_rms_deg' % axis] + 0.5:
+                failures.append("%s tracking rms %.2f deg against %.2f on the stock controller" %
+                                (axis, report['%s_rms_deg' % axis], stock['%s_rms_deg' % axis]))
+            if report['%s_max_deg' % axis] > 1.5 * stock['%s_max_deg' % axis] + 2:
+                failures.append("%s excursion max %.1f deg against %.1f on the stock controller" %
+                                (axis, report['%s_max_deg' % axis], stock['%s_max_deg' % axis]))
+        if len(failures):
+            raise NotAchievedException("INDI did not fly the plane: " + "; ".join(failures))
+
+    def INDIPlaneMismatched(self):
+        '''INDI validation stage 3 on a plane: effectiveness 0.3x and 3x the prior, and a reversed axis'''
+        self.indi_plane_setup()
+        sets = [
+            ("0.3x", {'SIM_CE_SCALE_X': 0.3, 'SIM_CE_SCALE_Y': 0.3, 'SIM_CE_SCALE_Z': 0.3,
+                      'SIM_CE_REV_MSK': 0}, False),
+            ("3x", {'SIM_CE_SCALE_X': 3.0, 'SIM_CE_SCALE_Y': 3.0, 'SIM_CE_SCALE_Z': 3.0,
+                    'SIM_CE_REV_MSK': 0}, False),
+            ("reversed roll", {'SIM_CE_SCALE_X': 1.0, 'SIM_CE_SCALE_Y': 1.0, 'SIM_CE_SCALE_Z': 1.0,
+                               'SIM_CE_REV_MSK': 1}, True),
+        ]
+        for label, params, want_flip in sets:
+            self.set_parameters(params)
+            for n in range(5):
+                self.progress("INDI plane %s launch %u/5" % (label, n + 1))
+                launches = self.indi_plane_launch()
+                if len(launches) < 1:
+                    raise NotAchievedException("%s launch %u: no identification launch in log" % (label, n))
+                L = launches[0]
+                self.indi_report_launches([L], label)
+                if L['fallback']:
+                    raise NotAchievedException("%s launch %u: fallback engaged at %s ms" % (label, n, L['fallback_ms']))
+                if want_flip:
+                    if L['sign_flip_ms'] is None:
+                        raise NotAchievedException("%s launch %u: reversed axis never detected" % (label, n))
+                    if L['sign_flip_ms'] > 50:
+                        raise NotAchievedException("%s launch %u: sign recovered after %u ms, want 50" %
+                                                   (label, n, L['sign_flip_ms']))
+                elif L['sign_flip_ms'] is not None:
+                    raise NotAchievedException("%s launch %u: spurious sign flip" % (label, n))
+                times = L['converged_ms']
+                if None in times or max(times) > 500:
+                    raise NotAchievedException("%s launch %u: converged %s, want all within 500 ms" % (label, n, times))
+        self.set_parameters({'SIM_CE_REV_MSK': 0, 'SIM_CE_SCALE_X': 1.0, 'SIM_CE_SCALE_Y': 1.0, 'SIM_CE_SCALE_Z': 1.0})
+
     def CustomController(self):
         '''Test Custom Controller API'''
 
@@ -10843,6 +11011,9 @@ return update()
             self.EXTENDED_SYS_STATE,
             self.PID_TUNING_axes,
             self.CustomController,
+            self.INDIPlaneMatched,
+            self.INDIPlaneMismatched,
+            self.INDIPlaneFlies,
         ])
         return ret
 
@@ -11144,6 +11315,10 @@ return update()
 
     def disabled_tests(self):
         ret = {
+            # INDI validation on the plane (libraries/AP_INDI/SPEC.md) does
+            # not yet meet its pass criteria; run by name while developed
+            "INDIPlaneMatched": "INDI validation stage 2 targets not yet met on the plane, see libraries/AP_INDI/SPEC.md",
+            "INDIPlaneMismatched": "INDI validation stage 3 waits on stage 2 passing on the plane",
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",

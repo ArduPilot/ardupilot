@@ -1823,6 +1823,346 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_RTL()
         self.progress("Custom controller test complete")
 
+    # INDI custom controller (libraries/AP_INDI/SPEC.md) validation,
+    # stages 2 to 4 of its validation plan
+    def indi_setup(self, extra_parameters=None):
+        """Select the INDI custom-control backend and reboot into it."""
+        params = {
+            'CC_TYPE': 3,
+            'CC_AXIS_MASK': 7,
+            'RC6_OPTION': 109,  # custom controller switch
+            'LOG_DISARMED': 1,  # one log across all the takeoffs
+            'LOG_BITMASK': 176127,  # default plus ATTITUDE_FAST for RATE
+            'LOG_FILE_RATEMAX': 0,  # full-rate RATE for the offline replay tool
+        }
+        self.set_parameters(params)
+        self.set_rc(6, 1000)
+        self.reboot_sitl()
+        if self.get_parameter("CC_TYPE") != 3:
+            raise NotAchievedException("INDI backend not selected")
+        # the backend's own parameters exist once it is constructed
+        self.get_parameter("CC3_G_RP")
+        backend_params = {
+            # the SITL motors respond within a loop period; the gyro filter
+            # is the only lag in the chain and the controller matches that
+            # itself from INS_GYRO_FILTER
+            'CC3_ACT_TAU': 0.003,
+            'CC3_ACT_DLY': 0.003,
+        }
+        if extra_parameters is not None:
+            backend_params.update(extra_parameters)
+        self.set_parameters(backend_params)
+
+    def indi_engage(self):
+        """Switch the custom controller on before the flight so the launch
+        identification runs from spool-up."""
+        self.context_collect('STATUSTEXT')
+        self.set_rc(6, 2000)
+        self.wait_statustext("Custom controller is ON", check_context=True)
+
+    def indi_takeoff_cycle(self, alt=5, settle=3):
+        """One launch: arm, take off in GUIDED, hover, land and disarm."""
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=alt, timeout=60, max_err=alt)
+        self.delay_sim_time(settle, "settle after takeoff")
+        self.land_and_disarm()
+
+    def INDIMatched(self, cycles=100, seed=20261013):
+        '''INDI validation stage 2: matched airframe, repeated launches with random wind'''
+        import random
+        self.indi_setup()
+        self.indi_engage()
+        rng = random.Random(seed)
+        start_us = self.get_sim_time() * 1e6
+        for n in range(cycles):
+            self.set_parameters({
+                'SIM_WIND_SPD': rng.uniform(0, 8),
+                'SIM_WIND_DIR': rng.uniform(0, 360),
+                'SIM_WIND_TURB': rng.uniform(0, 3),
+            })
+            self.progress("INDI matched launch %u/%u" % (n + 1, cycles))
+            self.indi_takeoff_cycle()
+        self.set_rc(6, 1000)
+        self.set_parameters({'SIM_WIND_SPD': 0, 'SIM_WIND_TURB': 0})
+
+        launches = self.indi_launches_from_log(start_us)
+        self.indi_report_launches(launches, "matched")
+        if len(launches) < cycles:
+            raise NotAchievedException("Expected %u launches in log, found %u" % (cycles, len(launches)))
+        fallbacks = [L for L in launches if L['fallback']]
+        if len(fallbacks) > 0:
+            raise NotAchievedException("Fallback engaged on %u of %u launches" % (len(fallbacks), len(launches)))
+        converged_300 = 0
+        for L in launches:
+            times = L['converged_ms']
+            if None not in times and max(times) <= 300:
+                converged_300 += 1
+        frac = converged_300 / float(len(launches))
+        self.progress("INDI matched: %u of %u launches converged on all axes within 300 ms (%.0f%%)" %
+                      (converged_300, len(launches), frac * 100))
+        if frac < 0.95:
+            raise NotAchievedException("Converged within 300 ms on only %.0f%% of launches, need 95%%" % (frac * 100))
+
+    def indi_mismatched_set(self, label, sim_params, cycles, want_flip, converge_ms):
+        """Run cycles launches with the frame model altered and check the
+        sign recovery and convergence targets."""
+        self.set_parameters(sim_params)
+        start_us = self.get_sim_time() * 1e6
+        failures = []
+        for n in range(cycles):
+            self.progress("INDI %s launch %u/%u" % (label, n + 1, cycles))
+            try:
+                self.indi_takeoff_cycle()
+            except (NotAchievedException, AutoTestTimeoutException) as e:
+                # a launch the controller could not fly is a failure of this
+                # set, not a reason to skip the sets after it
+                failures.append("%s launch %u: %s" % (label, n, str(e)))
+                self.change_mode('LAND')
+                self.wait_disarmed(timeout=120)
+        launches = self.indi_launches_from_log(start_us)
+        self.indi_report_launches(launches, label)
+        if len(launches) < cycles:
+            failures.append("%s: expected %u launches in log, found %u" % (label, cycles, len(launches)))
+        for n, L in enumerate(launches):
+            if L['fallback']:
+                failures.append("%s launch %u: fallback engaged at %s ms" % (label, n, L['fallback_ms']))
+            if want_flip:
+                if L['sign_flip_ms'] is None:
+                    failures.append("%s launch %u: reversed axis never detected" % (label, n))
+                elif L['sign_flip_ms'] > 50:
+                    failures.append("%s launch %u: sign recovered after %u ms, want 50" %
+                                    (label, n, L['sign_flip_ms']))
+            elif L['sign_flip_ms'] is not None:
+                failures.append("%s launch %u: spurious sign flip" % (label, n))
+            times = L['converged_ms']
+            if None in times or max(times) > converge_ms:
+                failures.append("%s launch %u: converged %s, want all within %u ms" %
+                                (label, n, times, converge_ms))
+        for f in failures:
+            self.progress("UNMET: " + f)
+        return failures
+
+    def INDIMismatched(self):
+        '''INDI validation stage 3: effectiveness 0.3x and 3x the prior, and a reversed axis'''
+        # the scaling is relative to the prior, so the prior is first set to
+        # what stage 2 identified for the default SITL quad (roll and pitch
+        # 257, yaw 12 rad/s^2 per unit); 0.3x and 3x of that lie inside the
+        # 0.25x..4x band, where identification rather than fallback is the
+        # specified outcome
+        self.indi_setup(extra_parameters={
+            'CC3_G_RP': 257,
+            'CC3_G_YAW': 12,
+        })
+        self.indi_engage()
+        failures = []
+        failures += self.indi_mismatched_set("0.3x", {
+            'SIM_CE_SCALE_X': 0.3, 'SIM_CE_SCALE_Y': 0.3, 'SIM_CE_SCALE_Z': 0.3,
+        }, cycles=5, want_flip=False, converge_ms=500)
+        failures += self.indi_mismatched_set("3x", {
+            'SIM_CE_SCALE_X': 3.0, 'SIM_CE_SCALE_Y': 3.0, 'SIM_CE_SCALE_Z': 3.0,
+        }, cycles=5, want_flip=False, converge_ms=500)
+        failures += self.indi_mismatched_set("reversed roll", {
+            'SIM_CE_SCALE_X': 1.0, 'SIM_CE_SCALE_Y': 1.0, 'SIM_CE_SCALE_Z': 1.0,
+            'SIM_CE_REV_MSK': 1,
+        }, cycles=5, want_flip=True, converge_ms=500)
+        self.set_parameters({'SIM_CE_REV_MSK': 0})
+        self.set_rc(6, 1000)
+        if failures:
+            raise NotAchievedException("%u unmet stage 3 criteria, first: %s" % (len(failures), failures[0]))
+
+    def indi_copter_profile(self, label):
+        '''GUIDED takeoff to 10 m, a 20 m box with the position controller
+        driving all three axes, land; returns the flight report'''
+        start_us = self.get_sim_time() * 1e6
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=10, timeout=60, max_err=5)
+        for (x, y) in [(20, 0), (20, 20), (0, 20), (0, 0)]:
+            self.fly_guided_move_local(x, y, 10, timeout=60)
+        self.land_and_disarm()
+        return self.indi_flight_report(start_us, label)
+
+    def INDIFlies(self):
+        '''INDI flies the copter: takeoff, a box with yaw changes, land, all axes INDI, no handback'''
+        self.indi_setup()
+        # the same profile on the stock controller sets the tracking bar
+        stock = self.indi_copter_profile("copter flight, stock controller")
+        self.indi_engage()
+        report = self.indi_copter_profile("copter flight, INDI")
+        failures = []
+        if report['fallback_records'] > 0:
+            failures.append("an axis was handed back to the rate PID (mask 0x%x at %.1f s)" %
+                            (report['fallback_mask'], report['fallback_first_s']))
+        # flies as well as the stock controller: attitude error within 1.5x
+        # of its on the same box
+        for axis in ['roll', 'pitch']:
+            if report['%s_rms_deg' % axis] > 1.5 * stock['%s_rms_deg' % axis] + 0.5:
+                failures.append("%s tracking rms %.2f deg against %.2f on the stock controller" %
+                                (axis, report['%s_rms_deg' % axis], stock['%s_rms_deg' % axis]))
+            if report['%s_max_deg' % axis] > 1.5 * stock['%s_max_deg' % axis] + 2:
+                failures.append("%s excursion max %.1f deg against %.1f on the stock controller" %
+                                (axis, report['%s_max_deg' % axis], stock['%s_max_deg' % axis]))
+        if len(failures):
+            raise NotAchievedException("INDI did not fly the copter: " + "; ".join(failures))
+
+    def INDIFliesRPM(self):
+        '''INDI flies the copter on measured motor speed: the INDIFlies box with ESC telemetry RPM as the actuator state'''
+        # SITL reports each motor's speed through ESC telemetry
+        # (SIM_ESC_TELEM, on by default) as its command times
+        # SIM_VIB_MOT_MAX; 250 Hz at full command is a typical 5 inch
+        # motor (15000 rpm). That also adds motor-frequency vibration to the
+        # simulated IMU, so the stock flight is flown with it too.
+        full_speed_hz = 250.0
+        # the motor-speed feedback ported from ArduPilot/ardupilot#21699
+        # handles quad X only, and the SITL copter the other tests fly is
+        # a plus frame: fly this one on SITL's X model, started with the X
+        # frame's own defaults (FRAME_TYPE 1) as sim_vehicle starts it
+        self.customise_SITL_commandline([], model="x", defaults_filepath=self.model_defaults_filepath("X"))
+        self.indi_setup(extra_parameters={
+            'SIM_VIB_MOT_MAX': full_speed_hz,
+            'CC3_ACT_SRC': 1,
+            # motor speed at full command, rad/s
+            'CC3_THR2RTRSPD': full_speed_hz * 2 * math.pi,
+        })
+        stock = self.indi_copter_profile("copter flight on RPM, stock controller")
+        self.indi_engage()
+        start_us = self.get_sim_time() * 1e6
+        report = self.indi_copter_profile("copter flight on RPM, INDI")
+        failures = []
+        if report['fallback_records'] > 0:
+            failures.append("an axis was handed back to the rate PID (mask 0x%x at %.1f s)" %
+                            (report['fallback_mask'], report['fallback_first_s']))
+        for axis in ['roll', 'pitch']:
+            if report['%s_rms_deg' % axis] > 1.5 * stock['%s_rms_deg' % axis] + 0.5:
+                failures.append("%s tracking rms %.2f deg against %.2f on the stock controller" %
+                                (axis, report['%s_rms_deg' % axis], stock['%s_rms_deg' % axis]))
+            if report['%s_max_deg' % axis] > 1.5 * stock['%s_max_deg' % axis] + 2:
+                failures.append("%s excursion max %.1f deg against %.1f on the stock controller" %
+                                (axis, report['%s_max_deg' % axis], stock['%s_max_deg' % axis]))
+        # the measured actuator state must actually have been flown on:
+        # INDG.Src is 1 (measured) once the measurement has agreed with the
+        # model for half a second in flight, 2 if it was rejected
+        dfreader = self.dfreader_for_current_onboard_log()
+        src_counts = {0: 0, 1: 0, 2: 0}
+        while True:
+            m = dfreader.recv_match(type='INDG')
+            if m is None:
+                break
+            if m.TimeUS < start_us:
+                continue
+            src_counts[m.Src] = src_counts.get(m.Src, 0) + 1
+        total = sum(src_counts.values())
+        self.progress("INDI actuator source over the flight: model %u, measured %u, rejected %u INDG records" %
+                      (src_counts[0], src_counts[1], src_counts[2]))
+        if src_counts[2] > 0:
+            failures.append("the measured actuator state was rejected")
+        # most of the flight: the records on the ground before takeoff and
+        # the half second of agreement are on the model
+        if total == 0 or src_counts[1] < 0.5 * total:
+            failures.append("measured actuator state used on only %u of %u records" % (src_counts[1], total))
+        if len(failures):
+            raise NotAchievedException("INDI did not fly the copter on RPM: " + "; ".join(failures))
+
+    def INDIFailureInjection(self):
+        '''INDI validation stage 4: slow actuators, gyro dropout and a gust in the first strokes'''
+        TRIG_STALL = 1 << 3
+        TRIG_DIVERGENCE = 1 << 4
+        TRIG_GYRO = 1 << 5
+        TRIG_GUST = 1 << 6
+        TRIG_ALIGN = 1 << 7
+        self.indi_setup()
+        self.indi_engage()
+        # a) motors slowed in flight: the SITL motors respond within a
+        # loop period, so 3x their lag is nothing; use 3x the lag of a
+        # typical real motor and ESC (20 ms) instead
+        slow_tc = 0.060
+        start_us = self.get_sim_time() * 1e6
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=10, timeout=60, max_err=10)
+        self.delay_sim_time(3, "settle in hover")
+        self.progress("INDI: slowing motors to %.3f s" % slow_tc)
+        self.set_parameter('SIM_CE_MOT_TC', slow_tc)
+        # excite the axes while slowed and make sure it still flies
+        self.set_rc(1, 1700)
+        self.delay_sim_time(1, "stroke with slowed motors")
+        self.set_rc(1, 1300)
+        self.delay_sim_time(1, "stroke with slowed motors")
+        self.set_rc(1, 1500)
+        self.wait_altitude(5, 15, relative=True, minimum_duration=8, timeout=30)
+        self.set_parameter('SIM_CE_MOT_TC', 0)
+        self.land_and_disarm()
+        launches = self.indi_launches_from_log(start_us)
+        self.indi_report_launches(launches, "slow motors")
+        failures = []
+        if len(launches) < 1:
+            failures.append("slow motors: no launch in log")
+        else:
+            trg = launches[-1]['triggers']
+            if not (trg & (TRIG_ALIGN | TRIG_STALL | TRIG_DIVERGENCE)):
+                failures.append("slow motors: no alignment, stall or divergence trigger (trg=0x%02x)" % trg)
+
+        # b) gyro dropout
+        start_us = self.get_sim_time() * 1e6
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=10, timeout=60, max_err=10)
+        self.delay_sim_time(3, "settle in hover")
+        self.progress("INDI: failing the primary gyro")
+        self.set_parameter('SIM_GYR_FAIL_MSK', 1)
+        # SITL carries several IMUs, so the vehicle either fails over to
+        # another gyro (no trigger owed) or the controller sees its gyro
+        # unhealthy or its measurement frozen (gyro or divergence trigger,
+        # fallback). Whichever way, it must keep flying.
+        self.wait_altitude(5, 15, relative=True, minimum_duration=8, timeout=30)
+        self.set_parameter('SIM_GYR_FAIL_MSK', 0)
+        self.land_and_disarm()
+        launches = self.indi_launches_from_log(start_us)
+        self.indi_report_launches(launches, "gyro dropout")
+        if len(launches) < 1:
+            failures.append("gyro dropout: no launch in log")
+        else:
+            trg = launches[-1]['triggers']
+            # the trigger must fire; whether it ends in fallback depends on
+            # how long the gyro stays unhealthy before the vehicle fails over
+            if not (trg & (TRIG_GYRO | TRIG_DIVERGENCE)):
+                failures.append("gyro dropout: neither the gyro nor the divergence trigger fired (trg=0x%02x)" % trg)
+            self.progress("gyro dropout: triggers 0x%02x fallback=%s" % (trg, launches[-1]['fallback']))
+
+        # c) gust in the first 200 ms after liftoff; identification must
+        # reject the disturbed windows and still converge without fallback
+        self.set_parameters({
+            'SIM_CE_GUST_X': 40.0,
+            'SIM_CE_GUST_Y': -40.0,
+            'SIM_CE_GUST_T': 0.05,
+            'SIM_CE_GUST_DUR': 0.15,
+        })
+        start_us = self.get_sim_time() * 1e6
+        self.indi_takeoff_cycle(alt=5, settle=3)
+        self.set_parameters({'SIM_CE_GUST_DUR': 0})
+        launches = self.indi_launches_from_log(start_us)
+        self.indi_report_launches(launches, "gust")
+        if len(launches) < 1:
+            failures.append("gust: no launch in log")
+        else:
+            L = launches[-1]
+            if L['fallback']:
+                failures.append("gust: fallback engaged")
+            if None in L['converged_ms'] or max(L['converged_ms']) > 1000:
+                failures.append("gust: converged %s, want all axes within 1000 ms" % L['converged_ms'])
+            if not (L['triggers'] & TRIG_GUST) and L['gust_rejects'] == 0:
+                failures.append("gust: no window was rejected as a disturbance")
+        self.set_rc(6, 1000)
+        for f in failures:
+            self.progress("UNMET: " + f)
+        if failures:
+            raise NotAchievedException("%u unmet stage 4 criteria, first: %s" % (len(failures), failures[0]))
+
     # Tests all actions and logic behind the battery failsafe
     def batt_failsafe_init(self):
         '''configure the common battery failsafe parameters shared by the
@@ -23754,6 +24094,11 @@ return update, 1000
         ret = ([
             self.ThrottleFailsafe,
             self.CustomController,
+            self.INDIMatched,
+            self.INDIMismatched,
+            self.INDIFailureInjection,
+            self.INDIFlies,
+            self.INDIFliesRPM,
             self.WPArcs,
             self.BatteryFailsafeTwoStage,
             self.BatteryFailsafeBrakeLand,
@@ -24169,6 +24514,12 @@ return update, 1000
 
     def disabled_tests(self):
         return {
+            # INDI validation stages 2 to 4 (libraries/AP_INDI/SPEC.md) do not
+            # yet meet their own pass criteria; run them by name while the
+            # controller is developed
+            "INDIMatched": "INDI validation stage 2 targets not yet met, see libraries/AP_INDI/SPEC.md status",
+            "INDIMismatched": "INDI validation stage 3 targets not yet met, see libraries/AP_INDI/SPEC.md status",
+            "INDIFailureInjection": "INDI validation stage 4 gust case not yet met, see libraries/AP_INDI/SPEC.md status",
             "GroundEffectCompensation_takeOffExpected": "Flapping",
             "GroundEffectCompensation_touchDownExpected": "Flapping",
             "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",

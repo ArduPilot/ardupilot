@@ -207,6 +207,7 @@ BUILD_OPTIONS = [
     Feature('Copter', 'COPTER_ADVANCED_FAILSAFE', 'AP_COPTER_ADVANCED_FAILSAFE_ENABLED', 'Enable Advanced Failsafe', 0, "ADVANCED_FAILSAFE"),  # NOQA: E501
     Feature('Copter', 'COPTER_AHRS_AUTO_TRIM', 'AP_COPTER_AHRS_AUTO_TRIM_ENABLED', 'Enable Copter AHRS AutoTrim', 0, None),  # NOQA: E501
     Feature('Copter', 'COPTER_CUSTOM_CONTROL', 'AP_COPTER_CUSTOMCONTROL_ENABLED', 'Enable custom copter attitude controller', 0, None),  # NOQA: E501
+    Feature('Copter', 'INDI', 'AP_INDI_ENABLED', 'Enable INDI rate control with online effectiveness identification', 0, 'COPTER_CUSTOM_CONTROL'),  # NOQA: E501
 
     Feature('Rover', 'ROVER_ADVANCED_FAILSAFE', 'AP_ROVER_ADVANCED_FAILSAFE_ENABLED', 'Enable Advanced Failsafe', 0, "ADVANCED_FAILSAFE"),  # NOQA: E501
     Feature('Rover', 'ROVER_AUTO_ARM_ONCE', 'AP_ROVER_AUTO_ARM_ONCE_ENABLED', 'Make Auto-Arm-Once functionality available', 0, None),  # NOQA: E501
@@ -292,6 +293,7 @@ BUILD_OPTIONS = [
     Feature('Plane', 'PLANE_SYSTEMID', 'AP_PLANE_SYSTEMID_ENABLED', 'Enable systemID support', 0, 'QUADPLANE,Logging'),  # NOQA: E501
     # PLANE_CUSTOM_CONTROL depends on scripting due to SRV_Channels::set_output_pwm_chan_timeout.
     Feature('Plane', 'PLANE_CUSTOM_CONTROL', 'AP_PLANE_CUSTOMCONTROL_ENABLED', 'Enable custom plane controller', 0, "SCRIPTING"),  # NOQA: E501
+    Feature('Plane', 'PLANE_INDI', 'AP_PLANE_CUSTOMCONTROL_INDI_ENABLED', 'Enable INDI custom plane controller with online effectiveness identification', 0, 'PLANE_CUSTOM_CONTROL,INDI'),  # NOQA: E501
 
     Feature('RC', 'RC_Protocol', 'AP_RCPROTOCOL_ENABLED', "Enable Serial RC Protocols", 0, None),   # NOQA: E501
     Feature('RC', 'RC_CRSF', 'AP_RCPROTOCOL_CRSF_ENABLED', "Enable CRSF", 0, "RC_Protocol"),   # NOQA: E501

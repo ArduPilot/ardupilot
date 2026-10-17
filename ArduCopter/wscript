@@ -8,6 +8,7 @@ def build(bld):
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AC_AttitudeControl',
             'AC_CustomControl',
+            'AP_INDI',
             'AC_InputManager',
             'AC_PrecLand',
             'AC_Sprayer',
