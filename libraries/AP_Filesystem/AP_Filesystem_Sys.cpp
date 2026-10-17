@@ -320,6 +320,19 @@ int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
     } else if (strcmp(pathname_noslash, "crash_dump.bin") == 0) {
         stbuf->st_size = hal.util->last_crash_dump_size();
 #endif
+#if AP_MAVLINK_COMPONENT_INFORMATION_ENABLED
+    } else if (strcmp(pathname_noslash, "general_metadata.json") == 0) {
+        // GCSs fetching component metadata fail the download if
+        // it is shorter than this size. The file is small, so
+        // generate it to find its size
+        ExpandingString str;
+        gcs().general_metadata(str);
+        if (str.has_failed_allocation()) {
+            errno = ENOMEM;
+            return -1;
+        }
+        stbuf->st_size = str.get_length();
+#endif
     } else {
         stbuf->st_size = 100000;
     }
