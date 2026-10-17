@@ -456,11 +456,20 @@ bool AP_GPS_NMEA::_term_complete()
                     // prefer AGRICA
                     break;
                 }
+                // atof() accepts nan, inf and any magnitude; the conversions
+                // to int32 below are undefined outside the int32 range, so
+                // ignore a position that cannot be one
+                if (!isfinite(_ksxt.fields[2]) || fabs(_ksxt.fields[2]) > 90 ||
+                    !isfinite(_ksxt.fields[1]) || fabs(_ksxt.fields[1]) > 180 ||
+                    !isfinite(_ksxt.fields[3]) || fabs(_ksxt.fields[3]) > 1.0e7) {
+                    break;
+                }
                 state.location.lat     = _ksxt.fields[2]*1.0e7;
                 state.location.lng     = _ksxt.fields[1]*1.0e7;
                 set_alt_amsl_cm(state, _ksxt.fields[3]*1.0e2);
                 _last_KSXT_pos_ms = now;
-                if (_ksxt.fields[9] >= 1) {
+                if (_ksxt.fields[9] >= 1 &&
+                    isfinite(_ksxt.fields[16]) && isfinite(_ksxt.fields[17]) && isfinite(_ksxt.fields[18])) {
                     // we have 3D fix
                     constexpr float kmh_to_mps = 1.0 / 3.6;
                     state.velocity.y = _ksxt.fields[16] * kmh_to_mps;
@@ -472,7 +481,7 @@ bool AP_GPS_NMEA::_term_complete()
                     velocity_to_speed_course(state);
                     _last_3D_velocity_ms = now;
                 }
-                if (is_equal(3.0f, float(_ksxt.fields[10]))) {
+                if (is_equal(3.0f, float(_ksxt.fields[10])) && isfinite(_ksxt.fields[4])) {
                     // have good yaw (from RTK fixed moving baseline solution)
                     _last_yaw_ms = now;
                     state.gps_yaw = _ksxt.fields[4];
@@ -490,6 +499,17 @@ bool AP_GPS_NMEA::_term_complete()
 #if AP_GPS_NMEA_UNICORE_ENABLED
             case _GPS_SENTENCE_AGRICA: {
                 const auto &ag = _agrica;
+                // strtof()/atof() accept nan and inf; a message carrying them
+                // (or a position outside the int32 range) is ignored whole
+                if (!isfinite(ag.lat) || fabs(ag.lat) > 90 ||
+                    !isfinite(ag.lng) || fabs(ag.lng) > 180 ||
+                    !isfinite(ag.alt) || fabsf(ag.alt) > 1.0e7f ||
+                    !isfinite(ag.undulation) ||
+                    ag.vel_NED.is_nan() || ag.vel_NED.is_inf() ||
+                    ag.vel_stddev.is_nan() || ag.vel_stddev.is_inf() ||
+                    ag.pos_stddev.is_nan() || ag.pos_stddev.is_inf()) {
+                    break;
+                }
                 _last_AGRICA_ms = now;
                 _last_vvelocity_ms = now;
                 _last_vaccuracy_ms = now;
@@ -527,6 +547,12 @@ bool AP_GPS_NMEA::_term_complete()
                 if (now - _last_AGRICA_ms > 500 || ag.heading_status != 4) {
                     // we need heading_status from AGRICA
                     state.have_gps_yaw = false;
+                    break;
+                }
+                if (!isfinite(uh.baseline_length) || !isfinite(uh.heading) ||
+                    !isfinite(uh.pitch) || !isfinite(uh.heading_sd)) {
+                    // strtof() accepts nan/inf; calculate_moving_base_yaw()
+                    // rejects them too, but relPos* must not see them either
                     break;
                 }
                 const float dist = uh.baseline_length;

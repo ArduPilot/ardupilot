@@ -195,4 +195,50 @@ TEST(AP_GPS_NMEA, overlong_speed_saturates_instead_of_wrapping)
                 test.state.ground_speed, 1.0f);
 }
 
+TEST(AP_GPS_NMEA, ksxt_rejects_non_finite_and_out_of_range_position)
+{
+    AP_GPS_NMEA_Test test;
+    const char *ksxt_fmt = "KSXT,20211016083433.00,%s,%s,49.4911,223.57,-11.32,330.19,0.024,,1,3,28,27,,,,-0.012,0.021,0.020,,";
+    char body[300];
+
+    hal.util->snprintf(body, sizeof(body), ksxt_fmt, "116.31296102", "nan");
+    test.send(body);
+    EXPECT_EQ(0, test.state.location.lat);
+    EXPECT_FALSE(test.state.have_gps_yaw);
+
+    hal.util->snprintf(body, sizeof(body), ksxt_fmt, "116.31296102", "1e300");
+    test.send(body);
+    EXPECT_EQ(0, test.state.location.lat);
+
+    hal.util->snprintf(body, sizeof(body), ksxt_fmt, "181.0", "39.95817066");
+    test.send(body);
+    EXPECT_EQ(0, test.state.location.lng);
+
+    hal.util->snprintf(body, sizeof(body), ksxt_fmt, "116.31296102", "39.95817066");
+    test.send(body);
+    EXPECT_EQ(399581706, test.state.location.lat);
+    EXPECT_EQ(1163129610, test.state.location.lng);
+    EXPECT_TRUE(test.state.have_gps_yaw);
+}
+
+#if AP_GPS_NMEA_UNICORE_ENABLED
+TEST(AP_GPS_NMEA, agrica_rejects_non_finite_position)
+{
+    AP_GPS_NMEA_Test test;
+    test.expect_agrica(true);
+    const char *agrica_fmt = "AGRICA,82,GPS,FINE,2237,176366400,0,0,18,15;GNSS,232,22,11,22,0,59,8,1,5,8,12,0,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,296.4656,-26.5685,0.0000,0.005,0.000,0.000,-0.005,0.044,0.032,0.038,%s,149.13181842030,609.1494,-4471799.0368,2672944.7758,-3668288.9857,1.3923,1.5128,3.2272,2.3026,2.1633,2.1586,0.00000000000,0.00000000000,0.0000,0.00000000000,0.00000000000,0.0000,176366400,0.000,66.175285,18.972784,0.000000,0.000000,5,0,0,0";
+    char body[600];
+
+    hal.util->snprintf(body, sizeof(body), agrica_fmt, "nan");
+    test.send(body, true);
+    EXPECT_EQ(0, test.state.location.lat);
+    EXPECT_FALSE(test.state.have_vertical_velocity);
+
+    hal.util->snprintf(body, sizeof(body), agrica_fmt, "-35.33142715815");
+    test.send(body, true);
+    EXPECT_EQ(-353314271, test.state.location.lat);
+    EXPECT_TRUE(test.state.have_vertical_velocity);
+}
+#endif
+
 AP_GTEST_MAIN()
