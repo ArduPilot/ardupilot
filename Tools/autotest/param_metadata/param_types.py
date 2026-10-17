@@ -1,5 +1,5 @@
 '''
-Work out the type each parameter has on the wire by reading the source:
+Work out the type of each parameter by reading the source:
 the AP_Param table entry declaring a documented parameter names the
 class member holding it, and that member's declaration gives its type.
 
@@ -12,17 +12,18 @@ AP_FLAKE8_CLEAN
 import os
 import re
 
-# the MAVLink parameter-metadata type for each AP_Param type; unsigned
-# parameters go over the wire as the signed type of the same size
-WIRE_TYPES = {
+# the MAVLink parameter-metadata type for each AP_Param type.  Unsigned
+# parameters are sent in PARAM_VALUE as the signed type of the same size,
+# but are described as unsigned so a GCS knows the range of values they hold
+METADATA_TYPES = {
     'AP_Int8': 'Int8',
-    'AP_UInt8': 'Int8',
+    'AP_UInt8': 'Uint8',
     'AP_Enum': 'Int8',
     'AP_Int16': 'Int16',
-    'AP_UInt16': 'Int16',
+    'AP_UInt16': 'Uint16',
     'AP_Enum16': 'Int16',
     'AP_Int32': 'Int32',
-    'AP_UInt32': 'Int32',
+    'AP_UInt32': 'Uint32',
     'AP_Float': 'Float',
     'AP_Vector3f': 'Float',
 }
@@ -54,7 +55,7 @@ prog_define = re.compile(r"^[ \t]*#[ \t]*define[ \t]+(\w+)[ \t]+([A-Za-z_]\w*)[ 
 prog_class = re.compile(r"\b(?:class|struct)\s+(\w+)(?:\s+final)?\s*(?::([^;{]*))?{")
 
 # a declaration of one or more parameter members
-prog_param_member = re.compile(r"\b(" + '|'.join(WIRE_TYPES.keys()) + r")\b(?:\s*<[^;{}]*?>)?\s+([^;()]+);")
+prog_param_member = re.compile(r"\b(" + '|'.join(METADATA_TYPES.keys()) + r")\b(?:\s*<[^;{}]*?>)?\s+([^;()]+);")
 
 
 def blank_comments(text):
@@ -317,7 +318,7 @@ class ParamTypes(object):
                     # elements are the member after next
                     element_type = split_args(decl.group(2))[0].split('::')[-1]
                     if len(parts) == 2:
-                        if element_type in WIRE_TYPES:
+                        if element_type in METADATA_TYPES:
                             return element_type
                         continue
                     ret = self.member_type(element_type, '.'.join(parts[2:]), path, depth + 1)
@@ -348,7 +349,7 @@ class ParamTypes(object):
         return candidates[0]
 
     def resolve_in_table(self, path, start, end, short_name, depth=0):
-        '''return the set of wire types short_name could have in a table'''
+        '''return the set of metadata types short_name could have in a table'''
         found = set()
         for entry in self.entries(path, start, end):
             if entry.name is None:
@@ -357,7 +358,7 @@ class ParamTypes(object):
                 if short_name == entry.name:
                     t = self.member_type(entry.clazz, entry.element, path)
                     if t is not None:
-                        found.add(WIRE_TYPES[t])
+                        found.add(METADATA_TYPES[t])
                 elif short_name[:-2] == entry.name and short_name[-2:] in ('_X', '_Y', '_Z'):
                     if self.member_type(entry.clazz, entry.element, path) == 'AP_Vector3f':
                         found.add('Float')
@@ -369,7 +370,7 @@ class ParamTypes(object):
         return found
 
     def resolve(self, path, offset, short_name):
-        '''return the wire type of the parameter documented at offset in path,
+        '''return the metadata type of the parameter documented at offset in path,
         whose name relative to the table it lives in is short_name'''
         if path.endswith('.lua'):
             # scripting parameters are all AP_Float, see AP_Param::add_param

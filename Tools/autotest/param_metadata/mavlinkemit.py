@@ -29,7 +29,7 @@ class MAVLinkEmit(Emit):
         Emit.__init__(self, *args, **kwargs)
         self.parameters = []
         self.names = set()
-        # parameter object -> wire type, see param_types.py
+        # parameter object -> metadata type, see param_types.py
         self.param_types = {}
         self.untyped = []
         self.duplicates = []
@@ -74,8 +74,8 @@ class MAVLinkEmit(Emit):
                 self.duplicates.append(name)
                 continue
 
-            wire_type = self.param_types.get(param)
-            if wire_type is None:
+            metadata_type = self.param_types.get(param)
+            if metadata_type is None:
                 # the schema requires a type, and a wrong type is worse
                 # than none: the GCS would use it to validate values
                 self.untyped.append(name)
@@ -84,7 +84,7 @@ class MAVLinkEmit(Emit):
             self.names.add(name)
             p = {
                 'name': name,
-                'type': wire_type,
+                'type': metadata_type,
             }
             if getattr(param, 'DisplayName', None):
                 p['shortDesc'] = param.DisplayName
