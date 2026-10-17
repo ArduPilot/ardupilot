@@ -1,0 +1,3 @@
+# Preserve the upstream F103 DShot output and DMA configuration.
+include ../iomcu-f103-dshot/hwdef.dat
+include ../iomcu-DCD-FC/no-ppm.inc
