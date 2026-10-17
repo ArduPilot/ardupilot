@@ -358,20 +358,26 @@ char *BL_Network::substitute_vars(const char *str, uint32_t size)
  */
 char *BL_Network::read_headers(SocketAPM *sock)
 {
-    char *ret = (char *)malloc(1024);
-    char *p = ret;
-    while (true) {
+    const size_t header_size = 1024;
+    char *ret = (char *)malloc(header_size);
+    if (ret == nullptr) {
+        return nullptr;
+    }
+    size_t length = 0;
+    while (length < header_size - 1) {
         char c;
         auto n = sock->recv(&c, 1, 100);
         if (n != 1) {
             break;
         }
-        *p++ = c;
-        if (p-ret >= 4 && strcmp(p-4, "\r\n\r\n") == 0) {
-            break;
+        ret[length++] = c;
+        if (length >= 4 && memcmp(ret + length - 4, "\r\n\r\n", 4) == 0) {
+            ret[length] = '\0';
+            return ret;
         }
     }
-    return ret;
+    free(ret);
+    return nullptr;
 }
 
 /*
@@ -487,6 +493,10 @@ void BL_Network::handle_request(SocketAPM *sock)
       read HTTP headers
      */
     char *headers = read_headers(sock);
+    if (headers == nullptr) {
+        delete sock;
+        return;
+    }
 
     const char *header = "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n"
@@ -505,7 +515,7 @@ void BL_Network::handle_request(SocketAPM *sock)
             p += strlen(clen1);
             const uint32_t content_length = atoi(p);
             handle_post(sock, content_length);
-            delete headers;
+            free(headers);
             delete sock;
             return;
         }
@@ -520,7 +530,7 @@ void BL_Network::handle_request(SocketAPM *sock)
             WITH_SEMAPHORE(status_mtx);
             sock->send(bl_status, strlen(bl_status));
         }
-        delete headers;
+        free(headers);
         delete sock;
         return;
     }
@@ -540,7 +550,7 @@ void BL_Network::handle_request(SocketAPM *sock)
         sock->send(msg2, strlen(msg2));
         delete msg2;
     }
-    delete headers;
+    free(headers);
     delete sock;
     AP_ROMFS::free(msg);
 }
