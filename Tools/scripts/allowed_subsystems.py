@@ -57,7 +57,9 @@ class AllowedSubsystems(object):
         # tooling / infrastructure
         'Tools',
         'autotest',
+        'scripts',
         'waf',
+        'ardupilotwaf',
         'hwdef',
         'ci',
         '.github',
@@ -91,7 +93,8 @@ class AllowedSubsystems(object):
     # under a different (or additional) subsystem name.
     SPECIAL_DIR_RULES = [
         ('Tools/autotest/', ['autotest', 'Tools']),
-        ('Tools/ardupilotwaf/', ['waf']),
+        ('Tools/scripts/', ['Tools', 'scripts']),
+        ('Tools/ardupilotwaf/', ['waf', 'ardupilotwaf']),
         ('Tools/AP_Periph/', ['AP_Periph', 'Periph']),
         ('Tools/AP_Bootloader/', ['AP_Bootloader']),
         ('Tools/bootloaders/', ['bootloaders']),
@@ -169,6 +172,18 @@ class AllowedSubsystems(object):
             if os.path.isdir(os.path.join(libraries, name))
         }
 
+    def submodule_dirs(self):
+        '''return the set of immediate subdirectory names of modules/'''
+        modules = os.path.join(self.repo_root, 'modules')
+        try:
+            entries = os.listdir(modules)
+        except OSError:
+            return set()
+        return {
+            name for name in entries
+            if os.path.isdir(os.path.join(modules, name))
+        }
+
     def allowed_subsystems(self, created_dirs=()):
         '''return the full set of allowed subsystem names.
 
@@ -181,6 +196,7 @@ class AllowedSubsystems(object):
             for sub_prefix in sub_prefixes
         }
         return (self.library_dirs()
+                | self.submodule_dirs()
                 | set(self.CURATED_SUBSYSTEMS)
                 | special_subsystems
                 | set(created_dirs))
@@ -221,6 +237,9 @@ class AllowedSubsystems(object):
                 if filename.startswith(sub_prefix):
                     return [lib, sub_prefix]
             return [lib]
+
+        if parts[0] == 'modules' and parts[1] in self.submodule_dirs():
+            return [parts[1], 'modules']
 
         # most-specific-first special directory rules
         for prefix, subsystems in self.SPECIAL_DIR_RULES:
