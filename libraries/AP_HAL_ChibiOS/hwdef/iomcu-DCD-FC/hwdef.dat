@@ -1,0 +1,3 @@
+# Corp.DCLASS DCD FC I/O MCU; STM32F103, existing 24 MHz baseline.
+include ../iomcu-f103/hwdef.dat
+include no-ppm.inc
