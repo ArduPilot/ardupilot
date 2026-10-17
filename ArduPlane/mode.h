@@ -119,15 +119,15 @@ public:
     // true if mode can have terrain following disabled by switch
     virtual bool allows_terrain_disable() const { return false; }
 
-    // true if automatic switch to thermal mode is supported.
-    virtual bool does_automatic_thermal_switch() const {return false; }
-
     // subclasses override this if they require navigation.
     virtual void navigate() { return; }
 
     // this allows certain flight modes to mix RC input with throttle
     // depending on airspeed_nudge_cm
     virtual bool allows_throttle_nudging() const { return false; }
+
+    // true if automatic switch to thermal mode is supported.
+    virtual bool does_automatic_thermal_switch() const { return false; }
 
     // true if the mode sets the vehicle destination, which controls
     // whether control input is ignored with STICK_MIXING=0
@@ -261,14 +261,14 @@ public:
     const char *name() const override { return "Auto"; }
     const char *name4() const override { return "AUTO"; }
 
-    bool does_automatic_thermal_switch() const override { return true; }
-
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
     void navigate() override;
 
     bool allows_throttle_nudging() const override { return true; }
+
+    bool does_automatic_thermal_switch() const override { return true; }
 
     bool does_auto_navigation() const override;
 
@@ -368,6 +368,8 @@ public:
 
     bool allows_throttle_nudging() const override { return true; }
 
+    bool does_automatic_thermal_switch() const override { return true; }
+
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
@@ -444,6 +446,8 @@ public:
     bool isHeadingLinedUp_cd(const int32_t bearing_cd);
 
     bool allows_throttle_nudging() const override { return true; }
+
+    bool does_automatic_thermal_switch() const override { return true; }
 
     bool does_auto_navigation() const override { return true; }
 
@@ -646,10 +650,10 @@ public:
 
     bool allows_terrain_disable() const override { return true; }
 
-    bool does_automatic_thermal_switch() const override { return true; }
-
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    bool does_automatic_thermal_switch() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
     
@@ -672,14 +676,14 @@ public:
 
     bool allows_terrain_disable() const override { return true; }
 
-    bool does_automatic_thermal_switch() const override { return true; }
-
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
     void navigate() override;
 
     bool get_target_heading_cd(int32_t &target_heading) const;
+
+    bool does_automatic_thermal_switch() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
 
