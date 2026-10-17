@@ -99,12 +99,17 @@ void Tracker::update_tracking(void)
         return;
     }
 
+    auto &srv = AP::srv();
+
     // do not perform updates if safety switch is disarmed (i.e. servos can't be moved)
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        // still push so output drivers (e.g. DroneCAN) see the safety state
+        srv.cork();
+        srv.push();
         return;
     }
 
-    hal.rcout->cork();
+    srv.cork();
 
     // do not move if we are not armed:
     if (!hal.util->get_soft_armed()) {
@@ -127,7 +132,7 @@ void Tracker::update_tracking(void)
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
 
-    hal.rcout->push();
+    srv.push();
 
     return;
 }

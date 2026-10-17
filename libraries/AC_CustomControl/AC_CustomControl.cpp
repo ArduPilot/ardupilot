@@ -119,8 +119,10 @@ void AC_CustomControl::reset_main_att_controller(void)
 
 void AC_CustomControl::set_custom_controller(bool enabled)
 {
+#if HAL_LOGGING_ENABLED
     // double logging switch makes the state change very clear in the log
     log_switch();
+#endif  // HAL_LOGGING_ENABLED
 
     _custom_controller_active = false;
 
@@ -164,8 +166,10 @@ void AC_CustomControl::set_custom_controller(bool enabled)
 
     _custom_controller_active = enabled;
 
+#if HAL_LOGGING_ENABLED
     // log successful switch
     log_switch();
+#endif  // HAL_LOGGING_ENABLED
 }
 
 // check that RC switch is on, backend is not changed mid flight and controller type is selected
@@ -179,6 +183,7 @@ bool AC_CustomControl::is_safe_to_run(void) {
     return false;
 }
 
+#if HAL_LOGGING_ENABLED
 // log when the custom controller is switch into
 void AC_CustomControl::log_switch(void) {
     // @LoggerMessage: CC
@@ -192,6 +197,7 @@ void AC_CustomControl::log_switch(void) {
                             _controller_type,
                             _custom_controller_active);
 }
+#endif  // HAL_LOGGING_ENABLED
 
 void AC_CustomControl::set_notch_sample_rate(float sample_rate)
 {
