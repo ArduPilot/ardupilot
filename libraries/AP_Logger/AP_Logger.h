@@ -487,6 +487,10 @@ public:
 
     void handle_mavlink_msg(class GCS_MAVLINK &, const mavlink_message_t &msg);
 
+#if AP_LOGGER_MAVLINK_EVENTS_ENABLED
+    void send_mavlink_current_event_sequence(class GCS_MAVLINK &link);
+#endif
+
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
     // We may need to make sure data is loggable before starting the
@@ -635,7 +639,9 @@ private:
         uint16_t seqno;
         uint8_t log_level;
         uint8_t args[1];  // uint8_t[40] in the mavlink message
-    } mavlink_event_interface_queue[5];
+    } mavlink_event_interface_queue[AP_LOGGER_MAVLINK_EVENTS_QUEUE_LENGTH];
+    static_assert(AP_LOGGER_MAVLINK_EVENTS_QUEUE_LENGTH > 0 && AP_LOGGER_MAVLINK_EVENTS_QUEUE_LENGTH <= UINT8_MAX,
+                  "queue is indexed by uint8_t");
     uint8_t next_mavlink_event_interface_queue_entry;
     bool queue_full;
     uint16_t mavlink_event_interface_seq;

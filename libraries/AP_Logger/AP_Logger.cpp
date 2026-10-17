@@ -1782,6 +1782,22 @@ void AP_Logger::send_pending_mavlink_events()
         mavlink_event_interface_next_send_seq++;
     }
 }
+
+// tell a GCS the sequence number of the latest event so it can
+// request any it missed
+void AP_Logger::send_mavlink_current_event_sequence(GCS_MAVLINK &link)
+{
+    WITH_SEMAPHORE(mavlink_event_interface_sem);
+    // events still waiting to be sent are not counted, or a GCS
+    // would request them before they are sent.  Until the first
+    // event the reset flag tells a GCS our sequence has restarted
+    const bool have_events = queue_full || next_mavlink_event_interface_queue_entry != 0;
+    mavlink_msg_current_event_sequence_send(
+        link.get_chan(),
+        uint16_t(mavlink_event_interface_next_send_seq - 1),
+        have_events ? 0 : MAV_EVENT_CURRENT_SEQUENCE_FLAGS_RESET
+        );
+}
 #endif  // AP_LOGGER_MAVLINK_EVENTS_ENABLED
 
 // Wrote an event packet
