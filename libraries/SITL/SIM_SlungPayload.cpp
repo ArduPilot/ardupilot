@@ -25,8 +25,11 @@
 #include <stdio.h>
 #include "SIM_Aircraft.h"
 #include <AP_HAL_SITL/SITL_State.h>
+#include <AP_HAL_SITL/HAL_SITL_Class.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+
+extern const HAL_SITL& hal_sitl;
 
 using namespace SITL;
 
@@ -130,8 +133,11 @@ bool SlungPayloadSim::get_forces_on_vehicle(Vector3f& forces_ef) const
 // send a report to the vehicle control code over MAVLink
 void SlungPayloadSim::send_report(void)
 {
-    if (!mavlink_connected && mav_socket.connect(target_address, target_port)) {
-        ::printf("SlungPayloadSim connected to %s:%u\n", target_address, (unsigned)target_port);
+    // SERIAL2's TCP port for *this* SITL instance: -I moves it by ten
+    // per instance, so the base port alone only ever reaches instance 0
+    const uint16_t port = target_port + 10 * hal_sitl.get_instance();
+    if (!mavlink_connected && mav_socket.connect(target_address, port)) {
+        ::printf("SlungPayloadSim connected to %s:%u\n", target_address, (unsigned)port);
         mavlink_connected = true;
     }
     if (!mavlink_connected) {
