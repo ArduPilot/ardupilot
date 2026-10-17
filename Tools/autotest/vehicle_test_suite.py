@@ -11592,6 +11592,57 @@ Also, ignores heartbeats not from our target system'''
 
         self.context_pop()
 
+    def CompassCalibrationReportOrientationReset(self):
+        '''check MAG_CAL_REPORT has no orientation result from an earlier attempt'''
+        # compass 1 is mounted yawed 90 degrees but configured as
+        # unrotated, so with COMPASS_AUTO_ROT=1 the first calibration
+        # ends in a confident bad orientation.  The second one is
+        # scaled so that it fails the radius check, which runs before
+        # the orientation check, so its report must not carry the
+        # first calibration's orientation solution or confidence
+        self.context_push()
+        self.set_parameters({
+            "SIM_MAG1_ORIENT": 2,  # ROTATION_YAW_90
+            "COMPASS_ORIENT": 0,  # ROTATION_NONE
+            "COMPASS_AUTO_ROT": 1,  # check only
+        })
+        self.customise_SITL_commandline(["-M", "calibration"])
+        self.wait_statustext("is using GPS", timeout=60)
+
+        def calibrate():
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
+                p1=1,  # mag mask
+                p2=0,  # retry
+                p3=0,  # autosave
+                p4=0,  # delay
+            )
+            self.set_servo(5, 1250)  # calibration model: cycle through poses
+            m = self.assert_receive_message(
+                'MAG_CAL_REPORT',
+                condition='MAG_CAL_REPORT.compass_id==0',
+                timeout=120,
+                verbose=True,
+            )
+            self.set_servo(5, 1000)
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CANCEL_MAG_CAL, p1=1)
+            return m
+
+        m = calibrate()
+        if (m.cal_status != mavutil.mavlink.MAG_CAL_FAILED_ORIENTATION or
+                m.new_orientation != 2 or
+                m.orientation_confidence <= 0):
+            raise NotAchievedException("Expected a confident bad orientation 2, got %s" % str(m))
+
+        self.set_parameter("SIM_MAG1_SCALING", 1.6)
+        m = calibrate()
+        if m.cal_status != mavutil.mavlink.MAG_CAL_FAILED_RADIUS:
+            raise NotAchievedException("Expected a bad radius, got %s" % str(m))
+        if m.orientation_confidence != 0 or m.new_orientation != m.old_orientation:
+            raise NotAchievedException("Report carries an earlier orientation result: %s" % str(m))
+
+        self.context_pop()
+
     def SixCompassCalibrationAndReordering(self):
         '''Test reordering of 6 simulated compasses by changing priority and appearance order'''
         self.context_push()
