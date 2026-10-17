@@ -50,14 +50,14 @@ const AP_Param::GroupInfo Parameters_RCIN::var_info[] {
     // @Units: Hz
     AP_GROUPINFO("_MSGRATE", 2, Parameters_RCIN, rcin_rate_hz, 50),
 
-    // @Param: _PORT
+    // @Param: 1_PORT
     // @DisplayName: RC input port
     // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to RC input.
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("_PORT", 3, Parameters_RCIN, rcin1_port, AP_PERIPH_RC1_PORT_DEFAULT),
+    AP_GROUPINFO("1_PORT", 3, Parameters_RCIN, rcin1_port, AP_PERIPH_RC1_PORT_DEFAULT),
 
     // @Param: 1_PORT_OPTIONS
     // @DisplayName: RC input port serial options
