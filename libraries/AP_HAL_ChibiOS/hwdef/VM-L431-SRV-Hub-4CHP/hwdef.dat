@@ -27,5 +27,8 @@ PB3   TIM2_CH2  TIM2 PWM(2) GPIO(51)
 PA2   TIM2_CH3  TIM2 PWM(3) GPIO(52)
 PA3   TIM2_CH4  TIM2 PWM(4) GPIO(53)
 
+define AP_PERIPH_RELAY_ENABLED 1
+define AP_RELAY_NUM_RELAYS 4
+
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
