@@ -62,6 +62,7 @@ from pymavlink.mavftp import MAX_Payload as FTP_MAX_PAYLOAD
 from pymavlink.mavftp_op import FTP_OP
 from pymavlink.rotmat import Vector3
 
+from pysim import json_physics
 from pysim import util
 from pysim import vehicleinfo
 
@@ -3522,6 +3523,23 @@ class TestSuite(abc.ABC):
         self.set_streamrate(self.sitl_streamrate())
         self.apply_default_parameters()
         self.progress("Reset SITL commandline to default")
+
+    @contextmanager
+    def JSON_physics(self, fields=None, **kwargs):
+        '''run SITL with --model JSON against pysim's JSON physics backend,
+        sending fields from the first frame'''
+        physics = json_physics.JSONPhysics(**kwargs)
+        physics.set(**(fields or {}))
+        physics.start()
+        try:
+            self.customise_SITL_commandline([], model="JSON", wipe=True)
+            yield physics
+        finally:
+            # SITL blocks without its physics backend, so restore the
+            # default model before stopping it
+            physics.paused = False
+            self.customise_SITL_commandline([])
+            physics.stop()
 
     def pause_SITL(self):
         '''temporarily stop the SITL process from running.  Note that
