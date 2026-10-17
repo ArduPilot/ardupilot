@@ -39,7 +39,7 @@ public:
 
     AP_GPS_NMEA_Test()
     {
-        memset(&state, 0, sizeof(state));
+        state = {};
         driver = NEW_NOTHROW AP_GPS_NMEA(test_gps, test_gps.params[0], state, nullptr);
     }
     ~AP_GPS_NMEA_Test()
