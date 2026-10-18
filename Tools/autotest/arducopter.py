@@ -10341,6 +10341,93 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 camera.close()
                 mavutil.mavfile_global = saved_mavfile_global
 
+    def MAVLinkCameraTracking(self):
+        '''forward tracking commands to a MAVLink camera that advertises tracking'''
+        point_flag = mavutil.mavlink.CAMERA_CAP_FLAGS_HAS_TRACKING_POINT
+        rect_flag = mavutil.mavlink.CAMERA_CAP_FLAGS_HAS_TRACKING_RECTANGLE
+        point = mavutil.mavlink.MAV_CMD_CAMERA_TRACK_POINT
+        rect = mavutil.mavlink.MAV_CMD_CAMERA_TRACK_RECTANGLE
+        stop = mavutil.mavlink.MAV_CMD_CAMERA_STOP_TRACKING
+        self.set_parameters({"CAM1_TYPE": 6, "SERIAL2_PROTOCOL": 2})
+        self.reboot_sitl()
+        saved_mavfile_global = mavutil.mavfile_global
+        camera = mavutil.mavlink_connection(
+            self.sitl_serial_endpoint(2), source_system=self.sysid_thismav(),
+            source_component=mavutil.mavlink.MAV_COMP_ID_CAMERA)
+        mavutil.mavfile_global = saved_mavfile_global
+        try:
+            def information(flags):
+                camera.mav.camera_information_send(
+                    0, b"ArduPilot".ljust(32, b'\0'), b"Tracking".ljust(32, b'\0'),
+                    1, 0, 0, 0, 1920, 1080, 0, flags, 0, b"")
+
+            for _ in range(15):
+                camera.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, 0, 0, 0, 0)
+                information(point_flag | rect_flag)
+                self.delay_sim_time(1, reason="discover camera tracking test device")
+
+            def forwarded(send, supported):
+                while camera.recv_match() is not None:
+                    pass
+                send(mavutil.mavlink.MAV_RESULT_ACCEPTED if supported else
+                     mavutil.mavlink.MAV_RESULT_UNSUPPORTED)
+                self.delay_sim_time(0.3, reason="collect forwarded tracking command")
+                messages = []
+                while (msg := camera.recv_match()) is not None:
+                    if msg.get_type() == 'COMMAND_LONG' and msg.command in (point, rect, stop):
+                        messages.append(msg)
+                if len(messages) != int(supported):
+                    raise NotAchievedException("Incorrect tracking forwarding: %s" % messages)
+                if messages and (messages[0].target_system != self.sysid_thismav() or
+                                 messages[0].target_component != camera.mav.srcComponent):
+                    raise NotAchievedException("Tracking command misaddressed: %s" % messages[0])
+                return messages[0] if messages else None
+
+            def check(msg, command, params):
+                got = (msg.param1, msg.param2, msg.param3, msg.param4, msg.param5)
+                if msg.command != command or any(abs(g - p) > 1e-5 for g, p in zip(got, params)):
+                    raise NotAchievedException("Tracking parameters changed: %s" % msg)
+
+            for flags in (point_flag | rect_flag, point_flag, rect_flag, 0):
+                information(flags)
+                self.delay_sim_time(0.2, reason="update camera capabilities")
+                msg = forwarded(lambda r: self.run_cmd(point, p1=0.25, p2=0.75, p3=0.1, p4=1, want_result=r),
+                                bool(flags & point_flag))
+                if msg is not None:
+                    # the radius reaches the camera, which is its own target
+                    check(msg, point, (0.25, 0.75, 0.1, 0, 0))
+                msg = forwarded(lambda r: self.run_cmd_int(rect, p1=0.1, p2=0.2, p3=0.6, p4=0.7, x=1, want_result=r),
+                                bool(flags & rect_flag))
+                if msg is not None:
+                    check(msg, rect, (0.1, 0.2, 0.6, 0.7, 0))
+                msg = forwarded(lambda r: self.run_cmd(stop, p1=1, want_result=r), bool(flags))
+                if msg is not None:
+                    check(msg, stop, (0, 0, 0, 0, 0))
+            information(point_flag | rect_flag)
+            self.delay_sim_time(0.2, reason="update camera capabilities")
+            msg = forwarded(lambda r: self.run_cmd(point, p1=0.5, p2=0.5, p3=float('nan'), want_result=r), True)
+            check(msg, point, (0.5, 0.5, 0, 0, 0))
+            # coordinates outside the image are refused, not forwarded
+            for bad in (float('nan'), float('inf'), -0.1, 1.1):
+                for send in (lambda: self.run_cmd(point, p1=bad, p2=0.5, p4=1,
+                                                  want_result=mavutil.mavlink.MAV_RESULT_DENIED),
+                             lambda: self.run_cmd(point, p1=0.5, p2=bad, p4=1,
+                                                  want_result=mavutil.mavlink.MAV_RESULT_DENIED),
+                             lambda: self.run_cmd(rect, p1=0.1, p2=0.2, p3=bad, p4=0.7, p5=1,
+                                                  want_result=mavutil.mavlink.MAV_RESULT_DENIED),
+                             lambda: self.run_cmd_int(rect, p1=0.1, p2=0.2, p3=0.6, p4=bad, x=1,
+                                                      want_result=mavutil.mavlink.MAV_RESULT_DENIED)):
+                    while camera.recv_match() is not None:
+                        pass
+                    send()
+                    self.delay_sim_time(0.2, reason="check nothing was forwarded")
+                    while (msg := camera.recv_match()) is not None:
+                        if msg.get_type() == 'COMMAND_LONG' and msg.command in (point, rect):
+                            raise NotAchievedException("Invalid tracking forwarded: %s" % msg)
+        finally:
+            camera.close()
+            mavutil.mavfile_global = saved_mavfile_global
+
     def CameraModeMission(self):
         '''camera mode mission items accept reserved NaNs and retain mode and selector'''
         command = mavutil.mavlink.MAV_CMD_SET_CAMERA_MODE
@@ -20263,6 +20350,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAVLinkCameraMode,
             self.CameraModeMission,
             self.MAVLinkCameraModeSITL,
+            self.MAVLinkCameraTracking,
             self.MAVLinkCameraComponentIDs,
             self.MAVLinkCameraMixed,
             self.MAVLinkCameraStreams,
