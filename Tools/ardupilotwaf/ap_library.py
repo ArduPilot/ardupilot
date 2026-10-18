@@ -89,14 +89,18 @@ def _depends_on_vehicle(bld, source_node):
     return _depends_on_vehicle_cache[path]
 
 @conf
-def ap_library(bld, library, vehicle):
+def ap_library(bld, library, vehicle, build_type=None):
+    # vehicle-dependent objects are compiled once per build type, so
+    # copter and heli (both from ArduCopter) do not share them
+    variant = build_type or vehicle
+
     try:
         common_tg = bld.get_tgen_by_name(_common_tgen_name(library))
     except Errors.WafError:
         common_tg = None
 
     try:
-        vehicle_tg = bld.get_tgen_by_name(_vehicle_tgen_name(library, vehicle))
+        vehicle_tg = bld.get_tgen_by_name(_vehicle_tgen_name(library, variant))
     except Errors.WafError:
         vehicle_tg = None
 
@@ -141,10 +145,10 @@ def ap_library(bld, library, vehicle):
         kw = dict(bld.env.AP_LIBRARIES_OBJECTS_KW)
         kw['features'] = kw.get('features', []) + ['ap_library_object']
         kw.update(
-            name=_vehicle_tgen_name(library, vehicle),
+            name=_vehicle_tgen_name(library, variant),
             source=source,
-            defines=ap.get_legacy_defines(vehicle, bld),
-            idx=_vehicle_index(vehicle),
+            defines=ap.get_legacy_defines(vehicle, build_type),
+            idx=_vehicle_index(variant),
         )
         bld.objects(**kw)
 
@@ -154,11 +158,12 @@ def process_ap_libraries(self):
     self.use = Utils.to_list(getattr(self, 'use', []))
     libraries = Utils.to_list(getattr(self, 'ap_libraries', []))
     vehicle = getattr(self, 'ap_vehicle', None)
+    variant = getattr(self, 'ap_build_type', None) or vehicle
 
     for l in libraries:
         self.use.append(_common_tgen_name(l))
         if vehicle:
-            self.use.append(_vehicle_tgen_name(l, vehicle))
+            self.use.append(_vehicle_tgen_name(l, variant))
 
 @before_method('process_source')
 @feature('cxxstlib', 'ap_dynamic_source')
