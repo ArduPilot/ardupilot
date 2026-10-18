@@ -2,31 +2,42 @@
 
 def build(bld):
     vehicle = bld.path.name
+    ap_libraries = bld.ap_common_vehicle_libraries() + [
+        'AC_AttitudeControl',
+        'AC_CustomControl',
+        'AC_InputManager',
+        'AC_PrecLand',
+        'AC_Sprayer',
+        'AC_Autorotation',
+        'AC_WPNav',
+        'AP_Camera',
+        'AP_IRLock',
+        'AP_Motors',
+        'AP_Avoidance',
+        'AP_AdvancedFailsafe',
+        'AP_SmartRTL',
+        'AP_WheelEncoder',
+        'AP_Winch',
+        'AP_LTM_Telem',
+        'AP_Devo_Telem',
+        'AC_AutoTune',
+        'AP_KDECAN',
+        'AP_SurfaceDistance'
+    ]
+
     bld.ap_stlib(
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
-        ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'AC_AttitudeControl',
-            'AC_CustomControl',
-            'AC_InputManager',
-            'AC_PrecLand',
-            'AC_Sprayer',
-            'AC_Autorotation',
-            'AC_WPNav',
-            'AP_Camera',
-            'AP_IRLock',
-            'AP_Motors',
-            'AP_Avoidance',
-            'AP_AdvancedFailsafe',
-            'AP_SmartRTL',
-            'AP_WheelEncoder',
-            'AP_Winch',
-            'AP_LTM_Telem',
-            'AP_Devo_Telem',
-            'AC_AutoTune',
-            'AP_KDECAN',
-            'AP_SurfaceDistance'
-        ],
+        ap_libraries=ap_libraries,
+    )
+
+    # heli's vehicle-dependent library objects are compiled as
+    # APM_BUILD_Heli, so it needs its own copy of them:
+    bld.ap_stlib(
+        name=vehicle + '_heli_libs',
+        ap_vehicle=vehicle,
+        ap_build_type='Heli',
+        ap_libraries=ap_libraries,
     )
 
     bld.ap_program(
@@ -39,6 +50,7 @@ def build(bld):
     bld.ap_program(
         program_name='arducopter-heli',
         program_groups=['bin', 'heli'],
-        use=vehicle + '_libs',
+        use=vehicle + '_heli_libs',
+        ap_build_type='Heli',
         defines=['FRAME_CONFIG=HELI_FRAME'],
         )
