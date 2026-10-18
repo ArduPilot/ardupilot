@@ -647,6 +647,11 @@ def test_summary(bld):
 _build_commands = {}
 
 def _process_build_command(bld):
+    # bld.options is shared by every command in this invocation, so
+    # take a copy rather than extending its list; otherwise `waf copter
+    # plane` would also build copter's programs during the plane command
+    bld.program_groups = list(bld.options.program_group)
+
     if bld.cmd not in _build_commands:
         return
 
@@ -660,7 +665,7 @@ def _process_build_command(bld):
             bld.targets = targets
 
     program_group_list = Utils.to_list(params['program_group_list'])
-    bld.options.program_group.extend(program_group_list)
+    bld.program_groups.extend(program_group_list)
 
 def build_command(name,
                    targets=None,
@@ -676,7 +681,7 @@ def build_command(name,
     context_class.__doc__ = doc
 
 def _select_programs_from_group(bld):
-    groups = bld.options.program_group
+    groups = bld.program_groups
     if not groups:
         if bld.targets:
             groups = []
