@@ -6927,6 +6927,67 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # "PreArm: Chute has no relay".
         self.set_parameter("CHUTE_ENABLED", 1)
 
+    def ParachuteStaleBaro(self):
+        '''parachute must still release on a loss of control when the baro
+        altitude has stopped updating'''
+        self.context_push()
+        self.set_rc(9, 1000)
+        self.set_parameters({
+            "CHUTE_ENABLED": 1,
+            "CHUTE_TYPE": 10,
+            "SERVO9_FUNCTION": 27,
+            "SIM_PARA_ENABLE": 1,
+            "SIM_PARA_PIN": 9,
+            "RC9_OPTION": 23,  # parachute 3pos
+        })
+
+        # climb with a working barometer; the frozen altitude below has
+        # to be a plausible one, and an altitude hold which never sees
+        # itself climb does not reach a height to fall from
+        self.takeoff(40, mode='LOITER')
+        self.set_rc(9, 1500)  # chute enabled, not released
+
+        # Freeze every barometer.  parachute_check() runs every main
+        # loop but reads an altitude refreshed by a 10Hz task, so most
+        # loops already see a bit-identical copy of the previous
+        # sample; a frozen baro is that same staleness made permanent
+        # and so deterministic.  Any test of the descent guard which
+        # treats an unchanged altitude as evidence of not falling
+        # cannot let the loss-of-control counter run, and the chute
+        # never deploys.
+        self.set_parameters({
+            "SIM_BARO_FREEZE": 1,
+            "SIM_BAR2_FREEZE": 1,
+            "SIM_BAR3_FREEZE": 1,
+        })
+        self.delay_sim_time(2, reason="the frozen altitude to take effect")
+
+        self.context_collect('STATUSTEXT')
+        # both front motors, as the loss-of-control subtest of
+        # Parachute uses: one failed motor is compensated well enough
+        # that the >30deg attitude error only marginally appears, and a
+        # failed diagonal pair leaves a torque-balanced flat spin
+        self.set_parameter("SIM_ENGINE_FAIL", (1 << 0) | (1 << 2))
+        self.wait_statustext('BANG!  Parachute deployed', timeout=60,
+                             check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+
+        self.set_rc(9, 1000)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        # the parachute aux function has changed CHUTE_ENABLED in RAM
+        # without saving it, so the parameter reads 0 while storage
+        # still holds 1.  Put it back while still inside this test's
+        # own context: context_pop() then sees the change it recorded
+        # and reverts it properly.  Done after the pop instead, the set
+        # lands in the enclosing context and records 1 as that
+        # context's original, and the suite reports a leak it cannot
+        # revert:
+        #     Test leaked parameters the suite could not revert:
+        #     CHUTE_ENABLED 0.000000->1.000000
+        self.set_parameter("CHUTE_ENABLED", 1)
+        self.context_pop()
+
     def Parachute(self):
         '''Test Parachute Functionality'''
         self._Parachute(self.run_cmd)
@@ -23809,6 +23870,7 @@ return update, 1000
             self.GPSViconSwitching,
             self.Button,
             self.Parachute,
+            self.ParachuteStaleBaro,
             self.MANUAL_CONTROL,
             self.PosHoldDesiredAttitudeMonotonic,
             self.RangeFinderDriversMaxAlt_LightwareSerial,
