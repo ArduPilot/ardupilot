@@ -359,7 +359,10 @@ bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
     const int8_t requested_rate_hz = _params.attitude_rate_hz.get();
     int32_t attitude_interval_us = -1;
     if (requested_rate_hz > 0) {
-        attitude_interval_us = 1000000 / requested_rate_hz;
+        // Plane's default 50Hz loop cannot send at the default 50Hz
+        // mount rate. Clamp the initial request so discovery can finish.
+        const uint16_t interval_ms = (1000U + requested_rate_hz - 1U) / requested_rate_hz;
+        attitude_interval_us = _link->cap_message_interval(interval_ms) * 1000;
     }
     const MAV_RESULT res = _link->set_message_interval(
         MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE,
