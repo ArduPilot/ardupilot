@@ -6475,28 +6475,40 @@ class TestSuite(abc.ABC):
                           (delta, timeout))
             return
 
-    def wait_attitude(self, desroll=None, despitch=None, timeout=2, tolerance=10,
-                      message_type='ATTITUDE', use_cached_simtime=False):
-        '''wait for an attitude (degrees)'''
-        if desroll is None and despitch is None:
-            raise ValueError("despitch or desroll must be supplied")
+    def wait_attitude(self, desroll=None, despitch=None, desyaw=None, timeout=2, tolerance=10,
+                      message_type='ATTITUDE', use_cached_simtime=False, minimum_duration=None):
+        '''wait for an attitude (degrees).  If minimum_duration is
+        supplied the attitude must be held for that many seconds'''
+        if desroll is None and despitch is None and desyaw is None:
+            raise ValueError("desroll, despitch or desyaw must be supplied")
+        if minimum_duration is not None and minimum_duration >= timeout:
+            raise ValueError("minimum_duration must be less than timeout")
         if use_cached_simtime:
             tstart = self.get_sim_time()
         else:
             tstart = self.get_sim_time_cached()
+        achieved_start = None
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise AutoTestTimeoutException("Failed to achieve attitude")
             m = self.assert_receive_message(message_type, timeout=60)
             roll_deg = math.degrees(m.roll)
             pitch_deg = math.degrees(m.pitch)
-            self.progress("wait_att[%s]: roll=%f desroll=%s pitch=%f despitch=%s" %
-                          (message_type, roll_deg, desroll, pitch_deg, despitch))
-            if desroll is not None and abs(roll_deg - desroll) > tolerance:
+            yaw_deg = math.degrees(m.yaw)
+            self.progress("wait_att[%s]: roll=%f desroll=%s pitch=%f despitch=%s yaw=%f desyaw=%s" %
+                          (message_type, roll_deg, desroll, pitch_deg, despitch, yaw_deg, desyaw))
+            if ((desroll is not None and abs(roll_deg - desroll) > tolerance) or
+                    (despitch is not None and abs(pitch_deg - despitch) > tolerance) or
+                    (desyaw is not None and self.heading_delta(yaw_deg, desyaw) > tolerance)):
+                achieved_start = None
                 continue
-            if despitch is not None and abs(pitch_deg - despitch) > tolerance:
-                continue
-            return
+            if minimum_duration is None:
+                return
+            now = self.get_sim_time_cached()
+            if achieved_start is None:
+                achieved_start = now
+            if now - achieved_start >= minimum_duration:
+                return
 
     def wait_attitude_quaternion(self,
                                  desroll=None,
