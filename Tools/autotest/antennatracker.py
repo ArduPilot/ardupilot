@@ -109,6 +109,61 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
         self.achieve_attitude(desyaw=0, despitch=0)
         self.achieve_attitude(desyaw=45, despitch=10)
 
+    def GUIDEDHoldsAttitudeOnEntry(self):
+        '''ensure entering GUIDED holds the current attitude until a target arrives'''
+        self.reboot_sitl()
+        self.set_parameters({
+            # keep pitch away from its limits while scanning
+            "SCAN_SPEED_PIT": 0,
+            # build up integrator for GUIDED to discard
+            "YAW2SRV_I": 0.02,
+            "PITCH2SRV_I": 0.02,
+        })
+
+        def enter_guided_from_auto_and_check_hold(stale_target_yaw):
+            # scan away from the stale GUIDED target
+            self.change_mode(2)  # "SCAN"
+            tstart = self.get_sim_time()
+            while True:
+                # SCAN may have to go the long way round
+                if self.get_sim_time_cached() - tstart > 240:
+                    raise NotAchievedException("Did not scan away from yaw=%f" % stale_target_yaw)
+                m = self.assert_receive_message('ATTITUDE')
+                if abs(mavextra.angle_diff(math.degrees(m.yaw), stale_target_yaw)) > 60:
+                    break
+
+            # with no vehicle position AUTO leaves the servos where they are
+            self.change_mode(10)  # "AUTO"
+            self.wait_message_field_values('ATTITUDE', {
+                'yawspeed': 0,
+                'pitchspeed': 0,
+            }, epsilon=math.radians(0.5), minimum_duration=2, timeout=60)
+
+            self.change_mode(4)  # "GUIDED"
+            m = self.assert_receive_message('ATTITUDE')
+            entry_yaw = math.degrees(m.yaw)
+            entry_pitch = math.degrees(m.pitch)
+            self.progress("Entered GUIDED at yaw=%f pitch=%f" % (entry_yaw, entry_pitch))
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 10:
+                m = self.assert_receive_message('ATTITUDE')
+                yaw_error = abs(mavextra.angle_diff(math.degrees(m.yaw), entry_yaw))
+                pitch_error = abs(math.degrees(m.pitch) - entry_pitch)
+                if yaw_error > 2 or pitch_error > 2:
+                    raise NotAchievedException(
+                        "Moved after entering GUIDED: yaw=%f pitch=%f" %
+                        (math.degrees(m.yaw), math.degrees(m.pitch)))
+
+        # first entry after boot must not slew to the default (north, level) target
+        enter_guided_from_auto_and_check_hold(0)
+
+        # re-entry must not slew to the previous GUIDED target; the I
+        # gains can make the tracker oscillate around this target
+        self.set_parameters({"YAW2SRV_I": 0, "PITCH2SRV_I": 0})
+        self.achieve_attitude(desyaw=-90, despitch=10)
+        self.set_parameters({"YAW2SRV_I": 0.02, "PITCH2SRV_I": 0.02})
+        enter_guided_from_auto_and_check_hold(-90)
+
     def MANUAL(self):
         '''Test MANUAL mode'''
         self.change_mode(0) # "MANUAL"
@@ -379,6 +434,7 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
         ret = super(AutoTestTracker, self).tests()
         ret.extend([
             self.GUIDED,
+            self.GUIDEDHoldsAttitudeOnEntry,
             self.MANUAL,
             self.MAV_CMD_DO_SET_SERVO,
             self.MAV_CMD_MISSION_START,
