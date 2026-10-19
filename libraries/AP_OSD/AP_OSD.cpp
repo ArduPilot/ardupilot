@@ -432,7 +432,7 @@ void AP_OSD::osd_thread()
     }
 }
 
-void AP_OSD::update_osd()
+void AP_OSD::update_osd(bool flush_scripting_backend)
 {
     for (uint8_t instance = 0; instance < _backend_count; instance++) {
         _backends[instance]->clear();
@@ -445,7 +445,9 @@ void AP_OSD::update_osd()
             }
         }
 
-        _backends[instance]->flush();
+        if (flush_scripting_backend || instance != 0) {
+            _backends[instance]->flush();
+        }
     }
 }
 
