@@ -13150,6 +13150,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test Arming Parameter Checks'''
         self.test_parameter_checks_poscontrol("PSC")
 
+    def ParamSaveAfterRuntimeDefault(self):
+        '''check a non-forced save of the var_info default survives set_default()'''
+        # an earlier test may have saved RNGFND1_SCALING, which would
+        # stop the backend's set_default() applying
+        self.customise_SITL_commandline([], wipe=True)
+        self.set_parameters({
+            "SERIAL4_PROTOCOL": 9,
+            "RNGFND1_TYPE": 13,  # MaxSonar serial: RNGFND1_SCALING default 3 -> 0.0254
+            "SCR_ENABLE": 1,
+        })
+        self.reboot_sitl()
+        self.assert_parameter_value("RNGFND1_SCALING", 0.0254, epsilon=0.0001)
+
+        # unlike a GCS PARAM_SET, param:set_and_save() doesn't force the
+        # save.  The script must be gone before the final reboot, or it
+        # would save 3 again
+        self.context_push()
+        self.install_script_content_context("save-scaling.lua", """
+assert(param:set_and_save('RNGFND1_SCALING', 3))
+function update()
+  gcs:send_text(6, 'saved RNGFND1_SCALING')
+  return update, 1000
+end
+return update, 1000
+""")
+        self.reboot_sitl()
+        self.wait_statustext('saved RNGFND1_SCALING')
+        self.delay_sim_time(2, reason="queued save to complete")
+        self.context_pop()
+        self.reboot_sitl()
+        self.assert_parameter_value("RNGFND1_SCALING", 3, epsilon=0.0001)
+
     def PosHoldTakeOff(self):
         """ensure vehicle stays put until it is ready to fly"""
         self.context_push()
@@ -19597,6 +19629,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.TakeoffAlt,
             self.AutoYawDO_MOUNT_CONTROL,
             self.ParameterChecks,
+            self.ParamSaveAfterRuntimeDefault,
             self.ModeFollow_with_FOLLOW_TARGET,
             self.MAVLinkRangeFinderIDs,
             self.MAV_CMD_NAV_LOITER_UNLIM,
