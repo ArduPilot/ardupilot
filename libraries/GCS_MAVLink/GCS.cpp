@@ -762,7 +762,7 @@ void GCS::available_modes_changed() {
 
 void GCS::poweroff_initiated(float p1, const char *fmt, ...)
 {
-    // Send a Mavlink broadcast announcing the shutdown
+    // Send a Mavlink broadcast to our components announcing the shutdown
     mavlink_command_long_t cmd_msg{};
     cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
     cmd_msg.param1 = p1;
