@@ -3568,7 +3568,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
     }
 #endif
 
-    // refuse reboot when armed:
+    // refuse reboot or shutdown when armed:
     if (hal.util->get_soft_armed()) {
         /// but allow it if forced:
         const uint32_t magic_force_reboot_value = 20190226;
@@ -3577,11 +3577,15 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
         }
     }
 
+    bool supported_reboot_action = reboot || reboot_to_bootloader;
 #if AP_REBOOT_MASS_STORAGE_ENABLED
-    const bool supported_reboot_action = reboot || reboot_to_bootloader || reboot_to_mass_storage;
-#else
-    const bool supported_reboot_action = reboot || reboot_to_bootloader;
-#endif
+    supported_reboot_action |= reboot_to_mass_storage;
+#endif // AP_REBOOT_MASS_STORAGE_ENABLED
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+    const bool shutdown = is_equal(packet.param1, static_cast<float>(REBOOT_SHUTDOWN_ACTION_SHUTDOWN));
+    supported_reboot_action |= shutdown;
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+
     if (!supported_reboot_action) {
         // param1 must select a supported reboot action
         return MAV_RESULT_UNSUPPORTED;
@@ -3605,6 +3609,13 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
         }
     }
 #endif
+
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+    if (shutdown) {
+        AP::vehicle()->poweroff_start();
+        return MAV_RESULT_ACCEPTED;
+    }
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
 
     // send ack before we reboot
     mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED,
