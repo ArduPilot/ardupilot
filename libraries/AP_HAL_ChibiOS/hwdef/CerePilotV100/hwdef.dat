@@ -1,0 +1,223 @@
+# hw definition file for processing by chibios_hwdef.py
+# for CerePilot V1.00 (Cerepi) - STM32H743VI flight controller / Jetson carrier.
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CEREPILOT_V100
+
+# 16 MHz external TCXO: an active oscillator drives the HSE input directly, so
+# the internal crystal oscillator is bypassed. HSE is still the clock source.
+OSCILLATOR_HZ 16000000
+define STM32_HSE_BYPASS
+
+# ChibiOS system timer. TIM2 drives PWM output 5 on this board, so the tick
+# uses TIM5, which is otherwise unused.
+STM32_ST_USE_TIMER 5
+
+# flash layout: 2 MB part, 128 KB reserved for the bootloader
+FLASH_SIZE_KB 2048
+FLASH_RESERVE_START_KB 128
+
+# order of UARTs (and USB)
+#  SERIAL0 OTG1   USB
+#  SERIAL1 UART7  TELEM1
+#  SERIAL2 UART8  companion computer (on-board Jetson UART1)
+#  SERIAL3 UART4  GPS1 (on-board u-blox MAX-M10N)
+#  SERIAL4 USART1 external RS-232
+#  SERIAL5 USART2 RC input (SBUS)
+SERIAL_ORDER OTG1 UART7 UART8 UART4 USART1 USART2
+
+# default undefined pins to a safe low output to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# USB (single OTG_FS device port)
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# TELEM1 (UART7)
+PE8 UART7_TX UART7
+PE7 UART7_RX UART7
+
+# companion computer (UART8) - hard-wired to the on-board Jetson's UART1
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+
+# GPS1 (UART4) - u-blox MAX-M10N
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
+
+# external RS-232 (USART1), behind a TRS3221E transceiver. NODMA: this is a
+# low rate console port, and the streams are better spent on the PWM timers
+PB14 USART1_TX USART1 NODMA
+PB15 USART1_RX USART1 NODMA
+
+# RC input (serial) on USART2 RX = PA3.
+# DESIGN RULE: the SBUS signal reaches PA3 through a level translator only -
+# there is no external RX inverter. ArduPilot auto-enables the STM32H7 internal
+# RXINV for the SBUS protocol, so an external hardware inverter would double
+# invert and stop normal (inverted) SBUS receivers decoding, as well as break
+# CRSF/IBUS polarity. Keep the signal path non-inverting.
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# default serial protocols
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_GPS
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_RCIN
+
+# ADC rail monitors. Every divider on this board is 10K/10K.
+PB1 VDD_5V_SENS   ADC1 SCALE(2)
+PB0 SCALED1_V3V3  ADC1 SCALE(2)
+PC4 SCALED2_V3V3  ADC1 SCALE(2)
+PC0 SCALED3_V3V3  ADC1 SCALE(2)
+PC1 SCALED4_V3V3  ADC1 SCALE(2)
+
+# SPI1 - FRAM : FM25V02A
+PA5 SPI1_SCK  SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+PA4 FRAM_CS CS
+
+# SPI3 - BMI088 IMU (accel + gyro)
+PB3 SPI3_SCK  SPI3
+PB4 SPI3_MISO SPI3
+PB5 SPI3_MOSI SPI3
+PD4 BMI088_A_CS CS
+PD5 BMI088_G_CS CS
+PD6 DRDY_BMI088_INT_ACCEL INPUT
+PD7 DRDY_BMI088_INT_GYRO  INPUT
+
+# SPI4 - ISM330DLC IMU
+PE12 SPI4_SCK  SPI4
+PE13 SPI4_MISO SPI4
+PE14 SPI4_MOSI SPI4
+PE15 ISM330_CS CS
+PE11 DRDY_ISM330 INPUT
+
+# PWM outputs (9 channels, all behind TXS0108E level translators)
+PC6  TIM3_CH1 TIM3 PWM(1) GPIO(50)
+PC7  TIM3_CH2 TIM3 PWM(2) GPIO(51)
+PA8  TIM1_CH1 TIM1 PWM(3) GPIO(52)
+PA10 TIM1_CH3 TIM1 PWM(4) GPIO(53)
+PA15 TIM2_CH1 TIM2 PWM(5) GPIO(54)
+PB8  TIM4_CH3 TIM4 PWM(6) GPIO(55)
+PB9  TIM4_CH4 TIM4 PWM(7) GPIO(56)
+PE5  TIM15_CH1 TIM15 PWM(8) GPIO(57)
+PE6  TIM15_CH2 TIM15 PWM(9) GPIO(58)
+
+# CAN
+PD0  CAN1_RX CAN1
+PD1  CAN1_TX CAN1
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+
+# I2C buses
+PB6  I2C1_SCL I2C1
+PB7  I2C1_SDA I2C1
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+PD12 I2C4_SCL I2C4
+PD13 I2C4_SDA I2C4
+
+# bus order: I2C1 (baro + compass) and I2C2 (secure element) are internal,
+# I2C4 is the external connector
+I2C_ORDER I2C1 I2C2 I2C4
+define HAL_I2C_INTERNAL_MASK 3
+
+# sensor data-ready interrupts
+PC13 DRDY_BMP585 INPUT
+PE3  DRDY_BMM350 INPUT
+
+# microSD (SDMMC1)
+PC12 SDMMC1_CK  SDMMC1
+PD2  SDMMC1_CMD SDMMC1
+PC8  SDMMC1_D0  SDMMC1
+PC9  SDMMC1_D1  SDMMC1
+PC10 SDMMC1_D2  SDMMC1
+PC11 SDMMC1_D3  SDMMC1
+define FATFS_HAL_DEVICE SDCD1
+define HAL_OS_FATFS_IO 1
+
+# status LEDs (active low)
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+PD14 LED0 OUTPUT HIGH GPIO(90)   # green
+PD15 LED1 OUTPUT HIGH GPIO(91)   # blue
+define HAL_GPIO_A_LED_PIN 90
+define HAL_GPIO_B_LED_PIN 91
+
+# sensor-rail power enables
+PD8 VDD_3V3_SENSORS_EN  OUTPUT HIGH
+PE2 VDD_1V8_SENSORS_EN  OUTPUT HIGH
+PD3 VDD_3V3_BMI088_EN   OUTPUT HIGH
+
+# HW version/revision strap driver
+PB2 HW_VER_REV_DRIVE OUTPUT LOW
+
+# on-board Jetson. The control lines drive inverting buffers, so a high
+# output holds the module powered down and in reset, which is the state it is
+# left in: the module needs POWER_EN and SYS_RESET released in sequence with
+# a delay between them, so it is not brought up by simply driving the pins.
+# SHUTDOWN_REQ is an output of the module and is only read.
+PD11 JETSON_EN           OUTPUT HIGH GPIO(72)
+PD10 JETSON_RST          OUTPUT HIGH GPIO(71)
+PD9  JETSON_SHUTDOWN_REQ INPUT GPIO(70)
+
+# SPI device table
+SPIDEV bmi088_a SPI3 DEVID1 BMI088_A_CS MODE3 10*MHZ 10*MHZ
+SPIDEV bmi088_g SPI3 DEVID2 BMI088_G_CS MODE3 10*MHZ 10*MHZ
+SPIDEV ism330   SPI4 DEVID1 ISM330_CS   MODE3  2*MHZ  8*MHZ
+SPIDEV ramtron  SPI1 DEVID1 FRAM_CS     MODE3  8*MHZ  8*MHZ
+
+# IMUs
+# each IC carries one rotation covering its own accel and gyro; the two parts
+# are placed differently on the PCB so their rotations differ. Both verified on
+# hardware: nose up gives +x, right wing down gives -y, upright gives -z.
+IMU BMI088 SPI:bmi088_a SPI:bmi088_g ROTATION_ROLL_180_YAW_90
+IMU ISM330DLC SPI:ism330 ROTATION_PITCH_180_YAW_90
+define HAL_DEFAULT_INS_FAST_SAMPLE 3
+
+# FRAM parameter storage
+define HAL_WITH_RAMTRON 1
+define HAL_STORAGE_SIZE 32768
+
+# barometer: BMP585 on internal I2C1 (bus 0), SDO tied low. The BMP585 is
+# register-compatible with the BMP581 (chip-id 0x51 vs 0x50, handled in the
+# driver).
+BARO BMP581 I2C:0:0x46
+
+# compass: BMM350 on internal I2C1 (bus 0), ADSEL tied low
+COMPASS BMM350 I2C:0:0x14 false ROTATION_NONE
+
+# differential pressure: SM9541-100C-D-C-3-S on internal I2C2 (bus 1), at its
+# fixed address 0x28. Differential, -100 to +100 cmH2O.
+define HAL_AIRSPEED_TYPE_DEFAULT 21
+define HAL_AIRSPEED_BUS_DEFAULT 1
+
+# battery monitor: I2C smart power module on the external bus (I2C4 = bus 2).
+# There is no analog battery voltage or current sense on this board.
+define HAL_BATT_MONITOR_DEFAULT 21
+define HAL_BATTMON_INA2XX_BUS 2
+
+# DMA stream priorities. There are 20 DMA users and 16 streams here, so some
+# sharing is unavoidable and these directives choose where it lands. All five
+# PWM timers are listed so that no output shares a stream with a sensor bus;
+# without TIM2 and TIM15, TIM2_UP takes the stream SPI4_TX needs. SPI1 (FRAM)
+# and SPI3 (first IMU) are kept exclusive because SPI1_RX otherwise sits with
+# three UART TX channels. SPI4_RX does share with the UART TX channels:
+# claiming a stream for it instead moves the sharing onto TIM4_UP, which
+# drives PWM 6 and 7.
+DMA_PRIORITY TIM1* TIM2* TIM3* TIM4* TIM15* SDMMC* SPI* UART* USART*
+DMA_NOSHARE SPI1* SPI3* TIM2*
+
+# allow DFU reboot to (re)install the bootloader and build the .abin
+ENABLE_DFU_BOOT 1
+env BUILD_ABIN True
