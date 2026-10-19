@@ -54,6 +54,12 @@ void NavEKF3_core::SelectFlowFusion()
     }
     // not on a Rover, which drives at its range finder ground clearance where this fuses zero flow
 #if EK3_FEATURE_RANGEFINDER_MEASUREMENTS && !APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    // Replay is its own build, so it follows the logged vehicle to replay a Rover log as Rover ran it
+    const bool focusFloor = dal.get_vehicle_class() != AP_DAL::VehicleClass::GROUND;
+#else
+    const bool focusFloor = true;
+#endif
     // In flight the sensor cannot focus below the height it reports, so discard the sample rather
     // than let an unfocused reading drive a phantom velocity. The rangefinder is used rather than
     // terrainState because the range keeps more margin on the ground, and terrainState on the
@@ -80,7 +86,7 @@ void NavEKF3_core::SelectFlowFusion()
             // with no sample stored for a second it is no longer refreshed, and the ground may have changed
             flowFocusRestRng = 0;
         }
-    } else if (flowDataToFuse && tiltOK && flowFocusRngValid) {
+    } else if (focusFloor && flowDataToFuse && tiltOK && flowFocusRngValid) {
         // Within 5 cm of the range finder ground clearance the vehicle is on or at the ground,
         // where the range is clamped and the flow is not motion, whatever the sensor's focus height.
         // 5 cm is clear of the jitter of a range finder resting on the ground and below any height a
