@@ -380,6 +380,10 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SITL RGBLed")
 
+    g.add_option('--lua-coverage', action='store_true',
+                 default=False,
+                 help="Enable line-coverage instrumentation of Lua scripts (SITL only)")
+
     g.add_option('--force-32bit', action='store_true',
                  default=False,
                  help="Force 32bit build")
