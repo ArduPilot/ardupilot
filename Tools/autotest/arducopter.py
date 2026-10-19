@@ -17058,6 +17058,62 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not seen_primary_change:
             raise NotAchievedException("Did not see primary change")
 
+    def GPSUBloxPVTOnly(self):
+        '''check GPS week is derived from the date for a u-blox GPS sending only NAV-PVT'''
+        GPS_EPOCH_UNIX = 315964800
+        LEAP_SECONDS = 18
+        SEC_PER_WEEK = 604800
+        PVT_ONLY = 2  # SIM_GPSn_OPTIONS bit
+
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS2_OPTIONS": PVT_ONLY,
+            "LOG_DISARMED": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.reboot_sitl()
+
+        self.start_subtest("Week from NAV-PVT date matches week sent by a normal u-blox")
+        self.wait_statustext("GPS 2: week from NAV-PVT date", check_context=True, timeout=60)
+        if self.statustext_in_collections("GPS 1: week from NAV-PVT date") is not None:
+            raise NotAchievedException("GPS 1 should be using the week it sends")
+        self.delay_sim_time(5, reason="GPS data to accumulate in log")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        weeks = {}
+        while True:
+            m = dfreader.recv_match(type="GPS")
+            if m is None:
+                break
+            if m.GWk != 0:
+                weeks[m.I] = m.GWk
+        self.progress("Logged GPS weeks: %s" % str(weeks))
+        if 0 not in weeks or 1 not in weeks:
+            raise NotAchievedException("Did not get GPS week for both GPSs")
+        if weeks[0] != weeks[1]:
+            raise NotAchievedException("Week from NAV-PVT date (%u) != week from NAV-SOL (%u)" %
+                                       (weeks[1], weeks[0]))
+
+        self.start_subtest("GPS time is set from a GPS sending only NAV-PVT")
+        self.set_parameters({
+            "GPS2_TYPE": 0,
+            "SIM_GPS2_ENABLE": 0,
+            "SIM_GPS1_OPTIONS": PVT_ONLY,
+        })
+        self.reboot_sitl()
+        self.wait_statustext("GPS 1: week from NAV-PVT date", check_context=True, timeout=60)
+        m = self.assert_receive_message(
+            'SYSTEM_TIME',
+            condition='SYSTEM_TIME.time_unix_usec!=0',
+            timeout=10,
+            verbose=True,
+        )
+        week = int((m.time_unix_usec // 1000000 + LEAP_SECONDS - GPS_EPOCH_UNIX) // SEC_PER_WEEK)
+        if week != weeks[0]:
+            raise NotAchievedException("SYSTEM_TIME week %u != GPS week %u" % (week, weeks[0]))
+
     def GPSBlending(self):
         '''Test GPS Blending'''
         '''ensure we get dataflash log messages for blended instance'''
@@ -19589,6 +19645,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AltEstimation,
             self.FlyEachFrame,
             self.GPSBlendingLog,
+            self.GPSUBloxPVTOnly,
             self.GPSBlendingAffinity,
             self.ProximitySensors,
             self.MISSION_START,
