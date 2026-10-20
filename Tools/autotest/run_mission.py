@@ -13,6 +13,7 @@ os.environ['MAVLINK20'] = '1'
 import argparse  # noqa:E402
 import sys  # noqa:E402
 
+import autotest  # noqa:E402
 import vehicle_test_suite  # noqa:E402
 
 from pysim import util  # noqa:E402
@@ -106,6 +107,14 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    if args.instance < 0 or args.instance > autotest.MAX_AUTOTEST_INSTANCE:
+        # SITL stores the instance in a uint8_t, so --instance -1 has it
+        # listening on instance 255's ports while we wait on ports derived
+        # from -1, and --instance 256 wraps onto instance 0's
+        parser.error("--instance %d is outside 0..%u, the instances the "
+                     "per-instance port allocation supports" %
+                     (args.instance, autotest.MAX_AUTOTEST_INSTANCE))
 
     x = RunMission(
         args.vehicle_binary,
