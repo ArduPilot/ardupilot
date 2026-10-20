@@ -3586,6 +3586,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def PlaneWindFailsafe(self):
         '''test the plane-wind-failsafe.lua example script'''
+        self.install_lua_coverage_context()
         self.install_example_script_context("plane-wind-failsafe.lua")
         self.set_parameters({
             "SCR_ENABLE": 1,
@@ -3664,6 +3665,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(-5, 1, relative=True, timeout=60)
         self.wait_disarmed(timeout=60)
         self.zero_throttle()
+
+        self.lua_coverage_report(self.script_example_source_path("plane-wind-failsafe.lua"))
 
     def HighServoFunctionDefault(self):
         '''check that stale constructor set_default() is purged when param_overrides are loaded'''
