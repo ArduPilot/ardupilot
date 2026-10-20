@@ -25,6 +25,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_Backend.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -61,6 +62,20 @@ bool AP_Airspeed_Backend::bus_is_configured(void) const
 void AP_Airspeed_Backend::set_bus_id(uint32_t id)
 {
     frontend.param[instance].bus_id.set_and_save(id);
+}
+
+// some sensors use zero offsets, so need no calibration
+void AP_Airspeed_Backend::set_use_zero_offset(void)
+{
+#ifndef HAL_BUILD_AP_PERIPH
+    if (frontend.state[instance].cal.start_ms != 0) {
+        // cancel a calibration started before we knew it was not needed
+        frontend.state[instance].cal.start_ms = 0;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibration not required", instance + 1);
+    }
+    frontend.param[instance].offset.set(0.0);
+#endif
+    frontend.state[instance].cal.state = AP_Airspeed::CalibrationState::NOT_REQUIRED_ZERO_OFFSET;
 }
 
 #endif  // AP_AIRSPEED_ENABLED

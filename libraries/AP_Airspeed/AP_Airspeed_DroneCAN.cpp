@@ -5,6 +5,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -16,6 +17,8 @@ bool AP_Airspeed_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     const auto driver_index = ap_dronecan->get_driver_index();
 
     return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_airspeed, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_indicated_airspeed, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_true_airspeed, driver_index) != nullptr)
 #if AP_AIRSPEED_HYGROMETER_ENABLE
         && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_hygrometer, driver_index) != nullptr)
 #endif
@@ -103,6 +106,42 @@ void AP_Airspeed_DroneCAN::handle_airspeed(AP_DroneCAN *ap_dronecan, const Canar
     }
 }
 
+void AP_Airspeed_DroneCAN::handle_indicated_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_IndicatedAirspeed &msg)
+{
+    if (!isfinite(msg.indicated_airspeed)) {
+        return;
+    }
+
+    WITH_SEMAPHORE(_sem_registry);
+
+    AP_Airspeed_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
+
+    if (driver != nullptr) {
+        WITH_SEMAPHORE(driver->_sem_airspeed);
+        driver->_direct.ias = MAX(msg.indicated_airspeed, 0);
+        driver->_direct.ias_last_sample_ms = AP_HAL::millis();
+        driver->_direct.received = true;
+    }
+}
+
+void AP_Airspeed_DroneCAN::handle_true_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_TrueAirspeed &msg)
+{
+    if (!isfinite(msg.true_airspeed)) {
+        return;
+    }
+
+    WITH_SEMAPHORE(_sem_registry);
+
+    AP_Airspeed_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
+
+    if (driver != nullptr) {
+        WITH_SEMAPHORE(driver->_sem_airspeed);
+        driver->_direct.tas = MAX(msg.true_airspeed, 0);
+        driver->_direct.tas_last_sample_ms = AP_HAL::millis();
+        driver->_direct.received = true;
+    }
+}
+
 #if AP_AIRSPEED_HYGROMETER_ENABLE
 void AP_Airspeed_DroneCAN::handle_hygrometer(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg)
 {
@@ -136,6 +175,49 @@ bool AP_Airspeed_DroneCAN::get_differential_pressure(float &pressure)
     pressure = _pressure;
 
     return true;
+}
+
+bool AP_Airspeed_DroneCAN::has_airspeed()
+{
+    bool received;
+    {
+        WITH_SEMAPHORE(_sem_airspeed);
+        received = _direct.received;
+    }
+    if (received && !_direct.zero_offset_set) {
+        // airspeed is not derived from differential pressure, so no
+        // zero offset calibration is needed
+        set_use_zero_offset();
+        _direct.zero_offset_set = true;
+    }
+    return received;
+}
+
+/*
+  return airspeed in m/s. ArduPilot airspeed is equivalent airspeed, so
+  IndicatedAirspeed is used directly and preferred. TrueAirspeed is
+  converted using the AHRS EAS2TAS ratio.
+ */
+bool AP_Airspeed_DroneCAN::get_airspeed(float &airspeed)
+{
+    const float eas2tas = AP::ahrs().get_EAS2TAS();
+
+    WITH_SEMAPHORE(_sem_airspeed);
+
+    const uint32_t now_ms = AP_HAL::millis();
+
+    if (_direct.ias_last_sample_ms != 0 && (now_ms - _direct.ias_last_sample_ms) <= AP_AIRSPEED_DRONECAN_TIMEOUT_MS) {
+        airspeed = _direct.ias;
+        return true;
+    }
+
+    if (_direct.tas_last_sample_ms != 0 && (now_ms - _direct.tas_last_sample_ms) <= AP_AIRSPEED_DRONECAN_TIMEOUT_MS &&
+        is_positive(eas2tas)) {
+        airspeed = _direct.tas / eas2tas;
+        return true;
+    }
+
+    return false;
 }
 
 bool AP_Airspeed_DroneCAN::get_temperature(float &temperature)

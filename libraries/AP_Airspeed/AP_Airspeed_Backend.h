@@ -99,12 +99,7 @@ protected:
     }
 
     // some sensors use zero offsets
-    void set_use_zero_offset(void) {
-        frontend.state[instance].cal.state = AP_Airspeed::CalibrationState::NOT_REQUIRED_ZERO_OFFSET;
-#ifndef HAL_BUILD_AP_PERIPH
-        frontend.param[instance].offset.set(0.0);
-#endif
-    }
+    void set_use_zero_offset(void);
 
     // set use
     void set_use(int8_t use) {
