@@ -625,6 +625,7 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_XTX_XT25F128F         0x0B4018
 #define JEDEC_ID_GIANTEC_GT25Q64EZ     0x1C7117
 #define JEDEC_ID_GIANTEC_GT25Q128EZ    0x1C7118
+#define JEDEC_ID_PUYA_PY25Q128HA       0x852018
 
 /* Hardware-specific constants */
 
@@ -801,6 +802,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     case JEDEC_ID_FMSH_FM25Q128A:
     case JEDEC_ID_XTX_XT25F128F:
     case JEDEC_ID_GIANTEC_GT25Q128EZ: 
+    case JEDEC_ID_PUYA_PY25Q128HA:
         block_count = 256;    /* 16MiB */
         break;
 
