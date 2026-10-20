@@ -261,6 +261,10 @@ protected:
     
     bool estop_checks(bool display_failure);
 
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+    bool poweroff_checks(bool display_failure) const;
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
     bool crashdump_checks(bool report);
 #endif
