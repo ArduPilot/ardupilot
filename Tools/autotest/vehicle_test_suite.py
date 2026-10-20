@@ -10690,6 +10690,11 @@ Also, ignores heartbeats not from our target system'''
             "callgrind": self.callgrind,
             "asan": self.asan,
             "wipe": True,
+            # start_SITL() uses this only to derive the gdbserver port;
+            # without it a peripheral restarted under --gdbserver listens
+            # on 3333 whatever instance we are, so two instances cannot
+            # both be debugged and the second fails to bind
+            "instance": self.instance,
         }
         for i in range(len(self.sup_binaries)):
             if instance is not None and instance != i:
