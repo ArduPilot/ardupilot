@@ -125,6 +125,10 @@ The PixPilot-V6PRO flight controller is sold by a range of resellers listed at [
 | 5 | GND | GND |
 | 6 | GND | GND |
 
+## PWM Output
+
+The first 8 outputs (MAIN) are controlled by the STM32F103 IO controller and support all PWM output formats. DShot on these outputs requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller. Doing so disables PPM, DSM, iBus, SUMD, SRXL and ST24 input on the IO controller's RC input pin. SBUS and FPort on that pin, and DSM receivers on the DSM port, continue to work.
+
 ## RC Input
 
 All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.

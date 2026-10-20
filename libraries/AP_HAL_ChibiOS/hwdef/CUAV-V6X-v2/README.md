@@ -56,7 +56,7 @@ RC input is configured on the port marked DSM/SBUS RC and PPM IN for all unidire
 
 ## PWM Output
 
-The CUAV-V6X-v2 supports up to 16 PWM outputs. First 8 outputs (labelled M1 to M8) are the "main" outputs. It controlled by a dedicated STM32F103 IO controller.
+The CUAV-V6X-v2 supports up to 16 PWM outputs. First 8 outputs (labelled M1 to M8) are the "main" outputs. It controlled by a dedicated STM32F103 IO controller. These support all PWM protocols. DShot on M1-M8 requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller.
 
 The remaining 8 outputs (labelled A1 to A8) are the "auxiliary" outputs. These are directly attached to the STM32H753. A1 to A6 support all PWM protocols and Bi-Directional DShot. A7 and A8 only support PWM.
 

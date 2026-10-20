@@ -91,6 +91,7 @@ The X6_Air flight controller supports up to 15 PWM outputs.
 First 8 outputs (labelled M1 to M8) are controlled by a dedicated STM32F103 IO controller.
 The remaining 7 outputs (labelled A9 to A15) are the "auxiliary" outputs. These are directly attached to the STM32H753 FMU controller.
 All 15 outputs support normal PWM output formats. All outputs support DShot, except A15.
+DShot on M1-M8 requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller.
 
 The M1-8 outputs are in 4 groups:
 

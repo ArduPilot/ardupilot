@@ -64,12 +64,14 @@ The first 8 outputs (labelled M1 to M8) are controlled by a dedicated STM32F103 
 The remaining 7 outputs (labelled A1 to A7) are the "auxiliary" outputs.
 These are directly attached to the STM32H743 FMU controller,.
 
-All outputs are  bi-directional DSHOT capable.
+A1 - A7 and M1 - M4 are bi-directional DShot capable.
 
 The 15 PWM outputs are:
 
 M1 - M8 are connected to the IOMCU.
 A1 - A7 are connected to the FMU.
+
+DShot on M1 - M8 requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller. Doing so disables DSM, iBus, SUMD, SRXL and ST24 input on the SBUS-in pin. SBUS continues to work.
 
 M1 - M8 support DShot and are in 3 groups:
 

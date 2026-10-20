@@ -215,7 +215,7 @@ Spektrum satellite receivers.
 
 ## PWM Output
 
-The CubeOrangePlus supports up to 14 PWM outputs, with the first 8 ("MAIN") managed by an STM32F100 IO controller. These support all PWM formats, and DShot can be enabled by setting BRD_IO_DSHOT to 1, which loads the DShot firmware on the IO co-processor.
+The CubeOrangePlus supports up to 14 PWM outputs, with the first 8 ("MAIN") managed by an STM32F100 IO controller. These support all PWM formats, and DShot can be enabled by setting [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to 1, which loads the DShot firmware on the IO co-processor. Doing so disables PPM, DSM, iBus, SUMD, SRXL and ST24 input on the IO controller's RC input pin. SBUS and FPort on that pin, and DSM receivers on the DSM port, continue to work.
 
 The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxiliary"
 outputs. These are directly attached to the STM32H743 and support all
