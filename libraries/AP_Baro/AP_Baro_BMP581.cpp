@@ -53,6 +53,7 @@ extern const AP_HAL::HAL &hal;
 #define BMP581_REG_ODR_CONFIG         0x37
 #define BMP581_REG_OSR_EFF            0x38
 #define BMP581_REG_CMD                0x7E
+#define BMP581_CMD_SOFT_RESET         0xB6
 
 AP_Baro_BMP581::AP_Baro_BMP581(AP_Baro &baro, AP_HAL::Device &dev)
     : AP_Baro_Backend(baro)
@@ -103,21 +104,38 @@ bool AP_Baro_BMP581::init()
         return false;
     }
 
+    uint8_t int_status;
+    if (!_dev->read_registers(BMP581_REG_INT_STATUS, &int_status, 1)) {
+        return false;
+    }
+
+    // POR bit is only set after the sensor is powered up. If it is not set,
+    // the MCU was rebooted without power cycling the sensor, so soft reset it.
+    if ((int_status & 0x10) == 0) {
+        _dev->write_register(BMP581_REG_CMD, BMP581_CMD_SOFT_RESET);
+        hal.scheduler->delay(5);
+
+        // after reset the interface needs a dummy read to switch back to SPI mode
+        if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+            uint8_t dummy;
+            _dev->read_registers(BMP581_REG_CHIP_ID, &dummy, 1);
+        }
+
+        if (!_dev->read_registers(BMP581_REG_INT_STATUS, &int_status, 1)) {
+            return false;
+        }
+        if ((int_status & 0x10) == 0) {
+            return false;
+        }
+    }
+
+    // check NVM is ready and has no error (after any soft reset, as it reloads NVM)
     uint8_t status;
     if (!_dev->read_registers(BMP581_REG_STATUS, &status, 1)) {
         return false;
     }
 
     if ((status & 0b10) == 0 || (status & 0b100)) {
-        return false;
-    }
-
-    uint8_t int_status;
-    if (!_dev->read_registers(BMP581_REG_INT_STATUS, &int_status, 1)) {
-        return false;
-    }
-
-    if ((int_status & 0x10) == 0) {
         return false;
     }
 
