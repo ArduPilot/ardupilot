@@ -22542,6 +22542,17 @@ SERIAL5_BAUD 128
         suite = TestSuite(f"Autotest {frame} {test_name}")
         suite.timestamp = datetime.now().replace(microsecond=0).isoformat()
         for result in results:
+            if result.test is None:
+                # a Valgrind or ASAN finding, or a worker which exited
+                # non-zero: a failure with no test behind it.  Report it
+                # as a case of its own rather than dereferencing the
+                # test it does not have - and rather than dropping it,
+                # which would describe a run that failed only for one of
+                # these reasons as clean.
+                case = TestCase(f"{result}", f"{frame}", 0)
+                case.result = [Failure(f"{result}", "")]
+                suite.add_testcase(case)
+                continue
             case = TestCase(f"{result.test.name}", f"{frame}", result.time_elapsed)
             # f"{result.test.description}"
             # case.file ## TODO : add file properties to match test location
