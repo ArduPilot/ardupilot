@@ -279,6 +279,18 @@ T wrap_PI(const T radian)
 template float wrap_PI<float>(const float radian);
 template double wrap_PI<double>(const double radian);
 
+// report a NaN passed to one of the constrain functions and return
+// value.  Kept out of line so the common path through the constrain
+// functions does not need to save registers for the call
+template <typename T>
+static NOINLINE T constrain_nan(const T value, uint32_t line)
+{
+#if AP_INTERNALERROR_ENABLED
+    AP::internalerror().error(AP_InternalError::error_t::constraining_nan, line);
+#endif
+    return value;
+}
+
 template <typename T>
 T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
 {
@@ -286,10 +298,7 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
-#if AP_INTERNALERROR_ENABLED
-        AP::internalerror().error(AP_InternalError::error_t::constraining_nan, line);
-#endif
-        return (low + high) / 2;
+        return constrain_nan((low + high) / 2, line);
     }
 
     if (amt < low) {
@@ -314,8 +323,7 @@ T constrain_value(const T amt, const T low, const T high)
     // float semantics already handle -Inf and +Inf
     if (std::is_floating_point<T>::value) {
         if (isnan(amt)) {
-            INTERNAL_ERROR(AP_InternalError::error_t::constraining_nan);
-            return (low + high) / 2;
+            return constrain_nan((low + high) / 2, __AP_LINE__);
         }
     }
 
