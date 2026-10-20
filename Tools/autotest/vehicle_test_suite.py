@@ -13,6 +13,7 @@ import enum
 import errno
 import fnmatch
 import glob
+import html
 import importlib.util
 import io
 import math
@@ -9863,8 +9864,144 @@ Also, ignores heartbeats not from our target system'''
                 os.unlink(dest)
         except IOError:
             pass
+
+    LUA_COVERAGE_STATS_FILE = os.path.join("scripts", "luacov.stats.out")
+
+    def install_lua_coverage_context(self):
+        '''install the luacov script, which saves Lua line coverage, for
+        the current context.  Coverage is only recorded by SITL builds
+        configured with --lua-coverage; call lua_coverage_report() once
+        the script under test has been exercised'''
+        try:
+            os.unlink(self.LUA_COVERAGE_STATS_FILE)
         except OSError:
             pass
+        self.install_script(os.path.join(self.rootdir(), "Tools", "autotest", "lua", "luacov.lua"), "luacov.lua")
+        self.context_get().installed_scripts.append("luacov.lua")
+
+        self.lua_coverage_status = None
+
+        def hook(mav, m):
+            if m.get_type() == 'STATUSTEXT' and m.text.startswith("luacov: "):
+                self.lua_coverage_status = m.text
+        self.install_message_hook_context(hook)
+
+    def lua_coverage_stats(self, started_after_ms):
+        '''parse the luacov stats file; returns a dict mapping Lua source
+        name to a dict mapping line number to hit count for every line
+        holding code.  Returns None if the file is missing, incomplete or
+        from a save started before started_after_ms (autopilot time)'''
+        try:
+            with open(self.LUA_COVERAGE_STATS_FILE) as f:
+                lines = f.read().splitlines()
+        except OSError:
+            return None
+        if len(lines) == 0 or not lines[0].startswith("# start "):
+            return None
+        if int(lines[0][len("# start "):]) < started_after_ms:
+            return None
+        result = {}
+        counts = None
+        for line in lines[1:]:
+            if line == "# end":
+                return result
+            if line.startswith("# "):
+                counts = result.setdefault(line[2:], {})
+                continue
+            try:
+                (line_number, count) = line.split()
+                counts[int(line_number)] = int(count)
+            except ValueError:
+                return None
+        return None
+
+    def lua_coverage_report(self, source_path, min_pct=100):
+        '''write an HTML coverage report for the Lua script at source_path
+        into buildlogs and check that at least min_pct percent of its
+        executable lines were run.  Does nothing if the firmware was not
+        built with --lua-coverage'''
+        if self.lua_coverage_status is None:
+            raise NotAchievedException("luacov.lua did not report its status")
+        if self.lua_coverage_status != "luacov: active":
+            self.progress("Not checking Lua coverage: %s" % self.lua_coverage_status)
+            return
+
+        # the stats are saved every second; make sure we read a complete
+        # save started after the code under test ran
+        tstart = self.get_sim_time()
+        while True:
+            coverage = self.lua_coverage_stats(started_after_ms=tstart * 1000)
+            if coverage is not None:
+                break
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("luacov stats were not saved")
+            self.delay_sim_time(1, reason="luacov to save stats")
+
+        script_name = os.path.basename(source_path)
+        hits = None
+        for src, counts in coverage.items():
+            if os.path.basename(src) == script_name:
+                hits = counts
+                break
+        if hits is None:
+            raise NotAchievedException("No coverage data found for %s" % script_name)
+
+        with open(source_path) as f:
+            source_lines = f.read().splitlines()
+
+        rows = []
+        missed = []
+        for i, text in enumerate(source_lines, start=1):
+            count = hits.get(i)
+            if count is None:
+                row_class = 'neutral'
+                count_str = ''
+            elif count > 0:
+                row_class = 'hit'
+                count_str = str(count)
+            else:
+                row_class = 'miss'
+                count_str = '0'
+                missed.append(i)
+            rows.append('<tr class="%s"><td class="lineno">%u</td><td class="count">%s</td><td>%s</td></tr>' %
+                        (row_class, i, count_str, html.escape(text)))
+
+        total = len(hits)
+        hit_count = total - len(missed)
+        pct = (100 * hit_count // total) if total else 100
+        summary = "%s: %u/%u executable lines hit (%u%%)" % (script_name, hit_count, total, pct)
+
+        html_out = self.buildlogs_path("%s-coverage.html" % os.path.splitext(script_name)[0])
+        with open(html_out, 'w') as f:
+            f.write('''<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lua coverage: %s</title>
+<style>
+  body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; margin: 20px; }
+  table { border-collapse: collapse; width: 100%%; }
+  td { padding: 1px 8px; white-space: pre; }
+  .lineno, .count { color: #858585; text-align: right; width: 4em; border-right: 1px solid #333; }
+  .hit { background: #1a2e1a; }
+  .hit .count { color: #4ec94e; }
+  .miss { background: #2e1a1a; }
+  .miss .count { color: #f44747; }
+</style>
+</head>
+<body>
+<h1>%s</h1>
+<table>
+%s
+</table>
+</body>
+</html>
+''' % (html.escape(script_name), html.escape(summary), "\n".join(rows)))
+        self.progress("%s; report in %s" % (summary, html_out))
+
+        if pct < min_pct:
+            raise NotAchievedException("%s coverage %u%% < required %u%%; missed lines: %s" %
+                                       (script_name, pct, min_pct, missed))
 
     def mavlink_connection_supports_reconnect_delay(self):
         '''returns True if pymavlink lets us choose how long it waits
