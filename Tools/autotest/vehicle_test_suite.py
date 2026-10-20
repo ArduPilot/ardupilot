@@ -12215,6 +12215,11 @@ Also, ignores heartbeats not from our target system'''
             "asan": self.asan,
             "wipe": True,
             "stdout_file": self.sitl_stdout_file(),
+            # start_SITL() uses this only to derive the gdbserver port;
+            # without it a peripheral restarted under --gdbserver listens
+            # on 3333 whatever instance we are, so two instances cannot
+            # both be debugged and the second fails to bind
+            "instance": self.instance,
         }
         for i in range(len(self.sup_binaries)):
             if instance is not None and instance != i:
