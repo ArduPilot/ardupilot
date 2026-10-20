@@ -21381,7 +21381,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'WVANE_ENABLE': 1,
         })
         self.takeoff(20, mode='GUIDED')
-        self.guided_achieve_heading(0, direction=1, accuracy=1)
+        # turn the shortest way; forcing one can need more than the time allowed
+        self.guided_achieve_heading(0, accuracy=1)
 
         self.set_parameter("GUID_OPTIONS", 128)
         self.wait_heading(90, timeout=60, minimum_duration=10)
