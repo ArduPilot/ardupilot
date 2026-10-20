@@ -9,6 +9,9 @@ import operator
 import os
 import re
 import signal
+import socket
+import struct
+import threading
 import time
 
 from pymavlink import mavextra
@@ -7643,6 +7646,122 @@ return update()
             'temperature': 2500,
         }, instance=1, epsilon=0.5, minimum_duration=2, timeout=30)
 
+    def DroneCANAirspeed(self):
+        '''test airspeed received as DroneCAN IndicatedAirspeed and TrueAirspeed'''
+        import dronecan
+
+        # this test acts as a DroneCAN airspeed node, sending frames
+        # straight onto the SITL multicast CAN bus.  pydronecan encodes
+        # the messages; its own multicast driver is not used as it does
+        # not honour the interface and port the autotest suite sets.
+        node = {'ias': None, 'tas': None}  # m/s, None to not send
+        stop = threading.Event()
+
+        def node_main():
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            if_addr = os.environ.get('SITL_MULTICAST_IF_ADDR')
+            if if_addr:
+                sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(if_addr))
+            port = int(os.environ.get('SITL_CAN_MCAST_PORT', 57732))
+            transfer_id = 0
+            while not stop.is_set():
+                msgs = []
+                if node['ias'] is not None:
+                    msgs.append(dronecan.uavcan.equipment.air_data.IndicatedAirspeed(
+                        indicated_airspeed=node['ias'], indicated_airspeed_variance=0))
+                if node['tas'] is not None:
+                    msgs.append(dronecan.uavcan.equipment.air_data.TrueAirspeed(
+                        true_airspeed=node['tas'], true_airspeed_variance=0))
+                for msg in msgs:
+                    transfer = dronecan.transport.Transfer(
+                        transfer_id=transfer_id, source_node_id=100, payload=msg)
+                    for frame in transfer.to_frames():
+                        # SITL multicast CAN packet: magic, crc, flags, extended id, data
+                        body = struct.pack("<HI", 0, frame.message_id | (1 << 31)) + bytes(frame.bytes)
+                        header = struct.pack("<HH", 0x2934, dronecan.dsdl.common.crc16_from_bytes(body))
+                        sock.sendto(header + body, ("239.65.82.0", port))
+                transfer_id = (transfer_id + 1) % 32
+                time.sleep(0.02)
+            sock.close()
+
+        def wait_airspeed(expected, timeout=10):
+            '''wait for a healthy DroneCAN airspeed with no differential pressure'''
+            tstart = self.get_sim_time()
+            m = None
+            while self.get_sim_time_cached() - tstart < timeout:
+                m = self.assert_receive_message('AIRSPEED', instance=0, timeout=5)
+                if m.flags & 1:  # AIRSPEED_SENSOR_UNHEALTHY
+                    continue
+                if m.raw_press != 0:
+                    raise NotAchievedException("Expected no differential pressure (%s)" % str(m))
+                if abs(m.airspeed - expected) < 0.05:
+                    self.progress("Got airspeed %.2f" % m.airspeed)
+                    return
+            raise NotAchievedException("Did not get airspeed %.2f (last %s)" % (expected, str(m)))
+
+        node_thread = threading.Thread(target=node_main, daemon=True)
+        node_thread.start()
+        self.context_push()
+        try:
+            self.set_parameters({
+                "CAN_P1_DRIVER": 1,
+                "ARSPD_TYPE": 8,  # DroneCAN
+                "ARSPD2_TYPE": 0,
+            })
+            # airspeed sensors are only allocated at boot, so the node
+            # must already be broadcasting when we reboot
+            node['ias'] = 15.0
+            self.context_collect('STATUSTEXT')
+            self.reboot_sitl()
+
+            self.start_subtest("IndicatedAirspeed is used directly as EAS")
+            wait_airspeed(15.0)
+            node['ias'] = 22.5
+            wait_airspeed(22.5)
+
+            self.start_subtest("No zero offset calibration is needed")
+            self.wait_statustext("Airspeed 1 calibration not required", check_context=True)
+            self.wait_ready_to_arm()
+            self.assert_parameter_value('ARSPD_OFFSET', 0)
+
+            self.start_subtest("TrueAirspeed is converted to EAS")
+            # expected EAS2TAS from the ISA density at home altitude;
+            # ArduPilot's own estimate also depends on ground temperature
+            home_alt = self.home_position_as_location().get_alt_m(AltFrame.ABSOLUTE)
+            eas2tas = math.pow(1 - 2.25577e-5 * home_alt, -4.2559 / 2)
+            node['ias'] = None
+            node['tas'] = 20.0
+            tstart = self.get_sim_time()
+            m = None
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("TrueAirspeed not converted (want %.2f, last %s)" %
+                                               (20.0 / eas2tas, str(m)))
+                m = self.assert_receive_message('AIRSPEED', instance=0, timeout=5)
+                if not (m.flags & 1) and abs(m.airspeed - 20.0 / eas2tas) < 0.2:
+                    self.progress("TrueAirspeed 20.00 gave EAS %.2f (EAS2TAS %.4f)" % (m.airspeed, eas2tas))
+                    break
+
+            self.start_subtest("IndicatedAirspeed is preferred over TrueAirspeed")
+            node['ias'] = 10.0
+            wait_airspeed(10.0)
+
+            self.start_subtest("Sensor goes unhealthy when the node stops sending")
+            node['ias'] = None
+            node['tas'] = None
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("DroneCAN airspeed still healthy with no data")
+                m = self.assert_receive_message('AIRSPEED', instance=0, timeout=5)
+                if m.flags & 1:  # AIRSPEED_SENSOR_UNHEALTHY
+                    break
+        finally:
+            stop.set()
+            node_thread.join()
+            self.context_pop()
+            self.reboot_sitl()
+
     def RunMissionScript(self):
         '''Test run_mission.py script'''
         script = os.path.join('Tools', 'autotest', 'run_mission.py')
@@ -10807,6 +10926,7 @@ return update()
             self.WindEstimatesTrim,
             self.AirspeedCal,
             self.AirspeedScripting,
+            Test(self.DroneCANAirspeed, speedup=1),
             self.MissionJumpTags,
             Test(self.GCSFailsafe, speedup=8),
             self.RudderArmedTakeoffRequiresNeutralThrottle,
