@@ -3773,6 +3773,35 @@ class TestSuite(abc.ABC):
         def hook_removed(self):
             self.progress(f"Maximum divergence was {self.max_divergence}m (max={self.max_allowed_divergence}m)")
 
+    def wait_simstate_divergence_below(self, maximum, minimum_duration=0, timeout=60):
+        """wait for the EKF's reported position to agree with the simulator's
+        to within `maximum` metres, held for `minimum_duration` seconds.
+
+        A gate for tests which arm as soon as the vehicle is armable and
+        then assert on position: the filter may still be converging, and
+        the residual lands in whatever the test measures next."""
+        tstart = self.get_sim_time()
+        good_since = None
+        divergence = None
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException(
+                    "position still %s from simstate after %us" %
+                    ("%.2fm" % divergence if divergence is not None else "unknown",
+                     timeout))
+            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+            simstate = self.assert_receive_message('SIMSTATE')
+            divergence = self.get_distance_int(gpi, simstate)
+            if divergence > maximum:
+                good_since = None
+                continue
+            if good_since is None:
+                good_since = now
+                self.progress("position within %.2fm of simstate" % divergence)
+            if now - good_since >= minimum_duration:
+                return
+
     class ValidateGlobalPositionIntAgainstSimState(ValidateIntPositionAgainstSimState):
         def __init__(self, suite, **kwargs):
             super(TestSuite.ValidateGlobalPositionIntAgainstSimState, self).__init__(suite, 'GLOBAL_POSITION_INT', **kwargs)
