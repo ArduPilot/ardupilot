@@ -8584,7 +8584,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
 
-            self.disarm_vehicle(force=True)
+            # land so the body-yaw subtest takes off from the ground.
+            # After a force-disarm in the air it re-armed shortly after
+            # the falling vehicle hit the ground, and polling
+            # change_mode() and armed() moved that re-arm closer still
+            # to the impact; the vehicle then never got home:
+            #     Mount/MountTopotek: "Did not get home"
+            self.land_and_disarm()
 
             self.test_mount_body_yaw()
 
