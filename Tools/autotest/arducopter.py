@@ -7745,7 +7745,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "WVANE_ENABLE": 1,
             "WVANE_GAIN": 3,
             "WVANE_VELZ_MAX": 1,
-            "WVANE_SPD_MAX": 2
+            "WVANE_SPD_MAX": 2,
+            # the roll deadzone leaves the heading settled short of the wind
+            "WVANE_ANG_MIN": 0,
         })
 
         self.progress("Test weathervaning in auto")
@@ -7768,13 +7770,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.user_takeoff(alt_min=15)
         # Wait for heading to match wind direction.
-        self.wait_heading(100, accuracy=8, timeout=100)
+        self.wait_heading(100, accuracy=5, minimum_duration=10, timeout=100)
 
         self.progress("Test weathervaning in guided pos only")
         # Travel directly north to align heading north and build some airspeed.
         self.fly_guided_move_local(x=40, y=0, z_up=15)
         # Wait for heading to match wind direction.
-        self.wait_heading(100, accuracy=8, timeout=100)
+        self.wait_heading(100, accuracy=5, minimum_duration=10, timeout=100)
         self.do_RTL()
 
     def _DO_WINCH(self, command):
@@ -21379,6 +21381,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'SIM_WIND_SPD': 10,
             'SIM_WIND_DIR': 90,
             'WVANE_ENABLE': 1,
+            # the roll deadzone leaves the heading settled short of the wind
+            'WVANE_ANG_MIN': 0,
         })
         self.takeoff(20, mode='GUIDED')
         # turn the shortest way; forcing one can need more than the time allowed
