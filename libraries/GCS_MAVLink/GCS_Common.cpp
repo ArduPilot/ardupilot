@@ -3322,15 +3322,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int
         break;
 
 #if AP_CAMERA_ENABLED
-    case MSG_CAMERA_INFORMATION:
+    case MSG_CAMERA_INFORMATION: {
         // param2 selects a specific camera instance (1-based); 0 means all
-        if (packet.param2 >= 1) {
-            AP_Camera *camera = AP::camera();
-            if (camera != nullptr) {
-                camera->set_camera_information_send_instance((int16_t)(packet.param2 - 1));
-            }
+        AP_Camera *camera = AP::camera();
+        if (camera != nullptr && !camera->request_camera_information(chan, packet.param2)) {
+            // no such camera, so there is nothing to send
+            return MAV_RESULT_ACCEPTED;
         }
         break;
+    }
 #endif
 
     default:
