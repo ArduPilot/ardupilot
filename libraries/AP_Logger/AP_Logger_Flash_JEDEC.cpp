@@ -63,7 +63,8 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_FMSH_FM25Q128A        0xA14018
 #define JEDEC_ID_FMSH_FM25Q256         0xA14019
 #define JEDEC_ID_XTX_XT25F128F         0x0B4018
-
+#define JEDEC_ID_Giantec_GT25Q64EZ     0x1C7117
+#define JEDEC_ID_Giantec_GT25Q128EZ    0x1C7118
 void AP_Logger_Flash_JEDEC::Init()
 {
     dev = hal.spi->get_device("dataflash");
@@ -145,6 +146,7 @@ bool AP_Logger_Flash_JEDEC::getSectorCount(void)
     case JEDEC_ID_FMSH_FM25Q64:
     case JEDEC_ID_MACRONIX_MX25L6406E:
     case JEDEC_ID_CYPRESS_S25FL064L:
+    case JEDEC_ID_Giantec_GT25Q64EZ: 
         blocks = 128;
         df_PagePerBlock = 256;
         df_PagePerSector = 16;
@@ -156,6 +158,7 @@ bool AP_Logger_Flash_JEDEC::getSectorCount(void)
     case JEDEC_ID_CYPRESS_S25FL128L:
     case JEDEC_ID_ZBIT_ZB25VQ128:   
     case JEDEC_ID_XTX_XT25F128F:
+    case JEDEC_ID_Giantec_GT25Q128EZ:   
         blocks = 256;
         df_PagePerBlock = 256;
         df_PagePerSector = 16;
