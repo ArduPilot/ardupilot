@@ -63,6 +63,8 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_FMSH_FM25Q128A        0xA14018
 #define JEDEC_ID_FMSH_FM25Q256         0xA14019
 #define JEDEC_ID_XTX_XT25F128F         0x0B4018
+#define JEDEC_ID_Giantec_GT25Q64EZ     0x1C7117
+#define JEDEC_ID_Giantec_GT25Q128EZ    0x1C7118
 
 void AP_Logger_Flash_JEDEC::Init()
 {
