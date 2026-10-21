@@ -696,6 +696,12 @@ public:
         return _last_change_time_ms;
     }
 
+    // return a counter incremented on every change to the mission
+    uint32_t change_count(void) const
+    {
+        return _change_count;
+    }
+
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
     // be found.
@@ -955,6 +961,8 @@ private:
     // last time that mission changed
     uint32_t _last_change_time_ms;
     uint32_t _last_change_time_prev_ms;
+    // incremented on every change to the mission
+    uint32_t _change_count;
 
     // maximum number of commands that will fit in storage
     uint16_t _commands_max;
