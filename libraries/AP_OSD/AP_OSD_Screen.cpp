@@ -2510,6 +2510,33 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
     }
     backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYMBOL(SYM_MW));
 }
+void AP_OSD_Screen::draw_vtx_band_channel(uint8_t x, uint8_t y)
+{
+    AP_VideoTX *vtx = AP_VideoTX::get_singleton();
+    if (vtx == nullptr) {
+        return;
+    }
+
+    const uint8_t band = vtx->get_band();
+    const uint8_t channel = vtx->get_channel();
+
+    static constexpr char band_chars[] = {
+        'A', 'B', 'E', 'F', 'R', 'L',
+        '1', '2', 'X', '3', '4'
+    };
+
+    if (band >= sizeof(band_chars)) {
+        return;
+    }
+
+    backend->write(
+        x, y,
+        !vtx->is_configuration_finished(),
+        "%c:%u",
+        band_chars[band],
+        static_cast<unsigned>(channel + 1)
+    );
+}
 #endif  // AP_VIDEOTX_ENABLED
 
 #if AP_TERRAIN_AVAILABLE
