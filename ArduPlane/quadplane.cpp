@@ -1775,8 +1775,6 @@ void QuadPlane::update(void)
         throttle_wait = false;
     }
 
-    tiltrotor.update();
-
     if (in_vtol_mode()) {
         // if enabled output forward throttle else 0
         float fwd_thr = 0;
