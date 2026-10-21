@@ -16568,6 +16568,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+        self.start_subtest("a position lost while the motors spool down after landing does not trip")
+        # land_complete is set before the motors reach ground idle; a spool-down far past
+        # its 2 s range keeps them spooling down past the 7 s the EKF holds its position
+        # after GPS is lost
+        self.set_parameters({
+            "DISARM_DELAY": 0,
+            "MOT_SPOOL_TIM_DN": 15,
+        })
+        self.set_rc(8, 1000)
+        self.takeoff(10, mode="LOITER")
+        self.set_rc(3, 1000)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=60)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
+        landed = self.get_sim_time()
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_ekf_flags(0, pos_horiz, timeout=30)
+        lost = self.get_sim_time() - landed
+        self.progress("position lost %.1f s after landing" % lost)
+        if lost > 13:
+            raise NotAchievedException("position lost too late for the failsafe to count inside the spool-down")
+        self.delay_sim_time(3, "longer than the 1 s the failsafe takes to count")
+        if failsafe_seen():
+            raise NotAchievedException("EKF failsafe while the motors spool down after landing")
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+            "MOT_SPOOL_TIM_DN": 0,
+        })
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
         self.start_subtest("spooling up without a position trips before land_complete clears")
         # STABILIZE clears land_complete only once the motors reach full throttle, so
         # a long spool-up keeps it set while the vehicle is leaving idle; only the
