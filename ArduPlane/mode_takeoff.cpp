@@ -64,6 +64,7 @@ bool ModeTakeoff::_enter()
 {
     takeoff_mode_setup = false;
     have_autoenabled_fences = false;
+    plane.takeoff_state.level_off_start_time_ms = 0;
 
     return true;
 }
@@ -82,7 +83,7 @@ void ModeTakeoff::update()
     const float dist = target_dist;
     if (!takeoff_mode_setup) {
         plane.auto_state.takeoff_altitude_rel_cm = alt * 100;
-        const uint16_t altitude = plane.relative_ground_altitude(RangeFinderUse::NONE,true);
+        const float altitude = plane.relative_ground_altitude(RangeFinderUse::NONE,true);
         const Vector2f &groundspeed2d = ahrs.groundspeed_vector();
         const float direction = wrap_360(degrees(groundspeed2d.angle()));
         const float groundspeed = groundspeed2d.length();
@@ -97,9 +98,12 @@ void ModeTakeoff::update()
             } else {
                 gcs().send_text(MAV_SEVERITY_INFO, "Climbing to TKOFF alt then loitering");
                 start_loc = plane.current_loc;
-                plane.next_WP_loc = plane.current_loc;
-                plane.next_WP_loc.offset_up_m(alt - altitude);
+                // Preserve the entry point horizontally and use local ground as the vertical origin.
+                start_loc.offset_up_m(-altitude);
+                plane.next_WP_loc = start_loc;
+                plane.next_WP_loc.offset_up_m(alt);
                 plane.next_WP_loc.offset_bearing(direction, dist);
+                plane.auto_state.takeoff_altitude_rel_cm = plane.next_WP_loc.alt - plane.home.alt;
                 takeoff_mode_setup = true;
                 plane.set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
             }
