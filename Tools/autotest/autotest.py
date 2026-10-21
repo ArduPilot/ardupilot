@@ -766,7 +766,9 @@ def run_tests(steps):
             os.unlink(f)
 
     diagnostic_files = []
-    for p in "dumpstack.sh_*", "dumpcore.sh_*", "autotest-*tlog":
+    # Preserve MAVLink telemetry logs as run evidence. A broad wildcard here
+    # used to erase unrelated output from earlier AutoTest runs.
+    for p in "dumpstack.sh_*", "dumpcore.sh_*":
         diagnostic_files.extend(glob.glob(p))
     if diagnostic_files:
         print('Removing diagnostic files: %s' % str(diagnostic_files))
