@@ -338,6 +338,7 @@ void AP_Mission::truncate(uint16_t index)
     if ((unsigned)_cmd_total > index) {
         _cmd_total.set_and_save(index);
         _last_change_time_ms = AP_HAL::millis();
+        _change_count++;
     }
 }
 
@@ -1087,6 +1088,7 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
     if (index != 0) {
         // Update of home location is not a true change
         _last_change_time_ms = AP_HAL::millis();
+        _change_count++;
     }
 
     // return success
