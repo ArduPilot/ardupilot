@@ -24,6 +24,7 @@ import traceback
 from pymavlink.generator import mavtemplate
 
 import antennatracker
+import antoine_bridge
 import arducopter
 import arduplane
 import ardusub
@@ -296,6 +297,9 @@ __bin_names = {
 
 def binary_path(step, debug=False):
     """Get vehicle binary path."""
+    if step.split(".")[1:2] == ["AntoineBridge"]:
+        # This suite drives an already-running external model.
+        return "/bin/true"
     try:
         vehicle = step.split(".")[1]
     except IndexError:
@@ -343,6 +347,7 @@ def find_specific_test_to_run(step):
 
 
 tester_class_map = {
+    "test.AntoineBridge": antoine_bridge.AutoTestAntoineBridge,
     "test.Blimp": blimp.AutoTestBlimp,
     "test.Copter": arducopter.AutoTestCopter,
     "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
@@ -1101,6 +1106,7 @@ if __name__ == "__main__":
 
         'build.Copter',
         'test.Copter',
+        'test.AntoineBridge',
 
         'build.Helicopter',
         'test.Helicopter',
