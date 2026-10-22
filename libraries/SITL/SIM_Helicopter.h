@@ -40,7 +40,7 @@ public:
 protected:
 
     void update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector2f &tpp_angle, float dt);
-    float update_rpm(float curr_rpm, float throttle, float &engine_torque, float collective, float dt);
+    float update_rpm(float curr_rpm, float throttle, float &engine_torque, float &engine_rpm, float collective, float dt);
 
     // buffers to provide time delay
     struct servos_stored {
@@ -55,6 +55,14 @@ protected:
     ObjectBuffer<servos_stored> *servos_stored_buffer;
     void push_to_buffer(const uint16_t servos_input[16]);
     void pull_from_buffer(uint16_t servos_delayed[6]);
+
+    // Structure to hold the engine results of each step
+    struct EngineOutput {
+        float omega_next;    // Engine speed for the next step [rad/s]
+        float torque_brake;  // Net usable torque [N*m]
+    };
+
+    EngineOutput two_stroke_step(float u, float omega, float T_load, float dt);
 
 
 private:
@@ -96,6 +104,7 @@ private:
     void update_battery() override;
     bool battery_is_empty() { return battery_voltage < 0.5f; };
     
+    float _engine_rpm;
 };
 
 } // namespace SITL
