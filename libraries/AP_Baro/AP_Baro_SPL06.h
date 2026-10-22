@@ -17,11 +17,12 @@
 class AP_Baro_SPL06 : public AP_Baro_Backend
 {
 public:
-	enum class Type {
-		UNKNOWN,
-		SPL06,
-		SPA06,
-	};
+    enum class Type {
+        UNKNOWN,
+        SPL06,
+        SPA06,
+        SPL07,
+    };
     AP_Baro_SPL06(AP_Baro &baro, AP_HAL::Device &dev);
 
     /* AP_Baro public interface: */
