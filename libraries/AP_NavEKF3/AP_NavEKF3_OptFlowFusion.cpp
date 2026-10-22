@@ -41,7 +41,9 @@ void NavEKF3_core::SelectFlowFusion()
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
     // check is the terrain offset estimate is still valid - if we are using range finder as the main height reference, the ground is assumed to be at 0
-    gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER);
+    // and for 5 s after range height last passed its innovation check, which measures height above ground as a terrain update does
+    gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) ||
+                     ((imuSampleTime_ms - lastRngHgtPassTime_ms) < 5000);
     // with the range finder configured as the height source the terrain estimator is skipped, so
     // the ground is measured through the height instead, in each step that takes the range height
     const bool rngHgtTaken = rangeDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) &&
