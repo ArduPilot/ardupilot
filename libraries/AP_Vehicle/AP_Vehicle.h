@@ -242,6 +242,14 @@ public:
     // It's up to the Lua script to ensure the provided location makes sense
     virtual bool set_crosstrack_start(const Location &new_start_location) { return false; }
 
+    // Allow scripting to temporarily disable horizontal crosstrack path-following
+    // (e.g. to fly a direct current-position-to-target line) without touching
+    // prev_WP_loc, which vertical glide-slope calculations also depend on.
+    // get_crosstrack_enabled() returns false (not supported) on vehicles that don't
+    // override it; enabled is only valid when this returns true.
+    virtual bool set_crosstrack_enabled(bool enabled) { return false; }
+    virtual bool get_crosstrack_enabled(bool &enabled) const { return false; }
+
     // control outputs enumeration
     enum class ControlOutput {
         Roll = 1,
