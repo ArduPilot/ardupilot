@@ -376,14 +376,15 @@ void AP_Terrain::update(void)
     AP_AHRS &ahrs = AP::ahrs();
 
     // try to ensure the home location is populated
-    float height;
     if (ahrs.home_is_set()) {
-        height_amsl(ahrs.get_home(), height);
+        float height_unused;
+        height_amsl(ahrs.get_home(), height_unused);
     }
 
     // update the cached current location height
     Location loc;
     bool pos_valid = ahrs.get_location(loc);
+    float height;
     bool terrain_valid = pos_valid && height_amsl(loc, height);
     if (pos_valid && terrain_valid) {
         last_current_loc_height = height;
