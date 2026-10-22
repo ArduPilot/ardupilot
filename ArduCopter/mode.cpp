@@ -702,7 +702,10 @@ float Mode::get_alt_above_ground_m(void) const
         // current loc uninitialised during startup, return zero
         return 0;
     }
-    if (copter.current_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_m)) {
+    // current loc has an altitude but no lat/lng until we have a
+    // position estimate, so we can't look up terrain for it
+    if ((copter.current_loc.lat != 0 || copter.current_loc.lng != 0) &&
+        copter.current_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_m)) {
         return alt_above_ground_m;
     }
 
