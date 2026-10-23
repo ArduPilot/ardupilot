@@ -474,12 +474,12 @@ void AP_Scripting::restart_all()
 }
 
 #if HAL_GCS_ENABLED
-void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan) {
+void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan, bool crc_ok) {
     if (mavlink_data.rx_buffer == nullptr) {
         return;
     }
 
-    struct mavlink_msg data {msg, chan, AP_HAL::millis()};
+    struct mavlink_msg data {msg, crc_ok, chan, AP_HAL::millis()};
 
     WITH_SEMAPHORE(mavlink_data.sem);
     for (uint16_t i = 0; i < mavlink_data.accept_msg_ids_size; i++) {

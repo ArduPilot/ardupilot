@@ -65,7 +65,9 @@ public:
     bool should_run(void) const { return enabled() && !_stop; }
 
 #if HAL_GCS_ENABLED
-    void handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan);
+    // crc_ok is false for messages whose CRC could not be verified,
+    // which may be because we don't know the message's CRC extra
+    void handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan, bool crc_ok=true);
 
     // Check if command ID is blocked
     bool is_handling_command(uint16_t cmd_id);
@@ -131,6 +133,7 @@ public:
 
     struct mavlink_msg {
         mavlink_message_t msg;
+        bool crc_ok;  // fills padding after the packed msg
         mavlink_channel_t chan;
         uint32_t timestamp_ms;
     };
