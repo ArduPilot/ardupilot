@@ -619,9 +619,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         target_pos_ned_m = _origin_ned_m;
         s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_m, get_corner_acceleration_mss(), _flags.fast_waypoint, _track_dt_scalar * vel_dt_scalar * dt, target_pos_ned_m, target_vel_ned_ms, target_accel_ned_mss);
     } else {
-        // splinetarget_vel
+        // spline legs continue from the velocity commanded on the previous cycle
         target_vel_ned_ms = curr_target_vel_ned_ms;
-        _spline_this_leg.advance_target_along_track(_track_dt_scalar * vel_dt_scalar * dt, target_pos_ned_m, target_vel_ned_ms);
+        _spline_this_leg.advance_target_along_track(_track_dt_scalar * vel_dt_scalar * dt, target_pos_ned_m, target_vel_ned_ms, target_accel_ned_mss);
         s_finished = _spline_this_leg.reached_destination();
     }
 
