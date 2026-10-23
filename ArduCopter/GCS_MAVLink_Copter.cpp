@@ -1162,7 +1162,18 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
             copter.mode_guided.hold_position();
             return;
         }
-        copter.mode_guided.set_pos_vel_NED_m(pos_ned_m, vel_ned_ms, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
+        if (acc_ignore) {
+            copter.mode_guided.set_pos_vel_NED_m(pos_ned_m, vel_ned_ms, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
+        } else {
+            // position + velocity + acceleration: use the acceleration as feed-forward,
+            // symmetric with SET_POSITION_TARGET_LOCAL_NED (it was silently dropped here)
+            if (!sane_vel_or_acc_vector(accel_ned_mss)) {
+                // acceleration vector contains NaN or Inf
+                copter.mode_guided.hold_position();
+                return;
+            }
+            copter.mode_guided.set_pos_vel_accel_NED_m(pos_ned_m, vel_ned_ms, accel_ned_mss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads, false);
+        }
     } else if (pos_ignore && !vel_ignore) {
         copter.mode_guided.set_vel_accel_NED_m(vel_ned_ms, accel_ned_mss, !yaw_ignore, yaw_rad, !yaw_rate_ignore, yaw_rate_rads);
     } else if (pos_ignore && vel_ignore && !acc_ignore) {
