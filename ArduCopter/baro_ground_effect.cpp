@@ -9,10 +9,12 @@ void Copter::update_ground_effect_detector(void)
     gndeff.enable_takeoff_comp(flightmode->mode_number() != Mode::Number::THROW);
     gndeff.set_high_vibrations(vibration_check.high_vibes);
 
-    // ALT_HOLD has manual attitude and no NE controller, so a near-level
-    // attitude target stands in for "pilot is asking for slow horizontal"
+    // ALT_HOLD and VALT have manual attitude and no NE controller, so a
+    // near-level attitude target stands in for "pilot is asking for slow
+    // horizontal"
     bool pilot_slow_horizontal = false;
-    if (flightmode->mode_number() == Mode::Number::ALT_HOLD) {
+    if (flightmode->mode_number() == Mode::Number::ALT_HOLD ||
+        flightmode->mode_number() == Mode::Number::VALT) {
         const Vector3f angle_target_rad = attitude_control->get_att_target_euler_rad();
         pilot_slow_horizontal = cosf(angle_target_rad.x) * cosf(angle_target_rad.y) > cosf(radians(7.5f));
     }

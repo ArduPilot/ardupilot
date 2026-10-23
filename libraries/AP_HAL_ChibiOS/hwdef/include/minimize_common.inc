@@ -108,6 +108,7 @@ define AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED 0
 #  directory, but are seen across the entire codebase:
 define MODE_FLOWHOLD_ENABLED 0
 define MODE_ZIGZAG_ENABLED 0
+define MODE_VALT_ENABLED 0
 define AC_NAV_GUIDED 0
 define AP_OAPATHPLANNER_ENABLED 0
 define AP_FOLLOW_ENABLED 0

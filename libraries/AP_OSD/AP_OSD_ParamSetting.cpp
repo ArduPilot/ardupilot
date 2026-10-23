@@ -227,7 +227,7 @@ static const char* FLTMODES[] = {
     "STAB", "ACRO", "ALTHOLD", "AUTO", "GUIDED", "LOIT", "RTL", "CIRC", "", "LAND",
     "", "DRFT", "", "SPORT", "FLIP", "ATUN", "POSHLD", "BRAKE", "THROW", "AVD_ADSB",
     "GUID_NOGPS", "SMRTRTL", "FLOHOLD", "FOLLOW", "ZIGZAG", "SYSID", "HELI_ARO", "AUTORTL",
-    "TRTLE"
+    "TRTLE", "VALT"
 };
 
 static const char* FS_OPTIONS[] = {
@@ -248,7 +248,7 @@ const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[un
     { -1, AP_SerialManager::SerialProtocol_NumProtocols - 1,    1, ARRAY_SIZE(SERIAL_PROTOCOL_VALUES), SERIAL_PROTOCOL_VALUES },  // OSD_PARAM_SERIAL_PROTOCOL
     { 0, SRV_Channel::k_nr_aux_servo_functions - 1,             1, ARRAY_SIZE(SERVO_FUNCTIONS), SERVO_FUNCTIONS },                // OSD_PARAM_SERVO_FUNCTION
     { 0, 105, 1, ARRAY_SIZE(AUX_OPTIONS), AUX_OPTIONS },                        // OSD_PARAM_AUX_FUNCTION
-    { 0, 28, 1,  ARRAY_SIZE(FLTMODES), FLTMODES },                              // OSD_PARAM_FLIGHT_MODE
+    { 0, 29, 1,  ARRAY_SIZE(FLTMODES), FLTMODES },                              // OSD_PARAM_FLIGHT_MODE
     { 0, 3, 1,   ARRAY_SIZE(FS_OPTIONS), FS_OPTIONS },                          // OSD_PARAM_FAILSAFE_ACTION
     { 0, 5, 1,   ARRAY_SIZE(FS_ACT), FS_ACT },                                  // OSD_PARAM_FAILSAFE_ACTION_1
     { 0, 5, 1,   ARRAY_SIZE(THR_FS_ACT), THR_FS_ACT },                          // OSD_PARAM_FAILSAFE_ACTION_2
