@@ -129,6 +129,9 @@ private:
     // resulting path is stored in _shortest_path array as vector offsets from EKF origin
     bool calc_shortest_path(const Location &origin, const Location &destination, AP_OADijkstra_Error &err_id);
 
+    // Helper to recover if start point is outside fence
+    bool find_closest_fence_point(const Vector2f& src, Vector2f& closest_pt);
+
     // shortest path state variables
     bool _inclusion_polygon_with_margin_ok;
     bool _exclusion_polygon_with_margin_ok;
