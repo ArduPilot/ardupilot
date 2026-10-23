@@ -88,14 +88,16 @@ extern const AP_HAL::HAL& hal;
 
 AC_PosControl *AC_PosControl::_singleton;
 
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
 #define POSCONTROL_TVEC_ARM_MS                  100     // the path must demand more than free fall for this long before inverted thrust is armed
 #define POSCONTROL_TVEC_EXIT_MS                 250     // the vertical axis must want thrust up for this long before inverted thrust is released
 #define POSCONTROL_TVEC_ALT_MIN_M               5.0f    // lowest PSC_TVEC_ALT honoured, whatever the parameter says
+#define POSCONTROL_HEADING_DEGENERATE_TILT_RAD  radians(80.0f)   // thrust tilt past which a world-frame heading target is abandoned
+#define POSCONTROL_HEADING_DEGENERATE_EXIT_RAD  radians(70.0f)   // and the tilt below which it is resumed
+#endif
 
 #define POSCONTROL_ACCEL_D_MAX_SHAPED_MSS       7.5f    // vertical acceleration ceiling for the input shaping, applied before the overspeed gain
 static_assert(POSCONTROL_ACCEL_D_MAX_SHAPED_MSS < GRAVITY_MSS, "the shaping must never ask for more than free fall");
-#define POSCONTROL_HEADING_DEGENERATE_TILT_RAD  radians(80.0f)   // thrust tilt past which a world-frame heading target is abandoned
-#define POSCONTROL_HEADING_DEGENERATE_EXIT_RAD  radians(70.0f)   // and the tilt below which it is resumed
 
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
@@ -153,11 +155,14 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_D_JERK", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
 
+    // only Copter grants inverted thrust, so the other vehicles do not carry its parameters
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // @Param: _TVEC_EN
     // @DisplayName: Thrust vector control enable
     // @Description: Allows the commanded thrust vector to tilt past 90 degrees when the path demands a downward acceleration greater than free fall, other than to slow down along it. The vehicle decides where it may be used: Copter permits it only on Auto waypoint legs, and never on a helicopter. The vertical thrust demand is no longer clamped at zero and the throttle is set from the magnitude of the thrust vector rather than by angle boost. The horizontal acceleration is still bounded by the lean angle limit, so a vertical manoeuvre needs ATC_ANGLE_MAX raised. Experimental.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+    // @Vehicles: Copter
     AP_GROUPINFO("_TVEC_EN", 15, AC_PosControl, _thrust_vector_enabled, 0),
 
     // @Param: _TVEC_ALT
@@ -167,7 +172,9 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Range: 5 200
     // @Increment: 1
     // @User: Advanced
+    // @Vehicles: Copter
     AP_GROUPINFO("_TVEC_ALT", 16, AC_PosControl, _thrust_vector_min_height_m, 15.0f),
+#endif
 
     // @Param: _D_VEL_P
     // @DisplayName: Velocity (vertical) controller P gain
@@ -791,7 +798,7 @@ void AC_PosControl::NE_update_controller()
     // upright thrust, so it is skipped while inverted thrust is active; the configured lean
     // angle still bounds the horizontal demand.
     float angle_max_rad = get_lean_angle_max_rad();
-    if (!_thrust_inverted_active) {
+    if (!inverted_thrust_active()) {
         angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), angle_max_rad);
     }
     const float accel_max_mss = angle_rad_to_accel_mss(angle_max_rad);
@@ -925,11 +932,13 @@ void AC_PosControl::D_relax_controller(float throttle_setting)
 // Private function shared by other vertical initializers.
 void AC_PosControl::D_init_controller()
 {
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
     // thrust supports weight until the vertical controller says otherwise
     _thrust_vector_d_mss = -GRAVITY_MSS;
     set_inverted_thrust_active(false);
     _thrust_invert_arm_ms = 0;
     _heading_degenerate = false;
+#endif
 
     // initialise terrain targets and offsets to zero
     init_terrain();
@@ -1185,6 +1194,7 @@ void AC_PosControl::D_update_controller()
 
     // Actuator commands
 
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
     // -thrust_d_norm is the throttle the vertical axis wants assuming thrust points up;
     // negative is the request for thrust out of the bottom of the airframe
     const float throttle_up = -thrust_d_norm;
@@ -1204,6 +1214,10 @@ void AC_PosControl::D_update_controller()
         _attitude_control.set_throttle_out(-thrust_d_norm, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
     }
     update_heading_degenerate();
+#else
+    // Send final throttle output to attitude controller (includes angle boost)
+    _attitude_control.set_throttle_out(-thrust_d_norm, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+#endif
 
     // Check for vertical controller health
 
@@ -1431,6 +1445,7 @@ void AC_PosControl::set_posvelaccel_offset_target_D_m(float pos_offset_target_d_
     _posvelaccel_offset_target_d_ms = AP_HAL::millis();
 }
 
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
 // Decide whether the vehicle may point its thrust downward this cycle. Arming is driven by
 // the path, not the vertical PID, so the negative thrust demands near touchdown cannot roll
 // the vehicle over; once entered it is held while the vertical axis still wants thrust down,
@@ -1494,14 +1509,20 @@ void AC_PosControl::set_inverted_thrust_active(bool active)
     _thrust_inverted_active = active;
     LOGGER_WRITE_EVENT(active ? LogEvent::INVERTED_THRUST_START : LogEvent::INVERTED_THRUST_STOP);
 }
+#endif  // AC_POSCONTROL_INVERTED_THRUST_ENABLED
 
 Vector3f AC_PosControl::get_thrust_vector() const
 {
     Vector3f accel_target_ned_mss = get_accel_target_NED_mss();
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
     accel_target_ned_mss.z = _thrust_vector_enabled ? _thrust_vector_d_mss : -GRAVITY_MSS;
+#else
+    accel_target_ned_mss.z = -GRAVITY_MSS;
+#endif
     return accel_target_ned_mss;
 }
 
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
 // Hysteresis on the thrust tilt past which a world-frame heading target is abandoned, so the
 // heading mode cannot alternate cycle by cycle around the threshold.
 void AC_PosControl::update_heading_degenerate()
@@ -1531,6 +1552,7 @@ bool AC_PosControl::thrust_vector_heading_degenerate() const
 {
     return _heading_degenerate;
 }
+#endif  // AC_POSCONTROL_INVERTED_THRUST_ENABLED
 
 // Computes NE stopping point in meters based on current position, velocity, and acceleration.
 void AC_PosControl::get_stopping_point_NE_m(Vector2p &stopping_point_ne_m) const
