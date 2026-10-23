@@ -181,8 +181,8 @@ public:
     */
     MAV_RESULT handle_mag_cal_command(const mavlink_command_int_t &packet);
 
-    bool send_mag_cal_progress(const class GCS_MAVLINK& link);
-    bool send_mag_cal_report(const class GCS_MAVLINK& link);
+    bool send_mag_cal_progress(const class GCS_MAVLINK& link) WARN_IF_UNUSED;
+    bool send_mag_cal_report(const class GCS_MAVLINK& link) WARN_IF_UNUSED;
 #endif  // HAL_MAVLINK_BINDINGS_ENABLED
 #endif  // COMPASS_CAL_ENABLED
 
