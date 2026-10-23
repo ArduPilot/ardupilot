@@ -151,7 +151,7 @@ void SoloGimbal::send_report(void)
         for (uint8_t i=0; i<ret; i++) {
             mavlink_message_t msg;
             mavlink_status_t status;
-            if (mavlink_frame_char_buffer(&mavlink.rxmsg, &mavlink.status,
+            if (mavlink_parse_char_buffer(&mavlink.rxmsg, &mavlink.status,
                                           buf[i],
                                           &msg, &status) == MAVLINK_FRAMING_OK) {
                 switch (msg.msgid) {
