@@ -906,6 +906,125 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if state["min_alt"] < 5:
                 raise NotAchievedException("%s: dive ended at %.1f m" % (name, state["min_alt"]))
 
+    def ArcSplineYawBehaviour(self):
+        '''a vertical loop and an upright spline fly under WP_YAW_BEHAVIOR 0 and 2'''
+        # LOOK_AT_NEXT_WP asks for an absolute world-frame heading, which only means
+        # anything while the vehicle is near upright.  Nothing else in the suite varies
+        # WP_YAW_BEHAVIOR over a curved path, so a change to the heading source can
+        # break a vertical manoeuvre, or ordinary upright flight, unnoticed.
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+            "WP_SPD": 20,
+            "WP_SPD_UP": 20,
+            "WP_SPD_DN": 20,
+            "WP_ACC": 10,
+            "WP_ACC_CNR": 25,  # must clear v^2/r = 20 or the arc speed cap throttles the leg
+            "WP_ACC_Z": 10,
+            "WP_JERK": 20,
+            "ATC_ANGLE_MAX": 80,
+            "PSC_TVEC_EN": 1,
+        })
+        self.reboot_sitl()
+
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        TO = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        SPL = mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT
+        RTL = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+
+        # A loop of radius 20 m in the North-Down plane built from four quarter arcs.  The
+        # arc plane is rotated about each chord's ground track, so all four lie in the one
+        # vertical plane; param1 is the side of the chord each bulges to, above (+) or
+        # below (-), so the two lower quarters are negative and the two upper ones positive.
+        loop = [
+            (TO, 0, 0, 40),
+            (WP, 60, 0, 40),
+            (WP, 120, 0, 40),                             # bottom, tangent +North
+            (ARC, 140, 0, 60, {"p1": -90, "p2": 90}),     # up the front
+            (ARC, 120, 0, 80, {"p1": 90, "p2": 90}),      # over the top, inverted
+            (ARC, 100, 0, 60, {"p1": 90, "p2": 90}),      # down the back
+            (ARC, 120, 0, 40, {"p1": -90, "p2": 90}),     # back to the bottom
+            (RTL, 0, 0, 0),
+        ]
+        # the spline stays upright throughout, so the steep-tilt heading fallback never engages
+        # and it must fly as it always has
+        spline = [
+            (TO, 0, 0, 30),
+            (WP, 100, 60, 30),
+            (WP, 100, 0, 30),
+            (SPL, 108.79, -21.21, 45.0),
+            (SPL, 130.0, -30.0, 60.0),
+            (SPL, 151.21, -21.21, 75.0),
+            (SPL, 160.0, 0.0, 90.0),
+            (RTL, 0, 0, 0),
+        ]
+
+        # 0 is WP_YAW_BEHAVIOR_NONE, 2 is LOOK_AT_NEXT_WP_EXCEPT_RTL and the default
+        for behaviour in 0, 2:
+            for name, mission, last_seq in [("arc loop", loop, 7), ("spline helix", spline, 7)]:
+                self.start_subtest("%s with WP_YAW_BEHAVIOR=%u" % (name, behaviour))
+                self.set_parameter("WP_YAW_BEHAVIOR", behaviour)
+                state = {"active": False, "min_cos": 1.0, "inv_yaw_rate": 0.0, "max_east": 0.0, "max_alt": 0.0,
+                         "ground": None, "vel": None, "max_course_err": 0.0, "att_n": 0, "course_n": 0}
+
+                def hook(mav, m):
+                    if m.get_type() == 'LOCAL_POSITION_NED' and state["ground"] is None:
+                        # home is set where each case arms, which after the first is not the EKF origin
+                        state["ground"] = (m.y, m.z)
+                    if not state["active"]:
+                        return
+                    if m.get_type() == 'ATTITUDE':
+                        state["att_n"] += 1
+                        c = math.cos(m.roll) * math.cos(m.pitch)
+                        state["min_cos"] = min(state["min_cos"], c)
+                        if c < 0:
+                            state["inv_yaw_rate"] = max(state["inv_yaw_rate"], abs(math.degrees(m.yawspeed)))
+                        if state["vel"] is not None and math.hypot(*state["vel"]) > 5:
+                            course = math.degrees(math.atan2(state["vel"][1], state["vel"][0]))
+                            err = abs(mavextra.wrap_180(math.degrees(m.yaw) - course))
+                            state["max_course_err"] = max(state["max_course_err"], err)
+                            state["course_n"] += 1
+                    elif m.get_type() == 'LOCAL_POSITION_NED' and state["ground"] is not None:
+                        state["vel"] = (m.vx, m.vy)
+                        state["max_east"] = max(state["max_east"], abs(m.y - state["ground"][0]))
+                        state["max_alt"] = max(state["max_alt"], -(m.z - state["ground"][1]))
+                # each case has its own hook, removed when its context is popped
+                self.context_push()
+                self.install_message_hook_context(hook)
+                self.change_mode('STABILIZE')
+                self.start_flying_simple_relhome_mission(mission)
+                self.wait_current_waypoint(4, timeout=300)
+                state["active"] = True
+                self.wait_current_waypoint(last_seq + 1, timeout=300)
+                state["active"] = False
+                self.wait_disarmed(timeout=180)
+                self.context_pop()
+                self.progress("%s: min cos %.3f, inverted yaw rate %.0f deg/s, max east %.2f m, max alt %.1f m, "
+                              "heading off track %.0f deg" % (
+                                  name, state["min_cos"], state["inv_yaw_rate"], state["max_east"], state["max_alt"],
+                                  state["max_course_err"]))
+                # a check on samples that never arrived would pass
+                if state["att_n"] == 0 or state["course_n"] == 0:
+                    raise NotAchievedException("%s: no attitude or velocity received in flight" % name)
+                if mission is spline:
+                    if state["min_cos"] < 0:
+                        raise NotAchievedException("spline helix inverted (%.3f)" % state["min_cos"])
+                    # upright, LOOK_AT_NEXT_WP must still point along the track; it flies within
+                    # about 50 degrees of it, and a held heading is up to 180 degrees off
+                    if behaviour == 2 and state["max_course_err"] > 90:
+                        raise NotAchievedException("spline heading %.0f deg off the track" % state["max_course_err"])
+                    continue
+                if state["min_cos"] > -0.5:
+                    raise NotAchievedException("loop did not invert over the top (%.3f)" % state["min_cos"])
+                if state["max_alt"] < 76 or state["max_alt"] > 86:
+                    raise NotAchievedException("loop topped out at %.1f m, not 80" % state["max_alt"])
+                if state["max_east"] > 2:
+                    raise NotAchievedException("loop left its plane by %.2f m" % state["max_east"])
+                # LOOK_AT_NEXT_WP must not chase a heading while inverted; with no heading
+                # demand at all (0) the loop is flown diagonally by design and not checked
+                if behaviour == 2 and state["inv_yaw_rate"] > 20:
+                    raise NotAchievedException("yawed at %.0f deg/s while inverted" % state["inv_yaw_rate"])
+
     def ArcWaypointPlaneParam(self):
         '''ARC_WAYPOINT param2 round trips for each plane rotation and rejects anything else'''
         ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
@@ -19763,6 +19882,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.DoJumpToDoCommand,
             self.ArcSplineAggro,
             self.ArcSplineAggroTV,
+            self.ArcSplineYawBehaviour,
             self.ArcWaypointPlaneParam,
             self.BatteryFailsafeBrakeLandNoGPS,
             self.AC_Avoidance_Proximity,
