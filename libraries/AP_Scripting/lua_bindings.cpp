@@ -850,7 +850,9 @@ int lua_removefile(lua_State *L) {
 // Manual binding to allow SRV_Channels table to see safety state
 int SRV_Channels_get_safety_state(lua_State *L) {
     binding_argcheck(L, 1);
-    const bool data = hal.util->safety_switch_state() !=  AP_HAL::Util::SAFETY_ARMED;
+    // SAFETY_NONE means the platform has no safety switch, so outputs are not
+    // held in the safe state.
+    const bool data = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
     lua_pushboolean(L, data);
     return 1;
 }
