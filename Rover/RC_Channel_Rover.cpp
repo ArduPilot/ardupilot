@@ -73,6 +73,9 @@ bool RC_Channels_Rover::has_valid_input() const
     if (in_rc_failsafe()) {
         return false;
     }
+    if (!input_valid()) {
+        return false;
+    }
     return RC_Channels::has_valid_input();
 }
 

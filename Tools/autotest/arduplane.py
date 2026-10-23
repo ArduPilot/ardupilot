@@ -8065,6 +8065,37 @@ return update()
 
         self.reboot_sitl()
 
+    def AdvancedFailsafeRCLoss(self):
+        '''test AFS termination when RC is lost'''
+        self.set_parameters({
+            "AFS_ENABLE": 1,
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "AFS_TERM_ACTION": 42,
+            "AFS_RC_MAN_ONLY": 0,
+            "AFS_RC_FAIL_TIME": 3,
+            # the AFS timer runs on loss of RC whatever the throttle
+            # failsafe is configured to do:
+            "THR_FAILSAFE": 0,
+        })
+        # AFS_TERMINATE magically set-and-saved by code:
+        self.context_preserve_parameters(["AFS_TERMINATE"])
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 50),
+        ])
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        # AFS leaves its preflight state when the vehicle first flies auto:
+        self.change_mode('AUTO')
+        self.wait_altitude(45, 55, relative=True, timeout=120)
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameter('SIM_RC_FAIL', 3)  # the receiver reports failsafe
+        self.wait_statustext('Terminating due to RC failure', check_context=True, timeout=10)
+        self.set_parameter('SIM_RC_FAIL', 0)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def MAV_CMD_DO_LAND_START(self):
         '''test MAV_CMD_DO_LAND_START as mavlink command'''
         self.set_parameters({
@@ -11081,6 +11112,7 @@ return update()
             self.FRSkyMAVlite,
             self.LTM,
             self.AdvancedFailsafe,
+            self.AdvancedFailsafeRCLoss,
             self.DeepStall,
             self.LargeMissions,
             self.SIMCompare,
