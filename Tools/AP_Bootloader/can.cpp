@@ -219,7 +219,7 @@ static void send_fw_reads(void)
         if (r.have_reply) {
             continue;
         }
-        if (r.sent_ms != 0 && now - r.sent_ms < 10+2*MAX(250,fw_update.rtt_ms)) {
+        if (r.sent_ms != 0 && now - r.sent_ms < 10+2*MAX(250U,fw_update.rtt_ms)) {
             // waiting on a response
             continue;
         }
@@ -277,14 +277,14 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
     }
     if (!found) {
         // not a current transfer, we may be getting long delays
-        fw_update.rtt_ms = MIN(3000, fw_update.rtt_ms+250);
+        fw_update.rtt_ms = MIN(3000U, fw_update.rtt_ms+250);
         return;
     }
     if (uavcan_protocol_file_ReadResponse_decode(transfer, &fw_update.reads[idx].pkt)) {
         return;
     }
     fw_update.reads[idx].have_reply = true;
-    uint32_t rtt = MIN(3000,MAX(AP_HAL::millis() - fw_update.reads[idx].sent_ms, 25));
+    uint32_t rtt = MIN(3000U,MAX(AP_HAL::millis() - fw_update.reads[idx].sent_ms, 25U));
     fw_update.rtt_ms = uint32_t(0.9 * fw_update.rtt_ms + 0.1 * rtt);
 
     while (fw_update.reads[fw_update.idx].have_reply) {
