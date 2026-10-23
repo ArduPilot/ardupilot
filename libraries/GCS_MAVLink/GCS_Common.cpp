@@ -426,7 +426,8 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     battery.get_mavlink_fault_bitmask(instance));   // fault_bitmask
 }
 
-// returns true if all battery instances were reported
+// sends the next reportable battery instance, round-robin; returns false
+// if there was no space for it, so the same instance is retried
 bool GCS_MAVLINK::send_battery_status()
 {
     const AP_BattMonitor &battery = AP::battery();
@@ -6674,7 +6675,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 #if AP_BATTERY_ENABLED
     case MSG_BATTERY_STATUS:
-        send_battery_status();
+        ret = send_battery_status();
         break;
 #endif // AP_BATTERY_ENABLED
 
