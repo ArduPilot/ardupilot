@@ -138,6 +138,8 @@ bool AC_PolyFence_loader::find_storage_offset_for_seq(const uint16_t seq, uint16
 
 bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
 {
+    WITH_SEMAPHORE(_index_sem);
+
     if (!check_indexed()) {
         return false;
     }
@@ -1101,6 +1103,8 @@ uint16_t AC_PolyFence_loader::sum_of_polygon_point_counts_and_returnpoint()
 
 bool AC_PolyFence_loader::load_from_storage()
 {
+    WITH_SEMAPHORE(_index_sem);
+
     if (!check_indexed()) {
         return false;
     }
@@ -1604,6 +1608,8 @@ uint16_t AC_PolyFence_loader::fence_storage_space_required(const AC_PolyFenceIte
 
 bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_t count)
 {
+    WITH_SEMAPHORE(_index_sem);
+
     if (!validate_fence(new_items, count)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Fence validation failed");
         return false;
@@ -1721,6 +1727,8 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
 
 bool AC_PolyFence_loader::get_return_point(Vector2l &ret)
 {
+    WITH_SEMAPHORE(_index_sem);
+
     if (!check_indexed()) {
         return false;
     }
