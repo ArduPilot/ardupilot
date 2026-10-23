@@ -503,21 +503,6 @@ void memory_flush_all(void)
 }
 
 /*
-  replacement for strdup
- */
-char *strdup(const char *str)
-{
-    const size_t len = strlen(str);
-    char *ret = malloc(len+1);
-    if (!ret) {
-        return NULL;
-    }
-    memcpy(ret, str, len);
-    ret[len] = 0;
-    return ret;
-}
-
-/*
     is valid memory region
  */
 bool is_address_in_memory(void *addr)
@@ -560,28 +545,6 @@ void* get_addr_mem_region_end_addr(void *addr)
         }
     }
     return 0;
-}
-
-/*
-  alloction functions for newlib
- */
-void *__wrap__calloc_r(void *rptr, size_t nmemb, size_t size)
-{
-    (void)rptr;
-    return calloc(nmemb, size);
-}
-
-void *__wrap__malloc_r(void *rptr, size_t size)
-{
-    (void)rptr;
-    // we want consistent zero memory
-    return calloc(1, size);
-}
-
-void __wrap__free_r(void *rptr, void *ptr)
-{
-    (void)rptr;
-    return free(ptr);
 }
 
 #if HAL_USE_FATFS

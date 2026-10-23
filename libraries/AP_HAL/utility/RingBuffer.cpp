@@ -12,9 +12,11 @@ ByteBuffer::ByteBuffer(uint32_t _size)
 
 ByteBuffer::~ByteBuffer(void)
 {
+#if !defined(CH_CFG_USE_HEAP) || CH_CFG_USE_HEAP == TRUE
     if (!external_buf) {
         free(buf);
     }
+#endif
 }
 
 /*

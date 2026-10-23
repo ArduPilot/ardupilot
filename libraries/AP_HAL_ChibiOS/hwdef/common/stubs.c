@@ -71,110 +71,126 @@
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
-#include <sys/unistd.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include "ch.h"
-#if defined(STDOUT_SD) || defined(STDIN_SD)
-#include "hal.h"
+
+#include <stdlib.h>
+#include <sys/lock.h>
+
+#if CH_CFG_USE_MUTEXES == TRUE
+
+struct __lock {
+    mutex_t mutex;
+    bool dynamically_allocated;
+};
+
+struct __lock __lock___libc_recursive_mutex = {
+    __MUTEX_DATA(__lock___libc_recursive_mutex.mutex), false
+};
+
+#else
+
+// Bootloaders disable ChibiOS mutexes and execute libc calls on one thread.
+struct __lock {
+    uint8_t unused;
+};
+
+struct __lock __lock___libc_recursive_mutex;
+static struct __lock single_thread_lock;
+
 #endif
 
-uint8_t _before_main = 1;
+static int preinit_errno;
 
-/***************************************************************************/
-
-__attribute__((used))
-int _read(struct _reent *r, int file, char * ptr, int len)
+int *ap_picolibc_errno(void)
 {
-    (void)r;
-    (void)file;
-    (void)ptr;
-    (void)len;
-    return -1;
+    if (ch_system.state != ch_sys_running) {
+        return &preinit_errno;
+    }
+    return &chThdGetSelfX()->picolibc_errno;
 }
 
-/***************************************************************************/
-
-__attribute__((used))
-int _lseek(struct _reent *r, int file, int ptr, int dir)
+static void lock_init(_LOCK_T *lock)
 {
-    (void)r;
-    (void)file;
-    (void)ptr;
-    (void)dir;
+#if CH_CFG_USE_MUTEXES == TRUE
+    struct __lock *new_lock = malloc(sizeof(*new_lock));
+    if (new_lock == NULL) {
+        *lock = NULL;
+        return;
+    }
+    chMtxObjectInit(&new_lock->mutex);
+    new_lock->dynamically_allocated = true;
+    *lock = new_lock;
+#else
+    *lock = &single_thread_lock;
+#endif
+}
 
+void __retarget_lock_init(_LOCK_T *lock)
+{
+    lock_init(lock);
+}
+
+void __retarget_lock_init_recursive(_LOCK_T *lock)
+{
+    lock_init(lock);
+}
+
+void __retarget_lock_close(_LOCK_T lock)
+{
+#if CH_CFG_USE_MUTEXES == TRUE
+    if (lock != NULL && lock->dynamically_allocated) {
+        free(lock);
+    }
+#else
+    (void)lock;
+#endif
+}
+
+void __retarget_lock_close_recursive(_LOCK_T lock)
+{
+    __retarget_lock_close(lock);
+}
+
+void __retarget_lock_acquire(_LOCK_T lock)
+{
+#if CH_CFG_USE_MUTEXES == TRUE
+    // Startup is single-threaded until chSysInit() has completed.
+    if (lock != NULL && ch_system.state == ch_sys_running) {
+        chMtxLock(&lock->mutex);
+    }
+#else
+    (void)lock;
+#endif
+}
+
+void __retarget_lock_acquire_recursive(_LOCK_T lock)
+{
+    __retarget_lock_acquire(lock);
+}
+
+void __retarget_lock_release(_LOCK_T lock)
+{
+#if CH_CFG_USE_MUTEXES == TRUE
+    if (lock != NULL && ch_system.state == ch_sys_running) {
+        chMtxUnlock(&lock->mutex);
+    }
+#else
+    (void)lock;
+#endif
+}
+
+void __retarget_lock_release_recursive(_LOCK_T lock)
+{
+    __retarget_lock_release(lock);
+}
+
+int __aeabi_atexit(void *arg, void (*func)(void *), void *dso_handle)
+{
+    // Firmware never exits, so static destructors do not need registration.
+    (void)arg;
+    (void)func;
+    (void)dso_handle;
     return 0;
-}
-
-/***************************************************************************/
-
-__attribute__((used))
-int _write(struct _reent *r, int file, char * ptr, int len)
-{
-    (void)r;
-    (void)file;
-    (void)ptr;
-    (void)len;
-    return -1;
-}
-
-/***************************************************************************/
-
-__attribute__((used))
-int _close(struct _reent *r, int file)
-{
-    (void)r;
-    (void)file;
-    return 0;
-}
-
-/***************************************************************************/
-
-__attribute__((used))
-int _fstat(struct _reent *r, int file, struct stat * st)
-{
-    (void)r;
-    (void)file;
-    (void)st;
-    return -1;
-}
-
-/***************************************************************************/
-
-__attribute__((used))
-int _isatty(struct _reent *r, int fd)
-{
-    (void)r;
-    (void)fd;
-    return 1;
-}
-
-__attribute__((used))
-pid_t _getpid(void)
-{
-    return 0;
-}
-
-__attribute__((used))
-void _exit( int status )
-{
-    (void)status;
-    while ( 1 );
-}
-
-__attribute__((used))
-void _fini(void)
-{
-}
-
-__attribute__((used))
-int _kill( int pid, int sig )
-{
-    (void)pid;
-    (void)sig;
-    return -1;
 }
 
 /*** EOF ***/

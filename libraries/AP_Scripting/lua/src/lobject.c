@@ -236,8 +236,11 @@ static lua_Number lua_strx2number (const char *s, char **endptr) {
     neg1 = isneg(&s);  /* signal */
     if (!lisdigit(cast_uchar(*s)))
       return 0.0;  /* invalid; must have at least one digit */
-    while (lisdigit(cast_uchar(*s)))  /* read exponent */
-      exp1 = exp1 * 10 + *(s++) - '0';
+    while (lisdigit(cast_uchar(*s))) {  /* read exponent */
+      if (exp1 < 100000)  /* larger exponents all overflow/underflow */
+        exp1 = exp1 * 10 + *s - '0';
+      s++;
+    }
     if (neg1) exp1 = -exp1;
     e += exp1;
     *endptr = cast(char *, s);  /* valid up to here */

@@ -735,9 +735,11 @@ extern "C" {
  * @brief   Threads descriptor structure extension.
  * @details User fields added to the end of the @p thread_t structure.
  */
+#define AP_PICOLIBC_THREAD_EXTRA_FIELDS                                     \
+  int picolibc_errno;
+
 #ifndef CH_CFG_THREAD_EXTRA_FIELDS
-#define CH_CFG_THREAD_EXTRA_FIELDS                                          \
-  /* Add threads custom fields here.*/
+#define CH_CFG_THREAD_EXTRA_FIELDS AP_PICOLIBC_THREAD_EXTRA_FIELDS
 #endif
 
 /**
@@ -748,7 +750,7 @@ extern "C" {
  *          the threads creation APIs.
  */
 #define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
-  /* Add threads initialization code here.*/                                \
+  (tp)->picolibc_errno = 0;                                                  \
 }
 
 /**
