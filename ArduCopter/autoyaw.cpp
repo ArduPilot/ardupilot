@@ -394,6 +394,15 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
             break;
     }
 
+    // a world-frame heading, and the rate of change of one, stops meaning anything once the
+    // thrust vector is steeply tilted, so through a vertical manoeuvre hold the rotation about
+    // the thrust axis instead; only the pilot's own yaw rate, which is body-frame, is kept
+    if (auto_yaw.mode() != Mode::PILOT_RATE &&
+        copter.pos_control->thrust_vector_heading_degenerate()) {
+        heading.heading_mode = AC_AttitudeControl::HeadingMode::Rate_Only;
+        heading.yaw_rate_rads = 0.0f;
+    }
+
     return heading;
 }
 
