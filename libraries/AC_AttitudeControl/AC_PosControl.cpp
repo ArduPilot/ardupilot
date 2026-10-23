@@ -785,24 +785,24 @@ void AC_PosControl::NE_update_controller()
     _accel_target_ned_mss.xy() = accel_target_ne_mss;
     _accel_target_ned_mss.xy() += _accel_desired_ned_mss.xy() + _accel_offset_ned_mss.xy();
 
-    // limit acceleration using maximum lean angles, except while inverted thrust is active:
-    // the limit is derived from atan(accel/g) and cannot express a tilt at or past 90 degrees
-    if (_thrust_inverted_active) {
+    // limit acceleration using maximum lean angles.  The throttle-based althold limit assumes
+    // upright thrust, so it is skipped while inverted thrust is active; the configured lean
+    // angle still bounds the horizontal demand.
+    float angle_max_rad = get_lean_angle_max_rad();
+    if (!_thrust_inverted_active) {
+        angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), angle_max_rad);
+    }
+    const float accel_max_mss = angle_rad_to_accel_mss(angle_max_rad);
+    // Save unbounded target for use in "limited" check (not unit-consistent with z!)
+    _limit_vector_ned.xy() = _accel_target_ned_mss.xy();
+    // Normalise desired velocity by max speed for the cross-track reference (guard zero max speed).
+    Vector2f vel_norm_ne;
+    if (is_positive(_vel_max_ne_ms)) {
+        vel_norm_ne = _vel_desired_ned_ms.xy() / _vel_max_ne_ms;
+    }
+    if (!limit_accel_xy(vel_norm_ne, _accel_target_ned_mss.xy(), accel_max_mss)) {
+        // _accel_target_ned_mss was not limited so we can zero the xy limit vector
         _limit_vector_ned.xy().zero();
-    } else {
-        const float angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), get_lean_angle_max_rad());
-        const float accel_max_mss = angle_rad_to_accel_mss(angle_max_rad);
-        // Save unbounded target for use in "limited" check (not unit-consistent with z!)
-        _limit_vector_ned.xy() = _accel_target_ned_mss.xy();
-        // Normalise desired velocity by max speed for the cross-track reference (guard zero max speed).
-        Vector2f vel_norm_ne;
-        if (is_positive(_vel_max_ne_ms)) {
-            vel_norm_ne = _vel_desired_ned_ms.xy() / _vel_max_ne_ms;
-        }
-        if (!limit_accel_xy(vel_norm_ne, _accel_target_ned_mss.xy(), accel_max_mss)) {
-            // _accel_target_ned_mss was not limited so we can zero the xy limit vector
-            _limit_vector_ned.xy().zero();
-        }
     }
 
     // Convert acceleration to roll/pitch angle targets (used by attitude controller)
@@ -1149,7 +1149,12 @@ void AC_PosControl::D_update_controller()
     // Velocity Controller
 
     // PID controller: convert velocity error to acceleration
-    _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    // while the thrust vector points down more throttle accelerates the vehicle down rather than
+    // up, so the upper and lower motor saturation limits trade places
+    const bool thrust_down = is_positive(get_thrust_vector().z);
+    const bool limit_lower = thrust_down ? _motors.limit.throttle_upper : _motors.limit.throttle_lower;
+    const bool limit_upper = thrust_down ? _motors.limit.throttle_lower : _motors.limit.throttle_upper;
+    _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, limit_lower, limit_upper);
     _accel_target_ned_mss.z *= AP::ahrs().get_control_gain_scaler_Z();
 
     // add feed forward component
@@ -1206,9 +1211,9 @@ void AC_PosControl::D_update_controller()
     _vel_d_control_ratio = constrain_float(_vel_d_control_ratio, 0.0f, 2.0f);
 
     // set vertical component of the limit vector
-    if (_motors.limit.throttle_upper) {
+    if (limit_upper) {
         _limit_vector_ned.z = -1.0f;
-    } else if (_motors.limit.throttle_lower) {
+    } else if (limit_lower) {
         _limit_vector_ned.z = 1.0f;
     } else {
         _limit_vector_ned.z = 0.0f;
@@ -1431,14 +1436,13 @@ void AC_PosControl::set_posvelaccel_offset_target_D_m(float pos_offset_target_d_
 void AC_PosControl::update_inverted_thrust_state(float throttle_up)
 {
     const uint32_t now_ms = AP_HAL::millis();
-    const float height_m = -_pos_estimate_ned_m.z;
 
     // consume the vehicle's permission: it must be renewed every loop, so a caller that
     // stops refreshing it cannot leave inverted thrust enabled
     const bool allowed = _inverted_thrust_allowed;
     _inverted_thrust_allowed = false;
 
-    if (!_thrust_vector_enabled || !allowed || height_m < _thrust_vector_min_height_m) {
+    if (!_thrust_vector_enabled || !allowed || _inverted_thrust_height_m < _thrust_vector_min_height_m) {
         _thrust_inverted_active = false;
         _thrust_invert_arm_ms = 0;
         _thrust_invert_upright_ms = now_ms;
@@ -1446,7 +1450,19 @@ void AC_PosControl::update_inverted_thrust_state(float throttle_up)
     }
 
     if (!_thrust_inverted_active) {
-        if (_accel_desired_ned_mss.z > GRAVITY_MSS) {
+        // a deceleration along the direction of travel is given up rather than flown inverted,
+        // so arresting a climb never rolls the vehicle over while turning and diving still can.
+        // Taking it out can only lower the downward demand, never add to it.
+        float accel_arm_d_mss = _accel_desired_ned_mss.z;
+        const float vel_desired_ms = _vel_desired_ned_ms.length();
+        if (is_positive(vel_desired_ms)) {
+            const Vector3f vel_unit = _vel_desired_ned_ms / vel_desired_ms;
+            const float accel_along_mss = _accel_desired_ned_mss * vel_unit;
+            if (is_negative(accel_along_mss)) {
+                accel_arm_d_mss = MIN(accel_arm_d_mss, accel_arm_d_mss - vel_unit.z * accel_along_mss);
+            }
+        }
+        if (accel_arm_d_mss > GRAVITY_MSS) {
             if (_thrust_invert_arm_ms == 0) {
                 _thrust_invert_arm_ms = now_ms;
             } else if (now_ms - _thrust_invert_arm_ms >= POSCONTROL_TVEC_ARM_MS) {

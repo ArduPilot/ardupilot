@@ -538,8 +538,14 @@ public:
     // Returns the maximum allowed roll/pitch angle in radians.
     float get_lean_angle_max_rad() const;
 
-    // Permits the thrust vector to tilt past 90 degrees for one cycle; consumed by the vertical controller, so renew every loop.
-    void set_inverted_thrust_allowed(bool allowed) { _inverted_thrust_allowed = allowed; }
+    // Permits the thrust vector to tilt past 90 degrees for one cycle at the given height above ground; renew every loop.
+    void set_inverted_thrust_allowed(bool allowed, float height_above_ground_m) {
+        _inverted_thrust_allowed = allowed;
+        _inverted_thrust_height_m = height_above_ground_m;
+    }
+
+    // Permits the thrust vector to tilt past 90 degrees for one cycle, taking height above the EKF origin.
+    void set_inverted_thrust_allowed(bool allowed) { set_inverted_thrust_allowed(allowed, -_pos_estimate_ned_m.z); }
 
     // Returns true if the commanded thrust vector is currently permitted to point downward.
     bool inverted_thrust_active() const { return _thrust_inverted_active; }
@@ -742,6 +748,7 @@ protected:
     // inverted thrust state
     float           _thrust_vector_d_mss;       // specific thrust along Down the vehicle should produce in m/s^2, used when _thrust_vector_enabled
     bool            _inverted_thrust_allowed;   // vehicle permits inverted thrust; refreshed every loop by the vehicle
+    float           _inverted_thrust_height_m;  // height above ground the vehicle gave with its permission
     bool            _thrust_inverted_active;    // inverted thrust regime is currently armed
     uint32_t        _thrust_invert_arm_ms;      // time the path first demanded more than free fall
     uint32_t        _thrust_invert_upright_ms;  // time the vertical axis last wanted thrust up
