@@ -134,17 +134,13 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_GroundEffect',
 ]
 
-def get_legacy_defines(sketch_name, bld):
-    # If we are building heli, we adjust the build directory define so that 
-    # we do not need to actually split heli and copter directories
-    if bld.cmd == 'heli' or 'heli' in bld.targets:
-        return [
-        'APM_BUILD_DIRECTORY=APM_BUILD_Heli',
-        'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
-        ]
-
+def get_legacy_defines(sketch_name, build_type=None):
+    # build_type lets one sketch directory produce more than one
+    # vehicle type; heli is built from ArduCopter as APM_BUILD_Heli
+    if build_type is None:
+        build_type = sketch_name
     return [
-        'APM_BUILD_DIRECTORY=APM_BUILD_' + sketch_name,
+        'APM_BUILD_DIRECTORY=APM_BUILD_' + build_type,
         'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
     ]
 
@@ -406,6 +402,7 @@ def ap_program(bld,
                use_legacy_defines=True,
                program_name=None,
                vehicle_binary=True,
+               ap_build_type=None,
                **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
@@ -418,7 +415,7 @@ def ap_program(bld,
         program_name = bld.path.name
 
     if use_legacy_defines:
-        kw['defines'].extend(get_legacy_defines(bld.path.name, bld))
+        kw['defines'].extend(get_legacy_defines(bld.path.name, ap_build_type))
 
     kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES + ['post_link']
 
@@ -477,7 +474,7 @@ def ap_stlib(bld, **kw):
 
     kw['ap_libraries'] = unique_list(kw['ap_libraries'] + bld.env.AP_LIBRARIES)
     for l in kw['ap_libraries']:
-        bld.ap_library(l, kw['ap_vehicle'])
+        bld.ap_library(l, kw['ap_vehicle'], kw.get('ap_build_type'))
 
     # Pull the shared 'dronecan_libs' objects target (see
     # _build_common_taskgens()) in via 'use'
@@ -647,6 +644,11 @@ def test_summary(bld):
 _build_commands = {}
 
 def _process_build_command(bld):
+    # bld.options is shared by every command in this invocation, so
+    # take a copy rather than extending its list; otherwise `waf copter
+    # plane` would also build copter's programs during the plane command
+    bld.program_groups = list(bld.options.program_group)
+
     if bld.cmd not in _build_commands:
         return
 
@@ -660,7 +662,7 @@ def _process_build_command(bld):
             bld.targets = targets
 
     program_group_list = Utils.to_list(params['program_group_list'])
-    bld.options.program_group.extend(program_group_list)
+    bld.program_groups.extend(program_group_list)
 
 def build_command(name,
                    targets=None,
@@ -676,7 +678,7 @@ def build_command(name,
     context_class.__doc__ = doc
 
 def _select_programs_from_group(bld):
-    groups = bld.options.program_group
+    groups = bld.program_groups
     if not groups:
         if bld.targets:
             groups = []
