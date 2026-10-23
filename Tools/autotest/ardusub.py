@@ -1839,6 +1839,43 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
 
+    def GuidedTargetAtZeroLatLng(self):
+        """GCS-supplied terrain-frame guided target at lat/lng 0,0 is a genuine location"""
+        # Sub does not use the terrain database by default.  Nobody
+        # serves terrain at 0,0, and nobody has to:
+        self.set_parameter("TERRAIN_ENABLE", 1)
+        self.reboot_sitl()
+        self.install_terrain_handlers_context(unserveable_requests_fatal=False)
+
+        # a depth fence makes guided convert its target's altitude
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 8,  # alt min
+            "FENCE_ALT_MIN": -100,
+        })
+        self.dive(-5, mode='ALT_HOLD')
+        self.change_mode('GUIDED')
+
+        pos_mode = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE |
+                    mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE |
+                    mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+                    mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE |
+                    mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE |
+                    mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+                    mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE |
+                    mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE)
+        self.progress("Sending guided target at 0,0 in the terrain frame")
+        self.mav.mav.set_position_target_global_int_send(
+            0, 1, 1, mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT, pos_mode,
+            0, 0, 10,
+            0, 0, 0, 0, 0, 0, 0, 0)
+
+        # the vehicle must still be with us
+        self.delay_sim_time(5, reason="vehicle to act on target")
+        self.assert_receive_message('HEARTBEAT')
+
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1889,6 +1926,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.IgnoreGPSDrift,
             self.GuidedPosVelAccel,
             self.GuidedAboveTerrain,
+            self.GuidedTargetAtZeroLatLng,
         ])
 
         return ret
