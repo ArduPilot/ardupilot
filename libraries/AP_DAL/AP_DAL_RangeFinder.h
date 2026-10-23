@@ -63,6 +63,9 @@ public:
 
     const Vector3f &get_pos_offset() const { return _RRNI.pos_offset; }
 
+    // as AP_RangeFinder_Backend::on_ground(), from the logged reading and the downward ground clearance
+    bool on_ground() const;
+
     // DAL methods:
     void start_frame(AP_RangeFinder_Backend *backend);
 
