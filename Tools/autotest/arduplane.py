@@ -6862,6 +6862,96 @@ return update()
         self.change_mode('AUTOLAND')
         self.wait_disarmed(timeout=180)
 
+    def TakeoffModeLevelOffTimerFence(self):
+        '''Ensure a stale TAKEOFF level-off timer does not consume fence auto-enable.'''
+        takeoff_alt = 40.0
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "ARSPD_USE": 0,
+            "FENCE_ALT_MAX": 300,
+            "FENCE_AUTOENABLE": 1,
+            "FENCE_ENABLE": 0,
+            "FENCE_TYPE": 1,
+            "TKOFF_ALT": takeoff_alt,
+            "TKOFF_DIST": 500,
+            "TKOFF_LVL_PITCH": 15,
+            "TKOFF_PLIM_SEC": 10,
+            "TKOFF_ROTATE_SPD": 0,
+        })
+
+        self.change_mode('TAKEOFF')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_statustext('Takeoff level-off starting', check_context=True, timeout=90)
+        self.wait_altitude(takeoff_alt-2, takeoff_alt+2, relative=True, timeout=90)
+        self.change_mode('AUTOLAND')
+        self.wait_disarmed(timeout=240)
+
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode('TAKEOFF')
+        self.delay_sim_time(3, reason='check fence remains disabled before takeoff')
+        messages = [m.text for m in self.context_collection('STATUSTEXT')]
+        for message in messages:
+            if 'fence auto-' in message:
+                raise NotAchievedException(
+                    f"Fence state changed before second takeoff: {message}"
+                )
+        self.assert_fence_sys_status(True, False, True)
+
+        self.context_clear_collection('STATUSTEXT')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_altitude(takeoff_alt-2, takeoff_alt+2, relative=True, timeout=90)
+        self.wait_statustext('Max Alt fence auto-enabled', check_context=True, timeout=10)
+        self.assert_fence_sys_status(True, True, True)
+        self.disarm_vehicle(force=True)
+
+    def TakeoffModeAirborneEntryAltitude(self):
+        '''Ensure airborne TAKEOFF entry uses a ground-relative target altitude.'''
+        target_alt = 150.0
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "ARSPD_USE": 0,
+            "TKOFF_DIST": 500,
+            "TKOFF_PLIM_SEC": 0,
+        })
+
+        self.takeoff(alt=46, alt_max=51, timeout=90)
+        self.change_mode('LOITER')
+        self.delay_sim_time(12, reason='satisfy airborne TAKEOFF entry guard')
+        entry_alt = self.get_altitude(relative=True)
+        if entry_alt < 45 or entry_alt > 55:
+            raise NotAchievedException(
+                f"Airborne TAKEOFF entry altitude {entry_alt:.2f}m outside test range"
+            )
+
+        self.set_parameter('TKOFF_ALT', target_alt)
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode('TAKEOFF')
+        self.wait_statustext('Climbing to TKOFF alt then loitering', check_context=True, timeout=20)
+        self.wait_altitude(
+            target_alt-5,
+            target_alt+5,
+            relative=True,
+            minimum_duration=15,
+            timeout=240,
+        )
+
+        self.change_mode('LOITER')
+        above_target_entry_alt = self.get_altitude(relative=True)
+        self.set_parameter('TKOFF_ALT', 100)
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode('TAKEOFF')
+        self.wait_statustext('Above TKOFF alt - loitering', check_context=True, timeout=20)
+        self.wait_altitude(
+            above_target_entry_alt-5,
+            above_target_entry_alt+5,
+            relative=True,
+            minimum_duration=10,
+            timeout=30,
+        )
+        self.disarm_vehicle(force=True)
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -10785,6 +10875,8 @@ return update()
             self.TakeoffAuto4,
             self.TakeoffTakeoff1,
             self.TakeoffGround,
+            self.TakeoffModeLevelOffTimerFence,
+            self.TakeoffModeAirborneEntryAltitude,
             self.MAVFTP,
             self.MAVFTPListDirectoryFullPacket,
             self.MAVFTPMavLogDirectory,
