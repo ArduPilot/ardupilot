@@ -41,6 +41,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_HAL',
     'AP_HAL_Empty',
     'AP_DDS',
+    'AP_Zenoh',
     'AP_InertialSensor',
     'AP_Math',
     'AP_Mission',
