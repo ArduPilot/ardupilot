@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<!--
+************************************************************************
+Arducotper UAV Model
+************************************************************************
+-->
+<PropertyList>
+  <sim>
+    <description>Arducopter UAV (R/C) (plus quad)</description>
+    <author>James Goppert</author>
+    <aircraft-version>0.0</aircraft-version>
+    <status>experimental</status>
+    <flight-model>jsb</flight-model>
+    <aero>plus_quad2</aero>
+    <model-hz>50</model-hz>
+    <sound>
+      <path>Aircraft/Generic/generic-sound.xml</path>
+    </sound>
+    <panel>
+      <visibility archive="n">false</visibility>
+    </panel>
+    <model>
+      <path archive="y">Aircraft/arducopter/Models/plus_quad2.xml</path>
+    </model>
+    <view>
+      <internal archive="y">true</internal>
+      <config>
+        <x-offset-m archive="y">0.0</x-offset-m>
+        <y-offset-m archive="y">0.15</y-offset-m>
+        <z-offset-m archive="y">0.90</z-offset-m>
+        <pitch-offset-deg>0</pitch-offset-deg>
+      </config>
+    </view>
+    <chase-distance-m archive="y" type="double">-5.5</chase-distance-m>
+    <help>
+      <title>plus_quad UAV</title>
+      <line>Cruise speed: ? mph</line>
+      <line>Never-exceed (Vne): ? mph</line>
+      <line>Best Glide (Vglide): ? mph</line>
+      <line>Maneuvering (Va): ? mph</line>
+      <line>Approach speed: ? mph</line>
+      <line>Stall speed (Vs): ? mph</line>
+    </help>
+    <startup>
+      <splash-title>Arducopter UAV DIY Drones/ OPENMAV</splash-title>
+      <splash-texture>Aircraft/arducopter/arducopter.jpg</splash-texture>
+    </startup>
+  </sim>
+  <controls>
+    <flight>
+      <aileron-trim>0.00</aileron-trim>
+      <!-- fixed -->
+      <elevator-trim>0.00</elevator-trim>
+      <!-- controllable -->
+    </flight>
+  </controls>
+  <consumables>
+    <fuel>
+      <tank n="0">
+        <level-gal_us>0</level-gal_us>
+      </tank>
+    </fuel>
+  </consumables>
+  <payload>
+    <weight>
+      <name type="string">Payload</name>
+      <weight-lb alias="/fdm/jsbsim/inertia/pointmass-weight-lbs[0]"/>
+      <min-lb type="double">0.0</min-lb>
+      <max-lb type="double">1.0</max-lb>
+    </weight>
+  </payload>
+  <nasal>
+    <plus_quad2>
+      <script>
+         setlistener("/sim/signals/fdm-initialized", func {
+             var left  = screen.display.new(20, 10);
+             left.add("/controls/engines/engine[0]/throttle");
+             left.add("/controls/engines/engine[1]/throttle");
+             left.add("/controls/engines/engine[2]/throttle");
+             left.add("/controls/engines/engine[3]/throttle");
+
+             var right = screen.display.new(-250, 20);
+             right.add("/position/altitude-agl-ft");
+             right.add("/orientation/roll-deg");
+             right.add("/orientation/pitch-deg");
+             right.add("/orientation/heading-deg");
+             right.add("/instrumentation/gps/indicated-ground-speed-kt");
+         });
+        </script>
+    </plus_quad2>
+  </nasal>
+</PropertyList>
+<!-- vim:sw=4:ts=4:expandtab -->

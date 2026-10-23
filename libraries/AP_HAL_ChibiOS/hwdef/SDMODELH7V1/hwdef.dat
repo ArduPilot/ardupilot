@@ -1,0 +1,4 @@
+include ../KakuteH7v2/hwdef.dat
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SDMODELH7V1

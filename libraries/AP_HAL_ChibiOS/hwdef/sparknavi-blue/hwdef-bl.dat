@@ -1,0 +1,69 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H743 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_SPARKNAVI_BLUE 
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+PB1 LED_RED OUTPUT LOW # red
+PC6 LED_ACTIVITY OUTPUT LOW # green
+PC7 LED_BOOTLOADER OUTPUT LOW # blue
+
+define HAL_LED_ON 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7
+
+# UART7 is debug
+PE7 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# pullup buzzer for no sound in bootloader
+PE5 BUZZER OUTPUT LOW PULLDOWN
+
+# Add CS pins to ensure they are high in bootloader
+PE6 IIM42652_CS CS SPEED_VERYLOW
+PA8 ICM42688_CS CS SPEED_VERYLOW
+PB12 FRAM_CS CS SPEED_VERYLOW
+PB2 EXTERNAL_CS CS
+
+# FATFS support:
+define CH_CFG_USE_MEMCORE 1
+define CH_CFG_USE_HEAP 1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES 1
+define CH_CFG_USE_DYNAMIC 1
+define CH_CFG_USE_WAITEXIT 1
+define CH_CFG_USE_REGISTRY 1
+
+# microSD support
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1
+define FATFS_HAL_DEVICE SDCD1
+define HAL_OS_FATFS_IO 1

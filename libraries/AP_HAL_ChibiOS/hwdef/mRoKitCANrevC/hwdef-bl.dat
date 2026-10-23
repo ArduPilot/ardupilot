@@ -1,0 +1,8 @@
+include ../f303-periph/hwdef-bl.inc
+
+# start as DNA
+
+undef APJ_BOARD_ID
+APJ_BOARD_ID AP_HW_TULIP_BATTMON
+
+define CAN_APP_NODE_NAME "org.ardupilot.mRoKitCANrevC"

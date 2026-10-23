@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+_ap_autotest() {
+  local cur opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  # don't complet =
+  _init_completion -n = || return
+
+  # the calling program is the first argument of the completion function
+  local caller="$1"
+  opts=$($caller --list | sed -n -e '/^build/p' -e '/^test/p' -e '/^run/p')
+  tests=$($caller --list-vehicles-test)
+  opts+=$(compgen -W "${tests}" -P "test.")
+
+  # Prevent word reuse
+  lim=$((COMP_CWORD - 1))
+  for i in $(seq 0 $lim); do
+    if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
+      opts=${opts//${COMP_WORDS[i]}/}
+      opts=${opts//--${COMP_WORDS[i]}/}
+    fi
+  done
+
+  case $cur in
+    test.*.*)
+      local supported_vehicle_list
+      supported_vehicle_list=$($caller --list-vehicles)
+      local vehicle
+      # get the part before the last dot
+      lcur=${cur%.*}
+      # search for the right vehicle name in the list
+      # TODO : just extract the caracters between the two dot with bash and use python to extract the right subtests
+      for v in $supported_vehicle_list
+      do
+        if [[ ${lcur} == *"$v"* ]]
+        then
+          vehicle=$v
+          break
+        fi
+      done
+      azr=$($caller --list-subtests-for-vehicle "${vehicle}")
+      # append back the last dot
+      lcur="${lcur}."
+      opts=$(compgen -W "${azr}" -P "${lcur}")
+      mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
+      ;;
+  esac
+
+  # shellcheck disable=SC2016 # compgen -W expands the command substitution itself
+  mapfile -t COMPREPLY < <(compgen -W '$(_parse_help "$1")' -- "$cur")
+  mapfile -t -O "${#COMPREPLY[@]}" COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
+  [[ ${COMPREPLY-} == *. ]] && compopt -o nospace
+  [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
+}
+
+complete -F _ap_autotest autotest.py

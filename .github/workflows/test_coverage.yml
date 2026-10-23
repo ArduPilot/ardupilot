@@ -1,0 +1,97 @@
+name: test coverage
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # every sunday at midnight
+# paths:
+# - "*"
+# - "!README.md" <-- don't rebuild on doc change
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
+    runs-on: ubuntu-22.04
+    container:
+      image: ardupilot/ardupilot-dev-${{ matrix.type }}:v0.2.0
+      options: --privileged
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        toolchain: [
+            base,  # GCC
+        ]
+        config: [
+            coverage,
+            sitltest-can,
+        ]
+        type: [
+          coverage,
+        ]
+        include:
+          - config: sitltest-can
+            type: periph
+        exclude:
+          - config: sitltest-can
+            type: coverage
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
+      - name: test ${{matrix.config}} ${{ matrix.toolchain }}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+          TERM: xterm
+        shell: 'script -q -e -c "bash {0}"'
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          python3 -m pip install --progress-bar off --user mavproxy
+          python3 -m pip uninstall -y pymavlink
+          git submodule update --init --recursive --depth=1
+          (cd modules/mavlink/pymavlink && DISABLE_MAVNATIVE=True MDEF="$PWD/../message_definitions" python3 -m pip install --progress-bar off --user .)
+          if [[ ${{ matrix.config }} == "coverage" ]]; then
+            Tools/scripts/run_coverage.py -f --keep-going
+          else
+            Tools/scripts/run_coverage.py -i
+            ./waf configure --board sitl_periph_universal --debug --coverage
+            ./waf build --target bin/AP_Periph
+            Tools/scripts/run_coverage.py -i
+            Tools/autotest/autotest.py test.CAN --debug --coverage
+            Tools/scripts/run_coverage.py -u
+          fi
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2.3.8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./reports/lcov-report/lcov.info
+          flag-name: run-${{matrix.config}}
+          parallel: true
+
+
+  finish:
+    if: always()
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2.3.8
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true

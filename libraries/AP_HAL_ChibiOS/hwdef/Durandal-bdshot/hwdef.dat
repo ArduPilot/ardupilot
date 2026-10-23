@@ -1,0 +1,10 @@
+# Bi-directional dshot version of Durandal
+
+include ../Durandal/hwdef.dat
+
+undef PE14 PA10 PE11 PE9 PD13 PD14
+
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50) BIDIR
+PA10 TIM1_CH3 TIM1 PWM(2) GPIO(51)
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52) BIDIR
+PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)

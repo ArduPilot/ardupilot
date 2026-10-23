@@ -1,0 +1,18 @@
+include ../MatekL431/hwdef.inc
+
+define HAL_USE_ADC FALSE
+
+# --------------------- PWM -----------------------
+PA8   TIM1_CH1  TIM1 PWM(1) GPIO(50)
+PA9   TIM1_CH2  TIM1 PWM(2) GPIO(51)
+PA10  TIM1_CH3  TIM1 PWM(3) GPIO(52)
+PA11  TIM1_CH4  TIM1 PWM(4) GPIO(53)
+PA15  TIM2_CH1  TIM2 PWM(5) GPIO(54)
+
+define AP_PERIPH_RC_OUT_ENABLED 1
+
+# enable APD telemetry on rx1
+define AP_PERIPH_ESC_APD_ENABLED 1
+define APD_ESC_INSTANCES 1
+define APD_ESC_SERIAL_0 0
+USE_BOOTLOADER_FROM_BOARD MatekL431

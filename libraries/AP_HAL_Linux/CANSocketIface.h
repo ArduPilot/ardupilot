@@ -1,0 +1,179 @@
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+ * Many thanks to members of the UAVCAN project:
+ *  Pavel Kirienko <pavel.kirienko@gmail.com>
+ *  Ilia Sheremet <illia.sheremet@gmail.com>
+ *
+ *  license info can be found in the uavcan submodule located:
+ *  modules/uavcan/LICENSE
+ *  modules/uavcan/libuavcan_drivers/linux/include/uavcan_linux/socketcan.hpp
+ */
+
+
+#pragma once
+
+#include "AP_HAL_Linux.h"
+
+#if HAL_NUM_CAN_IFACES
+
+#include <AP_HAL/CANIface.h>
+
+#include <linux/can.h>
+
+#include <string>
+#include <queue>
+#include <memory>
+#include <map>
+#include <unordered_set>
+#include <poll.h>
+
+namespace Linux {
+
+enum class SocketCanError
+{
+    SocketReadFailure,
+    SocketWriteFailure,
+    TxTimeout
+};
+
+#define CAN_MAX_POLL_ITERATIONS_COUNT 100
+#define CAN_MAX_INIT_TRIES_COUNT 100
+
+class CANIface: public AP_HAL::CANIface {
+public:
+    CANIface(int index)
+      : _self_index(index)
+      , _max_frames_in_socket_tx_queue(2)
+      , _frames_in_socket_tx_queue(0)
+    { }
+
+    ~CANIface() { }
+
+    // Initialise CAN Peripheral
+    bool init(const uint32_t bitrate) override;
+
+    // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
+    // 1 on successfully pushing a frame into FIFO
+    int16_t send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
+                 CanIOFlags flags) override;
+
+    // Receive frame from Rx Buffer, returns negative on error, 0 on nothing available, 
+    // 1 on successfully poping a frame
+    int16_t receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us,
+                    CanIOFlags& out_flags) override;
+
+    // Always return false, there's no busoff condition in Linux CAN
+    bool is_busoff() const override
+    {
+        return false;
+    }
+
+    void flush_tx() override;
+
+    void clear_rx() override;
+
+    // Get total number of Errors discovered
+    uint32_t getErrorCount() const override;
+
+    // returns true if init was successfully called
+    bool is_initialized() const override;
+
+    /******************************************
+     * Select Method                          *
+     * ****************************************/
+    // wait until selected event is available, false when timed out waiting else true
+    bool select(bool &read, bool &write,
+                const AP_HAL::CANFrame* const pending_tx,
+                uint64_t blocking_deadline) override;
+    
+    // setup event handle for waiting on events
+    bool set_event_handle(AP_HAL::BinarySemaphore *handle) override;
+
+    // fetch stats text and return the size of the same,
+    // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
+    void get_stats(ExpandingString &str) override;
+
+private:
+    void _pollWrite();
+
+    bool _pollRead();
+
+    int _write(const AP_HAL::CANFrame& frame) const;
+
+    int _read(AP_HAL::CANFrame& frame, uint64_t& ts_usec, bool& loopback) const;
+
+    void _incrementNumFramesInSocketTxQueue();
+
+    void _confirmSentFrame();
+
+    bool _wasInPendingLoopbackSet(const AP_HAL::CANFrame& frame);
+
+    bool _hasReadyTx();
+
+    bool _hasReadyRx();
+
+    void _poll(bool read, bool write);
+
+    int _openSocket(const std::string& iface_name);
+
+    void _updateDownStatusFromPollResult(const pollfd& pfd);
+
+    uint32_t _bitrate;
+
+    bool _down;
+    bool _initialized;
+
+    int _fd;
+
+    const uint8_t _self_index;
+
+    const unsigned _max_frames_in_socket_tx_queue;
+    unsigned _frames_in_socket_tx_queue;
+    uint32_t _tx_frame_counter;
+    AP_HAL::BinarySemaphore *sem_handle;
+
+    pollfd _pollfd;
+    std::map<SocketCanError, uint64_t> _errors;
+    std::priority_queue<CanTxItem> _tx_queue;
+    std::queue<CanRxItem> _rx_queue;
+    std::unordered_multiset<uint32_t> _pending_loopback_ids;
+
+    struct bus_stats : public AP_HAL::CANIface::bus_stats_t {
+        uint32_t tx_confirmed;
+        uint32_t num_downs;
+        uint32_t num_rx_poll_req;
+        uint32_t num_tx_poll_req;
+        uint32_t num_poll_waits;
+        uint32_t num_poll_tx_events;
+        uint32_t num_poll_rx_events;
+    } stats;
+
+protected:
+    bool add_to_rx_queue(const CanRxItem &rx_item) override {
+        _rx_queue.push(rx_item);
+        return true;
+    }
+
+    int8_t get_iface_num(void) const override {
+        return _self_index;
+    }
+    HAL_Semaphore sem;
+};
+
+}
+
+#endif //#if HAL_NUM_CAN_IFACES

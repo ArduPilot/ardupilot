@@ -1,0 +1,4 @@
+#Default Parameters for the CubeOrange-periph-heavy
+
+CAN_SLCAN_CPORT 1
+SERIAL6_PROTOCOL 22

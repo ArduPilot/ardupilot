@@ -1,0 +1,100 @@
+# AP_Scripting
+
+## Enabling Scripting Support in Builds
+
+Scripting is automatically enabled on all boards with more than 1MB of flash space.
+The following example enables scripting, builds the ArduPlane firmware for the Cube, and uploads it.
+
+```bash
+waf configure --board=CubeBlack
+
+waf plane
+
+waf plane --upload
+```
+
+To run SITL you can simply use the `sim_vehicle.py` script which will wrap the configuration, compilation,
+and launching of the simulation into one command for you.
+
+```bash
+Tools/autotest/sim_vehicle.py -v ArduPlane
+```
+
+Once you have a vehicle flashed with scripting you need to set the `SCR_ENABLE` parameter to 1 to enable scripting and reboot.
+
+## Adding Scripts
+
+The vehicle will automatically look for and launch any scripts that are contained in the `scripts` folder when it starts.
+On real hardware this should be inside of the `APM` folder of the SD card. In SITL this should be in the working directory (typically the main `ardupilot` directory).
+
+An example script is given below:
+
+```lua
+function update () -- periodic function that will be called
+  local current_pos = ahrs:get_location() -- fetch the current position of the vehicle
+  local home = ahrs:get_home()            -- fetch the home position of the vehicle
+  if current_pos and home then            -- check that both a vehicle location, and home location are available
+    local distance = current_pos:get_distance(home) -- calculate the distance from home in meters
+    if distance > 1000 then -- if more then 1000 meters away
+      distance = 1000;      -- clamp the distance to 1000 meters
+    end
+    SRV_Channels:set_output_pwm(96, 1000 + distance) -- set the servo assigned function 96 (scripting3) to a proportional value
+  end
+
+  return update, 1000 -- request "update" to be rerun again 1000 milliseconds (1 second) from now
+end
+
+return update, 1000   -- request "update" to be the first time 1000 milliseconds (1 second) after script is loaded
+```
+
+## Examples
+
+See the [code examples folder](https://github.com/ArduPilot/ardupilot/tree/master/libraries/AP_Scripting/examples)
+
+## MAVLink module upgrade for ArduPilot 4.8
+
+When upgrading to ArduPilot 4.8, replace `APM/scripts/modules/MAVLink` on the SD card
+with the firmware's matching `libraries/AP_Scripting/modules/MAVLink` directory.
+The internal message layout changed to support 32-bit system IDs. Older installed
+copies of `mavlink_msgs.lua` cannot decode this layout, even with system IDs below 256.
+Updating the firmware does not update the SD-card module files.
+
+## Working with bindings
+
+Edit bindings.desc and rebuild. The waf build will automatically
+re-run the code generator.
+
+The generator uses Python's standard library, with no additional packages.
+To run it directly from the repository root:
+
+```bash
+python3 libraries/AP_Scripting/generator/generator.py \
+    -i libraries/AP_Scripting/generator/description/bindings.desc \
+    -o /tmp/lua_generated_bindings -d /tmp/generated_docs.lua
+```
+
+In `generator/`, `bindings_parser.py` reads descriptions into the dataclasses in
+`model.py`. `cpp.py` and `docs.py` render that model using the files in
+`templates/`. Templates use standard `string.Template` substitutions;
+loops, type conversions, and decisions stay in Python. Waf tracks both
+the Python files and templates as inputs, and `./waf scripting_docs` also
+generates the editable Lua documentation.
+
+Run the generator regression tests with:
+
+```bash
+python3 -m unittest discover -s libraries/AP_Scripting/generator/tests -v
+```
+
+The tests cover description parsing and diagnostics, output argument handling,
+documentation types, and Python module compatibility.
+
+## Lua Source Code
+
+The Lua 5.3.6 source code is vendored in `lua/`. This is a customized
+version of the [official
+distribution](https://www.lua.org/ftp/lua-5.3.6.tar.gz). Where possible,
+differences have been marked of the code.
+
+Lua (not including modifications) is distributed under the terms of the
+MIT license.

@@ -1,0 +1,57 @@
+# hw definition file for processing by chibios_hwdef.py
+# for mPhibr rFCU board
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_rFCU
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 2
+
+PI5 LED_RED OUTPUT OPENDRAIN HIGH # red
+PI6 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # green
+PI7 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # blue
+
+define HAL_LED_ON 1
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7
+
+# UART7 is debug
+PF6 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define BOOTLOADER_DEBUG SD7
+
+# Add CS pins to ensure they are high in bootloader
+PF10 ADIS16470_CS CS
+PF3  ICM42688_SPI4_CS  CS
+PG10 MS5611_SPI4_CS CS
+PF5  FRAM_CS CS
+PF2  RM3100_CS CS
+PI4  EXT1_CS1 CS
+PI10 EXT1_CS2 CS
+PI12 ICM42688_SPI6_CS CS
+PI8  MS5611_SPI6_CS CS
+
+

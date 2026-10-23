@@ -1,0 +1,188 @@
+# Secure Boot Support
+
+To assist with vendors needing high levels of tamper resistance with
+RemoteID, you can optionally use secure boot with ArduPilot. This
+involves installing a bootloader with up to 10 public keys included
+and signing the ArduPilot vehicle firmware with one private key. The
+bootloader will refuse to boot the firmware if the signature on the
+firmware doesn't match any of the public keys in the bootloader.
+
+## Generating Keys
+
+To generate a public/private key pair, run the following command:
+
+```bash
+  python3 -m pip install pymonocypher==3.1.3.2
+  Tools/scripts/signing/generate_keys.py NAME
+```
+
+That will create two files:
+
+- NAME_private_key.dat
+- NAME_public_key.dat
+
+NAME can be any string, but would usually be your vendor name. It is
+only used for the local filenames.
+
+The generated private key should be kept in a secure location. The
+public key will be used to create a secure bootloader that will only
+accept firmwares signed with one of the public keys in the bootloader.
+
+## Building Secure Bootloader
+
+To build a secure bootloader run this command:
+
+```bash
+ Tools/scripts/build_bootloaders.py BOARDNAME --signing-key=NAME_public_key.dat
+```
+
+This will update the bootloader in Tools/bootloaders/BOARDNAME_bl.bin
+with secure boot enabled with the specified public key. Next time you
+build a firmware for this board this bootloader will be included
+in ROMFS.
+
+Note that this will include the 3 ArduPilot signing keys by default as
+well as your key. This allows the core dev team to help users who make
+mistakes during the secure boot setup process and prevents issues with
+vendors who can no longer provide firmware updates to users. If you
+have a very good reason for not including the ArduPilot signing keys
+then you can pass the option --omit-ardupilot-keys to the
+build_bootloaders.py script mentioned above.
+
+## Building Signed Firmware
+
+To build a signed firmware run this command (example is for a copter build):
+
+```bash
+ ./waf configure --board BOARDNAME --signed-fw
+ ./waf copter
+ ./Tools/scripts/signing/make_secure_fw.py build/BOARDNAME/bin/arducopter.apj NAME_private_key.dat
+```
+
+The final step signs the apj firmware with your private key.
+
+Alternatively you can set the private key in the configure step, which
+allows for build and upload in one step for faster development:
+
+```bash
+ ./waf configure --board BOARDNAME --signed-fw --private-key NAME_private_key.dat
+ ./waf copter --upload
+```
+
+You can then load that secure firmware including the secure bootloader
+as per usual with your ground station.  For example using MissionPlanner's
+"Load custom firmware" feature or Tools/scripts/uploader.py on Linux.
+
+## Flashing the Secure Bootloader
+
+There are two methods of getting the secure bootloader onto the
+board. The simplest is to follow the above steps and then follow the
+usual method of updating the bootloader, which involves sending a
+MAVLink command to ask the firmware to flash the embedded bootloader
+from ROMFS.  [Instructions for Mission Planner, QGC and MAVProxy can be found here](https://ardupilot.org/copter/docs/common-bootloader-update.html#upgrading-using-mission-planner).
+
+The second method is to put the board into DFU mode. If your hwdef.dat
+and hwdef-bl.dat include the ENABLE_DFU_BOOT options and your board is
+based on a STM32H7 then your ground station should be able to put the
+board into DFU mode. You can then flash the bootloader bin file to
+address 0x08000000 using any DFU capable client.
+
+Note that the flight controller will refuse a switch to DFU mode if it
+is running a secure bootloader already.
+
+## How to tell you are using secure boot
+
+When using a secure bootloader the USB ID presented by the bootloader
+will have a "Secure" string added.
+
+On Linux, disconnect the USB cable, enter "sudo dmesg -w" into the terminal
+and plug in the USB cable and check the terminal for a line similar to below
+
+```text
+  Product: BOARDNAME-Secure-BL-v10
+```
+
+On Windows you can look at the device properties in device manager
+when the bootloader is running and look for the "Bus reported device
+description". It will have the above "Secure" string. Note that this
+string only appears when in the bootloader. To ensure the board stays
+in the bootloader for long enough to see this string just flash a
+normal unsigned firmware. With a secure bootloader and an unsigned
+firmware the board will stay in the bootloader forever as it will be
+failing the secure boot checks.
+
+## Reverting to normal boot
+
+If you have installed secure boot on a board then to revert to normal
+boot you would need to flash a new bootloader that does not have
+secure boot enabled. To do that you should replace
+Tools/bootloaders/BOARDNAME_bl.bin with the normal bootloader for your
+board.
+
+Then using MAVProxy connect to the autopilot and execute the following commands to remove all
+public keys from the signed bootloader:
+
+```text
+  module load SecureCommand
+  securecommand set private_keyfile NAME_private_key.dat
+  securecommand getsessionkey
+```
+
+This opens a secure command session using your private_key.dat file to allow the removal of all public keys from the bootloader using these commands:
+
+```text
+  securecommand getpublickeys          will return the number of public keys...you will need this next
+  securecommand removepublickeys 0 X   where X is the number of public keys...this removes them
+```
+
+For example, if you have a standard firmware with the 3 ArduPilot
+public keys and one of your own public keys then X will be 4 in the
+above command.
+
+Re-run the 'securecommand getpublickeys' command again and check that "No public keys" is returned.
+This confirms that all keys have been removed.  By design, ArduPilot accepts all SECURE_COMMANDs when there are no public keys present.
+
+Now exit MAVProxy and build a firmware using the normal bootloader but still using the --signed-fw option:
+
+```bash
+   ./waf configure --board BOARDNAME --signed-fw
+   ./waf copter --upload   (or whatever vehicle you desire)
+```
+
+After loading the new firmware with the normal bootloader, use the [usual method of updating the bootloader](https://ardupilot.org/copter/docs/common-bootloader-update.html#upgrading-using-mission-planner).
+For example if using MAVProxy, this involves connecting and running this command:
+
+```text
+  flashbootloader
+```
+
+You may now use and run normal unsigned firmware, including the firmware just loaded.
+
+## Supported Boards
+
+Secure boot is only supported on boards with at least 32k of flash
+space for the bootloader. This includes all boards based on the
+STM32H7 and STM32F7. You can use secure boot on other older boards if
+you change the hwdef.dat and hwdef-bl.dat to add more space for the
+bootloader.
+
+## Public key update over MAVLink
+
+If you have a private key corresponding to one of the public keys in
+the bootloader on a board then you can use the MAVLink2 SECURE_COMMAND
+messages to change the public keys, or even remove all public keys to
+allow the use of unsigned firmwares.
+
+MAVProxy version 1.8.55 and later has a "securecommand" module which
+gives you commands for:
+
+- generating a session key for remote update
+- fetching the current public keys
+- setting new public keys as additional or replacement keys
+- removing all public keys
+
+It is expected that future versions of MissionPlanner will include a
+plugin with the same functionality.
+
+Using SECURE_COMMAND in combination with MAVLink forwarding you can
+hand over management of a vehicle between vendors.

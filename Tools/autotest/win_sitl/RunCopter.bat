@@ -1,0 +1,14 @@
+rem File run APM:Copter SITL
+SETLOCAL enableextensions
+@echo off
+
+rem Assumes a Cgywin install at C:\cygwin64
+if "%CYGWIN_LOCATION%" == "" (set "CYGWIN_LOCATION=C:\cygwin64")
+
+rem get current dir for Cygwin
+set pth=%CD:~2,99%
+set pth=%pth:\=/%
+set drv=%CD:~0,1%
+set "fullpath=/cygdrive/%drv%%pth%"
+
+%CYGWIN_LOCATION%\bin\bash.exe --login -i -c "cd ""%fullpath%"" && cd ../../../ArduCopter && ../Tools/autotest/sim_vehicle.py"

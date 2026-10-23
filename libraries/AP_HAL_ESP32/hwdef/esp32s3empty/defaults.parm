@@ -1,0 +1,2 @@
+SCHED_LOOP_RATE 100 # flash won't go faster :(
+SIM_RATE_HZ 100

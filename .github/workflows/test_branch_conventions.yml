@@ -1,0 +1,65 @@
+name: Test for Malformed Commits in PR Branch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check-merge-commits:
+    if: github.repository == 'ArduPilot/ardupilot'
+    runs-on: ubuntu-latest
+    container: ardupilot/ardupilot-dev-chibios:v0.2.0
+    # pull_request context values reach run: blocks through env, never through
+    # ${{ }} interpolation, which a branch name could otherwise break out of
+    env:
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      BASE_CLONE_URL: ${{ github.event.pull_request.base.repo.clone_url }}
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          submodules: 'false'
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: |
+          git remote -v
+          git remote add upstream "$BASE_CLONE_URL"
+          git fetch upstream "$BASE_REF"
+          git show "upstream/$BASE_REF"
+
+      - name: Install markdownlint-cli2
+        shell: bash
+        run: |
+          apt-get update && apt-get install -y npm
+          npm install -g markdownlint-cli2@0.4.0
+
+      - name: Check branch conventions
+        shell: bash
+        run: |
+          Tools/scripts/check_branch_conventions.py --base-branch "upstream/$BASE_REF"
+
+      - name: Update submodules
+        run: |
+          git submodule update --init --recursive
+
+      - name: Install aarch64 cross toolchain for Linux board checks
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y g++-aarch64-linux-gnu
+
+      - name: Test new boards compile
+        shell: bash
+        run: |
+          Tools/scripts/test_new_boards.py --master-branch "upstream/$BASE_REF"

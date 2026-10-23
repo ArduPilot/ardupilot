@@ -1,0 +1,1 @@
+"""Autotests tools suite"""

@@ -1,0 +1,118 @@
+#VRML_SIM R2023a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/road/protos/StraightRoadSegment.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/appearances/protos/Grass.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/tables/protos/Table.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/advertising_board/protos/AdvertisingBoard.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/obstacles/protos/OilBarrel.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/animals/protos/Dog.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/animals/protos/Rabbit.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/garden/protos/Gnome.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/factory/forklift/protos/Forklift.proto"
+EXTERNPROTO "../protos/Iris.proto"
+EXTERNPROTO "../protos/ArucoMarker.proto"
+
+WorldInfo {
+  title "Iris Ardupilot"
+  basicTimeStep 2
+  FPS 20
+}
+Viewpoint {
+  orientation 0.10264123808602478 -0.7648124131744727 -0.6360241732028804 5.867275660921915
+  position -2.488925008027789 0.29237831017431365 2.067754838508868
+  follow "Iris"
+  followSmoothness 0.01
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+Floor {
+  size 300 100
+  appearance Grass {
+  }
+}
+StraightRoadSegment {
+  translation -15 0.3 0.02
+  rotation 0 0 1 0.105
+  width 16.5
+  rightBorder FALSE
+  leftBorder FALSE
+  length 140
+}
+Rabbit {
+  translation 4.68362 1.88178 0.88
+  rotation 0 0 1 2.61799
+  name "nibbles"
+}
+Gnome {
+  translation 5.87588 0.590355 3.6788e-21
+  rotation 0 0 1 2.61799
+}
+Forklift {
+  translation 9.19827 2.56008 0.81
+  rotation 0 0 1 -2.3561953071795863
+  enablePhysics FALSE
+}
+Dog {
+  translation 5.97592 3.52 1.77636e-15
+  rotation 0 0 1 -2.6179953071795863
+  name "bentley"
+}
+OilBarrel {
+  translation 4.54625 1.79835 0.44
+}
+AdvertisingBoard {
+  translation 13.1012 17.8267 0
+  rotation 0 0 1 -1.469
+  frontTexture [
+    "../../../../../Tools/autotest/web-firmware/images/logo.png"
+  ]
+  backTexture [
+    "../../../../../Tools/autotest/web-firmware/images/logo.png"
+  ]
+  displayWidth 16.28
+  displayHeight 6
+  poleNumber 2
+  poleType "H-shape"
+  poleHeight 10
+}
+Table {
+  translation 0 0.92 0
+}
+Iris {
+  translation 0.0702495 1.45039 0.8
+  controller "ardupilot_vehicle_controller"
+  controllerArgs [
+    "--motors"
+    "m1_motor, m2_motor, m3_motor, m4_motor"
+    "--camera"
+    "camera"
+    "--camera-port"
+    "5599"
+  ]
+  extensionSlot [
+    Camera {
+      translation 0.05 0 0.05
+      rotation 0 1 0 0
+      width 640
+      height 480
+    }
+  ]
+}
+ArucoMarker {
+  translation 4.23295 1.80428 0.72
+  rotation 0 1 0 -1.5707953071795862
+  name "aruco 0"
+  size 0.2
+}
+ArucoMarker {
+  translation 4.39446 1.53182 0.44
+  rotation 0.44721372362178063 -0.7745965212991105 0.44721372362178063 1.82348
+  name "aruco 1"
+  size 0.2
+  markerId "1"
+}

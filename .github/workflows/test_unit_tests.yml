@@ -1,0 +1,184 @@
+name: test unit tests and sitl building
+
+on:
+  push:
+    branches: ['**']  # excludes tag pushes
+    paths-ignore:
+      - 'Tools/renode/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove generic tools
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/workflows/test_unit_tests.yml'  # except this one
+  pull_request:
+    paths-ignore:
+      - 'Tools/renode/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove generic tools
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/workflows/test_unit_tests.yml'  # except this one
+
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
+    runs-on: ubuntu-22.04
+    container:
+      image: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.2.0
+      options: --user 1001
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        toolchain: [
+            base,  # GCC
+            clang,
+        ]
+        config: [
+            unit-tests,
+            unit-tests-asan,
+            examples,
+            examples-asan,
+            sitl
+        ]
+        exclude:
+          # the clang images do not carry the sanitizer runtime, so clang
+          # cannot link anything built with --asan.  Drop these two once
+          # libclang-rt-<v>-dev is in ardupilot-dev-clang
+          - toolchain: clang
+            config: unit-tests-asan
+          - toolchain: clang
+            config: examples-asan
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
+      - name: test ${{matrix.config}} ${{ matrix.toolchain }}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: 'script -q -e -c "bash {0}"'
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          if [[ ${{ matrix.toolchain }} == "clang" ]]; then
+            export CC=clang
+            export CXX=clang++
+          fi
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/build_ci.sh
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
+
+      - name: Unittest extract_param_defaults
+        env:
+          PYTHONPATH: "${{ github.workspace }}/Tools/scripts:${{ github.workspace }}/modules/mavlink/pymavlink"
+        if: matrix.config == 'unit-tests'
+        run: |
+          Tools/autotest/unittest/extract_param_defaults_unittest.py
+
+      - name: Unittest annotate_params
+        env:
+          PYTHONPATH: "${{ github.workspace }}/Tools/scripts"
+        if: matrix.config == 'unit-tests'
+        run: |
+          Tools/autotest/unittest/annotate_params_unittest.py
+
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+           name: fail-${{ matrix.toolchain }}-${{matrix.config}}
+           path: /tmp/buildlogs
+           retention-days: 14

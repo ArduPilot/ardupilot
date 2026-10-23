@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+'''
+Create an apj file from a *.bin binary firmware
+
+AP_FLAKE8_CLEAN
+'''
+
+import argparse
+import base64
+import json
+import pathlib
+import zlib
+
+parser = argparse.ArgumentParser(description='make_apj')
+
+parser.add_argument('bin')
+parser.add_argument('apj')
+parser.add_argument('--board-id', type=int, default=1, help='board ID')
+
+args = parser.parse_args()
+
+img = pathlib.Path(args.bin).read_bytes()
+d = {
+    "board_id": int(args.board_id),
+    "magic": "APJFWv1",
+    "description": "Firmware for a %s" % args.bin,
+    "image": base64.b64encode(zlib.compress(img, 9)).decode('utf-8'),
+    "summary": args.bin,
+    "version": "0.1",
+    "image_size": len(img),
+    "board_revision": 0,
+    "signed_firmware": False,
+}
+
+with open(args.apj, "w") as out_file:
+    out_file.write(json.dumps(d, indent=4))

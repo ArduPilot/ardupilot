@@ -1,0 +1,13 @@
+include ../MatekL431/hwdef.inc
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+# support all proximity types
+define AP_PERIPH_PROXIMITY_ENABLED 1
+define HAL_PROXIMITY_ENABLED 1
+
+define AP_PERIPH_PRX_PORT_DEFAULT 2
+
+USE_BOOTLOADER_FROM_BOARD MatekL431

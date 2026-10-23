@@ -1,0 +1,6 @@
+# hw definition file for Matek H7A3 Wing bootloader
+
+include ../MatekH7A3/hwdef-bl.inc
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MatekH7A3_Wing

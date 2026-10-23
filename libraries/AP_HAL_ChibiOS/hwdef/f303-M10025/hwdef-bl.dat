@@ -1,0 +1,4 @@
+include ../f303-periph/hwdef-bl.inc
+
+# start as DNA
+

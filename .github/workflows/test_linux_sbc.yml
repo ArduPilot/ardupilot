@@ -1,0 +1,204 @@
+name: test Linux SBC
+
+on:
+  push:
+    branches: ['**']  # excludes tag pushes
+    paths-ignore:
+      - 'Tools/renode/**'
+      # remove non LINUX HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_SITL/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard file from Tools/scripts as not used
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/workflows/test_linux_sbc.yml'  # except this one
+
+  pull_request:
+    paths-ignore:
+      - 'Tools/renode/**'
+      # remove non LINUX HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_SITL/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/workflows/test_linux_sbc.yml'  # except this one
+
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.2.0
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        config: [
+            linux,
+            navigator,
+            navio,
+            navio2,
+            bbbmini,
+            bhat,
+            bebop,
+            erlebrain2,
+            pxfmini,
+            pxf,
+            canzero,
+        ]
+        toolchain: [
+            armhf,
+        ]
+        include:
+          - config: navigator
+            toolchain: armhf-musl
+          - config: linux
+            toolchain: base # GCC
+          - config: navigator64
+            toolchain: aarch64
+          - config: t3-gem-o1
+            toolchain: aarch64
+        exclude:
+          - config: navigator
+            toolchain: armhf
+          - config: linux
+            toolchain: armhf
+
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: ${{ matrix.config }}-${{ matrix.toolchain }}
+      - name: test ${{matrix.config}} ${{ matrix.toolchain }}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          if [[ ${{ matrix.toolchain }} == "clang" ]]; then
+            export CC=clang
+            export CXX=clang++
+          fi
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/build_ci.sh
+          ccache -s
+          ccache -z
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.config }}-${{ matrix.toolchain }}

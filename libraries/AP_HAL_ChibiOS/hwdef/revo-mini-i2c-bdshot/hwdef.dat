@@ -1,0 +1,12 @@
+# Bi-directional dshot version of revo-mini-i2c
+
+include ../revo-mini-i2c/hwdef.dat
+
+SERIAL_ORDER OTG1 USART1 USART3 USART6
+
+undef PB0 PB1 PA3 PA2 PA1 PA0
+
+PB0 TIM3_CH3  TIM3 PWM(1) GPIO(50)
+PB1 TIM3_CH4  TIM3 PWM(2) GPIO(51) BIDIR
+PA3 TIM2_CH4  TIM2 PWM(3) GPIO(52) BIDIR
+PA2 TIM2_CH3  TIM2 PWM(4) GPIO(53)

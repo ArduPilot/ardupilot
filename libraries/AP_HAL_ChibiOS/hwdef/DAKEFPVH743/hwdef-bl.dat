@@ -1,0 +1,9 @@
+
+# hw definition file for processing by chibios_hwdef.py
+# for DAKEFPVH743 hardware.
+# thanks to betaflight for pin information
+
+include ../DAKEFPVH743Pro/hwdef-bl.dat
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_DAKEFPVH743

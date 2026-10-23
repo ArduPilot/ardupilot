@@ -1,0 +1,31 @@
+name: pre-commit
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-slim
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
+      with:
+        python-version: 3.x
+    - uses: pre-commit/action@v3.0.1
+    - run: python3 -m pip install --upgrade pip
+    - run: python3 -m pip install pytest
+    - name: Check out Waf for the build-system tests
+      run: git submodule update --init --depth 1 modules/waf
+    - name: Install compiler and linker for the symbol tests
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes build-essential binutils
+    - run: PYTHONPATH="." pytest tests/ Tools/ardupilotwaf/tests/

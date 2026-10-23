@@ -1,0 +1,4 @@
+# setup the temperature compensation
+BRD_HEAT_TARG 45
+BRD_HEAT_P 50
+BRD_HEAT_I 0.07

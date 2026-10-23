@@ -1,0 +1,10 @@
+# Bi-directional dshot version of KakuteF7
+
+include ../KakuteF7/hwdef.dat
+
+undef PB1 PE11 PB0 PC9
+
+PB1  TIM3_CH4 TIM3 PWM(1) GPIO(50)          # M1
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)  BIDIR   # M4
+PB0  TIM3_CH3 TIM3 PWM(4) GPIO(53)  BIDIR   # M3
+

@@ -1,0 +1,18 @@
+# Parameters to allow use of indoor loiter with AP_Beacon library and Pozyx running IndoorLoiter2.ino and plugged into Telem2
+#
+# disable GPS arming check
+ARMING_SKIPCHK,8
+# Set beacon origin to be approx 1.2m above ground level
+BCN_ALT,585.3
+# the beacon origin must match the flight simulator origin - set to default SITL location (Australia)
+BCN_LATITUDE,-35.363261
+BCN_LONGITUDE,149.165230
+# tell the beacon library we are using simulated beacons
+BCN_TYPE,10
+# tell the autopilot to ignore the GPS
+GPS1_TYPE,0
+# log data before arming to asist with diasnostics
+LOG_DISARMED,1
+# Make sure the normal EKF aiding mode is selected (beacon fusion not tested in other modes)
+EK2_GPS_TYPE,0
+EK3_GPS_TYPE,0

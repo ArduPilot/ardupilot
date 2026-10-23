@@ -1,0 +1,37 @@
+# hw definition file for processing by chibios_pins.py
+# for minimal F405 bootloader
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKF405
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# LEDs
+PB9 LED_BOOTLOADER OUTPUT LOW
+PA14 LED_ACTIVITY  OUTPUT LOW
+define HAL_LED_ON 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 64
+
+
+# order of UARTs
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# Add CS pins to ensure they are high in bootloader
+PB10 MAX7456_CS CS
+PC1 SDCARD_CS CS
+PC0 M25P16_CS CS
+PC2 MPU6000_CS CS

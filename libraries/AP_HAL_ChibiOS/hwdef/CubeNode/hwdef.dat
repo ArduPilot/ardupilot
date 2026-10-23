@@ -1,0 +1,53 @@
+# CubeNode AP_Periph hwdef - peripheral firmware for the CubeNode module
+# Shared CubeNode module pins live in hwdef.inc
+
+include hwdef.inc
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUBENODE
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# the location where the bootloader will put the firmware
+# the H757 has 128k sectors, assign 2 sectors for BL
+FLASH_BOOTLOADER_LOAD_KB 256
+FLASH_RESERVE_START_KB 256
+
+# SERIAL
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+SERIAL_ORDER OTG1 UART7
+
+# override following defines as needed
+define HAL_USE_ADC FALSE
+STORAGE_FLASH_PAGE 14
+define HAL_STORAGE_SIZE 32768
+
+define AP_PERIPH_NETWORKING_ENABLED 1
+
+IMU Invensensev3 SPI:icm45686 ROTATION_NONE
+
+define AP_PERIPH_IMU_ENABLED 1
+
+# Periph GCS
+define HAL_GCS_ENABLED 1
+
+#################################
+# AP_Periph - configurations specific to this App
+#################################
+
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+define AP_NETWORKING_MAX_INSTANCES 4
+
+define AP_SCRIPTING_ENABLED 1
+define AP_FILESYSTEM_ROMFS_ENABLED 1
+
+# listen for reboot command from uploader.py script
+# undefine to disable. Use -1 to allow on all ports, otherwise serial number index defined in SERIAL_ORDER starting at 0
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+#################################
+
+define HAL_MONITOR_THREAD_ENABLED 1

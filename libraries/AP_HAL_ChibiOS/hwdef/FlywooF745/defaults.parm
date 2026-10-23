@@ -1,0 +1,12 @@
+# setup the four built-in Neopixel LEDs on chan 9
+SERVO9_FUNCTION 120
+NTF_LED_LEN 4
+
+# setup SERIAL3 for RCIN
+SERIAL3_PROTOCOL 23
+
+# disable GPS on Serial 4
+SERIAL4_PROTOCOL -1
+
+# setup SERIAL6 for GPS
+SERIAL6_PROTOCOL 5

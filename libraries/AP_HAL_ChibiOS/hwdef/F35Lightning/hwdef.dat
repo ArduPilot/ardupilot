@@ -1,0 +1,164 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Furious FPV F35 Lightning type hardware 
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_F35LIGHTNING
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+# flash size
+FLASH_SIZE_KB 1024
+FLASH_RESERVE_START_KB 64
+
+# console
+#STDOUT_SERIAL SD1
+#STDOUT_BAUDRATE 57600
+
+# order of I2C buses
+I2C_ORDER I2C1
+
+# order of UARTs (UART3RX used for RCInput, UART4RX and USART6RX not pinned out)
+SERIAL_ORDER OTG1 USART1 UART5 USART2 EMPTY UART4 USART6
+
+# USB sensing
+#PA9 VBUS INPUT OPENDRAIN
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# UART1 (telem1)
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+
+# UART2 (GPS)
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# UART3RX (RCInput)
+PB11 TIM2_CH4 TIM2 RCININT PULLDOWN LOW
+PA8 SBUS_INVERT_RX OUTPUT
+
+# UART4 (user), only TX pinned out
+PA0 UART4_TX UART4
+PC11 UART4_RX UART4
+
+# UART5 (telem2)
+PC12 UART5_TX UART5
+PD2 UART5_RX UART5
+
+# USART6 (user), only TX pinned out as "SPO" pin with hw inverter
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+
+# ADCs
+PC1 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC2 BATT_CURRENT_SENS ADC1 SCALE(1)
+PC3 RSSI_IN ADC1 SCALE(2)
+define BOARD_RSSI_ANA_PIN 13
+# also could be used as analog airspeed input
+#PC3 PRESSURE_SENS ADC1 SCALE(2)
+
+# VDD sense pin
+#PA4 VDD_5V_SENS ADC1 SCALE(2)
+
+# LED
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+PC10 LED OUTPUT HIGH GPIO(57)
+define AP_NOTIFY_GPIO_LED_1_PIN 57
+
+# SPI
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+PB3 SPI3_SCK SPI3
+PB4 SPI3_MISO SPI3
+PB5 SPI3_MOSI SPI3
+
+# CS pins
+PC0 MPU9250_CS CS
+PA4 OSD_CS CS
+PC5 BMP280_CS CS
+#PB12 SDCARD_CS CS
+
+PC4 MPU9250_DRDY INPUT
+
+# These are the pins for SWD debugging with a STlinkv2 or black-magic probe.
+#PA13 JTMS-SWDIO SWD
+#PA14 JTCK-SWCLK SWD
+
+# passive buzzer disabled, optional timers 2 and 5 used for RCinput and STM32
+# PA1 TIM2_CH2 TIM2 GPIO(77) ALARM
+
+# use active buzzer instead
+PA1 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+
+
+
+# I2C
+PB6 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+# PWM pins S1-S6
+PC8 TIM8_CH3 TIM8 PWM(1) GPIO(50)
+PC9 TIM8_CH4 TIM8 PWM(2) GPIO(51)
+PB8 TIM4_CH3 TIM4 PWM(3) GPIO(52)
+PB9 TIM4_CH4 TIM4 PWM(4) GPIO(53)
+PB0 TIM3_CH3 TIM3 PWM(5) GPIO(54)
+PB1 TIM3_CH4 TIM3 PWM(6) GPIO(55)
+
+# SPI device table, note that the 9250 is not reliable at 8MHz on this board
+SPIDEV mpu9250    SPI3 DEVID1 MPU9250_CS MODE3 4*MHZ 4*MHZ
+SPIDEV bmp280     SPI3 DEVID2 BMP280_CS MODE3 1*MHZ 8*MHZ
+SPIDEV osd        SPI1 DEVID1 OSD_CS MODE0 10*MHZ 10*MHZ
+#SPIDEV sdcard     SPI2 DEVID1 SDCARD_CS MODE0 400*KHZ 25*MHZ
+
+# one IMU
+IMU Invensense SPI:mpu9250 ROTATION_YAW_90
+
+# one baro
+BARO BMP280 SPI:bmp280
+
+# probe external compasses plus one in 9250
+COMPASS AK8963:probe_mpu9250 0 ROTATION_YAW_90
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
+
+# no onboard SD, filesystem support disabled until flash logging implemented
+#define HAL_OS_FATFS_IO 1
+
+# OSD support
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# available storage
+define HAL_STORAGE_SIZE 15360
+STORAGE_FLASH_PAGE 1
+
+# defaults for battery monitoring
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 11
+define HAL_BATT_CURR_PIN 12
+define HAL_BATT_VOLT_SCALE 11
+define HAL_BATT_CURR_SCALE 25
+
+# enable IMU fast sampling
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# no space for bootloader in firmware image:
+include ../include/minimize_fpv_osd.inc
+include ../include/no_bootloader_DFU.inc

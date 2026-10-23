@@ -1,0 +1,50 @@
+# hw definition file for processing by chibios_pins.py
+# for Holybro KakuteF4 v2 Mini hardware.
+@ thanks to betaflight for pin information
+
+include ../KakuteF4/hwdef.dat
+undef APJ_BOARD_ID
+undef PB0 PB1 PA3 PA2 PB11 PB10 PD2 PC8
+undef SERIAL_ORDER
+undef CH_CFG_ST_RESOLUTION
+undef STM32_ST_USE_TIMER
+undef DEFAULT_SERIAL2_PROTOCOL
+
+APJ_BOARD_ID AP_HW_KAKUTEF4_MINI
+
+# redefine the battery multipliers
+undef HAL_BATT_VOLT_SCALE
+undef HAL_BATT_CURR_SCALE
+define HAL_BATT_VOLT_SCALE 10.9
+define HAL_BATT_CURR_SCALE 28.5
+
+# use natural UART order to align with docs
+SERIAL_ORDER OTG1 USART1 EMPTY USART3 UART4 UART5 USART6
+
+# RC input defaults to UART to allow for bi-dir dshot
+# also frees up 32-bit TIM2 for system timer
+PB11 USART3_RX USART3
+PB10 USART3_TX USART3
+
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
+define DEFAULT_SERIAL5_BAUD 115
+
+# UART5 (ESC telemetry sensor), SERIAL5, NODMA for bi-dir dshot
+PD2 UART5_RX UART5 NODMA
+
+# Motors, bi-directional dshot capable
+PB0 TIM3_CH3 TIM3 PWM(1) GPIO(50) BIDIR
+PB1 TIM3_CH4 TIM3 PWM(2) GPIO(51)
+PA3 TIM5_CH4 TIM5 PWM(3) GPIO(52) BIDIR
+PA2 TIM5_CH3 TIM5 PWM(4) GPIO(53)
+PC8 TIM8_CH3 TIM8 PWM(5) GPIO(56) # LED strip
+
+DMA_PRIORITY ADC* USART3* TIM3* TIM5* SPI3* SPI1*
+DMA_NOSHARE SPI3_RX
+
+# save some flash
+define HAL_PARACHUTE_ENABLED 0
+
+undef DEFAULT_NTF_LED_TYPES
+define DEFAULT_NTF_LED_TYPES 257

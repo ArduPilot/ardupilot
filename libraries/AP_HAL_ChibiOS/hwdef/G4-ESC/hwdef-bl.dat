@@ -1,0 +1,85 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32G474 STM32G474xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 26
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FlywooF745
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency, no crystal for now
+OSCILLATOR_HZ 24000000
+
+# assume 256k flash part
+FLASH_SIZE_KB 256
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER USART1
+
+# a fault LED
+PA1 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 1
+
+# USART1
+PA9  USART1_TX USART1 SPEED_HIGH NODMA
+PA10 USART1_RX USART1 SPEED_HIGH NODMA
+
+define HAL_USE_SERIAL TRUE
+
+define STM32_SERIAL_USE_USART1 TRUE
+
+define SERIAL_BUFFERS_SIZE 32
+define HAL_USE_EMPTY_IO TRUE
+define PORT_INT_REQUIRED_STACK 64
+
+
+define DMA_RESERVE_SIZE 0
+
+
+MAIN_STACK 0x800
+PROCESS_STACK 0x800
+
+# enable CAN support
+PB5 CAN2_RX CAN2
+PB6 CAN2_TX CAN2
+PB0 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PA7 GPIO_CAN2_SHUTDOWN OUTPUT PUSHPULL SPEED_LOW LOW
+
+# 2nd CAN interface
+PB3 CAN3_RX CAN3
+PB4 CAN3_TX CAN3
+PC4 GPIO_CAN3_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PA6 GPIO_CAN3_SHUTDOWN OUTPUT PUSHPULL SPEED_LOW LOW
+
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+
+CAN_ORDER 2 1
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# define BOOTLOADER_DEBUG SD1
+
+# use a small bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000
+
+
+
+# Add CS pins to ensure they are high in bootloader
+PB12 IMU_CS CS

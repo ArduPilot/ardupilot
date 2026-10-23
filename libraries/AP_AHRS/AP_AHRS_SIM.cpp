@@ -1,0 +1,285 @@
+#include "AP_AHRS_SIM.h"
+
+#if AP_AHRS_SIM_ENABLED
+
+#include "AP_AHRS.h"
+
+bool AP_AHRS_SIM::get_location(Location &loc) const
+{
+    if (_sitl == nullptr) {
+        return false;
+    }
+
+    const struct SITL::sitl_fdm &fdm = _sitl->state;
+    loc = {};
+    loc.lat = fdm.latitude * 1e7;
+    loc.lng = fdm.longitude * 1e7;
+    loc.alt = fdm.altitude*100;
+
+    return true;
+}
+
+bool AP_AHRS_SIM::synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type)
+{
+    type = AirspeedEstimateType::SIM;
+    if (_sitl == nullptr) {
+        return false;
+    }
+
+    airspeed_ret = _sitl->state.airspeed;
+
+    return true;
+}
+
+bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
+{
+    memset(&status, 0, sizeof(status));
+    status.flags.attitude = true;
+    status.flags.horiz_vel = true;
+    status.flags.vert_vel = true;
+    status.flags.horiz_pos_rel = true;
+    status.flags.horiz_pos_abs = true;
+    status.flags.vert_pos = true;
+    status.flags.pred_horiz_pos_rel = true;
+    status.flags.pred_horiz_pos_abs = true;
+    status.flags.initalized = true;
+    status.flags.using_gps = true;
+    status.flags.terrain_alt = true;
+
+    return true;
+}
+
+bool AP_AHRS_SIM::get_origin(Location &ret) const
+{
+    if (_sitl == nullptr) {
+        return false;
+    }
+
+    ret = _sitl->state.home;
+
+    return true;
+}
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+/*
+  return the ideal offsets for a compass instance, in body frame,
+  milligauss.  The simulation subtracts SIM_MAGn_OFS from the field it
+  reports and Compass adds COMPASS_OFS back when correcting, so the
+  offset the compass wants is SIM_MAGn_OFS put through the same
+  transformation the simulated sensor applies after subtracting it.
+  SITL::SIM::get_mag_offsets_for_devid() does that, so the maths lives in one
+  place rather than being duplicated here.
+ */
+bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
+{
+    if (_sitl == nullptr) {
+        return false;
+    }
+    // the Compass may rotate the reading before adding COMPASS_OFS, and
+    // the simulated offset is in the body frame; only offer it for an
+    // instance whose field arrives unrotated.  The rotation which
+    // matters is this instance's, not the board's - an external compass
+    // carries its own COMPASS_ORIENT:
+    if (!AP::compass().instance_is_unrotated(mag_idx)) {
+        return false;
+    }
+
+    // mag_idx is a priority index; the simulated sensors are indexed
+    // in detection order, and COMPASS_PRIO*_ID can reorder one
+    // against the other.  Go via the device id:
+    return _sitl->get_mag_offsets_for_devid(AP::compass().get_dev_id(mag_idx), magOffsets);
+}
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+
+// return the innovations for the specified instance
+// An out of range instance (eg -1) returns data for the primary instance
+bool AP_AHRS_SIM::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+{
+    velInnov.zero();
+    posInnov.zero();
+    magInnov.zero();
+    tasInnov = 0.0f;
+    yawInnov = 0.0f;
+
+    return true;
+}
+
+void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
+{
+#if AP_AIRSPEED_ENABLED
+    // SIM doesn't really use an airspeed sensor... but whatever.
+    // This must be filled in even when we have no SITL pointer
+    // yet, so do it before the early return below:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
+    if (_sitl == nullptr) {
+        _sitl = AP::sitl();
+        if (_sitl == nullptr) {
+            return;
+        }
+    }
+
+    // always initialised once sitl pointer is good
+    results.initialised = true;
+
+    // always healthy
+    results.healthy = true;
+
+    // not using a specific sensor:
+    results.primary_gyro = AP::ins().get_first_usable_gyro();
+    results.primary_accel = AP::ins().get_first_usable_accel();
+
+    const struct SITL::sitl_fdm &fdm = _sitl->state;
+    const AP_InertialSensor &_ins = AP::ins();
+
+    results.attitude_valid = true;
+
+    // populate vehicle body attitude:
+    results.quaternion = fdm.quaternion;
+    results.quaternion.rotate(-AP::ahrs().get_trim());
+
+    // Apply offsets
+    Quaternion offsets;
+    offsets.from_euler(Vector3f{_sitl->sim_ahrs_offset.roll, _sitl->sim_ahrs_offset.pitch, _sitl->sim_ahrs_offset.yaw} * radians(1));
+    results.quaternion *= offsets;
+
+    // update derived attitude values:
+    results.quaternion.rotation_matrix(results.dcm_matrix);
+    results.quaternion.to_euler(results.roll_rad, results.pitch_rad, results.yaw_rad);
+
+    results.gyro_estimate = _ins.get_gyro();
+    results.gyro_drift.zero();
+
+    /*
+     * acceleration estimates
+     */
+    // SIM exactly estimates accel bias:
+    results.accel_bias = AP::sitl()->accel_bias[results.primary_accel].get();
+
+    const Vector3f &accel = _ins.get_accel();
+    results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
+
+    results.velocity_NED = Vector3f(fdm.speedN, fdm.speedE, fdm.speedD);
+    results.velocity_NED_valid = true;
+
+    // ground velocity estimate in meters/second, in North/East order
+    results.velocity_NE = results.velocity_NED.xy();
+
+    // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
+    results.vert_pos_rate_D_valid = true;
+    results.vert_pos_rate_D = _sitl->state.speedD;
+
+    /*
+     * position estimates
+     */
+    results.location_valid = get_location(results.location);
+
+    // origin-relative functions
+    // results.provides_common_origin = false;
+
+    // origin-relative position:
+    {
+        Location orgn;
+        if (get_origin(orgn)) {
+            results.position_D = -(fdm.altitude - orgn.alt*0.01f);
+            results.position_D_valid = true;
+
+            if (results.location_valid) {
+                results.position_NE = orgn.get_distance_NE_postype(results.location);
+                results.position_NE_valid = true;
+            }
+        }
+    }
+
+    results.hagl_valid = true;
+    results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
+
+    /*
+     * air data estimates
+     */
+    results.wind = _sitl->state.wind_ef;
+    results.wind_valid = true;
+
+    /*
+     * Sensor-related information
+     */
+    // true if the estimator will use GPS data in creating its
+    // estimate when the data is good:
+    results.configured_to_use_gps = true;
+    // true if GPS is configured as the horizontal position source
+    // for this estimator.  Used to decide whether GPS will set
+    // the navigation origin:
+    results.configured_to_use_gps_for_pos_XY = true;
+
+    // are we consuming yaw from an external (e.g. vision-based) source?
+    // results.using_extnav_for_yaw = false;
+
+    // are we consuming yaw from a source which is *not* a compass
+    // (e.g. the GSF)
+    // results.using_noncompass_for_yaw = false;
+
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+    // estimators can provide their predicted magnetic fields:
+    // ... but SIM does not (and probably should!):
+    // results.mag_field_NED = {};
+    // results.mag_field_NED_valid = false;
+    // results.mag_field_corrections = {};
+    // results.mag_field_corrections_valid = false;
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
+
+    /*
+     * filter status and estimates quality values:
+     */
+    results.filter_status_valid = get_filter_status(results.filter_status);
+
+    // provides the innovations normalised between 0 and 1:
+    // velVar = 0;
+    // posVar = 0;
+    // hgtVar = 0;
+    // magVar.zero();
+    // tasVar = 0;
+    results.variances_valid = true;
+
+    // terrain_alt_variance = 0;
+    results.terrain_alt_variance_valid = true;
+
+    // very loose limits on velocities and no gain scaling:
+    results.control_ground_speed_limit_ms = 400.0;
+    results.control_gain_scaler_XY = 1;
+    results.control_gain_scaler_Z = 1;
+
+    // control height is never limited:
+    // results.control_height_limit_valid = false;
+    // results.control_height_limit_m = 0;
+
+#if HAL_NAVEKF3_AVAILABLE
+    if (_sitl->odom_enable) {
+        // use SITL states to write body frame odometry data at 20Hz
+        uint32_t timeStamp_ms = AP_HAL::millis();
+        if (timeStamp_ms - _last_body_odm_update_ms > 50) {
+            const float quality = 100.0f;
+            const Vector3f posOffset(0.0f, 0.0f, 0.0f);
+            const float delTime = 0.001f * (timeStamp_ms - _last_body_odm_update_ms);
+            _last_body_odm_update_ms = timeStamp_ms;
+            timeStamp_ms -= (timeStamp_ms - _last_body_odm_update_ms)/2; // correct for first order hold average delay
+            Vector3f delAng = _ins.get_gyro();
+
+            delAng *= delTime;
+            // rotate earth velocity into body frame and calculate delta position
+            Matrix3f Tbn;
+            Tbn.from_euler(radians(fdm.rollDeg),radians(fdm.pitchDeg),radians(fdm.yawDeg));
+            const Vector3f earth_vel(fdm.speedN,fdm.speedE,fdm.speedD);
+            const Vector3f delPos = Tbn.transposed() * (earth_vel * delTime);
+            // write to EKF
+            EKF3.writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, 0, posOffset);
+        }
+    }
+#endif // HAL_NAVEKF3_AVAILABLE
+
+    // publish this backend's airspeed estimate from the results above:
+    fill_airspeed_estimate(results);
+}
+
+#endif // AP_AHRS_SIM_ENABLED

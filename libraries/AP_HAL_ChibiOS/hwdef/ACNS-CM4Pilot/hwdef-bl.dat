@@ -1,0 +1,42 @@
+# hw definition file for processing by chibios_pins.py
+# for CM4pilot bootloader
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_ACNS_CM4PILOT
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+FLASH_SIZE_KB 1024
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 64
+
+# order of UARTs
+SERIAL_ORDER OTG1 USART1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+
+#PC13 VBUS INPUT OPENDRAIN
+
+PC14 LED_BOOTLOADER OUTPUT LOW GPIO(0)
+PA13 LED_ACTIVITY OUTPUT LOW GPIO(1) # optional
+define HAL_LED_ON 1
+
+# Add CS pins to ensure they are high in bootloader
+PA4 BMI088_A_CS CS
+PC3 BMI088_G_CS CS
+PB12 MAG_CS CS
+PD2 SDCARD_CS CS
+PA14 FLASH_CS CS
+PC15 ESPI_CS CS

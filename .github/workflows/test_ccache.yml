@@ -1,0 +1,153 @@
+name: test ccache
+
+on:
+  push:
+    branches: ['**']  # excludes tag pushes
+    paths-ignore:
+      - 'Tools/renode/**'
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non chibios HAL
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_SITL/**'
+      # remove non stm directories
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/workflows/test_ccache.yml'  # except this one
+
+  pull_request:
+    paths-ignore:
+      - 'Tools/renode/**'
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non chibios HAL
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_SITL/**'
+      # remove non stm directories
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/workflows/test_ccache.yml'  # except this one
+
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.2.0
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        toolchain: [
+            chibios,
+        ]
+        gcc: [10]
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+      - name: ccache test
+        shell: bash
+        run: |
+          PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-${{matrix.gcc}}/bin:$PATH"
+          Tools/scripts/build_tests/test_ccache.py --boards MatekF405-bdshot,MatekF405-TE-bdshot --min-cache-pct=75
+          Tools/scripts/build_tests/test_ccache.py --boards Durandal-bdshot,Pixhawk6X --min-cache-pct=60

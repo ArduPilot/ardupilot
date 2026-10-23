@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+
+# AP_FLAKE8_CLEAN
+"""Build generated bindings from bindings.desc for AP_Scripting."""
+
+
+def configure(cfg):
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_Scripting'] = ['lua_generated_bindings.cpp']
+
+
+def generate_bindings(task):
+    command = list(task.env.PYTHON) + [
+        task.generator.binding_generator.abspath(),
+        '-i', task.inputs[0].abspath(),
+        '-o', task.outputs[0].abspath()[:-4],
+    ]
+    if len(task.outputs) == 3:
+        command += ['-d', task.outputs[2].abspath()]
+    return task.exec_command(command)
+
+
+def build(bld):
+    generator = bld.srcnode.make_node('libraries/AP_Scripting/generator')
+    bindings = generator.make_node('description/bindings.desc')
+    targets = [
+        bld.bldnode.find_or_declare('libraries/AP_Scripting/lua_generated_bindings.cpp'),
+        bld.bldnode.find_or_declare('libraries/AP_Scripting/lua_generated_bindings.h'),
+    ]
+    if bld.options.scripting_docs:
+        targets.append(bld.srcnode.make_node('libraries/AP_Scripting/docs/docs.lua'))
+
+    bld(
+        name='scripting_bindings',
+        source=[bindings] + generator.ant_glob('*.py templates/*.tmpl'),
+        target=targets,
+        rule=generate_bindings,
+        cls_str=lambda task: 'AP_Scripting Lua bindings',
+        binding_generator=generator.make_node('generator.py'),
+        vars=['PYTHON'],
+        group='dynamic_sources',
+    )

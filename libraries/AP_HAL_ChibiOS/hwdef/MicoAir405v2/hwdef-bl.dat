@@ -1,0 +1,41 @@
+# hw definition file for processing by chibios_pins.py
+# for the MicoAir405v2 hardware
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MicoAir405v2
+
+# crystal frequency & PPL, working at 168M
+OSCILLATOR_HZ 8000000
+STM32_PLLM_VALUE 8
+
+# chip flash size & bootloader & firmware
+FLASH_SIZE_KB 1024
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 48
+
+# LEDs
+PA8 LED_BOOTLOADER OUTPUT LOW
+PC5 LED_ACTIVITY  OUTPUT LOW
+define HAL_LED_ON 0
+
+# order of UARTs and USB
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+
+
+#CS pin
+PB12 AT7456E_CS CS
+PA4  SPL06_CS   CS
+PC13 ACCEL_CS   CS
+PC14 GYRO_CS    CS
+PC9  SDCARD_CS  CS

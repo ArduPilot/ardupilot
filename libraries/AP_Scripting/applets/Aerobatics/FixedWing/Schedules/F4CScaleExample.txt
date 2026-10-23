@@ -1,0 +1,182 @@
+#   trajectory tracking aerobatic control
+#   See README.md for usage
+#   Written by Matthew Hampsey, Andy Palmer and Andrew Tridgell, with controller
+#   assistance from Paul Riseborough, testing by Henry Wurzburg
+
+# To use this schedule put the file on your microSD in the root directory 
+# (not the APM directory) with name trick91.txt The schedule can then be 
+# used in auto missions or in TRIKn_ID commands for tricks on a switch
+
+# This schedule is set up to be flown Left to Right. The schedule starts downwind - so 
+# the mission should be set up with WP's lined up on the flight line (150m out from the 
+# pilot), and the mission should be triggered when the plane gets to the center marker 
+# heading RIGHT to LEFT. Schedule direction is reversed with aerom_scale = -1 (and 
+# remember to reverse the mission WP's as well). Note the required height is greater 
+# than 400 feet - so only fly at an airfield where there is a 1500 foot clearance
+
+# This is an example of a F4C Scale schedule. Some manouvers are flown over the center
+# line of the runway. Please understand the behaviour by flying in SITL before flying this
+# schedule with a real aircraft! Your aircraft requires adequate performance to complete 
+# the schedule
+
+name: F4CScaleExampleSchedule
+
+function half_climbing_circle(radius, height, bank_angle, arg4)
+   return make_paths("half_climbing_circle", {
+         { path_horizontal_arc(radius, 180, height), roll_angle_entry_exit(bank_angle) },
+   })
+end
+
+function scale_figure_eight(r, bank_angle, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("scale_figure_eight", {
+         { path_straight(rabs),             roll_angle(0) },
+         { path_horizontal_arc(r,  90),     roll_angle_entry_exit(bank_angle) },
+         { path_horizontal_arc(-r, 360),    roll_angle_entry_exit(-bank_angle) },
+         { path_horizontal_arc(r,  270),    roll_angle_entry_exit(bank_angle) },
+         { path_straight(3*rabs),           roll_angle(0) },
+   })
+end
+
+function immelmann_turn(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("immelmann_turn", {
+         { path_vertical_arc(r, 180),      roll_angle(0) },
+         { path_straight(rabs/2),          roll_angle(180) },
+   })
+end
+
+function climbing_circle(radius, height, bank_angle, arg4)
+   return make_paths("climbing_circle", {
+         { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
+   })
+end
+
+function upline_20(r, height_gain, arg3, arg4)
+   local h = (height_gain - 2*r*(1.0-math.cos(math.rad(20))))/math.sin(math.rad(20))
+   assert(h >= 0)
+   return make_paths("upline_45", {
+         { path_vertical_arc(r, 20),  roll_angle(0) },
+         { path_straight(h),          roll_angle(0) },
+         { path_vertical_arc(-r, 20), roll_angle(0) },
+   })
+end
+
+function loop(radius, bank_angle, num_loops, arg4)
+   if not num_loops or num_loops <= 0 then
+      num_loops = 1
+   end
+   return make_paths("loop", {
+         { path_vertical_arc(radius, 360*num_loops), roll_angle_entry_exit(bank_angle) },
+   })
+end
+
+function half_reverse_cuban_eight(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("half_reverse_cuban_eight", {
+         { path_vertical_arc(r,  45),   roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(180) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_vertical_arc(-r, 225),  roll_angle(0) },
+   })
+end
+
+function split_s(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return make_paths("split_s", {
+         { path_straight(rabs/2),                roll_angle(180) },
+         { path_vertical_arc(-r, 180),           roll_angle(0) },
+   })
+end
+
+function derry_turn(radius, bank_angle, roll_dist, arg4)
+   local direction = sgn(radius)
+   local abs_bank = math.abs(bank_angle)
+   local bank2 = 360.0 - abs_bank*2
+   return make_paths("derry_turn", {
+            { path_horizontal_arc(radius,  90),      roll_angle_entry(direction*abs_bank) },
+            { path_straight(roll_dist),              roll_angle(bank2) },
+            { path_horizontal_arc(-radius, 90),      roll_angle_exit(direction*abs_bank) },
+      })
+end
+
+function barrel_roll(radius, length, num_spirals, arg4)
+   local gamma_deg = math.deg(math.atan((length/num_spirals)/(2*math.pi*radius)))
+   local speed = target_groundspeed()
+   local bank = math.deg(math.atan((speed*speed) / (radius * GRAVITY_MSS)))
+   local radius2 = radius/(1.0 - math.cos(math.rad(90-gamma_deg)))
+
+   return make_paths("barrel_roll", {
+         { path_horizontal_arc(-radius2, 90-gamma_deg, 0), roll_angle_entry_exit(-bank) },
+         { path_cylinder(radius, length, num_spirals),    roll_angle(0) },
+         { path_horizontal_arc(radius2, 90-gamma_deg, 0),  roll_angle_entry_exit(bank) },
+   })
+end
+
+straight_roll 20 0
+side_step 15 70
+straight_roll 200
+half_climbing_circle -65 0 -50
+straight_roll 10 0
+
+align_center
+message: ScaleFigureEight
+scale_figure_eight -140 -35
+
+straight_roll 20 0
+immelmann_turn 90
+
+align_center
+message: Descending360
+climbing_circle 180 -225 40
+
+straight_roll 40 0
+upline_20 100 45
+straight_roll 20 0
+half_climbing_circle 65 0 50
+
+align_center
+message: Loop       
+loop 80 0 1
+
+straight_align -40
+half_reverse_cuban_eight 80
+
+align_center
+message: ImmelmannTurn
+immelmann_turn 80
+
+straight_align -140 
+split_s 80
+
+align_center
+message: HalfCubanEight
+half_cuban_eight 80
+   
+straight_align -180
+half_climbing_circle 65 0 50
+
+align_center
+message: DerryTurn
+derry_turn 140 60 30
+
+straight_roll 80 0
+half_climbing_circle -140 0 -50
+
+align_center
+message: GearDemo
+climbing_circle -140 0 -40
+
+straight_roll 290 0
+half_climbing_circle -105 0 -45
+
+align_center
+message: BarrelRoll
+barrel_roll 80 260 1
+
+straight_roll 5 0
+half_cuban_eight 80
+straight_roll 60 0
+
+

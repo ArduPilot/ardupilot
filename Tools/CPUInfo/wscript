@@ -1,0 +1,7 @@
+# encoding: utf-8
+
+def build(bld):
+    bld.ap_program(
+        use='ap',
+        program_groups=['tool'],
+    )

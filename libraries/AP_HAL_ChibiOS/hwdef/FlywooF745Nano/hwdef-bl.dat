@@ -1,0 +1,3 @@
+include ../FlywooF745/hwdef-bl.dat
+
+APJ_BOARD_ID AP_HW_FlywooF745Nano

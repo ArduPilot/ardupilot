@@ -1,0 +1,8 @@
+# setup for LEDs on chan5
+SERVO5_FUNCTION 120
+NTF_LED_TYPES 257
+# Bluejay installed by default
+SERVO_BLH_AUTO 1
+SERVO_BLH_BDMASK 15
+SERVO_DSHOT_ESC 2
+MOT_PWM_TYPE 6

@@ -1,0 +1,60 @@
+# hw definition file for processing by chibios_pins.py
+# for iFlight Beast F7 v2 hardware, based on Beast F7 v1
+# thanks to betaflight for pin information
+
+include ../BeastF7/hwdef.dat
+undef APJ_BOARD_ID
+undef DEFAULT_SERIAL3_PROTOCOL
+undef IMU
+undef BARO
+undef PD15
+undef PE9 PE11 PB8 PB9 PB11 PB10 PA10 PA9 PA3 PA2
+undef HAL_DEFAULT_INS_FAST_SAMPLE DMA_PRIORITY DMA_NOSHARE
+undef I2C1
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_BEASTF7v2
+
+# V2 has different motor mapping
+PB4 TIM3_CH1 TIM3 PWM(2) GPIO(51)  BIDIR   # 2
+PB5 TIM3_CH2 TIM3 PWM(3) GPIO(52)          # 3
+
+# only one I2C bus
+I2C_ORDER I2C2
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY EMPTY UART7
+
+# Buzzer - DMA timer channel use by LEDs
+PD2 BUZZER OUTPUT GPIO(80) LOW
+
+# USART1 (DJI)
+PA10 USART1_RX USART1
+PA9  USART1_TX USART1 NODMA
+
+# USART2 (DJI RCIN)
+PA3 USART2_RX USART2
+PA2 USART2_TX USART2 NODMA
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_RCIN
+
+# USART3 (RCIN)
+PB11 USART3_RX USART3
+PB10 USART3_TX USART3
+
+# I2C2 for compass. These pins can also be used as USART3
+PB10 I2C2_SCL I2C2 ALT(1)
+PB11 I2C2_SDA I2C2 ALT(1)
+
+# spi devices
+SPIDEV bmi270    SPI1 DEVID1 BMI270_CS  MODE3 10*MHZ 10*MHZ
+
+DMA_PRIORITY USART1* TIM3*
+
+# no built-in compass
+define AP_COMPASS_PROBING_ENABLED 1
+
+# one IMU
+IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_225
+
+# v2 has no BARO
+define HAL_BARO_ALLOW_INIT_NO_BARO 1

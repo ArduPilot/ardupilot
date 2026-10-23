@@ -1,0 +1,66 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32F7xx STM32F732xx
+
+FLASH_RESERVE_START_KB 0
+# two sectors for bootloader, two for storage
+FLASH_BOOTLOADER_LOAD_KB 64
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_FreeflyRTK
+
+# also support px4 firmware with ID 85
+ALT_BOARD_ID 85
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+# order of UARTs
+SERIAL_ORDER OTG1
+
+PC7 USB_RESET_N OUTPUT PUSHPULL HIGH
+
+# use safety button to stay in bootloader
+PC14 STAY_IN_BOOTLOADER INPUT PULLDOWN
+define HAL_STAY_IN_BOOTLOADER_VALUE 1
+
+PA6 LED_BOOTLOADER OUTPUT HIGH
+define HAL_LED_ON 0
+
+# Now we define the pins that USB is connected on.
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# These are the pins for SWD debugging with a STlinkv2 or black-magic probe.
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_SERIAL FALSE
+
+define STM32_SERIAL_USE_USART1 FALSE
+define STM32_SERIAL_USE_USART2 FALSE
+define STM32_SERIAL_USE_USART3 FALSE
+
+define HAL_USE_EMPTY_IO TRUE
+
+define DMA_RESERVE_SIZE 0
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a small bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000
+
+# Add CS pins to ensure they are high in bootloader
+PA15 IMU_CS CS

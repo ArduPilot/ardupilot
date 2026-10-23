@@ -1,0 +1,24 @@
+# parameters for SITL peripheral
+
+GPS1_TYPE 1
+COMPASS_ENABLE 1
+BARO_ENABLE 1
+ARSPD_TYPE 100
+RNGFND1_TYPE 100
+RNGFND1_MAX 120.00
+BATT_MONITOR 16
+BATT_I2C_BUS 2
+
+# by default disable motors/servos, overridden in vehicle specific parameters
+OUT1_FUNCTION -1
+OUT2_FUNCTION -1
+OUT3_FUNCTION -1
+OUT4_FUNCTION -1
+OUT5_FUNCTION -1
+OUT6_FUNCTION -1
+OUT7_FUNCTION -1
+OUT8_FUNCTION -1
+
+# enable some simulated ADSB vehicles
+SIM_ADSB_COUNT 4
+ADSB_PORT 2

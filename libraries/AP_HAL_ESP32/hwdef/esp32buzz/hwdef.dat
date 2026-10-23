@@ -1,0 +1,104 @@
+define HAL_ESP32_BOARD_NAME "esp32-buzz"
+
+# SPI Buses; https://docs.espressif.com/projects/esp-idf/en/v5.3.4/esp32/api-reference/peripherals/spi_master.html
+# tip:  VSPI_HOST  is an alternative name for esp's SPI3
+#            Host      DMA Channel     MOSI        MISO        SCLK
+ESP32_SPIBUS VSPI_HOST 1               GPIO_NUM_23 GPIO_NUM_19 GPIO_NUM_18
+
+# SPI Devices
+#            Name                Bus   Device  ChipSel      Mode LoSpeed HiSpeed
+ESP32_SPIDEV bmp280              0     0       GPIO_NUM_26  3    1*MHZ   1*MHZ
+ESP32_SPIDEV mpu9250             0     1       GPIO_NUM_5   0    2*MHZ   8*MHZ
+
+# i2c Buses
+#             Port       SDA         SCL          SPEED    INTERNAL SOFT
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_13 GPIO_NUM_12  400*KHZ  true     false
+
+# no airspeed sensor
+define AP_AIRSPEED_ENABLED 0
+
+# ADC is available on lots of pints on the esp32, but adc2 can't co-exist with wifi
+
+# two different pin numbering schemes, both are ok, but only one at a time:
+#-----ADC-----
+#             PORT                RXPIN TXPIN
+# ESP32_ADC_PIN ADC1_GPIO35_CHANNEL 11    1
+# ESP32_ADC_PIN ADC1_GPIO34_CHANNEL 11    2
+# ESP32_ADC_PIN ADC1_GPIO39_CHANNEL 11    3
+# ESP32_ADC_PIN ADC1_GPIO36_CHANNEL 11    4
+
+ESP32_ADC_PIN ADC1_GPIO35_CHANNEL 11   35
+ESP32_ADC_PIN ADC1_GPIO34_CHANNEL 11   34
+ESP32_ADC_PIN ADC1_GPIO39_CHANNEL 11   39
+ESP32_ADC_PIN ADC1_GPIO36_CHANNEL 11   36
+
+define AP_COMPASS_PROBING_ENABLED 1
+
+define HAL_INS_MPU9250_NAME "mpu9250"
+
+# uncommenting one or more of these will give more console debug in certain areas.. ... 
+# ...however all teh extra printf's use a lot of stack, so best to limit yourself to only uncommenting one at a time
+# define STORAGEDEBUG 1
+# define SCHEDDEBUG 1
+# define FSDEBUG 1
+# define BUSDEBUG 1 //ok
+# define WIFIDEBUG 1 //uses a lot?
+# define INS_TIMING_DEBUG 1 //define this to see all the imu-resets and temp resets and imu timing info on the console.
+
+#-----INS/IMU-----
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+# IMU Invensense SPI:mpu9250 ROTATION_180
+define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
+define INS_MAX_INSTANCES 3  # only here for binary identicality
+
+# -----BARO-----
+BARO BMP280 SPI:bmp280
+# allow boot without a baro
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+# 2 use udp, 1 use tcp...  for udp,client needs to connect as UDPCL in missionplanner etc to 192.168.4.1 port 14550
+define HAL_ESP32_WIFI 1
+
+# tip: if u are ok getting mavlink-over-tcp or mavlink-over-udp and want to disable mavlink-over-serial-usb
+#then set ardupilot parameter SERIAL0_PROTOCOL = 0 and reboot.
+# u also will/may want..
+#LOG_BACKEND_TYPE 1
+#LOG_DISARMED 1
+#SERIAL0_PROTOCOL 0
+
+
+define WIFI_SSID "ardupilot123"
+define WIFI_PWD "ardupilot123"
+
+# RCOUT which pins are used?
+
+ESP32_RCOUT GPIO_NUM_25
+ESP32_RCOUT GPIO_NUM_27
+ESP32_RCOUT GPIO_NUM_33
+ESP32_RCOUT GPIO_NUM_32
+ESP32_RCOUT GPIO_NUM_22
+ESP32_RCOUT GPIO_NUM_21
+
+# rcin on what pin?
+define HAL_ESP32_RCIN GPIO_NUM_4
+
+//-----UARTS-----
+ESP32_SERIAL  UART_NUM_0  GPIO_NUM_3    GPIO_NUM_1
+ESP32_SERIAL  UART_NUM_1  GPIO_NUM_16   GPIO_NUM_17
+
+define AP_FILESYSTEM_ESP32_ENABLED 1
+
+# Do u want to use mmc or spi mode for the sd card, this is board specific ,
+#  as mmc uses specific pins but is quicker,
+define HAL_ESP32_SDMMC 1
+# and spi is more flexible pinouts....  dont forget vspi/hspi should be selected to NOT conflict with SPI_BUSES above
+# define HAL_ESP32_SDSPI {.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_2, .miso=GPIO_NUM_15, .sclk=GPIO_NUM_14, .cs=GPIO_NUM_21}
+
+define HAL_ESP32_SDCARD 1
+define LOGGER_MAVLINK_SUPPORT 1
+
+# this becomes the default value for the ardupilot param LOG_BACKEND_TYPE, which most ppl want to be 1, for log-to-flash
+# setting to 2 means log-over-mavlink to a companion computer etc.
+define HAL_LOGGING_BACKENDS_DEFAULT 1
+
+define HAL_ESP32_RMT_RX_PIN_NUMBER 4

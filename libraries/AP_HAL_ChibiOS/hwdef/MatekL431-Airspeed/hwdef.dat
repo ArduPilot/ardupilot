@@ -1,0 +1,14 @@
+include ../MatekL431/hwdef.inc
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+# ------------------ I2C airspeed -------------------------
+define AP_PERIPH_AIRSPEED_ENABLED 1
+
+# 10" DLVR sensor by default
+define HAL_AIRSPEED_TYPE_DEFAULT 9  
+define AIRSPEED_MAX_SENSORS 1
+
+USE_BOOTLOADER_FROM_BOARD MatekL431

@@ -1,0 +1,14 @@
+#!/usr/bin/env nix-shell
+#! nix-shell --pure -i bash -p "python3.withPackages (p: [ p.numpy p.sympy ])"
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/eabc38219184cc3e04a974fe31857d8e0eac098d.tar.gz
+
+# above pins Python 3.9.13, Numpy 1.21.2, and Sympy 1.9 (and deps)
+# using the last nixos-21.11 branch commit
+
+cd "$(dirname "$0")"
+rm -rf generated # ensure generated directory exists and is empty
+mkdir -p generated
+
+# explicitly invoke python3 to use interpreter from nix-shell
+python3 ./generate_1.py
+python3 ./generate_2.py

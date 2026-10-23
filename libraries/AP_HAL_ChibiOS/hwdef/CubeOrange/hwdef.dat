@@ -1,0 +1,9 @@
+# hw definition file for processing by chibios_hwdef.py
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+include hwdef.inc
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True

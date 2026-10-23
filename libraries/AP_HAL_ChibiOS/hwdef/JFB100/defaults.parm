@@ -1,0 +1,3 @@
+# JFB-100 board default definition
+SERIAL5_OPTIONS,8
+SERIAL5_PROTOCOL,23

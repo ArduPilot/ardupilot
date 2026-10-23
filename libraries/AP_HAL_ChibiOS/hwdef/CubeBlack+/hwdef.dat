@@ -1,0 +1,22 @@
+# hw definition file for processing by chibios_hwdef.py
+# for The CUBE Black and the Cube Purple hardware
+# this is based on fmuv3, but with vendor specific USB IDs
+
+include ../CubeBlack/hwdef.dat
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUBEBLACKPLUS
+
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+USB_PRODUCT 0x1101
+USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+
+undef IMU
+
+IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
+IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
+IMU Invensense SPI:mpu9250 ROTATION_YAW_270
+
+undef ROMFS
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_cube_highpolh.bin

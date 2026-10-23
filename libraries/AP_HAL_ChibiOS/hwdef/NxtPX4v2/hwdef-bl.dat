@@ -1,0 +1,44 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the NxtPX4v2 hardware
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_NxtPX4v2
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CS pins
+PA3 BMI088_1_G_CS CS
+PA2 BMI088_1_A_CS CS
+PC2 BMI088_2_G_CS CS
+PC13 BMI088_2_A_CS CS
+
+# LEDs
+PD11 LED_ACTIVITY   OUTPUT HIGH GPIO(91)  #green
+PB15 LED_BOOTLOADER OUTPUT HIGH GPIO(92)  #blue
+define HAL_LED_ON 1

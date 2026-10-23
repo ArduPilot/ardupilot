@@ -1,0 +1,136 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the JFB110 hardware
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_JFB110
+
+# MCU class and specific type
+MCU STM32H7xx STM32H755xx
+define CORE_CM7
+#define SMPS_PWR
+
+# crystal frequency 24MHz
+OSCILLATOR_HZ 24000000
+
+# the location where the bootloader will put the firmware
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+# the H755 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+# with 2M flash we can afford to optimize for speed
+FLASH_SIZE_KB 2048
+HAL_STORAGE_SIZE 32768
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 2
+
+# USB setup
+# USB_VENDOR 0x0A8E  # JAE
+# USB_PRODUCT 0x8888 # This is temp Number
+USB_STRING_MANUFACTURER "Japan Aviation Electronics Industry Ltd."
+USB_STRING_PRODUCT "JFB-110"
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7 UART5 USART3
+
+# serial port for stdout, set SERIAL7_PROTOCOL 0(none) when using
+# The value for STDOUT_SERIAL is a serial device name, and must be for a 
+# serial device for which pins are defined in this file. For example, SD3
+# is for USART3 (SD3 == "serial device 3" in ChibiOS).
+STDOUT_SERIAL SD3
+STDOUT_BAUDRATE 921600
+
+
+
+# USB OTG1 SERIAL0
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CS pins
+PH3  SCHA63T_G_CS CS   # SPI1_CS1
+PH4  SCHA63T_A_CS CS   # SPI1_CS2
+PH5  MS5611_2_CS CS    # SPI1_CS3
+PG6  AT25512_CS CS     # SPI1_CS4
+PG7  FRAM_CS CS        # SPI3_CS1
+PF10 IIM42652_1_CS CS  # SPI3_CS2
+PH15 MS5611_1_CS CS    # SPI4_CS1
+PG15 IIM42652_2_CS CS  # SPI4_CS2
+
+# telem1 
+PE8  UART7_TX  UART7
+PE10 UART7_CTS UART7
+PF6  UART7_RX  UART7
+PF8  UART7_RTS UART7
+
+# telem2
+PC12 UART5_TX  UART5
+PC9  UART5_CTS UART5
+PD2  UART5_RX  UART5
+PC8  UART5_RTS UART5
+
+# debug uart
+PD8  USART3_TX USART3 NODMA
+PD9  USART3_RX USART3 NODMA
+
+# armed indication
+PB10 nARMED OUTPUT HIGH  # TP8
+
+# This defines an output pin which will default to output HIGH. It is
+# a pin that enables peripheral power on this board. It starts in the
+# off state, then is pulled low to enable peripherals in
+# peripheral_power_enable()
+PG10 nVDD_5V_HIPOWER_EN OUTPUT HIGH
+PG4  nVDD_5V_PERIPH_EN  OUTPUT HIGH
+PG12 VDD_3V3_SENSORS_EN OUTPUT LOW
+PD4  VDD_3V3_SENSORS2_EN OUTPUT LOW
+PD3  VDD_3V3_SENSORS3_EN OUTPUT LOW
+#VDD_3V3_SENSORS4_EN OUTPUT LOW
+#VDD_3V3_SD_CARD_EN  OUTPUT LOW
+
+# PWM output pins
+# we need to disable DMA on the last 2 FMU channels
+# as timer 12 doesn't have a TIMn_UP DMA option
+PA2  PWMOUT1  OUTPUT LOW
+PE6  PWMOUT2  OUTPUT LOW
+PA7  PWMOUT3  OUTPUT LOW
+PA6  PWMOUT4  OUTPUT LOW
+PD15 PWMOUT5  OUTPUT LOW
+PE9  PWMOUT6  OUTPUT LOW
+PH11 PWMOUT7  OUTPUT LOW
+PH10 PWMOUT8  OUTPUT LOW
+PA10 PWMOUT9  OUTPUT LOW
+PA9  PWMOUT10 OUTPUT LOW
+PD14 PWMOUT11 OUTPUT LOW
+PD13 PWMOUT12 OUTPUT LOW
+PD12 PWMOUT13 OUTPUT LOW
+PH9  PWMOUT14 OUTPUT LOW
+PH12 PWMOUT15 OUTPUT LOW
+PH6  PWMOUT16 OUTPUT LOW
+PD11 PWM_OE   OUTPUT HIGH
+PD5  PWM_OE2  OUTPUT HIGH
+
+# controlled manually
+PG13 GPIO_CAN1_SILENT OUTPUT PUSHPULL HIGH
+PG8  GPIO_CAN2_SILENT OUTPUT PUSHPULL HIGH
+
+# Control of Spektrum power pin
+PH2 SPEKTRUM_PWR OUTPUT LOW GPIO(69)
+
+# LEDs
+#PE3 LED_RED OUTPUT OPENDRAIN GPIO(70) HIGH
+##PE4 LED_GREEN OUTPUT OPENDRAIN GPIO(71) LOW
+##PE5 LED_BLUE OUTPUT OPENDRAIN GPIO(72) LOW
+
+PE4 LED_BOOTLOADER OUTPUT HIGH
+PE5 LED_ACTIVITY OUTPUT HIGH
+define HAL_LED_ON 0
+
+#define HAL_USE_EMPTY_STORAGE 1
+#define HAL_STORAGE_SIZE 32768
+
+# enable DFU by default
+#ENABLE_DFU_BOOT 1

@@ -1,0 +1,12 @@
+include ../MatekL431/hwdef.inc
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+# support all serial EFI types
+define AP_PERIPH_EFI_ENABLED 1
+define HAL_EFI_ENABLED 1
+
+define AP_PERIPH_EFI_PORT_DEFAULT 2
+USE_BOOTLOADER_FROM_BOARD MatekL431

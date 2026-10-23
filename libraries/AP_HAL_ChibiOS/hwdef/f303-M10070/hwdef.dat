@@ -1,0 +1,30 @@
+include ../f303-periph/hwdef.inc
+
+# mRo Location One CAN GPS
+# M10070B
+
+define CAN_APP_NODE_NAME "io.mrobotics.m10070_loc1"
+
+# added rm3100 mag on SPI
+SPIDEV rm3100 SPI1 DEVID1 MAG_CS MODE0 1*MHZ 1*MHZ
+COMPASS RM3100 SPI:rm3100 false ROTATION_NONE
+
+# an I2C baro (DPS310)
+BARO DPS280 I2C:0:0x77
+
+# GPS+MAG+LED+Baro
+define AP_PERIPH_GPS_ENABLED 1
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
+
+# Optional I2C Airspeed sensor connected to I2C connector
+define AP_PERIPH_AIRSPEED_ENABLED 1
+
+# Safety button
+PC13 SAFE_BUTTON INPUT PULLUP
+# Button is active LOW
+define HAL_SAFE_BUTTON_ON 0
+
+define AP_COMPASS_PROBING_ENABLED 1
+

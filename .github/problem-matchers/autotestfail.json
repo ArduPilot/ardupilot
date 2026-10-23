@@ -1,0 +1,17 @@
+{
+    "__comment": "by buzz try to match autotest test failures",
+    "problemMatcher": [
+        {
+            "owner": "autotest-fail-matcher",
+            "severity": "error",
+            "pattern": [
+                {
+                    "regexp": "^(.*)(TIMEOUT|Build failed|FAILED STEP|FAILED):(.*)$",
+                    "column": 1,
+                    "code": 2,
+                    "message": 3
+                }
+            ]
+        }
+    ]
+}

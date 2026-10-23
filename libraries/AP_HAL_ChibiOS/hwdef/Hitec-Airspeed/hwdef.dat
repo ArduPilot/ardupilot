@@ -1,0 +1,115 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32G441 STM32G441xx
+
+# bootloader starts firmware at 22k + 4k (STORAGE_FLASH)
+FLASH_RESERVE_START_KB 26
+
+# store parameters in pages 11 and 12
+STORAGE_FLASH_PAGE 11
+define HAL_STORAGE_SIZE 800
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HITEC_AIRSPEED
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# enable watchdog
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# assume the 128k flash part
+FLASH_SIZE_KB 128
+
+# UARTs disabled to save flash
+# order of UARTs
+# SERIAL_ORDER USART1
+SERIAL_ORDER
+define AP_HAL_UARTDRIVER_ENABLED 0
+
+define HAL_CAN_POOL_SIZE 6000
+
+# STDOUT_SERIAL SD1
+# STDOUT_BAUDRATE 57600
+
+# USART1, telemetry
+# PB6 USART1_TX USART1 SPEED_HIGH
+# PB7 USART1_RX USART1 SPEED_HIGH
+
+# LEDs
+PA10 LED OUTPUT LOW
+
+# a CAN/I2C selection LED
+PA5 LED_CAN_I2C OUTPUT LOW
+
+# a fault LED
+PA6 LED_FAULT OUTPUT LOW
+
+# allow for reboot command for faster development
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define SERIAL_BUFFERS_SIZE 64
+
+define DMA_RESERVE_SIZE 512
+
+
+# stack for fast interrupts
+define PORT_INT_REQUIRED_STACK 64
+
+# MAIN_STACK is stack for ISR handlers
+MAIN_STACK 0x300
+
+# PROCESS_STACK controls stack for main thread
+PROCESS_STACK 0xA00
+
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+
+# GPIO for CAN/I2C selection
+PB5 GPIO_CAN_I2C1_SEL INPUT PUSHPULL FLOATING
+
+# only one I2C bus in normal config
+PA15 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+define HAL_USE_I2C TRUE
+define STM32_I2C_USE_I2C1 TRUE
+I2C_ORDER I2C1
+define HAL_I2C_CLEAR_ON_TIMEOUT 0
+define HAL_I2C_INTERNAL_MASK 0
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+define HAL_DEVICE_THREAD_STACK 0x200
+define STORAGE_THD_WA_SIZE 512
+define IO_THD_WA_SIZE      512
+
+define AP_PARAM_MAX_EMBEDDED_PARAM 128
+
+define HAL_NO_RCOUT_THREAD
+
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+
+# don't share any DMA channels (there are enough for everyone)
+DMA_NOSHARE *
+
+# default to DLVR 10in
+AIRSPEED DLVR I2C:0:0x28 10
+define AIRSPEED_MAX_SENSORS 1
+define HAL_AIRSPEED_BUS_DEFAULT 0
+define AP_PERIPH_AIRSPEED_ENABLED 1
+define HAL_AIRSPEED_TYPE_DEFAULT 9

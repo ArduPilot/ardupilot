@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ArduPilot Automatic Testing</title>
+
+<!--CSS -->
+<link rel="stylesheet" href="css/main.css" type="text/css" />
+</head>
+
+<body>
+<div class="main">
+<a href="https://autotest.ardupilot.org/">
+<div class="logo">
+</div>
+</a>
+
+<h2>Automatic test run at ${date}</h2>
+
+<div class="git">Test run on git commit <a href="https://github.com/ArduPilot/ardupilot/commit/${githash}">${githash}</a>
+</div>
+
+<h2>Test Results</h2>
+<img src="autotest-badge.svg" alt="missing autotest badge"/>
+
+<ul class="testresults">
+${{tests:<li>${name} - ${result} (${elapsed} seconds)</li>
+}}
+</ul>
+
+<h2>Test logs</h2>
+
+<ul class=testlogs>
+${{files:<li>${name} - <a href="${fname}">${fname}</a>
+}}
+</ul>
+
+<h2>Flight Tracks</h2>
+
+<ul class=testlogs>
+${{images:${fname}<br><img src="${fname}" alt="${name}" />
+}}
+</ul>
+
+<h2>Older results</h2>
+<div class="git">
+Older test results are <a href="history">available here</a>
+</div>
+</div>
+
+<!-- Global site tag (gtag.js) - Autotest statistics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-75650032-5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-75650032-5', { 'anonymize_ip': true });
+
+</script>
+
+
+</body>
+</html>

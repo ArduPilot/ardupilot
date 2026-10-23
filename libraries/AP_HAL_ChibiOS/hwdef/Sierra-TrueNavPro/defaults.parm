@@ -1,0 +1,3 @@
+# setup for Neopixel
+OUT1_FUNCTION 120
+NTF_LED_LEN 2

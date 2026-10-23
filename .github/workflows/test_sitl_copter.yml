@@ -1,0 +1,378 @@
+name: test copter
+
+on:
+  push:
+    branches: ['**']  # excludes tag pushes
+    paths-ignore:
+      - 'Tools/renode/**'
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove other vehicles autotest
+      - 'Tools/autotest/antennatracker.py'
+      - 'Tools/autotest/arduplane.py'
+      - 'Tools/autotest/ardusub.py'
+      - 'Tools/autotest/balancebot.py'
+      - 'Tools/autotest/blimp.py'
+      - 'Tools/autotest/locations.txt'
+      - 'Tools/autotest/quadplane.py'
+      - 'Tools/autotest/rover.py'
+      - 'Tools/autotest/sailboat.py'
+      - 'Tools/autotest/swarminit.txt'
+      - 'Tools/autotest/sim_vehicle.py'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
+      - '!.github/workflows/test_sitl_copter.yml'  # except this one
+
+
+  pull_request:
+    paths-ignore:
+      - 'Tools/renode/**'
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove other vehicles autotest
+      - 'Tools/autotest/antennatracker.py'
+      - 'Tools/autotest/arduplane.py'
+      - 'Tools/autotest/ardusub.py'
+      - 'Tools/autotest/balancebot.py'
+      - 'Tools/autotest/blimp.py'
+      - 'Tools/autotest/locations.txt'
+      - 'Tools/autotest/quadplane.py'
+      - 'Tools/autotest/rover.py'
+      - 'Tools/autotest/sailboat.py'
+      - 'Tools/autotest/swarminit.txt'
+      - 'Tools/autotest/sim_vehicle.py'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
+      - '!.github/workflows/test_sitl_copter.yml'  # except this one
+
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.2.0
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        toolchain: [
+            base,  # GCC
+        ]
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: ${{ matrix.toolchain }}
+      - name: build copter ${{ matrix.toolchain }}
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board sitl --debug
+          ./waf build --target bin/arducopter
+          ccache -s
+          ccache -z
+      # Pre-build the firmware that tests build at test time, so those
+      # objects are in the saved ccache and the in-test builds become
+      # ccache hits.  Only master pushes save the cache (see
+      # save-ccache), so only they pay for this - on PR runs the chunks
+      # restore master's cache and the pre-build would be pure waste.
+      - name: pre-build test-time firmware
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf build --target tool/Replay
+          # PeriphMultiUARTTunnel builds this into build-periph; the out
+          # directory must match (ccache sees it via generated-header paths)
+          ./waf configure --board sitl_periph_can_to_serial --debug --out build-periph
+          ./waf build --target bin/AP_Periph
+          # DroneCANCompass builds this via restart_SITL_frame('copter-periph-compass')
+          ./waf configure --board sitl_periph_universal --debug
+          ./waf build --target bin/AP_Periph
+          ccache -s
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.toolchain }}
+
+  autotest:
+    needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
+    runs-on: ubuntu-22.04
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.2.0
+      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        config: [
+            sitltest-copter-tests1a,
+            sitltest-copter-tests1b,
+            sitltest-copter-tests1c,
+            sitltest-copter-tests1d,
+            sitltest-copter-tests1e,
+            sitltest-copter-tests2a,
+            sitltest-copter-tests2b,
+            sitltest-copter-tests2c,
+            sitltest-copter-tests2d,
+        ]
+
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - name: Register gcc problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/gcc.json"
+
+      - name: Register python problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/python.json"
+
+      - name: Register autotest warn matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+
+      - name: Register autotest fail matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestfail.json"
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: base
+      - name: test ${{matrix.config}}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/build_ci.sh
+
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+           name: ${{ github.workflow }}-fail-${{matrix.config}}
+           path: |
+             /tmp/buildlogs
+             /__w/ardupilot/ardupilot/logs
+             /__w/ardupilot/ardupilot/ap-*.core
+             /__w/ardupilot/ardupilot/core.*
+             /__w/ardupilot/ardupilot/dumpstack.sh_*
+             /__w/ardupilot/ardupilot/dumpcore.sh_*
+           retention-days: 14
+
+      - name: Archive .bin artifacts
+        uses: actions/upload-artifact@v7
+        with:
+           name: ${{ github.workflow }}-BIN-${{matrix.config}}
+           path: /__w/ardupilot/ardupilot/logs
+           retention-days: 7
+
+  build-gcc-heli:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
+    runs-on: ubuntu-22.04
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.2.0
+      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: heli
+      - name: build heli
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board sitl --debug
+          ./waf build --target bin/arducopter-heli
+          ccache -s
+          ccache -z
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: heli
+
+  autotest-heli:
+    needs: build-gcc-heli  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-base:v0.2.0
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        config: [
+            sitltest-heli,
+        ]
+
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: heli
+      - name: test ${{matrix.config}}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/build_ci.sh
+
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+           name: ${{ github.workflow }}-fail-${{matrix.config}}
+           path: |
+             /tmp/buildlogs
+             /__w/ardupilot/ardupilot/logs
+             /__w/ardupilot/ardupilot/ap-*.core
+             /__w/ardupilot/ardupilot/core.*
+             /__w/ardupilot/ardupilot/dumpstack.sh_*
+             /__w/ardupilot/ardupilot/dumpcore.sh_*
+           retention-days: 14
+
+      - name: Archive .bin artifacts
+        uses: actions/upload-artifact@v7
+        with:
+           name: ${{ github.workflow }}-BIN-${{matrix.config}}
+           path: /__w/ardupilot/ardupilot/logs
+           retention-days: 7

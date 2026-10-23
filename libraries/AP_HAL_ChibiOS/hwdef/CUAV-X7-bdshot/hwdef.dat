@@ -1,0 +1,9 @@
+# Bi-directional dshot version CUAV-X7
+
+include ../CUAV-X7/hwdef.dat
+
+undef PH10 PH12
+
+PH10 TIM5_CH1 TIM5 PWM(1) GPIO(50) BIDIR
+PH12 TIM5_CH3 TIM5 PWM(3) GPIO(52) BIDIR
+

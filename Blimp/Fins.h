@@ -1,0 +1,109 @@
+//This class converts horizontal acceleration commands to fin flapping commands.
+#pragma once
+#include <AP_Notify/AP_Notify.h>
+#include <AP_AHRS/AP_AHRS.h>
+
+extern const AP_HAL::HAL& hal;
+
+#define NUM_FINS 4 //Current maximum number of fins or motors that can be added.
+#define INPUT_AND_OUTPUT_SCALING 1000 //Input and output scaling
+
+class Fins
+{
+public:
+    friend class Blimp;
+    friend class Loiter;
+
+    enum motor_frame {
+        MOTOR_FRAME_UNDEFINED = 0,
+        MOTOR_FRAME_FISHBLIMP = 1,
+        MOTOR_FRAME_FOUR_MOTOR = 2,
+    };
+
+    //Need this class variable (rather than using the parameter directly) because if the user changes the parameter, we don't want the frame to change immediately, only on reboot.
+    motor_frame _frame;
+
+    //constructor
+    Fins(uint16_t loop_rate);
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo        var_info[];
+
+    bool initialised_ok() const
+    {
+        return _initialised_ok;
+    }
+
+    void armed(bool arm)
+    {
+        if (arm != _armed) {
+            _armed = arm;
+            AP_Notify::flags.armed = arm;
+        }
+
+    }
+    bool armed() const
+    {
+        return _armed;
+    }
+
+private:
+    // internal variables
+    const uint16_t      _loop_rate;                 // rate in Hz at which output() function is called (normally 400hz)
+    uint16_t            _speed_hz;                  // speed in hz to send updates to motors
+    float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
+
+    float               _time;                       // current timestamp
+
+    bool _armed;             // 0 if disarmed, 1 if armed
+
+    float              _amp[NUM_FINS]; //amplitudes
+    float              _off[NUM_FINS]; //offsets
+    float              _freq[NUM_FINS]; //frequency multiplier
+    float              _thrpos[NUM_FINS]; //servo positions or motor throttles
+
+    float               _right_amp_factor[NUM_FINS];
+    float               _front_amp_factor[NUM_FINS];
+    float               _down_amp_factor[NUM_FINS];
+    float               _yaw_amp_factor[NUM_FINS];
+
+    float               _right_off_factor[NUM_FINS];
+    float               _front_off_factor[NUM_FINS];
+    float               _down_off_factor[NUM_FINS];
+    float               _yaw_off_factor[NUM_FINS];
+
+    int8_t              _num_added;
+
+    bool _initialised_ok;    // 1 if initialisation was successful
+
+    void setup_fins();
+    void setup_motors();
+    void output_fins();
+    void output_motors();
+    void add_fin(int8_t fin_num, float right_amp_fac, float front_amp_fac, float yaw_amp_fac, float down_amp_fac, float right_off_fac, float front_off_fac, float yaw_off_fac, float down_off_fac);
+    void add_motor(int8_t fin_num, float right_amp_fac, float front_amp_fac, float yaw_amp_fac, float down_amp_fac);
+
+public:
+    float               right_out;                  //input right movement, negative for left, +1 to -1
+    float               front_out;                  //input front/forwards movement, negative for backwards, +1 to -1
+    float               yaw_out;                    //input yaw, +1 to -1
+    float               down_out;                   //input height control, +1 to -1
+
+    AP_Float            freq_hz;
+    AP_Int8             turbo_mode;
+    AP_Float            thr_max;
+
+    void setup_finsmotors();
+    void output();
+    void output_min();
+    const char* get_frame_string();
+
+    float get_throttle()
+    {
+        //Only for Mavlink - essentially just an indicator of how hard the fins are working.
+        //Note that this is the unconstrained version, so if the higher level control gives too high input,
+        //throttle will be displayed as more than 100.
+        return fmaxf(fmaxf(fabsf(down_out),fabsf(front_out)), fmaxf(fabsf(right_out),fabsf(yaw_out)));
+    }
+
+};

@@ -1,0 +1,3 @@
+include ../TBS_LUCID_H7/hwdef-bl.dat
+
+APJ_BOARD_ID AP_HW_TBS_LUCID_H7_WING

@@ -1,0 +1,264 @@
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_mRoCZOEM_revG
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+define STM32_HSE_BYPASS
+define SMPS_EXT
+
+FLASH_SIZE_KB 2048
+
+
+# start on 2th sector (1st sector for bootloader)
+FLASH_RESERVE_START_KB 128
+
+define HAL_STORAGE_SIZE 32768
+
+# USB setup
+USB_VENDOR 0x26ac
+USB_PRODUCT 0x1124
+USB_STRING_MANUFACTURER "3DR"
+USB_STRING_PRODUCT "CZOEMrevG"
+
+PA8 RCC_MCO_1 OUTPUT LOW
+
+PH5 VDD_1V2_CORE_EN OUTPUT HIGH
+
+# RC Input set for Interrupt not DMA
+PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
+
+# GPIO(70) # also USART6_RX for serial RC
+
+# Control of Spektrum power pin
+PE4 SPEKTRUM_PWR OUTPUT LOW GPIO(70)
+define HAL_GPIO_SPEKTRUM_PWR 70
+
+# Spektrum Power is Active High
+define HAL_SPEKTRUM_PWR_ENABLED 0
+
+# Spektrum RC Input pin, used as GPIO for bind for Satellite Receivers
+PB0 SPEKTRUM_RC INPUT PULLUP GPIO(71)
+define HAL_GPIO_SPEKTRUM_RC 71
+
+# Order of I2C buses
+I2C_ORDER I2C1 I2C3 I2C4
+
+# this board has no internal I2C buses so mark them all external
+define HAL_I2C_INTERNAL_MASK 0
+
+# order of UARTs and suggested uses
+# USART2 TELEM1
+# USART3 TELEM2
+# UART4 GPS
+# UART8 GPS2 
+# UART7 DEBUG
+
+# USART6 RC input (Only RX pin is connected)
+
+# OTG1 and OTG2 are USB devices (1x physical USB connection enumerated as 2x logical ports)
+
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 USART6 OTG2
+
+# Another USART, this one for telem1. This one has RTS and CTS lines.
+# USART2 telem1
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+PD3 USART2_CTS USART2
+PD4 USART2_RTS USART2
+
+# The telem2 USART, with RTS and CTS lines.
+# USART3 telem2
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+PD11 USART3_CTS USART3
+PD12 USART3_RTS USART3
+
+# UART4 GPS
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
+
+# UART7
+PE8 UART7_TX UART7 NODMA
+PE7 UART7_RX UART7 NODMA
+
+# USART6
+PG14 USART6_TX USART6
+PG9  USART6_RX USART6
+PG13 USART6_CTS USART6
+PG12 USART6_RTS USART6
+
+# UART8 GPS2
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+
+# RSSI Analog Input
+PC1 RSSI_IN ADC1
+
+# Safety Switch Input
+PC4 SAFETY_IN INPUT PULLDOWN
+define HAL_HAVE_SAFETY_SWITCH 1
+
+# Battery Analog Sense Pins
+PA2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA3 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# Now the VDD sense pin. This is used to sense primary board voltage.
+PA4 VDD_5V_SENS ADC1 SCALE(2)
+
+# Now setup the default battery pins driver analog pins and default
+# scaling for the power brick (Adjusted for Power Zero - M10077).
+define HAL_BATT_VOLT_PIN 14
+define HAL_BATT_CURR_PIN 15
+define HAL_BATT_VOLT_SCALE 15.3
+define HAL_BATT_CURR_SCALE 50.0
+
+#SPI1 ICM_20602 / ICM_20948
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+#SPI2 FRAM / DPS310
+PB10 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+#SPI5 BMI088
+PF7 SPI5_SCK SPI5
+PF8 SPI5_MISO SPI5
+PF9 SPI5_MOSI SPI5
+
+#SPI6 External
+#PG13 SPI6_SCK SPI6
+#PG12 SPI6_MISO SPI6
+#PG14 SPI6_MOSI SPI6
+
+# This is the pin that senses USB being connected. It is an input pin
+# setup as OPENDRAIN.
+PA9 VBUS INPUT OPENDRAIN
+
+# This input pin is used to detect that power is valid on USB.
+PC0 VBUS_VALID INPUT PULLDOWN
+
+# Now we define the pins that USB is connected on.
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# These are the pins for SWD debugging with a STlinkv2 or black-magic probe.
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# PWM output for buzzer
+PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
+
+# First I2C bus.
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# Second I2C bus.
+PH7 I2C3_SCL I2C3
+PH8 I2C3_SDA I2C3
+
+# Third I2C bus.
+PB6 I2C4_SCL I2C4
+PB7 I2C4_SDA I2C4
+
+# microSD card
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+
+# CS pins for SPI sensors. The labels for all CS pins need to
+# match the SPI device table later in this file.
+PC2 ICM_20602_CS CS
+PD7 BARO_CS CS
+PD10 FRAM_CS CS SPEED_VERYLOW NODMA
+PE15 ICM_20948_CS CS
+PF6 BMI088_ACCEL_CS CS
+PF10 BMI088_GYRO_CS CS
+#PG9 EXTERNAL CS
+
+# CAN Busses
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+
+PB13 CAN2_TX CAN2
+PB12 CAN2_RX CAN2
+
+# CAN Silent Pins LOW Enable
+PF5 GPIO_CAN_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(72)
+
+# Now we start defining some PWM pins. We also map these pins to GPIO
+# values, so users can set BRD_PWM_COUNT to choose how many of the PWM
+# outputs on the primary MCU are setup as PWM and how many as
+# GPIOs. To match HAL_PX4 we number the GPIOs for the PWM outputs
+# starting at 50.
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50) BIDIR
+PE13 TIM1_CH3 TIM1 PWM(2) GPIO(51)
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52) BIDIR
+PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54) BIDIR
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55) BIDIR
+PI5  TIM8_CH1 TIM8 PWM(7) GPIO(56) BIDIR
+PI6  TIM8_CH2 TIM8 PWM(8) GPIO(57)
+
+# This is the invensense 20602 data-ready pin.
+PD15 MPU_DRDY INPUT
+
+# Power Supply Enable
+PE3 VDD_1V8_3V3_SENSORS_EN OUTPUT HIGH
+
+# Power Supply Enable 3.3v Periph/Spektrum
+PC5 VDD_3V3_PERIPH_EN OUTPUT HIGH
+
+# Power flag pins: these tell the MCU the status of the various power
+# supplies that are available. The pin names need to exactly match the
+# names used in AnalogIn.cpp. 
+PB5 VDD_BRICK_VALID INPUT PULLDOWN
+
+SPIDEV dps310      SPI2 DEVID3  BARO_CS           MODE3  5*MHZ  5*MHZ
+SPIDEV ramtron     SPI2 DEVID10 FRAM_CS           MODE3  8*MHZ  8*MHZ
+SPIDEV bmi088_g    SPI5 DEVID1  BMI088_GYRO_CS    MODE3  10*MHZ  10*MHZ
+SPIDEV bmi088_a    SPI5 DEVID2  BMI088_ACCEL_CS   MODE3  10*MHZ  10*MHZ
+SPIDEV icm20608    SPI1 DEVID2  ICM_20602_CS      MODE3  2*MHZ  7*MHZ
+SPIDEV icm20948    SPI1 DEVID1  ICM_20948_CS      MODE3  2*MHZ  7*MHZ
+
+# Enable RAMTRON parameter storage.
+define HAL_WITH_RAMTRON 1
+
+# Enable FAT filesystem support (needs a microSD defined via SDMMC).
+define HAL_OS_FATFS_IO 1
+
+# Control Zero has a TriColor LED, Red, Green, Blue
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
+
+# LED setup for PixracerLED driver
+PB11 LED_R OUTPUT HIGH GPIO(0)
+PB1  LED_G OUTPUT HIGH GPIO(1)
+PB3  LED_B OUTPUT HIGH GPIO(2)
+
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 0
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 1
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 2
+
+# DMA_PRIORITY SDMMC*
+DMA_NOSHARE SPI1* SPI5*
+
+# 3 IMUs
+IMU BMI088       SPI:bmi088_a SPI:bmi088_g ROTATION_NONE
+IMU Invensense   SPI:icm20608 ROTATION_ROLL_180_YAW_90
+IMU Invensensev2 SPI:icm20948 ROTATION_ROLL_180_YAW_90
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 7
+
+# 1 baro
+BARO DPS310      SPI:dps310
+
+# 1 compass
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180
+define AP_COMPASS_PROBING_ENABLED 1

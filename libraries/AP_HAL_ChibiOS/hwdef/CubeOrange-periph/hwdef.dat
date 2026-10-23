@@ -1,0 +1,55 @@
+include ../CubeOrange/hwdef.dat
+
+undef IOMCU_UART
+undef USART6
+undef ROMFS
+undef HAL_HAVE_SAFETY_SWITCH
+undef HAL_CHIBIOS_ARCH_FMUV3
+undef BOOTLOADER_DEV_LIST
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUBEORANGE_PERIPH
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+
+
+define AP_CAN_SLCAN_ENABLED 1
+define AP_PERIPH_BATTERY_ENABLED 1
+define AP_PERIPH_GPS_ENABLED 1
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
+define AP_PERIPH_RC_OUT_ENABLED 1
+define AP_PERIPH_NOTIFY_ENABLED 1
+define AP_PERIPH_IMU_ENABLED 1
+
+define AP_KDECAN_ENABLED 1
+
+# single GPS and compass for peripherals
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+
+define AP_SCRIPTING_ENABLED 0
+
+# use blue LED
+define HAL_GPIO_PIN_LED HAL_GPIO_PIN_FMU_LED_AMBER
+
+undef HAL_OS_FATFS_IO
+
+undef SDMMC1
+
+MAIN_STACK 0x2000
+PROCESS_STACK 0x6000
+
+define HAL_CAN_DRIVER_DEFAULT 1
+
+# listen for reboot command from uploader.py script
+# undefine to disable. Use -1 to allow on all ports, otherwise serial number index defined in SERIAL_ORDER starting at 0
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+ 
+

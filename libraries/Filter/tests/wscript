@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+
+def build(bld):
+    bld.ap_find_tests(
+        use='ap',
+        DOUBLE_PRECISION_SOURCES=['test_notchfilter.cpp']
+    )

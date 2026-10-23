@@ -1,0 +1,130 @@
+# hw definition file for processing by chibios_pins.py
+# for Revo-Mini hardware
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_REVOLUTION
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+define STM32_ST_USE_TIMER 5
+
+FLASH_SIZE_KB 1024
+
+
+# use USB for stdout, so no STDOUT_SERIAL
+# STDOUT_SERIAL SD3
+# STDOUT_BAUDRATE 57600
+
+# only one I2C bus
+I2C_ORDER I2C1
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1 EMPTY USART3
+
+# rcinput is PC6, which is the 3rd "PWM IN" pin (the yellow wire on a
+# revolution board)
+PC6 TIM8_CH1 TIM8 RCIN PULLDOWN LOW
+
+# analog pins
+PC3 VDD_5V_SENS ADC1
+PC2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
+PC5 USB_SENSE ADC1
+
+# define default battery setup
+define HAL_BATT_VOLT_PIN 12
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+
+# LEDs
+PB5 LED_BLUE OUTPUT LOW GPIO(0)
+PB6 LED_YELLOW OUTPUT LOW GPIO(1) # optional
+PB4 LED_RED OUTPUT LOW GPIO(2)
+
+# GPS port disabled (PC6 used for RCIN)
+#PC6 USART6_TX USART6
+#PC7 USART6_RX USART6
+# SBUS inversion control pin, active high
+#PC0 USART6_RXINV OUTPUT LOW GPIO(78) POL(1)
+
+# flexi port, setup as GPS
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+
+# main port, for telem1
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+
+# alternative config
+# PB10 I2C2_SCL I2C2
+# PB11 I2C2_SDA I2C2
+
+# spi bus for IMU
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# spi bus for dataflash
+PC10 SPI3_SCK SPI3
+PC11 SPI3_MISO SPI3
+PC12 SPI3_MOSI SPI3
+
+# IRQ for MPU6000
+PC4 EXTI_MPU6000 INPUT
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# only one I2C bus in normal config
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# SPI chip selects
+PA4 MPU_CS CS
+PB3 FLASH_CS CS
+
+# PWM out pins
+PB0 TIM3_CH3 TIM3 PWM(1) GPIO(50)
+PB1 TIM3_CH4 TIM3 PWM(2) GPIO(51)
+PA3 TIM2_CH4 TIM2 PWM(3) GPIO(52)
+PA2 TIM2_CH3 TIM2 PWM(4) GPIO(53)
+PA1 TIM2_CH2 TIM2 PWM(5) GPIO(54)
+PA0 TIM2_CH1 TIM2 PWM(6) GPIO(55)
+# disable last two channels as conflicts with TIM8 for RCIN
+#PC8 TIM8_CH3 TIM8 PWM(7) GPIO(56)
+#PC9 TIM8_CH4 TIM8 PWM(8) GPIO(57)
+
+PB7 DRDY_HMC5883 INPUT PULLUP
+
+define HAL_STORAGE_SIZE 15360
+STORAGE_FLASH_PAGE 2
+
+# reserve 32k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 64
+
+# one IMU
+IMU Invensense SPI:mpu6000 ROTATION_YAW_180
+
+# one baro
+BARO MS5611 I2C:0:0x77
+
+# look for internal I2C compass
+COMPASS HMC5843 I2C:0:0x1E false ROTATION_YAW_270
+
+# SPI devices
+SPIDEV mpu6000   SPI1 DEVID1 MPU_CS   MODE3 1*MHZ 8*MHZ 
+SPIDEV dataflash SPI3 DEVID1 FLASH_CS MODE3 32*MHZ 32*MHZ
+
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+include ../include/minimize_fpv_osd.inc

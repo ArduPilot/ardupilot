@@ -1,0 +1,55 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H757 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H757xx
+
+define CORE_CM7
+define SMPS_PWR
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HERE3PLUS
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# reserve space for flash storage in last 2 sectors
+FLASH_RESERVE_END_KB 256
+
+# the location where the bootloader will put the firmware
+# the H757 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 256
+
+# enable CAN support
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+PD2 SLEEPCAN1 OUTPUT PUSHPULL SPEED_LOW LOW 
+PD3 TERMCAN1 OUTPUT LOW
+
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+PB10 SLEEPCAN2 OUTPUT PUSHPULL SPEED_LOW LOW 
+PB11 TERMCAN2 OUTPUT LOW
+
+# board voltage
+STM32_VDD 330U
+
+PB8 LED_SCK OUTPUT LOW
+PB9 LED_DI OUTPUT HIGH
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# order of UARTs
+SERIAL_ORDER
+
+# setup for blanking LEDs in bootloader
+define AP_BOOTLOADER_CUSTOM_HERE4

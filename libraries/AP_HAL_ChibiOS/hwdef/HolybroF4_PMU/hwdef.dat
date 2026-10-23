@@ -1,0 +1,108 @@
+# hw definition file for f405 Holybro CAN PMU
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+FLASH_SIZE_KB 1024
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 15360
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Holybro-PMU-F4
+
+env AP_PERIPH 1
+
+define STM32_ST_USE_TIMER 5
+define CH_CFG_ST_RESOLUTION 32
+
+# enable watchdog
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+STDOUT_SERIAL SD3
+STDOUT_BAUDRATE 57600
+
+# blue LED0 marked as ACT
+PB0 LED OUTPUT HIGH GPIO(90)
+define AP_NOTIFY_GPIO_LED_1_ENABLED  1
+define AP_NOTIFY_GPIO_LED_1_PIN  90
+
+define SERIAL_BUFFERS_SIZE 512
+define PORT_INT_REQUIRED_STACK 64
+
+# debug
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define DMA_RESERVE_SIZE 0
+
+define HAL_DEVICE_THREAD_STACK 768
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+# ---------------------- CAN bus -------------------------
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PA15 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB4 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW HIGH
+
+# use DNA for node allocation
+
+define CAN_APP_NODE_NAME "org.ardupilot.f405_HolybroPMU"
+
+
+# ---------------------- UARTs ---------------------------
+#           
+SERIAL_ORDER USART3 
+
+# USART3, for debug
+PC10  USART3_TX USART3 SPEED_HIGH NODMA
+PC11  USART3_RX USART3 SPEED_HIGH NODMA
+
+# ---------------------- I2Cs ---------------------------
+#           
+I2C_ORDER I2C1 
+
+# I2C2, for TEMP SENSOR
+PB8  I2C1_SCL I2C1 
+PB9  I2C1_SDA I2C1 
+
+# ------------------ BATTERY Monitor -----------------------
+define AP_PERIPH_BATTERY_ENABLED 1
+define AP_PERIPH_DEVICE_TEMPERATURE_ENABLED 1
+define HAL_USE_ADC TRUE
+define STM32_ADC_USE_ADC1 TRUE
+
+PC0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# Set the Default Battery Monitor Type to be Analog I/V
+define HAL_BATT_MONITOR_DEFAULT 4
+
+define HAL_BATT_VOLT_PIN 10
+define HAL_BATT_VOLT_SCALE 18.0
+
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_CURR_SCALE 125
+
+# ACS772-400U Zero-Current Offset
+define AP_BATT_CURR_AMP_OFFSET_DEFAULT 0.409
+
+# ------------------ Temperature Sensor -----------------------
+define AP_TEMPERATURE_SENSOR_ENABLED 1
+define AP_TEMPERATURE_SENSOR_TSYS03_ENABLED 1
+define AP_TEMPERATURE_SENSOR_I2C_ADDR_DEFAULT 64
+define AP_TEMPERATURE_SENSOR_I2C_BUS_DEFAULT 0
+
+
+

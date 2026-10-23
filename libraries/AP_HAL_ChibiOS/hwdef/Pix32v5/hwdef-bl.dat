@@ -1,0 +1,8 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Holybro Pix32v5 bootloader
+
+include ../fmuv5/hwdef-bl.dat
+
+USB_VENDOR 0x3162 # ONLY FOR USE BY Holybro
+USB_PRODUCT 0x004E
+USB_STRING_MANUFACTURER "Holybro"

@@ -1,0 +1,14 @@
+# Bi-directional dshot version of MatekF765-Wing
+
+include ../MatekF765-Wing/hwdef.dat
+
+# undefine the pins we are going to change
+undef PA0 PA1 PA2 PA3
+
+# hw definition file for processing by chibios_pins.py
+# for Matek F765-Wing
+
+PA0 TIM2_CH1 TIM2 PWM(1) GPIO(50) BIDIR
+PA1 TIM2_CH2 TIM2 PWM(2) GPIO(51)
+PA2 TIM5_CH3 TIM5 PWM(3) GPIO(52) BIDIR
+PA3 TIM5_CH4 TIM5 PWM(4) GPIO(53)

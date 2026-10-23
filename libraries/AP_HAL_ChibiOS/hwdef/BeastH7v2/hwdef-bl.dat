@@ -1,0 +1,3 @@
+include ../BeastH7/hwdef-bl.dat
+undef APJ_BOARD_ID
+APJ_BOARD_ID AP_HW_BEASTH7v2

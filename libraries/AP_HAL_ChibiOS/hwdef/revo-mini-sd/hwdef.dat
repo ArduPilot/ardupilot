@@ -1,0 +1,22 @@
+# Revo-mini target with I2C and SD card support
+
+
+
+include ../revo-mini-i2c/hwdef.dat
+
+PA0 UART4_TX UART4 ALT(6)
+PA1 UART4_RX UART4 ALT(6)
+
+PA15 SDCARD_CS CS
+
+SPIDEV sdcard    SPI3 DEVID2 SDCARD_CS MODE0 400*KHZ 25*MHZ
+
+# disable logging to dataflash
+undef HAL_LOGGING_DATAFLASH_ENABLED
+
+# filesystem setup on sdcard
+define HAL_OS_FATFS_IO 1
+
+# disable parachute and sprayer to save flash
+define HAL_PARACHUTE_ENABLED 0
+AUTOBUILD_TARGETS None

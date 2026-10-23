@@ -1,0 +1,3 @@
+# turn on the CAN power monitoring(default)
+CAN_P1_DRIVER  1
+CAN_P2_DRIVER  1

@@ -1,0 +1,7 @@
+#Default Parameters for the mRo Control Zero F7
+
+CAN_P1_DRIVER 1
+CAN_SLCAN_CPORT 1
+SERIAL6_PROTOCOL 22
+
+

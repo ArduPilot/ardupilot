@@ -1,0 +1,2 @@
+<?xml version="1.0"?>
+<output name="localhost" type="FLIGHTGEAR" port="%(FGOUTPORT)s" protocol="udp" rate="1000"/>

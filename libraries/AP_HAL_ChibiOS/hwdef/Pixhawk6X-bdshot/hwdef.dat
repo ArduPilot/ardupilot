@@ -1,0 +1,16 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the Pixhawk V6X hardware bdshot version
+
+include ../Pixhawk6X/hwdef.dat
+
+undef PI0 PH12 PH11 PH10 PD13 PD14
+
+# PWM output pins
+PI0  TIM5_CH4 TIM5 PWM(1) GPIO(50) BIDIR
+PH12 TIM5_CH3 TIM5 PWM(2) GPIO(51)
+PH11 TIM5_CH2 TIM5 PWM(3) GPIO(52) BIDIR
+PH10 TIM5_CH1 TIM5 PWM(4) GPIO(53)
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54) BIDIR
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55) BIDIR
+
+DMA_PRIORITY TIM5* TIM4* SPI1* SPI2* SPI3* SDMMC* USART6* ADC* UART* USART*

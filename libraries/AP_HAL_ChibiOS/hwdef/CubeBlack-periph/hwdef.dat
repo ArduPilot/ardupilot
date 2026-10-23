@@ -1,0 +1,54 @@
+include ../CubeBlack/hwdef.dat
+
+undef COMPASS
+undef IOMCU_UART
+undef USART6
+undef ROMFS
+undef HAL_HAVE_SAFETY_SWITCH
+undef IMU
+undef HAL_CHIBIOS_ARCH_FMUV3
+undef BOOTLOADER_DEV_LIST
+undef HAL_OS_FATFS_IO
+undef SDIO
+undef FLASH_RESERVE_START_KB
+# the location where the bootloader will put the firmware
+# we use first 32k
+FLASH_RESERVE_START_KB 32
+
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CUBEBLACK_PERIPH
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+
+
+define AP_PERIPH_GPS_ENABLED 1
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_BARO_ENABLED 1
+define AP_PERIPH_RC_OUT_ENABLED 1
+
+
+# single GPS and compass for peripherals
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+define AP_PERIPH_BATTERY_ENABLED 1
+
+
+define AP_SCRIPTING_ENABLED 0
+
+# use blue LED
+define HAL_GPIO_PIN_LED HAL_GPIO_PIN_FMU_LED_AMBER
+
+MAIN_STACK 0x2000
+PROCESS_STACK 0x6000
+
+define HAL_CAN_DRIVER_DEFAULT 1
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

@@ -1,0 +1,252 @@
+name: ESP32 Build
+
+on:
+  push:
+    branches: ['**']  # excludes tag pushes
+    paths-ignore:
+      - 'Tools/renode/**'
+      # remove non copter and plane vehicles
+      - 'AntennaTracker/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non esp32 HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_QURT/**'
+      - 'libraries/AP_HAL_SITL/**'
+      - 'libraries/SITL/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotest
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/actions/**'
+      - '!.github/problem-matchers/**'
+      - '!.github/workflows/esp32_build.yml'  # except this one
+
+  pull_request:
+    paths-ignore:
+      - 'Tools/renode/**'
+      # remove non copter and plane vehicles
+      - 'AntennaTracker/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non esp32 HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_QURT/**'
+      - 'libraries/AP_HAL_SITL/**'
+      - 'libraries/SITL/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotest
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      # Remove some directories check
+      - '.vscode/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/actions/**'
+      - '!.github/problem-matchers/**'
+      - '!.github/workflows/esp32_build.yml'  # except this one
+
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    # ESP-IDF toolchain is baked into this image (see ardupilot_dev_docker
+    # Dockerfile_dev-esp32). Keep the tag in sync with the rest of CI.
+    container: ardupilot/ardupilot-dev-esp32:v0.2.0
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        config: [
+            esp32buzz,
+            esp32s3empty,
+        ]
+        gcc: [10]
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: ${{ matrix.config }}
+
+      - name: Register gcc problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/gcc.json"
+
+      - name: Register python problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/python.json"
+
+      - name: Register autotest warn matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+
+      - name: Register autotest fail matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestfail.json"
+
+      - name: build ${{matrix.config}}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+          IDF_CCACHE_ENABLE: 1
+          CCACHE_MAXSIZE: 1G  # ESP32 plane+copter objects exceed ccache.env's 400M default; env overrides the conf
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          # ESP-IDF and its toolchain are baked into the container at $IDF_PATH
+          source $IDF_PATH/export.sh
+          which cmake
+          ./waf configure --board ${{matrix.config}}
+          {
+            echo './waf configure --board ${{matrix.config}}'
+            echo "### Build Plane ${{matrix.config}} :rocket:"
+            echo './waf plane'
+          } >> $GITHUB_STEP_SUMMARY
+          ./waf plane | tee >( grep -vE 'Compiling|Generat|includes.list|Parsing|Validation|Building|Linking|Detecting|linker|\*\*\*\*\*\*\*|Partition|SubType|Checking|esp-idf' --color=never --line-buffered > summary.log)
+          cat summary.log >> $GITHUB_STEP_SUMMARY
+
+          cp build/${{matrix.config}}/esp-idf_build/ardupilot.bin ./ArduPlane.${{matrix.config}}.bin
+          cp build/${{matrix.config}}/esp-idf_build/ardupilot.elf ./ArduPlane.${{matrix.config}}.elf
+          {
+            echo "### Build Copter ${{matrix.config}} :rocket:"
+            echo './waf copter'
+          } >> $GITHUB_STEP_SUMMARY
+          ./waf copter | tee >( grep -vE 'Compiling|Generat|includes.list|Parsing|Validation|Building|Linking|Detecting|linker|\*\*\*\*\*\*\*|Partition|SubType|Checking|esp-idf' --color=never --line-buffered > summary2.log)
+
+          cat summary2.log >> $GITHUB_STEP_SUMMARY
+
+          cp build/${{matrix.config}}/esp-idf_build/ardupilot.bin ./ArduCopter.${{matrix.config}}.bin
+          cp build/${{matrix.config}}/esp-idf_build/ardupilot.elf ./ArduCopter.${{matrix.config}}.elf
+
+          cp build/${{matrix.config}}/esp-idf_build/bootloader/bootloader.bin ./bootloader.${{matrix.config}}.bin
+          cp build/${{matrix.config}}/esp-idf_build/partition_table/partition-table.bin ./partition-table.${{matrix.config}}.bin
+
+          echo "### Assets avail in artifact:" >> $GITHUB_STEP_SUMMARY
+          ls bootloader* partition* Ardu*.elf Ardu*.bin >> $GITHUB_STEP_SUMMARY
+          ccache -s
+
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.config }}
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v7
+        with:
+           name: esp32-binaries -${{matrix.config}}
+           path: |
+              /home/runner/work/ardupilot/ardupilot/ArduPlane.${{matrix.config}}.bin
+              /home/runner/work/ardupilot/ardupilot/ArduPlane.${{matrix.config}}.elf
+              /home/runner/work/ardupilot/ardupilot/ArduCopter.${{matrix.config}}.bin
+              /home/runner/work/ardupilot/ardupilot/ArduCopter.${{matrix.config}}.elf
+              /home/runner/work/ardupilot/ardupilot/bootloader.${{matrix.config}}.bin
+              /home/runner/work/ardupilot/ardupilot/partition-table.${{matrix.config}}.bin
+
+
+           retention-days: 14
+           

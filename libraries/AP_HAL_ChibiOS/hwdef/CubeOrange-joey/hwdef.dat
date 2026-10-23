@@ -1,0 +1,15 @@
+# hw definition file for processing by chibios_hwdef.py
+
+include ../CubeOrange/hwdef.dat
+
+undef USB_STRING_PRODUCT
+undef USB_STRING_MANUFACTURER
+undef APJ_BOARD_ID
+undef USB_PRODUCT
+
+# USB setup
+USB_PRODUCT 0x1057
+USB_STRING_MANUFACTURER "CubePilot"
+USB_STRING_PRODUCT "Joey"
+
+APJ_BOARD_ID AP_HW_CUBEORANGE_JOEY

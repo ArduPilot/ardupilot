@@ -1,0 +1,9 @@
+# setup the heater temperature to 45 degree
+BRD_HEAT_TARG 45
+
+# setup serial2 port defaults for ESP8266
+SERIAL2_BAUD 921600
+
+# setup the parameter for the two Relays GPIO others for reserve
+RELAY1_PIN 1
+RELAY2_PIN 2

@@ -1,0 +1,11 @@
+# hw definition file for Matek H7A3-slim
+
+include hwdef.inc
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MatekH7A3
+
+# --------------------- FLASH ----------------------
+SPIDEV dataflash SPI2 DEVID1 FLASH_CS   MODE3 104*MHZ  104*MHZ
+
+DATAFLASH littlefs:w25nxx

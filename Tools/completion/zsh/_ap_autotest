@@ -1,0 +1,116 @@
+#compdef autotest.py
+#autoload
+
+_ap_autotest() {
+  typeset -A opt_args
+  local context state line curcontext="$curcontext"
+  _arguments -C \
+    '(- 1 *)'{-h,--help}'[show help options and exit]' \
+    '(- 1 *)--list[list the available steps]' \
+    '(- 1 *)--list-subtests[list available subtests e.g. test.Copter]' \
+    ':first parameter:_ap_autotest_cmds' \
+    '*:: :->args'
+
+  case "$state" in
+    (args)
+      _arguments -C \
+        '--autotest-server[run in autotest-server mode; dangerous!]' \
+        '--move-logs-on-test-failure[move logs to ../buildlogs if a test fails]' \
+        '--skip[list of steps to skip (comma separated)]:SKIP:' \
+        '--viewerip[IP address to send MAVLink and fg packets to]:VIEWERIP:' \
+        '--enable-fgview[enable FlightGear output]' \
+        '--map[show map]' \
+        '--experimental[enable experimental tests]' \
+        '--timeout[maximum runtime in seconds]:TIMEOUT:' \
+        '--show-test-timings[show how long each test took to run]' \
+        '--validate-parameters[validate vehicle parameter files]' \
+        '--Werror[configure with --Werror]' \
+        '--junit[generate Junit XML tests report]' \
+        '--no-configure[do not configure before building]' \
+        '*--waf-configure-args[extra arguments passed to waf in configure]:WAF_CONFIGURE_ARGS:' \
+        '-j[build CPUs]:int:' \
+        '--no-clean[do not clean before building]' \
+        '--debug[make built SITL binaries debug binaries]' \
+        '--no-debug[do not make built SITL binaries debug binaries]' \
+        '--coverage[make built binaries coverage binaries]' \
+        '--enable-math-check-indexes[enable checking of math indexes]' \
+        '--postype-single[force single precision copter position controller]' \
+        '--ekf-single[force single precision EKF]' \
+        '--force-32bit[compile sitl using 32-bit]' \
+        '--ubsan[compile sitl with undefined behaviour sanitiser]' \
+        '--ubsan-abort[compile sitl with undefined behaviour sanitiser and abort on error]' \
+        '--num-aux-imus[number of auxiliary IMUs to simulate]:int:' \
+        '--enable-dronecan-tests[enable dronecan tests]' \
+        '--speedup[speedup to run the simulations at]:SPEEDUP:' \
+        '--check-parameter-leaks[after each test, check no parameter the suite could not revert has been left changed (on by default)]' \
+        '--no-check-parameter-leaks[do not check for parameter leaks after each test]' \
+        '--unix-domain-socket[use Unix domain sockets for SITL UARTs]' \
+        '--uds[use Unix domain sockets for SITL UARTs]' \
+        '--valgrind[run ArduPilot binaries under valgrind]' \
+        '--asan[enable ASAN error checking (binary must be built with --asan --debug)]' \
+        '--callgrind[enable valgrind for performance analysis (slow!!)]' \
+        '--gdb[run ArduPilot binaries under gdb]' \
+        '--gdb-no-tui[when running under GDB do NOT start in TUI mode]' \
+        '--gdbserver[run ArduPilot binaries under gdbserver]' \
+        '--lldb[run ArduPilot binaries under lldb]' \
+        '--strace[strace the ArduPilot binary]' \
+        '(-B --breakpoint)'{-B,--breakpoint}'[add a breakpoint at given location in debugger]:BREAKPOINT:' \
+        '--disable-breakpoints[disable all breakpoints before starting]' \
+        '--force-ahrs-type[force a specific AHRS type (e.g. 10 for SITL-ekf)]:AHRS_TYPE:' \
+        '--replay[enable replay logging for tests]' \
+        '--reset-after-every-test[reset everything after every test run]' \
+        '*: :_ap_autotest_cmds' \
+      ;;
+    esac
+}
+
+(( $+functions[_ap_autotest_cmds] )) ||
+  _ap_autotest_cmds() {
+  local suf
+  local tasks
+  # check we are on something like test.Copter
+  if compset -P '*[.]*[.]'; then
+    local type; type="$(echo ${words[$CURRENT]} | cut -d'.' -f1)"
+    local vehicle; vehicle="$(echo ${words[$CURRENT]} | cut -d'.' -f2)"
+    # check that we want completing test
+    case $type in
+    test)
+      tasks=( $($caller --list-subtests-for-vehicle $vehicle) )
+      suf=( -qS '.' )
+      _wanted "subtests" expl "subtest" compadd $tasks && return 0
+      ;;
+    esac
+  else
+    # check we are on something like test.
+    if compset -P '*[.]'; then
+      local type; type="$(echo ${words[$CURRENT]} | cut -d'.' -f1)"
+      case $type in
+      test)
+        tasks=( $($caller --list-vehicles-test) )
+        # add dot after vehicle name for further completion
+        suf=( -qS '.' )
+        ;;
+      build)
+        # remove first and last line, get the lines starting with build, replace line return by space
+        tasks=( $($caller --list | sed -e '1d' -e '$d' | sed  -n 's/\bbuild\b.*\.//p' | tr '\n' ' ') )
+        # don't add more dot on non test
+        suf=( )
+        ;;
+      run)
+        # remove first and last line, get the lines starting with run, replace line return by space
+        tasks=( $($caller --list | sed -e '1d' -e '$d' | sed  -n 's/\brun\b.*\.//p' | tr '\n' ' ' ) )
+        # don't add more dot on non test
+        suf=( )
+        ;;
+      esac
+    else
+      tasks=(build test run)
+      suf=( -qS '.' )
+    fi
+    _wanted "schemes" expl "scheme" compadd $suf[@] $tasks && return 0
+  fi
+  }
+
+# get the calling program, remove anything after the space == all commands arguments
+caller=$(echo ${words[@]} | sed 's/ .*//g');
+_ap_autotest "$@"

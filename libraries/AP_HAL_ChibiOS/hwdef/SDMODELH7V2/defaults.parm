@@ -1,0 +1,9 @@
+# setup for LEDs on chan9
+SERVO9_FUNCTION 120
+#UART Protocol Defaults to allow DMA on RC,GPS on serial 4
+SERIAL3_PROTOCOL 23
+SERIAL6_PROTOCOL 2
+# UART1 for DisplayPort Goggles
+SERIAL1_PROTOCOL 42
+OSD_TYPE2 5
+

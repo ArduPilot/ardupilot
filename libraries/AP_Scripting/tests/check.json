@@ -1,0 +1,21 @@
+{ // lua-language-server config for checking
+    "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+    "runtime.version": "Lua 5.3",
+    "runtime.builtin": {
+        // Not all of the standard functionality is available
+        "coroutine": "disable",
+        "os": "disable",
+        "debug": "disable",
+        "ffi": "disable",
+        "jit": "disable",
+        "table.clear": "disable",
+        "table.new": "disable",
+        "utf8": "disable"
+      },
+    "workspace": {
+      // These lua scripts are not for running on AP
+      "ignoreDir": ["Tools/CHDK-Scripts/*", "modules/*", "libraries/AP_Scripting/tests/luacheck.lua", "lua-language-server/*"],
+      // Dont use gitignore, it results in skipping checks for in progress scripts running in SITL
+      "useGitIgnore": false
+    }
+}

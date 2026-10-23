@@ -1,0 +1,2 @@
+include ../fmuv3/hwdef-bl.dat
+APJ_BOARD_ID AP_HW_PixSurveyA1

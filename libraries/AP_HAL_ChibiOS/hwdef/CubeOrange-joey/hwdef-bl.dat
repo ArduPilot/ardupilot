@@ -1,0 +1,16 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H743 bootloader
+
+include ../CubeOrange/hwdef-bl.dat
+
+undef USB_STRING_PRODUCT
+undef USB_STRING_MANUFACTURER
+undef APJ_BOARD_ID
+undef USB_PRODUCT
+
+# USB setup
+USB_PRODUCT 0x1056
+USB_STRING_MANUFACTURER "CubePilot"
+USB_STRING_PRODUCT "Joey-BL"
+
+APJ_BOARD_ID AP_HW_CUBEORANGE_JOEY

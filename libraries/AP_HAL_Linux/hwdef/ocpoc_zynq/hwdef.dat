@@ -1,0 +1,25 @@
+# SPI Devices:
+# MPU9250 is restricted to 1MHz for non-data and interrupt registers
+#            NAME      BUS SUBDEV MODE       BPW CS_PIN         LOWSPD HIGHSPD
+LINUX_SPIDEV "mpu9250" 1   0      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
+LINUX_SPIDEV "ms5611"  1   1      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
+
+# IMUs:
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+define INS_MAX_INSTANCES 3
+
+# Compasses:
+COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
+define AP_COMPASS_PROBING_ENABLED 1
+
+# Baros:
+BARO MS5611 SPI:ms5611
+
+# RC Input:
+define AP_RCPROTOCOL_ZYNQ_ENABLED 1
+define RCIN_ZYNQ_PULSE_INPUT_BASE 0x43ca0000
+define RCIN_ZYNQ_TICK_PER_US 50
+
+# RC Output:
+define AP_RCOUTPUT_ZYNQ_ENABLED 1
+define RCOUT_ZYNQ_TICK_PER_US 50

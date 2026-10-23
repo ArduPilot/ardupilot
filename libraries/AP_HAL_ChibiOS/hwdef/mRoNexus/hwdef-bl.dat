@@ -1,0 +1,56 @@
+# hw definition file for processing by chibios_hwdef.py
+# mRo Nexus CAN flight controller bootloader
+# M10084
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# USB setup
+USB_STRING_MANUFACTURER "mRo"
+
+# crystal frequency
+OSCILLATOR_HZ 25000000
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MRO_NEXUS
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+PB0 LED_BOOTLOADER OUTPUT
+
+# define all 3 to make LED output White.
+PA6 LED_ACTIVITY OUTPUT
+PA7 LED_ACTIVITY2 OUTPUT
+# PB11 LED_ACTIVITY3 OUTPUT
+
+define HAL_LED_ON 0
+
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7
+
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins to ensure they are high in bootloader
+PB12 CS_ADIS16470 CS
+PA15 CS_ICM40609D CS
+PE3  CS_DPS310 CS
+PB11 CS_RM3100 CS
+PE4  CS_FRAM CS
+
+# This is the reset line for the adis16470. This will force a reset upon reboot.
+PB1 nRST_ADIS OUTPUT LOW

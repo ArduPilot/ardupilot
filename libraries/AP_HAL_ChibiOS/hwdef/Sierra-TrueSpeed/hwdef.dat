@@ -1,0 +1,105 @@
+# HW definition file for Sierra-TrueSpeed
+
+# MCU class and specific type
+MCU STM32L431 STM32L431xx
+
+# bootloader starts firmware at 36k + 4k (STORAGE_FLASH)
+FLASH_RESERVE_START_KB 40
+FLASH_SIZE_KB 256
+
+# store parameters in pages 18 and 19
+STORAGE_FLASH_PAGE 18
+define HAL_STORAGE_SIZE 800
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 15
+define CH_CFG_ST_RESOLUTION 16
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Sierra-TrueSpeed
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+env AP_PERIPH 1
+
+define SERIAL_BUFFERS_SIZE 512
+define PORT_INT_REQUIRED_STACK 64
+
+define DMA_RESERVE_SIZE 0
+
+# MAIN_STACK is stack for ISR handlers
+MAIN_STACK 0x300
+
+# PROCESS_STACK controls stack for main thread
+PROCESS_STACK 0xA00
+
+# save memory
+define HAL_USE_ADC FALSE
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# order of I2C buses
+I2C_ORDER I2C1 I2C2
+
+# I2C bus for magnetometer
+PB13 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+# I2C bus for DLVR
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# Mag probe
+COMPASS BMM150 I2C:0:0x10 false ROTATION_NONE
+
+# default to DLVR 10in
+AIRSPEED DLVR I2C:0:0x28 10
+define HAL_AIRSPEED_BUS_DEFAULT 0
+define HAL_AIRSPEED_TYPE_DEFAULT 9
+
+# ---------------------- CAN bus -------------------------
+CAN_ORDER 1
+
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PB1 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB6 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW HIGH
+
+define HAL_CAN_POOL_SIZE 6000
+
+# allow for reboot command for faster development
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+# enable compass and airspeed
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_AIRSPEED_ENABLED 1
+define HAL_COMPASS_MAX_SENSORS 1  
+define AIRSPEED_MAX_SENSORS 1
+
+# PWM, WS2812 LED
+PA2 TIM2_CH3 TIM2 PWM(1) GPIO(50)
+PA3 TIM2_CH4 TIM2 PWM(2) GPIO(51)
+
+define CAN_APP_NODE_NAME "in.sierraaerospace.TrueSpeed"
+
+# LEDs
+PA1 LED OUTPUT LOW GPIO(1)
+
+# ---------------------- UARTs ---------------------------
+SERIAL_ORDER USART1
+
+# USART1
+PA9  USART1_TX USART1 SPEED_HIGH
+PA10  USART1_RX USART1 SPEED_HIGH
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1

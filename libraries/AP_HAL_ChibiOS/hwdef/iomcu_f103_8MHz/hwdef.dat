@@ -1,0 +1,16 @@
+
+# MCU class and specific type
+MCU STM32F103 STM32F103xB
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_IOMCU_F103_8MHZ
+
+include ../iomcu/hwdef.inc
+
+undef OSCILLATOR_HZ
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# directly define DMA channels
+DMA_NOMAP 1

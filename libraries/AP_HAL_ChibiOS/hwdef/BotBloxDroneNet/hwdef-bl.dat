@@ -1,0 +1,75 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the BotBloxSwitch hardware
+
+
+
+# MCU class and specific type
+MCU STM32H7xx STM32H723xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# setup build for a peripheral bootloader
+env AP_PERIPH 1
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_BotBloxSwitch
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# flash size
+FLASH_SIZE_KB 1024
+
+# USB
+PA11 OTG_HS_DM OTG1
+PA12 OTG_HS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CAN bus
+PD0  CAN1_RX CAN1
+PD1  CAN1_TX CAN1
+
+#PD4 USART2_DE USART2
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+PD12 USART3_RTS USART3
+PD11 USART3_CTS USART3
+
+# LEDs
+PC0 LED_STT1 OUTPUT OPENDRAIN HIGH
+PA4 LED_STT2 OUTPUT OPENDRAIN HIGH
+define HAL_LED_ON 0
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+
+PC1 ETH_MDC              ETH1
+PA2 ETH_MDIO             ETH1
+PC4 ETH_RMII_RXD0        ETH1
+PC5 ETH_RMII_RXD1        ETH1
+PB12 ETH_RMII_TXD0       ETH1
+PB13 ETH_RMII_TXD1       ETH1
+PB11 ETH_RMII_TX_EN      ETH1
+PA7 ETH_RMII_CRS_DV      ETH1
+PA1 ETH_RMII_REF_CLK     ETH1
+
+define BOARD_PHY_ADDRESS 5
+define BOARD_PHY_RMII
+
+# auto-negotiation doesn't work, force 100MBit full duplex
+define STM32_MAC_PHY_LINK_TYPE MAC_LINK_100_FULLDUPLEX
+
+include ../include/network_bootloader.inc
+
+SERIAL_ORDER OTG1 USART3

@@ -1,0 +1,88 @@
+# HW definition file for processing by chibios_hwdef.py
+# for GreenSight's UltraBlue board
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# Setup USB
+USB_STRING_MANUFACTURER "GreenSight"
+USB_STRING_PRODUCT "UltraBlue-BL"
+
+# Crystal frequency
+OSCILLATOR_HZ 16000000
+
+# Board ID for firmware load
+APJ_BOARD_ID AP_HW_GreenSight_UltraBlue
+
+FLASH_SIZE_KB 2048
+
+# Bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# Where the bootloader will put the firmware
+# Note that the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 2
+
+# LEDs
+PI5 LED_RED OUTPUT OPENDRAIN HIGH # red
+PI7 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # blue
+PI6 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # green
+
+define HAL_LED_ON 0
+
+# Baudrate to run bootloader at on UARTs
+define BOOTLOADER_BAUDRATE 115200
+
+# Order of UART/USB to run bootloader protocol on
+# This allows flashing via USB, Jetson telem, or debug
+SERIAL_ORDER OTG1 USART2 UART7
+
+# UARTs
+# USART2 is Jetson telem
+PD6 USART2_RX USART2
+PD5 USART2_TX USART2
+PD3 USART2_CTS USART2
+PD4 USART2_RTS USART2
+
+# UART7 is debug
+PF6 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# These are the pins for SWD debugging with a STlinkv2 or black-magic probe.
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Print bootloader debug messages on UART7
+define BOOTLOADER_DEBUG SD7
+
+# Enable the ability to boot into DFU mode
+ENABLE_DFU_BOOT 1
+
+# microSD support
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1
+
+# Add CS pins to ensure they are high in bootloader
+PF10 BMI088_U11_A_CS CS
+PG6  BMI088_U11_G_CS CS
+PI12 ICM20649_CS CS SPEED_VERYLOW
+PF3  BMI088_U12_A_CS CS
+PF4  BMI088_U12_G_CS CS
+PF5  FRAM_CS CS SPEED_VERYLOW
+PI8  DPS310_CS CS
+PI4  EXT1_CS1 CS
+PI10 EXT1_CS2 CS
+PI13 EXT1_CS3 CS

@@ -1,0 +1,9 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32F100 STM32F100xB
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_IOMCU_F100
+
+include ../iomcu-dshot/hwdef.inc

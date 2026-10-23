@@ -1,0 +1,127 @@
+# See https://pre-commit.com for more information, specially https://pre-commit.com/#pre-commit-run for manual trigger
+# Some example useful invocations:
+#  pre-commit run: this is what pre-commit runs by default when committing. This will run all hooks against currently staged files.
+#  pre-commit run --all-files: run all the hooks against all the files. This is a useful invocation if you are using pre-commit in CI.
+#  pre-commit run check-executables-have-shebangs: run the check-executables-have-shebangs hook against all staged files.
+
+# Files or directory we want to excude from checking
+exclude: |
+  (?x)(
+  ^modules/ |
+  ^build/ |
+  ^cmake-build-debug/ |
+  \.m |
+  ^libraries/AP_HAL_ChibiOS/hwdef/scripts/
+  )
+
+repos:
+  -   repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v6.0.0
+      hooks:
+        #-   id: trailing-whitespace
+        #-   id: end-of-file-fixer
+        -   id: mixed-line-ending
+            name: Check line ending character (LF)
+            args: ["--fix=lf"]
+            types_or: [python, c, c++, shell]
+            exclude: |
+              (?x)^(
+                libraries/AP_ADSB/AP_ADSB_Sagetech_MXS.cpp |
+                libraries/AP_ADSB/AP_ADSB_Sagetech_MXS.h
+              )$
+        -   id: check-added-large-files
+        -   id: check-executables-have-shebangs
+        -   id: check-shebang-scripts-are-executable
+            exclude: |
+              (?x)^(
+                .*\/wscript |
+                wscript
+              )$
+        -   id: check-merge-conflict
+        -   id: check-xml
+        -   id: check-yaml
+
+  -   repo: https://github.com/psf/black
+      rev: 25.1.0
+      hooks:
+        - id: black
+          files: |
+            (?x)^(
+              libraries\/AP_DDS\/(wscript|.*\.py)$ |
+              Tools/ros2/.*\.py
+            )$
+
+  -   repo: https://github.com/pycqa/flake8
+      rev: 7.3.0
+      hooks:
+      -   id: flake8
+  
+  -   repo: local
+      hooks:
+      -   id: ament-pep257
+          name: Run ament_pep257 on Tools/ros2
+          entry: bash -c 'ament_pep257 Tools/ros2 > /dev/null'
+          language: python
+          additional_dependencies:
+          -   ament-lint-pep257
+          -   tomli;python_version<'3.11'
+          pass_filenames: false
+          files: ^Tools/ros2/
+      -   id: serial-protocol-gates
+          name: Check SerialProtocol gate coverage
+          entry: Tools/scripts/check_serial_protocol_gates.py
+          language: script
+          pass_filenames: false
+          files: |
+            (?x)^(
+              libraries/AP_SerialManager/AP_SerialManager\.h |
+              libraries/AP_SerialManager/AP_SerialManager_default_protocol_check\.cpp |
+              Tools/scripts/check_serial_protocol_gates\.py
+            )$
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell # See pyproject.toml for args
+        types_or: [python]
+        args:
+          - --ignore-words-list=afile,bodgy,chek,commitish,edn,empy,finis,fram,mot,ned,parm,releas,parms,rin,ser,sitl,siz
+        additional_dependencies:
+          - tomli
+
+  - repo: local
+    hooks:
+    -   id: check-copyright
+        name: check copyright notice in files
+        entry: Tools/gittools/pre_commit_copyright.py
+        language: python
+        files: |
+            (?x)^(
+              Tools/ros2/.*\.py
+            )$
+        args: [
+            --ignore=Tools/ros2/ardupilot_dds_tests/setup.py,
+            --ignore=Tools/ros2/ardupilot_dds_tests/test/test_pep257.py,
+            --ignore=Tools/ros2/ardupilot_dds_tests/test/test_copyright.py,
+        ]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.6
+    hooks:
+    -   id: ruff-check
+
+# # Use to sort python imports by name and put system import first.
+#   -   repo: https://github.com/pycqa/isort
+#       rev: 5.12.0
+#       hooks:
+#         - id: isort
+#           args: [--check-only]
+#           name: isort (python)
+
+# # Use to check python typing to show errors.
+#   -   repo: https://github.com/pre-commit/mirrors-mypy
+#       rev: 'v0.950'
+#       hooks:
+#         - id: mypy
+#           args: [--no-strict-optional, --ignore-missing-imports]
+#           additional_dependencies: [types-PyYAML, types-requests]
