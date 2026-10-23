@@ -79,6 +79,11 @@ void Mode::_TakeOff::do_pilot_takeoff_ms(float pilot_climb_rate_ms)
     }
 
     if (copter.ap.land_complete) {
+        // do not lift off while the pilot is commanding a descent
+        if (is_negative(pilot_climb_rate_ms)) {
+            stop();
+            return;
+        }
         // send throttle to attitude controller with angle boost
         float throttle_norm = constrain_float(copter.attitude_control->get_throttle_in() + copter.G_Dt / copter.g2.takeoff_throttle_slew_time, 0.0, 1.0);
         copter.attitude_control->set_throttle_out(throttle_norm, true, 0.0);
