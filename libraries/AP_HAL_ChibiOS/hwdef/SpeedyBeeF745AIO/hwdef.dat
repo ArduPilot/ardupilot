@@ -1,0 +1,170 @@
+# hw definition file for processing by chibios_hwdef.py
+# for SPEEDYBEE_F745_AIO hardware.
+# thanks to betaflight for pin information
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# MCU class and specific type
+MCU STM32F7xx STM32F745xx
+
+# board ID for firmware load. This must also be added to
+# Tools/AP_Bootloader/board_types.txt (or the binary won't validate)
+APJ_BOARD_ID AP_HW_SpeedyBeeF745AIO
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader takes first sector - and parameters come directly after that
+FLASH_RESERVE_START_KB 96
+
+define HAL_STORAGE_SIZE 16384
+define STORAGE_FLASH_PAGE 1
+
+STM32_ST_USE_TIMER 5
+
+# SPI devices
+
+# SPI1 - flash
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI2 - OSD (MAX7456)
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+# SPI4 - gyro (MPU6000)
+PE2 SPI4_SCK SPI4
+PE5 SPI4_MISO SPI4
+PE6 SPI4_MOSI SPI4
+
+# Chip select pins
+PA4 FLASH1_CS CS
+PB12 OSD1_CS CS
+PE4 GYRO1_CS CS
+
+# PE1 is the MPU6000 data-ready interrupt in betaflight
+# (resource GYRO_EXTI 1 E01)
+PE1 INPUT
+
+# Beeper (BF: beeper_inversion=ON, i.e. active low hardware)
+PD15 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+
+# SERIAL ports
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# USART1: Manual specifies RX1 pad as PPM/Spektrum, TX1 pad is Spektrum SRXL2.
+# Specify it as generic UART here
+PA10 USART1_RX USART1
+PA9  USART1_TX USART1
+# ... define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_None
+
+# USART2: GPS
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_GPS
+
+# USART3: spare (telem / esc telem / alt GPS)
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
+
+# UART4: receiver
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_RCIN
+
+# USART6: T6/R6 pads go to DJI Air Unit
+PC6 USART6_TX USART6 NODMA
+PC7 USART6_RX USART6 NODMA
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_MSP_DisplayPort
+
+# I2C1: barometer and external compass probing
+I2C_ORDER I2C1
+PB6 I2C1_SCL I2C1 PULLUP
+PB7 I2C1_SDA I2C1 PULLUP
+
+# ADC ports
+PC2 BATT_CURRENT_SENS ADC1 SCALE(1)
+PC3 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+
+# battery setup (BF: ibata_scale=256 -> 10000/256 = 39.06)
+define HAL_BATT_CURR_PIN 12
+define HAL_BATT_CURR_SCALE 39.1
+define HAL_BATT_VOLT_PIN 13
+define HAL_BATT_VOLT_SCALE 11.0
+define HAL_BATT_MONITOR_DEFAULT 4
+
+# Motors (BF: MOTOR1 B00, MOTOR2 B01, MOTOR3 E09, MOTOR4 E11)
+# Defaulting to bi-directional Dshot, one BIDIR channel per timer group
+# This works only when flashing BlueJay to the ESCs
+PB0  TIM3_CH3 TIM3 PWM(1) GPIO(50)  BIDIR   # M1
+PB1  TIM3_CH4 TIM3 PWM(2) GPIO(51)          # M2
+PE9  TIM1_CH1 TIM1 PWM(3) GPIO(52)  BIDIR   # M3
+PE11 TIM1_CH2 TIM1 PWM(4) GPIO(53)            # M4
+
+# NeoPixel LED strip pad (BF: LED_STRIP 1 D12)
+PD12 TIM4_CH1 TIM4 PWM(5) GPIO(54)
+
+# Camera control / pad pad (BF: CAMERA_CONTROL 1 B03)
+PB3 CAMERA1 OUTPUT GPIO(70) LOW
+define RELAY2_PIN_DEFAULT 70
+
+# onboard LED (BF: LED 1 A02)
+PA2 LED0 OUTPUT LOW GPIO(90)
+define HAL_GPIO_A_LED_PIN 90
+define AP_NOTIFY_GPIO_LED_ENABLED 1
+define AP_NOTIFY_GPIO_LED_1_PIN 90
+
+# DMA setup for DShot on TIM3/TIM1 plus gyro on SPI4
+DMA_NOSHARE TIM3_UP TIM1_UP SPI4*
+DMA_PRIORITY TIM3_UP TIM1_UP SPI4*
+
+# Optionally: no DMA on I2C
+# NODMA I2C*
+# define STM32_I2C_USE_DMA FALSE
+
+# Dataflash setup
+SPIDEV dataflash SPI1 DEVID1 FLASH1_CS     MODE3 104*MHZ 104*MHZ
+
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+# OSD setup
+SPIDEV osd SPI2 DEVID1 OSD1_CS   MODE0  10*MHZ  10*MHZ
+
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# Barometer setup
+BARO BMP280 I2C:0:0x76
+
+# IMU setup - MPU6000 on SPI4.
+IMU Invensense SPI:imu1 ROTATION_NONE
+SPIDEV imu1   SPI4 DEVID1 GYRO1_CS   MODE3   1*MHZ   4*MHZ
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# Motor order implies Betaflight/X for standard ESCs
+define HAL_FRAME_TYPE_DEFAULT 12
+
+# save some flash
+include ../include/minimize_fpv_osd.inc
+
+# Neopixel (256) and onboard (1)
+define DEFAULT_NTF_LED_TYPES 257
