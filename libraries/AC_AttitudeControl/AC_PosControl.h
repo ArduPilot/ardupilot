@@ -12,6 +12,7 @@
 #include <AC_PID/AC_PID_2D.h>       // PID library (2-axis)
 #include <AP_Scripting/AP_Scripting_config.h>
 #include "AC_AttitudeControl.h"     // Attitude control library
+#include "AC_AttitudeControl_config.h"
 
 #include <AP_Logger/LogStructure.h>
 
@@ -544,12 +545,6 @@ public:
         _inverted_thrust_height_m = height_above_ground_m;
     }
 
-    // Permits the thrust vector to tilt past 90 degrees for one cycle, taking height above the EKF origin.
-    void set_inverted_thrust_allowed(bool allowed) { set_inverted_thrust_allowed(allowed, -_pos_estimate_ned_m.z); }
-
-    // Returns true if the commanded thrust vector is currently permitted to point downward.
-    bool inverted_thrust_active() const { return _thrust_inverted_active; }
-
     // Overrides the maximum allowed roll/pitch angle in radians.
     // A value of 0 reverts to using the ANGLE_MAX parameter.
     void set_lean_angle_max_rad(float angle_max_rad) { _angle_max_override_rad = angle_max_rad; }
@@ -684,6 +679,9 @@ protected:
     // Updates whether the vehicle is allowed to point its thrust downward this cycle.
     void update_inverted_thrust_state(float throttle_up);
 
+    // Sets whether the thrust vector may point downward, logging each change.
+    void set_inverted_thrust_active(bool active);
+
     // Updates the heading-degenerate flag from the thrust tilt, with hysteresis.
     void update_heading_degenerate();
 
@@ -743,7 +741,7 @@ protected:
     AP_Float        _shaping_jerk_ne_msss;  // Jerk limit of the ne kinematic path generation in m/s³ used to determine how quickly the aircraft varies the acceleration target
     AP_Float        _shaping_jerk_d_msss;   // Jerk limit of the u kinematic path generation in m/s³ used to determine how quickly the aircraft varies the acceleration target
     AP_Int8         _thrust_vector_enabled; // allow the commanded thrust vector to tilt past 90 degrees when the path demands more than free fall
-    AP_Float        _thrust_vector_min_height_m; // minimum height above the EKF origin at which inverted thrust is permitted
+    AP_Float        _thrust_vector_min_height_m; // minimum height above ground at which inverted thrust is permitted
 
     // inverted thrust state
     float           _thrust_vector_d_mss;       // specific thrust along Down the vehicle should produce in m/s^2, used when _thrust_vector_enabled

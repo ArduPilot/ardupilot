@@ -90,6 +90,7 @@ AC_PosControl *AC_PosControl::_singleton;
 
 #define POSCONTROL_TVEC_ARM_MS                  100     // the path must demand more than free fall for this long before inverted thrust is armed
 #define POSCONTROL_TVEC_EXIT_MS                 250     // the vertical axis must want thrust up for this long before inverted thrust is released
+#define POSCONTROL_TVEC_ALT_MIN_M               5.0f    // lowest PSC_TVEC_ALT honoured, whatever the parameter says
 
 #define POSCONTROL_ACCEL_D_MAX_SHAPED_MSS       7.5f    // vertical acceleration ceiling for the input shaping, applied before the overspeed gain
 static_assert(POSCONTROL_ACCEL_D_MAX_SHAPED_MSS < GRAVITY_MSS, "the shaping must never ask for more than free fall");
@@ -154,18 +155,19 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // @Param: _TVEC_EN
     // @DisplayName: Thrust vector control enable
-    // @Description: Allows the commanded thrust vector to tilt past 90 degrees when the path demands a downward acceleration greater than free fall. The vertical thrust demand is no longer clamped at zero and the throttle is set from the magnitude of the thrust vector rather than by angle boost. Experimental.
+    // @Description: Allows the commanded thrust vector to tilt past 90 degrees when the path demands a downward acceleration greater than free fall, other than to slow down along it. The vehicle decides where it may be used: Copter permits it only on Auto waypoint legs, and never on a helicopter. The vertical thrust demand is no longer clamped at zero and the throttle is set from the magnitude of the thrust vector rather than by angle boost. The horizontal acceleration is still bounded by the lean angle limit, so a vertical manoeuvre needs ATC_ANGLE_MAX raised. Experimental.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("_TVEC_EN", 15, AC_PosControl, _thrust_vector_enabled, 0),
 
     // @Param: _TVEC_ALT
     // @DisplayName: Thrust vector minimum height
-    // @Description: Minimum height above the EKF origin at which the commanded thrust vector may tilt past 90 degrees. Inverted thrust is inhibited below this height whatever the path demands, because the vertical controller routinely wants less than zero upward thrust in the last part of a descent.
+    // @Description: Minimum height above ground at which the commanded thrust vector may tilt past 90 degrees, as the vehicle estimates it: Copter takes the lowest of its rangefinder, terrain and home heights. Inverted thrust is inhibited below this height whatever the path demands, because the vertical controller routinely wants less than zero upward thrust in the last part of a descent. Values below 5 are treated as 5.
     // @Units: m
     // @Range: 5 200
+    // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("_TVEC_ALT", 16, AC_PosControl, _thrust_vector_min_height_m, 15.0),
+    AP_GROUPINFO("_TVEC_ALT", 16, AC_PosControl, _thrust_vector_min_height_m, 15.0f),
 
     // @Param: _D_VEL_P
     // @DisplayName: Velocity (vertical) controller P gain
@@ -925,7 +927,7 @@ void AC_PosControl::D_init_controller()
 {
     // thrust supports weight until the vertical controller says otherwise
     _thrust_vector_d_mss = -GRAVITY_MSS;
-    _thrust_inverted_active = false;
+    set_inverted_thrust_active(false);
     _thrust_invert_arm_ms = 0;
     _heading_degenerate = false;
 
@@ -1442,8 +1444,8 @@ void AC_PosControl::update_inverted_thrust_state(float throttle_up)
     const bool allowed = _inverted_thrust_allowed;
     _inverted_thrust_allowed = false;
 
-    if (!_thrust_vector_enabled || !allowed || _inverted_thrust_height_m < _thrust_vector_min_height_m) {
-        _thrust_inverted_active = false;
+    if (!_thrust_vector_enabled || !allowed || _inverted_thrust_height_m < MAX(_thrust_vector_min_height_m, POSCONTROL_TVEC_ALT_MIN_M)) {
+        set_inverted_thrust_active(false);
         _thrust_invert_arm_ms = 0;
         _thrust_invert_upright_ms = now_ms;
         return;
@@ -1466,7 +1468,7 @@ void AC_PosControl::update_inverted_thrust_state(float throttle_up)
             if (_thrust_invert_arm_ms == 0) {
                 _thrust_invert_arm_ms = now_ms;
             } else if (now_ms - _thrust_invert_arm_ms >= POSCONTROL_TVEC_ARM_MS) {
-                _thrust_inverted_active = true;
+                set_inverted_thrust_active(true);
                 _thrust_invert_upright_ms = now_ms;
             }
         } else {
@@ -1478,9 +1480,19 @@ void AC_PosControl::update_inverted_thrust_state(float throttle_up)
     if (is_negative(throttle_up)) {
         _thrust_invert_upright_ms = now_ms;
     } else if (now_ms - _thrust_invert_upright_ms >= POSCONTROL_TVEC_EXIT_MS) {
-        _thrust_inverted_active = false;
+        set_inverted_thrust_active(false);
         _thrust_invert_arm_ms = 0;
     }
+}
+
+// Sets whether the thrust vector may point downward, logging each change.
+void AC_PosControl::set_inverted_thrust_active(bool active)
+{
+    if (active == _thrust_inverted_active) {
+        return;
+    }
+    _thrust_inverted_active = active;
+    LOGGER_WRITE_EVENT(active ? LogEvent::INVERTED_THRUST_START : LogEvent::INVERTED_THRUST_STOP);
 }
 
 Vector3f AC_PosControl::get_thrust_vector() const
