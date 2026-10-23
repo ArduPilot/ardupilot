@@ -78,6 +78,8 @@ public:
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) override;
     void rate_controller_run() override;
+    void rate_controller_target_reset() override;
+    void record_rate_modifiers() override;
 
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
@@ -90,12 +92,11 @@ public:
 
 protected:
 
-    // Boosts angle controller gains during rapid throttle changes to improve responsiveness
-    // boost angle_p/pd each cycle on high throttle slew
-    void update_throttle_gain_boost();
+    // returns the PD multiplier to apply on high throttle slew, 1.0 otherwise. Angle P is boosted by its square
+    float get_throttle_pd_boost() const;
 
     // Slews the current throttle-to-attitude mix ratio toward the target (_throttle_rpy_mix_desired)
-    void update_throttle_rpy_mix();
+    void update_throttle_rpy_mix(float dt);
 
     // Get throttle limit based on priority of attitude vs throttle control (used for blending during low thrust)
     float get_throttle_avg_max(float throttle_in);
@@ -154,4 +155,12 @@ protected:
 
     // angle_p/pd boost multiplier
     AP_Float              _throttle_gain_boost;
+
+    // per-loop sysid and gain scale modifiers recorded for the rate controller, which may run several times per main loop on the rate thread
+    struct {
+        Vector3f sysid_ang_vel_body_rads;
+        Vector3f actuator_sysid;
+        Vector3f pd_scale{1,1,1};
+        Vector3f i_scale{1,1,1};
+    } _rate_modifiers;
 };
