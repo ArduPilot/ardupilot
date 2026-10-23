@@ -5,7 +5,10 @@ name: Labels Trigger
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    # edited is how a retarget arrives: the base changes without the head
+    # moving, so nothing else would fire.  It also fires on a title or body
+    # edit, where the run finds nothing to do and stops.
+    types: [opened, synchronize, reopened, closed, edited]
 
 permissions: {}
 
