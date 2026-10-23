@@ -803,6 +803,51 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         return (cx, cy), R
 
+    def ArcWaypointPlaneParam(self):
+        '''ARC_WAYPOINT param2 round trips for each plane rotation and rejects anything else'''
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        MISSION = mavutil.mavlink.MAV_MISSION_TYPE_MISSION
+        frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+        home = self.home_position_as_location()
+        lat = int(home.lat * 1e7)
+        lng = int(home.lng * 1e7)
+
+        def items(p2):
+            return [
+                self.create_MISSION_ITEM_INT(WP, seq=0, x=lat, y=lng, z=0, frame=frame),
+                self.create_MISSION_ITEM_INT(ARC, seq=1, p1=90, p2=p2, x=lat + 1000, y=lng, z=20, frame=frame),
+            ]
+
+        def downloaded_param2():
+            return self.download_using_mission_protocol(MISSION)[1].param2
+
+        # the four rotations the storage holds come back as they went up, and an unset (NaN)
+        # param2 means the horizontal arc
+        for p2, want in (0, 0), (45, 45), (90, 90), (135, 135), (float('nan'), 0):
+            self.start_subtest("param2 %s" % p2)
+            self.upload_using_mission_protocol(MISSION, items(p2))
+            got = downloaded_param2()
+            if got != want:
+                raise NotAchievedException("param2 %s downloaded as %f, want %f" % (p2, got, want))
+
+        # anything else is refused rather than snapped to the nearest step
+        acks = []
+
+        def hook(mav, m):
+            if m.get_type() == 'MISSION_ACK':
+                acks.append(m.type)
+        self.install_message_hook_context(hook)
+        for p2 in 30, -45, 180, 46, 45.4:
+            self.start_subtest("param2 %s is rejected" % p2)
+            del acks[:]
+            try:
+                self.upload_using_mission_protocol(MISSION, items(p2))
+            except NotAchievedException:
+                pass
+            if mavutil.mavlink.MAV_MISSION_INVALID_PARAM2 not in acks:
+                raise NotAchievedException("param2 %s was not rejected (acks %s)" % (p2, acks))
+
     def WPArcs2(self):
         '''more tests for waypoint arcs'''
         self.set_parameters({
@@ -19613,6 +19658,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.WPArcs2,
             self.WPArcStartWaypoint,
             self.DoJumpToDoCommand,
+            self.ArcWaypointPlaneParam,
             self.BatteryFailsafeBrakeLandNoGPS,
             self.AC_Avoidance_Proximity,
             self.AC_Avoidance_Fence,
