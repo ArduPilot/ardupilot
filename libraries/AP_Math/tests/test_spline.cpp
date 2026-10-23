@@ -25,7 +25,7 @@ static const uint32_t MAX_ITERS = 200000;
 
 // drive a spline to completion, returning the worst mismatch between the turning part of the
 // acceleration it reports and that of the derivative of the velocity it reports
-static float worst_accel_mismatch(SplineCurve &leg, float &worst_normal, float &peak_speed)
+static float worst_accel_mismatch(SplineCurve &leg, float &worst_normal, float &peak_speed, float &worst_along)
 {
     const float dt = 0.0025f;
     Vector3p pos;
@@ -33,6 +33,7 @@ static float worst_accel_mismatch(SplineCurve &leg, float &worst_normal, float &
     bool have_prev = false;
     float worst = 0.0f;
     worst_normal = 0.0f;
+    worst_along = 0.0f;
     peak_speed = 0.0f;
     for (uint32_t i = 0; i < MAX_ITERS && !leg.reached_destination(); i++) {
         vel_prev = vel;
@@ -47,6 +48,7 @@ static float worst_accel_mismatch(SplineCurve &leg, float &worst_normal, float &
             const Vector3f accel_normal = accel - unit * (accel * unit);
             worst = MAX(worst, (fd_normal - accel_normal).length());
             worst_normal = MAX(worst_normal, accel_normal.length());
+            worst_along = MAX(worst_along, fabsf(accel * unit));
         }
         have_prev = true;
     }
@@ -64,10 +66,12 @@ TEST(SplineCurve, accel_matches_velocity_derivative)
     leg.set_origin_and_destination(Vector3p{0, 0, -50}, Vector3p{60, 40, -70},
                                    Vector3f{15, 0, 0}, Vector3f{0, 15, 0});
 
-    float worst_normal, peak_speed;
-    const float worst = worst_accel_mismatch(leg, worst_normal, peak_speed);
+    float worst_normal, peak_speed, worst_along;
+    const float worst = worst_accel_mismatch(leg, worst_normal, peak_speed, worst_along);
     EXPECT_GT(peak_speed, 5.0f);        // it actually flew
     EXPECT_LT(worst, 0.5f);
+    // the speed is not the spline's own, so nothing is reported along the direction of travel
+    EXPECT_LT(worst_along, 0.01f);
 }
 
 // A vertical spline is the case that matters for inverted flight: the curve must report
@@ -80,8 +84,8 @@ TEST(SplineCurve, vertical_spline_reports_acceleration)
     leg.set_origin_and_destination(Vector3p{0, 0, -60}, Vector3p{40, 0, -60},
                                    Vector3f{0, 0, -25}, Vector3f{0, 0, 25});
 
-    float worst_normal, peak_speed;
-    const float worst = worst_accel_mismatch(leg, worst_normal, peak_speed);
+    float worst_normal, peak_speed, worst_along;
+    const float worst = worst_accel_mismatch(leg, worst_normal, peak_speed, worst_along);
     EXPECT_GT(peak_speed, 5.0f);
     EXPECT_LT(worst, 1.0f);
     // it must demand real turning acceleration, which the old code reported as zero
@@ -99,8 +103,8 @@ TEST(SplineCurve, normal_accel_within_lateral_limit)
     leg.set_origin_and_destination(Vector3p{0, 0, -40}, Vector3p{50, 50, -40},
                                    Vector3f{20, 0, 0}, Vector3f{0, 20, 0});
 
-    float worst_normal, peak_speed;
-    worst_accel_mismatch(leg, worst_normal, peak_speed);
+    float worst_normal, peak_speed, worst_along;
+    worst_accel_mismatch(leg, worst_normal, peak_speed, worst_along);
     EXPECT_GT(peak_speed, 5.0f);
     EXPECT_LE(worst_normal, 0.5f * accel_xy + 0.5f);
 }
@@ -141,7 +145,7 @@ TEST(SplineCurve, rest_endpoint_accel_is_bounded)
             worst = MAX(worst, accel.length());
         }
         EXPECT_EQ(cycles_after, 200U);
-        EXPECT_LT(worst, 2.0f * accel_max) << "leg to (" << l.dest.x << "," << l.dest.y << "," << l.dest.z << ")";
+        EXPECT_LE(worst, accel_max + 0.01f) << "leg to (" << l.dest.x << "," << l.dest.y << "," << l.dest.z << ")";
     }
 }
 
