@@ -5128,6 +5128,126 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def ScriptingMAVLinkPerScript(self):
+        """Check scripts receiving MAVLink each get the messages they registered for."""
+        self.context_push()
+        self.set_parameter("SCR_ENABLE", 1)
+
+        def script(name, msgids, queue_len=20):
+            return """
+-- count the MAVLink messages received, by message ID
+mavlink:init(%u, %u)
+for _, msgid in ipairs({%s}) do
+    assert(mavlink:register_rx_msgid(msgid), "already registered")
+end
+local counts = {}
+local function update()
+    while true do
+        local msg = mavlink:receive_chan()
+        if msg == nil then
+            break
+        end
+        local msgid = string.unpack("<I3", msg, 13)
+        counts[msgid] = (counts[msgid] or 0) + 1
+    end
+    local parts = {}
+    for msgid, count in pairs(counts) do
+        parts[#parts+1] = string.format("%%u=%%u", msgid, count)
+    end
+    table.sort(parts)
+    gcs:send_text(6, "%s: " .. table.concat(parts, " "))
+    return update, 1000
+end
+return update, 1000
+""" % (queue_len, len(msgids), ",".join([str(x) for x in msgids]), name)
+
+        HEARTBEAT = mavutil.mavlink.MAVLINK_MSG_ID_HEARTBEAT
+        PARAM_SET = mavutil.mavlink.MAVLINK_MSG_ID_PARAM_SET
+        NAMED_VALUE_INT = mavutil.mavlink.MAVLINK_MSG_ID_NAMED_VALUE_INT
+        self.install_script_content_context("rx_a.lua", script("RXA", [HEARTBEAT]))
+        self.install_script_content_context("rx_b.lua", script("RXB", [HEARTBEAT, PARAM_SET]))
+        self.install_script_content_context("rx_c.lua", script("RXC", [NAMED_VALUE_INT], queue_len=1))
+
+        def long_named_value_int():
+            # a NAMED_VALUE_INT with one more payload byte than our
+            # definition, as a sender with a newer definition might send
+            payload = struct.pack("<Ii10s", 1, 1, b"0123456789") + b"\x01"
+            header = struct.pack("<BBBBBBBHB", 0xFD, len(payload), 0, 0, 0,
+                                 self.mav.mav.srcSystem, self.mav.mav.srcComponent,
+                                 NAMED_VALUE_INT & 0xFFFF, NAMED_VALUE_INT >> 16)
+            crc = mavutil.mavlink.x25crc(header[1:] + payload)
+            crc.accumulate(struct.pack("<B", mavutil.mavlink.MAVLink_named_value_int_message.crc_extra))
+            return header + payload + struct.pack("<H", crc.crc)
+
+        def counts(name):
+            m = self.wait_statustext(r"%s: " % name, regex=True)
+            ret = {}
+            for part in m.text.split(":", 1)[1].split():
+                msgid, count = part.split("=")
+                ret[int(msgid)] = int(count)
+            return ret
+
+        def check():
+            # wait until both scripts are running
+            counts("RXA")
+            counts("RXB")
+            # set a parameter so that PARAM_SETs are sent
+            for value in 1, 2, 3:
+                self.set_parameter("SCR_USER1", value)
+            self.set_parameter("SCR_USER1", 0)
+            self.delay_sim_time(5, "accumulate heartbeats")
+            # the scripts report at different times, so RXB's report
+            # is compared with the RXA reports either side of it
+            a = counts("RXA")
+            b = counts("RXB")
+            a2 = counts("RXA")
+            self.progress("RXA=%s RXB=%s RXA=%s" % (a, b, a2))
+            for x in a, a2:
+                if set(x.keys()) != {HEARTBEAT}:
+                    raise NotAchievedException("RXA received messages it did not register for: %s" % x)
+            if b.get(PARAM_SET, 0) == 0:
+                raise NotAchievedException("RXB received no PARAM_SETs: %s" % b)
+            if a[HEARTBEAT] < 5 or not a[HEARTBEAT] - 1 <= b.get(HEARTBEAT, 0) <= a2[HEARTBEAT] + 1:
+                raise NotAchievedException("Both scripts should receive every HEARTBEAT")
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        self.start_subtest("Two scripts receive the same message")
+        check()
+
+        self.start_subtest("A queue of one has room for a message longer than our definition")
+        for i in range(1, 4):
+            self.mav.write(long_named_value_int())
+            self.wait_statustext(r"RXC: %u=%u$" % (NAMED_VALUE_INT, i), regex=True)
+
+        self.start_subtest("Registrations are freed when scripting restarts")
+        self.scripting_restart()
+        check()
+
+        self.start_subtest("A finaliser can use MAVLink")
+        # the garbage is collected after each script run
+        self.install_script_content_context("rx_d.lua", """
+mavlink:init(1, 1)
+local count = 0
+local function update()
+    setmetatable({}, {__gc = function() mavlink:init(1, 1) end})
+    count = count + 1
+    gcs:send_text(6, string.format("RXD: %u", count))
+    return update, 1000
+end
+return update, 1000
+""")
+        self.scripting_restart()
+        self.wait_statustext("RXD: 3")
+        counts("RXA")
+
+        if self.statustext_in_collections("Lua:") is not None:
+            raise NotAchievedException("Lua error")
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
 
@@ -8198,6 +8318,7 @@ return update()
             self.SlewRate,
             self.Scripting,
             self.ScriptingMAVLink,
+            self.ScriptingMAVLinkPerScript,
             self.ScriptingSteeringAndThrottle,
             self.MissionFrames,
             self.SetpointGlobalPos,

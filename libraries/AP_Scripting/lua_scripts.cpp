@@ -424,6 +424,11 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
         running_checksum ^= script->crc;
     }
     
+#if HAL_GCS_ENABLED
+    // before the environment reference can be reused by another script
+    AP::scripting()->mavlink_rx_remove(script->env_ref);
+#endif
+
     if (L != nullptr) {
         // state will be nullptr when we are tearing down
         luaL_unref(L, LUA_REGISTRYINDEX, script->env_ref);
@@ -486,6 +491,8 @@ void lua_scripts::run(void) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: Couldn't allocate a lua state");
         return;
     }
+    // no script is running yet
+    AP::scripting()->set_current_env_ref(LUA_NOREF);
     // initialize the state with a pointer to us for ls_* callback trampolines
     // (see ls_object_from_state)
     *static_cast<lua_scripts**>(lua_getextraspace(L)) = this;
@@ -500,6 +507,9 @@ void lua_scripts::run(void) {
     }
     // we are now finished with Lua, tear everything down
 
+    // finalisers run as the state is closed must not act for the
+    // last script run; errors they raise here are ignored
+    AP::scripting()->set_current_env_ref(LUA_NOREF);
     lua_close(L); // shut down the state
     L = nullptr;
 
