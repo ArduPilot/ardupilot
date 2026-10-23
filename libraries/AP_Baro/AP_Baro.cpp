@@ -82,6 +82,14 @@
 #define AP_FIELD_ELEVATION_ENABLED !defined(HAL_BUILD_AP_PERIPH) && !APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #endif
 
+#ifndef AP_BARO_OPTION_SPA06_AS_SPL07
+#define AP_BARO_OPTION_SPA06_AS_SPL07 0
+#endif
+
+#ifndef AP_BARO_OPTIONS_DEFAULT
+#define AP_BARO_OPTIONS_DEFAULT (AP_BARO_OPTION_SPA06_AS_SPL07 << 1)
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -253,9 +261,10 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param{Copter,Plane}: _OPTIONS
     // @DisplayName: Barometer options
     // @Description: Barometer options
-    // @Bitmask: 0:Treat MS5611 as MS5607
+    // @Bitmask: 0:Treat MS5611 as MS5607,1:Treat SPA06 as SPL07
+    // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_OPTIONS", 24, AP_Baro, _options, 0),
+    AP_GROUPINFO("_OPTIONS", 24, AP_Baro, _options, AP_BARO_OPTIONS_DEFAULT),
 #endif
 
 #if AP_BARO_THST_COMP_ENABLED

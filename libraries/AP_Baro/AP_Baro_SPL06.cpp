@@ -124,39 +124,37 @@ bool AP_Baro_SPL06::_init()
 
     for (uint8_t i=0; i<5; i++) {
         if (_dev->read_registers(SPL06_REG_CHIP_ID, &whoami, 1)) {
-        	switch(whoami) {
-			case SPL06_CHIP_ID:
-				type = Type::SPL06;
-				break;
-			case SPA06_CHIP_ID:
-				type = Type::SPA06;
-				break;
-			default:
-				type = Type::UNKNOWN;
-				break;
-			}
+            switch (whoami) {
+            case SPL06_CHIP_ID:
+                type = Type::SPL06;
+                break;
+            case SPA06_CHIP_ID:
+                type = _frontend.option_enabled(AP_Baro::Options::TreatSPA06AsSPL07) ? Type::SPL07 : Type::SPA06;
+                break;
+            default:
+                type = Type::UNKNOWN;
+                break;
+            }
         }
 
-        if (type != Type::UNKNOWN)
-			break;
+        if (type != Type::UNKNOWN) {
+            break;
+        }
     }
     
-    if (type == Type::UNKNOWN) {
-        return false;
-    }
-
     // number of calibration coefficient bytes to read for this device
     uint8_t calib_coeffs_len = SPL06_NUM_CALIB_COEFFS;
-	switch(type) {
-	case Type::SPL06:
-		calib_coeffs_len = SPL06_NUM_CALIB_COEFFS;
-		break;
-	case Type::SPA06:
-		calib_coeffs_len = SPA06_NUM_CALIB_COEFFS;
-		break;
-	default:
-		break;
-	}
+    switch (type) {
+    case Type::SPL06:
+        calib_coeffs_len = SPL06_NUM_CALIB_COEFFS;
+        break;
+    case Type::SPA06:
+    case Type::SPL07:
+        calib_coeffs_len = SPA06_NUM_CALIB_COEFFS;
+        break;
+    case Type::UNKNOWN:
+        return false;
+    }
 
     bool ready = false;
     for (uint8_t i=0; i<5; i++) {
@@ -214,14 +212,21 @@ bool AP_Baro_SPL06::_init()
     // 0x20 c30 [15:8] + 0x21 c30 [7:0]
     _c30 = get_twos_complement(((uint32_t)buf[16] << 8) | (uint32_t)buf[17], 16);
 
-    if(type == Type::SPA06) {
+    switch (type) {
+    case Type::SPA06:
+    case Type::SPL07:
         // 0x23 c31 [3:0] + 0x22 c31 [11:4]
         _c31 = get_twos_complement(((uint32_t)buf[18] << 4) | (((uint32_t)buf[19] >> 4) & 0x0F), 12);
         // 0x23 c40 [11:8] + 0x24 c40 [7:0]
         _c40 = get_twos_complement((((uint32_t)buf[19] & 0x0F) << 8) | (uint32_t)buf[20], 12);
-	}
+        break;
+    case Type::SPL06:
+        break;
+    case Type::UNKNOWN:
+        return false;
+    }
 
-    const uint8_t tmp_sensor = (type == Type::SPA06 ? 0 : SPL06_TEMP_USE_EXT_SENSOR);
+    const uint8_t tmp_sensor = ((type == Type::SPA06 || type == Type::SPL07) ? 0 : SPL06_TEMP_USE_EXT_SENSOR);
 #if AP_BARO_SPL06_BACKGROUND_ENABLE
     // setup temperature and pressure measurements
     _dev->setup_checked_registers(4, 20);
@@ -233,11 +238,20 @@ bool AP_Baro_SPL06::_init()
 	//enable background mode
 	_dev->write_register(SPL06_REG_MODE_AND_STATUS, SPL06_MEAS_CON_PRE_TEM, true);
 #else
-    // setup temperature and pressure measurements
     _dev->setup_checked_registers(3, 20);
-
-    _dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
-    _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
+    switch (type) {
+    case Type::SPL06:
+    case Type::SPA06:
+        _dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
+        _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
+        break;
+    case Type::SPL07:
+        _dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_TEMP_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
+        _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_PRES_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
+        break;
+    case Type::UNKNOWN:
+        return false;
+    }
 #endif //AP_BARO_SPL06_BACKGROUND_ENABLE
 
     uint8_t int_and_fifo_reg_value = 0;
@@ -249,13 +263,21 @@ bool AP_Baro_SPL06::_init()
     }
     _dev->write_register(SPL06_REG_INT_AND_FIFO_CFG, int_and_fifo_reg_value, true);
 
-    _instance = _frontend.register_sensor();
-
-    if(type == Type::SPA06) {
-	    _dev->set_device_type(DEVTYPE_BARO_SPA06);
-    } else {
-	    _dev->set_device_type(DEVTYPE_BARO_SPL06);
+    switch (type) {
+    case Type::SPL06:
+        _dev->set_device_type(DEVTYPE_BARO_SPL06);
+        break;
+    case Type::SPA06:
+        _dev->set_device_type(DEVTYPE_BARO_SPA06);
+        break;
+    case Type::SPL07:
+        _dev->set_device_type(DEVTYPE_BARO_SPL07);
+        break;
+    case Type::UNKNOWN:
+        return false;
     }
+
+    _instance = _frontend.register_sensor();
 
     set_bus_id(_instance, _dev->get_bus_id());
     
@@ -355,18 +377,22 @@ void AP_Baro_SPL06::_update_pressure(int32_t press_raw)
     float pressure_cal = 0;
     float press_temp_comp = 0;
 
-    switch(type) {
-	case Type::SPL06:
-		pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * _c30));
-		press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * _c21));
-		break;
-	case Type::SPA06:
-		pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * ((float)_c30 + press_raw_sc * _c40)));
-		press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * ((float)_c21) + press_raw_sc * _c31));
-		break;
-	default:
-		break;
-	}
+    switch (type) {
+    case Type::SPL06:
+        pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * _c30));
+        press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * _c21));
+        break;
+    case Type::SPA06:
+        pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * ((float)_c30 + press_raw_sc * _c40)));
+        press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * ((float)_c21) + press_raw_sc * _c31));
+        break;
+    case Type::SPL07:
+        pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * _c30));
+        press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * ((float)_c21) + press_raw_sc * _c31));
+        break;
+    case Type::UNKNOWN:
+        return;
+    }
 
     const float press_comp = pressure_cal + press_temp_comp;
 

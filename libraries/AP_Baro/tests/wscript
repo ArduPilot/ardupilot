@@ -4,3 +4,9 @@ def build(bld):
     bld.ap_find_tests(
         use='ap',
     )
+
+    if bld.env.HAS_GTEST:
+        # BARO_OPTIONS is exposed only by Copter and Plane.
+        spl06_test = bld.get_tgen_by_name('tests/test_baro_spl06')
+        spl06_test.use = ['ArduCopter_libs', 'GTEST']
+        spl06_test.defines = ['APM_BUILD_DIRECTORY=APM_BUILD_ArduCopter']
