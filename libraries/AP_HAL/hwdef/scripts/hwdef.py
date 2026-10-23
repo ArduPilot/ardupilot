@@ -116,6 +116,10 @@ class HWDef:
         self.seen_BARO_lines = set()
         self.seen_COMPASS_lines = set()
 
+    def board_name(self):
+        '''retrieves board name - assumes there's a hwdef!'''
+        return os.path.split(os.path.dirname(self.hwdef[0]))[-1]
+
     def is_int(self, str):
         '''check if a string is an integer'''
         try:
@@ -225,6 +229,17 @@ class HWDef:
 ''')
 
         self.write_hwdef_header_content(f)
+
+        f.write(f'''
+#ifndef HAL_BOARD_NAME
+#define HAL_BOARD_NAME "{self.board_name()}"
+#endif
+
+// allow for short names overridden in hwdef.dat
+#ifndef HAL_SHORT_BOARD_NAME
+#define HAL_SHORT_BOARD_NAME HAL_BOARD_NAME
+#endif
+''')
 
         f.close()
 
@@ -409,6 +424,8 @@ class HWDef:
             'HAL_PICCOLO_CAN_ENABLE': 'HAL_PICCOLO_CAN_ENABLE was renamed to AP_PICCOLOCAN_ENABLED; fix your hwdef file',
             'HAL_PERIPH_ENABLE_NETWORKING': 'HAL_PERIPH_ENABLE_NETWORKING is no longer used; try "define AP_PERIPH_NETWORKING_ENABLED 1"',  # noqa:E501
             'HAL_PROBE_EXTERNAL_I2C_BAROS': 'HAL_PROBE_EXTERNAL_I2C_BAROS is no longer used; try "define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1"',  # noqa:E501
+            'CHIBIOS_BOARD_NAME': 'CHIBIOS_BOARD_NAME was renamed to HAL_BOARD_NAME; fix your hwdef file',
+            'CHIBIOS_SHORT_BOARD_NAME': 'CHIBIOS_SHORT_BOARD_NAME was renamed to HAL_SHORT_BOARD_NAME; fix your hwdef file',
         }
 
     def assert_good_define(self, name):

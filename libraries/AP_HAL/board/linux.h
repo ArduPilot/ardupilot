@@ -2,7 +2,6 @@
 
 #include <hwdef.h>
 
-#define HAL_BOARD_NAME "Linux"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
 #define HAL_OS_SOCKETS 1
