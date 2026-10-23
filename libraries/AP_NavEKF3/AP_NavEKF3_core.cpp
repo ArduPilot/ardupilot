@@ -216,6 +216,9 @@ void NavEKF3_core::InitialiseVariables()
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    memset(&rngOutOfRangeLowTime_ms, 0, sizeof(rngOutOfRangeLowTime_ms));
+#endif
     flowMeaTime_ms = 0;
     prevFlowFuseTime_ms = 0;
     gndHgtValidTime_ms = 0;
@@ -299,6 +302,8 @@ void NavEKF3_core::InitialiseVariables()
     aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
     aglKfValid = false;
     lastAglRngFuseTime_ms = 0;
+    aglKfLastRngHgt = 1.0e6f;   // no reading yet, so not near the floor
+    aglKfHeldOnFloor = false;
 #endif
     yawResetCount = 0;
     tiltErrorVariance = sq(M_2PI);
