@@ -16324,6 +16324,127 @@ switch value'''
         self.check_msp_set_vtx_config(msp)
         self.reboot_sitl()
 
+    def SerialPassthroughRCIN(self):
+        '''check SERIAL_PASS passthrough onto an RC input port: data passes
+        intact both ways, and RC input resumes once passthrough ends'''
+        rx_port = self.spare_network_port()
+        host_port = self.spare_network_port(1)
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 23,  # RC input, where the receiver is
+            "RC_PROTOCOLS": 512,     # CRSF only, not SITL's own RC input
+        })
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % rx_port,    # the receiver
+            "--serial2=tcp:%u" % host_port,  # the host, e.g. a flashing tool
+        ])
+
+        def connect(port):
+            tstart = self.get_sim_time()
+            while True:
+                try:
+                    sock = socket.create_connection(("127.0.0.1", port), timeout=1)
+                    sock.setblocking(False)
+                    return sock
+                except OSError:
+                    if self.get_sim_time_cached() - tstart > 30:
+                        raise NotAchievedException("Could not connect to port %u" % port)
+                    self.delay_sim_time(0.5)
+
+        def crsf_rc_frame(value):
+            # 16 channels of 11 bits, all at value
+            bits = 0
+            nbits = 0
+            payload = bytearray()
+            for _ in range(16):
+                bits |= value << nbits
+                nbits += 11
+                while nbits >= 8:
+                    payload.append(bits & 0xFF)
+                    bits >>= 8
+                    nbits -= 8
+            body = bytes([0x16]) + payload  # RC_CHANNELS_PACKED
+            crc = 0
+            for b in body:
+                crc ^= b
+                for _ in range(8):
+                    crc = ((crc << 1) ^ 0xD5) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+            return bytes([0xC8, len(body) + 1]) + body + bytes([crc])
+
+        def send_rc_until(sock, value, timeout=20):
+            # CRSF value v gives v*5/8+880 us
+            pwm = value * 5 // 8 + 880
+            frame = crsf_rc_frame(value)
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < timeout:
+                try:
+                    sock.send(frame)
+                except BlockingIOError:
+                    pass
+                m = self.mav.recv_match(type='RC_CHANNELS', blocking=True, timeout=0.05)
+                if m is not None and m.chan1_raw == pwm:
+                    return
+            raise NotAchievedException("RC input never reached %uus" % pwm)
+
+        def drain(sock):
+            try:
+                while sock.recv(4096):
+                    pass
+            except BlockingIOError:
+                pass
+
+        def transfer(src, dst, data, timeout=60):
+            sent = 0
+            got = bytearray()
+            tstart = self.get_sim_time()
+            while len(got) < len(data):
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Only %u of %u bytes passed through" % (len(got), len(data)))
+                if sent < len(data):
+                    try:
+                        sent += src.send(data[sent:sent+1024])
+                    except BlockingIOError:
+                        pass
+                try:
+                    got += dst.recv(4096)
+                except BlockingIOError:
+                    pass
+                self.drain_mav(quiet=True)
+            if bytes(got) != data:
+                first = next(i for i in range(len(data)) if i >= len(got) or got[i] != data[i])
+                raise NotAchievedException("Passthrough data differs from byte %u" % first)
+
+        rx = connect(rx_port)
+        host = connect(host_port)
+        self.progress("Receiver detected as CRSF")
+        send_rc_until(rx, 992)
+
+        self.progress("Enabling passthrough between SERIAL2 and the RC input port")
+        self.set_parameters({
+            "SERIAL_PASSTIMO": 30,
+            "SERIAL_PASS1": 2,
+            "SERIAL_PASS2": 5,
+        })
+        # passthrough starts 1s after it is enabled
+        self.delay_sim_time(3, reason="passthrough to start")
+        drain(rx)
+        drain(host)
+
+        rand = random.Random(34)
+        to_rx = bytes(rand.getrandbits(8) for _ in range(64 * 1024))
+        to_host = bytes(rand.getrandbits(8) for _ in range(16 * 1024))
+        self.progress("Host to receiver")
+        transfer(host, rx, to_rx)
+        self.progress("Receiver to host")
+        transfer(rx, host, to_host)
+
+        self.progress("Disabling passthrough, RC input should resume")
+        self.set_parameter("SERIAL_PASS2", -1)
+        send_rc_until(rx, 1312)
+
+        rx.close()
+        host.close()
+        self.reboot_sitl()
+
     def CRSF(self):
         '''Test RC CRSF'''
         self.context_push()
