@@ -193,6 +193,14 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_TARG_RATE", 18, AP_Mount_Params, target_rate_hz, 10),
 
+    // @Param: _CADDX_SENS
+    // @DisplayName: Mount CADDX/XFRobot follow sensitivity
+    // @Description: Follow sensitivity for CADDX and XFRobot gimbals. Higher values hold the camera more firmly (more lock), lower values follow the vehicle more loosely. Has no effect on other mount types.
+    // @Range: -1.0 1.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("_CADDX_SENS", 19, AP_Mount_Params, caddx_sens, 0),
+
     AP_GROUPEND
 };
 
