@@ -373,7 +373,7 @@ private:
     // Maximum and minimum floating point throttle limits
     float _THRmaxf;
     float _THRminf;
-    // Maximum and minimum throttle safety limits, set externally, typically by servos.cpp:apply_throttle_limits()
+    // Maximum and minimum throttle safety limits, set externally, typically by servos.cpp:calc_throttle_limits()
     float _THRmaxf_ext = 1.0f;
     float _THRminf_ext = -1.0f;
     // Maximum and minimum pitch limits, set externally, typically by the takeoff logic.
