@@ -8612,12 +8612,16 @@ return update()
         self.context_collect('STATUSTEXT')
 
         self.wait_statustext('Polygon fence breached', timeout=300)
+        self.wait_mode('RTL')
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 0}, timeout=60)
         self.wait_current_waypoint(6)
         self.wait_distance_to_location(fence_centre, 350, 20000)
 
         self.set_current_waypoint(2)
 
         self.wait_statustext('Polygon fence breached', timeout=300)
+        self.wait_mode('RTL')
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 0}, timeout=60)
         self.wait_current_waypoint(6, timeout=5)
         self.fly_home_land_and_disarm()
 

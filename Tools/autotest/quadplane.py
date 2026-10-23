@@ -392,6 +392,225 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''Check extended sys state works'''
         self.EXTENDED_SYS_STATE_SLT()
 
+    def FenceRTLBeforeQRTL(self):
+        """recover inside horizontal fences before starting a QRTL landing"""
+        for fence_type in (2, 4):
+            for enable_method in ('parameter', 'arming', 'auxiliary'):
+                self.fence_rtl_before_qrtl(fence_type, enable_method)
+
+    def fence_rtl_before_qrtl(self, fence_type, enable_method):
+        self.start_subtest(f'fence type {fence_type}, {enable_method}')
+        self.context_push()
+        home = self.home_position_as_location()
+        vertices = [self.offset_location_ne(home, north, east) for north, east in
+                    ((-400, -400), (-400, 400), (400, 400), (400, -400))]
+        try:
+            if fence_type == 4:
+                self.upload_fences_from_locations([
+                    (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, vertices),
+                ])
+            self.set_parameters({
+                'FENCE_TYPE': fence_type,
+                'FENCE_RADIUS': 400,
+                'FENCE_ACTION': 1,
+                'FENCE_AUTOENABLE': 3 if enable_method == 'arming' else 0,
+                'FENCE_ENABLE': 1 if enable_method == 'parameter' else 0,
+                'RC7_OPTION': 11 if enable_method == 'auxiliary' else 0,
+                'Q_RTL_MODE': 1,
+                'Q_RTL_ALT': 20,
+                'RTL_ALTITUDE': 80,
+                'RTL_RADIUS': 80,
+                # Make the automatic QRTL switch eligible while still
+                # outside the fence, without putting the RTL loiter outside it.
+                'Q_TRANS_DECEL': 0.2,
+            })
+            self.set_rc(7, 1000)
+            if enable_method == 'auxiliary':
+                self.set_rc(7, 2000)
+            self.context_collect('HEARTBEAT')
+            self.start_flying_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 80),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1200, 0, 80),
+            ])
+            self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1}, timeout=120)
+            rtl_mode = self.get_mode_from_mode_mapping('RTL')
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 120:
+                    raise NotAchievedException('RTL did not return inside the fence')
+                self.wait_heartbeat()
+                status = self.poll_message('FENCE_STATUS', quiet=True)
+                if status.breach_status == 0:
+                    break
+                # These checks must share a heartbeat: drain_mav=False
+                # still waits for another one unless cached=True is set.
+                if self.mode_is('QRTL', cached=True):
+                    # A heartbeat can precede the periodic fence-status
+                    # message. Query the current state before judging it.
+                    status = self.poll_message('FENCE_STATUS', quiet=True)
+                    if status.breach_status != 0:
+                        raise NotAchievedException('QRTL started before the fence breach cleared')
+                    break
+                seen_rtl = any(m.custom_mode == rtl_mode for m in self.context_collection('HEARTBEAT'))
+                if not self.mode_is('RTL', cached=True) and (seen_rtl or not self.mode_is('AUTO', cached=True)):
+                    raise NotAchievedException('Left RTL during fence recovery: mode=%u' % self.get_mode(cached=True))
+            # RTL may already have completed by the time breach telemetry is
+            # consumed. Check its history instead of waiting for it to recur.
+            if not any(m.custom_mode == rtl_mode for m in self.context_collection('HEARTBEAT')):
+                raise NotAchievedException('Fence recovery never entered RTL')
+            self.wait_mode('QRTL')
+            self.wait_disarmed(timeout=180)
+        finally:
+            if self.armed():
+                self.disarm_vehicle(force=True)
+            self.context_pop()
+            self.reboot_sitl()
+
+    def FenceRTLDisable(self):
+        '''allow automatic QRTL landing after disabling a breached fence with AUX'''
+        for qrtl_mode in (1, 2):
+            for enable_method in ('parameter', 'arming', 'auxiliary'):
+                self.start_subtest(f'Q_RTL_MODE={qrtl_mode}, {enable_method}')
+                self.context_push()
+                try:
+                    home = self.home_position_as_location()
+                    vertices = [self.offset_location_ne(home, north, east) for north, east in
+                                ((-1500, -1500), (-1500, 1500), (1500, 1500), (1500, -1500))]
+                    self.upload_fences_from_locations([
+                        (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, vertices),
+                    ])
+                    self.set_parameters({
+                        'FENCE_TYPE': 4,
+                        'FENCE_ACTION': 1,
+                        'FENCE_AUTOENABLE': 3 if enable_method == 'arming' else 0,
+                        'FENCE_ENABLE': 0,
+                        'RC7_OPTION': 11,
+                        'Q_RTL_MODE': qrtl_mode,
+                        'Q_RTL_ALT': 20,
+                        'RTL_ALTITUDE': 80,
+                        'RTL_RADIUS': 80,
+                        'Q_TRANS_DECEL': 0.2 if qrtl_mode == 1 else 2,
+                    })
+                    self.set_rc(7, 1000)
+                    if enable_method == 'parameter':
+                        self.set_parameter('FENCE_ENABLE', 1)
+                    elif enable_method == 'auxiliary':
+                        self.set_rc(7, 2000)
+                    self.start_flying_simple_relhome_mission([
+                        (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 80),
+                        (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1200, 0, 80),
+                    ])
+                    self.wait_distance_to_home(600, 700, timeout=120)
+                    # Exclude home and its loiter so the breach cannot clear
+                    # before we exercise the disable switch.
+                    self.upload_fences_from_locations([
+                        (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, vertices),
+                    ])
+                    self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1})
+                    self.wait_mode('RTL')
+                    tstart = self.get_sim_time()
+                    while self.get_sim_time_cached() - tstart < 90:
+                        self.wait_heartbeat()
+                        self.assert_mode_is('RTL')
+                        if self.get_altitude(relative=True) < 65:
+                            raise NotAchievedException('Started landing descent while fence breached')
+                    self.set_rc(7, 2000)
+                    self.delay_sim_time(1, reason='AUX switch debounce before disabling')
+                    self.set_rc(7, 1000)
+                    self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
+                                           present=True, enabled=False, healthy=True)
+                    self.wait_mode('QRTL', timeout=180)
+                    self.wait_disarmed(timeout=180)
+                finally:
+                    if self.armed():
+                        self.disarm_vehicle(force=True)
+                    self.context_pop()
+                    self.reboot_sitl()
+
+    def FenceRTLLandingExceptions(self):
+        '''preserve report-only fences and explicitly configured VTOL-only RTL'''
+        for policy in ('report-only', 'VTOL-only'):
+            self.start_subtest(policy)
+            self.context_push()
+            try:
+                self.set_parameters({
+                    'FENCE_TYPE': 2,
+                    'FENCE_RADIUS': 400,
+                    'FENCE_ACTION': 0 if policy == 'report-only' else 1,
+                    'FENCE_ENABLE': 1,
+                    'Q_RTL_MODE': 1 if policy == 'report-only' else 3,
+                    'Q_RTL_ALT': 20,
+                    'RTL_ALTITUDE': 80,
+                    'Q_TRANS_DECEL': 0.2,
+                })
+                self.start_flying_simple_relhome_mission([
+                    (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 80),
+                    (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1200, 0, 80),
+                ])
+                self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1}, timeout=120)
+                if policy == 'report-only':
+                    self.change_mode('RTL')
+                self.wait_mode('QRTL')
+                if self.distance_to_home(use_cached_home=True) <= 400:
+                    raise NotAchievedException('QRTL handover was delayed until inside the fence')
+                self.do_fence_disable()
+                self.change_mode('QLAND')
+                self.wait_disarmed(timeout=180)
+            finally:
+                if self.armed():
+                    self.disarm_vehicle(force=True)
+                self.context_pop()
+                self.reboot_sitl()
+
+    def FenceRTLActiveVTOL(self):
+        '''preserve low-altitude VTOL recovery without transitioning to fixed wing'''
+        self.set_parameters({
+            'FENCE_TYPE': 2,
+            'FENCE_RADIUS': 500,
+            'FENCE_ACTION': 1,
+            'FENCE_ENABLE': 1,
+            'Q_GUIDED_MODE': 1,
+            'Q_RTL_MODE': 1,
+            'Q_RTL_ALT': 20,
+            'RTL_RADIUS': 80,
+        })
+        self.takeoff(15, 'GUIDED')
+        loc = self.offset_location_ne(self.home_position_as_location(), 100, 0)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            0, 1, 0, 0,
+            int(loc.lat * 1e7), int(loc.lng * 1e7), 15,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+        )
+        self.wait_location(loc, height_accuracy=None, timeout=120)
+        self.set_parameter('FENCE_RADIUS', 30)
+        self.wait_mode('QRTL')
+        if self.distance_to_home(use_cached_home=True) <= 30:
+            raise NotAchievedException('Low-altitude VTOL recovery was delayed')
+        self.wait_disarmed(timeout=180)
+
+    def FenceAutoDisableLanding(self):
+        '''preserve configured fence auto-disabling when entering QLAND'''
+        self.set_parameters({
+            'FENCE_TYPE': 2,
+            'FENCE_RADIUS': 5000,
+            'FENCE_ACTION': 1,
+            'FENCE_AUTOENABLE': 1,
+            'FENCE_OPTIONS': 0,
+            'Q_RTL_MODE': 1,
+        })
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1200, 0, 30),
+        ])
+        self.wait_distance_to_home(600, 700, timeout=120)
+        self.set_parameter('FENCE_RADIUS', 400)
+        self.wait_mode('RTL')
+        self.change_mode('QLAND')
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
+                               present=True, enabled=False, healthy=True)
+        self.wait_disarmed(timeout=180)
+
     def QRTLGradualAltDescent(self):
         '''check gradual descent to RTL_ALTITUDE in QRTL'''
         qrtl_alt = 20
@@ -4587,6 +4806,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestMotorMask,
             self.ParameterChecks,
             self.TestLogDownload,
+            self.FenceRTLBeforeQRTL,
+            self.FenceRTLDisable,
+            self.FenceRTLLandingExceptions,
+            self.FenceRTLActiveVTOL,
+            self.FenceAutoDisableLanding,
             self.QRTLGradualAltDescent,
             self.QAssist,
             self.CopterTailsitter,
