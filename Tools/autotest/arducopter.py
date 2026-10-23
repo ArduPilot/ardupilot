@@ -14,6 +14,7 @@ import pathlib
 import re
 import shutil
 import socket
+import struct
 import subprocess
 import tempfile
 import time
@@ -19705,6 +19706,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.WP_SPEED,
             self.DeadReckoningInWind,
             self.ScriptCopterPosOffsets,
+            self.LoggerStreamNamedValues,
+            self.LoggerStreamNamedValueMAVLink,
             self.MountSiyiZT30,
             self.CircleSpeed,
             self.ArmSwitchAfterReboot,
@@ -20011,6 +20014,244 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.test_mount_pitch(-90, 5, mavutil.mavlink.MAV_MOUNT_MODE_HOME_LOCATION, constrained=False)
 
         self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def LoggerStreamNamedValues(self):
+        '''test streaming of log message fields as named values'''
+        self.context_push()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.install_test_script_context("logger_stream_named_value.lua")
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("LSNV: configured", check_context=True, timeout=60)
+
+        self.start_subtest("check values sent by the script arrive with correct type and value")
+        m = self.assert_receive_named_value("NAMED_VALUE_FLOAT", "LSNV.fval")
+        if abs(m.value - 122.25) > 0.0001:
+            raise NotAchievedException("Bad LSNV.fval want=122.25 got=%f" % m.value)
+        m = self.assert_receive_named_value("NAMED_VALUE_INT", "LSNV.ival")
+        if m.value != -1234567:
+            raise NotAchievedException("Bad LSNV.ival want=-1234567 got=%d" % m.value)
+        m = self.assert_receive_named_value("NAMED_VALUE_STRING", "LSNV.sval")
+        if m.value != "speedy":
+            raise NotAchievedException("Bad LSNV.sval want=speedy got=%s" % m.value)
+        # the script also streams ival under a requested name:
+        m = self.assert_receive_named_value("NAMED_VALUE_INT", "myint")
+        if m.value != -1234567:
+            raise NotAchievedException("Bad myint want=-1234567 got=%d" % m.value)
+
+        self.start_subtest("check instance-restricted streams capture the right instance")
+        # the script logs LSNI with instance 0 holding 17.5 and
+        # instance 1 holding 42.5; the streamed name is truncated to 10
+        # characters:
+        m = self.assert_receive_named_value("NAMED_VALUE_FLOAT", "LSNI[0].va")
+        if abs(m.value - 17.5) > 0.0001:
+            raise NotAchievedException("Bad LSNI[0].val want=17.5 got=%f" % m.value)
+        m = self.assert_receive_named_value("NAMED_VALUE_FLOAT", "LSNI[1].va")
+        if abs(m.value - 42.5) > 0.0001:
+            raise NotAchievedException("Bad LSNI[1].val want=42.5 got=%f" % m.value)
+
+        self.start_subtest("check fields of statically-defined messages stream")
+        # roll while sitting on the ground should be very close to zero:
+        m = self.assert_receive_named_value("NAMED_VALUE_FLOAT", "ATT.Roll")
+        if abs(m.value) > 5:
+            raise NotAchievedException("Unlikely ATT.Roll %f" % m.value)
+        # the script's final stream must also arrive:
+        self.assert_receive_named_value("NAMED_VALUE_FLOAT", "ATT.Yaw")
+
+        self.start_subtest("check each stream is rate-limited")
+        m = self.assert_receive_named_value("NAMED_VALUE_FLOAT", "LSNV.fval")
+        last_ms = m.time_boot_ms
+        for i in range(5):
+            m = self.assert_receive_named_value("NAMED_VALUE_FLOAT", "LSNV.fval")
+            delta_ms = m.time_boot_ms - last_ms
+            last_ms = m.time_boot_ms
+            if delta_ms < 90:
+                raise NotAchievedException("Stream not rate-limited (interval %ums)" % delta_ms)
+
+        self.start_subtest("check channel masking")
+        # the script only streams ATT.Pitch on mavlink channel 1
+        # (SERIAL1); it must not appear on this connection (SERIAL0)
+        # even while ATT.Roll continues to arrive:
+        seen_roll = False
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            m = self.mav.recv_match(type="NAMED_VALUE_FLOAT", blocking=True, timeout=1)
+            if m is None:
+                continue
+            if m.name == "ATT.Pitch":
+                raise NotAchievedException("Received ATT.Pitch on masked-out channel")
+            if m.name == "ATT.Roll":
+                seen_roll = True
+        if not seen_roll:
+            raise NotAchievedException("Did not see ATT.Roll on primary connection")
+
+        # both ATT.Pitch and ATT.Roll must arrive on SERIAL1:
+        mav2 = mavutil.mavlink_connection(
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5762),
+            robust_parsing=True,
+            source_system=7,
+            source_component=7,
+        )
+        # the vehicle must receive traffic on a channel before that
+        # channel is considered active:
+        mav2.mav.heartbeat_send(
+            mavutil.mavlink.MAV_TYPE_GCS,
+            mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+            0,
+            0,
+            0)
+        self.assert_receive_named_value("NAMED_VALUE_FLOAT", "ATT.Pitch", mav=mav2, timeout=30)
+        self.assert_receive_named_value("NAMED_VALUE_FLOAT", "ATT.Roll", mav=mav2, timeout=30)
+        mav2.close()
+
+        self.context_pop()
+        self.reboot_sitl()
+
+    def LoggerStreamNamedValueMAVLink(self):
+        '''test configuring log-field streaming via LOG_STREAM_NAMED_VALUE'''
+        # the installed pymavlink may not know LOG_STREAM_NAMED_VALUE
+        # yet, so construct the message by hand:
+        mlink = mavutil.mavlink
+
+        crc = mavutil.x25crc()
+        crc.accumulate_str('LOG_STREAM_NAMED_VALUE ')
+        # fields are accumulated in wire order, widest first:
+        crc.accumulate_str('int32_t interval_us ')
+        crc.accumulate_str('int16_t instance ')
+        crc.accumulate_str('uint8_t target_system ')
+        crc.accumulate_str('uint8_t target_component ')
+        crc.accumulate_str('char msg_name ')
+        crc.accumulate(struct.pack('B', 4))
+        crc.accumulate_str('char field_name ')
+        crc.accumulate(struct.pack('B', 16))
+        crc.accumulate_str('char name ')
+        crc.accumulate(struct.pack('B', 10))
+
+        class MAVLink_log_stream_named_value_message(mlink.MAVLink_message):
+            id = 11061
+            msgname = 'LOG_STREAM_NAMED_VALUE'
+            fieldnames = ['target_system', 'target_component', 'msg_name', 'field_name', 'instance',
+                          'name', 'interval_us']
+            ordered_fieldnames = ['interval_us', 'instance', 'target_system', 'target_component',
+                                  'msg_name', 'field_name', 'name']
+            fieldtypes = ['uint8_t', 'uint8_t', 'char', 'char', 'int16_t', 'char', 'int32_t']
+            crc_extra = (crc.crc & 0xFF) ^ (crc.crc >> 8)
+
+            def __init__(self, target_system, target_component, msg_name, field_name, instance, name, interval_us):
+                mlink.MAVLink_message.__init__(
+                    self,
+                    MAVLink_log_stream_named_value_message.id,
+                    MAVLink_log_stream_named_value_message.msgname)
+                self._fieldnames = MAVLink_log_stream_named_value_message.fieldnames
+                self.target_system = target_system
+                self.target_component = target_component
+                self.msg_name = msg_name
+                self.field_name = field_name
+                self.instance = instance
+                self.name = name
+                self.interval_us = interval_us
+
+            def pack(self, mav, force_mavlink1=False):
+                return self._pack(
+                    mav,
+                    self.crc_extra,
+                    struct.pack(
+                        '<ihBB4s16s10s',
+                        self.interval_us,
+                        self.instance,
+                        self.target_system,
+                        self.target_component,
+                        self.msg_name,
+                        self.field_name,
+                        self.name),
+                    force_mavlink1=force_mavlink1)
+
+        def send_stream_request(mav, msg_name, field_name, instance=-1, name=b"", interval_us=0):
+            mav.mav.send(MAVLink_log_stream_named_value_message(
+                1, 1, msg_name, field_name, instance, name, interval_us))
+
+        self.context_push()
+        self.set_parameter("LOG_DISARMED", 1)
+        self.reboot_sitl()
+
+        self.start_subtest("requesting an unknown message must warn")
+        self.context_collect('STATUSTEXT')
+        send_stream_request(self.mav, b"XXXX", b"Roll")
+        self.wait_statustext("Unable to stream XXXX.Roll", check_context=True)
+
+        self.start_subtest("requesting an instance of a non-instanced message must warn")
+        send_stream_request(self.mav, b"ATT", b"Roll", instance=0)
+        self.wait_statustext(r"Unable to stream ATT\[0\].Roll", check_context=True, regex=True)
+
+        self.start_subtest("instanced requests stream under instanced names")
+        # SITL runs two EKF3 cores, so XKF4 is logged with instances 0 and 1:
+        send_stream_request(self.mav, b"XKF4", b"SS", instance=0)
+        self.assert_receive_named_value("NAMED_VALUE_INT", "XKF4[0].SS")
+        send_stream_request(self.mav, b"XKF4", b"SS", instance=1)
+        self.assert_receive_named_value("NAMED_VALUE_INT", "XKF4[1].SS")
+
+        self.start_subtest("a requested field streams only on the requesting channel")
+        send_stream_request(self.mav, b"ATT", b"Roll")
+        self.assert_receive_named_value("NAMED_VALUE_FLOAT", "ATT.Roll")
+
+        # the second connection must not receive the value, even once
+        # its channel is active:
+        mav2 = mavutil.mavlink_connection(
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5762),
+            robust_parsing=True,
+            source_system=7,
+            source_component=7,
+        )
+        mav2.mav.heartbeat_send(
+            mavutil.mavlink.MAV_TYPE_GCS,
+            mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+            0,
+            0,
+            0)
+        self.assert_receive_message("HEARTBEAT", mav=mav2)
+        tstart = time.time()  # wallclock; we drain self.mav ourselves
+        while time.time() - tstart < 5:
+            # the simulation stalls if the primary connection is not drained:
+            self.drain_mav()
+            m = mav2.recv_match(type="NAMED_VALUE_FLOAT", blocking=True, timeout=0.1)
+            if m is not None and m.name == "ATT.Roll":
+                raise NotAchievedException("Received ATT.Roll on non-requesting channel")
+
+        self.start_subtest("a second request merges the new channel into the stream")
+        send_stream_request(mav2, b"ATT", b"Roll")
+        self.assert_receive_named_value("NAMED_VALUE_FLOAT", "ATT.Roll", mav=mav2)
+        mav2.close()
+
+        self.start_subtest("a requested name is used in place of the derived name")
+        send_stream_request(self.mav, b"ATT", b"Pitch", name=b"mypitch")
+        self.assert_receive_named_value("NAMED_VALUE_FLOAT", "mypitch")
+
+        self.start_subtest("a name streaming a different field must be refused")
+        send_stream_request(self.mav, b"ATT", b"Yaw", name=b"mypitch")
+        self.wait_statustext("Unable to stream mypitch", check_context=True)
+
+        self.start_subtest("stopping a name which is not streaming must warn")
+        send_stream_request(self.mav, b"ATT", b"Roll", name=b"nosuch", interval_us=-1)
+        self.wait_statustext("Unable to stop nosuch", check_context=True)
+
+        self.start_subtest("a stopped stream ceases, and can be restarted")
+        send_stream_request(self.mav, b"ATT", b"Roll", interval_us=-1)
+        # drain anything sent before the stop took effect:
+        self.delay_sim_time(1, reason="let in-flight values arrive")
+        self.drain_mav()
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            m = self.mav.recv_match(type="NAMED_VALUE_FLOAT", blocking=True, timeout=1)
+            if m is not None and m.name == "ATT.Roll":
+                raise NotAchievedException("Received ATT.Roll after stopping the stream")
+        send_stream_request(self.mav, b"ATT", b"Roll")
+        self.assert_receive_named_value("NAMED_VALUE_FLOAT", "ATT.Roll")
+
         self.context_pop()
         self.reboot_sitl()
 
