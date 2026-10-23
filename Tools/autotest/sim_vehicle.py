@@ -1808,6 +1808,10 @@ frame_given = cmd_opts.frame is not None
 if cmd_opts.frame is None:
     cmd_opts.frame = vinfo.options[cmd_opts.vehicle]["default_frame"]
 
+if cmd_opts.frame.startswith("gazebo") and cmd_opts.model is None:
+    print("Gazebo frames use the JSON backend: add --model JSON")
+    sys.exit(1)
+
 frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
                                       cmd_opts)
