@@ -456,6 +456,12 @@ public:
     ///
     static void reload_defaults_file(bool last_pass);
 
+    // name of a parameter in a defaults file which has been removed
+    // from the firmware, or nullptr if there is none
+    static const char *removed_param_in_defaults() {
+        return _removed_param_in_defaults[0] != 0 ? _removed_param_in_defaults : nullptr;
+    }
+
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
 
     // set a AP_Param variable to a specified value
@@ -538,6 +544,9 @@ public:
                                         const struct AP_Param::GroupInfo *group_info,
                                         uint16_t old_index, bool is_top_level, bool recurse_sub_groups = false);
 
+    // return true if the parameter is configured in EEPROM/FRAM
+    bool configured_in_storage(void) const;
+
     /*
       fetch a parameter value based on the index within a group. This
       is used to find the old value of a parameter that has been
@@ -576,6 +585,9 @@ public:
 
     // return true if the parameter is configured
     bool configured(void) const;
+
+    // return true if the parameter is configured in the defaults file
+    bool configured_in_defaults_file(bool &read_only) const;
 
     // return true if the parameter is read-only
     bool is_read_only(void) const;
@@ -787,6 +799,10 @@ private:
 
     static bool parse_param_line(char *line, char **vname, float &value, bool &read_only);
 
+    // record pname if it is a parameter removed from the firmware
+    static void check_removed_param(const char *pname);
+    static char _removed_param_in_defaults[AP_MAX_NAME_SIZE+1];
+
     /*
       load a parameter defaults file. This happens as part of load_all()
      */
@@ -807,12 +823,6 @@ private:
      */
     static bool count_embedded_param_defaults(uint16_t &count);
     static void load_embedded_param_defaults(bool last_pass);
-
-    // return true if the parameter is configured in the defaults file
-    bool configured_in_defaults_file(bool &read_only) const;
-
-    // return true if the parameter is configured in EEPROM/FRAM
-    bool configured_in_storage(void) const;
 
     /*
       convert width of a parameter, allowing update to wider scalar

@@ -122,6 +122,8 @@ bool AP_Param::registered_save_handler;
 
 bool AP_Param::done_all_default_params;
 
+char AP_Param::_removed_param_in_defaults[AP_MAX_NAME_SIZE+1];
+
 AP_Param::defaults_list *AP_Param::default_list;
 
 // we need a dummy object for the parameter save callback
@@ -2377,6 +2379,32 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
 }
 
 
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED || AP_PARAM_DYNAMIC_ENABLED || AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
+/*
+  record pname if it is a parameter which has been removed from the
+  firmware.  Unlike a parameter for a feature which isn't compiled in,
+  a defaults file setting one of these expects it to change how the
+  vehicle behaves, so it must not be silently ignored
+ */
+void AP_Param::check_removed_param(const char *pname)
+{
+    static const char *const removed_prefixes[] {
+        "RCMAP_",  // replaced by RCn_OPTION in ArduPilot-4.8
+    };
+    if (_removed_param_in_defaults[0] != 0) {
+        // report only the first
+        return;
+    }
+    for (const char *prefix : removed_prefixes) {
+        if (strncmp(pname, prefix, strlen(prefix)) == 0) {
+            // parse_param_line() limits pname to AP_MAX_NAME_SIZE
+            strncpy_noterm(_removed_param_in_defaults, pname, AP_MAX_NAME_SIZE);
+            return;
+        }
+    }
+}
+#endif
+
 #if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED || AP_PARAM_DYNAMIC_ENABLED
 
 // increments num_defaults for each default found in filename
@@ -2401,6 +2429,9 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
         }
         enum ap_var_type var_type;
         if (!find(pname, &var_type)) {
+            // the loading pass only sees lines after the first known
+            // parameter, so check for removed parameters here too
+            check_removed_param(pname);
             continue;
         }
         num_defaults++;
@@ -2431,6 +2462,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         enum ap_var_type var_type;
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
+            check_removed_param(pname);
             if (last_pass) {
 #if ENABLE_DEBUG
                 ::printf("Ignored unknown param %s in defaults file %s\n",
@@ -2571,6 +2603,9 @@ bool AP_Param::count_param_defaults(const volatile char *ptr, int32_t length, ui
 
         enum ap_var_type var_type;
         if (!find(pname, &var_type)) {
+            // the loading pass can stop before the last line, so
+            // check for removed parameters here too
+            check_removed_param(pname);
             continue;
         }
 
@@ -2635,6 +2670,7 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
         enum ap_var_type var_type;
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
+            check_removed_param(pname);
             if (last_pass) {
 #if ENABLE_DEBUG && (AP_PARAM_MAX_EMBEDDED_PARAM > 0)
                 ::printf("Ignored unknown param %s from embedded region (offset=%u)\n",
