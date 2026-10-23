@@ -2155,6 +2155,10 @@ void AP_Mission::complete()
     _flags.state = MISSION_COMPLETE;
     _flags.in_landing_sequence = false;
     _flags.in_return_path = false;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // there is no current item to report progress for
+    clear_item_progress();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     // callback to main program's mission complete function
     _mission_complete_fn();
