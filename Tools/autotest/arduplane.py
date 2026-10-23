@@ -668,6 +668,174 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm(timeout=180)
 
+    def NAV_CONTROLLER_PROGRESS(self):
+        '''test NAV_CONTROLLER_PROGRESS reports progress through mission items'''
+        loiter_time_s = 20
+        self.context_push()
+        self.context_set_message_rate_hz('NAV_CONTROLLER_PROGRESS', 10)
+        self.context_collect('NAV_CONTROLLER_PROGRESS')
+        # a waypoint precedes each loiter: Plane starts counting a
+        # loiter as soon as the navigation controller reports the
+        # circle reached, which may still be left over from a previous
+        # loiter
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),                     # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 50),                  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME, 800, 600, 50, {            # 3
+                "p1": loiter_time_s,
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 900, 50),                # 4
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS, 0, 600, 50, {"p1": 1}),   # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT, 0, 0, 80),               # 6
+            # still running throughout item 8
+            (mavutil.mavlink.MAV_CMD_CONDITION_DELAY, 0, 0, 0, {                 # 7
+                "p1": 300,
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL,
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 600, 0, 80),                  # 8
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 80),                    # 9
+        ])
+        home = self.home_position_as_location()
+        self.wait_current_waypoint(9, timeout=900)
+        msgs = self.context_collection('NAV_CONTROLLER_PROGRESS')
+        self.context_pop()
+
+        # item 7 is a condition, so has no progress of its own
+        by_seq = self.nav_progress_by_seq(msgs, 8, skip=(7,))
+
+        def phases(seq, want):
+            return self.assert_nav_progress_phases(by_seq[seq], f"item {seq}", want)
+
+        self.start_subtest("TAKEOFF reports altitude still to climb")
+        (climb, ) = phases(1, ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("item 1", climb, 40, leg=50)
+
+        # waypoints are reached at a turn radius
+        self.start_subtest("WAYPOINT reports distance to the waypoint")
+        (approach, ) = phases(2, ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("item 2", approach, 500, close=150)
+
+        self.assert_nav_progress_target("item 2", approach, loc=self.offset_location_ne(home, 800, 0))
+
+        # a loiter's approach counts down to its centre, but Plane counts
+        # the loiter as reached once it starts capturing the circle, short
+        # of the circle itself
+        self.start_subtest("LOITER_TIME reports approach then loiter time")
+        (approach, hold) = phases(3, ['distance_remaining', 'time_remaining'])
+        self.assert_nav_progress_distance_closes("item 3", approach, 400, close=250, final_pct=50)
+        self.assert_nav_progress_target("item 3", approach + hold, loc=self.offset_location_ne(home, 800, 600))
+        self.assert_nav_progress_countdown("item 3", hold, 'time_remaining', loiter_time_s)
+
+        self.start_subtest("LOITER_TURNS reports approach then turns")
+        (approach, turns) = phases(5, ['distance_remaining', 'count_remaining'])
+        self.assert_nav_progress_distance_closes("item 5", approach, 200, close=250, final_pct=25)
+        self.assert_nav_progress_countdown("item 5", turns, 'count_remaining', 1)
+        self.assert_nav_progress_target("item 5", approach + turns, loc=self.offset_location_ne(home, 0, 600))
+
+        self.start_subtest("LOITER_TO_ALT reports altitude still to climb")
+        (climb, ) = phases(6, ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("item 6", climb, 20, leg=30)
+
+        self.start_subtest("WAYPOINT reports its leg, while a condition runs")
+        (approach, ) = phases(8, ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("item 8", approach, 400, close=150)
+
+        self.fly_home_land_and_disarm(timeout=240)
+
+    def NAV_CONTROLLER_PROGRESS_Modes(self):
+        '''test NAV_CONTROLLER_PROGRESS reports progress towards the targets of modes other than AUTO'''
+        self.context_push()
+        self.context_set_message_rate_hz('NAV_CONTROLLER_PROGRESS', 10)
+        home = self.home_position_as_location()
+
+        def collect(description, fn):
+            self.context_collect('NAV_CONTROLLER_PROGRESS')
+            fn()
+            msgs = self.context_stop_collecting('NAV_CONTROLLER_PROGRESS')
+            if len(msgs) == 0:
+                raise NotAchievedException(f"{description}: no NAV_CONTROLLER_PROGRESS")
+            self.assert_nav_progress_not_mission(description, msgs)
+            return msgs
+
+        def loiter_approach(msgs, description):
+            '''the approach to a loiter point, with nothing left to report once there'''
+            phases = self.nav_progress_phases(msgs, description)
+            kinds = [k for (k, ms) in phases]
+            if kinds not in (['distance_remaining'], ['distance_remaining', None]):
+                raise NotAchievedException(f"{description}: unexpected phases {kinds}")
+            return phases[0][1]
+
+        self.start_subtest("TAKEOFF mode reports altitude still to climb")
+        self.set_parameters({
+            'TKOFF_ALT': 50,
+            'TKOFF_DIST': 1000,
+        })
+        self.change_mode('TAKEOFF')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        msgs = collect("takeoff", lambda: (
+            self.wait_altitude(48, 60, relative=True, timeout=120),
+            self.delay_sim_time(10, reason="fly towards the takeoff loiter point")))
+        # the climb is followed by the approach to the loiter point,
+        # with nothing left to report once that is reached
+        phases = self.nav_progress_phases(msgs, "takeoff")
+        if phases[0][0] != 'distance_remaining':
+            raise NotAchievedException(f"takeoff: unexpected phases {[k for (k, ms) in phases]}")
+        distances = phases[0][1]
+        split = None
+        for i in range(1, len(distances)):
+            if distances[i].distance_remaining > distances[i-1].distance_remaining + 20:
+                split = i
+                break
+        if split is None:
+            raise NotAchievedException("takeoff: no approach to the loiter point after the climb")
+        self.assert_nav_progress_distance_closes("takeoff climb", distances[:split], 40, leg=50)
+        # the loiter point is TKOFF_DIST along the takeoff heading
+        for m in distances[split:]:
+            target = Location.latlon_only(m.x * 1e-7, m.y * 1e-7)
+            target_dist = self.get_distance(target, home)
+            if abs(target_dist - 1000) > 50:
+                raise NotAchievedException(f"takeoff: loiter target {target_dist}m from home")
+
+        self.start_subtest("GUIDED reports distance to the loiter circle")
+        dest = self.offset_location_ne(home, 1000, 500)
+
+        def reposition():
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                p2=mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                p5=int(dest.lat*1e7),
+                p6=int(dest.lng*1e7),
+                p7=60,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            )
+            self.wait_distance_to_location(dest, 0, 150, timeout=120)
+        msgs = collect("guided", reposition)
+        # TAKEOFF mode's own approach may still be reported at first
+        msgs = self.nav_progress_from_distance(msgs, "guided", 600)
+        approach = loiter_approach(msgs, "guided")
+        self.assert_nav_progress_distance_closes("guided", approach, 500, close=250, final_pct=50)
+        self.assert_nav_progress_target("guided", approach, loc=dest, max_dist=5)
+
+        self.start_subtest("RTL reports distance to the loiter circle over home")
+        msgs = collect("RTL", lambda: (self.change_mode('RTL'), self.wait_distance_to_home(0, 150, timeout=120)))
+        msgs = self.nav_progress_from_distance(msgs, "RTL", 600)
+        approach = loiter_approach(msgs, "RTL")
+        self.assert_nav_progress_distance_closes("RTL", approach, 500, close=250, final_pct=50)
+        self.assert_nav_progress_target("RTL", approach, loc=home, max_dist=5)
+
+        self.start_subtest("a second RTL to the same point reports its approach again")
+        # CRUISE does not report progress, so nothing sees the target change
+        self.change_mode('CRUISE')
+        self.wait_distance_to_home(500, 1000, timeout=60)
+        msgs = collect("RTL again", lambda: (self.change_mode('RTL'), self.wait_distance_to_home(0, 150, timeout=120)))
+        approach = loiter_approach(msgs, "RTL again")
+        self.assert_nav_progress_distance_closes("RTL again", approach, 400, close=250, final_pct=50)
+
+        self.context_pop()
+        self.fly_home_land_and_disarm(timeout=240)
+
     def DO_REPOSITION_mode_change_refused(self):
         '''DO_REPOSITION must not redirect the vehicle if it cannot change into GUIDED'''
         self.start_flying_simple_relhome_mission([
@@ -11139,6 +11307,8 @@ return update()
             self.PPPPeriph,
             self.steplessAHRSSwitch,
             self.DO_REPOSITION_mode_change_refused,
+            self.NAV_CONTROLLER_PROGRESS,
+            self.NAV_CONTROLLER_PROGRESS_Modes,
         ])
         return ret
 

@@ -67,6 +67,10 @@ public:
     // get current destination. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     const Location &get_destination() const { return _destination; }
 
+    // get the origin and destination of the current leg, ignoring any object avoidance. Note: these are not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
+    virtual const Location &get_leg_origin() const { return _origin; }
+    virtual const Location &get_leg_destination() const { return _destination; }
+
     // for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing_cd() const { return _wp_bearing_cd; }
     float nav_bearing_cd() const { return _desired_heading_cd; }

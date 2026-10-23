@@ -7166,6 +7166,157 @@ class TestSuite(abc.ABC):
         del context.collections[msg_type]
         return ret
 
+    # NAV_CONTROLLER_PROGRESS helpers.  "Phases" are runs of
+    # consecutive messages reporting the same kind of progress
+    # (distance, time or count remaining, or None for no progress).
+
+    def nav_progress_kind(self, m):
+        '''returns which of the remaining-fields of a NAV_CONTROLLER_PROGRESS is populated'''
+        populated = [name for name in ('distance_remaining', 'time_remaining', 'count_remaining')
+                     if not math.isnan(getattr(m, name))]
+        if len(populated) > 1:
+            raise NotAchievedException(f"More than one remaining-field populated {m=}")
+        if len(populated) == 0:
+            return None
+        return populated[0]
+
+    def nav_progress_phases(self, msgs, description):
+        '''returns ordered list of (kind, [messages])'''
+        phases = []
+        for m in msgs:
+            k = self.nav_progress_kind(m)
+            if len(phases) == 0 or phases[-1][0] != k:
+                phases.append((k, []))
+            phases[-1][1].append(m)
+
+        def summary(k, ms):
+            if k is None:
+                return (k, len(ms))
+            return (k, len(ms), [(round(getattr(m, k), 2), m.percentage_complete) for m in (ms[:3] + ms[-2:])])
+        self.progress(f"{description}: phases {[summary(k, ms) for (k, ms) in phases]}")
+        return phases
+
+    def assert_nav_progress_phases(self, msgs, description, want):
+        '''assert msgs fall into phases of the kinds in want, returning
+        the messages of each phase'''
+        phases = self.nav_progress_phases(msgs, description)
+        # progress is often only set once an item or stage has been
+        # checked, so a message may sneak out just after it starts
+        if len(phases) > 1 and phases[0][0] is None and want[0] is not None and len(phases[0][1]) <= 2:
+            phases = phases[1:]
+        got = [k for (k, ms) in phases]
+        if got != want:
+            raise NotAchievedException(f"{description}: expected phases {want} got {got}")
+        return [ms for (k, ms) in phases]
+
+    def nav_progress_from_distance(self, msgs, description, distance):
+        '''drop leading messages until one reports more than distance
+        remaining; the previous navigation's progress may still be
+        reported for a moment after a new one starts'''
+        for (i, m) in enumerate(msgs):
+            if m.distance_remaining > distance:
+                return msgs[i:]
+        raise NotAchievedException(f"{description}: never more than {distance}m remaining")
+
+    def assert_nav_progress_invalid(self, description, msgs):
+        for m in msgs:
+            if m.percentage_complete != 255:
+                raise NotAchievedException(f"{description}: expected invalid percentage {m=}")
+
+    def assert_nav_progress_distance_closes(self, description, msgs, min_start, leg=None, close=5, final_pct=80):
+        '''distance should close on the target, with percentage complete
+        rising as a part of the leg (of length leg, if known) flown'''
+        first = msgs[0].distance_remaining
+        closest = min([m.distance_remaining for m in msgs])
+        if first < min_start:
+            raise NotAchievedException(f"{description}: initial distance {first} < {min_start}")
+        if closest > close:
+            raise NotAchievedException(f"{description}: never got close ({closest=})")
+        last_pct = None
+        for m in msgs:
+            if m.percentage_complete > 100:
+                raise NotAchievedException(
+                    f"{description}: bad percentage {m.percentage_complete} at {m.distance_remaining}m")
+            if last_pct is not None and m.percentage_complete < last_pct - 2:
+                raise NotAchievedException(
+                    f"{description}: percentage went down ({last_pct} -> {m.percentage_complete})")
+            last_pct = m.percentage_complete
+            if leg is not None and m.distance_remaining <= leg:
+                want_pct = (leg - m.distance_remaining) * 100.0 / leg
+                if abs(m.percentage_complete - want_pct) > 5:
+                    raise NotAchievedException(
+                        f"{description}: percentage {m.percentage_complete} not consistent with {leg}m leg ({want_pct=})")
+        if msgs[0].percentage_complete > 25:
+            raise NotAchievedException(f"{description}: started at {msgs[0].percentage_complete}%")
+        if msgs[-1].percentage_complete < final_pct:
+            raise NotAchievedException(f"{description}: only got to {msgs[-1].percentage_complete}%")
+
+    def assert_nav_progress_countdown(self, description, msgs, field, total, min_values=3, final_pct=75):
+        '''field should count down from total with a consistent percentage complete'''
+        last = None
+        seen = set()
+        for m in msgs:
+            remaining = getattr(m, field)
+            if remaining < 0 or remaining > total + 0.01:
+                raise NotAchievedException(f"{description}: {field} out of range {m=}")
+            if last is not None and remaining > last + 0.01:
+                raise NotAchievedException(f"{description}: {field} went up ({last} -> {remaining})")
+            last = remaining
+            seen.add(round(remaining, 1))
+            want_pct = (total - remaining) * 100.0 / total
+            if abs(m.percentage_complete - want_pct) > 2:
+                raise NotAchievedException(
+                    f"{description}: percentage {m.percentage_complete} not consistent with {field} ({want_pct=})")
+        if len(seen) < min_values:
+            raise NotAchievedException(f"{description}: {field} did not count down ({seen=})")
+        if msgs[-1].percentage_complete < final_pct:
+            raise NotAchievedException(f"{description}: only got to {msgs[-1].percentage_complete}%")
+
+    def assert_nav_progress_target(self, description, msgs, loc=None, alt_amsl=None, max_dist=2, max_alt_err=2):
+        '''all msgs should carry the target loc (or no target if loc is None)'''
+        for m in msgs:
+            if loc is None:
+                if (m.x != 2**31-1 or m.y != 2**31-1 or not math.isnan(m.z)):
+                    raise NotAchievedException(f"{description}: expected target to be unset {m=}")
+                continue
+            target = Location.latlon_only(m.x * 1e-7, m.y * 1e-7)
+            dist = self.get_distance(target, loc)
+            if dist > max_dist:
+                raise NotAchievedException(f"{description}: target {dist}m from expected")
+            if alt_amsl is not None and (not math.isfinite(m.z) or abs(m.z - alt_amsl) > max_alt_err):
+                raise NotAchievedException(f"{description}: target alt {m.z} want {alt_amsl}")
+
+    def nav_progress_by_seq(self, msgs, nitems, skip=()):
+        '''group mission NAV_CONTROLLER_PROGRESS messages by item,
+        checking items 1..nitems (except those in skip, e.g. do
+        commands) are each reported, in order'''
+        by_seq = {}
+        last_seq = 0
+        for m in msgs:
+            if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+                raise NotAchievedException(f"Bad mission_type {m=}")
+            if m.seq == 0:
+                # not running a mission item, e.g. mission finished
+                continue
+            if m.seq < last_seq:
+                raise NotAchievedException(f"seq went backwards {last_seq=} {m=}")
+            last_seq = m.seq
+            by_seq.setdefault(m.seq, []).append(m)
+        for seq in range(1, nitems+1):
+            if seq in skip:
+                if seq in by_seq:
+                    raise NotAchievedException(f"NAV_CONTROLLER_PROGRESS for non-nav item {seq}")
+                continue
+            if seq not in by_seq:
+                raise NotAchievedException(f"No NAV_CONTROLLER_PROGRESS for item {seq}")
+        return by_seq
+
+    def assert_nav_progress_not_mission(self, description, msgs):
+        '''progress towards the target of a mode is not for a mission or rally item'''
+        for m in msgs:
+            if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_ALL:
+                raise NotAchievedException(f"{description}: expected MAV_MISSION_TYPE_ALL {m=}")
+
     # Parameters which legitimately differ across a test through no fault
     # of the test: cumulative statistics, and values the vehicle learns
     # for itself in flight.  Anything else changing across a test which

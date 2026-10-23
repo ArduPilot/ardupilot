@@ -42,6 +42,9 @@ void ModeSmartRTL::update()
             // check if return path is computed and if yes, begin journey home
             if (g2.smart_rtl.request_thorough_cleanup()) {
                 smart_rtl_state = SmartRTLState::PathFollow;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+                path_follow_start_points = g2.smart_rtl.get_num_points();
+#endif
                 _load_point = true;
             }
             // Note: this may lead to an unnecessary 20ms slow down of the vehicle (but it is unlikely)
@@ -142,3 +145,30 @@ void ModeSmartRTL::save_position()
     const bool save_pos = (rover.control_mode != &rover.mode_smartrtl);
     g2.smart_rtl.update(true, save_pos);
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+bool ModeSmartRTL::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    switch (smart_rtl_state) {
+    case SmartRTLState::WaitForPathCleanup:
+    case SmartRTLState::Failure:
+        return false;
+    case SmartRTLState::PathFollow:
+        // count the points on the path still to be driven to, including the current one
+        progress.set_count_remaining(MIN(g2.smart_rtl.get_num_points() + 1U, path_follow_start_points), path_follow_start_points);
+        break;
+    case SmartRTLState::StopAtHome:
+        progress.set_count_remaining(0, path_follow_start_points);
+        break;
+    }
+    UNUSED_RESULT(get_nav_target(target));
+    return true;
+}
+
+// the path ends at home
+bool ModeSmartRTL::get_nav_target(Location &target) const
+{
+    target = AP::ahrs().get_home();
+    return true;
+}
+#endif
