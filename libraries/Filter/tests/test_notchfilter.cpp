@@ -3,6 +3,7 @@
 #include <Filter/Filter.h>
 #include <Filter/NotchFilter.h>
 #include <Filter/HarmonicNotchFilter.h>
+#include "GoertzelOscillator.h"
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -179,7 +180,9 @@ static void test_one_filter(float base_freq, float attenuation_dB,
     const uint16_t rate_hz = 2000;
     const uint32_t samples = 50000;
     const float test_amplitude = 1.0;
-    const double dt = 1.0 / rate_hz;
+
+    Goertzel_Oscillator osc;
+    osc.init(test_freq, rate_hz);
 
     HarmonicNotchFilter<float> filter {};
     struct {
@@ -209,9 +212,7 @@ static void test_one_filter(float base_freq, float attenuation_dB,
     f.update(source_freq);
 
     for (uint32_t s=0; s<samples; s++) {
-        const double t = s * dt;
-
-        const double sample = sin(test_freq * t * 2 * M_PI) * test_amplitude;
+        const double sample = osc.next() * test_amplitude;
         float v = sample;
         v = f.apply(v);
         if (s >= samples/10) {
