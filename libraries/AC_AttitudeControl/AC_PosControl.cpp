@@ -88,6 +88,9 @@ extern const AP_HAL::HAL& hal;
 
 AC_PosControl *AC_PosControl::_singleton;
 
+#define POSCONTROL_TVEC_ARM_MS                  100     // the path must demand more than free fall for this long before inverted thrust is armed
+#define POSCONTROL_TVEC_EXIT_MS                 250     // the vertical axis must want thrust up for this long before inverted thrust is released
+
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
@@ -143,6 +146,21 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_D_JERK", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
+
+    // @Param: _TVEC_EN
+    // @DisplayName: Thrust vector control enable
+    // @Description: Allows the commanded thrust vector to tilt past 90 degrees when the path demands a downward acceleration greater than free fall. The vertical thrust demand is no longer clamped at zero and the throttle is set from the magnitude of the thrust vector rather than by angle boost. Experimental.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("_TVEC_EN", 15, AC_PosControl, _thrust_vector_enabled, 0),
+
+    // @Param: _TVEC_ALT
+    // @DisplayName: Thrust vector minimum height
+    // @Description: Minimum height above the EKF origin at which the commanded thrust vector may tilt past 90 degrees. Inverted thrust is inhibited below this height whatever the path demands, because the vertical controller routinely wants less than zero upward thrust in the last part of a descent.
+    // @Units: m
+    // @Range: 5 200
+    // @User: Advanced
+    AP_GROUPINFO("_TVEC_ALT", 16, AC_PosControl, _thrust_vector_min_height_m, 15.0),
 
     // @Param: _D_VEL_P
     // @DisplayName: Velocity (vertical) controller P gain
@@ -761,19 +779,24 @@ void AC_PosControl::NE_update_controller()
     _accel_target_ned_mss.xy() = accel_target_ne_mss;
     _accel_target_ned_mss.xy() += _accel_desired_ned_mss.xy() + _accel_offset_ned_mss.xy();
 
-    // limit acceleration using maximum lean angles
-    const float angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), get_lean_angle_max_rad());
-    const float accel_max_mss = angle_rad_to_accel_mss(angle_max_rad);
-    // Save unbounded target for use in "limited" check (not unit-consistent with z!)
-    _limit_vector_ned.xy() = _accel_target_ned_mss.xy();
-    // Normalise desired velocity by max speed for the cross-track reference (guard zero max speed).
-    Vector2f vel_norm_ne;
-    if (is_positive(_vel_max_ne_ms)) {
-        vel_norm_ne = _vel_desired_ned_ms.xy() / _vel_max_ne_ms;
-    }
-    if (!limit_accel_xy(vel_norm_ne, _accel_target_ned_mss.xy(), accel_max_mss)) {
-        // _accel_target_ned_mss was not limited so we can zero the xy limit vector
+    // limit acceleration using maximum lean angles, except while inverted thrust is active:
+    // the limit is derived from atan(accel/g) and cannot express a tilt at or past 90 degrees
+    if (_thrust_inverted_active) {
         _limit_vector_ned.xy().zero();
+    } else {
+        const float angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), get_lean_angle_max_rad());
+        const float accel_max_mss = angle_rad_to_accel_mss(angle_max_rad);
+        // Save unbounded target for use in "limited" check (not unit-consistent with z!)
+        _limit_vector_ned.xy() = _accel_target_ned_mss.xy();
+        // Normalise desired velocity by max speed for the cross-track reference (guard zero max speed).
+        Vector2f vel_norm_ne;
+        if (is_positive(_vel_max_ne_ms)) {
+            vel_norm_ne = _vel_desired_ned_ms.xy() / _vel_max_ne_ms;
+        }
+        if (!limit_accel_xy(vel_norm_ne, _accel_target_ned_mss.xy(), accel_max_mss)) {
+            // _accel_target_ned_mss was not limited so we can zero the xy limit vector
+            _limit_vector_ned.xy().zero();
+        }
     }
 
     // Convert acceleration to roll/pitch angle targets (used by attitude controller)
@@ -894,6 +917,11 @@ void AC_PosControl::D_relax_controller(float throttle_setting)
 // Private function shared by other vertical initializers.
 void AC_PosControl::D_init_controller()
 {
+    // thrust supports weight until the vertical controller says otherwise
+    _thrust_vector_d_mss = -GRAVITY_MSS;
+    _thrust_inverted_active = false;
+    _thrust_invert_arm_ms = 0;
+
     // initialise terrain targets and offsets to zero
     init_terrain();
 
@@ -1141,8 +1169,24 @@ void AC_PosControl::D_update_controller()
 
     // Actuator commands
 
-    // Send final throttle output to attitude controller (includes angle boost)
-    _attitude_control.set_throttle_out(-thrust_d_norm, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+    // -thrust_d_norm is the throttle the vertical axis wants assuming thrust points up;
+    // negative is the request for thrust out of the bottom of the airframe
+    const float throttle_up = -thrust_d_norm;
+    update_inverted_thrust_state(throttle_up);
+
+    if (_thrust_inverted_active) {
+        const float hover_throttle = _motors.get_throttle_hover();
+        _thrust_vector_d_mss = is_positive(hover_throttle) ? -(throttle_up / hover_throttle) * GRAVITY_MSS : -GRAVITY_MSS;
+
+        // Angle boost is the 1/cos(tilt) special case of this magnitude and cannot represent
+        // a tilt at or past 90 degrees, so the magnitude is used directly and boost disabled.
+        const float throttle_out = hover_throttle * get_thrust_vector().length() / GRAVITY_MSS;
+        _attitude_control.set_throttle_out(throttle_out, false, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+    } else {
+        // stock behaviour: thrust supports weight and angle boost supplies the tilt correction
+        _thrust_vector_d_mss = -GRAVITY_MSS;
+        _attitude_control.set_throttle_out(-thrust_d_norm, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+    }
 
     // Check for vertical controller health
 
@@ -1370,11 +1414,53 @@ void AC_PosControl::set_posvelaccel_offset_target_D_m(float pos_offset_target_d_
     _posvelaccel_offset_target_d_ms = AP_HAL::millis();
 }
 
-// Returns desired thrust direction as a unit vector in the body frame.
+// Decide whether the vehicle may point its thrust downward this cycle. Arming is driven by
+// the path, not the vertical PID, so the negative thrust demands near touchdown cannot roll
+// the vehicle over; once entered it is held while the vertical axis still wants thrust down,
+// since the constant speed part of a dive has no feedforward but must push through drag.
+void AC_PosControl::update_inverted_thrust_state(float throttle_up)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    const float height_m = -_pos_estimate_ned_m.z;
+
+    // consume the vehicle's permission: it must be renewed every loop, so a caller that
+    // stops refreshing it cannot leave inverted thrust enabled
+    const bool allowed = _inverted_thrust_allowed;
+    _inverted_thrust_allowed = false;
+
+    if (!_thrust_vector_enabled || !allowed || height_m < _thrust_vector_min_height_m) {
+        _thrust_inverted_active = false;
+        _thrust_invert_arm_ms = 0;
+        _thrust_invert_upright_ms = now_ms;
+        return;
+    }
+
+    if (!_thrust_inverted_active) {
+        if (_accel_desired_ned_mss.z > GRAVITY_MSS) {
+            if (_thrust_invert_arm_ms == 0) {
+                _thrust_invert_arm_ms = now_ms;
+            } else if (now_ms - _thrust_invert_arm_ms >= POSCONTROL_TVEC_ARM_MS) {
+                _thrust_inverted_active = true;
+                _thrust_invert_upright_ms = now_ms;
+            }
+        } else {
+            _thrust_invert_arm_ms = 0;
+        }
+        return;
+    }
+
+    if (is_negative(throttle_up)) {
+        _thrust_invert_upright_ms = now_ms;
+    } else if (now_ms - _thrust_invert_upright_ms >= POSCONTROL_TVEC_EXIT_MS) {
+        _thrust_inverted_active = false;
+        _thrust_invert_arm_ms = 0;
+    }
+}
+
 Vector3f AC_PosControl::get_thrust_vector() const
 {
     Vector3f accel_target_ned_mss = get_accel_target_NED_mss();
-    accel_target_ned_mss.z = -GRAVITY_MSS;
+    accel_target_ned_mss.z = _thrust_vector_enabled ? _thrust_vector_d_mss : -GRAVITY_MSS;
     return accel_target_ned_mss;
 }
 
