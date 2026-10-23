@@ -18,16 +18,8 @@ public:
     // move target location along track from origin to destination
     // target_pos is updated with the target position from EKF origin in NED frame
     // target_vel is updated with the target velocity in NED frame
-    // target_accel is updated with the acceleration the path requires at that velocity,
-    // which is the curvature of the spline scaled by speed squared plus the tangential
-    // acceleration the speed limit is asking for
+    // target_accel is updated with the acceleration the path requires to turn at that velocity
     void advance_target_along_track(float dt, Vector3p &target_pos, Vector3f &target_vel, Vector3f &target_accel);
-
-    // move target location along track, discarding the acceleration
-    void advance_target_along_track(float dt, Vector3p &target_pos, Vector3f &target_vel) {
-        Vector3f target_accel;
-        advance_target_along_track(dt, target_pos, target_vel, target_accel);
-    }
 
     // returns true if vehicle has reached destination
     bool reached_destination() const WARN_IF_UNUSED { return _reached_destination; }

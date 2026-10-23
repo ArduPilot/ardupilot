@@ -121,23 +121,17 @@ void SplineCurve::advance_target_along_track(float dt, Vector3p &target_pos, Vec
     Vector3f curvature;
 
     calc_dt_speed_max(_time, distance_delta, spline_dt, target_pos, spline_vel_unit, speed_max, accel_max, curvature);
-    const float speed_previous = speed_cms;
     speed_cms = constrain_float(speed_max, speed_cms - accel_max * dt, speed_cms + accel_max * dt);
     target_vel = spline_vel_unit * speed_cms;
 
-    // the acceleration the path demands: turning the corner at this speed, plus whatever
-    // tangential acceleration the speed limit just asked for.  The speed is slewed toward
+    // the acceleration the path demands to turn at this speed.  The speed is slewed toward
     // its limit while the curvature applies at once, so near a tight corner the product can
-    // briefly ask for far more than the vehicle was configured for; bound the turning part
-    // by the leg's own acceleration limits
+    // briefly ask for more than the vehicle was configured for; bound it by the leg's limits
     target_accel = curvature * sq(speed_cms);
     const float accel_norm_max = kinematic_limit(target_accel, _accel_xy, _accel_z, _accel_z);
     const float accel_norm_length = target_accel.length();
     if (is_positive(accel_norm_max) && accel_norm_length > accel_norm_max) {
         target_accel *= accel_norm_max / accel_norm_length;
-    }
-    if (is_positive(dt)) {
-        target_accel += spline_vel_unit * ((speed_cms - speed_previous) / dt);
     }
 
     _time += spline_dt;
