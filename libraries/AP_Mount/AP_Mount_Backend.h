@@ -449,6 +449,10 @@ private:
     // returns true on success, false on failure
     bool get_angle_target_to_location(const Location &loc, MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
 
+    // get angle targets (in radians) from a start Location to a target Location
+    // returns true on success, false on failure
+    bool get_angle_target_to_location(const Location &start_loc, const Location &target_loc, MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
+
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // calculate the Location that the gimbal is pointing at
     void calculate_poi();

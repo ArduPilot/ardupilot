@@ -460,6 +460,17 @@ bool ModeGuided::get_wp(Location& destination) const
     return false;
 }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+bool ModeGuided::get_wp_prev(Location& origin) const
+{
+    // only the wp_nav submode flies a segment
+    if (guided_mode != SubMode::WP) {
+        return false;
+    }
+    return wp_nav->get_wp_origin_loc(origin);
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
 // or if the fence is enabled and guided waypoint is outside the fence
