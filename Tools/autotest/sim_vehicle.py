@@ -980,7 +980,12 @@ def start_vehicle(binary, opts, stuff, spawns=None):
     cmd.append(binary)
     if opts.wipe_eeprom:
         cmd.append("-w")
-    cmd.extend(["--model", stuff["model"]])
+    if opts.model is None and "frame" in stuff:
+        # SITL maps the frame to its model and default parameters
+        model = stuff["frame"]
+    else:
+        model = stuff["model"]
+    cmd.extend(["--model", model])
     cmd.extend(["--speedup", str(opts.speedup)])
     if opts.sysid is not None:
         cmd.extend(["--sysid", str(opts.sysid)])
@@ -997,10 +1002,17 @@ def start_vehicle(binary, opts, stuff, spawns=None):
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
     # the SITL binary resolves the per-frame default parameter files
-    # from its embedded vehicleinfo.json keyed by --model, so we no
-    # longer pass --defaults here. Use --add-param-file or --param to
+    # from its embedded vehicleinfo.json keyed by --model; only pass
+    # --defaults when it can't. Use --add-param-file or --param to
     # layer extra parameters on top of the embedded defaults.
     path = None
+    if vinfo.needs_defaults(stuff, frame_given, model):
+        paths = stuff["default_params_filename"]
+        if not isinstance(paths, list):
+            paths = [paths]
+        # absolute, as each instance runs from its own directory
+        path = ",".join([os.path.join(autotest_dir, x) for x in paths])
+        progress("Using defaults from (%s)" % (path,))
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")
         cmd.append("--set-storage-posix-enabled 0")
@@ -1792,6 +1804,7 @@ You could also try changing directory to e.g. the ArduCopter subdirectory
     sys.exit(1)
 
 # determine frame options (e.g. build type might be "sitl")
+frame_given = cmd_opts.frame is not None
 if cmd_opts.frame is None:
     cmd_opts.frame = vinfo.options[cmd_opts.vehicle]["default_frame"]
 

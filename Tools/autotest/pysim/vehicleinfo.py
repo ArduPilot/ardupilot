@@ -34,15 +34,18 @@ class VehicleInfo(object):
         ret = None
         frames = self.options[vehicle]["frames"]
         if frame in frames:
-            ret = self.options[vehicle]["frames"][frame]
+            # copied, as the fields below are adjusted for this launch
+            ret = dict(self.options[vehicle]["frames"][frame])
+            # SITL can resolve this frame's model and defaults by itself
+            ret["frame"] = frame
         else:
             for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane", "airsim"]:
                 if frame.startswith(p):
-                    ret = self.options[vehicle]["frames"][p]
+                    ret = dict(self.options[vehicle]["frames"][p])
                     break
         if ret is None:
             if frame.endswith("-heli"):
-                ret = self.options[vehicle]["frames"]["heli"]
+                ret = dict(self.options[vehicle]["frames"]["heli"])
         if ret is None:
             print("WARNING: no config for frame (%s)" % frame)
             ret = {}
@@ -67,3 +70,28 @@ class VehicleInfo(object):
             ret["waf_target"] = opts.build_target
 
         return ret
+
+    def _frame_named(self, name):
+        """True if name is a frame name or a frame's "model" field, in any vehicle"""
+        return any(name == key or name == frame.get("model")
+                   for vehicle in self.options.values()
+                   for key, frame in vehicle.get("frames", {}).items())
+
+    def sitl_resolves(self, model):
+        """True if SITL finds a frame for --model by itself; mirrors
+        SITL_State::resolve_defaults_from_romfs()"""
+        if self._frame_named(model):
+            return True
+        # drop ":<args>", then "-<variant>" suffixes one at a time
+        candidate = model.split(":")[0]
+        while not self._frame_named(candidate):
+            if "-" not in candidate:
+                return False
+            candidate = candidate.rsplit("-", 1)[0]
+        return True
+
+    def needs_defaults(self, frame_info, frame_given, model):
+        """True if sim_vehicle.py must pass the -f frame's defaults with
+        --defaults because SITL can't find a frame for the --model it gets"""
+        return (frame_given and "default_params_filename" in frame_info
+                and not self.sitl_resolves(model))
