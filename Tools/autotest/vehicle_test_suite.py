@@ -4577,7 +4577,9 @@ class TestSuite(abc.ABC):
             if opts.get('frame', None) is not None:
                 frame = opts.get('frame')
             p1 = opts.get('p1', 0)  # should we pass `None` instead?
-            ret.append(self.create_MISSION_ITEM_INT(t, seq=seq, frame=frame, p1=p1, x=int(lat*1e7), y=int(lng*1e7), z=alt))
+            p2 = opts.get('p2', 0)
+            ret.append(self.create_MISSION_ITEM_INT(t, seq=seq, frame=frame, p1=p1, p2=p2,
+                                                    x=int(lat*1e7), y=int(lng*1e7), z=alt))
             seq += 1
 
         return ret
