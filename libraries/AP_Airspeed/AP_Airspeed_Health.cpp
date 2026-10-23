@@ -121,6 +121,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed sensor %d now OK. Re-enabled", i+1);
         param[i].use.set_and_notify(state[i].failures.param_use_backup); // resume
         state[i].failures.param_use_backup = -1; // set to invalid so we don't use it
+        state[i].healthy = true;
     }
 #endif // HAL_BUILD_AP_PERIPH
 }
