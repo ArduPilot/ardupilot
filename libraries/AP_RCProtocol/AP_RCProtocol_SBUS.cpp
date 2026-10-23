@@ -94,6 +94,11 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
     if ((frame[0] != 0x0f)) {
         return false;
     }
+    // SBUS flags byte uses only the low nibble (ch17/ch18/frame_lost/failsafe).
+    // If upper bits are set, the stream is almost certainly misaligned.
+    if ((frame[SBUS_FLAGS_BYTE] & 0xF0U) != 0U) {
+        return false;
+    }
 
     uint16_t chancount = SBUS_INPUT_CHANNELS;
 
@@ -173,16 +178,14 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
     byte_input.last_byte_us = timestamp_us;
 
     if (have_frame_gap) {
-        // if we have a frame gap then this must be the start of a new
-        // frame
+        // a gap can only be a frame boundary, so drop any partial frame
         byte_input.ofs = 0;
     }
-    if (b != 0x0F && byte_input.ofs == 0) {
-        // definately not SBUS, missing header byte
-        return;
-    }
-    if (byte_input.ofs == 0 && !have_frame_gap) {
-        // must have a frame gap before the start of a new SBUS frame
+
+    // a gap is not required to start a frame: bytes read from a UART arrive in
+    // batches and do not carry true wire-time spacing. Anchor on the header
+    // instead, and resync by searching for the next one on a decode failure.
+    if (byte_input.ofs == 0 && b != 0x0F) {
         return;
     }
 
@@ -197,8 +200,21 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
                         sbus_failsafe, SBUS_INPUT_CHANNELS) &&
             num_values >= MIN_RCIN_CHANNELS) {
             add_input(num_values, values, sbus_failsafe);
+            byte_input.ofs = 0;
+            return;
         }
-        byte_input.ofs = 0;
+
+        // Decode failed: attempt in-buffer resync to next 0x0F header so we
+        // recover quickly from a single dropped/inserted byte.
+        uint8_t new_ofs = 0;
+        for (uint8_t i = 1; i < sizeof(byte_input.buf); i++) {
+            if (byte_input.buf[i] == 0x0F) {
+                new_ofs = sizeof(byte_input.buf) - i;
+                memmove(byte_input.buf, &byte_input.buf[i], new_ofs);
+                break;
+            }
+        }
+        byte_input.ofs = new_ofs;
     }
 }
 
