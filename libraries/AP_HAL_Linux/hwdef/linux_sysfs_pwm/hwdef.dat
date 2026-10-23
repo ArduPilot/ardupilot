@@ -1,0 +1,35 @@
+# Generic Linux userspace target using PWM sysfs for RC output.
+#
+# Default output mapping:
+#   SERVO1 -> /sys/class/pwm/pwmchip0/pwm0
+#   SERVO2 -> /sys/class/pwm/pwmchip0/pwm1
+#
+# The OS and device tree must expose the desired PWM channels through
+# sysfs. Tested on a Raspberry Pi with the pwm-2chan device tree overlay,
+# which exposes PWM0 on GPIO18 and PWM1 on GPIO19 as pwmchip0.
+
+# A dedicated subtype is needed because RC output driver selection in
+# HAL_Linux_Class.cpp is keyed on CONFIG_HAL_BOARD_SUBTYPE. The existing
+# sysfs PWM boards (navio2, edge, canzero, t3-gem-o1) hard-code their
+# channel mapping in HAL_Linux_Class.cpp under their own subtypes; this
+# subtype instead selects an RCOutput_Sysfs instance configured by the
+# HAL_RCOUT_SYSFS_* defines below, so boards derived from this target
+# only need a hwdef.
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_SYSFS_PWM
+
+env TOOLCHAIN native
+env OPTIMIZE -O2 -fomit-frame-pointer
+
+# Sysfs PWM mapping.
+define HAL_RCOUT_SYSFS_CHIP 0
+define HAL_RCOUT_SYSFS_CHANNEL_BASE 0
+define HAL_RCOUT_SYSFS_CHANNEL_COUNT 2
+
+# Minimal Linux target. Add real sensor configuration in a downstream board
+# or extend this target later if required.
+define HAL_INS_DEFAULT HAL_INS_NONE
+define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+define AP_HAL_LINUX_SET_HW_RTC_ENABLED 0
+define APM_LINUX_RCIN_RATE 500
