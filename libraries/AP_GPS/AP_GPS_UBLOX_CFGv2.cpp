@@ -323,6 +323,16 @@ bool AP_GPS_UBLOX_CFGv2::_identify_module()
         return true;
     }
 
+    if (ubx_backend._have_version) {
+        // MON-VER had no "PROTVER=" extension (e.g. u-blox 6, or
+        // "PROTVER 15.00" on older M8 firmware), so the receiver
+        // predates CFG-VALGET/VALSET; stop polling it for MON-VER
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                    "GPS %u: u-blox protocol too old for CFG-VALGET/VALSET",
+                    unsigned(ubx_backend.state.instance) + 1);
+        curr_state = States::FAILED;
+    }
+
     return false;
 }
 

@@ -175,6 +175,7 @@ public:
 
     enum class GPSOptions : uint32_t {
         UBX_IS_F9P = 1U << 0,
+        UBX_NO_BACKUP = 1U << 1,
     };
 
     struct sitl_fdm state;
@@ -369,6 +370,7 @@ public:
         AP_Int8 fix_type; // GPS fix type
         AP_Float noise_horizontal; // horizontal noise radius in meters
         AP_Vector3f vel_glitch; // glitch offsets in NED velocity (m/s)
+        AP_Int8 ubx_model; // see enum SITL::GPS_UBlox::Model
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
