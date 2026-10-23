@@ -154,7 +154,7 @@ public:
     virtual bool allows_inverted() const { return false; };
 #endif
 
-#if FRAME_CONFIG != HELI_FRAME
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED && FRAME_CONFIG != HELI_FRAME
     // return true if the mode flies a planned path along which the thrust vector may point downward
     virtual bool allows_inverted_thrust() const { return false; }
 #endif
@@ -597,7 +597,7 @@ public:
     bool is_taking_off() const override;
     bool use_pilot_yaw() const override;
 
-#if FRAME_CONFIG != HELI_FRAME
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED && FRAME_CONFIG != HELI_FRAME
     // waypoint legs are the planned paths: arcs, splines and straight legs
     bool allows_inverted_thrust() const override { return _mode == SubMode::WP; }
 #endif
