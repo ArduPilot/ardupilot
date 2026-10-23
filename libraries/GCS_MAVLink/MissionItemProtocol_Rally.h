@@ -30,6 +30,12 @@ protected:
     }
     bool clear_all_items() override WARN_IF_UNUSED;
 
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    uint32_t items_change_count() const override {
+        return rally.change_count();
+    }
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+
 private:
     AP_Rally &rally;
 

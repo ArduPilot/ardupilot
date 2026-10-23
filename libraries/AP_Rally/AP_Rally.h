@@ -80,6 +80,8 @@ public:
 
     // last time rally points changed
     uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
+    // counter incremented on every change to the rally points
+    uint32_t change_count(void) const { return _change_count; }
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
@@ -101,6 +103,7 @@ private:
     AP_Int8  _rally_incl_home;
 
     uint32_t _last_change_time_ms = 0xFFFFFFFF;
+    uint32_t _change_count;
 };
 
 namespace AP {
