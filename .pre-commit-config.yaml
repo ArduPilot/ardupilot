@@ -67,6 +67,17 @@ repos:
           -   tomli;python_version<'3.11'
           pass_filenames: false
           files: ^Tools/ros2/
+      -   id: workflow-path-filters
+          name: Check the workflow path filters
+          entry: Tools/scripts/check_workflow_path_filters.py
+          language: python
+          additional_dependencies: [pyyaml]
+          pass_filenames: false
+          files: |
+            (?x)^(
+              \.github/workflows/.*\.ya?ml |
+              Tools/scripts/check_workflow_path_filters\.py
+            )$
       -   id: serial-protocol-gates
           name: Check SerialProtocol gate coverage
           entry: Tools/scripts/check_serial_protocol_gates.py
