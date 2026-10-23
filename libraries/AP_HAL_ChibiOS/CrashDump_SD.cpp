@@ -1052,7 +1052,8 @@ static bool abort_transfer()
     stop_data_path();
     clear_data_flags();
 
-    for (volatile uint32_t i = 0; i < 1000U; i++) {
+    for (volatile uint32_t i = 0; i < 1000U;) {
+        i = i + 1;
     }
     for (uint8_t i = 0; i < 3U; i++) {
         (void)stop_multiblock_transfer();
