@@ -129,6 +129,7 @@ protected:
         ASP5033  = 0x0A,
         AUAV     = 0x0B,
         SCRIPTING = 0x0C,
+        SM9541   = 0x0D,
     };
     
 private:
