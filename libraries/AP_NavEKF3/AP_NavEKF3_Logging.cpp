@@ -234,6 +234,24 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
 #endif
 }
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+void NavEKF3_core::Log_Write_XKF7(uint64_t time_us) const
+{
+    if (!frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
+        return;
+    }
+
+    const struct log_XKF7 pkt7{
+        LOG_PACKET_HEADER_INIT(LOG_XKF7_MSG),
+        time_us : time_us,
+        core    : DAL_CORE(core_index),
+        flowVelResetCount : flowVelResetCount,
+        flowVelResetUnhealthy : (uint8_t)flowVelResetUnhealthy,
+    };
+    AP::logger().WriteBlock(&pkt7, sizeof(pkt7));
+}
+#endif
+
 void NavEKF3_core::Log_Write_Quaternion(uint64_t time_us) const
 {
     // log quaternion
@@ -417,6 +435,9 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
     Log_Write_XKF2(time_us);
     Log_Write_XKF3(time_us);
     Log_Write_XKF5(time_us);
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    Log_Write_XKF7(time_us);
+#endif
 
     Log_Write_XKFS(time_us);
     Log_Write_Quaternion(time_us);
