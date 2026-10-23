@@ -6,20 +6,49 @@
 
 #include <SITL/SITL.h>
 
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+
 using namespace SITL;
+
+static const uint8_t CLASS_NAV = 0x01;
+static const uint8_t CLASS_RXM = 0x02;
+static const uint8_t CLASS_ACK = 0x05;
+static const uint8_t CLASS_CFG = 0x06;
+static const uint8_t CLASS_MON = 0x0A;
+static const uint8_t CLASS_TIM = 0x0D;
+
+static const uint8_t MSG_POSLLH = 0x2;
+static const uint8_t MSG_STATUS = 0x3;
+static const uint8_t MSG_DOP = 0x4;
+static const uint8_t MSG_SOL = 0x6;
+static const uint8_t MSG_PVT = 0x7;
+static const uint8_t MSG_VELNED = 0x12;
+static const uint8_t MSG_TIMEGPS = 0x20;
+static const uint8_t MSG_SVINFO = 0x30;
+static const uint8_t MSG_RELPOSNED = 0x3c;
+
+/*
+  send a UBLOX GPS NAV message
+ */
+void GPS_UBlox::send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
+{
+    send_ubx(CLASS_NAV, msgid, buf, size);
+}
 
 /*
   send a UBLOX GPS message
  */
-void GPS_UBlox::send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
+void GPS_UBlox::send_ubx(uint8_t msgclass, uint8_t msgid, const uint8_t *buf, uint16_t size)
 {
     const uint8_t PREAMBLE1 = 0xb5;
     const uint8_t PREAMBLE2 = 0x62;
-    const uint8_t CLASS_NAV = 0x1;
     uint8_t hdr[6], chk[2];
     hdr[0] = PREAMBLE1;
     hdr[1] = PREAMBLE2;
-    hdr[2] = CLASS_NAV;
+    hdr[2] = msgclass;
     hdr[3] = msgid;
     hdr[4] = size & 0xFF;
     hdr[5] = size >> 8;
@@ -170,34 +199,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
         uint8_t valid; //  leapsvalid | weekvalid | tow valid;
         uint32_t tAcc;
     } timegps {};
-    const uint8_t SV_COUNT = 10;
-    struct PACKED ubx_nav_svinfo {
-        uint32_t itow;
-        uint8_t numCh;
-        uint8_t globalFlags;
-        uint8_t reserved1[2];
-        // repeated block
-        struct PACKED svinfo_sv {
-            uint8_t chn;
-            uint8_t svid;
-            uint8_t flags;
-            uint8_t quality;
-            uint8_t cno;
-            int8_t elev;
-            int16_t azim;
-            int32_t prRes;
-        } sv[SV_COUNT];
-    } svinfo {};
     ubx_nav_relposned relposned {};
-    const uint8_t MSG_POSLLH = 0x2;
-    const uint8_t MSG_STATUS = 0x3;
-    const uint8_t MSG_DOP = 0x4;
-    const uint8_t MSG_VELNED = 0x12;
-    const uint8_t MSG_SOL = 0x6;
-    const uint8_t MSG_PVT = 0x7;
-    const uint8_t MSG_TIMEGPS = 0x20;
-    const uint8_t MSG_SVINFO = 0x30;
-    const uint8_t MSG_RELPOSNED = 0x3c;
 
     // Note: This variable is actually a bug but removing it causes some CI failures.
     // Keep this here for now pending further investigation.
@@ -334,6 +336,40 @@ void GPS_UBlox::publish(const GPS_Data *d)
         break;
     }
 
+    if (config_simulated()) {
+        // only send what the receiver has been configured to send
+        nav_count++;
+        if (should_send(CLASS_NAV, MSG_POSLLH)) {
+            send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
+        }
+        if (should_send(CLASS_NAV, MSG_STATUS)) {
+            send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
+        }
+        if (should_send(CLASS_NAV, MSG_VELNED)) {
+            send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
+        }
+        if (should_send(CLASS_NAV, MSG_SOL)) {
+            send_ubx(MSG_SOL, (uint8_t*)&sol, sizeof(sol));
+        }
+        if (should_send(CLASS_NAV, MSG_TIMEGPS)) {
+            send_ubx(MSG_TIMEGPS, (uint8_t*)&timegps, sizeof(timegps));
+        }
+        if (should_send(CLASS_NAV, MSG_DOP)) {
+            send_ubx(MSG_DOP, (uint8_t*)&dop, sizeof(dop));
+        }
+        if (should_send(CLASS_NAV, MSG_PVT)) {
+            send_ubx(MSG_PVT, (uint8_t*)&pvt, sizeof(pvt));
+        }
+        if (_sitl->gps[instance].hdg_enabled > SITL::SIM::GPS_HEADING_NONE &&
+            should_send(CLASS_NAV, MSG_RELPOSNED)) {
+            send_ubx(MSG_RELPOSNED, (uint8_t*)&relposned, sizeof(relposned));
+        }
+        if (should_send(CLASS_NAV, MSG_SVINFO)) {
+            send_svinfo(gps_tow.ms, d->num_sats);
+        }
+        return;
+    }
+
     send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
     send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
     send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
@@ -356,23 +392,756 @@ void GPS_UBlox::publish(const GPS_Data *d)
     }
 
     if (gps_tow.ms > _next_nav_sv_info_time) {
-        svinfo.itow = gps_tow.ms;
-        svinfo.numCh = 32;
-        svinfo.globalFlags = 4; // u-blox 8/M8
-        // fill in the SV's with some data even though firmware does not currently use it
-        // note that this is not using num_sats as we aren't dynamically creating this to match
-        for (uint8_t i = 0; i < SV_COUNT; i++) {
-            svinfo.sv[i].chn = i;
-            svinfo.sv[i].svid = i;
-            svinfo.sv[i].flags = (i < d->num_sats) ? 0x7 : 0x6; // sv used, diff correction data, orbit information
-            svinfo.sv[i].quality = 7; // code and carrier lock and time synchronized
-            svinfo.sv[i].cno = MAX(20, 30 - i);
-            svinfo.sv[i].elev = MAX(30, 90 - i);
-            svinfo.sv[i].azim = i;
-            // not bothering to fill in prRes
-        }
-        send_ubx(MSG_SVINFO, (uint8_t*)&svinfo, sizeof(svinfo));
+        send_svinfo(gps_tow.ms, d->num_sats);
         _next_nav_sv_info_time = gps_tow.ms + 10000; // 10 second delay
+    }
+}
+
+void GPS_UBlox::send_svinfo(uint32_t tow_ms, uint8_t num_sats)
+{
+    const uint8_t SV_COUNT = 10;
+    struct PACKED ubx_nav_svinfo {
+        uint32_t itow;
+        uint8_t numCh;
+        uint8_t globalFlags;
+        uint8_t reserved1[2];
+        // repeated block
+        struct PACKED svinfo_sv {
+            uint8_t chn;
+            uint8_t svid;
+            uint8_t flags;
+            uint8_t quality;
+            uint8_t cno;
+            int8_t elev;
+            int16_t azim;
+            int32_t prRes;
+        } sv[SV_COUNT];
+    } svinfo {};
+
+    svinfo.itow = tow_ms;
+    svinfo.numCh = 32;
+    // the low 3 bits give the hardware generation
+    svinfo.globalFlags = model() == Model::UBLOX6 ? 2 : 4; // u-blox 6 or u-blox 8/M8
+    // fill in the SV's with some data even though firmware does not currently use it
+    // note that this is not using num_sats as we aren't dynamically creating this to match
+    for (uint8_t i = 0; i < SV_COUNT; i++) {
+        svinfo.sv[i].chn = i;
+        svinfo.sv[i].svid = i;
+        svinfo.sv[i].flags = (i < num_sats) ? 0x7 : 0x6; // sv used, diff correction data, orbit information
+        svinfo.sv[i].quality = 7; // code and carrier lock and time synchronized
+        svinfo.sv[i].cno = MAX(20, 30 - i);
+        svinfo.sv[i].elev = MAX(30, 90 - i);
+        svinfo.sv[i].azim = i;
+        // not bothering to fill in prRes
+    }
+    send_ubx(MSG_SVINFO, (uint8_t*)&svinfo, sizeof(svinfo));
+}
+
+/*
+  configuration simulation
+ */
+
+const GPS_UBlox::MsgID GPS_UBlox::tracked_msgs[] {
+    { CLASS_NAV, MSG_POSLLH },
+    { CLASS_NAV, MSG_STATUS },
+    { CLASS_NAV, MSG_DOP },
+    { CLASS_NAV, MSG_SOL },
+    { CLASS_NAV, MSG_PVT },
+    { CLASS_NAV, MSG_VELNED },
+    { CLASS_NAV, MSG_TIMEGPS },
+    { CLASS_NAV, MSG_SVINFO },
+    { CLASS_NAV, MSG_RELPOSNED },
+    { CLASS_RXM, 0x10 },  // RAW
+    { CLASS_RXM, 0x15 },  // RAWX
+    { CLASS_MON, 0x09 },  // HW
+    { CLASS_MON, 0x0b },  // HW2
+    { CLASS_TIM, 0x03 },  // TM2
+};
+
+// the UART1 index into port arrays; the simulated receiver is
+// always attached to the autopilot by UART1
+static const uint8_t UBX_PORT = 1;
+
+static const uint32_t SAVED_CONFIG_MAGIC = 0x55425853;  // "SXBU"
+
+// CFG-VALGET/VALSET keys, with the M10's default values
+const GPS_UBlox::ConfigKeyInfo GPS_UBlox::config_keys[] {
+    { 0x1031001F, 1 },  // CFG-SIGNAL-GPS_ENA
+    { 0x10310020, 1 },  // CFG-SIGNAL-SBAS_ENA
+    { 0x10310021, 1 },  // CFG-SIGNAL-GAL_ENA
+    { 0x10310022, 1 },  // CFG-SIGNAL-BDS_ENA
+    { 0x1031000D, 1 },  // CFG-SIGNAL-BDS_B1_ENA
+    { 0x1031000F, 0 },  // CFG-SIGNAL-BDS_B1C_ENA
+    { 0x10310024, 1 },  // CFG-SIGNAL-QZSS_ENA
+    { 0x10310012, 1 },  // CFG-SIGNAL-QZSS_L1CA_ENA
+    { 0x10310014, 1 },  // CFG-SIGNAL-QZSS_L1S_ENA
+    { 0x10310025, 0 },  // CFG-SIGNAL-GLO_ENA
+};
+static const uint32_t CFG_NAVSPG_DYNMODEL = 0x20110021;
+
+GPS_UBlox::Model GPS_UBlox::model() const
+{
+    const uint8_t value = _sitl->gps[instance].ubx_model.get();
+    if (value > uint8_t(Model::M10_SPG510)) {
+        // unknown model; behave as the simple model
+        return Model::SIMPLE;
+    }
+    return Model(value);
+}
+
+// receivers with flash keep their saved configuration without a
+// backup supply
+bool GPS_UBlox::has_flash() const
+{
+    switch (model()) {
+    case Model::M8N_FW201:
+    case Model::M8N_SPG301:
+    case Model::M9N_SPG404:
+        return true;
+    case Model::SIMPLE:
+    case Model::UBLOX6:
+    case Model::M8_ROM301:
+    case Model::M10_SPG510:
+        break;
+    }
+    return false;
+}
+
+// only the M10 is simulated as supporting CFG-VALGET/VALSET; the
+// driver doesn't use them on the older receivers
+bool GPS_UBlox::supports_valset() const
+{
+    return model() == Model::M10_SPG510;
+}
+
+// return true if the receiver supports outputting a message; this
+// matches what the real receivers NAK
+bool GPS_UBlox::supports(uint8_t msg_class, uint8_t msg_id) const
+{
+    if (msg_class == CLASS_RXM) {
+        // none of the simulated receivers output raw measurements
+        return false;
+    }
+    if (msg_class == CLASS_MON && msg_id == 0x04) {
+        // MON-VER is poll-only
+        return false;
+    }
+    switch (model()) {
+    case Model::UBLOX6:
+        return !(msg_class == CLASS_NAV && msg_id == MSG_PVT);
+    case Model::M9N_SPG404:
+    case Model::M10_SPG510:
+        return !(msg_class == CLASS_NAV && (msg_id == MSG_SOL || msg_id == MSG_SVINFO));
+    case Model::SIMPLE:
+    case Model::M8N_FW201:
+    case Model::M8_ROM301:
+    case Model::M8N_SPG301:
+        break;
+    }
+    return true;
+}
+
+int8_t GPS_UBlox::tracked_index(uint8_t msg_class, uint8_t msg_id) const
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(tracked_msgs); i++) {
+        if (tracked_msgs[i].msg_class == msg_class && tracked_msgs[i].msg_id == msg_id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// factory default configuration: no UBX output on UART1
+void GPS_UBlox::factory_config(Config &cfg) const
+{
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.measure_rate_ms = 1000;
+    cfg.nav_rate = 1;
+    cfg.timeref = 1;  // GPS time
+
+    struct PACKED {
+        uint16_t mask;
+        uint8_t dynModel;
+        uint8_t fixMode;
+        int32_t fixedAlt;
+        uint32_t fixedAltVar;
+        int8_t minElev;
+        uint8_t drLimit;
+        uint16_t pDop;
+        uint16_t tDop;
+        uint16_t pAcc;
+        uint16_t tAcc;
+        uint8_t staticHoldThresh;
+        uint8_t dgnssTimeout;
+        uint8_t reserved[12];
+    } nav5 {};
+    static_assert(sizeof(nav5) == sizeof(cfg.nav5), "NAV5 size");
+    nav5.dynModel = 0;  // portable
+    nav5.fixMode = 3;   // auto 2D/3D
+    nav5.fixedAltVar = 10000;
+    nav5.minElev = 5;
+    nav5.pDop = 250;
+    nav5.tDop = 250;
+    nav5.pAcc = 100;
+    nav5.tAcc = 350;
+    nav5.dgnssTimeout = 60;
+    memcpy(cfg.nav5, &nav5, sizeof(nav5));
+
+    // SBAS enabled, ranging/corrections/integrity, up to 3 channels
+    const uint8_t sbas[8] { 1, 3, 3, 0, 0, 0, 0, 0 };
+    memcpy(cfg.sbas, sbas, sizeof(sbas));
+
+    struct PACKED {
+        uint8_t msgVer;
+        uint8_t numTrkChHw;
+        uint8_t numTrkChUse;
+        uint8_t numConfigBlocks;
+        struct PACKED {
+            uint8_t gnssId;
+            uint8_t resTrkCh;
+            uint8_t maxTrkCh;
+            uint8_t reserved1;
+            uint32_t flags;
+        } block[7];
+    } gnss {
+        0, 32, 32, 7, {
+            { 0, 8, 16, 0, 0x01010001 },  // GPS
+            { 1, 1, 3, 0, 0x01010001 },   // SBAS
+            { 2, 4, 8, 0, 0x01010000 },   // Galileo
+            { 3, 8, 16, 0, 0x01010000 },  // BeiDou
+            { 4, 0, 8, 0, 0x01010000 },   // IMES
+            { 5, 0, 3, 0, 0x05050001 },   // QZSS
+            { 6, 8, 14, 0, 0x01010001 },  // GLONASS
+        }
+    };
+    static_assert(sizeof(gnss) == sizeof(cfg.gnss), "GNSS size");
+    memcpy(cfg.gnss, &gnss, sizeof(gnss));
+    cfg.gnss_len = sizeof(gnss);
+
+    for (uint8_t i=0; i<ARRAY_SIZE(config_keys); i++) {
+        cfg.key_value[i] = config_keys[i].default_value;
+    }
+}
+
+void GPS_UBlox::config_filename(char *buf, uint8_t buflen) const
+{
+    snprintf(buf, buflen, "sim_ublox_gps%u.bin", unsigned(instance+1));
+}
+
+/*
+  on power-up the receiver loads its saved configuration into RAM.
+  Receivers without flash need a backup supply to keep it
+ */
+void GPS_UBlox::load_saved_config()
+{
+    factory_config(saved);
+
+    const bool no_backup = (_sitl->gps[instance].options & uint32_t(SITL::SIM::GPSOptions::UBX_NO_BACKUP)) != 0;
+    if (has_flash() || !no_backup) {
+        char filename[32];
+        config_filename(filename, sizeof(filename));
+        const int fd = ::open(filename, O_RDONLY);
+        if (fd != -1) {
+            SavedConfig file;
+            if (::read(fd, &file, sizeof(file)) == sizeof(file) &&
+                file.magic == SAVED_CONFIG_MAGIC &&
+                file.model == uint8_t(model())) {
+                saved = file.config;
+            }
+            ::close(fd);
+        }
+    }
+
+    ram = saved;
+    loaded_model = model();
+    config_loaded = true;
+}
+
+void GPS_UBlox::store_saved_config() const
+{
+    char filename[32];
+    config_filename(filename, sizeof(filename));
+    const int fd = ::open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (fd == -1) {
+        AP_HAL::panic("open(%s): %s", filename, strerror(errno));
+    }
+    const SavedConfig file {
+        SAVED_CONFIG_MAGIC,
+        uint8_t(model()),
+        saved
+    };
+    if (::write(fd, &file, sizeof(file)) != sizeof(file)) {
+        AP_HAL::panic("write(%s): %s", filename, strerror(errno));
+    }
+    ::close(fd);
+}
+
+// return true if a message is due to be output this navigation solution
+bool GPS_UBlox::should_send(uint8_t msg_class, uint8_t msg_id)
+{
+    if (!config_loaded || loaded_model != model()) {
+        load_saved_config();
+    }
+    const int8_t idx = tracked_index(msg_class, msg_id);
+    if (idx < 0 || !supports(msg_class, msg_id)) {
+        return false;
+    }
+    const uint8_t rate = ram.rate[idx];
+    return rate != 0 && nav_count % rate == 0;
+}
+
+void GPS_UBlox::send_ack(uint8_t msg_class, uint8_t msg_id, bool ack)
+{
+    const uint8_t payload[2] { msg_class, msg_id };
+    send_ubx(CLASS_ACK, ack ? 0x01 : 0x00, payload, sizeof(payload));
+}
+
+void GPS_UBlox::send_mon_ver()
+{
+    struct {
+        const char *sw;
+        const char *hw;
+        const char *ext[7];
+    } ver {};
+    switch (model()) {
+    case Model::UBLOX6:
+        // no extension strings at all
+        ver = { "7.03 (45969)", "00040007", {} };
+        break;
+    case Model::M8N_FW201:
+        // note the protocol version and module are not "KEY=value"
+        ver = { "2.01 (75350)", "00080000", {
+                "2.01 (75331)",
+                "PROTVER 15.00",
+                "FIS 0xEF4015 (79189)",
+                "MOD NEO-M8N-0",
+                "GPS;SBAS;GLO;BDS;QZSS" } };
+        break;
+    case Model::M8_ROM301:
+        ver = { "ROM CORE 3.01 (107888)", "00080000", {
+                "FWVER=SPG 3.01",
+                "PROTVER=18.00",
+                "GPS;GLO;GAL;BDS",
+                "SBAS;IMES;QZSS" } };
+        break;
+    case Model::M8N_SPG301:
+        ver = { "EXT CORE 3.01 (107900)", "00080000", {
+                "ROM BASE 3.01 (107888)",
+                "FWVER=SPG 3.01",
+                "PROTVER=18.00",
+                "MOD=NEO-M8N-0",
+                "FIS=0xEF4015 (100111)",
+                "GPS;GLO;GAL;BDS",
+                "SBAS;IMES;QZSS" } };
+        break;
+    case Model::M9N_SPG404:
+        ver = { "EXT CORE 4.04 (7f89f7)", "00190000", {
+                "ROM BASE 0x118B2060",
+                "FWVER=SPG 4.04",
+                "PROTVER=32.01",
+                "MOD=NEO-M9N",
+                "GPS;GLO;GAL;BDS",
+                "SBAS;QZSS" } };
+        break;
+    case Model::M10_SPG510:
+        // no MOD= extension
+        ver = { "ROM SPG 5.10 (7b202e)", "000A0000", {
+                "FWVER=SPG 5.10",
+                "PROTVER=34.10",
+                "GPS;GLO;GAL;BDS",
+                "SBAS;QZSS" } };
+        break;
+    case Model::SIMPLE:
+        return;
+    }
+
+    uint8_t payload[40 + 30*ARRAY_SIZE(ver.ext)] {};
+    strncpy((char*)&payload[0], ver.sw, 30);
+    strncpy((char*)&payload[30], ver.hw, 10);
+    uint16_t len = 40;
+    for (const char *ext : ver.ext) {
+        if (ext == nullptr) {
+            break;
+        }
+        strncpy((char*)&payload[len], ext, 30);
+        len += 30;
+    }
+    send_ubx(CLASS_MON, 0x04, payload, len);
+}
+
+void GPS_UBlox::send_cfg_prt()
+{
+    // built bytewise; clang's analyser can't follow byte reads of
+    // multi-byte fields in send_ubx()
+    uint8_t prt[20] {};
+    const uint32_t mode = 0x8c0;        // 8N1
+    const uint32_t baudrate = 230400;
+    const uint16_t in_proto = 0x07;     // UBX, NMEA, RTCM2
+    const uint16_t out_proto = 0x03;    // UBX, NMEA
+    prt[0] = UBX_PORT;
+    memcpy(&prt[4], &mode, 4);
+    memcpy(&prt[8], &baudrate, 4);
+    memcpy(&prt[12], &in_proto, 2);
+    memcpy(&prt[14], &out_proto, 2);
+    send_ubx(CLASS_CFG, 0x00, prt, sizeof(prt));
+}
+
+void GPS_UBlox::handle_cfg(uint8_t msg_id, const uint8_t *payload, uint16_t len)
+{
+    switch (msg_id) {
+    case 0x00:  // PRT
+        if (len <= 1) {
+            send_cfg_prt();
+            send_ack(CLASS_CFG, msg_id, true);
+        } else {
+            send_ack(CLASS_CFG, msg_id, true);
+        }
+        return;
+
+    case 0x01: {  // MSG
+        if (len < 2) {
+            break;
+        }
+        const uint8_t msg_class = payload[0];
+        const uint8_t id = payload[1];
+        if (!supports(msg_class, id)) {
+            break;
+        }
+        const int8_t idx = tracked_index(msg_class, id);
+        if (len == 2) {
+            // poll; reply with the rates on all six ports
+            uint8_t reply[8] { msg_class, id };
+            if (idx >= 0) {
+                reply[2+UBX_PORT] = ram.rate[idx];
+            }
+            send_ubx(CLASS_CFG, msg_id, reply, sizeof(reply));
+            send_ack(CLASS_CFG, msg_id, true);
+            return;
+        }
+        if (idx >= 0) {
+            if (len == 3) {
+                // rate on the current port
+                ram.rate[idx] = payload[2];
+            } else if (len == 8) {
+                ram.rate[idx] = payload[2+UBX_PORT];
+            }
+        }
+        send_ack(CLASS_CFG, msg_id, true);
+        return;
+    }
+
+    case 0x08:  // RATE
+        if (len == 0) {
+            uint8_t reply[6];
+            memcpy(&reply[0], &ram.measure_rate_ms, 2);
+            memcpy(&reply[2], &ram.nav_rate, 2);
+            memcpy(&reply[4], &ram.timeref, 2);
+            send_ubx(CLASS_CFG, msg_id, reply, sizeof(reply));
+            send_ack(CLASS_CFG, msg_id, true);
+            return;
+        }
+        if (len == 6) {
+            memcpy(&ram.measure_rate_ms, &payload[0], 2);
+            memcpy(&ram.nav_rate, &payload[2], 2);
+            memcpy(&ram.timeref, &payload[4], 2);
+            send_ack(CLASS_CFG, msg_id, true);
+            return;
+        }
+        break;
+
+    case 0x09: {  // CFG: clear, save and load configuration
+        if (len != 12 && len != 13) {
+            break;
+        }
+        uint32_t clear_mask, save_mask, load_mask;
+        memcpy(&clear_mask, &payload[0], 4);
+        memcpy(&save_mask, &payload[4], 4);
+        memcpy(&load_mask, &payload[8], 4);
+        if (clear_mask != 0) {
+            factory_config(saved);
+            store_saved_config();
+        }
+        if (save_mask != 0) {
+            saved = ram;
+            store_saved_config();
+        }
+        if (load_mask != 0) {
+            ram = saved;
+        }
+        send_ack(CLASS_CFG, msg_id, true);
+        return;
+    }
+
+    case 0x16:  // SBAS
+        if (len == 0) {
+            send_ubx(CLASS_CFG, msg_id, ram.sbas, sizeof(ram.sbas));
+            send_ack(CLASS_CFG, msg_id, true);
+            return;
+        }
+        if (len == sizeof(ram.sbas)) {
+            memcpy(ram.sbas, payload, len);
+            send_ack(CLASS_CFG, msg_id, true);
+            return;
+        }
+        break;
+
+    case 0x24:  // NAV5
+        if (len == 0) {
+            uint8_t reply[sizeof(ram.nav5)];
+            memcpy(reply, ram.nav5, sizeof(reply));
+            // the receiver reports all settings as valid
+            reply[0] = reply[1] = 0xff;
+            send_ubx(CLASS_CFG, msg_id, reply, sizeof(reply));
+            send_ack(CLASS_CFG, msg_id, true);
+            return;
+        }
+        if (len == sizeof(ram.nav5)) {
+            const uint16_t mask = payload[0] | (payload[1]<<8);
+            if (mask & 0x01) {
+                ram.nav5[2] = payload[2];   // dynModel
+            }
+            if (mask & 0x02) {
+                ram.nav5[12] = payload[12]; // minElev
+            }
+            if (mask & 0x04) {
+                ram.nav5[3] = payload[3];   // fixMode
+            }
+            send_ack(CLASS_CFG, msg_id, true);
+            return;
+        }
+        break;
+
+    case 0x3e:  // GNSS
+        if (model() == Model::UBLOX6) {
+            // CFG-GNSS arrived with u-blox 7
+            break;
+        }
+        if (len == 0) {
+            send_ubx(CLASS_CFG, msg_id, ram.gnss, ram.gnss_len);
+            send_ack(CLASS_CFG, msg_id, true);
+            return;
+        }
+        if (len >= 4 && len <= sizeof(ram.gnss)) {
+            memcpy(ram.gnss, payload, len);
+            ram.gnss_len = len;
+            send_ack(CLASS_CFG, msg_id, true);
+            return;
+        }
+        break;
+
+    case 0x8a:  // VALSET
+        if (supports_valset()) {
+            handle_valset(payload, len);
+            return;
+        }
+        break;
+
+    case 0x8b:  // VALGET
+        if (supports_valset()) {
+            handle_valget(payload, len);
+            return;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    send_ack(CLASS_CFG, msg_id, false);
+}
+
+// return a pointer to where the value of a single-byte key is held, or nullptr
+uint8_t *GPS_UBlox::config_value(Config &cfg, uint32_t key)
+{
+    if (key == CFG_NAVSPG_DYNMODEL) {
+        return &cfg.nav5[2];
+    }
+    for (uint8_t i=0; i<ARRAY_SIZE(config_keys); i++) {
+        if (config_keys[i].key == key) {
+            return &cfg.key_value[i];
+        }
+    }
+    return nullptr;
+}
+
+/*
+  reply with the values of the requested keys from the requested
+  layer: 0=RAM, 1=BBR, 2=flash, 7=default.  Any unknown key NAKs the
+  request, as the M10 does for a single unknown key
+ */
+void GPS_UBlox::handle_valget(const uint8_t *payload, uint16_t len)
+{
+    if (len < 8 || (len - 4) % 4 != 0) {
+        send_ack(CLASS_CFG, 0x8b, false);
+        return;
+    }
+    const uint8_t layer = payload[1];
+    Config defaults;
+    factory_config(defaults);
+    Config *cfg;
+    switch (layer) {
+    case 0:
+        cfg = &ram;
+        break;
+    case 1:
+    case 2:
+        cfg = &saved;
+        break;
+    case 7:
+        cfg = &defaults;
+        break;
+    default:
+        send_ack(CLASS_CFG, 0x8b, false);
+        return;
+    }
+    uint8_t reply[4 + 5*16];
+    reply[0] = 1;  // version
+    reply[1] = layer;
+    reply[2] = payload[2];
+    reply[3] = payload[3];
+    uint16_t reply_len = 4;
+    for (uint16_t ofs=4; ofs<len; ofs+=4) {
+        uint32_t key;
+        memcpy(&key, &payload[ofs], 4);
+        const uint8_t *value = config_value(*cfg, key);
+        if (value == nullptr || size_t(reply_len) + 5 > sizeof(reply)) {
+            send_ack(CLASS_CFG, 0x8b, false);
+            return;
+        }
+        memcpy(&reply[reply_len], &key, 4);
+        reply[reply_len+4] = *value;
+        reply_len += 5;
+    }
+    send_ubx(CLASS_CFG, 0x8b, reply, reply_len);
+    send_ack(CLASS_CFG, 0x8b, true);
+}
+
+/*
+  set key values in the RAM layer (bit 0) and/or the saved
+  configuration (BBR bit 1, flash bit 2)
+ */
+void GPS_UBlox::handle_valset(const uint8_t *payload, uint16_t len)
+{
+    if (len < 4 || (len - 4) % 5 != 0) {
+        send_ack(CLASS_CFG, 0x8a, false);
+        return;
+    }
+    // check every key before changing anything
+    for (uint16_t ofs=4; ofs<len; ofs+=5) {
+        uint32_t key;
+        memcpy(&key, &payload[ofs], 4);
+        if (config_value(ram, key) == nullptr) {
+            send_ack(CLASS_CFG, 0x8a, false);
+            return;
+        }
+    }
+    const uint8_t layers = payload[1];
+    for (uint16_t ofs=4; ofs<len; ofs+=5) {
+        uint32_t key;
+        memcpy(&key, &payload[ofs], 4);
+        if (layers & 0x01) {
+            *config_value(ram, key) = payload[ofs+4];
+        }
+        if (layers & 0x06) {
+            *config_value(saved, key) = payload[ofs+4];
+        }
+    }
+    if (layers & 0x06) {
+        store_saved_config();
+    }
+    send_ack(CLASS_CFG, 0x8a, true);
+}
+
+void GPS_UBlox::handle_ubx(uint8_t msg_class, uint8_t msg_id, const uint8_t *payload, uint16_t len)
+{
+    switch (msg_class) {
+    case CLASS_CFG:
+        handle_cfg(msg_id, payload, len);
+        break;
+    case CLASS_MON:
+        if (msg_id == 0x04 && len == 0) {
+            send_mon_ver();
+        }
+        break;
+    case CLASS_NAV:
+        if (msg_id == MSG_SVINFO && len == 0 && supports(msg_class, msg_id)) {
+            send_svinfo(gps_time().ms, _sitl->gps[instance].numsats);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+/*
+  parse UBX messages from the autopilot; anything else (e.g. the
+  $PUBX baudrate sentence) is ignored
+ */
+void GPS_UBlox::update_read()
+{
+    if (!config_simulated()) {
+        GPS_Backend::update_read();
+        return;
+    }
+    if (!config_loaded || loaded_model != model()) {
+        load_saved_config();
+    }
+
+    uint8_t buf[256];
+    const ssize_t n = read_from_autopilot((char*)buf, sizeof(buf));
+    for (ssize_t i=0; i<n; i++) {
+        const uint8_t c = buf[i];
+        switch (parser.step) {
+        case 0:
+            if (c == 0xb5) {
+                parser.step++;
+            }
+            break;
+        case 1:
+            parser.step = (c == 0x62) ? 2 : 0;
+            break;
+        case 2:
+            parser.msg_class = c;
+            parser.ck_a = parser.ck_b = c;
+            parser.step++;
+            break;
+        case 3:
+            parser.msg_id = c;
+            parser.ck_b += (parser.ck_a += c);
+            parser.step++;
+            break;
+        case 4:
+            parser.len = c;
+            parser.ck_b += (parser.ck_a += c);
+            parser.step++;
+            break;
+        case 5:
+            parser.len |= uint16_t(c) << 8;
+            parser.ck_b += (parser.ck_a += c);
+            parser.count = 0;
+            if (parser.len > sizeof(parser.payload)) {
+                parser.step = 0;
+                break;
+            }
+            parser.step = parser.len == 0 ? 7 : 6;
+            break;
+        case 6:
+            parser.payload[parser.count++] = c;
+            parser.ck_b += (parser.ck_a += c);
+            if (parser.count == parser.len) {
+                parser.step++;
+            }
+            break;
+        case 7:
+            parser.step = (c == parser.ck_a) ? 8 : 0;
+            break;
+        case 8:
+            parser.step = 0;
+            if (c == parser.ck_b) {
+                handle_ubx(parser.msg_class, parser.msg_id, parser.payload, parser.len);
+            }
+            break;
+        }
     }
 }
 
