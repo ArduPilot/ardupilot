@@ -642,7 +642,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     // vehicleinfo.json. This makes the binary self-sufficient: a user
     // running `arduplane --model=quadplane-tilt` from a directory without
     // the source tree gets the right parameter defaults from ROMFS.
-    resolve_defaults_from_romfs(model_str, vehicle_str);
+    if (!is_example) {
+        model_str = resolve_defaults_from_romfs(model_str, vehicle_str);
+    }
 
     if (!model_str) {
         printf("You must specify a vehicle model.  Options are:\n");
@@ -868,29 +870,31 @@ static void append_frame_defaults(std::string &joined, const AP_JSON::value &fra
 
 /*
   search a single vehicle entry for a frame matching model_str. Returns
-  true and fills `joined` if found.
+  the matching frame, after appending its defaults to `joined`, or
+  nullptr.
 
   A frame matches when either its JSON key equals model_str (e.g. "X",
-  "octa-quad") or its explicit "model" field equals model_str (e.g.
-  "Callisto" defines model "octa-quad:@ROMFS/models/Callisto.json").
-  Without the second check, frames with a custom model string would
-  not load their per-frame defaults.
+  "Callisto") or its explicit "model" field equals model_str (e.g.
+  "octa-quad-cwx:@ROMFS/models/Callisto.json").
  */
-static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
-                                     const char *model_str,
-                                     std::string &joined)
+static const AP_JSON::value *resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
+                                                      const char *model_str,
+                                                      std::string &joined)
 {
     if (!vehicle.is<AP_JSON::value::object>()) {
-        return false;
+        return nullptr;
     }
     const AP_JSON::value &frames = vehicle.get("frames");
     if (!frames.is<AP_JSON::value::object>()) {
-        return false;
+        return nullptr;
     }
+    // a frame name, e.g. "Callisto"
     if (frames.contains(std::string(model_str))) {
-        append_frame_defaults(joined, frames.get(std::string(model_str)));
-        return true;
+        const AP_JSON::value &frame = frames.get(std::string(model_str));
+        append_frame_defaults(joined, frame);
+        return &frame;
     }
+    // a frame's own model string, e.g. "octa-quad-cwx:@ROMFS/models/Callisto.json"
     const AP_JSON::value::object &frames_obj = frames.get<AP_JSON::value::object>();
     for (const auto &kv : frames_obj) {
         if (!kv.second.is<AP_JSON::value::object>()) {
@@ -900,20 +904,22 @@ static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
         if (model_val.is<std::string>() &&
             model_val.get<std::string>() == model_str) {
             append_frame_defaults(joined, kv.second);
-            return true;
+            return &kv.second;
         }
     }
-    return false;
+    return nullptr;
 }
 
-// Search own vehicle first, then all vehicles, for a single candidate string.
-static bool search_once(const AP_JSON::value *root, const char *vehicle_str,
-                        const std::string &candidate, std::string &out)
+// Search own vehicle first, then all vehicles, for a single candidate
+// string. Returns the matching frame or nullptr.
+static const AP_JSON::value *search_once(const AP_JSON::value *root, const char *vehicle_str,
+                                         const std::string &candidate, std::string &out)
 {
     if (vehicle_str != nullptr && root->contains(std::string(vehicle_str))) {
-        if (resolve_frame_in_vehicle(root->get(std::string(vehicle_str)),
-                                     candidate.c_str(), out)) {
-            return true;
+        const AP_JSON::value *frame = resolve_frame_in_vehicle(root->get(std::string(vehicle_str)),
+                                                               candidate.c_str(), out);
+        if (frame != nullptr) {
+            return frame;
         }
     }
     if (root->is<AP_JSON::value::object>()) {
@@ -922,12 +928,13 @@ static bool search_once(const AP_JSON::value *root, const char *vehicle_str,
             if (vehicle_str != nullptr && kv.first == vehicle_str) {
                 continue;       // already tried
             }
-            if (resolve_frame_in_vehicle(kv.second, candidate.c_str(), out)) {
-                return true;
+            const AP_JSON::value *frame = resolve_frame_in_vehicle(kv.second, candidate.c_str(), out);
+            if (frame != nullptr) {
+                return frame;
             }
         }
     }
-    return false;
+    return nullptr;
 }
 
 /*
@@ -937,44 +944,70 @@ static bool search_once(const AP_JSON::value *root, const char *vehicle_str,
   earlier ones, so any user-supplied --defaults paths layer on top of
   the embedded per-frame defaults.
 
+  If the model is a frame name and that frame has a "model" field, the
+  field becomes the simulation model (e.g. "Callisto" runs
+  "octa-quad-cwx:@ROMFS/models/Callisto.json" with the Callisto
+  defaults). Returns the model to simulate.
+
   We first look under the binary's own vehicle (AP_BUILD_TARGET_NAME)
   and fall back to scanning every top-level vehicle. The scan covers
   the case where a heli binary (AP_BUILD_TARGET_NAME=ArduCopter) is
   asked for a frame that lives under "Helicopter" in the JSON.
 
-  If the full model string is not found, trailing dash-separated suffixes
-  are stripped and the lookup is retried (e.g. "plane-catapult" falls back
-  to "plane"). This mirrors the model-constructor prefix matching so that
-  physics variants automatically inherit the base frame's defaults.
+  If no frame matches, any ":<args>" suffix and then trailing
+  dash-separated suffixes are stripped and the lookup is retried (e.g.
+  "plane-catapult" falls back to "plane"). This mirrors the
+  model-constructor prefix matching so that physics variants
+  automatically inherit the base frame's defaults.
  */
-void SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str)
+const char *SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str)
 {
     if (model_str == nullptr) {
-        return;
+        return nullptr;
     }
 
     AP_JSON::value *root = AP_JSON::load_json("@ROMFS/vehicleinfo.json");
     if (root == nullptr) {
-        return;     // no embedded data — graceful no-op
+        return model_str;   // no embedded data — graceful no-op
     }
 
     std::string joined;
-    bool found = false;
     std::string candidate = model_str;
-
-    while (!found) {
-        found = search_once(root, vehicle_str, candidate, joined);
-        if (found) {
-            break;
+    // 1. exact match; a frame name selects that frame's model
+    const AP_JSON::value *frame = search_once(root, vehicle_str, candidate, joined);
+    bool found = frame != nullptr;
+    if (found) {
+        const AP_JSON::value &model_val = frame->get("model");
+        if (model_val.is<std::string>()) {
+            model_str = strdup(model_val.get<std::string>().c_str());
+            LSAN_IGNORE_OBJECT(model_str);
         }
+    }
+
+    // 2. "<model>:<args>": take defaults from the part before the
+    //    colon; the full string is still what gets simulated
+    const size_t colon = candidate.find(':');
+    if (!found && colon != std::string::npos) {
+        candidate = candidate.substr(0, colon);
+        found = search_once(root, vehicle_str, candidate, joined) != nullptr;
+    }
+
+    // 3. "<frame>-<variant>", e.g. "plane-catapult": strip variants
+    //    until a frame matches, again for defaults only
+    while (!found) {
         const size_t dash = candidate.rfind('-');
         if (dash == std::string::npos) {
             break;
         }
         candidate = candidate.substr(0, dash);
+        found = search_once(root, vehicle_str, candidate, joined) != nullptr;
     }
 
-    if (found && !joined.empty()) {
+    if (!found) {
+        if (defaults_path == nullptr) {
+            printf("No vehicleinfo.json frame for model %s: no default parameters loaded\n", model_str);
+        }
+    } else if (!joined.empty()) {
         if (defaults_path != nullptr) {
             // prepend ROMFS list so explicit --defaults files override
             std::string combined = joined + "," + defaults_path;
@@ -985,6 +1018,7 @@ void SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *
     }
 
     delete root;
+    return model_str;
 }
 
 /*
