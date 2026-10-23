@@ -3332,6 +3332,71 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         print("Fence upload/download verification passed.")
 
+        self.test_fence_upload_exactly_fills_storage(home_loc)
+
+    def test_fence_upload_exactly_fills_storage(self, home_loc, target_system=1, target_component=1):
+        '''a fence which exactly fills the storage area must be rejected, not
+        read past the end of storage'''
+        self.start_subtest("Reject fence which exactly fills storage")
+
+        # storage required is 4 + 2*num_polygons + 8*total_vertices.  On Copter
+        # the fence area is 560 bytes, so two polygons with 69 vertices in
+        # total fill it exactly, leaving no room for the end-of-storage marker.
+        mission_type = mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        items = []
+        seq = 0
+        for poly_index, vertex_count in enumerate([35, 34]):
+            radius = 200 + 100 * poly_index
+            for i in range(vertex_count):
+                (lat, lng) = mavextra.gps_newpos(home_loc.lat,
+                                                 home_loc.lng,
+                                                 360.0 / vertex_count * i,
+                                                 radius)
+                items.append(self.mav.mav.mission_item_encode(
+                    target_system,
+                    target_component,
+                    seq,
+                    mavutil.mavlink.MAV_FRAME_GLOBAL,
+                    mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+                    0, 0,
+                    vertex_count, 0, 0, 0,
+                    lat, lng, 33.0,
+                    mission_type))
+                seq += 1
+
+        tstart = self.get_sim_time()
+        self.mav.mav.mission_count_send(target_system,
+                                        target_component,
+                                        len(items),
+                                        mission_type)
+        while True:
+            if self.get_sim_time_cached() - tstart > 20:
+                raise NotAchievedException(
+                    "No MISSION_ACK for fence which exactly fills storage "
+                    "(vehicle may have stopped responding)")
+            m = self.mav.recv_match(type=['MISSION_REQUEST', 'MISSION_ACK'],
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
+            if m.get_type() == 'MISSION_ACK':
+                if (m.target_system == 255 and
+                        m.target_component == 0 and
+                        m.type == 1 and
+                        m.mission_type == 0):
+                    # MAVProxy noise
+                    continue
+                if m.mission_type != mission_type:
+                    raise NotAchievedException("Mission ack not of expected mission type")
+                if m.type == mavutil.mavlink.MAV_MISSION_ACCEPTED:
+                    raise NotAchievedException("Fence which exactly fills storage was accepted")
+                self.progress("Fence rightfully rejected (%s)" %
+                              (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name,))
+                break
+            item = items[m.seq]
+            item.pack(self.mav.mav)
+            self.mav.mav.send(item)
+
     def assert_fence_not_breached(self):
         m = self.assert_receive_message('FENCE_STATUS', timeout=2)
         if m.breach_status != 0:

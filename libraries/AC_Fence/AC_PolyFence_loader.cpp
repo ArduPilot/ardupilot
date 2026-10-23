@@ -401,7 +401,11 @@ bool AC_PolyFence_loader::scan_eeprom(scan_fn_t scan_fn)
     read_offset += 4;
     bool all_done = false;
     while (!all_done) {
-        if (read_offset > fence_storage.size()) {
+        // the storage area holds fence_storage.size() bytes, so the valid
+        // offsets are 0 to size()-1.  Use >= so that a fence which exactly
+        // fills the area (leaving no room for the end-of-storage marker)
+        // is rejected instead of reading one byte past the end of storage.
+        if (read_offset >= fence_storage.size()) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             AP_HAL::panic("did not find end-of-storage-marker before running out of space");
 #endif
@@ -1173,7 +1177,10 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
         return false;
     }
 
-    if (fence_storage_space_required(new_items, count) > fence_storage.size()) {
+    // the end-of-storage marker requires one byte, so the fence itself must
+    // leave room for it.  Reject at upload time rather than failing the
+    // subsequent scan.
+    if (fence_storage_space_required(new_items, count) + 1 > fence_storage.size()) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Fence exceeds storage size");
         return false;
     }
@@ -1373,6 +1380,9 @@ AC_PolyFence_loader::FenceIndex *AC_PolyFence_loader::find_first_fence(const AC_
 
 bool AC_PolyFence_loader::write_eos_to_storage(uint16_t &offset)
 {
+    if (offset >= fence_storage.size()) {
+        return false;
+    }
     if (!write_type_to_storage(offset, AC_PolyFenceType::END_OF_STORAGE)) {
         return false;
     }
