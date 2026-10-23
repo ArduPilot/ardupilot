@@ -30,6 +30,19 @@ public:
     // update the state structure. All backends must implement this.
     virtual void update() = 0;
 
+    // return true if the sensor is producing data
+    virtual bool healthy() const { return true; }
+
+    // return true if readings are pushed to us by an external device at
+    // its own rate. An unchanged reading from such a sensor means no new
+    // data has arrived, not that the wheel has stopped
+    virtual bool streamed() const { return false; }
+
+#if AP_WHEELENCODER_MAV_ENABLED
+    // handle an incoming MAVLink message
+    virtual void handle_msg(const mavlink_message_t &msg) {}
+#endif
+
 protected:
 
     // return pin number.  returns -1 if pin is not defined for this instance

@@ -18,10 +18,15 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 
-// Maximum number of WheelEncoder measurement instances available on this platform
-#define WHEELENCODER_MAX_INSTANCES      2
+#include "AP_WheelEncoder_config.h"
+
+#if AP_WHEELENCODER_MAV_ENABLED
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
+
 #define WHEELENCODER_CPR_DEFAULT        3200    // default encoder counts per full revolution of the wheel
 #define WHEELENCODER_RADIUS_DEFAULT     0.05f   // default wheel radius of 5cm (0.05m)
+#define WHEELENCODER_STREAM_TIMEOUT_MS  500     // streamed readings further apart than this are treated as a gap in the data
 
 class AP_WheelEncoder_Backend; 
  
@@ -31,6 +36,7 @@ public:
     friend class AP_WheelEncoder_Backend;
     friend class AP_WheelEncoder_Quadrature;
     friend class AP_WheelEncoder_SITL_Quadrature;
+    friend class AP_WheelEncoder_MAV;
 
     AP_WheelEncoder(void);
 
@@ -46,6 +52,7 @@ public:
     enum WheelEncoder_Type : uint8_t {
         WheelEncoder_TYPE_NONE             =   0,
         WheelEncoder_TYPE_QUADRATURE       =   1,
+        WheelEncoder_TYPE_MAVLINK          =   2,
         WheelEncoder_TYPE_SITL_QUADRATURE  =  10,
     };
 
@@ -78,6 +85,16 @@ public:
 
     // return true if the instance is enabled
     bool enabled(uint8_t instance) const;
+
+    // return true if readings from the instance are pushed to us by an
+    // external device, so an unchanged reading means no new data rather
+    // than no movement
+    bool streamed(uint8_t instance) const;
+
+#if AP_WHEELENCODER_MAV_ENABLED
+    // handle an incoming MAVLink message
+    void handle_msg(const mavlink_message_t &msg);
+#endif
 
     // get the counts per revolution of the encoder
     uint16_t get_counts_per_revolution(uint8_t instance) const;
