@@ -63,6 +63,9 @@ void Actuators::initialize_actuators() {
             continue;
         }
         SRV_Channel* chan = SRV_Channels::srv_channel(channel_number);
+        if (chan == nullptr) {
+            continue;
+        }
         uint16_t servo_min = chan->get_output_min();
         uint16_t servo_max = chan->get_output_max();
         uint16_t servo_range = servo_max - servo_min;
@@ -82,6 +85,9 @@ void Actuators::update_actuators() {
             continue;
         }
         SRV_Channel* chan = SRV_Channels::srv_channel(channel_number);
+        if (chan == nullptr) {
+            continue;
+        }
         uint16_t servo_min = chan->get_output_min();
         uint16_t servo_max = chan->get_output_max();
         uint16_t servo_range = servo_max - servo_min;
