@@ -45,7 +45,13 @@ protected:
 
 private:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_Ainstein_LR_D1(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // Ainstein LR-D1 datasheet: 0.7m to 500m
+        params.min_distance.set_default(0.7f);
+        params.max_distance.set_default(500.0f);
+    }
 
     // get_reading - read all samples, return last.  The device sends at
     // 40Hz, so there should only ever be one sample available.  Assuming

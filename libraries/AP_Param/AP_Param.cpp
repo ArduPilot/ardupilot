@@ -1228,6 +1228,15 @@ void AP_Param::save_sync(bool force_save, bool send_to_gcs)
         } else {
             v2 = get_default_value(this, *info);
         }
+#if AP_PARAM_DEFAULTS_ENABLED
+        // if set_default() has changed the default then an unsaved
+        // parameter won't come back as v2 on reboot, so always save it
+        float runtime_default = v2;
+        check_default(this, &runtime_default);
+        if (!is_equal(runtime_default, v2)) {
+            force_save = true;
+        }
+#endif  // AP_PARAM_DEFAULTS_ENABLED
         if (is_equal(v1,v2) && !force_save) {
             if (send_to_gcs) {
                 GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2);

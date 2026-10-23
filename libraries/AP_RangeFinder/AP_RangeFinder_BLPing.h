@@ -158,7 +158,13 @@ protected:
 
 private:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_BLPing(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // Ping2 sonar: 0.3m minimum, 100m usable range
+        params.min_distance.set_default(0.3f);
+        params.max_distance.set_default(100.0f);
+    }
 
     /**
      * @brief Do the necessary sensor initiation

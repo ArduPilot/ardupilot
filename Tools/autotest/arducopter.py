@@ -14,6 +14,7 @@ import pathlib
 import re
 import shutil
 import socket
+import struct
 import subprocess
 import tempfile
 import time
@@ -13189,6 +13190,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test Arming Parameter Checks'''
         self.test_parameter_checks_poscontrol("PSC")
 
+    def ParamSaveAfterRuntimeDefault(self):
+        '''check a non-forced save of the var_info default survives set_default()'''
+        # an earlier test may have saved RNGFND1_SCALING, which would
+        # stop the backend's set_default() applying
+        self.customise_SITL_commandline([], wipe=True)
+        self.set_parameters({
+            "SERIAL4_PROTOCOL": 9,
+            "RNGFND1_TYPE": 13,  # MaxSonar serial: RNGFND1_SCALING default 3 -> 0.0254
+            "SCR_ENABLE": 1,
+        })
+        self.reboot_sitl()
+        self.assert_parameter_value("RNGFND1_SCALING", 0.0254, epsilon=0.0001)
+
+        # unlike a GCS PARAM_SET, param:set_and_save() doesn't force the
+        # save.  The script must be gone before the final reboot, or it
+        # would save 3 again
+        self.context_push()
+        self.install_script_content_context("save-scaling.lua", """
+assert(param:set_and_save('RNGFND1_SCALING', 3))
+function update()
+  gcs:send_text(6, 'saved RNGFND1_SCALING')
+  return update, 1000
+end
+return update, 1000
+""")
+        self.reboot_sitl()
+        self.wait_statustext('saved RNGFND1_SCALING')
+        self.delay_sim_time(2, reason="queued save to complete")
+        self.context_pop()
+        self.reboot_sitl()
+        self.assert_parameter_value("RNGFND1_SCALING", 3, epsilon=0.0001)
+
     def PosHoldTakeOff(self):
         """ensure vehicle stays put until it is ready to fly"""
         self.context_push()
@@ -16176,6 +16209,73 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.reboot_sitl()
             self.fly_rangefinder_drivers_fly([x.name for x in do_drivers])
 
+    def RangeFinderTeraRangerDefaults(self):
+        '''check TeraRanger backends supply RNGFNDx_MIN/RNGFNDx_MAX defaults'''
+        # an earlier test may have saved RNGFND1_MIN/MAX, which would
+        # stop the backends' set_default() applying
+        self.customise_SITL_commandline([], wipe=True)
+        self.progress("TeraRanger Evo (I2C address 0x31) keeps the generic default")
+        self.set_parameters({
+            "RNGFND1_TYPE": 14,
+            "RNGFND1_ADDR": 0x31,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.assert_parameter_value("RNGFND1_MAX", 7, epsilon=0.001)
+
+        self.progress("TeraRanger Neo (serial) supplies a 30m default")
+        self.set_parameters({
+            "SERIAL4_PROTOCOL": 9,
+            "RNGFND1_TYPE": 35,
+        })
+        self.customise_SITL_commandline([
+            "--serial4=sim:teraranger_serial",
+        ])
+        self.wait_ready_to_arm()
+        self.assert_parameter_values({
+            "RNGFND1_MAX": 30,
+            "RNGFND1_MIN": 0.2,
+        }, epsilon=0.001)
+
+        self.progress("Ensure a user-set value is not overridden")
+        self.set_parameter("RNGFND1_MAX", 10)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.assert_parameter_value("RNGFND1_MAX", 10, epsilon=0.001)
+
+    def RangeFinderLegacyMaxConversion(self):
+        '''check a converted RNGFNDx_MAX_CM survives a backend's default'''
+        # AP_Param revision 6 storage holding FORMAT_VERSION (key 0),
+        # RNGFND1_TYPE and the pre-4.7 int16 RNGFND1_MAX_CM (key 53,
+        # group elements 89 and 473)
+        def entry(key, group, ptype, fmt, value):
+            header = (key & 255) | (ptype << 8) | ((key >> 8) << 13) | (group << 14)
+            return struct.pack('<I' + fmt, header, value)
+        storage = (
+            b'PA\x06\x00' +
+            entry(0, 0, 2, 'h', 120) +
+            entry(53, 89, 1, 'b', 16) +  # VL53L0X; probing constructs backends
+            entry(53, 473, 2, 'h', 321) +
+            b'\xff' * 4
+        )
+        self.contexts[-1].sitl_commandline_customised = True
+        self.mav.close()
+        self.stop_SITL()
+        with open(os.path.join(os.getcwd(), "eeprom.bin"), "wb") as f:
+            f.write(storage.ljust(32768, b'\x00'))
+        self.start_SITL(wipe=False)
+        self.mav.do_connect()
+        self.wait_heartbeat(drain_mav=True)
+        self.set_streamrate(self.sitl_streamrate())
+
+        self.assert_parameter_values({
+            "RNGFND1_TYPE": 16,
+            "RNGFND1_MAX": 3.21,  # converted, not the backend default
+            "RNGFND1_MIN": 0.05,  # not converted, so the backend default
+        }, epsilon=0.001)
+        self.reboot_sitl()
+        self.assert_parameter_value("RNGFND1_MAX", 3.21, epsilon=0.001)
+
     def RangeFinderDriversMaxAlt_FlyDriver(self,
                                            name : str,
                                            rngfnd_type : int,
@@ -16284,6 +16384,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline([
             "--serial4=sim:benewake_tf02",
         ])
+        # set this once the driver has supplied its own default:
+        self.set_parameter("RNGFND1_MAX", 7)
 
         text_good = "GOOD"
         text_out_of_range_high = "OUT_OF_RANGE_HIGH"
@@ -19637,6 +19739,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.TakeoffAlt,
             self.AutoYawDO_MOUNT_CONTROL,
             self.ParameterChecks,
+            self.ParamSaveAfterRuntimeDefault,
             self.ModeFollow_with_FOLLOW_TARGET,
             self.MAVLinkRangeFinderIDs,
             self.MAV_CMD_NAV_LOITER_UNLIM,
@@ -19690,6 +19793,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ModeZigZag,
             self.ModeFollow,
             self.RangeFinderDrivers,
+            self.RangeFinderTeraRangerDefaults,
+            self.RangeFinderLegacyMaxConversion,
             self.RichenPower,
             self.MAV_CMD_NAV_VTOL_LAND,
             self.FenceRelativeToHomeMinAltOriginAbove,
