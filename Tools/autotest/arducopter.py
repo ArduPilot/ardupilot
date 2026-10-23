@@ -906,6 +906,66 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if state["min_alt"] < 5:
                 raise NotAchievedException("%s: dive ended at %.1f m" % (name, state["min_alt"]))
 
+    def WPArcLoop(self):
+        '''fly a vertical loop as two chained vertical arcs, then stop on a straight climb'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+            "WP_SPD": 20,
+            "WP_SPD_UP": 20,
+            "WP_SPD_DN": 20,
+            "WP_ACC": 15,
+            "WP_ACC_CNR": 30,
+            "WP_ACC_Z": 15,
+            "WP_JERK": 30,
+            "ATC_ANGLE_MAX": 75,
+            "PSC_TVEC_EN": 1,
+        })
+        self.reboot_sitl()
+
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        TO = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        RTL = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+
+        # Two 180 degree arcs in the vertical plane sharing a 40 m chord but bulging to
+        # opposite sides trace one circle of radius 20 m centred at (120, 0, 60), entered
+        # and left climbing.  Over the top v^2/r points down and exceeds gravity, so the
+        # vehicle inverts.  The straight climb after it is arrested at WP_ACC_Z, which
+        # also exceeds gravity, but slowing down along the path must not invert.
+        state = {"seq": 0, "min_cos": {}}
+
+        def hook(mav, m):
+            if m.get_type() == 'MISSION_CURRENT':
+                state["seq"] = m.seq
+            elif m.get_type() == 'ATTITUDE':
+                s = state["seq"]
+                state["min_cos"][s] = min(state["min_cos"].get(s, 1.0), math.cos(m.roll) * math.cos(m.pitch))
+        self.install_message_hook_context(hook)
+        self.change_mode('STABILIZE')
+        self.start_flying_simple_relhome_mission([
+            (TO, 0, 0, 30),
+            (WP, 100, 0, 30),
+            (WP, 100, 0, 60),
+            (ARC, 140, 0, 60, {"p1": 180, "p2": 90}),     # over the top
+            (ARC, 100, 0, 60, {"p1": -180, "p2": 90}),    # round the bottom
+            (WP, 100, 0, 90),                             # straight climb to a stop
+            (RTL, 0, 0, 0),
+        ])
+        self.wait_altitude(76, 86, relative=True, timeout=240)
+        self.wait_altitude(36, 44, relative=True, timeout=120)
+        self.wait_altitude(85, 95, relative=True, timeout=120)
+        self.wait_disarmed(timeout=180)
+
+        if 4 not in state["min_cos"] or 6 not in state["min_cos"]:
+            raise NotAchievedException("no attitude recorded over the top or on the exit climb")
+        over_top = state["min_cos"][4]
+        exit_climb = state["min_cos"][6]
+        self.progress("min cos(roll)cos(pitch): over the top %.3f, exit climb %.3f" % (over_top, exit_climb))
+        if over_top > -0.5:
+            raise NotAchievedException("did not invert over the top of the loop (%.3f)" % over_top)
+        if exit_climb < 0.5:
+            raise NotAchievedException("inverted to stop the exit climb (%.3f)" % exit_climb)
+
     def ArcSplineYawBehaviour(self):
         '''a vertical loop and an upright spline fly under WP_YAW_BEHAVIOR 0 and 2'''
         # LOOK_AT_NEXT_WP asks for an absolute world-frame heading, which only means
@@ -19882,6 +19942,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.DoJumpToDoCommand,
             self.ArcSplineAggro,
             self.ArcSplineAggroTV,
+            self.WPArcLoop,
             self.ArcSplineYawBehaviour,
             self.ArcWaypointPlaneParam,
             self.BatteryFailsafeBrakeLandNoGPS,
