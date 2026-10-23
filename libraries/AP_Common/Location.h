@@ -201,6 +201,16 @@ public:
     // passed via mavlink into the current vehicle's altitude
     bool alt_is_zero() const { return alt == 0; }
 
+    // lat/lng 0,0 is used throughout ArduPilot to mean "no location".
+    // Code accepting 0,0 from outside ArduPilot (e.g. from a GCS) as
+    // a genuine location can call this to move it ~1cm north so it is
+    // not mistaken for an uninitialised location
+    void nudge_off_zero_latlng() {
+        if (lat == 0 && lng == 0) {
+            lat = 1;
+        }
+    }
+
     // wrap longitude at -180e7 to 180e7
     static int32_t wrap_longitude(int64_t lon);
 

@@ -1783,6 +1783,96 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_mode("RTL")
         self.wait_rtl_complete()
 
+    def TerrainTakeoffNoLatLon(self):
+        '''arm with a terrain-frame takeoff which has no lat/lon (issue 34016)'''
+        # start with no terrain data on board, so it must all be
+        # fetched from the GCS:
+        self.remove_ardupilot_terrain_cache()
+        self.reboot_sitl()
+
+        self.install_terrain_handlers_context()
+
+        # a takeoff to 20m above terrain with no lat/lon, followed by
+        # an RTL, also in the terrain frame.  Nothing in this mission
+        # has a location.  ArduPilot does not report the RTL's frame
+        # back on download, so upload without the usual readback
+        # comparison.
+        items = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20, {
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, {
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            }),
+        ])
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION, items)
+
+        # allow arming in AUTO, and start the mission's takeoff
+        # command before we arm, as a GCS user would:
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm(timeout=200)
+        self.arm_vehicle()
+
+        # fly the mission: up to 20m, then back down again at home
+        self.wait_altitude(18, 22, relative=True, timeout=60)
+        self.wait_disarmed(timeout=120)
+
+    def TerrainTargetsAtZeroLatLng(self):
+        '''GCS-supplied terrain-frame targets at lat/lng 0,0 are genuine locations'''
+        # nobody serves terrain at 0,0, and nobody has to:
+        self.install_terrain_handlers_context(unserveable_requests_fatal=False)
+
+        # an altitude fence makes guided convert its target's altitude
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 1,
+            "AVOID_ENABLE": 0,
+        })
+        self.takeoff(10, mode="GUIDED")
+
+        self.progress("Setting ROI at 0,0 in the terrain frame")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+            p5=0,
+            p6=0,
+            p7=20,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI,
+            p5=0,
+            p6=0,
+            p7=20,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+        )
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI_NONE)
+
+        self.progress("Sending guided target at 0,0 in the terrain frame")
+        self.mav.mav.set_position_target_global_int_send(
+            0, # timestamp
+            1, # target system_id
+            1, # target component id
+            mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE,
+            0, # lat
+            0, # lon
+            20, # alt
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0) # yawrate
+
+        # the vehicle should head off towards 0,0
+        self.wait_distance_to_home(20, 1000, timeout=60)
+
+        self.do_RTL()
+
     def CustomController(self, timeout=300):
         '''Test Custom Controller'''
         self.progress("Configure custom controller parameters")
@@ -23879,6 +23969,8 @@ return update, 1000
             self.GuidedSubModeChange,
             self.PayloadPlaceMission,
             self.TerrainFailsafe,
+            self.TerrainTakeoffNoLatLon,
+            self.TerrainTargetsAtZeroLatLng,
             self.BatteryFailsafeTerminate,
             self.GainBackoffTakeoff,
             self.MinAltFence,

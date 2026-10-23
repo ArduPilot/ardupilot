@@ -767,6 +767,8 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
                 int32_t(packet.alt*100),
                 frame,
             };
+            // 0,0 is a genuine target here, not "no location"
+            loc.nudge_off_zero_latlng();
         }
 
         Vector3f acc_vector_neu_cmss;
