@@ -236,7 +236,19 @@ if cmtc_rad_m <= 0 then
     cmtc_rad_m = wp_loiter_rad_m
 end
 
-THROTTLE_CHANNEL_NO = Parameter('RCMAP_THROTTLE'):get()
+RC_CHANNEL_AUXFUNC_THROTTLE = 203  -- see RC_Channel.h
+
+-- return the number of the RC channel which has been assigned the given RCn_OPTION
+local function find_channel_num_for_option(option)
+    for chan_num = 1, 16 do
+        if param:get("RC" .. chan_num .. "_OPTION") == option then
+            return chan_num
+        end
+    end
+    return nil
+end
+
+THROTTLE_CHANNEL_NO = assert(find_channel_num_for_option(RC_CHANNEL_AUXFUNC_THROTTLE), "no throttle RC channel")
 THROTTLE_CHANNEL = rc:get_channel(THROTTLE_CHANNEL_NO) -- The RC channel used for throttle
 
 THROTTLE_CHANNEL_PREFIX = string.format("RC%.0f_", THROTTLE_CHANNEL_NO)

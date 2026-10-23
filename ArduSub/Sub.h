@@ -78,11 +78,6 @@
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 
-// libraries which are dependent on #defines in defines.h and/or config.h
-#if RCMAP_ENABLED
-#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
-#endif
-
 #include <AP_RPM/AP_RPM_config.h>
 
 #if AP_RPM_ENABLED
@@ -200,10 +195,6 @@ private:
     Mode::Number control_mode;
 
     Mode::Number prev_control_mode;
-
-#if RCMAP_ENABLED
-    RCMapper rcmap;
-#endif
 
     // Failsafe
     struct {
