@@ -223,11 +223,11 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
             LOG_PACKET_HEADER_INIT(LOG_XKFA_MSG),
             time_us : time_us,
             core    : DAL_CORE(core_index),
-            hAgl    : (float)aglKfH,                // AGL height estimate (m)
-            vAgl    : (float)aglKfV,                // AGL velocity estimate (m/s, +ve = climbing)
-            hAglStd : (float)sqrtF(aglKfP[0][0]),   // std-dev of h_agl (m)
-            vAglStd : (float)sqrtF(aglKfP[1][1]),   // std-dev of v_agl (m/s)
-            valid   : (uint8_t)aglKfValid            // 1 when RF fused within last 5 s
+            hAgl    : (float)aglKf.hgt,                // AGL height estimate (m)
+            vAgl    : (float)aglKf.vel,                // AGL velocity estimate (m/s, +ve = climbing)
+            hAglStd : (float)sqrtF(aglKf.cov[0][0]),   // std-dev of h_agl (m)
+            vAglStd : (float)sqrtF(aglKf.cov[1][1]),   // std-dev of v_agl (m/s)
+            valid   : (uint8_t)aglKf.valid            // 1 when RF fused within last 5 s
         };
         AP::logger().WriteBlock(&pktfA, sizeof(pktfA));
     }
@@ -309,18 +309,18 @@ void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
         return;
     }
 
-    const uint32_t updateTime_ms = MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
+    const uint32_t updateTime_ms = MAX(bodyOdm.dataDelayed.time_ms,bodyOdm.wheelDataDelayed.time_ms);
     if (updateTime_ms > lastUpdateTime_ms) {
         const struct log_XKFD pkt11{
             LOG_PACKET_HEADER_INIT(LOG_XKFD_MSG),
             time_us : time_us,
             core    : DAL_CORE(core_index),
-            velInnovX : innovBodyVel[0],
-            velInnovY : innovBodyVel[1],
-            velInnovZ : innovBodyVel[2],
-            velInnovVarX : varInnovBodyVel[0],
-            velInnovVarY : varInnovBodyVel[1],
-            velInnovVarZ : varInnovBodyVel[2]
+            velInnovX : bodyOdm.innov[0],
+            velInnovY : bodyOdm.innov[1],
+            velInnovZ : bodyOdm.innov[2],
+            velInnovVarX : bodyOdm.varInnov[0],
+            velInnovVarY : bodyOdm.varInnov[1],
+            velInnovVarZ : bodyOdm.varInnov[2]
          };
         AP::logger().WriteBlock(&pkt11, sizeof(pkt11));
         lastUpdateTime_ms = updateTime_ms;
