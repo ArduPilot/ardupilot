@@ -27,8 +27,9 @@ public:
     // - destination_ned_m: NED offset from EKF origin in meters.
     // - is_terrain_alt: true if the destination_ned_m is relative to the terrain surface.
     // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+    // arc_axis_rot_rad rotates the plane of that arc away from horizontal (0 for a horizontal arc)
     // - Resets OA state on success.
-    bool set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt = false, float arc_rad = 0.0) override;
+    bool set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt = false, float arc_rad = 0.0, float arc_axis_rot_rad = 0.0) override;
 
     // Returns the horizontal distance to the final destination in centimeters.
     // See get_wp_distance_to_destination_m() for full details.

@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 
     // @Param: ACC_CNR
     // @DisplayName: Waypoint Cornering Acceleration
-    // @Description: Maximum cornering acceleration in m/s/s used during missions.  If zero uses 2x accel value.
+    // @Description: Maximum cornering acceleration in m/s/s used during missions, including the centripetal acceleration of an arc waypoint in whatever plane it is flown, so on an arc in the vertical plane it bounds the vertical centripetal acceleration rather than WP_ACC_Z.  If zero uses 2x accel value.
     // @Units: m/s/s
     // @Range: 0 5.00
     // @Increment: 0.10
@@ -319,8 +319,9 @@ void AC_WPNav::set_speed_down_ms(float speed_down_ms)
 // Sets the current waypoint destination using a Location object.
 // Converts global coordinates to NED position and sets destination.
 // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+// arc_axis_rot_rad rotates the plane of that arc away from horizontal (0 for a horizontal arc)
 // Returns false if conversion fails (e.g. missing terrain data).
-bool AC_WPNav::set_wp_destination_loc(const Location& destination, float arc_rad)
+bool AC_WPNav::set_wp_destination_loc(const Location& destination, float arc_rad, float arc_axis_rot_rad)
 {
     bool is_terrain_alt;
     Vector3p dest_ned_m;
@@ -331,14 +332,15 @@ bool AC_WPNav::set_wp_destination_loc(const Location& destination, float arc_rad
     }
 
     // apply destination as the active waypoint leg
-    return set_wp_destination_NED_m(dest_ned_m, is_terrain_alt, arc_rad);
+    return set_wp_destination_NED_m(dest_ned_m, is_terrain_alt, arc_rad, arc_axis_rot_rad);
 }
 
 // Sets the next waypoint destination using a Location object.
 // Converts global coordinates to NED position and preloads the trajectory.
 // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+// arc_axis_rot_rad rotates the plane of that arc away from horizontal (0 for a horizontal arc)
 // Returns false if conversion fails or terrain data is unavailable.
-bool AC_WPNav::set_wp_destination_next_loc(const Location& destination, float arc_rad)
+bool AC_WPNav::set_wp_destination_next_loc(const Location& destination, float arc_rad, float arc_axis_rot_rad)
 {
     bool is_terrain_alt;
     Vector3p dest_ned_m;
@@ -349,7 +351,7 @@ bool AC_WPNav::set_wp_destination_next_loc(const Location& destination, float ar
     }
 
     // apply destination as the next waypoint leg
-    return set_wp_destination_next_NED_m(dest_ned_m, is_terrain_alt, arc_rad);
+    return set_wp_destination_next_NED_m(dest_ned_m, is_terrain_alt, arc_rad, arc_axis_rot_rad);
 }
 
 // Gets the current waypoint destination as a Location object.
@@ -379,8 +381,9 @@ bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, boo
 // If `is_terrain_alt` is true, altitude is interpreted as height above terrain.
 // Reinitializes the current leg if interrupted, updates origin, and computes trajectory.
 // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+// arc_axis_rot_rad rotates the plane of that arc away from horizontal (0 for a horizontal arc)
 // Returns false if terrain offset cannot be determined when required.
-bool AC_WPNav::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt, float arc_rad)
+bool AC_WPNav::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt, float arc_rad, float arc_axis_rot_rad)
 {
     // re-initialise if previous destination has been interrupted
     if (!is_active() || !_flags.reached_destination) {
@@ -419,7 +422,7 @@ bool AC_WPNav::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool 
         _scurve_this_leg.calculate_track(_origin_ned_m, _destination_ned_m, arc_rad,
                                          _pos_control.NE_get_max_speed_ms(), _pos_control.get_max_speed_up_ms(), _pos_control.get_max_speed_down_ms(),
                                          get_wp_acceleration_mss(), get_accel_D_mss(), get_corner_acceleration_mss(),
-                                         _scurve_snap_max_mssss, _scurve_jerk_max_msss);
+                                         _scurve_snap_max_mssss, _scurve_jerk_max_msss, arc_axis_rot_rad);
         if (!is_zero(origin_speed_m)) {
             // If we have a valid starting speed, seed it into the S-curve
             _scurve_this_leg.set_origin_speed_max(origin_speed_m);
@@ -484,7 +487,8 @@ bool AC_WPNav::set_circle_destination_NED_m(const Vector2f& center_ne_m, float t
 // Calculates trajectory preview for smoother transition into next segment.
 // Updates velocity handoff if previous leg is a spline.
 // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
-bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt, float arc_rad)
+// arc_axis_rot_rad rotates the plane of that arc away from horizontal (0 for a horizontal arc)
+bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt, float arc_rad, float arc_axis_rot_rad)
 {
     // do not add next point if alt types don't match
     if (is_terrain_alt != _is_terrain_alt) {
@@ -495,7 +499,7 @@ bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3p& destination_ned_m, 
     _scurve_next_leg.calculate_track(_destination_ned_m, destination_ned_m, arc_rad,
                                      _pos_control.NE_get_max_speed_ms(), _pos_control.get_max_speed_up_ms(), _pos_control.get_max_speed_down_ms(),
                                      get_wp_acceleration_mss(), get_accel_D_mss(), get_corner_acceleration_mss(),
-                                     _scurve_snap_max_mssss, _scurve_jerk_max_msss);
+                                     _scurve_snap_max_mssss, _scurve_jerk_max_msss, arc_axis_rot_rad);
     if (_this_leg_is_spline) {
         const float this_leg_dest_speed_max_ms = _spline_this_leg.get_destination_speed_max();
         // Pass velocity forward to allow continuous spline-scurve transition
