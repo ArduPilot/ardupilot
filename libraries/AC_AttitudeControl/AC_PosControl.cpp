@@ -91,6 +91,9 @@ AC_PosControl *AC_PosControl::_singleton;
 #define POSCONTROL_TVEC_ARM_MS                  100     // the path must demand more than free fall for this long before inverted thrust is armed
 #define POSCONTROL_TVEC_EXIT_MS                 250     // the vertical axis must want thrust up for this long before inverted thrust is released
 
+#define POSCONTROL_ACCEL_D_MAX_SHAPED_MSS       7.5f    // vertical acceleration ceiling for the input shaping, applied before the overspeed gain
+static_assert(POSCONTROL_ACCEL_D_MAX_SHAPED_MSS < GRAVITY_MSS, "the shaping must never ask for more than free fall");
+
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
@@ -409,7 +412,8 @@ void AC_PosControl::input_pos_NED_m(const Vector3p& pos_ned_m, float pos_terrain
 
     // calculated increased maximum acceleration and jerk if over speed
     const float overspeed_gain = calculate_overspeed_gain();
-    const float accel_max_d_mss = _accel_max_d_mss * overspeed_gain;
+    // the ceiling is applied first so the up and down limits match unless braking an overspeed
+    const float accel_max_d_mss = MIN(_accel_max_d_mss, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS) * overspeed_gain;
     const float jerk_max_d_msss = _jerk_max_d_msss * overspeed_gain;
 
     update_pos_vel_accel_xy(_pos_desired_ned_m.xy(), _vel_desired_ned_ms.xy(), _accel_desired_ned_mss.xy(), _dt_s, _limit_vector_ned.xy(), _p_pos_ne_m.get_error(), _pid_vel_ne_m.get_error());
@@ -442,7 +446,7 @@ void AC_PosControl::input_pos_NED_m(const Vector3p& pos_ned_m, float pos_terrain
     shape_pos_vel_accel(pos_d_m, 0, 0,
                         _pos_desired_ned_m.z, _vel_desired_ned_ms.z, _accel_desired_ned_mss.z,
                         -vel_max_d_ms, vel_max_d_ms,
-                        -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, 7.5),
+                        -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS),
                         jerk_max_d_msss, _dt_s, false);
 }
 
@@ -977,7 +981,8 @@ void AC_PosControl::input_vel_accel_D_m(float &vel_d_ms, float accel_d_mss, bool
 {
     // calculated increased maximum acceleration and jerk if over speed
     const float overspeed_gain = calculate_overspeed_gain();
-    const float accel_max_d_mss = _accel_max_d_mss * overspeed_gain;
+    // the ceiling is applied first so the up and down limits match unless braking an overspeed
+    const float accel_max_d_mss = MIN(_accel_max_d_mss, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS) * overspeed_gain;
     const float jerk_max_d_msss = _jerk_max_d_msss * overspeed_gain;
 
     // adjust desired alt if motors have not hit their limits
@@ -985,7 +990,7 @@ void AC_PosControl::input_vel_accel_D_m(float &vel_d_ms, float accel_d_mss, bool
 
     shape_vel_accel(vel_d_ms, accel_d_mss,
                     _vel_desired_ned_ms.z, _accel_desired_ned_mss.z,
-                    -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, 7.5),
+                    -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS),
                     jerk_max_d_msss, _dt_s, limit_output);
 
     update_vel_accel(vel_d_ms, accel_d_mss, _dt_s, 0.0, 0.0);
@@ -1031,7 +1036,8 @@ void AC_PosControl::input_pos_vel_accel_D_m(float &pos_d_m, float &vel_d_ms, flo
 {
     // calculated increased maximum acceleration and jerk if over speed
     const float overspeed_gain = calculate_overspeed_gain();
-    const float accel_max_d_mss = _accel_max_d_mss * overspeed_gain;
+    // the ceiling is applied first so the up and down limits match unless braking an overspeed
+    const float accel_max_d_mss = MIN(_accel_max_d_mss, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS) * overspeed_gain;
     const float jerk_max_d_msss = _jerk_max_d_msss * overspeed_gain;
 
     // adjust desired altitude if motors have not hit their limits
@@ -1040,7 +1046,7 @@ void AC_PosControl::input_pos_vel_accel_D_m(float &pos_d_m, float &vel_d_ms, flo
     shape_pos_vel_accel(pos_d_m, vel_d_ms, accel_d_mss,
                         _pos_desired_ned_m.z, _vel_desired_ned_ms.z, _accel_desired_ned_mss.z,
                         -_vel_max_up_ms, _vel_max_down_ms,
-                        -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, 7.5),
+                        -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS),
                         jerk_max_d_msss, _dt_s, limit_output);
 
     postype_t posp = pos_d_m;
