@@ -1106,6 +1106,22 @@ bool CompassCalibrator::calculate_orientation(void)
         _sample_buffer[i].set(s);
     }
 
+    // rotate the soft-iron matrix for the new orientation. The
+    // samples and offsets were rotated by R, so R*S*R' keeps every
+    // residual unchanged
+    Matrix3f rot_old, rot_new;
+    rot_old.from_rotation(_orientation);
+    rot_new.from_rotation(besti);
+    const Matrix3f R = rot_new * rot_old.transposed();
+    const Matrix3f softiron {
+        _params.diag.x,    _params.offdiag.x, _params.offdiag.y,
+        _params.offdiag.x, _params.diag.y,    _params.offdiag.z,
+        _params.offdiag.y, _params.offdiag.z, _params.diag.z
+    };
+    const Matrix3f rot_softiron = R * softiron * R.transposed();
+    _params.diag = Vector3f(rot_softiron.a.x, rot_softiron.b.y, rot_softiron.c.z);
+    _params.offdiag = Vector3f(rot_softiron.a.y, rot_softiron.a.z, rot_softiron.b.z);
+
     _orientation = besti;
     _orientation_solution = besti;
 
