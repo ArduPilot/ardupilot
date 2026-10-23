@@ -92,8 +92,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameter("H_RSC_RUNUP_TIME", TARGET_RUNUP_TIME)
         self.progress("Initiate Runup by putting some throttle")
         tstart = self.get_sim_time()
-        self.set_rc(8, 2000)
-        self.set_rc(3, 1700)
+        self.set_rc_from_map({8: 2000, 3: 1700})
         self.progress("Collective threshold PWM %u" % coll)
         self.progress("Wait that collective PWM pass threshold value")
         servo = self.assert_receive_message(
@@ -102,12 +101,7 @@ class AutoTestHelicopter(AutoTestCopter):
         )
         runup_time = self.get_sim_time() - tstart
         self.progress("Collective is now at PWM %u" % servo.servo1_raw)
-        self.mav.wait_heartbeat()
         if runup_time < TARGET_RUNUP_TIME:
-            self.zero_throttle()
-            self.set_rc(8, 1000)
-            self.disarm_vehicle()
-            self.mav.wait_heartbeat()
             raise NotAchievedException("Takeoff initiated before runup time complete %u" % runup_time)
         self.progress("Runup time %u" % runup_time)
         self.zero_throttle()
@@ -206,31 +200,23 @@ class AutoTestHelicopter(AutoTestCopter):
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
-    def FlyEachFrame(self):
-        '''Fly each supported internal frame'''
+    # no known-broken helicopter frames:
+    fly_each_frame_known_broken = {}
+
+    def FlyFrame(self, frame):
+        '''Fly a supported internal frame'''
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
-        known_broken_frames = {
-        }
-        for frame in sorted(vinfo_options["frames"].keys()):
-            self.start_subtest("Testing frame (%s)" % str(frame))
-            if frame in known_broken_frames:
-                self.progress("Actually, no I'm not - it is known-broken (%s)" %
-                              (known_broken_frames[frame]))
-                continue
-            frame_bits = vinfo_options["frames"][frame]
-            print("frame_bits: %s" % str(frame_bits))
-            if frame_bits.get("external", False):
-                self.progress("Actually, no I'm not - it is an external simulation")
-                continue
-            model = frame_bits.get("model", frame)
-            self.customise_SITL_commandline(
-                [],
-                model=model,
-                wipe=True,
-            )
-            self.takeoff(10)
-            self.do_RTL()
+        frame_bits = vinfo_options["frames"][frame]
+        print("frame_bits: %s" % str(frame_bits))
+        model = frame_bits.get("model", frame)
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            wipe=True,
+        )
+        self.takeoff(10)
+        self.do_RTL()
 
     def governortest(self):
         '''Test Heli Internal Throttle Curve and Governor'''
@@ -510,8 +496,7 @@ class AutoTestHelicopter(AutoTestCopter):
     def StabilizeTakeOff(self):
         """Fly stabilize takeoff"""
         self.change_mode('STABILIZE')
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
+        self.set_rc_from_map({3: 1000, 8: 1000})
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_rc(8, 2000)
@@ -558,8 +543,7 @@ class AutoTestHelicopter(AutoTestCopter):
         })
         bail_out_time = self.get_parameter('H_RSC_AROT_RUNUP')
         self.change_mode('POSHOLD')
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
+        self.set_rc_from_map({3: 1000, 8: 1000})
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_rc(8, 2000)
@@ -680,8 +664,7 @@ class AutoTestHelicopter(AutoTestCopter):
                 self.reboot_sitl()
 
             self.change_mode('POSHOLD')
-            self.set_rc(3, 1000)
-            self.set_rc(8, 1000)
+            self.set_rc_from_map({3: 1000, 8: 1000})
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.set_rc(8, 2000)
@@ -698,8 +681,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.change_mode('STABILIZE')
 
             self.progress("Triggering manual autorotation by disabling interlock")
-            self.set_rc(3, 1000)
-            self.set_rc(8, 1000)
+            self.set_rc_from_map({3: 1000, 8: 1000})
 
             self.wait_statustext(r"RSC: In Autorotation", check_context=True)
 
@@ -733,8 +715,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.delay_sim_time(5, reason="power recovery to stabilise")
 
             # Initiate autorotation again
-            self.set_rc(3, 1000)
-            self.set_rc(8, 1000)
+            self.set_rc_from_map({3: 1000, 8: 1000})
 
             self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
                                  check_context=True,
@@ -1090,8 +1071,7 @@ class AutoTestHelicopter(AutoTestCopter):
                              "H_RSC_SETPOINT": SETPOINT,
                              "H_RSC_IDLE": IDLE,
                              "H_RSC_CLDWN_TIME": COOLDOWN_TIME})
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
+        self.set_rc_from_map({3: 1000, 8: 1000})
 
         self.progress("Starting turbine")
         self.wait_ready_to_arm()
@@ -1130,12 +1110,13 @@ class AutoTestHelicopter(AutoTestCopter):
         """Check Turbine Start Feature"""
         RAMP_TIME = 4
         # set option for Turbine Start
-        self.set_parameter("RC6_OPTION", 161)
-        self.set_parameter("H_RSC_RAMP_TIME", RAMP_TIME)
-        self.set_parameter("H_RSC_SETPOINT", 66)
-        self.set_parameter("DISARM_DELAY", 0)
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
+        self.set_parameters({
+            "RC6_OPTION": 161,
+            "H_RSC_RAMP_TIME": RAMP_TIME,
+            "H_RSC_SETPOINT": 66,
+            "DISARM_DELAY": 0,
+        })
+        self.set_rc_from_map({3: 1000, 8: 1000})
 
         # check that turbine start doesn't activate while disarmed
         self.progress("Checking Turbine Start doesn't activate while disarmed")
@@ -1151,16 +1132,14 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Checking Turbine Start doesn't activate while armed with interlock enabled")
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.set_rc(8, 2000)
-        self.set_rc(6, 2000)
+        self.set_rc_from_map({8: 2000, 6: 2000})
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
             servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
 
-        self.set_rc(8, 1000)
-        self.set_rc(6, 1000)
+        self.set_rc_from_map({8: 1000, 6: 1000})
         self.disarm_vehicle()
 
         # check that turbine start activates as designed (armed with interlock disabled)
@@ -1182,15 +1161,13 @@ class AutoTestHelicopter(AutoTestCopter):
 
         # check that turbine start will not reactivate after interlock enabled
         self.progress("Checking Turbine Start doesn't activate once interlock is enabled after start)")
-        self.set_rc(8, 2000)
-        self.set_rc(6, 2000)
+        self.set_rc_from_map({8: 2000, 6: 2000})
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
             servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
-        self.set_rc(6, 1000)
-        self.set_rc(8, 1000)
+        self.set_rc_from_map({6: 1000, 8: 1000})
         self.disarm_vehicle()
 
     def PIDNotches(self):
@@ -1401,8 +1378,7 @@ class AutoTestHelicopter(AutoTestCopter):
         tstart = self.get_sim_time()
         try:
             while self.get_sim_time_cached() - tstart < timeout:
-                self.wait_heartbeat()
-                if self.armed():
+                if self.armed(poll=False):
                     raise NotAchievedException("Stick-armed when it should not have")
         finally:
             self.set_output_to_trim(arming_channel)
@@ -1444,6 +1420,7 @@ class AutoTestHelicopter(AutoTestCopter):
     def tests(self):
         '''return list of all tests'''
         ret = vehicle_test_suite.TestSuite.tests(self)
+        ret.extend(self.FlyEachFrameTests())
         ret.extend([
             self.AVCMission,
             self.RotorRunup,
@@ -1455,7 +1432,6 @@ class AutoTestHelicopter(AutoTestCopter):
             self.ManAutorotation,
             self.governortest,
             self.GovernorNotEngagedManualThrottle,
-            self.FlyEachFrame,
             self.AirspeedDrivers,
             self.TurbineStart,
             self.TurbineCoolDown,

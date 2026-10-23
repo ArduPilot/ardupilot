@@ -76,7 +76,7 @@ private:
 
     // socket connection variables
     const char *target_address = "127.0.0.1";
-    const uint16_t target_port = 5763;
+    const uint16_t target_port = 5763;  // instance 0's SERIAL2 port
     SocketAPM_native mav_socket { false };
     bool initialised;           // true if this class has been initialised
     uint32_t last_update_us;    // system time of last update

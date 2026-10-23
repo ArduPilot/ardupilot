@@ -73,7 +73,7 @@ private:
 
     // Socket connection variables for MAVLink communication
     const char *target_address = "127.0.0.1"; // Address for MAVLink socket communication
-    const uint16_t target_port = 5763;        // Port for MAVLink socket communication
+    const uint16_t target_port = 5763;        // instance 0's SERIAL2 port for MAVLink socket communication
     SocketAPM_native mav_socket { false };   // Socket for MAVLink communication
     bool initialised;                        // True if the simulation class is initialized
     uint32_t last_update_us;                 // Timestamp of the last update in microseconds

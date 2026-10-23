@@ -10,6 +10,7 @@
  *  passing inputs straight from the RC inputs to RC outputs.
  */
 
+#if AP_MAINLOOP_FAILSAFE_ENABLED
 /*
  *  this failsafe_check function is called from the core timer interrupt
  *  at 1kHz.
@@ -35,6 +36,11 @@ void Plane::failsafe_check(void)
         // ran. That means we're in trouble, or perhaps are in
         // an initialisation routine or log erase. Start passing RC
         // inputs through to outputs
+        if (!in_failsafe) {
+            // record only on entry; the passthrough below re-stamps
+            // last_timestamp every 20ms while we remain in failsafe
+            mainloop_failsafe_stalled((tnow - last_timestamp) / 1000);
+        }
         in_failsafe = true;
     }
 
@@ -112,4 +118,6 @@ void Plane::failsafe_check(void)
         }
 #endif
     }
+
 }
+#endif  // AP_MAINLOOP_FAILSAFE_ENABLED

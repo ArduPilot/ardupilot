@@ -429,7 +429,9 @@ private:
 
 
 public:
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void failsafe_check();
+#endif
     // Motor test
     void motor_test_output();
     bool mavlink_motor_test_check(const GCS_MAVLINK &gcs_chan, bool check_rc, AP_MotorsUGV::motor_test_order motor_instance, uint8_t throttle_type, int16_t throttle_value);

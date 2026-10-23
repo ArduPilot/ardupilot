@@ -93,6 +93,7 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         /* parse type:args:flags string for path. 
            For example:
              tcp:5760:wait    // tcp listen on port 5760
+             tcp:2:wait,pace  // flags are a comma-separated list
              tcp:0:wait       // tcp listen on use base_port + 0
              uds:APM-UDS-serial0:wait
              tcpclient:192.168.2.15:5762
@@ -123,7 +124,25 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 #endif
         if (strcmp(devtype, "tcp") == 0) {
             uint16_t port = atoi(args1);
-            bool wait = (args2 && strcmp(args2, "wait") == 0);
+            // the flags field is a comma-separated option list, e.g.
+            // tcp:2:wait,pace:
+            //   wait: do not start the simulation until a client connects
+            //   pace: hold the simulation back while this port's
+            //         outbound queue is backed up, exactly as
+            //         wait_clock() always does for serial0, so a GCS
+            //         reading this port is never left processing
+            //         traffic from well in our past
+            bool wait = false;
+            char *optsave = nullptr;
+            for (char *opt = args2 ? strtok_r(args2, ",", &optsave) : nullptr;
+                 opt != nullptr;
+                 opt = strtok_r(nullptr, ",", &optsave)) {
+                if (strcmp(opt, "wait") == 0) {
+                    wait = true;
+                } else if (strcmp(opt, "pace") == 0) {
+                    _pace_sim = true;
+                }
+            }
             _tcp_start_connection(port, wait);
         } else if (strcmp(devtype, "uds") == 0) {
             if (args1 == nullptr || args1[0] == '\0') {
@@ -412,6 +431,25 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
             fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
             exit(1);
         }
+
+#if defined(__APPLE__) && defined(__MACH__)
+        /*
+          a reboot is an execv, and on macOS the listening socket's port
+          stays in LISTEN after that exec even though the descriptor is
+          close-on-exec.  The re-executed image's bind() then fails with
+          EADDRINUSE - SO_REUSEADDR is not enough there - and the bind
+          failure below exits the process, so the vehicle never comes
+          back and the test times out in "Did not detect reboot".
+          SO_REUSEADDR has the needed semantics on Linux, where the port
+          is released at exec; this is only wanted on Darwin, as on Linux
+          SO_REUSEPORT instead load-balances between binders and would
+          hide the port collisions the parallel runner relies on seeing.
+         */
+        if (setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one)) == -1) {
+            fprintf(stderr, "setsockopt SO_REUSEPORT failed: %s\n", strerror(errno));
+            exit(1);
+        }
+#endif
 
         fprintf(stderr, "bind port %u for SERIAL%u\n",
                 (unsigned)ntohs(_listen_sockaddr.sin_port),
@@ -1266,7 +1304,16 @@ ssize_t UARTDriver::get_system_outqueue_length() const
 #if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
     return 0;
 #elif defined(__APPLE__) && defined(__MACH__)
-    return 0;
+    // TIOCOUTQ is a Linux extension for sockets; SO_NWRITE is the
+    // equivalent here, giving the bytes written but not yet sent.  If
+    // this is not a socket the call fails and we fall back to claiming
+    // the queue is empty, which is what this whole branch used to do.
+    int size;
+    socklen_t size_len = sizeof(size);
+    if (getsockopt(_fd, SOL_SOCKET, SO_NWRITE, &size, &size_len) == -1) {
+        return 0;
+    }
+    return size;
 #else
     int size;
     if (ioctl(_fd, TIOCOUTQ, &size) == -1) {

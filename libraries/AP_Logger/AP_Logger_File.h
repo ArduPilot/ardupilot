@@ -152,6 +152,7 @@ private:
     struct {
         bool was_logging;
         uint16_t log_num;
+        uint16_t last_log_num;
     } erase;
     void erase_next(void);
 

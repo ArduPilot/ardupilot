@@ -5,6 +5,8 @@ AP_FLAKE8_CLEAN
 from __future__ import annotations
 
 import atexit
+import contextlib
+import fcntl
 import math
 import os
 import re
@@ -83,6 +85,7 @@ def relwaf():
 def waf_configure(board,
                   j=None,
                   debug=False,
+                  debug_symbols=False,
                   math_check_indexes=False,
                   coverage=False,
                   ekf_single=False,
@@ -95,7 +98,8 @@ def waf_configure(board,
                   num_aux_imus=0,
                   dronecan_tests=False,
                   extra_defines: dict | None = None,
-                  asan=False):
+                  asan=False,
+                  waflock=None):
 
     if extra_args is None:
         extra_args = []
@@ -105,6 +109,11 @@ def waf_configure(board,
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
+    if debug_symbols:
+        # -g without -O0: symbols for gdb/valgrind/core dumps at no
+        # runtime cost.  waf ignores this when --debug is given, which
+        # implies -g anyway.
+        cmd_configure.append('--debug-symbols')
     if coverage:
         cmd_configure.append('--coverage')
     if math_check_indexes:
@@ -133,6 +142,14 @@ def waf_configure(board,
     for piece in pieces:
         cmd_configure.extend(piece)
 
+    configure_env = None
+    if waflock is not None:
+        # give this configuration its own waf lockfile so it does not
+        # usurp the tree's default build directory/board (e.g. a
+        # peripheral firmware built mid-test must not cause a later
+        # "./waf build" to build the peripheral board)
+        configure_env = dict(os.environ)
+        configure_env['WAFLOCK'] = waflock
     if asan:
         cmd_configure.append('--asan')
         if not debug:
@@ -145,11 +162,15 @@ def waf_configure(board,
         # compiler silently compiles all of the networking code out of
         # every sanitizer build.
 
-    run_cmd(cmd_configure, directory=topdir(), checkfail=True)
+    run_cmd(cmd_configure, directory=topdir(), checkfail=True, env=configure_env)
 
 
-def waf_clean():
-    run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True)
+def waf_clean(waflock=None):
+    env = None
+    if waflock is not None:
+        env = dict(os.environ)
+        env['WAFLOCK'] = waflock
+    run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True, env=env)
 
 
 def waf_build(target=None):
@@ -159,6 +180,34 @@ def waf_build(target=None):
     run_cmd(cmd, directory=topdir(), checkfail=True)
 
 
+@contextlib.contextmanager
+def isolated_build_lock():
+    """serialise the mid-test builds against each other, machine-wide.
+
+    An isolated build is a full build of an output directory of its
+    own, started by one worker while the others are running tests, and
+    waf is left to use the whole machine.  Two at once starve every
+    SITL on the box: a --parallel run which had a frame rebuild and a
+    Replay tool build compiling together lost three unrelated tests at
+    the same instant, two to timesync timeouts and one to dropped log
+    blocks.  Running them one at a time, each at full width, is both
+    kinder and no slower overall.
+    """
+    lockpath = os.path.join(topdir(), '.lock-autotest-isolated-build')
+    with open(lockpath, 'w') as lockfile:
+        tstart = time.time()
+        try:
+            fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            print("Waiting for the isolated-build lock")
+            fcntl.flock(lockfile, fcntl.LOCK_EX)
+            print("Took the isolated-build lock after %us" % (time.time() - tstart))
+        try:
+            yield
+        finally:
+            fcntl.flock(lockfile, fcntl.LOCK_UN)
+
+
 def build_SITL(
         build_target,
         board='sitl',
@@ -166,6 +215,7 @@ def build_SITL(
         configure=True,
         coverage=False,
         debug=False,
+        debug_symbols=False,
         ekf_single=False,
         extra_configure_args: list | None = None,
         extra_defines: dict | None = None,
@@ -178,39 +228,148 @@ def build_SITL(
         num_aux_imus=0,
         dronecan_tests=False,
         asan=False,
+        waflock=None,
+        isolated=False,
+        artefact_dst=None,
 ):
     if extra_configure_args is None:
         extra_configure_args = []
     if extra_defines is None:
         extra_defines = {}
 
-    # first configure
-    if configure:
-        waf_configure(board,
-                      j=j,
-                      debug=debug,
-                      math_check_indexes=math_check_indexes,
-                      ekf_single=ekf_single,
-                      postype_single=postype_single,
-                      coverage=coverage,
-                      force_32bit=force_32bit,
-                      ubsan=ubsan,
-                      ubsan_abort=ubsan_abort,
-                      extra_defines=extra_defines,
-                      num_aux_imus=num_aux_imus,
-                      dronecan_tests=dronecan_tests,
-                      extra_args=extra_configure_args,
-                      asan=asan,)
+    # isolated: configure and build in a separate output directory with
+    # a separate waf lockfile, then copy the built binary to the path in
+    # the default build tree callers expect.  For mid-test rebuilds with
+    # special configure options (e.g. --enable-PPP): without isolation
+    # the configure rewrites the default build tree's stored
+    # configuration and every binary built there afterwards inherits the
+    # options.
+    isolated_builddir = None
+    if isolated:
+        if isolated is True:
+            isolated_builddir = reltopdir('build-frame')
+            default_lock = '.lock-waf-frame-build'
+        else:
+            # a caller may name its own isolation directory so that
+            # concurrent isolated builds (e.g. a Replay tool build in
+            # one suite and a PPP frame build in another) cannot
+            # collide in build-frame
+            isolated_builddir = reltopdir(isolated)
+            default_lock = '.lock-waf-' + os.path.basename(isolated_builddir)
+        extra_configure_args = list(extra_configure_args) + ['--out', isolated_builddir]
+        if waflock is None:
+            waflock = default_lock
 
-    # then clean
-    if clean:
-        waf_clean()
+    # configure="auto": (re)configure only when the configuration we
+    # want differs from the one the tree last had.  The wanted
+    # configuration is fully determined by this function's parameters,
+    # so a stamp of them is compared; a missing stamp, a missing board
+    # build directory, or any parameter change reconfigures.  This
+    # replaces the old --no-configure guesswork: skipping is the
+    # common fast path, and a tree configured some other way (a manual
+    # ./waf configure, different options) is reconfigured instead of
+    # failing with "configure options have changed".
+    stampfile = None
 
-    # then build
-    cmd_make = [relwaf(), "build", "--target", build_target]
-    if j is not None:
-        cmd_make.extend(['-j', str(j)])
-    run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
+    # the lockfile this build will follow: waf builds whatever board
+    # the lockfile was last configured for, so the auto-configure
+    # decision must notice when some other configure has repointed it
+    lockname = waflock
+    if lockname is None:
+        lockname = '.lock-waf_%s_build' % sys.platform
+    lockpath = os.path.join(topdir(), lockname)
+
+    def lock_fingerprint():
+        try:
+            st = os.stat(lockpath)
+            return "%u:%u" % (st.st_mtime_ns, st.st_size)
+        except OSError:
+            return "missing"
+
+    if configure == "auto":
+        wanted = repr(sorted({
+            "board": board,
+            "debug": debug,
+            "debug_symbols": debug_symbols,
+            "math_check_indexes": math_check_indexes,
+            "ekf_single": ekf_single,
+            "postype_single": postype_single,
+            "coverage": coverage,
+            "force_32bit": force_32bit,
+            "ubsan": ubsan,
+            "ubsan_abort": ubsan_abort,
+            "num_aux_imus": num_aux_imus,
+            "dronecan_tests": dronecan_tests,
+            "asan": asan,
+            "extra_configure_args": extra_configure_args,
+            "extra_defines": sorted(extra_defines.items()),
+            "waflock": waflock,
+        }.items()))
+        stampfile = os.path.join(topdir(), "build",
+                                 ".autotest-configure-%s" % board)
+        try:
+            with open(stampfile) as f:
+                (have, have_lock) = f.read().split("\n", 1)
+        except (OSError, ValueError):
+            (have, have_lock) = (None, None)
+        configure = (have != wanted or
+                     have_lock != lock_fingerprint() or
+                     not os.path.exists(os.path.join(topdir(), "build", board)))
+        if not configure:
+            print("Configuration for %s unchanged; not reconfiguring" % board)
+
+    # one isolated build at a time, machine-wide: see isolated_build_lock()
+    with isolated_build_lock() if isolated else contextlib.nullcontext():
+        # first configure
+        if configure:
+            waf_configure(board,
+                          j=j,
+                          debug=debug,
+                          debug_symbols=debug_symbols,
+                          math_check_indexes=math_check_indexes,
+                          ekf_single=ekf_single,
+                          postype_single=postype_single,
+                          coverage=coverage,
+                          force_32bit=force_32bit,
+                          ubsan=ubsan,
+                          ubsan_abort=ubsan_abort,
+                          extra_defines=extra_defines,
+                          num_aux_imus=num_aux_imus,
+                          dronecan_tests=dronecan_tests,
+                          extra_args=extra_configure_args,
+                          asan=asan,
+                          waflock=waflock,)
+            if stampfile is not None:
+                os.makedirs(os.path.dirname(stampfile), exist_ok=True)
+                with open(stampfile, "w") as f:
+                    f.write(wanted + "\n" + lock_fingerprint())
+            elif waflock is None and not isolated:
+                # an explicitly-requested configure of the default tree may
+                # differ from the stamped one; forget the stamp so the next
+                # auto build re-checks.  Isolated/waflocked configures do
+                # not touch the default tree's configuration.
+                try:
+                    os.unlink(os.path.join(topdir(), "build",
+                                           ".autotest-configure-%s" % board))
+                except OSError:
+                    pass
+
+        # then clean
+        if clean:
+            waf_clean(waflock=waflock)
+
+        # then build
+        cmd_make = [relwaf(), "build", "--target", build_target]
+        if j is not None:
+            cmd_make.extend(['-j', str(j)])
+        build_env = None
+        if waflock is not None:
+            build_env = dict(os.environ)
+            build_env['WAFLOCK'] = waflock
+        run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True, env=build_env)
+        if isolated:
+            _copy_frame_artefact(isolated_builddir, board, build_target,
+                                 dst=artefact_dst)
     return True
 
 
@@ -218,12 +377,15 @@ def build_SITL_frame(
         vehicleinfo_key,
         frame,
         extra_configure_args: list | None = None,
+        artefact_dst=None,
+        periph_artefact_dst=None,
         **build_kwargs,
 ):
     '''Build the main vehicle SITL plus (when defined) the AP_Periph
     companion for a frame entry in pysim/vehicleinfo.json.
 
-    Reads the frame's `waf_target`, `configure_args` and (optional)
+    Reads the frame's `waf_target`, `configure_args`, optional `board`
+    (the vehicle build target board, default sitl) and optional
     `periph_board` fields, then runs `build_SITL()` once for the vehicle
     and (if the frame defines a periph_board) once more for the
     companion AP_Periph build. `configure_args` are passed through to
@@ -240,25 +402,80 @@ def build_SITL_frame(
     vinfo = vehicleinfo.VehicleInfo()
     frame_opts = vinfo.options[vehicleinfo_key]['frames'][frame]
 
+    # keep these configurations' waf lockfile away from the tree's
+    # default one: the vehicle is configured with frame-specific
+    # options and the companion is a peripheral board, and letting
+    # either rewrite the default lockfile makes the next plain
+    # "./waf build" (or autotest --no-configure) silently build with
+    # this frame's configuration instead of the tree's
+    # each frame gets its own isolation directory and lockfile: under
+    # a unified multi-suite pool two frame-building tests can run at
+    # once (CircuitStatusScript and PPPPeriph did, and their builds
+    # destroyed each other in a shared build-frame).  Per frame and no
+    # finer: two tests wanting the same frame at once (the generated
+    # FlyFrame_nexus and NexusIMUs do) are kept apart by
+    # isolated_build_lock() instead, so that the second finds the
+    # objects the first built rather than an empty directory.
+    frame_isolation_dir = 'build-frame-%s' % frame
+    build_kwargs.setdefault('waflock', '.lock-waf-%s' % frame_isolation_dir)
+
     configure_args = list(frame_opts.get('configure_args', []))
     if extra_configure_args is not None:
         configure_args += list(extra_configure_args)
 
+    # a frame may name a non-default board (e.g. SITL_Nexus); when it does
+    # the vehicle build targets that board, landing in <builddir>/<board>/.
+    vehicle_build_kwargs = dict(build_kwargs)
+    board = frame_opts.get('board')
+    if board is not None:
+        vehicle_build_kwargs['board'] = board
+
+    # isolated: the frame's configure args (e.g. --enable-PPP) must not
+    # rewrite the default build tree's stored configuration - a Plane
+    # suite's PPPPeriph run left build/sitl PPP-enabled, and the Sub
+    # network-port tests built after it black-holed all NET traffic
     build_SITL(frame_opts['waf_target'],
                extra_configure_args=configure_args,
-               **build_kwargs)
+               isolated=frame_isolation_dir,
+               artefact_dst=artefact_dst,
+               **vehicle_build_kwargs)
 
     periph_board = frame_opts.get('periph_board')
     if periph_board is not None:
         build_SITL('bin/AP_Periph',
                    board=periph_board,
                    extra_configure_args=configure_args,
+                   isolated=frame_isolation_dir,
+                   artefact_dst=periph_artefact_dst,
                    **build_kwargs)
 
     return frame_opts
 
 
-def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
+def _copy_frame_artefact(frame_builddir, board, waf_target, dst=None):
+    '''copy a binary built in the frame build directory to dst, or by
+    default to the same relative location in the default build
+    directory.  An explicit dst lets a test deliver the artefact
+    straight to its own private binary path: the master binary in the
+    default build directory then never changes, so no concurrent
+    worker can copy a half-written or wrongly-configured binary.'''
+    import shutil
+    src = os.path.join(frame_builddir, board, waf_target)
+    if dst is None:
+        dst = os.path.join(topdir(), 'build', board, waf_target)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    # unlink first: the destination may be a binary a running SITL was
+    # started from, and overwriting it in place fails with ETXTBSY
+    try:
+        os.unlink(dst)
+    except FileNotFoundError:
+        pass
+    shutil.copy2(src, dst)
+    os.chmod(dst, 0o755)
+
+
+def build_examples(board, j=None, debug=False, debug_symbols=False, clean=False, configure=True,
+                   math_check_indexes=False, coverage=False,
                    ekf_single=False, postype_single=False, force_32bit=False, ubsan=False, ubsan_abort=False,
                    num_aux_imus=0, dronecan_tests=False,
                    extra_configure_args: list | None = None,
@@ -271,6 +488,7 @@ def build_examples(board, j=None, debug=False, clean=False, configure=True, math
         waf_configure(board,
                       j=j,
                       debug=debug,
+                      debug_symbols=debug_symbols,
                       math_check_indexes=math_check_indexes,
                       ekf_single=ekf_single,
                       postype_single=postype_single,
@@ -309,6 +527,7 @@ def build_replay(board, j=None, debug=False, clean=False):
 def build_tests(board,
                 j=None,
                 debug=False,
+                debug_symbols=False,
                 clean=False,
                 configure=True,
                 math_check_indexes=False,
@@ -330,6 +549,7 @@ def build_tests(board,
         waf_configure(board,
                       j=j,
                       debug=debug,
+                      debug_symbols=debug_symbols,
                       math_check_indexes=math_check_indexes,
                       ekf_single=ekf_single,
                       postype_single=postype_single,
@@ -504,7 +724,10 @@ class PSpawnStdPrettyPrinter(object):
         print("%s: %s" % (self.prefix, line), file=self.output)
 
     def flush(self):
-        pass
+        # when we are writing to a file rather than a terminal this is
+        # the only thing which gets the last line of a SITL which is
+        # about to die onto disk.  pexpect flushes us after each write.
+        self.output.flush()
 
 
 def unix_domain_socket_path(serial, cwd=None):
@@ -574,6 +797,50 @@ def sitl_rcin_connection(device):
     return mavutil.mavudp(device, input=False)
 
 
+def gdbserver_port(instance):
+    '''port --gdbserver listens on for a SITL at this instance; instance
+    0 keeps the historical 3333'''
+    return 3333 + instance
+
+
+def die_with_parent(expected_parent_pid):
+    '''preexec_fn which asks the kernel to kill this process when the
+    process that started it dies.
+
+    A parallel worker which hangs is SIGKILLed by the dispatcher, which
+    runs none of its cleanup, so whatever it started outlives it.  SITL
+    happens to notice - its pty hangs up and it exits - but a
+    peripheral does not: it is reparented to init and stays on the
+    simulation-state multicast group, which has no per-instance offset,
+    talking to every peripheral test which runs after it, in this run
+    or the next one on the machine.  Measured: a SIGKILLed worker left
+    AP_Periph running, reparented, with its ports still held.
+
+    expected_parent_pid is read in the parent, before the fork, because
+    of the race the other way: if the parent dies between the fork and
+    the prctl() below, the death signal has already been and gone and
+    we would sit here orphaned forever.  Comparing getppid() afterwards
+    catches exactly that window.
+
+    Best-effort, and deliberately quiet about it:
+      - Linux only.  Elsewhere this is a no-op and the previous
+        behaviour stands.
+      - cleared across a setuid exec, so it does nothing for
+        "sudo pppd"; that one still needs killing by hand.
+      - not inherited across fork, so a wrapper which forks the real
+        inferior (gdbserver, xterm) protects only the wrapper.
+    '''
+    try:
+        import ctypes
+        PR_SET_PDEATHSIG = 1
+        ctypes.CDLL("libc.so.6").prctl(PR_SET_PDEATHSIG, signal.SIGKILL)
+    except Exception:  # noqa: BLE001 - never let this stop a spawn
+        return
+    if os.getppid() != expected_parent_pid:
+        # already orphaned: the signal fired before we asked for it
+        os._exit(1)
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -597,9 +864,17 @@ def start_SITL(binary,
                enable_fgview=False,
                supplementary=False,
                stdout_prefix=None,
+               stdout_file=None,
                asan=False,
                unix_domain_socket=False,
+               instance=0,
+               sitl_rcin_port=None,
+               env: dict | None = None,  # extra environment variables
                ):
+
+    if model is None and not supplementary:
+        raise ValueError("model must not be None")
+
     """Launch a SITL instance."""
 
     if defaults_filepath is None:
@@ -633,11 +908,11 @@ def start_SITL(binary,
         if callgrind:
             cmd.extend(["--tool=callgrind"])
     if gdbserver:
-        cmd.extend(['gdbserver', 'localhost:3333'])
+        cmd.extend(['gdbserver', 'localhost:%u' % gdbserver_port(instance)])
         if gdb:
             # attach gdb to the gdbserver:
             f = open("/tmp/x.gdb", "w")
-            f.write("target extended-remote localhost:3333\nc\n")
+            f.write("target extended-remote localhost:%u\nc\n" % gdbserver_port(instance))
             for breakingpoint in breakpoints:
                 f.write("b %s\n" % (breakingpoint,))
             if disable_breakpoints:
@@ -703,6 +978,16 @@ def start_SITL(binary,
         defaults.append(str(filepath.name))
 
     if not supplementary:
+        # peripherals take any -I from their customisations; a leading
+        # one here would fix their port base first
+        cmd.extend(['-I', str(instance)])
+
+    if sitl_rcin_port is not None:
+        # the harness allocates RC-in ports three per instance rather
+        # than SITL's ten, so say which one explicitly
+        cmd.extend(["--rc-in-port", str(sitl_rcin_port)])
+
+    if not supplementary:
         if wipe:
             cmd.append('-w')
         if home is not None:
@@ -724,8 +1009,16 @@ def start_SITL(binary,
             cmd.extend(unix_domain_socket_serial_args())
             cmd.append("--rc-in-port=uds:APM-UDS-rcin")
         else:
-            # somewhere for MAVProxy to connect to:
-            cmd.append('--serial1=tcp:2')
+            # somewhere for MAVProxy to connect to.  "pace" holds the
+            # simulation back while this port's outbound queue is backed
+            # up, as always happens for serial0: without it a loaded
+            # machine can advance the simulation many seconds while
+            # MAVProxy is not scheduled, and the vehicle's own deadlines
+            # (e.g. the mission upload timeout) expire before MAVProxy
+            # has a chance to act.  The unix-domain-socket path above
+            # takes its arguments from unix_domain_socket_serial_args()
+            # and has no equivalent option.
+            cmd.append('--serial1=tcp:2:pace')
         if enable_fgview:
             cmd.append("--enable-fgview")
 
@@ -740,7 +1033,11 @@ def start_SITL(binary,
     pexpect_logfile_prefix = stdout_prefix
     if pexpect_logfile_prefix is None:
         pexpect_logfile_prefix = os.path.basename(binary)
-    pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
+    if stdout_file is None:
+        pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
+    else:
+        pexpect_logfile = PSpawnStdPrettyPrinter(output=stdout_file,
+                                                 prefix=pexpect_logfile_prefix)
 
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
@@ -755,8 +1052,8 @@ def start_SITL(binary,
         out = out.decode('utf-8')
         p = re.compile('tab 1 of window id (.*)')
 
-        tstart = time.time()
-        while time.time() - tstart < 5:
+        tstart = time.monotonic()
+        while time.monotonic() - tstart < 5:
             tabs = p.findall(out)
 
             if len(tabs) > 0:
@@ -771,7 +1068,9 @@ def start_SITL(binary,
             print("Cannot find %s process terminal" % binary)
         child = FakeMacOSXSpawn()
     elif gdb and not os.getenv('DISPLAY'):
-        subprocess.Popen(cmd, cwd=cwd)
+        spawning_pid = os.getpid()
+        subprocess.Popen(cmd, cwd=cwd,
+                         preexec_fn=lambda: die_with_parent(spawning_pid))
         atexit.register(kill_screen_gdb)
         # we are expected to return a pexpect wrapped around the
         # stdout of the ArduPilot binary.  Not going to happen until
@@ -780,6 +1079,7 @@ def start_SITL(binary,
         return pexpect.spawn("true", ["true"],
                              logfile=pexpect_logfile,
                              encoding='ascii',
+                             codec_errors='replace',
                              timeout=5)
     else:
         print("Running: %s" % cmd_as_shell(cmd))
@@ -795,6 +1095,8 @@ def start_SITL(binary,
         # all, which is exactly when one is wanted.
         spawn_env.setdefault('AP_SCRIPTS_DIR_PATH',
                              os.path.abspath(reltopdir('Tools/scripts')))
+        if env is not None:
+            spawn_env.update(env)
         if asan:
             log_base = asan_log_filepath(binary=binary, model=model)
             existing = spawn_env.get('ASAN_OPTIONS', '')
@@ -809,7 +1111,10 @@ def start_SITL(binary,
             # stop llvm-symbolizer trying to fetch debug info over the
             # network, which blocks for ~90 seconds a frame
             spawn_env['DEBUGINFOD_URLS'] = ''
-        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd, env=spawn_env)
+        spawning_pid = os.getpid()
+        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii',
+                              codec_errors='replace', timeout=5, cwd=cwd, env=spawn_env,
+                              preexec_fn=lambda: die_with_parent(spawning_pid))
         pexpect_autoclose(child)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
@@ -932,7 +1237,14 @@ def start_MAVProxy_SITL(atype,
     print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii', timeout=pexpect_timeout, env=env)
+    # the vehicle's boot banner includes a statustext carrying the
+    # firmware hash, which is not ASCII.  Replace what we cannot decode
+    # rather than throwing UnicodeDecodeError out of an unrelated expect:
+    #     AccelCal (...) ('ascii' codec can't decode byte 0xef in position 611: ...)
+    spawning_pid = os.getpid()
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii',
+                        codec_errors='replace', timeout=pexpect_timeout, env=env,
+                        preexec_fn=lambda: die_with_parent(spawning_pid))
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
@@ -945,7 +1257,10 @@ def start_PPP_daemon(ips, sockaddr):
     cmd = cmd.split()
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii', timeout=30)
+    spawning_pid = os.getpid()
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii',
+                        codec_errors='replace', timeout=30,
+                        preexec_fn=lambda: die_with_parent(spawning_pid))
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
@@ -955,15 +1270,18 @@ def expect_setup_callback(e, callback):
     """Setup a callback that is called once a second while waiting for
        patterns."""
     def _expect_callback(pattern, timeout=e.timeout):
-        tstart = time.time()
-        while time.time() < tstart + timeout:
+        tstart = time.monotonic()
+        while time.monotonic() < tstart + timeout:
             try:
                 ret = e.expect_saved(pattern, timeout=1)
                 return ret
             except pexpect.TIMEOUT:
                 e.expect_user_callback(e)
-        print("Timed out looking for %s" % pattern)
-        raise pexpect.TIMEOUT(timeout)
+        # put the pattern in the exception, not just the timeout value.
+        # str() of this is all the failure summary gets to show, and
+        # "(60)" tells you nothing about what we were waiting for.
+        raise pexpect.TIMEOUT("Timed out after %ss looking for %s" %
+                              (timeout, pattern))
 
     e.expect_user_callback = callback
     e.expect_saved = e.expect

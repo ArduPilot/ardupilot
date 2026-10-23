@@ -83,6 +83,7 @@ autotest.lck
 build
 launch-settings.json
 /renode/
+build-*/
 cmake_install.cmake
 cscope.in.out
 cscope.out
@@ -91,6 +92,8 @@ dataflash.bin
 eeprom.bin
 index.html
 logs/
+pristine-logs/
+parallel-autotest/
 mav.log
 mav.log.raw
 mav.parm
