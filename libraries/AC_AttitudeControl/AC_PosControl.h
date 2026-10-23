@@ -545,10 +545,7 @@ public:
 
 #if AC_POSCONTROL_INVERTED_THRUST_ENABLED
     // Permits the thrust vector to tilt past 90 degrees for one cycle at the given height above ground; renew every loop.
-    void set_inverted_thrust_allowed(bool allowed, float height_above_ground_m) {
-        _inverted_thrust_allowed = allowed;
-        _inverted_thrust_height_m = height_above_ground_m;
-    }
+    void set_inverted_thrust_allowed(bool allowed, float height_above_ground_m);
 #endif
 
     // Overrides the maximum allowed roll/pitch angle in radians.

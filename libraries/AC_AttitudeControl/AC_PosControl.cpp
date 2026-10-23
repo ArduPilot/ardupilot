@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 #if AC_POSCONTROL_INVERTED_THRUST_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // @Param: _TVEC_EN
     // @DisplayName: Thrust vector control enable
-    // @Description: Allows the commanded thrust vector to tilt past 90 degrees when the path demands a downward acceleration greater than free fall, other than to slow down along it. The vehicle decides where it may be used: Copter permits it only on Auto waypoint legs, and never on a helicopter. The vertical thrust demand is no longer clamped at zero and the throttle is set from the magnitude of the thrust vector rather than by angle boost. The horizontal acceleration is still bounded by the lean angle limit, so a vertical manoeuvre needs ATC_ANGLE_MAX raised. Experimental.
+    // @Description: Allows the commanded thrust vector to tilt past 90 degrees when the path demands a downward acceleration greater than free fall, other than to slow down along it. The vehicle decides where it may be used: Copter permits it only on Auto waypoint legs, and never on a helicopter. The vertical thrust demand is no longer clamped at zero and the throttle is set from the magnitude of the thrust vector rather than by angle boost. The horizontal acceleration is still bounded by the lean angle limit, so a vertical manoeuvre needs ATC_ANGLE_MAX raised, or PSC_ANGLE_MAX where it is set, since it overrides ATC_ANGLE_MAX for the position controller; raising ATC_ANGLE_MAX also raises the pilot's lean limit in the manual modes. Experimental.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     // @Vehicles: Copter
@@ -932,7 +932,14 @@ void AC_PosControl::D_relax_controller(float throttle_setting)
 // Private function shared by other vertical initializers.
 void AC_PosControl::D_init_controller()
 {
+    float throttle_in = _attitude_control.get_throttle_in();
 #if AC_POSCONTROL_INVERTED_THRUST_ENABLED
+    // inverted thrust sends the size of the thrust vector as throttle; the integrator below
+    // wants the throttle that holds the vertical axis upright, which is its vertical part
+    if (_thrust_inverted_active && is_positive(_motors.get_throttle_hover())) {
+        throttle_in = MAX(0.0f, -_thrust_vector_d_mss * _motors.get_throttle_hover() / GRAVITY_MSS);
+    }
+
     // thrust supports weight until the vertical controller says otherwise
     _thrust_vector_d_mss = -GRAVITY_MSS;
     set_inverted_thrust_active(false);
@@ -963,7 +970,7 @@ void AC_PosControl::D_init_controller()
     // Set acceleration PID I term based on the current throttle
     // Remove the expected P term due to _accel_desired_ned_mss.z being constrained to _accel_max_d_mss
     // Remove the expected FF term due to non-zero _accel_target_ned_mss.z
-    _pid_accel_d_m.set_integrator(-(_attitude_control.get_throttle_in() - _motors.get_throttle_hover())
+    _pid_accel_d_m.set_integrator(-(throttle_in - _motors.get_throttle_hover())
         - _pid_accel_d_m.kP() * (_accel_target_ned_mss.z - get_estimated_accel_D_mss())
         - _pid_accel_d_m.ff() * _accel_target_ned_mss.z);
 
@@ -1460,7 +1467,8 @@ void AC_PosControl::update_inverted_thrust_state(float throttle_up)
     const bool allowed = _inverted_thrust_allowed;
     _inverted_thrust_allowed = false;
 
-    if (!_thrust_vector_enabled || !allowed || _inverted_thrust_height_m < MAX(_thrust_vector_min_height_m, POSCONTROL_TVEC_ALT_MIN_M)) {
+    // written so that a NaN height fails the floor rather than passing it
+    if (!_thrust_vector_enabled || !allowed || !(_inverted_thrust_height_m >= MAX(_thrust_vector_min_height_m, POSCONTROL_TVEC_ALT_MIN_M))) {
         set_inverted_thrust_active(false);
         _thrust_invert_arm_ms = 0;
         _thrust_invert_upright_ms = now_ms;
@@ -1501,6 +1509,20 @@ void AC_PosControl::update_inverted_thrust_state(float throttle_up)
     }
 }
 
+// Permits the thrust vector to tilt past 90 degrees for one cycle, at the vehicle's height above
+// ground. The vertical controller consumes the permission, so the vehicle renews it every loop.
+// Withdrawing it ends the regime at once, since a mode that does not run the vertical controller
+// would otherwise leave it latched until the controller next initialised.
+void AC_PosControl::set_inverted_thrust_allowed(bool allowed, float height_above_ground_m)
+{
+    _inverted_thrust_allowed = allowed;
+    _inverted_thrust_height_m = height_above_ground_m;
+    if (!allowed) {
+        set_inverted_thrust_active(false);
+        _thrust_invert_arm_ms = 0;
+    }
+}
+
 // Sets whether the thrust vector may point downward, logging each change.
 void AC_PosControl::set_inverted_thrust_active(bool active)
 {
@@ -1508,6 +1530,10 @@ void AC_PosControl::set_inverted_thrust_active(bool active)
         return;
     }
     _thrust_inverted_active = active;
+    if (!active) {
+        // upright again at once, for a mode that reads the thrust vector before the vertical controller runs
+        _thrust_vector_d_mss = -GRAVITY_MSS;
+    }
     LOGGER_WRITE_EVENT(active ? LogEvent::INVERTED_THRUST_START : LogEvent::INVERTED_THRUST_STOP);
 }
 #endif  // AC_POSCONTROL_INVERTED_THRUST_ENABLED
