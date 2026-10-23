@@ -66,6 +66,11 @@ void AP_Frsky_MAVlite_SPortToMAVlite::parse(uint8_t byte)
         return;
 
     case State::WANT_LEN:
+        if (byte > MAVLITE_MAX_PAYLOAD_LEN) {
+            // a payload longer than the buffer would overflow _rxmsg.payload
+            parse_state = State::ERROR;
+            return;
+        }
         _rxmsg.len = byte;
         update_checksum(byte);
         parse_state = State::WANT_MSGID;
@@ -82,7 +87,11 @@ void AP_Frsky_MAVlite_SPortToMAVlite::parse(uint8_t byte)
         return;
 
     case State::WANT_PAYLOAD:
-        // add byte to payload
+        // add byte to payload; guard the write in case len was not capped
+        if (payload_next_byte >= MAVLITE_MAX_PAYLOAD_LEN) {
+            parse_state = State::ERROR;
+            return;
+        }
         _rxmsg.payload[payload_next_byte++] = byte;
         update_checksum(byte);
 
