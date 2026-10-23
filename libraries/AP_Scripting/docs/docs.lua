@@ -4573,7 +4573,7 @@ function osd:flush() end
 -- clear the OSD buffer
 function osd:clear() end
 
--- request a screen redraw
+-- clear the buffer and draw the normal OSD screen into it; flush() shows it with anything written after it
 function osd:draw_screen() end
 
 -- get the aspect ratio correction factor

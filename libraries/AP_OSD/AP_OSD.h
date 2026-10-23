@@ -668,7 +668,7 @@ public:
     }
     void draw_screen() {
         if (scripting_override) {
-            update_osd();
+            update_osd(false);
         }
     }
     bool display_disabled() const { return _disable; }
@@ -713,7 +713,8 @@ public:
 private:
     void osd_thread();
 #if OSD_ENABLED
-    void update_osd();
+    // false leaves _backends[0], the backend scripting draws to, for the script's flush()
+    void update_osd(bool flush_scripting_backend = true);
     void update_stats();
     void update_current_screen();
     void next_screen();
