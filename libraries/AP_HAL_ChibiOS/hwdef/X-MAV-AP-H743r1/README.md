@@ -111,11 +111,11 @@ The default battery parameters are:
 - BATT_VOLT_MULT 18.5
 - BATT_AMP_PERVLT 40
 
-## Pinouts
+## Pinout
 
 ![AP-H743-R1 pinouts](ap-h743r1-pinouts.png)
 
-## Mechanical
+## Physical
 
 ![AP-H743-R1](ap-h743r1-size.png)
 
