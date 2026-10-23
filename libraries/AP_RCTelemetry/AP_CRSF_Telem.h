@@ -468,6 +468,8 @@ private:
 
     bool _bind_request_pending;
 
+    bool _initialized;
+
     // vtx state
     bool _vtx_freq_update;  // update using the frequency method or not
     bool _vtx_dbm_update; // update using the dbm method or not
@@ -478,6 +480,7 @@ private:
     bool _noted_lq_as_rssi_active;
 
     static AP_CRSF_Telem *singleton;
+    static HAL_Semaphore sem;
 };
 
 namespace AP {
