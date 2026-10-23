@@ -5561,6 +5561,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     if (!location_from_command_t(packet, roi_loc)) {
         return MAV_RESULT_DENIED;
     }
+    // an all-zero location clears the ROI; 0,0 with an altitude is a
+    // genuine ROI
+    if (roi_loc.initialised()) {
+        roi_loc.nudge_off_zero_latlng();
+    }
     return handle_command_do_set_roi(roi_loc);
 }
 
@@ -5576,6 +5581,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const mavlink_command
     if (packet.command == MAV_CMD_DO_SET_ROI_LOCATION &&
         (!location_from_command_t(packet, roi_loc) || !roi_loc.check_latlng())) {
         return MAV_RESULT_DENIED;
+    }
+    // an all-zero location clears the ROI; 0,0 with an altitude is a
+    // genuine ROI
+    if (roi_loc.initialised()) {
+        roi_loc.nudge_off_zero_latlng();
     }
     if (isnan(packet.param1) || is_zero(packet.param1)) {
         return handle_command_do_set_roi(roi_loc);
