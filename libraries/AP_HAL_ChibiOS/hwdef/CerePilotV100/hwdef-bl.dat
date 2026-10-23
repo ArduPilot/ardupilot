@@ -1,0 +1,62 @@
+# hw definition file for processing by chibios_hwdef.py
+# for CerePilot V1.00 (Cerepi) bootloader - STM32H743VI.
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_CEREPILOT_V100
+
+# crystal frequency - 16 MHz external TCXO (HSE bypass)
+OSCILLATOR_HZ 16000000
+define STM32_HSE_BYPASS
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# order of UARTs (and USB) exposed by the bootloader
+SERIAL_ORDER OTG1 UART7 UART8
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# deassert all on-board SPI chip selects while in the bootloader
+PD4  BMI088_A_CS CS
+PD5  BMI088_G_CS CS
+PE15 ISM330_CS CS
+PA4  FRAM_CS CS
+
+# TELEM1
+PE8 UART7_TX UART7
+PE7 UART7_RX UART7
+
+# companion computer
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+
+# bring sensor rails up so CS lines have a valid level
+PD8 VDD_3V3_SENSORS_EN OUTPUT HIGH
+PE2 VDD_1V8_SENSORS_EN OUTPUT HIGH
+PD3 VDD_3V3_BMI088_EN  OUTPUT HIGH
+
+# on-board Jetson control. Both lines drive inverting open-drain buffers, so
+# high holds the module powered down and in reset, which is how the
+# bootloader leaves them: the module has to have POWER_EN and SYS_RESET
+# released in sequence, which the bootloader does not do.
+PD11 JETSON_EN  OUTPUT HIGH
+PD10 JETSON_RST OUTPUT HIGH
+
+# bootloader activity LED (green, active low)
+PD14 LED_BOOTLOADER OUTPUT HIGH
+define HAL_LED_ON 0
