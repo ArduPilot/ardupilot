@@ -42,6 +42,7 @@
 #include "SIM_QMC5883L.h"
 #include "SIM_RF_Benewake_TFMiniPlus.h"
 #include "SIM_Temperature_MCP9600.h"
+#include "SIM_Temperature_MLX90614.h"
 #include "SIM_Temperature_SHT3x.h"
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_Temperature_TSYS03.h"
@@ -97,6 +98,9 @@ static TSYS03 tsys03;
 #endif
 #if AP_SIM_TEMPERATURE_MCP9600_ENABLED
 static MCP9600 mcp9600;
+#endif
+#if AP_SIM_TEMPERATURE_MLX90614_ENABLED
+static MLX90614 mlx90614;
 #endif
 #if AP_SIM_ICM40609_ENABLED
 static ICM40609 icm40609;
@@ -162,6 +166,9 @@ struct i2c_device_at_address {
 #if AP_SIM_TEMPERATURE_MCP9600_ENABLED
     { 0, 0x60, mcp9600 }, // 0x60 is low address
 #endif
+#if AP_SIM_TEMPERATURE_MLX90614_ENABLED
+    { 0, 0x5A, mlx90614 },
+#endif
 #if AP_SIM_MAXSONAR_I2C_XL_ENABLED
     { 0, 0x71, maxsonari2cxl_2 }, // RNGFNDx_TYPE = 2, RNGFNDx_ADDR = 113
 #endif
@@ -187,7 +194,7 @@ struct i2c_device_at_address {
     { 1, 0x42, ina3221 },
 #endif
 #if AP_SIM_TEMPERATURE_TSYS01_ENABLED
-    { 1, 0x77, tsys01 },
+    { 0, 0x77, tsys01 },
 #endif
 #if AP_SIM_BATT_MONITOR_SMBUS_ROTOYE_ENABLED
     { 1, 0x0B, rotoye },        // Rotoye: BATTx_MONITOR 19, BATTx_I2C_ADDR 13
