@@ -143,6 +143,23 @@ void Scheduler::delay_microseconds(uint16_t usec)
     } while (true);
 }
 
+/*
+  delay from AP_InertialSensor wait for IMU sample
+ */
+void Scheduler::delay_microseconds_boost(uint16_t usec)
+{
+    if (in_main_thread() && !hal.util->get_soft_armed() && usec >= 500) {
+        const uint32_t start_us = AP_HAL::micros();
+        call_delay_cb();
+        const uint32_t dt_us = AP_HAL::micros() - start_us;
+        if (dt_us >= usec) {
+            return;
+        }
+        usec -= dt_us;
+    }
+    delay_microseconds(usec);
+}
+
 void Scheduler::delay(uint16_t ms)
 {
     uint32_t start = AP_HAL::millis();
