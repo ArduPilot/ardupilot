@@ -803,6 +803,109 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         return (cx, cy), R
 
+    def ArcSplineAggro(self):
+        '''a diving arc and spline that ask for more than 1g downward stay upright without PSC_TVEC_EN'''
+        self.aggro_dive_cases(0)
+
+    def ArcSplineAggroTV(self):
+        '''the same dives with PSC_TVEC_EN point the thrust downward to fly them'''
+        self.aggro_dive_cases(1)
+
+    def aggro_dive_cases(self, tvec):
+        self.set_parameters({
+            "PSC_TVEC_EN": tvec,
+            "AUTO_OPTIONS": 3,
+            "WP_SPD": 30,
+            "WP_SPD_UP": 20,
+            "WP_SPD_DN": 30,
+            "WP_ACC": 10,
+            "WP_ACC_CNR": 20,
+            "WP_ACC_Z": 15,
+            # WP_JERK is only read when Auto starts, so it is set before the mission
+            "WP_JERK": 30,
+            "ATC_ANGLE_MAX": 80,
+        })
+        self.reboot_sitl()
+
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        TO = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        SPL = mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT
+        RTL = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+
+        # A 180 degree arc of radius 10 m descending 180 m is a path 80 degrees from
+        # level, and WP_ACC_Z 15 along it asks for 1.5g downward; the spline flies the
+        # same geometry.  Pointing the thrust downward is the only way to fly either.
+        cases = [
+            ("arc dive", [
+                (TO, 0, 0, 200),
+                (WP, 120, 60, 200),
+                (WP, 120, 0, 200),
+                (ARC, 100, 0, 20, {"p1": -180}),
+                (RTL, 0, 0, 0),
+            ]),
+            ("spline dive", [
+                (TO, 0, 0, 200),
+                (WP, 120, 60, 200),
+                (WP, 120, 0, 200),
+                (SPL, 117.07, -7.07, 155.0),
+                (SPL, 110.0, -10.0, 110.0),
+                (SPL, 102.93, -7.07, 65.0),
+                (SPL, 100.0, 0.0, 20.0),
+                (RTL, 0, 0, 0),
+            ]),
+        ]
+
+        for (name, items) in cases:
+            self.start_subtest(name)
+            # cos(roll)cos(pitch) is the vertical component of the thrust axis: negative is
+            # thrust pointing downward, and unlike Euler roll it does not fold at the apex
+            state = {"active": False, "min_cos": 1.0, "min_alt": None, "climb": 0.0, "att_n": 0}
+
+            def hook(mav, m):
+                if not state["active"]:
+                    return
+                if m.get_type() == 'ATTITUDE':
+                    state["att_n"] += 1
+                    state["min_cos"] = min(state["min_cos"], math.cos(m.roll) * math.cos(m.pitch))
+                elif m.get_type() == 'GLOBAL_POSITION_INT':
+                    alt = m.relative_alt * 0.001
+                    state["min_alt"] = alt if state["min_alt"] is None else min(state["min_alt"], alt)
+                elif m.get_type() == 'VFR_HUD':
+                    state["climb"] = m.climb
+            # each case has its own hook, removed when its context is popped
+            self.context_push()
+            self.install_message_hook_context(hook)
+            self.change_mode('STABILIZE')
+            self.start_flying_simple_relhome_mission(items)
+            self.wait_current_waypoint(4, timeout=300)
+            state["active"] = True
+            # the RTL that follows the dive; the inserted home item makes it seq len(items).
+            # Keep watching until the descent is arrested, so the end of the dive's stop counts
+            self.wait_current_waypoint(len(items), timeout=300)
+            tstart = self.get_sim_time()
+            while state["climb"] < -0.5 and self.get_sim_time_cached() - tstart < 30:
+                self.assert_receive_message('VFR_HUD')
+            if state["climb"] < -0.5:
+                raise NotAchievedException("%s: still descending %.1f m/s 30 s into RTL" % (name, -state["climb"]))
+            state["active"] = False
+            self.wait_disarmed(timeout=180)
+            self.context_pop()
+            # a check on samples that never arrived would pass
+            if state["att_n"] == 0 or state["min_alt"] is None:
+                raise NotAchievedException("%s: no attitude or position received during the dive" % name)
+            self.progress("%s: min cos(roll)cos(pitch) %.3f, min alt %.1f m" %
+                          (name, state["min_cos"], state["min_alt"]))
+            if tvec:
+                if state["min_cos"] > -0.5:
+                    raise NotAchievedException("%s: thrust never pointed downward (min %.3f)" % (name, state["min_cos"]))
+            elif state["min_cos"] < 0:
+                raise NotAchievedException("%s: thrust pointed downward without PSC_TVEC_EN (min %.3f)" %
+                                           (name, state["min_cos"]))
+            # the dive ends 20 m up, and the stop must not carry it to the ground
+            if state["min_alt"] < 5:
+                raise NotAchievedException("%s: dive ended at %.1f m" % (name, state["min_alt"]))
+
     def ArcWaypointPlaneParam(self):
         '''ARC_WAYPOINT param2 round trips for each plane rotation and rejects anything else'''
         ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
@@ -19658,6 +19761,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.WPArcs2,
             self.WPArcStartWaypoint,
             self.DoJumpToDoCommand,
+            self.ArcSplineAggro,
+            self.ArcSplineAggroTV,
             self.ArcWaypointPlaneParam,
             self.BatteryFailsafeBrakeLandNoGPS,
             self.AC_Avoidance_Proximity,
