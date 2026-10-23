@@ -24,10 +24,15 @@ local STEST_PCT       = bind_add_param('PCT',           2, 100)
 local STEST_PWM_MIN   = bind_add_param('PWM_MIN',       3, 1000)
 local STEST_PWM_MAX   = bind_add_param('PWM_MAX',       4, 2000)
 local STEST_FREQ      = bind_add_param('FREQ',          5, 1)
+-- Use a RC transmitter to send HIGH on this channel to kill the output.
+local STEST_KILL_CHAN = bind_add_param('KILL_CHAN',     6, 0)
+
+local kill_active = false
 
 function update()
    local chan = STEST_CHAN:get()
    local freq = STEST_FREQ:get()
+   local kill_chan = STEST_KILL_CHAN:get()
    if chan > 0 and freq > 0 then
       local t = 0.001 * millis():tofloat()
       local pi = 3.1415
@@ -36,8 +41,32 @@ function update()
       local pwm_max = STEST_PWM_MAX:get()
       local pwm_mid = 0.5*(pwm_min+pwm_max)
       local pwm = math.floor(pwm_mid + (pwm_max-pwm_mid) * output)
+
+      -- if the kill channel is high, set the output on chan-1 to pwm_min
+      if kill_chan > 0 then
+         local kill_pwm_val = rc:get_pwm(kill_chan)
+         if kill_pwm_val > 1500 then
+            pwm = 1000
+            if not kill_active then
+               gcs:send_text(0, "Servo Slew: Kill now active")
+               kill_active = true
+            end
+         else
+            if kill_active then
+               gcs:send_text(0, "Servo Slew: Kill disabled")
+               kill_active = false
+            end
+         end
+      else
+         if kill_active then
+            gcs:send_text(0, "Servo Slew: Kill disabled")
+            kill_active = false
+         end
+      end
+      
       SRV_Channels:set_output_pwm_chan_timeout(chan-1, pwm, 100)
-      --gcs:send_text(0, string.format("pwm=%u", pwm))
+      gcs:send_text(3, string.format("pwm=%u", pwm))
+
    end
    return update, 5 -- 200Hz
 end
