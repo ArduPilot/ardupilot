@@ -8312,6 +8312,115 @@ return update()
         self.context_pop()
         self.fly_home_land_and_disarm()
 
+    def GuidedAttitudeNoGPSIsFlying(self):
+        """Keep reporting flight during GPS loss without throttle nudging."""
+        self.set_parameter('THROTTLE_NUDGE', 0)
+        self.GuidedAttitudeNoGPS()
+
+        # Check after landing so a failed assertion does not interrupt cleanup.
+        dfreader = self.dfreader_for_current_onboard_log()
+        guided_mode = self.get_mode_from_mode_mapping('GUIDED')
+        mode = None
+        gps_status = None
+        ground_alt = None
+        sim_alt = None
+        checked = 0
+        while True:
+            m = dfreader.recv_match(type=['SIM', 'GPS', 'MODE', 'STAT'])
+            if m is None:
+                break
+            if m.get_type() == 'SIM':
+                sim_alt = m.Alt
+                if ground_alt is None:
+                    # This flight starts on the ground in the flat SITL world.
+                    ground_alt = sim_alt
+            elif m.get_type() == 'GPS':
+                if m.I == 0:
+                    gps_status = m.Status
+            elif m.get_type() == 'MODE':
+                mode = m.ModeNum
+            elif (mode == guided_mode and m.Armed and
+                  gps_status is not None and gps_status < 3 and
+                  sim_alt is not None and sim_alt - ground_alt > 10):
+                # Use simulator truth, not the GPS-deprived altitude estimate.
+                checked += 1
+                if not m.isFlying:
+                    raise NotAchievedException(
+                        f"Reported not flying during GPS loss at "
+                        f"{sim_alt - ground_alt:.1f}m above the SITL ground "
+                        f"(t={m.TimeUS * 1e-6:.1f}s, probability={m.isFlyProb:.3f})")
+
+        if checked == 0:
+            raise NotAchievedException("No airborne GPS-loss status samples in the log")
+        self.progress(f"Checked {checked} airborne GPS-loss status samples")
+
+    def AutoDisarmHighAirspeedNoGPS(self):
+        """Auto-disarm on the ground with high pitot readings and no GPS."""
+        self.set_parameters({
+            'LAND_DISARMDELAY': 20,
+            'SIM_TERRAIN': 0,  # Use the same ground altitude at takeoff and touchdown.
+            # Keep the high sensor reading available instead of rejecting it.
+            'ARSPD_OPTIONS': 0,
+            'AHRS_OPTIONS': int(self.get_parameter('AHRS_OPTIONS')) | 4,
+        })
+        self.delay_sim_time(1, reason="flat SITL ground to settle")
+        ground_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+        self.takeoff(30)
+        count = self.load_generic_mission('flaps.txt')
+        self.change_mode('AUTO')
+        self.wait_distance_to_waypoint(8, 100, 10000000)
+        self.set_current_waypoint(8)
+        self.wait_current_waypoint(count - 1, timeout=300)
+        self.wait_groundspeed(0, 0.5, minimum_duration=2, timeout=180)
+        self.assert_armed()
+        height = self.get_altitude(altitude_source='SIM_STATE.alt') - ground_alt
+        if abs(height) > 1:
+            raise NotAchievedException(f"Expected touchdown, SIM height is {height:.2f}m")
+
+        # Inject pitot data, not aerodynamic wind forces.
+        self.set_parameters({'SIM_ARSPD_FAIL': 20, 'SIM_GPS1_ENABLE': 0})
+        # Allow the recent-GPS-loss exception and probability filter to settle.
+        settle_until = self.get_sim_time() + 10
+        self.wait_disarmed(timeout=45)
+        height = self.get_altitude(altitude_source='SIM_STATE.alt') - ground_alt
+        if abs(height) > 1:
+            raise NotAchievedException(f"Vehicle left the ground: SIM height is {height:.2f}m")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        sim_alt = None
+        gps_status = None
+        airspeed = None
+        checked = 0
+        while True:
+            m = dfreader.recv_match(type=['SIM', 'GPS', 'CTUN', 'STAT'])
+            if m is None:
+                break
+            if m.get_type() == 'SIM':
+                sim_alt = m.Alt
+            elif m.get_type() == 'GPS':
+                if m.I == 0:
+                    gps_status = m.Status
+            elif m.get_type() == 'CTUN':
+                airspeed = m
+            elif m.TimeUS * 1e-6 >= settle_until and m.Armed:
+                if sim_alt is None or abs(sim_alt - ground_alt) > 1:
+                    raise NotAchievedException("Missing ground-level simulator truth")
+                if gps_status is None or gps_status >= 3:
+                    raise NotAchievedException("Expected GPS loss after touchdown")
+                if airspeed is None or airspeed.AsT != 1 or airspeed.As < 15:
+                    raise NotAchievedException("High pitot reading was not used by AHRS")
+                if not m.Still:
+                    raise NotAchievedException("Expected still IMU after touchdown")
+                checked += 1
+                if m.isFlying:
+                    raise NotAchievedException(
+                        f"Reported flying on the ground with high pitot readings "
+                        f"(t={m.TimeUS * 1e-6:.1f}s, probability={m.isFlyProb:.3f})")
+
+        if checked == 0:
+            raise NotAchievedException("No settled, armed ground status samples in the log")
+        self.progress(f"Checked {checked} ground status samples with high pitot readings and no GPS")
+
     def ScriptStats(self):
         '''test script stats logging'''
         self.context_push()
@@ -11125,6 +11234,8 @@ return update()
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
             self.MinThrottle,
             self.GuidedAttitudeNoGPS,
+            self.GuidedAttitudeNoGPSIsFlying,
+            self.AutoDisarmHighAirspeedNoGPS,
             self.ScriptStats,
             self.SetHomeAltChange2,
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
