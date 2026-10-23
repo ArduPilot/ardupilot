@@ -38,7 +38,7 @@ class VehicleInfo(object):
             # SITL can resolve this frame's model and defaults by itself
             ret["frame"] = frame
         else:
-            for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane", "airsim"]:
+            for p in ["octa", "tri", "y6", "firefly", "heli", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane", "airsim"]:
                 if frame.startswith(p):
                     ret = self.options[vehicle]["frames"][p]
                     break
