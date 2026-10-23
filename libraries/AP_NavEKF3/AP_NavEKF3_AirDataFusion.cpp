@@ -108,7 +108,6 @@ void NavEKF3_core::FuseAirspeed()
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         const bool isConsistent = (tasTestRatio < 1.0f) || badIMUdata;
-        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
         if (!isConsistent) {
             lastTasFailTime_ms = imuSampleTime_ms;
         } else {
@@ -157,6 +156,10 @@ void NavEKF3_core::SelectTasFusion()
 
     // get true airspeed measurement
     readAirSpdData();
+
+    // Declare a timeout if airspeed has not been fused for too long.
+    tasTimeout = (lastTasPassTime_ms == 0) ||
+                 ((imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms);
 
     // if the filter is initialised, wind states are not inhibited and we have data to fuse, then perform TAS fusion
 
