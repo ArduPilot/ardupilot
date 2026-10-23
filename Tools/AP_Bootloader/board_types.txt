@@ -701,6 +701,11 @@ AP_HW_Viima-WH7-v3                   7163
 AP_HW_TYKHO_TLS7V2                   7170
 AP_HW_TYKHO_TLS7-Wing                7171
 
+# IDs 7180-7189 reserved for Raspberry Pi
+AP_HW_RPI_UAVFC                      7180
+AP_HW_RASPBERRYPI_PICO2              7181
+AP_HW_RASPBERRYPI_LAUREL             7182
+
 # please fill gaps in the above ranges rather than adding past ID #7199
 
 
