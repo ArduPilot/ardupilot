@@ -590,6 +590,17 @@ bool AP_NavEKF_Source::wheel_encoder_enabled(void) const
     return false;
 }
 
+// return true if optical flow is enabled on any source
+bool AP_NavEKF_Source::optflow_enabled(void) const
+{
+    for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
+        if (_source_set[i].velxy == SourceXY::OPTFLOW) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // returns active source set
 uint8_t AP_NavEKF_Source::get_active_source_set() const
 {

@@ -772,7 +772,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional EKF behaviour
-    // @Description: EKF optional behaviour. Bit 0 (JammingExpected): Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad position estimate. Bit 1 (Manual lane switching): DANGEROUS – If enabled, this disables automatic lane switching. If the active lane becomes unhealthy, no automatic switching will occur. Users must manually set EK3_PRIMARY to change lanes. No health checks will be performed on the selected lane. Use with extreme caution.  Bit 2 (Optflow may use terrain alt): Terrain SRTM data will be used if the vehicle climbs above the rangefinder's range allowing optical flow to be used at higher altitudes. Bit 3 (AGL KF for optflow scaling): Use a 2-state IMU-aided AGL Kalman filter (height + vertical velocity, fused with rangefinder) to compute the height-above-ground used for optical flow velocity scaling, instead of terrainState-pd. This decouples optical flow scaling from errors in the main filter's vertical position state.
+    // @Description: EKF optional behaviour. Bit 0 (JammingExpected): Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad position estimate. Bit 1 (Manual lane switching): DANGEROUS - If enabled, this disables automatic lane switching. If the active lane becomes unhealthy, no automatic switching will occur. Users must manually set EK3_PRIMARY to change lanes. No health checks will be performed on the selected lane. Use with extreme caution.  Bit 2 (Optflow may use terrain alt): Above the rangefinder's range, use terrain SRTM data directly as the height of the ground, including with no height source, and lift the optical flow height limit while it is available. Without this bit, the terrain data is used only for the shape of the ground, anchored to the height the rangefinder last measured. Bit 3 (AGL KF for optflow scaling): Use a 2-state IMU-aided AGL Kalman filter (height + vertical velocity, fused with rangefinder) to compute the height-above-ground used for optical flow velocity scaling, instead of terrainState-pd. This decouples optical flow scaling from errors in the main filter's vertical position state.
     // @Bitmask: 0:JammingExpected, 1:ManualLaneSwitching, 2:Optflow may use terrain alt, 3:AGL KF for optflow scaling
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
@@ -931,6 +931,30 @@ bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core) const
     return coreRelativeErrors[new_core] < coreRelativeErrors[current_core];
 }
 
+#if EK3_FEATURE_OPTFLOW_FUSION && AP_RANGEFINDER_ENABLED
+// Above the range finder's reach flow navigation runs on the terrain database or on assumed
+// flat ground, and flow velocity is out by their height error over the height: SRTM's
+// relative error of about 6 m is 30% of 20 m. Nothing can be done about it in flight, so
+// warn while disarmed, checking until a late range finder such as DroneCAN has appeared
+void NavEKF3::checkFlowRangeWarning(void)
+{
+    const uint32_t now_ms = dal.millis();
+    if (flowRangeWarned || dal.get_armed() || (now_ms - flowRangeCheck_ms < 5000)) {
+        return;
+    }
+    flowRangeCheck_ms = now_ms;
+    const auto *rng = dal.rangefinder();
+    if (!sources.optflow_enabled() || rng == nullptr || !rng->has_orientation(ROTATION_PITCH_270)) {
+        return;
+    }
+    const float rngMax = rng->max_distance_orient(ROTATION_PITCH_270);
+    if (rngMax < 20.0f) {
+        flowRangeWarned = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3: rangefinder max %.0fm, flow above may drift", rngMax);
+    }
+}
+#endif
+
 /* 
   Update Filter States - this should be called whenever new IMU data is available
   Execution speed governed by SCHED_LOOP_RATE
@@ -957,6 +981,10 @@ void NavEKF3::UpdateFilter(void)
         }
         core[i].UpdateFilter(allow_state_prediction);
     }
+
+#if EK3_FEATURE_OPTFLOW_FUSION && AP_RANGEFINDER_ENABLED
+    checkFlowRangeWarning();
+#endif
 
     // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
     // Don't start running the check until the primary core has started returned healthy for at least 10 seconds to avoid switching
@@ -1776,11 +1804,6 @@ void NavEKF3::writeTerrainData(float alt_m)
 #if EK3_FEATURE_OPTFLOW_SRTM
     // write altitude to DAL
     dal.writeTerrainData(alt_m);
-
-    // exit immediately if feature is not enabled
-    if (!option_is_enabled(Option::OptflowMayUseTerrainAlt)) {
-        return;
-    }
 
     // send to each core
     if (core) {
