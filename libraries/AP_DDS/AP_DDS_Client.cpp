@@ -421,6 +421,19 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
         msg.transforms_size++;
     }
 
+    // Add in transform from base_link_ned to base_link for the IMU topic (NED to ENU)
+    update_topic(msg.transforms[msg.transforms_size].header.stamp);
+    STRCPY(msg.transforms[msg.transforms_size].header.frame_id, BASE_LINK_FRAME_ID);
+    STRCPY(msg.transforms[msg.transforms_size].child_frame_id, BASE_LINK_NED_FRAME_ID);
+    msg.transforms[msg.transforms_size].transform.translation.x = 0.0;
+    msg.transforms[msg.transforms_size].transform.translation.y = 0.0;
+    msg.transforms[msg.transforms_size].transform.translation.z = 0.0;
+    msg.transforms[msg.transforms_size].transform.rotation.x = HALF_SQRT_2;
+    msg.transforms[msg.transforms_size].transform.rotation.y = HALF_SQRT_2;
+    msg.transforms[msg.transforms_size].transform.rotation.z = 0.0;
+    msg.transforms[msg.transforms_size].transform.rotation.w = 0.0;
+    msg.transforms_size++;
+
 }
 #endif // AP_DDS_STATIC_TF_PUB_ENABLED
 
