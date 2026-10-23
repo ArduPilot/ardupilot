@@ -34,6 +34,10 @@
 #include <AP_HAL_SITL/HAL_SITL_Class.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL_SITL/SITL_SwarmInfo.h>
+#endif
+
 using namespace SITL;
 
 extern const AP_HAL::HAL& hal;
@@ -263,7 +267,153 @@ void Aircraft::time_advance()
     // we only advance time if it hasn't been advanced already by the
     // backend
     if (last_time_us == time_now_us) {
-        time_now_us += frame_time_us;
+        uint64_t step_us = frame_time_us;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+        /*
+          under the adaptive rate governor the commanded speedup is a
+          CONSTRAINT, not a target: simulated time is slaved to the
+          wall clock so achieved speedup equals the commanded value by
+          construction, on any hardware. Each frame's timestep
+          stretches by exactly the current schedule deficit - on a
+          host with headroom the deficit is zero and the nominal
+          timestep (and the pacing sleeps) are untouched; on a host
+          that cannot keep up, granularity degrades in real time by
+          precisely the amount required and time never falls behind.
+          The per-step rotation clamp in update_dynamics() keeps the
+          integration bounded at any stretched timestep. The stretch
+          is capped per frame so a single OS stall smears over many
+          frames instead of one giant step.
+        */
+        static int8_t slaved = -1;
+        if (slaved == -1) {
+            slaved = getenv("SITL_ADAPTIVE_RATE") != nullptr;
+        }
+        static bool engaged;
+        static uint64_t epoch_wall_us, epoch_sim_us;
+        if (slaved == 1 && !engaged) {
+            // the published epoch IS the engagement signal: the armed
+            // instant is transient (flags flicker around crashes and
+            // relands), and a member that misses it must still adopt
+            // the cluster schedule the moment one exists - a
+            // non-engaged member crawling at natural pace beside
+            // slaved peers was measured at 54,000 sim-seconds of skew
+            uint64_t w = 0, t = 0;
+            if (hal_sitl.get_sitl_state()->
+                    _shared_mem.peek_slave_epoch(w, t)) {
+                epoch_wall_us = w;
+                epoch_sim_us = t;
+                engaged = true;
+                ::printf("SIM: wall-slaved schedule engaged: adopted "
+                         "existing cluster epoch\n");
+            }
+        }
+        if (slaved == 1 && !engaged &&
+            hal_sitl.get_sitl_state()->_shared_mem.all_members_armed()) {
+            // the schedule engages when EVERY cluster member is armed,
+            // and stays engaged: boot, configuration and arming are
+            // wall-bound interactive work, and slaving time through
+            // them makes every sim-paced wait (parameter round-trips,
+            // arming checks, EKF settling) expire in wall-instants -
+            // and one armed member racing ahead drags the still-unarmed
+            // rest through catch-up they cannot sustain mid-takeoff.
+            // From the moment the whole formation flies, the commanded
+            // speedup is guaranteed.
+            engaged = true;
+            ::printf("SIM: wall-slaved schedule engaged: all cluster "
+                     "members armed (own soft_armed=%u)\n",
+                     (unsigned)hal.util->get_soft_armed());
+        }
+        slave_engaged = (slaved == 1 && engaged);
+        if (slaved == 1 && engaged) {
+            const uint64_t wall_us = get_wall_time_us();
+            if (epoch_wall_us == 0) {
+                // ONE schedule for the whole cluster: the first member
+                // to get here publishes the epoch into the shared
+                // segment and everyone slaves to that single timeline.
+                // Per-member epochs would pin members to permanently
+                // offset schedules, and a slaved member re-stretches
+                // over every barrier wait - measured as tens of
+                // thousands of sim-seconds of skew.
+                uint64_t w = wall_us, t = time_now_us;
+                if (hal_sitl.get_sitl_state()->
+                        _shared_mem.get_or_set_slave_epoch(w, t)) {
+                    epoch_wall_us = w;
+                    epoch_sim_us = t;
+                } else {
+                    // not clustered (or segment gone): local epoch
+                    epoch_wall_us = wall_us;
+                    epoch_sim_us = time_now_us;
+                }
+            }
+            /*
+              the schedule targets 5% ABOVE the commanded speedup:
+              measurement and stretch-cap losses otherwise leave a
+              converged run reading ~95% forever. 95% is a FAIL,
+              100% is good, 105% is margin.
+            */
+            static int8_t margin_seeded = -1;
+            if (margin_seeded == -1) {
+                margin_seeded = 1;
+                /*
+                  the margin scales with the commanded speedup:
+                  margin% = speedup/5, so 20% at 100x, 10% at 50x,
+                  4% at 20x - higher speedups accumulate more
+                  measurement and stretch-cap loss to cover (the
+                  original speedup/10 law under-resolved ~11% short
+                  in practice). SITL_SPEEDUP_MARGIN (percent)
+                  overrides.
+                */
+                slave_margin_floor = constrain_float(
+                    target_speedup * 0.002f, 0.0f, 0.30f);
+                const char *m = getenv("SITL_SPEEDUP_MARGIN");
+                if (m != nullptr) {
+                    slave_margin_floor = constrain_float(
+                        atof(m) * 0.01f, 0.0f, 0.5f);
+                }
+                slave_margin = slave_margin_floor;
+            }
+            const uint64_t scheduled_sim_us = epoch_sim_us +
+                (uint64_t)((wall_us - epoch_wall_us) *
+                           (double)target_speedup *
+                           (1.0 + slave_margin));
+            if (scheduled_sim_us > time_now_us + step_us) {
+                const uint64_t deficit_us =
+                    scheduled_sim_us - (time_now_us + step_us);
+                // the stretch cap grows smoothly with height: ground contact demands
+                // nearly nominal frames, altitude tolerates coarser steps, and a hard
+                // band edge put a 2.5x cadence cliff mid-climb vehicles oscillated on
+                /*
+                  dense frames near the ground AND whenever the
+                  attitude is upset: the ramp starts at 10m (climbing
+                  through 3-5m at a 9ms step put the takeoff transient
+                  inside the measured instability band and copters
+                  tumbled at full throttle), and a tilt beyond ~30
+                  degrees snaps the cap back to dense regardless of
+                  height - a tumble is the plant demanding fidelity,
+                  and recovery at a coarse step only feeds it.
+                */
+                /*
+                  ceiling +5ms: zero-order-held aerodynamic forces at
+                  20ms steps pumped energy into the plane (1.6km above
+                  its LOITER target, still climbing 3 m/s against a
+                  protesting TECS - the tamed remnant of the old
+                  escaped-the-atmosphere failures). With the nominal
+                  rate floored at 100Hz the ceiling costs almost no
+                  throughput, and the aero bias shrinks fourfold.
+                */
+                const float agl =
+                    constrain_float(hagl() - 10.0f, 0.0f, 30.0f);
+                uint64_t stretch_cap_us =
+                    1000 + (uint64_t)(agl * (4000.0f / 30.0f));
+                if (dcm.c.z < 0.85f) {
+                    stretch_cap_us = 1000;
+                }
+                step_us += MIN(deficit_us, stretch_cap_us);
+            }
+        }
+#endif
+        effective_frame_time_us = step_us;
+        time_now_us += step_us;
     }
     last_time_us = time_now_us;
     if (use_time_sync) {
@@ -288,33 +438,246 @@ void Aircraft::adjust_frame_time(float new_rate)
     rate_hz = new_rate;
 }
 
-/*
-   try to synchronise simulation time with wall clock time, taking
-   into account desired speedup
-   This tries to take account of possible granularity of
-   get_wall_time_us() so it works reasonably well on windows
-*/
+// try to synchronise simulation time with wall clock time, taking into
+// account desired speedup, allowing for get_wall_time_us() granularity
+// (notably on Windows)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+// runtime physics-rate governor, evaluated once per wall-time
+// reporting interval from sync_frame_time()
+void Aircraft::adaptive_rate_governor(const uint32_t now_ms)
+{
+    // runtime governor (SITL_ADAPTIVE_RATE=1): trades physics frame rate
+    // for achieved speedup, restoring fidelity with headroom; the
+    // achieved-vs-rate curve is non-monotonic per host, so measure at runtime
+    static int8_t adaptive = -1;
+    if (adaptive == -1) {
+        adaptive = getenv("SITL_ADAPTIVE_RATE") != nullptr;
+    }
+    if (adaptive == 1 && sitl != nullptr && slave_engaged) {
+        /*
+          track the nominal frame rate to MEASURED throughput so the
+          stretch stays near zero in steady state: the vehicle then
+          runs self-consistently at whatever rate the host affords
+          (the regime the governed campaign proved flyable down to
+          50Hz) while the wall-slaved stretch covers transients and
+          guarantees the schedule. Pinning nominal at a rate the host
+          cannot deliver left every frame stretched - nominal !=
+          actual - and vehicle-side constants that assume the nominal
+          rate (gyro filtering above all) degraded the attitude loop
+          into a full-throttle tumble.
+        */
+        static uint32_t last_track_ms;
+        /*
+          track slowly, and never during takeoff/landing: the nominal
+          rate re-derives the vehicle's filter and controller
+          constants, and re-tuning a copter every 2s from a
+          thermally-noisy fps reading destabilised exactly the
+          delicate phases - solo (steady fps) flew at the same
+          timestep the cluster (swinging fps) bounced at.
+        */
+        if (now_ms - last_track_ms > 4000 && hagl() > 10.0f) {
+            last_track_ms = now_ms;
+            if (achieved_rate_hz > 1 && target_speedup >= 1) {
+                /*
+                  the law: achieved speedup = fps / nominal rate, so
+                  the nominal rate that delivers the COMMANDED speedup
+                  on this host is measured fps divided by it. Floored
+                  at 50Hz - the proven edge of formation flight - so a
+                  host too weak even for that runs at the floor with
+                  the stretch covering the (bounded) shortfall.
+                */
+                /*
+                  floor 100Hz: measured tonight, a copter at 50Hz/21ms
+                  goes inverted on takeoff - the flyable floor is
+                  ~10ms. Below the floor the gate reports the honest
+                  shortfall; the only true fixes are cheaper
+                  iterations or a cooler host.
+                */
+                /*
+                  track against the MARGIN-INCLUSIVE schedule: the
+                  slaved clock demands target*(1+margin), and tracking
+                  to bare target left every frame stretched by exactly
+                  the margin fraction - a permanent nominal-vs-actual
+                  gap that degraded the plane's rate-derived control
+                  into an unbounded climb (per-sub-step aero
+                  re-evaluation did NOT fix it; this consistency did).
+                */
+                float track_hz = constrain_float(
+                    achieved_rate_hz /
+                        (target_speedup * (1.0f + slave_margin)),
+                    100.0f, 1200.0f);
+                /*
+                  asymmetric damping: converge fast while far from the
+                  operating point (10%/10s from the boot rate took
+                  minutes - longer than an entire run), fine-tune
+                  gently once within 25% of it
+                */
+                static bool first_track = true;
+                if (!first_track) {
+                    const float cur = sitl->loop_rate_hz.get();
+                    const float lo = (track_hz < cur * 0.75f)
+                                         ? cur * 0.75f : cur * 0.9f;
+                    track_hz = constrain_float(track_hz, lo, cur * 1.1f);
+                }
+                // the first step jumps straight to the operating
+                // point: walking down from the boot rate spent the
+                // whole run budget mid-descent
+                first_track = false;
+                sitl->loop_rate_hz.set(track_hz);
+            }
+        }
+    } else if (adaptive == 1 && sitl != nullptr) {
+        /*
+          un-slaved (the wall-bound prelude, boot to group-arm):
+          vehicle HEALTH outranks throughput here, so the frame rate
+          is simply pinned at 3x the loop rate - the proven arming
+          and flight sweet spot, and comfortably above the 2x line
+          under which ArduPilot refuses to arm (a governor that once
+          descended past it deadlocked a CI run at 9Hz frames). The
+          wall-slaved schedule takes over from the moment of
+          engagement.
+        */
+        static bool prelude_rate_set;
+        if (!prelude_rate_set && hal.scheduler->is_system_initialized()) {
+            prelude_rate_set = true;
+            float loop_hz = 400;
+            AP_Scheduler *sched = AP_Scheduler::get_singleton();
+            if (sched != nullptr) {
+                loop_hz = sched->get_loop_rate_hz();
+            }
+            const float start_hz =
+                constrain_float(3.0f * loop_hz, 400.0f, 1200.0f);
+            sitl->loop_rate_hz.set(start_hz);
+            ::printf("SIM: adaptive rate: prelude at %.0fHz\n",
+                     (double)start_hz);
+        }
+    }
+}
+#endif  // HAL_BOARD_SITL && !HAL_BUILD_AP_PERIPH
+
 void Aircraft::sync_frame_time(void)
 {
     frame_counter++;
     uint64_t now = get_wall_time_us();
     uint64_t dt_us = now - last_wall_time_us;
 
-    const float target_dt_us = 1.0e6/(rate_hz*target_speedup);
+    /*
+      under the adaptive rate governor, pace to 2% ABOVE the commanded
+      speedup: the pacer is a hard ceiling, so a host paced to exactly
+      the commanded rate measures fractionally below it forever
+      (99.x%) no matter how much headroom it has - the governor then
+      keeps sacrificing physics rate chasing a value the pacer will
+      never let it reach. 2% of overspeed lets a converged host measure
+      at or above the commanded rate; the governor's thresholds keep
+      the real operating point within a couple of percent of it.
+    */
+    static int8_t adaptive_pacing = -1;
+    if (adaptive_pacing == -1) {
+        adaptive_pacing = getenv("SITL_ADAPTIVE_RATE") != nullptr;
+    }
+    const float pacing_speedup =
+        adaptive_pacing == 1 ? target_speedup * 1.10f : target_speedup;
+    const float target_dt_us = 1.0e6/(rate_hz*pacing_speedup);
 
     // accumulate sleep debt if we're running too fast
     sleep_debt_us += target_dt_us - dt_us;
 
-    if (sleep_debt_us < -1.0e5) {
-        // don't let a large negative debt build up
-        sleep_debt_us = -1.0e5;
+    /*
+      the debt floor is the pacer's memory of how far behind wall
+      schedule the sim is. With only 100ms of memory, any OS stall
+      longer than that becomes unrepayable lost sim time - at 100x a
+      single 300ms scheduler stall permanently costs 20 sim seconds
+      against the achieved average, and on a busy CI runner such
+      stalls are constant (measured as the ~5% shortfall between
+      windows that touch the pacing ceiling and a steady-state that
+      does not). Two seconds of memory plus the 10% pacing overspeed
+      lets a stalled vehicle sprint the debt back down.
+    */
+    if (sleep_debt_us < -2.0e6) {
+        // don't let an unbounded negative debt build up
+        sleep_debt_us = -2.0e6;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    /*
+      Cluster work is decimated: it runs every Nth frame where N is the
+      requested speedup, so the number of barrier crossings per WALL
+      second is constant regardless of speedup. Synchronising every frame
+      would scale sync work linearly with speedup (40000 crossings per
+      wall-second at 100x) and, with the skew window fixed in sim time,
+      would demand microsecond wall alignment no OS can deliver - which
+      is exactly what capped clustered runs near realtime.
+
+      For the same reason the skew tolerance is fixed in WALL time (the
+      per-frame default's 5ms at 1x) and scaled into sim time by the
+      speedup: scheduling jitter is a wall-clock quantity, so the minimum
+      achievable sim-time skew is jitter multiplied by speedup, whatever
+      the code asks for. Between crossings every instance advances its
+      own clock in the original manner, entirely self-paced.
+
+      One aircraft per SITL process (as the process-global hal_sitl use
+      here already assumes), so function-statics hold the state.
+    */
+    static uint64_t cross_interval_us;
+    static uint64_t next_cross_us;
+    static bool catching_up_state;
+    if (cross_interval_us == 0) {
+        /*
+          crossings are scheduled on the SHARED sim-time grid, NOT on
+          per-vehicle frame counts: under the adaptive rate governor
+          each vehicle runs its own physics rate, so frame-count
+          schedules drift apart between members and skew accumulates
+          without bound (measured: 4s of skew where the time-based
+          grid holds under 2s). The interval scales with the speedup
+          so crossings per wall second are constant, sparse enough to
+          limit exposure to the instantaneous slowest member.
+        */
+#ifdef CYGWIN_BUILD
+        // Cygwin runs each vehicle at a fraction of a core's duty
+        // cycle, so members rarely run simultaneously and every
+        // crossing pays the currently-descheduled member's wakeup
+        // latency - measured as a 3.4x throughput loss (57x solo vs
+        // 17x clustered) where Linux loses almost nothing. A quarter
+        // of the crossings.
+        cross_interval_us = 13333ULL * (uint64_t)target_speedup;
+#else
+        cross_interval_us = 3333ULL * (uint64_t)target_speedup;
+#endif
+        cross_interval_us = MAX(cross_interval_us, (uint64_t)1000);
+    }
+    const uint64_t max_skew_us = 6ULL * cross_interval_us;
+    const bool at_crossing = time_now_us >= next_cross_us;
+    if (at_crossing) {
+        // align to the shared grid so every member crosses at the same
+        // sim times regardless of its own physics rate
+        next_cross_us = time_now_us - (time_now_us % cross_interval_us)
+                        + cross_interval_us;
+    }
+    if (at_crossing) {
+        // on a fresh start, instantly snap our clock to match peers
+        // instead of sprinting to catch up
+        hal_sitl.get_sitl_state()->_shared_mem.instant_catchup_if_new(time_now_us);
+
+        // if we've fallen behind the swarm (e.g. just rebooted), halve
+        // our sleep to run at ~2x speedup and fast-forward back into
+        // lock-step, rather than staying permanently excluded. The state
+        // persists across the frames in between, so the sprint pacing
+        // applies to every frame, not just the checked ones.
+        catching_up_state = hal_sitl.get_sitl_state()->_shared_mem.is_behind_peers(
+            time_now_us, max_skew_us);
+    }
+    const float catchup_sleep_scale = catching_up_state ? 0.5f : 1.0f;
+#else
+    const float catchup_sleep_scale = 1.0f;
+#endif
+    (void)catchup_sleep_scale;
+
     if (sleep_debt_us > min_sleep_time) {
         // sleep if we have built up a debt of min_sleep_tim
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        usleep(sleep_debt_us);
+        usleep((uint64_t)(sleep_debt_us * catchup_sleep_scale));
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        hal.scheduler->delay_microseconds(sleep_debt_us);
+        hal.scheduler->delay_microseconds((uint64_t)(sleep_debt_us * catchup_sleep_scale));
 #else
         // ??
 #endif
@@ -326,15 +689,154 @@ void Aircraft::sync_frame_time(void)
     float dt_wall = (now_ms - last_fps_report_ms) * 0.001;
     if (dt_wall > 0.01) {  // 0.01s average
         achieved_rate_hz = (frame_counter - last_frame_count) / dt_wall;
-#if 0
-        ::printf("Rate: target:%.1f achieved:%.1f speedup %.1f/%.1f\n",
-                 rate_hz*target_speedup, achieved_rate_hz,
-                 achieved_rate_hz/rate_hz, target_speedup);
-#endif
         last_frame_count = frame_counter;
         last_fps_report_ms = now_ms;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+        // clustered runs report their achieved speedup so a cluster that
+        // cannot reach the requested rate is visible on the console
+        // rather than a mystery; quiet for ordinary single-vehicle SITL
+        static uint32_t last_rate_print_ms;
+        static uint64_t last_print_sim_us;
+        static uint32_t last_print_frames;
+        if (hal_sitl.get_sitl_state()->_shared_mem.is_initialised() &&
+            now_ms - last_rate_print_ms > 2000) {
+            last_rate_print_ms = now_ms;
+            // average EFFECTIVE timestep this window: sim advanced per
+            // frame - the one number that says whether control density
+            // is flyable and where the speedup is really coming from
+            float dt_avg_ms = 0;
+            if (frame_counter > last_print_frames &&
+                last_print_sim_us != 0) {
+                dt_avg_ms = (time_now_us - last_print_sim_us) * 1.0e-3f /
+                            (frame_counter - last_print_frames);
+            }
+            /*
+              close the loop on the margin using the TRUE window
+              speedup (sim advanced over wall elapsed): a window under
+              commanded raises the margin one point, sustained
+              overshoot beyond commanded+margin trims one, clamped to
+              [base-ish, 30%]. The schedule then aims however high
+              this host needs for the reported number to meet the ask.
+            */
+            static uint64_t last_margin_wall_us;
+            const uint64_t wall_now2 = get_wall_time_us();
+            // TRUE speedup this window: sim advanced over wall elapsed.
+            // The instantaneous fps sample above is a ~10ms snapshot of
+            // a vehicle that alternates sprinting with waiting at the
+            // barrier, so it legitimately swings 70-150% of schedule
+            // window to window; this is the number that means something.
+            float win_speedup = 0;
+            if (last_margin_wall_us != 0 && wall_now2 > last_margin_wall_us) {
+                win_speedup =
+                    (float)(time_now_us - last_print_sim_us) /
+                    (float)(wall_now2 - last_margin_wall_us);
+            }
+            if (slave_engaged && win_speedup > 0) {
+                static bool short_last_window;
+                if (win_speedup < target_speedup) {
+                    /*
+                      raise proportionally to the shortfall (fixed
+                      1-point steps took 10-20x the run length to
+                      settle), but only after TWO consecutive short
+                      windows and at most 5 points per step: a single
+                      short window is as often a compile burst or
+                      scheduler hiccup as a real deficit, and chasing
+                      it drove the margin to the ceiling against a
+                      transiently-loaded host.
+                    */
+                    if (short_last_window) {
+                        const float shortfall =
+                            (target_speedup - win_speedup) /
+                            target_speedup;
+                        slave_margin = MIN(
+                            slave_margin +
+                            constrain_float(shortfall, 0.01f, 0.05f),
+                            0.50f);
+                    }
+                    short_last_window = true;
+                } else if (win_speedup > target_speedup * 1.02f) {
+                    /*
+                      trim whenever a window is comfortably above
+                      TARGET (not above target+margin, which at high
+                      margin is unreachable - that one-way ratchet
+                      railed the margin at its cap and the schedule
+                      permanently over-aimed 50%, oscillating the
+                      cluster 80-116% around an aim it could never
+                      satisfy). Proportional and gentle: the margin
+                      settles where windows straddle the target.
+                    */
+                    const float excess =
+                        (win_speedup - target_speedup) / target_speedup;
+                    slave_margin = MAX(
+                        slave_margin -
+                        constrain_float(excess * 0.5f, 0.005f, 0.02f),
+                        slave_margin_floor);
+                    short_last_window = false;
+                } else {
+                    short_last_window = false;
+                }
+            }
+            last_margin_wall_us = wall_now2;
+            last_print_sim_us = time_now_us;
+            last_print_frames = frame_counter;
+            // ~8s smoothed headline (4 windows) so the reported trend is
+            // readable; the raw 2s window stays visible in parentheses
+            static float speedup_ema;
+            if (win_speedup > 0) {
+                speedup_ema = (speedup_ema <= 0)
+                    ? win_speedup
+                    : 0.75f * speedup_ema + 0.25f * win_speedup;
+            }
+            const float headline = (speedup_ema > 0)
+                ? speedup_ema : achieved_rate_hz / rate_hz;
+            // keep under STATUSTEXT's 50 chars or the GCS line chunks
+            // into two messages ("...mgn 3" / "0%"). The target is in
+            // every harness [follow] line already.
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                          "speedup %.1fx (2s %.0fx) dt %.1fms mgn %.0f%%",
+                          headline, win_speedup,
+                          dt_avg_ms, slave_margin * 100.0f);
+            ::printf("SIM: sim_time=%.0fs achieved %.1fx of requested "
+                     "%.0fx (frames %.0fHz, dt %.1fms, %.0f fps)\n",
+                     time_now_us * 1.0e-6,
+                     headline, target_speedup, rate_hz,
+                     (double)dt_avg_ms, (double)achieved_rate_hz);
+        }
+
+        adaptive_rate_governor(now_ms);
+#endif
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    if (at_crossing) {
+    // publish basic swarm telemetry (position/velocity/heading) for peer
+    // instances to read - see AP_SITL_SwarmInfo for the payload layout.
+    {
+        AP_SITL_SwarmInfo swarm {};
+        swarm.sysid       = mavlink_system.sysid;
+        swarm.sim_time_us = time_now_us;
+        swarm.lat         = location.lat;
+        swarm.lng         = location.lng;
+        swarm.alt_cm      = location.alt;
+        swarm.vx          = velocity_ef.x;
+        swarm.vy          = velocity_ef.y;
+        swarm.vz          = velocity_ef.z;
+        float roll, pitch, yaw;
+        dcm.to_euler(&roll, &pitch, &yaw);
+        swarm.heading_deg = wrap_360(degrees(yaw));
+        hal_sitl.get_sitl_state()->_shared_mem.write_payload(&swarm, sizeof(swarm));
+    }
+
+    // When running multiple SITL instances in parallel, keep them within
+    // a bounded sim-time window of each other so inter-vehicle state is
+    // consistent. The window is wall-fixed (hence scaled by speedup, see
+    // above) and the barrier is a no-op for single-instance runs.
+    hal_sitl.get_sitl_state()->_shared_mem.sync_with_peers(time_now_us, max_skew_us);
+    }
+#endif
 }
+
 
 /* add noise based on throttle level (from 0..1) */
 void Aircraft::add_noise(float throttle)
@@ -385,7 +887,16 @@ double Aircraft::rand_normal(double mean, double stddev)
 void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 {
     bool is_smoothed = false;
-    if (use_smoothing) {
+    // under SITL_ADAPTIVE_RATE the chase filter never engages AT ALL: its
+    // 0.1s chase rings against stretched timesteps (bouncing takeoffs with
+    // it, steady flight without), and switching sources mid-run at schedule
+    // engagement fed the controllers a sensor discontinuity they convulsed
+    // on (7-13 m/s impacts right at arm). EKF type 10 reads truth directly.
+    static int8_t adaptive_mode = -1;
+    if (adaptive_mode == -1) {
+        adaptive_mode = getenv("SITL_ADAPTIVE_RATE") != nullptr;
+    }
+    if (use_smoothing && adaptive_mode != 1) {
         smooth_sensors();
         is_smoothed = true;
     }
@@ -724,48 +1235,127 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
     WITH_SEMAPHORE(pose_sem);
 
-    const float delta_time = frame_time_us * 1.0e-6f;
+    // integrate with the frame's ACTUAL timestep: when the adaptive
+    // governor stretches a frame to hold the wall-clock schedule, the
+    // physics must advance by the same amount as the clock
+    const float delta_time =
+        (effective_frame_time_us != 0 ? effective_frame_time_us
+                                      : frame_time_us) * 1.0e-6f;
 
     // update eas2tas and air density
     eas2tas = AP_Baro::get_EAS2TAS_for_alt_amsl(location.alt*0.01);
     air_density = AP_Baro::get_air_density_for_alt_amsl(location.alt*0.01);
 
-    // update rotational rates in body frame
-    gyro += rot_accel * delta_time;
+    /*
+      sub-stepped integration: the expensive parts of a frame (sensor
+      generation, scheduler coupling) run once, but the pure
+      integration below costs about a microsecond, so a frame whose
+      timestep was stretched by the wall-slaved schedule is integrated
+      as N internal sub-steps of at most 5ms each - near full physics
+      quality at any stretch (single-step Euler at large timesteps
+      turned precise loiters into 50km orbits even with the safety
+      clamps). At normal frame rates N is 1 and nothing changes. The
+      model's forces are held constant across the sub-steps
+      (zero-order hold): control latency remains at the frame rate,
+      integration accuracy does not.
+    */
+    const uint32_t nsub =
+        constrain_int32((int32_t)ceilf(delta_time / 0.005f), 1, 4);
+    const float dt_sub = delta_time / nsub;
+    const bool was_on_ground = on_ground();
+    Vector3f accel_earth;
+    // hold the body-frame force input constant across sub-steps (true
+    // ZOH): re-integrating the rewritten accelerometer view as force misread
+    // thrust by the ground-clamp amount - copters bounced on takeoff forever
+    const Vector3f accel_body_in = accel_body;
+    for (uint32_t isub = 0; isub < nsub; isub++) {
+        // update rotational rates in body frame
+        gyro += rot_accel * dt_sub;
 
-    gyro.x = constrain_float(gyro.x, -radians(2000.0f), radians(2000.0f));
-    gyro.y = constrain_float(gyro.y, -radians(2000.0f), radians(2000.0f));
-    gyro.z = constrain_float(gyro.z, -radians(2000.0f), radians(2000.0f));
+        float gyro_limit_rads = radians(2000.0f);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+        // bound the rotation per integration step so no single step
+        // can rotate more than ~45 degrees: keeps the integration
+        // bounded at ANY timestep. Inert at sub-steps of 5ms or less.
+        if (dt_sub > 0.011f) {
+            gyro_limit_rads = MIN(gyro_limit_rads,
+                                  radians(45.0f) / dt_sub);
+        }
+#endif
+        gyro.x = constrain_float(gyro.x, -gyro_limit_rads, gyro_limit_rads);
+        gyro.y = constrain_float(gyro.y, -gyro_limit_rads, gyro_limit_rads);
+        gyro.z = constrain_float(gyro.z, -gyro_limit_rads, gyro_limit_rads);
 
-    // limit body accel to 64G
-    const float accel_limit = 64*GRAVITY_MSS;
-    accel_body.x = constrain_float(accel_body.x, -accel_limit, accel_limit);
-    accel_body.y = constrain_float(accel_body.y, -accel_limit, accel_limit);
-    accel_body.z = constrain_float(accel_body.z, -accel_limit, accel_limit);
+        // limit body accel to 64G
+        const float accel_limit = 64*GRAVITY_MSS;
+        accel_body.x = constrain_float(accel_body.x, -accel_limit, accel_limit);
+        accel_body.y = constrain_float(accel_body.y, -accel_limit, accel_limit);
+        accel_body.z = constrain_float(accel_body.z, -accel_limit, accel_limit);
 
-    // update attitude
-    dcm.rotate(gyro * delta_time);
-    dcm.normalize();
+        // update attitude
+        dcm.rotate(gyro * dt_sub);
+        dcm.normalize();
 
-    Vector3f accel_earth = dcm * accel_body;
-    accel_earth += Vector3f(0.0f, 0.0f, GRAVITY_MSS);
+        accel_earth = dcm * accel_body_in;
+        accel_earth += Vector3f(0.0f, 0.0f, GRAVITY_MSS);
 
-    // if we're on the ground, then our vertical acceleration is limited
-    // to zero. This effectively adds the force of the ground on the aircraft
-    if (on_ground() && accel_earth.z > 0) {
-        accel_earth.z = 0;
+        // if we're on the ground, then our vertical acceleration is limited
+        // to zero. This effectively adds the force of the ground on the aircraft
+        if (on_ground() && accel_earth.z > 0) {
+            accel_earth.z = 0;
+        }
+
+        // new velocity vector
+        velocity_ef += accel_earth * dt_sub;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+        // translational counterpart of the rotation clamp: bound the
+        // velocity to a generous flight envelope during STRETCHED
+        // FRAMES - gated on the frame timestep, not the sub-step:
+        // sub-stepping keeps sub-steps at 5ms or less by design, so a
+        // sub-step gate would never fire (measured: a plane flew
+        // 6,600km with the envelopes silently inert).
+        if (delta_time > 0.011f) {
+            const float vmax = 120.0f;
+            const float vlen = velocity_ef.length();
+            if (vlen > vmax) {
+                velocity_ef *= vmax / vlen;
+            }
+        }
+#endif
+
+        // new position vector
+        position += (velocity_ef * dt_sub).todouble();
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+        // position envelope: a loosely-controlled vehicle at heavily
+        // stretched timesteps can drift for tens of thousands of sim
+        // seconds - one plane climbed out of the atmosphere and the
+        // barometric math died of a floating point exception; another
+        // rode the velocity cap 2,348km sideways to the same end.
+        // Bound the whole state box (NED: -z is up; 45km above, 1km
+        // below, 100km of horizontal range) so no downstream math can
+        // ever receive an unbounded input. Gated on the FRAME
+        // timestep - sub-steps are always small by design.
+        if (delta_time > 0.011f) {
+            position.z = constrain_double(position.z, -45000.0, 1000.0);
+            const double r2 = position.x * position.x +
+                              position.y * position.y;
+            const double rmax = 100000.0;
+            if (r2 > rmax * rmax) {
+                const double scale = rmax / sqrt(r2);
+                position.x *= scale;
+                position.y *= scale;
+            }
+        }
+#endif
     }
 
-    // work out acceleration as seen by the accelerometers. It sees the kinematic
-    // acceleration (ie. real movement), plus gravity
-    accel_body = dcm.transposed() * (accel_earth + Vector3f(0.0f, 0.0f, -GRAVITY_MSS));
-
-    // new velocity vector
-    velocity_ef += accel_earth * delta_time;
-
-    const bool was_on_ground = on_ground();
-    // new position vector
-    position += (velocity_ef * delta_time).todouble();
+    // acceleration as seen by the accelerometers (kinematic plus
+    // gravity), computed ONCE from the final attitude and possibly
+    // ground-clamped earth-frame acceleration, as the single-step path did
+    accel_body = dcm.transposed() *
+        (accel_earth + Vector3f(0.0f, 0.0f, -GRAVITY_MSS));
 
     // velocity relative to air mass, in earth frame
     velocity_air_ef = velocity_ef - wind_ef;
@@ -778,8 +1368,17 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
     // constrain height to the ground
     if (on_ground()) {
-        if (!was_on_ground && AP_HAL::millis() - last_ground_contact_ms > 1000) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SIM Hit ground at %f m/s", velocity_ef.z);
+        // no more than one report per 10 simulated seconds: a vehicle
+        // bouncing on its gear otherwise floods the telemetry stream,
+        // but the message must re-arm - autotests crash deliberately
+        // and wait for it long after an earlier normal touchdown
+        if (!was_on_ground &&
+            time_now_us - last_hit_ground_report_us > 10000000ULL) {
+            last_hit_ground_report_us = time_now_us;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SIM Hit ground at %f m/s (dt=%.0fms)",
+                          velocity_ef.z,
+                          (effective_frame_time_us != 0 ?
+                           effective_frame_time_us : frame_time_us) * 1.0e-3);
             last_ground_contact_ms = AP_HAL::millis();
         }
         position.z = -(ground_level + frame_height - home.alt * 0.01f + ground_height_difference());
@@ -1003,13 +1602,22 @@ void Aircraft::smooth_sensors(void)
 #endif
 
 
-    // integrate to get new attitude
-    smoothing.rotation_b2e.rotate(smoothing.gyro * delta_time);
-    smoothing.rotation_b2e.normalize();
+    // integrate the chase in sub-steps of <=10ms: explicit Euler on this
+    // 0.1s time constant is badly underdamped at ~40ms stretched frames, and
+    // the ringing sensor state threw a hovering copter down from metres up
+    const uint32_t smooth_nsub =
+        constrain_int32((int32_t)ceilf(delta_time / 0.010f), 1, 8);
+    const float dt_smooth = delta_time / smooth_nsub;
+    for (uint32_t i = 0; i < smooth_nsub; i++) {
+        // integrate to get new attitude
+        smoothing.rotation_b2e.rotate(smoothing.gyro * dt_smooth);
+        smoothing.rotation_b2e.normalize();
 
-    // integrate to get new position
-    smoothing.velocity_ef += accel_e * delta_time;
-    smoothing.position += (smoothing.velocity_ef * delta_time).todouble();
+        // integrate to get new position
+        smoothing.velocity_ef += accel_e * dt_smooth;
+        smoothing.position +=
+            (smoothing.velocity_ef * dt_smooth).todouble();
+    }
 
     smoothing.location = origin;
     smoothing.location.offset(smoothing.position.x, smoothing.position.y);
@@ -1030,7 +1638,12 @@ float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx
         // glad we have a zero-momentum system.
         pwm = servo_filter[idx].angle_pwm();
     }
-    return servo_filter[idx].filter_angle(pwm, frame_time_us * 1.0e-6);
+    // filter the actuators with the frame's ACTUAL timestep, not the
+    // nominal one: at nominal rate a stretched frame made every servo and
+    // motor respond several times slower in sim time - enough to bounce
+    return servo_filter[idx].filter_angle(
+        pwm, (effective_frame_time_us != 0 ?
+              effective_frame_time_us : frame_time_us) * 1.0e-6);
 }
 
 /*
@@ -1039,7 +1652,9 @@ float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx
  */
 float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx)
 {
-    return servo_filter[idx].filter_range(input.servos[idx], frame_time_us * 1.0e-6);
+    return servo_filter[idx].filter_range(
+        input.servos[idx], (effective_frame_time_us != 0 ?
+                            effective_frame_time_us : frame_time_us) * 1.0e-6);
 }
 
 // setup filtering for servo
