@@ -32,7 +32,9 @@
 #define APM_UART_UNBUFFERED_PRIORITY 181
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
+#ifndef APM_STARTUP_PRIORITY
 #define APM_STARTUP_PRIORITY     10
+#endif
 #define APM_SCRIPTING_PRIORITY  LOWPRIO
 
 /*
@@ -146,6 +148,11 @@ public:
       create a new thread
      */
     bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
+#if CH_CFG_SMP_MODE == TRUE
+    // core1 load in percent since the last call; -2 before there is an
+    // interval to measure, -1 without CH_DBG_STATISTICS
+    float core1_load_pct();
+#endif  // CH_CFG_SMP_MODE == TRUE
 
     // pat the watchdog
     void watchdog_pat(void);
@@ -185,6 +192,14 @@ private:
     thread_t* _io_thread_ctx;
     thread_t* _storage_thread_ctx;
     thread_t* _monitor_thread_ctx;
+#if CH_CFG_SMP_MODE == TRUE
+#if CH_DBG_STATISTICS == TRUE
+    rttime_t  _core1_last_cumulative;
+    uint64_t  _core1_last_us;
+    // accumulated idle time of core1's idle thread
+    static rttime_t core1_idle_cumulative(void);
+#endif  // CH_DBG_STATISTICS == TRUE
+#endif  // CH_CFG_SMP_MODE == TRUE
 
 #if CH_CFG_USE_SEMAPHORES == TRUE
     binary_semaphore_t _timer_semaphore;

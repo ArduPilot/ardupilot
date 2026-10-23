@@ -31,6 +31,9 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include "stm32_util.h"
+#if defined(RP2350)
+#include "../../rp2350/rp2350_core_affinity.h"
+#endif
 
 #ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
 #pragma GCC optimize("Og")
@@ -452,6 +455,60 @@ size_t mem_available(void)
 }
 
 #if CH_CFG_USE_DYNAMIC == TRUE
+#if CH_CFG_SMP_MODE == TRUE
+/*
+  the OS instance a named thread runs on, from AP_THREAD_CORE_TABLE, or NULL
+  to start it on the calling core. A core that has not started yet gives NULL.
+ */
+os_instance_t *thread_get_preferred_core(const char *name)
+{
+#ifdef AP_THREAD_CORE_TABLE
+    static const struct {
+        const char *name;
+        uint8_t core;
+    } thread_cores[] = { AP_THREAD_CORE_TABLE };
+    for (uint8_t i = 0; name != NULL && i < sizeof(thread_cores)/sizeof(thread_cores[0]); i++) {
+        if (strcmp(name, thread_cores[i].name) == 0) {
+            const uint8_t core = thread_cores[i].core;
+            return core < PORT_CORES_NUMBER ? ch_system.instances[core] : NULL;
+        }
+    }
+#else
+    (void)name;
+#endif  // AP_THREAD_CORE_TABLE
+    return NULL;
+}
+#endif  // CH_CFG_SMP_MODE
+
+/*
+  chThdCreateFromHeap(), on the core thread_get_preferred_core() gives
+ */
+static thread_t *thread_create_from_heap(memory_heap_t *heapp, size_t size,
+                                         const char *name, tprio_t prio,
+                                         tfunc_t pf, void *arg)
+{
+#if CH_CFG_SMP_MODE == TRUE
+    void *wbase = chHeapAllocAligned(heapp, size, PORT_WORKING_AREA_ALIGN);
+    if (wbase == NULL) {
+        return NULL;
+    }
+    void *wend = (uint8_t *)wbase + size;
+    thread_descriptor_t td = THD_DESCRIPTOR_AFFINITY(name, wbase, wend, prio, pf, arg,
+                                                     thread_get_preferred_core(name));
+#if CH_DBG_FILL_THREADS == TRUE
+    __thd_stackfill((uint8_t *)wbase, (uint8_t *)wend);
+#endif
+    chSysLock();
+    thread_t *tp = chThdCreateSuspendedI(&td);
+    tp->flags = CH_FLAG_MODE_HEAP;
+    chSchWakeupS(tp, MSG_OK);
+    chSysUnlock();
+    return tp;
+#else
+    return chThdCreateFromHeap(heapp, size, name, prio, pf, arg);
+#endif  // CH_CFG_SMP_MODE
+}
+
 /*
   allocate a thread on any available heap
  */
@@ -461,7 +518,7 @@ thread_t *thread_create_alloc(size_t size,
 {
     thread_t *ret;
     // first try default heap
-    ret = chThdCreateFromHeap(NULL, size, name, prio, pf, arg);
+    ret = thread_create_from_heap(NULL, size, name, prio, pf, arg);
     if (ret != NULL) {
         return ret;
     }
@@ -469,14 +526,15 @@ thread_t *thread_create_alloc(size_t size,
     // now try other heaps
     uint8_t i;
     for (i=1; i<NUM_MEMORY_REGIONS; i++) {
-        ret = chThdCreateFromHeap(&heaps[i], size, name, prio, pf, arg);
+        ret = thread_create_from_heap(&heaps[i], size, name, prio, pf, arg);
         if (ret != NULL) {
             return ret;
         }
     }
     return NULL;
 }
-#endif
+
+#endif  // CH_CFG_USE_DYNAMIC
 
 /*
   return heap information

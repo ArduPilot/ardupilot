@@ -29,8 +29,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-// F1 has a different EXTI register layout
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(STM32F1)
+// F1 has a different EXTI register layout, and RP2350 has no EXTI
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(STM32F1) && !defined(RP2350)
 #include <hal.h>
 #if defined(STM32F3) || defined(STM32F4) || defined(STM32F7)
 #define EXTI_SWIER_REG EXTI->SWIER
@@ -78,7 +78,7 @@ static bool create_interrupt_storm()
     chSysUnlock();
     return false;
 }
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(STM32F1)
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(STM32F1) && !defined(RP2350)
 
 /*
   handle a crash trigger, sent as MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN
@@ -194,7 +194,7 @@ MAV_RESULT GCS_MAVLINK::handle_crash_trigger(const mavlink_command_int_t &packet
         return MAV_RESULT_ACCEPTED;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(STM32F1)
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(STM32F1) && !defined(RP2350)
     if (is_equal(packet.param4, 104.0f)) {
         // the following text is unlikely to make it out...
         send_text(MAV_SEVERITY_WARNING,"Creating interrupt storm");

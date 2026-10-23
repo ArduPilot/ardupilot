@@ -129,6 +129,50 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
     mmcconfig.hscfg = &highspeed;
     mmcconfig.lscfg = &lowspeed;
 
+#if defined(RP2350) && defined(HAL_GPIO_PIN_SDCARD_CS)
+    /*
+     * HAL_SDCARD_SPI_HOOK maps the MMC-SPI driver's spiStart/spiSelect/
+     * spiSend/spiReceive onto the hooks at the end of this file, so these
+     * two configs never reach the PL022: spiStartHook() only compares the
+     * pointer to pick the low or high speed of the "sdcard" SPIDEV line.
+     * SPIDevice derives the clock from that line with SSPCPSR=2 and SCR
+     * capped at 255, so at 225 MHz the card runs at 439 kHz and 22.5 MHz.
+     */
+    lowspeed.ssport  = PAL_PORT(HAL_GPIO_PIN_SDCARD_CS);
+    lowspeed.sspad   = (uint16_t)PAL_PAD(HAL_GPIO_PIN_SDCARD_CS);
+    lowspeed.SSPCR0  = (234U << 8U) | 0x07U;
+    lowspeed.SSPCPSR = 4U;
+    highspeed.ssport  = PAL_PORT(HAL_GPIO_PIN_SDCARD_CS);
+    highspeed.sspad   = (uint16_t)PAL_PAD(HAL_GPIO_PIN_SDCARD_CS);
+    highspeed.SSPCR0  = (7U << 8U) | 0x07U;
+    highspeed.SSPCPSR = 2U;
+#endif  // defined(RP2350) && defined(HAL_GPIO_PIN_SDCARD_CS)
+
+
+#if defined(RP2350) && CH_CFG_SMP_MODE == TRUE
+    /*
+     * The thread core table controls which core the SPI1 bus thread runs on.
+     * sdcard_init() always runs on core0. If the SPI1 bus thread has already
+     * started SPID1 on the other core then its DMA IRQs fire there while the
+     * thread waiting here is on core0, so the bus is stopped and left for the
+     * next acquire_bus() to start again from this core.
+     *
+     * This must go through the SPIBus, not spiStop() directly. The MMC driver
+     * cannot restart the peripheral - hal_mmc_spi.c redirects spiStart to
+     * spiStartHook, which only sets the bus speed - so the restart comes from
+     * apply_config() via acquire_bus(), and that is gated on the bus's
+     * spi_started flag. Calling spiStop() behind the SPIBus left that flag set
+     * while the driver's DMA channels were freed and the peripheral put back
+     * in reset, so start_peripheral() early-returned and every later transfer
+     * was armed against a dead peripheral, timing out in do_transfer().
+     */
+    {
+        // a transfer in flight on another device must not find the bus gone
+        WITH_SEMAPHORE(device->get_semaphore());
+        static_cast<ChibiOS::SPIDevice*>(device)->stop_bus_peripheral();
+    }
+#endif  // defined(RP2350) && CH_CFG_SMP_MODE == TRUE
+
     // try the requested number of times to initialise the microSD interface
     for (uint8_t i=0; i<tries; i++) {
         mmcStart(&MMCD1, &mmcconfig);
