@@ -67,6 +67,7 @@ class ExtractFeatures(BuildScriptBase):
 
             ('AP_BEACON_ENABLED', 'AP_Beacon::AP_Beacon',),
             ('HAL_TORQEEDO_ENABLED', 'AP_Torqeedo::AP_Torqeedo'),
+            ('HAL_TORQEEDO_ENABLED', r'AP_Torqeedo::_singleton\b',),
 
             ('HAL_NAVEKF3_AVAILABLE', 'NavEKF3::NavEKF3',),
             ('HAL_NAVEKF2_AVAILABLE', 'NavEKF2::NavEKF2',),
@@ -80,6 +81,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RANGEFINDER_{type}_ENABLED', r'AP_RangeFinder_(?P<type>.*)::get_reading\b',),
             ('AP_RANGEFINDER_{type}_ENABLED', r'AP_RangeFinder_(?P<type>.*)::model_dist_max_cm\b',),
             ('AP_RANGEFINDER_{type}_ENABLED', r'AP_RangeFinder_(?P<type>.*)::handle_frame\b',),
+            ('AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED', r'AP_RangeFinder_Benewake_TFS20L::update\b',),
             ('AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED', r'AP_RangeFinder_LightWareSerial::get_reading\b',),
             ('AP_RANGEFINDER_LWI2C_ENABLED', r'AP_RangeFinder_LightWareI2C::update\b',),
             ('AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED', r'AP_RangeFinder_MaxsonarSerialLV::get_reading\b',),
@@ -90,6 +92,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED', 'AP_RangeFinder_LightWareGRF::get_reading'),
 
             ('AP_GPS_NMEA_UNICORE_ENABLED', r'AP_GPS_NMEA::parse_agrica_field',),
+            ('AP_GPS_NMEA_UNICORE_ENABLED', r'AP_GPS_NMEA::parse_versiona_field\b',),
             ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
 
             ('AP_OPTICALFLOW_ENABLED', 'AP_OpticalFlow::AP_OpticalFlow',),
@@ -110,6 +113,8 @@ class ExtractFeatures(BuildScriptBase):
             ('HAL_MSP_ENABLED', r'AP_MSP::init\b',),
             ('HAL_MSP_{type}_ENABLED', r'AP_(?P<type>.*)_MSP::update\b',),
             ('HAL_MSP_{type}_ENABLED', r'AP_(?P<type>.*)_MSP::read\b',),
+            ('HAL_MSP_SENSORS_ENABLED', r'(AP_Baro|Compass|AP_Airspeed|AP_GPS)::handle_msp\b',),
+            ('AP_BARO_MSP_ENABLED', r'AP_Baro::handle_msp\b',),
             ('HAL_WITH_MSP_DISPLAYPORT', r'AP_OSD_MSP_DisplayPort::init\b',),
             ('AP_MSP_INAV_FONTS_ENABLED', r'AP_OSD_MSP_DisplayPort::write_INAV\b',),
 
@@ -132,6 +137,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_CRSF_SCRIPTING_ENABLED', 'AP_CRSF_Telem::get_menu_event',),
             ('AP_LTM_TELEM_ENABLED', 'AP_LTM_Telem::init',),
             ('HAL_HIGH_LATENCY2_ENABLED', 'GCS_MAVLINK::handle_control_high_latency',),
+            ('HAL_HIGH_LATENCY2_ENABLED', r'GCS_MAVLINK::send_high_latency2\b',),
 
             ('AP_FRSKY_TELEM_ENABLED', 'AP::frsky_telem',),
             ('AP_FRSKY_D_TELEM_ENABLED', 'AP_Frsky_D::send',),
@@ -148,11 +154,15 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_CAMERA_ENABLED', 'AP_Camera::var_info',),
             ('AP_CAMERA_{type}_ENABLED', 'AP_Camera_(?P<type>.*)::trigger_pic',),
             ('AP_CAMERA_SEND_FOV_STATUS_ENABLED', 'AP_Camera::send_camera_fov_status'),
+            ('AP_CAMERA_SEND_FOV_STATUS_ENABLED', r'AP_Camera_Backend::send_camera_fov_status\b'),
             ('AP_CAMERA_SEND_THERMAL_RANGE_ENABLED', 'AP_Camera::send_camera_thermal_range'),
+            ('AP_CAMERA_SEND_THERMAL_RANGE_ENABLED', r'AP_Camera_Backend::send_camera_thermal_range\b'),
             ('AP_CAMERA_INFO_FROM_SCRIPT_ENABLED', 'AP_Camera_Backend::set_camera_information'),
             ('AP_CAMERA_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
 
             ('HAL_PROXIMITY_ENABLED', 'AP_Proximity::AP_Proximity',),
+            # Plane never constructs an AP_Proximity, but the library is still used via AP::proximity():
+            ('HAL_PROXIMITY_ENABLED', r'AP_Proximity::_singleton\b',),
             ('AP_PROXIMITY_{type}_ENABLED', 'AP_Proximity_(?P<type>.*)::update',),
             ('AP_PROXIMITY_CYGBOT_ENABLED', 'AP_Proximity_Cygbot_D1::update',),
             ('AP_PROXIMITY_LIGHTWARE_{type}_ENABLED', 'AP_Proximity_LightWare(?P<type>.*)::update',),
@@ -163,8 +173,12 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
             ('HAL_RALLY_ENABLED', 'AP_Rally::find_nearest_rally_point',),
             ('AP_AVOIDANCE_ENABLED', 'AC_Avoid::AC_Avoid',),
+            # Plane never constructs an AC_Avoid, but still gets the avoidance log structures:
+            ('AP_AVOIDANCE_ENABLED', ExtractFeatures.FindString('TimeUS,State,DVelX,DVelY,DVelZ,MVelX,MVelY,MVelZ,Back')),
             ('AP_AVOIDANCE_ALTHOLD_ENABLED', 'AC_Avoid::adjust_roll_pitch',),
             ('AP_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
+            # AP_OADATABASE_ENABLED defaults to AP_OAPATHPLANNER_ENABLED and is used by vehicles without a path planner:
+            ('AP_OAPATHPLANNER_ENABLED', r'AP_OADatabase::_singleton\b',),
             ('AC_PAYLOAD_PLACE_ENABLED', 'PayloadPlace::start_descent'),
             ('AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', ExtractFeatures.FindString('PayloadPlace')),
             ('AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED', 'AP_Mount_Backend::get_angle_target_to_wpnext_offset'),
@@ -196,8 +210,10 @@ class ExtractFeatures(BuildScriptBase):
 
             ('AP_GRIPPER_ENABLED', r'AP_Gripper::init\b',),
             ('HAL_SPRAYER_ENABLED', 'AC_Sprayer::AC_Sprayer',),
+            ('HAL_SPRAYER_ENABLED', r'AC_Sprayer::_singleton\b',),
             ('AP_LANDINGGEAR_ENABLED', r'AP_LandingGear::init\b',),
             ('AP_WINCH_ENABLED', 'AP_Winch::AP_Winch',),
+            ('AP_WINCH_ENABLED', r'GCS_MAVLINK::send_winch_status\b',),
             ('AP_WINCH_{type}_ENABLED', r'AP_Winch_(?P<type>.*)::update\b',),
             ('AP_RELAY_ENABLED', 'AP_Relay::init',),
             ('AP_SERVORELAYEVENTS_ENABLED', 'AP_ServoRelayEvents::update_events',),
@@ -205,14 +221,18 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RCPROTOCOL_ENABLED', r'AP_RCProtocol::init\b',),
             ('AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED', r'AP_RCProtocol_MAVLinkRadio::update_radio_rc_channels',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_byte\b',),
+            # _process_byte may be inlined; the virtual process_byte can not be:
+            ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::process_byte\b',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::process_pulse\b',),
 
             ('AP_SERVO_TELEM_ENABLED', r'AP_Servo_Telem::update\b',),
             ('AP_VOLZ_ENABLED', r'AP_Volz_Protocol::init\b',),
             ('AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', r'AP_DroneCAN::handle_actuator_status_Volz\b',),
             ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::init\b',),
+            ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::update\b',),
             ('AP_FETTEC_ONEWIRE_ENABLED', r'AP_FETtecOneWire::init\b',),
             ('AP_SBUSOUTPUT_ENABLED', 'AP_SBusOut::sbus_format_frame',),
+            ('AP_SBUSOUTPUT_ENABLED', r'AP_SBusOut::update\b',),
             ('AP_KDECAN_ENABLED', r'AP_KDECAN::update\b',),
 
             ('AP_RPM_ENABLED', 'AP_RPM::AP_RPM',),
@@ -252,6 +272,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED', r'AP_Notify::handle_play_tune'),
             ('AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED', r'AP_Notify::handle_led_control'),
             ('AP_NOTIFY_NCP5623_ENABLED', r'NCP5623::write'),
+            ('AP_NOTIFY_NCP5623_ENABLED', r'NCP5623::hw_set_rgb\b'),
             ('AP_NOTIFY_PROFILED_ENABLED', r'ProfiLED::init_ports'),
             ('AP_NOTIFY_PROFILED_SPI_ENABLED', r'ProfiLED_SPI::rgb_set_id'),
             ('AP_NOTIFY_NEOPIXEL_ENABLED', r'NeoPixel::init_ports'),
@@ -264,6 +285,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_CRASHDUMP_FLASH_ENABLED', 'crashdump_flash_start'),
             ('AP_CRASHDUMP_FATFS_ENABLED', 'crashdump_sd_init'),
             ('AP_MAVLINK_FAILURE_CREATION_ENABLED', 'GCS_MAVLINK::deadlock_sem'),
+            ('AP_MAVLINK_FAILURE_CREATION_ENABLED', r'GCS_MAVLINK::handle_crash_trigger\b'),
             ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
             ('AP_ADSB_AVOIDANCE_ENABLED', 'AP_Avoidance::init'),
 
@@ -271,21 +293,26 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'GCS_MAVLINK::handle_send_autopilot_version'),
             ('AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'GCS_MAVLINK::handle_command_request_autopilot_capabilities'),  # noqa
             ('AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'GCS_MAVLINK::send_relay_status'),
+            ('AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', r'AP_Relay::send_relay_status\b'),
             ('AP_MAVLINK_MSG_DEVICE_OP_ENABLED', 'GCS_MAVLINK::handle_device_op_write'),
             ('AP_MAVLINK_SERVO_RELAY_ENABLED', 'GCS_MAVLINK::handle_servorelay_message'),
             ('AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'GCS_MAVLINK::handle_serial_control'),
             ('AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', r'GCS_MAVLINK::handle_mission_request\b'),
+            ('AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', r'MissionItemProtocol::handle_mission_request\b'),
             ('AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED', r'GCS_MAVLINK::send_rc_channels_raw\b'),
             ('AP_MAVLINK_FTP_ENABLED', 'GCS_FTP::init'),
+            ('AP_MAVLINK_FTP_ENABLED', r'GCS_FTP::handle_file_transfer_protocol\b'),
             ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
             ('AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED', 'GCS_MAVLINK::handle_command_get_home_position'),  # noqa
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
+            ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', r'AP_Camera_Backend::send_video_stream_information\b'),
             ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
             ('AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', r'GCS_MAVLINK::send_rangefinder'),
             ('AP_MAVLINK_SIGNING_ENABLED', r'GCS_MAVLINK::load_signing_key'),
 
             ('AP_DRONECAN_HIMARK_SERVO_SUPPORT', 'AP_DroneCAN::SRV_send_himark'),
             ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', 'AP_DroneCAN::hobbywing_ESC_update'),
+            ('AP_DRONECAN_HOBBYWING_ESC_SUPPORT', r'AP_DroneCAN::handle_hobbywing_StatusMsg1\b'),
             ('COMPASS_CAL_ENABLED', 'CompassCalibrator::stop'),
             ('AP_TUNING_ENABLED', 'AP_Tuning::check_input'),
             ('AP_DRONECAN_SERIAL_ENABLED', 'AP_DroneCAN_Serial::update'),
@@ -320,8 +347,10 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_QUICKTUNE_ENABLED', r'AP_Quicktune::update'),
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
+            ('AP_CAN_LOGGING_ENABLED', r'.*&AP_CANManager::can_logging_callback>'),  # only referenced via a Functor
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
             ('AP_PLANE_CUSTOMCONTROL_ENABLED', r'Plane::run_custom_controller'),
+            ('AP_PLANE_CUSTOMCONTROL_ENABLED', r'AP_CustomControl::update\b'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
             ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
             ('AP_CPU_IDLE_STATS_ENABLED', r'AP_BoardConfig::use_idle_stats'),
