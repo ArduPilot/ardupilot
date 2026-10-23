@@ -210,6 +210,8 @@ every pause-at-a-breakpoint into a reboot).
 - `peripherals/common/AP_Hotplug.cs` — monitor command used by the launcher to
   safely unregister a peripheral and its external UART connection while the
   emulated machine is running.
+- `peripherals/common/AP_GdbTime.cs` — monitor command used by the GDB adapter
+  to keep real-time pacing across GDB halts.
 - `peripherals/stm32/AP_STM32*_RCC.cs` — register-driven STM32 clock trees for
   the F1/F3, F4/F7, H7, and L4/G4 families. Firmware oscillator, PLL,
   prescaler, and peripheral-mux writes determine UART, timer, CAN, SPI, I2C,
@@ -455,7 +457,7 @@ Tools/renode/launch.py --renode ~/project/UAV/renode/renode
 
 The **Target** tab discovers supported boards and their built ELF images,
 selects a matching bootloader when one is available, and exposes CPU pinning,
-real IOMCU, UDS, USB/DFU, CAN bus and Ethernet TAP options. The **Config** tab
+real IOMCU, UDS, USB/DFU, CAN bus, Ethernet TAP and GDB options. The **Config** tab
 expands the selected board's production `hwdef.dat` and lists its
 `SERIAL_ORDER`, `I2C_ORDER`, and `CAN_ORDER` ports. Devices can be attached
 directly to those logical ArduPilot ports; the physical MCU peripheral is shown
@@ -503,6 +505,14 @@ The runtime panel obtains status directly from Renode's monitor and shows the
 current PC, configured MIPS, actually executed MIPS, and virtual-time speedup.
 The target for paced execution is `1.00x realtime`; a lower value means the
 host is not keeping up with the selected model and workload.
+
+On Linux the **GDB** option runs the firmware under gdb in an xterm, like
+`sim_vehicle.py -D -G`. gdb continues from reset straight away, so the vehicle
+can be flown normally; interrupt with Ctrl-C to inspect threads or set
+breakpoints, then `continue`. The ELF needs debug information
+(`./waf configure --board BOARD -g`). Quitting or closing gdb leaves the
+firmware running; `build/BOARD/renode/gdb.sh` attaches again. `--gdb-port` selects the launcher's GDB port (3333 by
+default; Renode also uses the next port).
 
 ### Standalone physics sidecar
 
@@ -981,6 +991,18 @@ registry, `info threads`, `thread N`, and `thread apply all bt` show the guest
 threads and their saved Cortex-M contexts. Before that point GDB shows the
 single physical CPU. `--gdb-port` selects the public adapter port (3333 by
 default); `--renode-gdb-port` can override its private connection to Renode.
+`--gdb-continue` makes gdb continue from reset instead of waiting at the
+first instruction.
+
+Everything, including the physics lockstep, runs on virtual time, so a halted
+target also freezes the physics model and the vehicle resumes exactly where it
+stopped. Renode's real-time pacing would otherwise count the halt as lost time
+and run unthrottled until it caught up; the adapter avoids that by calling
+`emulation APResyncHostTime` (from `peripherals/common/AP_GdbTime.cs`) before
+resuming a target that has been halted. When gdb detaches, quits or is killed
+while the target is halted, the adapter resumes it, since Renode otherwise
+leaves a CPU stopped by GDB paused after the connection closes. A new gdb
+connection halts the target again.
 
 Pass `--reverse-debug` together with `--gdb` to enable reverse execution.
 Renode then takes periodic snapshots, so GDB can use `reverse-step`,
