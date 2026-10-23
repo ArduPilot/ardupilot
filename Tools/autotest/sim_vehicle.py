@@ -1815,6 +1815,10 @@ if cmd_opts.frame.startswith("gazebo") and cmd_opts.model is None:
 frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
                                       cmd_opts)
+# calibration is flagged external only so autotests skip it; SITL simulates it
+if frame_infos.get("external") and cmd_opts.model is None and cmd_opts.frame != "calibration":
+    print("WARNING: frame %s needs an external simulator and no --model was given, using model %s" %
+          (cmd_opts.frame, frame_infos["model"]))
 
 vehicle_dir = os.path.realpath(os.path.join(root_dir, cmd_opts.vehicle))
 if not os.path.exists(vehicle_dir):
