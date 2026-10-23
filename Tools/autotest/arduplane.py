@@ -1604,6 +1604,39 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.end_subtest("Completed Parachute Failsafe test")
 
+    def TakeoffModeGCSFailsafe(self):
+        '''GCS failsafe deferred in TAKEOFF mode keeps its type after the climb'''
+        self.set_parameters({
+            "FS_GCS_ENABL": 1,
+            "FS_LONG_ACTN": 1,
+            "FS_LONG_TIMEOUT": 5,
+            "RTL_AUTOLAND": 1,
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "TKOFF_ALT": 150,  # long climb: the failsafe must start well before it ends
+            "TKOFF_DIST": 3000,  # end the climb by altitude, not by distance
+        })
+        self.change_mode("TAKEOFF")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_altitude(10, 1000, relative=True)
+        self.context_collect('STATUSTEXT')
+        self.progress("Disconnecting GCS during the initial climb")
+        self.set_heartbeat_rate(0)
+        # the long failsafe starts during the climb and its action is deferred
+        self.wait_statustext("GCS Failsafe On: switched to Takeoff", check_context=True, timeout=30)
+        self.assert_mode_is("TAKEOFF")
+        # the deferred action runs once the climb is done
+        self.wait_mode("RTL", timeout=60)
+        self.wait_statustext("GCS Failsafe On: switched to RTL", check_context=True)
+        self.delay_sim_time(5, reason="failsafe to stay on while the GCS is lost")
+        # the GCS failsafe must not be re-raised as an RC one and cleared while the GCS is still lost
+        for text in "RC Long Failsafe", "Failsafe Cleared":
+            if self.statustext_count_in_collections(text) != 0:
+                raise NotAchievedException("Unexpected (%s) while the GCS is lost" % text)
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", check_context=True, timeout=30)
+        self.fly_home_land_and_disarm()
+
     def TestGripperMission(self):
         '''Test Gripper mission items'''
         self.set_parameter("RTL_AUTOLAND", 1)
@@ -10809,6 +10842,7 @@ return update()
             self.AirspeedScripting,
             self.MissionJumpTags,
             Test(self.GCSFailsafe, speedup=8),
+            self.TakeoffModeGCSFailsafe,
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.MAV_CMD_DO_AUTOTUNE_ENABLE,
             self.MAV_CMD_NAV_ALTITUDE_WAIT,
