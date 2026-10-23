@@ -50,6 +50,9 @@ void Copter::Log_Write_Control_Tuning()
     desired_rangefinder_alt_m = AP_Logger::quiet_nanf();
 #endif
 
+    Vector3f vel_ned;
+    const float climb_rate_ms = ahrs.get_velocity_NED(vel_ned) ? -vel_ned.z : pos_control->get_vel_estimate_U_ms();
+
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         time_us                 : AP_HAL::micros64(),
@@ -68,7 +71,7 @@ void Copter::Log_Write_Control_Tuning()
 #endif
         terr_alt                : terr_alt,
         target_climb_rate_ms    : target_climb_rate_ms,
-        climb_rate_ms           : pos_control->get_vel_estimate_U_ms()
+        climb_rate_ms           : climb_rate_ms
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
