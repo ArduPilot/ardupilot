@@ -1085,6 +1085,78 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 if behaviour == 2 and state["inv_yaw_rate"] > 20:
                     raise NotAchievedException("yawed at %.0f deg/s while inverted" % state["inv_yaw_rate"])
 
+    def ArcInvertedModeChange(self):
+        '''leaving Auto while the thrust points downward ends inverted thrust at once'''
+        self.set_parameters({
+            "PSC_TVEC_EN": 1,
+            "AUTO_OPTIONS": 3,
+            "WP_SPD": 30,
+            "WP_SPD_UP": 20,
+            "WP_SPD_DN": 30,
+            "WP_ACC": 10,
+            "WP_ACC_CNR": 20,
+            "WP_ACC_Z": 15,
+            "WP_JERK": 30,
+            "ATC_ANGLE_MAX": 80,
+        })
+        self.reboot_sitl()
+
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        TO = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        RTL = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+
+        # AltHold flies upright lean angles, so if inverted thrust survived the mode change
+        # its throttle law would turn a demand to descend into more upward thrust
+        self.change_mode('STABILIZE')
+        self.start_flying_simple_relhome_mission([
+            (TO, 0, 0, 200),
+            (WP, 120, 60, 200),
+            (WP, 120, 0, 200),
+            (ARC, 100, 0, 20, {"p1": -180}),
+            (RTL, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(4, timeout=300)
+        # centred, so AltHold holds height rather than asking to climb or descend
+        self.set_rc(3, 1500)
+        tstart = self.get_sim_time()
+        while True:
+            m = self.assert_receive_message('ATTITUDE')
+            if math.cos(m.roll) * math.cos(m.pitch) < 0:
+                break
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("dive never pointed the thrust downward")
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(5, reason='let AltHold settle')
+        # the dive's 30 m/s descent limit is no speed to land at
+        self.set_parameter('WP_SPD_DN', 3)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=300)
+
+        # LogEvent::INVERTED_THRUST_START and _STOP
+        dfreader = self.dfreader_for_current_onboard_log()
+        althold_us = None
+        stop_us = None
+        active = False
+        while True:
+            m = dfreader.recv_match(type=['MODE', 'EV'])
+            if m is None:
+                break
+            if m.get_type() == 'MODE' and m.Mode == 2 and althold_us is None:
+                if not active:
+                    raise NotAchievedException("inverted thrust was not active when ALT_HOLD was entered")
+                althold_us = m.TimeUS
+            elif m.get_type() == 'EV' and m.Id in (91, 92):
+                active = m.Id == 91
+                if m.Id == 92 and althold_us is not None and stop_us is None:
+                    stop_us = m.TimeUS
+        if althold_us is None or stop_us is None:
+            raise NotAchievedException("no ALT_HOLD entry and inverted thrust stop in the log")
+        delay = (stop_us - althold_us) * 1.0e-6
+        self.progress("inverted thrust stopped %.3f s after entering ALT_HOLD" % delay)
+        if delay > 0.1:
+            raise NotAchievedException("inverted thrust carried on %.3f s into ALT_HOLD" % delay)
+
     def ArcWaypointPlaneParam(self):
         '''ARC_WAYPOINT param2 round trips for each plane rotation and rejects anything else'''
         ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
@@ -19944,6 +20016,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ArcSplineAggroTV,
             self.WPArcLoop,
             self.ArcSplineYawBehaviour,
+            self.ArcInvertedModeChange,
             self.ArcWaypointPlaneParam,
             self.BatteryFailsafeBrakeLandNoGPS,
             self.AC_Avoidance_Proximity,
