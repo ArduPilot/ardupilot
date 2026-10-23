@@ -1165,7 +1165,8 @@ void AC_PosControl::D_update_controller()
     const bool thrust_down = is_positive(get_thrust_vector().z);
     const bool limit_lower = thrust_down ? _motors.limit.throttle_upper : _motors.limit.throttle_lower;
     const bool limit_upper = thrust_down ? _motors.limit.throttle_lower : _motors.limit.throttle_upper;
-    _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, limit_lower, limit_upper);
+    // the output is a Down acceleration, so the negative side is limited by the motors' upper limit
+    _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, limit_upper, limit_lower);
     _accel_target_ned_mss.z *= AP::ahrs().get_control_gain_scaler_Z();
 
     // add feed forward component
