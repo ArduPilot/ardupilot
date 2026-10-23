@@ -647,6 +647,9 @@ public:
     // Logs target and actual offset for position [m], velocity [m/s], and acceleration [m/s²].
     static void Write_PSOT(float pos_target_offset_m, float pos_offset_m, float vel_target_offset_ms, float vel_offset_ms, float accel_target_offset_mss, float accel_offset_mss);
 
+    // accessor for the PSC_RFND_FBK
+    bool rangefinder_fallback() const { return _rangefinder_fallback != 0; }
+
     // perform any required parameter conversions
     void convert_parameters();
 
@@ -725,6 +728,7 @@ protected:
     AC_PID_2D       _pid_vel_ne_m;          // XY axis velocity controller to convert target velocity (m/s) to target acceleration (m/s²)
     AC_PID_Basic    _pid_vel_d_m;           // Z axis velocity controller to convert target climb rate (m/s) to target acceleration (m/s²)
     AC_PID          _pid_accel_d_m;         // Z axis acceleration controller to convert target acceleration (in units of gravity) to normalised throttle output
+    AP_Int8         _rangefinder_fallback;  // Fallback (1) or not (0) to terrain if the rangefinder goes unhealthy
 
     // internal variables
     float       _dt_s;                      // time difference (in seconds) since the last loop time
