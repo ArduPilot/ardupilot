@@ -213,6 +213,10 @@ public:
     virtual bool set_RTS_pin(bool high) { return false; };
     virtual bool set_CTS_pin(bool high) { return false; };
 
+    // return true if this port is a USB (virtual COM) port, i.e. a
+    // physically local link rather than a serial, radio or network link
+    virtual bool is_usb(void) const { return false; }
+
     // return true requested baud on USB port
     virtual uint32_t get_usb_baud(void) const { return 0; }
 
