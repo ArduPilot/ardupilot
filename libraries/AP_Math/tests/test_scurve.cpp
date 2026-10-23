@@ -756,5 +756,110 @@ TEST(SCurveTrack, tilted_arc_velocity_matches_position_derivative)
     }
 }
 
+// A tilted arc is bounded by the tighter vertical speed limit, since it moves both up and
+// down along the path; holding only the horizontal limit, as a level helix does, would let a
+// vertical semicircle climb and descend at the full horizontal speed.
+TEST(SCurveTrack, vertical_arc_speed_held_to_vertical_limit)
+{
+    const Vector3p origin{0, 0, -50};
+    const Vector3p dest{40, 0, -50};
+
+    SCurve leg;
+    // 8 m/s horizontal, 3 up, 2 down
+    leg.calculate_track(origin, dest, M_PI, 8.0f, 3.0f, 2.0f, 5.0f, 5.0f, 10.0f, 60.0f, 30.0f, M_PI_2);
+    const LegPeak peak = drive_leg(leg, origin);
+    ASSERT_TRUE(peak.finished);
+    // the horizontal peak is at the top and the vertical one at the sides, both at path speed
+    EXPECT_GT(MAX(peak.speed_xy, peak.speed_z), 1.5f);
+    EXPECT_LT(peak.speed_xy, 2.05f);
+    EXPECT_LT(peak.speed_z, 2.05f);
+}
+
+// The acceleration reported for an arc in any plane, including the full 3D centripetal term,
+// must be the derivative of the velocity it reports.
+TEST(SCurveTrack, tilted_arc_accel_matches_velocity_derivative)
+{
+    const float rotations[] = { M_PI_4, M_PI_2, radians(120.0f) };
+    for (float rot : rotations) {
+        const Vector3p origin{0, 0, -60};
+        const Vector3p dest{40, 10, -45};
+
+        SCurve leg;
+        leg.calculate_track(origin, dest, M_PI, 20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, rot);
+
+        SCurve prev, next;
+        prev.init();
+        next.init();
+        const float dt = 0.0025f;
+        Vector3p pos;
+        Vector3f vel, accel, vel_prev;
+        bool have_prev = false;
+        bool done = false;
+        float max_err = 0.0f;
+        for (uint32_t i = 0; i < MAX_DRIVE_ITERS && !done; i++) {
+            pos = origin;
+            vel.zero();
+            accel.zero();
+            done = leg.advance_target_along_track(prev, next, 2.0f, 2.0f, false, dt, pos, vel, accel);
+            if (have_prev && vel.length() > 3.0f) {
+                max_err = MAX(max_err, ((vel - vel_prev) / dt - accel).length());
+            }
+            vel_prev = vel;
+            have_prev = true;
+        }
+        EXPECT_TRUE(done) << "arc_axis_rot_rad = " << rot;
+        EXPECT_LT(max_err, 0.05f) << "arc_axis_rot_rad = " << rot;
+    }
+}
+
+// A vertical arc on a climbing chord keeps the full bulge of the vertical plane through it,
+// on the upper side: a 180 degree arc over a 50 m chord is a semicircle of radius 25 m.
+TEST(SCurveTrack, vertical_arc_on_climbing_chord_keeps_full_bulge)
+{
+    const Vector3p origin{0, 0, -50};
+    const Vector3p dest{40, 0, -80};   // 40 m North and 30 m up, a 50 m chord
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI, 20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+    std::vector<Vector3f> path;
+    sample_path(leg, origin, path);
+    ASSERT_GT(path.size(), 100U);
+
+    // distance from the chord within the North-Down plane, positive above it
+    const Vector2f chord_unit = Vector2f{40.0f, -30.0f}.normalized();
+    float max_above = 0.0f, max_below = 0.0f;
+    for (const Vector3f &d : path) {
+        const float side = chord_unit.x * d.z - chord_unit.y * d.x;
+        max_above = MAX(max_above, -side);
+        max_below = MAX(max_below, side);
+    }
+    EXPECT_NEAR(max_above, 25.0f, 0.3f);
+    EXPECT_LT(max_below, 0.05f);
+}
+
+// Stacked waypoints a millimetre apart horizontally have no ground track to name a plane by,
+// so a rotated arc between them is flown straight rather than as a loop on whatever bearing
+// the millimetre points.
+TEST(SCurveTrack, near_vertical_chord_flies_straight)
+{
+    const Vector3p origin{0, 0, -20};
+    const Vector3p dest{0.001, 0, -70};
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI, 20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+    std::vector<Vector3f> path;
+    sample_path(leg, origin, path);
+    ASSERT_GT(path.size(), 100U);
+
+    float max_horizontal = 0.0f;
+    for (const Vector3f &d : path) {
+        max_horizontal = MAX(max_horizontal, d.xy().length());
+    }
+    EXPECT_LT(max_horizontal, 0.1f);
+    EXPECT_NEAR(path.back().z, -50.0f, 0.2f);
+}
+
 AP_GTEST_MAIN()
 int hal = 0; //weirdly the build will fail without this
