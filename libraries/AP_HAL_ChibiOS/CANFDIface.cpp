@@ -48,6 +48,7 @@
 # include <hal.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/ExpandingString.h>
+#include <GCS_MAVLink/GCS.h>
 
 # if defined(STM32H7XX) || defined(STM32G4)
 #include "CANFDIface.h"
@@ -313,24 +314,63 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
 /*
   table driven timings for CANFD
   These timings are from https://www.kvaser.com/support/calculators/can-fd-bit-timing-calculator
+  HAL_CANFD_SUPPORTED, from the hwdef CANFD_SUPPORTED line, is the maximum
+  data rate in Mbit/s this board will program.
  */
+static const struct {
+    uint8_t bitrate_mbaud;
+    uint8_t prescaler;
+    uint8_t bs1;
+    uint8_t bs2;
+    uint8_t sjw;
+    uint8_t sample_point_pct;
+} CANFD_timings[] {
+    { 1, 4, 14, 5, 5, 75},
+    { 2, 2, 14, 5, 5, 75},
+    { 4, 1, 14, 5, 5, 75},
+    { 5, 1, 11, 4, 4, 75},
+    { 8, 1,  6, 3, 3, 70},
+};
+
+// Rate to program for a requested data bitrate. A request above
+// HAL_CANFD_SUPPORTED is reduced to the highest table entry at or below
+// that maximum. was_limited is set when the returned rate is lower than
+// the request. Returns 0 if the request is not a table entry and is not
+// above the board maximum.
+static uint32_t limited_fd_bitrate(uint32_t requested, bool& was_limited)
+{
+    was_limited = false;
+    const uint32_t requested_mbaud = requested / 1000000U;
+    uint32_t highest_allowed = 0;
+    bool exact = false;
+    for (const auto &t : CANFD_timings) {
+        if (t.bitrate_mbaud > HAL_CANFD_SUPPORTED) {
+            continue;
+        }
+        const uint32_t rate = uint32_t(t.bitrate_mbaud) * 1000000U;
+        if (rate > highest_allowed) {
+            highest_allowed = rate;
+        }
+        if (t.bitrate_mbaud == requested_mbaud) {
+            exact = true;
+        }
+    }
+    if (exact) {
+        return requested_mbaud * 1000000U;
+    }
+    if (requested_mbaud > HAL_CANFD_SUPPORTED && highest_allowed > 0) {
+        was_limited = true;
+        return highest_allowed;
+    }
+    return 0;
+}
+
 bool CANIface::computeFDTimings(const uint32_t target_bitrate, Timings& out_timings) const
 {
-    static const struct {
-        uint8_t bitrate_mbaud;
-        uint8_t prescaler;
-        uint8_t bs1;
-        uint8_t bs2;
-        uint8_t sjw;
-        uint8_t sample_point_pct;
-    } CANFD_timings[] {
-        { 1, 4, 14, 5, 5, 75},
-        { 2, 2, 14, 5, 5, 75},
-        { 4, 1, 14, 5, 5, 75},
-        { 5, 1, 11, 4, 4, 75},
-        { 8, 1,  6, 3, 3, 70},
-    };
     for (const auto &t : CANFD_timings) {
+        if (t.bitrate_mbaud > HAL_CANFD_SUPPORTED) {
+            continue;
+        }
         if (t.bitrate_mbaud*1000U*1000U == target_bitrate) {
             // out_timings has the register bits, which are the actual value minus 1
             out_timings.prescaler = t.prescaler;
@@ -563,7 +603,15 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate)
                   ((timings.prescaler-1) << FDCAN_NBTP_NBRP_Pos));
 
     if (fdbitrate) {
-        if (!computeFDTimings(fdbitrate, fdtimings)) {
+        bool fd_limited = false;
+        const uint32_t fd_rate = limited_fd_bitrate(fdbitrate, fd_limited);
+        if (fd_limited) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CAN%u FD %uM limited to %uM",
+                          unsigned(self_index_ + 1),
+                          unsigned(fdbitrate / 1000000U),
+                          unsigned(fd_rate / 1000000U));
+        }
+        if (fd_rate == 0 || !computeFDTimings(fd_rate, fdtimings)) {
             can_->CCCR &= ~FDCAN_CCCR_INIT;
             uint32_t while_start_ms = AP_HAL::millis();
             while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
@@ -573,7 +621,7 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate)
             }
             return false;
         }
-        _fdbitrate = fdbitrate;
+        _fdbitrate = fd_rate;
         can_->DBTP = (((fdtimings.bs1-1) << FDCAN_DBTP_DTSEG1_Pos) |
                       ((fdtimings.bs2-1) << FDCAN_DBTP_DTSEG2_Pos)  |
                       ((fdtimings.prescaler-1) << FDCAN_DBTP_DBRP_Pos) |
