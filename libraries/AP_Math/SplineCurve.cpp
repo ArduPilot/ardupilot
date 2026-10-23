@@ -26,6 +26,7 @@ extern const AP_HAL::HAL &hal;
 
 #define SPLINE_FACTOR           4.0f    // defines shape of curves.  larger numbers result in longer spline curves, lower numbers take a direct path
 #define TANGENTIAL_ACCEL_SCALER 0.5f    // the proportion of the maximum accel that can be used for tangential acceleration (aka in the direction of travel along the track)
+#define CURVATURE_VEL_MIN_FRAC  1.0e-3f    // |P'| below this fraction of |P''| is a rounding residual, not a direction
 #define LATERAL_ACCEL_SCALER    0.5f    // the proportion of the maximum accel that can be used for lateral acceleration (aka crosstrack acceleration)
 
 // limit the maximum speed along the track to that which will achieve a cornering (aka lateral) acceleration of LATERAL_SPEED_SCALER * acceleration limit
@@ -88,23 +89,25 @@ void SplineCurve::set_origin_and_destination(const Vector3p &origin, const Vecto
     Vector3f spline_vel_unit;
     float spline_dt;
     float accel_max;
-    calc_dt_speed_max(0.0f, 0.0f, spline_dt, target_pos, spline_vel_unit, _origin_speed_max, accel_max);
+    Vector3f curvature;
+    calc_dt_speed_max(0.0f, 0.0f, spline_dt, target_pos, spline_vel_unit, _origin_speed_max, accel_max, curvature);
     if (_destination_vel.is_zero()) {
         _destination_speed_max = 0.0f;
     } else {
-        calc_dt_speed_max(1.0f, 0.0f, spline_dt, target_pos, spline_vel_unit, _destination_speed_max, accel_max);
+        calc_dt_speed_max(1.0f, 0.0f, spline_dt, target_pos, spline_vel_unit, _destination_speed_max, accel_max, curvature);
     }
 }
 
 // move target location along track from origin to destination
 // target_pos is updated with the target position from EKF origin in NED frame
 // target_vel is updated with the target velocity in NED frame
-void SplineCurve::advance_target_along_track(float dt, Vector3p &target_pos, Vector3f &target_vel)
+void SplineCurve::advance_target_along_track(float dt, Vector3p &target_pos, Vector3f &target_vel, Vector3f &target_accel)
 {
     // handle zero length track
     if (_zero_length) {
         target_pos = _destination;
         target_vel.zero();
+        target_accel.zero();
         return;
     }
 
@@ -115,10 +118,27 @@ void SplineCurve::advance_target_along_track(float dt, Vector3p &target_pos, Vec
     Vector3f spline_vel_unit;
     float speed_max;
     float accel_max;
+    Vector3f curvature;
 
-    calc_dt_speed_max(_time, distance_delta, spline_dt, target_pos, spline_vel_unit, speed_max, accel_max);
+    calc_dt_speed_max(_time, distance_delta, spline_dt, target_pos, spline_vel_unit, speed_max, accel_max, curvature);
+    const float speed_previous = speed_cms;
     speed_cms = constrain_float(speed_max, speed_cms - accel_max * dt, speed_cms + accel_max * dt);
     target_vel = spline_vel_unit * speed_cms;
+
+    // the acceleration the path demands: turning the corner at this speed, plus whatever
+    // tangential acceleration the speed limit just asked for.  The speed is slewed toward
+    // its limit while the curvature applies at once, so near a tight corner the product can
+    // briefly ask for far more than the vehicle was configured for; bound the turning part
+    // by the leg's own acceleration limits
+    target_accel = curvature * sq(speed_cms);
+    const float accel_norm_max = kinematic_limit(target_accel, _accel_xy, _accel_z, _accel_z);
+    const float accel_norm_length = target_accel.length();
+    if (is_positive(accel_norm_max) && accel_norm_length > accel_norm_max) {
+        target_accel *= accel_norm_max / accel_norm_length;
+    }
+    if (is_positive(dt)) {
+        target_accel += spline_vel_unit * ((speed_cms - speed_previous) / dt);
+    }
 
     _time += spline_dt;
 
@@ -131,13 +151,14 @@ void SplineCurve::advance_target_along_track(float dt, Vector3p &target_pos, Vec
 
 // calculate the spline delta time for a given delta distance
 // returns the spline position and velocity and maximum speed and acceleration the vehicle can travel without exceeding acceleration limits
-void SplineCurve::calc_dt_speed_max(float time, float distance_delta, float &spline_dt, Vector3p &target_pos, Vector3f &spline_vel_unit, float &speed_max, float &accel_max)
+void SplineCurve::calc_dt_speed_max(float time, float distance_delta, float &spline_dt, Vector3p &target_pos, Vector3f &spline_vel_unit, float &speed_max, float &accel_max, Vector3f &curvature)
 {
     // initialise outputs
     spline_dt = 0.0f;
     spline_vel_unit.zero();
     speed_max = 0.0f;
     accel_max = 0.0f;
+    curvature.zero();
 
     // calculate target position and velocity using spline calculator
     Vector3f spline_vel;
@@ -179,6 +200,15 @@ void SplineCurve::calc_dt_speed_max(float time, float distance_delta, float &spl
     const float spline_accel_tangent_length = spline_accel.dot(spline_vel_unit);
     Vector3f spline_accel_norm = spline_accel - (spline_vel_unit * spline_accel_tangent_length);
     const float spline_accel_norm_length = spline_accel_norm.length();
+
+    // the path's turning vector.  The speed limit below is the statement that
+    // spline_accel_norm_length * (v/spline_vel_length)^2 must stay within accel_norm_max,
+    // so this is the same quantity expressed independently of speed.  At a rest endpoint
+    // |P'| collapses to a rounding residual while the slewed speed is still finite, so
+    // below a small fraction of |P''| it carries no direction and no curvature is reported.
+    if (spline_vel_length > CURVATURE_VEL_MIN_FRAC * spline_accel.length()) {
+        curvature = spline_accel_norm / sq(spline_vel_length);
+    }
 
     // limit the maximum speed along the track to that which will achieve a cornering (aka lateral) acceleration of LATERAL_SPEED_SCALER * acceleration limit
     const float tangential_speed_max = kinematic_limit(spline_vel_unit, _speed_xy, _speed_up, _speed_down);

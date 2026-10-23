@@ -18,7 +18,16 @@ public:
     // move target location along track from origin to destination
     // target_pos is updated with the target position from EKF origin in NED frame
     // target_vel is updated with the target velocity in NED frame
-    void advance_target_along_track(float dt, Vector3p &target_pos, Vector3f &target_vel);
+    // target_accel is updated with the acceleration the path requires at that velocity,
+    // which is the curvature of the spline scaled by speed squared plus the tangential
+    // acceleration the speed limit is asking for
+    void advance_target_along_track(float dt, Vector3p &target_pos, Vector3f &target_vel, Vector3f &target_accel);
+
+    // move target location along track, discarding the acceleration
+    void advance_target_along_track(float dt, Vector3p &target_pos, Vector3f &target_vel) {
+        Vector3f target_accel;
+        advance_target_along_track(dt, target_pos, target_vel, target_accel);
+    }
 
     // returns true if vehicle has reached destination
     bool reached_destination() const WARN_IF_UNUSED { return _reached_destination; }
@@ -37,7 +46,9 @@ private:
 
     // calculate the spline delta time for a given delta distance
     // returns the spline position and velocity and maximum speed and acceleration the vehicle can travel without exceeding acceleration limits
-    void calc_dt_speed_max(float time, float distance_delta, float &spline_dt, Vector3p &target_pos, Vector3f &spline_vel_unit, float &speed_max, float &accel_max);
+    // curvature is the path's turning vector, P''_normal / |P'|^2, so the acceleration
+    // needed to follow the path at speed v is curvature * v^2
+    void calc_dt_speed_max(float time, float distance_delta, float &spline_dt, Vector3p &target_pos, Vector3f &spline_vel_unit, float &speed_max, float &accel_max, Vector3f &curvature);
 
     // recalculate hermite_spline_solution grid
     void update_solution(const Vector3p &origin, const Vector3p &dest, const Vector3f &origin_vel, const Vector3f &dest_vel);
