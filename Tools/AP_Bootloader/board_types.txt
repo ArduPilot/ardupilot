@@ -545,6 +545,7 @@ AP_HW_UAV-DEV-AUAV-G4                5234
 AP_HW_UAV-DEV-ETHERNET-H7            5235
 AP_HW_UAV-DEV-FC-PIZERO-H7           5236
 AP_HW_UAV-DEV-M10S-G4                5237
+AP_HW_UAV-DEV-LED-L4                 5238
 
 # IDs 5240-5249 reserved for TM IT-Systemhaus
 AP_HW_TM-SYS-BeastFC                 5240
