@@ -7652,6 +7652,33 @@ return update()
         self.correct_wp_seq_numbers(fence)
         self.check_fence_upload_download(fence)
 
+    def FenceFTPUpload(self):
+        '''upload a fence over MAVLink FTP while the fence is in use'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+        })
+        self.wait_ready_to_arm()
+        home = self.home_position_as_location()
+
+        # the FTP thread writes the fence while the main thread reads
+        # the fence being replaced:
+        for count in (10, 50):
+            fence = self.generate_polyfence(
+                home,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+                radius=200,
+                count=count,
+            )
+            self.correct_wp_seq_numbers(fence)
+            # AP_Filesystem_Mission header: magic, data_type, options, start, num_items
+            data = struct.pack("<HHHHH", 0x763d, mavutil.mavlink.MAV_MISSION_TYPE_FENCE, 0, 0, len(fence))
+            for item in fence:
+                data += item.unpacker.pack(*[getattr(item, f) for f in item.ordered_fieldnames])
+            self.ftp_write_file("@MISSION/fence.dat", data)
+
+            downloaded = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+            self.check_fence_items_same(fence, downloaded)
+
     def ManyMAVLinkConnections(self):
         '''test testing >8 MAVLink connections'''
         self.set_parameters({
@@ -8651,6 +8678,7 @@ return update()
             self.MotorBoatSkidGuided,
             self.PolyFence,
             self.SDPolyFence,
+            self.FenceFTPUpload,
             self.PolyFenceAvoidance,
             self.PolyFenceObjectAvoidanceAuto,
             self.PolyFenceObjectAvoidanceGuided,
