@@ -160,6 +160,7 @@ public:
         k_param_fs_crash_check,
         k_param_fs_ekf_action,
         k_param_fs_ekf_thresh,  // 187
+        k_param_fs_servo_mask,  // 188
 
         // obstacle control
         k_param_sonar_enabled = 190,  // deprecated, can be removed
@@ -260,6 +261,7 @@ public:
     AP_Int8     fs_crash_check;
     AP_Int8     fs_ekf_action;
     AP_Float    fs_ekf_thresh;
+    AP_Int16    fs_servo_mask;
 
     // driving modes
     //

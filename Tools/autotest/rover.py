@@ -184,6 +184,76 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1500)
         self.progress("Circuit complete")
 
+    def ServoFailsafe(self):
+        """per-output servo failsafe positions (SERVOn_FSPWM)"""
+        # SERVO9 has no function and is driven by DO_SET_SERVO, which is not
+        # recomputed each loop; SERVO1 is steering and must never be moved.
+        # 2400 is outside the steering PWM range.
+        self.set_parameters({
+            "SERVO9_FUNCTION": 0,
+            "SERVO9_FSPWM": 1900,
+            "SERVO1_FSPWM": 2400,
+            "FS_SERVO_MASK": 1,     # radio failsafe
+            "FS_THR_ENABLE": 1,
+            "FS_ACTION": 2,         # hold
+        })
+        self.change_mode("MANUAL")
+        self.set_servo(9, 1300)
+        self.wait_servo_channel_value(9, 1300)
+
+        self.start_subtest("Disarmed: a radio failsafe moves nothing")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.delay_sim_time(5, reason="radio failsafe to be detected")
+        self.assert_servo_channel_value(9, 1300)
+        self.assert_servo_channel_value(1, 2400, comparator=lambda x, y: x != y)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(3, reason="RC to restore")
+
+        self.start_subtest("Armed: the failsafe position applies, steering is untouched")
+        # the disarmed failsafe switched to HOLD, where a failsafe does not
+        # trigger
+        self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_servo(9, 1300)
+        self.wait_servo_channel_value(9, 1300)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_mode("HOLD", timeout=10)
+        self.wait_servo_channel_value(9, 1900, timeout=5)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            self.assert_servo_channel_value(1, 2100, comparator=lambda x, y: x < y)
+
+        self.start_subtest("The output returns to its commanded value when the failsafe clears")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_servo_channel_value(9, 1300, timeout=10)
+
+        self.start_subtest("A radio failsafe starting in HOLD still applies the position")
+        self.change_mode("HOLD")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_servo_channel_value(9, 1900, timeout=10)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_servo_channel_value(9, 1300, timeout=10)
+
+        self.start_subtest("Overlapping failsafes: radio recovering while GCS is still lost keeps the position")
+        self.change_mode("MANUAL")
+        self.set_parameters({
+            "FS_SERVO_MASK": 5,     # radio and GCS
+            "FS_GCS_ENABLE": 1,
+            "MAV_GCS_SYSID": self.mav.source_system,
+        })
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_servo_channel_value(9, 1900, timeout=10)
+        self.set_heartbeat_rate(0)
+        self.delay_sim_time(10, reason="GCS failsafe to be detected")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(5, reason="radio failsafe to clear")
+        self.assert_servo_channel_value(9, 1900)
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_servo_channel_value(9, 1300, timeout=15)
+        self.set_parameter("FS_GCS_ENABLE", 0)
+        self.disarm_vehicle()
+
     def ThrottleFailsafe(self):
         """Trigger throttle failsafes"""
         self.progress("Testing throttle failsafe")
@@ -8256,6 +8326,7 @@ return update()
             self.SafetySwitch,
             self.EnterModeOnSafetySwitch,
             self.ThrottleFailsafe,
+            self.ServoFailsafe,
             self.CrashCheck,
             self.DriveEachFrame,
             self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
