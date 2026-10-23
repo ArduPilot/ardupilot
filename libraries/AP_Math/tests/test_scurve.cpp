@@ -1,4 +1,5 @@
 #include <AP_gtest.h>
+#include <vector>
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vector2.h>
@@ -333,7 +334,7 @@ TEST(SCurveTrack, climbing_arc_limit_from_arc_length)
 
 // The projected velocity must equal the derivative of the projected position, including for a
 // climbing arc. Regression: the arc velocity/acceleration previously used a unit horizontal tangent
-// where the horizontal fraction arc.length_ne/seg_length was required, tilting a climbing arc's
+// where the horizontal fraction arc.length/seg_length was required, tilting a climbing arc's
 // reported velocity too far toward horizontal (and inflating the centripetal term).
 TEST(SCurveTrack, arc_velocity_matches_position_derivative)
 {
@@ -536,6 +537,143 @@ TEST(SCurveCircle, prev_leg_handoff)
     EXPECT_NEAR((float)target_pos.x, (float)D.x, 0.05f);
     EXPECT_NEAR((float)target_pos.y, (float)D.y, 0.05f);
     EXPECT_NEAR((float)target_pos.z, (float)D.z, 0.05f);
+}
+
+// Sample a leg's path, returning every reported position.
+static void sample_path(SCurve &leg, const Vector3p &origin, std::vector<Vector3f> &out)
+{
+    SCurve prev, next;
+    prev.init();
+    next.init();
+    const float dt = 0.0025f;
+    Vector3p pos;
+    Vector3f vel, accel;
+    for (uint32_t i = 0; i < MAX_DRIVE_ITERS; i++) {
+        pos = origin;
+        vel.zero();
+        accel.zero();
+        const bool done = leg.advance_target_along_track(prev, next, 2.0f, 2.0f, false, dt, pos, vel, accel);
+        out.push_back((pos - origin).tofloat());
+        if (done) {
+            break;
+        }
+    }
+}
+
+// With no axis rotation the helix must be the horizontal arc the NE-only implementation
+// flew: a quarter turn from 20 m North of the centre to 20 m East of it is a circle of
+// radius 20 about (0,0), swept clockwise through the North-East quadrant, with the
+// altitude change spread linearly along it.
+TEST(SCurveTrack, arc_axis_rotation_zero_is_horizontal_arc)
+{
+    const Vector3p origin{20, 0, -50};
+    const Vector3p dest{0, 20, -20};
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI_2, 10.0f, 5.0f, 5.0f, 3.0f, 3.0f, 3.0f, 60.0f, 10.0f);
+
+    std::vector<Vector3f> path;
+    sample_path(leg, origin, path);
+    ASSERT_GT(path.size(), 100U);
+
+    float max_radius_err = 0.0f, max_z_err = 0.0f, min_x = 1e9f, min_y = 1e9f, min_mid_dist = 1e9f;
+    const Vector3f mid_abs{20.0f * cosf(M_PI_4), 20.0f * sinf(M_PI_4), -35.0f};
+    for (const Vector3f &d : path) {
+        const Vector3f abs = d + origin.tofloat();
+        max_radius_err = MAX(max_radius_err, fabsf(abs.xy().length() - 20.0f));
+        // altitude is linear in the swept angle
+        const float swept = atan2f(abs.y, abs.x);
+        max_z_err = MAX(max_z_err, fabsf(abs.z - (-50.0f + 30.0f * swept / M_PI_2)));
+        min_x = MIN(min_x, abs.x);
+        min_y = MIN(min_y, abs.y);
+        min_mid_dist = MIN(min_mid_dist, (abs - mid_abs).length());
+    }
+    EXPECT_LT(max_radius_err, 0.05f);
+    EXPECT_LT(max_z_err, 0.2f);
+    // the short way round, clockwise from North through North-East to East
+    EXPECT_GT(min_x, -0.05f);
+    EXPECT_GT(min_y, -0.05f);
+    EXPECT_LT(min_mid_dist, 0.2f);
+    const Vector3f end = path.back();
+    EXPECT_NEAR(end.x, -20.0f, 0.2f);
+    EXPECT_NEAR(end.y, 20.0f, 0.2f);
+    EXPECT_NEAR(end.z, 30.0f, 0.2f);
+}
+
+// With the axis rotated a quarter turn about the chord the arc must lie in the vertical
+// plane through the chord: a half circle over a 40 m horizontal chord bulges one radius
+// (20 m) vertically and stays on the chord's compass bearing.
+TEST(SCurveTrack, vertical_arc_lies_in_vertical_plane)
+{
+    const Vector3p origin{0, 0, -50};
+    const Vector3p dest{40, 0, -50};   // 40 m chord, due North, level
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI,
+                        20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+    std::vector<Vector3f> path;
+    sample_path(leg, origin, path);
+    ASSERT_GT(path.size(), 100U);
+
+    float max_east = 0.0f, max_up = 0.0f, max_down = 0.0f;
+    for (const Vector3f &d : path) {
+        max_east = MAX(max_east, fabsf(d.y));
+        max_up = MAX(max_up, -d.z);
+        max_down = MAX(max_down, d.z);
+    }
+    // the arc plane contains no East component
+    EXPECT_LT(max_east, 0.05f);
+    // and it bulges a full radius to exactly one side of the chord
+    EXPECT_TRUE((max_up > 19.0f && max_down < 0.5f) || (max_down > 19.0f && max_up < 0.5f));
+    // the endpoint is still the commanded destination
+    const Vector3f end = path.back();
+    EXPECT_NEAR(end.x, 40.0f, 0.2f);
+    EXPECT_NEAR(end.z, 0.0f, 0.2f);
+}
+
+// The reported velocity must stay tangent to the path for a tilted arc too, which is what
+// catches a projection that mixes the axis and in-plane components incorrectly.
+TEST(SCurveTrack, tilted_arc_velocity_matches_position_derivative)
+{
+    const float rotations[] = { M_PI_2, M_PI_4, radians(120.0f) };
+    for (float rot : rotations) {
+        const Vector3p origin{0, 0, -60};
+        const Vector3p dest{40, 10, -45};
+
+        SCurve leg;
+        leg.calculate_track(origin, dest, M_PI,
+                            20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, rot);
+
+        SCurve prev, next;
+        prev.init();
+        next.init();
+        const float dt = 0.0025f;
+        Vector3p pos, pos_prev;
+        Vector3f vel, accel;
+        bool have_prev = false;
+        float max_err = 0.0f;
+        for (uint32_t i = 0; i < MAX_DRIVE_ITERS; i++) {
+            pos = origin;
+            vel.zero();
+            accel.zero();
+            const bool done = leg.advance_target_along_track(prev, next, 2.0f, 2.0f, false, dt, pos, vel, accel);
+            if (have_prev && vel.length() > 3.0f) {
+                const Vector3f fd = (pos - pos_prev).tofloat() / dt;
+                max_err = MAX(max_err, (fd - vel).length());
+            }
+            pos_prev = pos;
+            have_prev = true;
+            if (done) {
+                break;
+            }
+        }
+        EXPECT_LT(max_err, 0.05f) << "arc_axis_rot_rad = " << rot;
+        // and the leg still arrives where it was sent
+        const Vector3f end = (pos - origin).tofloat();
+        const Vector3f want = (dest - origin).tofloat();
+        EXPECT_LT((end - want).length(), 0.2f) << "arc_axis_rot_rad = " << rot;
+    }
 }
 
 AP_GTEST_MAIN()

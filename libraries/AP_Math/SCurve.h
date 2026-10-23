@@ -54,10 +54,13 @@ public:
 
     // generate a trigonometric track in 3D space that moves over a straight line
     // between two points defined by the origin and destination
+    // arc_axis_rot_rad rotates the helix axis away from Down about the chord, so 0 gives
+    // a horizontal arc and PI/2 an arc in the vertical plane containing a level chord
     void calculate_track(const Vector3p &origin, const Vector3p &destination, float arc_rad,
                          float speed_xy, float speed_up, float speed_down,
                          float accel_xy, float accel_z, float accel_c,
-                         float snap_maximum, float jerk_maximum);
+                         float snap_maximum, float jerk_maximum,
+                         float arc_axis_rot_rad = 0.0f);
 
     // generate a trigonometric track that follows a circular arc about center_ne
     // total_angle_rad is the signed swept angle and may exceed 2*pi for multiple turns
@@ -197,14 +200,17 @@ private:
     // populate the canonical straight-segment geometry from seg_delta
     void set_straight_geometry();
 
-    // populate the canonical arc geometry (center relative to origin, radius and signed swept angle)
-    // seg_delta (its vertical component) must already be set
-    void set_arc_geometry(const Vector2f &center_ne_rel, float radius, float angle_rad);
+    // populate the canonical arc geometry (center relative to origin, unit helix axis, radius and signed swept angle)
+    // seg_delta (its component along the axis) must already be set
+    void set_arc_geometry(const Vector3f &center_rel, const Vector3f &axis, float radius, float angle_rad);
 
     // build the jerk-limited profile from the already-configured geometry and the given limits
     void generate_path(float speed_xy, float speed_up, float speed_down,
                         float accel_xy, float accel_z, float accel_c,
                         float snap_maximum, float jerk_maximum);
+
+    // maximum magnitude along the path that keeps the horizontal and vertical components within their limits everywhere on it
+    float path_kinematic_limit(float max_xy, float max_z_up, float max_z_down) const WARN_IF_UNUSED;
 
     // return true if the curve is valid.  Used to identify and protect against code errors
     bool valid() const WARN_IF_UNUSED;
@@ -252,12 +258,17 @@ private:
 
     bool is_arc_segment;    // true if this segment is a circular arc, false if straight line
     Vector3f seg_delta;     // total displacement vector from start to end point (NED frame)
-    float seg_length;       // 3D scalar length of the path (arc length + vertical component)
+    float seg_length;       // 3D scalar length of the path (arc length combined with the travel along the axis)
 
+    // An arc segment is a helix: a circular arc in the plane perpendicular to axis, plus a
+    // linear translation along axis.  With axis = Down it is a horizontal arc with a linear
+    // altitude change.
     struct {
-        float angle_rad;    // signed central angle of the arc [rad] (+CCW, -CW), 0 = straight
-        float length_ne;    // horizontal arc length along the circle (R * |theta|)
-        float radius_ne;    // arc radius
-        Vector2f center_ne; // center of the circle in local NE plane, relative to start point
+        float angle_rad;    // signed central angle of the arc [rad] (+CW, -CCW), 0 = straight
+        float length;       // arc length within the arc plane (R * |theta|)
+        float radius;       // arc radius
+        float axis_travel;  // translation along the helix axis over the whole segment
+        Vector3f center;    // center of the circle relative to start point
+        Vector3f axis;      // unit helix axis; the arc lies in the plane perpendicular to it
     } arc;
 };
