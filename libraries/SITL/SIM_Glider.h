@@ -182,8 +182,9 @@ protected:
     bool update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel);
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
 
+    const float initial_balloon_height = -45;
     Vector3f balloon_velocity;           // balloon velocity NED
-    Vector3f balloon_position{0.0f, 0.0f, -45.0f}; // balloon position NED from origin
+    Vector3f balloon_position{0.0f, 0.0f, initial_balloon_height}; // balloon position NED from origin
 
     enum class carriageState {
         NONE = 0, // no carriage option available
@@ -196,6 +197,9 @@ protected:
 
     uint32_t last_drag_ms;
     float sim_LD;
+
+    // hook set_pose() so we can update balloon position
+    void set_pose_hook(void) override;
 };
 
 } // namespace SITL
