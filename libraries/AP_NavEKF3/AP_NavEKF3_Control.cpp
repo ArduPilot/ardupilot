@@ -443,6 +443,9 @@ void NavEKF3_core::setAidingMode()
         case AID_RELATIVE:
             // We are doing relative position navigation where velocity errors are constrained, but position drift will occur
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u started relative aiding",(unsigned)imu_index);
+            flowFusedAxes = 0;
+            bodyVelFusedAxes = 0;
+            allAxesFusedTime_ms = 0;
 #if EK3_FEATURE_OPTFLOW_FUSION
             if (readyToUseOptFlow()) {
                 // Reset time stamps

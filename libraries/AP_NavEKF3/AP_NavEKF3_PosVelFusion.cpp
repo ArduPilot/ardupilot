@@ -1219,6 +1219,11 @@ void NavEKF3_core::FuseVelPosNED()
 *                   MISC FUNCTIONS                      *
 ********************************************************/
 
+ftype NavEKF3_core::rngSwitchInSpeed() const
+{
+    return MAX((frontend->_useRngSwSpd - 1.0f), (frontend->_useRngSwSpd * 0.5f));
+}
+
 // select the height measurement to be fused from the available baro, range finder and GPS sources
 void NavEKF3_core::selectHeightForFusion()
 {
@@ -1263,8 +1268,62 @@ void NavEKF3_core::selectHeightForFusion()
     } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BARO) || (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
         const ftype rangeMaxUse = 1e-2 * (ftype)_rng->max_distance_orient(ROTATION_PITCH_270) * (ftype)frontend->_useRngSwHgt;
-        bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
-        bool belowLowerSwHgt = ((terrainState - stateStruct.position.z) < 0.7f * rangeMaxUse) && (imuSampleTime_ms - gndHgtValidTime_ms < 1000);
+
+        // Use the AGL KF height estimate when available. The default
+        // (terrainState - position.z) rides on the main filter's vertical
+        // position, which baro ground effect corrupts. The AGL KF fuses IMU
+        // and rangefinder, so it does not carry that error directly - baro
+        // reaches it only through the accel bias the main filter learns.
+        ftype heightAboveGnd;
+        // The legacy terrain-offset estimator stalls near the ground, so its
+        // timestamp goes stale and vetoes the switch. Gate on the AGL KF's own
+        // last-fusion time when it is the height authority, only while it would
+        // stand in as the height observation, so a stale one cannot hold the switch.
+        uint32_t hgtValidTime_ms = gndHgtValidTime_ms;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
+            (prevTnb.c.z >= frontend->DCM33FlowMin) && (imuSampleTime_ms - lastAglRngFuseTime_ms < 200)) {
+            heightAboveGnd = aglKfH;
+            hgtValidTime_ms = lastAglRngFuseTime_ms;
+        } else
+#endif
+        {
+            heightAboveGnd = terrainState - stateStruct.position.z;
+        }
+
+        bool aboveUpperSwHgt = heightAboveGnd > rangeMaxUse;
+        bool belowLowerSwHgt = (heightAboveGnd < 0.7f * rangeMaxUse) && (imuSampleTime_ms - hgtValidTime_ms < 1000);
+
+        // The vehicle only marks terrain stable during takeoff and landing, leaving
+        // altitude on baro through cruise/hover. When the IMU-aided AGL KF is enabled
+        // and valid it provides a de-glitched height above ground that does not carry
+        // baro error directly, so let it act as a stable terrain reference here too.
+        // Not while armed with no horizontal velocity measured, as the speed gate below then has
+        // nothing to test: in constant position mode, or in relative aiding, which starts from zero
+        // velocity, unless every axis of flow or odometry has passed its latest innovation check
+        // within ALL_AXES_FUSED_HOLD_MS. One axis is not enough: across the direction of flight it
+        // passes at any speed, and an axis that passed before a turn can be failing after it.
+        bool terrainStable = terrainHgtStable;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        const bool relVelFused = (imuSampleTime_ms - allAxesFusedTime_ms) < ALL_AXES_FUSED_HOLD_MS;
+        const bool horizVelMeasured = filterStatus.flags.horiz_vel &&
+                                      ((PV_AidingMode == AID_ABSOLUTE) || ((PV_AidingMode == AID_RELATIVE) && relVelFused));
+        if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid && (onGround || horizVelMeasured)) {
+            terrainStable = true;
+        }
+#endif
+
+        // Where only the AGL KF makes terrain stable, switching in resets the height to the AGL KF, so wait
+        // until it has caught up with the range sample being fused, or the reset carries its lag into the height
+        bool aglSettled = true;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        const ftype rngHgt = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+        const bool aglOnlyStable = terrainStable && !terrainHgtStable;
+        if (aglOnlyStable) {
+            aglSettled = rangeDataToFuse && (imuSampleTime_ms - lastAglRngFuseTime_ms < 200) &&
+                         (fabsF(aglKfH - rngHgt) < 0.15f);
+        }
+#endif
 
         // If the terrain height is consistent and we are moving slowly, then it can be
         // used as a height reference in combination with a range finder
@@ -1273,13 +1332,12 @@ void NavEKF3_core::selectHeightForFusion()
         if (filterStatus.flags.horiz_vel) {
             // We can use the velocity estimate
             ftype horizSpeed = stateStruct.velocity.xy().length();
-            dontTrustTerrain = (horizSpeed > frontend->_useRngSwSpd) || !terrainHgtStable;
-            ftype trust_spd_trigger = MAX((frontend->_useRngSwSpd - 1.0f),(frontend->_useRngSwSpd * 0.5f));
-            trustTerrain = (horizSpeed < trust_spd_trigger) && terrainHgtStable;
+            dontTrustTerrain = (horizSpeed > frontend->_useRngSwSpd) || !terrainStable;
+            trustTerrain = (horizSpeed < rngSwitchInSpeed()) && terrainStable;
         } else {
             // We can't use the velocity estimate
-            dontTrustTerrain = !terrainHgtStable;
-            trustTerrain = terrainHgtStable;
+            dontTrustTerrain = !terrainStable;
+            trustTerrain = terrainStable;
         }
 
         /*
@@ -1294,7 +1352,18 @@ void NavEKF3_core::selectHeightForFusion()
             } else if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS) {
                 activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
             }
-        } else if (belowLowerSwHgt && trustTerrain && (prevTnb.c.z >= 0.7f)) {
+        } else if (belowLowerSwHgt && trustTerrain && aglSettled && (prevTnb.c.z >= 0.7f)) {
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            // Switching in freezes the terrain offset, which after a step up can still be the lower ground's.
+            // Take it from the range when they disagree by more than baro drift did at a switch in flight
+            // tests (under 0.25 m, against 0.66 m on a step).
+            if ((activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER) && aglOnlyStable) {
+                if (fabsF((terrainState - stateStruct.position.z) - rngHgt) > 0.3f) {
+                    terrainState = stateStruct.position.z + rngHgt;
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u terrain offset reset from range", (unsigned)imu_index);
+                }
+            }
+#endif
             // reliable terrain and range finder so start using range finder height
             activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
         }
@@ -1378,8 +1447,26 @@ void NavEKF3_core::selectHeightForFusion()
         // using range finder data
         // correct for tilt using a flat earth model
         if (prevTnb.c.z >= 0.7) {
-            // calculate height above ground
-            hgtMea  = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+            // calculate height above ground and its observation noise
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            // Fuse the IMU-aided AGL KF height in place of the raw rangefinder: it is the same
+            // tilt-compensated range, de-glitched. It runs later in the step, so it holds the range
+            // up to the previous sample; it stays valid for 5 s without fusing, as when it rejects
+            // samples or is tilted past its own limit, so it stands in only within that limit and
+            // while its last fusion is recent
+            if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
+                (prevTnb.c.z >= frontend->DCM33FlowMin) && (imuSampleTime_ms - lastAglRngFuseTime_ms < 200)) {
+                hgtMea = MAX(aglKfH, rngOnGnd);
+                posDownObsNoise = MAX(aglKfP[0][0], sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f)));
+            } else
+#endif
+            {
+                hgtMea = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+                posDownObsNoise = sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f));
+            }
+            // add uncertainty created by terrain gradient and vehicle tilt, which the AGL KF does not
+            // model either: its terrain term grows only with horizontal movement
+            posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
             // correct for terrain position relative to datum
             hgtMea -= terrainState;
             // correct sensor so that local position height adjusts to match GPS
@@ -1390,10 +1477,6 @@ void NavEKF3_core::selectHeightForFusion()
             velPosObs[5] = -hgtMea;
             // enable fusion
             fuseHgtData = true;
-            // set the observation noise
-            posDownObsNoise = sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f));
-            // add uncertainty created by terrain gradient and vehicle tilt
-            posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
         } else {
             // disable fusion if tilted too far
             fuseHgtData = false;
@@ -2001,6 +2084,14 @@ void NavEKF3_core::FuseBodyVel()
         if ((bodyVelTestRatio[obsIndex]) < 1.0f) {
             // record the last time observations were accepted for fusion
             prevBodyVelFuseTime_ms = imuSampleTime_ms;
+            // as for flow, the axis counts only while the speed error it lets through fits between the
+            // speeds at which the range height switch takes hold and lets go, 1/sqrt(3) of it per axis as a
+            // tilt can put the errors on all three body axes into the horizontal together
+            if (fabsF(innovBodyVel[obsIndex]) < 0.577f * (frontend->_useRngSwSpd - rngSwitchInSpeed())) {
+                bodyVelFusedAxes |= 1U << obsIndex;
+            } else {
+                bodyVelFusedAxes &= ~(1U << obsIndex);
+            }
             // notify first time only
             if (!bodyVelFusionActive) {
                 bodyVelFusionActive = true;
@@ -2036,7 +2127,12 @@ void NavEKF3_core::FuseBodyVel()
                     faultStatus.bad_zvel = true;
                 }
             }
+        } else {
+            bodyVelFusedAxes &= ~(1U << obsIndex);
         }
+    }
+    if (bodyVelFusedAxes == 0x07) {
+        allAxesFusedTime_ms = imuSampleTime_ms;
     }
 }
 #endif // EK3_FEATURE_BODY_ODOM
