@@ -1614,6 +1614,26 @@ bool NavEKF3::using_extnav_for_yaw() const
     return core[primary].using_extnav_for_yaw();
 }
 
+bool NavEKF3::has_horiz_pos_vel_source() const
+{
+    if (sources.getPosXYSource(primary) != AP_NavEKF_Source::SourceXY::NONE) {
+        return true;
+    }
+    // useVelXYSource() also counts the velocities of other sets when all are fused
+    static const AP_NavEKF_Source::SourceXY velxy_sources[] {
+        AP_NavEKF_Source::SourceXY::GPS,
+        AP_NavEKF_Source::SourceXY::OPTFLOW,
+        AP_NavEKF_Source::SourceXY::EXTNAV,
+        AP_NavEKF_Source::SourceXY::WHEEL_ENCODER,
+    };
+    for (const auto velxy : velxy_sources) {
+        if (sources.useVelXYSource(velxy, primary)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // are we using a gps?
 bool NavEKF3::using_gps(void) const
 {
