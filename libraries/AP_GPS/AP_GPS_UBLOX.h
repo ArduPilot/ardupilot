@@ -81,6 +81,9 @@
 
 #define UBX_TIMEGPS_VALID_WEEK_MASK 0x2
 
+#define UBX_PVT_VALID_DATE 0x1
+#define UBX_PVT_VALID_TIME 0x2
+
 #define UBLOX_MAX_PORTS 6
 #define UBLOX_MODULE_LEN 9
 #define UBLOX_PROTVER_LEN 8
@@ -136,6 +139,7 @@ class AP_GPS_UBLOX : public AP_GPS_Backend
     using CFGv2 = AP_GPS_UBLOX_CFGv2;
 #endif
     friend class AP_GPS_UBLOX_CFGv2;
+    friend class AP_GPS_UBLOX_Test;
 public:
     AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, AP_GPS::GPS_Role role);
     ~AP_GPS_UBLOX() override;
@@ -887,6 +891,12 @@ private:
     
     bool havePvtMsg;
 
+    // true once the receiver has given us the GPS week in NAV-SOL or
+    // NAV-TIMEGPS. Until then the week is derived from the NAV-PVT date
+    bool _have_receiver_week;
+    uint32_t _pvt_week_start_ms;
+    bool _pvt_week_announced;
+
     using config_list = ubx_config_list;
 
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
@@ -903,6 +913,8 @@ private:
     void        _save_cfg(void);
     void        _verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _check_new_itow(uint32_t itow);
+    void        _set_week_from_pvt_date(void);
+    static bool _week_from_pvt_date(const struct ubx_nav_pvt &pvt, uint16_t &week);
 
     void unexpected_message(void);
     void log_mon_hw(void);
