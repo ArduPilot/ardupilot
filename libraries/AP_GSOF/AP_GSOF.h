@@ -195,6 +195,7 @@ private:
     // Returns true if, and only if, the expected packets were parsed.
     // Unexpected/unparsed data will make this return false.
     bool process_message(MsgTypes& parsed_msgs) WARN_IF_UNUSED;
+    uint8_t min_record_length(uint8_t output_type);
 
     void parse_pos_time(uint32_t a);
     void parse_pos(uint32_t a);
