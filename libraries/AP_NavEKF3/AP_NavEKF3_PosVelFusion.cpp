@@ -1032,6 +1032,9 @@ void NavEKF3_core::FuseVelPosNED()
             if (hgtTestRatio < maxTestRatio) {
                 hgtCheckPassed = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;
+                if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+                    lastRngHgtPassTime_ms = imuSampleTime_ms;
+                }
             } else if ((frontend->_gpsGlitchRadiusMax <= 0) && !onGroundNotNavigating && (activeHgtSource == AP_NavEKF_Source::SourceZ::GPS)) {
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding

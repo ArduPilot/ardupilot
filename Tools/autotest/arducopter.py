@@ -5287,6 +5287,132 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
+    def EK3_RngHgtFlowLandingKeepsPosition(self):
+        '''a flow-only vehicle keeps relative position for 5 s after it loses the range on range finder height'''
+        # LAND sets terrain height stable, so EKF3 takes the range finder for height on the
+        # way down, and the terrain estimator does not run while it does. When the range
+        # finder goes out of range low at touchdown and height falls back to baro half a
+        # second later, the ground must still count as measured, or the flow's relative
+        # position is lost with it.
+        self.set_analog_rangefinder_parameters()
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_parameters({
+            "SIM_TERRAIN": 0,       # the ground at home height, so the range reads 0 on it
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_RNG_USE_HGT": 70,  # of the 40 m range: on below 19.6 m, so for all of the descent
+        })
+        self.reboot_sitl()
+        self.start_subtest("land on range finder height")
+        self.takeoff(10, mode='ALT_HOLD', require_absolute=False)
+        self.change_mode('LOITER')
+        # the ground reads 0, so touchdown is out of range low; set only now, as before
+        # takeoff an out of range low range finder gives a flow-only vehicle no position
+        self.set_parameter("RNGFND1_MIN", 0.05)
+        self.wait_groundspeed(0, 0.5, minimum_duration=2)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.delay_sim_time(2, reason="let the log catch up before reading it")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        land_start = None
+        disarmed = None
+        rfnd = []
+        terrain = {}
+        rel = []
+        ekf_failsafe = None
+        while True:
+            m = dfreader.recv_match(type=['MODE', 'ARM', 'RFND', 'XKF4', 'XKF5', 'ERR'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            t = m.TimeUS * 1.0e-6
+            if land_start is None:
+                if mtype == 'MODE' and m.ModeNum == 9:  # LAND
+                    land_start = t
+                continue
+            if mtype == 'ARM' and m.ArmState == 0:
+                disarmed = t
+                break
+            if mtype == 'RFND':
+                rfnd.append((t, m.Stat))
+            elif mtype == 'XKF5' and t > land_start + 2:
+                terrain.setdefault(m.C, []).append((t, (m.RI, m.TOfs)))
+            elif mtype == 'XKF4' and m.C == m.PI:
+                rel.append((t, bool(m.SS & (1 << 3))))  # horiz_pos_rel
+            elif mtype == 'ERR' and m.Subsys == 17 and m.ECode == 1 and ekf_failsafe is None:  # EKF failsafe occurred
+                ekf_failsafe = t
+        if disarmed is None:
+            raise NotAchievedException("no disarm after LAND in the log")
+        # the range finder's last stretch out of range: the EKF gets no range data from it,
+        # so height falls back to baro 0.5 s in; the fall back itself is not logged
+        last_good = max([t for (t, stat) in rfnd if stat == 4], default=land_start)
+        low = [t for (t, stat) in rfnd if t > last_good and stat == 2]  # OutOfRangeLow
+        if not low:
+            raise NotAchievedException("the range finder never read out of range low on the ground")
+        out_of_range_low = low[0]
+        # the terrain estimator is idle while the range finder is the height source, so its
+        # range innovation and terrain offset stand still from 2 s into the descent on each
+        # lane XKF5 logged; on baro it updates them on every range sample
+        for (core, samples) in terrain.items():
+            before = set(v for (t, v) in samples if t < out_of_range_low)
+            if len(before) > 1:
+                raise NotAchievedException("range finder height not in use on the descent (XKF5 C%u RI, TOfs %s)" %
+                                           (core, sorted(before)[:10]))
+        if sum(len([t for (t, v) in s if t < out_of_range_low]) for s in terrain.values()) < 20:
+            raise NotAchievedException("too few XKF5 samples on the descent")
+        lost = [t for (t, held) in rel if not held]
+        if lost:
+            raise NotAchievedException("relative position lost %.2f s after out of range low" % (lost[0] - out_of_range_low))
+        held = [t for (t, h) in rel if h and t > out_of_range_low + 0.6]
+        if not held or held[-1] < disarmed - 0.5:
+            raise NotAchievedException("no relative position samples from the fall back to baro through to disarm")
+        if ekf_failsafe is not None:
+            raise NotAchievedException("EKF failsafe %.2f s after out of range low" % (ekf_failsafe - out_of_range_low))
+
+        # the hold is the 5 s a terrain offset update gives, not for good: hover on the range
+        # finder as the height source and take the range away
+        self.start_subtest("lose the range in flight")
+        self.set_parameters({
+            "RNGFND1_MIN": 0,
+            "EK3_SRC1_POSZ": 2,  # range finder
+        })
+        self.reboot_sitl()
+        self.takeoff(10, mode='ALT_HOLD', require_absolute=False)
+        self.change_mode('LOITER')
+        self.wait_groundspeed(0, 0.5, minimum_duration=2)
+        self.set_parameter("RNGFND1_MAX", 5)  # out of range high at 10 m
+        self.delay_sim_time(8, reason="let the ground offset lapse")
+        # by now the EKF failsafe has it in LAND without position
+        self.set_parameter("RNGFND1_MAX", 40)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.delay_sim_time(2, reason="let the log catch up before reading it")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        range_lost = None
+        rel = []
+        while True:
+            m = dfreader.recv_match(type=['RFND', 'XKF4'])
+            if m is None:
+                break
+            t = m.TimeUS * 1.0e-6
+            if m.get_type() == 'RFND':
+                if range_lost is None and m.Stat == 3:  # OutOfRangeHigh
+                    range_lost = t
+            elif range_lost is not None and m.C == m.PI:
+                rel.append((t - range_lost, bool(m.SS & (1 << 3))))  # horiz_pos_rel
+        if range_lost is None:
+            raise NotAchievedException("the range finder never read out of range high")
+        early = [held for (dt, held) in rel if dt < 4]
+        if len(early) < 10 or not all(early):
+            raise NotAchievedException("relative position not held for 4 s after the range was lost")
+        gone = [dt for (dt, held) in rel if not held]
+        if not gone or gone[0] > 7:
+            raise NotAchievedException("relative position still held 7 s after the range was lost")
+        if any(held for (dt, held) in rel if gone[0] < dt < 7.5):
+            raise NotAchievedException("relative position came back while the range was still lost")
+
     def TerrainDBPreArm(self):
         '''test that pre-arm checks are working correctly for terrain database'''
         self.context_push()
@@ -19527,6 +19653,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AHRSSwitchBackendPositionNEReset,
             self.GPSForYawAttitudeCorrection,
             self.EK3_RNG_USE_HGT,
+            self.EK3_RngHgtFlowLandingKeepsPosition,
             self.NoRC,
             self.ThrottleGainBoost,
             self.ScriptMountPOI,
