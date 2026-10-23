@@ -23,7 +23,6 @@
 #include <SITL/SIM_Sailboat.h>
 #include <SITL/SIM_MotorBoat.h>
 #include <SITL/SIM_CRRCSim.h>
-#include <SITL/SIM_Gazebo.h>
 #include <SITL/SIM_last_letter.h>
 #include <SITL/SIM_JSBSim.h>
 #include <SITL/SIM_Tracker.h>
@@ -177,9 +176,6 @@ static const struct {
 #if AP_SIM_FLIGHTAXIS_ENABLED
     { "flightaxis",         FlightAxis::create },
 #endif  // AP_SIM_FLIGHTAXIS_ENABLED
-#if AP_SIM_GAZEBO_ENABLED
-    { "gazebo",             Gazebo::create },
-#endif  // AP_SIM_GAZEBO_ENABLED
 #if AP_SIM_LAST_LETTER_ENABLED
     { "last_letter",        last_letter::create },
 #endif  // AP_SIM_LAST_LETTER_ENABLED
