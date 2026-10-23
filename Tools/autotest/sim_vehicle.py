@@ -980,7 +980,11 @@ def start_vehicle(binary, opts, stuff, spawns=None):
     cmd.append(binary)
     if opts.wipe_eeprom:
         cmd.append("-w")
-    cmd.extend(["--model", stuff["model"]])
+    if opts.model is None and "frame" in stuff:
+        # SITL maps the frame to its model and default parameters
+        cmd.extend(["--model", stuff["frame"]])
+    else:
+        cmd.extend(["--model", stuff["model"]])
     cmd.extend(["--speedup", str(opts.speedup)])
     if opts.sysid is not None:
         cmd.extend(["--sysid", str(opts.sysid)])
@@ -1001,6 +1005,14 @@ def start_vehicle(binary, opts, stuff, spawns=None):
     # longer pass --defaults here. Use --add-param-file or --param to
     # layer extra parameters on top of the embedded defaults.
     path = None
+    if (opts.model is not None or "frame" not in stuff) and "default_params_filename" in stuff:
+        # SITL can't find the frame from this model: pass its defaults
+        paths = stuff["default_params_filename"]
+        if not isinstance(paths, list):
+            paths = [paths]
+        # absolute, as each instance runs from its own directory
+        path = ",".join([os.path.join(autotest_dir, x) for x in paths])
+        progress("Using defaults from (%s)" % (path,))
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")
         cmd.append("--set-storage-posix-enabled 0")
