@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
 
     // @Param: POLES
     // @DisplayName: BLHeli Motor Poles
-    // @Description: This allows calculation of true RPM from ESC's eRPM. The default is 14.
+    // @Description: Generally the number of magnets (magnet poles) in your motor(s), not stator poles. This allows calculation of true RPM from ESC's eRPM. The default is 14.
     // @Range: 1 127
     // @User: Advanced
     // @RebootRequired: True
