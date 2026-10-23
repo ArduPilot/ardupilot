@@ -54,8 +54,10 @@ public:
 
     // generate a trigonometric track in 3D space that moves over a straight line
     // between two points defined by the origin and destination
-    // arc_axis_rot_rad rotates the helix axis away from Down about the chord, so 0 gives
-    // a horizontal arc and PI/2 an arc in the vertical plane containing a level chord
+    // arc_axis_rot_rad rotates the helix axis away from Down about the chord's ground
+    // track, so 0 gives a horizontal arc and PI/2 an arc in the vertical plane through
+    // the chord.  A positive arc_rad bulges left of the chord in the horizontal plane
+    // (a clockwise turn) and above it in the vertical plane, whichever way the chord runs
     void calculate_track(const Vector3p &origin, const Vector3p &destination, float arc_rad,
                          float speed_xy, float speed_up, float speed_down,
                          float accel_xy, float accel_z, float accel_c,

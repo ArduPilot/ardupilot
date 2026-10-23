@@ -28,6 +28,8 @@
 
 extern const AP_HAL::HAL &hal;
 
+#define SCURVE_ARC_GROUND_TRACK_MIN 0.01f   // a ground track shorter than this fraction of the chord cannot set the plane of a rotated arc
+
 #define SEG_INIT                0
 #define SEG_ACCEL_MAX           4
 #define SEG_ACCEL_END           7
@@ -86,14 +88,20 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
     }
 
     // The helix axis starts at Down, which puts the arc in the horizontal plane, and is
-    // rotated about the chord by arc_axis_rot_rad.  At PI/2 the axis is perpendicular to
-    // the chord and horizontal, so the arc lies in the vertical plane through the chord.
+    // rotated by arc_axis_rot_rad about the chord's ground track, so PI/2 puts the arc in
+    // the vertical plane through the chord.  The ground track rather than the chord itself
+    // gives every leg of a figure drawn in one vertical plane the same plane.
+    // A leg that is all but vertical has no ground track to name a plane by: a millimetre of
+    // offset between stacked waypoints would otherwise choose the bearing of the arc, so such
+    // a leg keeps the Down axis.
     Vector3f axis{0.0f, 0.0f, 1.0f};
-    if (!is_zero(arc_axis_rot_rad)) {
-        const Vector3f chord_unit = seg_delta.normalized();
+    const Vector3f chord_ground{seg_delta.x, seg_delta.y, 0.0f};
+    if (!is_zero(arc_axis_rot_rad) &&
+        chord_ground.length_squared() > sq(SCURVE_ARC_GROUND_TRACK_MIN) * seg_delta.length_squared()) {
+        const Vector3f chord_unit = chord_ground.normalized();
         const float ca = cosf(arc_axis_rot_rad);
         const float sa = sinf(arc_axis_rot_rad);
-        // Rodrigues rotation of the Down axis about the chord
+        // Rodrigues rotation of the Down axis about the ground track
         axis = axis * ca + (chord_unit % axis) * sa + chord_unit * ((chord_unit * axis) * (1.0f - ca));
         if (!is_positive(axis.length_squared())) {
             axis = Vector3f{0.0f, 0.0f, 1.0f};

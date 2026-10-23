@@ -602,11 +602,97 @@ TEST(SCurveTrack, arc_axis_rotation_zero_is_horizontal_arc)
 
 // With the axis rotated a quarter turn about the chord the arc must lie in the vertical
 // plane through the chord: a half circle over a 40 m horizontal chord bulges one radius
-// (20 m) vertically and stays on the chord's compass bearing.
+// (20 m) vertically and stays on the chord's compass bearing.  A positive angle bulges
+// above the chord whichever way the chord runs, and a negative one below.
 TEST(SCurveTrack, vertical_arc_lies_in_vertical_plane)
 {
+    const struct {
+        const char *name;
+        Vector3p origin, dest;
+        float angle_rad;
+        bool above;
+    } cases[] = {
+        {"north +180", {0, 0, -50}, {40, 0, -50}, M_PI, true},
+        {"south +180", {40, 0, -50}, {0, 0, -50}, M_PI, true},
+        {"north -180", {0, 0, -50}, {40, 0, -50}, -M_PI, false},
+    };
+    for (const auto &c : cases) {
+        SCurve leg;
+        leg.calculate_track(c.origin, c.dest, c.angle_rad,
+                            20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+        std::vector<Vector3f> path;
+        sample_path(leg, c.origin, path);
+        ASSERT_GT(path.size(), 100U) << c.name;
+
+        float max_east = 0.0f, max_up = 0.0f, max_down = 0.0f;
+        for (const Vector3f &d : path) {
+            max_east = MAX(max_east, fabsf(d.y));
+            max_up = MAX(max_up, -d.z);
+            max_down = MAX(max_down, d.z);
+        }
+        // the arc plane contains no East component
+        EXPECT_LT(max_east, 0.05f) << c.name;
+        // and it bulges a full radius to the commanded side of the chord only
+        EXPECT_GT(c.above ? max_up : max_down, 19.0f) << c.name;
+        EXPECT_LT(c.above ? max_down : max_up, 0.5f) << c.name;
+        // the endpoint is still the commanded destination
+        const Vector3f end = path.back();
+        EXPECT_NEAR(end.x, (c.dest - c.origin).x, 0.2f) << c.name;
+        EXPECT_NEAR(end.z, 0.0f, 0.2f) << c.name;
+    }
+}
+
+// A vertical circle flown as four quarter arcs needs the sign to alternate: the arc
+// bulges away from the centre, so the two lower quarters bulge below their chords and
+// the two upper quarters above.  A convention that gave a loop a single sign would make
+// a lone vertical arc's side depend on its compass heading.
+TEST(SCurveTrack, vertical_circle_quarters_alternate_sign)
+{
+    const Vector3f centre{0.0f, 0.0f, -20.0f};
+    const Vector3p bottom{0, 0, 0}, front{20, 0, -20}, top{0, 0, -40}, back{-20, 0, -20};
+    const struct {
+        const char *name;
+        Vector3p origin, dest;
+        float angle_rad;
+    } quarters[] = {
+        {"bottom to front", bottom, front, -M_PI_2},
+        {"front to top", front, top, M_PI_2},
+        {"top to back", top, back, M_PI_2},
+        {"back to bottom", back, bottom, -M_PI_2},
+    };
+    const float signs[] = {1.0f, -1.0f};
+    for (const auto &q : quarters) {
+        for (const float sign : signs) {
+            SCurve leg;
+            leg.calculate_track(q.origin, q.dest, sign * q.angle_rad,
+                                20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+            std::vector<Vector3f> path;
+            sample_path(leg, q.origin, path);
+            ASSERT_GT(path.size(), 100U) << q.name;
+
+            float max_radius_err = 0.0f;
+            for (const Vector3f &d : path) {
+                max_radius_err = MAX(max_radius_err, fabsf((d + q.origin.tofloat() - centre).length() - 20.0f));
+            }
+            if (is_positive(sign)) {
+                EXPECT_LT(max_radius_err, 0.2f) << q.name;
+            } else {
+                // the other sign is the mirror image through the chord, well off the circle
+                EXPECT_GT(max_radius_err, 5.0f) << q.name << " with the sign flipped";
+            }
+        }
+    }
+}
+
+// The axis is rotated about the chord's ground track, not the chord itself, so a climbing
+// chord still gets an arc in the vertical plane through it: nothing leaves that plane.
+// Rotating about the 3D chord would tilt the plane and put an East component in the path.
+TEST(SCurveTrack, vertical_arc_on_climbing_chord_stays_in_plane)
+{
     const Vector3p origin{0, 0, -50};
-    const Vector3p dest{40, 0, -50};   // 40 m chord, due North, level
+    const Vector3p dest{40, 0, -80};   // 40 m North and 30 m up
 
     SCurve leg;
     leg.calculate_track(origin, dest, M_PI,
@@ -616,20 +702,14 @@ TEST(SCurveTrack, vertical_arc_lies_in_vertical_plane)
     sample_path(leg, origin, path);
     ASSERT_GT(path.size(), 100U);
 
-    float max_east = 0.0f, max_up = 0.0f, max_down = 0.0f;
+    float max_east = 0.0f;
     for (const Vector3f &d : path) {
         max_east = MAX(max_east, fabsf(d.y));
-        max_up = MAX(max_up, -d.z);
-        max_down = MAX(max_down, d.z);
     }
-    // the arc plane contains no East component
     EXPECT_LT(max_east, 0.05f);
-    // and it bulges a full radius to exactly one side of the chord
-    EXPECT_TRUE((max_up > 19.0f && max_down < 0.5f) || (max_down > 19.0f && max_up < 0.5f));
-    // the endpoint is still the commanded destination
     const Vector3f end = path.back();
     EXPECT_NEAR(end.x, 40.0f, 0.2f);
-    EXPECT_NEAR(end.z, 0.0f, 0.2f);
+    EXPECT_NEAR(end.z, -30.0f, 0.2f);
 }
 
 // The reported velocity must stay tangent to the path for a tilted arc too, which is what
