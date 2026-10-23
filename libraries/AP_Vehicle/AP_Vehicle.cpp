@@ -607,6 +607,10 @@ void AP_Vehicle::loop()
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Internal Errors 0x%x", (unsigned)new_internal_errors);
         _last_internal_errors = new_internal_errors;
     }
+
+#if AP_POWEROFF_ENABLED
+    poweroff_update();
+#endif // AP_POWEROFF_ENABLED
 }
 
 #if AP_SCHEDULER_ENABLED
@@ -964,6 +968,69 @@ void AP_Vehicle::notify_no_such_mode(uint8_t mode_number)
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"No such mode %u", mode_number);
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode_number));
 }
+
+#if AP_POWEROFF_ENABLED
+void AP_Vehicle::poweroff_update()
+{
+#if AP_POWEROFF_DELAY_MS
+    if (_poweroff_start_ms == 0) {
+        return;
+    }
+    if (AP_HAL::millis() - _poweroff_start_ms < AP_POWEROFF_DELAY_MS) {
+        return;
+    }
+    poweroff();
+#endif // AP_POWEROFF_DELAY_MS
+}
+
+void AP_Vehicle::poweroff()
+{
+#ifdef AP_POWER_CONTROL_GPIO
+    hal.gpio->write(AP_POWER_CONTROL_GPIO, AP_POWER_CONTROL_GPIO_VALUE_OFF);
+#else
+#error AP_POWEROFF_ENABLED but no mechanism to power off
+#endif // AP_POWER_CONTROL_GPIO
+}
+
+void AP_Vehicle::poweroff_start()
+{
+#if defined(AP_POWEROFF_DELAY_MS) && AP_POWEROFF_DELAY_MS != 0
+    if (poweroff_pending()) {
+        // Poweroff already in progress
+        return;
+    }
+    _poweroff_start_ms = AP_HAL::millis();
+
+    // Disable servo outputs
+    SRV_Channels::prepare_for_reboot();
+    hal.rcout->force_safety_on();
+
+    // flush pending parameter writes
+    AP_Param::flush();
+
+#ifndef HAL_BUILD_AP_PERIPH
+    // Set the AP_Notify flag, which plays the power off tones
+    AP_Notify::flags.powering_off = true;
+#endif // HAL_BUILD_AP_PERIPH
+
+#if HAL_GCS_ENABLED
+    gcs().poweroff_initiated(0, "Vehicle powering off");
+#endif // HAL_GCS_ENABLED
+
+#else // AP_POWEROFF_DELAY_MS not set - power off immediately
+    poweroff();
+#endif // defined(AP_POWEROFF_DELAY_MS) && AP_POWEROFF_DELAY_MS != 0
+}
+
+bool AP_Vehicle::poweroff_pending() const
+{
+#if AP_POWEROFF_DELAY_MS
+    return _poweroff_start_ms != 0;
+#else
+    return false;
+#endif // AP_POWEROFF_DELAY_MS
+}
+#endif // AP_POWEROFF_ENABLED
 
 // reboot the vehicle in an orderly manner, doing various cleanups and
 // flashing LEDs as appropriate

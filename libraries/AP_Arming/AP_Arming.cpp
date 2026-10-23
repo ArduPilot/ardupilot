@@ -1681,6 +1681,18 @@ bool AP_Arming::serial_protocol_checks(bool display_failure)
     return true;
 }
 
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+// Check for a pending power off
+bool AP_Arming::poweroff_checks(bool display_failure) const
+{
+    if (AP::vehicle()->poweroff_pending()) {
+        check_failed(display_failure, "Power off pending");
+        return false;
+    }
+    return true;
+}
+#endif  // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+
 //Check for estop
 bool AP_Arming::estop_checks(bool display_failure)
 {
@@ -1788,6 +1800,9 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
         & crashdump_checks(report)
 #endif
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+        &  poweroff_checks(report)
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
         &  serial_protocol_checks(report)
         &  estop_checks(report);
 
@@ -1891,6 +1906,9 @@ bool AP_Arming::mandatory_checks(bool report)
 #endif
     ret &= rc_in_calibration_check(report);
     ret &= serial_protocol_checks(report);
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+    ret &= poweroff_checks(report);
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
     return ret;
 }
 

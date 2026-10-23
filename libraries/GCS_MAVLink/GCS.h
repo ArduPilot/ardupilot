@@ -1247,6 +1247,12 @@ public:
         return 200;
     }
 
+    // poweroff_initiated - called when system is being deliberately
+    // powered off.  p1 will be sent as the first parameter in a
+    // MAV_CMD_POWER_OFF_INITIATED.  A varargs-string and parameters
+    // can be supplied to send a custom message.
+    void poweroff_initiated(float p1, const char *fmt, ...) FMT_PRINTF(3, 4);
+
     void init();
     void convert_parameters();
     void setup_console();
