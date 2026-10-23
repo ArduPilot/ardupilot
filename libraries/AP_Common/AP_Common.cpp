@@ -25,6 +25,22 @@ extern const AP_HAL::HAL& hal;
 /* assert that const vals are float, not double. so 100.0 means 100.0f */
 static_assert(sizeof(1e6) == sizeof(float), "Compilation needs to use single-precision constants");
 
+WithDepthGuard::WithDepthGuard(uint8_t &depth) :
+    _depth(depth)
+{
+    __atomic_add_fetch(&_depth, 1, __ATOMIC_RELAXED);
+}
+
+WithDepthGuard::~WithDepthGuard()
+{
+    __atomic_sub_fetch(&_depth, 1, __ATOMIC_RELAXED);
+}
+
+uint8_t WithDepthGuard::value(const uint8_t &depth)
+{
+    return __atomic_load_n(&depth, __ATOMIC_RELAXED);
+}
+
 /*
   Return true if value is between lower and upper bound inclusive.
   False otherwise.

@@ -130,6 +130,8 @@ void AP_RAMTRON::send_offset(uint8_t cmd, uint32_t offset) const
 }
 
 // read from device
+// @StackMaxRecursion: 2
+// Large reads recurse with size=maxread, which cannot enter the splitting loop.
 bool AP_RAMTRON::read(uint32_t offset, uint8_t *buf, uint32_t size)
 {
     // Don't allow reads outside of the FRAM memory.

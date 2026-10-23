@@ -1331,6 +1331,8 @@ void UARTDriver::_tx_timer_tick(void)
 /*
   change flow control mode for port
  */
+// @StackMaxRecursion: 2
+// RTS_DE can fall back to DISABLE, whose case makes no recursive call.
 void UARTDriver::set_flow_control(enum flow_control flowcontrol)
 {
     if (sdef.is_usb) {
