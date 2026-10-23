@@ -93,6 +93,8 @@ AC_PosControl *AC_PosControl::_singleton;
 
 #define POSCONTROL_ACCEL_D_MAX_SHAPED_MSS       7.5f    // vertical acceleration ceiling for the input shaping, applied before the overspeed gain
 static_assert(POSCONTROL_ACCEL_D_MAX_SHAPED_MSS < GRAVITY_MSS, "the shaping must never ask for more than free fall");
+#define POSCONTROL_HEADING_DEGENERATE_TILT_RAD  radians(80.0f)   // thrust tilt past which a world-frame heading target is abandoned
+#define POSCONTROL_HEADING_DEGENERATE_EXIT_RAD  radians(70.0f)   // and the tilt below which it is resumed
 
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
@@ -925,6 +927,7 @@ void AC_PosControl::D_init_controller()
     _thrust_vector_d_mss = -GRAVITY_MSS;
     _thrust_inverted_active = false;
     _thrust_invert_arm_ms = 0;
+    _heading_degenerate = false;
 
     // initialise terrain targets and offsets to zero
     init_terrain();
@@ -1193,6 +1196,7 @@ void AC_PosControl::D_update_controller()
         _thrust_vector_d_mss = -GRAVITY_MSS;
         _attitude_control.set_throttle_out(-thrust_d_norm, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
     }
+    update_heading_degenerate();
 
     // Check for vertical controller health
 
@@ -1468,6 +1472,36 @@ Vector3f AC_PosControl::get_thrust_vector() const
     Vector3f accel_target_ned_mss = get_accel_target_NED_mss();
     accel_target_ned_mss.z = _thrust_vector_enabled ? _thrust_vector_d_mss : -GRAVITY_MSS;
     return accel_target_ned_mss;
+}
+
+// Hysteresis on the thrust tilt past which a world-frame heading target is abandoned, so the
+// heading mode cannot alternate cycle by cycle around the threshold.
+void AC_PosControl::update_heading_degenerate()
+{
+    // without inverted thrust the tilt is the lean angle, where a heading still means something
+    if (!_thrust_vector_enabled) {
+        _heading_degenerate = false;
+        return;
+    }
+    const Vector3f thrust_vector = get_thrust_vector();
+    const float thrust_length = thrust_vector.length();
+    if (!is_positive(thrust_length)) {
+        _heading_degenerate = false;
+        return;
+    }
+    // -z/|thrust| is cos(tilt), so a larger tilt is a smaller value
+    const float cos_tilt = -thrust_vector.z / thrust_length;
+    const float threshold_rad = _heading_degenerate ? POSCONTROL_HEADING_DEGENERATE_EXIT_RAD : POSCONTROL_HEADING_DEGENERATE_TILT_RAD;
+    _heading_degenerate = cos_tilt < cosf(threshold_rad);
+}
+
+// Returns true when the thrust vector is tilted so far that a world-frame heading target no
+// longer means anything. Past that tilt the heading changes as a consequence of rotating about
+// the pitch axis, so an absolute target fights the rotation already carrying the nose around.
+// Only ever true while PSC_TVEC_EN is enabled.
+bool AC_PosControl::thrust_vector_heading_degenerate() const
+{
+    return _heading_degenerate;
 }
 
 // Computes NE stopping point in meters based on current position, velocity, and acceleration.
