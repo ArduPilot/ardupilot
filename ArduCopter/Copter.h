@@ -322,9 +322,13 @@ private:
     // vibration check
     struct {
         bool high_vibes;    // true while high vibration are detected
+        bool forced;        // compensation forced on by the flight mode
         uint32_t start_ms;  // system time high vibration were last detected
         uint32_t clear_ms;  // system time high vibrations stopped
     } vibration_check;
+
+    // vibration compensation is active when detected or forced
+    bool vibe_comp_active() const { return vibration_check.high_vibes || vibration_check.forced; }
 
     // EKF variances are unfiltered and are designed to recover very quickly when possible
     // thus failsafes should be triggered on filtered values in order to avoid transient errors 
