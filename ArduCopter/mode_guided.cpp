@@ -156,29 +156,46 @@ bool ModeGuided::move_vehicle_on_ekf_reset() const
 }
 
 // initialises position controller to implement take-off
-// takeoff_alt_m is interpreted as alt-above-home (in m) or alt-above-terrain if a rangefinder is available
-bool ModeGuided::do_user_takeoff_start_m(float takeoff_alt_m)
+// takeoff_alt_m is interpreted according to alt_frame, or as alt-above-terrain if a rangefinder is available
+bool ModeGuided::do_user_takeoff_start_m(float takeoff_alt_m, TakeoffAltFrame alt_frame)
 {
     // calculate target altitude and frame (either alt-above-ekf-origin or alt-above-terrain)
     float alt_target_m;
     bool alt_target_terrain = false;
 #if AP_RANGEFINDER_ENABLED
+    // altitude the rangefinder would be asked to achieve, as alt-above-terrain.
+    // an above-home altitude is flown as above-terrain unconverted, which is
+    // long-standing behaviour rather than an oversight
+    float rangefinder_alt_target_m = takeoff_alt_m;
+    if (alt_frame == TakeoffAltFrame::ABOVE_CURRENT) {
+        // a climb above the current altitude is a climb above the current terrain
+        // altitude.  use the glitch-protected altitude; the takeoff is flown against
+        // the terrain offset derived from it, and a single bad sample here would
+        // otherwise be baked into the target for the whole takeoff
+        rangefinder_alt_target_m += copter.rangefinder_state.alt_glitch_protected_m;
+    }
     if (wp_nav->rangefinder_used_and_healthy() &&
         wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
-        takeoff_alt_m < copter.rangefinder.max_distance_orient(ROTATION_PITCH_270)) {
+        rangefinder_alt_target_m < copter.rangefinder.max_distance_orient(ROTATION_PITCH_270)) {
         // can't takeoff downwards
-        if (takeoff_alt_m <= copter.rangefinder_state.alt_m) {
+        if (rangefinder_alt_target_m <= copter.rangefinder_state.alt_glitch_protected_m) {
             return false;
         }
         // provide target altitude as alt-above-terrain
-        alt_target_m = takeoff_alt_m;
+        alt_target_m = rangefinder_alt_target_m;
         alt_target_terrain = true;
     } else
 #endif
     {
-        // interpret altitude as alt-above-home
         Location target_loc = copter.current_loc;
-        target_loc.set_alt_m(takeoff_alt_m, Location::AltFrame::ABOVE_HOME);
+        switch (alt_frame) {
+        case TakeoffAltFrame::ABOVE_HOME:
+            target_loc.set_alt_m(takeoff_alt_m, Location::AltFrame::ABOVE_HOME);
+            break;
+        case TakeoffAltFrame::ABOVE_CURRENT:
+            target_loc.offset_up_m(takeoff_alt_m);
+            break;
+        }
 
         // provide target altitude as alt-above-ekf-origin
         if (!target_loc.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, alt_target_m)) {
