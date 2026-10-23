@@ -183,7 +183,7 @@ static bool send_fw_read(uint8_t idx)
     r.have_reply = false;
 
     uavcan_protocol_file_ReadRequest pkt {};
-    pkt.path.path.len = strlen((const char *)fw_update.path);
+    pkt.path.path.len = strnlen((const char *)fw_update.path, sizeof(pkt.path.path.data));
     pkt.offset = r.offset;
     memcpy(pkt.path.path.data, fw_update.path, pkt.path.path.len);
 
@@ -758,7 +758,11 @@ bool can_check_update(void)
         for (uint8_t i=0; i<FW_UPDATE_PIPELINE_LEN; i++) {
             fw_update.reads[i].offset = i*sizeof(uavcan_protocol_file_ReadResponse::data.data);
         }
+        static_assert(sizeof(fw_update.path) >= sizeof(uavcan_protocol_file_Path::path.data)+1,
+                      "fw_update.path must hold the full handoff path");
         memcpy(fw_update.path, comms->path, sizeof(uavcan_protocol_file_Path::path.data)+1);
+        // don't trust the app to have terminated the handoff path
+        fw_update.path[sizeof(fw_update.path)-1] = 0;
         ret = true;
         // clear comms region
         memset(comms, 0, sizeof(struct app_bootloader_comms));
