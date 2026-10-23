@@ -506,8 +506,12 @@ void Copter::update_flight_mode()
 #endif
     attitude_control->landed_gain_reduction(copter.ap.land_complete); // Adjust gains when landed to attenuate ground oscillation
 
-    // inverted thrust is only permitted clear of the ground
-    pos_control->set_inverted_thrust_allowed(!ap.land_complete && !ap.land_complete_maybe);
+#if FRAME_CONFIG != HELI_FRAME
+    // inverted thrust is only permitted on a planned path, clear of the ground; any other mode,
+    // and a mode change out of one, releases it at once
+    const bool inverted_thrust_allowed = flightmode->allows_inverted_thrust() && !ap.land_complete && !ap.land_complete_maybe;
+    pos_control->set_inverted_thrust_allowed(inverted_thrust_allowed, inverted_thrust_allowed ? flightmode->get_alt_above_ground_m() : 0.0f);
+#endif
 
     // set ekf reset handling method
     pos_control->set_reset_handling_method(flightmode->move_vehicle_on_ekf_reset() ? AC_PosControl::EKFResetMethod::MoveVehicle : AC_PosControl::EKFResetMethod::MoveTarget);

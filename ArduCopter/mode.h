@@ -154,6 +154,11 @@ public:
     virtual bool allows_inverted() const { return false; };
 #endif
 
+#if FRAME_CONFIG != HELI_FRAME
+    // return true if the mode flies a planned path along which the thrust vector may point downward
+    virtual bool allows_inverted_thrust() const { return false; }
+#endif
+
     // return a string for this flightmode
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
@@ -591,6 +596,11 @@ public:
 
     bool is_taking_off() const override;
     bool use_pilot_yaw() const override;
+
+#if FRAME_CONFIG != HELI_FRAME
+    // waypoint legs are the planned paths: arcs, splines and straight legs
+    bool allows_inverted_thrust() const override { return _mode == SubMode::WP; }
+#endif
 
     bool set_speed_NE_ms(float speed_ne_ms) override;
     bool set_speed_up_ms(float speed_up_ms) override;
