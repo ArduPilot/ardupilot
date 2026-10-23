@@ -2533,6 +2533,13 @@ bool AP_InertialSensor::get_first_usable_accel_cal_sample_avg(uint8_t sample_num
 #if HAL_GCS_ENABLED
 bool AP_InertialSensor::calibrate_gyros()
 {
+    // exit immediately if there are no gyros to calibrate. This also
+    // prevents a hang in wait_for_sample() if a gyro calibration
+    // request is received via MAVLink before the backends have been
+    // created (e.g. during vehicle startup)
+    if (get_gyro_count() == 0) {
+        return false;
+    }
     init_gyro();
     if (!gyro_calibrated_ok_all()) {
         return false;
@@ -2552,6 +2559,15 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
     if ((now - last_accel_cal_ms) < 5000) {
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
+
+    // exit immediately if there are no accelerometers to calibrate. This
+    // also prevents a hang in wait_for_sample() if an accelerometer
+    // calibration request is received via MAVLink before the backends
+    // have been created (e.g. during vehicle startup)
+    if (get_accel_count() == 0) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
     last_accel_cal_ms = now;
 
     uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
