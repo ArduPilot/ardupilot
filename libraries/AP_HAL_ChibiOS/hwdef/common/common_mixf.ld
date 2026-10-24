@@ -72,7 +72,6 @@ SECTIONS
     /* External Flash area if defined */
     .extflash : ALIGN(4) SUBALIGN(4)
     {
-        *(.ap_romfs*)
         /* moving GCS_MAVLink to ext_flash */
         lib/lib*.a:GCS*.*(.text* .rodata*)
         lib/lib*.a:AP_OSD*.*(.text* .rodata*)
@@ -80,8 +79,15 @@ SECTIONS
         lib/lib*.a:AP_AccelCal*.*(.text* .rodata*)
         *(.extflash)
     } > ext_flash
+
+    /* Native modules must retain their input alignment despite SUBALIGN(4). */
+    .ap_romfs :
+    {
+        *(.ap_romfs*)
+    } > ext_flash
     __firmware_crc_ext_start__ = ADDR(.extflash);
-    __firmware_crc_ext_end__ = ADDR(.extflash) + SIZEOF(.extflash);
+    __firmware_crc_ext_end__ = MAX(ADDR(.extflash) + SIZEOF(.extflash),
+                                 ADDR(.ap_romfs) + SIZEOF(.ap_romfs));
 
     .text : ALIGN(4) SUBALIGN(4)
     {

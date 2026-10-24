@@ -18,8 +18,11 @@
 
 #include "CrashCatcher.h"
 #include "hwdef.h"
+#include "stack_guard.h"
 #if AP_USB_DEBUG_ENABLED
 #define HardFault_Handler AP_HardFault_Handler
+#elif HAL_STACK_GUARD_ENABLED
+#define HardFault_Handler AP_StackGuard_HardFault_Fallback
 #endif
 
     .text
@@ -30,6 +33,18 @@
     .type HardFault_Handler, %function
     .thumb_func
 HardFault_Handler:
+#if HAL_STACK_GUARD_ENABLED
+    /* All fatal entry paths, including Bus/Usage faults, can dump the guarded
+     * memory. Only scratch registers clobbered by the following code are used;
+     * preserve LR and the original MSP for CrashCatcher. */
+    ldr     r3, =0xE000ED9C /* MPU_RBAR */
+    movs    r2, #(0x10 + HAL_STACK_GUARD_MPU_REGION)
+    str     r2, [r3]
+    movs    r2, #0
+    str     r2, [r3, #4] /* MPU_RASR */
+    dsb
+    isb
+#endif
     /*
      * Save the exception registers before switching MSP to the dedicated
      * CrashCatcher stack. The resulting layout is CrashCatcherExceptionRegisters.
