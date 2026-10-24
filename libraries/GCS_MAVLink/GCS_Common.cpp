@@ -7516,8 +7516,9 @@ void GCS::passthru_timer(void)
             _passthru.port2->begin_locked(baud, 0, 0, lock_key);
         }
 
-        if (_passthru.parity2 != parity) {
-            _passthru.parity2 = parity;
+        // compare with the port's parity, not what we last set, as the
+        // port's owner may change it as we take it (e.g. RC input)
+        if (_passthru.port2->get_parity() != parity) {
             _passthru.port2->configure_parity(parity);
         }
     }
@@ -7531,8 +7532,7 @@ void GCS::passthru_timer(void)
             _passthru.port1->begin_locked(baud, 0, 0, lock_key);
         }
 
-        if (_passthru.parity1 != parity) {
-            _passthru.parity1 = parity;
+        if (_passthru.port1->get_parity() != parity) {
             _passthru.port1->configure_parity(parity);
         }
     }
