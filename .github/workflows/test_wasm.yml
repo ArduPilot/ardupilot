@@ -1,14 +1,11 @@
-name: test WebAssembly Plane
+name: test WebAssembly
 
 on:
   push:
     paths-ignore:
       # remove other vehicles
       - 'AntennaTracker/**'
-      - 'ArduCopter/**'
-      - 'ArduSub/**'
       - 'Blimp/**'
-      - 'Rover/**'
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
@@ -80,15 +77,12 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
-      - '!.github/workflows/test_wasm_plane.yml'  # except this one
+      - '!.github/workflows/test_wasm.yml'  # except this one
   pull_request:
     paths-ignore:
       # remove other vehicles
       - 'AntennaTracker/**'
-      - 'ArduCopter/**'
-      - 'ArduSub/**'
       - 'Blimp/**'
-      - 'Rover/**'
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
@@ -160,7 +154,7 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
-      - '!.github/workflows/test_wasm_plane.yml'  # except this one
+      - '!.github/workflows/test_wasm.yml'  # except this one
   workflow_dispatch:
 
 concurrency:
@@ -177,6 +171,18 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     container: ardupilot/ardupilot-dev-base:v0.2.0
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - binary: arducopter
+            model: '+'
+          - binary: arduplane
+            model: plane
+          - binary: ardurover
+            model: rover
+          - binary: ardusub
+            model: vectored
 
     steps:
       - uses: actions/checkout@v7
@@ -194,16 +200,16 @@ jobs:
         shell: bash
         run: Tools/environment_install/install-wasm-prereqs-ubuntu.sh
 
-      - name: Build ArduPlane WebAssembly SITL
+      - name: Build ${{ matrix.binary }} WebAssembly SITL
         shell: bash
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           source "$HOME/emsdk/emsdk_env.sh"
           ./waf configure --board wasm
-          ./waf build --target bin/arduplane
-          test -f build/wasm/bin/arduplane.js
-          test -f build/wasm/bin/arduplane.wasm
-          node Tools/autotest/wasm_plane_smoke_test.mjs build/wasm/bin/arduplane.js
+          ./waf build --target bin/${{ matrix.binary }}
+          test -f build/wasm/bin/${{ matrix.binary }}.js
+          test -f build/wasm/bin/${{ matrix.binary }}.wasm
+          node Tools/autotest/wasm_sitl_smoke_test.mjs build/wasm/bin/${{ matrix.binary }}.js '${{ matrix.model }}'
 
       - name: Save Emscripten SDK
         if: github.ref == 'refs/heads/master' && github.event_name == 'push' && steps.restore-emsdk.outputs.cache-hit != 'true'
