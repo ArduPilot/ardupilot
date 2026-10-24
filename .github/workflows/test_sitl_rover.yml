@@ -256,6 +256,11 @@ jobs:
       - uses: ./.github/actions/setup-ccache
         with:
           key-suffix: base
+      - name: Install native module compiler
+        if: matrix.config == 'sitltest-rover'
+        shell: bash
+        run: |
+          python3 Tools/modules/rust/install_toolchain.py --directory "${RUNNER_TEMP}/ap-rust"
       - name: test ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
