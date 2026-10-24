@@ -426,9 +426,12 @@ bool Copter::set_target_angle_and_rate_and_throttle(float roll_deg, float pitch_
 }
 
 // Register a custom mode with given number and names
-AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, const char* full_name, const char* short_name)
+AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, const char* full_name, const char* short_name,
+                                                        const void *owner)
 {
+    WITH_SEMAPHORE(scheduler.get_semaphore());
     const Mode::Number number = (Mode::Number)num;
+    const void *owner_key = owner != nullptr ? owner : this;
 
     // See if this mode has been registered already, if it has return the state for it
     // This allows scripting restarts
@@ -439,6 +442,11 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
         if ((mode_guided_custom[i]->mode_number() == number) &&
             (strcmp(mode_guided_custom[i]->name(), full_name) == 0) &&
             (strncmp(mode_guided_custom[i]->name4(), short_name, 4) == 0)) {
+            auto &state = mode_guided_custom[i]->state;
+            if (state.owner != nullptr && state.owner != owner_key) {
+                return nullptr;
+            }
+            state.owner = owner_key;
             return &mode_guided_custom[i]->state;
         }
     }
@@ -465,6 +473,7 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
             }
 
             // Registration successful, notify the GCS that it should re-request the available modes
+            mode_guided_custom[i]->state.owner = owner_key;
             gcs().available_modes_changed();
 
             return &mode_guided_custom[i]->state;
