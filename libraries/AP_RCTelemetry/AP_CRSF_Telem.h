@@ -201,20 +201,26 @@ public:
         const char* name;
         ScriptedParameter* params;
         ScriptedMenu* next_menu;    // linked list of menus to make addition/removal/modification easy
+        const void* owner;          // nullptr for Lua, module context for native runtimes
 
         // public API called from lua
-        ScriptedMenu* add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu);
+        ScriptedMenu* add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu,
+                               const void* menu_owner = nullptr);
         ScriptedParameter* add_parameter(uint8_t length, const char* data);
 
         // private API
-        ScriptedMenu(const char* menu_name, uint8_t size, uint8_t parent_menu);
+        ScriptedMenu(const char* menu_name, uint8_t size, uint8_t parent_menu,
+                     const void* menu_owner = nullptr);
         ~ScriptedMenu();
         ScriptedParameter* find_parameter(uint8_t param_num);
         ScriptedMenu* find_menu(uint8_t param_num);
         bool remove_menu(uint8_t param_num);
 
         void dump_structure(uint8_t indent);
-        ScriptedMenu() {}
+        ScriptedMenu() : num_params(0), name(nullptr), params(nullptr), next_menu(nullptr), owner(nullptr) {
+            id = 0;
+            parent_id = 0;
+        }
     };
 
     enum ScriptedParameterEvents : uint8_t {
@@ -246,15 +252,20 @@ public:
     HAL_Semaphore scr_sem; // semaphore guarding access to the inbound and outbound queues
     // access so that submenus can serialize access from scripting
     HAL_Semaphore& get_semaphore() { return scr_sem; }
+    // Caller holds scr_sem. Rotate other owners' requests without consuming them.
+    bool select_scripted_event(ObjectBuffer<ScriptedParameterWrite>& queue, const void* owner,
+                               ScriptedParameterWrite& request);
 
-    void clear_menus();
+    // Remove menus belonging to one runtime. Lua menus have a null owner.
+    // Queued requests referencing their parameters are discarded before free.
+    void clear_menus(const void* owner = nullptr);
     bool process_scripted_param_write(ParameterSettingsWriteFrame* write, uint8_t length);
     bool process_scripted_param_read(ParameterSettingsReadFrame* read);
     void dump_menu_structure();
 
     // public API called from lua
     // add a scripted sub-menu to this menu
-    ScriptedMenu* add_menu(const char* name);
+    ScriptedMenu* add_menu(const char* name, const void* owner = nullptr);
     // get a menu event filtered by event type, this adds the event to the outbound queue for processing
     uint8_t get_menu_event(uint8_t menu_events, uint8_t& param_id, ScriptedPayload& payload);
     // peek for a menu event filtered by event type, this makes no changes to the outbound queue
