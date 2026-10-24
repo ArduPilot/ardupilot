@@ -75,6 +75,9 @@ private:
     void output_servos(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
 
+    ssize_t send_servos(const void *pkt, size_t size);
+    ssize_t recv_sensors(void *buf, size_t size, uint32_t timeout_ms);
+
     uint64_t parse_sensors(const char *json);
 
     // buffer for parsing pose data in JSON format
