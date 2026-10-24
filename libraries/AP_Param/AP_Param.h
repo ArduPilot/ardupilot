@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <cmath>
 #include <type_traits>
+#include <atomic>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
@@ -626,6 +627,13 @@ public:
 #if AP_PARAM_DYNAMIC_ENABLED
     // allow for dynamically added parameter tables from scripts
     static bool add_table(uint8_t key, const char *prefix, uint8_t num_params);
+    // Keep table metadata for the rest of this boot, including across module
+    // reloads. Existing names cannot change and capacity cannot grow. Tables
+    // cannot switch between this mode and add_table() within a boot.
+    // add_param() still restores stored values, not unsaved changes.
+    // Registration writers are serialized internally, including legacy Lua
+    // registrations. This does not lock general parameter reads or writes.
+    static bool add_table_persistent(uint8_t key, const char *prefix, uint8_t num_params);
     static bool add_param(uint8_t key, uint8_t param_num, const char *pname, float default_value);
     static bool load_int32(uint16_t key, uint32_t group_element, int32_t &value);
 #endif
@@ -841,6 +849,11 @@ private:
         return i<_num_vars_base? _var_info[i] : _var_info_dynamic[i-_num_vars_base];
     }
     static uint8_t _dynamic_table_sizes[AP_PARAM_MAX_DYNAMIC];
+    static bool _dynamic_table_persistent[AP_PARAM_MAX_DYNAMIC];
+    static HAL_Semaphore _dynamic_registration_sem;
+    static bool add_table_internal(uint8_t key, const char *prefix, uint8_t num_params, bool persistent);
+    static bool add_table_locked(uint8_t key, const char *prefix, uint8_t num_params, bool persistent,
+                                 AP_Param *&crc_param);
 #else
     // simple static var table in flash
     static const struct Info &var_info(uint16_t i) {
@@ -888,6 +901,14 @@ private:
         defaults_list *next;
     };
     static defaults_list *default_list;
+#if AP_PARAM_DEFAULTS_ENABLED
+    // Protect only the runtime defaults list, not parameter values or the
+    // separately loaded overrides array. setup() enables locking after static
+    // constructors; call it before concurrent parameter access begins.
+    class DefaultsLock;
+    static HAL_Semaphore _defaults_sem;
+    static std::atomic<bool> _defaults_locking;
+#endif
     static void check_default(AP_Param *ap, float *default_value);
     static void purge_defaults_list_overrides(void);
 
