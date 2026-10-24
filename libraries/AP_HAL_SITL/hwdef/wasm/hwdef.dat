@@ -1,7 +1,7 @@
 include ../sitl/hwdef.dat
 
 env TOOLCHAIN emscripten
-AUTOBUILD_TARGETS None
+AUTOBUILD_TARGETS Copter, Plane, Rover, Sub
 
 define HAL_SITL_WASM_ENABLED 1
 define AP_NETWORKING_ENABLED 0
