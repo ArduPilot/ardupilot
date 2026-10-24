@@ -20,6 +20,7 @@
 #include "AP_Filesystem_config.h"
 
 #if AP_FILESYSTEM_SYS_ENABLED
+#include <AP_HAL/Semaphores.h>
 
 class ExpandingString;
 
@@ -40,6 +41,8 @@ private:
     // only allow up to 4 files at a time
     static constexpr uint8_t max_open_file = 4;
     int8_t file_in_sysfs(const char *fname);
+    void close_slot(uint8_t idx);
+    HAL_Semaphore _sem;
 
     struct DirReadTracker {
         size_t file_offset;
@@ -47,7 +50,11 @@ private:
     };
 
     struct rfile {
-        bool open;
+        enum class State : uint8_t {
+            Closed,
+            Opening,
+            Open,
+        } state;
         uint32_t file_ofs;
         ExpandingString *str;
     } file[max_open_file];
