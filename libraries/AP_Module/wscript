@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+
+# AP_FLAKE8_CLEAN
+"""Build generated native bindings from the AP_Scripting description IR."""
+
+
+GENERATED = [
+    'BindingConfig.h',
+    'BindingIds.h',
+    'BindingImports_generated.cpp',
+    'BindingLog_generated.h',
+    'BindingMath_generated.cpp',
+    'Bindings_generated.cpp',
+    'HostApi.h',
+    'generator/bindings_contract.json',
+    'generator/coverage.json',
+    'generator/imports.json',
+    'sdk/abi.json',
+    'sdk/ada/ap_module-types.ads',
+    'sdk/ada/ap_module-statuses.ads',
+    'sdk/ada/ap_module-bindings.ads',
+    'sdk/ada/ap_module-bindings.adb',
+    'sdk/ada/bridge.cpp',
+    'sdk/fortran/ap_module_bindings.f90',
+    'sdk/fortran/bridge.cpp',
+    'sdk/cpp/bindings.hpp',
+    'sdk/cpp/imports.cpp',
+    'sdk/rust/src/airspeed.rs',
+    'sdk/rust/src/analog_pwm.rs',
+    'sdk/rust/src/api.rs',
+    'sdk/rust/src/applet.rs',
+    'sdk/rust/src/arming.rs',
+    'sdk/rust/src/battery.rs',
+    'sdk/rust/src/bindings.rs',
+    'sdk/rust/src/borrowed.rs',
+    'sdk/rust/src/camera.rs',
+    'sdk/rust/src/can.rs',
+    'sdk/rust/src/command_int.rs',
+    'sdk/rust/src/crsf.rs',
+    'sdk/rust/src/custom_mode.rs',
+    'sdk/rust/src/dronecan.rs',
+    'sdk/rust/src/efi.rs',
+    'sdk/rust/src/enums.rs',
+    'sdk/rust/src/example_constants.rs',
+    'sdk/rust/src/examples.rs',
+    'sdk/rust/src/file.rs',
+    'sdk/rust/src/filesystem.rs',
+    'sdk/rust/src/format.rs',
+    'sdk/rust/src/i2c.rs',
+    'sdk/rust/src/imports.rs',
+    'sdk/rust/src/libm.rs',
+    'sdk/rust/src/log.rs',
+    'sdk/rust/src/math.rs',
+    'sdk/rust/src/mavlink.rs',
+    'sdk/rust/src/motor_config.rs',
+    'sdk/rust/src/network.rs',
+    'sdk/rust/src/old_parameter.rs',
+    'sdk/rust/src/onvif.rs',
+    'sdk/rust/src/parameter.rs',
+    'sdk/rust/src/periph.rs',
+    'sdk/rust/src/rangefinder_proximity.rs',
+    'sdk/rust/src/serial.rs',
+    'sdk/rust/src/shared_state.rs',
+    'sdk/rust/src/serialled.rs',
+    'sdk/rust/src/strtof.rs',
+    'sdk/rust/src/telemetry.rs',
+    'sdk/rust/src/values.rs',
+]
+
+
+def configure(cfg):
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_Module'] = [
+        'BindingImports_generated.cpp',
+        'BindingMath_generated.cpp',
+        'Bindings_generated.cpp',
+    ]
+
+
+def generate_bindings(task):
+    command = list(task.env.PYTHON) + [
+        task.generator.binding_generator.abspath(),
+        '--output-dir', task.generator.output_dir.abspath(),
+    ]
+    return task.exec_command(command)
+
+
+def build(bld):
+    root = bld.srcnode.make_node('libraries/AP_Module')
+    generator = root.make_node('generator')
+    lua_generator = bld.srcnode.make_node('libraries/AP_Scripting/generator')
+    output_dir = bld.bldnode.make_node('libraries/AP_Module')
+    targets = [bld.bldnode.find_or_declare('libraries/AP_Module/' + name) for name in GENERATED]
+    sources = generator.ant_glob('*.py *.json templates/**/*.tmpl')
+    sources += [root.make_node('sdk/rust/src/compatibility.rs')]
+    sources += lua_generator.ant_glob('*.py templates/*.tmpl description/bindings.desc')
+    sources += [bld.srcnode.make_node('modules/mavlink/message_definitions/v1.0/common.xml')]
+    sources += [bld.srcnode.make_node('libraries/' + path) for path in (
+        'AP_GPS/AP_GPS.h', 'AP_GPS/AP_GPS_FixType.h', 'AP_Terrain/AP_Terrain.h', 'AP_Mission/AP_Mission.h',
+    )]
+    bld(
+        name='module_bindings',
+        source=sources,
+        target=targets,
+        rule=generate_bindings,
+        cls_str=lambda task: 'AP_Module bindings',
+        binding_generator=generator.make_node('generate.py'),
+        output_dir=output_dir,
+        vars=['PYTHON'],
+        group='dynamic_sources',
+    )
