@@ -177,6 +177,14 @@ void AP_SmartAudio::update_vtx_params()
             } else {
                 vtx.update_configured_channel_and_band();
             }
+            // a band parameter change may have disabled the selected channel since
+            // the change was requested, leaving nothing to command
+            if (!vtx.configured_selectable()) {
+                _vtx_freq_change_pending = false;
+            }
+        }
+        if (!_vtx_freq_change_pending) {
+            _freq_attempts = 0;
         }
 
         debug("update_params(): freq %d->%d, chan: %d->%d, band: %d->%d, pwr: %d->%d, opts: %d->%d",
@@ -218,10 +226,31 @@ void AP_SmartAudio::update_vtx_params()
             set_operation_mode(mode);
         } else if (_vtx_freq_change_pending) {
             debug("update frequency");
-            if (_vtx_use_set_freq) {
-                set_frequency(vtx.get_configured_frequency_mhz(), false);
+            // a custom band is not in the VTX's own band map, so it can only
+            // be reached by frequency, whatever mode the VTX is in
+            if (_vtx_use_set_freq || vtx.configured_band_is_custom()) {
+                const uint16_t freq = vtx.get_configured_frequency_mhz();
+                if (freq != _freq_attempt_mhz) {
+                    _freq_attempt_mhz = freq;
+                    _freq_attempts = 0;
+                }
+                if (_freq_attempts >= VTX_MAX_FREQUENCY_ATTEMPTS) {
+                    // the VTX does not take this frequency (it may be out of
+                    // its range, or locked): stop asking so that other changes
+                    // can go out
+                    vtx.frequency_rejected();
+                    _vtx_freq_change_pending = false;
+                    _freq_attempts = 0;
+                    return;
+                }
+                _freq_attempts++;
+                _sent_band = vtx.get_configured_band();
+                _sent_channel = vtx.get_configured_channel();
+                set_frequency(freq, false);
             } else {
-                set_channel(vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel());
+                _sent_band = vtx.get_configured_band();
+                _sent_channel = vtx.get_configured_channel();
+                set_channel(_sent_band * VTX_MAX_CHANNELS + _sent_channel);
             }
         } else if (_vtx_power_change_pending) {
             debug("update power (ver %u)", _protocol_version);
@@ -517,9 +546,9 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     AP_VideoTX& vtx = AP::vtx();
 
     vtx.set_enabled(true);
-    vtx.set_frequency_mhz(settings.frequency);
-    vtx.set_band(settings.band);
-    vtx.set_channel(settings.channel);
+    // it seems like the spec is wrong, on a unify pro32 this setting is inverted
+    _vtx_use_set_freq = !(settings.mode & 1);
+    vtx.set_reported_state(settings.band, settings.channel, settings.frequency, !_vtx_use_set_freq);
     // SA21 sends us a complete packet with the supported power levels
     if (settings.version == SMARTAUDIO_SPEC_PROTOCOL_v21) {
         vtx.set_power_dbm(settings.power_in_dbm);
@@ -533,9 +562,6 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     } else {
         vtx.set_power_level(settings.power, AP_VideoTX::PowerActive::Active);
     }
-    // it seems like the spec is wrong, on a unify pro32 this setting is inverted
-    _vtx_use_set_freq = !(settings.mode & 1);
-
     // PITMODE | UNLOCKED
     // SmartAudio 2.1 dropped support for outband pitmode so we won't support it
     uint8_t opts = ((settings.mode & 0x2) >> 1) | ((settings.mode & 0x10) >> 1);
@@ -620,10 +646,8 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U16ResponseFrame *resp = (const U16ResponseFrame *)buffer;
-        unpack_frequency(&settings, resp->payload);
-        vtx.set_frequency_mhz(settings.frequency);
-        vtx.set_configured_frequency_mhz(vtx.get_frequency_mhz());
-        vtx.update_configured_channel_and_band();
+        unpack_frequency(&settings, be16toh(resp->payload));
+        vtx.frequency_command_reply(_sent_band, _sent_channel, _freq_attempt_mhz, settings.frequency);
         debug("Frequency was set to %d", settings.frequency);
     }
         break;
@@ -633,11 +657,8 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U8ResponseFrame *resp = (const U8ResponseFrame *)buffer;
-        vtx.set_band(resp->payload / VTX_MAX_CHANNELS);
-        vtx.set_channel(resp->payload % VTX_MAX_CHANNELS);
-        vtx.set_configured_channel(vtx.get_channel());
-        vtx.set_configured_band(vtx.get_band());
-        vtx.update_configured_frequency();
+        vtx.channel_command_reply(_sent_band, _sent_channel,
+                                  resp->payload / VTX_MAX_CHANNELS, resp->payload % VTX_MAX_CHANNELS);
         debug("Channel was set to %d", resp->payload);
     }
         break;
