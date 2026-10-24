@@ -10,8 +10,12 @@ extern const AP_HAL::HAL& hal;
 using namespace HALSITL;
 
 // construct a semaphore
-Semaphore::Semaphore()
+Semaphore::Semaphore() :
+    owner((pthread_t)-1),
+    take_count(0)
 {
+    // Like ChibiOS chMtxObjectInit(), initialize ownership and recursion state
+    // here so stack-allocated semaphores do not depend on zeroed storage.
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
