@@ -19,8 +19,9 @@ const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 class Parameters
 {
 public:
-    enum { k_param_value };
+    enum { k_param_value, k_param_float_value };
     AP_Int32 value;
+    AP_Float float_value;
 };
 
 class TestVehicle : public AP_Vehicle
@@ -72,6 +73,7 @@ static TestVehicle testvehicle;
 
 const AP_Param::Info TestVehicle::var_info[] = {
     GSCALAR(value, "VALUE", 0),
+    GSCALAR(float_value, "FLOAT", 0),
     AP_VAREND
 };
 
@@ -266,6 +268,53 @@ TEST_F(ParamFlush, EmptyQueueReturnsImmediately)
     AP_Param::flush();
     EXPECT_EQ(scheduler.delay_count, 0U);
     EXPECT_EQ(scheduler.delayed_ms, 0U);
+}
+
+TEST_F(ParamFlush, SaveOppositeInt32Values)
+{
+    // Run AP_ParamT.cpp with signed-integer-overflow sanitization: functional
+    // equality alone need not distinguish overflowing subtraction from a fix.
+    const int32_t pairs[][2] = {
+        {INT32_MIN, INT32_MAX}, {INT32_MAX, INT32_MIN},
+        {0, INT32_MIN}, {INT32_MIN, 0},
+        {2147483520, -2147483647}, {-2147483647, 2147483520},
+    };
+    for (const auto &pair : pairs) {
+        testvehicle.g.value.set(pair[0]);
+        testvehicle.g.value.set_and_save(pair[1]);
+        scheduler.io();
+        testvehicle.g.value.set(1);
+        EXPECT_TRUE(testvehicle.g.value.load());
+        EXPECT_EQ(testvehicle.g.value.get(), pair[1]);
+    }
+}
+
+TEST_F(ParamFlush, UnchangedIntegerForcesDefaultSave)
+{
+    testvehicle.g.value.set(0);
+    testvehicle.g.value.set_and_save(0);
+    scheduler.io();
+    testvehicle.g.value.set(1);
+    EXPECT_TRUE(testvehicle.g.value.load());
+    EXPECT_EQ(testvehicle.g.value.get(), 0);
+}
+
+TEST_F(ParamFlush, NearFloatForcesDefaultSave)
+{
+    testvehicle.g.float_value.set(FLT_EPSILON * 0.5f);
+    testvehicle.g.float_value.set_and_save(0.0f);
+    scheduler.io();
+    testvehicle.g.float_value.set(1.0f);
+    EXPECT_TRUE(testvehicle.g.float_value.load());
+    EXPECT_FLOAT_EQ(testvehicle.g.float_value.get(), 0.0f);
+}
+
+TEST_F(ParamFlush, EpsilonFloatDoesNotForceDefaultSave)
+{
+    testvehicle.g.float_value.set(FLT_EPSILON);
+    testvehicle.g.float_value.set_and_save(0.0f);
+    scheduler.io();
+    EXPECT_FALSE(testvehicle.g.float_value.load());
 }
 
 AP_GTEST_MAIN()
