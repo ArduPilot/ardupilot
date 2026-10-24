@@ -47,6 +47,7 @@ on:
       # Remove other vehicles autotest
       - 'Tools/autotest/antennatracker.py'
       - 'Tools/autotest/arducopter.py'
+      - 'Tools/autotest/arduplane.py'
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
@@ -124,6 +125,7 @@ on:
       # Remove other vehicles autotest
       - 'Tools/autotest/antennatracker.py'
       - 'Tools/autotest/arducopter.py'
+      - 'Tools/autotest/arduplane.py'
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
