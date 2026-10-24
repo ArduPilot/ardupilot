@@ -1,0 +1,108 @@
+diff --git a/arch/arm/helper.c b/arch/arm/helper.c
+index 5938989f..1b424789 100644
+--- a/arch/arm/helper.c
++++ b/arch/arm/helper.c
+@@ -921,6 +921,37 @@ static inline bool tz_v8m_should_pop_additional_registers(uint32_t type)
+     return (type & 1) == 0 && (type & (1 << 6)) > 0;
+ }
+
++static void v7m_complete_active_irq(CPUState *env)
++{
++    if(env->v7m.exception == 0) {
++        return;
++    }
++
++    /* This ensures we properly complete banked secure exceptions. */
++    bool need_secure_bit = false;
++    if(env->v7m.has_trustzone) {
++        if(env->v7m.exception < ARMV7M_EXCP_HARDIRQ0) {
++            switch(env->v7m.exception) {
++                case ARMV7M_EXCP_NMI:
++                case ARMV7M_EXCP_BUS:
++                case ARMV7M_EXCP_RESET:
++                case ARMV7M_EXCP_SECURE:
++                    break;
++                case ARMV7M_EXCP_HARD:
++                    if(!tlib_nvic_interrupt_targets_secure(env->v7m.exception)) {
++                        goto banked_exception;
++                    }
++                    break;
++                banked_exception:
++                default:
++                    need_secure_bit = env->secure;
++                    break;
++            }
++        }
++    }
++    tlib_nvic_complete_irq(env->v7m.exception | (need_secure_bit ? BANKED_SECURE_EXCP_BIT : 0));
++}
++
+ void do_v7m_exception_exit(CPUState *env)
+ {
+     uint32_t type;
+@@ -944,31 +975,7 @@ void do_v7m_exception_exit(CPUState *env)
+         }
+     }
+
+-    if(env->v7m.exception != 0) {
+-        /* This ensures we properly complete banked secure exceptions */
+-        bool need_secure_bit = false;
+-        if(env->v7m.has_trustzone) {
+-            if(env->v7m.exception < ARMV7M_EXCP_HARDIRQ0) {
+-                switch(env->v7m.exception) {
+-                    case ARMV7M_EXCP_NMI:
+-                    case ARMV7M_EXCP_BUS:
+-                    case ARMV7M_EXCP_RESET:
+-                    case ARMV7M_EXCP_SECURE:
+-                        break;
+-                    case ARMV7M_EXCP_HARD:
+-                        if(!tlib_nvic_interrupt_targets_secure(env->v7m.exception)) {
+-                            goto banked_exception;
+-                        }
+-                        break;
+-                    banked_exception:
+-                    default:
+-                        need_secure_bit = env->secure;
+-                        break;
+-                }
+-            }
+-        }
+-        tlib_nvic_complete_irq(env->v7m.exception | (need_secure_bit ? BANKED_SECURE_EXCP_BIT : 0));
+-    }
++    v7m_complete_active_irq(env);
+
+     if(env->interrupt_end_callback_enabled) {
+         tlib_on_interrupt_end(env->exception_index);
+@@ -1449,7 +1456,31 @@ static void do_interrupt_v7m(CPUState *env)
+     addr = ldl_phys(env->v7m.vecbase[env->secure] + env->v7m.exception * 4);
+     env->regs[15] = addr & 0xfffffffe;
+     env->thumb = addr & 1;
+-    if(stack_status) {
++    if(stack_status && !env->v7m.has_trustzone) {
++        /*
++         * A stacking fault is a derived exception and must use the exception
++         * return payload of the entry that failed. The incomplete frame must
++         * not be popped. Complete the exception that was acknowledged before
++         * stacking, select again with the derived MemManage pending and keep
++         * the original LR for the interrupted context.
++         *
++         * TrustZone needs the full MergeExcInfo security-state handling and
++         * retains the previous behaviour below for now.
++         */
++        const int original_exception = env->v7m.exception;
++        v7m_complete_active_irq(env);
++        /* Model the original exception as not yet acknowledged, as required
++         * for the "overridden exceptions pended" MergeExcInfo choice. */
++        tlib_nvic_set_pending_irq(original_exception);
++        tlib_nvic_set_pending_irq(ARMV7M_EXCP_MEM);
++        env->v7m.exception = tlib_nvic_acknowledge_irq();
++        /* get_phys_addr() recorded the stack write fault; it is consumed. */
++        env->exception_index = EXCP_IRQ;
++        env->regs[14] = lr;
++        addr = ldl_phys(env->v7m.vecbase[env->secure] + env->v7m.exception * 4);
++        env->regs[15] = addr & 0xfffffffe;
++        env->thumb = addr & 1;
++    } else if(stack_status) {
+         do_v7m_exception_exit(env);
+         env->exception_index = EXCP_DATA_ABORT;
+         do_interrupt_v7m(env);
