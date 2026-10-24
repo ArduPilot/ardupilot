@@ -25,6 +25,12 @@ public:
         return 512*1024;
     }
 
+#if HAL_EXECUTABLE_MEMORY_ENABLED
+    AP_HAL::ExecutableMemory::Target executable_memory_target() const override;
+    AP_HAL::ExecutableMemory *allocate_executable(uint32_t size, uint32_t alignment = 0) override;
+    bool is_executable(const void *address, uint32_t size) const override;
+#endif
+
     // get path to custom defaults file for AP_Param
     const char* get_custom_defaults_file() const override {
         return sitlState->defaults_path;
@@ -42,6 +48,7 @@ public:
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
     void dump_stack_trace();
+    void thread_info(ExpandingString &str) override;
 
 #ifdef WITH_SITL_TONEALARM
     bool toneAlarm_init(uint8_t types) override { return _toneAlarm.init(); }

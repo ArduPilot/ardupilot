@@ -30,8 +30,8 @@ define AP_PERIPH_NET_PPP_BAUD_DEFAULT 12500000
 
 # Enable scripting + ROMFS so the built-in PPPGW web interface (the same
 # pppgw_webui.lua shipped on ChibiOS PPPGW boards) is available in SITL.
-undef AP_SCRIPTING_ENABLED
-define AP_SCRIPTING_ENABLED 1
+undef AP_SCRIPTING_LUA_ENABLED
+define AP_SCRIPTING_LUA_ENABLED 1
 define AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED 1
 
 # AP_Periph does not link the subsystems below; disable their Lua bindings

@@ -2,12 +2,18 @@
 #include <sys/time.h>
 #include <AP_Param/AP_Param.h>
 #include "RCOutput.h"
+#include "Scheduler.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <AP_Common/ExpandingString.h>
 
 extern const AP_HAL::HAL& hal;
+
+void HALSITL::Util::thread_info(ExpandingString &str)
+{
+    Scheduler::from(hal.scheduler)->thread_info(str);
+}
 
 #ifdef WITH_SITL_TONEALARM
 HALSITL::ToneAlarm_SF HALSITL::Util::_toneAlarm;
