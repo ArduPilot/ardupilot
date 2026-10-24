@@ -586,17 +586,25 @@ is bob we will attempt to checkout bob-AVR'''
                 if vehicle == 'AP_Periph' or board == "Here4FC":
                     # need bin file for uavcan-gui-tool and MissionPlanner
                     extensions.append('.bin')
+                if board == "wasm":
+                    # web pages import the ES module, which fetches the paired .wasm
+                    extensions.extend([".js", ".wasm"])
                 for extension in extensions:
                     filepath = "".join([bare_path, extension])
                     if os.path.exists(filepath):
                         files_to_copy.append((filepath, os.path.basename(filepath)))
-                if not os.path.exists(bare_path):
+                if board == "wasm":
+                    # emscripten does not emit an elf
+                    bare_path = None
+                elif not os.path.exists(bare_path):
                     raise Exception("No elf file?!")
 
                 # attempt to run an extract_features.py to create features.txt:
                 features_text = None
                 ef_path = os.path.join(topdir(), "Tools", "scripts", "extract_features.py")
-                if os.path.exists(ef_path):
+                if bare_path is None:
+                    pass
+                elif os.path.exists(ef_path):
                     try:
                         features_text = self.run_program("EF", [ef_path, bare_path], show_output=False)
                     except Exception as e:  # noqa: BLE001
@@ -609,10 +617,11 @@ is bob we will attempt to checkout bob-AVR'''
                 # only rename the elf if we have have other files to
                 # copy.  So linux gets "arducopter" and stm32 gets
                 # "arducopter.elf"
-                target_elf_filename = os.path.basename(bare_path)
-                if len(files_to_copy) > 0:
-                    target_elf_filename += ".elf"
-                files_to_copy.append((bare_path, target_elf_filename))
+                if bare_path is not None:
+                    target_elf_filename = os.path.basename(bare_path)
+                    if len(files_to_copy) > 0:
+                        target_elf_filename += ".elf"
+                    files_to_copy.append((bare_path, target_elf_filename))
 
                 for (path, target_filename) in files_to_copy:
                     try:
