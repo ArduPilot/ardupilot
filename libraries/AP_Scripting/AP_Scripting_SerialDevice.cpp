@@ -6,7 +6,7 @@
 
 #if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
 
-#include "AP_Scripting.h"
+#include "AP_Scripting_SerialDevice.h"
 
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -19,6 +19,32 @@
 #define AP_SCRIPTING_SERIALDEVICE_MIN_RXSIZE 2048
 #endif
 
+AP_Scripting_SerialDevice *AP_Scripting_SerialDevice::_singleton;
+
+const AP_Param::GroupInfo AP_Scripting_SerialDevice::var_info[] = {
+    // These indices and suffixes match AP_Scripting::var_info. AP_Vehicle uses
+    // this minimal group only when Rust is the sole scripting runtime.
+    AP_GROUPINFO_FLAGS("SDEV_EN", 15, AP_Scripting_SerialDevice, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO("SDEV1_PROTO", 16, AP_Scripting_SerialDevice, ports[0].state.protocol, -1),
+#if AP_SCRIPTING_SERIALDEVICE_NUM_PORTS > 1
+    AP_GROUPINFO("SDEV2_PROTO", 17, AP_Scripting_SerialDevice, ports[1].state.protocol, -1),
+#endif
+#if AP_SCRIPTING_SERIALDEVICE_NUM_PORTS > 2
+    AP_GROUPINFO("SDEV3_PROTO", 18, AP_Scripting_SerialDevice, ports[2].state.protocol, -1),
+#endif
+    AP_GROUPEND
+};
+
+AP_Scripting_SerialDevice::AP_Scripting_SerialDevice()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Scripting serial device must be a singleton");
+    }
+#endif
+    _singleton = this;
+}
+
 /*
   initialise scripting serial ports
 */
@@ -28,12 +54,33 @@ void AP_Scripting_SerialDevice::init(void)
         return;
     }
 
+    // Zero is reserved for malformed handles. The seven-bit value is encoded
+    // into Rust's revalidated simulated-port selector.
+    _generation = (_generation % 0x7fU) + 1U;
+
     for (uint8_t i=0; i<ARRAY_SIZE(ports); i++) {
         auto &p = ports[i];
         p.state.idx = AP_SERIALMANAGER_SCR_PORT_1 + i;
         p.init();
         AP::serialmanager().register_port(&p);
     }
+}
+
+AP_Scripting_SerialDevice::Port *AP_Scripting_SerialDevice::find_port(int8_t protocol,
+                                                                      uint16_t instance,
+                                                                      uint8_t generation)
+{
+    if (enable == 0 || generation == 0 || generation != _generation) {
+        return nullptr;
+    }
+    for (auto &port : ports) {
+        if (port.state.protocol == protocol && instance-- == 0) {
+            WITH_SEMAPHORE(port.sem);
+            port._native_accessed = true;
+            return &port;
+        }
+    }
+    return nullptr;
 }
 
 void AP_Scripting_SerialDevice::clear(void)
@@ -54,6 +101,10 @@ void AP_Scripting_SerialDevice::Port::init(void)
 void AP_Scripting_SerialDevice::Port::clear(void)
 {
     WITH_SEMAPHORE(sem);
+    // Native selectors can outlive a Lua restart and have no close operation.
+    if (_native_accessed) {
+        return;
+    }
     if (readbuffer) {
         readbuffer->clear();
     }

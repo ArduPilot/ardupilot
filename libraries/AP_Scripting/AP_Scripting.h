@@ -16,7 +16,7 @@
 
 #include "AP_Scripting/AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include <GCS_MAVLink/GCS_config.h>
 #include <AP_Common/AP_Common.h>
@@ -69,6 +69,10 @@ public:
 
     // Check if command ID is blocked
     bool is_handling_command(uint16_t cmd_id);
+
+    // Block a command for one scripting backend/module owner.
+    bool block_command(uint16_t cmd_id, const void *owner);
+    void unblock_commands(const void *owner);
 #endif
 
     static AP_Scripting * get_singleton(void) { return _singleton; }
@@ -144,6 +148,7 @@ public:
 
     struct command_block_list {
         uint16_t id;
+        const void *owner;
         command_block_list *next;
     };
     command_block_list *mavlink_command_block_list;
@@ -217,4 +222,4 @@ namespace AP {
     AP_Scripting * scripting(void);
 };
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_SCRIPTING_LUA_ENABLED

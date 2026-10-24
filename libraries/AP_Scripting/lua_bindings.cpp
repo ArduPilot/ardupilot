@@ -1,6 +1,6 @@
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/HAL.h>
@@ -233,28 +233,8 @@ int lua_mavlink_block_command(lua_State *L) {
     binding_argcheck(L, 2);
 
     const uint16_t id = get_uint16_t(L, 2);
-
-    // Check if ID is already registered
-    if (AP::scripting()->is_handling_command(id)) {
-        lua_pushboolean(L, true);
-        return 1;
-    }
-
-    // Add new list item
-    AP_Scripting::command_block_list *new_item = NEW_NOTHROW AP_Scripting::command_block_list;
-    if (new_item == nullptr) {
-        lua_pushboolean(L, false);
-        return 1;
-    }
-    new_item->id = id;
-
-    {
-        WITH_SEMAPHORE(AP::scripting()->mavlink_command_block_list_sem);
-        new_item->next = AP::scripting()->mavlink_command_block_list;
-        AP::scripting()->mavlink_command_block_list = new_item;
-    }
-
-    lua_pushboolean(L, true);
+    auto *scripting = AP::scripting();
+    lua_pushboolean(L, scripting != nullptr && scripting->block_command(id, scripting));
     return 1;
 }
 #endif // HAL_GCS_ENABLED
@@ -641,7 +621,7 @@ int lua_get_CAN_device(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev == nullptr) {
-        scripting->_CAN_dev = NEW_NOTHROW ScriptingCANSensor(AP_CAN::Protocol::Scripting);
+        scripting->_CAN_dev = get_scripting_can_sensor(0);
         if (scripting->_CAN_dev == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
@@ -669,7 +649,7 @@ int lua_get_CAN_device2(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev2 == nullptr) {
-        scripting->_CAN_dev2 = NEW_NOTHROW ScriptingCANSensor(AP_CAN::Protocol::Scripting2);
+        scripting->_CAN_dev2 = get_scripting_can_sensor(1);
         if (scripting->_CAN_dev2 == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
@@ -1316,4 +1296,4 @@ int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L)
 }
 #endif // AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_SCRIPTING_LUA_ENABLED

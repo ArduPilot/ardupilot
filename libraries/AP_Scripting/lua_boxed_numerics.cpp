@@ -1,6 +1,6 @@
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include "lua_boxed_numerics.h"
@@ -199,4 +199,4 @@ int uint64_t_split(lua_State *L) {
     return 2;
 }
 
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_SCRIPTING_LUA_ENABLED
