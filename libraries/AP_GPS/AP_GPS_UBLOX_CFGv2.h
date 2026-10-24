@@ -229,6 +229,8 @@ private:
     bool _gnss_cfg_rejected;
     bool _gnss_cfg_skip_flash;  // the VALSET being sent leaves out flash
     bool _gnss_cfg_retry_without_flash;  // the receiver NAKed it with flash
+    // gnss_mode last acted on, to notice it changing
+    uint8_t _configured_gnss_mode;
 
     // Signal names aligned with UBLOX_SIGNALS indices
     static const char* const SIGNAL_NAMES[];
