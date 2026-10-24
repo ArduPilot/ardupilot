@@ -20903,6 +20903,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LAND')
         self.wait_disarmed()
 
+        self.start_subtest("NAV_TAKEOFF via COMMAND_INT with MAV_FRAME_GLOBAL_RELATIVE_ALT_INT")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=takeoff_alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+        )
+        self.wait_altitude(
+            takeoff_alt - 0.5,
+            takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=True,
+        )
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        self.start_subtest("NAV_TAKEOFF via COMMAND_INT rejects non-relative frames")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        for frame in (mavutil.mavlink.MAV_FRAME_GLOBAL,
+                      mavutil.mavlink.MAV_FRAME_GLOBAL_INT):
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                p7=takeoff_alt,
+                frame=frame,
+                want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+            )
+        self.disarm_vehicle()
+
     def Ch6TuningWPSpeed(self):
         '''test waypoint speed can be changed via Ch6 tuning knob'''
         self.set_parameters({
