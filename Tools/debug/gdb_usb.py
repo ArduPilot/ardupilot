@@ -12,6 +12,7 @@ GCS traffic while the target runs; telemetry pauses at debugger stops.
 """
 
 import argparse
+import glob
 import json
 import os
 import shutil
@@ -20,6 +21,7 @@ import socket
 import struct
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -269,9 +271,108 @@ def gdb_command(args):
                '-ex', f'target remote {port}']
     if args.batch:
         command.append('--batch')
-    for expression in args.ex:
+    for expression in gdb_post_commands(args):
         command.extend(['-ex', expression])
     return command
+
+
+def gdb_post_commands(args):
+    commands = []
+    modules = getattr(args, 'apmod', [])
+    if modules:
+        helper = Path(__file__).resolve().parents[1] / 'modules/apmod_gdb.py'
+        if any(c in str(helper) for c in '\r\n\x00'):
+            raise DebugError('GDB helper path must not contain newlines or NUL')
+        # Unlike add-symbol-file, source takes the entire filename literally,
+        # including spaces: quotes would become part of the requested name.
+        commands += [f'source {helper}',
+                     'apmod symbols ' + ' '.join(json.dumps(str(path.resolve()), ensure_ascii=False) for path in modules)]
+    return commands + args.ex
+
+
+def seer_command(args, directory):
+    """Seer connects and loads the ELF through MI after starting its GDB."""
+    commands = gdb_post_commands(args)
+    if any(c in os.getcwd() for c in '\r\n\x00'):
+        raise DebugError('working directory must not contain newlines or NUL')
+    startup = ['set pagination off', 'set serial baud 115200', 'set remotetimeout 10',
+               'cd ' + os.getcwd()]
+    if commands:
+        # Either the connection or ELF may arrive first. Queue setup outside
+        # the event handler, after both are ready and DWARF has finished loading.
+        startup += ['python', 'import gdb, os', f'_usb_seer_commands = {commands!r}',
+                    f'_usb_seer_elf = {str(args.elf.resolve())!r}', '''
+def _usb_seer_ready():
+    filename = gdb.current_progspace().filename
+    if not _usb_seer_commands or gdb.selected_thread() is None or not filename:
+        return
+    if os.path.realpath(filename) != _usb_seer_elf:
+        return
+    commands = list(_usb_seer_commands)
+    _usb_seer_commands.clear()
+    gdb.events.stop.disconnect(_usb_seer_event)
+    gdb.events.new_objfile.disconnect(_usb_seer_event)
+    for command in commands:
+        try:
+            gdb.execute(command)
+        except gdb.error as error:
+            gdb.write(f'USB debug setup: {error}\\n', gdb.STDERR)
+
+def _usb_seer_event(event):
+    gdb.post_event(_usb_seer_ready)
+
+gdb.events.stop.connect(_usb_seer_event)
+gdb.events.new_objfile.connect(_usb_seer_event)
+end''']
+    (directory / 'startup.gdb').write_text('\n'.join(startup) + '\n', encoding='utf-8')
+    # Start in the temporary directory so Seer's GDB argument parser needs no
+    # nested path quoting or environment expansion. startup.gdb restores cwd.
+    return ['seergdb', '--gdb-program', os.path.abspath(shutil.which(args.gdb)),
+            '--gdb-arguments', '-nx --quiet --interpreter=mi -x startup.gdb',
+            '--connect', args.gdb_server or (args.port if os.name == 'nt' else os.path.abspath(args.port)),
+            '--cwd', os.getcwd(), str(args.elf.resolve())]
+
+
+def launch_debugger(args, command, cwd=None):
+    if not args.gdb_server:
+        print(f'Requesting USB debugging on {args.port}; use the matching firmware ELF.', flush=True)
+        connect(args.port, args.timeout, trigger=not args.no_break)
+    if args.seer:
+        print('USB monitor ready. Use Seer to pause/continue, inspect threads and detach.', flush=True)
+    else:
+        print('USB monitor ready. Use continue, Ctrl-C, break and info threads; detach restores normal USB.', flush=True)
+    # GDB and the launcher share the terminal's foreground process group.
+    # Leave SIGINT enabled in the child, but let GDB handle Ctrl-C itself.
+    child = subprocess.Popen(command, cwd=cwd)
+    previous_sigint = signal.signal(signal.SIGINT, signal.SIG_IGN)
+    try:
+        return child.wait()
+    finally:
+        signal.signal(signal.SIGINT, previous_sigint)
+
+
+def expand_apmod_paths(patterns):
+    """Expand quoted globs in stable order, keeping overlapping matches once."""
+    modules = []
+    seen = set()
+    for path in patterns:
+        pattern = str(path)
+        if any(c in pattern for c in '\r\n\x00'):
+            raise DebugError('--apmod path must not contain newlines or NUL')
+        # An existing literal filename may itself contain glob metacharacters.
+        if path.is_file() or not glob.has_magic(pattern):
+            matches = [path]
+        else:
+            matches = [Path(name) for name in sorted(glob.glob(pattern))
+                       if Path(name).suffix == '.apmod' and Path(name).is_file()]
+            if not matches:
+                raise DebugError(f'--apmod pattern matched no files: {pattern}')
+        for match in matches:
+            resolved = match.resolve()
+            if resolved not in seen:
+                seen.add(resolved)
+                modules.append(resolved)
+    return modules
 
 
 def main(argv=None):
@@ -282,6 +383,9 @@ def main(argv=None):
     endpoint.add_argument('--gdb-server', metavar='HOST:PORT',
                           help='connect to an existing bridge (for example Windows USB with a WSL debugger)')
     parser.add_argument('--gdb', default='arm-none-eabi-gdb', help='GDB executable')
+    parser.add_argument('--apmod', type=Path, action='append', default=[],
+                        help="load module ELF and pretty-printers; accepts quoted globs such as '*.apmod' "
+                        '(repeatable; requires Python GDB)')
     parser.add_argument('--timeout', type=float, default=30, help='monitor connection deadline in seconds')
     parser.add_argument('--no-break', action='store_true',
                         help='reattach to an existing debug session, interrupting if running')
@@ -291,6 +395,7 @@ def main(argv=None):
     mode.add_argument('--serve', action='store_true', help='serve one GDB connection over local TCP instead of starting GDB')
     mode.add_argument('--vscode', type=Path, metavar='WORKSPACE.code-workspace',
                       help='create a VS Code workspace for this ELF/port without attaching')
+    mode.add_argument('--seer', action='store_true', help='launch the Seer GUI using seergdb and the selected ARM GDB')
     parser.add_argument('--tcp-port', type=int, default=3333, help='local TCP port for --serve/--vscode (default: 3333)')
     args = parser.parse_args(argv)
     try:
@@ -305,27 +410,36 @@ def main(argv=None):
             raise DebugError('--serve and --no-break require --port')
         if (args.serve or args.vscode) and (args.batch or args.ex):
             raise DebugError('--batch and --ex apply only to interactive/batch GDB, not --serve or --vscode')
+        if args.seer and args.batch:
+            raise DebugError('--batch cannot be used with --seer')
         if not args.serve and shutil.which(args.gdb) is None:
             raise DebugError(f'GDB executable not found: {args.gdb}')
+        if args.seer and shutil.which('seergdb') is None:
+            raise DebugError('Seer executable not found: seergdb')
+        if args.apmod:
+            if args.serve or args.vscode:
+                raise DebugError('--apmod applies to GDB sessions; source Tools/modules/apmod_gdb.py in the IDE')
+            args.apmod = expand_apmod_paths(args.apmod)
+            for path in args.apmod:
+                if (any(c in str(path) for c in '\r\n\x00') or path.suffix != '.apmod' or
+                        not path.is_file() or not path.with_suffix('.elf').is_file()):
+                    raise DebugError(f'--apmod needs a module and its matching companion .elf: {path}')
+        if args.apmod or (args.seer and args.ex):
+            result = subprocess.run([args.gdb, '-nx', '--batch', '-ex', 'python print("APMOD_PYTHON_OK")'],
+                                    capture_output=True, text=True, timeout=15)
+            if result.returncode != 0 or 'APMOD_PYTHON_OK' not in result.stdout:
+                option = '--apmod' if args.apmod else '--seer with --ex'
+                raise DebugError(f'{option} requires a Python-enabled ARM GDB; select it with --gdb')
         if args.vscode:
             vscode_workspace(args)
             return 0
         if args.serve:
             serve(args)
             return 0
-        command = gdb_command(args)
-        if not args.gdb_server:
-            print(f'Requesting USB debugging on {args.port}; use the matching firmware ELF.', flush=True)
-            connect(args.port, args.timeout, trigger=not args.no_break)
-        print('USB monitor ready. Use continue, Ctrl-C, break and info threads; detach restores normal USB.', flush=True)
-        # GDB and the launcher share the terminal's foreground process group.
-        # Leave SIGINT enabled in the child, but let GDB handle Ctrl-C itself.
-        child = subprocess.Popen(command)
-        previous_sigint = signal.signal(signal.SIGINT, signal.SIG_IGN)
-        try:
-            return child.wait()
-        finally:
-            signal.signal(signal.SIGINT, previous_sigint)
+        if args.seer:
+            with tempfile.TemporaryDirectory(prefix='ap-usb-seer-') as directory:
+                return launch_debugger(args, seer_command(args, Path(directory)), cwd=directory)
+        return launch_debugger(args, gdb_command(args))
     except (DebugError, OSError) as error:
         print(f'gdb_usb.py: {error}', file=sys.stderr)
         return 1
