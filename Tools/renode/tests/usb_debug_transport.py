@@ -116,6 +116,10 @@ class GDB:
         self.u = usb
         self.buf = b""
 
+    @property
+    def in_waiting(self):
+        return len(self.buf)
+
     def read(self, n):
         if not self.buf:
             try:

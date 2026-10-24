@@ -24,6 +24,14 @@ SPEC.loader.exec_module(driver_inventory)
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def test_source_inventory_excludes_cargo_build_output(tmp_path):
+    source = tmp_path / 'libraries/AP_Module/sdk/target/debug/build/sdk/out/Bindings_generated.cpp'
+    source.parent.mkdir(parents=True)
+    source.write_text('i2c_mgr->get_device(); find_serial();')
+    assert driver_inventory.direct_i2c_sources(tmp_path) == []
+    assert driver_inventory.serial_driver_sources(tmp_path) == []
+
+
 def test_live_catalog_is_consistent():
     assert driver_inventory.validate_catalog(ROOT) == []
     assert driver_inventory.validate_classifications(ROOT) == []
