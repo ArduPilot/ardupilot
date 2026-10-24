@@ -1,0 +1,94 @@
+use crate::{result, Error, Result, Vector2f};
+
+pub const CAMERA_VENDOR_NAME_SIZE: usize = ${vendor_size};
+pub const CAMERA_MODEL_NAME_SIZE: usize = ${model_size};
+pub const CAMERA_DEFINITION_URI_SIZE: usize = ${uri_size};
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CameraState {
+    pub take_picture_increment: u16,
+    pub recording_video: bool,
+    pub zoom_type: u8,
+    pub zoom_value: f32,
+    pub focus_type: u8,
+    pub focus_value: f32,
+    pub tracking_type: u8,
+    pub tracking_point_1: Vector2f,
+    pub tracking_point_2: Vector2f,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CameraInformation {
+    pub firmware_version: u32,
+    pub focal_length: f32,
+    pub sensor_size_h: f32,
+    pub sensor_size_v: f32,
+    pub flags: u32,
+    pub resolution_h: u16,
+    pub resolution_v: u16,
+    pub definition_version: u16,
+    vendor_name: [u8; CAMERA_VENDOR_NAME_SIZE],
+    model_name: [u8; CAMERA_MODEL_NAME_SIZE],
+    definition_uri: [u8; CAMERA_DEFINITION_URI_SIZE],
+}
+
+impl Default for CameraInformation {
+    fn default() -> Self { Self { firmware_version: 0, focal_length: 0.0, sensor_size_h: 0.0,
+        sensor_size_v: 0.0, flags: 0, resolution_h: 0, resolution_v: 0, definition_version: 0,
+        vendor_name: [0; CAMERA_VENDOR_NAME_SIZE], model_name: [0; CAMERA_MODEL_NAME_SIZE],
+        definition_uri: [0; CAMERA_DEFINITION_URI_SIZE] } }
+}
+
+fn set_text(output: &mut [u8], value: &str) -> Result {
+    let bytes = value.as_bytes();
+    if bytes.len() >= output.len() || bytes.contains(&0) { return Err(Error::Invalid); }
+    output.fill(0); output[..bytes.len()].copy_from_slice(bytes); Ok(())
+}
+
+impl CameraInformation {
+    pub fn set_vendor_name(&mut self, value: &str) -> Result { set_text(&mut self.vendor_name, value) }
+    pub fn set_model_name(&mut self, value: &str) -> Result { set_text(&mut self.model_name, value) }
+    pub fn set_definition_uri(&mut self, value: &str) -> Result { set_text(&mut self.definition_uri, value) }
+}
+
+impl crate::bindings::Camera<'_, '_> {
+    pub fn get_state(&self, instance: u8) -> Result<Option<CameraState>> {
+        let input = [instance];
+        let mut output = [0u8; ${state_wire_size}];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${state_id}.slot(), input.as_ptr(), 1,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        match output[0] {
+            0 if output[1..].iter().all(|byte| *byte == 0) => Ok(None),
+            0 => Err(Error::Host),
+            1 => Ok(Some(CameraState {
+                take_picture_increment: u16::from_le_bytes(output[1..3].try_into().unwrap()),
+                recording_video: match output[3] { 0 => false, 1 => true, _ => return Err(Error::Host) },
+                zoom_type: output[4], zoom_value: f32::from_le_bytes(output[5..9].try_into().unwrap()),
+                focus_type: output[9], focus_value: f32::from_le_bytes(output[10..14].try_into().unwrap()),
+                tracking_type: output[14],
+                tracking_point_1: Vector2f::decode(&output[15..23]),
+                tracking_point_2: Vector2f::decode(&output[23..31]),
+            })),
+            _ => Err(Error::Host),
+        }
+    }
+
+    pub fn set_information(&self, instance: u8, value: &CameraInformation) -> Result {
+        let mut input = [0u8; ${information_wire_size}]; input[0] = instance;
+        input[1..5].copy_from_slice(&value.firmware_version.to_le_bytes());
+        input[5..9].copy_from_slice(&value.focal_length.to_le_bytes());
+        input[9..13].copy_from_slice(&value.sensor_size_h.to_le_bytes());
+        input[13..17].copy_from_slice(&value.sensor_size_v.to_le_bytes());
+        input[17..21].copy_from_slice(&value.flags.to_le_bytes());
+        input[21..23].copy_from_slice(&value.resolution_h.to_le_bytes());
+        input[23..25].copy_from_slice(&value.resolution_v.to_le_bytes());
+        input[25..27].copy_from_slice(&value.definition_version.to_le_bytes());
+        input[27..59].copy_from_slice(&value.vendor_name);
+        input[59..91].copy_from_slice(&value.model_name);
+        input[91..231].copy_from_slice(&value.definition_uri);
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${information_id}.slot(), input.as_ptr(), input.len() as u32,
+            core::ptr::null_mut(), 0) })
+    }
+}

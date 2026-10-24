@@ -1,0 +1,8 @@
+{
+            let length = ${value} as usize;
+            if length > ${buffer}.len() || output[${start} + length..].iter().any(|byte| *byte != 0) {
+                return Err(Error::Host);
+            }
+            ${buffer}[..length].copy_from_slice(&output[${start}..${start} + length]);
+            length
+        }

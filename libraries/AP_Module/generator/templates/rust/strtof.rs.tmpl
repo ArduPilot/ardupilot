@@ -1,0 +1,29 @@
+use crate::{result, Error, Result};
+
+impl crate::bindings::String<'_, '_> {
+    /// Firmware C-library strtof: value and consumed byte count.
+    /// Accepts C numeric prefixes (including whitespace, hex, NaN and infinity).
+    /// No conversion returns (0.0, 0); overflow/underflow return inf/rounded zero
+    /// or subnormals. errno is not exposed. Check the offset for trailing junk.
+    /// Rounding and locale follow the board's C library, as for Lua numbers.
+    /// Conversion may allocate firmware-owned memory outside the module heap.
+    /// Input must be NUL-free and at most 255 bytes. No scheduler lock is held;
+    /// stop is checked on every host call.
+    pub fn strtof(&self, text: &str) -> Result<(f32, usize)> {
+        if text.len() > 255 || text.as_bytes().contains(&0) {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; 256];
+        input[..text.len()].copy_from_slice(text.as_bytes());
+        let mut output = [0u8; 6];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${method_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        let consumed = u16::from_le_bytes(output[4..6].try_into().unwrap()) as usize;
+        if consumed > text.len() {
+            return Err(Error::Host);
+        }
+        Ok((f32::from_le_bytes(output[..4].try_into().unwrap()), consumed))
+    }
+}

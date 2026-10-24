@@ -1,0 +1,4 @@
+        ${result} _result_value{};
+        if (!wire::Codec<bool>::get(output, _result_value.present)) { return {Error::Host}; }
+        if (_result_value.present && !wire::Codec<decltype(_result_value.value)>::get(
+                input + ${input_offset}, _result_value.value)) { return {Error::Host}; }

@@ -1,0 +1,15 @@
+{
+  "version": 3,
+  "required_functions": 8,
+  "status": {"OK": 0, "STOPPED": 1, "INVALID": -1, "NO_MEMORY": -2, "UNAVAILABLE": -3, "HOST_ERROR": -4, "BUSY": -5},
+  "functions": [
+    {"name": "allocate", "return": "mut_bytes", "args": [["context", "pointer"], ["size", "u32"], ["alignment", "u32"]]},
+    {"name": "deallocate", "return": "void", "args": [["context", "pointer"], ["allocation", "mut_bytes"]]},
+    {"name": "time_us", "return": "u64", "args": [["context", "pointer"]]},
+    {"name": "sleep_ms", "return": "i32", "args": [["context", "pointer"], ["milliseconds", "u32"]]},
+    {"name": "stop_requested", "return": "u8", "args": [["context", "pointer"]]},
+    {"name": "text", "return": "i32", "args": [["context", "pointer"], ["severity", "u8"], ["message", "const_bytes"], ["length", "u32"]]},
+    {"name": "panic", "return": "void", "args": [["context", "pointer"], ["message", "const_bytes"], ["length", "u32"]]},
+    {"name": "binding_call", "return": "i32", "args": [["context", "pointer"], ["id", "u32"], ["input", "const_bytes"], ["input_size", "u32"], ["output", "mut_bytes"], ["output_size", "u32"]]}
+  ]
+}

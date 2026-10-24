@@ -1,0 +1,13 @@
+#[derive(Clone, Copy, Debug, Eq, PartialEq${default})]
+#[repr(${scalar})]
+pub enum ${name} {
+${variants}}
+
+impl TryFrom<${scalar}> for ${name} {
+    type Error = Error;
+    fn try_from(value: ${scalar}) -> Result<Self> {
+        match value {
+${cases}            _ => Err(Error::Host),
+        }
+    }
+}

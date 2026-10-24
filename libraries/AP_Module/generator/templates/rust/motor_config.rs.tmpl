@@ -1,0 +1,165 @@
+// Shared motor configuration is mutated call by call and is not rolled back on module exit.
+
+use crate::{result, Error, Result};
+
+pub const MOTOR_FACTOR_COUNT: usize = ${factor_count};
+pub const MOTOR_FRAME_STRING_MAX: usize = ${frame_string_max};
+
+/// Complete copied factors for the maximum supported firmware motor count.
+/// Entries above a target firmware's motor count must remain zero.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct MotorFactorTable {
+    pub roll: [f32; MOTOR_FACTOR_COUNT],
+    pub pitch: [f32; MOTOR_FACTOR_COUNT],
+    pub yaw: [f32; MOTOR_FACTOR_COUNT],
+    pub throttle: [f32; MOTOR_FACTOR_COUNT],
+}
+
+fn decode_bool(output: [u8; 1]) -> Result<bool> {
+    match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+}
+
+fn finite(value: f32) -> Result<u32> {
+    if value.is_finite() { Ok(value.to_bits()) } else { Err(Error::Invalid) }
+}
+
+impl crate::bindings::MotorsDynamic<'_, '_> {
+    /// Mutates the shared dynamic mixer. Changes persist after this module exits.
+    pub fn init(&self, expected_motors: u8) -> Result<bool> {
+        let input = [expected_motors];
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(
+                self.context.raw, crate::imports::BINDING_${dynamic_init_id}.slot(), input.as_ptr(), 1,
+                output.as_mut_ptr(), 1)
+        })?;
+        decode_bool(output)
+    }
+
+    /// Adds to the shared dynamic mixer and returns the native acceptance result.
+    pub fn add_motor(&self, motor: u8, testing_order: u8) -> Result<bool> {
+        let input = [motor, testing_order];
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(
+                self.context.raw, crate::imports::BINDING_${dynamic_add_id}.slot(), input.as_ptr(), 2,
+                output.as_mut_ptr(), 1)
+        })?;
+        decode_bool(output)
+    }
+
+    /// Atomically copies all factors into the shared dynamic mixer. This is not rolled back.
+    pub fn load_factors(&self, factors: &MotorFactorTable) -> Result {
+        let mut input = [0u8; 4 * MOTOR_FACTOR_COUNT * core::mem::size_of::<f32>()];
+        let mut offset = 0;
+        for field in [&factors.roll, &factors.pitch, &factors.yaw, &factors.throttle] {
+            for value in field {
+                input[offset..offset + 4].copy_from_slice(&finite(*value)?.to_le_bytes());
+                offset += 4;
+            }
+        }
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(
+                self.context.raw, crate::imports::BINDING_${dynamic_load_id}.slot(),
+                input.as_ptr(), input.len() as u32, core::ptr::null_mut(), 0)
+        })
+    }
+
+}
+
+impl crate::bindings::MotorsMatrix<'_, '_> {
+    /// Initializes the shared static scriptable matrix. This is not rolled back.
+    pub fn init(&self, expected_motors: u8) -> Result<bool> {
+        let input = [expected_motors];
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(
+                self.context.raw, crate::imports::BINDING_${matrix_init_id}.slot(), input.as_ptr(), 1,
+                output.as_mut_ptr(), 1)
+        })?;
+        decode_bool(output)
+    }
+
+    pub fn add_motor_raw(&self, motor: u8, roll: f32, pitch: f32, yaw: f32,
+                         testing_order: u8) -> Result {
+        let mut input = [0u8; 14];
+        input[0] = motor;
+        input[1..5].copy_from_slice(&finite(roll)?.to_le_bytes());
+        input[5..9].copy_from_slice(&finite(pitch)?.to_le_bytes());
+        input[9..13].copy_from_slice(&finite(yaw)?.to_le_bytes());
+        input[13] = testing_order;
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(
+                self.context.raw, crate::imports::BINDING_${matrix_add_id}.slot(),
+                input.as_ptr(), input.len() as u32, core::ptr::null_mut(), 0)
+        })
+    }
+
+    pub fn set_throttle_factor(&self, motor: u8, factor: f32) -> Result<bool> {
+        if factor < 0.0 { return Err(Error::Invalid); }
+        let mut input = [0u8; 5];
+        input[0] = motor;
+        input[1..].copy_from_slice(&finite(factor)?.to_le_bytes());
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(
+                self.context.raw, crate::imports::BINDING_${matrix_throttle_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), 1)
+        })?;
+        decode_bool(output)
+    }
+
+}
+
+impl crate::bindings::Motors6dof<'_, '_> {
+    /// Initializes the Copter-only shared 6DoF mixer. This is not rolled back.
+    pub fn init(&self, expected_motors: u8) -> Result<bool> {
+        let input = [expected_motors];
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(
+                self.context.raw, crate::imports::BINDING_${six_dof_init_id}.slot(), input.as_ptr(), 1,
+                output.as_mut_ptr(), 1)
+        })?;
+        decode_bool(output)
+    }
+
+    /// Adds one complete set of finite factors to the Copter-only shared 6DoF mixer.
+    /// The configuration persists after this module exits.
+    pub fn add_motor(&self, motor: u8, roll: f32, pitch: f32, yaw: f32,
+                     throttle: f32, forward: f32, right: f32,
+                     reversible: bool, testing_order: u8) -> Result {
+        let mut input = [0u8; 27];
+        input[0] = motor;
+        for (index, value) in [roll, pitch, yaw, throttle, forward, right].iter().enumerate() {
+            let offset = 1 + index * 4;
+            input[offset..offset + 4].copy_from_slice(&finite(*value)?.to_le_bytes());
+        }
+        input[25] = u8::from(reversible);
+        input[26] = testing_order;
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(
+                self.context.raw, crate::imports::BINDING_${six_dof_add_id}.slot(),
+                input.as_ptr(), input.len() as u32, core::ptr::null_mut(), 0)
+        })
+    }
+
+}
+
+impl crate::bindings::Motors<'_, '_> {
+    /// Copies a bounded label into firmware. Firmware accepts only its first frame label,
+    /// and that allocation/configuration persists after this module exits.
+    pub fn set_frame_string(&self, value: &str) -> Result {
+        if value.len() > MOTOR_FRAME_STRING_MAX || value.as_bytes().contains(&0) {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; MOTOR_FRAME_STRING_MAX + 1];
+        input[0] = value.len() as u8;
+        input[1..1 + value.len()].copy_from_slice(value.as_bytes());
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(
+                self.context.raw, crate::imports::BINDING_${frame_id}.slot(),
+                input.as_ptr(), input.len() as u32, core::ptr::null_mut(), 0)
+        })
+    }
+}

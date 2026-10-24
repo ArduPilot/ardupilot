@@ -1,0 +1,12 @@
+pub struct ${namespace_type}<'context, 'api> {
+    pub(crate) context: &'context Context<'api>,
+}
+
+impl<'api> Context<'api> {
+    pub fn ${namespace}(&self) -> ${namespace_type}<'_, 'api> {
+        ${namespace_type} { context: self }
+    }
+}
+
+impl<'context, 'api> ${namespace_type}<'context, 'api> {
+${methods}}

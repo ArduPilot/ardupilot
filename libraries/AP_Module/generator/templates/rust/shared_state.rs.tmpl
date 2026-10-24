@@ -1,0 +1,76 @@
+use crate::{result, Context, Error, Result};
+
+/// A context-owned reference. All users of an ID must request the same size.
+/// The last close/worker join releases the zero-initialized shared block.
+pub struct SharedState<'a, 'h> {
+    context: &'a Context<'h>,
+    token: u32,
+}
+
+impl<'h> Context<'h> {
+    pub fn shared_state<'a>(&'a self, id: u32, size: u32) -> Result<SharedState<'a, 'h>> {
+        let mut input = [0u8; 8];
+        input[..4].copy_from_slice(&id.to_le_bytes());
+        input[4..].copy_from_slice(&size.to_le_bytes());
+        let mut output = [0u8; 4];
+        result(unsafe {
+            self.api.binding_call.unwrap()(self.raw, crate::imports::BINDING_${open_id}.slot(),
+                input.as_ptr(), 8, output.as_mut_ptr(), 4)
+        })?;
+        let token = u32::from_le_bytes(output);
+        if token == 0 { return Err(Error::Host); }
+        Ok(SharedState { context: self, token })
+    }
+}
+
+impl SharedState<'_, '_> {
+    pub fn token(&self) -> u32 { self.token }
+
+    /// Copy at most 2048 bytes under the block mutex, returning its revision.
+    /// Errors leave the destination unchanged.
+    pub fn read(&self, offset: u32, data: &mut [u8]) -> Result<u64> {
+        if data.len() > 2048 { return Err(Error::Invalid); }
+        let mut input = [0u8; 10];
+        input[..4].copy_from_slice(&self.token.to_le_bytes());
+        input[4..8].copy_from_slice(&offset.to_le_bytes());
+        input[8..].copy_from_slice(&(data.len() as u16).to_le_bytes());
+        let mut output = [0u8; 2056];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${read_id}.slot(),
+                input.as_ptr(), 10, output.as_mut_ptr(), 2056)
+        })?;
+        let revision = u64::from_le_bytes(output[..8].try_into().unwrap());
+        if revision == 0 { return Err(Error::Host); }
+        data.copy_from_slice(&output[8..8 + data.len()]);
+        Ok(revision)
+    }
+
+    /// expected_revision=0 writes unconditionally. Otherwise None means that
+    /// another writer changed the block and no bytes were copied.
+    pub fn write(&self, offset: u32, data: &[u8], expected_revision: u64) -> Result<Option<u64>> {
+        if data.len() > 2048 { return Err(Error::Invalid); }
+        let mut input = [0u8; 2066];
+        input[..4].copy_from_slice(&self.token.to_le_bytes());
+        input[4..8].copy_from_slice(&offset.to_le_bytes());
+        input[8..10].copy_from_slice(&(data.len() as u16).to_le_bytes());
+        input[10..18].copy_from_slice(&expected_revision.to_le_bytes());
+        input[18..18 + data.len()].copy_from_slice(data);
+        let mut output = [0u8; 8];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${write_id}.slot(),
+                input.as_ptr(), 2066, output.as_mut_ptr(), 8)
+        })?;
+        let revision = u64::from_le_bytes(output);
+        Ok(if revision == 0 { None } else { Some(revision) })
+    }
+}
+
+impl Drop for SharedState<'_, '_> {
+    fn drop(&mut self) {
+        let input = self.token.to_le_bytes();
+        let _ = unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${close_id}.slot(),
+                input.as_ptr(), 4, core::ptr::null_mut(), 0)
+        };
+    }
+}

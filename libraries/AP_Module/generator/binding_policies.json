@@ -1,0 +1,121 @@
+{
+  "accessors": {
+    "AP_OSD_Backend": {
+      "get": "AP_OSD::get_singleton() == nullptr ? nullptr : AP_OSD::get_singleton()->scripting_get_backend()",
+      "literal": false,
+      "reference": false,
+      "reason": "Preserve Lua's display override; AP_OSD::update restores normal drawing after two seconds without a call.",
+      "effects": "Every call claims the OSD display, including queries and later-rejected arguments.\nThe getter waits for the OSD semaphore without a timeout, before the binding lock.\nStop cannot interrupt that wait. Normal drawing resumes about two seconds after the last call."
+    },
+    "AP::fwversion()": {
+      "get": null,
+      "literal": true,
+      "reference": true,
+      "reason": "Returns the static firmware version by reference; no resource claim."
+    },
+    "AP::motors()": {
+      "get": null,
+      "literal": true,
+      "reference": false,
+      "reason": "Returns the existing vehicle motor singleton; no resource claim."
+    },
+    "hal.analogin": {
+      "get": null,
+      "literal": true,
+      "reference": false,
+      "reason": "Existing HAL analog driver; resource-returning methods remain unsupported."
+    },
+    "hal.gpio": {
+      "get": null,
+      "literal": true,
+      "reference": false,
+      "reason": "Existing HAL GPIO driver; pin operations have the same shared-state semantics as Lua."
+    }
+  },
+  "effects": {
+    "AP_Mission.set_item": "Changes stored mission state; exit does not roll it back. Storage writes use the firmware mission implementation, as in Lua.",
+    "AP_AHRS.set_home": "Changes the shared home location with scripting authority; exit does not restore it.",
+    "AP_AHRS.set_origin": "Requests a navigation origin change with scripting authority; exit does not restore it.",
+    "AP_AHRS.handle_external_position_estimate": "Supplies an external position measurement to the navigation estimator, as in Lua.",
+    "AP_Mount.set_roi_target": "Copies a shared mount target and selects GPS pointing mode; exit does not restore it.",
+    "AP_Vehicle.set_target_location": "Changes the vehicle navigation target with scripting authority; exit does not undo it.",
+    "AP_Vehicle.update_target_location": "Updates the navigation target if the old target still matches; exit does not undo it.",
+    "AP_Vehicle.set_crosstrack_start": "Changes the navigation crosstrack reference; exit does not restore it.",
+    "AP_Vehicle.set_target_pos_NED": "Changes the vehicle position target, subject to its flight-mode checks and timeouts, as in Lua.",
+    "AP_Vehicle.set_target_posvel_NED": "Changes vehicle position and velocity targets, subject to flight-mode checks and timeouts, as in Lua.",
+    "AP_Vehicle.set_target_posvelaccel_NED": "Changes vehicle position, velocity and acceleration targets, subject to flight-mode checks and timeouts, as in Lua.",
+    "AP_Vehicle.set_target_velaccel_NED": "Changes vehicle velocity and acceleration targets, subject to flight-mode checks and timeouts, as in Lua.",
+    "AP_Vehicle.set_velocity_match": "Changes the vehicle velocity-matching target, subject to flight-mode checks and timeouts, as in Lua.",
+    "AC_PosControl.set_posvelaccel_offset": "Changes shared position-controller offsets, with the firmware timeout semantics; exit does not undo it.",
+    "SITL::SIM.set_pose": "Teleports a simulated vehicle and changes its attitude and velocity. Waits for the simulator pose semaphore.",
+    "RC_Channel.set_override": "Overrides pilot input; zero clears it, otherwise the configured timeout applies (possibly disabled). Exit does not clear it. Disabled overrides or the override-enable channel silently succeed without effect, as in Lua.",
+    "GCS.send_text": "Copies text into firmware telemetry/notification queues; delivery is not guaranteed.",
+    "GCS.send_named_float": "Sends and logs a named value using the Lua host implementation and its name truncation.",
+    "GCS.send_named_int": "Sends and logs a named value using the Lua host implementation and its name truncation.",
+    "GCS.send_named_string": "Sends and logs a named value using the Lua host implementation and its field truncation.",
+    "AP_Notify.play_tune": "Copies into the tone driver buffer; playback can outlive the module. Driver locking may block.",
+    "AP_Notify.send_text_scripting": "Blocking display IO on this thread; overrides a row until release_text_scripting is called.",
+    "AP_OSD_Backend.write": "Draws synchronously through the shared OSD backend; normal display resumes on its timeout.",
+    "AP_Filesystem.crc32": "Reads the entire file synchronously. Stop cannot interrupt IO; large files may exceed the stop timeout.",
+    "AP_Logger.log_file_content": "Queues a firmware-owned filename copy outside the module heap, as in Lua. The queue outlives exit and is unbounded if producers outrun logging; do not call in an unbounded loop.",
+    "AP_Arming.arm": "Requests vehicle arming with scripting authority; ordinary pre-arm checks apply.",
+    "AP_Arming.arm_force": "Force-arms the vehicle, bypassing pre-arm checks as the Lua binding does.",
+    "AP_Arming.disarm": "Requests vehicle disarming with scripting authority.",
+    "AP_Arming.pre_arm_checks": "Runs vehicle pre-arm checks; may update checks and diagnostics.",
+    "AP_Vehicle.set_mode": "Changes the vehicle flight mode with scripting authority; exit does not restore it.",
+    "RC_Channels.run_aux_function": "Invokes an auxiliary function with scripting authority, including arming and mode changes.",
+    "GCS.set_message_interval": "Changes a telemetry stream interval; module exit does not restore it.",
+    "AP_Camera.change_setting": "Changes camera state; module exit does not restore it.",
+    "AP_Mount.set_mode": "Changes mount state; module exit does not restore it.",
+    "AP_AHRS.set_posvelyaw_source_set": "Changes the active navigation source set; module exit does not restore it.",
+    "SRV_Channels.set_output_pwm": "Changes shared actuator output state; module exit does not undo it.",
+    "SRV_Channels.set_output_scaled": "Changes shared actuator output state; module exit does not undo it.",
+    "SRV_Channels.set_output_norm": "Changes shared actuator output state; module exit does not undo it.",
+    "SRV_Channels.set_angle": "Changes shared actuator scaling; module exit does not restore it.",
+    "SRV_Channels.set_range": "Changes shared actuator scaling; module exit does not restore it."
+  },
+  "excluded": {
+    "AP_CRSF_Telem.pop_menu_event": "module-lifecycle-owned-crsf-menu-adapter",
+    "AP_CRSF_Telem.send_response": "module-lifecycle-owned-crsf-menu-adapter",
+    "AP_ONVIF.start": "persistent-client-initialization-and-concurrent-ownership",
+    "AP::motors().set_frame_string": "persistent-frame-string-initialization",
+    "AP_Arming.get_aux_auth_id": "auxiliary-authorization-ownership",
+    "AP_Arming.set_aux_auth_passed": "auxiliary-authorization-ownership",
+    "AP_Arming.set_aux_auth_failed": "auxiliary-authorization-ownership",
+    "AP_Scripting.restart_all": "lua-runtime-lifecycle",
+    "AP_Networking.add_route": "persistent-route-ownership",
+    "AP_SerialLED.set_num_neopixel": "persistent-driver-allocation",
+    "AP_SerialLED.set_num_neopixel_rgb": "persistent-driver-allocation",
+    "AP_SerialLED.set_num_profiled": "persistent-driver-allocation",
+    "AP_MotorsMatrix.init": "motor-configuration-lifecycle",
+    "AP_MotorsMatrix.add_motor_raw": "motor-configuration-lifecycle",
+    "AP_MotorsMatrix.set_throttle_factor": "motor-configuration-lifecycle",
+    "AP_MotorsMatrix_Scripting_Dynamic.init": "motor-configuration-lifecycle",
+    "AP_MotorsMatrix_Scripting_Dynamic.add_motor": "motor-configuration-lifecycle",
+    "AP_MotorsMatrix_6DoF_Scripting.init": "motor-configuration-lifecycle",
+    "AP_MotorsMatrix_6DoF_Scripting.add_motor": "motor-configuration-lifecycle",
+    "AP_Filesystem.format": "filesystem-format-lifecycle"
+  },
+  "headers": {
+    "AP_Scripting/AP_Scripting_helpers.h": {
+      "replace": "AP_Scripting/Parameter.h",
+      "reason": "Only the shared Parameter helper is used; Lua constructors and DroneCAN handles are not generated."
+    },
+    "AP_Scripting/AP_Scripting.h": {
+      "replace": null,
+      "reason": "Lua lifecycle entry points are excluded."
+    },
+    "AP_Scripting/AP_Scripting_SerialAccess.h": {
+      "replace": null,
+      "reason": "Serial resource handles and manual Lua methods are not generated."
+    },
+    "AP_Scripting/AP_Scripting_CANSensor.h": {
+      "replace": null,
+      "reason": "CAN resource handles and manual Lua methods are not generated."
+    },
+    "AP_Scripting/AP_Scripting_CRSFMenu.h": {
+      "replace": null,
+      "reason": "CRSF menu userdata ownership is not generated."
+    }
+  }
+}

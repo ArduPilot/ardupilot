@@ -1,0 +1,149 @@
+use crate::{result, Context, Error, Result};
+use core::num::NonZeroU32;
+
+pub const CAN_FRAME_DATA_MAX: usize = ${frame_data_max};
+pub const CAN_BUFFER_LENGTH_MAX: u8 = ${buffer_length_max};
+pub const CAN_WRITE_TIMEOUT_MAX_US: u32 = ${write_timeout_max_us};
+pub const CAN_FLAG_EFF: u32 = 1 << 31;
+pub const CAN_FLAG_RTR: u32 = 1 << 30;
+pub const CAN_FLAG_ERR: u32 = 1 << 29;
+pub const CAN_MASK_STD_ID: u32 = 0x7ff;
+pub const CAN_MASK_EXT_ID: u32 = 0x1fff_ffff;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CanFrame {
+    id: u32,
+    dlc: u8,
+    can_fd: bool,
+    data: [u8; CAN_FRAME_DATA_MAX],
+}
+
+impl Default for CanFrame {
+    fn default() -> Self { Self { id: 0, dlc: 0, can_fd: false, data: [0; CAN_FRAME_DATA_MAX] } }
+}
+
+impl CanFrame {
+    pub fn id(&self) -> u32 { self.id }
+    pub fn set_id(&mut self, id: u32) { self.id = id; }
+    pub fn dlc(&self) -> u8 { self.dlc }
+    pub fn set_dlc(&mut self, dlc: u8) -> Result {
+        if dlc > 15 || (!self.can_fd && dlc > 8) { return Err(Error::Invalid); }
+        self.dlc = dlc;
+        Ok(())
+    }
+    pub fn can_fd(&self) -> bool { self.can_fd }
+    pub fn set_can_fd(&mut self, can_fd: bool) -> Result {
+        if !can_fd && self.dlc > 8 { return Err(Error::Invalid); }
+        self.can_fd = can_fd;
+        Ok(())
+    }
+    pub fn data(&self, index: usize) -> Result<u8> {
+        self.data.get(index).copied().ok_or(Error::Invalid)
+    }
+    pub fn set_data(&mut self, index: usize, value: u8) -> Result {
+        *self.data.get_mut(index).ok_or(Error::Invalid)? = value;
+        Ok(())
+    }
+    pub fn payload(&self) -> &[u8] { &self.data[..self.data_length()] }
+    pub fn data_length(&self) -> usize {
+        match self.dlc { 0..=8 => self.dlc as usize, 9 => 12, 10 => 16, 11 => 20,
+                         12 => 24, 13 => 32, 14 => 48, _ => 64 }
+    }
+    pub fn id_signed(&self) -> i32 {
+        (self.id & if self.is_extended() { CAN_MASK_EXT_ID } else { CAN_MASK_STD_ID }) as i32
+    }
+    pub fn is_extended(&self) -> bool { self.id & CAN_FLAG_EFF != 0 }
+    pub fn is_remote_transmission_request(&self) -> bool { self.id & CAN_FLAG_RTR != 0 }
+    pub fn is_error_frame(&self) -> bool { self.id & CAN_FLAG_ERR != 0 }
+
+    fn encode(&self, output: &mut [u8; ${frame_wire_size}]) -> Result {
+        if self.dlc > 15 || (!self.can_fd && self.dlc > 8) { return Err(Error::Invalid); }
+        output[..4].copy_from_slice(&self.id.to_le_bytes());
+        output[4] = self.dlc;
+        output[5] = u8::from(self.can_fd);
+        output[6..].copy_from_slice(&self.data);
+        Ok(())
+    }
+
+    fn decode(input: &[u8]) -> Result<Self> {
+        if input.len() != ${frame_wire_size} || input[5] > 1 || input[4] > 15 ||
+            (input[5] == 0 && input[4] > 8) { return Err(Error::Host); }
+        let mut frame = Self::default();
+        frame.id = u32::from_le_bytes(input[..4].try_into().unwrap());
+        frame.dlc = input[4];
+        frame.can_fd = input[5] != 0;
+        frame.data.copy_from_slice(&input[6..]);
+        Ok(frame)
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct CanBuffer { token: NonZeroU32 }
+
+fn decode_buffer(output: [u8; 4]) -> Option<CanBuffer> {
+    NonZeroU32::new(u32::from_le_bytes(output)).map(|token| CanBuffer { token })
+}
+
+impl crate::bindings::Can<'_, '_> {
+    fn get(&self, id: u32, buffer_length: u8) -> Result<Option<CanBuffer>> {
+        if buffer_length == 0 || buffer_length > CAN_BUFFER_LENGTH_MAX { return Err(Error::Invalid); }
+        let input = [buffer_length];
+        let mut output = [0u8; 4];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw, id, input.as_ptr(), 1,
+                                                        output.as_mut_ptr(), 4) })?;
+        Ok(decode_buffer(output))
+    }
+
+    pub fn get_device(&self, buffer_length: u8) -> Result<Option<CanBuffer>> {
+        self.get(crate::imports::BINDING_${get_id}.slot(), buffer_length)
+    }
+
+    pub fn get_device2(&self, buffer_length: u8) -> Result<Option<CanBuffer>> {
+        self.get(crate::imports::BINDING_${get2_id}.slot(), buffer_length)
+    }
+}
+
+impl CanBuffer {
+    pub fn read_frame(&self, context: &Context<'_>) -> Result<Option<CanFrame>> {
+        let input = self.token.get().to_le_bytes();
+        let mut output = [0u8; ${frame_wire_size_plus_1}];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${read_id}.slot(), input.as_ptr(), 4,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        match output[0] { 0 => Ok(None), 1 => Ok(Some(CanFrame::decode(&output[1..])?)),
+                          _ => Err(Error::Host) }
+    }
+
+    pub fn write_frame(&self, context: &Context<'_>, frame: &CanFrame, timeout_us: u32) -> Result<bool> {
+        if timeout_us > CAN_WRITE_TIMEOUT_MAX_US { return Err(Error::Invalid); }
+        let mut input = [0u8; ${n4_plus_frame_wire_size_plus_4}];
+        input[..4].copy_from_slice(&self.token.get().to_le_bytes());
+        let encoded: &mut [u8; ${frame_wire_size}] = (&mut input[4..${n4_plus_frame_wire_size}]).try_into().unwrap();
+        frame.encode(encoded)?;
+        input[${n4_plus_frame_wire_size}..].copy_from_slice(&timeout_us.to_le_bytes());
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${write_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), 1) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    pub fn add_filter(&self, context: &Context<'_>, mask: u32, value: u32) -> Result<bool> {
+        let mut input = [0u8; 12];
+        input[..4].copy_from_slice(&self.token.get().to_le_bytes());
+        input[4..8].copy_from_slice(&mask.to_le_bytes());
+        input[8..].copy_from_slice(&value.to_le_bytes());
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${add_filter_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), 1) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    pub fn close(self, context: &Context<'_>) -> Result {
+        let input = self.token.get().to_le_bytes();
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${close_id}.slot(), input.as_ptr(), 4,
+            core::ptr::null_mut(), 0) })
+    }
+}
