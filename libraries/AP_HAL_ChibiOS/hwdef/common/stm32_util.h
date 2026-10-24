@@ -45,6 +45,11 @@ void *malloc_eth_safe(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
 bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op);
 
+#define MEM_REGION_FLAG_DMA_OK 1
+#define MEM_REGION_FLAG_FAST   2
+#define MEM_REGION_FLAG_AXI_BUS 4
+#define MEM_REGION_FLAG_ETH_SAFE 8
+
 struct memory_region {
     void *address;
     uint32_t size;
