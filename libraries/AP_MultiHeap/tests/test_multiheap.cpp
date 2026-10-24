@@ -118,4 +118,18 @@ TEST(MultiHeap, ReserveCannotWrapDuringGrowth)
     hal.util->set_soft_armed(previous);
 }
 
+TEST(MultiHeap, CapAndArenaExhaustionAreDistinct)
+{
+    MultiHeap heap{};
+    const bool previous = hal.util->get_soft_armed();
+    hal.util->set_soft_armed(true);
+    EXPECT_TRUE(heap.create(4096, 1, true, 0, 65536));
+    EXPECT_EQ(heap.allocate(8192), nullptr); // initial GC opportunity
+    EXPECT_EQ(heap.allocate(8192), nullptr); // no descriptor for growth
+    EXPECT_EQ(heap.get_expansion_failures(), MultiHeap::Arenas);
+    EXPECT_EQ(heap.get_expansion_size(), 0U);
+    heap.destroy();
+    hal.util->set_soft_armed(previous);
+}
+
 AP_GTEST_MAIN()
