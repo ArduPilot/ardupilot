@@ -60,7 +60,14 @@ static AP_Filesystem_Param fs_param;
 
 #if AP_FILESYSTEM_SYS_ENABLED
 #include "AP_Filesystem_Sys.h"
-static AP_Filesystem_Sys fs_sys;
+// Logger workers can still access SYS files during process exit. Retain the
+// backend and its semaphore until the process has stopped all threads.
+static union SysBackendStorage {
+    AP_Filesystem_Sys backend;
+    SysBackendStorage() : backend() {}
+    ~SysBackendStorage() {}
+} fs_sys_storage;
+static AP_Filesystem_Sys &fs_sys = fs_sys_storage.backend;
 #endif
 
 #if AP_FILESYSTEM_MISSION_ENABLED
