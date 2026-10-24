@@ -62,6 +62,10 @@ extern AP_IOMCU iomcu;
 // set the servo output for these channels as "GPIO", on a Pixhawk these would be FMU outputs 5/6
 #define RCOU_SERIAL_TIMING_DEBUG 0
 #define LED_THD_WA_SIZE 256
+// safety button input polarity: 0 = active-high, 1 = active-low
+#ifndef HAL_SAFETY_IN_ACTIVE_LOW
+#define HAL_SAFETY_IN_ACTIVE_LOW 0
+#endif
 #ifndef HAL_NO_LED_THREAD
 #if defined(HAL_NO_RCOUT_THREAD)
 #define HAL_NO_LED_THREAD 1
@@ -2530,6 +2534,9 @@ void RCOutput::safety_update(void)
 #ifdef HAL_GPIO_PIN_SAFETY_IN
     // handle safety button
     bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_IN);
+#if HAL_SAFETY_IN_ACTIVE_LOW
+    safety_pressed = !safety_pressed;
+#endif
     if (safety_pressed) {
         AP_BoardConfig *brdconfig = AP_BoardConfig::get_singleton();
         if (safety_press_count < UINT8_MAX) {
