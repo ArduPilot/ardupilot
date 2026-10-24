@@ -214,8 +214,21 @@ private:
     void _parse_signal_kv(ConfigKey key, uint64_t value, uint8_t value_len);
     void _parse_common_cfg(ConfigKey key, uint64_t value, uint8_t value_len);
     void _publish_supported_constellations();
-    // send GNSS constellation enables based on gnss_mode param, returns true if config was sent
-    bool _send_gnss_cfg();
+    // send GNSS constellation enables based on gnss_mode param
+    enum class GnssCfgResult : uint8_t {
+        SENT,   // VALSET sent
+        RETRY,  // no room to send the VALSET
+        DONE,   // nothing to change, or the receiver won't take it
+    };
+    GnssCfgResult _send_gnss_cfg();
+    // give up on setting constellations after this many tries, or
+    // once the receiver NAKs them
+    static constexpr uint8_t GNSS_CFG_MAX_ATTEMPTS = 3;
+    uint8_t _gnss_cfg_mode;  // gnss_mode the attempts below are for
+    uint8_t _gnss_cfg_attempts;
+    bool _gnss_cfg_rejected;
+    bool _gnss_cfg_skip_flash;  // the VALSET being sent leaves out flash
+    bool _gnss_cfg_retry_without_flash;  // the receiver NAKed it with flash
 
     // Signal names aligned with UBLOX_SIGNALS indices
     static const char* const SIGNAL_NAMES[];
