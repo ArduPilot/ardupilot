@@ -97,6 +97,10 @@ enum class LogEvent : uint8_t {
 
     AIRSPEED_PRIMARY_CHANGED = 90,
 
+    // the position controller's thrust vector may point downward
+    INVERTED_THRUST_START = 91,
+    INVERTED_THRUST_STOP = 92,
+
     SURFACED = 163,
     NOT_SURFACED = 164,
     BOTTOMED = 165,

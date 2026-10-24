@@ -88,6 +88,17 @@ extern const AP_HAL::HAL& hal;
 
 AC_PosControl *AC_PosControl::_singleton;
 
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
+#define POSCONTROL_TVEC_ARM_MS                  100     // the path must demand more than free fall for this long before inverted thrust is armed
+#define POSCONTROL_TVEC_EXIT_MS                 250     // the vertical axis must want thrust up for this long before inverted thrust is released
+#define POSCONTROL_TVEC_ALT_MIN_M               5.0f    // lowest PSC_TVEC_ALT honoured, whatever the parameter says
+#define POSCONTROL_HEADING_DEGENERATE_TILT_RAD  radians(80.0f)   // thrust tilt past which a world-frame heading target is abandoned
+#define POSCONTROL_HEADING_DEGENERATE_EXIT_RAD  radians(70.0f)   // and the tilt below which it is resumed
+#endif
+
+#define POSCONTROL_ACCEL_D_MAX_SHAPED_MSS       7.5f    // vertical acceleration ceiling for the input shaping, applied before the overspeed gain
+static_assert(POSCONTROL_ACCEL_D_MAX_SHAPED_MSS < GRAVITY_MSS, "the shaping must never ask for more than free fall");
+
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
@@ -143,6 +154,27 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_D_JERK", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
+
+    // only Copter grants inverted thrust, so the other vehicles do not carry its parameters
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    // @Param: _TVEC_EN
+    // @DisplayName: Thrust vector control enable
+    // @Description: Allows the commanded thrust vector to tilt past 90 degrees when the path demands a downward acceleration greater than free fall, other than to slow down along it. The vehicle decides where it may be used: Copter permits it only on Auto waypoint legs, and never on a helicopter. The vertical thrust demand is no longer clamped at zero and the throttle is set from the magnitude of the thrust vector rather than by angle boost. The horizontal acceleration is still bounded by the lean angle limit, so a vertical manoeuvre needs ATC_ANGLE_MAX raised, or PSC_ANGLE_MAX where it is set, since it overrides ATC_ANGLE_MAX for the position controller; raising ATC_ANGLE_MAX also raises the pilot's lean limit in the manual modes. Experimental.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    // @Vehicles: Copter
+    AP_GROUPINFO("_TVEC_EN", 15, AC_PosControl, _thrust_vector_enabled, 0),
+
+    // @Param: _TVEC_ALT
+    // @DisplayName: Thrust vector minimum height
+    // @Description: Minimum height above ground at which the commanded thrust vector may tilt past 90 degrees, as the vehicle estimates it: Copter takes the lowest of its rangefinder, terrain and home heights. Inverted thrust is inhibited below this height whatever the path demands, because the vertical controller routinely wants less than zero upward thrust in the last part of a descent. Values below 5 are treated as 5.
+    // @Units: m
+    // @Range: 5 200
+    // @Increment: 1
+    // @User: Advanced
+    // @Vehicles: Copter
+    AP_GROUPINFO("_TVEC_ALT", 16, AC_PosControl, _thrust_vector_min_height_m, 15.0f),
+#endif
 
     // @Param: _D_VEL_P
     // @DisplayName: Velocity (vertical) controller P gain
@@ -391,7 +423,8 @@ void AC_PosControl::input_pos_NED_m(const Vector3p& pos_ned_m, float pos_terrain
 
     // calculated increased maximum acceleration and jerk if over speed
     const float overspeed_gain = calculate_overspeed_gain();
-    const float accel_max_d_mss = _accel_max_d_mss * overspeed_gain;
+    // the ceiling is applied first so the up and down limits match unless braking an overspeed
+    const float accel_max_d_mss = MIN(_accel_max_d_mss, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS) * overspeed_gain;
     const float jerk_max_d_msss = _jerk_max_d_msss * overspeed_gain;
 
     update_pos_vel_accel_xy(_pos_desired_ned_m.xy(), _vel_desired_ned_ms.xy(), _accel_desired_ned_mss.xy(), _dt_s, _limit_vector_ned.xy(), _p_pos_ne_m.get_error(), _pid_vel_ne_m.get_error());
@@ -424,7 +457,7 @@ void AC_PosControl::input_pos_NED_m(const Vector3p& pos_ned_m, float pos_terrain
     shape_pos_vel_accel(pos_d_m, 0, 0,
                         _pos_desired_ned_m.z, _vel_desired_ned_ms.z, _accel_desired_ned_mss.z,
                         -vel_max_d_ms, vel_max_d_ms,
-                        -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, 7.5),
+                        -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS),
                         jerk_max_d_msss, _dt_s, false);
 }
 
@@ -761,8 +794,13 @@ void AC_PosControl::NE_update_controller()
     _accel_target_ned_mss.xy() = accel_target_ne_mss;
     _accel_target_ned_mss.xy() += _accel_desired_ned_mss.xy() + _accel_offset_ned_mss.xy();
 
-    // limit acceleration using maximum lean angles
-    const float angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), get_lean_angle_max_rad());
+    // limit acceleration using maximum lean angles.  The throttle-based althold limit assumes
+    // upright thrust, so it is skipped while inverted thrust is active; the configured lean
+    // angle still bounds the horizontal demand.
+    float angle_max_rad = get_lean_angle_max_rad();
+    if (!inverted_thrust_active()) {
+        angle_max_rad = MIN(_attitude_control.get_althold_lean_angle_max_rad(), angle_max_rad);
+    }
     const float accel_max_mss = angle_rad_to_accel_mss(angle_max_rad);
     // Save unbounded target for use in "limited" check (not unit-consistent with z!)
     _limit_vector_ned.xy() = _accel_target_ned_mss.xy();
@@ -894,6 +932,21 @@ void AC_PosControl::D_relax_controller(float throttle_setting)
 // Private function shared by other vertical initializers.
 void AC_PosControl::D_init_controller()
 {
+    float throttle_in = _attitude_control.get_throttle_in();
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
+    // inverted thrust sends the size of the thrust vector as throttle; the integrator below
+    // wants the throttle that holds the vertical axis upright, which is its vertical part
+    if (_thrust_inverted_active && is_positive(_motors.get_throttle_hover())) {
+        throttle_in = MAX(0.0f, -_thrust_vector_d_mss * _motors.get_throttle_hover() / GRAVITY_MSS);
+    }
+
+    // thrust supports weight until the vertical controller says otherwise
+    _thrust_vector_d_mss = -GRAVITY_MSS;
+    set_inverted_thrust_active(false);
+    _thrust_invert_arm_ms = 0;
+    _heading_degenerate = false;
+#endif
+
     // initialise terrain targets and offsets to zero
     init_terrain();
 
@@ -917,7 +970,7 @@ void AC_PosControl::D_init_controller()
     // Set acceleration PID I term based on the current throttle
     // Remove the expected P term due to _accel_desired_ned_mss.z being constrained to _accel_max_d_mss
     // Remove the expected FF term due to non-zero _accel_target_ned_mss.z
-    _pid_accel_d_m.set_integrator(-(_attitude_control.get_throttle_in() - _motors.get_throttle_hover())
+    _pid_accel_d_m.set_integrator(-(throttle_in - _motors.get_throttle_hover())
         - _pid_accel_d_m.kP() * (_accel_target_ned_mss.z - get_estimated_accel_D_mss())
         - _pid_accel_d_m.ff() * _accel_target_ned_mss.z);
 
@@ -949,7 +1002,8 @@ void AC_PosControl::input_vel_accel_D_m(float &vel_d_ms, float accel_d_mss, bool
 {
     // calculated increased maximum acceleration and jerk if over speed
     const float overspeed_gain = calculate_overspeed_gain();
-    const float accel_max_d_mss = _accel_max_d_mss * overspeed_gain;
+    // the ceiling is applied first so the up and down limits match unless braking an overspeed
+    const float accel_max_d_mss = MIN(_accel_max_d_mss, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS) * overspeed_gain;
     const float jerk_max_d_msss = _jerk_max_d_msss * overspeed_gain;
 
     // adjust desired alt if motors have not hit their limits
@@ -957,7 +1011,7 @@ void AC_PosControl::input_vel_accel_D_m(float &vel_d_ms, float accel_d_mss, bool
 
     shape_vel_accel(vel_d_ms, accel_d_mss,
                     _vel_desired_ned_ms.z, _accel_desired_ned_mss.z,
-                    -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, 7.5),
+                    -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS),
                     jerk_max_d_msss, _dt_s, limit_output);
 
     update_vel_accel(vel_d_ms, accel_d_mss, _dt_s, 0.0, 0.0);
@@ -1003,7 +1057,8 @@ void AC_PosControl::input_pos_vel_accel_D_m(float &pos_d_m, float &vel_d_ms, flo
 {
     // calculated increased maximum acceleration and jerk if over speed
     const float overspeed_gain = calculate_overspeed_gain();
-    const float accel_max_d_mss = _accel_max_d_mss * overspeed_gain;
+    // the ceiling is applied first so the up and down limits match unless braking an overspeed
+    const float accel_max_d_mss = MIN(_accel_max_d_mss, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS) * overspeed_gain;
     const float jerk_max_d_msss = _jerk_max_d_msss * overspeed_gain;
 
     // adjust desired altitude if motors have not hit their limits
@@ -1012,7 +1067,7 @@ void AC_PosControl::input_pos_vel_accel_D_m(float &pos_d_m, float &vel_d_ms, flo
     shape_pos_vel_accel(pos_d_m, vel_d_ms, accel_d_mss,
                         _pos_desired_ned_m.z, _vel_desired_ned_ms.z, _accel_desired_ned_mss.z,
                         -_vel_max_up_ms, _vel_max_down_ms,
-                        -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, 7.5),
+                        -accel_max_d_mss, constrain_float(accel_max_d_mss, 0.0, POSCONTROL_ACCEL_D_MAX_SHAPED_MSS),
                         jerk_max_d_msss, _dt_s, limit_output);
 
     postype_t posp = pos_d_m;
@@ -1112,7 +1167,13 @@ void AC_PosControl::D_update_controller()
     // Velocity Controller
 
     // PID controller: convert velocity error to acceleration
-    _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    // while the thrust vector points down more throttle accelerates the vehicle down rather than
+    // up, so the upper and lower motor saturation limits trade places
+    const bool thrust_down = is_positive(get_thrust_vector().z);
+    const bool limit_lower = thrust_down ? _motors.limit.throttle_upper : _motors.limit.throttle_lower;
+    const bool limit_upper = thrust_down ? _motors.limit.throttle_lower : _motors.limit.throttle_upper;
+    // the output is a Down acceleration, so the negative side is limited by the motors' upper limit
+    _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, limit_upper, limit_lower);
     _accel_target_ned_mss.z *= AP::ahrs().get_control_gain_scaler_Z();
 
     // add feed forward component
@@ -1141,8 +1202,30 @@ void AC_PosControl::D_update_controller()
 
     // Actuator commands
 
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
+    // -thrust_d_norm is the throttle the vertical axis wants assuming thrust points up;
+    // negative is the request for thrust out of the bottom of the airframe
+    const float throttle_up = -thrust_d_norm;
+    update_inverted_thrust_state(throttle_up);
+
+    if (_thrust_inverted_active) {
+        const float hover_throttle = _motors.get_throttle_hover();
+        _thrust_vector_d_mss = is_positive(hover_throttle) ? -(throttle_up / hover_throttle) * GRAVITY_MSS : -GRAVITY_MSS;
+
+        // Angle boost is the 1/cos(tilt) special case of this magnitude and cannot represent
+        // a tilt at or past 90 degrees, so the magnitude is used directly and boost disabled.
+        const float throttle_out = hover_throttle * get_thrust_vector().length() / GRAVITY_MSS;
+        _attitude_control.set_throttle_out(throttle_out, false, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+    } else {
+        // stock behaviour: thrust supports weight and angle boost supplies the tilt correction
+        _thrust_vector_d_mss = -GRAVITY_MSS;
+        _attitude_control.set_throttle_out(-thrust_d_norm, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+    }
+    update_heading_degenerate();
+#else
     // Send final throttle output to attitude controller (includes angle boost)
     _attitude_control.set_throttle_out(-thrust_d_norm, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+#endif
 
     // Check for vertical controller health
 
@@ -1152,9 +1235,9 @@ void AC_PosControl::D_update_controller()
     _vel_d_control_ratio = constrain_float(_vel_d_control_ratio, 0.0f, 2.0f);
 
     // set vertical component of the limit vector
-    if (_motors.limit.throttle_upper) {
+    if (limit_upper) {
         _limit_vector_ned.z = -1.0f;
-    } else if (_motors.limit.throttle_lower) {
+    } else if (limit_lower) {
         _limit_vector_ned.z = 1.0f;
     } else {
         _limit_vector_ned.z = 0.0f;
@@ -1370,13 +1453,133 @@ void AC_PosControl::set_posvelaccel_offset_target_D_m(float pos_offset_target_d_
     _posvelaccel_offset_target_d_ms = AP_HAL::millis();
 }
 
-// Returns desired thrust direction as a unit vector in the body frame.
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
+// Decide whether the vehicle may point its thrust downward this cycle. Arming is driven by
+// the path, not the vertical PID, so the negative thrust demands near touchdown cannot roll
+// the vehicle over; once entered it is held while the vertical axis still wants thrust down,
+// since the constant speed part of a dive has no feedforward but must push through drag.
+void AC_PosControl::update_inverted_thrust_state(float throttle_up)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // consume the vehicle's permission: it must be renewed every loop, so a caller that
+    // stops refreshing it cannot leave inverted thrust enabled
+    const bool allowed = _inverted_thrust_allowed;
+    _inverted_thrust_allowed = false;
+
+    // written so that a NaN height fails the floor rather than passing it
+    if (!_thrust_vector_enabled || !allowed || !(_inverted_thrust_height_m >= MAX(_thrust_vector_min_height_m, POSCONTROL_TVEC_ALT_MIN_M))) {
+        set_inverted_thrust_active(false);
+        _thrust_invert_arm_ms = 0;
+        _thrust_invert_upright_ms = now_ms;
+        return;
+    }
+
+    if (!_thrust_inverted_active) {
+        // a deceleration along the direction of travel is given up rather than flown inverted,
+        // so arresting a climb never rolls the vehicle over while turning and diving still can.
+        // Taking it out can only lower the downward demand, never add to it.
+        float accel_arm_d_mss = _accel_desired_ned_mss.z;
+        const float vel_desired_ms = _vel_desired_ned_ms.length();
+        if (is_positive(vel_desired_ms)) {
+            const Vector3f vel_unit = _vel_desired_ned_ms / vel_desired_ms;
+            const float accel_along_mss = _accel_desired_ned_mss * vel_unit;
+            if (is_negative(accel_along_mss)) {
+                accel_arm_d_mss = MIN(accel_arm_d_mss, accel_arm_d_mss - vel_unit.z * accel_along_mss);
+            }
+        }
+        if (accel_arm_d_mss > GRAVITY_MSS) {
+            if (_thrust_invert_arm_ms == 0) {
+                _thrust_invert_arm_ms = now_ms;
+            } else if (now_ms - _thrust_invert_arm_ms >= POSCONTROL_TVEC_ARM_MS) {
+                set_inverted_thrust_active(true);
+                _thrust_invert_upright_ms = now_ms;
+            }
+        } else {
+            _thrust_invert_arm_ms = 0;
+        }
+        return;
+    }
+
+    if (is_negative(throttle_up)) {
+        _thrust_invert_upright_ms = now_ms;
+    } else if (now_ms - _thrust_invert_upright_ms >= POSCONTROL_TVEC_EXIT_MS) {
+        set_inverted_thrust_active(false);
+        _thrust_invert_arm_ms = 0;
+    }
+}
+
+// Permits the thrust vector to tilt past 90 degrees for one cycle, at the vehicle's height above
+// ground. The vertical controller consumes the permission, so the vehicle renews it every loop.
+// Withdrawing it ends the regime at once, since a mode that does not run the vertical controller
+// would otherwise leave it latched until the controller next initialised.
+void AC_PosControl::set_inverted_thrust_allowed(bool allowed, float height_above_ground_m)
+{
+    _inverted_thrust_allowed = allowed;
+    _inverted_thrust_height_m = height_above_ground_m;
+    if (!allowed) {
+        set_inverted_thrust_active(false);
+        _thrust_invert_arm_ms = 0;
+    }
+}
+
+// Sets whether the thrust vector may point downward, logging each change.
+void AC_PosControl::set_inverted_thrust_active(bool active)
+{
+    if (active == _thrust_inverted_active) {
+        return;
+    }
+    _thrust_inverted_active = active;
+    if (!active) {
+        // upright again at once, for a mode that reads the thrust vector before the vertical controller runs
+        _thrust_vector_d_mss = -GRAVITY_MSS;
+    }
+    LOGGER_WRITE_EVENT(active ? LogEvent::INVERTED_THRUST_START : LogEvent::INVERTED_THRUST_STOP);
+}
+#endif  // AC_POSCONTROL_INVERTED_THRUST_ENABLED
+
 Vector3f AC_PosControl::get_thrust_vector() const
 {
     Vector3f accel_target_ned_mss = get_accel_target_NED_mss();
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
+    accel_target_ned_mss.z = _thrust_vector_enabled ? _thrust_vector_d_mss : -GRAVITY_MSS;
+#else
     accel_target_ned_mss.z = -GRAVITY_MSS;
+#endif
     return accel_target_ned_mss;
 }
+
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED
+// Hysteresis on the thrust tilt past which a world-frame heading target is abandoned, so the
+// heading mode cannot alternate cycle by cycle around the threshold.
+void AC_PosControl::update_heading_degenerate()
+{
+    // without inverted thrust the tilt is the lean angle, where a heading still means something
+    if (!_thrust_vector_enabled) {
+        _heading_degenerate = false;
+        return;
+    }
+    const Vector3f thrust_vector = get_thrust_vector();
+    const float thrust_length = thrust_vector.length();
+    if (!is_positive(thrust_length)) {
+        _heading_degenerate = false;
+        return;
+    }
+    // -z/|thrust| is cos(tilt), so a larger tilt is a smaller value
+    const float cos_tilt = -thrust_vector.z / thrust_length;
+    const float threshold_rad = _heading_degenerate ? POSCONTROL_HEADING_DEGENERATE_EXIT_RAD : POSCONTROL_HEADING_DEGENERATE_TILT_RAD;
+    _heading_degenerate = cos_tilt < cosf(threshold_rad);
+}
+
+// Returns true when the thrust vector is tilted so far that a world-frame heading target no
+// longer means anything. Past that tilt the heading changes as a consequence of rotating about
+// the pitch axis, so an absolute target fights the rotation already carrying the nose around.
+// Only ever true while PSC_TVEC_EN is enabled.
+bool AC_PosControl::thrust_vector_heading_degenerate() const
+{
+    return _heading_degenerate;
+}
+#endif  // AC_POSCONTROL_INVERTED_THRUST_ENABLED
 
 // Computes NE stopping point in meters based on current position, velocity, and acceleration.
 void AC_PosControl::get_stopping_point_NE_m(Vector2p &stopping_point_ne_m) const
