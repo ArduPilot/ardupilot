@@ -51,7 +51,7 @@ const char* const AP_GPS_UBLOX_CFGv2::CONSTELLATION_NAMES[] = {
     "BDS",   // 3
     "",      // 4 (IMES, unused)
     "QZSS",  // 5
-    "",      // 6 (GLO, unused)
+    "GLO",   // 6
     "NAVIC", // 7
 };
 
