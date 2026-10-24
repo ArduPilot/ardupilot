@@ -179,7 +179,7 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Param: UBXMDL
     // @DisplayName: UBlox receiver model
     // @Description: Which u-blox receiver to simulate. Simple outputs all messages and ignores configuration; the other models are configured by the autopilot through the UBX configuration protocol and output only the messages they have been configured to output
-    // @Values: 0:Simple, 1:u-blox 6 FW 7.03, 2:NEO-M8N FW 2.01, 3:M8 ROM CORE 3.01, 4:NEO-M8N SPG 3.01, 5:NEO-M9N SPG 4.04, 6:M10 ROM SPG 5.10
+    // @Values: 0:Simple, 1:u-blox 6 FW 7.03, 2:NEO-M8N FW 2.01, 3:M8 ROM CORE 3.01, 4:NEO-M8N SPG 3.01, 5:NEO-M9N SPG 4.04, 6:M10 ROM SPG 5.10, 7:ZED-X20P HPG 2.11
     // @User: Advanced
     AP_GROUPINFO("UBXMDL",    22, GPSParms, ubx_model, 0),
 
