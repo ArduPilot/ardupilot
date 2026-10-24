@@ -1,0 +1,162 @@
+use crate::{result, Error, Result};
+
+pub const GPS_INJECT_DATA_MAX: usize = ${gps_inject_max};
+pub const VIDEO_STREAM_NAME_SIZE: usize = ${video_stream_name_size};
+pub const VIDEO_STREAM_URI_SIZE: usize = ${video_stream_uri_size};
+
+/// Complete owned VIDEO_STREAM_INFORMATION input. The camera backend derives
+/// `camera_device_id` from `instance`, so it is intentionally not caller-set.
+#[derive(Clone, Debug, PartialEq)]
+pub struct VideoStreamInformation {
+    pub framerate: f32,
+    pub bitrate: u32,
+    pub flags: u16,
+    pub resolution_h: u16,
+    pub resolution_v: u16,
+    pub rotation: u16,
+    pub hfov: u16,
+    pub stream_id: u8,
+    pub count: u8,
+    pub stream_type: u8,
+    pub encoding: u8,
+    name: [u8; VIDEO_STREAM_NAME_SIZE],
+    uri: [u8; VIDEO_STREAM_URI_SIZE],
+}
+
+impl Default for VideoStreamInformation {
+    fn default() -> Self {
+        Self {
+            framerate: 0.0,
+            bitrate: 0,
+            flags: 0,
+            resolution_h: 0,
+            resolution_v: 0,
+            rotation: 0,
+            hfov: 0,
+            stream_id: 0,
+            count: 0,
+            stream_type: 0,
+            encoding: 0,
+            name: [0; VIDEO_STREAM_NAME_SIZE],
+            uri: [0; VIDEO_STREAM_URI_SIZE],
+        }
+    }
+}
+
+fn set_video_stream_text<const N: usize>(output: &mut [u8; N], value: &str) -> Result {
+    let bytes = value.as_bytes();
+    if bytes.len() > N || bytes.contains(&0) {
+        return Err(Error::Invalid);
+    }
+    output.fill(0);
+    output[..bytes.len()].copy_from_slice(bytes);
+    Ok(())
+}
+
+impl VideoStreamInformation {
+    pub fn set_name(&mut self, value: &str) -> Result {
+        set_video_stream_text(&mut self.name, value)
+    }
+
+    pub fn set_uri(&mut self, value: &str) -> Result {
+        set_video_stream_text(&mut self.uri, value)
+    }
+
+    pub fn name_bytes(&self) -> &[u8; VIDEO_STREAM_NAME_SIZE] { &self.name }
+    pub fn uri_bytes(&self) -> &[u8; VIDEO_STREAM_URI_SIZE] { &self.uri }
+}
+
+impl crate::bindings::Gps<'_, '_> {
+    pub fn time_epoch_usec(&self, instance: u8) -> Result<u64> {
+        let input = [instance];
+        let mut output = [0u8; 8];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${epoch_id}.slot(),
+                input.as_ptr(), 1, output.as_mut_ptr(), 8)
+        })?;
+        Ok(u64::from_le_bytes(output))
+    }
+
+    pub fn inject_data(&self, data: &[u8]) -> Result {
+        if data.is_empty() || data.len() > GPS_INJECT_DATA_MAX {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; GPS_INJECT_DATA_MAX + 2];
+        input[..2].copy_from_slice(&(data.len() as u16).to_le_bytes());
+        input[2..2 + data.len()].copy_from_slice(data);
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${inject_id}.slot(),
+                input.as_ptr(), input.len() as u32, core::ptr::null_mut(), 0)
+        })
+    }
+
+}
+
+impl crate::bindings::Camera<'_, '_> {
+    pub fn set_stream_information(
+        &self,
+        instance: u8,
+        information: &VideoStreamInformation,
+    ) -> Result {
+        if !information.framerate.is_finite() || information.framerate < 0.0 {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; ${video_stream_wire_size}];
+        input[0] = instance;
+        input[1..5].copy_from_slice(&information.framerate.to_bits().to_le_bytes());
+        input[5..9].copy_from_slice(&information.bitrate.to_le_bytes());
+        input[9..11].copy_from_slice(&information.flags.to_le_bytes());
+        input[11..13].copy_from_slice(&information.resolution_h.to_le_bytes());
+        input[13..15].copy_from_slice(&information.resolution_v.to_le_bytes());
+        input[15..17].copy_from_slice(&information.rotation.to_le_bytes());
+        input[17..19].copy_from_slice(&information.hfov.to_le_bytes());
+        input[19] = information.stream_id;
+        input[20] = information.count;
+        input[21] = information.stream_type;
+        input[22..54].copy_from_slice(&information.name);
+        input[54..214].copy_from_slice(&information.uri);
+        input[214] = information.encoding;
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${camera_id}.slot(),
+                input.as_ptr(), input.len() as u32, core::ptr::null_mut(), 0)
+        })
+    }
+
+}
+
+impl crate::bindings::Networking<'_, '_> {
+    /// Add a persistent route. Module exit does not remove it.
+    pub fn add_route(
+        &self,
+        backend_idx: u8,
+        iface_idx: u8,
+        dest_ip: u32,
+        mask_len: u8,
+    ) -> Result<bool> {
+        if mask_len > 32 { return Err(Error::Invalid); }
+        let mut input = [0u8; 7];
+        input[0] = backend_idx;
+        input[1] = iface_idx;
+        input[2..6].copy_from_slice(&dest_ip.to_le_bytes());
+        input[6] = mask_len;
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${route_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), 1)
+        })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+}
+
+impl crate::bindings::Scripting<'_, '_> {
+    /// Request a restart of the Lua scripting backend. This call returns
+    /// normally and does not stop or restart this Native module or other native
+    /// modules. Firmware without the Lua backend returns `Error::Unavailable`.
+    pub fn restart_all(&self) -> Result {
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${restart_id}.slot(),
+                core::ptr::null(), 0, core::ptr::null_mut(), 0)
+        })
+    }
+}

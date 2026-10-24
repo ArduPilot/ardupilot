@@ -1,0 +1,16 @@
+{
+  "Parameter": {
+    "include": "AP_Scripting/AP_Scripting_helpers.h",
+    "methods": ["configured", "get", "init", "set", "set_and_save", "set_default"]
+  },
+  "Quaternion": {
+    "include": "AP_Math/AP_Math.h",
+    "methods": ["earth_to_body", "from_angular_velocity", "from_axis_angle", "from_euler", "get_euler_pitch", "get_euler_roll", "get_euler_yaw", "inverse", "length", "normalize", "to_axis_angle"],
+    "operators": ["*"]
+  },
+  "Vector3f": {
+    "include": "AP_Math/AP_Math.h",
+    "methods": ["angle", "cross", "dot", "is_inf", "is_nan", "is_zero", "length", "normalize", "rotate_xy", "scale"],
+    "operators": ["+", "-"]
+  }
+}

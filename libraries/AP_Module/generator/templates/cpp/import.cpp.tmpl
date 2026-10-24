@@ -1,0 +1,2 @@
+volatile uint32_t import_${hash} asm("__ap_module_import_${hash}.${name}")
+    __attribute__((section(".ap_module_import_${hash}.${name}"))) = UINT32_MAX;
