@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#pragma once
+#include <stddef.h>
+namespace std {
+struct nothrow_t { explicit constexpr nothrow_t() = default; };
+inline constexpr nothrow_t nothrow{};
+enum class align_val_t : size_t {};
+}
+void *operator new(size_t);
+void *operator new[](size_t);
+void *operator new(size_t, const std::nothrow_t &) noexcept;
+void *operator new[](size_t, const std::nothrow_t &) noexcept;
+void *operator new(size_t, std::align_val_t);
+void *operator new[](size_t, std::align_val_t);
+void *operator new(size_t, std::align_val_t, const std::nothrow_t &) noexcept;
+void *operator new[](size_t, std::align_val_t, const std::nothrow_t &) noexcept;
+void operator delete(void *) noexcept;
+void operator delete[](void *) noexcept;
+void operator delete(void *, size_t) noexcept;
+void operator delete[](void *, size_t) noexcept;
+void operator delete(void *, std::align_val_t) noexcept;
+void operator delete[](void *, std::align_val_t) noexcept;
+void operator delete(void *, size_t, std::align_val_t) noexcept;
+void operator delete[](void *, size_t, std::align_val_t) noexcept;
+inline void *operator new(size_t, void *p) noexcept { return p; }
+inline void operator delete(void *, void *) noexcept {}
