@@ -42,6 +42,9 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Scripting/AP_Scripting.h>
+#if AP_MODULE_ENABLED
+#include <AP_Module/Runtime.h>
+#endif
 #include <AP_Camera/AP_RunCam.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
@@ -1190,9 +1193,16 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
         const AP_Scripting *scripting = AP_Scripting::get_singleton();
         if ((scripting != nullptr) && !scripting->arming_checks(sizeof(buffer), buffer)) {
+            check_failed(Check::SYSTEM, report, "%s", buffer);
+            return false;
+        }
+#endif
+#if AP_MODULE_ENABLED
+        const auto *modules = AP_Module::Runtime::get_singleton();
+        if (modules != nullptr && !modules->arming_checks(sizeof(buffer), buffer)) {
             check_failed(Check::SYSTEM, report, "%s", buffer);
             return false;
         }
@@ -1500,11 +1510,18 @@ bool AP_Arming::fettec_checks(bool display_failure) const
 // returns true on success
 bool AP_Arming::get_aux_auth_id(uint8_t& auth_id)
 {
+    return get_aux_auth_id(auth_id, nullptr);
+}
+
+bool AP_Arming::get_aux_auth_id(uint8_t& auth_id, const void *owner)
+{
     WITH_SEMAPHORE(aux_auth_sem);
 
     // check we have enough room to allocate another id
     if (aux_auth_count >= aux_auth_count_max) {
-        aux_auth_error = true;
+        // Owned callers report allocation failure through their own runtime.
+        // Preserve the legacy global error for callers which cannot do that.
+        aux_auth_error |= owner == nullptr;
         return false;
     }
 
@@ -1512,11 +1529,21 @@ bool AP_Arming::get_aux_auth_id(uint8_t& auth_id)
     if (aux_auth_fail_msg == nullptr) {
         aux_auth_fail_msg = (char *)calloc(aux_auth_str_len, sizeof(char));
         if (aux_auth_fail_msg == nullptr) {
-            aux_auth_error = true;
+            aux_auth_error |= owner == nullptr;
             return false;
         }
     }
-    auth_id = aux_auth_count;
+    for (auth_id = 0; auth_id < aux_auth_count_max; auth_id++) {
+        if (!aux_auth_active[auth_id]) {
+            break;
+        }
+    }
+    if (auth_id >= aux_auth_count_max) {
+        return false;
+    }
+    aux_auth_active[auth_id] = true;
+    aux_auth_owner[auth_id] = owner;
+    aux_auth_state[auth_id] = AuxAuthStates::NO_RESPONSE;
     aux_auth_count++;
     return true;
 }
@@ -1524,24 +1551,36 @@ bool AP_Arming::get_aux_auth_id(uint8_t& auth_id)
 // set auxiliary authorisation passed
 void AP_Arming::set_aux_auth_passed(uint8_t auth_id)
 {
+    set_aux_auth_passed(auth_id, nullptr);
+}
+
+bool AP_Arming::set_aux_auth_passed(uint8_t auth_id, const void *owner)
+{
     WITH_SEMAPHORE(aux_auth_sem);
 
-    // sanity check auth_id
-    if (auth_id >= aux_auth_count) {
-        return;
+    if (auth_id >= aux_auth_count_max || !aux_auth_active[auth_id] || aux_auth_owner[auth_id] != owner) {
+        return false;
     }
 
     aux_auth_state[auth_id] = AuxAuthStates::AUTH_PASSED;
+    if (aux_auth_fail_msg_source == auth_id) {
+        update_aux_auth_fail_msg();
+    }
+    return true;
 }
 
 // set auxiliary authorisation failed and provide failure message
 void AP_Arming::set_aux_auth_failed(uint8_t auth_id, const char* fail_msg)
 {
+    set_aux_auth_failed(auth_id, fail_msg, nullptr);
+}
+
+bool AP_Arming::set_aux_auth_failed(uint8_t auth_id, const char *fail_msg, const void *owner)
+{
     WITH_SEMAPHORE(aux_auth_sem);
 
-    // sanity check auth_id
-    if (auth_id >= aux_auth_count) {
-        return;
+    if (auth_id >= aux_auth_count_max || !aux_auth_active[auth_id] || aux_auth_owner[auth_id] != owner) {
+        return false;
     }
 
     // update state
@@ -1549,8 +1588,8 @@ void AP_Arming::set_aux_auth_failed(uint8_t auth_id, const char* fail_msg)
 
     // store failure message if this authoriser has the lowest auth_id
     for (uint8_t i = 0; i < auth_id; i++) {
-        if (aux_auth_state[i] == AuxAuthStates::AUTH_FAILED) {
-            return;
+        if (aux_auth_active[i] && aux_auth_state[i] == AuxAuthStates::AUTH_FAILED) {
+            return true;
         }
     }
     if (aux_auth_fail_msg != nullptr) {
@@ -1559,7 +1598,56 @@ void AP_Arming::set_aux_auth_failed(uint8_t auth_id, const char* fail_msg)
         } else {
             strncpy(aux_auth_fail_msg, fail_msg, aux_auth_str_len);
         }
+        aux_auth_fail_msg[aux_auth_str_len - 1] = '\0';
         aux_auth_fail_msg_source = auth_id;
+    }
+    return true;
+}
+
+void AP_Arming::update_aux_auth_fail_msg()
+{
+    for (uint8_t i = 0; i < aux_auth_count_max; i++) {
+        if (aux_auth_active[i] && aux_auth_state[i] == AuxAuthStates::AUTH_FAILED) {
+            aux_auth_fail_msg_source = i;
+            if (aux_auth_fail_msg != nullptr) {
+                strncpy(aux_auth_fail_msg, "Auxiliary authorisation refused", aux_auth_str_len);
+                aux_auth_fail_msg[aux_auth_str_len - 1] = '\0';
+            }
+            return;
+        }
+    }
+    aux_auth_fail_msg_source = UINT8_MAX;
+    if (aux_auth_fail_msg != nullptr) {
+        aux_auth_fail_msg[0] = '\0';
+    }
+}
+
+void AP_Arming::release_aux_auths(const void *owner)
+{
+    WITH_SEMAPHORE(aux_auth_sem);
+
+    bool released_failure_source = false;
+    for (uint8_t i = 0; i < aux_auth_count_max; i++) {
+        if (!aux_auth_active[i] || aux_auth_owner[i] != owner) {
+            continue;
+        }
+        released_failure_source |= aux_auth_fail_msg_source == i;
+        aux_auth_active[i] = false;
+        aux_auth_owner[i] = nullptr;
+        aux_auth_state[i] = AuxAuthStates::NO_RESPONSE;
+        aux_auth_count--;
+    }
+    if (owner == nullptr) {
+        // Only legacy/Lua allocation failures set this global flag.
+        aux_auth_error = false;
+    }
+    if (released_failure_source) {
+        update_aux_auth_fail_msg();
+    }
+    if (aux_auth_count == 0 && aux_auth_fail_msg != nullptr) {
+        free(aux_auth_fail_msg);
+        aux_auth_fail_msg = nullptr;
+        aux_auth_fail_msg_source = UINT8_MAX;
     }
 }
 
@@ -1567,25 +1655,22 @@ void AP_Arming::reset_all_aux_auths()
 {
     WITH_SEMAPHORE(aux_auth_sem);
 
-    // clear all auxiliary authorisation ids
     aux_auth_count = 0;
-    // clear any previous allocation errors
     aux_auth_error = false;
-
-    // reset states for all auxiliary authorisation ids
+    aux_auth_fail_msg_source = UINT8_MAX;
     for (uint8_t i = 0; i < aux_auth_count_max; i++) {
+        aux_auth_active[i] = false;
+        aux_auth_owner[i] = nullptr;
         aux_auth_state[i] = AuxAuthStates::NO_RESPONSE;
     }
-
-    // free up the failure message buffer
-    if (aux_auth_fail_msg != nullptr) {
-        free(aux_auth_fail_msg);
-        aux_auth_fail_msg = nullptr;
-    }
+    free(aux_auth_fail_msg);
+    aux_auth_fail_msg = nullptr;
 }
 
 bool AP_Arming::aux_auth_checks(bool display_failure)
 {
+    WITH_SEMAPHORE(aux_auth_sem);
+
     // handle error cases
     if (aux_auth_error) {
         if (aux_auth_fail_msg == nullptr) {
@@ -1596,13 +1681,14 @@ bool AP_Arming::aux_auth_checks(bool display_failure)
         return false;
     }
 
-    WITH_SEMAPHORE(aux_auth_sem);
-
     // check results for each auxiliary authorisation id
     bool some_failures = false;
     bool failure_msg_sent = false;
     bool waiting_for_responses = false;
-    for (uint8_t i = 0; i < aux_auth_count; i++) {
+    for (uint8_t i = 0; i < aux_auth_count_max; i++) {
+        if (!aux_auth_active[i]) {
+            continue;
+        }
         switch (aux_auth_state[i]) {
         case AuxAuthStates::NO_RESPONSE:
             waiting_for_responses = true;

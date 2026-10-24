@@ -142,8 +142,12 @@ public:
 #if AP_ARMING_AUX_AUTH_ENABLED
     // auxiliary authorisation methods
     bool get_aux_auth_id(uint8_t& auth_id);
+    bool get_aux_auth_id(uint8_t& auth_id, const void *owner);
     void set_aux_auth_passed(uint8_t auth_id);
+    bool set_aux_auth_passed(uint8_t auth_id, const void *owner);
     void set_aux_auth_failed(uint8_t auth_id, const char* fail_msg);
+    bool set_aux_auth_failed(uint8_t auth_id, const char *fail_msg, const void *owner);
+    void release_aux_auths(const void *owner);
     void reset_all_aux_auths();
 #endif
 
@@ -325,11 +329,14 @@ private:
         AUTH_FAILED,
         AUTH_PASSED
     } aux_auth_state[aux_auth_count_max] = {};  // state of each auxiliary authorisation
-    uint8_t aux_auth_count;     // number of auxiliary authorisers
-    uint8_t aux_auth_fail_msg_source;   // authorisation id who set aux_auth_fail_msg
-    char* aux_auth_fail_msg;    // buffer for holding failure messages
-    bool aux_auth_error;        // true if too many auxiliary authorisers
+    bool aux_auth_active[aux_auth_count_max] {}; // true for allocated slots
+    const void *aux_auth_owner[aux_auth_count_max] {}; // nullptr for legacy/Lua clients
+    uint8_t aux_auth_count {};     // number of auxiliary authorisers
+    uint8_t aux_auth_fail_msg_source {UINT8_MAX};   // authorisation id who set aux_auth_fail_msg
+    char* aux_auth_fail_msg {};    // buffer for holding failure messages
+    bool aux_auth_error {};        // true if too many auxiliary authorisers
     HAL_Semaphore aux_auth_sem; // semaphore for accessing the aux_auth_state and aux_auth_fail_msg
+    void update_aux_auth_fail_msg(); // caller holds aux_auth_sem
 #endif
 
     // method that was last used for arm/disarm; invalid unless the
