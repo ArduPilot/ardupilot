@@ -200,6 +200,8 @@ AC_Fence::AC_Fence()
 // get a user-friendly list of fences
 void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg)
 {
+    // only bits with an entry in FENCE_NAMES may be named
+    fences &= AC_FENCE_ALL_FENCES;
     if (!fences) {
         return;
     }
@@ -209,9 +211,10 @@ void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg)
         "Polygon",
         "Min Alt",
     };
+    static_assert(AC_FENCE_ALL_FENCES < (1U << ARRAY_SIZE(FENCE_NAMES)), "FENCE_NAMES must name every fence type");
     uint8_t i = 0;
     uint8_t nfences = 0;
-    while (fences !=0) {
+    while (fences != 0 && i < ARRAY_SIZE(FENCE_NAMES)) {
         if (fences & 0x1) {
             if (nfences > 0) {
                 if (!(fences & ~1U)) {
