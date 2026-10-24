@@ -310,7 +310,7 @@ void AP_Periph_FW::init()
     relay.init();
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     scripting.init();
 #endif
 

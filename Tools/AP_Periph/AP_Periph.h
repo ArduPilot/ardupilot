@@ -463,7 +463,7 @@ public:
     uint64_t get_vehicle_state() { return vehicle_state; }
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     AP_Scripting scripting;
 #endif
 
