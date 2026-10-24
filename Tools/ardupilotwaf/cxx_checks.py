@@ -248,17 +248,6 @@ def check_libiio(cfg, env):
     return check_package(cfg, env, 'libiio')
 
 @conf
-def check_libdl(cfg, env):
-    if cfg.env.STATIC_LINKING:
-        # using loadable modules for a static build is not recommended
-        cfg.msg("Checking for 'libdl':", 'disabled for static build', color='YELLOW')
-        return False
-    ret = cfg.check(compiler='cxx', lib='dl', mandatory=False, global_define=True, define_name='HAVE_LIBDL')
-    if ret:
-        env.LIB += cfg.env['LIB_DL']
-    return ret
-
-@conf
 def check_SFML(cfg, env):
     if not cfg.options.enable_sfml:
         cfg.msg("Checking for SFML graphics:", 'disabled', color='YELLOW')

@@ -717,6 +717,13 @@ def generate_hwdef_h(env):
     )
     hwdef_obj.run()
 
+    # ChibiOS C/assembly also needs this option (including its thread layout
+    # and context-switch hook); the generic option only supplies CXXFLAGS.
+    stack_guard = get_build_option_value(env, 'STACK_GUARD')
+    if stack_guard is not None:
+        with open(os.path.join(hwdef_out, 'hwdef.h'), 'a') as header:
+            header.write('\n#undef HAL_STACK_GUARD_ENABLED\n#define HAL_STACK_GUARD_ENABLED %u\n' % stack_guard)
+
     if get_build_option_value(env, 'USB_debug_startup_wait') and not get_build_option_value(env, 'USB_debug'):
         raise Errors.WafError('USB debug startup wait requires --enable-USB-debug')
     if get_build_option_value(env, 'USB_debug'):

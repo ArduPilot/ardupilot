@@ -109,6 +109,10 @@ class Board:
         self.disable_buggy_compiler_warnings(cfg, env)
 
         # Setup scripting:
+        if cfg.options.enable_scripting and cfg.options.disable_scripting:
+            cfg.fatal('Cannot both enable and disable Lua scripting')
+        if cfg.options.enable_modules and cfg.options.disable_modules:
+            cfg.fatal('Cannot both enable and disable native modules')
         env.DEFINES.update(
             LUA_32BITS = 1,
         )
@@ -120,12 +124,17 @@ class Board:
 
         if cfg.options.enable_scripting:
             env.DEFINES.update(
-                AP_SCRIPTING_ENABLED = 1,
+                AP_SCRIPTING_LUA_ENABLED = 1,
             )
         elif cfg.options.disable_scripting:
             env.DEFINES.update(
-                AP_SCRIPTING_ENABLED = 0,
+                AP_SCRIPTING_LUA_ENABLED = 0,
             )
+
+        if cfg.options.enable_modules:
+            env.DEFINES.update(AP_MODULE_ENABLED=1)
+        elif cfg.options.disable_modules:
+            env.DEFINES.update(AP_MODULE_ENABLED=0)
 
         # embed any scripts from ROMFS/scripts
         if os.path.exists('ROMFS/scripts'):
@@ -426,6 +435,7 @@ class Board:
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
+            cfg.options.disable_modules = True
 
         if cfg.options.enable_math_check_indexes:
             env.CXXFLAGS += ['-DMATH_CHECK_INDEXES']
@@ -709,7 +719,11 @@ class Board:
         '''embed some files using AP_ROMFS'''
         import embed
         header = ctx.bldnode.make_node('ap_romfs_embedded.h').abspath()
-        if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES, ctx.env.ROMFS_UNCOMPRESSED):
+        # Global raw ROMFS has borrowed find_decompress() ownership semantics,
+        # so keep its modules canonical and let the runtime copy-relocate them.
+        prelink_apmods = ctx.env.BOARD_CLASS == 'ChibiOS' and not ctx.env.ROMFS_UNCOMPRESSED
+        if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES, ctx.env.ROMFS_UNCOMPRESSED,
+                                       prelink_apmods=prelink_apmods):
             ctx.fatal("Failed to created ap_romfs_embedded.h")
 
         ctx.env.CFLAGS += ['-DAP_ROMFS_ENABLED=1']
@@ -719,6 +733,16 @@ class Board:
         for file in ctx.env.ROMFS_FILES:
             if file[0].startswith("scripts") and file[0].endswith(".lua"):
                 ctx.env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_LUA']
+                break
+
+        # Prelinked files outside rust/ still need canonical ordinary reads.
+        if prelink_apmods and any(file[0].endswith(".apmod") for file in ctx.env.ROMFS_FILES):
+            ctx.env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_PRELINKED_APMOD']
+
+        # Native modules under modules/ are discovered directly from ROMFS.
+        for file in ctx.env.ROMFS_FILES:
+            if os.path.dirname(file[0]) == "modules" and file[0].endswith(".apmod"):
+                ctx.env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_APMOD']
                 break
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
@@ -1523,7 +1547,6 @@ class LinuxBoard(Board):
 
         cfg.check_librt(env)
         cfg.check_lttng(env)
-        cfg.check_libdl(env)
         cfg.check_libiio(env)
 
         env.LINKFLAGS += ['-pthread',]

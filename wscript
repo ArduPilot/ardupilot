@@ -261,13 +261,19 @@ submodules at specific revisions.
                  default=False,
                  help="Enable checking of math indexes")
 
-    g.add_option('--disable-scripting', action='store_true',
+    g.add_option('--disable-scripting', '--disable-lua-scripting', dest='disable_scripting', action='store_true',
                  default=False,
-                 help="Disable onboard scripting engine")
+                 help="Disable the Lua scripting engine")
 
-    g.add_option('--enable-scripting', action='store_true',
+    g.add_option('--enable-scripting', '--enable-lua-scripting', dest='enable_scripting', action='store_true',
                  default=False,
-                 help="Enable onboard scripting engine")
+                 help="Enable the Lua scripting engine")
+
+    g.add_option('--enable-modules', action='store_true', default=False,
+                 help="Enable experimental trusted native modules")
+
+    g.add_option('--disable-modules', action='store_true', default=False,
+                 help="Disable native modules")
 
     g.add_option('--no-gcs', action='store_true',
                  default=False,
@@ -593,7 +599,7 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
-    cfg.start_msg('Scripting')
+    cfg.start_msg('Lua scripting')
     if cfg.options.disable_scripting:
         cfg.end_msg('disabled', color='YELLOW')
     elif cfg.options.enable_scripting:
@@ -601,6 +607,7 @@ def configure(cfg):
     else:
         cfg.end_msg('maybe')
     cfg.recurse('libraries/AP_Scripting')
+    cfg.recurse('libraries/AP_Module')
 
     cfg.recurse('libraries/AP_GPS')
     cfg.recurse('libraries/AP_HAL_SITL')
@@ -898,6 +905,7 @@ def _build_recursion(bld):
             dirs_to_recurse.append('Tools/AP_Periph')
 
     dirs_to_recurse.append('libraries/AP_Scripting')
+    dirs_to_recurse.append('libraries/AP_Module')
 
     if bld.env.ENABLE_ONVIF:
         dirs_to_recurse.append('libraries/AP_ONVIF')
