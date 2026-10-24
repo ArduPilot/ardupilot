@@ -40,6 +40,31 @@ command processing pause until `continue`. Attachment and detach re-enumerate
 both interfaces, so the GCS must reconnect after those transitions. An attached
 hardware debugger prevents USB debugger attachment.
 
+During each debugger stop, the free-running system timer is paused. HAL
+`micros()`/`millis()` timestamps, their 16/64-bit variants and ChibiOS sleep
+deadlines exclude the time spent stopped. Continue, single-step and detach
+restore the timer's previous enable state. The separate CPU cycle counter
+keeps USB polling, watchdog service and debugger timeouts working.
+
+Add `--seer` to launch the Seer GUI (`seergdb`) with the selected ARM GDB:
+
+```sh
+python3 Tools/debug/gdb_usb.py build/CubeOrangePlus/bin/arduplane \
+    --port /dev/serial/by-id/usb-CubePilot_CubeOrange+_<SERIAL>-if02 --seer
+```
+
+The option also works with `--gdb-server`, `--gdb`, `--no-break`, `--apmod` and
+`--ex`. Module symbols and extra commands load after Seer connects and loads
+the firmware ELF. Use Seer's pause/continue controls and detach when finished.
+
+Native modules can be debugged in the same session using a Python-enabled
+ARM GDB and the matching module ELF. Build the module with
+`Tools/modules/build.py --debug`, then pass `--apmod path/to/module.apmod`
+to `gdb_usb.py`. This loads relocated symbols and, for Rust modules, Rust
+pretty-printers; see the
+[module debugging guide](../modules/README.md#source-level-debugging) for
+commands, reload handling, prerequisites and tests.
+
 Useful GDB commands:
 
 ```gdb
@@ -87,9 +112,12 @@ automatic step-over is not supported. A literal BKPT instruction is skipped
 when resumed. Debugging is available while armed, including attachment and
 breakpoints in code that only runs in the armed state.
 
-`info threads` lists the ChibiOS registry when stopped in thread mode outside
-a kernel critical section. Otherwise, only the interrupted CPU context is
-exposed. A blocked thread provides its saved callee-saved registers, stack
+`info threads` lists the ChibiOS registry even during kernel critical sections
+and interrupts, provided its links form a consistent snapshot. An IRQ stop adds
+a separate CPU context; the interrupted thread keeps its ID but its unsaved
+registers are unavailable. A stop during an incomplete context switch also
+withholds unsafe saved contexts. A partially updated or invalid registry exposes
+only the CPU context. A blocked thread provides its saved callee-saved registers, stack
 pointer and return PC for stack unwinding. Its other registers are unavailable.
 Saved registers of a blocked thread can also be edited; unavailable registers
 and its descriptive stack pointer cannot. Resuming an individual blocked thread
