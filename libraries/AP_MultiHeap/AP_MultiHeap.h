@@ -17,7 +17,10 @@ public:
     /*
       allocate/deallocate heaps
      */
-    bool create(uint32_t total_size, uint8_t max_heaps, bool allow_expansion, uint32_t reserve_size);
+    // max_capacity bounds backing arena capacity, not live allocation bytes.
+    // Zero preserves the uncapped scripting heap policy.
+    bool create(uint32_t total_size, uint8_t max_heaps, bool allow_expansion, uint32_t reserve_size,
+                uint32_t max_capacity = 0);
     void destroy(void);
 
     // return true if the heap is available for operations
@@ -39,6 +42,11 @@ public:
     uint32_t get_expansion_size(void) const {
         return expanded_to;
     }
+    enum ExpansionFailure : uint8_t { Capacity = 1, Arenas = 2, Memory = 4 };
+    uint8_t get_expansion_failures() const { return expansion_failures; }
+    uint32_t get_size() const { return sum_size; }
+    // Caller must exclude concurrent allocation, expansion and destruction.
+    uint32_t get_free_size() const;
 
 private:
     struct Heap {
@@ -50,6 +58,8 @@ private:
     bool allow_expansion;
     uint32_t reserve_size;
     uint32_t sum_size;
+    uint32_t max_capacity;
+    uint8_t expansion_failures;
     uint32_t expanded_to;
 
     // we only do heap expansion if the last allocation failed this
@@ -76,4 +86,5 @@ private:
     // free some memory that was allocated by heap_allocate. The implementation must
     // be able to determine which heap the allocation was from using the pointer
     void heap_free(void *ptr);
+    uint32_t heap_free_size(void *heap) const;
 };

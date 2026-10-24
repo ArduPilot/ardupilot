@@ -44,4 +44,11 @@ void MultiHeap::heap_free(void *ptr)
     return chHeapFree(ptr);
 }
 
+uint32_t MultiHeap::heap_free_size(void *heap) const
+{
+    size_t free;
+    chHeapStatus(static_cast<memory_heap_t *>(heap), &free, nullptr);
+    return free;
+}
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
