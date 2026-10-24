@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_Module/AP_Module_config.h>
 #include <AP_SerialManager/AP_SerialManager_config.h>
 #include <AP_Vehicle/AP_Vehicle_config.h>
 
@@ -13,18 +14,22 @@
 #endif
 
 #ifndef AP_EXTERNAL_BINDING_ENABLED
-#define AP_EXTERNAL_BINDING_ENABLED AP_SCRIPTING_LUA_ENABLED
+#define AP_EXTERNAL_BINDING_ENABLED (AP_SCRIPTING_LUA_ENABLED || AP_MODULE_ENABLED)
 #endif
 
-#if AP_SCRIPTING_LUA_ENABLED && !AP_EXTERNAL_BINDING_ENABLED
-#error Lua scripting requires AP_EXTERNAL_BINDING_ENABLED
+#if !AP_EXTERNAL_BINDING_ENABLED && (AP_SCRIPTING_LUA_ENABLED || AP_MODULE_ENABLED)
+#error "A scripting runtime requires AP_EXTERNAL_BINDING_ENABLED"
+#endif
+
+#if AP_EXTERNAL_BINDING_ENABLED && !AP_SCRIPTING_LUA_ENABLED && !AP_MODULE_ENABLED
+#error "AP_EXTERNAL_BINDING_ENABLED requires a scripting runtime"
 #endif
 
 #ifndef AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED
 #define AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED 0
 #endif
 
-#if AP_SCRIPTING_LUA_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED || AP_MODULE_ENABLED
     #include <AP_Filesystem/AP_Filesystem_config.h>
     // enumerate all of the possible places we can read a script from.
     #if !AP_FILESYSTEM_POSIX_ENABLED && !AP_FILESYSTEM_FATFS_ENABLED && !AP_FILESYSTEM_ESP32_ENABLED && !AP_FILESYSTEM_ROMFS_ENABLED && !AP_FILESYSTEM_LITTLEFS_ENABLED

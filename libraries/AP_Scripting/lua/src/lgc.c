@@ -814,7 +814,11 @@ static void GCTM (lua_State *L, int propagateerrors) {
     int status;
     lu_byte oldah = L->allowhook;
     int running  = g->gcrunning;
+#if defined(LUA_MODULE_FINALIZER_HOOKS) && LUA_MODULE_FINALIZER_HOOKS
+    L->allowhook = 1;  /* module stop/instruction limits also cover finalizers */
+#else
     L->allowhook = 0;  /* stop debug hooks during GC metamethod */
+#endif
     g->gcrunning = 0;  /* avoid GC steps */
     setobj2s(L, L->top, tm);  /* push finalizer... */
     setobj2s(L, L->top + 1, &v);  /* ... and its argument */
