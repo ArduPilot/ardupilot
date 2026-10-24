@@ -761,7 +761,7 @@ void Rover::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
         { &stats, stats.var_info, 1 },
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
         { &scripting, scripting.var_info, 41 },
 #endif
