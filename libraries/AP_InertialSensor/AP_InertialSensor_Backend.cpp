@@ -7,9 +7,6 @@
 #include "AP_InertialSensor_Backend.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#if AP_MODULE_SUPPORTED
-#include <AP_Module/AP_Module.h>
-#endif
 #include <stdio.h>
 
 #ifndef AP_HEATER_IMU_INSTANCE
@@ -333,11 +330,6 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         sample_us = _imu._gyro_last_sample_us[instance];
     }
 
-#if AP_MODULE_SUPPORTED
-    // call gyro_sample hook if any
-    AP_Module::call_hook_gyro_sample(instance, dt, gyro);
-#endif
-
     // push gyros if optical flow present
     if (hal.opticalflow) {
         hal.opticalflow->push_gyro(gyro.x, gyro.y, dt);
@@ -424,11 +416,6 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
     Vector3f gyro = dangle / dt;
 
     _rotate_and_correct_gyro(instance, gyro);
-
-#if AP_MODULE_SUPPORTED
-    // call gyro_sample hook if any
-    AP_Module::call_hook_gyro_sample(instance, dt, gyro);
-#endif
 
     // push gyros if optical flow present
     if (hal.opticalflow) {
@@ -599,11 +586,6 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         sample_us = _imu._accel_last_sample_us[instance];
     }
 
-#if AP_MODULE_SUPPORTED
-    // call accel_sample hook if any
-    AP_Module::call_hook_accel_sample(instance, dt, accel, fsync_set);
-#endif    
-    
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
     {
@@ -678,11 +660,6 @@ void AP_InertialSensor_Backend::_notify_new_delta_velocity(uint8_t instance, con
 
     _rotate_and_correct_accel(instance, accel);
 
-#if AP_MODULE_SUPPORTED
-    // call accel_sample hook if any
-    AP_Module::call_hook_accel_sample(instance, dt, accel, false);
-#endif    
-    
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
     {
