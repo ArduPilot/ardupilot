@@ -53,6 +53,13 @@ public:
       create a new thread
      */
     bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
+
+#if HAL_OWNED_THREADS_ENABLED
+    uint8_t thread_priority_min() const override { return 1; }
+    uint8_t thread_priority_max() const override;
+    OwnedThread *thread_create_owned(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size,
+                                    priority_base base, int16_t priority) override;
+#endif
     
     /*
       set cpu affinity mask to be applied on initialization - setting it
@@ -96,7 +103,7 @@ private:
 
     // calculates an integer to be used as the priority for a
     // newly-created thread
-    uint8_t calculate_thread_priority(priority_base base, int8_t priority) const;
+    uint8_t calculate_thread_priority(priority_base base, int16_t priority) const;
 
     SchedulerThread _timer_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_timer_task, void), *this};
     SchedulerThread _io_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_io_task, void), *this};
