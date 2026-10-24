@@ -630,7 +630,7 @@ const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum
 // find_serial - searches available serial ports for the first instance that allows the given protocol
 //  instance should be zero if searching for the first instance, 1 for the second, etc
 //  returns uart on success, nullptr if a serial port cannot be found
-AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, uint8_t instance) const
+AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, uint8_t instance, bool apply_options) const
 {
     const struct UARTState *_state = find_protocol_instance(protocol, instance);
     if (_state == nullptr) {
@@ -653,7 +653,7 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
     }
 #endif
 
-    if (port) {
+    if (port && apply_options) {
         port->set_options(_state->options);
     }
     return port;
