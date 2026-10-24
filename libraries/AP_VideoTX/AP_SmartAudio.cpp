@@ -244,9 +244,13 @@ void AP_SmartAudio::update_vtx_params()
                     return;
                 }
                 _freq_attempts++;
+                _sent_band = vtx.get_configured_band();
+                _sent_channel = vtx.get_configured_channel();
                 set_frequency(freq, false);
             } else {
-                set_channel(vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel());
+                _sent_band = vtx.get_configured_band();
+                _sent_channel = vtx.get_configured_channel();
+                set_channel(_sent_band * VTX_MAX_CHANNELS + _sent_channel);
             }
         } else if (_vtx_power_change_pending) {
             debug("update power (ver %u)", _protocol_version);
@@ -643,9 +647,7 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
         }
         const U16ResponseFrame *resp = (const U16ResponseFrame *)buffer;
         unpack_frequency(&settings, be16toh(resp->payload));
-        vtx.set_reported_frequency(settings.frequency);
-        vtx.set_configured_frequency_mhz(vtx.get_frequency_mhz());
-        vtx.update_configured_channel_and_band();
+        vtx.frequency_command_reply(_sent_band, _sent_channel, _freq_attempt_mhz, settings.frequency);
         debug("Frequency was set to %d", settings.frequency);
     }
         break;
@@ -655,11 +657,8 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U8ResponseFrame *resp = (const U8ResponseFrame *)buffer;
-        vtx.set_band(resp->payload / VTX_MAX_CHANNELS);
-        vtx.set_channel(resp->payload % VTX_MAX_CHANNELS);
-        vtx.set_configured_channel(vtx.get_channel());
-        vtx.set_configured_band(vtx.get_band());
-        vtx.update_configured_frequency();
+        vtx.channel_command_reply(_sent_band, _sent_channel,
+                                  resp->payload / VTX_MAX_CHANNELS, resp->payload % VTX_MAX_CHANNELS);
         debug("Channel was set to %d", resp->payload);
     }
         break;

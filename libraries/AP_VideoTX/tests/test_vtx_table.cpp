@@ -433,6 +433,99 @@ TEST(VTXDefaults, EditedFactoryBand)
     EXPECT_EQ(vtx.get_configured_frequency_mhz(), 5740);
 }
 
+// the reply tests change the shared VTX's state and parameters: put them back
+// afterwards, and the factory bands, so the other tests see what they expect
+struct VTXStateRestore {
+    AP_VideoTX &vtx;
+    const uint8_t band, channel, cfg_band, cfg_channel;
+    const uint16_t freq, cfg_freq;
+    VTXStateRestore(AP_VideoTX &v) :
+        vtx(v),
+        band(v.get_band()), channel(v.get_channel()),
+        cfg_band(v.get_configured_band()), cfg_channel(v.get_configured_channel()),
+        freq(v.get_frequency_mhz()), cfg_freq(v.get_configured_frequency_mhz()) {}
+    ~VTXStateRestore() {
+        const int16_t none[8] {};
+        set_user_band(vtx.table(), -1, none);
+        vtx.set_band(band);
+        vtx.set_channel(channel);
+        vtx.set_frequency_mhz(freq);
+        vtx.set_configured_band(cfg_band);
+        vtx.set_configured_channel(cfg_channel);
+        vtx.set_configured_frequency_mhz(cfg_freq);
+    }
+};
+
+// a frequency command's reply is taken as the configured frequency, unless
+// the configuration changed while the command was in flight. Seen on a
+// SmartAudio VTX: VTX_BAND set to user band Y with channel 1 sent Y1's
+// 5760MHz, and the reply arrived after VTX_CHANNEL was set to 3, moving the
+// configuration to Airwave channel 2, which also has 5760MHz
+TEST(VTXCommandReply, FrequencyChangedInFlight)
+{
+    // this has to change parameters, so only runs once (see test_vtx())
+    static bool ran;
+    if (ran) {
+        GTEST_SKIP();
+    }
+    ran = true;
+    AP_VideoTX &vtx = test_vtx();
+    VTXStateRestore restore(vtx);
+    const int16_t y_freqs[8] = { 5760, 5800, 5840, 0, 0, 0, 0, 0 };
+    set_user_band(vtx.table(), -1, y_freqs);
+
+    vtx.set_configured_band(11);
+    vtx.set_configured_channel(0);
+    vtx.set_configured_frequency_mhz(5760);
+    // VTX_CHANNEL changed after 5760 was sent, before VTX_FREQ follows it
+    vtx.set_configured_channel(2);
+    vtx.frequency_command_reply(11, 0, 5760, 5760);
+    EXPECT_EQ(vtx.get_configured_band(), 11);
+    EXPECT_EQ(vtx.get_configured_channel(), 2);
+    EXPECT_EQ(vtx.get_frequency_mhz(), 5760);
+    // Y3 is still to be sent
+    EXPECT_TRUE(vtx.update_channel());
+
+    // with no change in flight the reply is taken, and the configuration
+    // stays on its slot
+    vtx.set_configured_frequency_mhz(5840);
+    vtx.frequency_command_reply(11, 2, 5840, 5840);
+    EXPECT_EQ(vtx.get_configured_band(), 11);
+    EXPECT_EQ(vtx.get_configured_channel(), 2);
+    EXPECT_EQ(vtx.get_configured_frequency_mhz(), 5840);
+    EXPECT_FALSE(vtx.update_frequency());
+}
+
+// the same for a channel command's reply
+TEST(VTXCommandReply, ChannelChangedInFlight)
+{
+    static bool ran;
+    if (ran) {
+        GTEST_SKIP();
+    }
+    ran = true;
+    AP_VideoTX &vtx = test_vtx();
+    VTXStateRestore restore(vtx);
+    const int16_t none[8] {};
+    set_user_band(vtx.table(), -1, none);
+    // R1 was sent, then VTX_BAND changed to band A
+    vtx.set_configured_band(0);
+    vtx.set_configured_channel(0);
+    vtx.channel_command_reply(4, 0, 4, 0);
+    EXPECT_EQ(vtx.get_configured_band(), 0);
+    EXPECT_EQ(vtx.get_configured_channel(), 0);
+    EXPECT_EQ(vtx.get_band(), 4);
+    EXPECT_EQ(vtx.get_channel(), 0);
+    EXPECT_TRUE(vtx.update_band());
+
+    // with no change in flight the reply is taken
+    vtx.channel_command_reply(0, 0, 0, 0);
+    EXPECT_EQ(vtx.get_configured_band(), 0);
+    EXPECT_EQ(vtx.get_configured_channel(), 0);
+    EXPECT_EQ(vtx.get_configured_frequency_mhz(), 5865);
+    EXPECT_FALSE(vtx.update_band());
+}
+
 #endif  // AP_VIDEOTX_ENABLED
 
 AP_GTEST_MAIN()

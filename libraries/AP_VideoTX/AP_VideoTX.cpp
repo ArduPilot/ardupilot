@@ -741,6 +741,34 @@ void AP_VideoTX::frequency_rejected()
     _channel.set_and_save_ifchanged(_current_channel);
 }
 
+// the VTX has replied to a frequency command. Take the frequency it tuned as
+// the configured one, as it may not be exactly what was asked for, unless the
+// configuration was changed while the command was in flight: the new one is
+// sent next, and taking the reply would undo it, or move VTX_BAND/VTX_CHANNEL
+// to another slot with the reply's frequency
+void AP_VideoTX::frequency_command_reply(uint8_t sent_band, uint8_t sent_channel, uint16_t sent_freq, uint16_t freq)
+{
+    set_reported_frequency(freq);
+    if (_band != sent_band || _channel != sent_channel || _frequency_mhz != sent_freq) {
+        return;
+    }
+    set_configured_frequency_mhz(get_frequency_mhz());
+    update_configured_channel_and_band();
+}
+
+// the VTX has replied to a channel command, as above
+void AP_VideoTX::channel_command_reply(uint8_t sent_band, uint8_t sent_channel, uint8_t band, uint8_t channel)
+{
+    set_band(band);
+    set_channel(channel);
+    if (_band != sent_band || _channel != sent_channel) {
+        return;
+    }
+    set_configured_channel(channel);
+    set_configured_band(band);
+    update_configured_frequency();
+}
+
 bool AP_VideoTX::keep_reported_frequency(bool custom_band, bool by_index, uint16_t freq)
 {
     // a VTX commanded by band/channel index tunes a factory band from its own

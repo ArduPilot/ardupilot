@@ -145,6 +145,10 @@ public:
     // warn and return the configuration to the VTX's current state, so that
     // other changes can go out
     void frequency_rejected();
+    // the VTX has replied to a frequency or channel command sent for the
+    // given configured band, channel and frequency
+    void frequency_command_reply(uint8_t sent_band, uint8_t sent_channel, uint16_t sent_freq, uint16_t freq);
+    void channel_command_reply(uint8_t sent_band, uint8_t sent_channel, uint8_t band, uint8_t channel);
     // get / set power level
     void set_power_mw(uint16_t power);
     void set_power_level(uint8_t level, PowerActive active=PowerActive::Active);
