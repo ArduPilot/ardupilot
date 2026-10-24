@@ -2,7 +2,7 @@
 
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
 
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -18,12 +18,16 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Scripting_SerialDevice);
 
-    AP_Scripting_SerialDevice() {}
+    AP_Scripting_SerialDevice();
+
+    static AP_Scripting_SerialDevice *get_singleton() { return _singleton; }
+    static const struct AP_Param::GroupInfo var_info[];
 
     AP_Int8 enable;
 
     void init(void);
     void clear(void);
+    uint8_t generation(void) const { return _generation; }
 
 public:
     class Port : public AP_SerialManager::RegisteredPort {
@@ -55,15 +59,22 @@ public:
         void _flush() override {}
         bool _discard_input() override;
 
-        ByteBuffer *readbuffer;
-        ByteBuffer *writebuffer;
-        uint32_t last_size_tx;
-        uint32_t last_size_rx;
+        ByteBuffer *readbuffer{};
+        ByteBuffer *writebuffer{};
+        uint32_t last_size_tx{};
+        uint32_t last_size_rx{};
+        bool _native_accessed{};
 
         HAL_Semaphore sem;
     };
 
     Port ports[AP_SCRIPTING_SERIALDEVICE_NUM_PORTS];
+
+    Port *find_port(int8_t protocol, uint16_t instance, uint8_t generation);
+
+private:
+    static AP_Scripting_SerialDevice *_singleton;
+    uint8_t _generation{};
 };
 
-#endif  // AP_SCRIPTING_SERIALDEVICE_ENABLED
+#endif  // AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
