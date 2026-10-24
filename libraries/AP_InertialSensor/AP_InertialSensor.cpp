@@ -864,10 +864,21 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
 void AP_InertialSensor::_start_backends()
 
 {
+    DEV_PRINTF("INS: start_backends begin detected=%u backends=%u gyros=%u accels=%u\n",
+               (unsigned)_backends_detected,
+               (unsigned)_backend_count,
+               (unsigned)_gyro_count,
+               (unsigned)_accel_count);
     detect_backends();
+    DEV_PRINTF("INS: detect_backends done backends=%u gyros=%u accels=%u\n",
+               (unsigned)_backend_count,
+               (unsigned)_gyro_count,
+               (unsigned)_accel_count);
 
     for (uint8_t i = 0; i < _backend_count; i++) {
+        DEV_PRINTF("INS: backend[%u] start\n", (unsigned)i);
         _backends[i]->start();
+        DEV_PRINTF("INS: backend[%u] started\n", (unsigned)i);
     }
 
 #if AP_INERTIALSENSOR_ALLOW_NO_SENSORS
@@ -946,6 +957,11 @@ bool AP_InertialSensor::has_fft_notch() const
 void
 AP_InertialSensor::init(uint16_t loop_rate)
 {
+    DEV_PRINTF("INS: init begin loop=%u gyros=%u accels=%u backends=%u\n",
+               (unsigned)loop_rate,
+               (unsigned)_gyro_count,
+               (unsigned)_accel_count,
+               (unsigned)_backend_count);
     // remember the sample rate
     _loop_rate = loop_rate;
     _loop_delta_t = 1.0f / loop_rate;
@@ -965,10 +981,16 @@ AP_InertialSensor::init(uint16_t loop_rate)
     if (_gyro_count == 0 && _accel_count == 0) {
         _start_backends();
     }
+    DEV_PRINTF("INS: after start_backends gyros=%u accels=%u backends=%u\n",
+               (unsigned)_gyro_count,
+               (unsigned)_accel_count,
+               (unsigned)_backend_count);
 
     // calibrate gyros unless gyro calibration has been disabled
     if (gyro_calibration_timing() != GYRO_CAL_NEVER && _gyro_count > 0) {
+        DEV_PRINTF("INS: init_gyro begin\n");
         init_gyro();
+        DEV_PRINTF("INS: init_gyro end\n");
     }
 
     _sample_period_usec = 1000*1000UL / _loop_rate;
@@ -1109,6 +1131,9 @@ AP_InertialSensor::init(uint16_t loop_rate)
         tcal_learning = true;
     }
 #endif
+    DEV_PRINTF("INS: init end gyros=%u accels=%u\n",
+               (unsigned)_gyro_count,
+               (unsigned)_accel_count);
 }
 
 bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
@@ -1710,6 +1735,7 @@ AP_InertialSensor::_init_gyro()
 
     // cold start
     DEV_PRINTF("Init Gyro");
+    DEV_PRINTF("INS: gyro cal start num_gyros=%u\n", (unsigned)num_gyros);
 
     /*
       we do the gyro calibration with no board rotation. This avoids
@@ -1757,6 +1783,13 @@ AP_InertialSensor::_init_gyro()
         uint8_t i;
 
         EXPECT_DELAY_MS(1000);
+
+        if ((j % 4) == 0) {
+            DEV_PRINTF("INS: gyro cal pass=%d conv=%u/%u\n",
+                       (int)j,
+                       (unsigned)num_converged,
+                       (unsigned)num_gyros);
+        }
 
         memset(diff_norm, 0, sizeof(diff_norm));
 
@@ -1814,6 +1847,9 @@ AP_InertialSensor::_init_gyro()
     // we've kept the user waiting long enough - use the best pair we
     // found so far
     DEV_PRINTF("\n");
+    DEV_PRINTF("INS: gyro cal done conv=%u/%u\n",
+               (unsigned)num_converged,
+               (unsigned)num_gyros);
     for (uint8_t k=0; k<num_gyros; k++) {
         if (!converged[k]) {
             DEV_PRINTF("gyro[%u] did not converge: diff=%f dps (expected < %f)\n",

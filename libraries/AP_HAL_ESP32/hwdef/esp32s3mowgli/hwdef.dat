@@ -1,70 +1,129 @@
 # Mowgli ESP32-S3 board
+#
+# Pin allocation aligned with esp32s3devkitpinout.png.
+# Important:
+# - physical pin usage follows the pinout image
+# - SERIAL/UART roles are intentionally kept as currently configured for mowgli
+# - CAN/TWAI is deliberately disabled for now
 
 define HAL_ESP32_BOARD_NAME "esp32s3mowgli"
 
-# Primary companion USB port on SERIAL4, backed by ESP32-S3 USB Serial/JTAG.
+# Keep the current mowgli USB/serial behavior unchanged.
 define HAL_ESP32_S3_USB_SERIAL4_ENABLED 1
 define HAL_ESP32_S3_USB_SERIAL_JTAG_BACKEND 1
 
-# Physical UART fallback/debug on UART1 is SERIAL3 in the current ESP32 HAL mapping.
-define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink2
+# Current mowgli serial policy:
+# SERIAL0 = console/debug only
+# SERIAL2 = disabled
+# SERIAL3 = GPS
+# SERIAL4 = MAVLink2 over native USB backend
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
 define DEFAULT_SERIAL2_BAUD 115
-define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_MAVLink2
-define DEFAULT_SERIAL3_BAUD 921
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_GPS
+define DEFAULT_SERIAL3_BAUD 230
 define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_MAVLink2
 define DEFAULT_SERIAL4_BAUD 921
 
 define HAL_ESP32_WIFI 0
 
-define HAL_ESP32_CAN_TX_PIN GPIO_NUM_15
-define HAL_ESP32_CAN_RX_PIN GPIO_NUM_18
-define HAL_ESP32_CAN_SELFTEST 0
-
-# SPI bus
+# --------------------------------------------------------------------
+# SPI bus / IMU
+# Pinout:
+# GPIO36 = SPI MOSI
+# GPIO37 = SPI MISO
+# GPIO35 = SPI SCLK
+# GPIO10 = IMU CS
+# --------------------------------------------------------------------
 ESP32_SPIBUS SPI3_HOST SPI_DMA_CH_AUTO GPIO_NUM_36 GPIO_NUM_37 GPIO_NUM_35
+ESP32_SPIDEV mpu9250 0 0 GPIO_NUM_10 0 2*MHZ 2*MHZ
 
+# --------------------------------------------------------------------
 # I2C bus
-ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_13 GPIO_NUM_12 400*KHZ true false
+# Pinout:
+# GPIO13 = SDA
+# GPIO12 = SCL
+# --------------------------------------------------------------------
+ESP32_I2CBUS I2C_NUM_0 GPIO_NUM_13 GPIO_NUM_12 400*KHZ true false
 
-# SPI device
-ESP32_SPIDEV mpu9250 0 0 GPIO_NUM_10 0 2*MHZ 8*MHZ
-
+# --------------------------------------------------------------------
+# RC input
+# Pinout:
+# GPIO4 = RCIN
+# --------------------------------------------------------------------
 define HAL_ESP32_RMT_RX_PIN_NUMBER GPIO_NUM_4
 define HAL_ESP32_RCIN GPIO_NUM_4
 
-# ADC pins
+# --------------------------------------------------------------------
+# ADC
+# Pinout marks only GPIO1 and GPIO3 as analog inputs.
+# Keep the S3 generic ADC channel style already used by the ESP32-S3 hwdefs.
+# --------------------------------------------------------------------
 ESP32_ADC_PIN ADC_CHANNEL_0 11 1
-ESP32_ADC_PIN ADC_CHANNEL_1 11 2
-ESP32_ADC_PIN ADC_CHANNEL_3 11 3
-ESP32_ADC_PIN ADC_CHANNEL_4 11 4
+ESP32_ADC_PIN ADC_CHANNEL_2 11 3
 
-# IMU
+# --------------------------------------------------------------------
+# IMU / compass / barometer
+# --------------------------------------------------------------------
 IMU Invensense SPI:mpu9250 ROTATION_NONE
 define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
 define INS_MAX_INSTANCES 3
 
-# Compass
 COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
 define AP_COMPASS_AK8963_ENABLED TRUE
 define AP_COMPASS_PROBING_ENABLED 1
 
-# Barometer
-BARO BMP280 I2C:0:0x77
+# BARO BMP280 I2C:0:0x77
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
+# --------------------------------------------------------------------
 # RC outputs
+# Pinout:
+# GPIO9  = PWM OUT1
+# GPIO11 = PWM OUT2
+# GPIO5  = PWM OUT3
+# --------------------------------------------------------------------
 ESP32_RCOUT GPIO_NUM_9
 ESP32_RCOUT GPIO_NUM_11
 ESP32_RCOUT GPIO_NUM_5
 
+# --------------------------------------------------------------------
+# Optional wheel encoder reservation from the pinout
+# GPIO2 = ENC_L_A
+# GPIO6 = ENC_L_B
+# GPIO7 = ENC_R_A
+# GPIO8 = ENC_R_B
+# --------------------------------------------------------------------
+define HAL_ESP32_WENC_LEFT_A  2
+define HAL_ESP32_WENC_LEFT_B  6
+define HAL_ESP32_WENC_RIGHT_A 7
+define HAL_ESP32_WENC_RIGHT_B 8
+
+# --------------------------------------------------------------------
 # Hardware UARTs
+# Kept exactly in the current mowgli mapping.
+# Pinout:
+# UART0: GPIO43 TX / GPIO44 RX
+# UART1: GPIO16 RX / GPIO17 TX
+# UART2: GPIO14 RX / GPIO21 TX
+# --------------------------------------------------------------------
 ESP32_SERIAL UART_NUM_0 GPIO_NUM_44 GPIO_NUM_43
 ESP32_SERIAL UART_NUM_1 GPIO_NUM_16 GPIO_NUM_17
 ESP32_SERIAL UART_NUM_2 GPIO_NUM_14 GPIO_NUM_21
 
+# --------------------------------------------------------------------
+# Filesystem / logging
+# --------------------------------------------------------------------
 define HAVE_FILESYSTEM_SUPPORT 1
 define HAL_ESP32_SDMMC 0
 define HAL_ESP32_SDCARD 0
 define LOGGER_MAVLINK_SUPPORT 1
 define HAL_OS_POSIX_IO 1
 define HAL_LOGGING_BACKENDS_DEFAULT 1
+
+# --------------------------------------------------------------------
+# CAN/TWAI intentionally disabled for now.
+# Pinout reserves:
+# GPIO15 = CAN TX
+# GPIO18 = CAN RX
+# but the feature is not enabled in this board file yet.
+# --------------------------------------------------------------------

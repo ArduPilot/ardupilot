@@ -322,7 +322,11 @@ void Rover::startup_INS(void)
     ahrs.set_fly_forward(true);
     ahrs.set_vehicle_class(AP_AHRS::VehicleClass::GROUND);
 
+    DEV_PRINTF("Rover: before ins.init loop=%u\n", (unsigned)scheduler.get_loop_rate_hz());
     ins.init(scheduler.get_loop_rate_hz());
+    DEV_PRINTF("Rover: after ins.init gyros=%u accels=%u\n",
+               (unsigned)ins.get_gyro_count(),
+               (unsigned)ins.get_accel_count());
     ahrs.reset();
 }
 
