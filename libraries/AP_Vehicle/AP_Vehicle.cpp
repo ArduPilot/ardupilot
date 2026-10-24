@@ -267,6 +267,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: SCR_
     // @Path: ../AP_Scripting/AP_Scripting.cpp
     AP_SUBGROUPINFO(scripting, "SCR_", 28, AP_Vehicle, AP_Scripting),
+#elif AP_MODULE_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+    // Preserve the shared SCR_SDEV* configuration when native modules are the sole
+    // scripting runtime.
+    // @Group: SCR_
+    // @Path: ../AP_Scripting/AP_Scripting_SerialDevice.cpp
+    AP_SUBGROUPINFO(scripting_serialdevice, "SCR_", 28, AP_Vehicle, AP_Scripting_SerialDevice),
 #endif
 
 #if HAL_LOGGING_ENABLED
@@ -298,6 +304,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_Beacon/AP_Beacon.cpp
     AP_SUBGROUPINFO(beacon, "BCN", 33, AP_Vehicle, AP_Beacon),
 #endif  // AP_BEACON_ENABLED
+
+#if AP_MODULE_ENABLED
+    // @Group: MOD_
+    // @Path: ../AP_Module/Runtime.cpp
+    AP_SUBGROUPINFO(native_modules, "MOD_", 34, AP_Vehicle, AP_Module::Runtime),
+#endif
 
     AP_GROUPEND
 };
@@ -396,6 +408,8 @@ void AP_Vehicle::setup()
     // (in particular mavlink which checks during init_ardupilot())
     scripting.init_serialdevice_ports();
 #endif
+#elif AP_MODULE_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+    scripting_serialdevice.init();
 #endif
 
 #if AP_NETWORKING_ENABLED
@@ -453,6 +467,10 @@ void AP_Vehicle::setup()
 #if AP_SCRIPTING_LUA_ENABLED
     scripting.init();
 #endif // AP_SCRIPTING_LUA_ENABLED
+
+#if AP_MODULE_ENABLED
+    native_modules.init();
+#endif
 
 #if AP_AIRSPEED_ENABLED
     airspeed.init();
@@ -1183,6 +1201,10 @@ void AP_Vehicle::one_Hz_update(void)
 
 #if AP_SCRIPTING_LUA_ENABLED
     scripting.update();
+#endif
+
+#if AP_MODULE_ENABLED
+    native_modules.update();
 #endif
 
 #if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
