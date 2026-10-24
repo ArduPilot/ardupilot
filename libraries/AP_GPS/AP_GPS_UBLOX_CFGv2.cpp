@@ -198,14 +198,19 @@ void AP_GPS_UBLOX_CFGv2::update()
             }
             break;
         case States::CONFIGURE_GNSS:
-            if (_send_gnss_cfg()) {
+            switch (_send_gnss_cfg()) {
+            case GnssCfgResult::SENT:
                 // re-identify signals after config change
                 curr_state = States::IDENTIFY_SIGNALS;
                 _last_request_time = AP_HAL::millis();
-            } else {
+                break;
+            case GnssCfgResult::RETRY:
+                break;
+            case GnssCfgResult::DONE:
                 // nothing to change, move on
                 curr_state = States::IDENTIFY_UART_PORT;
                 _last_request_time = 0;
+                break;
             }
             break;
         case States::IDENTIFY_UART_PORT: {
@@ -734,19 +739,27 @@ void AP_GPS_UBLOX_CFGv2::_publish_supported_constellations()
 }
 
 // send GNSS constellation enables based on gnss_mode param
-// returns true if a VALSET was sent, false if no changes needed
-bool AP_GPS_UBLOX_CFGv2::_send_gnss_cfg()
+AP_GPS_UBLOX_CFGv2::GnssCfgResult AP_GPS_UBLOX_CFGv2::_send_gnss_cfg()
 {
     const uint8_t desired_gnss = (uint8_t)ubx_backend.params.gnss_mode;
+    if (desired_gnss != _gnss_cfg_mode) {
+        // a new mode; forget how the receiver took the last one
+        _gnss_cfg_mode = desired_gnss;
+        _gnss_cfg_attempts = 0;
+        _gnss_cfg_rejected = false;
+        _gnss_cfg_skip_flash = false;
+        _gnss_cfg_retry_without_flash = false;
+    }
+
     if (desired_gnss == 0 || desired_gnss == enabled_gnss) {
-        return false;
+        return GnssCfgResult::DONE;
     }
 
     // mask off unsupported constellations
     const uint8_t effective_gnss = desired_gnss & supported_gnss;
 
     if (effective_gnss == enabled_gnss) {
-        return false;
+        return GnssCfgResult::DONE;
     }
 
     // build packed config with constellation enable/disable keys
@@ -764,17 +777,34 @@ bool AP_GPS_UBLOX_CFGv2::_send_gnss_cfg()
     #undef PUSH_GNSS
 
     if (packed_cfg.get_size() == 0) {
-        return false;
+        return GnssCfgResult::DONE;
     }
+
+    _gnss_cfg_skip_flash |= _gnss_cfg_retry_without_flash;
+
+    if (_gnss_cfg_rejected || _gnss_cfg_attempts >= GNSS_CFG_MAX_ATTEMPTS) {
+        // carry on with the rest of the configuration
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                     "GPS %u: u-blox %s GNSS mode %u",
+                     unsigned(ubx_backend.state.instance) + 1,
+                     _gnss_cfg_rejected ? "rejected" : "did not apply",
+                     unsigned(desired_gnss));
+        return GnssCfgResult::DONE;
+    }
+
+    // the constellation enables depend on each other, so they are
+    // always sent together: the receiver applies all of them or none
+    const ConfigLayer layers = _gnss_cfg_skip_flash ?
+        (ConfigLayer)((1U<<CFG_LAYER_RAM) | (1U<<CFG_LAYER_BBR)) : (ConfigLayer)CFG_LAYER_ALL;
+    if (!_send_valset_bytes(packed_cfg.get(), (uint16_t)packed_cfg.get_size(), layers)) {
+        return GnssCfgResult::RETRY;
+    }
+    _gnss_cfg_attempts++;
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                  "GPS %u: updating GNSS mode",
                  unsigned(ubx_backend.state.instance) + 1);
-
-    // the constellation enables depend on each other, so they are
-    // always sent together: the receiver applies all of them or none
-    _send_valset_bytes(packed_cfg.get(), (uint16_t)packed_cfg.get_size(), (ConfigLayer)CFG_LAYER_ALL);
-    return true;
+    return GnssCfgResult::SENT;
 }
 
 // push entries from a config_list array into _common_cfg, tracking position via item_index
@@ -1180,8 +1210,17 @@ void AP_GPS_UBLOX_CFGv2::handle_cfg_nack(uint8_t msg_id)
             break;
         case AP_GPS_UBLOX::MSG_CFG_VALSET:
             if (curr_state == States::IDENTIFY_SIGNALS || curr_state == States::CONFIGURE_GNSS) {
-                // the receiver can't use the requested constellations;
-                // setting them one at a time would apply only some
+                // the receiver won't take the requested constellations.
+                // Try once more without the flash layer, which a
+                // receiver without flash may refuse; setting them one
+                // at a time would apply only some.  The same NAK can be
+                // seen more than once, so this depends only on what it
+                // is a NAK of
+                if (_gnss_cfg_skip_flash) {
+                    _gnss_cfg_rejected = true;
+                } else {
+                    _gnss_cfg_retry_without_flash = true;
+                }
                 break;
             }
             // VALSET failed, fall back to single-key mode
