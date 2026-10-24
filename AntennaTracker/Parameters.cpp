@@ -546,7 +546,7 @@ void Tracker::load_parameters(void)
     AP_Param::convert_class(g.k_param_stats_old, &stats, stats.var_info, 0, true);
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
     AP_Param::convert_class(g.k_param_scripting_old, &scripting, scripting.var_info, 0, true);
 #endif
