@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+# AP_FLAKE8_CLEAN
+
+
+def build(bld):
+    bld.ap_find_tests(use='ap')
