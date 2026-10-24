@@ -238,8 +238,8 @@ SUPPRESSIONS = [
     # the rest of the vehicle's run.  The analyser does not model ownership
     # passing into the constructor, so it reports the successful path as a
     # leak.  False positive.
-    ('ArduCopter/Copter.cpp', {14: '5c69972abc745659219fcf09ba540758', 15: '5c69972abc745659219fcf09ba540758', 16: '5c69972abc745659219fcf09ba540758', 17: '5c69972abc745659219fcf09ba540758', 18: '5c69972abc745659219fcf09ba540758', 19: '5c69972abc745659219fcf09ba540758', 20: '5c69972abc745659219fcf09ba540758'}, 'ownership passes to ModeGuidedCustom'),  # full_name_copy  # noqa:E501
-    ('ArduCopter/Copter.cpp', {14: '3ff61749f1a31c8b1d3e821a99909517', 15: '3ff61749f1a31c8b1d3e821a99909517', 16: '3ff61749f1a31c8b1d3e821a99909517', 17: '3ff61749f1a31c8b1d3e821a99909517', 18: '3ff61749f1a31c8b1d3e821a99909517', 19: '3ff61749f1a31c8b1d3e821a99909517', 20: '3ff61749f1a31c8b1d3e821a99909517'}, 'ownership passes to ModeGuidedCustom'),  # short_name_copy  # noqa:E501
+    ('ArduCopter/Copter.cpp', {14: '5c69972abc745659219fcf09ba540758', 15: '5c69972abc745659219fcf09ba540758', 16: '5c69972abc745659219fcf09ba540758', 17: '5c69972abc745659219fcf09ba540758', 18: '1542ee84d1cf54b71ef86b3174a5bd31', 19: '5c69972abc745659219fcf09ba540758', 20: '5c69972abc745659219fcf09ba540758'}, 'ownership passes to ModeGuidedCustom'),  # full_name_copy  # noqa:E501
+    ('ArduCopter/Copter.cpp', {14: '3ff61749f1a31c8b1d3e821a99909517', 15: '3ff61749f1a31c8b1d3e821a99909517', 16: '3ff61749f1a31c8b1d3e821a99909517', 17: '3ff61749f1a31c8b1d3e821a99909517', 18: '8d4791774cf973f5c777ca2aa1f7771e', 19: '3ff61749f1a31c8b1d3e821a99909517', 20: '3ff61749f1a31c8b1d3e821a99909517'}, 'ownership passes to ModeGuidedCustom'),  # short_name_copy  # noqa:E501
 
     # takeoff_calc_roll() initialises takeoff_roll_limit_cd from roll_limit_cd
     # and both arms of the following if/else overwrite it, so the initialiser

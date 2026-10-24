@@ -1,0 +1,117 @@
+use crate::{result, Error, Result, Vector3f};
+
+pub const FLEXDEBUG_PAYLOAD_MAX: usize = ${flexdebug_payload_max};
+
+/// One command destructively popped from the module runtime mission queue.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MissionCommand {
+    pub time_ms: u32,
+    pub param1: u16,
+    pub param2: f32,
+    pub param3: f32,
+    pub param4: f32,
+}
+
+/// An owned copy of the latest FlexDebug payload for one node/message pair.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DroneCanFlexDebug {
+    payload: [u8; FLEXDEBUG_PAYLOAD_MAX],
+    length: u8,
+    pub timestamp_us: u32,
+}
+
+impl DroneCanFlexDebug {
+    pub fn payload(&self) -> &[u8] { &self.payload[..self.length as usize] }
+}
+
+impl crate::bindings::Vehicle<'_, '_> {
+    /// Set the guided NED velocity target. The target remains shared vehicle
+    /// state after this module exits, matching the Lua binding.
+    pub fn set_target_velocity_ned(&self, velocity_ned: &Vector3f,
+                                   align_yaw_to_target: bool) -> Result<bool> {
+        let mut input = [0u8; 13];
+        input[..12].copy_from_slice(&velocity_ned.encode());
+        input[12] = align_yaw_to_target as u8;
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${velocity_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+}
+
+impl crate::bindings::SrvChannels<'_, '_> {
+    /// Return true while the hardware safety switch is not armed.
+    pub fn get_safety_state(&self) -> Result<bool> {
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${safety_id}.slot(),
+                core::ptr::null(), 0, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+}
+
+impl crate::bindings::Mission<'_, '_> {
+    /// Destructively pop the oldest command from the module runtime mission
+    /// queue. `None` means the queue is empty.
+    pub fn receive(&self) -> Result<Option<MissionCommand>> {
+        let mut output = [0u8; ${mission_wire_size}];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${mission_id}.slot(),
+                core::ptr::null(), 0, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] {
+            0 if output[1..].iter().all(|byte| *byte == 0) => Ok(None),
+            0 => Err(Error::Host),
+            1 => Ok(Some(MissionCommand {
+                time_ms: u32::from_le_bytes(output[1..5].try_into().unwrap()),
+                param1: u16::from_le_bytes(output[5..7].try_into().unwrap()),
+                param2: f32::from_le_bytes(output[7..11].try_into().unwrap()),
+                param3: f32::from_le_bytes(output[11..15].try_into().unwrap()),
+                param4: f32::from_le_bytes(output[15..19].try_into().unwrap()),
+            })),
+            _ => Err(Error::Host),
+        }
+    }
+
+}
+
+impl crate::bindings::Dronecan<'_, '_> {
+    /// Return the latest non-stale FlexDebug value as an owned payload.
+    /// `None` means the driver/key is unavailable or its timestamp is unchanged.
+    pub fn get_flex_debug(&self, driver: u8, node_id: u8, message_id: u16,
+                          last_timestamp_us: u32) -> Result<Option<DroneCanFlexDebug>> {
+        let mut input = [0u8; 8];
+        input[0] = driver;
+        input[1] = node_id;
+        input[2..4].copy_from_slice(&message_id.to_le_bytes());
+        input[4..8].copy_from_slice(&last_timestamp_us.to_le_bytes());
+        let mut output = [0u8; ${flexdebug_wire_size}];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${flexdebug_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] {
+            0 if output[1..].iter().all(|byte| *byte == 0) => Ok(None),
+            0 => Err(Error::Host),
+            1 => {
+                let length = output[5] as usize;
+                if output[6 + length..].iter().any(|byte| *byte != 0) {
+                    return Err(Error::Host);
+                }
+                let mut payload = [0u8; FLEXDEBUG_PAYLOAD_MAX];
+                payload.copy_from_slice(&output[6..]);
+                Ok(Some(DroneCanFlexDebug {
+                    payload,
+                    length: length as u8,
+                    timestamp_us: u32::from_le_bytes(output[1..5].try_into().unwrap()),
+                }))
+            }
+            _ => Err(Error::Host),
+        }
+    }
+}

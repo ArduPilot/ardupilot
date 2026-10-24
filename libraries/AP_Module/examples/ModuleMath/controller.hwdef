@@ -1,0 +1,4 @@
+include aerobatics.hwdef
+# 512 stateful updates plus oracle file I/O, repeated for exact RAM recovery.
+define AP_MODULE_MATH_TIMEOUT_MS 20000
+define AP_MODULE_MATH_CYCLES 3

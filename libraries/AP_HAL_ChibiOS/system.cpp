@@ -90,12 +90,18 @@ extern "C"
 #define BusFault_Handler AP_BusFault_Handler
 #define UsageFault_Handler AP_UsageFault_Handler
 #define MemManage_Handler AP_MemManage_Handler
+#elif HAL_STACK_GUARD_ENABLED
+#define HardFault_Handler AP_StackGuard_HardFault_Fallback
+#define MemManage_Handler AP_StackGuard_MemManage_Fallback
 #endif
 
 #if !AP_CRASHDUMP_ENABLED
 // do legacy hardfault handling
 void HardFault_Handler(void);
 void HardFault_Handler(void) {
+#if HAL_STACK_GUARD_ENABLED
+    ap_stack_guard_disable();
+#endif
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
     //Get thread context. Contains main registers including PC and LR
     struct port_extctx ctx;
@@ -165,12 +171,17 @@ void HardFault_Handler(void) {
 // ChibiOS does not do this by default
 #if AP_USB_DEBUG_ENABLED
 void BusFault_Handler(void) __attribute__((alias("AP_HardFault_Handler")));
+#elif HAL_STACK_GUARD_ENABLED
+void BusFault_Handler(void) __attribute__((alias("AP_StackGuard_HardFault_Fallback")));
 #else
 void BusFault_Handler(void) __attribute__((alias("HardFault_Handler")));
 #endif
 
 void UsageFault_Handler(void);
 void UsageFault_Handler(void) {
+#if HAL_STACK_GUARD_ENABLED
+    ap_stack_guard_disable();
+#endif
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
     //Get thread context. Contains main registers including PC and LR
     struct port_extctx ctx;
@@ -208,6 +219,9 @@ void UsageFault_Handler(void) {
 
 void MemManage_Handler(void);
 void MemManage_Handler(void) {
+#if HAL_STACK_GUARD_ENABLED
+    ap_stack_guard_disable();
+#endif
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
     //Get thread context. Contains main registers including PC and LR
     struct port_extctx ctx;

@@ -219,7 +219,12 @@ static void mem_protect_enable()
       enable this on H7 to make writes to the first 1k of RAM on H7
       produce a hard fault and crash dump
      */
-    mpuConfigureRegion(MPU_REGION_7,
+    mpuConfigureRegion(
+#if HAL_STACK_GUARD_ENABLED
+                       MPU_REGION_3,
+#else
+                       MPU_REGION_7,
+#endif
                        0x0,
                        MPU_RASR_ATTR_AP_NA_NA |
                        MPU_RASR_SIZE_1K |

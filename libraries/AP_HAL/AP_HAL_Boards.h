@@ -244,12 +244,6 @@
 #define AP_TEST_DRONECAN_DRIVERS 0
 #endif
 
-#ifdef HAVE_LIBDL
-#define AP_MODULE_SUPPORTED 1
-#else
-#define AP_MODULE_SUPPORTED 0
-#endif
-
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
 #define HAL_SUPPORT_RCOUT_SERIAL 0
 #endif
@@ -406,4 +400,38 @@
 
 #ifndef AP_USB_DEBUG_STARTUP_WAIT_ENABLED
 #define AP_USB_DEBUG_STARTUP_WAIT_ENABLED 0
+#endif
+
+// The native runtime and its HAL services must agree even when HAL headers
+// are included before AP_Module_config.h. Explicit build overrides win.
+#ifndef AP_MODULE_ENABLED
+// Peripheral firmware does not link or initialize the native runtime.
+#if defined(HAL_BUILD_AP_PERIPH)
+#define AP_MODULE_ENABLED 0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL && \
+    (!defined(__x86_64__) || defined(__ILP32__) || defined(__CYGWIN__))
+// Host modules use the SysV AMD64 calling convention.
+#define AP_MODULE_ENABLED 0
+// WebAssembly cannot execute native module machine code.
+#elif defined(__EMSCRIPTEN__) || (defined(AP_SCRIPTING_ENABLED) && !AP_SCRIPTING_ENABLED)
+#define AP_MODULE_ENABLED 0
+#else
+#define AP_MODULE_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 2048)
+#endif
+#endif
+
+#ifndef HAL_OWNED_THREADS_ENABLED
+#if defined(AP_MODULE_ENABLED) && AP_MODULE_ENABLED
+#define HAL_OWNED_THREADS_ENABLED 1
+#else
+#define HAL_OWNED_THREADS_ENABLED 0
+#endif
+#endif
+
+#ifndef HAL_EXECUTABLE_MEMORY_ENABLED
+#if defined(AP_MODULE_ENABLED) && AP_MODULE_ENABLED
+#define HAL_EXECUTABLE_MEMORY_ENABLED 1
+#else
+#define HAL_EXECUTABLE_MEMORY_ENABLED 0
+#endif
 #endif

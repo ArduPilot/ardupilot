@@ -15,7 +15,7 @@
 
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
@@ -263,10 +263,11 @@ void AP_Scripting::init(void) {
 
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
 void AP_Scripting::init_serialdevice_ports(void) {
-    if (!_enable) {
+#if !AP_MODULE_ENABLED
+    if (_enable == 0) {
         return;
     }
-
+#endif
     _serialdevice.init();
 }
 #endif
@@ -313,7 +314,7 @@ void AP_Scripting::thread(void) {
 #endif
 #if AP_ARMING_ENABLED && AP_ARMING_AUX_AUTH_ENABLED
             // Clear any dangling pre-arms from previous script loads
-            AP_Arming::get_singleton()->reset_all_aux_auths();
+            AP_Arming::get_singleton()->release_aux_auths(nullptr);
 #endif
             // run won't return while scripting is still active
             lua->run();
@@ -359,15 +360,10 @@ void AP_Scripting::thread(void) {
         AP::crsf_telem()->clear_menus();
 #endif // AP_CRSF_SCRIPTING_ENABLED
         
-        // Clear blocked commands
-        {
-            WITH_SEMAPHORE(mavlink_command_block_list_sem);
-            while (mavlink_command_block_list != nullptr) {
-                command_block_list *next_item = mavlink_command_block_list->next;
-                delete mavlink_command_block_list;
-                mavlink_command_block_list = next_item;
-            }
-        }
+        // Clear commands owned by the Lua backend without disturbing native modules.
+#if HAL_GCS_ENABLED
+        unblock_commands(this);
+#endif
 
         bool cleared = false;
         while(true) {
@@ -508,6 +504,46 @@ bool AP_Scripting::is_handling_command(uint16_t cmd_id)
 
     return false;
 }
+
+bool AP_Scripting::block_command(uint16_t cmd_id, const void *owner)
+{
+    if (owner == nullptr) {
+        return false;
+    }
+    WITH_SEMAPHORE(mavlink_command_block_list_sem);
+    for (command_block_list *item = mavlink_command_block_list; item; item = item->next) {
+        if (item->id == cmd_id && item->owner == owner) {
+            return true;
+        }
+    }
+    command_block_list *new_item = NEW_NOTHROW command_block_list;
+    if (new_item == nullptr) {
+        return false;
+    }
+    new_item->id = cmd_id;
+    new_item->owner = owner;
+    new_item->next = mavlink_command_block_list;
+    mavlink_command_block_list = new_item;
+    return true;
+}
+
+void AP_Scripting::unblock_commands(const void *owner)
+{
+    if (owner == nullptr) {
+        return;
+    }
+    WITH_SEMAPHORE(mavlink_command_block_list_sem);
+    command_block_list **link = &mavlink_command_block_list;
+    while (*link != nullptr) {
+        command_block_list *item = *link;
+        if (item->owner == owner) {
+            *link = item->next;
+            delete item;
+        } else {
+            link = &item->next;
+        }
+    }
+}
 #endif // HAL_MAVLINK_BINDINGS_ENABLED
 
 // Update called at 1Hz from AP_Vehicle
@@ -544,4 +580,4 @@ namespace AP {
     }
 }
 
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_SCRIPTING_LUA_ENABLED

@@ -1980,7 +1980,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     }
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     case AUX_FUNC::STOP_RESTART_SCRIPTING: {
         AP_Scripting *scr = AP::scripting();
         if (scr != nullptr) {

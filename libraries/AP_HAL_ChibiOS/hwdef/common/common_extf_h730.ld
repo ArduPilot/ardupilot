@@ -262,6 +262,12 @@ SECTIONS
         *(.gcc*)
     } > default_flash
 
+    /* Preserve each native module's RX alignment; .text uses SUBALIGN(4). */
+    .ap_romfs :
+    {
+        *(.ap_romfs*)
+    } > default_flash
+
     .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)

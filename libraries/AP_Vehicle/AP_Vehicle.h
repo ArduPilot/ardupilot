@@ -72,8 +72,15 @@
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
 #include <AP_DDS/AP_DDS_config.h>
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
+#endif
+#include <AP_Module/AP_Module_config.h>
+#if AP_MODULE_ENABLED
+#include <AP_Module/Runtime.h>
+#endif
+#if AP_MODULE_ENABLED && !AP_SCRIPTING_LUA_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#include <AP_Scripting/AP_Scripting_SerialDevice.h>
 #endif
 
 #include <AP_Gripper/AP_Gripper_config.h>
@@ -262,8 +269,10 @@ public:
     // Register a custom mode with given number and names, return a structure which the script can edit
     struct custom_mode_state {
         bool allow_entry;
+        const void *owner;
     };
-    virtual custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) { return nullptr; }
+    virtual custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name,
+                                                  const void *owner = nullptr) { return nullptr; }
 
 #endif // AP_SCRIPTING_ENABLED
 
@@ -506,8 +515,16 @@ protected:
     AP_TemperatureSensor temperature_sensor;
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     AP_Scripting scripting;
+#endif
+
+#if AP_MODULE_ENABLED
+    AP_Module::Runtime native_modules;
+#endif
+
+#if AP_MODULE_ENABLED && !AP_SCRIPTING_LUA_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+    AP_Scripting_SerialDevice scripting_serialdevice;
 #endif
 
 #if AP_RPM_ENABLED

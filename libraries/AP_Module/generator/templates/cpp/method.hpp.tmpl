@@ -1,0 +1,8 @@
+    Result<${result}> ${name}(${arguments}) const {
+        extern volatile uint32_t ${slot} asm("__ap_module_import_${hash}.${api_name}");
+        uint8_t input[(${input_size}) ? (${input_size}) : 1]{};
+        uint8_t output[(${output_size}) ? (${output_size}) : 1]{};
+${encode}        const Error status = Error(context.call(${slot}, input, ${input_size}, output, ${output_size}));
+        if (status != Error::Ok) { return {status}; }
+${copybacks}${decode}        return {Error::Ok${result_value}};
+    }

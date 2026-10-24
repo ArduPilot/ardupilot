@@ -89,6 +89,12 @@ SECTIONS
         *(.gcc*)
     } > flash
 
+    /* Preserve each native module's RX alignment; .text uses SUBALIGN(4). */
+    .ap_romfs :
+    {
+        *(.ap_romfs*)
+    } > flash
+
     .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)

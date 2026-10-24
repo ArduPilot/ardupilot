@@ -1,0 +1,303 @@
+use crate::{result, Context, Error, Result};
+use core::num::NonZeroU32;
+
+pub const SOCKET_TRANSFER_MAX: usize = ${transfer_max};
+pub const SOCKET_POLL_TIMEOUT_MAX_MS: u16 = ${poll_timeout_max_ms};
+
+/// An IPv4 address in the host-order representation used by ArduPilot.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Ipv4Address(pub u32);
+
+impl Ipv4Address {
+    pub const fn octets(self) -> [u8; 4] { self.0.to_be_bytes() }
+}
+
+impl core::fmt::Display for Ipv4Address {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let octets = self.octets();
+        write!(formatter, "{}.{}.{}.{}", octets[0], octets[1], octets[2], octets[3])
+    }
+}
+
+/// The source of a received IPv4 datagram. The address and port are in host
+/// order, matching `SocketAPM::last_recv_address` and the Lua socket API.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Ipv4Endpoint {
+    pub address: u32,
+    pub port: u16,
+}
+
+impl Ipv4Endpoint {
+    pub const fn address_octets(&self) -> [u8; 4] { self.address.to_be_bytes() }
+}
+
+impl core::fmt::Display for Ipv4Endpoint {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let octets = self.address_octets();
+        write!(formatter, "{}.{}.{}.{}:{}",
+               octets[0], octets[1], octets[2], octets[3], self.port)
+    }
+}
+
+/// One successful bounded receive, with source metadata when the native
+/// socket reports it.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SocketReceive {
+    pub length: usize,
+    pub peer: Option<Ipv4Endpoint>,
+}
+
+/// A generation-checked socket owned by this module. Explicit close is useful
+/// for prompt release; firmware closes every remaining socket after worker join.
+#[derive(Debug, Eq, PartialEq)]
+pub struct Socket { token: Option<NonZeroU32> }
+
+impl Socket {
+    fn token(&self) -> Result<NonZeroU32> { self.token.ok_or(Error::Invalid) }
+
+    fn call_bool(&self, context: &Context<'_>, id: u32) -> Result<bool> {
+        let input = self.token()?.get().to_le_bytes();
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw, id,
+            input.as_ptr(), input.len() as u32, output.as_mut_ptr(), 1) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    pub fn close(&mut self, context: &Context<'_>) -> Result {
+        let input = self.token()?.get().to_le_bytes();
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${close_id}.slot(), input.as_ptr(), 4,
+            core::ptr::null_mut(), 0) })?;
+        self.token = None;
+        Ok(())
+    }
+
+    pub fn bind(&self, context: &Context<'_>, address: &str, port: u16) -> Result<bool> {
+        if address.is_empty() || address.len() >= ${path_size} || address.as_bytes().contains(&0) || port == 0 {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; ${n4_plus_path_size_plus_2}];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4..4 + address.len()].copy_from_slice(address.as_bytes());
+        input[${n4_plus_path_size}..].copy_from_slice(&port.to_le_bytes());
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${bind_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), 1) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    /// Start a connection. In logical blocking mode this waits at most 20 ms;
+    /// in nonblocking mode `false` may mean the connection remains pending.
+    pub fn connect(&self, context: &Context<'_>, address: &str, port: u16) -> Result<bool> {
+        if address.is_empty() || address.len() >= ${path_size} || address.as_bytes().contains(&0) || port == 0 {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; ${n4_plus_path_size_plus_2}];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4..4 + address.len()].copy_from_slice(address.as_bytes());
+        input[${n4_plus_path_size}..].copy_from_slice(&port.to_le_bytes());
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${connect_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), 1) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    pub fn listen(&self, context: &Context<'_>, backlog: u8) -> Result<bool> {
+        if backlog == 0 { return Err(Error::Invalid); }
+        let mut input = [0u8; 5];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4] = backlog;
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${listen_id}.slot(), input.as_ptr(), 5,
+            output.as_mut_ptr(), 1) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    /// Select logical blocking behavior. Descriptors remain nonblocking; when
+    /// enabled each accept/send/receive waits at most 20 ms for readiness.
+    pub fn set_blocking(&self, context: &Context<'_>, enabled: bool) -> Result {
+        let mut input = [0u8; 5];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4] = enabled as u8;
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${blocking_id}.slot(), input.as_ptr(), 5,
+            core::ptr::null_mut(), 0) })
+    }
+
+    pub fn is_connected(&self, context: &Context<'_>) -> Result<bool> {
+        self.call_bool(context, crate::imports::BINDING_${connected_id}.slot())
+    }
+
+    /// True while a nonblocking connection attempt remains in progress.
+    pub fn is_pending(&self, context: &Context<'_>) -> Result<bool> {
+        self.call_bool(context, crate::imports::BINDING_${pending_id}.slot())
+    }
+
+    pub fn reuse_address(&self, context: &Context<'_>) -> Result<bool> {
+        self.call_bool(context, crate::imports::BINDING_${reuse_address_id}.slot())
+    }
+
+    fn poll(&self, context: &Context<'_>, id: u32, timeout_ms: u16) -> Result<bool> {
+        if timeout_ms > SOCKET_POLL_TIMEOUT_MAX_MS { return Err(Error::Invalid); }
+        let mut input = [0u8; 6];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4..].copy_from_slice(&timeout_ms.to_le_bytes());
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw, id,
+            input.as_ptr(), 6, output.as_mut_ptr(), 1) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    pub fn pollin(&self, context: &Context<'_>, timeout_ms: u16) -> Result<bool> {
+        self.poll(context, crate::imports::BINDING_${pollin_id}.slot(), timeout_ms)
+    }
+
+    pub fn pollout(&self, context: &Context<'_>, timeout_ms: u16) -> Result<bool> {
+        self.poll(context, crate::imports::BINDING_${pollout_id}.slot(), timeout_ms)
+    }
+
+    pub fn accept(&self, context: &Context<'_>) -> Result<Option<Socket>> {
+        let input = self.token()?.get().to_le_bytes();
+        let mut output = [0u8; 4];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${accept_id}.slot(), input.as_ptr(), 4,
+            output.as_mut_ptr(), 4) })?;
+        Ok(NonZeroU32::new(u32::from_le_bytes(output)).map(|token| Socket { token: Some(token) }))
+    }
+
+    /// Receive at most 1024 bytes. `None` means the bounded readiness wait
+    /// expired; `Some(0)` is orderly EOF.
+    pub fn recv(&self, context: &Context<'_>, buffer: &mut [u8]) -> Result<Option<usize>> {
+        if buffer.is_empty() || buffer.len() > SOCKET_TRANSFER_MAX { return Err(Error::Invalid); }
+        let mut input = [0u8; 6];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4..].copy_from_slice(&(buffer.len() as u16).to_le_bytes());
+        let mut output = [0u8; ${transfer_max_plus_3}];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${recv_id}.slot(), input.as_ptr(), 6,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        if output[0] == 0 {
+            return if output[1..].iter().all(|byte| *byte == 0) { Ok(None) } else { Err(Error::Host) };
+        }
+        if output[0] != 1 { return Err(Error::Host); }
+        let length = u16::from_le_bytes(output[1..3].try_into().unwrap()) as usize;
+        if length > buffer.len() || output[3 + length..].iter().any(|byte| *byte != 0) {
+            return Err(Error::Host);
+        }
+        buffer[..length].copy_from_slice(&output[3..3 + length]);
+        Ok(Some(length))
+    }
+
+    /// Receive at most 1024 bytes and retain optional UDP peer metadata.
+    /// `None` means the bounded readiness wait expired; a zero length is EOF.
+    pub fn recv_from(&self, context: &Context<'_>, buffer: &mut [u8]) -> Result<Option<SocketReceive>> {
+        if buffer.is_empty() || buffer.len() > SOCKET_TRANSFER_MAX { return Err(Error::Invalid); }
+        let mut input = [0u8; 6];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4..].copy_from_slice(&(buffer.len() as u16).to_le_bytes());
+        let mut output = [0u8; ${transfer_max_plus_10}];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${recv_from_id}.slot(), input.as_ptr(), 6,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        if output[0] == 0 {
+            return if output[1..].iter().all(|byte| *byte == 0) { Ok(None) } else { Err(Error::Host) };
+        }
+        if output[0] != 1 { return Err(Error::Host); }
+        let length = u16::from_le_bytes(output[1..3].try_into().unwrap()) as usize;
+        if length > buffer.len() || output[10 + length..].iter().any(|byte| *byte != 0) {
+            return Err(Error::Host);
+        }
+        let peer = match output[3] {
+            0 if output[4..10].iter().all(|byte| *byte == 0) => None,
+            1 => {
+                let address = u32::from_le_bytes(output[4..8].try_into().unwrap());
+                let port = u16::from_le_bytes(output[8..10].try_into().unwrap());
+                if address == 0 || port == 0 { return Err(Error::Host); }
+                Some(Ipv4Endpoint { address, port })
+            }
+            _ => return Err(Error::Host),
+        };
+        buffer[..length].copy_from_slice(&output[10..10 + length]);
+        Ok(Some(SocketReceive { length, peer }))
+    }
+
+    /// Send at most 1024 bytes. `None` means the bounded readiness wait
+    /// expired; partial sends are returned for caller retry.
+    pub fn send(&self, context: &Context<'_>, buffer: &[u8]) -> Result<Option<usize>> {
+        if buffer.is_empty() || buffer.len() > SOCKET_TRANSFER_MAX { return Err(Error::Invalid); }
+        let mut input = [0u8; ${transfer_max_plus_6}];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4..6].copy_from_slice(&(buffer.len() as u16).to_le_bytes());
+        input[6..6 + buffer.len()].copy_from_slice(buffer);
+        let mut output = [0u8; 3];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${send_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), 3) })?;
+        if output[0] == 0 {
+            return if output[1..] == [0, 0] { Ok(None) } else { Err(Error::Host) };
+        }
+        if output[0] != 1 { return Err(Error::Host); }
+        let length = u16::from_le_bytes(output[1..].try_into().unwrap()) as usize;
+        if length > buffer.len() { return Err(Error::Host); }
+        Ok(Some(length))
+    }
+
+    /// Send one bounded datagram to a host-order IPv4 address and port.
+    /// `None` means the bounded readiness wait expired.
+    pub fn send_to(&self, context: &Context<'_>, buffer: &[u8], address: u32,
+                   port: u16) -> Result<Option<usize>> {
+        if buffer.is_empty() || buffer.len() > SOCKET_TRANSFER_MAX { return Err(Error::Invalid); }
+        let mut input = [0u8; ${transfer_max_plus_12}];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4..6].copy_from_slice(&(buffer.len() as u16).to_le_bytes());
+        input[6..10].copy_from_slice(&address.to_le_bytes());
+        input[10..12].copy_from_slice(&port.to_le_bytes());
+        input[12..12 + buffer.len()].copy_from_slice(buffer);
+        let mut output = [0u8; 3];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${send_to_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), 3) })?;
+        if output[0] == 0 {
+            return if output[1..] == [0, 0] { Ok(None) } else { Err(Error::Host) };
+        }
+        if output[0] != 1 { return Err(Error::Host); }
+        let length = u16::from_le_bytes(output[1..].try_into().unwrap()) as usize;
+        if length > buffer.len() { return Err(Error::Host); }
+        Ok(Some(length))
+    }
+
+    /// Transfer the file and connected socket to the firmware sendfile worker.
+    /// On success this handle is invalidated; completion is asynchronous.
+    pub fn sendfile(&mut self, context: &Context<'_>, path: &str) -> Result<bool> {
+        if path.is_empty() || path.len() >= ${path_size} || path.as_bytes().contains(&0) {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; ${n4_plus_path_size}];
+        input[..4].copy_from_slice(&self.token()?.get().to_le_bytes());
+        input[4..4 + path.len()].copy_from_slice(path.as_bytes());
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${sendfile_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), 1) })?;
+        match output[0] {
+            0 => Ok(false),
+            1 => { self.token = None; Ok(true) },
+            _ => Err(Error::Host),
+        }
+    }
+}
+
+impl crate::bindings::Network<'_, '_> {
+    pub fn open(&self, datagram: bool) -> Result<Socket> {
+        let input = [datagram as u8];
+        let mut output = [0u8; 4];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${open_id}.slot(), input.as_ptr(), 1,
+            output.as_mut_ptr(), 4) })?;
+        let token = NonZeroU32::new(u32::from_le_bytes(output)).ok_or(Error::Host)?;
+        Ok(Socket { token: Some(token) })
+    }
+}

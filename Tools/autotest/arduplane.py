@@ -7275,6 +7275,165 @@ return update()
             else:
                 raise NotAchievedException("Missing trick %s" % t)
 
+    def setup_rust_aerobatics(self, allow_mission_timeout=False):
+        '''Install and start the native aerobatics applet in a test context'''
+        self.context_push()
+        self.install_rust_applet_context('aerobatics/main.rs', install_name='airshow.apmod')
+        self.install_rust_file_context(self.rust_applet_source_path('aerobatics/AirShow.txt'),
+                                       install_name='trick72.txt', directory='scripts')
+        self.customise_SITL_commandline([], model='plane-3d', wipe=True)
+        self.set_parameters({
+            'MOD_ENABLE': 1,
+            'MOD_HEAP_MAX': 32768,
+            'MOD_CODE_MAXSIZE': 131072,
+            'MOD_STACK_MAX': 32768,
+            'SCR_ENABLE': 0,
+            'RC7_OPTION': 300,
+            'RC9_OPTION': 301,
+        })
+        self.context_set_speedup(5)
+        self.context_collect('STATUSTEXT')
+        errors = ['Module fatal:', 'Aerobatics error', 'Too low altitude, aborting', 'Invalid path - aborting',
+                  'NavScript time out']
+        if not allow_mission_timeout:
+            errors.append('NavScriptTime timed out')
+        self.install_message_hook_context(self.FailFastStatusText(self, errors))
+        self.reboot_sitl()
+        self.set_rc(7, 1000)
+        self.set_rc(9, 1000)
+        self.wait_text('Module: loaded 1 modules', check_context=True)
+
+    def AerobaticsScripting_rust(self):
+        '''Fly the native Rust RC AirShow'''
+        self.setup_rust_aerobatics()
+        self.set_parameter('TRIK_ENABLE', 1)
+        self.rust_scripting_restart()
+        self.wait_text('Enabled 3 tricks', check_context=True)
+        self.set_parameter('TRIK1_ID', 72)
+
+        self.wait_ready_to_arm()
+        self.change_mode('TAKEOFF')
+        self.arm_vehicle()
+        self.wait_altitude(30, 40, timeout=30, relative=True)
+        self.change_mode('CRUISE')
+        self.delay_sim_time(1, reason='trick selection to register')
+        self.set_rc(7, 1500)
+        self.wait_text('Trick 1 selected (SuperAirShow)', check_context=True)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_rc(7, 2000)
+        self.wait_text('Trick 1 started (SuperAirShow)', check_context=True)
+
+        self.wait_rust_airshow_complete()
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def AerobaticsScripting_rust_mission(self):
+        '''Fly native AirShow from NAV_SCRIPT_TIME with RC tricks disabled'''
+        self.setup_rust_aerobatics()
+        self.assert_parameter_value('TRIK_ENABLE', 0)
+        self.set_parameter('RTL_AUTOLAND', 2)
+        self.load_mission('rust-aerobatics.txt')
+        self.wait_ready_to_arm()
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+        self.wait_text('Starting SuperAirShow!', check_context=True, timeout=120)
+        self.assert_current_waypoint(4)
+        self.wait_rust_airshow_complete()
+        # Timeout is zero: only the applet's matching completion acknowledgement
+        # should advance the mission, not the NavScript watchdog.
+        self.wait_current_waypoint(5, timeout=10)
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def wait_rust_airshow_complete(self):
+        '''Check the complete schedule, not just a successful script start'''
+        highest_error = 0
+        samples = 0
+        start = self.get_sim_time()
+        while not any(m.text == 'Finishing SuperAirShow!' for m in self.context_collection('STATUSTEXT')):
+            if self.get_sim_time_cached() - start > 300:
+                raise AutoTestTimeoutException('Rust AirShow did not finish')
+            m = self.mav.recv_match(type='NAMED_VALUE_FLOAT', timeout=1, blocking=True)
+            if m is None or m.name != 'PERR':
+                continue
+            if not math.isfinite(m.value) or not 0 <= m.value <= 15:
+                raise NotAchievedException('Rust AirShow path error %s' % m.value)
+            highest_error = max(highest_error, m.value)
+            samples += 1
+        if samples < 20 or highest_error == 0:
+            raise NotAchievedException('Insufficient Rust path error telemetry (%u samples)' % samples)
+        tricks = ['Loop', 'HalfReverseCubanEight', 'ScaleFigureEight', 'Immelmann', 'Roll',
+                  'Split-S', 'RollingCircle', 'HumptyBump', 'HalfCubanEight', 'BarrelRoll',
+                  'Finishing SuperAirShow!']
+        observed = [m.text for m in self.context_collection('STATUSTEXT') if m.text in tricks]
+        if observed != tricks:
+            raise NotAchievedException('Rust AirShow maneuver order: %s' % observed)
+        self.progress('Rust AirShow completed: %u PERR samples, peak %.2fm' % (samples, highest_error))
+
+    def AerobaticsScripting_rust_mission_control(self):
+        '''Exercise mission arguments, command replacement, timeout and mode exit'''
+        self.setup_rust_aerobatics(allow_mission_timeout=True)
+        self.assert_parameter_value('TRIK_ENABLE', 0)
+        self.wait_ready_to_arm()
+        self.change_mode('TAKEOFF')
+        self.arm_vehicle()
+        self.wait_altitude(30, 40, timeout=30, relative=True)
+        self.change_mode('CRUISE')
+        self.set_parameter('AEROM_MIS_ANGLE', self.get_heading() or 360)
+        items = [
+            self.mission_item_home(),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_SCRIPT_TIME, p1=7, p2=3, p3=20000, p4=1),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_SCRIPT_TIME, p1=7, p3=80, p4=1),
+            self.mission_item_waypoint(-35.364290, 149.164936, 40),
+        ]
+        self.renumber_mission_items(items)
+        self.check_mission_upload_download(items)
+        self.set_current_waypoint(1, check_afterwards=False)
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode('AUTO')
+        self.wait_text('Starting Axial Roll!', check_context=True)
+        self.wait_text('NavScriptTime timed out', check_context=True)
+        self.wait_current_waypoint(2)
+        start = self.get_sim_time()
+        self.wait_text('Finishing Axial Roll!', check_context=True, timeout=15)
+        if self.get_sim_time() - start < 1:
+            raise NotAchievedException('Second mission maneuver finished prematurely')
+        self.wait_current_waypoint(3)
+        texts = [m.text for m in self.context_collection('STATUSTEXT')]
+        if texts.count('Starting Axial Roll!') != 2 or texts.count('Finishing Axial Roll!') != 1:
+            raise NotAchievedException('Mission task replacement/completion mismatch: %s' % texts)
+
+        self.change_mode('CRUISE')
+        self.set_parameter('AEROM_MIS_ANGLE', self.get_heading() or 360)
+        items[1].param2 = 0
+        self.check_mission_upload_download(items)
+        for exit_mode in (True, False):
+            self.context_clear_collection('STATUSTEXT')
+            self.set_current_waypoint(1, check_afterwards=False)
+            self.change_mode('AUTO')
+            self.wait_text('Starting Axial Roll!', check_context=True)
+            self.delay_sim_time(1, reason='allow mission controller updates')
+            self.drain_mav()
+            self.assert_receive_named_value_float('PERR', timeout=3)
+            if exit_mode:
+                self.change_mode('CRUISE')
+            else:
+                self.set_current_waypoint(3)
+            # Drain in-flight telemetry before checking that the old task stops.
+            self.delay_sim_time(1, reason='drain pre-exit telemetry')
+            self.context_push()
+            self.context_collect('NAMED_VALUE_FLOAT')
+            self.delay_sim_time(2, reason='check old mission controller stopped')
+            if any(m.name == 'PERR' for m in self.context_collection('NAMED_VALUE_FLOAT')):
+                raise NotAchievedException('Old mission controller continued after exit')
+            self.context_pop()
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        self.reboot_sitl()
+
     def UniversalAutoLandScript(self):
         '''Test UniversalAutoLandScript'''
         applet_script = "UniversalAutoLand.lua"
@@ -7309,6 +7468,50 @@ return update()
         loc = Location.latlon_only(-35.362938, 149.165085)
         if self.get_distance(loc, self.get_location()) > 35:
             raise NotAchievedException("Did not land close to home")
+
+    def UniversalAutoLandScript_rust(self):
+        '''Test the Rust port of UniversalAutoLandScript'''
+        self.context_push()
+        self.customise_SITL_commandline(["--home", "-35.362938,149.165085,585,173"])
+        self.install_rust_applet_context(
+            "universal_auto_land/main.rs",
+            install_name="universal-auto-land.apmod",
+        )
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SCR_ENABLE": 0,
+            "MOD_ENABLE": 1,
+            "MOD_HEAP_MAX": 32768,
+            "MOD_CODE_MAXSIZE": 65536,
+            "MOD_STACK_MAX": 32768,
+            "RTL_AUTOLAND": 2,
+        })
+        self.reboot_sitl()
+        self.wait_text("Loaded UniversalAutoLand Rust", check_context=True)
+        self.set_parameters({
+            "ALAND_ENABLE": 1,
+            "ALAND_WP_ALT": 55,
+            "ALAND_WP_DIST": 400,
+        })
+        self.wait_ready_to_arm()
+        self.context_clear_collection('STATUSTEXT')
+        self.rust_scripting_restart()
+        self.wait_text("Loaded UniversalAutoLand Rust", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode("AUTO")
+        self.wait_text("Captured initial takeoff direction", check_context=True)
+
+        self.wait_disarmed(120)
+        self.progress("Check the landed heading matches takeoff")
+        self.wait_heading(173, accuracy=5, timeout=1)
+        loc = Location.latlon_only(-35.362938, 149.165085)
+        if self.get_distance(loc, self.get_location()) > 35:
+            raise NotAchievedException("Did not land close to home")
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def SDCardWPTest(self):
         '''test BRD_SD_MISSION support'''
@@ -9436,15 +9639,31 @@ return update()
         self.set_rc(2, 1500)
         self.fly_home_land_and_disarm()
 
-    def ScriptedArmingChecksApplet(self):
+    def install_arming_checks_applet(self, rust):
+        if rust:
+            self.install_rust_applet_context(
+                "arming_checks/main.rs",
+                install_name="arming-checks.apmod",
+            )
+            self.set_parameters({
+                "SCR_ENABLE": 0,
+                "MOD_ENABLE": 1,
+                "MOD_HEAP_MAX": 32768,
+                "MOD_CODE_MAXSIZE": 65536,
+                "MOD_STACK_MAX": 32768,
+            })
+        else:
+            self.set_parameter("SCR_ENABLE", 1)
+            self.install_applet_script_context("arming-checks.lua")
+
+    def ScriptedArmingChecksApplet(self, rust=False):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
         self.start_subtest("Scripted Arming Checks Applet validation")
         self.context_collect("STATUSTEXT")
 
         """Initialize the FC"""
-        self.set_parameter("SCR_ENABLE", 1)
-        self.install_applet_script_context("arming-checks.lua")
+        self.install_arming_checks_applet(rust)
         self.reboot_sitl()
         self.wait_ekf_happy()
         self.wait_text("ArduPilot Ready", check_context=True)
@@ -9569,15 +9788,18 @@ return update()
         self.set_parameter("FENCE_AUTOENABLE", 0)
         self.wait_text("warn: Fence not enabled", check_context=True)
 
-    def ScriptedArmingChecksAppletEStop(self):
+    def ScriptedArmingChecksAppletRust(self):
+        '''Native Rust sibling of ScriptedArmingChecksApplet'''
+        self.ScriptedArmingChecksApplet(rust=True)
+
+    def ScriptedArmingChecksAppletEStop(self, rust=False):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
         self.start_subtest("Scripted Arming Checks Applet validation")
         self.context_collect("STATUSTEXT")
 
         """Initialize the FC"""
-        self.set_parameter("SCR_ENABLE", 1)
-        self.install_applet_script_context("arming-checks.lua")
+        self.install_arming_checks_applet(rust)
         self.reboot_sitl()
         self.wait_ekf_happy()
         self.wait_text("ArduPilot Ready", check_context=True)
@@ -9610,15 +9832,18 @@ return update()
         self.wait_text("clear: Motors EStopped", timeout=30, check_context=True, regex=True)
         self.wait_ready_to_arm()
 
-    def ScriptedArmingChecksAppletRally(self):
+    def ScriptedArmingChecksAppletEStopRust(self):
+        '''Native Rust sibling of ScriptedArmingChecksAppletEStop'''
+        self.ScriptedArmingChecksAppletEStop(rust=True)
+
+    def ScriptedArmingChecksAppletRally(self, rust=False):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
         self.start_subtest("Scripted Arming Checks Applet validation")
         self.context_collect("STATUSTEXT")
 
         """Initialize the FC"""
-        self.set_parameter("SCR_ENABLE", 1)
-        self.install_applet_script_context("arming-checks.lua")
+        self.install_arming_checks_applet(rust)
         self.reboot_sitl()
         self.wait_ekf_happy()
         self.wait_text("ArduPilot Ready", check_context=True)
@@ -9645,6 +9870,10 @@ return update()
         self.set_parameter("RALLY_LIMIT_KM", 7)
         self.wait_text("clear: Rally too far", check_context=True)
 
+    def ScriptedArmingChecksAppletRallyRust(self):
+        '''Native Rust sibling of ScriptedArmingChecksAppletRally'''
+        self.ScriptedArmingChecksAppletRally(rust=True)
+
     def PlaneFollowAppletSanity(self):
         '''PLane Follow Sanity Check, not a detailed test'''
         self.start_subtest("Plane Follow Script Load and Start")
@@ -9657,6 +9886,44 @@ return update()
         self.set_parameters({
             "SCR_ENABLE": 1,
             "SIM_SPEEDUP": 20, # need to give some cycles to lua
+            "RC7_OPTION": 301,
+        })
+
+        self.context_collect("STATUSTEXT")
+
+        self.reboot_sitl()
+
+        self.wait_text("Plane Follow .* script loaded", timeout=30, regex=True, check_context=True)
+
+        self.wait_ready_to_arm()
+        self.set_rc(7, 2000)
+        self.wait_text("PFollow: must be armed", check_context=True)
+        self.set_rc(7, 1000)
+        self.arm_vehicle()
+        self.set_rc(7, 2000)
+        self.wait_text("PFollow: enabled", check_context=True)
+        self.set_rc(7, 1000)
+        self.wait_text("PFollow: disabled", check_context=True)
+        self.disarm_vehicle()
+
+        self.reboot_sitl()
+
+    def PlaneFollowAppletSanityRust(self):
+        '''Plane Follow native Rust applet sanity check'''
+        self.start_subtest("Plane Follow Rust Applet Load and Start")
+
+        self.install_rust_applet_context(
+            "plane_follow/main.rs",
+            install_name="plane-follow.apmod",
+        )
+
+        self.set_parameters({
+            "SCR_ENABLE": 0,
+            "MOD_ENABLE": 1,
+            "MOD_HEAP_MAX": 65536,
+            "MOD_CODE_MAXSIZE": 131072,
+            "MOD_STACK_MAX": 32768,
+            "SIM_SPEEDUP": 20,
             "RC7_OPTION": 301,
         })
 
@@ -10674,6 +10941,7 @@ return update()
             self.Terrain,
             self.ScriptingTerrainCorrected,
             self.UniversalAutoLandScript,
+            self.UniversalAutoLandScript_rust,
             self.TerrainLoiter,
             self.KebniSensAItionExternalINS,
             self.AeronEAHRS,
@@ -10700,6 +10968,9 @@ return update()
             self.AutotuneFiltering,
             self.MidAirDisarmDisallowed,
             self.AerobaticsScripting,
+            self.AerobaticsScripting_rust,
+            self.AerobaticsScripting_rust_mission,
+            self.AerobaticsScripting_rust_mission_control,
             self.MANUAL_CONTROL,
             self.SDCardWPTest,
             self.SagetechMXS,
@@ -10812,8 +11083,11 @@ return update()
             self.RudderArmingWithArmingChecksSkipped,
             self.FenceDoubleBreach,
             self.ScriptedArmingChecksApplet,
+            self.ScriptedArmingChecksAppletRust,
             self.ScriptedArmingChecksAppletEStop,
+            self.ScriptedArmingChecksAppletEStopRust,
             self.ScriptedArmingChecksAppletRally,
+            self.ScriptedArmingChecksAppletRallyRust,
             self.AVAILABLE_MODES,
             self.MAVLinkCommandRejections,
             self.MAV_CMD_GUIDED_CHANGE_HEADING,
@@ -11092,6 +11366,7 @@ return update()
             self.MAVFTPVirtualWriteBounds,
             self.MAVFTPParamUploadBounds,
             self.MAVFTPListROMFS,
+            self.MAVFTPThreads,
             self.MAVFTPListROMFSLongNames,
             self.MAVFTPListROMFSMissingDirectory,
             self.MAVFTPListROMFSFile,
@@ -11119,6 +11394,7 @@ return update()
             self.DO_CHANGE_ALTITUDE,
             self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
             self.PlaneFollowAppletSanity,
+            self.PlaneFollowAppletSanityRust,
             self.PreflightRebootComponent,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,

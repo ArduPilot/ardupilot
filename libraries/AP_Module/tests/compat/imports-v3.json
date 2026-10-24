@@ -1,0 +1,35 @@
+[
+  {
+    "id": 46,
+    "hash": "91750bd9ab1b1534",
+    "contract": {
+      "name": "Vector3f.length",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "f32-le",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  }
+]

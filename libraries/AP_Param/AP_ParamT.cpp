@@ -74,10 +74,22 @@ void AP_ParamTBase<T, PT>::set_and_notify(const T &v) {
     }
 }
 
+// Integer equality must not subtract: opposite int32 values can overflow.
+template<typename T>
+static bool save_value_unchanged(T previous, T value)
+{
+    return previous == value;
+}
+
+static bool save_value_unchanged(float previous, float value)
+{
+    return fabsf(previous - value) < FLT_EPSILON;
+}
+
 // Combined set and save
 template<typename T, ap_var_type PT>
 void AP_ParamTBase<T, PT>::set_and_save(const T &v) {
-    bool force = fabsf((float)(_value - v)) < FLT_EPSILON;
+    bool force = save_value_unchanged(_value, v);
     set(v);
     save(force);
 }
