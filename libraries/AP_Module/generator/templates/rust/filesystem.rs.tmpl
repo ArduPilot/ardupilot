@@ -1,0 +1,142 @@
+use crate::{result, Error, Result};
+
+pub const FILESYSTEM_READ_MAX: usize = ${read_max};
+pub const FILESYSTEM_WRITE_MAX: usize = ${write_max};
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct FileStat { pub size: u32, pub mtime: u32, pub is_directory: bool }
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DirEntry { bytes: [u8; ${name_max}], length: u8 }
+
+impl DirEntry {
+    pub fn as_str(&self) -> &str {
+        // Host output is validated during construction.
+        unsafe { core::str::from_utf8_unchecked(&self.bytes[..self.length as usize]) }
+    }
+}
+
+fn path_wire(path: &str) -> Result<[u8; ${path_size}]> {
+    if path.is_empty() || path.len() >= ${path_size} || path.as_bytes().contains(&0) {
+        return Err(Error::Invalid);
+    }
+    let mut output = [0u8; ${path_size}];
+    output[..path.len()].copy_from_slice(path.as_bytes());
+    Ok(output)
+}
+
+impl crate::bindings::Fs<'_, '_> {
+    fn path_bool(&self, path: &str, id: u32) -> Result<bool> {
+        let input = path_wire(path)?;
+        let mut output = [0u8; 1];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw, id,
+            input.as_ptr(), input.len() as u32, output.as_mut_ptr(), 1) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    pub fn stat(&self, path: &str) -> Result<Option<FileStat>> {
+        let input = path_wire(path)?;
+        let mut output = [0u8; 10];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${stat_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        match output[0] {
+            0 if output[1..].iter().all(|byte| *byte == 0) => Ok(None),
+            0 => Err(Error::Host),
+            1 if output[9] <= 1 => Ok(Some(FileStat {
+                size: u32::from_le_bytes(output[1..5].try_into().unwrap()),
+                mtime: u32::from_le_bytes(output[5..9].try_into().unwrap()),
+                is_directory: output[9] != 0,
+            })),
+            _ => Err(Error::Host),
+        }
+    }
+
+    /// Read a bounded chunk. `None` means open failure; `Some(0)` is EOF.
+    pub fn read_at(&self, path: &str, offset: u32,
+                   buffer: &mut [u8]) -> Result<Option<usize>> {
+        if buffer.is_empty() || buffer.len() > FILESYSTEM_READ_MAX
+            || u64::from(offset) + buffer.len() as u64 > i32::MAX as u64 {
+            return Err(Error::Invalid);
+        }
+        let path = path_wire(path)?;
+        let mut input = [0u8; ${path_size_plus_6}];
+        input[..${path_size}].copy_from_slice(&path);
+        input[${path_size}..${path_size_plus_4}].copy_from_slice(&offset.to_le_bytes());
+        input[${path_size_plus_4}..].copy_from_slice(&(buffer.len() as u16).to_le_bytes());
+        let mut output = [0u8; ${read_max_plus_3}];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${read_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        if output[0] == 0 {
+            return if output[1..].iter().all(|byte| *byte == 0) { Ok(None) } else { Err(Error::Host) };
+        }
+        if output[0] != 1 { return Err(Error::Host); }
+        let length = u16::from_le_bytes(output[1..3].try_into().unwrap()) as usize;
+        if length > buffer.len() || output[3 + length..].iter().any(|byte| *byte != 0) {
+            return Err(Error::Host);
+        }
+        buffer[..length].copy_from_slice(&output[3..3 + length]);
+        Ok(Some(length))
+    }
+
+    /// Return the indexed directory entry. Each call opens and closes the
+    /// directory, avoiding retained firmware pointers across module calls.
+    pub fn dir_entry(&self, path: &str, index: u16) -> Result<Option<DirEntry>> {
+        let path = path_wire(path)?;
+        let mut input = [0u8; ${path_size_plus_2}];
+        input[..${path_size}].copy_from_slice(&path);
+        input[${path_size}..].copy_from_slice(&index.to_le_bytes());
+        let mut output = [0u8; ${name_max_plus_3}];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${entry_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        if output[0] == 0 {
+            return if output[1..].iter().all(|byte| *byte == 0) { Ok(None) } else { Err(Error::Host) };
+        }
+        if output[0] != 1 { return Err(Error::Host); }
+        let length = u16::from_le_bytes(output[1..3].try_into().unwrap()) as usize;
+        if length > ${name_max} || output[3 + length..].iter().any(|byte| *byte != 0) {
+            return Err(Error::Host);
+        }
+        core::str::from_utf8(&output[3..3 + length]).map_err(|_| Error::Host)?;
+        let mut bytes = [0u8; ${name_max}];
+        bytes.copy_from_slice(&output[3..]);
+        Ok(Some(DirEntry { bytes, length: length as u8 }))
+    }
+
+    /// Create or truncate a file. No descriptor is retained after this call.
+    pub fn truncate(&self, path: &str) -> Result<bool> {
+        self.path_bool(path, crate::imports::BINDING_${truncate_id}.slot())
+    }
+
+    /// Append one bounded chunk, creating the file if needed. Call truncate
+    /// once before sequential appends when replacing a file.
+    pub fn append(&self, path: &str, data: &[u8]) -> Result<bool> {
+        if data.is_empty() || data.len() > FILESYSTEM_WRITE_MAX { return Err(Error::Invalid); }
+        let path = path_wire(path)?;
+        let mut input = [0u8; ${path_size_plus_2_plus_write_max}];
+        input[..${path_size}].copy_from_slice(&path);
+        input[${path_size}..${path_size_plus_2}].copy_from_slice(&(data.len() as u16).to_le_bytes());
+        input[${path_size_plus_2}..${path_size_plus_2} + data.len()].copy_from_slice(data);
+        let mut output = [0u8; 1];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${append_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), 1) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    pub fn unlink(&self, path: &str) -> Result<bool> {
+        self.path_bool(path, crate::imports::BINDING_${unlink_id}.slot())
+    }
+
+    /// Start formatting the local filesystem. Firmware rejects this while armed.
+    pub fn format(&self) -> Result<bool> {
+        let mut output = [0u8; 1];
+        result(unsafe { self.context.api.binding_call.unwrap()(
+            self.context.raw, crate::imports::BINDING_${format_id}.slot(),
+            core::ptr::null(), 0, output.as_mut_ptr(), 1)
+        })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+}

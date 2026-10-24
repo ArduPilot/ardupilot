@@ -1,0 +1,4 @@
+if ${present} { Some(${value}) } else {
+            if output[${start}..${end}].iter().any(|byte| *byte != 0) { return Err(Error::Host); }
+            None
+        }

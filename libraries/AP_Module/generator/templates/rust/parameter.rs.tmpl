@@ -1,0 +1,128 @@
+${notice}
+use crate::{result, Context, Error, Result};
+use core::ptr::NonNull;
+
+/// The same cached C++ Parameter helper used by Lua. It reads live firmware
+/// values, not a snapshot. Backend parameter lifetimes and unsynchronized
+/// scalar access have the same assumptions as Lua.
+/// Storage belongs to the module heap; moving this wrapper does not move the
+/// C++ object. Safe code cannot manufacture, share or outlive its context.
+pub struct Parameter<'ctx, 'host> {
+    context: &'ctx Context<'host>,
+    storage: NonNull<u8>,
+}
+
+impl<'host> Context<'host> {
+    /// Resolve a parameter by name, as with Lua's Parameter(name).
+    /// A missing name returns None; allocation failure returns NoMemory.
+    pub fn parameter<'ctx>(&'ctx self, name: &str) -> Result<Option<Parameter<'ctx, 'host>>> {
+        validate_name(name)?;
+        let mut layout = [0u8; 8];
+        result(unsafe {
+            self.api.binding_call.unwrap()(self.raw, crate::imports::BINDING_${layout_id}.slot(),
+                core::ptr::null(), 0, layout.as_mut_ptr(), 8)
+        })?;
+        let size = u32::from_le_bytes(layout[..4].try_into().unwrap());
+        let alignment = u32::from_le_bytes(layout[4..].try_into().unwrap());
+        if size == 0 || size > ${max_size} || !alignment.is_power_of_two() ||
+            alignment > ${max_alignment} || size % alignment != 0 {
+            return Err(Error::Host);
+        }
+        let storage = NonNull::new(unsafe {
+            self.api.allocate.unwrap()(self.raw, size, alignment)
+        }).ok_or(Error::NoMemory)?;
+        // Drop releases storage on init failure, including a concurrent stop.
+        let mut parameter = Parameter { context: self, storage };
+        if storage.as_ptr() as usize % alignment as usize != 0 {
+            return Err(Error::Host);
+        }
+        if parameter.init(name)? { Ok(Some(parameter)) } else { Ok(None) }
+    }
+}
+
+fn validate_name(name: &str) -> Result {
+    if name.is_empty() || name.len() > 16 || name.as_bytes().contains(&0) {
+        return Err(Error::Invalid);
+    }
+    Ok(())
+}
+
+impl Parameter<'_, '_> {
+    fn call(&self, id: u32, input: &mut [u8], output: &mut [u8]) -> Result {
+        input[..8].copy_from_slice(&(self.storage.as_ptr() as usize as u64).to_le_bytes());
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, id, input.as_ptr(),
+                input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })
+    }
+
+    /// Rebind this helper. A missing name clears it, just as Lua init does.
+    pub fn init(&mut self, name: &str) -> Result<bool> {
+        validate_name(name)?;
+        let mut input = [0u8; 25];
+        input[8..8 + name.len()].copy_from_slice(name.as_bytes());
+        let mut output = [0u8; 1];
+        self.call(crate::imports::BINDING_${init_id}.slot(), &mut input, &mut output)?;
+        boolean(output[0])
+    }
+
+    /// Read the current value. An unbound helper returns None.
+    pub fn get(&self) -> Result<Option<f32>> {
+        let mut output = [0u8; 5];
+        self.call(crate::imports::BINDING_${get_id}.slot(), &mut [0u8; 8], &mut output)?;
+        if !boolean(output[0])? { return Ok(None); }
+        Ok(Some(f32::from_le_bytes(output[1..5].try_into().unwrap())))
+    }
+
+    /// `Parameter::configured` from bindings.desc; same implementation as Lua.
+    pub fn configured(&self) -> Result<bool> {
+        let mut input = [0u8; 8];
+        let mut output = [0u8; 1];
+        self.call(crate::imports::BINDING_${configured_id}.slot(), &mut input, &mut output)?;
+        boolean(output[0])
+    }
+
+    /// `Parameter::set` from bindings.desc; same implementation as Lua.
+    /// Rejects non-finite and out-of-range integer inputs before C++ conversion.
+    pub fn set(&self, value: f32) -> Result<bool> {
+        let mut input = [0u8; 12];
+        input[8..12].copy_from_slice(&value.to_le_bytes());
+        let mut output = [0u8; 1];
+        self.call(crate::imports::BINDING_${set_id}.slot(), &mut input, &mut output)?;
+        boolean(output[0])
+    }
+
+    /// `Parameter::set_and_save` from bindings.desc; same implementation as Lua.
+    /// Rejects non-finite and out-of-range integer inputs before C++ conversion.
+    /// May wait for save IO; success does not imply durable storage.
+    pub fn set_and_save(&self, value: f32) -> Result<bool> {
+        let mut input = [0u8; 12];
+        input[8..12].copy_from_slice(&value.to_le_bytes());
+        let mut output = [0u8; 1];
+        self.call(crate::imports::BINDING_${set_and_save_id}.slot(), &mut input, &mut output)?;
+        boolean(output[0])
+    }
+
+    /// `Parameter::set_default` from bindings.desc; same implementation as Lua.
+    /// Rejects non-finite and out-of-range integer inputs before C++ conversion.
+    pub fn set_default(&self, value: f32) -> Result<bool> {
+        let mut input = [0u8; 12];
+        input[8..12].copy_from_slice(&value.to_le_bytes());
+        let mut output = [0u8; 1];
+        self.call(crate::imports::BINDING_${set_default_id}.slot(), &mut input, &mut output)?;
+        boolean(output[0])
+    }
+
+}
+
+fn boolean(value: u8) -> Result<bool> {
+    match value { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+}
+
+impl Drop for Parameter<'_, '_> {
+    fn drop(&mut self) {
+        // The host asserts trivial destruction. Deallocation remains available
+        // after stop, unlike binding calls, and runs before the worker joins.
+        unsafe { self.context.api.deallocate.unwrap()(self.context.raw, self.storage.as_ptr()); }
+    }
+}

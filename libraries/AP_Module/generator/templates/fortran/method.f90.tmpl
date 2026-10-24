@@ -1,0 +1,17 @@
+    function ${name}( &
+            ${arguments}) result(status)
+        type(c_ptr), value :: ctx
+${declarations}        integer(c_int32_t) :: status
+        interface
+            function raw_call( &
+                    ${raw_arguments}) &
+                    bind(C, name="${symbol}") result(code)
+                import
+                type(c_ptr), value :: ctx
+${raw_declarations}                integer(c_int32_t) :: code
+            end function raw_call
+        end interface
+        status = raw_call( &
+            ${values})
+    end function ${name}
+
