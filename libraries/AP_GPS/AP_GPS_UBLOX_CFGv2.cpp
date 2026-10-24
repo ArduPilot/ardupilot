@@ -771,22 +771,9 @@ bool AP_GPS_UBLOX_CFGv2::_send_gnss_cfg()
                  "GPS %u: updating GNSS mode",
                  unsigned(ubx_backend.state.instance) + 1);
 
-    if (_single_key_valset) {
-        // send each constellation enable/disable as individual VALSET
-        uint16_t offset = 0;
-        while (offset < packed_cfg.get_size()) {
-            uint16_t start = offset;
-            ConfigKey key;
-            if (!packed_cfg.get_key_at_offset(offset, key)) {
-                break;
-            }
-            _send_valset_bytes(packed_cfg.get() + start, offset - start, (ConfigLayer)(1U<<CFG_LAYER_RAM));
-            _send_valset_bytes(packed_cfg.get() + start, offset - start, (ConfigLayer)(1U<<CFG_LAYER_FLASH));
-            _send_valset_bytes(packed_cfg.get() + start, offset - start, (ConfigLayer)(1U<<CFG_LAYER_BBR));
-        }
-    } else {
-        _send_valset_bytes(packed_cfg.get(), (uint16_t)packed_cfg.get_size(), (ConfigLayer)CFG_LAYER_ALL);
-    }
+    // the constellation enables depend on each other, so they are
+    // always sent together: the receiver applies all of them or none
+    _send_valset_bytes(packed_cfg.get(), (uint16_t)packed_cfg.get_size(), (ConfigLayer)CFG_LAYER_ALL);
     return true;
 }
 
@@ -1192,6 +1179,11 @@ void AP_GPS_UBLOX_CFGv2::handle_cfg_nack(uint8_t msg_id)
             }
             break;
         case AP_GPS_UBLOX::MSG_CFG_VALSET:
+            if (curr_state == States::IDENTIFY_SIGNALS || curr_state == States::CONFIGURE_GNSS) {
+                // the receiver can't use the requested constellations;
+                // setting them one at a time would apply only some
+                break;
+            }
             // VALSET failed, fall back to single-key mode
             if (!_single_key_valset) {
                 _single_key_valset = true;
