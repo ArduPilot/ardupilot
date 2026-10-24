@@ -81,6 +81,11 @@
 #include <AP_Gripper/AP_Gripper.h>
 #endif
 
+#include <AP_Beacon/AP_Beacon_config.h>
+#if AP_BEACON_ENABLED
+#include <AP_Beacon/AP_Beacon.h>
+#endif  // AP_BEACON_ENABLED
+
 #include <AP_RPM/AP_RPM_config.h>
 #if AP_RPM_ENABLED
 #include <AP_RPM/AP_RPM.h>
@@ -120,7 +125,7 @@ public:
     void loop() override final;
 
     // set_mode *must* set control_mode_reason
-    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
+    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) WARN_IF_UNUSED = 0;
     virtual uint8_t get_mode() const = 0;
 
     ModeReason get_control_mode_reason() const {
@@ -268,9 +273,6 @@ public:
     // returns true if vehicle is in the process of taking off
     virtual bool is_taking_off() const { return false; }
 
-    // zeroing the RC outputs can prevent unwanted motor movement:
-    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
-
     // reboot the vehicle in an orderly manner, doing various cleanups
     // and flashing LEDs as appropriate
     void reboot(bool hold_in_bootloader);
@@ -280,6 +282,11 @@ public:
       return false if failed or n/a
      */
     virtual bool get_wp_distance_m(float &distance) const { return false; }
+
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // return the lat/lon/alt etc of waypoint location:
+    virtual bool get_wp_location(Location &loc) const { return false; }
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
     /*
       get the current wp bearing in degrees
@@ -302,8 +309,8 @@ public:
      */
     virtual bool get_pan_tilt_norm(float &pan_norm, float &tilt_norm) const { return false; }
 
-    // Returns roll and  pitch for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing PTCH_TRIM_DEG
-    virtual void get_osd_roll_pitch_rad(float &roll, float &pitch) const;
+    // Returns roll, pitch, and yaw for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing PTCH_TRIM_DEG
+    virtual void get_osd_attitude_rad(float &roll, float &pitch, float &yaw);
 
     /*
      get the target earth-frame angular velocities in rad/s (Z-axis component used by some gimbals)
@@ -360,9 +367,9 @@ protected:
 
 #if HAL_LOGGING_ENABLED
     AP_Logger logger;
-    AP_Int32 bitmask_unused;
+    AP_UInt32 bitmask_unused;
     // method supplied by vehicle to provide log bitmask:
-    virtual const AP_Int32 &get_log_bitmask() { return bitmask_unused; }
+    virtual const AP_UInt32 &get_log_bitmask() { return bitmask_unused; }
     virtual const struct LogStructure *get_log_structures() const { return nullptr; }
     virtual uint8_t get_num_log_structures() const { return 0; }
 #endif
@@ -370,6 +377,11 @@ protected:
 #if AP_GRIPPER_ENABLED
     AP_Gripper gripper;
 #endif
+
+#if AP_BEACON_ENABLED
+    // beacon (non-GPS positioning) library
+    AP_Beacon beacon;
+#endif  // AP_BEACON_ENABLED
 
 #if AP_IBUS_TELEM_ENABLED
     AP_IBus_Telem ibus_telem;
@@ -562,7 +574,7 @@ protected:
 #endif // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
     // Bitmask of modes to disable from gcs
-    AP_Int32 flight_mode_GCS_block;
+    AP_UInt32 flight_mode_GCS_block;
 
 private:
 

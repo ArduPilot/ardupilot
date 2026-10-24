@@ -93,12 +93,12 @@ The correct battery setting parameters are:
 
 The DAKEFPV F405 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 81 controls the VTX BEC output to pins marked "12V". Setting this GPIO low removes voltage supply to pins.
 By default RELAY2 is configured to control this pin and sets the GPIO high on boot.
 
-## Camera control
+## Camera Control
 
 GPIO 82 controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output from CAM1 to CAM2. By default RELAY3 is configured to control this pin and sets the GPIO high on boot.
 

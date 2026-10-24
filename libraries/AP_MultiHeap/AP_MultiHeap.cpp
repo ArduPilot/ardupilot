@@ -7,6 +7,7 @@
 #include "AP_MultiHeap.h"
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Scripting/AP_Scripting_config.h>
 #include <stdio.h>
 
 /*
@@ -113,17 +114,19 @@ void *MultiHeap::allocate(uint32_t size)
         return nullptr;
     }
 
+#if !AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED
     if (!hal.util->get_soft_armed()) {
         // only expand the available heaps when armed. When disarmed
         // user should fix their SCR_HEAP_SIZE parameter
         last_failed = true;
         return nullptr;
     }
+#endif
 
     /*
-      vehicle is armed and MultiHeap (for scripting) is out of
-      memory. We will see if we can add a new heap from available
-      memory if we have at least reserve_size bytes free
+      MultiHeap (for scripting) is out of memory. We will see if we
+      can add a new heap from available memory if we have at least
+      reserve_size bytes free
      */
     const uint32_t available = hal.util->available_memory();
     const uint32_t heap_overhead = 128; // conservative value, varies with HAL

@@ -6,6 +6,8 @@
 
 #include "AP_DAL/AP_DAL.h"
 
+#define P (const_cast<const Matrix24 &>(Pmut))
+
 // Control filter mode transitions
 void NavEKF3_core::controlFilterModes()
 {
@@ -59,7 +61,12 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 // avoid unnecessary operations
 void NavEKF3_core::setWindMagStateLearningMode()
 {
-    const bool canEstimateWind = ((finalInflightYawInit && dragFusionEnabled) || assume_zero_sideslip()) &&
+    const bool recentGpsYawFusion = (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS ||
+                                     yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
+                                    last_gps_yaw_fuse_ms != 0 &&
+                                    imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000;
+    const bool yawInitialised = recentGpsYawFusion || finalInflightYawInit;
+    const bool canEstimateWind = ((yawInitialised && dragFusionEnabled) || assume_zero_sideslip()) &&
                                  !onGround &&
                                  PV_AidingMode != AID_NONE;
     if (!inhibitWindStates && !canEstimateWind) {
@@ -85,22 +92,20 @@ void NavEKF3_core::setWindMagStateLearningMode()
                 stateStruct.wind_vel.x = windSpeed * cosF(tempEuler.z);
                 stateStruct.wind_vel.y = windSpeed * sinF(tempEuler.z);
             } else {
-                trueAirspeedVariance = sq(WIND_VEL_VARIANCE_MAX); // use 2-sigma for faster initial convergence
+                trueAirspeedVariance = WIND_VEL_VARIANCE_MAX; // no airspeed: seed at the wind-state variance limit
             }
 
             // set the wind state variances to the measurement uncertainty
-            zeroCols(P, 22, 23);
-            zeroRows(P, 22, 23);
-            P[22][22] = P[23][23] = trueAirspeedVariance;
+            zeroStatesVarCov(22, 23);
+            Pmut[22][22] = Pmut[23][23] = trueAirspeedVariance;
 
             windStatesAligned = true;
 
         } else {
             // set the variances using a typical max wind speed for small UAV operation
-            zeroCols(P, 22, 23);
-            zeroRows(P, 22, 23);
+            zeroStatesVarCov(22, 23);
             for (uint8_t index=22; index<=23; index++) {
-                P[index][index] = sq(WIND_VEL_VARIANCE_MAX);
+                Pmut[index][index] = WIND_VEL_VARIANCE_MAX;
             }
         }
     }
@@ -132,16 +137,16 @@ void NavEKF3_core::setWindMagStateLearningMode()
         updateStateIndexLim();
         if (magFieldLearned) {
             // if we have already learned the field states, then retain the learned variances
-            P[16][16] = earthMagFieldVar.x;
-            P[17][17] = earthMagFieldVar.y;
-            P[18][18] = earthMagFieldVar.z;
-            P[19][19] = bodyMagFieldVar.x;
-            P[20][20] = bodyMagFieldVar.y;
-            P[21][21] = bodyMagFieldVar.z;
+            Pmut[16][16] = earthMagFieldVar.x;
+            Pmut[17][17] = earthMagFieldVar.y;
+            Pmut[18][18] = earthMagFieldVar.z;
+            Pmut[19][19] = bodyMagFieldVar.x;
+            Pmut[20][20] = bodyMagFieldVar.y;
+            Pmut[21][21] = bodyMagFieldVar.z;
         } else {
             // set the variances equal to the observation variances
             for (uint8_t index=16; index<=21; index++) {
-                P[index][index] = sq(frontend->_magNoise);
+                Pmut[index][index] = sq(frontend->_magNoise);
             }
 
             // set the NE earth magnetic field states using the published declination
@@ -162,9 +167,9 @@ void NavEKF3_core::setWindMagStateLearningMode()
         updateStateIndexLim();
 
         // set the initial covariance values
-        P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
-        P[14][14] = P[13][13];
-        P[15][15] = P[13][13];
+        Pmut[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+        Pmut[14][14] = P[13][13];
+        Pmut[15][15] = P[13][13];
     }
 
     if (tiltAlignComplete && inhibitDelAngBiasStates) {
@@ -173,9 +178,9 @@ void NavEKF3_core::setWindMagStateLearningMode()
         updateStateIndexLim();
 
         // set the initial covariance values
-        P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
-        P[11][11] = P[10][10];
-        P[12][12] = P[10][10];
+        Pmut[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
+        Pmut[11][11] = P[10][10];
+        Pmut[12][12] = P[10][10];
     }
 
     // If on ground we clear the flag indicating that the magnetic field in-flight initialisation has been completed
@@ -263,12 +268,12 @@ void NavEKF3_core::setAidingMode()
         // preserve quaternion 4x4 covariances, but zero the other rows and columns
         for (uint8_t row=0; row<4; row++) {
             for (uint8_t col=4; col<24; col++) {
-                P[row][col] = 0.0f;
+                Pmut[row][col] = 0.0f;
             }
         }
         for (uint8_t col=0; col<4; col++) {
             for (uint8_t row=4; row<24; row++) {
-                P[row][col] = 0.0f;
+                Pmut[row][col] = 0.0f;
             }
         }
         // keep the IMU bias state variances, but zero the covariances
@@ -276,10 +281,9 @@ void NavEKF3_core::setAidingMode()
         for (uint8_t row=0; row<6; row++) {
             oldBiasVariance[row] = P[row+10][row+10];
         }
-        zeroCols(P,10,15);
-        zeroRows(P,10,15);
+        zeroStatesVarCov(10, 15);
         for (uint8_t row=0; row<6; row++) {
-            P[row+10][row+10] = oldBiasVariance[row];
+            Pmut[row+10][row+10] = oldBiasVariance[row];
         }
     }
 
@@ -532,7 +536,8 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
 // return true if we should use the airspeed sensor
 bool NavEKF3_core::useAirspeed(void) const
 {
-    return dal.airspeed_sensor_enabled();
+    const auto *airspeed = dal.airspeed();
+    return airspeed != nullptr && airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
 }
 
 // return true if we should use the range finder sensor
@@ -638,6 +643,23 @@ bool NavEKF3_core::use_compass(void) const
            !allMagSensorsFailed;
 }
 
+// return true if GPS, compass or external nav yaw has been fused within the last 5 seconds
+bool NavEKF3_core::recentYawFusion(void) const
+{
+    if (last_gps_yaw_fuse_ms != 0 && imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000) {
+        return true;
+    }
+    if (last_mag_yaw_fuse_ms != 0 && imuSampleTime_ms - last_mag_yaw_fuse_ms < 5000) {
+        return true;
+    }
+#if EK3_FEATURE_EXTERNAL_NAV
+    if (last_extnav_yaw_fuse_ms != 0 && imuSampleTime_ms - last_extnav_yaw_fuse_ms < 5000) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 // are we using (aka fusing) a non-compass yaw?
 bool NavEKF3_core::using_noncompass_for_yaw(void) const
 {
@@ -681,20 +703,6 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
     return dal.get_fly_forward() && dal.get_vehicle_class() != AP_DAL::VehicleClass::GROUND;
 }
 
-// sets the local NED origin using a LLH location (latitude, longitude, height)
-// returns false if the origin is already set
-bool NavEKF3_core::setOriginLLH(const Location &loc)
-{
-    // reject external origin setting until the filter has finished
-    // bootstrap initialisation.  InitialiseVariables() resets
-    // validOrigin, so an origin set before that point is lost.
-    // Callers (e.g. AHRS use_recorded_origin_maybe) will retry.
-    if (!statesInitialised) {
-        return false;
-    }
-    return setOrigin(loc);
-}
-
 // populates the Earth magnetic field table using the given location
 void NavEKF3_core::setEarthFieldFromLocation(const Location &loc)
 {
@@ -711,7 +719,7 @@ void NavEKF3_core::setEarthFieldFromLocation(const Location &loc)
 
 // sets the local NED origin using a LLH location (latitude, longitude, height)
 // returns false is the origin has already been set
-bool NavEKF3_core::setOrigin(const Location &loc)
+bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
     // if the origin is valid reject setting a new origin
     if (validOrigin) {
@@ -758,10 +766,11 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const ftype delAngBiasVarMax = sq(radians(0.15 * dtEkfAvg));
-    if (!use_compass() && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
-        (yaw_source_last != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
+    if (!recentYawFusion() ||
+        (!use_compass() && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
+         (yaw_source_last != AP_NavEKF_Source::SourceYaw::EXTNAV))) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
-        // which can make this check fail
+        // which can make this check fail. A configured yaw source that is not being fused is no reference either
         const Vector3F delAngBiasVarVec { P[10][10], P[11][11], P[12][12] };
         const Vector3F temp = prevTnb * delAngBiasVarVec;
         delAngBiasLearned = (fabsF(temp.x) < delAngBiasVarMax) &&

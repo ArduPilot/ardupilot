@@ -35,6 +35,12 @@ The ZeroOne X6 is a series of flight controllers manufactured by ZeroOne, which 
        IMU2-BMI088(With vibration isolation)
        IMU3-IIM42653(No vibration isolation)
 
+    - **X6 Ultra**:
+
+       IMU1-SCH16T(With vibration isolation)
+       IMU2-IIM42652(With vibration isolation)
+       IMU3-IIM42652(No vibration isolation)
+
   - Baro:
 
        Two barometers:  2 x ICP20100
@@ -60,7 +66,7 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 | SERIAL5 | Telem3   | USART2   |DMA Enabled |
 | SERIAL6 | UART4    | UART4    |DMA Enabled |
 | SERIAL7 |FMU DEBUG | USART3   |DMA Enabled |
-| SERIAL8 | OTG-SLCAN| USB      |
+| SERIAL8 | OTG2     | USB      |
 
 ## RC Input
 
@@ -95,35 +101,21 @@ The 8 FMU PWM outputs are in 4 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
-## GPIO
+## GPIOs
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s SERVOx_FUNCTION to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
 
-| IO Pins |  | FMU Pins |
-| --- | --- | --- |
-| Name | Value | Option |
-|  | Name | Value |
-| Option | M1 | 101 |
-| MainOut1 |  | M9 |
-| 50 | AuxOut1 | M2 |
-| 102 | MainOut2 |  |
-| M10 | 51 | AuxOut2 |
-| M3 | 103 | MainOut3 |
-|  | M11 | 52 |
-| AuxOut3 | M4 | 104 |
-| MainOut4 |  | M12 |
-| 53 | AuxOut4 | M5 |
-| 105 | MainOut5 |  |
-| M13 | 54 | AuxOut5 |
-| M6 | 106 | MainOut6 |
-|  | M14 | 55 |
-| AuxOut6 | M7 | 107 |
-| MainOut7 |  | M15 |
-| 56 |  | M8 |
-| 108 | MainOut8 |  |
-| M16 | 57 | BB Blue GPIo pin 3 |
-|  |  |  |
-|  | FCU CAP | 58 |
+| IO Pin | IO Value | IO Option | | FMU Pin | FMU Value | FMU Option |
+| --- | --- | --- | --- | --- | --- | --- |
+| M1 | 101 | MainOut1 | | M9 | 50 | AuxOut1 |
+| M2 | 102 | MainOut2 | | M10 | 51 | AuxOut2 |
+| M3 | 103 | MainOut3 | | M11 | 52 | AuxOut3 |
+| M4 | 104 | MainOut4 | | M12 | 53 | AuxOut4 |
+| M5 | 105 | MainOut5 | | M13 | 54 | AuxOut5 |
+| M6 | 106 | MainOut6 | | M14 | 55 | AuxOut6 |
+| M7 | 107 | MainOut7 | | M15 | 56 | |
+| M8 | 108 | MainOut8 | | M16 | 57 | BB Blue GPIO pin 3 |
+| | | | | FCU CAP | 58 | |
 
 ## Battery Monitoring
 
@@ -134,7 +126,7 @@ These are set by default in the firmware and shouldn't need to be adjusted.
 
 The X6 flight controller built-in industrial-grade electronic compass chip RM3100.
 
-## Analog inputs
+## Analog Inputs
 
 The X6 flight controller has 2 analog inputs.
 

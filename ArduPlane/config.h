@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.h"
+#include <AP_HAL/AP_HAL_Boards.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -10,10 +11,6 @@
 
 #ifdef CONFIG_APM_HARDWARE
 #error CONFIG_APM_HARDWARE option is deprecated! use CONFIG_HAL_BOARD instead.
-#endif
-
-#ifndef MAV_SYSTEM_ID
- # define MAV_SYSTEM_ID          1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -211,6 +208,14 @@
 #ifndef AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
  #define AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED 1
 #endif
+
+#ifndef HAL_QUADPLANE_ENABLED
+#define HAL_QUADPLANE_ENABLED 1
+#endif
+
+#ifndef AP_PLANE_TAILSITTER_ENABLED
+#define AP_PLANE_TAILSITTER_ENABLED HAL_QUADPLANE_ENABLED
+#endif //  AP_PLANE_TAILSITTER_ENABLED
 
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe

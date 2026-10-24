@@ -115,7 +115,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 3:Simple Mode
     // @Values{Copter, Rover, Plane}: 4:RTL
     // @Values{Copter}: 5:Save Trim
-    // @Values{Rover}: 5:Save Trim (4.1 and lower)
     // @Values{Copter, Rover}: 7:Save WP
     // @Values{Copter, Rover, Plane, Sub}: 9:Camera Trigger
     // @Values{Copter}: 10:RangeFinder Enable
@@ -147,7 +146,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Plane}: 38:ADSB Avoidance Enable
     // @Values{Copter}: 39:PrecLoiter Enable
     // @Values{Copter, Rover}: 40:Proximity Avoidance Enable
-    // @Values{Copter, Rover, Plane}: 41:ArmDisarm (4.1 and lower)
     // @Values{Copter, Rover}: 42:SMARTRTL Mode
     // @Values{Copter, Plane}: 43:InvertedFlight Enable
     // @Values{Copter}: 44:Winch Enable, 45:Winch Control
@@ -210,7 +208,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Rover, Plane}: 106:Disable Airspeed Use
     // @Values{Plane}: 107:Enable FW Autotune
     // @Values{Plane}: 108:QRTL Mode
-    // @Values{Copter}: 109:use Custom Controller
+    // @Values{Copter, Plane}: 109:use Custom Controller
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  110:KillIMU3
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  111:Loweheiser starter
     // @Values{Copter,Plane,Rover,Blimp,Sub,Tracker}: 112:SwitchExternalAHRS
@@ -218,10 +216,10 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 150:CRUISE Mode
     // @Values{Copter}: 151:TURTLE Mode
     // @Values{Copter}: 152:SIMPLE heading reset
-    // @Values{Copter, Rover, Plane, Sub}: 153:ArmDisarm (4.2 and higher)
+    // @Values{Copter, Rover, Plane, Sub}: 153:ArmDisarm
     // @Values{Blimp}: 153:ArmDisarm
-    // @Values{Copter}: 154:ArmDisarm with AirMode  (4.2 and higher)
-    // @Values{Plane}: 154:ArmDisarm with Quadplane AirMode (4.2 and higher)
+    // @Values{Copter}: 154:ArmDisarm with AirMode
+    // @Values{Plane}: 154:ArmDisarm with Quadplane AirMode
     // @Values{Rover}: 155:Set steering trim to current servo and RC
     // @Values{Plane}: 155:Set roll pitch and yaw trim to current servo and RC
     // @Values{Rover}: 156:Torqeedo Clear Err
@@ -250,8 +248,9 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 182: AHRS AutoTrim
     // @Values{Plane}: 183: AUTOLAND mode
     // @Values{Plane}: 184: System ID Chirp
-    // @Values{Copter, Rover, Plane, Blimp, Sub}:  185:Mount Roll/Pitch Lock
-    // @Values{Copter, Rover, Plane, Blimp, Sub}:  186:Mount POI Lock
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 185:Mount Roll/Pitch Lock
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 186:Mount POI Lock
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 187:EKF Reset
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -302,10 +301,11 @@ bool RC_Channel::get_reverse(void) const
 // read input from hal.rcin or overrides
 bool RC_Channel::update(void)
 {
+    raw_radio_in = hal.rcin->read(ch_in);
     if (has_override() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_OVERRIDES)) {
         radio_in = override_value;
     } else if (rc().has_had_rc_receiver() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER)) {
-        radio_in = hal.rcin->read(ch_in);
+        radio_in = raw_radio_in;
     } else {
         return false;
     }
@@ -508,6 +508,13 @@ bool RC_Channel::in_trim_dz() const
     return is_bounded_int32(radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
 }
 
+/*
+  return true if raw input is within deadzone of trim
+*/
+bool RC_Channel::in_raw_trim_dz() const
+{
+    return is_bounded_int32(raw_radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
+}
 
 /*
    return trues if input is within deadzone of min
@@ -523,6 +530,18 @@ void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_ms)
         return;
     }
 
+    // the channel that controls override-enable must always reflect the
+    // physical RC switch; accepting a GCS override here would let the GCS
+    // disable its own overrides and create an oscillation
+    if ((AUX_FUNC)option.get() == AUX_FUNC::RC_OVERRIDE_ENABLE) {
+        return;
+    }
+
+    // store throttle pwm at the start of an override session
+    if (!rc().has_active_overrides()) {
+        rc().set_override_start_throttle(rc().get_throttle_channel().get_raw_radio_in());
+    }
+
     last_override_time = timestamp_ms != 0 ? timestamp_ms : AP_HAL::millis();
     override_value = v;
     rc().new_override_received();
@@ -532,6 +551,10 @@ void RC_Channel::clear_override()
 {
     last_override_time = 0;
     override_value = 0;
+    // only forget the throttle override-start pwm once no overrides remain
+    if (!rc().has_active_overrides()) {
+        rc().set_override_start_throttle(-1);
+    }
 }
 
 bool RC_Channel::has_override() const
@@ -679,6 +702,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if AP_GRIPPER_ENABLED
     case AUX_FUNC::GRIPPER:
 #endif
+#if AP_LANDINGGEAR_ENABLED
     case AUX_FUNC::LANDING_GEAR:
 #endif
     case AUX_FUNC::LOST_VEHICLE_SOUND:
@@ -696,6 +720,9 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if AP_AHRS_ENABLED
     case AUX_FUNC::EKF_LANE_SWITCH:
     case AUX_FUNC::EKF_YAW_RESET:
+#endif
+#if AP_AHRS_EKF_RESET_ENABLED
+    case AUX_FUNC::EKF_RESET:
 #endif
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::GENERATOR: // don't turn generator on or off initially
@@ -768,6 +795,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if AP_GPS_ENABLED
     case AUX_FUNC::GPS_DISABLE:
     case AUX_FUNC::GPS_DISABLE_YAW:
+#endif
 #if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:
     case AUX_FUNC::KILL_IMU2:
@@ -1267,11 +1295,7 @@ void RC_Channel::do_aux_function_fence(const AuxSwitchPos ch_flag)
 void RC_Channel::do_aux_function_clear_wp(const AuxSwitchPos ch_flag)
 {
     if (ch_flag == AuxSwitchPos::HIGH) {
-        AP_Mission *mission = AP::mission();
-        if (mission == nullptr) {
-            return;
-        }
-        mission->clear();
+        AP::mission().clear();
     }
 }
 #endif  // AP_MISSION_ENABLED
@@ -1379,11 +1403,7 @@ void RC_Channel::do_aux_function_mission_reset(const AuxSwitchPos ch_flag)
     if (ch_flag != AuxSwitchPos::HIGH) {
         return;
     }
-    AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        return;
-    }
-    mission->reset();
+    AP::mission().reset();
 }
 #endif
 
@@ -1636,18 +1656,15 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 
 #if AP_AIRSPEED_ENABLED
     case AUX_FUNC::DISABLE_AIRSPEED_USE: {
-        AP_Airspeed *airspeed = AP::airspeed();
-        if (airspeed == nullptr) {
-            break;
-        }
+        AP_Airspeed &airspeed = AP::airspeed();
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
-            airspeed->force_disable_use(true);
+            airspeed.force_disable_use(true);
             break;
         case AuxSwitchPos::MIDDLE:
             break;
         case AuxSwitchPos::LOW:
-            airspeed->force_disable_use(false);
+            airspeed.force_disable_use(false);
             break;
         }
         break;
@@ -1926,6 +1943,22 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         AP::ahrs().request_yaw_reset();
         break;
 
+#if AP_AHRS_EKF_RESET_ENABLED
+    case AUX_FUNC::EKF_RESET:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            // only allowed while disarmed - resetting the EKF in flight would
+            // discard the in-flight state estimate
+            if (hal.util->get_soft_armed()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF reset ignored: vehicle armed");
+            } else if (AP::ahrs().reset_configured_backend()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF bootstrap reset performed");
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF bootstrap reset failed");
+            }
+        }
+        break;
+#endif  // AP_AHRS_EKF_RESET_ENABLED
+
     case AUX_FUNC::AHRS_TYPE: {
 #if HAL_NAVEKF3_AVAILABLE && AP_EXTERNAL_AHRS_ENABLED
         AP::ahrs().set_ekf_type(ch_flag==AuxSwitchPos::HIGH? AP_AHRS::EKFType::EXTERNAL : AP_AHRS::EKFType::THREE);
@@ -2111,21 +2144,6 @@ bool RC_Channels::duplicate_options_exist()
         used_auxsw_options.set(option);
     }
     return false;
-}
-
-// convert option parameter from old to new
-void RC_Channels::convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option)
-{
-    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        RC_Channel *c = channel(i);
-        if (c == nullptr) {
-            // odd?
-            continue;
-        }
-        if ((RC_Channel::AUX_FUNC)c->option.get() == old_option) {
-            c->option.set_and_save((int16_t)new_option);
-        }
-    }
 }
 
 #endif  // AP_RC_CHANNEL_ENABLED

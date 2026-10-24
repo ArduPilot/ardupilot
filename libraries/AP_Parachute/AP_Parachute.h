@@ -116,7 +116,7 @@ private:
         SkipDisarmBeforeParachuteRelease = (1U<<1),
     };
 
-    AP_Int32    _options;
+    AP_UInt32   _options;
 };
 
 namespace AP {

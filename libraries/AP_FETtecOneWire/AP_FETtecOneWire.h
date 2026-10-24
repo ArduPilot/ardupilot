@@ -104,14 +104,15 @@ private:
     static AP_FETtecOneWire *_singleton;
     AP_HAL::UARTDriver *_uart;
 
-    AP_Int32 _motor_mask_parameter;
-    AP_Int32 _reverse_mask_parameter;
+    AP_UInt32 _motor_mask_parameter;
+    AP_UInt32 _reverse_mask_parameter;
 #if HAL_WITH_ESC_TELEM
-    AP_Int8 _pole_count_parameter;
+    AP_UInt8 _pole_count_parameter;
 #endif
 
     static constexpr uint8_t FRAME_OVERHEAD = 6;          ///< OneWire message frame overhead (header+tail bytes)
     static constexpr uint8_t MAX_RECEIVE_LENGTH = 12;     ///< OneWire max receive message payload length in bytes
+    static constexpr uint8_t MAX_ESC_COUNT = 24;          ///< Max ESCs supported (will be fewer with telemetry)
 #if HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
     static constexpr uint8_t SERIAL_NUMBER_LENGTH = 12;   ///< ESC serial number length in bytes
 #endif

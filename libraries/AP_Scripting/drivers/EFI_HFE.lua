@@ -118,17 +118,6 @@ local EFI_HFE_REL_IDX = bind_add_param('REL_IDX',  5, 0)
 --]]
 local EFI_HFE_CANDRV = bind_add_param('CANDRV',  6, 0)
 
---[[
-  // @Param: EFI_HFE_OPTIONS
-  // @DisplayName: HFI EFI options
-  // @Description: HFI EFI options
-  // @Bitmask: 1:EnableCANLogging
-  // @User: Standard
---]]
-local EFI_HFE_OPTIONS = bind_add_param('OPTIONS',  7, 0)
-
-local OPTION_LOGALLFRAMES = 0x01
-
 -- on 4.6.x this will be nil and direct relay support in AP_ICEngine can be used
 local ICE_PWM_IGN_ON = nil
 if param:get("ICE_PWM_IGN_ON") then
@@ -150,21 +139,6 @@ end
 if not driver1 then
     gcs:send_text(0, string.format("EFI_HFE: Failed to load driver"))
     return
-end
-
-local frame_count = 0
-
---[[
-   frame logging - can be replayed with Tools/scripts/CAN/CAN_playback.py
---]]
-local function log_can_frame(frame)
-    logger:write("CANF",'Id,DLC,FC,B0,B1,B2,B3,B4,B5,B6,B7','IBIBBBBBBBB',
-                 frame:id(),
-                 frame:dlc(),
-                 frame_count,
-                 frame:data(0), frame:data(1), frame:data(2), frame:data(3),
-                 frame:data(4), frame:data(5), frame:data(6), frame:data(7))
-    frame_count = frame_count + 1
 end
 
 --[[
@@ -222,10 +196,6 @@ local function engine_control(driver)
             if not frame then
                 break
             end
-            if EFI_HFE_OPTIONS:get() & OPTION_LOGALLFRAMES ~= 0 then
-                log_can_frame(frame)
-            end
-
             -- All Frame IDs for this EFI Engine are in the 29-bit extended address space
             if frame:isExtended() then
                 self.handle_EFI_packet(frame)

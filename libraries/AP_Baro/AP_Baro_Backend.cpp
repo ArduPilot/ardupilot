@@ -22,7 +22,7 @@ AP_Baro_Backend::AP_Baro_Backend(AP_Baro &baro) :
 
 void AP_Baro_Backend::set_bus_id(uint8_t instance, uint32_t id)
 {
-    _frontend.sensors[instance].bus_id.set(int32_t(id));
+    _frontend.sensors[instance].bus_id.set(id);
 }
 
 void AP_Baro_Backend::update_healthy_flag(uint8_t instance)

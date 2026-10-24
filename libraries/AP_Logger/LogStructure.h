@@ -70,6 +70,7 @@ const struct UnitStructure log_Units[] = {
     { 't', "N.m" },           // Newton meters, torque
     { 'q', "rpm" },           // rounds per minute. Not SI, but sometimes more intuitive than Hertz
     { 'r', "rad" },           // radians
+    { 'R', "dBm" },           // decibel-milliwatt (referenced to 1 mW)
     { 'U', "deglongitude" },  // degrees of longitude
     { 'u', "ppm" },           // pulses per minute
     { 'v', "V" },             // Volt
@@ -137,6 +138,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Camera/LogStructure.h>
 #include <AP_Mount/LogStructure.h>
 #include <AP_Baro/LogStructure.h>
+#include <AP_Compass/LogStructure.h>
 #include <AP_CANManager/LogStructure.h>
 #include <AP_VisualOdom/LogStructure.h>
 #include <AC_PrecLand/LogStructure.h>
@@ -252,7 +254,7 @@ struct PACKED log_MSG {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t id;
-    uint8_t chunk_seq;
+    uint16_t chunk_seq;
     char msg[64];
 };
 
@@ -364,9 +366,9 @@ struct PACKED log_MCU {
 struct PACKED log_MAVLink_Command {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint8_t target_system;
+    uint32_t target_system;
     uint8_t target_component;
-    uint8_t source_system;
+    uint32_t source_system;
     uint8_t source_component;
     uint8_t frame;
     uint16_t command;
@@ -431,23 +433,6 @@ struct PACKED log_ADSB {
     uint16_t squawk;
 };
 
-struct PACKED log_MAG {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  instance;
-    int16_t  mag_x;
-    int16_t  mag_y;
-    int16_t  mag_z;
-    int16_t  offset_x;
-    int16_t  offset_y;
-    int16_t  offset_z;
-    int16_t  motor_offset_x;
-    int16_t  motor_offset_y;
-    int16_t  motor_offset_z;
-    uint8_t  health;
-    uint32_t SUS;
-};
-
 struct PACKED log_Mode {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -486,6 +471,7 @@ struct PACKED log_RFND {
     uint8_t status;
     uint8_t orient;
     int8_t quality;
+    float temperature;
 };
 
 /*
@@ -784,22 +770,6 @@ struct PACKED log_VER {
 // @Field: WeightOnWheels: Weight on wheels state
 // @FieldValueEnum: WeightOnWheels: AP_LandingGear::LG_WOW_State
 
-// @LoggerMessage: MAG
-// @Description: Information received from compasses
-// @Field: TimeUS: Time since system startup
-// @Field: I: magnetometer sensor instance number
-// @Field: MagX: magnetic field strength in body frame
-// @Field: MagY: magnetic field strength in body frame
-// @Field: MagZ: magnetic field strength in body frame
-// @Field: OfsX: magnetic field offset in body frame
-// @Field: OfsY: magnetic field offset in body frame
-// @Field: OfsZ: magnetic field offset in body frame
-// @Field: MOX: motor interference magnetic field offset in body frame
-// @Field: MOY: motor interference magnetic field offset in body frame
-// @Field: MOZ: motor interference magnetic field offset in body frame
-// @Field: Health: true if the compass is considered healthy
-// @Field: S: time measurement was taken
-
 // @LoggerMessage: MAV
 // @Description: GCS MAVLink link statistics
 // @Field: TimeUS: Time since system startup
@@ -1039,6 +1009,7 @@ struct PACKED log_VER {
 // @Field: Orient: Sensor orientation
 // @FieldValueEnum: Orient: Rotation
 // @Field: Quality: Signal quality. -1 means invalid, 0 is no signal, 100 is perfect signal
+// @Field: Temp: Temperature of the fluid (air or water) the rangefinder measures through, not the sensor internal temperature
 
 // @LoggerMessage: RSSI
 // @Description: Received Signal Strength Indicator for RC receiver
@@ -1112,7 +1083,7 @@ struct PACKED log_VER {
 // @Field: Heal: Healthy
 // @Field: ThEnd: Reached end of thread
 // @Field: Mov: Motor is moving
-// @Field: Clut: Clutch is engaged (motor can move freely)
+// @Field: Clut: Clutch is disengaged (motor can move freely)
 // @Field: Mode: 0 is Relaxed, 1 is Position Control, 2 is Rate Control
 // @Field: DLen: Desired Length
 // @Field: Len: Estimated Length
@@ -1195,7 +1166,7 @@ struct PACKED log_VER {
      "PARM", "QNff",        "TimeUS,Name,Value,Default", "s---", "F---"  },       \
 LOG_STRUCTURE_FROM_GPS \
     { LOG_MSG_MSG, sizeof(log_MSG), \
-      "MSG",  "QBBZ",     "TimeUS,ID,Seq,Message", "s---", "F---"}, \
+      "MSG",  "QBHZ",     "TimeUS,ID,Seq,Message", "s---", "F---"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------", true }, \
     { LOG_RCI2_MSG, sizeof(log_RCI2), \
@@ -1217,20 +1188,19 @@ LOG_STRUCTURE_FROM_PRECLAND \
       "MCU","Qffff","TimeUS,MTemp,MVolt,MVmin,MVmax", "sOvvv", "F0000", true }, \
 LOG_STRUCTURE_FROM_MISSION \
     { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
-      "MAVC", "QBBBBBHffffiifBB","TimeUS,TS,TC,SS,SC,Fr,Cmd,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
+      "MAVC", "QIBIBBHffffiifBB","TimeUS,TS,TC,SS,SC,Fr,Cmd,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------", true }, \
 LOG_STRUCTURE_FROM_CAMERA \
 LOG_STRUCTURE_FROM_MOUNT \
     { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBffB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hp,TR,Pri", "s#nPOPP-----", "F-00B00-----", true }, \
     LOG_STRUCTURE_FROM_BATTMONITOR \
-    { LOG_MAG_MSG, sizeof(log_MAG), \
-      "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F", true }, \
+    LOG_STRUCTURE_FROM_COMPASS \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
 LOG_RTC_MESSAGE \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-      "RFND", "QBfBBb", "TimeUS,Instance,Dist,Stat,Orient,Quality", "s#m--%", "F-0---", true }, \
+      "RFND", "QBfBBbf", "TimeUS,Instance,Dist,Stat,Orient,Quality,Temp", "s#m--%O", "F-0---0", true }, \
     { LOG_DMS_MSG, sizeof(log_DMS), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \
@@ -1350,7 +1320,7 @@ enum LogMessages : uint8_t {
     LOG_PIDE_MSG,
     LOG_PIDW_MSG,
     LOG_IDS_FROM_LANDING,
-    LOG_MAG_MSG,
+    LOG_IDS_FROM_COMPASS,
     LOG_ARSP_MSG,
     LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,

@@ -110,7 +110,7 @@ bool Blimp::ekf_over_threshold()
     // use EKF to get variance
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
-    ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance);
+    ahrs.get_variances_for_configured_backend(vel_variance, position_variance, height_variance, mag_variance, tas_variance);
 
     const float mag_max = fmaxf(fmaxf(mag_variance.x,mag_variance.y),mag_variance.z);
 
@@ -174,25 +174,6 @@ void Blimp::failsafe_ekf_off_event(void)
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
-// check for ekf yaw reset and adjust target heading, also log position reset
-void Blimp::check_ekf_reset()
-{
-    // check for yaw reset
-    float yaw_angle_change_rad;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        ekfYawReset_ms = new_ekfYawReset_ms;
-        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
-    }
-
-    // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
-    if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
-        ekf_primary_core = ahrs.get_primary_core_index();
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
-    }
-}
-
 // check for high vibrations affecting altitude control
 void Blimp::check_vibration()
 {
@@ -215,7 +196,7 @@ void Blimp::check_vibration()
     // check if vertical velocity variance is at least 1 (NK4.SV >= 1.0)
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
-    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
+    if (!ahrs.get_variances_for_configured_backend(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
         checks_succeeded = false;
     }
 

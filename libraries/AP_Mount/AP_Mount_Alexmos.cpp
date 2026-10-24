@@ -156,7 +156,7 @@ void AP_Mount_Alexmos::send_target_angles(const MountAngleTarget& angle_target_r
     outgoing_buffer.angle_speed.speed_pitch = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
     outgoing_buffer.angle_speed.angle_pitch = DEGREE_TO_VALUE(degrees(angle_target_rad.pitch));
     outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
-    outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(angle_target_rad.get_bf_yaw());
+    outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(degrees(angle_target_rad.get_bf_yaw()));
     send_command(CMD_CONTROL, (uint8_t *)&outgoing_buffer.angle_speed, sizeof(alexmos_angles_speed));
 }
 

@@ -129,6 +129,7 @@ define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_GPS
 PD8 USART3_TX USART3
 PD9 USART3_RX USART3
 define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_DJI_FPV
+define AP_MSP_VIDEOTX_ENABLED 1
 
 # UART4 (Telemetry), SERIAL4
 PB8 UART4_RX UART4
@@ -205,7 +206,6 @@ BARO BMP280 I2C:0:0x76
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
-define ALLOW_ARM_NO_COMPASS
 define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 1
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2

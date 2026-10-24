@@ -66,7 +66,7 @@ all channels in the same group need to use the same configuration / rate.
 - PWM 7-8 Group 4
 - PWM 9-10 Group 5 (These are on the TX6 and RX6 pads that can also be used for SERIAL6)
 
-## Analog inputs
+## Analog Inputs
 
 The RADIX 2 HD has 3 analog inputs:
 

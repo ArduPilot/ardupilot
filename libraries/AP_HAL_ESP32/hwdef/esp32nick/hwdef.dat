@@ -39,7 +39,6 @@ define INS_MAX_INSTANCES 3  # only here for binary identicality
 COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
 
 define AP_COMPASS_PROBING_ENABLED 1
-define ALLOW_ARM_NO_COMPASS				1
 define AP_COMPASS_AK8963_ENABLED TRUE
 
 //-----WIFI-----

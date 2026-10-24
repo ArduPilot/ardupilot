@@ -15,27 +15,27 @@ for).
 Then you should restart scripting or reboot and set the following
 parameters per SoC estimator.
 
-## BATT_SOCn_IDX
+### BATT_SOCn_IDX
 
 The IDX is the battery index, starting at 1.
 
-## BATT_SOCn_NCELL
+### BATT_SOCn_NCELL
 
 Set the number of cells in your battery in the NCELL parameter
 
-## BATT_SOCn_C1
+### BATT_SOCn_C1
 
 C1 is the first coefficient from your fit of your battery
 
-## BATT_SOCn_C2
+### BATT_SOCn_C2
 
 C2 is the second coefficient from your fit of your battery
 
-## BATT_SOCn_C3
+### BATT_SOCn_C3
 
 C3 is the third coefficient from your fit of your battery
 
-## BATT_SOCn_C4
+### BATT_SOCn_C4
 
 C4 is the fourth coefficient from your fit of your battery
 

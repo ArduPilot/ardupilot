@@ -42,6 +42,7 @@
 #include "AP_InertialSensor_ASM330.h"
 #include "AP_InertialSensor_ADIS16607.h"
 #include <AP_Scheduler/AP_Scheduler.h>
+#include "AP_InertialSensor_ZeroOne_FPGA_SCH16T.h"
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -754,7 +755,7 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
 
     // Loop over the existing instances and check if the instance already exists
     for (uint8_t instance_to_check = 0; instance_to_check < _gyro_count; instance_to_check++) {
-        if ((uint32_t)_gyro_id(instance_to_check) == id) {
+        if (_gyro_id(instance_to_check) == id) {
             // if it does, then bail
             return false;
         }
@@ -766,12 +767,12 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
 
     bool saved = _gyro_id(_gyro_count).load();
 
-    if (saved && (uint32_t)_gyro_id(_gyro_count) != id) {
+    if (saved && _gyro_id(_gyro_count) != id) {
         // inconsistent gyro id - mark it as needing calibration
         _gyro_cal_ok[_gyro_count] = false;
     }
 
-    _gyro_id(_gyro_count).set((int32_t) id);
+    _gyro_id(_gyro_count).set(id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!saved) {
@@ -822,7 +823,7 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
 
     // Loop over the existing instances and check if the instance already exists
     for (uint8_t instance_to_check = 0; instance_to_check < _accel_count; instance_to_check++) {
-        if ((uint32_t)_accel_id(instance_to_check) == id) {
+        if (_accel_id(instance_to_check) == id) {
             // if it does, then bail
             return false;
         }
@@ -837,14 +838,14 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
     if (!saved) {
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
-    } else if ((uint32_t)_accel_id(_accel_count) != id) {
+    } else if (_accel_id(_accel_count) != id) {
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
     } else {
         _accel_id_ok[_accel_count] = true;
     }
 
-    _accel_id(_accel_count).set((int32_t) id);
+    _accel_id(_accel_count).set(id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_SIM_ENABLED)
         // assume this is the same sensor and save its ID to allow seamless
@@ -1071,11 +1072,18 @@ AP_InertialSensor::init(uint16_t loop_rate)
             } else
 #endif
             {
+                // Note that this ignores fixedwing motors on plane.
                 AP_Motors *motors = AP::motors();
                 if (motors != nullptr) {
+#if HAL_WITH_ESC_TELEM
+                    // Both masks are aligned to servo channels, so it is safe to & them.
+                    const uint8_t num_motors = __builtin_popcount(motors->get_motor_mask() & notch.params.esc_mask());
+#else
+                    const uint8_t num_motors = __builtin_popcount(motors->get_motor_mask());
+#endif
                     // Always have at least one notch, this allows the filter to alocate and then be expanded at runtime if the number of motors is changed
                     // Never have more than INS_MAX_NOTCHES
-                    notch.num_dynamic_notches = MAX(MIN(__builtin_popcount(motors->get_motor_mask()), INS_MAX_NOTCHES), 1);
+                    notch.num_dynamic_notches = MAX(MIN(num_motors, INS_MAX_NOTCHES), 1);
                 }
             }
             // avoid harmonics unless actually configured by the user
@@ -1179,7 +1187,7 @@ AP_InertialSensor::detect_backends(void)
 #endif
 
     uint8_t probe_count __attribute__((unused)) = 0;
-    uint8_t enable_mask __attribute__((unused)) = uint8_t(_enable_mask.get());
+    uint8_t enable_mask __attribute__((unused)) = _enable_mask;
     uint8_t found_mask __attribute__((unused)) = 0;
 
     /*
@@ -1211,7 +1219,7 @@ AP_InertialSensor::detect_backends(void)
 #define ADD_BACKEND_AUX(x, devid) do { \
         bool init_aux = true; \
         for (uint8_t i=0; i<_backend_count; i++) { \
-            if (((uint32_t)_accel_id(i) == devid) || ((uint32_t)_gyro_id(i) == devid)) { \
+            if ((_accel_id(i) == devid) || (_gyro_id(i) == devid)) { \
                 init_aux = false; \
             } \
         } \
@@ -1231,7 +1239,9 @@ AP_InertialSensor::detect_backends(void)
     // if enabled, make the first IMU the external AHRS
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
     if (serial_port >= 0) {
+        const uint8_t count_before = _backend_count;
         ADD_BACKEND(NEW_NOTHROW AP_InertialSensor_ExternalAHRS(*this, serial_port));
+        _first_onboard_imu_instance = _backend_count - count_before;   // Sets to 1 only if it actually registered.
     }
 #endif
 
@@ -1281,21 +1291,6 @@ AP_InertialSensor::detect_backends(void)
         ADD_BACKEND(AP_InertialSensor_Invensensev2::probe(*this, hal.spi->get_device("icm20948"), ROTATION_YAW_270));
         break;
 
-    case AP_BoardConfig::PX4_BOARD_FMUV6:
-        _fast_sampling_mask.set_default(1);
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20689"), ROTATION_NONE));
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20602"), ROTATION_NONE));
-        // allow for either BMI055 or BMI088
-        ADD_BACKEND(AP_InertialSensor_BMI055::probe(*this,
-                                                    hal.spi->get_device("bmi055_a"),
-                                                    hal.spi->get_device("bmi055_g"),
-                                                    ROTATION_ROLL_180_YAW_90));
-        ADD_BACKEND(AP_InertialSensor_BMI088::probe(*this,
-                                                    hal.spi->get_device("bmi055_a"),
-                                                    hal.spi->get_device("bmi055_g"),
-                                                    ROTATION_ROLL_180_YAW_90));
-        break;
-
     case AP_BoardConfig::PX4_BOARD_PHMINI:
         // PHMINI uses ICM20608 on the ACCEL_MAG device and a MPU9250 on the old MPU6000 CS line
         _fast_sampling_mask.set_default(3);
@@ -1313,11 +1308,6 @@ AP_InertialSensor::detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
         _fast_sampling_mask.set_default(1);
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_YAW_270));
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_AEROFC:
-        _fast_sampling_mask.set_default(1);
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU6500_NAME), ROTATION_YAW_270));
         break;
 
     default:
@@ -1534,6 +1524,36 @@ bool AP_InertialSensor::use_gyro(uint8_t instance) const
     return (get_gyro_health(instance) && _use(instance));
 }
 
+// look up the backend that owns the given gyro instance, or nullptr
+const AP_InertialSensor_Backend *AP_InertialSensor::_find_gyro_backend(uint8_t instance) const
+{
+    for (uint8_t i = 0; i < _backend_count; i++) {
+        if (_backends[i] != nullptr && _backends[i]->get_gyro_instance() == instance) {
+            return _backends[i];
+        }
+    }
+    return nullptr;
+}
+
+float AP_InertialSensor::get_gyro_bias_limit_rads(uint8_t instance) const
+{
+    const auto *backend = _find_gyro_backend(instance);
+    if (backend == nullptr) {
+        // fall back to the legacy default if no backend has claimed this instance yet
+        return 0.5f;
+    }
+    return backend->gyro_bias_limit_rads();
+}
+
+float AP_InertialSensor::get_gyro_bias_init_dps(uint8_t instance) const
+{
+    const auto *backend = _find_gyro_backend(instance);
+    if (backend == nullptr) {
+        return 2.5f;
+    }
+    return backend->gyro_bias_init_dps();
+}
+
 // get_accel_health_all - return true if all accels are healthy
 bool AP_InertialSensor::get_accel_health_all(void) const
 {
@@ -1737,12 +1757,8 @@ AP_InertialSensor::_init_gyro()
     DEV_PRINTF("Init Gyro");
     DEV_PRINTF("INS: gyro cal start num_gyros=%u\n", (unsigned)num_gyros);
 
-    /*
-      we do the gyro calibration with no board rotation. This avoids
-      having to rotate readings during the calibration
-    */
-    enum Rotation saved_orientation = _board_orientation;
-    _board_orientation = ROTATION_NONE;
+    // the gyro backend leaves the board rotation off while _calibrating_gyro
+    // is set, so the samples below are already in board frame
 
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
@@ -1868,9 +1884,6 @@ AP_InertialSensor::_init_gyro()
         }
     }
 
-    // restore orientation
-    _board_orientation = saved_orientation;
-
     // record calibration complete
     _calibrating_gyro = false;
 
@@ -1940,11 +1953,9 @@ void AP_InertialSensor::update(void)
     wait_for_sample();
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            // mark sensors unhealthy and let update() in each backend
-            // mark them healthy via _publish_gyro() and
-            // _publish_accel()
-            _gyro_healthy[i] = false;
-            _accel_healthy[i] = false;
+            // health flags are deliberately not cleared here: they are read
+            // from other threads, and clearing before the backends republish
+            // leaves a window in which a healthy sensor reads unhealthy
             _delta_velocity_valid[i] = false;
             _delta_angle_valid[i] = false;
         }

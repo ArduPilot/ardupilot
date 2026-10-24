@@ -10,27 +10,34 @@ import math
 import operator
 import os
 import pathlib
+import shutil
+import struct
 import sys
 import time
 
 from pymavlink import mavextra
 from pymavlink import mavutil
+from pymavlink.mavftp import MAVFTP
 
 import vehicle_test_suite
 
 from pysim import util
 from pysim import vehicleinfo
+from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
+from vehicle_test_suite import Test
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
-SITL_START_LOCATION = mavutil.location(40.071374969556928,
-                                       -105.22978898137808,
-                                       1583.702759,
-                                       246)
+SITL_START_LOCATION = Location(40.071374969556928,
+                               -105.22978898137808,
+                               1583.702759,
+                               AltFrame.ABSOLUTE)
+SITL_START_HEADING = 246
 
 
 class AutoTestRover(vehicle_test_suite.TestSuite):
@@ -65,6 +72,9 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
 
     def sitl_start_location(self):
         return SITL_START_LOCATION
+
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
 
     def default_frame(self):
         return "rover"
@@ -200,6 +210,40 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_mode("HOLD", timeout=10)
         self.disarm_vehicle()
         self.progress("Loiter or Hold as throttle failsafe OK")
+
+    def CrashCheck(self):
+        """Test crash detection with FS_CRASH_CHECK 1 (hold) and 2 (hold+disarm)"""
+        self.set_parameters({
+            "CRASH_VEL_MIN": 60.0,    # unreachably high so any speed triggers
+            "CRASH_TRAT_MIN": 360.0,  # same for turn rate
+            "CRASH_TIMEOUT": 2.0,
+            "CRASH_THR_MIN": 5.0,
+        })
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, 0),
+        ])
+
+        self.progress("Testing FS_CRASH_CHECK,1 (hold only)")
+        self.set_parameter("FS_CRASH_CHECK", 1)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_statustext("Crash: Going to HOLD")
+        self.wait_mode("HOLD")
+        self.progress("Confirming still armed after hold-only crash")
+        self.assert_armed()
+        self.disarm_vehicle(force=True)
+        self.progress("FS_CRASH_CHECK,1 (hold only) OK")
+
+        self.progress("Testing FS_CRASH_CHECK,2 (hold + disarm)")
+        self.set_parameter("FS_CRASH_CHECK", 2)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_statustext("Crash: Going to HOLD")
+        self.wait_mode("HOLD")
+        self.wait_disarmed()
+        self.progress("FS_CRASH_CHECK,2 (hold + disarm) OK")
 
     def PARAM_ERROR(self):
         '''test PARAM_ERROR mavlink message'''
@@ -374,7 +418,13 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
             m = self.assert_receive_message('VFR_HUD')
             self.progress("Current speed: %f" % m.groundspeed)
 
+        # centre the sticks and let the rover coast to a stop before we
+        # finish.  Disarming stops the motors but not the vehicle, and
+        # the next test is entitled to start from rest.
+        self.set_rc(3, 1500)
+        self.set_rc(1, 1500)
         self.disarm_vehicle()
+        self.wait_groundspeed(0, 0.2, minimum_duration=1)
 
     #################################################
     # AUTOTEST ALL
@@ -435,20 +485,20 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.change_mode("STEERING")
         self.set_rc(3, 2000)
         self.wait_groundspeed(15, 100)
-        initial = self.mav.location()
+        initial = self.get_location()
         initial_time = time.time()
         while time.time() - initial_time < 2:
             # wait for a position update from the autopilot
-            start = self.mav.location()
+            start = self.get_location()
             if start != initial:
                 break
         self.set_rc(3, 1500)
         self.wait_groundspeed(0, 0.2)  # why do we not stop?!
-        initial = self.mav.location()
+        initial = self.get_location()
         initial_time = time.time()
         while time.time() - initial_time < 2:
             # wait for a position update from the autopilot
-            stop = self.mav.location()
+            stop = self.get_location()
             if stop != initial:
                 break
         delta = self.get_distance(start, stop)
@@ -571,7 +621,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "RC10_OPTION": 40, # proximity-enable
         })
         self.reboot_sitl()
-        # start = self.mav.location()
         self.wait_ready_to_arm()
         self.arm_vehicle()
         # first make sure we can breach the fence:
@@ -664,7 +713,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.start_subtest("test MAV_CMD_DO_REPEAT_RELAY")
             self.context_push()
-            self.set_parameter("SIM_SPEEDUP", 1)
+            self.context_set_speedup(1)
             method(
                 mavutil.mavlink.MAV_CMD_DO_REPEAT_RELAY,
                 p1=0,  # servo 1
@@ -676,7 +725,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     "on": value,
                 })
             self.context_pop()
-            self.delay_sim_time(3)
+            self.delay_sim_time(3, reason="relay state to propagate")
             self.assert_received_message_field_values('RELAY_STATUS', {
                 "on": 1,  # back to initial state
             })
@@ -690,7 +739,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.start_subtest("test MAV_CMD_DO_REPEAT_SERVO")
 
             self.context_push()
-            self.set_parameter("SIM_SPEEDUP", 1)
+            self.context_set_speedup(1)
             trim = self.get_parameter("SERVO13_TRIM")
             value = 2000
             method(
@@ -708,9 +757,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def MAVProxy_SetModeUsingSwitch(self):
         """Set modes via mavproxy switch"""
-        port = self.sitl_rcin_port(offset=1)
+        rcin_commandline_value = self.sitl_rcin_commandline_value(offset=1)
+        rcin_endpoint = self.sitl_rcin_endpoint(offset=1)
         self.customise_SITL_commandline([
-            "--rc-in-port", str(port),
+            "--rc-in-port", rcin_commandline_value,
         ])
         ex = None
         try:
@@ -722,7 +772,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     (4, 'AUTO'),
                     (5, 'AUTO'),  # non-existent mode, should stay in RTL
                     (6, 'MANUAL')]
-            mavproxy = self.start_mavproxy(sitl_rcin_port=port)
+            mavproxy = self.start_mavproxy(sitl_rcin_port=rcin_endpoint)
             for (num, expected) in fnoo:
                 mavproxy.send('switch %u\n' % num)
                 self.wait_mode(expected)
@@ -878,6 +928,80 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 break
         self.disarm_vehicle()
 
+    def RCOverrideEnableChannel(self):
+        '''Test RC Override Enable channel not overridden by GCS (issue #33161)'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "RC10_OPTION": 46,  # RC Override Enable
+        })
+
+        self.change_mode('MANUAL')
+
+        # TX: steering centred, ch10 HIGH (enable GCS overrides)
+        steering_tx = 1500
+        self.set_rc_from_map({
+            1: steering_tx,
+            3: 1500,
+            10: 2000,
+        })
+
+        # GCS joystick: full-right steering on ch1, but ch10=LOW which
+        # contradicts the TX and should trigger the intermittent override bug
+        steering_override = 1000
+        override_ch10 = 1000
+
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 15:
+            self.mav.mav.rc_channels_override_send(
+                1,                 # target_system
+                1,                 # target_component
+                steering_override, # chan1_raw (full left)
+                65535,             # chan2_raw (ignore)
+                65535,             # chan3_raw (ignore)
+                65535,             # chan4_raw
+                65535,             # chan5_raw
+                65535,             # chan6_raw
+                65535,             # chan7_raw
+                65535,             # chan8_raw
+                chan10_raw=override_ch10,  # ch10 LOW — contradicts TX HIGH
+            )
+
+            m = self.assert_receive_message('RC_CHANNELS')
+            if m.chan1_raw == steering_tx:
+                raise NotAchievedException(
+                    "chan1 dropped to TX value (issue #33161 reproduced): "
+                    "chan1_raw=%u chan10_raw=%u" %
+                    (m.chan1_raw, m.chan10_raw)
+                )
+
+        # switch ch10 LOW to disable overrides; verify GCS overrides are now blocked
+        self.set_rc(10, 1000)
+        self.delay_sim_time(0.5, "allow debounce to complete")
+
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 15:
+            self.mav.mav.rc_channels_override_send(
+                1,                 # target_system
+                1,                 # target_component
+                steering_override, # chan1_raw (should now be blocked)
+                65535,             # chan2_raw (ignore)
+                65535,             # chan3_raw (ignore)
+                65535,             # chan4_raw
+                65535,             # chan5_raw
+                65535,             # chan6_raw
+                65535,             # chan7_raw
+                65535,             # chan8_raw
+                chan10_raw=2000,   # try to re-enable via override — must be ignored
+            )
+
+            m = self.assert_receive_message('RC_CHANNELS')
+            if m.chan1_raw == steering_override:
+                raise NotAchievedException(
+                    "chan1 accepted override when switch disabled: "
+                    "chan1_raw=%u chan10_raw=%u" %
+                    (m.chan1_raw, m.chan10_raw)
+                )
+
     def RCOverrides(self):
         '''Test RC overrides'''
         self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
@@ -979,6 +1103,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter("RC_OVERRIDE_TIME", 0)
         self.wait_rc_channel_value(ch, 1000)
         self.set_parameter("RC_OVERRIDE_TIME", old)
+        # an override is only live for RC_OVERRIDE_TIME seconds after it
+        # arrives, and the two parameter round-trips above can eat more
+        # than that in simulated time - one run came back to find the
+        # override long expired, and sat watching chan2 stay at 1000.
+        # Send a fresh one, which is what re-enabling overrides has to
+        # act upon anyway.
+        self.progress("Sending override message %u" % ch_override_value)
+        self.mav.mav.rc_channels_override_send(
+            1, # target system
+            1, # targe component
+            *channels
+        )
         self.wait_rc_channel_value(ch, ch_override_value)
 
         ch_override_value = 1720
@@ -996,7 +1132,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("Ensuring timeout works")
         self.wait_rc_channel_value(ch, 1000, timeout=5)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="RC override timeout")
 
         self.set_parameter("RC_OVERRIDE_TIME", 10)
         self.progress("Sending override message")
@@ -1044,7 +1180,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 raise NotAchievedException("Value reverted after %f seconds when it should not have (got=%u) (want=%u)" % (delta, m_value, ch_override_value))  # noqa
         self.set_parameter("RC_OVERRIDE_TIME", old)
 
-        self.delay_sim_time(10)
+        self.wait_rc_channel_value(ch, 1000, timeout=15)
 
         self.start_subtest("Checking higher-channel semantics")
         self.context_push()
@@ -1109,6 +1245,66 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subtest("Checking higher-channel semantics")
 
         self.disarm_vehicle()
+
+    def RCOverridesClearByPilotInput(self):
+        '''Test RC_OPTIONS bit 14 on Rover: steering/throttle clear, pitch/yaw do not'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "RC12_OPTION": 46,  # RC_OVERRIDE_ENABLE aux switch
+        })
+        self.reboot_sitl()
+
+        self.set_rc(12, 2000)
+        self.delay_sim_time(0.2, "allow aux switch change to register")
+
+        bit_clear_by_rc = 1 << 14
+
+        self.start_subtest("RC_OPTIONS bit off: pilot input does not clear overrides")
+        rc_options = int(self.get_parameter("RC_OPTIONS"))
+        self.set_parameter("RC_OPTIONS", rc_options & ~bit_clear_by_rc)
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=1, trigger_pwm=1700,
+            override_ch=3, override_pwm=1700,
+            expect_clear=False,
+        )
+
+        rc_options = int(self.get_parameter("RC_OPTIONS"))
+        self.set_parameter("RC_OPTIONS", rc_options | bit_clear_by_rc)
+
+        self.start_subtest("Override held while every stick stays at trim")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=None, trigger_pwm=None,
+            override_ch=1, override_pwm=1700,
+            expect_clear=False,
+        )
+
+        self.start_subtest("Steering input clears overrides")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=1, trigger_pwm=1700,
+            override_ch=3, override_pwm=1700,
+            expect_clear=True,
+        )
+
+        self.start_subtest("Throttle input clears overrides")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=3, trigger_pwm=1700,
+            override_ch=1, override_pwm=1700,
+            expect_clear=True,
+        )
+
+        self.start_subtest("Pitch input does not clear overrides")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=2, trigger_pwm=1700,
+            override_ch=3, override_pwm=1700,
+            expect_clear=False,
+        )
+
+        self.start_subtest("Yaw input does not clear overrides")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=4, trigger_pwm=1700,
+            override_ch=3, override_pwm=1700,
+            expect_clear=False,
+        )
 
     def MANUAL_CONTROL(self):
         '''Test mavlink MANUAL_CONTROL'''
@@ -1255,11 +1451,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
         self.wait_mode(1)
         self.progress("Make sure we stay in this mode")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="mode persistence check")
         self.wait_mode(1)
         # now change modes with a switch:
         self.set_rc(throttle_ch, 1100)
-        self.delay_sim_time(3)
+        self.delay_sim_time(3, reason="RC throttle to register")
         self.set_rc(mode_ch, mapping[5])
         self.wait_mode('STEERING')
 
@@ -1335,6 +1531,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.load_rally_using_mavproxy("rover-test-rally.txt")
         self.assert_parameter_value('RALLY_TOTAL', 2)
 
+        # the file's rally points are fixed coordinates chosen relative
+        # to the SITL startup location, but RTL returns to whichever of
+        # home and the rally points is closest - and home is wherever
+        # the vehicle happened to be.  Re-place them relative to us so
+        # the rally point is the closer of the two once we have driven
+        # away, whatever a previous test did with the vehicle:
+        here = self.get_location()
+        rally_locs = [
+            self.offset_location_ne(here, 19.8, 33.0),
+            self.offset_location_ne(here, 99.1, -114.7),
+        ]
+        self.upload_rally_points_from_locations(rally_locs)
+
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
@@ -1346,11 +1555,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.change_mode("RTL")
 
-        # location copied in from rover-test-rally.txt:
-        loc = mavutil.location(40.071553,
-                               -105.229401,
-                               1583,
-                               0)
+        loc = rally_locs[0]
 
         self.wait_location(loc, accuracy=accuracy, minimum_duration=10, timeout=45)
         self.disarm_vehicle()
@@ -1788,17 +1993,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.set_rc(3, 2000)
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="vehicle to move")
             self.set_rc(3, 1500)
         # Trigger telemetry loss with failsafe disabled. Verify no action taken.
         self.start_subtest("GCS failsafe disabled test: FS_GCS_ENABLE=0 should take no failsafe action")
         self.setGCSfailsafe(0)
         go_somewhere()
         self.set_heartbeat_rate(0)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="GCS failsafe timeout")
         self.wait_mode("MANUAL")
         self.set_heartbeat_rate(self.speedup)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="heartbeat restoration")
         self.wait_mode("MANUAL")
         self.end_subtest("Completed GCS failsafe disabled test")
 
@@ -1841,10 +2046,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.setGCSfailsafe(2)
         self.load_mission("test_arming.txt")
         self.change_mode("AUTO")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="mission waypoints to start")
         self.set_heartbeat_rate(0)
         self.wait_statustext("Failsafe - Continuing Auto Mode", timeout=60)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="failsafe continuation check")
         self.wait_mode("AUTO")
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
@@ -1856,7 +2061,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter("FS_GCS_TIMEOUT", new_gcs_timeout)
         go_somewhere()
         self.set_heartbeat_rate(0)
-        self.delay_sim_time(old_gcs_timeout + (new_gcs_timeout - old_gcs_timeout) / 2)
+        self.delay_sim_time(old_gcs_timeout + (new_gcs_timeout - old_gcs_timeout) / 2, reason="GCS timeout midpoint")
         self.assert_mode("MANUAL")
         self.wait_mode("RTL")
         self.wait_statustext("Reached destination", timeout=60)
@@ -2046,7 +2251,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         mavproxy = self.start_mavproxy()
         self.start_subsubtest("fence addcircle")
         self.clear_fence_using_mavproxy(mavproxy)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="fence clear to propagate")
         radius = 20
         item = self.mav.mav.mission_item_int_encode(
             target_system,
@@ -2067,7 +2272,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         print("item is (%s)" % str(item))
         self.click_location_from_item(mavproxy, item)
         mavproxy.send("fence addcircle inc %u\n" % radius)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="fence upload to complete")
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         print("downloaded items: %s" % str(downloaded_items))
         self.check_fence_items_same([item], downloaded_items)
@@ -2091,7 +2296,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         self.click_location_from_item(mavproxy, item2)
         mavproxy.send("fence addcircle exc %f\n" % radius_exc)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="fence upload to complete")
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         print("downloaded items: %s" % str(downloaded_items))
         self.check_fence_items_same([item, item2], downloaded_items)
@@ -2099,10 +2304,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.start_subsubtest("fence addpoly")
         self.clear_fence_using_mavproxy(mavproxy)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="fence clear to propagate")
         pointcount = 7
         mavproxy.send("fence addpoly inc 20 %u 37.2\n" % pointcount) # radius, pointcount, rotation
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="fence upload to complete")
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         if len(downloaded_items) != pointcount:
             raise NotAchievedException("Did not get expected number of points returned (want=%u got=%u)" %
@@ -2111,19 +2316,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.start_subsubtest("fence movepolypoint")
         self.clear_fence_using_mavproxy(mavproxy)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="fence clear to propagate")
         triangle = self.test_gcs_fence_boring_triangle(
             target_system=target_system,
             target_component=target_component)
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            triangle)
         mavproxy.send("fence list\n")
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="fence list to display in MAVProxy")
         triangle[2].x += 500
         triangle[2].y += 700
         self.click_location_from_item(mavproxy, triangle[2])
         mavproxy.send("fence movepolypoint 0 2\n")
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="fence point move to propagate")
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         self.check_fence_items_same(triangle, downloaded_items)
         self.end_subsubtest("fence movepolypoint")
@@ -2201,7 +2406,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         target_system = 1
         target_component = 1
 
-        here = self.mav.location()
+        here = self.get_location()
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
                 # east
@@ -2225,7 +2430,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
             want_type=mavutil.mavlink.MAV_MISSION_INVALID_SEQUENCE,
         )
-        self.delay_sim_time(0.1)
+        self.delay_sim_time(0.1, reason="mission count collection")
         found = False
         for m in self.context_collection('MISSION_COUNT'):
             if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_FENCE:
@@ -2236,6 +2441,45 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         if not found:
             raise NotAchievedException("Did not see correction for fencepoint count")
+
+    def GuidedRejectOutsideFence(self):
+        '''ensure a GUIDED destination outside the fence is rejected'''
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        here = self.get_location()
+        self.set_parameters({
+            "FENCE_TYPE": 2,    # circle only
+            "FENCE_RADIUS": 50,
+            "FENCE_ACTION": 0,  # report only so a breach does not change mode
+            "FENCE_ENABLE": 1,
+        })
+        self.change_mode('GUIDED')
+        self.arm_vehicle()
+
+        inside_loc = self.offset_location_ne(here, 10, 0)
+        outside_loc = self.offset_location_ne(here, 200, 0)
+
+        self.start_subtest("Reposition inside the fence should be accepted")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            x=int(inside_loc.lat * 1e7),
+            y=int(inside_loc.lng * 1e7),
+            z=0,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
+
+        self.start_subtest("Reposition outside the fence should be rejected")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            x=int(outside_loc.lat * 1e7),
+            y=int(outside_loc.lng * 1e7),
+            z=0,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.disarm_vehicle(force=True)
 
     # explode the write_type_to_storage method
     # FIXME: test converting invalid fences / minimally valid fences / normal fences
@@ -2250,6 +2494,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     # FIXME: add a test that fences enclose an area (e.g. all the points aren't the same value!
     def Offboard(self, timeout=90):
         '''Test Offboard Control'''
+        # rover-guided-mission.txt is in absolute coordinates, anchored
+        # at the SITL startup location, and the run has to get all the
+        # way round it and back home inside the timeout.  Starting from
+        # wherever a previous test left the vehicle adds the drive out
+        # to the mission and the drive home again at the end, and the
+        # budget does not cover that:
+        #     Offboard (Test Offboard Control) (Didn't complete)
+        # with the mission on its last item, RTL, when time ran out.
+        self.reboot_sitl()
         self.load_mission("rover-guided-mission.txt")
         self.wait_ready_to_arm(require_absolute=True)
         self.arm_vehicle()
@@ -2483,13 +2736,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # there are race conditions in MAVProxy.  Beware.
         mavproxy.send("click 1.0 1.0\n")
         mavproxy.send("rally add\n")
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="rally upload to propagate")
         mavproxy.send("click 2.0 2.0\n")
         mavproxy.send("rally add\n")
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="rally upload to propagate")
         mavproxy.send("click 3.0 3.0\n")
         mavproxy.send("rally add\n")
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="rally upload to complete")
         self.assert_mission_count_on_link(
             self.mav,
             3,
@@ -2516,7 +2769,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         mavproxy.send(f'click {lat_s} {lng_s}\n')
         self.drain_mav()
         mavproxy.send('rally add\n')
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally upload to propagate")
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         if len(downloaded_items) != 1:
             raise NotAchievedException("Unexpected count (got=%u want=1)" %
@@ -2606,7 +2859,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         mavproxy.send("rally add\n")
         mavproxy.send("click 2.0 2.0\n")
         mavproxy.send("rally add\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally upload to propagate")
         self.assert_mission_count_on_link(
             self.mav,
             2,
@@ -2619,7 +2872,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_heartbeat()
         self.wait_heartbeat()
         mavproxy.send("rally changealt 2 19.1\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally alt change to propagate")
 
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         if len(downloaded_items) != 2:
@@ -2644,7 +2897,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("Now change two at once")
         mavproxy.send("rally changealt 1 17.3 2\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally alt change to propagate")
         mavproxy.send('rally list\n')
         self.drain_mav()
         self.wait_heartbeat()
@@ -2679,7 +2932,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         mavproxy.send("rally add\n")
         mavproxy.send("click 2.0 2.0\n")
         mavproxy.send("rally add\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally upload to propagate")
         self.assert_mission_count_on_link(
             self.mav,
             2,
@@ -2689,10 +2942,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         )
         mavproxy.send("click 3.0 3.0\n")
         mavproxy.send("rally move 2\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally move to propagate")
         mavproxy.send("click 4.12345 4.987654\n")
         mavproxy.send("rally move 1\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally move to propagate")
 
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         if len(downloaded_items) != 2:
@@ -2722,7 +2975,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         pure_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         self.progress("Removing last in list")
         mavproxy.send("rally remove 3\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally remove to propagate")
         self.assert_mission_count_on_link(
             self.mav,
             2,
@@ -2739,7 +2992,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("Removing first in list")
         mavproxy.send("rally remove 1\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally remove to propagate")
         self.assert_mission_count_on_link(
             self.mav,
             1,
@@ -2755,7 +3008,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("Removing remaining item")
         mavproxy.send("rally remove 1\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally remove to propagate")
         self.assert_mission_count_on_link(
             self.mav,
             0,
@@ -2775,7 +3028,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         util.pexpect_drain(mavproxy)
         savelocal_path = self.buildlogs_path("rally-testing-tmp-local.txt")
         mavproxy.send('rally savelocal %s\n' % savelocal_path)
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="file save to complete")
         self.assert_rally_filepath_content(savelocal_path, '''QGC WPL 110
 0	0	3	5100	0.000000	0.000000	0.000000	0.000000	-5.678900	98.234100	87.000000	0
 ''')
@@ -2796,7 +3049,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         pure_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         self.progress("Removing first in list")
         mavproxy.send("rally remove 1\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally remove to propagate")
         self.assert_mission_count_on_link(
             self.mav,
             2,
@@ -2805,7 +3058,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
         )
         mavproxy.send("rally undo\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally undo to propagate")
         undone_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         self.check_rally_items_same(pure_items, undone_items)
 
@@ -2815,9 +3068,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         mavproxy.send("click 4.12345 4.987654\n")
         mavproxy.send("rally move 1\n")
         # move has already been tested, assume it works...
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally move to propagate")
         mavproxy.send("rally undo\n")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="rally undo to propagate")
         undone_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         self.check_rally_items_same(pure_items, undone_items)
 
@@ -3019,7 +3272,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("ensure a mavlink1 connection can't do anything useful with new item types")
             self.set_parameter("SERIAL2_PROTOCOL", 1)
             self.reboot_sitl()
-            mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
+            mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
                                               robust_parsing=True,
                                               source_system=7,
                                               source_component=7)
@@ -3443,7 +3696,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.drain_mav()
 
         self.start_subtest("No clear mission while it is being uploaded by a different node")
-        mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
                                           robust_parsing=True,
                                           source_system=7,
                                           source_component=7)
@@ -3509,7 +3762,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 #        oldalt = downloaded_items[changealt_item].z
         want_newalt = 37.2
         mavproxy.send('wp changealt %u %f\n' % (changealt_item, want_newalt))
-        self.delay_sim_time(15)
+        self.delay_sim_time(15, reason="waypoint alt change to propagate")
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         if abs(downloaded_items[changealt_item].z - want_newalt) > 0.0001:
             raise NotAchievedException(
@@ -3522,7 +3775,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         new_home_lng = 2.71828
         mavproxy.send('click %f %f\n' % (new_home_lat, new_home_lng))
         mavproxy.send('wp sethome\n')
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="home waypoint to be set")
         # any way to close the loop on this one?
         # downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         # if abs(downloaded_items[0].x - new_home_lat) > 0.0001:
@@ -3534,7 +3787,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.start_subsubtest("wp slope")
         mavproxy.send('wp slope\n')
         mavproxy.expect("WP3: slope 0.1")
-        self.delay_sim_time(5)
         self.end_subsubtest("wp slope")
 
         if not self.mavproxy_can_do_mision_item_protocols():
@@ -3543,9 +3795,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.start_subsubtest("wp split")
         mavproxy.send("wp clear\n")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="waypoint clear to propagate")
         mavproxy.send("wp list\n")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="waypoint list to display")
         items = [
             None,
             self.mav.mav.mission_item_int_encode(
@@ -3583,17 +3835,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ]
         mavproxy.send("click 5 5\n") # space for home position
         mavproxy.send("wp add\n")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="waypoint add to propagate")
         self.click_location_from_item(mavproxy, items[1])
         mavproxy.send("wp add\n")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="waypoint add to propagate")
         self.click_location_from_item(mavproxy, items[2])
         mavproxy.send("wp add\n")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="waypoint add to propagate")
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         self.check_mission_waypoint_items_same(items, downloaded_items)
         mavproxy.send("wp split 2\n")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="waypoint split to propagate")
         items_with_split_in = [
             items[0],
             items[1],
@@ -3626,60 +3878,27 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # MANUAL> usage: wp <changealt|clear|draw|editor|list|load|loop|move|movemulti|noflyadd|param|remove|save|savecsv|savelocal|set|sethome|show|slope|split|status|undo|update>  # noqa
 
-    def wait_location_sending_target(self, loc, target_system=1, target_component=1, timeout=60, max_delta=2):
-        tstart = self.get_sim_time()
-        last_sent = 0
+    def SIMCompare(self):
+        '''compare logged EKF2 and EKF3 estimates against simulator truth'''
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 3,
+            'EK2_ENABLE': 1,
+            'EK3_ENABLE': 1,
+        })
+        self.reboot_sitl()
 
-        type_mask = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE)
-
+        # drive a triangle to give the estimators some acceleration
+        # and yaw change to track:
         self.change_mode('GUIDED')
-        tstart = self.get_sim_time()
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart > timeout:
-                raise AutoTestTimeoutException("Did not get to location")
-            if now - last_sent > 10:
-                last_sent = now
-                self.mav.mav.set_position_target_global_int_send(
-                    0,
-                    target_system,
-                    target_component,
-                    mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                    type_mask,
-                    int(loc.lat * 1.0e7),
-                    int(loc.lng * 1.0e7),
-                    0, # alt
-                    0, # x-ve
-                    0, # y-vel
-                    0, # z-vel
-                    0, # afx
-                    0, # afy
-                    0, # afz
-                    0, # yaw,
-                    0, # yaw-rate
-                )
-            m = self.mav.recv_match(blocking=True,
-                                    timeout=1)
-            if m is None:
-                continue
-            t = m.get_type()
-            if t == "POSITION_TARGET_GLOBAL_INT":
-                self.progress("Target: (%s)" % str(m), send_statustext=False)
-            elif t == "GLOBAL_POSITION_INT":
-                self.progress("Position: (%s)" % str(m), send_statustext=False)
-                delta = self.get_distance(
-                    mavutil.location(m.lat * 1e-7, m.lon * 1e-7, 0, 0),
-                    loc)
-                self.progress("delta: %s" % str(delta), send_statustext=False)
-                if delta < max_delta:
-                    self.progress("Reached destination")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        home = self.home_position_as_location()
+        self.drive_to_location(self.offset_location_ne(home, 40, 0), timeout=60)
+        self.drive_to_location(self.offset_location_ne(home, 40, 40), timeout=60)
+        self.drive_to_location(home, timeout=60)
+        self.disarm_vehicle()
+
+        self.assert_ekfs_match_sim_state()
 
     def drive_to_location(self, loc, tolerance=1, timeout=30, target_system=1, target_component=1):
         self.assert_mode('GUIDED')
@@ -3719,13 +3938,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     0, # yaw,
                     0, # yaw-rate
                 )
-            if self.get_distance(self.mav.location(), loc) > tolerance:
+            if self.get_distance(self.get_location(), loc) > tolerance:
                 continue
             return
 
     def drive_somewhere_breach_boundary_and_rtl(self, loc, target_system=1, target_component=1, timeout=60):
         tstart = self.get_sim_time()
-        last_sent = 0
         seen_fence_breach = False
 
         type_mask = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE +
@@ -3738,30 +3956,35 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                      mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE)
 
         self.change_mode('GUIDED')
+
+        # ModeGuided rejects targets outside the fence, so disable the fence
+        # while sending the target and re-enable it once the autopilot has
+        # accepted it.  Breach detection then runs against the saved target.
+        self.do_fence_disable()
+        self.mav.mav.set_position_target_global_int_send(
+            0,
+            target_system,
+            target_component,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+            type_mask,
+            int(loc.lat * 1.0e7),
+            int(loc.lng * 1.0e7),
+            0, # alt
+            0, # x-ve
+            0, # y-vel
+            0, # z-vel
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw,
+            0, # yaw-rate
+        )
+        self.do_fence_enable()
+
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException("Did not breach boundary + RTL")
-            if now - last_sent > 10:
-                last_sent = now
-                self.mav.mav.set_position_target_global_int_send(
-                    0,
-                    target_system,
-                    target_component,
-                    mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                    type_mask,
-                    int(loc.lat * 1.0e7),
-                    int(loc.lng * 1.0e7),
-                    0, # alt
-                    0, # x-ve
-                    0, # y-vel
-                    0, # z-vel
-                    0, # afx
-                    0, # afy
-                    0, # afz
-                    0, # yaw,
-                    0, # yaw-rate
-                )
             m = self.mav.recv_match(blocking=True,
                                     timeout=1)
             if m is None:
@@ -3790,7 +4013,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                          target_component=1,
                                          timeout=120):
         tstart = self.get_sim_time()
-        last_sent = 0
 
         type_mask = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE +
                      mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE +
@@ -3803,30 +4025,35 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.change_mode('GUIDED')
         at_stopping_point = False
+
+        # ModeGuided rejects targets outside the fence, so disable the fence
+        # while sending the target and re-enable it once the autopilot has
+        # accepted it.  Avoidance then runs against the saved target.
+        self.do_fence_disable()
+        self.mav.mav.set_position_target_global_int_send(
+            0,
+            target_system,
+            target_component,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+            type_mask,
+            int(loc.lat * 1.0e7),
+            int(loc.lng * 1.0e7),
+            0, # alt
+            0, # x-ve
+            0, # y-vel
+            0, # z-vel
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw,
+            0, # yaw-rate
+        )
+        self.do_fence_enable()
+
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException("Did not arrive and stop at boundary")
-            if now - last_sent > 10:
-                last_sent = now
-                self.mav.mav.set_position_target_global_int_send(
-                    0,
-                    target_system,
-                    target_component,
-                    mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                    type_mask,
-                    int(loc.lat * 1.0e7),
-                    int(loc.lng * 1.0e7),
-                    0, # alt
-                    0, # x-ve
-                    0, # y-vel
-                    0, # z-vel
-                    0, # afx
-                    0, # afy
-                    0, # afz
-                    0, # yaw,
-                    0, # yaw-rate
-                )
             m = self.mav.recv_match(blocking=True,
                                     timeout=1)
             if m is None:
@@ -3837,11 +4064,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             elif t == "GLOBAL_POSITION_INT":
                 print("Position: (%s)" % str(m))
                 delta = self.get_distance(
-                    mavutil.location(m.lat * 1e-7, m.lon * 1e-7, 0, 0),
-                    mavutil.location(expected_stopping_point.lat,
-                                     expected_stopping_point.lng,
-                                     0,
-                                     0))
+                    Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7),
+                    expected_stopping_point)
                 print("delta: %s want_delta<%f" % (str(delta), expected_distance_epsilon))
                 at_stopping_point = delta < expected_distance_epsilon
             elif t == "VFR_HUD":
@@ -3850,11 +4074,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     if m.groundspeed < 1:
                         self.progress("Seemed to have stopped at stopping point")
                         return
-
-    def assert_fence_breached(self):
-        m = self.assert_receive_message('FENCE_STATUS', timeout=10)
-        if m.breach_status != 1:
-            raise NotAchievedException("Expected to be breached")
 
     def wait_fence_not_breached(self, timeout=5):
         tstart = self.get_sim_time()
@@ -3880,7 +4099,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameters({
             "FENCE_TYPE": 2,    # circle only
         })
-        self.delay_sim_time(5) # let breaches clear
+        self.wait_fence_not_breached()
         # FIXME: should we allow this?
         self.progress("Ensure we can arm with no poly in place")
         self.change_mode("GUIDED")
@@ -3903,7 +4122,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_poly_fence_noarms_exclusion_circle(self, target_system=1, target_component=1):
         self.start_subtest("Ensure not armable when within an exclusion circle")
 
-        here = self.mav.location()
+        here = self.get_location()
 
         items = [
             self.mav.mav.mission_item_int_encode(
@@ -3941,9 +4160,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ]
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            items)
-        self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
-        self.drain_mav()
-        self.assert_fence_breached()
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1})
         try:
             self.arm_motors_with_rc_input()
         except NotAchievedException:
@@ -3959,7 +4176,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_poly_fence_noarms_inclusion_circle(self, target_system=1, target_component=1):
         self.start_subtest("Ensure not armable when outside an inclusion circle (but within another")
 
-        here = self.mav.location()
+        here = self.get_location()
 
         items = [
             self.mav.mav.mission_item_int_encode(
@@ -3997,9 +4214,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ]
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            items)
-        self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
-        self.drain_mav()
-        self.assert_fence_breached()
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1})
         try:
             self.arm_motors_with_rc_input()
         except NotAchievedException:
@@ -4015,7 +4230,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_poly_fence_noarms_exclusion_polyfence(self, target_system=1, target_component=1):
         self.start_subtest("Ensure not armable when inside an exclusion polyfence (but outside another")
 
-        here = self.mav.location()
+        here = self.get_location()
 
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
@@ -4033,9 +4248,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, 50, -50), # tl,
             ]),
         ])
-        self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
-        self.drain_mav()
-        self.assert_fence_breached()
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1})
         try:
             self.arm_motors_with_rc_input()
         except NotAchievedException:
@@ -4051,7 +4264,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_poly_fence_noarms_inclusion_polyfence(self, target_system=1, target_component=1):
         self.start_subtest("Ensure not armable when outside an inclusion polyfence (but within another")
 
-        here = self.mav.location()
+        here = self.get_location()
 
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
@@ -4069,9 +4282,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, 50, -50), # tl,
             ]),
         ])
-        self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
-        self.drain_mav()
-        self.assert_fence_breached()
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1})
         try:
             self.arm_motors_with_rc_input()
         except NotAchievedException:
@@ -4164,8 +4375,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # Since ArduPilot has a 1s timeout on re-requesting, This only
         # requires a round-trip delay of 1/speedup seconds to trigger
         # - and that has been seen in practise on Travis
-        old_speedup = self.get_parameter("SIM_SPEEDUP")
-        self.set_parameter("SIM_SPEEDUP", 1)
+        self.context_push()
+        self.context_set_speedup(1)
         self.mav.mav.mission_count_send(target_system,
                                         target_component,
                                         2,
@@ -4211,7 +4422,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.expect_request_for_item(item)
 
-        self.set_parameter("SIM_SPEEDUP", old_speedup)
+        self.context_pop()
 
         self.progress("Now waiting for a timeout")
         tstart = self.get_sim_time()
@@ -4262,7 +4473,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                           target_component=target_component)
 
     def test_poly_fence_reboot_survivability(self):
-        here = self.mav.location()
+        here = self.get_location()
 
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
@@ -4294,7 +4505,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.change_mode("LOITER")
         self.wait_ready_to_arm()
-        here = self.mav.location()
+        here = self.get_location()
         self.progress("here: %f %f" % (here.lat, here.lng))
         self.set_parameters({
             "FENCE_ENABLE": 1,
@@ -4328,11 +4539,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "loc": self.offset_location_ne(here, 20, 0),
             }),
         ])
-        if self.mavproxy is not None:
-            # handy for getting pretty pictures
-            self.mavproxy.send("fence list\n")
 
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="fence to be uploaded")
         self.progress("Drive outside top circle")
         fence_middle = self.offset_location_ne(here, -150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4340,7 +4548,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.delay_sim_time(5)
         self.progress("Drive outside bottom circle")
         fence_middle = self.offset_location_ne(here, 150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4368,9 +4575,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             }),
         ])
 
-        self.delay_sim_time(5)
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.progress("Drive outside polygon")
         fence_middle = self.offset_location_ne(here, -150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4378,7 +4582,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.delay_sim_time(5)
         self.progress("Drive outside circle")
         fence_middle = self.offset_location_ne(here, 150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4401,9 +4604,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ]),
         ])
 
-        self.delay_sim_time(5)
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.progress("Drive outside top polygon")
         fence_middle = self.offset_location_ne(here, -150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4411,13 +4611,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.delay_sim_time(5)
+        self.wait_rtl_complete()
+
         self.progress("Drive outside bottom polygon")
         fence_middle = self.offset_location_ne(here, 150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
             fence_middle,
             target_system=target_system,
             target_component=target_component)
+
+    def wait_rtl_complete(self):
+        """Wait for RTL to reach home and disarm"""
+        self.progress("Waiting RTL to reach Home")
+        self.wait_distance_to_home(0, 7, timeout=30)
 
     def test_poly_fence_exclusion(self, here, target_system=1, target_component=1):
 
@@ -4441,9 +4647,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "loc": self.offset_location_ne(here, -60, 0),
             }),
         ])
-        self.delay_sim_time(5)
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
 
         self.progress("Breach eastern boundary")
         fence_middle = self.offset_location_ne(here, 0, 30)
@@ -4452,7 +4655,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                                      target_component=target_component)
 
         self.progress("delaying - hack to work around manual recovery bug")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="manual recovery from breach")
 
         self.progress("Breach western boundary")
         fence_middle = self.offset_location_ne(here, 0, -30)
@@ -4461,7 +4664,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                                      target_component=target_component)
 
         self.progress("delaying - hack to work around manual recovery bug")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="manual recovery from breach")
 
         self.progress("Breach southern circle")
         fence_middle = self.offset_location_ne(here, -150, 0)
@@ -4479,15 +4682,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Driving North")
         self.reach_heading_manual(0)
         self.set_rc(3, 2000)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="vehicle to travel north")
         self.set_rc(3, 1000)
         self.wait_groundspeed(0, 1)
-        loc = self.mav.location()
+        loc = self.get_location()
         self.progress("Driving East")
         self.set_rc(3, 2000)
         self.reach_heading_manual(90)
         self.set_rc(3, 2000)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="vehicle to travel east")
         self.set_rc(3, 1000)
 
         self.progress("Entering smartrtl")
@@ -4550,7 +4753,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         self.set_parameter("FENCE_ENABLE", 1)
         # target_loc is copied from the mission file
-        target_loc = mavutil.location(40.073799, -105.229156)
+        target_loc = Location.latlon_only(40.073799, -105.229156)
         self.wait_location(target_loc, height_accuracy=None, timeout=300)
         # mission has RTL as last item
         self.wait_distance_to_home(3, 7, timeout=300)
@@ -4586,11 +4789,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_parameter("FENCE_ENABLE", 1)
-        target_loc = mavutil.location(40.073800, -105.229172)
+        target_loc = Location.latlon_only(40.073800, -105.229172)
         self.send_guided_mission_item(target_loc,
                                       target_system=target_system,
                                       target_component=target_component)
-        self.wait_location(target_loc, timeout=300)
+        self.wait_location(target_loc, height_accuracy=None, timeout=300)
         self.do_RTL(timeout=300)
         self.disarm_vehicle()
 
@@ -4625,7 +4828,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_poly_fence_object_avoidance_guided_two_squares(self, target_system=1, target_component=1):
         self.start_subtest("Ensure we can steer around obstacles in guided mode")
-        here = self.mav.location()
+        here = self.get_location()
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
                 # east
@@ -4642,8 +4845,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, -60, 80), # br,
             ]),
         ])
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.context_push()
         ex = None
         try:
@@ -4655,16 +4856,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.set_parameter("FENCE_ENABLE", 1)
-            if self.mavproxy is not None:
-                self.mavproxy.send("fence list\n")
             self.arm_vehicle()
 
             self.change_mode("GUIDED")
-            target = mavutil.location(40.071382, -105.228340, 0, 0)
+            target = Location.latlon_only(40.071382, -105.228340)
             self.send_guided_mission_item(target,
                                           target_system=target_system,
                                           target_component=target_component)
-            self.wait_location(target, timeout=300)
+            self.wait_location(target, height_accuracy=None, timeout=300)
             self.do_RTL()
             self.disarm_vehicle()
         except Exception as e:  # noqa: BLE001
@@ -4677,7 +4876,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_poly_fence_avoidance_dont_breach_exclusion(self, target_system=1, target_component=1):
         self.start_subtest("Ensure we stop before breaching an exclusion fence")
-        here = self.mav.location()
+        here = self.get_location()
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
                 # east
@@ -4698,15 +4897,22 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "loc": self.offset_location_ne(here, -60, 0),
             }),
         ])
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.set_parameters({
             "FENCE_ENABLE": 1,
             "AVOID_ENABLE": 3,
+            # this scenario sits outside the inclusion-circle fence, so the
+            # vehicle is in breach the instant the fence is enabled.  We are
+            # exercising avoidance (which keeps us off the exclusion boundary),
+            # not the breach failsafe, so report-only keeps us in GUIDED rather
+            # than being forced into HOLD when the fence is re-enabled.
+            "FENCE_ACTION": 0,
         })
         fence_middle = self.offset_location_ne(here, 0, 30)
-        # FIXME: this might be nowhere near "here"!
-        expected_stopping_point = mavutil.location(40.0713376, -105.2295738, 0, 0)
+        # the fences above are placed relative to "here", so the point we
+        # stop at is too: just short of the exclusion fence 20m to our
+        # east.  This used to be a fixed location, which only worked
+        # while "here" happened to be the startup location.
+        expected_stopping_point = self.offset_location_ne(here, -1.05, 15.05)
         self.drive_somewhere_stop_at_boundary(
             fence_middle,
             expected_stopping_point,
@@ -4749,7 +4955,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        target_loc = mavutil.location(40.071060, -105.227734, 1584, 0)
+        target_loc = Location(40.071060, -105.227734, 1584, AltFrame.ABSOLUTE)
         self.send_guided_mission_item(target_loc,
                                       target_system=target_system,
                                       target_component=target_component)
@@ -4777,7 +4983,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        target_loc = mavutil.location(40.071260, -105.227000, 1584, 0)
+        target_loc = Location(40.071260, -105.227000, 1584, AltFrame.ABSOLUTE)
         self.send_guided_mission_item(target_loc,
                                       target_system=target_system,
                                       target_component=target_component)
@@ -4807,7 +5013,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        target_loc = mavutil.location(40.071260, -105.227000, 1584, 0)
+        target_loc = Location(40.071260, -105.227000, 1584, AltFrame.ABSOLUTE)
         # target_loc is copied from the mission file
         self.wait_location(target_loc, timeout=300)
         # mission has RTL as last item
@@ -4831,7 +5037,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter("SCR_ENABLE", 1)
         self.install_example_script_context("simple_loop.lua")
         self.reboot_sitl()
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="Lua script to initialise")
 
         self.context_pop()
         self.reboot_sitl()
@@ -4890,6 +5096,38 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def ScriptingMAVLink(self):
+        """Exercise MAVLink layouts and script replies in the embedded Lua interpreter."""
+        self.context_push()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_HEAP_SIZE": 1024000,
+            "SCR_VM_I_COUNT": 1000000,
+        })
+
+        # Exercise the checked-in module used by these applets, rather than
+        # generating a fresh module from the MAVLink submodule.
+        self.context_get().installed_modules.append("MAVLink")
+        shutil.copytree(self.script_modules_source_path("MAVLink"),
+                        self.installed_script_module_path("MAVLink"))
+        # Keep the applets outside scripts/ so AP does not execute them directly.
+        for source in [
+                self.script_example_source_path("MAVLink_Commands.lua"),
+                self.script_example_source_path("BQ40Z_bms_shutdown.lua"),
+                self.script_applet_source_path("param-lockdown.lua"),
+        ]:
+            self.install_script_module_context(source, os.path.basename(source))
+        self.install_test_scripts_context(["mavlink_layout.lua", "mavlink_replies.lua"])
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        for success_text in [
+                "MAVLink layout and target tests passed",
+                "MAVLink script reply tests passed",
+        ]:
+            self.wait_statustext(success_text, check_context=True)
+        self.context_pop()
+        self.reboot_sitl()
+
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
 
@@ -4917,7 +5155,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
-        while not self.mode_is("HOLD"):
+        while not self.mode_is("HOLD", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not move to hold")
             m = self.assert_receive_message('VFR_HUD')
@@ -4998,6 +5236,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def test_scripting_callback_time(self):
+        self.start_subtest("Scripting callback time")
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_test_script_context("callback_time_test.lua")
+        self.reboot_sitl()
+
+        self.wait_statustext('Timing test passed', check_context=True, timeout=600)
+
     def Scripting(self):
         '''Scripting test'''
         self.test_scripting_set_home_to_vehicle_location()
@@ -5007,6 +5255,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_scripting_internal_test()
         self.test_scripting_auxfunc()
         self.test_scripting_serial_loopback()
+        self.test_scripting_callback_time()
 
     def test_mission_frame(self, frame, target_system=1, target_component=1):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
@@ -5090,7 +5339,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         )
 
     def send_obstacle_distances_expect_distance_sensor_messages(self, obstacle_distances_in, expect_distance_sensor_messages):
-        self.delay_sim_time(11)  # allow obstacles to time out
+        self.delay_sim_time(11, reason="obstacles to time out")  # allow obstacles to time out
         self.do_timesync_roundtrip()
         expect_distance_sensor_messages_copy = expect_distance_sensor_messages[:]
         last_sent = 0
@@ -5103,7 +5352,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             m = self.mav.recv_match(type='DISTANCE_SENSOR', blocking=True, timeout=1)
             self.progress("Got (%s)" % str(m))
             if m is None:
-                self.delay_sim_time(1)
+                self.delay_sim_time(1, reason="sensor message poll interval")
                 continue
             orientation = m.orientation
             found = False
@@ -5270,11 +5519,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def SkidSteer(self):
         '''Check skid-steering'''
-        model = "rover-skid"
-
-        self.customise_SITL_commandline([],
-                                        model=model,
-                                        defaults_filepath=self.model_defaults_filepath(model))
+        self.customise_SITL_commandline([], model="rover-skid")
 
         self.change_mode("MANUAL")
         self.wait_ready_to_arm()
@@ -5297,6 +5542,69 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_heading(60)
         self.zero_throttle()
         self.disarm_vehicle()
+
+    def MotorBoatSkidGuided(self):
+        '''ensure a skid-steering motorboat does not spin in GUIDED when retargeting directly behind'''
+        model = "motorboat-skid"
+        self.customise_SITL_commandline([],
+                                        model=model,
+                                        defaults_filepath=self.model_defaults_filepath(model))
+
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+
+        # capture initial heading so we can place the two waypoints
+        # along that axis - that way each trip is a true 180-deg turn
+        att = self.assert_receive_message('ATTITUDE')
+        initial_yaw_deg = math.degrees(att.yaw)
+        here = self.get_location()
+        north = math.cos(math.radians(initial_yaw_deg))
+        east = math.sin(math.radians(initial_yaw_deg))
+        loc_a = self.offset_location_ne(here, 25*north, 25*east)
+        loc_b = self.offset_location_ne(here, -25*north, -25*east)
+
+        self.change_mode('GUIDED')
+        self.arm_vehicle()
+
+        # accumulate per-sample yaw deltas (wrapped to +/-180) to
+        # detect a spinning boat. With the SITL fix the skid-steer
+        # max yaw rate is bounded to 5*pi ~= 16 deg/s; without it,
+        # rates can exceed 300 deg/s when the bug fires.
+        state = {'last_yaw_deg': None, 'total_change': 0.0}
+
+        def yaw_hook(mav, m):
+            if m.get_type() != 'ATTITUDE':
+                return
+            yaw = math.degrees(m.yaw)
+            if state['last_yaw_deg'] is not None:
+                delta = mavextra.wrap_180(yaw - state['last_yaw_deg'])
+                state['total_change'] += abs(delta)
+            state['last_yaw_deg'] = yaw
+
+        self.install_message_hook_context(yaw_hook)
+
+        # drive between two waypoints 50m apart along the initial
+        # heading axis, pausing 10s at each. Each transition is a
+        # 180-deg target relative to the boat's current heading,
+        # which triggers the skid-steer spin bug in SITL when speed
+        # has drifted slightly off zero.
+        spin_limit_deg = 3 * 360
+        for trip in range(4):
+            target = loc_a if trip % 2 == 0 else loc_b
+            name = 'A' if trip % 2 == 0 else 'B'
+            self.progress("Trip %u: driving 50m to %s (180-deg turn)" % (trip, name))
+            self.send_do_reposition(int(target.lat * 1e7), int(target.lng * 1e7))
+            self.wait_location(target, accuracy=5, height_accuracy=None, timeout=60)
+            self.progress("Dwelling at %s for 10s" % name)
+            self.delay_sim_time(10, reason="heading stabilisation at waypoint")
+
+        total = state['total_change']
+        self.progress("Total yaw change %.0f deg over %u trips" % (total, trip + 1))
+        if total > spin_limit_deg:
+            raise NotAchievedException(
+                "Boat spun: total yaw change %.0f deg exceeds %u deg" % (total, spin_limit_deg))
+
+        self.disarm_vehicle(force=True)
 
     def SlewRate(self):
         """Test Motor Slew Rate feature."""
@@ -5407,14 +5715,60 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.disarm_vehicle()
 
     def SET_ATTITUDE_TARGET_heading(self, target_sysid=None, target_compid=1):
-        '''Test handling of SET_ATTITUDE_TARGET'''
+        '''Test heading control and telemetry for SET_ATTITUDE_TARGET'''
+        if target_sysid is None:
+            target_sysid = self.sysid_thismav()
+        self.context_push()
+        self.context_set_message_rate_hz('NAV_CONTROLLER_OUTPUT', 10)
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        for angle in 0, 290, 70, 180, 0:
+        for angle in 0, 45, 290, 70, 180, 359, 1, 0:
             self.SET_ATTITUDE_TARGET_heading_test_target(angle, target_sysid, target_compid)
+
+        self.start_subtest("Switch from a nonzero heading target to turn-rate control")
+        self.SET_ATTITUDE_TARGET_heading_test_target(45, target_sysid, target_compid)
+
+        def poke_turn_rate(value, target):
+            self.mav.mav.set_attitude_target_send(
+                0, # time_boot_ms
+                target_sysid,
+                target_compid,
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE,
+                [1, 0, 0, 0], # ignored attitude
+                0, # roll rate (rad/s)
+                0, # pitch rate
+                0, # yaw rate
+                1) # thrust
+
+        self.drain_mav()
+        poke_turn_rate(None, None)
+        self.wait_guided_nav_bearing(0, poke_turn_rate)
         self.disarm_vehicle()
+        self.context_pop()
+
+    def wait_guided_nav_bearing(self, bearing, called_function):
+        def get_nav_bearing():
+            m = self.assert_receive_message('NAV_CONTROLLER_OUTPUT')
+            if m.target_bearing != 0:
+                raise NotAchievedException("Expected target_bearing=0, got %s" % m.target_bearing)
+            if not -180 <= m.nav_bearing <= 180:
+                raise NotAchievedException("nav_bearing outside signed degree range: %s" % m.nav_bearing)
+            return m.nav_bearing
+
+        self.wait_and_maintain(
+            value_name='nav_bearing',
+            target=bearing,
+            current_value_getter=get_nav_bearing,
+            validator=lambda value, target: self.heading_delta(value, target) <= 1,
+            accuracy=1,
+            timeout=10,
+            minimum_duration=1,
+            called_function=called_function,
+        )
 
     def SET_ATTITUDE_TARGET_heading_test_target(self, angle, target_sysid, target_compid):
         if target_sysid is None:
@@ -5438,7 +5792,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 0, # yaw rate
                 1) # thrust
 
+        self.drain_mav()
+        poke_set_attitude(None, None)
         self.wait_heading(angle, called_function=poke_set_attitude, minimum_duration=5)
+        bearing = angle if angle <= 180 else angle - 360
+        self.wait_guided_nav_bearing(bearing, poke_set_attitude)
 
     def SET_POSITION_TARGET_LOCAL_NED(self, target_sysid=None, target_compid=1):
         '''Test handling of SET_POSITION_TARGET_LOCAL_NED'''
@@ -5564,9 +5922,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # mode with a 0m altitude in MAV_FRAME_GLOBAL_RELATIVE_ALT_INT.
         # At the SITL start location (~1584m AMSL) the correct AMSL altitude
         # is ~1584m, not 0m.
-        home_alt_amsl = SITL_START_LOCATION.alt  # ~1583.7m
+        home_alt_amsl = SITL_START_LOCATION.get_alt_m(AltFrame.ABSOLUTE)  # ~1583.7m
 
-        home_loc = self.home_position_as_mav_location()
+        home_loc = self.home_position_as_location()
         # NAV_LOITER_TURNS: param1=number of turns, param3=radius in metres
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 0, 0),
@@ -5589,13 +5947,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # Wait for the rover to reach and begin the circle waypoint
         self.wait_current_waypoint(2, timeout=60)
 
-        self.delay_sim_time(10)
-
-        # Check that POSITION_TARGET_GLOBAL_INT reports the correct AMSL
-        # altitude
-        self.assert_received_message_field_values("POSITION_TARGET_GLOBAL_INT", {
+        # Wait for POSITION_TARGET_GLOBAL_INT to report the correct AMSL altitude
+        self.wait_message_field_values("POSITION_TARGET_GLOBAL_INT", {
             "alt": home_alt_amsl,
-        }, epsilon=10)
+        }, epsilon=10, timeout=30)
 
         self.disarm_vehicle()
 
@@ -5813,8 +6168,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # Set SIM parameter after reboot when AIS sim is loaded
         self.set_parameter("SIM_AIS_COUNT", 5)
-
-        self.delay_sim_time(10)
 
         m = self.assert_receive_message('AIS_VESSEL', timeout=60)
 
@@ -6042,7 +6395,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "PLND_ORIENT": 0,
         })
 
-        start = self.mav.location()
+        # the loop below reboots, which returns the vehicle to the SITL
+        # startup location; take our reference from there rather than
+        # from wherever a previous test left us, or the target ends up
+        # that much further away than the drive to it allows for:
+        self.reboot_sitl()
+        start = self.get_location()
         target = self.offset_location_ne(start, 50, 0)
         self.progress("Setting target to %f %f" % (start.lat, start.lng))
         stopping_dist = 0.5
@@ -6073,7 +6431,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_distance_to_location(target, 0, max_delta, timeout=180)
             self.disarm_vehicle()
             self.assert_receive_message('GLOBAL_POSITION_INT')
-            new_pos = self.mav.location()
+            new_pos = self.get_location()
             delta = abs(self.get_distance(target, new_pos) - stopping_dist)
             self.progress("Docked %f metres from stopping point" % delta)
             if delta > max_delta:
@@ -6084,11 +6442,71 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("All done")
 
+    def BeaconPosition(self):
+        '''drive in MANUAL using only a (simulated) beacon for position'''
+        self.set_parameters({
+            "BCN_TYPE": 10,    # SITL
+            "BCN_LATITUDE": SITL_START_LOCATION.lat,
+            "BCN_LONGITUDE": SITL_START_LOCATION.lng,
+            "BCN_ALT": SITL_START_LOCATION.get_alt_m(AltFrame.ABSOLUTE),
+            "BCN_ORIENT_YAW": 0,
+            "GPS1_TYPE": 0,    # no GPS
+            "EK3_ENABLE": 1,
+            "EK3_SRC1_POSXY": 4,  # Beacon
+            "EK3_SRC1_VELXY": 0,  # None
+            "EK3_SRC1_POSZ": 1,   # Baro
+            "EK3_SRC1_VELZ": 0,   # None
+            "EK3_SRC1_YAW": 1,    # Compass
+            "EK2_ENABLE": 0,
+            "AHRS_EKF_TYPE": 3,
+        })
+        self.reboot_sitl()
+
+        # becoming armable with the GPS disabled proves the EKF is deriving a
+        # usable position purely from the beacon library, which the vehicle
+        # initialises and updates via AP_Vehicle:
+        # (require_absolute=False as we have deliberately disabled the GPS)
+        self.wait_ready_to_arm(require_absolute=False)
+
+        # use get_location() (GLOBAL_POSITION_INT, the EKF/beacon-fused
+        # position) rather than pymavlink's mavfile.location(), which blocks
+        # waiting for a GPS 3D fix that never arrives with the GPS disabled:
+        start_loc = self.get_location()
+        self.progress("Beacon-derived start location: %s" % str(start_loc))
+
+        # arm and drive forward in MANUAL, confirming we can travel a known
+        # distance using only the beacon for position.  Throughout the drive,
+        # validate that the EKF's reported position (GLOBAL_POSITION_INT) stays
+        # close to the true simulator position (SIMSTATE):
+        self.context_push()
+        self.install_message_hook_context(
+            vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(
+                self, max_allowed_divergence=5))
+        # wait for the beacon-derived position to agree with the true one
+        # before driving.  Polling change_mode() and armed() get us here
+        # sooner in simulated time than they used to, and the EKF's
+        # position is still converging: the divergence hook above then
+        # tripped on the residual, at 5.27-5.41m against its 5m limit.
+        # This is a condition rather than a delay, so a position which
+        # never settles fails here instead of mid-drive.
+        self.wait_simstate_divergence_below(2, minimum_duration=5, timeout=60)
+        self.change_mode('MANUAL')
+        self.arm_vehicle()
+        self.set_rc(3, 2000)   # full throttle forward
+        self.wait_distance(10, accuracy=2, timeout=60)
+        self.set_rc(3, 1500)   # stop
+        # hold station and confirm the beacon-derived position stays locked to
+        # the true position (GLOBAL_POSITION_INT vs SIMSTATE) while stationary:
+        self.delay_sim_time(30, reason="stationary beacon position tracking")
+        self.disarm_vehicle()
+        self.context_pop()
+
+        self.assert_current_onboard_log_contains_message("BCN")
+
     def PrivateChannel(self):
         '''test the serial option bit specifying a mavlink channel as private'''
         global mav2
-        port = self.adjust_ardupilot_port(5763)
-        mav2 = mavutil.mavlink_connection("tcp:localhost:%u" % port,
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
                                           robust_parsing=True,
                                           source_system=7,
                                           source_component=7)
@@ -6152,7 +6570,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # execute these commands:
         self.set_parameter("MAV3_OPTIONS", 2)
         self.reboot_sitl()  # mavlink-private is reboot-required
-        mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
                                           robust_parsing=True,
                                           source_system=7,
                                           source_component=7)
@@ -6193,7 +6611,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        here = self.mav.location()
+        here = self.get_location()
         target_loc = self.offset_location_ne(here, 2000, 0)
         self.send_guided_mission_item(target_loc)
 
@@ -6220,10 +6638,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        here = self.mav.location()
+        here = self.get_location()
         target_loc = self.offset_location_ne(here, 2000, 0)
         self.send_guided_mission_item(target_loc)
-        self.wait_distance_to_home(20, 100)
+        # the vehicle starts pointing away from the target, so it turns
+        # before it makes any ground: wait_distance_to_home()'s default
+        # ten seconds is enough only if that turn is quick, and one run
+        # spent them reaching 14.4m of the wanted 20m
+        self.wait_distance_to_home(20, 100, timeout=60)
 
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
         self.wait_mode('RTL')
@@ -6242,7 +6664,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        original_loc = self.mav.location()
+        original_loc = self.get_location()
         here = original_loc
         target_loc = self.offset_location_ne(here, 2000, 0)
         self.send_guided_mission_item(target_loc)
@@ -6298,7 +6720,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def MAV_CMD_DO_FENCE_ENABLE(self):
         '''ensure MAV_CMD_DO_FENCE_ENABLE mavlink command works'''
-        here = self.mav.location()
+        here = self.get_location()
 
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
@@ -6389,6 +6811,341 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("WebServer tests OK")
 
+    def MAVLinkHeaderTargets(self):
+        """Wide target headers route independently of source ID width."""
+        sysid = 100000
+        self.send_set_parameter_direct("MAV_SYSID", sysid)
+        self.mav.target_system = sysid
+        with self.mavlink_target_system_context():
+            mav2 = None
+
+            def service_primary_link():
+                # Waiting on mav2 does not run the primary link's hooks.
+                self.drain_all_pexpects()
+                self.drain_mav()
+
+            try:
+                mav2 = mavutil.mavlink_connection(
+                    "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                    source_system=42, source_component=7)
+                self.wait_heartbeat(timeout=60)
+                self.assert_receive_message('HEARTBEAT', mav=mav2, timeout=30,
+                                            delay_fn=service_primary_link)
+                # Distinct parameters prevent delayed retry replies from satisfying
+                # the next source-ID case; PARAM_VALUE has no destination field.
+                for source, name in ((42, "MAV_SYSID"), (70000, "MAV_GCS_SYSID"), (0xFFFFFFFF, "MAV_GCS_SYSID_HI")):
+                    mav2.mav.srcSystem = source
+                    request = mav2.mav.param_request_read_encode(sysid, 1, name.encode('ascii'), -1)
+                    expected_flags = 4 | (2 if source > 255 else 0)
+                    deadline = time.monotonic() + 30
+                    next_send = 0
+                    attempts = 0
+                    reply = None
+                    while time.monotonic() < deadline:
+                        service_primary_link()
+                        if time.monotonic() >= next_send:
+                            attempts += 1
+                            self.progress("Requesting %s from source %u to target %u (attempt %u)" %
+                                          (name, source, sysid, attempts))
+                            mav2.mav.send(request)
+                            if request.get_header().incompat_flags != expected_flags:
+                                raise NotAchievedException("Source and target widths are not independent")
+                            next_send = time.monotonic() + 1
+                        reply = mav2.recv_match(type='PARAM_VALUE', condition='PARAM_VALUE.param_id == "%s"' % name,
+                                                blocking=True, timeout=0.1)
+                        if reply is not None:
+                            break
+                    if reply is None:
+                        raise NotAchievedException("No %s reply from target %u to source %u after %u attempts" %
+                                                   (name, sysid, source, attempts))
+                    if reply.get_srcSystem() != sysid:
+                        raise NotAchievedException("Parameter reply came from the wrong vehicle")
+                    if reply.get_target_system() is not None or reply.get_header().incompat_flags & 4:
+                        raise NotAchievedException("Targetless reply acquired a target header")
+                    # Sharing the low target byte must not alias this vehicle.
+                    deadline = time.monotonic() + 1
+                    next_send = 0
+                    while time.monotonic() < deadline:
+                        service_primary_link()
+                        if time.monotonic() >= next_send:
+                            mav2.mav.param_request_read_send(sysid + 256, 1, b"FRAME_CLASS", -1)
+                            next_send = time.monotonic() + 0.2
+                        if mav2.recv_match(type='PARAM_VALUE', condition='PARAM_VALUE.param_id == "FRAME_CLASS"',
+                                           blocking=True, timeout=0.1) is not None:
+                            raise NotAchievedException("Processed request for a different wide target")
+            finally:
+                if mav2 is not None:
+                    mav2.close()
+                self.send_set_parameter_direct("MAV_SYSID", 1)
+                self.mav.target_system = 1
+                self.wait_heartbeat(timeout=60)
+
+    def MAVLinkStatustextWideSource(self):
+        """Preserve the source prefix and all payload bytes in MSG logs."""
+        self.set_parameter("LOG_DISARMED", 1)
+        self.delay_sim_time(2, reason="start logging")
+        original_source = self.mav.mav.srcSystem
+        original_component = self.mav.mav.srcComponent
+        expected = []
+        try:
+            for source, component in ((42, 190), (100000, 190), (0xFFFFFFFF, 255)):
+                self.mav.mav.srcSystem = source
+                self.mav.mav.srcComponent = component
+                first = "wide-source-test:" + "x" * 33
+                last = "end-of-message"
+                self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_INFO,
+                                             first.encode(), id=123, chunk_seq=0)
+                self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_INFO,
+                                             last.encode(), id=123, chunk_seq=1)
+                expected.append("SRC=%u/%u:%s%s" % (source, component, first, last))
+                self.delay_sim_time(1, reason="process source's STATUSTEXT chunks")
+            # A separate wide-source prefix must not wrap the final payload's
+            # log sequence back to zero when MAVLink uses all 256 chunks.
+            chunks = []
+            for seq in range(256):
+                text = ("chunk-%03u:" % seq).ljust(50, "x") if seq < 255 else "last-chunk"
+                chunks.append(text)
+                self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_INFO,
+                                             text.encode(), id=124, chunk_seq=seq)
+                if seq % 16 == 15:
+                    # Drain each batch without delay_sim_time's own STATUSTEXT
+                    # progress message interrupting the incoming chunk stream.
+                    deadline = self.get_sim_time() + 0.2
+                    while self.get_sim_time(drain_mav=False) < deadline:
+                        pass
+            expected.append("SRC=4294967295/255:" + "".join(chunks))
+        finally:
+            self.mav.mav.srcSystem = original_source
+            self.mav.mav.srcComponent = original_component
+        self.delay_sim_time(3, reason="flush STATUSTEXT log records")
+        log = self.dfreader_for_current_onboard_log()
+        messages = {}
+        while True:
+            record = log.recv_match(type='MSG')
+            if record is None:
+                break
+            if record.Seq == 0:
+                messages[record.ID] = record.Message
+            elif record.ID in messages:
+                messages[record.ID] += record.Message
+        for message in expected:
+            if message not in messages.values():
+                raise NotAchievedException("Missing logged message (%u bytes): %.80s..." % (len(message), message))
+
+    def MAVLinkTimesyncRTT(self):
+        """Request cookies must not contribute to RTT, even across ID changes."""
+        self.set_parameter("LOG_DISARMED", 1)
+        sysid = 0xFFFFFFFF
+        self.send_set_parameter_direct("MAV_SYSID", -1)
+        self.mav.target_system = sysid
+        with self.mavlink_target_system_context():
+            try:
+                self.wait_heartbeat(timeout=30)
+                for change_id in (False, True):
+                    request = self.assert_receive_message('TIMESYNC', timeout=30,
+                                                          condition='TIMESYNC.tc1 == 0')
+                    if change_id:
+                        self.send_set_parameter_direct("MAV_SYSID", 100000)
+                        sysid = 100000
+                        self.mav.target_system = sysid
+                        self.wait_heartbeat(timeout=30)
+                    self.mav.mav.timesync_send(1, request.ts1)
+                    self.delay_sim_time(1, reason="process TIMESYNC response")
+                self.delay_sim_time(3, reason="flush TIMESYNC log records")
+                log = self.dfreader_for_current_onboard_log()
+                count = 0
+                while True:
+                    record = log.recv_match(type='TSYN')
+                    if record is None:
+                        break
+                    if record.SysID != self.mav.source_system:
+                        continue
+                    if record.RTT > 5000000:
+                        raise NotAchievedException("TIMESYNC RTT includes request cookie: %u" % record.RTT)
+                    count += 1
+                if count < 2:
+                    raise NotAchievedException("Missing TIMESYNC response log records")
+            finally:
+                self.send_set_parameter_direct("MAV_SYSID", 1)
+                self.mav.target_system = 1
+                self.wait_heartbeat(timeout=30)
+
+    def MAV_SYSID_FullRange(self):
+        """Preserve unsigned system IDs through MAVFTP, reboot and consumers."""
+        self.set_parameters({"FOLL_ENABLE": 1, "SCR_ENABLE": 1, "RC_OVERRIDE_TIME": -1})
+        self.install_script_content_context("sysid32-follow.lua", """
+local function update()
+    gcs:send_named_float("FOLL_HAVE", follow:have_target() and 1 or 0)
+    return update, 100
+end
+return update()
+""")
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        current_sysid = self.sysid_thismav()
+
+        def read_params():
+            data, _ = self.ftp_burst_read("@PARAM/param.pck")
+            decoded = MAVFTP.ftp_param_decode(bytes(data))
+            if decoded is None:
+                raise NotAchievedException("Could not decode MAVFTP parameters")
+            return {name.decode(): int(value) & 0xFFFFFFFF for name, value, _ in decoded.params
+                    if name.decode() in names}
+
+        def write_params(values):
+            nonlocal current_sysid
+            records = bytearray()
+            for name, value in values.items():
+                encoded = name.encode()
+                # AP_PARAM_INT32 carries the exact unsigned bit pattern.
+                records.extend(bytes([3, (len(encoded) - 1) << 4]) + encoded + struct.pack('<I', value))
+            self.ftp_write_file("@PARAM/param.pck", struct.pack('<HHH', 0x671b, len(values), len(records) + 6) + records)
+            if 'MAV_SYSID' in values:
+                current_sysid = values['MAV_SYSID']
+                self.mav.target_system = current_sysid
+                self.wait_heartbeat(timeout=30)
+
+        names = ('MAV_SYSID', 'MAV_GCS_SYSID', 'MAV_GCS_SYSID_HI', 'FOLL_SYSID')
+        initial = read_params()
+        saved = {name: initial[name] for name in names}
+        with self.mavlink_target_system_context():
+            peer = None
+            try:
+                for sysid in (0x01000001, 0x7FFFFFFF, 0x80000000, 0xFFFFFFFE, 0xFFFFFFFF):
+                    self.progress("Checking exact parameter ID %u" % sysid)
+                    expected = dict.fromkeys(names, sysid)
+                    write_params(expected)
+                    actual = read_params()
+                    for name, value in expected.items():
+                        if actual[name] != value:
+                            raise NotAchievedException("MAVFTP truncated %s: %u != %u" % (name, actual[name], value))
+                    self.reboot_sitl()
+                    actual = read_params()
+                    if any(actual[name] != value for name, value in expected.items()):
+                        raise NotAchievedException("Unsigned system IDs changed across reboot: expected %s, got %s" %
+                                                   (expected, actual))
+                    heartbeat = self.wait_heartbeat()
+                    if heartbeat.get_srcSystem() != sysid:
+                        raise NotAchievedException("Vehicle source ID was truncated")
+
+                self.wait_ready_to_arm()
+                peer = mavutil.mavlink_connection(
+                    "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                    source_system=0xFFFFFFFE, source_component=7)
+                # A follow target in the upper half must not be treated as a
+                # negative/unset parameter, nor confused with its low-byte alias.
+                write_params({'FOLL_SYSID': 0xFFFFFFFE})
+                position = self.assert_receive_message('GLOBAL_POSITION_INT')
+                for source, expected in ((254, 0), (0xFFFFFFFE, 1)):
+                    peer.mav.srcSystem = source
+                    tstart = self.get_sim_time()
+                    while self.get_sim_time_cached() - tstart < 3:
+                        peer.mav.global_position_int_send(
+                            0, position.lat, position.lon, position.alt, position.relative_alt, 0, 0, 0, 0)
+                        self.delay_sim_time(0.1, reason="update follow estimate")
+                    message = self.mav.recv_match(
+                        type='NAMED_VALUE_FLOAT', condition='NAMED_VALUE_FLOAT.name == "FOLL_HAVE"',
+                        blocking=True, timeout=5)
+                    if message is None or int(message.value) != expected:
+                        raise NotAchievedException("Follow mishandled unsigned source %u" % source)
+
+                self.set_rc(1, 1500)
+                # Exercise a range crossing INT32_MAX and the disabled-upper-bound
+                # sentinel when the lower bound itself has bit 31 set.
+                for low, high, cases in (
+                        (0x7FFFFFFF, 0xFFFFFFFF, ((0x80000000, True), (0xFFFFFFFF, True), (250, False))),
+                        (0x80000000, 0, ((0x80000000, True), (0x80000001, False)))):
+                    write_params({'MAV_GCS_SYSID': low, 'MAV_GCS_SYSID_HI': high})
+                    for source, accepted in cases:
+                        peer.mav.srcSystem = source
+                        peer.mav.rc_channels_override_send(current_sysid, 1, 1600, *([65535] * 7))
+                        self.delay_sim_time(0.5, reason="process RC override")
+                        self.assert_rc_channel_value(1, 1600 if accepted else 1500)
+                        if accepted:
+                            peer.mav.rc_channels_override_send(current_sysid, 1, 0, *([65535] * 7))
+                            self.wait_rc_channel_value(1, 1500)
+            finally:
+                if peer is not None:
+                    peer.close()
+                write_params(saved)
+
+    def MAV_SYSID_32bit(self):
+        '''test 32 bit MAV_SYSID'''
+        if not hasattr(mavutil.mavlink, "MAVLINK_IFLAG_SYSID32"):
+            raise NotAchievedException("pymavlink is too old for 32 bit system IDs")
+
+        # sysid values must round-trip losslessly through the float32
+        # parameter transport, so stay below 2^24 for now
+        sysid = 100000
+        # The vehicle applies the ID immediately. Switch the test connection
+        # before waiting for replies, including the parameter helper's timesync.
+        self.send_set_parameter_direct("MAV_SYSID", sysid)
+        self.mav.target_system = sysid
+        with self.mavlink_target_system_context():
+            try:
+                self.wait_heartbeat(timeout=60)
+                m = self.wait_heartbeat()
+                if m.get_srcSystem() != sysid:
+                    raise NotAchievedException("Did not get 32 bit sysid, got %u" % m.get_srcSystem())
+                hdr = m.get_header()
+                if not (hdr.incompat_flags & mavutil.mavlink.MAVLINK_IFLAG_SYSID32):
+                    raise NotAchievedException("expected MAVLINK_IFLAG_SYSID32 to be set")
+
+                # parameter fetch at the new sysid
+                if int(self.get_parameter("MAV_SYSID")) != sysid:
+                    raise NotAchievedException("MAV_SYSID readback failed")
+
+                self.reboot_sitl()
+                if int(self.get_parameter("MAV_SYSID")) != sysid:
+                    raise NotAchievedException("Wide MAV_SYSID did not survive reboot")
+
+                self.set_parameter("FOLL_ENABLE", 1)
+                for run_cmd in (self.run_cmd, self.run_cmd_int):
+                    # Preserve legacy truncation, including positive fractions below 1.
+                    for target in (0.5, 1.5, 254.75, 255, 256, 100000.5, (1 << 24) - 1):
+                        run_cmd(mavutil.mavlink.MAV_CMD_DO_FOLLOW, p1=target)
+                        if int(self.get_parameter("FOLL_SYSID")) != int(target):
+                            raise NotAchievedException("Unexpected follow target after truncation")
+                    # Legacy range comparisons trap on NaN with SITL float exceptions enabled.
+                    for target in (0, -1, float('inf'), 1 << 24, 0xFFFFFFFF):
+                        run_cmd(mavutil.mavlink.MAV_CMD_DO_FOLLOW, p1=target,
+                                want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+                    if int(self.get_parameter("FOLL_SYSID")) != (1 << 24) - 1:
+                        raise NotAchievedException("Invalid follow command changed target")
+
+                # our own GCS with a 32 bit source system, and a targeted
+                # message each way
+                mav2 = mavutil.mavlink_connection(
+                    "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                    robust_parsing=True,
+                    source_system=70000,
+                    source_component=7,
+                )
+                mav2.mav.param_request_read_send(sysid, 1, b"MAV_SYSID", -1)
+                m = mav2.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
+                if m is None:
+                    raise NotAchievedException("no PARAM_VALUE for 32 bit source system")
+                if m.param_id != "MAV_SYSID" or int(m.param_value) != sysid:
+                    raise NotAchievedException("bad PARAM_VALUE %s" % str(m))
+                mav2.close()
+
+                # targeted mission-protocol round trip (the mission upload
+                # helpers hard-code target system 1, so do this by hand)
+                self.mav.mav.mission_request_list_send(sysid, 1, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+                m = self.assert_receive_message('MISSION_COUNT', timeout=10)
+                if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+                    raise NotAchievedException("bad MISSION_COUNT")
+
+                self.wait_ready_to_arm()
+                self.arm_vehicle()
+                self.disarm_vehicle()
+            finally:
+                # restore the old sysid
+                self.send_set_parameter_direct("MAV_SYSID", 1)
+                self.mav.target_system = 1
+                self.wait_heartbeat(timeout=60)
+                self.wait_heartbeat()
+
     def NetworkingWebServer(self):
         '''web server'''
         applet_script = "net_webserver.lua"
@@ -6441,9 +7198,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress('rebuilding rover with ppp enabled')
         import shutil
         shutil.copy('build/sitl/bin/ardurover', 'build/sitl/bin/ardurover.noppp')
-        util.build_SITL('bin/ardurover', clean=False, configure=True, extra_configure_args=['--enable-PPP', '--debug'])
+        # --enable-math-check-indexes matches the CI rover build
+        # configuration, so in CI this rebuild is a ccache hit against
+        # the pre-built PPP rover from the build job
+        util.build_SITL('bin/ardurover', clean=False, configure=True,
+                        extra_configure_args=['--enable-PPP', '--enable-math-check-indexes', '--debug'])
 
         self.reboot_sitl()
+
+        # the applet creates its WEB_* parameters at runtime, and they
+        # only go away when the vehicle comes up without it; removing the
+        # script from disk at context_pop() does not unload the copy
+        # already running.  Nothing here has customised the SITL
+        # commandline, so ask for the standard reset explicitly.
+        self.context_get().sitl_commandline_customised = True
 
         self.progress("Starting PPP daemon")
         pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
@@ -6548,7 +7316,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
 
         self.progress("Ensure we can arm when we have an inclusion fence we are inside of")
-        here = self.mav.location()
+        here = self.get_location()
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
                 # over the top of the vehicle
@@ -6558,17 +7326,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, 50, -50), # tl,
             ]),
         ])
-        self.delay_sim_time(5)
         self.wait_ready_to_arm()
 
         self.reboot_sitl()
         self.wait_ready_to_arm()
 
-        self.progress("Ensure we can't arm when we are in breacnh of a polyfence")
+        self.progress("Ensure we can't arm when we are in breach of a polyfence")
         self.clear_fence()
 
         self.progress("Now create a fence we are in breach of")
-        here = self.mav.location()
+        here = self.get_location()
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
                 # over the top of the vehicle
@@ -6639,7 +7406,42 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "RC6_OPTION": 118,
             "RC7_OPTION": 118,
         })
+        self.wait_not_ready_to_arm()
+        self.assert_prearm_failure("Duplicate Aux Switch Options")
         self.assert_arm_failure("Duplicate Aux Switch Options")
+
+    def RCModeChannelOptionConflict(self):
+        '''ensure mode channel / RCn_OPTION conflict is a pre-arm failure'''
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "MODE_CH": 8,
+            "RC8_OPTION": 4,  # RTL
+        })
+        self.wait_not_ready_to_arm()
+        self.assert_prearm_failure("Mode channel and RC8_OPTION conflict")
+
+        self.progress("Conflict still blocks arming with PARAMETERS check skipped")
+        self.set_parameter("ARMING_SKIPCHK", 1 << 5)
+        self.assert_prearm_failure("Mode channel and RC8_OPTION conflict")
+        self.assert_arm_failure("Mode channel and RC8_OPTION conflict")
+        self.set_parameter("ARMING_SKIPCHK", 0)
+
+        self.progress("Conflict not reported with RC check skipped")
+        self.set_parameter("ARMING_SKIPCHK", 1 << 6)
+        self.wait_ready_to_arm()
+        self.set_parameter("ARMING_SKIPCHK", 0)
+        self.wait_not_ready_to_arm()
+
+        self.progress("Conflict reported without RC input")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER, healthy=False)
+        self.assert_prearm_failure("Mode channel and RC8_OPTION conflict",
+                                   other_prearm_failures_fatal=False)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER, healthy=True)
+
+        self.set_parameter("RC8_OPTION", 0)
+        self.wait_ready_to_arm()
 
     def JammingSimulation(self):
         '''Test jamming simulation works'''
@@ -6761,7 +7563,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
         self.reboot_sitl()
 
-        home = self.home_position_as_mav_location()
+        home = self.home_position_as_location()
         fence = self.generate_polyfence(
             home,
             mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
@@ -6835,8 +7637,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.wait_statustext("hello, world")
         conns = {}
-        for port in 5761, 5762, 5763, 5764, 5765, 5766, 5767, 6700, 6701, 6702, 6703:
-            cstring = f"tcp:localhost:{port}"
+        endpoints = [
+            "tcp:localhost:5761",
+            self.sitl_serial_endpoint(1),
+            self.sitl_serial_endpoint(2),
+            "tcp:localhost:5764",
+            self.sitl_serial_endpoint(5),
+            self.sitl_serial_endpoint(6),
+            self.sitl_serial_endpoint(7),
+            "tcp:localhost:6700",
+            "tcp:localhost:6701",
+            "tcp:localhost:6702",
+            "tcp:localhost:6703",
+        ]
+        for cstring in endpoints:
             self.progress(f"Connecting to {cstring}")
             c = mavutil.mavlink_connection(
                 cstring,
@@ -6844,17 +7658,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 source_system=7,
                 source_component=7,
             )
-            conns[port] = c
+            conns[cstring] = c
 
         for repeats in range(1, 5):
-            for (port, conn) in conns.items():
+            for (endpoint, conn) in conns.items():
                 while True:
-                    self.progress(f"Checking port {port}")
+                    self.progress(f"Checking endpoint {endpoint}")
                     m = self.assert_receive_message('STATUSTEXT', mav=conn, timeout=120)
                     self.drain_all_pexpects()
                     self.drain_mav()
                     if m.text == "hello, world":
-                        self.progress(f"Received {m.text} from port {port}")
+                        self.progress(f"Received {m.text} from {endpoint}")
                         break
 
     def REQUIRE_LOCATION_FOR_ARMING(self):
@@ -6881,6 +7695,30 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def AHRSOptionsDCMFallback(self):
+        '''check AHRS_OPTIONS inhibits DCM fallback when EKF lacks height data'''
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "AHRS_OPTIONS": 3,  # disable DCM fallback
+            "EK3_SRC1_VELZ": 3,  # GPS
+            "EK3_SRC1_POSZ": 3,  # GPS
+            "SIM_GPS1_NUMSATS": 4,  # EKF does not like < 6, origin is never set
+        })
+        self.reboot_sitl()
+        # the EKF can provide attitude but not vertical velocity/position;
+        # the AHRS must still use it as DCM fallback is inhibited
+        self.wait_statustext("AHRS: EKF3 active", check_context=True, timeout=120)
+        # EKF must be reporting a valid attitude but no vertical position
+        self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_ATTITUDE, mavutil.mavlink.ESTIMATOR_POS_VERT_ABS, timeout=30)
+
+        self.start_subtest("DCM fallback used when not inhibited")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("AHRS_OPTIONS", 0)
+        self.reboot_sitl()
+        self.delay_sim_time(60, "allow time for AHRS to select an estimator")
+        if self.statustext_in_collections("AHRS: EKF3 active"):
+            raise NotAchievedException("AHRS used EKF3 without EKF height data")
+
     def SafetySwitch(self):
         '''check safety switch works'''
         self.start_subtest("Make sure we don't start moving when safety switch enabled")
@@ -6903,6 +7741,31 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_safetyswitch_off()
         self.wait_groundspeed(5, 100, minimum_duration=2)
         self.set_rc(3, 1500)
+        self.disarm_vehicle()
+
+    def EnterModeOnSafetySwitch(self):
+        '''test mode enter behaviour when there's a safety switch involved'''
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+        })
+        self.reboot_sitl()
+        self.wait_mode('MANUAL')
+        self.wait_prearm_sys_status_healthy()
+        self.arm_vehicle()
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+            p1=mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+            p2=self.get_mode_from_mode_mapping('GUIDED'),
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.set_safetyswitch_on()
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+            p1=mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+            p2=self.get_mode_from_mode_mapping('GUIDED'),
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.set_safetyswitch_off()
         self.disarm_vehicle()
 
     def GetMessageInterval(self):
@@ -6970,7 +7833,6 @@ return update()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
             "balancebot": "needs special stay-upright code",
-            "motorboat-skid": "gets stuck between waypoints 2 and 3",
         }
         for frame in sorted(vinfo_options["frames"].keys()):
             self.start_subtest("Testing frame (%s)" % str(frame))
@@ -6984,12 +7846,8 @@ return update()
                 self.progress("Actually, no I'm not - it is an external simulation")
                 continue
             model = frame_bits.get("model", frame)
-            defaults = self.model_defaults_filepath(frame)
-            if not isinstance(defaults, list):
-                defaults = [defaults]
             self.customise_SITL_commandline(
                 [],
-                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
@@ -7003,8 +7861,7 @@ return update()
             self.drive_mission(mission_file, strict=False, ignore_MANUAL_mode_change=True)
             self.wait_mode('MANUAL')
 
-            if self.distance_to_home() > 2:
-                raise NotAchievedException("Did not get home!")
+            self.wait_distance_to_home(0, 5, timeout=1)
 
     def start_driving_simple_relhome_mission(self, items):
         '''uploads items, changes mode to AUTO, waits ready to arm and starts mission'''
@@ -7053,7 +7910,7 @@ return update()
         target_lat = home.latitude + 10000
         target_lon = home.longitude
         self.send_do_reposition(target_lat, target_lon)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="reposition to register")
         m = self.assert_received_message_field_values("UTM_GLOBAL_POSITION", {
             "next_lat": target_lat,
             "next_lon": target_lon,
@@ -7131,6 +7988,156 @@ return update()
         if abs(Horizontaldistance - expected_distance) > 1:
             raise NotAchievedException(f"Unexpected GPS position (want {expected_distance}, got {Horizontaldistance})")
 
+    def WP_SPEED(self):
+        '''ensure changing WP_SPEED during a mission works'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, 0),
+        ])
+        start_speed_ms = self.get_parameter('WP_SPEED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+
+        self.wait_groundspeed(start_speed_ms-1, start_speed_ms+1, minimum_duration=10)
+
+        for speed_ms in 1, 2, 3, 4, 5:
+            self.set_parameter('WP_SPEED', speed_ms)
+            self.wait_groundspeed(speed_ms-1, speed_ms+1, minimum_duration=10)
+        self.do_RTL()
+        self.disarm_vehicle()
+
+    def AutoModeAccelChanges(self):
+        '''verify WP_ACCEL mid-mission change bakes at the next WP crossing and takes effect n+2 legs later'''
+        # Change WP_ACCEL during WP1->WP2; bakes at WP2 crossing;
+        # WP2->WP3 may still propagate old value; WP3->WP4 is the reliable measurement leg.
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  300,    0, 0),  # WP1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  300,  300, 0),  # WP2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  300, 0),  # WP3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  600, 0),  # WP4
+        ])
+        wp_accel    = 0.5   # m/s^2: slow enough for a clear ~2.0 s measurement
+        accel_start = 4.0   # m/s
+        accel_stop  = 5.0   # m/s
+        high_speed  = 6.0   # m/s
+        self.set_parameters({
+            "WP_SPEED":      high_speed,
+            "WP_ACCEL":      3.0,    # initial fast rate; changed mid-mission below
+            "ATC_ACCEL_MAX": 20.0,
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+
+        self.wait_current_waypoint(2, timeout=120)     # rover is now on WP1->WP2
+        self.set_parameter("WP_ACCEL", wp_accel)       # bakes at WP2 crossing
+
+        expected_time = (accel_stop - accel_start) / wp_accel  # 2.0 s
+        self.wait_current_waypoint(4, timeout=120)     # WP3->WP4: first reliable leg
+        self.wait_groundspeed(0, accel_start - 0.5, timeout=30)  # wait for WP3 corner dip
+        self.wait_groundspeed(accel_start, 100, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(accel_stop, 100, timeout=expected_time * 3)
+        actual_time = self.get_sim_time() - tstart
+        if actual_time > expected_time * 2.0:
+            raise NotAchievedException(
+                "WP_ACCEL=%.1f too slow: expected ~%.1fs, got %.1fs" %
+                (wp_accel, expected_time, actual_time))
+        if actual_time < expected_time * 0.3:
+            raise NotAchievedException(
+                "WP_ACCEL=%.1f too fast: expected ~%.1fs, got %.1fs" %
+                (wp_accel, expected_time, actual_time))
+        self.progress("WP_ACCEL=%.1f ramp time %.1fs (expected ~%.1fs)" %
+                      (wp_accel, actual_time, expected_time))
+        self.disarm_vehicle(force=True)
+
+    def AutoModeAccelLimiting(self):
+        '''verify ATC_ACCEL_MAX and ATC_DECEL_MAX cap WP_ACCEL'''
+
+        high_speed = 6.0  # m/s
+        low_speed  = 2.0  # m/s
+
+        self.start_subtest("ATC_ACCEL_MAX limits WP_ACCEL from standing start")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 0),
+        ])
+        wp_accel_high = 3.0   # m/s^2 — intentionally above the cap value
+        atc_accel_cap = 0.5   # m/s^2
+        meas_start    = 1.0   # m/s
+        meas_stop     = 3.0   # m/s
+        self.set_parameters({
+            "WP_SPEED":      high_speed,
+            "WP_ACCEL":      wp_accel_high,
+            "ATC_ACCEL_MAX": 20.0,
+            "ATC_DECEL_MAX": 5.0,
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_groundspeed(meas_start, 100, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(meas_stop, 100, timeout=15)
+        time_uncapped = self.get_sim_time() - tstart
+        self.progress("ATC_ACCEL_MAX uncapped ramp %.2fs" % time_uncapped)
+        self.change_mode('HOLD')
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        self.set_parameter("ATC_ACCEL_MAX", atc_accel_cap)
+        self.change_mode('AUTO')
+        self.wait_groundspeed(meas_start, 100, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(meas_stop, 100, timeout=30)
+        time_capped = self.get_sim_time() - tstart
+        self.progress("ATC_ACCEL_MAX=%.1f capped ramp %.2fs" % (atc_accel_cap, time_capped))
+        if time_capped < time_uncapped * 2.0:
+            raise NotAchievedException(
+                "ATC_ACCEL_MAX=%.1f did not limit WP_ACCEL as expected "
+                "(uncapped=%.2fs capped=%.2fs)" %
+                (atc_accel_cap, time_uncapped, time_capped))
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("ATC_DECEL_MAX limits WP_ACCEL via mid-leg WP_SPEED drop")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600, 0, 0),  # WP1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1200, 0, 0),  # WP2
+        ])
+        decel_trigger = high_speed - 0.7   # 5.3 m/s — confirm at cruise before triggering
+        decel_from    = high_speed - 1.0   # 5.0 m/s
+        decel_to      = 3.0               # m/s — 2 m/s band
+        atc_decel_cap = 0.5               # m/s^2
+        self.set_parameters({
+            "WP_SPEED":      high_speed,
+            "ATC_ACCEL_MAX": 20.0,
+            "ATC_DECEL_MAX": 0.0,
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_groundspeed(decel_trigger, 100, timeout=30)
+        self.set_parameter("WP_SPEED", low_speed)
+        self.wait_groundspeed(0, decel_from, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(0, decel_to, timeout=30)
+        time_uncapped_decel = self.get_sim_time() - tstart
+        self.progress("ATC_DECEL_MAX uncapped decel %.2fs" % time_uncapped_decel)
+        self.set_parameters({
+            "WP_SPEED":      high_speed,
+            "ATC_DECEL_MAX": atc_decel_cap,
+        })
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_groundspeed(decel_trigger, 100, timeout=30)
+        self.set_parameter("WP_SPEED", low_speed)
+        self.wait_groundspeed(0, decel_from, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(0, decel_to, timeout=60)
+        time_capped_decel = self.get_sim_time() - tstart
+        self.progress("ATC_DECEL_MAX=%.1f capped decel %.2fs" % (atc_decel_cap, time_capped_decel))
+        if time_capped_decel < time_uncapped_decel * 1.5:
+            raise NotAchievedException(
+                "ATC_DECEL_MAX=%.1f did not limit decel rate "
+                "(uncapped=%.2fs capped=%.2fs)" %
+                (atc_decel_cap, time_uncapped_decel, time_capped_decel))
+        self.disarm_vehicle(force=True)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -7144,6 +8151,7 @@ return update()
             self.DriveRTL,
             self.SmartRTL,
             self.DriveSquare,
+            self.SIMCompare,
             self.DriveMission,
             # self.DriveBrake,  # disabled due to frequent failures
             self.MAV_CMD_DO_SEND_BANNER,
@@ -7152,6 +8160,8 @@ return update()
             self.ServoRelayEvents,
             self.RCOverrides,
             self.RCOverridesCancel,
+            Test(self.RCOverrideEnableChannel, speedup=10),
+            self.RCOverridesClearByPilotInput,
             self.MANUAL_CONTROL,
             self.Sprayer,
             self.AC_Avoidance,
@@ -7175,6 +8185,7 @@ return update()
             self.MAVProxyParam,
             self.GCSFence,
             self.GCSFenceInvalidPoint,
+            self.GuidedRejectOutsideFence,
             self.GCSMission,
             # self.GCSRally,  # enable me in 2026, needs MAVProxy fixes
             self.MotorTest,
@@ -7182,6 +8193,7 @@ return update()
             self.DataFlashOverMAVLink,
             self.DataFlash,
             self.SkidSteer,
+            self.MotorBoatSkidGuided,
             self.PolyFence,
             self.SDPolyFence,
             self.PolyFenceAvoidance,
@@ -7193,6 +8205,7 @@ return update()
             self.PolyFenceObjectAvoidanceBendyRulerEasierAuto,
             self.SlewRate,
             self.Scripting,
+            self.ScriptingMAVLink,
             self.ScriptingSteeringAndThrottle,
             self.MissionFrames,
             self.SetpointGlobalPos,
@@ -7213,6 +8226,7 @@ return update()
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
             self.StickMixingAuto,
             self.AutoDock,
+            self.BeaconPosition,
             self.PrivateChannel,
             self.GCSFailsafe,
             self.RoverInitialMode,
@@ -7227,6 +8241,11 @@ return update()
             self.MAV_CMD_BATTERY_RESET,
             self.GPSForYaw,
             self.NetworkingWebServer,
+            self.MAV_SYSID_32bit,
+            self.MAV_SYSID_FullRange,
+            self.MAVLinkHeaderTargets,
+            self.MAVLinkStatustextWideSource,
+            self.MAVLinkTimesyncRTT,
             self.NetworkingWebServerPPP,
             self.RTL_SPEED,
             self.ScriptingLocationBindings,
@@ -7235,18 +8254,25 @@ return update()
             self.MissionPolyEnabledPreArm,
             self.OpticalFlow,
             self.RCDuplicateOptionsExist,
+            self.RCModeChannelOptionConflict,
             self.ClearMission,
             self.JammingSimulation,
             self.BatteryInvalid,
             self.REQUIRE_LOCATION_FOR_ARMING,
+            self.AHRSOptionsDCMFallback,
             self.GetMessageInterval,
             self.SafetySwitch,
+            self.EnterModeOnSafetySwitch,
             self.ThrottleFailsafe,
+            self.CrashCheck,
             self.DriveEachFrame,
             self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
             self.GPSAntennaPositionOffset,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
+            self.WP_SPEED,
+            self.AutoModeAccelChanges,
+            self.AutoModeAccelLimiting,
         ])
         return ret
 

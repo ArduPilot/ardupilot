@@ -239,7 +239,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - PWM7 56
 - PWM8 57
 
-## Analog inputs
+## Analog Inputs
 
 The Durandal has 7 analog inputs
 

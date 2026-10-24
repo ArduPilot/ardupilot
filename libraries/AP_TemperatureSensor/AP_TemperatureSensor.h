@@ -20,6 +20,16 @@
 
 #include "AP_TemperatureSensor_Params.h"
 
+// maximum number of Temperature Sensors
+#ifndef AP_TEMPERATURE_SENSOR_MAX_INSTANCES
+#define AP_TEMPERATURE_SENSOR_MAX_INSTANCES             3
+#endif
+
+// first sensor is always the primary sensor
+#ifndef AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE
+#define AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE          0
+#endif
+
 // declare backend class
 class AP_TemperatureSensor_Backend;
 class AP_TemperatureSensor_TSYS01;
@@ -28,6 +38,7 @@ class AP_TemperatureSensor_MAX31865;
 class AP_TemperatureSensor_TSYS03;
 class AP_TemperatureSensor_Analog;
 class AP_TemperatureSensor_MLX90614;
+class AP_TemperatureSensor_TMP119;
 
 class AP_TemperatureSensor
 {
@@ -39,6 +50,7 @@ class AP_TemperatureSensor
     friend class AP_TemperatureSensor_Analog;
     friend class AP_TemperatureSensor_DroneCAN;
     friend class AP_TemperatureSensor_MLX90614;
+    friend class AP_TemperatureSensor_TMP119;
 
 public:
 

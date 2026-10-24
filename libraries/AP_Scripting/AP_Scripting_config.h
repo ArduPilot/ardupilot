@@ -8,6 +8,10 @@
 #define AP_SCRIPTING_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
+#ifndef AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED
+#define AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED 0
+#endif
+
 #if AP_SCRIPTING_ENABLED
     #include <AP_Filesystem/AP_Filesystem_config.h>
     // enumerate all of the possible places we can read a script from.

@@ -48,7 +48,7 @@ public:
 
 private:
 
-    AP_Int32  _mask;
+    AP_UInt32 _mask;
 
     bool have_current;
     bool have_consumed_mah;

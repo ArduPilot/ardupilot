@@ -103,7 +103,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - AUX5 54
 - AUX6 55
 
-## Analog inputs
+## Analog Inputs
 
 The CUAVv5 has 7 analog inputs
 

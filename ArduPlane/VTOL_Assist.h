@@ -26,7 +26,7 @@ public:
     AP_Float delay;
 
     // special options
-    AP_Int16 options;
+    AP_UInt16 options;
 
     // assist options
     enum class OPTION {

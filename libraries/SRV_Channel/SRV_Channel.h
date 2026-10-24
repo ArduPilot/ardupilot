@@ -25,6 +25,12 @@
 
 #include "SRV_Channel_config.h"
 
+#ifndef ACTUATOR_CHANNELS
+#define ACTUATOR_CHANNELS 6
+#endif
+
+#define ACTUATOR_DEFAULT_INCREMENT 0.01
+
 static_assert(NUM_SERVO_CHANNELS <= 32, "More than 32 servos not supported");
 
 class SRV_Channels;
@@ -463,6 +469,9 @@ public:
     // set output for all channels matching the given function type, allow radio_trim to center servo
     static void set_output_pwm_trimmed(SRV_Channel::Function function, int16_t value);
 
+    // get the input for a channel function from the pwm value of the first matching channel
+    static bool get_output_pwm_trimmed(SRV_Channel::Function function, uint16_t &pwm);
+
     // set and save the trim for a function channel to the output value
     static void set_trim_to_servo_out_for(SRV_Channel::Function function);
 
@@ -559,9 +568,6 @@ public:
 #endif
     }
 
-    // SERVO* parameters
-    static void upgrade_parameters(void);
-
     // given a zero-based motor channel, return the k_motor function for that channel
     static SRV_Channel::Function get_motor_function(uint8_t channel) {
         if (channel < 8) {
@@ -600,7 +606,9 @@ public:
         return _singleton;
     }
 
-    static void zero_rc_outputs();
+    // called once a reboot has been commanded: stop driving the
+    // outputs so the reset cannot truncate a pulse in flight
+    static void prepare_for_reboot();
 
     // initialize before any call to push
     void init(uint32_t motor_mask = 0, AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE);
@@ -691,11 +699,11 @@ private:
     } functions[SRV_Channel::k_nr_aux_servo_functions];
 
     AP_Int8 auto_trim;
-    AP_Int16 default_rate;
+    AP_UInt16 default_rate;
     AP_Int8 dshot_rate;
     AP_Int8 dshot_esc_type;
-    AP_Int32 gpio_mask;
-    AP_Int32 rc_fs_mask;
+    AP_UInt32 gpio_mask;
+    AP_UInt32 rc_fs_mask;
 #if NUM_SERVO_CHANNELS >= 17
     AP_Int8 enable_32_channels;
 #endif

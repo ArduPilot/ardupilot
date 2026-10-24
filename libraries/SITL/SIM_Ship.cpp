@@ -28,6 +28,9 @@
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL_SITL/SITL_State.h>
+#include <AP_HAL_SITL/HAL_SITL_Class.h>
+
+extern const HAL_SITL& hal_sitl;
 #include <AP_Terrain/AP_Terrain.h>
 
 using namespace SITL;
@@ -52,7 +55,7 @@ const AP_Param::GroupInfo ShipSim::var_info[] = {
     // @Param: SYSID
     // @DisplayName: System ID
     // @Description: System ID of the ship
-    // @Range: 1 255
+    // @Range: 1 4294967295
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
     // @Param: DSIZE
     // @DisplayName: Deck Size
@@ -106,6 +109,9 @@ ShipSim::ShipSim()
 bool ShipSim::get_location(Location &loc) const
 {
     if (!enable) {
+        return false;
+    }
+    if (!home.initialised()) {
         return false;
     }
     loc = home;
@@ -170,8 +176,12 @@ void ShipSim::update(void)
         home.offset(ofs.x, ofs.y);
         home.alt -= ofs.z*100;
 
+        target_port += 10 * hal_sitl.get_instance();
+
         initialised = true;
-        ::printf("ShipSim home %f %f\n", home.lat*1.0e-7, home.lng*1.0e-7);
+        ::printf("ShipSim home %f %f reporting to %s:%u\n",
+                 home.lat*1.0e-7, home.lng*1.0e-7,
+                 target_address, (unsigned)target_port);
         ship.sim = this;
         last_update_us = now_us;
         last_report_ms = AP_HAL::millis();
@@ -202,6 +212,13 @@ void ShipSim::send_report(void)
         return;
     }
 
+    // Drain and discard anything the vehicle sends us:
+    {
+        uint8_t discard[1024];
+        while (mav_socket.recv(discard, sizeof(discard), 0) > 0) {
+        }
+    }
+
     uint32_t now = AP_HAL::millis();
 
     const uint8_t component_id = MAV_COMP_ID_USER10;
@@ -220,7 +237,7 @@ void ShipSim::send_report(void)
 
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
-            sys_id.get(),
+            sys_id,
             component_id,
             &mav_status,
             &msg,

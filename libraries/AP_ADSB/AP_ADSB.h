@@ -42,7 +42,7 @@ class AP_ADSB_Backend;
 class AP_ADSB {
 public:
     friend class AP_ADSB_Backend;
-    friend class AP_ADSB_uAvionix_MAVLink;
+    friend class AP_ADSB_MAVLink;
     friend class AP_ADSB_uAvionix_UCP;
     friend class AP_ADSB_Sagetech;
     friend class AP_ADSB_Sagetech_MXS;
@@ -61,7 +61,7 @@ public:
     // ADSB driver types
     enum class Type {
         None                = 0,
-        uAvionix_MAVLink    = 1,
+        MAVLink             = 1,
         Sagetech            = 2,
         uAvionix_UCP        = 3,
         Sagetech_MXS        = 4,
@@ -201,9 +201,9 @@ public:
     // when true, a vehicle with that ICAO was found in database and the vehicle is populated.
     bool get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const;
 
-    uint32_t get_special_ICAO_target() const { return (uint32_t)_special_ICAO_target; };
-    void set_special_ICAO_target(const uint32_t new_icao_target) { _special_ICAO_target.set((int32_t)new_icao_target); };
-    bool is_special_vehicle(uint32_t icao) const { return _special_ICAO_target != 0 && (_special_ICAO_target == (int32_t)icao); }
+    uint32_t get_special_ICAO_target() const { return _special_ICAO_target; };
+    void set_special_ICAO_target(const uint32_t new_icao_target) { _special_ICAO_target.set(new_icao_target); };
+    bool is_special_vehicle(uint32_t icao) const { return _special_ICAO_target != 0 && (_special_ICAO_target == icao); }
 
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
@@ -265,7 +265,7 @@ private:
     // ADSB-IN state. Maintains list of external vehicles
     struct {
         // list management
-        AP_Int16    list_size_param;
+        AP_UInt16   list_size_param;
         uint16_t    list_size_allocated;
         adsb_vehicle_t *vehicle_list;
         uint16_t    vehicle_count;
@@ -297,16 +297,16 @@ private:
             AP_Int32    ICAO_id_param;
             int32_t     ICAO_id_param_prev = -1; // assume we never send
             char        callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN]; //Vehicle identifier (8 characters, null terminated, valid characters are A-Z, 0-9, " " only).
-            AP_Int8     emitterType;
-            AP_Int8     lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
-            AP_Int8     gpsOffsetLat;
-            AP_Int8     gpsOffsetLon;
+            AP_UInt8    emitterType;
+            AP_UInt8    lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
+            AP_UInt8    gpsOffsetLat;
+            AP_UInt8    gpsOffsetLon;
             uint16_t    stall_speed_cm;
-            AP_Int8     rfSelect;
-            AP_Int16    squawk_octal_param;
+            AP_UInt8    rfSelect;
+            AP_UInt16   squawk_octal_param;
             uint16_t    squawk_octal;
             float       maxAircraftSpeed_knots;
-            AP_Int8     rf_capable;
+            AP_UInt8    rf_capable;
             bool        was_set_externally;
         } cfg;
 
@@ -331,9 +331,9 @@ private:
     uint8_t detected_num_instances;
 
     // special ICAO of interest that ignored filters when != 0
-    AP_Int32 _special_ICAO_target;
+    AP_UInt32 _special_ICAO_target;
 
-    AP_Int32 _options;
+    AP_UInt32 _options;
 
     static const uint8_t _max_samples = 30;
     ObjectBuffer<adsb_vehicle_t> _samples{_max_samples};

@@ -26,7 +26,6 @@
 #define AP_MOTORS_HELI_COLLECTIVE_MAX_DEG       90.0f // maximum collective blade pitch angle in deg
 #define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -2.0f // minimum landed collective blade pitch angle in deg for modes using althold
 
-
 // rsc function output channels.
 #define AP_MOTORS_HELI_RSC                      CH_8
 
@@ -107,6 +106,9 @@ public:
     // helper for vehicle code to request autorotation states in the RSC.
     void set_autorotation_active(bool tf) { _main_rotor.autorotation.set_active(tf, false); }
 
+    // true if we are using a manual collective flight mode
+    void set_using_manual_collective_mode(bool using_manual_collective_mode) { _main_rotor.set_using_manual_collective_mode(using_manual_collective_mode); }
+
     // helper to force the RSC autorotation state to deactivated
     void force_deactivate_autorotation(void) { _main_rotor.autorotation.set_active(false, true); }
 
@@ -171,7 +173,10 @@ protected:
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
 
     // update_motor_controls - sends commands to motor controllers
-    virtual AP_Motors::SpoolState update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
+    virtual void update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
+
+    // update_spool_state - updates the spool state based on the desired state
+    virtual AP_Motors::SpoolState update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
 
     // run spool logic
     void                output_logic();
@@ -191,6 +196,9 @@ protected:
     // init_outputs - initialise Servo/PWM ranges and endpoints.  This
     // method also updates the initialised flag.
     virtual void init_outputs() = 0;
+
+    // calculate_armed_scalars - recalculates scalars that can change while armed
+    virtual void calculate_armed_scalars();
 
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;
@@ -215,11 +223,6 @@ protected:
 
     // Update _heliflags.rotor_runup_complete value writing log event on state change
     void set_rotor_runup_complete(bool new_value);
-
-#if HAL_LOGGING_ENABLED
-    // Returns the scaling value required to convert the collective angle parameters into the cyclic-output-to-angle conversion for blade angle logging
-    float get_cyclic_angle_scaler(void) const;
-#endif
 
     // enum values for HOVER_LEARN parameter
     enum HoverLearn {
@@ -249,12 +252,12 @@ protected:
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
     AP_Float        _collective_hover;          // estimated collective required to hover throttle in the range 0 ~ 1
     AP_Int8         _collective_hover_learn;    // enable/disabled hover collective learning
-    AP_Int8         _heli_options;              // bitmask for optional features
+    AP_UInt8        _heli_options;              // bitmask for optional features
     AP_Float        _collective_zero_thrust_deg;// Zero thrust blade collective pitch in degrees
     AP_Float        _collective_land_min_deg;   // Minimum Landed collective blade pitch in degrees for non-manual collective modes (i.e. modes that use altitude hold)
     AP_Float        _collective_max_deg;        // Maximum collective blade pitch angle in deg that corresponds to the PWM set for maximum collective pitch (H_COL_MAX)
     AP_Float        _collective_min_deg;        // Minimum collective blade pitch angle in deg that corresponds to the PWM set for minimum collective pitch (H_COL_MIN)
-
+    AP_Float        _cyclic_max_deg;            // Maximum cyclic blade pitch angle in deg that corresponds to the setting for maximum cyclic pitch (H_CYC_MAX)
     // internal variables
     float           _collective_zero_thrust_pct;      // collective zero thrutst parameter value converted to 0 ~ 1 range
     float           _collective_land_min_pct;      // collective land min parameter value converted to 0 ~ 1 range

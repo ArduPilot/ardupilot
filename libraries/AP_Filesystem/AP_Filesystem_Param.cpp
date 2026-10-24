@@ -510,6 +510,12 @@ int32_t AP_Filesystem_Param::write(int fd, const void *buf, uint32_t count)
         errno = EBADF;
         return -1;
     }
+    // The upload header stores the total file length in a uint16_t
+    const uint32_t max_file_size = UINT16_MAX;
+    if (count > max_file_size || r.file_ofs > max_file_size - count) {
+        errno = EINVAL;
+        return -1;
+    }
     struct header hdr;
     if (r.file_ofs == 0 && count >= sizeof(hdr)) {
         // pre-expand the buffer to the full size when we get the header
@@ -543,6 +549,7 @@ bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
     need_retry = false;
 
     const uint8_t *b = (const uint8_t *)r.writebuf->get_string();
+    const uint8_t *buffer_start = b;
     uint32_t length = r.writebuf->get_length();
     struct header hdr;
     if (length < sizeof(hdr)) {
@@ -560,14 +567,25 @@ bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
     char last_name[17] {};
 
     for (uint16_t i=0; i<hdr.num_params; i++) {
-        enum ap_var_type ptype = (enum ap_var_type)(b[0]&0x0F);
-        uint8_t flags = (enum ap_var_type)(b[0]>>4);
+        const uint32_t bytes_remaining = length - (b - buffer_start);
+        if (bytes_remaining < 2U) {
+            return false;
+        }
+        const uint8_t ptype = b[0]&0x0F;
+        if (ptype == AP_PARAM_NONE || ptype >= AP_PARAM_VECTOR3F) {
+            return false;
+        }
+        const uint8_t value_size = AP_Param::type_size((enum ap_var_type)ptype);
+        const uint8_t flags = b[0]>>4;
         if (flags != 0) {
             return false;
         }
         uint8_t common_len = b[1]&0xF;
         uint8_t name_len = (b[1]>>4)+1;
-        if (common_len + name_len > 16) {
+        if (common_len > strlen(last_name) || common_len + name_len > 16) {
+            return false;
+        }
+        if (2U + name_len + value_size > bytes_remaining) {
             return false;
         }
         char name[17];
@@ -585,13 +603,7 @@ bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
         // via mavftp:
         AP_Param *p = AP_Param::find(name, &ptype2, &flags2);
         if (p == nullptr || !p->allow_set_via_mavlink(flags2)) {
-            if (ptype == AP_PARAM_INT8) {
-                b++;
-            } else if (ptype == AP_PARAM_INT16) {
-                b += 2;
-            } else {
-                b += 4;
-            }
+            b += value_size;
             continue;
         }
 

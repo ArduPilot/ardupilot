@@ -33,7 +33,9 @@ export GIT_VERSION="abcdef"
 export GIT_VERSION_EXTENDED="0123456789abcdef"
 export GIT_VERSION_INT="15"
 export CHIBIOS_GIT_VERSION="12345667"
-export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+if [ -z "$GITHUB_ACTIONS" ] || [ "$GITHUB_ACTIONS" != "true" ]; then
+  export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+fi
 autotest_args=""
 
 # If CI_BUILD_TARGET is not set, build 4 different ones
@@ -111,7 +113,7 @@ function run_autotest() {
     if [ $c_compiler == "clang" ]; then
         w="$w --check-c-compiler=clang --check-cxx-compiler=clang++"
     fi
-    if [ "$NAME" == "Rover" ]; then
+    if [ "$BVEHICLE" == "build.Rover" ]; then
         w="$w --enable-math-check-indexes"
     fi
     if [ "x$CI_BUILD_DEBUG" != "x" ]; then
@@ -123,7 +125,20 @@ function run_autotest() {
     if [ "$NAME" == "Examples" ]; then
         w="$w --speedup=5 --timeout=14400 --debug --no-clean"
     fi
-    Tools/autotest/autotest.py --show-test-timings --junit --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
+    # options for autotest itself rather than for waf configure
+    ao=""
+    if [ "$NAME" == "Unit Tests ASAN" ]; then
+        # autotest puts --asan and --debug on the waf configure line
+        # itself, and needs to see the option to know to build and run
+        # only the sitl tests: --asan is implemented for that board alone
+        ao="--asan"
+    fi
+    if [ "$NAME" == "Examples ASAN" ]; then
+        # tells run.examples to collect sanitizer reports.  No configure
+        # happens for this target, so this does not select a compiler
+        ao="--asan"
+    fi
+    Tools/autotest/autotest.py --show-test-timings --junit $ao --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
 
@@ -162,11 +177,20 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Copter" "build.Copter" "test.CopterTests2b"
         continue
     fi
+    if [ "$t" == "sitltest-copter-tests2c" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2c"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests2d" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2d"
+        continue
+    fi
     if [ "$t" == "sitltest-can" ]; then
         echo "Building SITL Periph GPS"
         $waf configure --board sitl
         $waf copter
         run_autotest "Copter" "build.SITLPeriphUniversal" "test.CAN"
+        run_autotest "Copter" "build.SITLPeriphBattMon" "test.BattCAN"
         continue
     fi
     if [ "$t" == "sitltest-plane-tests1a" ]; then
@@ -181,8 +205,16 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
         continue
     fi
-    if [ "$t" == "sitltest-quadplane" ]; then
-        run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
+    if [ "$t" == "sitltest-quadplane-tests1a" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1b" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1b"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1c" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1c"
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then
@@ -218,10 +250,22 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "unit-tests-asan" ]; then
+        run_autotest "Unit Tests ASAN" "build.unit_tests" "run.unit_tests"
+        continue
+    fi
+
     if [ "$t" == "examples" ]; then
         ./waf configure --board=sitl --debug
         ./waf examples
         run_autotest "Examples" "--no-clean" "run.examples"
+        continue
+    fi
+
+    if [ "$t" == "examples-asan" ]; then
+        ./waf configure --board=sitl --debug --asan
+        ./waf examples
+        run_autotest "Examples ASAN" "--no-clean" "run.examples"
         continue
     fi
 
@@ -477,6 +521,13 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "clang_scan_build" ]; then
+        unset BUILDROOT
+        echo "Running SITL clang-scan-build test"
+        ./Tools/autotest/autotest.py clang-scan-build
+        continue
+    fi
+
     if [ "$t" == "validate_board_list" ]; then
         echo "Validating board list"
         ./Tools/autotest/validate_board_list.py
@@ -581,6 +632,7 @@ for t in $CI_BUILD_TARGET; do
         for v in Rover Tracker Copter Plane Sub Blimp; do
             python3 Tools/autotest/logger_metadata/parse.py --vehicle $v
         done
+        python3 Tools/scripts/decode_devid.py --dump-json /dev/null --dump-json5 /dev/null
         continue
     fi
 
@@ -597,6 +649,18 @@ for t in $CI_BUILD_TARGET; do
 
         if [[ $t == "linux" ]]; then
             $waf check
+            (
+                storage_test_dir=$(mktemp -d -p /dev/shm)
+                trap 'rm -rf "$storage_test_dir"' EXIT
+                storage_test_runner=()
+                if (( EUID == 0 )); then
+                    # Container root cannot necessarily create realtime threads.
+                    chown nobody "$storage_test_dir"
+                    storage_test_runner=(runuser -u nobody --)
+                fi
+                "${storage_test_runner[@]}" timeout --kill-after=5 120 \
+                    build/linux/examples/StorageRace --storage-directory "$storage_test_dir"
+            )
         fi
         continue
     fi

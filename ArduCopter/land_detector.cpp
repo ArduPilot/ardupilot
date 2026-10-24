@@ -94,7 +94,7 @@ void Copter::update_land_detector()
         bool throttle_mix_at_min = attitude_control->is_throttle_mix_min();
         // set throttle_mix_at_min to true because throttle is never at mix min in airmode
         // increase land_trigger_sec when using airmode
-        if (flightmode->has_manual_throttle() && air_mode == AirMode::AIRMODE_ENABLED) {
+        if (flightmode->has_manual_throttle() && air_mode_active()) {
             land_trigger_sec = LAND_AIRMODE_DETECTOR_TRIGGER_SEC;
             throttle_mix_at_min = true;
         }
@@ -289,7 +289,7 @@ void Copter::update_throttle_mix()
 
     if (flightmode->has_manual_throttle()) {
         // manual throttle
-        if (channel_throttle->get_control_in() <= 0 && air_mode != AirMode::AIRMODE_ENABLED) {
+        if (channel_throttle->get_control_in() <= 0 && !air_mode_active()) {
             attitude_control->set_throttle_mix_min();
         } else {
             attitude_control->set_throttle_mix_man();

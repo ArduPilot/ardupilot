@@ -10,7 +10,7 @@ class SerialOptionsDev {
 public:
     SerialOptionsDev(void);
     static const struct AP_Param::GroupInfo var_info[];
-    AP_Int32 options;
+    AP_UInt32 options;
     AP_Int8 rtscts;
 };
 

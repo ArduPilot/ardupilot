@@ -7,12 +7,16 @@
 #include <AP_gtest.h>
 
 #include <AP_GSOF/AP_GSOF.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include <cstdio>
 #include <cstdlib>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
+#if HAL_LOGGING_ENABLED
+static AP_Logger logger;
+#endif
 
 TEST(AP_GSOF, incomplete_packet)
 {
@@ -61,6 +65,30 @@ static bool feed_packet(AP_GSOF &gsof, AP_GSOF::MsgTypes &parsed,
         }
     }
     return got;
+}
+
+TEST(AP_GSOF, position_time_fields)
+{
+    // GSOF1: TOW=0x01020304, week=2434, 15 satellites and valid RTK flags.
+    const uint8_t packet[] = {
+        0x02, 0x00, 0x40, 0x0F,
+        0x01, 0x00, 0x00,
+        0x01, 0x0A,
+        0x01, 0x02, 0x03, 0x04,
+        0x09, 0x82,
+        0x0F, 0xAF, 0x07, 0x11,
+        0xC6, 0x03,
+    };
+
+    AP_GSOF gsof;
+    AP_GSOF::MsgTypes parsed;
+    EXPECT_TRUE(feed_packet(gsof, parsed, packet, sizeof(packet)));
+    EXPECT_TRUE(parsed.get(AP_GSOF::POS_TIME));
+    EXPECT_EQ(gsof.pos_time.time_week_ms, 0x01020304U);
+    EXPECT_EQ(gsof.pos_time.time_week, 2434U);
+    EXPECT_EQ(gsof.pos_time.num_sats, 15U);
+    EXPECT_EQ(gsof.pos_time.pos_flags1, 0xAFU);
+    EXPECT_EQ(gsof.pos_time.pos_flags2, 0x07U);
 }
 
 // Packet layout (DCOL framing):

@@ -55,7 +55,17 @@ This list is automatically generated from the latest ardupilot source code, and 
         return ret
 
     def close(self):
-        self.f.write(self.preamble)
+        preamble = self.preamble
+        # Prepend optional firmware metadata as RST comments
+        if self.git_sha is not None or self.git_tag is not None:
+            firmware_lines = [".. Firmware metadata\n"]
+            if self.git_sha is not None:
+                firmware_lines.append(f".. git_sha: {self.git_sha}\n")
+            if self.git_tag is not None:
+                firmware_lines.append(f".. git_tag: {self.git_tag}\n")
+            firmware_lines.append("\n")
+            preamble = "".join(firmware_lines) + preamble
+        self.f.write(preamble)
         self.f.write(self.t)
         self.f.close()
 

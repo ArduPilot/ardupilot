@@ -90,7 +90,14 @@ extern const AP_HAL::HAL& hal;
 #define LOGGING_FIRST_DYNAMIC_MSGID 254
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// the autotest suites create far more logs in one run than a vehicle
+// does between downloads; a wrap part way through a suite leaves the
+// harness reading a stale log
+static constexpr uint16_t MAX_LOG_FILES = 5000;
+#else
 static constexpr uint16_t MAX_LOG_FILES = 500;
+#endif
 static constexpr uint16_t MIN_LOG_FILES = 2;
 
 const AP_Param::GroupInfo AP_Logger::var_info[] = {
@@ -99,6 +106,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
 
     // @Param: _FILE_BUFSIZE
@@ -171,7 +179,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Range: 0 1000
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
+    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 10),
 #endif
 
 #if HAL_LOGGING_BLOCK_ENABLED
@@ -194,9 +202,12 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_DARM_RATEMAX",  11, AP_Logger, _params.disarm_ratemax, 0),
 
+    // SITL defaults to 5000 so a whole autotest step fits without the
+    // log number wrapping.  Values above 500 are still in testing, so
+    // the documented range stays at 500.
     // @Param: _MAX_FILES
     // @DisplayName: Maximum number of log files
-    // @Description: This sets the maximum number of log file that will be written on dataflash or sd card before starting to rotate log number. Limit is capped at 500 logs.
+    // @Description: This sets the maximum number of log file that will be written on dataflash or sd card before starting to rotate log number. The value is capped at a board-dependent maximum.
     // @Range: 2 500
     // @Increment: 1
     // @User: Advanced
@@ -218,12 +229,9 @@ AP_Logger::AP_Logger()
     _singleton = this;
 }
 
-void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
+void AP_Logger::init(const AP_UInt32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
 {
     _log_bitmask = &log_bitmask;
-
-    // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
-    _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
 
     if (hal.util->was_watchdog_armed()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
@@ -664,7 +672,7 @@ bool AP_Logger::should_log(const uint32_t mask) const
  */
 bool AP_Logger::in_log_download() const
 {
-    if (uint8_t(_params.backend_types) & uint8_t(Backend_Type::BLOCK)) {
+    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         // when we have a BLOCK backend then listing completely prevents logging
         return transfer_activity != TransferActivity::IDLE;
     }
@@ -859,9 +867,9 @@ uint16_t AP_Logger::get_num_logs(void) {
 uint16_t AP_Logger::get_max_num_logs() {
     const auto max_logs = constrain_uint16(_params.max_log_files.get(), MIN_LOG_FILES, MAX_LOG_FILES);
     if (_params.max_log_files.get() != max_logs) {
-        _params.max_log_files.set_and_save_ifchanged(static_cast<int16_t>(max_logs));
+        _params.max_log_files.set_and_save_ifchanged(max_logs);
     }
-    return static_cast<uint16_t>(_params.max_log_files.get());
+    return _params.max_log_files;
 }
 
 /* we're started if any of the backends are started */
@@ -916,7 +924,7 @@ void AP_Logger::Write_Message(const char *message)
 {
     FOR_EACH_BACKEND(Write_Message(message));
 }
-void AP_Logger::Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq)
+void AP_Logger::Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq)
 {
     FOR_EACH_BACKEND(Write_MessageChunk(id, messagechunk, chunk_seq));
 }
@@ -961,7 +969,7 @@ void AP_Logger::Write_Fence()
 
 void AP_Logger::Write_NamedValueFloat(const char *name, float value)
 {
-    WriteStreaming(
+    Write(
         "NVF",
         "TimeUS,Name,Value",
         "s#-",
@@ -1426,6 +1434,14 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
  */
 bool AP_Logger::check_crash_dump_save(void)
 {
+#if defined(AP_CRASHDUMP_FATFS_ENABLED) && AP_CRASHDUMP_FATFS_ENABLED
+    if (hal.util->last_crash_dump_size() > 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Previous CrashDump: APM/CrashDump.DAT");
+        return true;
+    }
+    // The SD card may not be mounted yet, so keep checking.
+    return false;
+#else
     int fd = AP::FS().open("@SYS/crash_dump.bin", O_RDONLY);
     if (fd == -1) {
         // we don't have a crash dump file. The @SYS filesystem
@@ -1447,6 +1463,7 @@ bool AP_Logger::check_crash_dump_save(void)
     AP::FS().close(fd);
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Saved crash_dump.bin");
     return true;
+#endif
 }
 
 // thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
@@ -1605,6 +1622,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
         "@SYS/storage.bin",
         "@SYS/crash_dump.bin",
         "@ROMFS/defaults.parm",
+        "APM/CrashDump.DAT",
     };
     for (const auto *name : log_content_filenames) {
         log_file_content(at_arm_file_content, name);
@@ -1719,7 +1737,7 @@ void AP_Logger::file_content_update(FileContent &file_content)
     /* this function is called at around 100Hz on average (tested on
        400Hz copter). We don't want to saturate the logging with file
        data, so we reduce the frequency of 64 byte file writes by a
-       factor of 10. For the file crash_dump.bin we dump 10x faster so
+       factor of 10. For crash dump files we dump 10x faster so
        we get it in a reasonable time (full dump of 450k in about 1
        minute)
     */
@@ -1732,7 +1750,8 @@ void AP_Logger::file_content_update(FileContent &file_content)
     if (file_content.fd == -1) {
         // open a new file
         file_content.fd  = AP::FS().open(file->filename, O_RDONLY);
-        file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0;
+        file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0 ||
+                            strcmp(file->filename, "APM/CrashDump.DAT") == 0;
         if (file_content.fd == -1) {
             file_content.remove_and_free(file);
             return;

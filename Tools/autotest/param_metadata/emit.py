@@ -5,12 +5,25 @@
 import re
 
 
+def html_comment_safe(value):
+    """Keep metadata valid inside an HTML comment."""
+    while '--' in value:
+        value = value.replace('--', '- -')
+    return value
+
+
 class Emit:
     def __init__(self):
         pass
 
     prog_values_field = re.compile(r"-?\d*\.?\d+: ?[\w ]+,?")
     emit_legacy_params = True
+    git_sha = None
+    git_tag = None
+
+    def output_fname(self):
+        '''Return the path of the primary output file, or None if not applicable.'''
+        return None
 
     def close(self):
         pass

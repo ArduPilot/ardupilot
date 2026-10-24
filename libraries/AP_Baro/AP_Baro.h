@@ -142,13 +142,11 @@ public:
     float get_sealevel_pressure(float pressure, float altitude) const;
 
     // get scale factor required to convert equivalent to true
-    // airspeed. This should only be used to update the AHRS value
-    // once per loop. Please use AP::ahrs().get_EAS2TAS()
-    float _get_EAS2TAS(void) const;
-
-    // get air density / sea level density - decreases as altitude climbs
-    // please use AP::ahrs()::get_air_density_ratio()
-    float _get_air_density_ratio(void);
+    // airspeed.  This is a cached value, updated once per loop in
+    // update().  You probably want AP::ahrs().get_EAS2TAS() - the
+    // value could reasonably come from an ExternalAHRS system instead
+    // of this library.
+    float get_EAS2TAS(void) const { return _EAS2TAS; }
 
     // get current climb rate in meters/s. A positive number means
     // going up
@@ -231,7 +229,7 @@ public:
     // check if an option is set
     bool option_enabled(const Options option) const
     {
-        return (uint16_t(_options.get()) & uint16_t(option)) != 0;
+        return (_options & uint16_t(option)) != 0;
     }
 
 private:
@@ -300,7 +298,7 @@ private:
         bool healthy;                   // true if sensor is healthy
         bool alt_ok;                    // true if calculated altitude is ok
         bool calibrated;                // true if calculated calibrated successfully
-        AP_Int32 bus_id;
+        AP_UInt32 bus_id;
 #if HAL_BARO_WIND_COMP_ENABLED
         WindCoeff wind_coeff;
         Vector3f dynamic_pressure;      // calculated dynamic pressure
@@ -315,6 +313,13 @@ private:
 
     AP_Float                            _alt_offset;
     float                               _alt_offset_active;
+    float                               _EAS2TAS = 1.0;         // cached scale factor converting equivalent to true airspeed, updated in update()
+
+    // calculate scale factor required to convert equivalent to true
+    // airspeed.  This is called once per loop from update() to
+    // refresh the value returned by get_EAS2TAS():
+    float _get_EAS2TAS(void) const;
+
     AP_Float                            _field_elevation;       // field elevation in meters
     float                               _field_elevation_active;
     uint32_t                            _field_elevation_last_ms;
@@ -351,13 +356,13 @@ private:
 #endif  // AP_BARO_LPS2XH_ENABLED
 
     AP_Int8                            _filter_range;  // valid value range from mean value
-    AP_Int32                           _baro_probe_ext;
+    AP_UInt32                          _baro_probe_ext;
 
 #ifndef HAL_BUILD_AP_PERIPH
     AP_Float                           _alt_error_max;
 #endif
 
-    AP_Int16                           _options;
+    AP_UInt16                          _options;
 
     // semaphore for API access from threads
     HAL_Semaphore                      _rsem;

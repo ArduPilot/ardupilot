@@ -6,7 +6,6 @@
 #include <AC_Avoidance/AC_Avoid.h>
 #include "AC_Sprayer/AC_Sprayer.h"
 #include <AP_AIS/AP_AIS.h>
-#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Follow/AP_Follow.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "AP_Rally.h"
@@ -42,7 +41,7 @@ public:
         //
         k_param_log_bitmask_old = 10,  // unused
         k_param_num_resets_old,         // unused
-        k_param_reset_switch_chan,
+        k_param_reset_switch_chan,  // unused
         k_param_initial_mode,
         k_param_scheduler,
         k_param_relay,
@@ -125,7 +124,7 @@ public:
         k_param_speed_cruise,
         k_param_speed_turn_gain,    // unused
         k_param_speed_turn_dist,    // unused
-        k_param_ch7_option,         // unused
+        k_param_ch7_option,         // unused as a parameter; key retained for the RC7_OPTION conversion
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
         k_param_turn_circle,  // unused
@@ -237,17 +236,15 @@ public:
 
     // Misc
     //
-    AP_Int32    log_bitmask;
-    AP_Int8     reset_switch_chan;
+    AP_UInt32   log_bitmask;
     AP_Int8     initial_mode;
 
     // navigation parameters
     //
     AP_Float    speed_cruise;
-    AP_Int8     ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
-    AP_Int16    gcs_pid_mask;
+    AP_UInt16   gcs_pid_mask;
 
     // Throttle
     //
@@ -258,7 +255,7 @@ public:
     AP_Int8     fs_action;
     AP_Float    fs_timeout;
     AP_Int8     fs_throttle_enabled;
-    AP_Int16    fs_throttle_value;
+    AP_UInt16   fs_throttle_value;
     AP_Int8     fs_gcs_enabled;
     AP_Int8     fs_crash_check;
     AP_Int8     fs_ekf_action;
@@ -291,10 +288,6 @@ public:
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     // advanced failsafe library
     AP_AdvancedFailsafe_Rover afs;
-#endif
-
-#if AP_BEACON_ENABLED
-    AP_Beacon beacon;
 #endif
 
     // wheel encoders
@@ -342,6 +335,18 @@ public:
 
     // pitch/roll angle for crash check
     AP_Int8 crash_angle;
+
+    // min throttle for crash check
+    AP_Float crash_thr_min;
+
+    // velocity threshold for crash check
+    AP_Float crash_vel_min;
+
+    // turn rate threshold for crash check
+    AP_Float crash_turn_rate_min;
+
+    // crash trigger time in seconds
+    AP_Float crash_timeout;
 
 #if AP_FOLLOW_ENABLED
     // follow mode library
@@ -400,7 +405,7 @@ public:
     AP_Float loiter_speed_gain;
 
     // FS options
-    AP_Int32 fs_options;
+    AP_UInt32 fs_options;
 
 #if HAL_TORQEEDO_ENABLED
     // torqeedo motor driver
@@ -411,16 +416,19 @@ public:
     AR_PosControl pos_control;
 
     // guided options bitmask
-    AP_Int32 guided_options;
+    AP_UInt32 guided_options;
 
     // manual mode options
-    AP_Int32 manual_options;
+    AP_UInt32 manual_options;
 
     // manual mode steering expo
     AP_Float manual_steering_expo;
 
     // FS GCS timeout trigger time
     AP_Float fs_gcs_timeout;
+
+    // GUIDED mode timeout
+    AP_Float guided_timeout;
 
     class ModeCircle mode_circle;
 };

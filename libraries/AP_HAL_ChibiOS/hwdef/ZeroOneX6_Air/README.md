@@ -71,7 +71,7 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 | SERIAL5 | Telem3   | UART2   |DMA Enabled |
 | SERIAL6 | User    | UART4    |DMA Enabled |
 | SERIAL7 | Debug    | UART3    |DMA Enabled |
-| SERIAL8 | OTG-SLCAN| USB      |
+| SERIAL8 | OTG2     | USB      |
 
 ## RC Input
 
@@ -106,7 +106,7 @@ The A9-15 outputs are in 4 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
-## GPIO
+## GPIOs
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s SERVOx_FUNCTION to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
 
@@ -151,7 +151,7 @@ The X6_Air flight controller built-in industrial-grade electronic compass chip I
 interference, the autopilot is usually used with an external I2C compass as
 part of a GPS/Compass combination.
 
-## Analog inputs
+## Analog Inputs
 
 The X6_Air flight controller has 2 analog inputs.
 

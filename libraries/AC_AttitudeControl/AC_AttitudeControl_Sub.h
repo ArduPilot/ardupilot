@@ -46,9 +46,6 @@ public:
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
-    // Calculate body-frame throttle required to produce the given earth-frame throttle input (accounts for vehicle tilt)
-	float get_throttle_boosted(float throttle_in);
-
     // Set desired throttle vs attitude mixing (actual mix is slewed toward this value over 1~2 seconds)
     // Low values favor pilot/autopilot throttle over attitude control; high values prioritize attitude control
     // Has no effect when throttle is above hover throttle

@@ -1,0 +1,4 @@
+# setup for leds
+SERVO7_FUNCTION 120
+# define osd type
+OSD_TYPE2 5

@@ -182,7 +182,7 @@ AP_GPS_SBF::read(void)
                                 if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
                                     targetGA = "MultiAntenna";
                                 }
-                                if (asprintf(&config_string, "sga, %s\n", targetGA)) {
+                                if (asprintf(&config_string, "sga, %s\n", targetGA) == -1) {
                                   config_string = nullptr;
                                 }
                                 break;
@@ -598,7 +598,7 @@ AP_GPS_SBF::process_message(void)
                 state.gps_yaw_accuracy = sqrtf(temp.Cov_HeadHead);
                 state.have_gps_yaw_accuracy = true;
             } else {
-                state.gps_yaw_accuracy = false;
+                state.have_gps_yaw_accuracy = false;
             }
         }
         break;

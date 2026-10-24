@@ -99,7 +99,11 @@ def build_examples(**kwargs):
     for target in 'Pixhawk1', 'navio', 'linux', 'sitl':
         print("Running build.examples for %s" % target)
         try:
-            util.build_examples(target, **kwargs)
+            # --asan is only implemented for the sitl board
+            board_kwargs = dict(kwargs)
+            if target != 'sitl':
+                board_kwargs['asan'] = False
+            util.build_examples(target, **board_kwargs)
         except Exception as e:  # noqa: BLE001
             print("Failed build_examples on board=%s" % target)
             print(str(e))
@@ -108,9 +112,19 @@ def build_examples(**kwargs):
     return True
 
 
+def unit_test_boards(asan):
+    """Boards to build and run the unit tests for."""
+    if asan:
+        # --asan is only implemented for the sitl board, so building the
+        # linux tests here would just run them uninstrumented a second
+        # time - the unit-tests job already covers them
+        return ['sitl']
+    return ['linux', 'sitl']
+
+
 def build_unit_tests(**kwargs):
     """Build tests."""
-    for target in ['linux', 'sitl']:
+    for target in unit_test_boards(kwargs.get('asan')):
         print("Running build.unit_tests for %s" % target)
         try:
             util.build_tests(target, **kwargs)
@@ -125,14 +139,18 @@ def build_unit_tests(**kwargs):
 def run_unit_test(test):
     """Run unit test file."""
     print("Running (%s)" % test)
-    subprocess.check_call([test])
+    env = os.environ.copy()
+    # stop llvm-symbolizer fetching debug info over the network; ignored
+    # by tests which were not built with --asan
+    env["DEBUGINFOD_URLS"] = ""
+    subprocess.check_call([test], env=env)
 
 
-def run_unit_tests():
+def run_unit_tests(asan=False):
     """Run all unit tests files."""
     success = True
     fail_list = []
-    for target in ['linux', 'sitl']:
+    for target in unit_test_boards(asan):
         binary_dir = util.reltopdir(os.path.join('build',
                                                  target,
                                                  'tests',
@@ -164,7 +182,19 @@ def run_clang_scan_build():
         print("Failed scan-build-clean")
         return False
 
-    if util.run_cmd("scan-build python3 waf build",
+    # directories we never want in the reports: git submodules, vendored
+    # third-party code and machine-generated sources.  --exclude keeps them
+    # out of the browsable HTML; process_scan_build_output.py filters the
+    # same list (EXCLUDE_DIRS) out of the plists, which is what the ratchet
+    # counts.
+    from scan_build_suppressions import EXCLUDE_DIRS
+    exclude_args = ' '.join(
+        '--exclude %s' % util.reltopdir(d.rstrip('/')) for d in EXCLUDE_DIRS
+    )
+    # -plist-html emits both the browsable HTML reports and .plist files;
+    # the .plist files carry issue_hash_content_of_line_in_context, a
+    # line-number-independent hash used to match the suppressions list.
+    if util.run_cmd("scan-build -plist-html %s python3 waf build" % exclude_args,
                     directory=util.reltopdir('.')) != 0:
         print("Failed scan-build-build")
         return False
@@ -273,6 +303,8 @@ __bin_names = {
 
     "CopterTests2a": "arducopter",
     "CopterTests2b": "arducopter",
+    "CopterTests2c": "arducopter",
+    "CopterTests2d": "arducopter",
 
     "Plane": "arduplane",
     "PlaneTests1a": "arduplane",
@@ -283,6 +315,9 @@ __bin_names = {
     "Tracker": "antennatracker",
     "Helicopter": "arducopter-heli",
     "QuadPlane": "arduplane",
+    "QuadPlaneTests1a": "arduplane",
+    "QuadPlaneTests1b": "arduplane",
+    "QuadPlaneTests1c": "arduplane",
     "Sub": "ardusub",
     "Blimp": "blimp",
     "BalanceBot": "ardurover",
@@ -345,18 +380,23 @@ def find_specific_test_to_run(step):
 tester_class_map = {
     "test.Blimp": blimp.AutoTestBlimp,
     "test.Copter": arducopter.AutoTestCopter,
-    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
-    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s
-    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # 5m17s
-    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # 8m20s
-    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
-    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
-    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
+    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # ~14m on CI
+    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # ~15m on CI
+    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # ~14m on CI
+    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # ~14m on CI
+    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # ~14m on CI
+    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # ~14m on CI
+    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # ~14m on CI
+    "test.CopterTests2c": arducopter.AutoTestCopterTests2c, # ~14m on CI
+    "test.CopterTests2d": arducopter.AutoTestCopterTests2d, # ~14m on CI
     "test.Plane": arduplane.AutoTestPlane,
-    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
-    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
-    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c,
+    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a, # ~12m on CI
+    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b, # ~12m on CI
+    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c, # ~12m on CI
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
+    "test.QuadPlaneTests1a": quadplane.AutoTestQuadPlaneTests1a, # ~11m on CI
+    "test.QuadPlaneTests1b": quadplane.AutoTestQuadPlaneTests1b, # ~11m on CI
+    "test.QuadPlaneTests1c": quadplane.AutoTestQuadPlaneTests1c, # ~11m on CI
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
@@ -427,6 +467,7 @@ def run_step(step):
         "ubsan_abort" : opts.ubsan_abort,
         "num_aux_imus" : opts.num_aux_imus,
         "dronecan_tests" : opts.dronecan_tests,
+        "asan" : opts.asan,
     }
 
     if opts.Werror:
@@ -499,9 +540,9 @@ def run_step(step):
                               "customisation" : customisation,
                               "param_file" : param_file}
                 supplementary_binaries.append(sup_binary)
-            # we are running in conjunction with a supplementary app
-            # can't have speedup
-            opts.speedup = 1.0
+            # note that speedup is permitted here: the vehicle SITL is
+            # started with --sim-periph-lockstep so it cannot outrun
+            # the supplementary peripherals
             break
 
     fly_opts = {
@@ -509,6 +550,7 @@ def run_step(step):
         "use_map": opts.map,
         "valgrind": opts.valgrind,
         "callgrind": opts.callgrind,
+        "asan": opts.asan,
         "gdb": opts.gdb,
         "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
@@ -526,10 +568,12 @@ def run_step(step):
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
+        "unix_domain_socket": opts.unix_domain_socket,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
 
+    fly_opts["check_parameter_leaks"] = opts.check_parameter_leaks
     fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
     # handle "test.Copter" etc:
@@ -555,7 +599,7 @@ def run_step(step):
         return build_examples(**build_opts)
 
     if step == 'run.examples':
-        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
+        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False, asan=opts.asan)
 
     if step == 'build.Parameters':
         return build_parameters()
@@ -567,7 +611,7 @@ def run_step(step):
         return build_unit_tests(**build_opts)
 
     if step == 'run.unit_tests':
-        return run_unit_tests()
+        return run_unit_tests(asan=opts.asan)
 
     if step == 'clang-scan-build':
         return run_clang_scan_build()
@@ -833,6 +877,15 @@ if __name__ == "__main__":
     ''' main program '''
     os.environ['PYTHONUNBUFFERED'] = '1'
 
+    # pin SITL's multicast traffic (the simulation state a periph
+    # consumes, and multicast CAN) to the loopback interface.  By
+    # default it follows the routing table, which means it goes out
+    # whichever interface has the default route and stops working when
+    # that route is not up or is not multicast-capable; a test should
+    # not pass or fail on the state of the machine's network.  Every
+    # SITL we start inherits this.
+    os.environ.setdefault('SITL_MULTICAST_IF_ADDR', '127.0.0.1')
+
     if sys.platform != "darwin":
         os.putenv('TMPDIR', util.reltopdir('tmp'))
 
@@ -983,10 +1036,27 @@ if __name__ == "__main__":
                          default=None,
                          type='int',
                          help='speedup to run the simulations at')
+    group_sim.add_option("--check-parameter-leaks",
+                         action='store_true',
+                         dest='check_parameter_leaks',
+                         default=True,
+                         help='after each test, check no parameter the suite '
+                         'could not revert has been left changed; catches '
+                         'leaks into the tests which follow.  On by default')
+    group_sim.add_option("--no-check-parameter-leaks",
+                         action='store_false',
+                         dest='check_parameter_leaks',
+                         help='do not check for parameter leaks after each '
+                         'test.  The check downloads the full parameter set '
+                         'once per test')
     group_sim.add_option("--valgrind",
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under valgrind')
+    group_sim.add_option("--asan",
+                         default=False,
+                         action='store_true',
+                         help='enable ASAN error checking (binary must be built with --asan --debug)')
     group_sim.add_option("", "--callgrind",
                          action='store_true',
                          default=False,
@@ -1027,6 +1097,10 @@ if __name__ == "__main__":
     group_sim.add_option("", "--replay",
                          action='store_true',
                          help="enable replay logging for tests")
+    group_sim.add_option("--unix-domain-socket", "--uds",
+                         action='store_true',
+                         default=False,
+                         help="use Unix domain sockets for SITL UARTs")
     parser.add_option_group(group_sim)
 
     group_completion = optparse.OptionGroup(parser, "Completion helpers")
@@ -1067,6 +1141,8 @@ if __name__ == "__main__":
             opts.timeout *= 10
         elif opts.callgrind:
             opts.timeout *= 10
+        elif opts.asan:
+            opts.timeout *= 2
         elif opts.gdb:
             opts.timeout = None
 
@@ -1133,10 +1209,16 @@ if __name__ == "__main__":
 
         'test.CopterTests2a',
         'test.CopterTests2b',
+        'test.CopterTests2c',
+        'test.CopterTests2d',
 
         'test.PlaneTests1a',
         'test.PlaneTests1b',
         'test.PlaneTests1c',
+
+        'test.QuadPlaneTests1a',
+        'test.QuadPlaneTests1b',
+        'test.QuadPlaneTests1c',
 
         'clang-scan-build',
     ]
@@ -1168,6 +1250,8 @@ if __name__ == "__main__":
 
         "fly.ArduCopterTests2a": "test.CopterTests2a",
         "fly.ArduCopterTests2b": "test.CopterTests2b",
+        "fly.ArduCopterTests2c": "test.CopterTests2c",
+        "fly.ArduCopterTests2d": "test.CopterTests2d",
 
     }
 
@@ -1216,7 +1300,7 @@ if __name__ == "__main__":
 
     if lck is None:
         print("autotest is locked - exiting.  lckfile=(%s)" % (lckfile,))
-        sys.exit(0)
+        sys.exit(1)
 
     atexit.register(util.pexpect_close_all)
 

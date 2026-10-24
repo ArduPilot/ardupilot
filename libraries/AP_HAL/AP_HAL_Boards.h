@@ -36,7 +36,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_PXFMINI    1012
 #define HAL_BOARD_SUBTYPE_LINUX_NAVIO2     1013
 #define HAL_BOARD_SUBTYPE_LINUX_DISCO      1014
-#define HAL_BOARD_SUBTYPE_LINUX_AERO       1015
+// #define HAL_BOARD_SUBTYPE_LINUX_AERO       1015
 #define HAL_BOARD_SUBTYPE_LINUX_DARK       1016
 #define HAL_BOARD_SUBTYPE_LINUX_BLUE       1018
 // #define HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ 1019
@@ -162,16 +162,8 @@
 #define HAL_OS_SOCKETS 0
 #endif
 
-#ifndef HAL_OS_POSIX_IO
-#define HAL_OS_POSIX_IO 0
-#endif
-
 #ifndef HAL_PARAM_DEFAULTS_PATH
 #define HAL_PARAM_DEFAULTS_PATH nullptr
-#endif
-
-#ifndef HAL_HAVE_IMU_HEATER
-#define HAL_HAVE_IMU_HEATER 0
 #endif
 
 #ifndef HAL_NUM_CAN_IFACES
@@ -184,10 +176,6 @@
 
 #ifndef HAL_WITH_IO_MCU_BIDIR_DSHOT
 #define HAL_WITH_IO_MCU_BIDIR_DSHOT 0
-#endif
-
-#ifndef HAL_WITH_IO_MCU_DSHOT
-#define HAL_WITH_IO_MCU_DSHOT HAL_WITH_IO_MCU_BIDIR_DSHOT
 #endif
 
 #ifndef HAL_REQUIRES_BDSHOT_SUPPORT
@@ -220,12 +208,8 @@
 #define AP_HAL_UARTDRIVER_ENABLED 1
 #endif
 
-#ifndef HAL_OS_FATFS_IO
-#define HAL_OS_FATFS_IO 0
-#endif
-
-#ifndef HAL_OS_LITTLEFS_IO
-#define HAL_OS_LITTLEFS_IO 0
+#ifndef AP_REBOOT_MASS_STORAGE_ENABLED
+#define AP_REBOOT_MASS_STORAGE_ENABLED 0
 #endif
 
 #ifndef HAL_BARO_DEFAULT
@@ -333,16 +317,16 @@
 #if defined(STM32H7) || CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 // Enough for a double-notch per motor on an octa using three IMUs and one harmonics
 // plus one static notch with one double-notch harmonics
-#define HAL_HNF_MAX_FILTERS 54
+#define HAL_HNF_MAX_FILTERS 78
 #elif defined(STM32F7)
 // Enough for a notch per motor on an octa using three IMUs and one harmonics
 // plus one static notch with one harmonics
-#define HAL_HNF_MAX_FILTERS 27
+#define HAL_HNF_MAX_FILTERS 39
 #else
 // Enough for a notch per motor on an octa quad using two IMUs and one harmonic
 // plus one static notch with one harmonic
 // Or triple-notch per motor on one IMU with one harmonic
-#define HAL_HNF_MAX_FILTERS 24
+#define HAL_HNF_MAX_FILTERS 30
 #endif
 #endif // HAL_HNF_MAX_FILTERS
 
@@ -414,4 +398,12 @@
 
 #ifndef AP_CPU_IDLE_STATS_ENABLED
 #define AP_CPU_IDLE_STATS_ENABLED 0
+#endif
+
+#ifndef AP_USB_DEBUG_ENABLED
+#define AP_USB_DEBUG_ENABLED 0
+#endif
+
+#ifndef AP_USB_DEBUG_STARTUP_WAIT_ENABLED
+#define AP_USB_DEBUG_STARTUP_WAIT_ENABLED 0
 #endif

@@ -224,7 +224,7 @@ private:
     bool read_response(uint8_t *response_buffer);
     // parses the response and updates the vtx settings
     bool parse_frame_response(const uint8_t *buffer);
-    bool parse_response_buffer(const uint8_t *buffer);
+    bool parse_response_buffer(const uint8_t *buffer, uint8_t buffer_length);
     // get last reading from the fifo queue
     bool get_readings(AP_VideoTX *vtx_dest);
 

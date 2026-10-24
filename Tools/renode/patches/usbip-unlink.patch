@@ -1,0 +1,194 @@
+--- a/src/Emulator/Extensions/Utilities/USBIP/USBIPServer.cs
++++ b/src/Emulator/Extensions/Utilities/USBIP/USBIPServer.cs
+@@ -14,6 +14,7 @@
+ using System.Linq;
+ using System.Text.RegularExpressions;
+ using System.Threading;
++using System.Threading.Tasks;
+
+ using Antmicro.Renode.Core;
+ using Antmicro.Renode.Core.Structure;
+@@ -82,8 +83,12 @@
+             additionalDataCount = 0;
+
+             buffer.Clear();
+-            cancellationToken.Cancel();
+-            cancellationToken = new CancellationTokenSource();
++            lock(pendingReads)
++            {
++                cancellationToken.Cancel();
++                pendingReads.Clear();
++                cancellationToken = new CancellationTokenSource();
++            }
+         }
+
+         private void SendResponse(IEnumerable<byte> bytes)
+@@ -260,9 +265,13 @@
+                             ? buffer.Skip(buffer.Count - additionalDataCount).Take(additionalDataCount).ToArray()
+                             : null;
+                     var replyHeader = urbHeader;
++                    var token = cancellationToken.Token;
+                     device.USBCore.HandleSetupPacket(setupPacket, additionalData: additionalData, resultCallback: response =>
+                     {
+-                        SendResponse(GenerateURBReply(replyHeader, packet, response));
++                        if(!token.IsCancellationRequested)
++                        {
++                            SendResponse(GenerateURBReply(replyHeader, packet, response));
++                        }
+                     });
+                 }
+                 else
+@@ -277,24 +286,49 @@
+                         this.Log(LogLevel.Noisy, "Reading from endpoint #{0}", ep.Identifier);
+                         var replyHeader = urbHeader;
+                         var replyPacket = packet;
+-                        var token = cancellationToken.Token;
+-                        ThreadPool.QueueUserWorkItem(_ =>
++                        lock(pendingReads)
+                         {
+-                            try
++                            var source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token);
++                            pendingReads.Add(replyHeader.SequenceNumber, source);
++                            endpointReads.TryGetValue(ep, out var previous);
++                            // USBEndpoint has one data callback; reads must stay in URB order.
++                            endpointReads[ep] = Task.Run(async () =>
+                             {
+-                                var response = ep.Read(replyPacket.TransferBufferLength, token);
+-#if DEBUG_PACKETS
+-                                this.Log(LogLevel.Noisy, "Count {0}: {1}", response.Length, Misc.PrettyPrintCollectionHex(response));
+-#endif
+-                                if(!token.IsCancellationRequested)
++                                try
+                                 {
+-                                    SendResponse(GenerateURBReply(replyHeader, replyPacket, response));
++                                    if(previous != null)
++                                    {
++                                        await previous;
++                                    }
++                                    if(source.IsCancellationRequested)
++                                    {
++                                        return;
++                                    }
++                                    var response = ep.Read(replyPacket.TransferBufferLength, source.Token);
++                                    lock(pendingReads)
++                                    {
++                                        if(!source.IsCancellationRequested && pendingReads.Remove(replyHeader.SequenceNumber))
++                                        {
++                                            SendResponse(GenerateURBReply(replyHeader, replyPacket, response));
++                                        }
++                                    }
+                                 }
+-                            }
+-                            catch(OperationCanceledException)
+-                            {
+-                            }
+-                        });
++                                catch(OperationCanceledException)
++                                {
++                                }
++                                finally
++                                {
++                                    lock(pendingReads)
++                                    {
++                                        if(pendingReads.TryGetValue(replyHeader.SequenceNumber, out var current) && current == source)
++                                        {
++                                            pendingReads.Remove(replyHeader.SequenceNumber);
++                                        }
++                                        source.Dispose();
++                                    }
++                                }
++                            });
++                        }
+                     }
+                     else
+                     {
+@@ -317,7 +351,17 @@
+                 DebugHelper.Assert(buffer.Count <= Packet.CalculateLength<URBRequest>());
+                 if(buffer.Count == Packet.CalculateLength<URBRequest>())
+                 {
+-                    // this command is practically ignored
++                    lock(pendingReads)
++                    {
++                        // CMD_UNLINK puts the target sequence in the first word
++                        // after the common header (FlagsOrStatus in our layout).
++                        var removed = pendingReads.Remove(urbHeader.FlagsOrStatus, out var source);
++                        source?.Cancel();
++                        var response = urbHeader;
++                        response.Command = URBCommand.UnlinkReply;
++                        response.FlagsOrStatus = removed ? unchecked((uint)-104) : 0; // -ECONNRESET
++                        SendResponse(Packet.Encode(response).Concat(new byte[24]));
++                    }
+                     buffer.Clear();
+                     state = State.WaitForURBHeader;
+                 }
+@@ -569,6 +613,8 @@
+         private int additionalDataCount;
+         private CancellationTokenSource cancellationToken;
+         private bool deviceConnected;
++        private readonly Dictionary<uint, CancellationTokenSource> pendingReads = new Dictionary<uint, CancellationTokenSource>();
++        private readonly Dictionary<USBEndpoint, Task> endpointReads = new Dictionary<USBEndpoint, Task>();
+
+         private readonly int port;
+         private readonly List<byte> buffer;
+--- a/src/Emulator/Main/Peripherals/USB/USBEndpoint.cs
++++ b/src/Emulator/Main/Peripherals/USB/USBEndpoint.cs
+@@ -174,19 +174,47 @@
+                     && (!cancellationToken.IsCancellationRequested)
+                     && (limit == 0 || result.Count() < limit))
+             {
+-                var mre = new System.Threading.ManualResetEvent(false);
+-                SetDataReadCallbackOneShot((e, bytes) =>
+-                {
+-                    var arr = bytes.ToArray();
+-                    result = result.Concat(arr);
+-                    if(arr.Length < MaximumPacketSize)
+-                    {
+-                        endOfPacketDetected = true;
++                using(var mre = new System.Threading.ManualResetEvent(false))
++                {
++                    Action<USBEndpoint, IEnumerable<byte>> callback = (e, bytes) =>
++                    {
++                        var arr = bytes.ToArray();
++                        result = result.Concat(arr);
++                        if(arr.Length < MaximumPacketSize)
++                        {
++                            endOfPacketDetected = true;
++                        }
++                        mre.Set();
++                    };
++                    using(cancellationToken.Register(() =>
++                    {
++                        lock(buffer)
++                        {
++                            if(dataCallback == callback)
++                            {
++                                dataCallback = null;
++                            }
++                        }
++                    }))
++                    {
++                        lock(buffer)
++                        {
++                            if(cancellationToken.IsCancellationRequested)
++                            {
++                                break;
++                            }
++                            SetDataReadCallbackOneShot(callback);
++                        }
++                        System.Threading.WaitHandle.WaitAny(new System.Threading.WaitHandle[] { cancellationToken.WaitHandle, mre });
++                        lock(buffer)
++                        {
++                            if(dataCallback == callback)
++                            {
++                                dataCallback = null;
++                            }
++                        }
+                     }
+-                    mre.Set();
+-                });
+-
+-                System.Threading.WaitHandle.WaitAny(new System.Threading.WaitHandle[] { cancellationToken.WaitHandle, mre });
++                }
+             }
+
+             if(result.Count() > limit)

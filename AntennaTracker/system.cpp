@@ -46,7 +46,6 @@ void Tracker::init_ardupilot()
 #endif
 
     // initialise rc channels including setting mode
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
     // initialise servos
@@ -177,6 +176,8 @@ void Tracker::set_mode(Mode &newmode, const ModeReason reason)
         return;
     }
     mode = &newmode;
+
+    mode->enter();
 
     if (mode->requires_armed_servos()) {
         arm_servos();

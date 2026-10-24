@@ -101,12 +101,16 @@ public:
 
     // check if a option is set
     bool option_is_set(const AP_BattMonitor_Params::Options option) const {
-        return (uint16_t(_params._options.get()) & uint16_t(option)) != 0;
+        return (_params._options & uint32_t(option)) != 0;
     }
     
 #if AP_BATTERY_SCRIPTING_ENABLED
     virtual bool handle_scripting(const BattMonitorScript_State &battmon_state) { return false; }
 #endif
+
+    // set battery BMS sleep timeout in seconds
+    // set to zero to disable sleep
+    virtual void set_sleep_timeout(uint16_t timeout_sec) {}
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end

@@ -79,11 +79,11 @@ The correct battery setting parameters are:
 
 No onboard compass. Use external I2C compass via SDA/SCL pads.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 82 controls the VTX BEC output to pins marked "12V" and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY3 is configured to control this pin and sets the GPIO high.
 
-## Camera control
+## Camera Control
 
 GPIO 83 controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output from CAM1 to CAM2. By default RELAY4 is configured to control this pin and sets the GPIO high.
 

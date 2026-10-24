@@ -25,10 +25,6 @@
 
 #if HAVE_AP_BLHELI_SUPPORT
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#include <hal.h>
-#endif
-
 #include <AP_Math/crc.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
@@ -415,11 +411,15 @@ void AP_BLHeli::msp_process_command(void)
         blheli.connected[blheli.chan] = false;
         break;
 
-    case MSP_UID:
+    case MSP_UID: {
         // MCU identifier
         debug("MSP_UID");
-        msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
+        uint8_t uid[12] {};
+        uint8_t len = sizeof(uid);
+        hal.util->get_system_id_unformatted(uid, len);
+        msp_send_reply(msp.cmdMSP, uid, sizeof(uid));
         break;
+    }
 
         // a literal "4" is used for the PWMType here to allow Rover
         // to use the same number for the same protocol.  At time of
@@ -1429,7 +1429,7 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
     }
 #endif
 
-    mask |= uint32_t(channel_mask.get());
+    mask |= channel_mask;
 
     /*
       allow mode override - this makes it possible to use DShot for
@@ -1484,17 +1484,17 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
     }
 #endif
     // tell SRV_Channels about ESC capabilities
-    SRV_Channels::set_digital_outputs(digital_mask, uint32_t(channel_reversible_mask.get()) & digital_mask);
+    SRV_Channels::set_digital_outputs(digital_mask, channel_reversible_mask & digital_mask);
     // the dshot ESC type is required in order to send the reversed/reversible dshot command correctly
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
-    hal.rcout->set_reversible_mask(uint32_t(channel_reversible_mask.get()) & digital_mask);
-    hal.rcout->set_reversed_mask(uint32_t(channel_reversed_mask.get()) & digital_mask);
+    hal.rcout->set_reversible_mask(channel_reversible_mask & digital_mask);
+    hal.rcout->set_reversed_mask(channel_reversed_mask & digital_mask);
 #ifdef HAL_WITH_BIDIR_DSHOT
     // possibly enable bi-directional dshot
     hal.rcout->set_motor_poles(motor_poles);
 #endif
 #if defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT
-    hal.rcout->set_bidir_dshot_mask(uint32_t(channel_bidir_dshot_mask.get()) & digital_mask);
+    hal.rcout->set_bidir_dshot_mask(channel_bidir_dshot_mask & digital_mask);
 #endif
     // add motors from channel mask
     for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
@@ -1504,7 +1504,7 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
         }
     }
     motor_mask = mask;
-    debug("ESC: %u motors mask=0x%08lx", num_motors, digital_mask);
+    debug("%u motors mask=0x%08lx", num_motors, (unsigned long)digital_mask);
 
     // check if we have a combination of reversible and normal
     mixed_type = (mask != (mask & channel_reversible_mask.get())) && (channel_reversible_mask.get() != 0);

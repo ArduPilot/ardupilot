@@ -37,7 +37,7 @@ public:
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
     virtual uint8_t get_mode() const override { return 0; }
 
-    AP_Int32 unused_log_bitmask; // logging is magic for Test; this is unused
+    AP_UInt32 unused_log_bitmask; // logging is magic for Test; this is unused
     struct LogStructure log_structure[256] = {
     };
 
@@ -45,7 +45,7 @@ protected:
 
 protected:
 
-    const AP_Int32 &get_log_bitmask() override { return unused_log_bitmask; }
+    const AP_UInt32 &get_log_bitmask() override { return unused_log_bitmask; }
     const struct LogStructure *get_log_structures() const override {
         return log_structure;
     }
@@ -73,11 +73,16 @@ const AP_Param::Info TestVehicle::var_info[] {
     GSCALAR(b,         "AA", 0),
     GSCALAR(b,         "CC", 0),
     GSCALAR(b,         "BB", 0),
+    AP_VAREND
 };
 
 TEST(FindByName, Bob)
 {
     for (const auto &x : TestVehicle::var_info) {
+        if (x.type == AP_PARAM_NONE) {
+            // end of the table
+            break;
+        }
         enum ap_var_type ptype = (ap_var_type)-1;
         AP_Param::ParamToken token = AP_Param::ParamToken {};
         AP_Param *p = AP_Param::find_by_name(x.name, &ptype, &token);

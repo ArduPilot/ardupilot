@@ -1,7 +1,7 @@
 ---@meta
 -- ArduPilot lua scripting documentation in EmmyLua Annotations
 -- This file should be auto generated and then manual edited
--- generate with --scripting-docs, eg  ./waf copter --scripting-docs
+-- generate with scripting-docs, eg  ./waf scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
 -- luacheck: ignore 121 (Setting a read-only global variable)
 -- luacheck: ignore 122 (Setting a read-only field of a global variable)
@@ -1155,6 +1155,19 @@ function Location_ud:change_alt_frame(desired_frame) end
 ---| '2' # ABOVE_ORIGIN
 ---| '3' # ABOVE_TERRAIN
 function Location_ud:set_alt_m(alt, frame) end
+
+-- get altitude (in metres) in the desired frame. Returns nil on failure, which can only
+-- happen if the original frame or desired frame is:
+-- - above-terrain and the terrain database can't supply terrain height amsl
+-- - above-home and home is not set
+-- - above-origin and origin is not set
+---@param frame integer -- altitude frame
+---| '0' # ABSOLUTE
+---| '1' # ABOVE_HOME
+---| '2' # ABOVE_ORIGIN
+---| '3' # ABOVE_TERRAIN
+---@return number|nil -- altitude in specified frame
+function Location_ud:get_alt_m(frame) end
 
 -- Given a Location this calculates the north and east distance between the two locations in meters.
 ---@param loc Location_ud -- location to compare with
@@ -2916,6 +2929,10 @@ function vehicle:reboot(hold_in_bootloader) end
 ---@return boolean
 function vehicle:is_taking_off() end
 
+-- Returns true if the vehicle's crash detection has triggered
+---@return boolean
+function vehicle:is_crashed() end
+
 -- desc
 ---@return boolean
 function vehicle:is_landing() end
@@ -2979,6 +2996,11 @@ gcs = {}
 ---@param value number -- value to send
 function gcs:send_named_float(name, value) end
 
+-- send named integer value using NAMED_VALUE_INT message
+---@param name string -- up to 10 chars long
+---@param value integer -- value to send
+function gcs:send_named_int(name, value) end
+
 -- send named string value using NAMED_VALUE_STRING message
 ---@param name string -- up to 10 chars long
 ---@param value string -- value to send, up to 64 chars long
@@ -3014,12 +3036,12 @@ function gcs:set_message_interval(port_num, msg_id, interval_us) end
 ---| '16' # MAV_TYPE_FLAPPING_WING=16, /* Flapping wing | */
 ---| '17' # MAV_TYPE_KITE=17, /* Kite | */
 ---| '18' # MAV_TYPE_ONBOARD_CONTROLLER=18, /* Onboard companion controller | */
----| '19' # MAV_TYPE_VTOL_DUOROTOR=19, /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
----| '20' # MAV_TYPE_VTOL_QUADROTOR=20, /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
+---| '19' # MAV_TYPE_VTOL_TAILSITTER_DUOROTOR=19, /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
+---| '20' # MAV_TYPE_VTOL_TAILSITTER_QUADROTOR=20, /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
 ---| '21' # MAV_TYPE_VTOL_TILTROTOR=21, /* Tiltrotor VTOL | */
----| '22' # MAV_TYPE_VTOL_RESERVED2=22, /* VTOL reserved 2 | */
----| '23' # MAV_TYPE_VTOL_RESERVED3=23, /* VTOL reserved 3 | */
----| '24' # MAV_TYPE_VTOL_RESERVED4=24, /* VTOL reserved 4 | */
+---| '22' # MAV_TYPE_VTOL_FIXEDROTOR=22, /* VTOL with separate fixed rotors for hover and cruise flight | */
+---| '23' # MAV_TYPE_VTOL_TAILSITTER=23, /* Tailsitter VTOL | */
+---| '24' # MAV_TYPE_VTOL_TILTWING=24, /* Tiltwing VTOL | */
 ---| '25' # MAV_TYPE_VTOL_RESERVED5=25, /* VTOL reserved 5 | */
 ---| '26' # MAV_TYPE_GIMBAL=26, /* Gimbal | */
 ---| '27' # MAV_TYPE_ADSB=27, /* ADSB system | */
@@ -3038,7 +3060,14 @@ function gcs:set_message_interval(port_num, msg_id, interval_us) end
 ---| '40' # MAV_TYPE_IMU=40, /* IMU | */
 ---| '41' # MAV_TYPE_GPS=41, /* GPS | */
 ---| '42' # MAV_TYPE_WINCH=42, /* Winch | */
----| '43' # MAV_TYPE_ENUM_END=43, /*  | */
+---| '43' # MAV_TYPE_GENERIC_MULTIROTOR=43, /* Generic multirotor that does not fit into a specific type or whose type is unknown | */
+---| '44' # MAV_TYPE_ILLUMINATOR=44, /* Illuminator. An illuminator is a light source that is used for lighting up dark areas external to the system: e.g. a torch or searchlight (as opposed to a light source for illuminating the system itself, e.g. an indicator light). | */
+---| '45' # MAV_TYPE_SPACECRAFT_ORBITER=45, /* Orbiter spacecraft. Includes satellites orbiting terrestrial and extra-terrestrial bodies. Follows NASA Spacecraft Classification. | */
+---| '46' # MAV_TYPE_GROUND_QUADRUPED=46, /* A generic four-legged ground vehicle (e.g., a robot dog). | */
+---| '47' # MAV_TYPE_VTOL_GYRODYNE=47, /* VTOL hybrid of helicopter and autogyro. It has a main rotor for lift and separate propellers for forward flight. The rotor must be powered for hover but can autorotate in cruise flight. See: https://en.wikipedia.org/wiki/Gyrodyne | */
+---| '48' # MAV_TYPE_GRIPPER=48, /* Gripper | */
+---| '49' # MAV_TYPE_RADIO=49, /* Radio | */
+---| '50' # MAV_TYPE_ENUM_END=50, /*  | */
 function gcs:frame_type() end
 
 -- get the throttle value in %
@@ -3314,6 +3343,33 @@ function rangefinder:has_orientation(orientation) end
 -- desc
 ---@return integer
 function rangefinder:num_sensors() end
+
+-- Airspeed backend
+---@class (exact) AP_Airspeed_Backend_ud
+local AP_Airspeed_Backend_ud = {}
+
+-- Provide a differential pressure reading, in Pascal. Returns false if failed. If an airspeed is provided directly that will take priority and the differential pressure will not be used.
+---@param press_pa number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_differential_pressure(press_pa) end
+
+-- Provide an airspeed reading, in m/s. Returns false if failed
+---@param airspeed_ms number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_airspeed(airspeed_ms) end
+
+-- Provide a temperature reading, in degrees C. Returns false if failed
+---@param temperature_c number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_temperature(temperature_c) end
+
+-- Airspeed library methods
+airspeed = {}
+
+-- get backend based on airspeed instance provided, 0 indexed
+---@param instance integer
+---@return AP_Airspeed_Backend_ud|nil
+function airspeed:get_backend(instance) end
 
 -- Proximity backend methods
 ---@class (exact) AP_Proximity_Backend_ud
@@ -3837,7 +3893,14 @@ function ahrs:get_velocity_NED() end
 ---@return Vector2f_ud -- ground speed vector, North East, meters / second
 function ahrs:groundspeed_vector() end
 
+-- Returns nil, or a Vector3f containing the current wind estimate for the vehicle.
+---@return Vector3f_ud|nil -- wind estimate North, East, Down meters / second if available
+function ahrs:get_wind() end
+
 -- Returns a Vector3f containing the current wind estimate for the vehicle.
+-- Deprecated, use get_wind; this gives no indication of whether the vehicle
+-- actually has a valid wind estimate, so the returned vector may be zero or stale.
+---@deprecated Use get_wind
 ---@return Vector3f_ud -- wind estiamte North, East, Down meters / second
 function ahrs:wind_estimate() end
 
@@ -4047,12 +4110,16 @@ function mavlink:register_rx_msgid(msg_id) end
 function mavlink:receive_chan() end
 
 -- sends mavlink message, to use this function the call should be like this:
--- mavlink:send(chan, mavlink_msgs.encode("MSG_NAME", {param1 = value1, param2 = value2, ...}})
+-- mavlink:send_chan(chan, mavlink_msgs.encode("MSG_NAME", {param1 = value1, param2 = value2, ...}))
+-- To override the target, first capture both encode() results, then pass the target:
+-- local msgid, payload = mavlink_msgs.encode("MSG_NAME", message)
+-- mavlink:send_chan(chan, msgid, payload, target_system)
 ---@param chan integer
 ---@param msgid integer
 ---@param message string
+---@param target_system? uint32_t_ud|integer -- overrides the payload target and supplies the wide header; requires a target-system field. Signed Lua integers preserve their uint32 bit pattern.
 ---@return boolean|nil -- True if send was successful, false if send was not successful, nil if channel does not exist
-function mavlink:send_chan(chan, msgid, message) end
+function mavlink:send_chan(chan, msgid, message, target_system) end
 
 -- Block a given MAV_CMD from being processed by ArduPilot
 ---@param comand_id integer
@@ -4490,4 +4557,34 @@ function DroneCAN_Handle_ud:request(target_node, payload) end
 ---@param payload string -- payload for message
 ---@return boolean -- true if send succeeded
 function DroneCAN_Handle_ud:broadcast(payload) end
+
+-- OSD scripting backend access
+osd = {}
+
+-- write a string to the OSD at the given column and row
+---@param col integer -- column (0-29 typically)
+---@param row integer -- row (0-15 typically)
+---@param text string -- text to display
+function osd:write(col, row, text) end
+
+-- flush the OSD buffer to the display
+function osd:flush() end
+
+-- clear the OSD buffer
+function osd:clear() end
+
+-- request a screen redraw
+function osd:draw_screen() end
+
+-- get the aspect ratio correction factor
+---@return number
+function osd:get_aspect_ratio_correction() end
+
+-- get the current screen number
+---@return integer
+function osd:get_screen() end
+
+-- check if display is disabled
+---@return boolean
+function osd:display_disabled() end
 

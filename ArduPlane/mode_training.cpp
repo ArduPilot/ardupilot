@@ -42,6 +42,7 @@ void ModeTraining::run()
     const float pexpo = plane.pitch_in_expo(false);
     if (plane.training_manual_roll) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
+        plane.rollController.reset();
     } else {
         // calculate what is needed to hold
         plane.stabilize_roll();
@@ -54,6 +55,7 @@ void ModeTraining::run()
 
     if (plane.training_manual_pitch) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
+        plane.pitchController.reset();
     } else {
         plane.stabilize_pitch();
         if ((plane.nav_pitch_cd > 0 && pexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||

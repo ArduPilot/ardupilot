@@ -102,7 +102,7 @@ To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receive
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html#common-rc-systems) for details.
 
-## Battery Monitor
+## Battery Monitoring
 
 The default battery parameters for use with a digital power module (with INA2xx) connected to Power1 port:
 

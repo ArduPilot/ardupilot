@@ -60,6 +60,9 @@ private:
     void setup_defaults(void);
     char displayport_write_buffer[DISPLAYPORT_WRITE_BUFFER_MAX_LEN]; // terminator
 
+    uint8_t _canvas_cols = 30;
+    uint8_t _canvas_rows = 16;
+
     AP_MSP_Telem_Backend* _displayport;
 
     // MSP DisplayPort symbols
@@ -139,7 +142,7 @@ private:
     static const uint8_t SYM_XERR = 0x21;
     static const uint8_t SYM_KN = 0xF0;
     static const uint8_t SYM_NM = 0xF1;
-    static const uint8_t SYM_DIST = 0x04;
+    static const uint8_t SYM_DIST = 0x71;
     static const uint8_t SYM_FLY = 0x9C;
     static const uint8_t SYM_EFF = 0xF2;
     static const uint8_t SYM_AH = 0xF3;
@@ -150,7 +153,7 @@ private:
     static const uint8_t SYM_FENCE_ENABLED = 0xF5;
     static const uint8_t SYM_FENCE_DISABLED = 0xF6;
     static const uint8_t SYM_RNGFD = 0x7F;
-    static const uint8_t SYM_LQ = 0xF8;
+    static const uint8_t SYM_LQ = 0x7B;
 
     static const uint8_t SYM_SIDEBAR_L_ARROW = 0x02;
     static const uint8_t SYM_SIDEBAR_R_ARROW = 0x03;

@@ -9,6 +9,12 @@ void Sub::enable_motor_output()
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Sub::motors_output()
 {
+    // Sub has no pre-takeoff RPM gate that asserts the spool-up block,
+    // so clear it every cycle before motors.output() runs output_logic().
+    // Without this the block set during ground-idle ramp would never clear
+    // and the spool would stay in GROUND_IDLE.
+    motors.set_spoolup_block(false);
+    
     // Motor detection mode controls the thrusters directly
     if (control_mode == Mode::Number::MOTOR_DETECT){
         return;

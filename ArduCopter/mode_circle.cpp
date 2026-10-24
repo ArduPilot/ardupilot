@@ -57,7 +57,7 @@ void ModeCircle::run()
     // skip if in radio failsafe
     if (rc().has_valid_input() && copter.circle_nav->pilot_control_enabled()) {
         // update the circle controller's radius target based on pilot pitch stick inputs
-        const float radius_current_m = copter.circle_nav->get_radius_m();               // circle controller's radius target, which begins as the circle_radius parameter
+        const float radius_current_m = copter.circle_nav->get_radius_target_m();        // circle controller's radius target, which begins as the CIRCLE_RADIUS_M parameter
         const float pitch_stick_norm = channel_pitch->norm_input_dz();                  // pitch stick normalized -1 to 1
         const float nav_speed_ms = copter.wp_nav->get_default_speed_NE_ms();            // copter WP_NAV parameter speed
         const float radius_pilot_change_m = (pitch_stick_norm * nav_speed_ms) * G_Dt;   // rate of change (pitch stick up reduces the radius, as in moving forward)
@@ -81,16 +81,16 @@ void ModeCircle::run()
                 speed_changing = false;
             } else {
                 const float rate_degs = copter.circle_nav->get_rate_degs();           // circle controller's rate target, which begins as the circle_rate parameter
-                const float rate_current_degs = copter.circle_nav->get_rate_current(); // current adjusted rate target, which is probably different from _rate_degs
+                const float rate_target_degs = copter.circle_nav->get_rate_target_degs(); // current adjusted rate target, which is probably different from _rate_degs
                 const float rate_pilot_change_degs = (roll_stick_norm * G_Dt);        // rate of change from 0 to 1 degrees per second
-                float rate_new_degs = rate_current_degs;                              // new rate target
+                float rate_new_degs = rate_target_degs;                               // new rate target
                 if (is_positive(rate_degs)) {
                     // currently moving clockwise, constrain 0 to 90
-                    rate_new_degs = constrain_float(rate_current_degs + rate_pilot_change_degs, 0, 90);
+                    rate_new_degs = constrain_float(rate_target_degs + rate_pilot_change_degs, 0, 90);
 
                 } else if (is_negative(rate_degs)) {
                     // currently moving counterclockwise, constrain -90 to 0
-                    rate_new_degs = constrain_float(rate_current_degs + rate_pilot_change_degs, -90, 0);
+                    rate_new_degs = constrain_float(rate_target_degs + rate_pilot_change_degs, -90, 0);
 
                 } else if (is_zero(rate_degs) && !speed_changing) {
                     // Stopped, pilot has released the roll stick, and pilot now wants to begin moving with the roll stick

@@ -38,6 +38,12 @@ AP_Airspeed_Analog::AP_Airspeed_Analog(AP_Airspeed &_frontend, uint8_t _instance
 
 bool AP_Airspeed_Analog::init()
 {
+    set_bus_id(AP_HAL::Device::make_bus_id(
+        AP_HAL::Device::BUS_TYPE_UNKNOWN,
+        0,
+        0,
+        uint8_t(DevType::ANALOG)
+    ));
     return _source != nullptr;
 }
 

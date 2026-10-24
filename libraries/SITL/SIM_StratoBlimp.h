@@ -57,8 +57,6 @@ private:
                   Vector3f &drag_linear, Vector3f &drag_rotaccel);
     float get_lift(float altitude);
 
-    float air_density;
-    float EAS2TAS;
     float drag_yaw;
     bool released;
     bool helper_balloon_attached = true;

@@ -22,15 +22,15 @@ class SITLHWDef(hwdef.HWDef):
     def write_hwdef_header_content(self, f):
         for d in self.alllines:
             if d.startswith('define '):
-                f.write('#define %s\n' % d[7:])
+                f.write(self.define_line(d))
 
-    def process_line(self, line, depth):
+    def process_line(self, line, depth, a=None):
         '''process one line of pin definition file'''
         # keep all config lines for later use
         self.all_lines.append(line)
         self.alllines.append(line)
 
-        super(SITLHWDef, self).process_line(line, depth)
+        super(SITLHWDef, self).process_line(line, depth, a)
 
 
 if __name__ == '__main__':

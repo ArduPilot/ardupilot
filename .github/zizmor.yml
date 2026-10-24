@@ -1,0 +1,21 @@
+# zizmor configuration -- https://docs.zizmor.sh/configuration/
+# see .github/workflows/workflows_lint.yml for how CI invokes it
+
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # This repo pins actions to a release tag and lets dependabot
+        # (.github/dependabot.yml) move them, rather than pinning to a commit
+        # hash.  ref-pin requires a ref of some kind and accepts either a tag
+        # or a branch, so `@master` passes this as well; hash-pin is what would
+        # reject it, and nothing here asks for a tag specifically.
+        #
+        # Be clear about what this buys and what it costs: without this policy
+        # zizmor reports 76 high unpinned-uses findings across the workflows and
+        # the job fails.  Tag pins plus dependabot is the deliberate trade.
+        # What still watches a tag is known-vulnerable-actions and
+        # ref-confusion, which is why CI hands zizmor a token; the audits that
+        # would catch a moved pin -- impostor-commit, ref-version-mismatch,
+        # stale-action-refs -- read hash pins only and are silent here.
+        "*": ref-pin

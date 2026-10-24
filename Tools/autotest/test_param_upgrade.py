@@ -40,6 +40,11 @@ class TestParamUpgradeTestSuite(vehicle_test_suite.TestSuite):
     def __init__(self, binary):
         super(TestParamUpgradeTestSuite, self).__init__(binary)
 
+    def default_speedup(self):
+        # the base-class default was 8 when this suite was written;
+        # preserve that now the base default has been raised to 100:
+        return 8
+
     def sysid_thismav(self):
         if "antennatracker" in self.binary:
             return 2
@@ -99,7 +104,7 @@ class TestParamUpgradeTestSuiteSetParameters(TestParamUpgradeTestSuite):
         self.set_parameters(sets)
 
         # stopping SITL too soon can leave eeprom.bin corrupt!
-        self.delay_sim_time(2)  # FIXTHAT, should not be needed!
+        self.delay_sim_time(2, reason="EEPROM write to complete")  # FIXTHAT, should not be needed!
 
         self.stop_SITL()
 

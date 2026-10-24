@@ -356,7 +356,7 @@ void FlightAxis::start_controller()
 <RestoreOriginalControllerDevice><a>1</a><b>2</b></RestoreOriginalControllerDevice>
 </soap:Body>
 </soap:Envelope>)");
-    soap_request_end(1000UL);
+    free(soap_request_end(1000UL));
     if(option_is_set(Option::ResetPosition)) {
         soap_request_start("ResetAircraft", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
@@ -364,7 +364,7 @@ void FlightAxis::start_controller()
 <ResetAircraft><a>1</a><b>2</b></ResetAircraft>
 </soap:Body>
 </soap:Envelope>)");
-        soap_request_end(1000UL);
+        free(soap_request_end(1000UL));
     }
     soap_request_start("InjectUAVControllerInterface", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
@@ -372,7 +372,7 @@ void FlightAxis::start_controller()
 <InjectUAVControllerInterface><a>1</a><b>2</b></InjectUAVControllerInterface>
 </soap:Body>
 </soap:Envelope>)");
-    soap_request_end(1000UL);
+    free(soap_request_end(1000UL));
     activation_frame_counter = frame_counter;
     controller_started = true;
 }
@@ -656,6 +656,8 @@ void FlightAxis::update(const struct sitl_input &input)
 
     battery_voltage = MAX(state.m_batteryVoltage_VOLTS, 0);
     battery_current = MAX(state.m_batteryCurrentDraw_AMPS, 0);
+    // (temperature is not part of the protocol, so it is explicitly set constant here)
+    battery_temperature_degC = 0.0f;
     rpm[0] = state.m_heliMainRotorRPM;
     rpm[1] = state.m_propRPM;
     motor_mask = 3;
@@ -716,6 +718,10 @@ struct FlightAxis::state FlightAxis::interpolate_frame(struct state& new_state, 
 {
     struct state intermediate_state = old_state;
     double dt = new_state.m_currentPhysicsTime_SEC - old_state.m_currentPhysicsTime_SEC;
+    if (!is_positive(dt)) {
+        return new_state;
+    }
+
     double interval = new_time - old_state.m_currentPhysicsTime_SEC;
 
 #define INTERPOLATE(name) (intermediate_state.name = (old_state.name + interval * (new_state.name - old_state.name) / dt))

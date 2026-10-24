@@ -289,8 +289,8 @@ private:
     const float sweep_time_ms = 23000;
 
     // parameters
-    AP_Int8  axis_bitmask;      // axes to be tuned
-    AP_Int8  seq_bitmask;       // tuning sequence bitmask
+    AP_UInt8 axis_bitmask;      // axes to be tuned
+    AP_UInt8 seq_bitmask;       // tuning sequence bitmask
     AP_Float min_sweep_freq;    // minimum sweep frequency
     AP_Float max_sweep_freq;    // maximum sweep frequency
     AP_Float max_resp_gain;     // maximum response gain

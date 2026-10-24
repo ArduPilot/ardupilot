@@ -30,3 +30,8 @@ generate_log_message_documentation() {
 for vehicle in Rover Plane Copter Tracker Blimp Sub; do
     generate_log_message_documentation "$vehicle"
 done
+
+# device ID bus/device type tables (vehicle-independent) for decoding *_DEV_ID parameters and log fields:
+./Tools/scripts/decode_devid.py --dump-json "$DIR/devid.json.new" --dump-json5 "$DIR/devid.json5.new"
+mv "$DIR/devid.json.new" "$DIR/devid.json"
+mv "$DIR/devid.json5.new" "$DIR/devid.json5"

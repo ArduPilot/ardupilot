@@ -48,13 +48,6 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Range: 0.000 0.400
     // @User: Standard
 
-    // @Param: _RATE_FILT
-    // @DisplayName: Wheel rate control filter frequency
-    // @Description: Wheel rate control input filter.  Lower values reduce noise but add delay.
-    // @Range: 1.000 100.000
-    // @Units: Hz
-    // @User: Standard
-
     // @Param: _RATE_FLTT
     // @DisplayName: Wheel rate control target frequency in Hz
     // @Description: Wheel rate control target frequency in Hz
@@ -100,14 +93,14 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
 
     // @Param: _RATE_NTF
     // @DisplayName: Wheel rate Target notch filter index
-    // @Description: Wheel rate Target notch filter index
-    // @Range: 1 8
+    // @Description: Wheel rate Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _RATE_NEF
     // @DisplayName: Wheel rate Error notch filter index
-    // @Description: Wheel rate Error notch filter index
-    // @Range: 1 8
+    // @Description: Wheel rate Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_rate_pid0, "_RATE_", 3, AP_WheelRateControl, AC_PID),
@@ -140,13 +133,6 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @DisplayName: Wheel rate control D gain
     // @Description: Wheel rate control D gain.  Compensates for short-term change in desired rate vs actual
     // @Range: 0.000 0.400
-    // @User: Standard
-
-    // @Param: 2_RATE_FILT
-    // @DisplayName: Wheel rate control filter frequency
-    // @Description: Wheel rate control input filter.  Lower values reduce noise but add delay.
-    // @Range: 1.000 100.000
-    // @Units: Hz
     // @User: Standard
 
     // @Param: 2_RATE_FLTT
@@ -194,14 +180,14 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
 
     // @Param: 2_RATE_NTF
     // @DisplayName: Wheel rate Target notch filter index
-    // @Description: Wheel rate Target notch filter index
-    // @Range: 1 8
+    // @Description: Wheel rate Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: 2_RATE_NEF
     // @DisplayName: Wheel rate Error notch filter index
-    // @Description: Wheel rate Error notch filter index
-    // @Range: 1 8
+    // @Description: Wheel rate Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_rate_pid1, "2_RATE_", 4, AP_WheelRateControl, AC_PID),

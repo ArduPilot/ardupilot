@@ -694,7 +694,14 @@ void QuaternionT<T>::zero(void)
 template <typename T>
 bool QuaternionT<T>::is_unit_length(void) const
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wabsolute-value"
+#endif
     if (fabsF(length_squared() - 1) < 1E-3) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#pragma clang diagnostic pop
+#endif
         return true;
     }
 

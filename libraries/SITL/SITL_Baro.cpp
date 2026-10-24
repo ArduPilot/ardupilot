@@ -71,6 +71,13 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     // @Description: Barometer wind coefficient direction down in SITL
     // @User: Advanced
     AP_GROUPINFO("WCF_DN",  12, SIM::BaroParm, wcof_zn, 0.0),
+
+    // @Param: GEFF_M
+    // @DisplayName: Barometer ground effect altitude error
+    // @Description: Maximum simulated barometer altitude error from rotor-downwash ground effect, applied when motors are running. Decays linearly to zero at 2m AGL. Set to 0 to disable.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("GEFF_M",  13, SIM::BaroParm, ground_effect_alt_err, 0.0),
     AP_GROUPEND
 };
 }

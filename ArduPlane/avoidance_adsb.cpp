@@ -50,7 +50,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
 
         case MAV_COLLISION_ACTION_RTL:
             if (failsafe_state_change) {
-                plane.set_mode(plane.mode_rtl, ModeReason::AVOIDANCE);
+                IGNORE_RETURN(plane.set_mode(plane.mode_rtl, ModeReason::AVOIDANCE));
             }
             break;
 
@@ -58,11 +58,11 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
             if (failsafe_state_change) {
 #if HAL_QUADPLANE_ENABLED
                 if (plane.quadplane.is_flying()) {
-                    plane.set_mode(plane.mode_qloiter, ModeReason::AVOIDANCE);
+                    IGNORE_RETURN(plane.set_mode(plane.mode_qloiter, ModeReason::AVOIDANCE));
                     break;
                 }
 #endif
-                plane.set_mode(plane.mode_loiter, ModeReason::AVOIDANCE);
+                IGNORE_RETURN(plane.set_mode(plane.mode_loiter, ModeReason::AVOIDANCE));
             }
             break;
 
@@ -132,16 +132,16 @@ void AP_Avoidance_Plane::handle_recovery(RecoveryAction recovery_action)
                 break;
 
             case RecoveryAction::RESUME_PREVIOUS_FLIGHTMODE:
-                plane.set_mode_by_number(prev_control_mode_number, ModeReason::AVOIDANCE_RECOVERY);
+                IGNORE_RETURN(plane.set_mode_by_number(prev_control_mode_number, ModeReason::AVOIDANCE_RECOVERY));
                 break;
 
             case RecoveryAction::RTL:
-                plane.set_mode(plane.mode_rtl, ModeReason::AVOIDANCE_RECOVERY);
+                IGNORE_RETURN(plane.set_mode(plane.mode_rtl, ModeReason::AVOIDANCE_RECOVERY));
                 break;
 
             case RecoveryAction::RESUME_IF_AUTO_ELSE_LOITER:
                 if (prev_control_mode_number == Mode::Number::AUTO) {
-                    plane.set_mode(plane.mode_auto, ModeReason::AVOIDANCE_RECOVERY);
+                    IGNORE_RETURN(plane.set_mode(plane.mode_auto, ModeReason::AVOIDANCE_RECOVERY));
                 } else {
                     // let ModeAvoidADSB continue in its guided
                     // behaviour, but reset the loiter location,
@@ -165,7 +165,7 @@ bool AP_Avoidance_Plane::check_flightmode(bool allow_mode_change)
 {
     // ensure plane is in avoid_adsb mode
     if (allow_mode_change && plane.control_mode != &plane.mode_avoidADSB) {
-        plane.set_mode(plane.mode_avoidADSB, ModeReason::AVOIDANCE);
+        IGNORE_RETURN(plane.set_mode(plane.mode_avoidADSB, ModeReason::AVOIDANCE));
     }
 
     // check flight mode

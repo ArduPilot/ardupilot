@@ -5,7 +5,7 @@
 
 #include "AC_CustomControl_config.h"
 
-#if AP_CUSTOMCONTROL_ENABLED
+#if AP_COPTER_CUSTOMCONTROL_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -67,10 +67,10 @@ protected:
     AP_MotorsMulticopter*& _motors;
 
     AP_Enum<CustomControlType> _controller_type;
-    AP_Int8 _custom_controller_mask;
+    AP_UInt8 _custom_controller_mask;
 
 private:
     AC_CustomControl_Backend *_backend;
 };
 
-#endif  // AP_CUSTOMCONTROL_ENABLED
+#endif  // AP_COPTER_CUSTOMCONTROL_ENABLED

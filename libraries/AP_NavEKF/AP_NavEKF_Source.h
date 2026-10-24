@@ -82,7 +82,6 @@ public:
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     void setPosVelYawSourceSet(SourceSetSelection source_set_idx);
-    uint8_t getPosVelYawSourceSet() const { return active_source_set; }
 
     // get/set velocity source
     SourceXY getVelXYSource(uint8_t core_index) const { return _source_set[getActiveSourceSet(core_index)].velxy; }
@@ -144,7 +143,7 @@ private:
     // helper to check if an option parameter bit has been set
     bool option_is_set(SourceOptions option) const { return (_options.get() & int16_t(option)) != 0; }
 
-    AP_Int16 _options;      // source options bitmask
+    AP_UInt16 _options;      // source options bitmask
 
     uint8_t active_source_set; // index of active source set
     bool _configured; // true once configured has returned true

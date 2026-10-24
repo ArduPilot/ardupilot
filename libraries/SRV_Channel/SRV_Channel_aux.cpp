@@ -249,7 +249,7 @@ void SRV_Channels::update_aux_servo_function(void)
 /// called at 1Hz
 void SRV_Channels::enable_aux_servos()
 {
-    hal.rcout->set_default_rate(uint16_t(_singleton->default_rate.get()));
+    hal.rcout->set_default_rate(_singleton->default_rate);
 
     update_aux_servo_function();
 
@@ -386,6 +386,27 @@ SRV_Channels::set_output_pwm_trimmed(SRV_Channel::Function function, int16_t val
             channels[i].output_ch();
           }
     }
+}
+
+
+// get the input for a channel function from the pwm value of the first matching channel
+bool SRV_Channels::get_output_pwm_trimmed(SRV_Channel::Function function, uint16_t &pwm)
+{
+    uint8_t chan;
+    if (!find_channel(function, chan)) {
+        return false;
+    }
+    if (!SRV_Channel::valid_function(function)) {
+        return false;
+    }
+
+    uint16_t value2 = channels[chan].get_output_pwm();
+    if (channels[chan].get_reversed()) {
+        pwm = 1500 - value2 + channels[chan].get_trim();
+    } else {
+        pwm = value2 + 1500 - channels[chan].get_trim();
+    }
+    return true;
 }
 
 /*
@@ -904,21 +925,6 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Function function)
         if (c.function == function) {
             c.set_output_pwm(constrain_int16(c.output_pwm, c.servo_min, c.servo_max));
         }
-    }
-}
-
-/*
-  upgrade SERVO* parameters. This does the following:
-
-   - update to 16 bit FUNCTION from AP_Int8
-*/
-void SRV_Channels::upgrade_parameters(void)
-{
-    // PARAMETER_CONVERSION - Added: Jan-2020
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel &c = channels[i];
-        // convert from AP_Int8 to AP_Int16
-        c.function.convert_parameter_width(AP_PARAM_INT8);
     }
 }
 

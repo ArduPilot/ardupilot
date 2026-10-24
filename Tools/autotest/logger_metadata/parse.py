@@ -11,6 +11,7 @@ import re
 import sys
 
 import emit_html
+import emit_json
 import emit_rst
 import emit_xml
 import enum_parse
@@ -93,12 +94,15 @@ class LoggerDocco(object):
             emit_html.HTMLEmitter(),
             emit_rst.RSTEmitter(),
             emit_xml.XMLEmitter(),
+            emit_json.JSONEmitter(),
             emit_md.MDEmitter(),
         ]
         self.msg_fmts_list = {}
         self.msg_names_list = {}
         self.msg_units_list = {}
         self.msg_mults_list = {}
+        self.git_sha = None
+        self.git_branch = None
 
     class Docco(object):
 
@@ -531,6 +535,8 @@ class LoggerDocco(object):
         for enum in self.enumerations:
             enums_by_name[enum.name] = enum
         for emitter in self.emitters:
+            emitter.git_sha = self.git_sha
+            emitter.git_branch = self.git_branch
             emitter.emit(new_doccos, enums_by_name)
 
     def run(self):
@@ -550,10 +556,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Parse parameters.")
     parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
     parser.add_argument("--vehicle", required=True, help="Vehicle type to generate for")
+    parser.add_argument("--git-sha", help="git SHA of the firmware build (optional, included in output metadata)")
+    parser.add_argument("--git-branch", help="git branch of the firmware build (optional, included in output metadata)")
 
     args = parser.parse_args()
 
     s = LoggerDocco(args.vehicle)
+    s.git_sha = args.git_sha
+    s.git_branch = args.git_branch
 
     if args.vehicle not in s.vehicle_map:
         print("Invalid vehicle (choose from: %s)" % str(s.vehicle_map.keys()))

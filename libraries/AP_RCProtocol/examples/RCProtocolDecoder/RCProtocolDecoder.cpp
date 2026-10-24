@@ -58,6 +58,9 @@ class RC_Channel_RC : public RC_Channel
 class RC_Channels_RC : public RC_Channels
 {
 public:
+    const RC_Channel *channel(uint8_t chan) const override {
+        return &obj_channels[chan];
+    }
     RC_Channel *channel(uint8_t chan) override {
         return &obj_channels[chan];
     }

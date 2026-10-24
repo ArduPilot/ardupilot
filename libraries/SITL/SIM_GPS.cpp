@@ -95,11 +95,11 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     AP_GROUPINFO("POS",        9, GPSParms, pos_offset, 0),
 
     // @Param: NOISE
-    // @DisplayName: GPS Noise
-    // @Description: Amplitude of the GPS altitude error
+    // @DisplayName: GPS vertical noise
+    // @Description: Amplitude of the GPS vertical position error
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("NOISE",     10, GPSParms, noise, 0),
+    AP_GROUPINFO("NOISE",     10, GPSParms, noise_vertical, 0),
 
     // @Param: LCKTIME
     // @DisplayName: GPS Lock Time
@@ -160,6 +160,21 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Values: 0:No GPS connected, 1:No Fix, 2:2D Fix, 3:3D Fix, 4:3D DGPS Fix, 5:3D RTK Float, 6:3D RTK Fixed
     // @User: Advanced
     AP_GROUPINFO("FIXTYPE", 19, GPSParms, fix_type, 6),
+
+    // @Param: HNSE
+    // @DisplayName: GPS horizontal noise
+    // @Description: Radius of the GPS horizontal position error in meters
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("HNSE",       20, GPSParms, noise_horizontal, 0),
+
+    // @Param: GLTV
+    // @DisplayName: GPS velocity glitch
+    // @Description: Glitch offsets of simulated GPS velocity in NED. The reported position also moves continuously with this velocity, so position and velocity stay consistent (e.g. to simulate GPS spoofing that drifts the position). The accumulated position offset is cleared when all three components are zero at a GPS update, so when changing axes set the new component before zeroing the old one
+    // @Units: m/s
+    // @Vector3Parameter: 1
+    // @User: Advanced
+    AP_GROUPINFO("GLTV",       21, GPSParms, vel_glitch, 0),
 
     AP_GROUPEND
 };
@@ -503,8 +518,9 @@ void GPS::update()
     d.roll_deg = _sitl->state.rollDeg;
     d.pitch_deg = _sitl->state.pitchDeg;
 
+    const float gps_wander_angle_rad = now_ms * 0.0005f;  // choosing T=12.6 sec arbitrarily
     // add an altitude error controlled by a slow sine wave
-    d.altitude = altitude + params.noise * sinf(now_ms * 0.0005f) + params.alt_offset;
+    d.altitude = altitude + params.noise_vertical * sinf(gps_wander_angle_rad) + params.alt_offset;
 
     // Add offset to c.g. velocity to get velocity at antenna and add simulated error
     Vector3f velErrorNED = params.vel_err;
@@ -564,9 +580,34 @@ void GPS::update()
     // Applying GPS glitch
     // Using first gps glitch
     Vector3f glitch_offsets = params.glitch;
-    d.latitude += glitch_offsets.x;
-    d.longitude += glitch_offsets.y;
+    // apply a slow circular horizontal wander of radius noise_horizontal (in metres)
+    const double earth_rad_inv = 1.0f/RADIUS_OF_EARTH;
+    const float lat_wander_m = params.noise_horizontal * sinf(gps_wander_angle_rad);
+    const float lon_wander_m = params.noise_horizontal * cosf(gps_wander_angle_rad);
+    const float highest_permissible_lat_deg = 89.0f;
+    const double cosine_of_lat = (fabsf(d.latitude) < highest_permissible_lat_deg) ? cos(radians(d.latitude)) : cos(radians(highest_permissible_lat_deg));
+    d.latitude += glitch_offsets.x + degrees(lat_wander_m * earth_rad_inv);
+    d.longitude += glitch_offsets.y + degrees(lon_wander_m * earth_rad_inv / cosine_of_lat);
     d.altitude += glitch_offsets.z;
+
+    // Applying GPS velocity glitch. The position moves continuously with the velocity offset,
+    // so reported position and velocity stay consistent (e.g. a spoofer drifting the position).
+    // The accumulated offset is cleared when the velocity glitch is set back to zero.
+    const Vector3f vel_glitch = params.vel_glitch;
+    if (vel_glitch.is_zero()) {
+        vel_glitch_pos_ofs.zero();
+    } else if (last_vel_glitch_ms != 0) {
+        vel_glitch_pos_ofs += vel_glitch * ((now_ms - last_vel_glitch_ms) * 0.001f);
+    }
+    last_vel_glitch_ms = now_ms;
+    if (!vel_glitch_pos_ofs.is_zero()) {
+        d.latitude += degrees(vel_glitch_pos_ofs.x * earth_rad_inv);
+        d.longitude += degrees(vel_glitch_pos_ofs.y * earth_rad_inv / cosine_of_lat);
+        d.altitude -= vel_glitch_pos_ofs.z;
+    }
+    d.speedN += vel_glitch.x;
+    d.speedE += vel_glitch.y;
+    d.speedD += vel_glitch.z;
 
     if (params.jam == 1) {
         simulate_jamming(d);

@@ -63,6 +63,9 @@ private:
     float turn_circle(float steering) const;
     float calc_yaw_rate(float steering, float speed);
     float calc_lat_accel(float steering_angle, float speed);
+
+    void update_battery() override;
+    bool battery_is_empty() { return battery_voltage < 0.5f; };
 };
 
 } // namespace SITL

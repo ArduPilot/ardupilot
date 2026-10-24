@@ -22,10 +22,11 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
+#include "AP_ROMFS_config.h"
 
 #include <string.h>
 
-#ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#if AP_ROMFS_ENABLED
 #include <ap_romfs_embedded.h>
 #else
 const AP_ROMFS::embedded_file AP_ROMFS::files[] = {};
@@ -121,19 +122,22 @@ const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
     const size_t dlen = strlen(dirname);
     for ( ; ofs < ARRAY_SIZE(files); ofs++) {
         if (strncmp(dirname, files[ofs].filename, dlen) == 0) {
-            const char last_char = files[ofs].filename[dlen];
-            if (dlen != 0 && last_char != '/' && last_char != 0) {
-                // only a partial match, skip
+            if (dlen != 0 && files[ofs].filename[dlen] != '/') {
+                // only a partial match, or the name of a file rather than
+                // of a directory holding it, skip
                 continue;
             }
             /*
-              prevent duplicate directories
+              prevent duplicate directories: compare through the
+              separator, as a file such as "sub.txt" sorts just before
+              "sub/" and must not be taken for it
              */
-            const char *start_name = files[ofs].filename + dlen + 1;
+            const char *start_name = files[ofs].filename + (dlen > 0 ? dlen + 1 : 0);
             const char *slash = strchr(start_name, '/');
             if (ofs > 0 && slash != nullptr) {
-                auto len = slash - start_name;
-                if (memcmp(files[ofs].filename, files[ofs-1].filename, len+dlen+1) == 0) {
+                const size_t prefix_len = (slash - files[ofs].filename) + 1;
+                // strncmp, not memcmp: the previous name may be shorter
+                if (strncmp(files[ofs].filename, files[ofs-1].filename, prefix_len) == 0) {
                     continue;
                 }
             }

@@ -242,8 +242,9 @@ function update()
     -- Get the heading angle
     hdg = math.floor(math.deg(ahrs:get_yaw_rad()))
 
-    -- Get wind direction. Function wind_estimate returns x and y for direction wind blows in, add pi to get true wind dir
-    wind = ahrs:wind_estimate()
+    -- Get wind direction. Function get_wind returns x and y for direction wind blows in, add pi to get true wind dir
+    -- fall back to zero wind if we have no estimate, as we must still pick a heading
+    wind = ahrs:get_wind() or Vector3f()
     wind_dir_rad = math.atan(wind:y(), wind:x())+math.pi
     wind_dir_180 = math.floor(wrap_180(math.deg(wind_dir_rad)))
     hdg_error = wrap_180(wind_dir_180 - hdg)

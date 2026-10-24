@@ -30,6 +30,10 @@ AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
  */
 void AP_InertialSensor_Backend::notify_accel_fifo_reset(uint8_t instance)
 {
+    if (instance >= INS_MAX_INSTANCES) {
+        // can be called from probe() before registration
+        return;
+    }
     _imu._sample_accel_count[instance] = 0;
     _imu._sample_accel_start_us[instance] = 0;    
 }
@@ -39,6 +43,10 @@ void AP_InertialSensor_Backend::notify_accel_fifo_reset(uint8_t instance)
  */
 void AP_InertialSensor_Backend::notify_gyro_fifo_reset(uint8_t instance)
 {
+    if (instance >= INS_MAX_INSTANCES) {
+        // can be called from probe() before registration
+        return;
+    }
     _imu._sample_gyro_count[instance] = 0;
     _imu._sample_gyro_start_us[instance] = 0;
 }
@@ -164,9 +172,13 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
 
         // gyro calibration is always assumed to have been done in sensor frame
         gyro -= _imu._gyro_offset(instance);
-    }
 
-    gyro.rotate(_imu._board_orientation);
+        // calibration samples are wanted in board frame, so the vehicle
+        // rotation is applied only outside it. Zeroing _board_orientation for
+        // the duration instead would also strip it from the accel, which DCM
+        // reads for its startup alignment.
+        gyro.rotate(_imu._board_orientation);
+    }
 }
 
 /*
@@ -216,7 +228,7 @@ void AP_InertialSensor_Backend::save_gyro_window(const uint8_t instance, const V
 /*
   apply harmonic notch and low pass gyro filters
  */
-void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const Vector3f &gyro)
+Vector3f AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const Vector3f &gyro)
 {
     uint8_t filter_phase = 0;
     save_gyro_window(instance, gyro, filter_phase++);
@@ -276,6 +288,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
 #else
     _imu._gyro_filtered[instance] = gyro_filtered;
 #endif
+    return gyro_filtered;
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
@@ -343,6 +356,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     delta_coning = delta_coning % delta_angle;
     delta_coning *= 0.5f;
 
+    Vector3f gyro_filtered;
     {
         WITH_SEMAPHORE(_sem);
 
@@ -369,13 +383,13 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._last_raw_gyro[instance] = gyro;
 
         // apply gyro filters and sample for FFT
-        apply_gyro_filters(instance, gyro);
+        gyro_filtered = apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
 
     // 5us
-    log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
+    log_gyro_raw(instance, sample_us, gyro, gyro_filtered);
     update_primary();
 }
 
@@ -434,6 +448,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
     delta_coning = delta_coning % delta_angle;
     delta_coning *= 0.5f;
 
+    Vector3f gyro_filtered;
     {
         WITH_SEMAPHORE(_sem);
         uint64_t now = AP_HAL::micros64();
@@ -458,12 +473,12 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
         _imu._last_raw_gyro[instance] = gyro;
 
         // apply gyro filters and sample for FFT
-        apply_gyro_filters(instance, gyro);
+        gyro_filtered = apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
 
-    log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
+    log_gyro_raw(instance, sample_us, gyro, gyro_filtered);
     update_primary();
 }
 
@@ -776,14 +791,21 @@ void AP_InertialSensor_Backend::_inc_gyro_error_count(uint8_t instance)
  */
 void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float temperature) /* front end */
 {
+    if (instance >= INS_MAX_INSTANCES) {
+        // registration failed, this backend owns no instance
+        return;
+    }
     if (has_been_killed(instance)) {
         return;
     }
     _imu._temperature[instance] = temperature;
 
 #if HAL_HAVE_IMU_HEATER
-    /* give the temperature to the control loop in order to keep it constant*/
-    if (instance == AP_HEATER_IMU_INSTANCE) {
+    /* give the temperature to the control loop in order to keep it constant.
+       AP_HEATER_IMU_INSTANCE is offset by the occasional EAHRS which gets
+       interjected first in the registration order. */
+    const uint8_t offset = _imu.get_first_onboard_imu_instance();
+    if (instance == (AP_HEATER_IMU_INSTANCE + offset)) {
         AP_BoardConfig *bc = AP::boardConfig();
         if (bc) {
             bc->set_imu_temp(temperature);
@@ -799,7 +821,13 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
 {    
     WITH_SEMAPHORE(_sem);
 
+    if (instance >= INS_MAX_INSTANCES) {
+        // registration failed, this backend owns no instance
+        return;
+    }
+
     if (has_been_killed(instance)) {
+        _imu._gyro_healthy[instance] = false;
         return;
     }
 
@@ -810,6 +838,10 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
         _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];
 #endif
         _imu._new_gyro_data[instance] = false;
+    } else {
+        // no fresh sample this cycle. _publish_gyro() sets the flag true, so
+        // a healthy sensor never sees it transiently cleared
+        _imu._gyro_healthy[instance] = false;
     }
 
     update_gyro_filters(instance);
@@ -835,6 +867,10 @@ void AP_InertialSensor_Backend::update_primary()
  */
 void AP_InertialSensor_Backend::update_gyro_filters(uint8_t instance) /* front end */
 {
+    if (instance >= INS_MAX_INSTANCES) {
+        // registration failed, this backend owns no instance
+        return;
+    }
     // possibly update filter frequency
     const float gyro_rate = _gyro_raw_sample_rate(instance);
 
@@ -862,12 +898,21 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
 {    
     WITH_SEMAPHORE(_sem);
 
+    if (instance >= INS_MAX_INSTANCES) {
+        // registration failed, this backend owns no instance
+        return;
+    }
+
     if (has_been_killed(instance)) {
+        _imu._accel_healthy[instance] = false;
         return;
     }
     if (_imu._new_accel_data[instance]) {
         _publish_accel(instance, _imu._accel_filtered[instance]);
         _imu._new_accel_data[instance] = false;
+    } else {
+        // as for the gyro above
+        _imu._accel_healthy[instance] = false;
     }
 
     update_accel_filters(instance);
@@ -878,6 +923,10 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
  */
 void AP_InertialSensor_Backend::update_accel_filters(uint8_t instance) /* front end */
 {
+    if (instance >= INS_MAX_INSTANCES) {
+        // registration failed, this backend owns no instance
+        return;
+    }
     // possibly update filter frequency
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
         _imu._accel_filter[instance].set_cutoff_frequency(_accel_raw_sample_rate(instance), _accel_filter_cutoff());

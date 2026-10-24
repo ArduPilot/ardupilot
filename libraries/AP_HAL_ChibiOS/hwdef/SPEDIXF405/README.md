@@ -80,7 +80,7 @@ The correct battery setting parameters are:
 
 The board has no onboard compass. External compass modules can be connected via the I2C bus (SDA/SCL).
 
-## Camera control
+## Camera Control
 
 GPIO 82 controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output from CAM1 to CAM2. By default RELAY3 is configured to control this pin and sets the GPIO high.
 

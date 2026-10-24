@@ -29,7 +29,9 @@ public:
 
     AP_Float    roll_stb_lead;      // roll lead control gain (only used by servo backend)
     AP_Float    pitch_stb_lead;     // pitch lead control gain (only used by servo backend)
-    AP_Int8     sysid_default;      // target sysid for mount to follow
-    AP_Int32    dev_id;             // Device id taking into account bus
-    AP_Int8     options;            // mount options bitmask
+    AP_UInt32  sysid_default;      // target sysid for mount to follow
+    AP_UInt32   dev_id;             // Device id taking into account bus
+    AP_UInt8    options;            // mount options bitmask
+    AP_Int8     attitude_rate_hz;    // MAVLink vehicle attitude rate sent to gimbal
+    AP_Int8     target_rate_hz;      // MAVLink target rate sent to gimbal
 };

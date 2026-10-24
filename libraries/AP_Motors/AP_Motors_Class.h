@@ -2,6 +2,8 @@
 
 #include "AP_Motors_config.h"
 
+#if AP_MOTORS_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>         // filter library
@@ -9,6 +11,37 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger_config.h>
 #include <SRV_Channel/SRV_Channel_config.h>
+
+#ifndef AP_MOTORS_MAX_NUM_MOTORS
+#if AP_SCRIPTING_ENABLED
+#define AP_MOTORS_MAX_NUM_MOTORS 32
+#else
+#define AP_MOTORS_MAX_NUM_MOTORS 12
+#endif
+
+// doesn't make sense to have more motors than servo channels, so clamp:
+#if NUM_SERVO_CHANNELS < AP_MOTORS_MAX_NUM_MOTORS
+#undef AP_MOTORS_MAX_NUM_MOTORS
+#define AP_MOTORS_MAX_NUM_MOTORS NUM_SERVO_CHANNELS
+#endif
+
+// various Motors backends will not compile if we don't have 16 motors
+// available (eg. AP_Motors6DOF).  Until we stop compiling those
+// backends in when there aren't enough motors to support those
+// backends we will support a minimum of 12 motors, the limit before
+// we moved to 32 motor support:
+#if AP_MOTORS_MAX_NUM_MOTORS < 12
+#undef AP_MOTORS_MAX_NUM_MOTORS
+#define AP_MOTORS_MAX_NUM_MOTORS 12
+#endif
+
+#endif  // defined (AP_MOTORS_MAX_NUM_MOTORS)
+
+// scale factor for top layer to prevent beat frequency between top and bottom
+// layers of co-rotating motors. Must be less than 1.0
+#ifndef AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR
+#define AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR 0.9
+#endif
 
 // offsets for motors in motor_out and _motor_filtered arrays
 #define AP_MOTORS_MOT_1 0U
@@ -53,23 +86,51 @@ public:
 
     enum motor_frame_class {
         MOTOR_FRAME_UNDEFINED = 0,
+#if AP_MOTORS_FRAME_QUAD_ENABLED
         MOTOR_FRAME_QUAD = 1,
+#endif
+#if AP_MOTORS_FRAME_HEXA_ENABLED
         MOTOR_FRAME_HEXA = 2,
+#endif
+#if AP_MOTORS_FRAME_OCTA_ENABLED
         MOTOR_FRAME_OCTA = 3,
+#endif
+#if AP_MOTORS_FRAME_OCTAQUAD_ENABLED
         MOTOR_FRAME_OCTAQUAD = 4,
+#endif
+#if AP_MOTORS_FRAME_Y6_ENABLED
         MOTOR_FRAME_Y6 = 5,
+#endif
         MOTOR_FRAME_HELI = 6,
+#if AP_MOTORS_FRAME_TRI_ENABLED
         MOTOR_FRAME_TRI = 7,
+#endif  // AP_MOTORS_FRAME_TRI_ENABLED
+#if AP_MOTORS_FRAME_SINGLE_ENABLED
         MOTOR_FRAME_SINGLE = 8,
+#endif  // AP_MOTORS_FRAME_SINGLE_ENABLED
+#if AP_MOTORS_FRAME_COAX_ENABLED
         MOTOR_FRAME_COAX = 9,
+#endif  // AP_MOTORS_FRAME_COAX_ENABLED
+#if AP_MOTORS_FRAME_TAILSITTER_ENABLED
         MOTOR_FRAME_TAILSITTER = 10,
+#endif  // AP_MOTORS_FRAME_TAILSITTER_ENABLED
         MOTOR_FRAME_HELI_DUAL = 11,
+#if AP_MOTORS_FRAME_DODECAHEXA_ENABLED
         MOTOR_FRAME_DODECAHEXA = 12,
+#endif
         MOTOR_FRAME_HELI_QUAD = 13,
+#if AP_MOTORS_FRAME_DECA_ENABLED
         MOTOR_FRAME_DECA = 14,
+#endif
+#if AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
         MOTOR_FRAME_SCRIPTING_MATRIX = 15,
+#endif  // AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED
+#if AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
         MOTOR_FRAME_6DOF_SCRIPTING = 16,
+#endif  // AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
+#if AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
         MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX = 17,
+#endif  // AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED
     };
 
     // return string corresponding to frame_class
@@ -378,7 +439,7 @@ protected:
     float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
 
     // motor options
-    AP_Int16            _options;
+    AP_UInt16           _options;
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
 
@@ -414,3 +475,5 @@ private:
 namespace AP {
     AP_Motors *motors();
 };
+
+#endif  // AP_MOTORS_ENABLED

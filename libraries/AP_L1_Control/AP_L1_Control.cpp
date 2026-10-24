@@ -334,7 +334,7 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
     _last_Nu = Nu;
 
     // Limit Nu to +-(pi/2)
-    Nu = constrain_float(Nu, -1.5708f, +1.5708f);
+    Nu = constrain_float(Nu, -M_PI_2, M_PI_2);
     _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
 
     // Waypoint capture status is always false during waypoint following
@@ -431,13 +431,18 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     // Calculate tangential velocity
     float velTangent = xtrackVelCap * float(loiter_direction);
 
-    // Prevent PD demand from turning the wrong way by limiting the command when flying the wrong way
-    if (ltrackVelCap < 0.0f && velTangent < 0.0f) {
-        latAccDemCircPD =  MAX(latAccDemCircPD, 0.0f);
-    }
-
     // Calculate centripetal acceleration demand
     float latAccDemCircCtr = velTangent * velTangent / MAX((0.5f * radius), (radius + xtrackErrCirc));
+
+    // Prevent PD demand from turning the wrong way by limiting it when flying
+    // the wrong way, or while flying out from inside the loiter radius
+    if (ltrackVelCap < 0.0f) {
+        if (velTangent < 0.0f) {
+            latAccDemCircPD = MAX(latAccDemCircPD, 0.0f);
+        } else if (xtrackErrCirc < 0.0f) {
+            latAccDemCircPD = MAX(latAccDemCircPD, -latAccDemCircCtr);
+        }
+    }
 
     // Sum PD control and centripetal acceleration to calculate lateral manoeuvre demand
     float latAccDemCirc = loiter_direction * (latAccDemCircPD + latAccDemCircCtr);

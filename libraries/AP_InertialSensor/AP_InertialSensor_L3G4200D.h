@@ -51,4 +51,4 @@ private:
     LowPassFilter2pVector3f _accel_filter;
     LowPassFilter2pVector3f _gyro_filter;
 };
-#endif // __AP_INERTIAL_SENSOR_L3G4200D2_H__
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX

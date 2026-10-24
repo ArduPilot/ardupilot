@@ -81,6 +81,8 @@ Make.dep
 Thumbs.db
 autotest.lck
 build
+launch-settings.json
+/renode/
 cmake_install.cmake
 cscope.in.out
 cscope.out
@@ -114,6 +116,8 @@ GTAGS
 .gdbinit
 .vscode/*
 !.vscode/extensions.json
+!.vscode/usb-debug.code-workspace
+!.vscode/usb-debug-wsl.code-workspace
 .cache/
 /.history
 Parameters.html

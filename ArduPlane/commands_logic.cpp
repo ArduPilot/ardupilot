@@ -5,6 +5,12 @@
 /********************************************************************************/
 bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 {
+    if (control_mode == &mode_auto &&
+        AP_Mission::is_nav_cmd(cmd) &&
+        mission.get_prev_nav_cmd_index() != cmd.index) {
+        reset_alt_offset();
+    }
+
     // default to non-VTOL loiter
     auto_state.vtol_loiter = false;
 
@@ -83,7 +89,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        set_mode(mode_rtl, ModeReason::MISSION_CMD);
+        if (!set_mode(mode_rtl, ModeReason::MISSION_CMD)) {
+            // unable to enter RTL, allow the vehicle to try the next command
+            return false;
+        }
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
@@ -161,9 +170,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI:
         if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
-            if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                camera_mount.set_mode_to_default();
-            }
+            camera_mount.clear_roi_target();
         } else {
             // set mount's target location
             camera_mount.set_roi_target(cmd.content.location);
@@ -660,7 +667,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // see if the user has specified a maximum distance to waypoint
     // If override with p3 - then this is not used as it will overfly badly
     if (g.waypoint_max_radius > 0 &&
-        auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
+        auto_state.wp_distance > g.waypoint_max_radius) {
         if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
             if (cmd_passby == 0) {
@@ -1046,8 +1053,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 void Plane::exit_mission_callback()
 {
-    if (control_mode == &mode_auto) {
-        set_mode(mode_rtl, ModeReason::MISSION_END);
+    if (control_mode == &mode_auto && set_mode(mode_rtl, ModeReason::MISSION_END)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
 }
@@ -1079,7 +1085,10 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
 
                 if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_achieve_target_alt)) {
-                    Vector3f wind = ahrs.wind_estimate();
+                    Vector3f wind;
+                    // use the estimate even if it is not marked valid,
+                    // to preserve existing behaviour
+                    IGNORE_RETURN(ahrs.get_wind(wind));
                     vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
                     gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::ENSURE_RADIUS;

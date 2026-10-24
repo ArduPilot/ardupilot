@@ -115,13 +115,13 @@ ArduPilot automatically probes for **external I2C compasses** on I2C1.
 
 ---
 
-## Camera Control (CC) Output
+## Camera Control
 
 The **CC pin** is controlled as a standard GPIO via **RELAY2**.
 
 ---
 
-## OSD
+## OSD Support
 
 Analog OSD is supported via the internal **AT7456** chip.
 
@@ -129,7 +129,7 @@ Simultaneously, **DisplayPort HD OSD** is available by default via **UART1**,
 
 ---
 
-## RSSI Input
+## RSSI
 
 Analog RSSI input is supported through **RSSI_ANA_PIN = 15**.
 Connect your receiver’s analog RSSI output to this pad to enable RSSI display in OSD and telemetry.

@@ -103,14 +103,6 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: _STR_RAT_FILT
-    // @DisplayName: Steering control filter frequency
-    // @Description: Steering control input filter.  Lower values reduce noise but add delay.
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
-    // @User: Standard
-
     // @Param: _STR_RAT_FLTT
     // @DisplayName: Steering control Target filter frequency in Hz
     // @Description: Target filter frequency in Hz
@@ -157,14 +149,14 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_RAT_NTF
     // @DisplayName: Steering control Target notch filter index
-    // @Description: Steering control Target notch filter index
-    // @Range: 1 8
+    // @Description: Steering control Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _STR_RAT_NEF
     // @DisplayName: Steering control Error notch filter index
-    // @Description: Steering control Error notch filter index
-    // @Range: 1 8
+    // @Description: Steering control Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_steer_rate_pid, "_STR_RAT_", 1, AR_AttitudeControl, AC_PID),
@@ -202,14 +194,6 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Speed control feed forward
     // @Range: 0.000 0.500
     // @Increment: 0.001
-    // @User: Standard
-
-    // @Param: _SPEED_FILT
-    // @DisplayName: Speed control filter frequency
-    // @Description: Speed control input filter.  Lower values reduce noise but add delay.
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
     // @User: Standard
 
     // @Param: _SPEED_FLTT
@@ -258,14 +242,14 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _SPEED_NTF
     // @DisplayName: Speed control Target notch filter index
-    // @Description: Speed control Target notch filter index
-    // @Range: 1 8
+    // @Description: Speed control Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _SPEED_NEF
     // @DisplayName: Speed control Error notch filter index
-    // @Description: Speed control Error notch filter index
-    // @Range: 1 8
+    // @Description: Speed control Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_throttle_speed_pid, "_SPEED_", 2, AR_AttitudeControl, AC_PID),
@@ -365,14 +349,6 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: _BAL_FILT
-    // @DisplayName: Pitch control filter frequency
-    // @Description: Pitch control input filter.  Lower values reduce noise but add delay.
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
-    // @User: Standard
-
     // @Param: _BAL_FLTT
     // @DisplayName: Pitch control Target filter frequency in Hz
     // @Description: Pitch control Target filter frequency in Hz
@@ -419,14 +395,14 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _BAL_NTF
     // @DisplayName: Pitch control Target notch filter index
-    // @Description: Pitch control Target notch filter index
-    // @Range: 1 8
+    // @Description: Pitch control Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _BAL_NEF
     // @DisplayName: Pitch control Error notch filter index
-    // @Description: Pitch control Error notch filter index
-    // @Range: 1 8
+    // @Description: Pitch control Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pitch_to_throttle_pid, "_BAL_", 10, AR_AttitudeControl, AC_PID),
@@ -472,14 +448,6 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Sail Heel control feed forward
     // @Range: 0.000 0.500
     // @Increment: 0.001
-    // @User: Standard
-
-    // @Param: _SAIL_FILT
-    // @DisplayName: Sail Heel control filter frequency
-    // @Description: Sail Heel control input filter.  Lower values reduce noise but add delay.
-    // @Range: 0.000 100.000
-    // @Increment: 0.1
-    // @Units: Hz
     // @User: Standard
 
     // @Param: _SAIL_FLTT
@@ -528,14 +496,14 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _SAIL_NTF
     // @DisplayName: Sail Heel Target notch filter index
-    // @Description: Sail Heel Target notch filter index
-    // @Range: 1 8
+    // @Description: Sail Heel Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _SAIL_NEF
     // @DisplayName: Sail Heel Error notch filter index
-    // @Description: Sail Heel Error notch filter index
-    // @Range: 1 8
+    // @Description: Sail Heel Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_sailboat_heel_pid, "_SAIL_", 12, AR_AttitudeControl, AC_PID),

@@ -55,12 +55,6 @@ extern const AP_HAL::HAL &hal;
 #define HAL_PERIPH_EFI_BAUDRATE_DEFAULT 115200
 #endif
 
-#ifndef HAL_DEFAULT_MAV_SYSTEM_ID
-#define MAV_SYSTEM_ID 3
-#else
-#define MAV_SYSTEM_ID HAL_DEFAULT_MAV_SYSTEM_ID
-#endif
-
 #ifndef APD_ESC_SERIAL_0
   #define APD_ESC_SERIAL_0 -1
 #endif
@@ -652,7 +646,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 #endif
-#endif // AP_SIM_ENABLED
+#endif // AP_SIM_PARAM_ENABLED
 
 #if HAL_PERIPH_CAN_MIRROR
     // @Param: CAN_MIRROR_PORTS
@@ -760,6 +754,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(servo_telem_msg_rate, "SRV_TLM_MSG_RATE", 20),
+#endif
+
+#if AP_PERIPH_BATTERY_BMS_ENABLED
+    // @Group: BMS
+    // @Path: battery_bms.cpp
+    GOBJECT(battery_bms, "BMS_",  BatteryBMS),
 #endif
 
     AP_VAREND

@@ -21,10 +21,10 @@ void Blimp::init_rc_in()
     channel_yaw   = &rc().get_yaw_channel();
 
     // set rc channel ranges
-    channel_right->set_angle(RC_SCALE);
-    channel_front->set_angle(RC_SCALE);
-    channel_yaw->set_angle(RC_SCALE);
-    channel_up->set_angle(RC_SCALE);
+    channel_right->set_angle(INPUT_AND_OUTPUT_SCALING);
+    channel_front->set_angle(INPUT_AND_OUTPUT_SCALING);
+    channel_yaw->set_angle(INPUT_AND_OUTPUT_SCALING);
+    channel_up->set_angle(INPUT_AND_OUTPUT_SCALING);
 
     // set default dead zones
     default_dead_zones();
@@ -94,7 +94,7 @@ void Blimp::read_radio()
     set_failsafe_radio(true);
 }
 
-#define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
+#define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values at or below failsafe_throttle_value
 void Blimp::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
@@ -104,7 +104,7 @@ void Blimp::set_throttle_and_failsafe(uint16_t throttle_pwm)
     }
 
     //check for low throttle value
-    if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
+    if (throttle_pwm <= g.failsafe_throttle_value) {
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
         if (failsafe.radio || !(rc().has_ever_seen_rc_input() || motors->armed())) {

@@ -149,6 +149,8 @@ void ModeThrow::run()
 
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        // ignore motor checks
+        motors->set_spoolup_block(false);
 
         break;
 
@@ -252,13 +254,13 @@ void ModeThrow::run()
 bool ModeThrow::throw_detected()
 {
     // Check that the AHRS is healthy enough for us to be doing detection:
-    if (!ahrs.has_status(AP_AHRS::Status::ATTITUDE_VALID)) {
+    if (!ahrs.configured_backend_has_status(AP_AHRS::Status::ATTITUDE_VALID)) {
         return false;
     }
-    if (!ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
+    if (!ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
         return false;
     }
-    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
+    if (!ahrs.configured_backend_has_status(AP_AHRS::Status::VERT_POS)) {
         return false;
     }
 

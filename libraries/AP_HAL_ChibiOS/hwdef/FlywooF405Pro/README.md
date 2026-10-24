@@ -85,7 +85,7 @@ The GOKU F405 Pro does not have a builtin compass but it does have an external I
 
 The board includes a NeoPixel LED pad.
 
-## Loading Firmware (you will need to compile your own firmware)
+## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

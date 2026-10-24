@@ -54,6 +54,10 @@ public:
     void start_peripheral(void);
     void stop_peripheral(void);
 
+    // restore hardware state needed by the polled crash dump path
+    void crashdump_prepare_peripheral(void);
+    void crashdump_restore_sck(void);
+
 private:
     bool spi_started;
 
@@ -146,6 +150,23 @@ public:
     bool acquire_bus(bool acquire, bool skip_cs);
 
     SPIDriver * get_driver();
+
+    void get_crashdump_config(bool high_speed, uint32_t &config1,
+                              uint32_t &config2) const;
+    void crashdump_prepare_peripheral()
+    {
+        bus.crashdump_prepare_peripheral();
+    }
+    void crashdump_restore_sck()
+    {
+        bus.crashdump_restore_sck();
+    }
+
+    ioline_t get_chip_select_line() const { return device_desc.pal_line; }
+    struct bouncebuffer_t *prepare_crashdump_buffer(uint32_t size) {
+        return bus.prepare_crashdump_buffer(size);
+    }
+    void crashdump_deassert_all_cs();
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // used to measure clock frequencies

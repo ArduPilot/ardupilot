@@ -24,6 +24,7 @@ from builtin_interfaces.msg import Time
 from launch_fixtures import launch_sitl_copter_dds_serial
 from launch_fixtures import launch_sitl_copter_dds_udp
 from launch_pytest.tools import process as process_tools
+from ros_helpers import ros_node
 
 TOPIC = "ap/time"
 WAIT_FOR_START_TIMEOUT = 5.0
@@ -44,10 +45,6 @@ class TimeListener(rclpy.node.Node):
     def start_subscriber(self):
         """Start the subscriber."""
         self.subscription = self.create_subscription(Time, self.topic, self.subscriber_callback, 1)
-
-        # Add a spin thread.
-        self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
-        self.ros_spin_thread.start()
 
     def subscriber_callback(self, msg):
         """Process a Time message."""
@@ -78,14 +75,10 @@ def test_dds_serial_time_msg_recv(launch_context, launch_sitl_copter_dds_serial)
     process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
     process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
-    rclpy.init()
-    try:
-        node = TimeListener()
+    with ros_node(TimeListener) as node:
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
-    finally:
-        rclpy.shutdown()
     yield
 
 
@@ -102,12 +95,8 @@ def test_dds_udp_time_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
     process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
-    rclpy.init()
-    try:
-        node = TimeListener()
+    with ros_node(TimeListener) as node:
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
-    finally:
-        rclpy.shutdown()
     yield

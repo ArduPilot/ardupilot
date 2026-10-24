@@ -230,7 +230,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #endif  // HAL_BARO_WIND_COMP_ENABLED
 
 #if AP_FIELD_ELEVATION_ENABLED
-    // @Param: _FIELD_ELV
+    // @Param{Blimp,Copter,Plane,Rover,Tracker}: _FIELD_ELV
     // @DisplayName: field elevation
     // @Description: User provided field elevation in meters. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. Changes to this parameter will only be used when disarmed. A value of 0 means the EKF origin height is used for takeoff height above sea level.
     // @Units: m
@@ -241,7 +241,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #endif
 
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    // @Param: _ALTERR_MAX
+    // @Param{Copter,Plane}: _ALTERR_MAX
     // @DisplayName: Altitude error maximum
     // @Description: This is the maximum acceptable altitude discrepancy between GPS altitude and barometric presssure altitude calculated against a standard atmosphere for arming checks to pass. If you are getting an arming error due to this parameter then you may have a faulty or substituted barometer. A common issue is vendors replacing a MS5611 in a "Pixhawk" with a MS5607. If you have that issue then please see BARO_OPTIONS parameter to force the MS5611 to be treated as a MS5607. This check is disabled if the value is zero.
     // @Units: m
@@ -250,7 +250,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ALTERR_MAX", 23, AP_Baro, _alt_error_max, 2000),
 
-    // @Param: _OPTIONS
+    // @Param{Copter,Plane}: _OPTIONS
     // @DisplayName: Barometer options
     // @Description: Barometer options
     // @Bitmask: 0:Treat MS5611 as MS5607
@@ -418,17 +418,6 @@ void AP_Baro::update_calibration()
 }
 #endif  // AP_BARO_CALIBRATION_ENABLED
 
-// return air density / sea level density - decreases as altitude climbs
-float AP_Baro::_get_air_density_ratio(void)
-{
-    const float eas2tas = _get_EAS2TAS();
-    if (eas2tas > 0.0f) {
-        return 1.0f/(sq(eas2tas));
-    } else {
-        return 1.0f;
-    }
-}
-
 // return current climb_rate estimate relative to time that calibrate()
 // was called. Returns climb rate in meters/s, positive means up
 // note that this relies on read() being called regularly to get new data
@@ -474,12 +463,10 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
 #if AP_AIRSPEED_ENABLED
     // if we don't have an external temperature then try to use temperature
     // from the airspeed sensor
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        float temperature;
-        if (airspeed->healthy() && airspeed->get_temperature(temperature)) {
-            return temperature;
-        }
+    const AP_Airspeed &airspeed = AP::airspeed();
+    float temperature;
+    if (airspeed.healthy() && airspeed.get_temperature(temperature)) {
+        return temperature;
     }
 #endif
 #endif
@@ -515,7 +502,7 @@ bool AP_Baro::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
 {
     for (int i=0; i<_num_sensors; ++i) {
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
-            AP_HAL::Device::change_bus_id(uint32_t(sensors[i].bus_id.get()), 0)) {
+            AP_HAL::Device::change_bus_id(sensors[i].bus_id, 0)) {
             // device already has been defined.
             return true;
         }
@@ -686,7 +673,6 @@ void AP_Baro::init(void)
     case AP_BoardConfig::PX4_BOARD_PHMINI:
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
-    case AP_BoardConfig::PX4_BOARD_FMUV6:
 #if AP_BARO_MS5611_ENABLED
         probe_spi_dev(AP_Baro_MS5611::probe, HAL_BARO_MS5611_NAME);
         RETURN_IF_NO_SPACE;
@@ -700,15 +686,6 @@ void AP_Baro::init(void)
         probe_spi_dev(AP_Baro_MS5611::probe, HAL_BARO_MS5611_NAME);
         RETURN_IF_NO_SPACE;
 #endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_AEROFC:
-#if AP_BARO_MS5607_ENABLED
-#ifdef HAL_BARO_MS5607_I2C_BUS
-        probe_i2c_dev(AP_Baro_MS5607::probe, HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR);
-        RETURN_IF_NO_SPACE;
-#endif
-#endif  // AP_BARO_MS5607_ENABLED
         break;
 
     default:
@@ -975,6 +952,10 @@ void AP_Baro::update(void)
 #if AP_FIELD_ELEVATION_ENABLED
     update_field_elevation();
 #endif
+
+    // update the cached EAS2TAS value, a function of the primary
+    // baro's altitude:
+    _EAS2TAS = _get_EAS2TAS();
 
     // logging
 #if HAL_LOGGING_ENABLED

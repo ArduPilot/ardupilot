@@ -51,7 +51,10 @@ protected:
     void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
-    AP_Motors::SpoolState update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
+
+    // update_spool_state - updates the spool state based on the desired state
+    AP_Motors::SpoolState update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
 
     // calculate_roll_pitch_collective_factors - setup rate factors
     void calculate_roll_pitch_collective_factors ();

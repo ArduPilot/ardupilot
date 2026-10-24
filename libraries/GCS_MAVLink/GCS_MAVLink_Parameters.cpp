@@ -82,7 +82,7 @@ const struct AP_Param::GroupInfo *GCS::_chan_var_info[MAVLINK_COMM_NUM_BUFFERS];
 #else
 #error Need to set streamrates
 #endif  // APM_BUILD_TYPE
-#endif  // AP_MAV_DEFAULT_STREAM_RATE
+#endif  // AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS
 
 // this must be ordered identically to GCS_MAVLINK::streams!
 static const uint8_t default_rates[] {
@@ -210,16 +210,47 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: Bitmask for configuring this telemetry channel
-    // @Description: Bitmask for configuring this telemetry channel. For having effect on all channels, set the relevant mask in all MAVx_OPTIONS parameters. Keep in mind that part of the flags may require a reboot to take action.
+    // @Description: Bitmask for configuring this telemetry channel. For having effect on all channels, set the relevant mask in all MAVx_OPTIONS parameters. Keep in mind that part of the flags may require a reboot to take action. Unicast blocks forwarding of broadcasts to/from this link, but allows packets addressed to a learned system/component pair. A missing or zero target system or component is a broadcast. Unicast sends heartbeat but does not start the normal telemetry streams; devices can request messages with MAV_CMD_SET_MESSAGE_INTERVAL or MAV_CMD_REQUEST_MESSAGE. Local processing is unaffected.
     // @RebootRequired: True
     // @User: Standard
-    // @Bitmask: 0:Accept unsigned MAVLink2 messages, 1:Don't forward mavlink to/from, 2:Ignore Streamrate, 3:forward mavlink packets that don't pass CRC
+    // @Bitmask: 0:Accept unsigned MAVLink2 messages, 1:Don't forward mavlink to/from, 2:Ignore Streamrate, 3:forward mavlink packets that don't pass CRC, 4:Unicast
     AP_GROUPINFO("_OPTIONS",   20, GCS_MAVLINK, options, 0),
 
     // PARAMETER_CONVERSION - Added: May-2025 for ArduPilot-4.7
     // Hidden param used as a flag for param conversion
     // This allows one time conversion while allowing user to flash between versions with and without converted params
     AP_GROUPINFO_FLAGS("_OPTIONSCNV",   21, GCS_MAVLINK, options_were_converted, 0, AP_PARAM_FLAG_HIDDEN),
+
+    // @Param: _DEVID
+    // @DisplayName: DeviceID
+    // @Description: ID of device using this MAVLink channel
+    // @ReadOnly: True
+    // @Values: 0:Unknown
+    // @Values: 65542:SERIAL0 (USB on ChibiOS)
+    // @Values: 65798:SERIAL1
+    // @Values: 66054:SERIAL2
+    // @Values: 66310:SERIAL3
+    // @Values: 66566:SERIAL4
+    // @Values: 66822:SERIAL5
+    // @Values: 67078:SERIAL6
+    // @Values: 67334:SERIAL7
+    // @Values: 67590:SERIAL8
+    // @Values: 67846:SERIAL9
+    // @Values: 131078:NET_P1
+    // @Values: 131334:NET_P2
+    // @Values: 131590:NET_P3
+    // @Values: 131846:NET_P4
+    // @Values: 196614:CAN_D1_UC_S1
+    // @Values: 196870:CAN_D1_UC_S2
+    // @Values: 197126:CAN_D1_UC_S3
+    // @Values: 196622:CAN_D2_UC_S1
+    // @Values: 196878:CAN_D2_UC_S2
+    // @Values: 197134:CAN_D2_UC_S3
+    // @Values: 262150:SCR_SDEV1
+    // @Values: 262406:SCR_SDEV2
+    // @Values: 262662:SCR_SDEV3
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_DEVID",   22, GCS_MAVLINK, devid, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
     AP_GROUPEND
 };

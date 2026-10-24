@@ -220,7 +220,7 @@ void AP_ICEngine::init()
     param_conversion();
 }
 
-// PARAMETER_CONVERSION - Added: Aug 2024
+// PARAMETER_CONVERSION - Added: Aug-2024 for ArduPilot-4.6
 void AP_ICEngine::param_conversion()
 {
     if (!enable || (param_format_version == 1)) {

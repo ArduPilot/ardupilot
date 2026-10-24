@@ -48,8 +48,8 @@ protected:
     // linked list
     AP_RangeFinder_Backend_CAN *next;
 
-    AP_Int32 receive_id; // CAN ID to receive for this backend
-    AP_Int32 snr_min; // minimum signal strength to accept packet
+    AP_UInt32 receive_id; // CAN ID to receive for this backend
+    AP_UInt32 snr_min; // minimum signal strength to accept packet
 
     MultiCAN* multican_rangefinder; // Allows for multiple CAN rangefinders on a single bus
 private:

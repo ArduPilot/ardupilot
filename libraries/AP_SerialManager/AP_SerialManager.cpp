@@ -592,6 +592,7 @@ void AP_SerialManager::init()
 
 void AP_SerialManager::convert_parameters()
 {
+    // PARAMETER_CONVERSION - Added: Jun-2025 for ArduPilot-4.7
     for (auto &_state : state) {
         _state.options.convert_parameter_width(AP_PARAM_INT16);
     }
@@ -678,11 +679,11 @@ uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t i
 
 void AP_SerialManager::set_and_default_baud(enum SerialProtocol protocol, uint8_t instance, uint32_t _baud)
 {
-    const struct UARTState *_state = find_protocol_instance(protocol, instance);
+    struct UARTState *_state = const_cast<struct UARTState *>(find_protocol_instance(protocol, instance));
     if (_state == nullptr) {
         return;
     }
-    state->baud.set_and_default(_baud);
+    _state->baud.set_and_default(_baud);
 }
 
 // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
@@ -842,7 +843,7 @@ void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol
 }
 bool AP_SerialManager::pre_arm_checks(char *failure_msg, const uint8_t failure_msg_len)
 {
-    // PARAMETER_CONVERSION - Added May 2028 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jun-2025 for ArduPilot-4.7
     // ArduPilot 4.7 pre-arm fails if either bit is set when conversion should have nuked them
     // ArduPilot 4.8 pre-arm fails if either bit is set when conversion should have nuked them
     // ArduPilot 4.9 pre-arm fails if either bit is set when conversion should have nuked them
@@ -907,6 +908,60 @@ void AP_SerialManager::registered_ports_log()
 #endif
 
 #endif // AP_SERIALMANAGER_REGISTER_ENABLED
+
+// Return a device id for this port
+uint32_t AP_SerialManager::UARTState::get_device_id() const
+{
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    if (idx >= AP_SERIALMANAGER_SCR_PORT_1) {
+        // Scripting port
+        return AP_HAL::Device::make_bus_id(
+            AP_HAL::Device::BUS_TYPE_SERIAL,
+            0,
+            idx - AP_SERIALMANAGER_SCR_PORT_1,
+            uint8_t(DeviceType::SCRIPTING)
+        );
+    }
+
+    if (idx >= AP_SERIALMANAGER_CAN_D2_PORT_1) {
+        // CAN D2 port
+        return AP_HAL::Device::make_bus_id(
+            AP_HAL::Device::BUS_TYPE_SERIAL,
+            1,
+            idx - AP_SERIALMANAGER_CAN_D2_PORT_1,
+            uint8_t(DeviceType::CANBUS)
+        );
+    }
+
+    if (idx >= AP_SERIALMANAGER_CAN_D1_PORT_1) {
+        // CAN D1 port
+        return AP_HAL::Device::make_bus_id(
+            AP_HAL::Device::BUS_TYPE_SERIAL,
+            0,
+            idx - AP_SERIALMANAGER_CAN_D1_PORT_1,
+            uint8_t(DeviceType::CANBUS)
+        );
+    }
+
+    if (idx >= AP_SERIALMANAGER_NET_PORT_1) {
+        // Networking port
+        return AP_HAL::Device::make_bus_id(
+            AP_HAL::Device::BUS_TYPE_SERIAL,
+            0,
+            idx - AP_SERIALMANAGER_NET_PORT_1,
+            uint8_t(DeviceType::NETWORKING)
+        );
+    }
+#endif // AP_SERIALMANAGER_REGISTER_ENABLED
+
+    // Standard port
+    return AP_HAL::Device::make_bus_id(
+        AP_HAL::Device::BUS_TYPE_SERIAL,
+        0,
+        idx,
+        uint8_t(DeviceType::UART)
+    );
+}
 
 namespace AP {
 

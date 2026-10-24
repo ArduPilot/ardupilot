@@ -46,12 +46,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-#if HAL_CANMANAGER_ENABLED
-#define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANSITLIface", fmt, ##args); } while (0)
-#else
-#define Debug(fmt, args...)
-#endif
-
 uint8_t CANIface::_num_interfaces;
 
 bool CANIface::is_initialized() const
@@ -167,13 +161,19 @@ bool CANIface::_pollRead()
     if (transport == nullptr) {
         return false;
     }
+    // hold the lock across the read, not just the queue push: send()
+    // and receive() call this with it already held and _poll() without,
+    // so two threads could each take a frame off the socket and then
+    // race to queue them, reordering the frames of a multi-frame
+    // transfer.  The semaphore is recursive, so the callers which
+    // already hold it are unaffected.
+    WITH_SEMAPHORE(sem);
     CanRxItem rx {};
     bool ok = transport->receive(rx.frame);
     if (!ok) {
         return false;
     }
     rx.timestamp_us = AP_HAL::micros64();
-    WITH_SEMAPHORE(sem);
     add_to_rx_queue(rx);
     stats.rx_received++;
     return true;

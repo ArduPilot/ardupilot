@@ -19,7 +19,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: SYSID_TARGET
     // @DisplayName: Target vehicle's MAVLink system ID
     // @Description: The identifier of the vehicle being tracked. This should be zero (to auto detect) or be the same as the MAV_SYSID parameter of the vehicle being tracked.
-    // @Range: 1 255
+    // @Range: 0 4294967295
     // @User: Advanced
     GSCALAR(sysid_target,           "SYSID_TARGET",    0),
 
@@ -344,14 +344,14 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Param: PITCH2SRV_NTF
     // @DisplayName: Pitch Target notch filter index
-    // @Description: Pitch Target notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: PITCH2SRV_NEF
     // @DisplayName: Pitch Error notch filter index
-    // @Description: Pitch Error notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
@@ -440,14 +440,14 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Param: YAW2SRV_NTF
     // @DisplayName: Yaw Target notch filter index
-    // @Description: Yaw Target notch filter index
-    // @Range: 1 8
+    // @Description: Yaw Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: YAW2SRV_NEF
     // @DisplayName: Yaw Error notch filter index
-    // @Description: Yaw Error notch filter index
-    // @Range: 1 8
+    // @Description: Yaw Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
@@ -536,6 +536,10 @@ const AP_Param::Info Tracker::var_info[] = {
 void Tracker::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
+
+    // Convert the target before startup delay callbacks can expose parameters.
+    // PARAMETER_CONVERSION - Added: Jul-2026 for ArduPilot-4.8 - 32 bit sysids
+    g.sysid_target.convert_parameter_width(AP_PARAM_INT16);
 
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024

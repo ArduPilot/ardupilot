@@ -50,6 +50,12 @@ public:
     bool get_terrain_U_m(float& terrain_u_m);
     bool get_terrain_D_m(float& terrain_d_m);
 
+    // Converts _origin_ned_m.z between the terrain-relative and origin-relative altitude frames
+    // and re-seeds the position controller's terrain offset to match.  Call only when the new
+    // leg's frame differs from the current one.
+    // Returns false if terrain data is required but unavailable.
+    bool convert_origin_to_alt_frame(bool is_terrain_alt);
+
     // Returns the terrain following altitude margin in meters.
     // Vehicle will stop if distance from target altitude exceeds this margin.
     float get_terrain_margin_m() const { return MAX(_terrain_margin_m, 0.1); }
@@ -196,6 +202,23 @@ public:
     // Updates velocity handoff if previous leg is a spline.
     // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
     bool set_wp_destination_next_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt = false, float arc_rad = 0.0);
+
+    // Sets a circular-orbit destination about center_ne_m using the S-curve engine.
+    // The current destination (used as the leg origin) must lie on the circle; the radius is the
+    // distance from that origin to the center. turns_signed is the signed number of turns (its sign
+    // selects direction and its magnitude may exceed 1 for multiple turns). dest_d_m is the altitude
+    // (NED down) at the end of the orbit and is_terrain_alt selects the altitude frame. The orbit is
+    // flown at the waypoint speed, limited by the corner acceleration through the arc radius.
+    // Returns false if a terrain-frame transition is required but terrain data is unavailable.
+    // Not virtual: AC_WPNav_OA holds its avoidance state inactive for the whole orbit in
+    // update_wpnav() instead of overriding here, which lets the linker drop this and the
+    // S-curve arc builder behind it from vehicles that never fly an orbit.
+    bool set_circle_destination_NED_m(const Vector2f& center_ne_m, float turns_signed, float dest_d_m, bool is_terrain_alt);
+
+    // Returns the angle swept around the current circular-orbit leg so far, in radians.
+    // Unsigned and unwrapped, so it grows past 2*pi on a multi-turn orbit.
+    // Returns zero unless the current leg was set by set_circle_destination_NED_m().
+    float get_circle_angle_covered_rad() const { return _this_leg_is_circle ? _scurve_this_leg.get_arc_angle_covered_rad() : 0.0; }
 
     // Computes the horizontal stopping point in NE frame, returned in centimeters.
     // See get_wp_stopping_point_NE_m() for full details.
@@ -383,6 +406,7 @@ protected:
     // path type flags
     bool _this_leg_is_spline;       // true if the current leg uses spline trajectory
     bool _next_leg_is_spline;       // true if the next leg will use spline trajectory
+    bool _this_leg_is_circle;       // true if the current leg is a circular orbit built by set_circle_destination_NED_m
 
     // waypoint navigation state
     uint32_t _wp_last_update_ms;         // timestamp of the last update_wpnav() call (milliseconds)

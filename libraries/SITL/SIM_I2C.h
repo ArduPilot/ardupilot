@@ -29,8 +29,6 @@ class I2C {
 public:
     I2C() {}
 
-    void init();
-
     // update i2c state
     void update(const class Aircraft &aircraft);
 
@@ -53,6 +51,12 @@ public:
     // end "the following"
 
 private:
+    // one-time setup of the simulated device table.  Self-guarded by
+    // initialised and called lazily from update()/ioctl() (either may
+    // run first), so the simulated bus needs no external init() call.
+    void init();
+    bool initialised;
+
     int ioctl_rdwr(i2c_rdwr_ioctl_data *data);
 
 };

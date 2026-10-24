@@ -58,6 +58,17 @@ public:
     virtual bool get_hygrometer(uint32_t &last_sample_ms, float &temperature, float &humidity) { return false; }
 #endif
 
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+    // handle a differential pressure reading, in Pascal, from a lua script
+    virtual bool handle_script_differential_pressure(float press_pa) { return false; }
+
+    // handle an airspeed reading, in m/s, from a lua script
+    virtual bool handle_script_airspeed(float airspeed_ms) { return false; }
+
+    // handle a temperature reading, in degrees C, from a lua script
+    virtual bool handle_script_temperature(float temperature_c) { return false; }
+#endif // AP_AIRSPEED_SCRIPTING_ENABLED
+
 protected:
     int8_t get_pin(void) const;
     float get_psi_range(void) const;
@@ -117,6 +128,7 @@ protected:
         NMEA     = 0x09,
         ASP5033  = 0x0A,
         AUAV     = 0x0B,
+        SCRIPTING = 0x0C,
     };
     
 private:

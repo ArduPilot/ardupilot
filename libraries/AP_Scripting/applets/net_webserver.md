@@ -6,25 +6,25 @@ This implements a web server for boards that have networking support.
 
 The web server has a small number of parameters
 
-## WEB_ENABLE
+### WEB_ENABLE
 
 This must be set to 1 to enable the web server
 
-## WEB_BIND_PORT
+### WEB_BIND_PORT
 
 This sets the network port to use for the server. It defaults to 8080
 
-## WEB_DEBUG
+### WEB_DEBUG
 
 This enables verbose debugging
 
-## WEB_BLOCK_SIZE
+### WEB_BLOCK_SIZE
 
 This sets the block size for network and file read/write
 operations. Setting a larger value can increase performance at the
 cost of more memory
 
-## WEB_TIMEOUT
+### WEB_TIMEOUT
 
 This sets the timeout in seconds for inactive client connections.
 

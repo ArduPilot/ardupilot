@@ -90,10 +90,6 @@
 # define FENCE_ENABLED 1
 #endif
 
-#ifndef MAV_SYSTEM_ID
-# define MAV_SYSTEM_ID          1
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef NAV_GUIDED
@@ -148,10 +144,6 @@
 #ifndef ROLL_PITCH_INPUT_MAX
 # define ROLL_PITCH_INPUT_MAX      4500            // roll, pitch input range
 #endif
-#ifndef DEFAULT_ANGLE_MAX
-# define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Loiter position control gains
 //

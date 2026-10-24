@@ -311,6 +311,7 @@ void SilentWings::update(const struct sitl_input &input)
     }
 
     update_mag_field_bf();
+    update_battery();
 
     uint32_t now = AP_HAL::millis();
 

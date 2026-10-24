@@ -985,67 +985,27 @@ bool AP_Mount_Siyi::set_camera_source(uint8_t primary_source, uint8_t secondary_
     return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type);
 }
 
-// send camera information message to GCS
-void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
+// return focal length in mm for the current hardware model
+float AP_Mount_Siyi::get_camera_focal_length_mm() const
 {
-    // exit immediately if not initialised
-    if (!_initialised || !_fw_version.received) {
-        return;
-    }
-
-    static const uint8_t vendor_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_VENDOR_NAME_LEN] { "Siyi" };
-    uint8_t model_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_MODEL_NAME_LEN] {};
-    const uint32_t fw_version = _fw_version.camera.major | (_fw_version.camera.minor << 8) | (_fw_version.camera.patch << 16);
-    const char cam_definition_uri[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_CAM_DEFINITION_URI_LEN] {};
-
-    // copy model name
-    strncpy_noterm((char *)model_name, get_model_name(), sizeof(model_name));
-
-    // focal length
     // To-Do: check these values are correct for A2, ZR30, ZT30
-    float focal_length_mm = 0;
     switch (_hardware_model) {
     case HardwareModel::UNKNOWN:
     case HardwareModel::A2:
     case HardwareModel::A8:
     case HardwareModel::ZT6:
-        focal_length_mm = 21;
-        break;
+        return 21;
     case HardwareModel::ZR10:
     case HardwareModel::ZR30:
     case HardwareModel::ZT30:
         // focal length range from 5.15 ~ 47.38
-        focal_length_mm = 5.15;
-        break;
+        return 5.15;
     }
-
-    // capability flags
-    const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
-                           CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
-                           CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
-                           CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS;
-
-    // send CAMERA_INFORMATION message
-    mavlink_msg_camera_information_send(
-        chan,
-        AP_HAL::millis(),       // time_boot_ms
-        vendor_name,            // vendor_name uint8_t[32]
-        model_name,             // model_name uint8_t[32]
-        fw_version,             // firmware version uint32_t
-        focal_length_mm,        // focal_length float (mm)
-        NaNf,                   // sensor_size_h float (mm)
-        NaNf,                   // sensor_size_v float (mm)
-        0,                      // resolution_h uint16_t (pix)
-        0,                      // resolution_v uint16_t (pix)
-        0,                      // lens_id uint8_t
-        flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
-        0,                      // cam_definition_version uint16_t
-        cam_definition_uri,     // cam_definition_uri char[140]
-        _instance + 1);         // gimbal_device_id uint8_t
+    return 0;
 }
 
 // send camera settings message to GCS
-void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
+void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     const uint8_t mode_id = (_config_info.record_status == RecordingStatus::ON) ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE;
     const float zoom_mult_max = get_zoom_mult_max();
@@ -1060,12 +1020,13 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         mode_id,            // camera mode (0:image, 1:video, 2:image survey)
         zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        camera_device_id);  // camera_device_id
 }
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
 // send camera thermal range message to GCS
-void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan) const
+void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     const uint32_t now_ms = AP_HAL::millis();
     bool timeout = now_ms - _thermal.last_update_ms > AP_MOUNT_SIYI_THERM_TIMEOUT_MS;
@@ -1075,7 +1036,7 @@ void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan) const
         chan,
         now_ms,             // time_boot_ms
         _instance + 1,      // video stream id (assume one-to-one mapping with camera id)
-        _instance + 1,      // camera device id
+        camera_device_id,   // camera device id
         timeout ? NaNf : _thermal.max_C,     // max in degC
         timeout ? NaNf : _thermal.max_pos.x, // max x position
         timeout ? NaNf : _thermal.max_pos.y, // max y position

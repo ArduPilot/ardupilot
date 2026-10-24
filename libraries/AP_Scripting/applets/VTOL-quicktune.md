@@ -13,34 +13,34 @@ VTOL modes.
 The script adds 7 parameters to control it's behaviour. The parameters
 are:
 
-## QUIK_ENABLE
+### QUIK_ENABLE
 
 this must be set to 1 to enable the script
 
-## QUIK_RC_FUNC
+### QUIK_RC_FUNC
 
 The RCz_OPTIONS scripting function binding to be used for this script.
 Default RCz_OPTIONS binding is 300 (scripting1).
 
-## QUIK_AXES
+### QUIK_AXES
 
 This is the set of axes that the tune will run on. The default is 7,
 which means roll, pitch and yaw. It is a bitmask, so if you want just
 roll and pitch then set this to 3. For just yaw you would set it to 4.
 
-## QUIK_DOUBLE_TIME
+### QUIK_DOUBLE_TIME
 
 This controls how quickly a gain is raised while tuning. It is a time
 in seconds for the gain to double. Most users will want to leave this
 at the default of 10 seconds.
 
-## QUIK_GAIN_MARGIN
+### QUIK_GAIN_MARGIN
 
 This is the percentage gain margin to use. Once the oscillation point
 for a gain is found the gain is reduced by this percentage. The
 default of 60% is good for most users.
 
-## QUIK_OSC_SMAX
+### QUIK_OSC_SMAX
 
 This is the oscillation threshold in Hertz for detecting oscillation
 when a gain is raised. The default of 5Hz is good for most vehicles,
@@ -52,7 +52,7 @@ You can tell you have this set too high if you still have visible
 oscillations after a parameter has completed tuning. In that case
 halve this parameter and try again.
 
-## QUIK_YAW_P_MAX
+### QUIK_YAW_P_MAX
 
 This sets a limit on the YAW_P rate gain. The yaw axis on most
 multirotor style vehicles needs to have a much lower limit on the P
@@ -60,7 +60,7 @@ gain than the oscillation limit to ensure that enough control remains
 for roll, pitch and thrust. A maximum of 0.5 is good for most VTOL
 vehicles.
 
-## QUIK_YAW_D_MAX
+### QUIK_YAW_D_MAX
 
 This sets a limit on the YAW_D rate gain. The yaw axis on most
 multirotor style vehicles needs to have a much lower limit on the D
@@ -68,7 +68,7 @@ gain than the oscillation limit to ensure that enough control remains
 for roll, pitch and thrust. A maximum of 0.01 is good for most VTOL
 vehicles.
 
-## QUIK_RP_PI_RATIO
+### QUIK_RP_PI_RATIO
 
 This is the ratio for P to I for roll and pitch axes. This should
 normally be 1, but on some large vehicles a value of up to 3 can be
@@ -77,7 +77,7 @@ used if the I term in the PID is causing too much phase lag.
 If QUIK_RP_PI_RATIO is less than 1 then the I value will not be
 changed at all when P is changed.
 
-## QUIK_Y_PI_RATIO
+### QUIK_Y_PI_RATIO
 
 This is the ratio for P to I for the yax axis. This should
 normally be 10, but a different value may be needed on some vehicle
@@ -86,12 +86,12 @@ types.
 If QUIK_Y_PI_RATIO is less than 1 then the I value will not be
 changed at all when P is changed.
 
-## QUIK_AUTO_FILTER
+### QUIK_AUTO_FILTER
 
 This enables automatic setting of the PID filters based on the
 INS_GYRO_FILTER value. Set to zero to disable this feature.
 
-## QUIK_AUTO_SAVE
+### QUIK_AUTO_SAVE
 
 This enables automatic saving of the tune if this number of seconds
 pass after the end of the tune without reverting the tune. Setting
@@ -99,7 +99,7 @@ this to a non-zero value allows you to use quicktune with a 2-position
 switch, with the switch settings as low and mid positions. A zero
 value disables auto-save and you need to have a 3 position switch.
 
-## QUIK_MAX_REDUCE
+### QUIK_MAX_REDUCE
 
 This controls how much quicktune is allowed to lower gains from the
 original gains. If the vehicle already has a reasonable tune and is

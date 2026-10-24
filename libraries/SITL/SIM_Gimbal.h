@@ -14,6 +14,15 @@
  */
 /*
   gimbal simulator class
+
+./Tools/autotest/sim_vehicle.py -v Copter --gdb --debug --console --map --mavproxy-args=--load-module=gimbal --mavlink-gimbal
+param load Tools/autotest/default_params/copter-solo-gimbal.parm
+
+graph degrees(Quaternion(GIMBAL_DEVICE_ATTITUDE_STATUS.q).euler[0]) degrees(Quaternion(GIMBAL_DEVICE_ATTITUDE_STATUS.q).euler[1]) degrees(Quaternion(GIMBAL_DEVICE_ATTITUDE_STATUS.q).euler[2])
+
+reboot
+
+rc 6 1400
 */
 
 #pragma once

@@ -79,7 +79,7 @@ private:
 #endif
 
     // OA common parameters
-    float _margin_max;              // object avoidance will ignore objects more than this many meters from vehicle
+    float _margin_max;              // minimum distance in meters to keep from obstacles and fences
     
     // BendyRuler parameters
     AP_Float _lookahead;            // object avoidance will look this many meters ahead of vehicle

@@ -185,6 +185,7 @@ Subscribed topics:
  * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
+ * /clock [rosgraph_msgs/msg/Clock] 1 subscriber
 ```
 
 For a full list of interfaces, see [here](https://ardupilot.org/dev/docs/ros2-interfaces.html).
@@ -216,7 +217,7 @@ The static transforms for enabled sensors are also published, and can be receive
 ros2 topic echo /ap/tf_static --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
 ```
 
-In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials).
+In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/jazzy/Concepts/About-Tf2.html#tutorials).
 
 ## Using ROS 2 services
 
@@ -308,6 +309,17 @@ publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
 ```
 
+## Clock Synchronisation
+
+When running in a simulated environment, The master simulation clock (usually ``/clock``) needs to be provided to Ardupilot to ensure ArduPilot's topics
+have the correct timestamp. This ensure that any sensor fusion (or similar) nodes in ROS 2 fuse the correct data.
+
+ArduPilot SITL uses the standard ROS2 parameter of ``--use-sim-time <true|false>``. If ``true`` ArduPilot will automatically attempt
+to subscribe to ``/clock`` topic and use this for the timestamping of DDS topics. If this is unsuccessful, ArduPilot
+will use it's own internal clock.
+
+In either case, ArduPilot will publish the clock to ``/ap/clock`` (or ``/ap/vN/clock`` if namespacing is used).
+
 ## Contributing to `AP_DDS` library
 
 ### Adding DDS messages to ArduPilot
@@ -317,11 +329,11 @@ This package is intended to work with any `.idl` file complying with those exten
 
 Over time, these restrictions will ideally go away.
 
-To get a new IDL file from ROS 2, follow this process:
+To get a new IDL file from ROS 2, follow the below process. Note this assumes ROS 2 Jazzy. If using ROS 2 Humble, replace the ``jazzy`` with ``humble`` in the code block.
 
 ```bash
 cd ardupilot
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 
 # Find the IDL file
 find /opt/ros/$ROS_DISTRO -type f -wholename \*builtin_interfaces/msg/Time.idl
@@ -330,7 +342,7 @@ find /opt/ros/$ROS_DISTRO -type f -wholename \*builtin_interfaces/msg/Time.idl
 mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 
 # Copy the IDL
-cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
+cp /opt/ros/jazzy/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
 
 # Build the code again with the `--enable-DDS` flag as described above
 ```

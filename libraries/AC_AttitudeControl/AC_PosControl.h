@@ -777,8 +777,8 @@ protected:
     uint32_t    _posvelaccel_offset_target_d_ms;    // system time that pos, vel, accel targets were set (used to implement timeouts)
 
     // ekf reset handling
-    uint32_t    _ekf_ne_reset_ms;       // system time of last recorded ekf ne position reset
-    uint32_t    _ekf_d_reset_ms;        // system time of last recorded ekf altitude reset
+    uint16_t    _ahrs_position_NE_reset_count;       // count of ekf ne position resets
+    uint16_t    _ahrs_position_D_reset_count;        // count of ekf altitude resets
     EKFResetMethod _ekf_reset_method = EKFResetMethod::MoveTarget;  // EKF reset handling method.  Loiter should use MoveTarget, Auto should use MoveVehicle
 
     // high vibration handling

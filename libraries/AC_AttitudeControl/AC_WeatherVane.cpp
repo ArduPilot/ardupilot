@@ -169,7 +169,7 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
     const char* dir_string = "";
 
     // should we enable pitch input for nose-in and tail-in?
-    const bool pitch_enable = (uint8_t(_options.get()) & uint8_t(Options::PITCH_ENABLE)) != 0;
+    const bool pitch_enable = (_options & uint8_t(Options::PITCH_ENABLE)) != 0;
 
     switch (dir) {
         case Direction::OFF:

@@ -790,7 +790,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
                                       CanardRxTransfer* transfer)
 {
 #ifdef HAL_GPIO_PIN_LED_CAN1
-    palToggleLine(HAL_GPIO_PIN_LED_CAN1);
+    stm32_toggle_line(HAL_GPIO_PIN_LED_CAN1);
 #endif
 
 #if HAL_CANFD_SUPPORTED
@@ -1647,7 +1647,7 @@ void AP_Periph_FW::can_start()
         g.can_protocol[0].set_and_save(AP_CAN::Protocol::DroneCAN);
         g.can_baudrate[0].set_and_save(1000000);
     }
-#endif // HAL_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz
+#endif // AP_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz && HAL_NUM_CAN_IFACES >= 2
 
     {
         /*

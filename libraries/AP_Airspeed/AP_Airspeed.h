@@ -22,7 +22,7 @@ public:
     AP_Airspeed_Params(void);
 
     // parameters for each instance
-    AP_Int32 bus_id;
+    AP_UInt32 bus_id;
 #ifndef HAL_BUILD_AP_PERIPH
     AP_Float offset;
     AP_Float ratio;
@@ -189,7 +189,7 @@ public:
         TYPE_NONE=0,
 #if AP_AIRSPEED_MS4525_ENABLED
         TYPE_I2C_MS4525=1,
-#endif  // AP_AIRSPEED_MSP_ENABLED
+#endif  // AP_AIRSPEED_MS4525_ENABLED
 #if AP_AIRSPEED_ANALOG_ENABLED
         TYPE_ANALOG=2,
 #endif  // AP_AIRSPEED_ANALOG_ENABLED
@@ -230,6 +230,9 @@ public:
         TYPE_AUAV_5IN=18,
         TYPE_AUAV_30IN=19,
 #endif  // AP_AIRSPEED_AUAV_ENABLED
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+        TYPE_SCRIPTING=20,
+#endif  // AP_AIRSPEED_SCRIPTING_ENABLED
 #if AP_AIRSPEED_SITL_ENABLED
         TYPE_SITL=100,
 #endif  // AP_AIRSPEED_SITL_ENABLED
@@ -240,7 +243,12 @@ public:
 
     // get number of sensors
     uint8_t get_num_sensors(void) const { return num_sensors; }
-    
+
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+    // get backend for a given instance, used by scripting
+    AP_Airspeed_Backend *get_backend(uint8_t id) const;
+#endif // AP_AIRSPEED_SCRIPTING_ENABLED
+
     static AP_Airspeed *get_singleton() { return _singleton; }
 
     // return the current corrected pressure, public for AP_Periph
@@ -279,7 +287,7 @@ private:
 
     AP_Int8 primary_sensor;
     AP_Int8 max_speed_pcnt;
-    AP_Int32 _options;    // bitmask options for airspeed
+    AP_UInt32 _options;    // bitmask options for airspeed
     AP_Float _wind_max;
     AP_Float _wind_warn;
     AP_Float _wind_gate;
@@ -382,7 +390,7 @@ private:
 };
 
 namespace AP {
-    AP_Airspeed *airspeed();
+    AP_Airspeed &airspeed();
 };
 
 #endif  // AP_AIRSPEED_ENABLED

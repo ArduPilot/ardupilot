@@ -292,18 +292,18 @@ public:
     //
     AP_Int16        throttle_deadzone;
     AP_Int8         failsafe_throttle;
-    AP_Int16        failsafe_throttle_value;
-    AP_Int16        thr_arming_position;
+    AP_UInt16       failsafe_throttle_value;
+    AP_UInt16       thr_arming_position;
     
 
     // Misc
     //
-    AP_Int32        log_bitmask;
+    AP_UInt32       log_bitmask;
 
     AP_Int8         fs_ekf_action;
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
-    AP_Int16        gcs_pid_mask;
+    AP_UInt16       gcs_pid_mask;
 
     AP_Int16        rc_speed; // speed of fast RC Channels in Hz
 
@@ -435,7 +435,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "RC8_OPTION",          213},   // MOUNT1_PITCH
     { "MOT_PWM_MIN",         1100},
     { "MOT_PWM_MAX",         1900},
-    { "PSC_JERK_D",          50.0f},
+    { "PSC_D_JERK",          50.0f},
     { "WP_SPD",              1.0f},
     { "PILOT_SPEED_UP",      100.0f},
     { "PSC_NE_VEL_P",         6.0f},

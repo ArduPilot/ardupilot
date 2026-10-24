@@ -65,19 +65,19 @@ private:
     static AP_BLHeli *_singleton;
     
     // mask of channels to use for BLHeli protocol
-    AP_Int32 channel_mask;
-    AP_Int32 channel_reversible_mask;
-    AP_Int32 channel_reversed_mask;
+    AP_UInt32 channel_mask;
+    AP_UInt32 channel_reversible_mask;
+    AP_UInt32 channel_reversed_mask;
     AP_Int8 channel_auto;
     AP_Int8 run_test;
-    AP_Int16 timeout_sec;
-    AP_Int16 telem_rate;
+    AP_UInt16 timeout_sec;
+    AP_UInt16 telem_rate;
     AP_Int8 debug_level;
     AP_Int8 output_type;
     AP_Int8 control_port;
     AP_Int8 motor_poles;
     // mask of channels with bi-directional dshot enabled
-    AP_Int32 channel_bidir_dshot_mask;
+    AP_UInt32 channel_bidir_dshot_mask;
     
     enum mspState {
         MSP_IDLE=0,

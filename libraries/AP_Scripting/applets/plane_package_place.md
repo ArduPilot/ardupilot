@@ -10,24 +10,24 @@ enable scripting with SCR_ENABLE=1 and reboot.
 
 The script adds the following parameters:
 
-## PKG_ENABLE
+### PKG_ENABLE
 
 You need to set PKG_ENABLE=1 to enable this script
 
-## PKG_RELEASE_FUNC
+### PKG_RELEASE_FUNC
 
 This needs to be set to the SERVOn_FUNCTION of the release servo. It
 is recommended that you leave it at the default of 94 and set
 SERVOn_FUNCTION to 94 for the servo you want to use for package
 release.
 
-## PKG_RELEASE_HGT
+### PKG_RELEASE_HGT
 
 The parameter PKG_RELEASE_HGT controls the rangefinder height at which
 the package will be released. This can be zero if you want to release
 the package after you land.
 
-## PKG_RELEASE_HOLD
+### PKG_RELEASE_HOLD
 
 This controls the time that the vehicle will stop the descent before
 it releases the package. This defaults to 1 second and is used to let

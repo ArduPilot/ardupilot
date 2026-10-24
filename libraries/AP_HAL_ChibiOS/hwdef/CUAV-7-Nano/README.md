@@ -62,7 +62,7 @@ The board has a dedicated power monitor ports on 6 pin connectors(POWER A). The 
 
 The CUAV-7-Nano has an IST8310 builtin compass, but due to interference the board is usually used with an external I2C compass as part of a GPS/Compass combination.
 
-## Analog inputs
+## Analog Inputs
 
 The CUAV-7-Nano has 6 analog inputs.
 

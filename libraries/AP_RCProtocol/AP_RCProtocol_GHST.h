@@ -41,13 +41,13 @@ public:
 
     // is the receiver active, used to detect power loss and baudrate changes
     bool is_rx_active() const override {
-        return AP_HAL::micros() < _last_rx_frame_time_us + GHST_RX_TIMEOUT;
+        return _last_rx_frame_time_us != 0 && AP_HAL::micros() - _last_rx_frame_time_us < GHST_RX_TIMEOUT;
     }
 
     // is the transmitter active, used to adjust telemetry data
     bool is_tx_active() const {
         // this is the same as the Copter failsafe timeout
-        return AP_HAL::micros() < _last_tx_frame_time_us + GHST_TX_TIMEOUT;
+        return _last_tx_frame_time_us != 0 && AP_HAL::micros() - _last_tx_frame_time_us < GHST_TX_TIMEOUT;
     }
 
     // get singleton instance

@@ -1,0 +1,2 @@
+# Instantiate the external ICP201xx backend on I2C bus 1 for this probe.
+BARO ICP201XX I2C:1:0x63

@@ -42,7 +42,6 @@
 
 #include <stdio.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -85,7 +84,7 @@ Vector3f Glider::getTorque(float inputAileron, float inputElevator, float inputR
     const float aileron_rad = inputAileron * radians(m.aileronDeflectionLimitDeg);
     const float elevator_rad = inputElevator * radians(m.elevatorDeflectionLimitDeg);
     const float rudder_rad = inputRudder * radians(m.rudderDeflectionLimitDeg);
-    const float tas = MAX(airspeed * AP::ahrs().get_EAS2TAS(), 1);
+    const float tas = MAX(airspeed * eas2tas, 1);
 
     float Cl = (m.Cl2 * sq(alpharad) + m.Cl1 * alpharad + m.Cl0) * betarad;
     float Cm = m.Cm2 * sq(alpharad) + m.Cm1 * alpharad + m.Cm0;
@@ -369,6 +368,8 @@ void Glider::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    update_battery();
 }
 
 /*

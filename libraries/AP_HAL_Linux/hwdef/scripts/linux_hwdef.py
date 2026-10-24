@@ -8,7 +8,6 @@ AP_FLAKE8_CLEAN
 
 import argparse
 import os
-import shlex
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../libraries/AP_HAL/hwdef/scripts'))
@@ -25,7 +24,7 @@ class LinuxHWDef(hwdef.HWDef):
     def write_hwdef_header_content(self, f):
         for d in self.alllines:
             if d.startswith('define '):
-                f.write('#define %s\n' % d[7:])
+                f.write(self.define_line(d))
 
         self.write_SPI_config(f)
         self.write_IMU_config(f)
@@ -38,11 +37,11 @@ class LinuxHWDef(hwdef.HWDef):
         self.all_lines.append(line)
         self.alllines.append(line)
 
-        a = shlex.split(line, posix=False)
+        a = self.split_line(line, posix=False)
         if a[0] == 'LINUX_SPIDEV':
             self.process_line_linux_spidev(line, depth, a)
 
-        super(LinuxHWDef, self).process_line(line, depth)
+        super(LinuxHWDef, self).process_line(line, depth, a)
 
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:

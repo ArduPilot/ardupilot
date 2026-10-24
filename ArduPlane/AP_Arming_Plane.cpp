@@ -414,6 +414,7 @@ void AP_Arming_Plane::update_soft_armed()
 #endif
 }
 
+#if AP_MISSION_ENABLED
 /*
   extra plane mission checks
  */
@@ -454,9 +455,10 @@ bool AP_Arming_Plane::mission_checks(bool report)
             prev_cmd = cmd;
         }
     }
-#endif
+#endif  // HAL_QUADPLANE_ENABLED
     return ret;
 }
+#endif  // AP_MISSION_ENABLED
 
 // Checks rc has been received if it is configured to be used
 bool AP_Arming_Plane::rc_received_if_enabled_check(bool display_failure)

@@ -174,6 +174,7 @@ define HAL_OS_FATFS_IO 1
 #Serial Port defaults
 define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
 define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_MSP_DisplayPort
+define AP_MSP_VIDEOTX_ENABLED 1
 define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_RCIN
 define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_ESCTelemetry
 

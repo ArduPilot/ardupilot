@@ -32,11 +32,17 @@ AP_RangeFinder_SITL::AP_RangeFinder_SITL(RangeFinder::RangeFinder_State &_state,
  */
 void AP_RangeFinder_SITL::update(void)
 {
+    // Support the power down state
+    if (should_power_down()) {
+        set_status(RangeFinder::Status::PoweredDown);
+        return;
+    }
+
     const float dist = AP::sitl()->get_rangefinder(_instance);
 
     // nan distance means nothing is connected
     if (isnan(dist) || isinf(dist)) {
-        state.status = RangeFinder::Status::NoData;
+        set_status(RangeFinder::Status::NoData);
         return;
     }
 

@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 #include "RC_Channel_Copter.h"
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_SurfaceDistance/AP_SurfaceDistance.h>
 
 class ModeRTL;
 
@@ -14,6 +15,7 @@ class ModeRTL;
 #if WEATHERVANE_ENABLED
  #include <AC_AttitudeControl/AC_WeatherVane.h>
 #endif
+#include <AP_GroundEffect/AP_GroundEffect.h>
 
 // Global parameter class.
 //
@@ -394,11 +396,11 @@ public:
     AP_Int16        format_version;
 
     AP_Float        throttle_filt;
-    AP_Int16        throttle_behavior;
+    AP_UInt16       throttle_behavior;
 
 #if MODE_RTL_ENABLED
     AP_Float        rtl_cone_slope;
-    AP_Int32        rtl_loiter_time;
+    AP_UInt32       rtl_loiter_time;
     AP_Enum<ModeRTL::RTLAltType> rtl_alt_type;
 #endif
 
@@ -417,7 +419,7 @@ public:
     AP_Enum<FS_GCS_Action> failsafe_gcs;        // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
-    AP_Int8         super_simple;
+    AP_UInt8        super_simple;
 
     // Yaw behaviours during missions (WP_YAW_BEHAVIOR parameter)
     enum class WPYawBehavior {
@@ -448,19 +450,19 @@ public:
     // Throttle
     //
     AP_Enum<FS_THR_Action> failsafe_throttle;
-    AP_Int16        failsafe_throttle_value;
+    AP_UInt16       failsafe_throttle_value;
     AP_Int16        throttle_deadzone;
 
     // Flight modes
     //
     AP_Int8         flight_modes[6];
-    AP_Int8         simple_modes;
+    AP_UInt8        simple_modes;
     AP_Int8         flight_mode_chan;
     AP_Int8         initial_mode;
 
     // Misc
     //
-    AP_Int32        log_bitmask;
+    AP_UInt32       log_bitmask;
     AP_Int8         esc_calibrate;
 #if AP_RC_TRANSMITTER_TUNING_ENABLED
     AP_Int8         rc_tuning_param;
@@ -481,7 +483,7 @@ public:
     AP_Enum<FS_EKF_Action> fs_ekf_action;
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
-    AP_Int16        gcs_pid_mask;
+    AP_UInt16       gcs_pid_mask;
 
 #if MODE_THROW_ENABLED
     AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;
@@ -542,17 +544,14 @@ public:
     AP_Enum<ModeThrow::ThrowType> throw_type;
 #endif
 
-    // ground effect compensation enable/disable
-    AP_Int8 gndeffect_comp_enabled;
+#if AP_GROUNDEFFECT_ENABLED
+    // ground effect detector
+    AP_GroundEffect ground_effect;
+#endif
 
 #if AP_TEMPCALIBRATION_ENABLED
     // temperature calibration handling
     AP_TempCalibration temp_calibration;
-#endif
-
-#if AP_BEACON_ENABLED
-    // beacon (non-GPS positioning) library
-    AP_Beacon beacon;
 #endif
 
 #if HAL_PROXIMITY_ENABLED
@@ -566,7 +565,7 @@ public:
 #endif
 
     // developer options
-    AP_Int32 dev_options;
+    AP_UInt32 dev_options;
 
 #if MODE_ACRO_ENABLED
     AP_Float acro_thr_mid;
@@ -640,7 +639,7 @@ public:
     AP_Int8 fs_vibe_enabled;
 
     // Failsafe options bitmask #36
-    AP_Int32 fs_options;
+    AP_UInt32 fs_options;
 
 #if MODE_AUTOROTATE_ENABLED
     // Autonmous autorotation
@@ -664,24 +663,24 @@ public:
     AC_CommandModel command_model_pilot_y;
 
 #if MODE_ACRO_ENABLED
-    AP_Int8 acro_options;
+    AP_UInt8 acro_options;
 #endif
 
 #if MODE_AUTO_ENABLED
-    AP_Int32 auto_options;
+    AP_UInt32 auto_options;
 #endif
 
 #if MODE_GUIDED_ENABLED
-    AP_Int32 guided_options;
+    AP_UInt32 guided_options;
 #endif
 
     AP_Float fs_gcs_timeout;
 
 #if MODE_RTL_ENABLED
-    AP_Int32 rtl_options;
+    AP_UInt32 rtl_options;
 #endif
 
-    AP_Int32 flight_options;
+    AP_UInt32 flight_options;
 
 #if AP_RANGEFINDER_ENABLED
     AP_Float rangefinder_filt;
@@ -695,6 +694,7 @@ public:
     AP_Int8                 failsafe_dr_enable;
     AP_Int16                failsafe_dr_timeout;
     AP_Float                surftrak_tc;
+    AP_SurfaceDistance::SurfDistParameters surf_dist_parameters;
 
     // ramp time of throttle during take-off
     AP_Float takeoff_throttle_slew_time;
@@ -737,6 +737,10 @@ public:
 
 #if MODE_POSHOLD_ENABLED
     void *mode_poshold_ptr;
+#endif
+
+#if MODE_FLIP_ENABLED
+    void *mode_flip_ptr;
 #endif
 
 };

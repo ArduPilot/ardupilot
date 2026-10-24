@@ -8,6 +8,7 @@
 
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
@@ -48,6 +49,9 @@ AP_GPS gps;
 AP_Baro baro;
 AP_ExternalAHRS ext_ahrs;
 AP_Logger logger;
+#if AP_AIRSPEED_ENABLED
+AP_Airspeed airspeed_sensor;
+#endif
 
 GCS_Dummy _gcs;
 
@@ -248,13 +252,13 @@ void loop(void)
     switch (test_axis) {
         case Axis::Roll:
             angle_error_cd = nav_angle_cd - ahrs.roll_sensor;
-            output = roll_control.get_servo_out(angle_error_cd, speed_scaler, disable_integrator, ground_mode);
+            output = roll_control.run_angle_control(nav_angle_cd, speed_scaler, disable_integrator, ground_mode);
             info = &roll_control.get_pid_info();
             break;
 
         case Axis::Pitch:
             angle_error_cd = nav_angle_cd - ahrs.pitch_sensor;
-            output = pitch_control.get_servo_out(angle_error_cd, speed_scaler, disable_integrator, ground_mode);
+            output = pitch_control.run_angle_control(nav_angle_cd, speed_scaler, disable_integrator, ground_mode);
             info = &pitch_control.get_pid_info();
             break;
     }

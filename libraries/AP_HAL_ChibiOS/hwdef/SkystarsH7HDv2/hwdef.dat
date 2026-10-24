@@ -32,3 +32,6 @@ define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_MSP_DisplayPort
 
 # other pin defaults come from hwdefs this one includes
 define RELAY4_PIN_DEFAULT 83
+
+define AP_BARO_SPL06_ENABLED 1
+BARO SPL06 I2C:0:0x76

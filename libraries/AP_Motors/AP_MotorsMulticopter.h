@@ -2,6 +2,10 @@
 /// @brief	Motor control class for Multicopters
 #pragma once
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORSMULTI_ENABLED
+
 #include "AP_Motors_Class.h"
 #include "AP_Motors_Thrust_Linearization.h"
 
@@ -209,6 +213,7 @@ protected:
     // spool variables
     float               _spin_up_ratio;         // normalized spin scalar [0..1] between 0 and spin_min (used for ground-idle ramp)
     float               _idle_time;             // idle delay elapsed time at/above ground-idle spin [s]
+    bool                _spin_up_complete;      // set to true when spin up is complete and spool up blocks have been enabled
 
     // battery voltage, current and air pressure compensation variables
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
@@ -231,3 +236,5 @@ protected:
     // mask of overridden motors (used by quadplane tiltrotors)
     uint32_t _motor_mask_override;
 };
+
+#endif  // AP_MOTORSMULTI_ENABLED

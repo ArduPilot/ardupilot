@@ -57,6 +57,10 @@ public:
     // If `_radius_m` is non-positive, falls back to the RADIUS parameter.
     float get_radius_m() const { return is_positive(_radius_m) ? _radius_m : _radius_parm_m; }
 
+    // Returns the current circle radius target in meters, without falling back to the RADIUS parameter.
+    // Zero means the vehicle rotates in place (panorama).
+    float get_radius_target_m() const { return _radius_m; }
+
     // Sets the circle radius in centimeters.
     // See set_radius_m() for full details.
     void set_radius_cm(float radius_cm);
@@ -68,9 +72,10 @@ public:
     // Returns the configured circle turn rate in degrees per second from the RATE parameter.
     float get_rate_degs() const { return _rate_parm_degs; }
 
-    // Returns the current angular velocity in degrees per second.
-    // May be lower than the configured maximum due to ramp constraints.
-    float get_rate_current() const { return degrees(_angular_vel_rads); }
+    // Returns the commanded turn-rate target in degrees per second.
+    // This is the rate the controller ramps towards (set by the RATE
+    // parameter or set_rate_degs()).
+    float get_rate_target_degs() const { return degrees(_rotation_rate_max_rads); }
 
     // Sets the target circle rate in degrees per second.
     // Positive values result in clockwise rotation; negative for counter-clockwise.
@@ -139,6 +144,10 @@ public:
     // See roi_at_center() for flag logic.
     bool roi_at_center() const { return (_options.get() & CircleOptions::ROI_AT_CENTER) != 0; }
 
+    // Returns true if the vehicle yaw should align with the direction of travel (tangent)
+    // rather than facing the circle center.
+    bool face_direction_of_travel() const { return (_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0; }
+
     // Sets rangefinder terrain offset (in centimeters) above EKF origin.
     // See set_rangefinder_terrain_U_m() for full details.
     void set_rangefinder_terrain_U_cm(bool use, bool healthy, float terrain_u_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_u_m = terrain_u_cm * 0.01;}
@@ -196,7 +205,7 @@ private:
     // parameters
     AP_Float _radius_parm_m;      // Circle radius in meters, loaded from parameters.
     AP_Float _rate_parm_degs;     // Circle rotation rate in degrees per second, loaded from parameters.
-    AP_Int16 _options;            // Bitmask of CircleOptions (e.g. manual control, ROI at center, etc.).
+    AP_UInt16 _options;            // Bitmask of CircleOptions (e.g. manual control, ROI at center, etc.).
 
     // internal variables
     Vector3p _center_ned_m;             // Center of the circle in meters from EKF origin (NED frame).

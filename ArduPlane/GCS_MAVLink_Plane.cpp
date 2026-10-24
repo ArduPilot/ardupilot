@@ -292,7 +292,10 @@ float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
 
 void GCS_MAVLINK_Plane::send_wind() const
 {
-    const Vector3f wind = AP::ahrs().wind_estimate();
+    Vector3f wind;
+    // send the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
     mavlink_msg_wind_send(
         chan,
         degrees(atan2f(-wind.y, -wind.x)), // use negative, to give
@@ -427,17 +430,14 @@ void GCS_MAVLINK_Plane::send_hygrometer()
         return;
     }
 
-    const auto *airspeed = AP::airspeed();
-    if (airspeed == nullptr) {
-        return;
-    } 
+    const auto &airspeed = AP::airspeed();
     const uint32_t now = AP_HAL::millis();
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         uint8_t idx = (i+last_hygrometer_send_idx+1) % AIRSPEED_MAX_SENSORS;
         float temperature, humidity;
         uint32_t last_sample_ms;
-        if (!airspeed->get_hygrometer(idx, last_sample_ms, temperature, humidity)) {
+        if (!airspeed.get_hygrometer(idx, last_sample_ms, temperature, humidity)) {
             continue;
         }
         if (now - last_sample_ms > 2000) {
@@ -556,11 +556,6 @@ bool Plane::set_home(const Location& loc, bool _lock)
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
 {
-    // sanity check location
-    if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_DENIED;
-    }
-
     Location requested_position;
     if (!location_from_command_t(packet, requested_position)) {
         return MAV_RESULT_DENIED;
@@ -582,14 +577,18 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     // reject destination if outside the fence
     if (!plane.fence.check_location_within_fence(requested_position)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
-        return MAV_RESULT_DENIED;
+        return MAV_RESULT_FAILED;
     }
 #endif
 
     // location is valid load and set
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
         (plane.control_mode == &plane.mode_guided)) {
-        plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND)) {
+            // e.g. GUIDED blocked by FLTMODE_GCSBLOCK; don't touch the
+            // current mode's navigation target
+            return MAV_RESULT_FAILED;
+        }
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
 #endif
@@ -750,16 +749,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         return handle_command_int_guided_slew_commands(packet);
 #endif
 
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
-    case MAV_CMD_DO_FOLLOW:
-        // param1: sysid of target to follow
-        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-            plane.g2.follow.set_target_sysid((uint8_t)packet.param1);
-            return MAV_RESULT_ACCEPTED;
-        }
-        return MAV_RESULT_DENIED;
-#endif
-
 #if AP_ICENGINE_ENABLED
     case MAV_CMD_DO_ENGINE_CONTROL:
         if (!plane.g2.ice_control.engine_control(packet.param1, packet.param2, packet.param3, (uint32_t)packet.param4)) {
@@ -819,15 +808,21 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
             // first-item/last item not supported
             return MAV_RESULT_DENIED;
         }
-        plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
@@ -1211,18 +1206,17 @@ uint8_t GCS_MAVLINK_Plane::high_latency_tgt_heading() const
         return wrap_360_cd(nav_controller->target_bearing_cd() ) / 200;
 }
 
-// return units are dm
-uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist() const
+uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist_dam() const
 {
 #if HAL_QUADPLANE_ENABLED
     const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.show_vtol_view()) {
         bool wp_nav_valid = quadplane.using_wp_nav();
-        return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination_cm(), UINT16_MAX) : 0) / 10;
+        return (wp_nav_valid ? MIN(static_cast<uint16_t>(quadplane.wp_nav->get_wp_distance_to_destination_cm() * 1e-3), UINT16_MAX) : 0);
     }
     #endif
 
-    return MIN(plane.auto_state.wp_distance, UINT16_MAX) / 10;
+    return MIN(static_cast<uint16_t>(plane.auto_state.wp_distance * 0.1), UINT16_MAX);
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_tgt_airspeed() const
@@ -1234,7 +1228,9 @@ uint8_t GCS_MAVLINK_Plane::high_latency_tgt_airspeed() const
 uint8_t GCS_MAVLINK_Plane::high_latency_wind_speed() const
 {
     Vector3f wind;
-    wind = AP::ahrs().wind_estimate();
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
 
     // return units are m/s*5
     return MIN(wind.xy().length() * 5, UINT8_MAX);
@@ -1242,7 +1238,10 @@ uint8_t GCS_MAVLINK_Plane::high_latency_wind_speed() const
 
 uint8_t GCS_MAVLINK_Plane::high_latency_wind_direction() const
 {
-    const Vector3f wind = AP::ahrs().wind_estimate();
+    Vector3f wind;
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
 
     // return units are deg/2
     // need to convert -180->180 to 0->360/2

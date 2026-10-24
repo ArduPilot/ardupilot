@@ -681,6 +681,13 @@ int32_t Location::limit_lattitude(int32_t lat)
 // this alt-frame will be updated to match the destination alt frame
 void Location::linearly_interpolate_alt(const Location &point1, const Location &point2)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // alt frames must match; mixing frames produces meaningless interpolated altitudes
+    if (point1.get_alt_frame() != point2.get_alt_frame()) {
+        AP_HAL::panic("linearly_interpolate_alt: alt frames differ (point1=%u point2=%u)",
+                      (unsigned)point1.get_alt_frame(), (unsigned)point2.get_alt_frame());
+    }
+#endif
     // new target's distance along the original track and then linear interpolate between the original origin and destination altitudes
     set_alt_cm(point1.alt + (point2.alt - point1.alt) * constrain_float(line_path_proportion(point1, point2), 0.0f, 1.0f), point2.get_alt_frame());
 }

@@ -62,6 +62,7 @@ public:
         TELEMETRY_DISABLE_DJI_WORKAROUNDS = 1U<<1,
         DISPLAYPORT_BTFL_SYMBOLS = 1U<<2,
         DISPLAYPORT_INAV_SYMBOLS = 1U<<3,
+        VTX_HIGH_POWER = 1U<<4,
     };
 
     bool is_option_enabled(const Option option) const;
@@ -74,7 +75,7 @@ public:
 private:
     AP_MSP_Telem_Backend *_backends[MSP_MAX_INSTANCES];
 
-    AP_Int8 _options;
+    AP_UInt8 _options;
     AP_Int8 _cellcount;
 
     // these are the osd items we support for MSP OSD

@@ -67,6 +67,17 @@ repos:
           -   tomli;python_version<'3.11'
           pass_filenames: false
           files: ^Tools/ros2/
+      -   id: serial-protocol-gates
+          name: Check SerialProtocol gate coverage
+          entry: Tools/scripts/check_serial_protocol_gates.py
+          language: script
+          pass_filenames: false
+          files: |
+            (?x)^(
+              libraries/AP_SerialManager/AP_SerialManager\.h |
+              libraries/AP_SerialManager/AP_SerialManager_default_protocol_check\.cpp |
+              Tools/scripts/check_serial_protocol_gates\.py
+            )$
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1

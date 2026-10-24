@@ -335,8 +335,6 @@ void *AP_Filesystem_FlashMemory_LittleFS::opendir(const char *pathdir)
     return result;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-truncation"
 struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
 {
     FS_CHECK_ALLOWED(nullptr);
@@ -367,16 +365,18 @@ struct dirent *AP_Filesystem_FlashMemory_LittleFS::readdir(void *ptr)
     pair->entry.d_seekoff++;
 #endif
 
-    strncpy(pair->entry.d_name, info.name, MIN(strlen(info.name)+1, sizeof(pair->entry.d_name)));
+    // a name as long as d_name would otherwise be left without its terminator
+    const size_t len = MIN(strlen(info.name), sizeof(pair->entry.d_name)-1);
+    memcpy(pair->entry.d_name, info.name, len);
+    pair->entry.d_name[len] = 0;
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    pair->entry.d_namlen = strlen(info.name);
+    pair->entry.d_namlen = len;
 #endif
 
     pair->entry.d_type = info.type == LFS_TYPE_DIR ? DT_DIR : DT_REG;
 
     return &pair->entry;
 }
-#pragma GCC diagnostic pop
 
 int AP_Filesystem_FlashMemory_LittleFS::closedir(void *ptr)
 {
@@ -622,6 +622,7 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_FMSH_FM25Q64          0xA14017
 #define JEDEC_ID_FMSH_FM25Q128A        0xA14018
 #define JEDEC_ID_FMSH_FM25Q256         0xA14019
+#define JEDEC_ID_XTX_XT25F128F         0x0B4018
 
 /* Hardware-specific constants */
 
@@ -795,6 +796,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     case JEDEC_ID_CYPRESS_S25FL128L:
     case JEDEC_ID_ZBIT_ZB25VQ128:   
     case JEDEC_ID_FMSH_FM25Q128A:
+    case JEDEC_ID_XTX_XT25F128F:
         block_count = 256;    /* 16MiB */
         break;
 

@@ -49,6 +49,9 @@
 #include "hwdef/common/flash.h"
 #include "hwdef/common/watchdog.h"
 #include <AP_Filesystem/AP_Filesystem.h>
+#if AP_CRASHDUMP_FATFS_ENABLED
+#include "CrashDump.h"
+#endif
 #include "shared_dma.h"
 #include <AP_Common/ExpandingString.h>
 #include <GCS_MAVLink/GCS.h>
@@ -59,10 +62,6 @@ extern AP_IOMCU iomcu;
 #endif
 
 using namespace ChibiOS;
-
-#ifndef HAL_RCIN_THREAD_ENABLED
-#define HAL_RCIN_THREAD_ENABLED 1
-#endif
 
 #ifndef HAL_MONITOR_THREAD_ENABLED
 #define HAL_MONITOR_THREAD_ENABLED 1
@@ -434,8 +433,16 @@ void Scheduler::_monitor_thread(void *arg)
         // if running memory guard then check all allocations
         malloc_check(nullptr);
 
+#if AP_USB_DEBUG_ENABLED
+        const uint32_t debug_epoch = sched->usb_debug_epoch;
+#endif
         uint32_t now = AP_HAL::millis();
         uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
+#if AP_USB_DEBUG_ENABLED
+        if (debug_epoch != sched->usb_debug_epoch || debug_epoch != sched->watchdog_epoch) {
+            continue;
+        }
+#endif
         if (loop_delay >= 200) {
             // the main loop has been stuck for at least
             // 200ms. Starting logging the main loop state
@@ -472,14 +479,11 @@ void Scheduler::_monitor_thread(void *arg)
             try_force_mutex();
         }
 
-#if AP_CRASHDUMP_ENABLED
+#if AP_CRASHDUMP_ENABLED && !AP_WATCHDOG_LOCKUP_DETECT_ENABLED
         if (loop_delay >= 1800 && using_watchdog) {
             // we are about to watchdog, better to trigger a hardfault
             // now and get a crash dump file
-            void *ptr = (void*)0xE000FFFF;
-            typedef void (*fptr)();
-            fptr gptr = (fptr) (void *)ptr;
-            gptr();
+            __builtin_trap();
         }
 #endif
 
@@ -566,13 +570,16 @@ void Scheduler::_io_thread(void* arg)
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
     uint32_t last_stack_check_ms = 0;
 #endif
+#if AP_CRASHDUMP_FATFS_ENABLED
+    uint32_t last_crashdump_check_ms = 0;
+#endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
 
-#if HAL_LOGGING_ENABLED || CH_DBG_ENABLE_STACK_CHECK == TRUE
+#if HAL_LOGGING_ENABLED || CH_DBG_ENABLE_STACK_CHECK == TRUE || AP_CRASHDUMP_FATFS_ENABLED
         uint32_t now = AP_HAL::millis();
 #endif
 
@@ -590,6 +597,12 @@ void Scheduler::_io_thread(void* arg)
         if (now - last_stack_check_ms > 1000) {
             last_stack_check_ms = now;
             sched->check_stack_free();
+        }
+#endif
+#if AP_CRASHDUMP_FATFS_ENABLED
+        if (now - last_crashdump_check_ms > 1000) {
+            last_crashdump_check_ms = now;
+            crashdump_sd_update();
         }
 #endif
     }
@@ -648,6 +661,7 @@ void Scheduler::set_system_initialized()
                       "more than once");
     }
     _initialized = true;
+    stm32_lockup_detect_start();
 }
 
 /*
@@ -781,7 +795,13 @@ void Scheduler::expect_delay_ms(uint32_t ms)
 void Scheduler::watchdog_pat(void)
 {
     stm32_watchdog_pat();
+#if AP_USB_DEBUG_ENABLED
+    const uint32_t debug_epoch = usb_debug_epoch;
+#endif
     last_watchdog_pat_ms = AP_HAL::millis();
+#if AP_USB_DEBUG_ENABLED
+    watchdog_epoch = debug_epoch;
+#endif
 #if defined(HAL_GPIO_PIN_EXT_WDOG)
     ext_watchdog_pat(last_watchdog_pat_ms);
 #endif
@@ -793,7 +813,7 @@ void Scheduler::ext_watchdog_pat(uint32_t now_ms)
 {
     // toggle watchdog GPIO every WDI_OUT_INTERVAL_TIME_MS
     if ((now_ms - last_ext_watchdog_ms) >= EXT_WDOG_INTERVAL_MS) {
-        palToggleLine(HAL_GPIO_PIN_EXT_WDOG);
+        stm32_toggle_line(HAL_GPIO_PIN_EXT_WDOG);
         last_ext_watchdog_ms = now_ms;
     }
 }

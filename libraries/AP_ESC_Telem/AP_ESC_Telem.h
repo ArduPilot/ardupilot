@@ -86,11 +86,8 @@ public:
     // return the average motor frequency in Hz for dynamic filtering
     float get_average_motor_frequency_hz(uint32_t servo_channel_mask) const { return get_average_motor_rpm(servo_channel_mask) * (1.0f / 60.0f); };
 
-    // return the average motor frequency in Hz for dynamic filtering
-    float get_average_motor_frequency_hz() const { return get_average_motor_frequency_hz(0xFFFFFFFF); }
-
-    // return all of the motor frequencies in Hz for dynamic filtering
-    uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const;
+    // return motor frequencies selected in mask in Hz for dynamic filtering
+    uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs, uint32_t servo_channel_mask) const;
 
     // get the number of ESCs that sent valid telemetry data in the last ESC_TELEM_DATA_TIMEOUT_MS
     uint8_t get_num_active_escs() const;

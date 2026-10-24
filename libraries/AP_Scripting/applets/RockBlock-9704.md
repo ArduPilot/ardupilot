@@ -27,7 +27,7 @@ Caveats:
 
 The script has the following parameters:
 
-## RK9_FORCEHL
+### RK9_FORCEHL
 
 Mode of operation:
 
@@ -35,38 +35,38 @@ Mode of operation:
 - 1 = start enabled, can be disabled via MAV_CMD_CONTROL_HIGH_LATENCY
 - 2 = enabled on loss of telemetry (GCS) link for RK9_TIMEOUT seconds
 
-## RK9_PERIOD
+### RK9_PERIOD
 
 When in High Latency mode, send Rockblock updates every RK9_PERIOD seconds. Defaults to 30 seconds.
 
-## RK9_DEBUG
+### RK9_DEBUG
 
 Sends Rockblock debug text to GCS via statustexts. Defaults to 0 (disabled).
 
-## RK9_ENABLE
+### RK9_ENABLE
 
 Enables the modem transmission. Defaults to 1 (enabled).
 
-## RK9_TIMEOUT
+### RK9_TIMEOUT
 
 If RK9_FORCEHL=2, this is the number of seconds of no-messages from the GCS until High Latency mode is auto-enabled.
 Defaults to 5 seconds.
 
-## RK9_SERPORT
+### RK9_SERPORT
 
 Serial port number to which the Rockblock is connected.
 This is the index of the SERIALn_ ports that are set to 28 for "scripting". Defaults to 0.
 
-## RK9_SCRPORT
+### RK9_SCRPORT
 
 Scripting Serial port number to which the Rockblock is connected for HL2 messages.
 This is the index of the SCR_SDEV ports that are set to 2 for "MavlinkHL". Defaults to 0.
 
-## RK9_RELAY
+### RK9_RELAY
 
 RELAYn output to control Rockblock power. This connects to I_EN on the Rockblock header. Defaults to RELAY1.
 
-## RK9_BOOTED
+### RK9_BOOTED
 
 SERVOn GPIO pin number (usually 50 or greater) that reads the Rockblock booted state.
 This connects to I_BTD on the Rockblock header. Requires SERVOn_FUNCTION=-1. Defaults to 52 (SERVO3).

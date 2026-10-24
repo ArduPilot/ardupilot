@@ -6,8 +6,14 @@ class BatteryBMS {
 public:
     friend class AP_Periph_FW;
 
+    // constructor
+    BatteryBMS();
+
     // main update function
     void update(void);
+
+    // var_info for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
@@ -21,10 +27,9 @@ private:
     void request_display_percentage();
 
     // display battery SOC percentage using LEDs
-    void display_percentage();
-
-    // get battery SOC percentage (0-100). returns true on success
-    bool get_percentage(uint8_t &percentage);
+    // last_led_off allows blinking the last LED to indicate charging
+    // returns true on success
+    bool display_percentage(bool last_led_off = false);
 
     // set LED pattern based on 8-bit bitmask
     void set_led_pattern(uint8_t pattern);
@@ -51,12 +56,14 @@ private:
     // configuration variables
     bool config_complete;           // true once configuration has been completed
 
+    // parameters
+    AP_Int16 sleep_timeout_sec;     // battery sleep timeout in seconds
+
     // button handling variables
     struct {
         bool startup_complete;      // true once startup delay has completed
         bool pressed_prev;          // true if button was pressed during previous iteration
         uint32_t pressed_start_ms;  // system time that button was first detected as pressed
-        bool short_press_handled;   // true once a short press has been detected and handled
         bool long_press_handled;    // true once a long pressed has been detected and handled
     } button;
     static const uint32_t BUTTON_SHORT_PRESS_THRESHOLD_MS = 10; // 10 ms for short press
@@ -73,7 +80,7 @@ private:
     uint32_t led_display_soc_start_ms;  // system time that SOC display started.  0 if not displaying SOC
     uint8_t led_charging_animation_step; // LED charging animation step
     static const uint32_t LED_UPDATE_INTERVAL_MS = 50;  // update LEDs at 20hz
-    static const uint32_t LED_DISPLAY_SOC_DURATION_MS = 1000;   // Display SOC percentage for 1 second
+    static const uint32_t LED_DISPLAY_SOC_DURATION_MS = 2000;   // Display SOC percentage for 1 second
     static const uint8_t led_gpios[];   // GPIO pins used for BMS LEDs
 };
 

@@ -217,29 +217,25 @@ public:
     */
     void  getFilterStatus(nav_filter_status &status) const;
 
-    // send an EKF_STATUS_REPORT message to GCS
-    void send_status_report(class GCS_MAVLINK &link) const;
+    // return a terrain altitude variance
+    bool getTerrainAltVariance(float &terrain_alt_variance) const;
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
 
-    // return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
-    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAngDelta);
+    // return a count of yaw reset events; incremented when the
+    // primary core changes and when the primary core resets its yaw
+    uint16_t getYawResetCount(void);
 
-    // return the amount of NE position change due to the last position reset in metres
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &posDelta);
+    // return a count of NE position reset events; incremented when the
+    // primary core changes and when the primary core resets its NE position
+    uint16_t getPosNorthEastResetCount(void);
 
-    // return the amount of NE velocity change due to the last velocity reset in metres/sec
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
-
-    // return the amount of vertical position change due to the last reset in metres
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta);
+    // return a count of D position reset events; incremented when the
+    // primary core changes and when the primary core resets its D position
+    uint16_t getPosDownResetCount(void);
 
     // set and save the _baroAltNoise parameter
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
@@ -346,8 +342,8 @@ private:
     AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder, 2 = use GPS, 3 = use Range Beacon
     AP_Float _gyroScaleProcessNoise;// gyro scale factor state process noise : 1/s
     AP_Float _rngNoise;             // Range finder noise : m
-    AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
-    AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF2 for
+    AP_UInt8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
+    AP_UInt8 _imuMask;               // Bitmask of IMUs to instantiate EKF2 for
     AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
     AP_Float _noaidHorizNoise;      // horizontal position measurement noise assumed when synthesised zero position measurements are used to constrain attitude drift : m
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
@@ -359,15 +355,15 @@ private:
     AP_Int16 _rngBcnInnovGate;      // Percentage number of standard deviations applied to range beacon innovation consistency check
     AP_Int8  _rngBcnDelay_ms;       // effective average delay of range beacon measurements rel to IMU (msec)
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
-    AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
-    AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
+    AP_UInt8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
+    AP_UInt8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
     AP_Int8 _flowUse;               // Controls if the optical flow data is fused into the main navigation estimator and/or the terrain estimator.
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
-    AP_Int8 _gsfRunMask;            // mask controlling which EKF2 instances run a separate EKF-GSF yaw estimator
-    AP_Int8 _gsfUseMask;            // mask controlling which EKF2 instances will use EKF-GSF yaw estimator data to assit with yaw resets
+    AP_UInt8 _gsfRunMask;            // mask controlling which EKF2 instances run a separate EKF-GSF yaw estimator
+    AP_UInt8 _gsfUseMask;            // mask controlling which EKF2 instances will use EKF-GSF yaw estimator data to assit with yaw resets
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF2 is allowed to reset it's yaw to the EKF-GSF estimate
-    AP_Int32 _options;              // optional behaviour bitmask
+    AP_UInt32 _options;              // optional behaviour bitmask
 
     // enum for processing options
     enum class Option {
@@ -376,7 +372,7 @@ private:
 
     // return true if an option is set
     bool option_is_set(Option option) const {
-        return (uint32_t(option) & uint32_t(_options)) != 0;
+        return (uint32_t(option) & _options) != 0;
     }
     
 // Possible values for _flowUse
@@ -423,24 +419,18 @@ private:
     uint64_t lastLogWrite_us;
     
     struct {
-        uint32_t last_function_call;  // last time getLastYawResetAngle was called
-        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
-        uint32_t last_primary_change; // last time a primary has changed
-        float core_delta;             // the amount of yaw change between cores when a change happened
+        uint16_t count;               // count of yaw reset events passed to consumers
+        uint16_t last_core_count;     // primary core's yaw reset count when count last changed
     } yaw_reset_data;
 
     struct {
-        uint32_t last_function_call;  // last time getLastPosNorthEastReset was called
-        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
-        uint32_t last_primary_change; // last time a primary has changed
-        Vector2f core_delta;          // the amount of NE position change between cores when a change happened
+        uint16_t count;               // count of NE position reset events passed to consumers
+        uint16_t last_core_count;     // primary core's NE position reset count when count last changed
     } pos_reset_data;
 
     struct {
-        uint32_t last_function_call;  // last time getLastPosDownReset was called
-        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
-        uint32_t last_primary_change; // last time a primary has changed
-        float core_delta;             // the amount of D position change between cores when a change happened
+        uint16_t count;               // count of D position reset events passed to consumers
+        uint16_t last_core_count;     // primary core's D position reset count when count last changed
     } pos_down_reset_data;
 
     bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
@@ -462,17 +452,17 @@ private:
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
-    void updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary);
+    void updateLaneSwitchYawResetData(uint8_t new_primary);
 
     // update the position reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
-    void updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary);
+    void updateLaneSwitchPosResetData(uint8_t new_primary);
 
     // update the position down reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
-    void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
+    void updateLaneSwitchPosDownResetData(uint8_t new_primary);
 
     // return true if a new core has a better score than an existing core, including
     // checks for alignment

@@ -116,7 +116,7 @@ bool AP_Arming_Copter::rc_throttle_failsafe_checks(bool display_failure) const
     }
 
     // check throttle is not too low - must be above failsafe throttle
-    if (copter.channel_throttle->get_radio_in() < copter.g.failsafe_throttle_value) {
+    if (copter.channel_throttle->get_radio_in() <= copter.g.failsafe_throttle_value) {
         check_failed(Check::RC, display_failure, "%s below failsafe", rc_item);
         return false;
     }
@@ -137,7 +137,7 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
         const auto &ahrs = AP::ahrs();
-        const bool using_baro_ref = !ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL) && ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS);
+        const bool using_baro_ref = !ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL) && ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS);
         float pos_d_m = 0;
         UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
         if (using_baro_ref) {
@@ -363,7 +363,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // check if flight mode requires GPS
     const bool mode_requires_position = copter.flightmode->requires_position() || fence_requires_position || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
-    const bool mode_requires_gps = AP::ahrs().using_gps() && mode_requires_position;
+    const bool mode_requires_gps = AP::ahrs().active_backend_configured_to_use_gps() && mode_requires_position;
 
     // call parent gps checks
     if (mode_requires_gps) {
@@ -406,7 +406,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 // check ekf attitude is acceptable
 bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
 {
-    return AP::ahrs().has_status(AP_AHRS::Status::ATTITUDE_VALID);
+    return AP::ahrs().configured_backend_has_status(AP_AHRS::Status::ATTITUDE_VALID);
 }
 
 #if HAL_PROXIMITY_ENABLED
@@ -481,7 +481,7 @@ bool AP_Arming_Copter::mandatory_position_checks(bool display_failure)
     // check for GPS glitch (as reported by EKF)
     // this can only be true if the EKF is using the GPS
     nav_filter_status filt_status;
-    if (ahrs.get_filter_status(filt_status)) {
+    if (ahrs.get_filter_status_for_configured_backend(filt_status)) {
         if (filt_status.flags.gps_glitching) {
             check_failed(display_failure, "GPS glitching");
             return false;
@@ -492,7 +492,7 @@ bool AP_Arming_Copter::mandatory_position_checks(bool display_failure)
     if (copter.g.fs_ekf_thresh > 0.0f) {
         float vel_variance, pos_variance, hgt_variance, tas_variance;
         Vector3f mag_variance;
-        ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
+        ahrs.get_variances_for_configured_backend(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
         const struct {
             const char *name;
             float value;
@@ -572,9 +572,9 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         return false;
     }
 
-#ifndef ALLOW_ARM_NO_COMPASS
     // if non-compass is source of heading we can skip compass health check
-    if (!ahrs.using_noncompass_for_yaw()) {
+    if (check_enabled(Check::COMPASS) &&
+        !ahrs.using_noncompass_for_yaw()) {
         const Compass &_compass = AP::compass();
         // check compass health
         if (!_compass.healthy()) {
@@ -582,7 +582,6 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
             return false;
         }
     }
-#endif
 
     // always check if the current mode allows arming
     if (!copter.flightmode->allows_arming(method)) {
@@ -628,12 +627,14 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
                 return false;
             }
             // in manual modes throttle must be at zero
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
+            if ((copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::DRIFT) && copter.motors->get_takeoff_collective()) {
+#else
             if ((copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::DRIFT) && copter.channel_throttle->get_control_in() > 0) {
+#endif
                 check_failed(Check::RC, true, "%s too high", rc_item);
                 return false;
             }
-#endif
         }
     }
 
@@ -812,19 +813,6 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     send_arm_disarm_statustext("Disarming motors");
 #endif
-
-    auto &ahrs = AP::ahrs();
-
-    // save compass offsets learned by the EKF if enabled
-    Compass &compass = AP::compass();
-    if (ahrs.use_compass() && compass.get_learn_type() == Compass::LearnType::COPY_FROM_EKF) {
-        for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-            Vector3f magOffsets;
-            if (ahrs.getMagOffsets(i, magOffsets)) {
-                compass.set_and_save_offsets(i, magOffsets);
-            }
-        }
-    }
 
     // we are not in the air
     copter.set_land_complete(true);

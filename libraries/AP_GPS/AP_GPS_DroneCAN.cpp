@@ -40,19 +40,10 @@ extern const AP_HAL::HAL& hal;
 #define GPS_UAVCAN_DEBUGGING 0
 
 #if GPS_UAVCAN_DEBUGGING
-#if defined(HAL_BUILD_AP_PERIPH)
- extern "C" {
-   void can_printf(const char *fmt, ...);
- }
- # define Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
-#else
  # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
-#endif
 #else
  # define Debug(fmt, args ...)
 #endif
-
-#define LOG_TAG "GPS"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::micros64())
@@ -166,21 +157,9 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         default:
             return NULL;
     }
-    if (backend == nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR,
-                            LOG_TAG,
-                            "Failed to register DroneCAN GPS Node %d on Bus %d\n",
-                            _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_dronecan->get_driver_index());
-    } else {
+    if (backend != nullptr) {
         _detected_modules[found_match].driver = backend;
         backend->_detected_module = found_match;
-        AP::can().log_text(AP_CANManager::LOG_INFO,
-                            LOG_TAG,
-                            "Registered DroneCAN GPS Node %d on Bus %d as instance %d\n",
-                            _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_dronecan->get_driver_index(),
-                            _state.instance);
         snprintf(backend->_name, ARRAY_SIZE(backend->_name), "DroneCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
@@ -517,6 +496,15 @@ void AP_GPS_DroneCAN::handle_heading_msg(const ardupilot_gnss_Heading& msg)
     if (interim_state.have_gps_yaw) {
         interim_state.gps_yaw_time_ms = AP_HAL::millis();
     }
+    // the Heading message cannot carry the antenna offset the yaw was
+    // calculated from (and for AP-origin senders such as an AP_Periph
+    // Heading fallback it may be level-assumed moving baseline yaw), so no
+    // attitude correction is possible here. Zero the offset so a stale value
+    // from an earlier relposheading calculation on this instance is never
+    // applied to it
+#if AP_GPS_MB_YAW_OFFSET_ENABLED
+    interim_state.mb_yaw_offset.zero();
+#endif
 
     interim_state.have_gps_yaw_accuracy = msg.heading_accuracy_valid;
     interim_state.gps_yaw_accuracy = degrees(msg.heading_accuracy_rad);

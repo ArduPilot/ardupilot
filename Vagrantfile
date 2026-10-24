@@ -143,4 +143,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     questing.vm.boot_timeout = 1200
   end
+
+  # 26.04 LTS EOL Jul 2031
+  # note the use of "bento" here; Ubuntu stopped providing Vagrant
+  # images due to Hashicorp adopting the "Business Source License".
+  config.vm.define "resolute", autostart: false do |resolute|
+    resolute.vm.box = "bento/ubuntu-26.04"
+    resolute.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    resolute.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (resolute)"
+    end
+    resolute.vm.boot_timeout = 1200
+  end
+  config.vm.define "resolute-desktop", autostart: false do |resolute|
+    resolute.vm.box = "bento/ubuntu-26.04"
+    resolute.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    resolute.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (resolute-desktop)"
+      vb.gui = true
+    end
+    resolute.vm.boot_timeout = 1200
+  end
 end

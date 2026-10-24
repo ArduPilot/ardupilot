@@ -4,6 +4,9 @@
 
 #if AP_DDS_ENABLED
 
+// Whether to include Transform support
+#define AP_DDS_NEEDS_TRANSFORMS AP_DDS_DYNAMIC_TF_SUB_ENABLED || AP_DDS_STATIC_TF_PUB_ENABLED
+
 #include "uxr/client/client.h"
 #include "ucdr/microcdr.h"
 
@@ -77,6 +80,15 @@
 #if AP_DDS_UDP_ENABLED
 #include <AP_HAL/utility/Socket.h>
 #include <AP_Networking/AP_Networking_address.h>
+
+#ifndef AP_DDS_DEFAULT_UDP_IP_ADDR
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define AP_DDS_DEFAULT_UDP_IP_ADDR "192.168.144.2"
+#else
+#define AP_DDS_DEFAULT_UDP_IP_ADDR "127.0.0.1"
+#endif
+#endif
+
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -209,6 +221,13 @@ private:
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 
+#if AP_DDS_CLOCK_SUB_ENABLED
+    // incoming external clock for simulation time sync
+    static rosgraph_msgs_msg_Clock rx_clock_topic;
+    static builtin_interfaces_msg_Time external_clock_time;
+    static bool has_received_clock;
+#endif // AP_DDS_CLOCK_SUB_ENABLED
+
 #if AP_DDS_STATUS_PUB_ENABLED
     ardupilot_msgs_msg_Status status_topic;
     bool update_topic(ardupilot_msgs_msg_Status& msg);
@@ -306,9 +325,6 @@ private:
     // pointer to transport's communication structure
     uxrCommunication *comm{nullptr};
 
-    // client key prefix
-    static constexpr uint32_t key_base = 0xAD000000;
-
     // DDS constants
     static constexpr const char *dds_pubsub_prefix = "rt";
     static constexpr const char *dds_service_prefix = "rs";
@@ -316,7 +332,7 @@ private:
     static constexpr const char *dds_service_reply_prefix = "rr";
     static constexpr const char *participant_name_prefix = "ap";
 
-    static void dds_format_name(char* buf, const char* dds_prefix, uint8_t sysid, const char* name, bool use_sysid_ns);
+    static void dds_format_name(char* buf, const char* dds_prefix, uint32_t sysid, const char* name, bool use_sysid_ns);
 
 
 public:
@@ -348,7 +364,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     //! @brief ROS_DOMAIN_ID
-    AP_Int32 domain_id;
+    AP_UInt32 domain_id;
 
     //! @brief Timeout in milliseconds when pinging the XRCE agent
     AP_Int32 ping_timeout_ms;

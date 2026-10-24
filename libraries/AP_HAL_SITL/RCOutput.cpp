@@ -49,6 +49,11 @@ void RCOutput::disable_ch(uint8_t ch)
 
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
+    if (_outputs_frozen) {
+        // outputs are frozen, drop the write.  See prepare_for_reboot().
+        return;
+    }
+
     if (safety_state == AP_HAL::Util::SAFETY_DISARMED) {
         const auto *board_config = AP_BoardConfig::get_singleton();
         const uint32_t safety_mask = board_config != nullptr? board_config->get_safety_mask() : 0;
@@ -81,6 +86,20 @@ uint16_t RCOutput::read(uint8_t ch)
 void RCOutput::read(uint16_t* period_us, uint8_t len)
 {
     memcpy(period_us, _sitlState->pwm_output, len * sizeof(uint16_t));
+}
+
+/*
+  called once a reboot has been commanded: zero the outputs and stop
+  accepting writes, so that nothing can drive an output over the
+  interval between the command and the reboot itself
+ */
+void RCOutput::prepare_for_reboot(void)
+{
+    _outputs_frozen = true;
+
+    memset(_pending, 0, sizeof(_pending));
+    memset(_sitlState->pwm_output, 0, sizeof(_sitlState->pwm_output));
+    _corked = false;
 }
 
 void RCOutput::cork(void)

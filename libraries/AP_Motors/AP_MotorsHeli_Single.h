@@ -16,6 +16,9 @@
 // direct-drive variable pitch defaults
 #define AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT               50
 
+// tail rotor ramp time in seconds
+#define AP_MOTORS_HELI_SINGLE_TAIL_RAMP_TIME_DEFAULT           1
+
 // COLYAW parameter min and max values
 #define AP_MOTORS_HELI_SINGLE_COLYAW_RANGE                     5.0f
 
@@ -39,6 +42,9 @@ public:
 
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
+
+    // calculate_armed_scalars - recalculates scalars that can change while armed
+    void calculate_armed_scalars() override;
 
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
@@ -70,7 +76,10 @@ protected:
     void init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
-    AP_Motors::SpoolState update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
+
+    // update_spool_state - updates the spool state based on the desired state
+    AP_Motors::SpoolState update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
 
     // heli_move_actuators - moves swash plate and tail rotor
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) override;
@@ -121,6 +130,7 @@ protected:
     // parameters
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
+    AP_Int8         _direct_drive_ramp_time;    // Time in seconds for throttle output (TailHeliRSC servo) to ramp from ground idle (RSC_IDLE) to flight idle throttle setting when motor interlock is enabled (throttle hold off).
     AP_Float        _collective_yaw_scale;      // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Float        _yaw_trim;                  // Fixed offset applied to yaw output to reduce yaw I.
 };

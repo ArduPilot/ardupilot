@@ -24,4 +24,4 @@ protected:
     }
 };
 
-#endif  // AP_RANGEFINDER_USD1_CAN_ENABLED
+#endif  // AP_RANGEFINDER_TOFSENSEP_CAN_ENABLED

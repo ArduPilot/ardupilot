@@ -119,8 +119,8 @@ private:
 
     // parameters
     AP_Int8 _type;                  // avoidance algorithm to be used
-    AP_Float _margin_max;           // object avoidance will ignore objects more than this many meters from vehicle
-    AP_Int16 _options;              // Bitmask for options while recovering from Object Avoidance
+    AP_Float _margin_max;           // minimum distance in meters to keep from obstacles and fences
+    AP_UInt16 _options;              // Bitmask for options while recovering from Object Avoidance
     
     // internal variables used by front end
     HAL_Semaphore _rsem;            // semaphore for multi-thread use of avoidance_request and avoidance_result
