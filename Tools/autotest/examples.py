@@ -165,7 +165,6 @@ def run_examples(debug=False, valgrind=False, gdb=False, asan=False):
         "DSP_test": "exits with an arithmetic exception",
         "FlashTest": "https://github.com/ArduPilot/ardupilot/issues/14168",
         "INS_generic": "SITL is not available, segfaults",
-        "ModuleTest": "test aborts",
         "NMEA_Output": "segfault as AP_Logger not instantiated",
         "RCProtocolDecoder": "This assumes specific hardware is connected",
         "SlewLimiter": "exits with a status code of 1 (failure) for some reason",

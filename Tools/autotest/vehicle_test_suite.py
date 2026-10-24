@@ -26,6 +26,7 @@ import shutil
 import signal
 import socket
 import struct
+import subprocess
 import sys
 import tempfile
 import threading
@@ -347,6 +348,7 @@ class Context(object):
         self.original_heartbeat_interval_ms = None
         self.installed_scripts = []
         self.installed_modules = []
+        self.installed_rust_files = []
         self.overridden_message_rates = {}
         self.raising_debug_trap_on_exceptions = False
         # self.speedup value to restore on context_pop(); set by the
@@ -2738,6 +2740,22 @@ class TestSuite(abc.ABC):
             p1=mavutil.mavlink.SCRIPTING_CMD_STOP_AND_RESTART,
             timeout=5,
         )
+
+    def rust_scripting_restart(self, timeout=30):
+        '''request a cooperative native-module reload and wait for the new generation'''
+        self.progress("Restarting Rust scripting")
+        restart = int(self.get_parameter("MOD_RESTART"))
+        self.drain_mav()
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        try:
+            # Do not restore this request counter when the context is popped.
+            self.set_parameter("MOD_RESTART", -32768 if restart == 32767 else restart + 1,
+                               add_to_context=False)
+            self.wait_text(r"Module: loaded [0-9]+ modules", regex=True,
+                           check_context=True, timeout=timeout)
+        finally:
+            self.context_pop()
 
     def set_streamrate(self, streamrate, timeout=20, stream=mavutil.mavlink.MAV_DATA_STREAM_ALL):
         '''set MAV_DATA_STREAM_ALL; timeout is wallclock time'''
@@ -5793,6 +5811,9 @@ class TestSuite(abc.ABC):
         '''
         if wp.get_type() == 'MISSION_ITEM_INT':
             return wp
+        # NAV_SCRIPT_TIME carries integer script arguments, not lat/lon, in
+        # these fields. Scaling them truncates the arguments on the vehicle.
+        coordinate_scale = 1 if wp.command == mavutil.mavlink.MAV_CMD_NAV_SCRIPT_TIME else 1.0e7
         wp_int = mavutil.mavlink.MAVLink_mission_item_int_message(
             wp.target_system,
             wp.target_component,
@@ -5805,8 +5826,8 @@ class TestSuite(abc.ABC):
             wp.param2,
             wp.param3,
             wp.param4,
-            int(wp.x*1.0e7),
-            int(wp.y*1.0e7),
+            int(wp.x*coordinate_scale),
+            int(wp.y*coordinate_scale),
             wp.z,
             mission_type,
         )
@@ -7387,6 +7408,11 @@ class TestSuite(abc.ABC):
                 self.remove_message_hook(hook)
         for script in dead.installed_scripts:
             self.remove_installed_script(script)
+        for path in dead.installed_rust_files:
+            try:
+                os.unlink(path)
+            except FileNotFoundError:
+                pass
         for (message_id, rate_hz) in dead.overridden_message_rates.items():
             self.set_message_rate_hz(message_id, rate_hz)
         for module in dead.installed_modules:
@@ -9795,6 +9821,90 @@ Also, ignores heartbeats not from our target system'''
         finally:
             self.remove_message_hook(mh)
         return statustext_full
+
+    # routines helpful for testing native modules:
+    def rust_applet_source_path(self, filename):
+        return os.path.join(self.rootdir(), "libraries", "AP_Module", "applets", filename)
+
+    def rust_test_source_path(self, filename):
+        return os.path.join(self.rootdir(), "libraries", "AP_Module", "tests", "modules", filename)
+
+    def check_rust_toolchain(self, target='x86_64-unknown-linux-gnu'):
+        '''fail early with setup instructions; never download a compiler during a test'''
+        compiler = os.environ.get('RUSTC', 'rustc')
+        required = (pathlib.Path(self.rootdir()) / 'Tools/modules/rust/rust-toolchain-version').read_text().strip()
+        hint = ('Install Rust %s or newer and its %s target; select the compiler with RUSTC. '
+                'See Tools/modules/README.md' % (required, target))
+        try:
+            version = subprocess.check_output([compiler, '--version'], text=True, stderr=subprocess.STDOUT)
+            match = re.match(r'^rustc ([0-9]+)\.([0-9]+)\.([0-9]+)(?:[-+][^ ]+)?(?: |$)', version)
+            minimum = tuple(int(component) for component in required.split('.'))
+            if match is None or tuple(int(component) for component in match.groups()) < minimum:
+                raise PreconditionFailedException('%s: %s. %s' % (compiler, version.strip(), hint))
+            libdir = subprocess.check_output([compiler, '--print', 'target-libdir', '--target', target],
+                                             text=True, stderr=subprocess.STDOUT).strip()
+        except (OSError, subprocess.CalledProcessError) as ex:
+            raise PreconditionFailedException('%s: %s. %s' % (compiler, ex, hint)) from ex
+        if not list(pathlib.Path(libdir).glob('libcore-*.rlib')):
+            raise PreconditionFailedException('Missing Rust core library for %s. %s' % (target, hint))
+
+    def build_rust_module(self, source, output, stack_size=16384, target='x86_64-unknown-linux-gnu', heap_size=32768):
+        '''build a native module with Tools/modules/build.py (honours RUSTC).
+        target describes the firmware CPU, not necessarily the autotest host.
+        stack_size is the module requirement; MOD_STACK_MAX must also allow
+        the loader's host-callback margin (16 KiB on x86-64).'''
+        self.check_rust_toolchain(target)
+        output = os.path.abspath(output)
+        # autotest.py can export a TMPDIR which does not exist yet. Give rustc
+        # its own valid scratch directory without changing the suite environment.
+        with tempfile.TemporaryDirectory(prefix='autotest-rustc-') as scratch:
+            util.run_cmd([
+                sys.executable, os.path.join(self.rootdir(), 'Tools', 'modules', 'build.py'),
+                os.path.abspath(source), output, '--heap-size', str(heap_size),
+                '--target', target, '--stack-size', str(stack_size),
+            ], directory=self.rootdir(), env=dict(os.environ, TMPDIR=scratch))
+        return output
+
+    def install_rust_file_context(self, source, install_name=None, directory='modules'):
+        '''install a module or ancillary file, removing it when the context ends.
+        Refuse to overwrite existing files, including another context's files.
+        Aerobatics schedules currently belong in scripts/, not modules/.'''
+        if directory not in ('modules', 'scripts'):
+            raise ValueError("Module test files must be installed in modules/ or scripts/")
+        name = os.path.basename(source if install_name is None else install_name)
+        if name in ('', '.', '..'):
+            raise ValueError("Invalid Rust test filename")
+        dest = os.path.abspath(os.path.join(directory, name))
+        context = self.context_get()
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        self.progress("Copying (%s) to (%s)" % (source, dest))
+        with open(source, 'rb') as src:
+            with open(dest, 'xb') as dst:
+                context.installed_rust_files.append(dest)
+                shutil.copyfileobj(src, dst)
+        return dest
+
+    def install_rust_module_context(self, source, install_name=None, stack_size=16384,
+                                    target='x86_64-unknown-linux-gnu', heap_size=32768):
+        '''build a Rust source module and install only its .apmod for this context.
+        Firmware must have AP_MODULE_ENABLED; enable MOD_ENABLE and
+        reboot after installing. Build intermediates never enter the SD tree.'''
+        if install_name is None:
+            install_name = pathlib.Path(source).stem + '.apmod'
+        if not install_name.endswith('.apmod'):
+            raise ValueError("Native modules must have an .apmod filename")
+        with tempfile.TemporaryDirectory(prefix='autotest-rust-') as directory:
+            module = self.build_rust_module(source, os.path.join(directory, 'module.apmod'),
+                                            stack_size=stack_size, target=target, heap_size=heap_size)
+            return self.install_rust_file_context(module, install_name=install_name)
+
+    def install_rust_applet_context(self, filename, **kwargs):
+        '''build/install a source beneath libraries/AP_Module/applets/'''
+        return self.install_rust_module_context(self.rust_applet_source_path(filename), **kwargs)
+
+    def install_rust_test_module_context(self, filename, **kwargs):
+        '''build/install a source beneath libraries/AP_Module/tests/modules/'''
+        return self.install_rust_module_context(self.rust_test_source_path(filename), **kwargs)
 
     # routines helpful for testing LUA scripting:
     def script_example_source_path(self, scriptname):
@@ -16724,6 +16834,19 @@ switch value'''
             raise ex
 
         return tmpfile.read()
+
+    def MAVFTPThreads(self):
+        '''read the SITL HAL thread listing through MAVProxy FTP'''
+        listing = self.fetch_file_via_ftp('@SYS/threads.txt')
+        self.progress(listing)
+        if not listing.startswith('ThreadsV2\n'):
+            raise NotAchievedException('Missing thread listing header')
+        names = [line.split()[0] for line in listing.splitlines()[1:]]
+        if 'main' not in names or 'FTP' not in names:
+            raise NotAchievedException('Missing main or FTP worker in thread listing')
+        for line in listing.splitlines()[1:]:
+            if re.search(r'PRI=\s*[?\d]+ sp=\S+ STACK=[?\d]+/[?\d]+', line) is None:
+                raise NotAchievedException('Malformed thread entry: %s' % line)
 
     def MAVFTP(self):
         '''ensure MAVProxy can do MAVFTP to ardupilot'''

@@ -19536,6 +19536,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.NoRC,
             self.ThrottleGainBoost,
             self.ScriptMountPOI,
+            self.ScriptMountPOIRust,
             self.GuidedYawRate,
             self.MISSION_OPTION_CLEAR_MISSION_AT_BOOT,
             self.SafetySwitch,
@@ -19790,17 +19791,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def ScriptMountPOI(self):
         '''test the MountPOI example script'''
+        self.ScriptMountPOIMain(rust=False)
+
+    def ScriptMountPOIRust(self):
+        '''test the native Rust MountPOI applet'''
+        self.ScriptMountPOIMain(rust=True)
+
+    def ScriptMountPOIMain(self, rust):
         self.context_push()
 
         self.install_terrain_handlers_context()
         self.set_parameters({
-            "SCR_ENABLE": 1,
+            "SCR_ENABLE": 0 if rust else 1,
+            "MOD_ENABLE": 1 if rust else 0,
+            "MOD_HEAP_MAX": 32768,
+            "MOD_CODE_MAXSIZE": 131072,
+            "MOD_STACK_MAX": 32768,
             "RC12_OPTION": 300,
         })
         self.setup_servo_mount()
         self.reboot_sitl()
         self.set_rc(6, 1300)
-        self.install_applet_script_context('mount-poi.lua')
+        if rust:
+            self.install_rust_applet_context(
+                'mount_poi/main.rs',
+                install_name='mount-poi.apmod',
+            )
+        else:
+            self.install_applet_script_context('mount-poi.lua')
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.context_collect('STATUSTEXT')
@@ -23256,14 +23274,31 @@ return update()
 
     def LuaParamLockdown(self):
         '''test param-lockdown.lua applet'''
+        self.ParamLockdown(rust=False)
+
+    def RustParamLockdown(self):
+        '''test the native Rust param-lockdown applet'''
+        self.ParamLockdown(rust=True)
+
+    def ParamLockdown(self, rust):
         self.set_parameters({
-            'SCR_ENABLE': 1,
+            'SCR_ENABLE': 0 if rust else 1,
+            'MOD_ENABLE': 1 if rust else 0,
+            'MOD_HEAP_MAX': 32768,
+            'MOD_CODE_MAXSIZE': 131072,
+            'MOD_STACK_MAX': 32768,
         })
 
         self.context_push()
 
-        self.install_mavlink_module_context("MAVLink")
-        self.install_applet_script_context("param-lockdown.lua")
+        if rust:
+            self.install_rust_applet_context(
+                'param_lockdown/main.rs',
+                install_name='param-lockdown.apmod',
+            )
+        else:
+            self.install_mavlink_module_context("MAVLink")
+            self.install_applet_script_context("param-lockdown.lua")
         self.reboot_sitl()
 
         # collect original parameter values for everything other than
@@ -23906,6 +23941,7 @@ return update, 1000
             self.mission_NAV_LOITER_TURNS_direction,
             self.LuaMAVLinkTarget,
             self.LuaParamLockdown,
+            self.RustParamLockdown,
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             self.CRSF,

@@ -5236,6 +5236,30 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def RustSerialLoopback(self):
+        '''test Rust physical and simulated serial views in both directions'''
+        self.start_subtest("Rust serial loopback test")
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SCR_ENABLE": 0,
+            "SCR_SDEV_EN": 1,
+            "SCR_SDEV1_PROTO": 28,
+            "MOD_ENABLE": 1,
+        })
+        self.install_rust_test_module_context("serial_loopback.rs")
+        self.reboot_sitl()
+
+        for success_text in [
+                "Rust driver -> device good",
+                "Rust device -> driver good",
+        ]:
+            self.wait_statustext(success_text, check_context=True)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def test_scripting_callback_time(self):
         self.start_subtest("Scripting callback time")
 
@@ -7148,16 +7172,34 @@ return update()
 
     def NetworkingWebServer(self):
         '''web server'''
-        applet_script = "net_webserver.lua"
+        self.NetworkingWebServerMain(rust=False)
+
+    def NetworkingWebServerRust(self):
+        '''native Rust web server'''
+        self.NetworkingWebServerMain(rust=True)
+
+    def NetworkingWebServerMain(self, rust):
+        '''web server implementation shared by Lua and Rust assertions'''
 
         self.context_push()
-        self.install_applet_script_context(applet_script)
+        if rust:
+            self.install_rust_applet_context(
+                "net_webserver/main.rs",
+                install_name="net_webserver.apmod",
+                stack_size=16384,
+            )
+        else:
+            self.install_applet_script_context("net_webserver.lua")
 
         self.set_parameters({
-            "SCR_ENABLE": 1,
+            "SCR_ENABLE": 0 if rust else 1,
             "SCR_VM_I_COUNT": 1000000,
             "SIM_SPEEDUP": 20,
             "NET_ENABLE": 1,
+            "MOD_ENABLE": 1 if rust else 0,
+            "MOD_HEAP_MAX": 262144,
+            "MOD_CODE_MAXSIZE": 262144,
+            "MOD_STACK_MAX": 32768,
         })
 
         self.reboot_sitl()
@@ -7169,7 +7211,10 @@ return update()
             "WEB_BIND_PORT": 8081,
         })
 
-        self.scripting_restart()
+        if rust:
+            self.rust_scripting_restart()
+        else:
+            self.scripting_restart()
         self.wait_text("WebServer: starting on port 8081", check_context=True)
 
         self.wait_ready_to_arm()
@@ -7182,22 +7227,44 @@ return update()
 
     def NetworkingWebServerPPP(self):
         '''web server over PPP'''
-        applet_script = "net_webserver.lua"
+        self.NetworkingWebServerPPPMain(rust=False)
+
+    def NetworkingWebServerPPPRust(self):
+        '''native Rust web server over PPP'''
+        self.NetworkingWebServerPPPMain(rust=True)
+
+    def NetworkingWebServerPPPMain(self, rust):
+        '''PPP web server implementation shared by Lua and Rust assertions'''
 
         self.context_push()
-        self.install_applet_script_context(applet_script)
+        if rust:
+            self.install_rust_applet_context(
+                "net_webserver/main.rs",
+                install_name="net_webserver.apmod",
+                stack_size=16384,
+            )
+        else:
+            self.install_applet_script_context("net_webserver.lua")
 
         self.set_parameters({
-            "SCR_ENABLE": 1,
+            "SCR_ENABLE": 0 if rust else 1,
             "SCR_VM_I_COUNT": 1000000,
             "SIM_SPEEDUP": 20,
             "NET_ENABLE": 1,
             "SERIAL5_PROTOCOL": 48,
+            "MOD_ENABLE": 1 if rust else 0,
+            "MOD_HEAP_MAX": 262144,
+            "MOD_CODE_MAXSIZE": 262144,
+            "MOD_STACK_MAX": 32768,
         })
 
         self.progress('rebuilding rover with ppp enabled')
         import shutil
         shutil.copy('build/sitl/bin/ardurover', 'build/sitl/bin/ardurover.noppp')
+        # A preceding PPP test restored the non-PPP executable outside Waf.
+        # Its PPP link signature is still current, so remove the output to
+        # force relinking rather than leaving that restored binary in place.
+        os.unlink('build/sitl/bin/ardurover')
         # --enable-math-check-indexes matches the CI rover build
         # configuration, so in CI this rebuild is a ccache hit against
         # the pre-built PPP rover from the build job
@@ -7227,7 +7294,10 @@ return update()
             "WEB_BIND_PORT": 8081,
         })
 
-        self.scripting_restart()
+        if rust:
+            self.rust_scripting_restart()
+        else:
+            self.scripting_restart()
         self.wait_text("WebServer: starting on port 8081", check_context=True)
 
         self.wait_ready_to_arm()
@@ -8205,6 +8275,7 @@ return update()
             self.PolyFenceObjectAvoidanceBendyRulerEasierAuto,
             self.SlewRate,
             self.Scripting,
+            self.RustSerialLoopback,
             self.ScriptingMAVLink,
             self.ScriptingSteeringAndThrottle,
             self.MissionFrames,
@@ -8241,12 +8312,14 @@ return update()
             self.MAV_CMD_BATTERY_RESET,
             self.GPSForYaw,
             self.NetworkingWebServer,
+            self.NetworkingWebServerRust,
             self.MAV_SYSID_32bit,
             self.MAV_SYSID_FullRange,
             self.MAVLinkHeaderTargets,
             self.MAVLinkStatustextWideSource,
             self.MAVLinkTimesyncRTT,
             self.NetworkingWebServerPPP,
+            self.NetworkingWebServerPPPRust,
             self.RTL_SPEED,
             self.ScriptingLocationBindings,
             self.MissionRetransfer,
