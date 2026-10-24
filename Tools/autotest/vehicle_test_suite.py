@@ -4346,6 +4346,19 @@ class TestSuite(abc.ABC):
         self.set_parameter("LOG_MAX_FILES", 250)
         create_and_verify_logs(250, clear_logsdir=False)
 
+        self.start_subtest("List logs after the oldest files have been removed")
+        create_num_logs(10, logspath)
+        for number in range(1, 6):
+            (logspath / f"{number:08d}.BIN").unlink()
+        self.reboot_sitl()
+        logs_dict = self.download_full_log_list(print_logs=False)
+        if len(logs_dict) != 5:
+            raise NotAchievedException(f"Expected 5 retained logs, got {len(logs_dict)}")
+        for entry, log in logs_dict.items():
+            logfile = logspath / f"{entry + 5:08d}.BIN"
+            if log.size != logfile.stat().st_size:
+                raise NotAchievedException(f"Incorrect size for retained log {entry}")
+
         # cleanup
         shutil.rmtree(logspath, ignore_errors=True)
 
