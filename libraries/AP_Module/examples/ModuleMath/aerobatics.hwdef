@@ -1,0 +1,4 @@
+# Larger explicitly bounded test heap for composed aerobatics schedules.
+define AP_MODULE_ENABLED 1
+define AP_MODULE_MATH_HEAP_SIZE 65536
+define AP_MODULE_MATH_CODE_SIZE 131072
