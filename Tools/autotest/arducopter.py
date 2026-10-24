@@ -3266,6 +3266,32 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "Fence test failed to reach home (%fm distance) - "
             "timed out after %u seconds" % (home_distance, timeout,))
 
+    def FenceMarginTypeChange(self):
+        '''Test removing a margin-breached fence from FENCE_TYPE in flight'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 2,    # circle fence
+            "FENCE_RADIUS": 50,
+            "FENCE_MARGIN": 5,
+            "AVOID_ENABLE": 0,
+            "FENCE_OPTIONS": 4,  # notify on margin breach
+        })
+        self.context_collect('STATUSTEXT')
+
+        self.takeoff(10, mode="GUIDED")
+        # inside the circle fence but within its margin:
+        self.fly_guided_move_local(47.5, 0, 10)
+        self.wait_statustext("Circle fence in", check_context=True)
+
+        self.progress("Replacing the circle fence with a polygon fence")
+        self.set_parameter("FENCE_TYPE", 4)
+        # only the fence whose margin breach was cleared should be
+        # named; the whole complemented FENCE_TYPE mask used to be
+        # reported, indexing off the end of the fence names table
+        self.wait_statustext("Circle fence cleared margin breach", check_context=True)
+
+        self.do_RTL()
+
     def FenceUpload_MissionItem(self, timeout=180):
         '''Test MISSION_ITEM fence upload/download'''
         self.set_parameters({
@@ -23890,6 +23916,7 @@ return update, 1000
             self.MinAltFence,
             self.FenceFloorAutoDisableLanding,
             self.FenceMargin,
+            self.FenceMarginTypeChange,
             self.GPSGlitchAuto,
             self.GPSGlitchVelocity,
             self.MotorFail,
