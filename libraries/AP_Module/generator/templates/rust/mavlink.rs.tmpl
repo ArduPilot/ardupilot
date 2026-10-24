@@ -1,0 +1,115 @@
+use crate::{result, Error, Result};
+
+pub const MAVLINK_MESSAGE_SIZE: usize = ${message_size};
+pub const MAVLINK_PAYLOAD_MAX: usize = ${payload_max};
+
+/// An owned copy of the firmware's complete `mavlink_message_t`, including
+/// its checksum, header, payload storage and MAVLink2.1 extended target.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MavlinkMessage {
+    bytes: [u8; MAVLINK_MESSAGE_SIZE],
+    pub channel: u8,
+    pub timestamp_ms: u32,
+}
+
+impl MavlinkMessage {
+    pub fn bytes(&self) -> &[u8; MAVLINK_MESSAGE_SIZE] { &self.bytes }
+}
+
+impl crate::bindings::Mavlink<'_, '_> {
+    /// Allocate this module's bounded receive queue and message-ID table.
+    /// Repeated calls preserve the first allocation, matching the Lua API.
+    pub fn init(&self, queue_depth: u8, message_ids: u8) -> Result {
+        if queue_depth > 25 || message_ids > 25 {
+            return Err(Error::Invalid);
+        }
+        let input = [queue_depth, message_ids];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${init_id}.slot(),
+                input.as_ptr(), input.len() as u32, core::ptr::null_mut(), 0)
+        })
+    }
+
+    /// Add one 24-bit MAVLink message ID. Duplicate registrations return
+    /// `false`; exhausting the configured table returns `Error::NoMemory`.
+    pub fn register_rx_msgid(&self, msgid: u32) -> Result<bool> {
+        if msgid >= (1 << 24) {
+            return Err(Error::Invalid);
+        }
+        let input = msgid.to_le_bytes();
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw,
+                crate::imports::BINDING_${register_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    /// Pop the oldest subscribed packet with its receive channel and timestamp.
+    pub fn receive_chan(&self) -> Result<Option<MavlinkMessage>> {
+        let mut output = [0u8; ${receive_wire_size}];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw,
+                crate::imports::BINDING_${receive_id}.slot(),
+                core::ptr::null(), 0, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] {
+            0 if output[1..].iter().all(|byte| *byte == 0) => Ok(None),
+            0 => Err(Error::Host),
+            1 => {
+                let mut bytes = [0u8; MAVLINK_MESSAGE_SIZE];
+                bytes.copy_from_slice(&output[1..1 + MAVLINK_MESSAGE_SIZE]);
+                Ok(Some(MavlinkMessage {
+                    bytes,
+                    channel: output[1 + MAVLINK_MESSAGE_SIZE],
+                    timestamp_ms: u32::from_le_bytes(
+                        output[2 + MAVLINK_MESSAGE_SIZE..${receive_wire_size}].try_into().unwrap()),
+                }))
+            }
+            _ => Err(Error::Host),
+        }
+    }
+
+    /// Send a known MAVLink payload. `None` means the channel does not exist;
+    /// `Some(false)` means the packet could not currently be sent.
+    pub fn send_chan(&self, channel: u8, msgid: u32, payload: &[u8],
+                     target_system: Option<u32>) -> Result<Option<bool>> {
+        if msgid >= (1 << 24) || payload.len() > MAVLINK_PAYLOAD_MAX {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; ${send_wire_size}];
+        input[0] = channel;
+        input[1..5].copy_from_slice(&msgid.to_le_bytes());
+        input[5..7].copy_from_slice(&(payload.len() as u16).to_le_bytes());
+        if let Some(target) = target_system {
+            input[7] = 1;
+            input[8..12].copy_from_slice(&target.to_le_bytes());
+        }
+        input[12..12 + payload.len()].copy_from_slice(payload);
+        let mut output = [0u8; 2];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${send_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output {
+            [0, 0] => Ok(None),
+            [1, 0] => Ok(Some(false)),
+            [1, 1] => Ok(Some(true)),
+            _ => Err(Error::Host),
+        }
+    }
+
+    /// Block a MAVLink command until this module exits. Repeated calls for the
+    /// same module and command are idempotent; other owners remain independent.
+    pub fn block_command(&self, command: u16) -> Result<bool> {
+        let input = command.to_le_bytes();
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw,
+                crate::imports::BINDING_${block_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+}

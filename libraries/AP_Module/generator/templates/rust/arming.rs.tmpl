@@ -1,0 +1,47 @@
+use crate::{result, Error, Result};
+
+pub const AUX_AUTH_FAILURE_MESSAGE_MAX: usize = ${failure_message_max};
+
+impl crate::bindings::Arming<'_, '_> {
+    /// Allocate an auxiliary-authorisation ID owned by this module instance.
+    /// Firmware releases all IDs owned by the module after its worker exits.
+    pub fn get_aux_auth_id(&self) -> Result<Option<u8>> {
+        let mut output = [0u8; 2];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${get_id}.slot(),
+                core::ptr::null(), 0, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] {
+            0 if output[1] == 0 => Ok(None),
+            1 => Ok(Some(output[1])),
+            _ => Err(Error::Host),
+        }
+    }
+
+    /// Mark a module-owned auxiliary-authorisation ID as passed.
+    pub fn set_aux_auth_passed(&self, auth_id: u8) -> Result {
+        let input = [auth_id];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw,
+                crate::imports::BINDING_${passed_id}.slot(),
+                input.as_ptr(), input.len() as u32, core::ptr::null_mut(), 0)
+        })
+    }
+
+    /// Mark a module-owned auxiliary-authorisation ID as failed.
+    pub fn set_aux_auth_failed(&self, auth_id: u8, message: &str) -> Result {
+        let bytes = message.as_bytes();
+        if bytes.len() > AUX_AUTH_FAILURE_MESSAGE_MAX || bytes.contains(&0) {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; 2 + AUX_AUTH_FAILURE_MESSAGE_MAX];
+        input[0] = auth_id;
+        input[1] = bytes.len() as u8;
+        input[2..2 + bytes.len()].copy_from_slice(bytes);
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw,
+                crate::imports::BINDING_${failed_id}.slot(),
+                input.as_ptr(), input.len() as u32, core::ptr::null_mut(), 0)
+        })
+    }
+}

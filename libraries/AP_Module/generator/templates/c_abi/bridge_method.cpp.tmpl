@@ -1,0 +1,9 @@
+extern "C" int32_t ${symbol}(${arguments})
+{
+    const ap_module::Context context(*base);
+${locals}    const auto result = context.${group}().${name}(${values});
+${outputs}    if (result) {
+${copybacks}    }
+    return int32_t(result.error);
+}
+

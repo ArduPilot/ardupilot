@@ -1,0 +1,22 @@
+${notice}
+pub const ABI_VERSION: u32 = ${version};
+pub const API_FINGERPRINT: [u8; 16] = [${fingerprint}];
+
+${statuses}
+#[repr(C)]
+pub struct HostApi {
+    pub version: u32,
+    pub size: u32,
+    pub fingerprint: [u8; 16],
+${functions}}
+
+const _: () = {
+${assertions}};
+
+impl HostApi {
+    pub fn is_valid(&self) -> bool {
+        self.version == ABI_VERSION
+            && self.size as usize >= core::mem::size_of::<Self>()
+            && self.fingerprint == API_FINGERPRINT
+${required_functions}    }
+}

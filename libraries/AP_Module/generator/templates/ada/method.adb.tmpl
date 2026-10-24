@@ -1,0 +1,9 @@
+      function ${name}
+        (${arguments}) return AP_Module.Status
+      is
+         function Raw_Call (${raw_arguments}) return AP_Module.Status
+           with Import, Convention => C, External_Name => "${symbol}";
+      begin
+         return Raw_Call (${values});
+      end ${name};
+

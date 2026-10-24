@@ -1,0 +1,15 @@
+use crate::{PrintfArg, PrintfText, Result};
+
+impl crate::bindings::String<'_, '_> {
+    /// Experimental firmware printf, without Rust's numeric formatting code.
+    /// Up to eight typed arguments; format is at most 255 bytes, and strings
+    /// share a 256-byte pool including terminators. No NULs or allocation.
+    /// Supports d/i/u/o/x/X,
+    /// ASCII c, s, f/F/e/E/g/G, ll integers, literal widths <=255 and precision
+    /// <=60. Other modifiers, *, positional arguments, p and n are rejected.
+    /// Format/type mismatches, overflow and non-UTF-8 results return Invalid.
+    /// Float output follows HAL float32 formatting, even for f64 arguments.
+    pub fn format_printf(&self, format: &str, args: &[PrintfArg<'_>]) -> Result<PrintfText> {
+        crate::printf::format(self.context, crate::imports::BINDING_${method_id}.slot(), format, args)
+    }
+}

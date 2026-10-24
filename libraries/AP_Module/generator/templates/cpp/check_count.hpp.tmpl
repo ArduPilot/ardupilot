@@ -1,0 +1,4 @@
+        ${scalar} requested{};
+        if (!wire::Codec<${scalar}>::get(input + ${offset}, requested) ||
+            ${value} > requested || ${value} > ${capacity}) { return {Error::Host}; }
+${padding}
