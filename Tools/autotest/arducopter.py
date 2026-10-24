@@ -3715,6 +3715,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     UBX_MODEL_M8N_SPG301 = 4
     UBX_MODEL_M9N_SPG404 = 5
     UBX_MODEL_M10_SPG510 = 6
+    UBX_MODEL_X20P_HPG211 = 7
 
     def ublox_sim_config_filepath(self):
         '''the file the simulated u-blox keeps its saved configuration in'''
@@ -3848,6 +3849,132 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Expected one u-blox configuration save, got %u" % saves)
         if self.ublox_sim_saved_nav_sol_rate() != 0:
             raise NotAchievedException("NAV-SOL still enabled in saved configuration")
+
+        self.context_pop()
+        self.ublox_sim_reset_saved_config()
+        self.reboot_sitl()
+
+    # offsets in the simulated X20's saved configuration file of its
+    # key values (U4 each, in the order of the simulator's x20_keys
+    # table) and of the bitmask of keys set in the saved layers; they
+    # follow the M10's CFG-VALSET keys
+    UBX_SIM_X20_VALUES_OFFSET = 5 + 14 + 6 + 36 + 8 + 1 + 60 + 10
+    UBX_SIM_X20_SET_OFFSET = UBX_SIM_X20_VALUES_OFFSET + 46*4
+    UBX_SIM_X20_KEY_INDEX = {
+        "CFG-SIGNAL-GPS_ENA": 0,
+        "CFG-SIGNAL-SBAS_ENA": 4,
+        "CFG-SIGNAL-QZSS_ENA": 17,
+    }
+
+    def ublox_sim_x20_saved_value(self, name):
+        '''return a key's value in the simulated X20's saved
+        configuration, or None if it isn't set there'''
+        with open(self.ublox_sim_config_filepath(), "rb") as f:
+            data = f.read()
+        index = self.UBX_SIM_X20_KEY_INDEX[name]
+        (set_mask, ) = struct.unpack("<Q", data[self.UBX_SIM_X20_SET_OFFSET:self.UBX_SIM_X20_SET_OFFSET+8])
+        if not set_mask & (1 << index):
+            return None
+        ofs = self.UBX_SIM_X20_VALUES_OFFSET + 4*index
+        (value, ) = struct.unpack("<I", data[ofs:ofs+4])
+        return value
+
+    def ublox_statustexts(self):
+        '''return the text of the STATUSTEXTs collected, joining texts
+        sent in several chunks'''
+        texts = []
+        first_chunk = {}
+        for m in self.context_collection('STATUSTEXT'):
+            if m.id == 0:
+                texts.append(m.text)
+            elif m.chunk_seq == 0:
+                first_chunk[m.id] = len(texts)
+                texts.append(m.text)
+            elif m.id in first_chunk:
+                texts[first_chunk[m.id]] += m.text
+        return texts
+
+    def ublox_check_gnss_report(self, texts, want):
+        '''check the constellations in the last GNSS report from the
+        u-blox driver in texts are as in want'''
+        reports = [t for t in texts if t.startswith("GPS 1: GNSS: ")]
+        if len(reports) == 0:
+            raise NotAchievedException("No u-blox GNSS report")
+        got = {}
+        for m in re.finditer(r"(\w+)\[(\d)\]", reports[-1]):
+            got[m.group(1)] = int(m.group(2))
+        self.progress("u-blox GNSS: %s" % str(got))
+        for (name, value) in want.items():
+            if got.get(name) != value:
+                raise NotAchievedException("Expected %s[%u] in u-blox GNSS report, got %s" % (name, value, str(got)))
+
+    def ublox_check_configured(self, texts):
+        if "GPS 1: u-blox configured" not in texts:
+            raise NotAchievedException("u-blox not configured")
+
+    def UBloxX20GNSSMode(self):
+        '''check GPS1_GNSS_MODE selects the constellations a u-blox X20 uses'''
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        GNSS_GPS = 1 << 0
+        GNSS_GAL = 1 << 2
+        GNSS_BDS = 1 << 3
+        GNSS_QZSS = 1 << 5
+        GNSS_GLO = 1 << 6
+        self.set_parameters({
+            "GPS_AUTO_CONFIG": 1,
+            "SIM_GPS1_UBXMDL": self.UBX_MODEL_X20P_HPG211,
+            "GPS1_GNSS_MODE": 0,
+        })
+        factory = {"GPS": 1, "SBAS": 1, "GAL": 1, "BDS": 1, "QZSS": 0, "GLO": 1, "NAVIC": 0}
+
+        self.start_subtest("The factory constellations are reported, GLONASS included")
+        self.ublox_sim_reset_saved_config()
+        self.ublox_sim_boot()
+        texts = self.ublox_statustexts()
+        self.ublox_check_configured(texts)
+        self.ublox_check_gnss_report(texts, factory)
+
+        self.start_subtest("Enable QZSS and disable SBAS")
+        self.set_parameter("GPS1_GNSS_MODE", GNSS_GPS | GNSS_GAL | GNSS_BDS | GNSS_QZSS | GNSS_GLO)
+        self.ublox_sim_boot()
+        texts = self.ublox_statustexts()
+        self.ublox_check_configured(texts)
+        self.ublox_check_gnss_report(texts, {"GPS": 1, "SBAS": 0, "GAL": 1, "BDS": 1, "QZSS": 1, "GLO": 1})
+        if (self.ublox_sim_x20_saved_value("CFG-SIGNAL-QZSS_ENA") != 1 or
+                self.ublox_sim_x20_saved_value("CFG-SIGNAL-SBAS_ENA") != 0):
+            raise NotAchievedException("GNSS configuration not saved")
+
+        self.start_subtest("Constellations the receiver rejects don't stop its configuration")
+        self.ublox_sim_reset_saved_config()
+        # the X20 can't use QZSS without GPS
+        self.set_parameter("GPS1_GNSS_MODE", GNSS_GAL | GNSS_QZSS)
+        self.ublox_sim_boot()
+        texts = self.ublox_statustexts()
+        self.ublox_check_configured(texts)
+        if "GPS 1: u-blox rejected GNSS mode %u" % (GNSS_GAL | GNSS_QZSS) not in texts:
+            raise NotAchievedException("No warning that the GNSS mode was rejected")
+        self.ublox_check_gnss_report(texts, factory)
+        for name in "CFG-SIGNAL-GPS_ENA", "CFG-SIGNAL-QZSS_ENA":
+            if self.ublox_sim_x20_saved_value(name) is not None:
+                raise NotAchievedException("Rejected GNSS configuration saved (%s)" % name)
+        # a mode given up on is tried again once another mode has been set
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("GPS1_GNSS_MODE", 0)
+        self.wait_statustext("GPS 1: u-blox configured", check_context=True, timeout=30)
+        self.set_parameter("GPS1_GNSS_MODE", GNSS_GAL | GNSS_QZSS)
+        self.wait_statustext("GPS 1: updating GNSS mode", check_context=True, timeout=30)
+        self.wait_statustext("GPS 1: u-blox rejected GNSS mode %u" % (GNSS_GAL | GNSS_QZSS), check_context=True, timeout=30)
+
+        self.start_subtest("A change of GPS1_GNSS_MODE is applied without a reboot")
+        self.ublox_sim_reset_saved_config()
+        self.set_parameter("GPS1_GNSS_MODE", 0)
+        self.ublox_sim_boot()
+        self.ublox_check_configured(self.ublox_statustexts())
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("GPS1_GNSS_MODE", GNSS_GPS | GNSS_GAL | GNSS_BDS | GNSS_GLO)
+        self.wait_statustext("GPS 1: u-blox configured", check_context=True, timeout=30)
+        self.ublox_check_gnss_report(self.ublox_statustexts(), {"GPS": 1, "SBAS": 0, "GAL": 1, "BDS": 1, "QZSS": 0, "GLO": 1})
 
         self.context_pop()
         self.ublox_sim_reset_saved_config()
@@ -24017,6 +24144,7 @@ return update, 1000
             self.GPSFixTypes,
             self.UBloxNoSaveEveryBoot,
             self.UBloxNavSolInSavedConfig,
+            self.UBloxX20GNSSMode,
             self.AirModeLanding,
             self.TestLocalHomePosition,
             self.TestGripperMission,
