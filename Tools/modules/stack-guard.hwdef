@@ -1,0 +1,3 @@
+# Destructive stack-fault tests: H7 bench/emulator only.
+define AP_MODULE_ENABLED 1
+define HAL_STACK_GUARD_ENABLED 1
