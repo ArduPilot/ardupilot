@@ -37,6 +37,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_REBOOT_MASS_STORAGE_ENABLED', r'ChibiOS::usb_msd_run',),
             ('AP_USB_DEBUG_ENABLED', r'ChibiOS::usb_debug_poll\b',),
             ('AP_USB_DEBUG_STARTUP_WAIT_ENABLED', r'ChibiOS::usb_debug_startup_wait\b',),
+            ('HAL_STACK_GUARD_ENABLED', r'\bap_stack_guard_recover\b',),
             ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
             ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
 
@@ -245,7 +246,10 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_AHRS_POSITION_RESET_ENABLED', r'AP_AHRS::handle_external_position_estimate'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
-            ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
+            ('AP_SCRIPTING_LUA_ENABLED', r'AP_Scripting::init',),
+            ('AP_MODULE_ENABLED', r'AP_Module::Runtime::init',),
+            # The shared-state entry points also exist as disabled stubs.
+            ('AP_MODULE_SHARED_STATE_ENABLED', r'AP_Module::blocks\b',),
             ('AP_SCRIPTING_SERIALDEVICE_ENABLED', r'AP_Scripting_SerialDevice::init',),
 
             ('AP_NOTIFY_TONEALARM_ENABLED', r'AP_ToneAlarm::init'),
