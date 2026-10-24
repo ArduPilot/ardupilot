@@ -28,7 +28,6 @@
 #include "AP_AHRS_View.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-#include <AP_Module/AP_Module.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
@@ -635,11 +634,6 @@ void AP_AHRS::update(bool skip_ins_update)
 
     // update published state, including copying state from the active backend:
     update_state();
-
-#if AP_MODULE_SUPPORTED
-    // call AHRS_update hook if any
-    AP_Module::call_hook_AHRS_update(*this);
-#endif
 
     // push gyros if optical flow present
     if (hal.opticalflow) {
