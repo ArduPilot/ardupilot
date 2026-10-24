@@ -339,7 +339,7 @@ define AP_LTM_TELEM_ENABLED 0
 define HAL_BUTTON_ENABLED 0
 
 // disable scripting on SkyViper (should we enable this?)
-define AP_SCRIPTING_ENABLED 0
+define AP_SCRIPTING_LUA_ENABLED 0
 
 // SkyViper does not have a second battery....
 define AP_BATT_MONITOR_MAX_INSTANCES 1
