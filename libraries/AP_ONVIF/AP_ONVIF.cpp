@@ -37,7 +37,12 @@ const char *wsse_PasswordDigestURI = "http://docs.oasis-open.org/wss/2004/01/oas
 const char *wsse_Base64BinaryURI = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary";
 
 AP_ONVIF *AP_ONVIF::_singleton;
-static AP_ONVIF onvif;
+// Module workers can still use the client while process exit runs destructors.
+static union OnvifStorage {
+    AP_ONVIF client;
+    OnvifStorage() : client() {}
+    ~OnvifStorage() {}
+} onvif_storage;
 
 #define DEVICE_ENDPOINT_LOC "/onvif/device_service"
 #define MEDIA_ENDPOINT_LOC  "/onvif/media_service"
@@ -54,6 +59,7 @@ AP_ONVIF::AP_ONVIF()
 // Start ONVIF client with username, password and service host url
 bool AP_ONVIF::start(const char *user, const char *pass, const char *hostname)
 {
+    WITH_SEMAPHORE(_sem);
     if (!initialised) {
         soap = soap_new1(SOAP_XML_CANONICAL | SOAP_C_UTFSTRING);
         if (soap == nullptr) {
@@ -457,6 +463,7 @@ bool AP_ONVIF::set_credentials()
 // between limits
 bool AP_ONVIF::set_absolutemove(float x, float y, float z)
 {
+    WITH_SEMAPHORE(_sem);
     _tptz__AbsoluteMove AbsoluteMove;
     _tptz__AbsoluteMoveResponse AbsoluteMoveResponse;
     AbsoluteMove.Position = soap_new_tt__PTZVector(soap);
