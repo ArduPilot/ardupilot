@@ -1461,7 +1461,6 @@ void UARTDriver::configure_parity(uint8_t v)
         // not possible
         return;
     }
-    UARTDriver::parity = v;
 #if HAL_USE_SERIAL == TRUE
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
@@ -1515,6 +1514,11 @@ void UARTDriver::configure_parity(uint8_t v)
     }
 #endif
 #endif // HAL_USE_SERIAL
+
+    // record the parity only once the port has it, so a thread that
+    // checks get_parity() while another is changing it sees the old value
+    // and checks again, rather than the new value before it is applied
+    UARTDriver::parity = v;
 }
 
 /*
