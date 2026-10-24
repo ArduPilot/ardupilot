@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #if ENABLE_ONVIF
+#include <AP_HAL/Semaphores.h>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wsuggest-override"
@@ -44,15 +45,16 @@ public:
     bool set_absolutemove(float pan, float tilt, float zoom);
 
     // returns pan/tilt command max limit
-    Vector2f get_pan_tilt_limit_max() const { return pan_tilt_limit_max; }
+    Vector2f get_pan_tilt_limit_max() const { WITH_SEMAPHORE(_sem); return pan_tilt_limit_max; }
 
     // returns pan/tilt command min limit
-    Vector2f get_pan_tilt_limit_min() const { return pan_tilt_limit_min; }
+    Vector2f get_pan_tilt_limit_min() const { WITH_SEMAPHORE(_sem); return pan_tilt_limit_min; }
 
     // get singleton instance
     static AP_ONVIF *get_singleton() { return _singleton; }
 
 private:
+    mutable HAL_Semaphore _sem;
 
     // prepares security header of SOAP message going to be sent immmediately after
     bool set_credentials();
