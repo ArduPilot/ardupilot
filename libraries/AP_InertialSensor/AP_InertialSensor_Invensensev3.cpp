@@ -525,6 +525,12 @@ void AP_InertialSensor_Invensensev3::accumulate()
     // nothing to do
 }
 
+// the sensor marks an invalid FIFO sample with -32768 (0x8000) on an axis
+static inline bool fifo_sample_invalid(int16_t x, int16_t y, int16_t z)
+{
+    return x == INT16_MIN || y == INT16_MIN || z == INT16_MIN;
+}
+
 bool AP_InertialSensor_Invensensev3::accumulate_samples(const FIFOData *data, uint8_t n_samples)
 {
 #if INV3_ENABLE_FIFO_LOGGING
@@ -555,11 +561,18 @@ bool AP_InertialSensor_Invensensev3::accumulate_samples(const FIFOData *data, ui
         const float temp = d.temperature * temp_sensitivity + temp_zero;
 
         // these four calls are about 40us
-        _rotate_and_correct_accel(accel_instance, accel);
-        _rotate_and_correct_gyro(gyro_instance, gyro);
-
-        _notify_new_accel_raw_sample(accel_instance, accel, 0);
-        _notify_new_gyro_raw_sample(gyro_instance, gyro);
+        if (fifo_sample_invalid(d.accel[0], d.accel[1], d.accel[2])) {
+            _inc_accel_error_count(accel_instance);
+        } else {
+            _rotate_and_correct_accel(accel_instance, accel);
+            _notify_new_accel_raw_sample(accel_instance, accel, 0);
+        }
+        if (fifo_sample_invalid(d.gyro[0], d.gyro[1], d.gyro[2])) {
+            _inc_gyro_error_count(gyro_instance);
+        } else {
+            _rotate_and_correct_gyro(gyro_instance, gyro);
+            _notify_new_gyro_raw_sample(gyro_instance, gyro);
+        }
 
         temp_filtered = temp_filter.apply(temp);
     }
@@ -583,6 +596,14 @@ static inline float uint20_to_float(uint8_t msb, uint8_t bits, uint8_t lsb)
     }
 
     return float(value32bit);
+}
+
+// in hi-res frames the invalid marker is 0x8000 in the upper 16 bits of an axis
+static inline bool fifo_highres_sample_invalid(const uint8_t v[6])
+{
+    return (v[1] == 0x80 && v[0] == 0) ||
+           (v[3] == 0x80 && v[2] == 0) ||
+           (v[5] == 0x80 && v[4] == 0);
 }
 
 
@@ -617,11 +638,18 @@ bool AP_InertialSensor_Invensensev3::accumulate_highres_samples(const FIFODataHi
         const float temp = d.temperature * temp_sensitivity + temp_zero;
 
         // these four calls are about 40us
-        _rotate_and_correct_accel(accel_instance, accel);
-        _rotate_and_correct_gyro(gyro_instance, gyro);
-
-        _notify_new_accel_raw_sample(accel_instance, accel, 0);
-        _notify_new_gyro_raw_sample(gyro_instance, gyro);
+        if (fifo_highres_sample_invalid(d.accel)) {
+            _inc_accel_error_count(accel_instance);
+        } else {
+            _rotate_and_correct_accel(accel_instance, accel);
+            _notify_new_accel_raw_sample(accel_instance, accel, 0);
+        }
+        if (fifo_highres_sample_invalid(d.gyro)) {
+            _inc_gyro_error_count(gyro_instance);
+        } else {
+            _rotate_and_correct_gyro(gyro_instance, gyro);
+            _notify_new_gyro_raw_sample(gyro_instance, gyro);
+        }
 
         temp_filtered = temp_filter.apply(temp);
     }
