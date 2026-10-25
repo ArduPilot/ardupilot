@@ -1,0 +1,181 @@
+name: test native modules
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'libraries/**'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'Tools/modules/**'
+      - 'Tools/debug/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/scripts/build_options.py'
+      - 'wscript'
+      - '.github/workflows/test_native_modules.yml'
+      - '!**/*.md'
+  pull_request:
+    paths:
+      - 'libraries/**'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'Tools/modules/**'
+      - 'Tools/debug/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/scripts/build_options.py'
+      - 'wscript'
+      - '.github/workflows/test_native_modules.yml'
+      - '!**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:26.04
+      options: --cap-add=SYS_PTRACE --security-opt seccomp=unconfined
+    timeout-minutes: 120
+    env:
+      CC: clang-21
+      CXX: clang++-21
+      LLD: ld.lld-21
+      LLVM_LLC: llc-21
+      ARM_FC: arm-linux-gnueabihf-gfortran
+    steps:
+      - name: Install build and test dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
+            ca-certificates git build-essential g++-14 gnat-14 gprbuild \
+            clang-21 lld-21 llvm-21-dev libclang-21-dev \
+            gcc-arm-none-eabi libnewlib-arm-none-eabi gfortran \
+            gfortran-arm-linux-gnueabihf gnat-14-arm-linux-gnueabihf \
+            python3-venv python3-dev python3-pyelftools gdb mtools
+          python3 -m venv /tmp/native-module-python
+          echo /tmp/native-module-python/bin >> "$GITHUB_PATH"
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Select paths inside the container workspace
+        run: |
+          {
+            echo "ADA=$GITHUB_WORKSPACE/.cache/gnat-llvm/llvm-gnat1"
+            echo "AP_MODULE_SITL_BINARY=$GITHUB_WORKSPACE/build/sitl/bin/arduplane"
+            echo "AP_MODULE_COPTER_BINARY=$GITHUB_WORKSPACE/build/sitl/bin/arducopter"
+            # The reference runs the builtin Lua interpreter with MOD_ENABLE=0.
+            echo "AP_MODULE_LUA_REFERENCE_BINARY=$GITHUB_WORKSPACE/build/sitl/bin/arduplane"
+          } >> "$GITHUB_ENV"
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install pytest pyelftools numpy pexpect empy==3.3.4
+          python3 -m pip install ./modules/mavlink/pymavlink
+      - name: Install Rust and its ARM target
+        shell: bash
+        run: |
+          python3 Tools/modules/rust/install_toolchain.py --directory "$RUNNER_TEMP/ap-rust"
+          CARGO_HOME="$RUNNER_TEMP/ap-rust/cargo" RUSTUP_HOME="$RUNNER_TEMP/ap-rust/rustup" \
+            "$RUNNER_TEMP/ap-rust/cargo/bin/rustup" target add \
+              --toolchain "$(cat Tools/modules/rust/rust-toolchain-version)" thumbv7em-none-eabihf
+      - name: Cache the GNAT LLVM frontend
+        id: gnat-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: .cache/gnat-llvm/llvm-gnat1
+          # The three source revisions below determine the frontend binary.
+          key: gnat-llvm-ubuntu26-llvm21-0d52efe3e167cde8103309cfb02622e401e0f4b6-06933d37bf2eb1b363dfe3cff9a48fe0cc3e4e20-5827af4ea1ea11036b336e1029b4a25ca670b594
+      - name: Check out GNAT LLVM
+        if: steps.gnat-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: AdaCore/gnat-llvm
+          ref: 0d52efe3e167cde8103309cfb02622e401e0f4b6
+          path: .cache/gnat-llvm-source
+          persist-credentials: false
+      - name: Check out LLVM Ada bindings
+        if: steps.gnat-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: AdaCore/llvm-bindings
+          ref: 06933d37bf2eb1b363dfe3cff9a48fe0cc3e4e20
+          path: .cache/gnat-llvm-source/llvm-bindings
+          persist-credentials: false
+      - name: Check out the GNAT frontend sources
+        if: steps.gnat-cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: gcc-mirror/gcc
+          ref: 5827af4ea1ea11036b336e1029b4a25ca670b594
+          path: .cache/gnat-frontend-source
+          sparse-checkout: gcc/ada
+          persist-credentials: false
+      - name: Build GNAT LLVM without a target runtime
+        if: steps.gnat-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          export PATH="/usr/lib/llvm-21/bin:$PATH"
+          export LD_LIBRARY_PATH="/usr/lib/llvm-21/lib:${LD_LIBRARY_PATH:-}"
+          ln -s "$GITHUB_WORKSPACE/.cache/gnat-frontend-source/gcc/ada" \
+            .cache/gnat-llvm-source/llvm-interface/gnat_src
+          cd .cache/gnat-llvm-source/llvm-interface
+          make setup LLVM_CONFIG=llvm-config-21 GNATMAKE=gnatmake-14
+          read -r -a llvm_link_flags <<< "$(llvm-config-21 --libs all --ldflags --system-libs | tr '\n' ' ')"
+          read -r -a llvm_compile_flags <<< "$(llvm-config-21 --cxxflags)"
+          gprbuild -XLLVM_Version=21 -XBuild=Production -Pgnat_llvm -j2 \
+            -largs "${llvm_link_flags[@]}" -rdynamic -cargs:c++ "${llvm_compile_flags[@]}" -I.
+          mkdir -p "$(dirname -- "$ADA")"
+          cp bin/llvm-gnat1 "$ADA"
+      - name: Save the frontend before running regression tests
+        if: steps.gnat-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: .cache/gnat-llvm/llvm-gnat1
+          key: ${{ steps.gnat-cache.outputs.cache-primary-key }}
+      - name: Select Ada runtime source specifications
+        shell: bash
+        run: |
+          test -x "$ADA"
+          native_specs=$(gcc-14 -print-file-name=adainclude)
+          arm_specs=$(arm-linux-gnueabihf-gcc-14 -print-file-name=adainclude)
+          test -d "$native_specs"
+          test -d "$arm_specs"
+          command -v "$CC" "$CXX" "$LLD" "$LLVM_LLC" "$ARM_FC"
+          {
+            echo "ADA_NATIVE_INCLUDE_PATH=$native_specs"
+            echo "ADA_INCLUDE_PATH=$native_specs"
+            echo "ADA_ARM_INCLUDE_PATH=$arm_specs"
+          } >> "$GITHUB_ENV"
+      - name: Build module-enabled Plane and Copter SITL
+        shell: bash
+        run: |
+          export CC=gcc-14 CXX=g++-14
+          ./waf configure --board sitl --enable-modules --debug
+          ./waf plane copter -j2
+          test -x "$AP_MODULE_SITL_BINARY"
+          test -x "$AP_MODULE_COPTER_BINARY"
+      - name: Run generator, runtime and language regression suites
+        shell: bash
+        run: |
+          mkdir -p build/module-test-results
+          result=0
+          for suite in libraries/AP_Module/generator Tools/modules/tests \
+              Tools/modules/rust/tests Tools/modules/cpp/tests Tools/modules/fortran/tests Tools/modules/ada/tests \
+              Tools/debug/tests; do
+            label=${suite//\//-}
+            python3 -m pytest -q -rs "$suite" --junitxml="build/module-test-results/$label.xml" || result=1
+          done
+          exit "$result"
+      - name: Archive test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-module-test-results
+          path: build/module-test-results/*.xml
+          retention-days: 7
