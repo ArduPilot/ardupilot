@@ -148,7 +148,7 @@ AP_GPS_NOVA::parse(uint8_t temp)
             }
             break;
         case nova_msg_parser::DATA:
-            if (nova_msg.read >= sizeof(nova_msg.data)) {
+            if (nova_msg.read >= nova_msg.header.nova_headeru.headerlength + sizeof(nova_msg.data)) {
                 Debug("parse data overflow length=%u msglength=%u\n", (unsigned)nova_msg.read,nova_msg.header.nova_headeru.messagelength);
                 nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
                 break;
