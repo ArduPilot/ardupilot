@@ -3215,6 +3215,13 @@ class TestSuite(abc.ABC):
 
         ret = set()
 
+        # NPTR is emitted with WriteCritical from H7-only memprotect-trace
+        # code, so our C++ parsing never finds it, but it is documented and
+        # must stay documented
+        ret.update([
+            "NPTR",
+        ])
+
         # messages not expected to be on particular vehicles.  Nothing
         # needs fixing below this point, unless you can come up with a
         # better way to avoid this list!
@@ -3364,6 +3371,11 @@ class TestSuite(abc.ABC):
         for name in sorted(docco_ids):
             if name not in code_ids and name not in whitelist:
                 missing.append(name)
+                continue
+            if name not in code_ids:
+                # whitelisted and not parsed out of the C++ (e.g. a
+                # WriteCritical message), so there are no code labels to
+                # check the documentation against
                 continue
             for label in docco_ids[name]["labels"]:
                 if label not in code_ids[name]["labels"].split(","):
