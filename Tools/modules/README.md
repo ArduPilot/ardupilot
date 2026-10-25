@@ -9,6 +9,12 @@ The [loadable C Lua applet](../../libraries/AP_Module/applets/lua/README.md)
 uses `lua/build.py` to run selected existing Lua scripts in modules-only
 firmware on Cortex-M7 or x86-64 SITL.
 
+Build the H7 aerobatics, Lua and sine demonstration images together with
+`Tools/modules/build_demo.sh`. It can be invoked from any directory and writes to
+`build/modules/demo/`; set `AP_MODULE_DEMO_OUTPUT_DIR` to choose another output
+directory. Toolchain environment overrides are the same as for the individual
+builders.
+
 ## Prerequisites
 
 Install Python with `pyelftools`. Rust builds require Rust **1.98.1 or newer**. The minimum compiler
