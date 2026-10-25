@@ -67,10 +67,15 @@ class ScriptingCANSensor { public:
     ScriptingCANBuffer *add_buffer(uint32_t) { auto *buffer=new ScriptingCANBuffer(*this);
         std::lock_guard<std::mutex> lock(mutex); buffers.push_back(buffer); return buffer; }
     bool remove_buffer(ScriptingCANBuffer *buffer) { std::lock_guard<std::mutex> lock(mutex);
-        for (auto it=buffers.begin(); it != buffers.end(); ++it) if (*it == buffer) {
-            buffers.erase(it); delete buffer; return true; } return false; }
+        for (auto it=buffers.begin(); it != buffers.end(); ++it) {
+            if (*it == buffer) {
+                buffers.erase(it); delete buffer; return true;
+            }
+        }
+        return false;
+    }
     void inject(const AP_HAL::CANFrame &frame) { std::lock_guard<std::mutex> lock(mutex);
-        for (auto *buffer: buffers) buffer->inject(frame); }
+        for (auto *buffer: buffers) { buffer->inject(frame); } }
     bool ready=true; std::mutex mutex; std::vector<ScriptingCANBuffer*> buffers;
     AP_HAL::CANFrame last{}; uint32_t last_timeout=0;
 };
@@ -170,8 +175,10 @@ extern "C" uint32_t last_timeout(unsigned index) {
     lib.cleanup.argtypes = [ctypes.c_void_p]
     lib.set_next_token.argtypes = [ctypes.c_uint32]
     lib.inject.argtypes = [ctypes.c_uint, ctypes.c_uint32, ctypes.c_uint8, ctypes.c_bool]
-    for name in ('alive', 'last_id', 'last_dlc', 'last_data', 'last_fd', 'last_timeout'):
-        getattr(lib, name).restype = ctypes.c_uint32
+    for name, restype in (('alive', ctypes.c_uint), ('last_id', ctypes.c_uint32),
+                          ('last_dlc', ctypes.c_uint8), ('last_data', ctypes.c_uint8),
+                          ('last_fd', ctypes.c_bool), ('last_timeout', ctypes.c_uint32)):
+        getattr(lib, name).restype = restype
     return lib, request.param
 
 
