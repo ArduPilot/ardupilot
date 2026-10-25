@@ -691,10 +691,11 @@ void GPS::update_hpos_err(uint32_t now_ms)
         return;
     }
     if (last_hpos_err_ms == 0) {
-        // switched on: seed this error's generator (a fixed value per instance), then start from the stationary distribution
+        // switched on: seed this error's generator (SIM_RAND_SEED, folded with the instance; a fixed value
+        // per instance when the seed is 0), then start from the stationary distribution
         // (position sd, rate sd/tc, independent), so a short run sees the full error from its first fix rather
         // than growing into it over a few time constants
-        hpos_rng_state = 0x9E3779B9u * (uint32_t)(instance + 1);
+        hpos_rng_state = (uint32_t)_sitl->rand_seed.get() * 2654435761u ^ 0x9E3779B9u * (uint32_t)(instance + 1);
         if (hpos_rng_state == 0) {
             hpos_rng_state = 1;
         }

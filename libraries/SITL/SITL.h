@@ -268,6 +268,8 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odometry data
+    int32_t rand_seed_applied;   // the last seed applied (0 = none yet; zeroed with the object)
+    AP_Int32 rand_seed;   // SIM_RAND_SEED: seed for the simulation's random numbers (0 = the library's default sequence)
     AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
     AP_Float flow_noise; // optical flow measurement noise (rad/sec)
     AP_Int8  baro_count; // number of simulated baros to create
@@ -565,6 +567,10 @@ public:
     static void convert_body_frame(double rollDeg, double pitchDeg,
                                    double rollRate, double pitchRate, double yawRate,
                                    double *p, double *q, double *r);
+
+    // apply SIM_RAND_SEED to the C library's random number generators once per distinct value (set at
+    // start, or later over MAVLink before the noise that should be reproducible begins); 0 leaves them alone
+    void apply_rand_seed(void);
 
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
