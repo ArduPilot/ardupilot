@@ -108,19 +108,22 @@ def test_periph_module_selection(rust, rust_first, periph):
 
 
 @pytest.mark.parametrize('flags,enabled', [
-    ([], 1), (['-m32'], 0), (['-D__CYGWIN__'], 0), (['-m32', '-DAP_MODULE_ENABLED=1'], 1),
+    ([], 1), (['-m32'], 0), (['-U__x86_64__', '-D__aarch64__'], 0),
+    (['-U__x86_64__', '-D__arm__'], 0), (['-D__CYGWIN__'], 0),
+    (['-m32', '-DAP_MODULE_ENABLED=1'], 1), (['-DAP_MODULE_ENABLED=0'], 0),
 ])
-def test_sitl_host_runtime_defaults(tmp_path, flags, enabled):
+@pytest.mark.parametrize('board,number', [('sitl', 3), ('linux', 7)])
+def test_host_runtime_defaults(tmp_path, flags, enabled, board, number):
     # Only replace the board header, so the platform selection uses the real
     # HAL defaults without requiring a 32-bit host C++ library installation.
-    board = tmp_path / 'AP_HAL/board/sitl.h'
-    board.parent.mkdir(parents=True)
-    board.write_text('#define HAL_PROGRAM_SIZE_LIMIT_KB 4096\n'
-                     '#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE\n')
+    header = tmp_path / f'AP_HAL/board/{board}.h'
+    header.parent.mkdir(parents=True)
+    header.write_text('#define HAL_PROGRAM_SIZE_LIMIT_KB 4096\n'
+                      '#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE\n')
     source = '#include <AP_HAL/AP_HAL_Boards.h>\n'
     for name in ('AP_MODULE_ENABLED', 'HAL_OWNED_THREADS_ENABLED', 'HAL_EXECUTABLE_MEMORY_ENABLED'):
         source += f'static_assert(bool({name}) == bool({enabled}), "{name}");\n'
     result = subprocess.run(['g++', '-x', 'c++', '-std=c++17', '-fsyntax-only', '-nostdinc++',
-                             '-I', str(tmp_path), '-I', str(ROOT / 'libraries'), '-DCONFIG_HAL_BOARD=3',
+                             '-I', str(tmp_path), '-I', str(ROOT / 'libraries'), f'-DCONFIG_HAL_BOARD={number}',
                              *flags, '-'], input=source, text=True, capture_output=True)
     assert result.returncode == 0, result.stderr
