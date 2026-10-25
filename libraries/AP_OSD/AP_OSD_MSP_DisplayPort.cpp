@@ -173,8 +173,10 @@ void AP_OSD_MSP_DisplayPort::flush(void)
     // grab the screen and force a redraw
     _displayport->msp_displayport_grab();
     _displayport->msp_displayport_draw_screen();
+}
 
-    // ok done processing displayport data
+void AP_OSD_MSP_DisplayPort::osd_thread_update()
+{
     // let's process incoming MSP frames (and reply if needed)
     _displayport->process_incoming_data();
     // push any outgoing telemetry frames
