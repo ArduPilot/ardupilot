@@ -122,7 +122,10 @@ jobs:
         if: steps.gnat-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          export PATH="/usr/lib/llvm-21/bin:$PATH"
+          # gprbind looks for an unversioned binder even with versioned GNAT.
+          mkdir -p "$RUNNER_TEMP/gnat-bootstrap"
+          ln -sf "$(command -v gnatbind-14)" "$RUNNER_TEMP/gnat-bootstrap/gnatbind"
+          export PATH="$RUNNER_TEMP/gnat-bootstrap:/usr/lib/llvm-21/bin:$PATH"
           export LD_LIBRARY_PATH="/usr/lib/llvm-21/lib:${LD_LIBRARY_PATH:-}"
           ln -s "$GITHUB_WORKSPACE/.cache/gnat-frontend-source/gcc/ada" \
             .cache/gnat-llvm-source/llvm-interface/gnat_src
