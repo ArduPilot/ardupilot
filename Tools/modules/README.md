@@ -67,6 +67,12 @@ DebugMonitor and USB/IP patches described in `Tools/renode/patches/README.md`.
 Both integration suites require GDB Python dependencies and the matching Rust
 toolchain; absent optional firmware/emulator fixtures skip explicitly.
 
+The native-module CI workflow builds module-enabled Plane and Copter SITL and
+runs the generator, common runtime and per-language regression suites. It installs
+Rust, Clang/LLD, native and ARM GNU Fortran, and a cached GNAT LLVM frontend built
+from pinned sources. Tests requiring optional firmware, emulator or ONVIF-enabled
+SITL fixtures report explicit skips when those fixtures are unavailable.
+
 ## Build and inspect
 
 Run from the repository root:
