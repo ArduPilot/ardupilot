@@ -43,6 +43,7 @@ def primitive_results(tmp_path_factory):
                         tmp_path / 'primitives.apmod', 'x86_64-unknown-linux-gnu', 8192, heap_size=32768)
     vehicle = Vehicle(tmp_path / 'vehicle', {'primitives.apmod': image.read_bytes()}, {
         'SCR_ENABLE': 1, 'SCR_HEAP_SIZE': 300000, 'SCR_VM_I_COUNT': 1000000,
+        'MOD_HEAP_MAX': 32768,
         'LOG_BACKEND_TYPE': 1, 'LOG_DISARMED': 1, 'LOG_FILE_DSRMROT': 0, 'LOG_FILE_BUFSIZE': 128,
     })
     scripts = vehicle.directory / 'scripts'
