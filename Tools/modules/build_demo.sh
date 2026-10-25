@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+output=${AP_MODULE_DEMO_OUTPUT_DIR:-"$repo/build/modules/demo"}
+mkdir -p -- "$output"
+output=$(cd -- "$output" && pwd)
+cd -- "$repo"
+
 APPLET=libraries/AP_Module/applets/aerobatics
 SINE=libraries/AP_Module/examples/sine
 TARGET=thumbv7em-none-eabihf
@@ -25,25 +31,25 @@ start_build()
     build_names+=("$name")
 }
 
-start_build "aerobatics rust" python3 Tools/modules/build.py "$APPLET/main.rs" aerobatics_rust_H7.apmod \
+start_build "aerobatics rust" python3 Tools/modules/build.py "$APPLET/main.rs" "$output/aerobatics_rust_H7.apmod" \
     --target "$TARGET" --cpu cortex-m7 --debug --opt-level 1 \
     --stack-size 16384 --heap-size 26000 "$@"
 
-start_build "aerobatics ada" python3 "$APPLET/ada/build_airshow.py" aerobatics_ada_H7.apmod \
+start_build "aerobatics ada" python3 "$APPLET/ada/build_airshow.py" "$output/aerobatics_ada_H7.apmod" \
     --target "$TARGET" --cpu cortex-m7 --debug \
     --stack-size 16384 --heap-size 4096 "$@"
 
-start_build "aerobatics f90" python3 "$APPLET/f90/build.py" aerobatics_f90_H7.apmod \
+start_build "aerobatics f90" python3 "$APPLET/f90/build.py" "$output/aerobatics_f90_H7.apmod" \
     --target "$TARGET" --cpu cortex-m7 --debug \
     --stack-size 16384 --heap-size 32768 "$@"
 
-start_build "lua" python3 Tools/modules/lua/build.py lua-h7.apmod \
+start_build "lua" python3 Tools/modules/lua/build.py "$output/lua-h7.apmod" \
     --target "$TARGET" --cpu cortex-m7 --debug \
     --stack-size 24576 --heap-size 131072 "$@"
 
 for source in rust/sine.rs f90/sine.f90 ada/sine.adb; do
     language=${source%%/*}
-    start_build "sine $language" python3 Tools/modules/build.py "$SINE/$source" "sine_${language}_H7.apmod" \
+    start_build "sine $language" python3 Tools/modules/build.py "$SINE/$source" "$output/sine_${language}_H7.apmod" \
         --target "$TARGET" --cpu cortex-m7 --debug \
         --stack-size 8192 --heap-size 4096 "$@"
 done
@@ -59,4 +65,4 @@ if (( build_status != 0 )); then
     exit "$build_status"
 fi
 
-ls -ltr -- *.apmod
+ls -ltr -- "$output"/*.apmod
