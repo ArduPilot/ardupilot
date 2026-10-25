@@ -369,6 +369,8 @@ public:
         AP_Int8 fix_type; // GPS fix type
         AP_Float noise_horizontal; // horizontal noise radius in meters
         AP_Vector3f vel_glitch; // glitch offsets in NED velocity (m/s)
+        AP_Float hpos_err_sd; // standard deviation of the correlated horizontal position error, per axis (m)
+        AP_Float hpos_err_tc; // correlation time of that error (s)
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 

@@ -176,6 +176,22 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GLTV",       21, GPSParms, vel_glitch, 0),
 
+    // @Param: HPSD
+    // @DisplayName: GPS horizontal position error standard deviation
+    // @Description: Standard deviation, per axis, of a slowly varying horizontal position error added to the reported position (a second-order Gauss-Markov process: a random wander pulled back toward zero, with a continuous rate of change). The reported velocity carries the error's rate of change, so the added position and velocity errors stay consistent with each other (the model's assumption; a real receiver measures Doppler velocity apart from its code-phase position). A receiver datasheet's horizontal accuracy (CEP) divided by 1.18 is this value. 0 disables the error.
+    // @Units: m
+    // @Range: 0 20
+    // @User: Advanced
+    AP_GROUPINFO("HPSD",       22, GPSParms, hpos_err_sd, 0),
+
+    // @Param: HPTC
+    // @DisplayName: GPS horizontal position error correlation time
+    // @Description: Correlation time of the horizontal position error set by HPSD: the timescale of the wander (the model's inverse damping rate; the error decorrelates over about twice this). The error's rate of change, added to the reported velocity, has a standard deviation of HPSD divided by this time. Multipath and atmospheric errors on a real receiver change over tens of seconds to minutes. 0 disables the error. Adds to HNSE and GLTV if those are set.
+    // @Units: s
+    // @Range: 5 600
+    // @User: Advanced
+    AP_GROUPINFO("HPTC",       23, GPSParms, hpos_err_tc, 60),
+
     AP_GROUPEND
 };
 }
@@ -609,11 +625,99 @@ void GPS::update()
     d.speedE += vel_glitch.y;
     d.speedD += vel_glitch.z;
 
+    // the correlated horizontal position error (HPSD, HPTC), carried by position and velocity alike
+    update_hpos_err(now_ms);
+    if (!hpos_err_m.is_zero()) {
+        d.latitude += degrees(hpos_err_m.x * earth_rad_inv);
+        d.longitude += degrees(hpos_err_m.y * earth_rad_inv / cosine_of_lat);
+        d.speedN += hpos_err_rate_mps.x;
+        d.speedE += hpos_err_rate_mps.y;
+    }
+
     if (params.jam == 1) {
         simulate_jamming(d);
     }
 
     backend->publish(&d);
+}
+
+/*
+  the horizontal position error's own random numbers: an xorshift32 generator per GPS instance, seeded when the
+  error is switched on, so the error's realisation does not depend on what else in the simulation draws from the
+  C library's generator between start and activation (sensor noise, message timing). A normally distributed value
+  (mean 0, standard deviation 1) by the Box-Muller transform.
+*/
+float GPS::hpos_rand_normal(void)
+{
+    float x, y, r;
+    do {
+        x = hpos_rng_next() * (2.0f / 4294967296.0f) - 1.0f;
+        y = hpos_rng_next() * (2.0f / 4294967296.0f) - 1.0f;
+        r = x*x + y*y;
+    } while (is_zero(r) || r > 1.0f);
+    return x * sqrtf(-2.0f * logf(r) / r);
+}
+
+uint32_t GPS::hpos_rng_next(void)
+{
+    uint32_t s = hpos_rng_state;
+    s ^= s << 13;
+    s ^= s >> 17;
+    s ^= s << 5;
+    hpos_rng_state = s;
+    return s;
+}
+
+/*
+  advance the correlated horizontal position error (HPSD, HPTC): a critically damped second-order Gauss-Markov
+  process per axis, err'' = -2*b*err' - b*b*err + w, b = 1/HPTC, with the white noise w scaled so that the
+  stationary standard deviation of err is HPSD. The rate of change of the error is continuous, so it can be
+  reported as a velocity error; its stationary standard deviation is HPSD/HPTC. HPTC is the inverse damping
+  rate: the error's autocorrelation falls to 1/e over about 2.1 HPTC. One semi-implicit Euler step (rate, then
+  position) per GPS update: stable for dt up to HPTC/2; the stationary statistics are within a few percent of the
+  formulas for dt <= HPTC/25 (5 Hz and 5 s), drifting high at coarser steps. The error starts from its stationary
+  distribution when switched on. Carrying the error's rate of change in the reported velocity is the model's
+  assumption: it keeps the added position and velocity errors consistent with each other.
+*/
+void GPS::update_hpos_err(uint32_t now_ms)
+{
+    const auto &params = _sitl->gps[instance];
+    const float sd = params.hpos_err_sd;
+    const float tc = params.hpos_err_tc;
+    if (!is_positive(sd) || !is_positive(tc)) {
+        hpos_err_m.zero();
+        hpos_err_rate_mps.zero();
+        last_hpos_err_ms = 0;
+        return;
+    }
+    if (last_hpos_err_ms == 0) {
+        // switched on: seed this error's generator (a fixed value per instance), then start from the stationary distribution
+        // (position sd, rate sd/tc, independent), so a short run sees the full error from its first fix rather
+        // than growing into it over a few time constants
+        hpos_rng_state = 0x9E3779B9u * (uint32_t)(instance + 1);
+        if (hpos_rng_state == 0) {
+            hpos_rng_state = 1;
+        }
+        for (uint8_t i = 0; i < 2; i++) {
+            hpos_err_m[i] = sd * hpos_rand_normal();
+            hpos_err_rate_mps[i] = sd / tc * hpos_rand_normal();
+        }
+        last_hpos_err_ms = now_ms;
+        return;
+    }
+    const uint32_t elapsed_ms = now_ms - last_hpos_err_ms;   // unsigned: correct across the millis() wrap
+    if (elapsed_ms == 0) {
+        return;
+    }
+    const float dt = constrain_float(elapsed_ms * 0.001f, 0.001f, tc * 0.5f);
+    last_hpos_err_ms = now_ms;
+    const float b = 1.0f / tc;
+    // white noise spectral density S = 4 b^3 sd^2 gives a stationary position variance of sd^2
+    const float kick_sd = sqrtf(4.0f * b * b * b * sd * sd * dt);
+    for (uint8_t i = 0; i < 2; i++) {
+        hpos_err_rate_mps[i] += dt * (-2.0f * b * hpos_err_rate_mps[i] - b * b * hpos_err_m[i]) + kick_sd * hpos_rand_normal();
+        hpos_err_m[i] += dt * hpos_err_rate_mps[i];
+    }
 }
 
 void GPS_Backend::update_read()

@@ -170,6 +170,16 @@ private:
     Vector3f vel_glitch_pos_ofs;
     uint32_t last_vel_glitch_ms;
 
+    // the correlated horizontal position error (HPSD / HPTC): a second-order Gauss-Markov process in north and
+    // east, position error in metres and its rate of change in m/s, which the reported velocity carries too
+    Vector2f hpos_err_m;
+    Vector2f hpos_err_rate_mps;
+    uint32_t last_hpos_err_ms;
+    uint32_t hpos_rng_state;             // this error's own generator (xorshift32), seeded when switched on
+    void update_hpos_err(uint32_t now_ms);
+    float hpos_rand_normal(void);
+    uint32_t hpos_rng_next(void);
+
     bool _gps_has_basestation_position;
     GPS_Data _gps_basestation_data;
 
