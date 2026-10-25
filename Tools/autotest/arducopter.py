@@ -17195,6 +17195,172 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def GPSHorizontalPositionError(self):
+        '''SIM_GPSn_HPSD/HPTC: a correlated horizontal GPS position error carried by the reported velocity'''
+        hpsd = 3.0   # m, per-axis standard deviation of the error
+        hptc = 30    # s, its correlation time
+        hover_time = 120
+        earth_rad = 6378100.0  # RADIUS_OF_EARTH, the conversion SIM_GPS uses
+
+        def ne_offset(m, truth):
+            '''north/east offset (m) of a message's lat/lon (1e7 degrees) from a SIMSTATE position'''
+            dn = math.radians((m.lat - truth.lat) * 1e-7) * earth_rad
+            de = math.radians((m.lon - truth.lng) * 1e-7) * earth_rad * math.cos(math.radians(truth.lat * 1e-7))
+            return (dn, de)
+
+        def gps_error(m, truth):
+            '''north/east error (m) of a GPS_RAW_INT/GPS2_RAW position against a SIMSTATE position,
+            and the north/east velocity (m/s) it reports'''
+            speed = m.vel * 0.01
+            cog = math.radians(m.cog * 0.01) if m.cog != 65535 else 0.0
+            return ne_offset(m, truth) + (speed * math.cos(cog), speed * math.sin(cog))
+
+        self.context_push()
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_RAND_SEED": 17,   # a fixed realisation of the error
+            "WP_YAW_BEHAVIOR": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # part 1, on the ground: the published position of both instances carries the error, the published
+        # velocity carries its rate of change, and the error vanishes when HPSD is set back to 0
+        self.set_parameters({
+            "SIM_GPS1_HPTC": hptc,
+            "SIM_GPS2_HPTC": hptc,
+            "SIM_GPS1_HPSD": hpsd,
+            "SIM_GPS2_HPSD": hpsd,
+        })
+        truth = self.assert_receive_message('SIMSTATE')  # the vehicle is stationary; one truth sample
+        msg_names = ['GPS_RAW_INT', 'GPS2_RAW']
+        for name in msg_names:
+            self.set_message_rate_hz(name, 10)
+        samples = {name: [] for name in msg_names}  # (time_usec, err_n, err_e, vel_n, vel_e)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < hover_time:
+            m = self.assert_receive_message(msg_names, timeout=5)
+            s = samples[m.get_type()]
+            if len(s) and s[-1][0] == m.time_usec:
+                continue  # the same fix streamed again
+            s.append((m.time_usec,) + gps_error(m, truth))
+        for name in msg_names:
+            s = samples[name]
+            if len(s) < hover_time * 2:
+                raise NotAchievedException(f"{name}: only {len(s)} distinct fixes in {hover_time}s")
+            radial = [math.hypot(e[1], e[2]) for e in s]
+            self.progress(f"{name}: {len(s)} fixes, error min={min(radial):.2f}m max={max(radial):.2f}m")
+            if max(radial) < 0.5 * hpsd:
+                raise NotAchievedException(f"{name}: error never exceeded {0.5*hpsd}m (max {max(radial):.2f}m)")
+            if max(radial) > 4 * hpsd:
+                raise NotAchievedException(f"{name}: error exceeded {4*hpsd}m ({max(radial):.2f}m)")
+            # the change of the position error over each 10 s must be the integral of the reported velocity
+            # over the same 10 s (on the ground the true velocity is zero, so the reported velocity is the
+            # error's rate of change); a position bound alone would pass with no velocity coupling at all
+            window = 10e6  # us
+            worst = 0
+            largest_change = 0
+            i = 0
+            for j in range(1, len(s)):
+                while s[j][0] - s[i][0] > window:
+                    i += 1
+                if s[j][0] - s[i][0] < window * 0.9:
+                    continue
+                change = (s[j][1] - s[i][1], s[j][2] - s[i][2])
+                integral = [0.0, 0.0]
+                for k in range(i + 1, j + 1):
+                    dt = (s[k][0] - s[k-1][0]) * 1e-6
+                    integral[0] += s[k][3] * dt
+                    integral[1] += s[k][4] * dt
+                mismatch = math.hypot(change[0] - integral[0], change[1] - integral[1])
+                worst = max(worst, mismatch)
+                largest_change = max(largest_change, math.hypot(*change))
+            self.progress(f"{name}: largest 10s change {largest_change:.2f}m, "
+                          f"worst mismatch with the velocity integral {worst:.3f}m")
+            if largest_change < 0.3:
+                raise NotAchievedException(f"{name}: error did not move ({largest_change:.2f}m over 10s)")
+            if worst > 0.3:
+                raise NotAchievedException(f"{name}: position change and velocity integral disagree by {worst:.2f}m")
+
+        # switched off, the error must vanish within 3 s of the write (the write's round trip, then the
+        # next GPS update)
+        tstart = self.get_sim_time()
+        self.set_parameters({"SIM_GPS1_HPSD": 0, "SIM_GPS2_HPSD": 0})
+        self.drain_mav()
+        clean = set()
+        while len(clean) < len(msg_names):
+            m = self.assert_receive_message(msg_names, timeout=5)
+            if self.get_sim_time_cached() - tstart > 3:
+                raise NotAchievedException(f"error did not return to zero on {set(msg_names) - clean}")
+            err = gps_error(m, truth)
+            if math.hypot(err[0], err[1]) < 0.05 and math.hypot(err[2], err[3]) < 0.02:
+                clean.add(m.get_type())
+        self.progress("error back to zero on both instances")
+
+        # part 2, in LOITER: with the error off the EKF estimate stays on the true position; with it on, the
+        # estimate's offset from the true position tracks the GPS's offset from the true position (the
+        # injected error) as that error moves, while the EKF's GPS velocity innovations stay inside the gate
+        def hover_and_measure(expect_follow):
+            self.reboot_sitl()
+            hover_msgs = ['GLOBAL_POSITION_INT', 'GPS_RAW_INT', 'SIMSTATE', 'EKF_STATUS_REPORT']
+            for name in hover_msgs:
+                self.set_message_rate_hz(name, 10)
+            self.takeoff(10, mode='LOITER')
+            latest = {}
+            counts = {name: 0 for name in hover_msgs}
+            max_divergence = 0      # the estimate's distance from the true position
+            max_tracking_gap = 0    # the distance between the estimate's offset and the GPS's offset from truth
+            first_gps_err = None
+            gps_err_travel = 0      # how far the GPS's offset from truth moved from its first value
+            max_vel_ratio = 0  # EKF_STATUS_REPORT.velocity_variance is the square root of the innovation test ratio
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < hover_time:
+                m = self.assert_receive_message(hover_msgs, timeout=5)
+                latest[m.get_type()] = m
+                counts[m.get_type()] += 1
+                if m.get_type() == 'EKF_STATUS_REPORT':
+                    max_vel_ratio = max(max_vel_ratio, m.velocity_variance)
+                    continue
+                if 'SIMSTATE' not in latest or 'GLOBAL_POSITION_INT' not in latest or 'GPS_RAW_INT' not in latest:
+                    continue
+                ekf_err = ne_offset(latest['GLOBAL_POSITION_INT'], latest['SIMSTATE'])
+                gps_err = ne_offset(latest['GPS_RAW_INT'], latest['SIMSTATE'])
+                max_divergence = max(max_divergence, math.hypot(*ekf_err))
+                max_tracking_gap = max(max_tracking_gap, math.hypot(ekf_err[0] - gps_err[0], ekf_err[1] - gps_err[1]))
+                if first_gps_err is None:
+                    first_gps_err = gps_err
+                gps_err_travel = max(gps_err_travel,
+                                     math.hypot(gps_err[0] - first_gps_err[0], gps_err[1] - first_gps_err[1]))
+            self.change_mode('LAND')
+            self.wait_disarmed()
+            self.progress(f"HPSD {'on' if expect_follow else 'off'}: estimate at most {max_divergence:.2f}m from truth, "
+                          f"GPS error moved {gps_err_travel:.2f}m, estimate-minus-GPS gap at most {max_tracking_gap:.2f}m, "
+                          f"sqrt of the velocity innovation test ratio at most {max_vel_ratio:.3f} ({counts})")
+            for name in hover_msgs:
+                if counts[name] < hover_time * 5:
+                    raise NotAchievedException(f"only {counts[name]} {name} in {hover_time}s")
+            if max_vel_ratio > 0.5:
+                raise NotAchievedException(f"GPS velocity innovations too large ({max_vel_ratio:.2f})")
+            if not expect_follow:
+                if max_divergence > 0.5:
+                    raise NotAchievedException(f"estimate off truth with no error ({max_divergence:.2f}m)")
+                return
+            if max_divergence < 0.5 * hpsd:
+                raise NotAchievedException(f"estimate did not follow the error ({max_divergence:.2f}m)")
+            if gps_err_travel < 0.5 * hpsd:
+                raise NotAchievedException(f"the GPS error did not move ({gps_err_travel:.2f}m); the tracking check is void")
+            if max_tracking_gap > 0.5:
+                raise NotAchievedException(f"estimate did not track the GPS error (gap {max_tracking_gap:.2f}m)")
+
+        hover_and_measure(False)
+        self.set_parameters({"SIM_GPS1_HPSD": hpsd, "SIM_GPS2_HPSD": hpsd})
+        hover_and_measure(True)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def GPSBlendingAffinity(self):
         '''test blending when affinity in use'''
         # configure:
@@ -19707,6 +19873,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AP_Avoidance,
             self.GPSBlending,
             self.GPSWeightedBlending,
+            self.GPSHorizontalPositionError,
             self.DataFlashErase,
             self.WP_SPEED,
             self.DeadReckoningInWind,
