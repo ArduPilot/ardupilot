@@ -74,8 +74,14 @@ return update()
     assert formats['RLGP'][1:] == ('QfLB', 'TimeUS,Height,Lat,Who')
     for kind in ('RLG1', 'RLG2', 'RLGP'):
         assert len(messages[kind]) >= 100
-        times = [m.TimeUS for m in messages[kind]]
-        assert times == sorted(times) and times[0] > 0
+        # Lua and native writers sample TimeUS before enqueueing. Their records
+        # can interleave, but each writer's timestamps must remain monotonic.
+        times = defaultdict(list)
+        for message in messages[kind]:
+            writer = message.Who if kind == 'RLGP' else 0
+            times[writer].append(message.TimeUS)
+        for timestamps in times.values():
+            assert timestamps == sorted(timestamps) and timestamps[0] > 0
     for msg in messages['RLG1']:
         assert (msg.A, msg.B, msg.C, msg.D, msg.E, msg.F, msg.G, msg.H) == (
             -8, 250, -1234, 65000, -1234567, 4000000000, 0xfedcba9876543210, 1.25)
