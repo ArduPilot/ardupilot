@@ -284,6 +284,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_MAVLINK_MISSION_SET_CURRENT_ENABLED', r'GCS_MAVLINK::handle_mission_set_current\b'),
             ('AP_MAVLINK_MSG_SET_MODE_ENABLED', r'GCS_MAVLINK::handle_set_mode\b'),
             ('AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED', r'GCS_MAVLINK::handle_set_gps_global_origin\b'),
+            ('AP_GCS_MAVLINK1_ENABLED', r'GCS_MAVLINK::sending_mavlink1\b'),
             ('AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED', r'GCS_MAVLINK::send_rc_channels_raw\b'),
             ('AP_MAVLINK_FTP_ENABLED', 'GCS_FTP::init'),
             ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
