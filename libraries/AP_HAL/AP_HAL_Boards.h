@@ -408,7 +408,7 @@
 // Peripheral firmware does not link or initialize the native runtime.
 #if defined(HAL_BUILD_AP_PERIPH)
 #define AP_MODULE_ENABLED 0
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL && \
+#elif (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX) && \
     (!defined(__x86_64__) || defined(__ILP32__) || defined(__CYGWIN__))
 // Host modules use the SysV AMD64 calling convention.
 #define AP_MODULE_ENABLED 0
