@@ -225,16 +225,16 @@ void AC_AutoTune_Multi::test_run(AxisType test_axis, const float dir_sign)
         switch (test_axis) {
         case AxisType::ROLL:
             // override body-frame roll rate
-            attitude_control->input_rate_step_bf_roll_pitch_yaw_rads(dir_sign * cd_to_rad(target_rate + start_rate), 0.0f, 0.0f);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw_rads(cd_to_rad(dir_sign * target_rate + start_rate), 0.0f, 0.0f);
             break;
         case AxisType::PITCH:
             // override body-frame pitch rate
-            attitude_control->input_rate_step_bf_roll_pitch_yaw_rads(0.0f, dir_sign * cd_to_rad(target_rate + start_rate), 0.0f);
+            attitude_control->input_rate_step_bf_roll_pitch_yaw_rads(0.0f, cd_to_rad(dir_sign * target_rate + start_rate), 0.0f);
             break;
         case AxisType::YAW:
         case AxisType::YAW_D:
             // override body-frame yaw rate
-            attitude_control->input_rate_step_bf_roll_pitch_yaw_rads(0.0f, 0.0f, dir_sign * cd_to_rad(target_rate + start_rate));
+            attitude_control->input_rate_step_bf_roll_pitch_yaw_rads(0.0f, 0.0f, cd_to_rad(dir_sign * target_rate + start_rate));
             break;
         }
     }
