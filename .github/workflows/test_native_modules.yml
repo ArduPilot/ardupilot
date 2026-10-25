@@ -84,6 +84,8 @@ jobs:
           CARGO_HOME="$RUNNER_TEMP/ap-rust/cargo" RUSTUP_HOME="$RUNNER_TEMP/ap-rust/rustup" \
             "$RUNNER_TEMP/ap-rust/cargo/bin/rustup" target add \
               --toolchain "$(cat Tools/modules/rust/rust-toolchain-version)" thumbv7em-none-eabihf
+      - name: Expose Rust to generator probes
+        run: dirname -- "$RUSTC" >> "$GITHUB_PATH"
       - name: Cache the GNAT LLVM frontend
         id: gnat-cache
         uses: actions/cache/restore@v5
@@ -128,7 +130,7 @@ jobs:
           make setup LLVM_CONFIG=llvm-config-21 GNATMAKE=gnatmake-14
           read -r -a llvm_link_flags <<< "$(llvm-config-21 --libs all --ldflags --system-libs | tr '\n' ' ')"
           read -r -a llvm_compile_flags <<< "$(llvm-config-21 --cxxflags)"
-          gprbuild -XLLVM_Version=21 -XBuild=Production -Pgnat_llvm -j2 \
+          gprbuild -x -XLLVM_Version=21 -XBuild=Production -Pgnat_llvm -j2 \
             -largs "${llvm_link_flags[@]}" -rdynamic -cargs:c++ "${llvm_compile_flags[@]}" -I.
           mkdir -p "$(dirname -- "$ADA")"
           cp bin/llvm-gnat1 "$ADA"
