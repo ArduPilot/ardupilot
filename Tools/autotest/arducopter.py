@@ -3581,6 +3581,100 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.start_subtest("active EKF type %u" % active_type)
             self.gps_glitch_loiter2_for_ekf_type(active_type)
 
+    def assert_estimator_status_matches_ekf_status_report(self, timeout=30):
+        '''check an ESTIMATOR_STATUS against the EKF_STATUS_REPORTs either
+        side of it.  Returns the ESTIMATOR_STATUS'''
+        # bits 1 to 512 have the same meaning in both messages:
+        common_bits = (
+            mavutil.mavlink.ESTIMATOR_ATTITUDE |
+            mavutil.mavlink.ESTIMATOR_VELOCITY_HORIZ |
+            mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
+            mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL |
+            mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS |
+            mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
+            mavutil.mavlink.ESTIMATOR_POS_VERT_AGL |
+            mavutil.mavlink.ESTIMATOR_CONST_POS_MODE |
+            mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL |
+            mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_ABS
+        )
+        # the remaining EKF_STATUS_REPORT bits and their ESTIMATOR_STATUS equivalents:
+        mapped_bits = [
+            (mavutil.mavlink.EKF_GPS_GLITCHING, mavutil.mavlink.ESTIMATOR_GPS_GLITCH),
+            (mavutil.mavlink.EKF_UNINITIALIZED, mavutil.mavlink.ESTIMATOR_UNINITIALIZED),
+        ]
+        # ESTIMATOR_STATUS field and the EKF_STATUS_REPORT field it must match:
+        ratio_fields = [
+            ("vel_ratio", "velocity_variance"),
+            ("pos_horiz_ratio", "pos_horiz_variance"),
+            ("pos_vert_ratio", "pos_vert_variance"),
+            ("mag_ratio", "compass_variance"),
+            ("hagl_ratio", "terrain_alt_variance"),
+            ("tas_ratio", "airspeed_variance"),
+        ]
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not get a stable EKF_STATUS_REPORT/ESTIMATOR_STATUS sample")
+            before = self.assert_receive_message('EKF_STATUS_REPORT')
+            es = self.assert_receive_message('ESTIMATOR_STATUS')
+            after = self.assert_receive_message('EKF_STATUS_REPORT')
+            if before.flags != after.flags:
+                # flags changed while sampling; try again
+                continue
+            break
+
+        want = before.flags & common_bits
+        for (esr_bit, es_bit) in mapped_bits:
+            if before.flags & esr_bit:
+                want |= es_bit
+        if es.flags != want:
+            raise NotAchievedException(
+                f"ESTIMATOR_STATUS.flags={es.flags} want={want} (EKF_STATUS_REPORT.flags={before.flags})")
+
+        # both messages carry the same innovation test ratios, sampled
+        # at slightly different times:
+        tolerance = 0.05
+        for (es_field, esr_field) in ratio_fields:
+            value = getattr(es, es_field)
+            lo = min(getattr(before, esr_field), getattr(after, esr_field)) - tolerance
+            hi = max(getattr(before, esr_field), getattr(after, esr_field)) + tolerance
+            if math.isnan(value) or value < lo or value > hi:
+                raise NotAchievedException(
+                    f"ESTIMATOR_STATUS.{es_field}={value} not within [{lo}, {hi}] of EKF_STATUS_REPORT.{esr_field}")
+
+        return es
+
+    def EstimatorStatus(self):
+        '''check ESTIMATOR_STATUS agrees with EKF_STATUS_REPORT'''
+        self.set_message_rate_hz('EKF_STATUS_REPORT', 10)
+        self.set_message_rate_hz('ESTIMATOR_STATUS', 10)
+        self.wait_ready_to_arm()
+
+        self.start_subtest("Healthy on the ground")
+        es = self.assert_estimator_status_matches_ekf_status_report()
+        if es.flags & mavutil.mavlink.ESTIMATOR_UNINITIALIZED:
+            raise NotAchievedException("Estimator reported uninitialised")
+        for (field, maximum) in [
+                ("pos_horiz_accuracy", 10),
+                ("pos_vert_accuracy", 10),
+        ]:
+            value = getattr(es, field)
+            if not (0 < value < maximum):
+                raise NotAchievedException(f"ESTIMATOR_STATUS.{field}={value} not in (0, {maximum})")
+
+        self.start_subtest("GPS glitch is reported")
+        self.takeoff(10, mode="LOITER")
+        self.context_push()
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0.001)
+        self.wait_ekf_flags(mavutil.mavlink.EKF_GPS_GLITCHING, 0, timeout=60)
+        es = self.assert_estimator_status_matches_ekf_status_report()
+        if not es.flags & mavutil.mavlink.ESTIMATOR_GPS_GLITCH:
+            raise NotAchievedException("ESTIMATOR_GPS_GLITCH not set")
+        self.context_pop()
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_GPS_GLITCHING, timeout=60)
+        self.assert_estimator_status_matches_ekf_status_report()
+        self.do_RTL()
+
     def GPSGlitchAuto(self, timeout=180):
         '''fly mission and test reaction to gps glitch'''
         # set-up gps glitch array
@@ -19662,6 +19756,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.TakeoffCheck,
             self.MaxAltFenceAvoid,
             self.GPSGlitchLoiter2,
+            self.EstimatorStatus,
             self.SuperSimpleCircle,
             self.MagFail,
             self.LoiterNoCompassYaw,
