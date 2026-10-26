@@ -187,6 +187,12 @@ extern "C" bool receive(bool reject) {
     const CanardRxTransfer transfer{3, 42, 123456, false, payload, CanardTransferTypeBroadcast, 0};
     return Canard::HandlerList::latest->deliver(transfer);
 }
+extern "C" bool receive_response(uint8_t node, uint8_t transfer_id) {
+    if (Canard::HandlerList::latest == nullptr) { return false; }
+    const uint8_t payload[] = {4, 5, 6};
+    const CanardRxTransfer transfer{3, node, 123456, false, payload, CanardTransferTypeResponse, transfer_id};
+    return Canard::HandlerList::latest->deliver(transfer);
+}
 static AP_DroneCAN drivers[2] = { AP_DroneCAN(0), AP_DroneCAN(1) };
 static bool present[2] = {true, true};
 AP_DroneCAN *AP_DroneCAN::get_dronecan(uint8_t index) { return index < 2 && present[index] ? &drivers[index] : nullptr; }
@@ -235,6 +241,8 @@ extern "C" uint8_t seen_payload(unsigned driver, unsigned index) {
     lib.call.argtypes = [ctypes.c_uint, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint32,
                          ctypes.c_void_p, ctypes.c_uint32]
     lib.call.restype = ctypes.c_int
+    lib.receive_response.argtypes = [ctypes.c_uint8, ctypes.c_uint8]
+    lib.receive_response.restype = ctypes.c_bool
     lib.cleanup.argtypes = [ctypes.c_void_p]
     lib.set_next_token.argtypes = [ctypes.c_uint32]
     lib.configure.argtypes = [ctypes.c_uint, ctypes.c_bool, ctypes.c_bool]
@@ -339,6 +347,27 @@ def test_request_installs_response_subscription_and_preserves_metadata(dronecan_
     assert lib.seen(1, 9) == 0
     lib.cleanup(context)
     assert lib.seen(1, 9) == 0
+
+
+def test_consumed_response_releases_subscription(dronecan_host):
+    lib, enabled = dronecan_host
+    if not enabled:
+        return
+    context = ctypes.c_void_p(91)
+    status, token = open_handle(lib, context)
+    assert status == 0
+    assert send_request(lib, context, token, 42, b'request') == (0, b'\1')
+    assert not lib.receive_response(41, 0)
+    assert not lib.receive_response(42, 1)
+    assert lib.receive_response(42, 0)
+    output = ctypes.create_string_buffer(dronecan_binding.MESSAGE_WIRE_SIZE)
+    assert lib.call(1, context, token, 4, output, len(output)) == 0
+    assert output.raw[0] == 1
+    assert lib.seen(0, 9) == 0
+    assert not lib.receive_response(42, 0)
+    assert send_request(lib, context, token, 42, b'next') == (0, b'\1')
+    assert lib.seen(0, 9) == 1
+    lib.cleanup(context)
 
 
 def test_request_wire_bounds(dronecan_host):

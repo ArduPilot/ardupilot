@@ -42,6 +42,7 @@ public:
 
     bool pop(uint8_t *data, uint16_t &length, uint8_t &node_id, uint64_t &timestamp_us, bool &can_fd)
     {
+        WITH_SEMAPHORE(_driver.get_canard_iface().get_sem_rx());
         if (_subscriber == nullptr) {
             return false;
         }
@@ -55,6 +56,10 @@ public:
         can_fd = payload.can_fd;
         memcpy(data, payload.data, length);
         free(payload.data);
+        if (_subscriber->is_response()) {
+            delete _subscriber;
+            _subscriber = nullptr;
+        }
         return true;
     }
 
@@ -137,6 +142,7 @@ private:
         }
         ObjectBuffer<Payload> payloads{QUEUE_DEPTH};
         uint8_t node_id{};
+        bool is_response() const { return _transfer_type == CanardTransferTypeResponse; }
 
     private:
         bool handle_message(const CanardRxTransfer &transfer) override
