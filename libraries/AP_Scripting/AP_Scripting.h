@@ -56,7 +56,7 @@ public:
     void init(void);
 
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
-    void init_serialdevice_ports(void);
+    void init_serialdevice_ports(bool native_enabled = false);
 #endif
 
     void update();
