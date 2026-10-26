@@ -406,10 +406,16 @@ void AP_Vehicle::setup()
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
     // must be done now so ports are registered and drivers get set up properly
     // (in particular mavlink which checks during init_ardupilot())
+#if AP_MODULE_ENABLED
+    scripting.init_serialdevice_ports(native_modules.enabled());
+#else
     scripting.init_serialdevice_ports();
 #endif
+#endif
 #elif AP_MODULE_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
-    scripting_serialdevice.init();
+    if (native_modules.enabled()) {
+        scripting_serialdevice.init();
+    }
 #endif
 
 #if AP_NETWORKING_ENABLED
