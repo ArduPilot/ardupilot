@@ -333,8 +333,8 @@ private:
     // Updates attitude controller targets and evaluates test responses to tune gains.
     void control_attitude();
 
-    // returns true if vehicle is close to level
-    bool currently_level();
+    // Return attitude qualification and report the instantaneous rate qualification separately.
+    bool currently_level(bool &rate_ok);
 
     bool     pilot_override;        // true = pilot is overriding controls so we suspend tuning temporarily
     bool     use_poshold;           // true = enable position hold
