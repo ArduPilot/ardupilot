@@ -38,6 +38,7 @@ public:
     }
     static const AP_Param::GroupInfo var_info[];
     void init();
+    bool enabled() const { return _enable != 0; }
     void update();
     bool arming_checks(size_t length, char *message) const;
     static void module_info(ExpandingString &str);

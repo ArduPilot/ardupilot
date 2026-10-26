@@ -468,7 +468,12 @@ bool Runtime::load_generation()
     errno = 0;
     auto *directory = fs.opendir(DIRECTORY);
     if (directory == nullptr) {
-        if (errno != ENOENT) {
+        bool romfs_only = false;
+#ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_APMOD
+        // A missing or unmounted SD card must not prevent embedded startup.
+        romfs_only = _slots != nullptr && (errno == EIO || errno == ENOSPC || errno == ENODEV);
+#endif
+        if (errno != ENOENT && !romfs_only) {
             fail("module directory unavailable");
             return false;
         }
