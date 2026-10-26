@@ -27,7 +27,7 @@ import sys
 
 @conf
 def find_gxx(conf):
-    names = ['g++', 'c++']
+    names = ['g++', 'eg++', 'c++']
     if conf.env.TOOLCHAIN != 'native':
         names = ['%s-%s' % (conf.env.TOOLCHAIN, n) for n in names]
     cxx = conf.find_program(names, var='CXX')
@@ -36,7 +36,7 @@ def find_gxx(conf):
 
 @conf
 def find_gcc(conf):
-    names = ['gcc', 'cc']
+    names = ['gcc', 'egcc', 'cc']
     if conf.env.TOOLCHAIN != 'native':
         names = ['%s-%s' % (conf.env.TOOLCHAIN, n) for n in names]
     cc = conf.find_program(names, var='CC')
