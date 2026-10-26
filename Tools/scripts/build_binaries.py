@@ -500,11 +500,18 @@ is bob we will attempt to checkout bob-AVR'''
                     framesuffix = ""
                 else:
                     framesuffix = "-%s" % frame
+                checkout_start_time = time.time()
                 if not self.checkout(vehicle, tag, board, frame, submodule_update=False):
                     msg = ("Failed checkout of %s %s %s %s" %
                            (vehicle, board, tag, frame,))
                     self.progress(msg)
                     self.error_strings.append(msg)
+                    if tag == "latest":
+                        githash = self.run_git(["rev-parse", "master"]).rstrip()
+                        self.history.record_build(
+                            githash, tag, vehicle, board, frame, None,
+                            checkout_start_time, time.time() - checkout_start_time
+                        )
                     continue
 
                 self.progress("Building %s %s %s binaries %s" %
@@ -550,7 +557,13 @@ is bob we will attempt to checkout bob-AVR'''
                     waf_opts.extend(self.board_options(board))
                     self.run_waf(waf_opts, compiler=gccstring)
                 except subprocess.CalledProcessError:
-                    self.progress("waf configure failed")
+                    msg = ("Failed configure of %s %s%s %s" %
+                           (vehicle, board, framesuffix, tag))
+                    self.progress(msg)
+                    self.error_strings.append(msg)
+                    t1 = time.time()
+                    self.history.record_build(githash, tag, vehicle, board, frame, None,
+                                              t0, t1-t0)
                     continue
 
                 time_taken_to_configure = time.time() - t0
