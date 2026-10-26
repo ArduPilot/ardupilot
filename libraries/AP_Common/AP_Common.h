@@ -143,6 +143,12 @@
 #define UINT16_VALUE(hbyte, lbyte) (static_cast<uint16_t>(((hbyte)<<8)|(lbyte)))
 #define UINT32_VALUE(b3, b2, b1, b0) (static_cast<uint32_t>(((b3)<<24)|((b2)<<16)|((b1)<<8)|(b0)))
 
+#if !defined (__BYTE_ORDER) && defined (__OpenBSD__)
+#define __BYTE_ORDER __BYTE_ORDER__
+#define __LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
+#define __BIG_ENDIAN __ORDER_BIG_ENDIAN__
+#endif
+
 /*
  * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
  * be used for its internal variable.
