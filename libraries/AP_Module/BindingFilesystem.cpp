@@ -113,11 +113,11 @@ int32_t binding_filesystem_dir_entry(const uint8_t *input, uint32_t input_size,
     }
     memset(output, 0, output_size);
     const char *path = path_from(input);
-    const uint16_t wanted = uint16_t(BindingWire::read(input + PATH_SIZE, 2));
     if (path == nullptr) {
         return AP_MODULE_STATUS_INVALID;
     }
 #if AP_FILESYSTEM_FILE_READING_ENABLED
+    const uint16_t wanted = uint16_t(BindingWire::read(input + PATH_SIZE, 2));
     auto *directory = AP::FS().opendir(path);
     if (directory == nullptr) {
         return AP_MODULE_STATUS_OK;

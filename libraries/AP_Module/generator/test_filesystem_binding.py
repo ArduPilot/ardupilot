@@ -38,7 +38,8 @@ def test_contract_is_bounded_and_handle_free():
 
 
 @pytest.fixture
-def host_service(tmp_path):
+def host_service(tmp_path, request):
+    reading = getattr(request, 'param', 1)
     headers = {
         'AP_HAL/AP_HAL_Boards.h': '',
         'AP_HAL/Semaphores.h': '''#pragma once
@@ -147,7 +148,7 @@ extern "C" unsigned format_count() {{ return formats; }}
     library = tmp_path / 'host.so'
     subprocess.run([os.environ.get('CXX', 'c++'), '-std=c++17', '-Wall', '-Wextra', '-Werror',
                     '-fPIC', '-shared', '-DAP_MODULE_ENABLED=1',
-                    '-DAP_FILESYSTEM_FILE_READING_ENABLED=1', '-DAP_FILESYSTEM_FILE_WRITING_ENABLED=1',
+                    f'-DAP_FILESYSTEM_FILE_READING_ENABLED={reading}', '-DAP_FILESYSTEM_FILE_WRITING_ENABLED=1',
                     '-DAP_FILESYSTEM_FORMAT_ENABLED=1',
                     '-I' + str(tmp_path),
                     '-I' + str(bindings.ROOT), str(harness), '-o', str(library)], check=True)
@@ -221,3 +222,10 @@ pub(crate) struct Import(u32); impl Import {pub(crate) fn slot(&self)->u32{self.
 pub(crate) mod imports {use super::Import;
 ''' + imports + '\n}\nmod generated {\n' + generated + '\n}\nfn main() {}\n')
     subprocess.run(['rustc', '--edition=2021', str(source), '-o', str(tmp_path / 'sdk')], check=True)
+
+
+@pytest.mark.parametrize('host_service', [0], indirect=True)
+def test_directory_reading_disabled(host_service):
+    output = ctypes.create_string_buffer(258)
+    assert host_service.dir_call(path_wire('/test') + bytes(2), output) == -3
+    assert output.raw == bytes(258)
