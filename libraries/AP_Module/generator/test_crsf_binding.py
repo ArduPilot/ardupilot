@@ -262,7 +262,10 @@ AP_CRSF_Telem::ScriptedMenu *AP_CRSF_Telem::ScriptedMenu::add_menu(
 AP_CRSF_Telem::ScriptedParameter *AP_CRSF_Telem::ScriptedMenu::add_parameter(uint8_t length, const char *value) {
     auto *next=(ScriptedParameter*)realloc(params, sizeof(*params)*(num_params+1)); if (!next) return nullptr;
     params=next; auto &parameter=params[num_params++]; parameter={uint8_t(id+num_params),id,length,nullptr};
-    parameter.data=(const char*)malloc(length); memcpy((char*)parameter.data,value,length); return &parameter;
+    if (length != 0) {
+        parameter.data=(const char*)malloc(length); memcpy((char*)parameter.data,value,length);
+    }
+    return &parameter;
 }
 AP_CRSF_Telem::ScriptedMenu *AP_CRSF_Telem::add_menu(const char *name, const void *owner) {
     return scripted_menus.add_menu(name,2,0,owner);
