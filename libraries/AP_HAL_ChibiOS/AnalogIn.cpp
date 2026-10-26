@@ -215,13 +215,10 @@ float AnalogSource::voltage_latest()
 
 bool AnalogSource::set_pin(uint8_t pin)
 {
-    if (pin == ANALOG_INPUT_NONE) {
-        return false;
-    }
     if (_pin == pin) {
-        return true;
+        return pin != ANALOG_INPUT_NONE;
     }
-    bool found_pin = false;
+    bool found_pin = pin == ANALOG_INPUT_NONE;
     if (pin == ANALOG_SERVO_VRSSI_PIN) {
         found_pin = true;
     } else {
@@ -262,7 +259,8 @@ bool AnalogSource::set_pin(uint8_t pin)
     _latest_value = 0;
     _value = 0;
     _value_ratiometric = 0;
-    return true;
+    // Disabling clears the source but still reports that no valid pin is set.
+    return pin != ANALOG_INPUT_NONE;
 }
 
 /*
