@@ -144,7 +144,8 @@ int32_t AP_GPS_NMEA::_parse_decimal_100(const char *p)
 {
     char *endptr = nullptr;
     long ret = 100 * strtol(p, &endptr, 10);
-    int sign = ret < 0 ? -1 : 1;
+    // take the sign from the text, as the whole part of "-0.5" is 0
+    int sign = *p == '-' ? -1 : 1;
 
     if (ret >= (long)INT32_MAX) {
         return INT32_MAX;
