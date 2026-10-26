@@ -157,7 +157,12 @@ float ldexpf(float value, int exponent)
 }
 float log2f(float value)
 {
-    return logf(value) * 1.4426950408889634f;
+    if (value <= 0 || !__builtin_isfinite(value)) {
+        return logf(value);
+    }
+    int exponent;
+    const float mantissa = frexpf(value, &exponent) * 2.0f;
+    return (exponent - 1) + logf(mantissa) * 1.4426950408889634f;
 }
 float log10f(float value)
 {
