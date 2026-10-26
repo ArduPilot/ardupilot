@@ -54,7 +54,7 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
             ca-certificates git build-essential g++-14 gnat-14 gprbuild \
-            clang-21 lld-21 llvm-21-dev libclang-21-dev \
+            clang-21 lld-21 llvm-21-dev libclang-21-dev libclang-rt-21-dev \
             gcc-arm-none-eabi libnewlib-arm-none-eabi gfortran \
             gfortran-arm-linux-gnueabihf gnat-14-arm-linux-gnueabihf \
             python3-venv python3-dev python3-pyelftools gdb mtools
@@ -160,6 +160,7 @@ jobs:
       - name: Build module-enabled Plane and Copter SITL
         shell: bash
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           export CC=gcc-14 CXX=g++-14
           ./waf configure --board sitl --enable-modules --debug
           ./waf plane copter -j2
