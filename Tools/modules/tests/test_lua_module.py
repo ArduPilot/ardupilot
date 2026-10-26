@@ -383,3 +383,22 @@ emulation RunFor "30"
     assert 0 < result['heap_peak'] < 131072, result
     assert 0 < result['stack_used'] < result['stack_total'] - 4096, result
     print(result)
+
+
+def test_logarithms_of_powers_of_two(tmp_path, lua_image):
+    source = '''for exponent=1,60 do
+    assert(math.log(2^exponent,2) == exponent)
+    assert(math.floor(math.log(2^exponent,2)) == exponent)
+end
+assert(math.log(1,2) == 0)
+assert(math.log(0,2) == -math.huge)
+assert(math.log(math.huge,2) == math.huge)
+assert(math.log(-1,2) ~= math.log(-1,2))
+gcs:send_text(6,"Lua log2 powers OK")
+'''
+    instance = vehicle(tmp_path, lua_image, {'log2.lua': source})
+    try:
+        instance.start()
+        instance.text('Lua log2 powers OK')
+    finally:
+        instance.stop()
