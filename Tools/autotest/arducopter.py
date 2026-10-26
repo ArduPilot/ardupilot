@@ -7384,7 +7384,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             0, # timestamp
             1, # target system_id
             1, # target component id
-            mavutil.mavlink.MAV_FRAME_BODY_NED,
+            mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED,
             MAV_POS_TARGET_TYPE_MASK.POS_ONLY | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # mask specifying use-only-x-y-z
             0, # x
             0, # y
@@ -7870,6 +7870,159 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test mavlink DO_WINCH command'''
         self._DO_WINCH(self.run_cmd_int)
         self._DO_WINCH(self.run_cmd)
+
+    def GuidedLocalPositionFrames(self):
+        """Check local position frames away from the origin at two headings."""
+        self.set_parameter("WP_YAW_BEHAVIOR", 0)
+        self.takeoff(15, mode="GUIDED")
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 10)
+        failures = []
+        frames = (
+            ("LOCAL_NED", mavutil.mavlink.MAV_FRAME_LOCAL_NED),
+            ("LOCAL_OFFSET_NED", mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED),
+            ("BODY_OFFSET_NED", mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED),
+            ("BODY_NED", mavutil.mavlink.MAV_FRAME_BODY_NED),
+        )
+        for heading in (0, 90):
+            for name, frame in frames:
+                self.fly_guided_move_local(20, 30, 15)
+                self.wait_speed_vector(Vector3(0, 0, 0), accuracy=0.2, minimum_duration=2)
+                self.guided_achieve_heading(heading, accuracy=1, minimum_duration=2)
+                origin_offset = self.get_local_position_NED()
+                yaw = math.radians(self.get_heading())
+                if frame in (mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                             mavutil.mavlink.MAV_FRAME_BODY_NED):
+                    command = Vector3(5, 3, -15)
+                    expected = Vector3(5, 3, -15)
+                elif frame == mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED:
+                    command = Vector3(5, 3, 0)
+                    expected = origin_offset + command
+                else:
+                    command = Vector3(5, 3, 0)
+                    expected = origin_offset + Vector3(
+                        5 * math.cos(yaw) - 3 * math.sin(yaw),
+                        5 * math.sin(yaw) + 3 * math.cos(yaw),
+                        0,
+                    )
+                self.drain_mav()
+                self.mav.mav.set_position_target_local_ned_send(
+                    0, 1, 1, frame, MAV_POS_TARGET_TYPE_MASK.POS_ONLY,
+                    command.x, command.y, command.z,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                )
+                # Let the command be handled and discard earlier target telemetry.
+                self.delay_sim_time(1, reason="wait for position command processing")
+                self.drain_mav()
+                target = self.assert_receive_message('POSITION_TARGET_LOCAL_NED', timeout=3)
+                actual = Vector3(target.x, target.y, target.z)
+                if target.coordinate_frame != mavutil.mavlink.MAV_FRAME_LOCAL_NED:
+                    raise NotAchievedException("Target telemetry is not LOCAL_NED")
+                if target.type_mask & MAV_POS_TARGET_TYPE_MASK.POS_IGNORE:
+                    raise NotAchievedException("Target telemetry does not contain position")
+                error = (actual - expected).length()
+                passed = math.isfinite(error) and error < 0.6
+                result = "PASS" if passed else "FAIL"
+                self.progress(
+                    "FRAME_CHECK %s heading=%u result=%s "
+                    "start=(%.3f,%.3f,%.3f) expected=(%.3f,%.3f,%.3f) "
+                    "actual=(%.3f,%.3f,%.3f) error=%.3f" % (
+                        name, heading, result,
+                        origin_offset.x, origin_offset.y, origin_offset.z,
+                        expected.x, expected.y, expected.z,
+                        actual.x, actual.y, actual.z, error,
+                    )
+                )
+                if not passed:
+                    failures.append("%s heading=%u error=%.3fm" % (name, heading, error))
+        self.do_RTL()
+        if failures:
+            raise NotAchievedException("; ".join(failures))
+
+    def GuidedMixedLocalFrames(self):
+        """Check position, velocity and acceleration in the same local-frame packet."""
+        self.set_parameter("WP_YAW_BEHAVIOR", 0)
+        self.takeoff(15, mode="GUIDED")
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 10)
+        failures = []
+        for frame in (mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                      mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+                      mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED,
+                      mavutil.mavlink.MAV_FRAME_BODY_NED):
+            self.fly_guided_move_local(20, 30, 15)
+            self.wait_speed_vector(Vector3(0, 0, 0), accuracy=0.2, minimum_duration=2)
+            self.guided_achieve_heading(90, accuracy=1, minimum_duration=2)
+            start = self.get_local_position_NED()
+            yaw = math.radians(self.get_heading())
+            body_frame = frame in (mavutil.mavlink.MAV_FRAME_BODY_NED,
+                                   mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
+            offset_frame = frame in (mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+                                     mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED)
+            position = Vector3(5, 3, 0 if offset_frame else -15)
+            velocity = Vector3(1, 0.5, 0)
+            acceleration = Vector3(0.2, -0.1, 0)
+            if body_frame:
+                velocity = Vector3(math.cos(yaw) - 0.5 * math.sin(yaw),
+                                   math.sin(yaw) + 0.5 * math.cos(yaw), 0)
+                acceleration = Vector3(0.2 * math.cos(yaw) + 0.1 * math.sin(yaw),
+                                       0.2 * math.sin(yaw) - 0.1 * math.cos(yaw), 0)
+            expected_position = position
+            if offset_frame:
+                if body_frame:
+                    expected_position = Vector3(5 * math.cos(yaw) - 3 * math.sin(yaw),
+                                                5 * math.sin(yaw) + 3 * math.cos(yaw), 0)
+                expected_position = start + expected_position
+            start_time = self.get_sim_time()
+            self.drain_mav()
+            self.mav.mav.set_position_target_local_ned_send(
+                0, 1, 1, frame,
+                MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
+                position.x, position.y, position.z, 1, 0.5, 0, 0.2, -0.1, 0, 0, 0,
+            )
+            # Mixed targets advance continuously. Inspect the first updated
+            # packet, distinguished from the preceding position-only target.
+            mixed_mask = MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE
+            while True:
+                target = self.assert_receive_message('POSITION_TARGET_LOCAL_NED', timeout=3)
+                if target.type_mask == mixed_mask:
+                    break
+                if self.get_sim_time_cached() - start_time > 3:
+                    raise NotAchievedException("Did not receive mixed target")
+            if target.coordinate_frame != mavutil.mavlink.MAV_FRAME_LOCAL_NED:
+                raise NotAchievedException("Unexpected mixed target frame")
+            errors = ((Vector3(target.x, target.y, target.z) - expected_position).length(),
+                      (Vector3(target.vx, target.vy, target.vz) - velocity).length(),
+                      (Vector3(target.afx, target.afy, target.afz) - acceleration).length())
+            self.progress("MIXED_CHECK frame=%u position_error=%.3f velocity_error=%.3f acceleration_error=%.3f" %
+                          (frame, *errors))
+            if not all(math.isfinite(e) and e < limit for e, limit in zip(errors, (0.6, 0.05, 0.02))):
+                failures.append("frame=%u errors=%s" % (frame, errors))
+        self.do_RTL()
+        if failures:
+            raise NotAchievedException("; ".join(failures))
+
+    def GuidedStopLocalTarget(self):
+        """Stop at the current position, away from the EKF origin and ground."""
+        self.takeoff(15, mode="GUIDED")
+        self.fly_guided_move_local(20, 30, 15)
+        self.wait_speed_vector(Vector3(0, 0, 0), accuracy=0.2, minimum_duration=2)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 10)
+        self.mav.mav.set_position_target_local_ned_send(
+            0, 1, 1, mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            MAV_POS_TARGET_TYPE_MASK.POS_IGNORE | MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+            MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
+            0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+        )
+        self.wait_speed_vector(Vector3(1, 0, 0), accuracy=0.2, timeout=3)
+        start = self.get_local_position_NED()
+        self.fly_guided_stop(groundspeed_tolerance=0.1)
+        self.delay_sim_time(1, reason="wait for stop target processing")
+        self.drain_mav()
+        target = self.assert_receive_message('POSITION_TARGET_LOCAL_NED', timeout=3)
+        error = (Vector3(target.x, target.y, target.z) - start).length()
+        self.progress("STOP_CHECK target_error=%.3f" % error)
+        if not math.isfinite(error) or error > 0.6:
+            raise NotAchievedException("Stop targeted a different location")
+        self.do_RTL()
 
     def GuidedSubModeChange(self):
         """"Ensure we can move around in guided after a takeoff command."""
@@ -23909,6 +24062,9 @@ return update, 1000
         '''return list of all tests'''
         ret = ([
             self.GuidedSubModeChange,
+            self.GuidedLocalPositionFrames,
+            self.GuidedMixedLocalFrames,
+            self.GuidedStopLocalTarget,
             self.PayloadPlaceMission,
             self.TerrainFailsafe,
             self.BatteryFailsafeTerminate,
