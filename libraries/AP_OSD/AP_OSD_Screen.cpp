@@ -927,6 +927,25 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 21
     AP_SUBGROUPINFO(vtx_power, "VTX_PWR", 55, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: VTX_CH_EN
+    // @DisplayName: VTX Band and Channel
+    // @Description: Displays the configured VTX band and channel. Band labels: A=A, B=B, E=E, F=FatShark, R=Raceband, L=Low Raceband, 1=1G3_A, 2=1G3_B, X=X, 3=3G3_A, 4=3G3_B.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+
+    // @Param: VTX_CH_X
+    // @DisplayName: VTX Band and Channel X Position
+    // @Description: Horizontal position of the VTX band and channel display
+    // @Range: 0 59
+    // @User: Standard
+
+    // @Param: VTX_CH_Y
+    // @DisplayName: VTX Band and Channel Y Position
+    // @Description: Vertical position of the VTX band and channel display
+    // @Range: 0 21
+    // @User: Standard
+    AP_SUBGROUPINFO(vtx_band_channel, "VTX_CH", 63, AP_OSD_Screen, AP_OSD_Setting),
 #endif  // AP_VIDEOTX_ENABLED
 
 #if AP_TERRAIN_AVAILABLE
@@ -2510,6 +2529,33 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
     }
     backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYMBOL(SYM_MW));
 }
+void AP_OSD_Screen::draw_vtx_band_channel(uint8_t x, uint8_t y)
+{
+    AP_VideoTX *vtx = AP_VideoTX::get_singleton();
+    if (vtx == nullptr) {
+        return;
+    }
+
+    const uint8_t band = vtx->get_configured_band();
+    const uint8_t channel = vtx->get_configured_channel();
+
+    static constexpr char band_chars[] = {
+        'A', 'B', 'E', 'F', 'R', 'L',
+        '1', '2', 'X', '3', '4'
+    };
+
+    if (band >= sizeof(band_chars)) {
+        return;
+    }
+
+    backend->write(
+        x, y,
+        !vtx->is_configuration_finished(),
+        "%c:%u",
+        band_chars[band],
+        static_cast<unsigned>(channel + 1)
+    );
+}
 #endif  // AP_VIDEOTX_ENABLED
 
 #if AP_TERRAIN_AVAILABLE
@@ -2630,6 +2676,7 @@ void AP_OSD_Screen::draw(void)
 #endif
 #if AP_VIDEOTX_ENABLED
     DRAW_SETTING(vtx_power);
+    DRAW_SETTING(vtx_band_channel);
 #endif
 
 #if HAL_WITH_ESC_TELEM
