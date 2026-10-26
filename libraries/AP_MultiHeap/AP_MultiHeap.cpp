@@ -8,6 +8,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Scripting/AP_Scripting_config.h>
+#include <AP_HAL/Semaphores.h>
 #include <stdio.h>
 
 /*
@@ -18,6 +19,9 @@
 #endif
 
 extern const AP_HAL::HAL &hal;
+
+// All clients draw expansion arenas from the same system memory reserve.
+static HAL_Semaphore expansion_sem;
 
 /*
   create heaps with a total memory size, splitting over at most
@@ -145,6 +149,7 @@ void *MultiHeap::allocate(uint32_t size)
       can add a new heap from available memory if we have at least
       reserve_size bytes free
      */
+    WITH_SEMAPHORE(expansion_sem);
     const uint32_t available = hal.util->available_memory();
     const uint32_t heap_overhead = 128; // conservative value, varies with HAL
     if (size > UINT32_MAX - heap_overhead || available < reserve_size) {
