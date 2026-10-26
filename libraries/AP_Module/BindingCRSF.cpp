@@ -138,6 +138,26 @@ static bool owns_parameter(void *context, uint8_t parameter_id)
     return false;
 }
 
+static bool select_parameter_event(AP_CRSF_Telem &crsf,
+                                   ObjectBuffer<AP_CRSF_Telem::ScriptedParameterWrite> &queue,
+                                   void *context, AP_CRSF_Telem::ScriptedParameterWrite &request)
+{
+    while (crsf.select_scripted_event(queue, context, request)) {
+        if (request.param != nullptr && owns_parameter(context, request.param->id)) {
+            return true;
+        }
+        // Submenu links have no parameter handle. Discard them so a menu
+        // navigation write cannot block this owner's subsequent events.
+        if (!queue.pop(request)) {
+            return false;
+        }
+        if (&queue == &crsf.inbound_params) {
+            crsf.ready_params.push(request);
+        }
+    }
+    return false;
+}
+
 static uint8_t menu_count(AP_CRSF_Telem &crsf)
 {
     uint8_t count = 0;
@@ -345,8 +365,7 @@ int32_t binding_crsf_peek_menu_event(void *context, const uint8_t *input, uint32
     }
     BindingLock crsf_lock(crsf->get_semaphore());
     AP_CRSF_Telem::ScriptedParameterWrite request{};
-    if (!crsf->select_scripted_event(crsf->inbound_params, context, request) || request.param == nullptr ||
-        !owns_parameter(context, request.param->id)) {
+    if (!select_parameter_event(*crsf, crsf->inbound_params, context, request)) {
         return AP_MODULE_STATUS_OK;
     }
     if (request.payload.payload_length > EVENT_PAYLOAD_MAX) {
@@ -382,8 +401,7 @@ int32_t binding_crsf_pop_menu_event(void *context, const uint8_t *input, uint32_
     }
     BindingLock crsf_lock(crsf->get_semaphore());
     AP_CRSF_Telem::ScriptedParameterWrite request{};
-    if (!crsf->select_scripted_event(crsf->inbound_params, context, request) || request.param == nullptr ||
-        !owns_parameter(context, request.param->id) || request.param->id != input[0] ||
+    if (!select_parameter_event(*crsf, crsf->inbound_params, context, request) || request.param->id != input[0] ||
         uint8_t(request.type) != input[1] || !crsf->inbound_params.pop(request)) {
         return AP_MODULE_STATUS_OK;
     }
@@ -411,8 +429,7 @@ int32_t binding_crsf_send_write_response(void *context, const uint8_t *input, ui
     }
     BindingLock crsf_lock(crsf->get_semaphore());
     AP_CRSF_Telem::ScriptedParameterWrite request{};
-    if (!crsf->select_scripted_event(crsf->outbound_params, context, request) || request.param == nullptr ||
-        !owns_parameter(context, request.param->id) || !crsf->outbound_params.pop(request)) {
+    if (!select_parameter_event(*crsf, crsf->outbound_params, context, request) || !crsf->outbound_params.pop(request)) {
         return AP_MODULE_STATUS_OK;
     }
     const uint8_t length = input[0];
@@ -459,8 +476,7 @@ int32_t binding_crsf_send_response(void *context, const uint8_t *input, uint32_t
     }
     BindingLock crsf_lock(crsf->get_semaphore());
     AP_CRSF_Telem::ScriptedParameterWrite request{};
-    if (!crsf->select_scripted_event(crsf->outbound_params, context, request) || request.param == nullptr ||
-        !owns_parameter(context, request.param->id) || !crsf->outbound_params.pop(request)) {
+    if (!select_parameter_event(*crsf, crsf->outbound_params, context, request) || !crsf->outbound_params.pop(request)) {
         return AP_MODULE_STATUS_OK;
     }
     output[0] = crsf->ready_params.push(request);
@@ -487,8 +503,7 @@ int32_t binding_crsf_get_menu_event(void *context, const uint8_t *input, uint32_
     }
     BindingLock crsf_lock(crsf->get_semaphore());
     AP_CRSF_Telem::ScriptedParameterWrite request{};
-    if (!crsf->select_scripted_event(crsf->inbound_params, context, request) || request.param == nullptr ||
-        !owns_parameter(context, request.param->id)) {
+    if (!select_parameter_event(*crsf, crsf->inbound_params, context, request)) {
         return AP_MODULE_STATUS_OK;
     }
     if (request.payload.payload_length > EVENT_PAYLOAD_MAX || !crsf->inbound_params.pop(request)) {

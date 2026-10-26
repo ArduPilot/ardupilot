@@ -188,7 +188,7 @@ void *mem_realloc(void *pointer, size_t old_size, size_t new_size);
 #include <stdint.h>
 #include <string.h>
 #define AP_CRSF_SCRIPTING_ENABLED 1
-template <typename T, uint8_t N=8> class FakeQueue {
+template <typename T, uint8_t N=8> class ObjectBuffer {
 public:
     bool push(const T &v) { if (count == N) return false; values[(head+count)%N]=v; count++; return true; }
     bool pop(T &v) { if (!count) return false; v=values[head]; head=(head+1)%N; count--; return true; }
@@ -210,8 +210,8 @@ public:
     struct ScriptedPayload { uint8_t payload_length{}; uint8_t payload[57]{}; };
     struct ScriptedParameterWrite { ScriptedParameterEvents type{}; uint8_t destination{}, origin{}, param_num{},
         param_chunk{}; ScriptedParameter *param{}; ScriptedPayload payload{}; };
-    FakeQueue<ScriptedParameterWrite> inbound_params, outbound_params, ready_params;
-    bool select_scripted_event(FakeQueue<ScriptedParameterWrite> &queue, const void *owner,
+    ObjectBuffer<ScriptedParameterWrite> inbound_params, outbound_params, ready_params;
+    bool select_scripted_event(ObjectBuffer<ScriptedParameterWrite> &queue, const void *owner,
                                 ScriptedParameterWrite &request) {
         const unsigned count=queue.available();
         for(unsigned i=0;i<count && queue.peek(request);i++) {
@@ -255,7 +255,9 @@ AP_CRSF_Telem::ScriptedMenu *AP_CRSF_Telem::ScriptedMenu::add_menu(
     const char *new_name, uint8_t, uint8_t parent, const void *new_owner) {
     ScriptedMenu *tail=this; while (tail->next_menu) tail=tail->next_menu;
     auto *menu=new ScriptedMenu{}; menu->id=next_id++; menu->parent_id=parent; menu->owner=new_owner;
-    menu->name=strdup(new_name); tail->next_menu=menu; return menu;
+    menu->name=strdup(new_name); tail->next_menu=menu;
+    if (parent != 0) { auto *link=add_parameter(0, nullptr); link->id=menu->id; }
+    return menu;
 }
 AP_CRSF_Telem::ScriptedParameter *AP_CRSF_Telem::ScriptedMenu::add_parameter(uint8_t length, const char *value) {
     auto *next=(ScriptedParameter*)realloc(params, sizeof(*params)*(num_params+1)); if (!next) return nullptr;
@@ -313,6 +315,10 @@ extern "C" bool inject(uint8_t id, uint8_t type, uint8_t payload) {
         }
     }
     return false;
+}
+extern "C" uint8_t ready_id() {
+    AP_CRSF_Telem::ScriptedParameterWrite event{};
+    return crsf.ready_params.peek(event) ? event.param->id : 0;
 }
 extern "C" uint8_t menus() { uint8_t count=0;
     for(auto *m=crsf.scripted_menus.next_menu;m;m=m->next_menu) { count++; }
@@ -411,3 +417,33 @@ def test_core_cleanup_is_owner_selective_and_prunes_before_delete():
     deletion = source.index('delete menu;', prune)
     assert prune < deletion
     assert 'menu->owner == owner' in source[cleanup:deletion + len('delete menu;')]
+
+
+@pytest.mark.parametrize('method', [5, 6, 9])
+def test_submenu_navigation_does_not_block_later_events(crsf_host, method):
+    lib = crsf_host
+    owner = ctypes.c_void_p(51)
+    output = ctypes.create_string_buffer(256)
+    assert lib.call(0, owner, _name('root'), 16, output, 4) == 0
+    root = output.raw[:4]
+    assert lib.call(1, owner, root + _name('child'), 20, output, 4) == 0
+    child = output.raw[:4]
+    assert lib.call(10, owner, child, 4, output, 1) == 0
+    child_id = output.raw[0]
+    assert lib.call(2, owner, _parameter(int.from_bytes(child, 'little'), b'data'), 260, output, 4) == 0
+    parameter = output.raw[:4]
+    assert lib.call(3, owner, parameter, 4, output, 1) == 0
+    parameter_id = output.raw[0]
+    assert lib.inject(child_id, 2, 1)
+    assert lib.inject(parameter_id, 2, 7)
+    if method == 5:
+        assert lib.call(5, owner, None, 0, output, 62) == 0
+        assert output.raw[0] == 1 and output.raw[2] == parameter_id
+    elif method == 6:
+        assert lib.call(6, owner, bytes([parameter_id, 2]), 2, output, 1) == 0
+        assert output.raw[0] == 1
+    else:
+        assert lib.call(9, owner, b'\2', 1, output, 61) == 0
+        assert output.raw[0] == 1 and output.raw[1] == parameter_id
+    assert lib.ready_id() == child_id
+    lib.cleanup(owner)
