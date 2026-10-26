@@ -1,0 +1,282 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the Simplifly Neo: an FMUv6X-based autopilot built around the
+# STM32H753, with a single fixed BMI088 IMU.
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 2
+
+# board ID, allocated to Simplifly in Tools/AP_Bootloader/board_types.txt
+# (block 1251-1260). Must match hwdef-bl.dat.
+APJ_BOARD_ID AP_HW_SIMPLIFLY_NEO
+
+# USB identity
+USB_STRING_MANUFACTURER "MACFOS LTD (robu.in)"
+USB_STRING_PRODUCT      "SimpliflyNeo"
+
+FLASH_RESERVE_START_KB 128
+
+# FMUv6X boards use the alternate RAM map
+env USE_ALT_RAM_MAP 1
+
+# flash size
+FLASH_SIZE_KB 2048
+
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7 UART5 USART1 USART2 USART3 OTG2
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# telem1
+PE8 UART7_TX UART7
+PF6 UART7_RX UART7
+PF8 UART7_RTS UART7
+PE10 UART7_CTS UART7
+
+# telem2
+PC8 UART5_RTS UART5
+PC9 UART5_CTS UART5
+PC12 UART5_TX UART5
+PD2 UART5_RX UART5
+
+# SERIAL4.  On the SERIAL4/5 connector, which carries TX/RX only, so this
+# UART has no flow control lines.
+PA3 USART2_RX USART2
+PD5 USART2_TX USART2
+
+# GPS1
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+
+# SERIAL5.  Brought out on both the FMU debug header and the SERIAL4/5
+# connector.
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+
+# USART6 is for IOMCU
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+IOMCU_UART USART6
+
+# uart6, RX only, RC input, if no IOMCU
+# PC7 USART6_RX USART6
+
+# ADC
+PA0 SCALED1_V3V3 ADC1 SCALE(2)
+PA4 SCALED2_V3V3 ADC1 SCALE(2)
+PB0 SCALED3_V3V3 ADC1 SCALE(2)
+PF12 SCALED4_V3V3 ADC1 SCALE(2)
+
+PB1 VDD_5V_SENS  ADC1 SCALE(2)
+
+# 6.6V analog input on the ADC connector
+PC2 ADC1_6V6 ADC1 SCALE(2)
+
+# 3.3V analog input on the ADC connector
+PC3 ADC1_3V3 ADC1 SCALE(1)
+
+# SPI3 - BMI088
+PB2  SPI3_MOSI SPI3
+PC10 SPI3_SCK  SPI3
+PC11 SPI3_MISO SPI3
+PI4 SP3_CS1 CS
+PI8 SP3_CS2 CS
+PI6 SP3_DRDY1 INPUT
+PI7 SP3_DRDY2 INPUT
+
+# SPI5 - FRAM
+PF7  SPI5_SCK  SPI5
+PH7  SPI5_MISO SPI5
+PF11 SPI5_MOSI SPI5
+PG7  FRAM_CS CS
+
+# SPI6 - external sensor connector.  The bus and its two chip selects are
+# wired up, but no SPIDEV is declared, so using a device on this connector
+# requires a custom hwdef that adds one.
+PB3  SPI6_SCK SPI6
+PA6  SPI6_MISO SPI6
+PG14 SPI6_MOSI SPI6
+PI10 EXT1_CS CS
+PA15 EXT2_CS CS
+
+# FMU PWM outputs, brought out as the six auxiliary outputs A1-A6.  The eight
+# main outputs M1-M8 are driven by the IOMCU.  The FMU's two remaining timer
+# channels (PH6 and PH9 on TIM12) are not connected on this board.
+PI0  TIM5_CH4 TIM5 PWM(1) GPIO(50)
+PH12 TIM5_CH3 TIM5 PWM(2) GPIO(51)
+PH11 TIM5_CH2 TIM5 PWM(3) GPIO(52)
+PH10 TIM5_CH1 TIM5 PWM(4) GPIO(53)
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
+
+# GPIOs
+PC0 NFC_GPIO INPUT GPIO(60)
+
+
+# CAN bus
+PD0  CAN1_RX CAN1
+PD1  CAN1_TX CAN1
+
+# I2C buses
+
+# I2C1 - GPS1 connector (external compass) and the POWER connector
+# (INA2xx power monitor), which share this bus.
+PB9 I2C1_SDA I2C1
+PB8 I2C1_SCL I2C1
+
+# I2C3 - external I2C connector, plus a 24LC64T-I/MC EEPROM.
+# No MS5611 is fitted on this board.
+PA8 I2C3_SCL I2C3
+PH8 I2C3_SDA I2C3
+
+# I2C4 - internal sensor bus: BMM150 magnetometer, BMP390 barometer,
+# an SE050C1HQ1/Z01SCZ secure element, and a 24LC64T-I/MC EEPROM.
+PF14 I2C4_SCL I2C4
+PF15 I2C4_SDA I2C4
+
+# order of I2C buses
+I2C_ORDER I2C4 I2C1 I2C3
+define HAL_I2C_INTERNAL_MASK 1
+
+# heater
+PB10 HEATER_EN OUTPUT LOW GPIO(80)
+define HAL_HEATER_GPIO_PIN 80
+
+# Setup the IMU heater
+define HAL_HAVE_IMU_HEATER 1
+define HAL_IMU_TEMP_DEFAULT 45
+define HAL_IMUHEAT_P_DEFAULT 50
+define HAL_IMUHEAT_I_DEFAULT 0.07
+
+# armed indication
+PE6 nARMED OUTPUT HIGH
+
+# power enable pins
+PC13 VDD_3V3_SD_CARD_EN OUTPUT HIGH
+PI11 VDD_3V3_SENSORS1_EN OUTPUT HIGH
+PF4  VDD_3V3_SENSORS2_EN OUTPUT HIGH
+PE7  VDD_3V3_SENSORS3_EN OUTPUT HIGH
+PG8  VDD_3V3_SENSORS4_EN OUTPUT HIGH
+
+# start peripheral power on
+PG10 nVDD_5V_HIPOWER_EN OUTPUT LOW
+PG4  nVDD_5V_PERIPH_EN  OUTPUT LOW
+
+# PH2 enables the 3.3V regulator channel that supplies pin 4 of the SBUS_IN
+# connector, the power rail for a DSM satellite receiver.  Enable is active high.
+PH2 SPEKTRUM_PWR OUTPUT HIGH GPIO(73)
+define HAL_GPIO_SPEKTRUM_PWR 73
+define HAL_SPEKTRUM_PWR_ENABLED 1
+
+# power sensing
+PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
+PF13 VDD_5V_HIPOWER_nOC INPUT PULLUP
+
+# PG1 senses the POWER connector, PG2 senses the servo rail.  USB presence is
+# reported from PA9 VBUS above.
+PG1 VDD_BRICK_nVALID INPUT PULLUP
+PG2 VDD_BRICK2_nVALID INPUT PULLUP
+
+# microSD support
+PD6  SDMMC2_CK SDMMC2
+PD7  SDMMC2_CMD SDMMC2
+PB14 SDMMC2_D0 SDMMC2
+PB15 SDMMC2_D1 SDMMC2
+PG11 SDMMC2_D2 SDMMC2
+PB4  SDMMC2_D3 SDMMC2
+define FATFS_HAL_DEVICE SDCD2
+
+# safety
+PD10 LED_SAFETY OUTPUT
+PF5 SAFETY_IN INPUT PULLDOWN
+
+# LEDs
+PE3 LED_RED OUTPUT OPENDRAIN GPIO(90) HIGH
+PE4 LED_GREEN OUTPUT OPENDRAIN GPIO(91) HIGH
+PE5 LED_BLUE OUTPUT OPENDRAIN GPIO(92) HIGH
+
+# setup for "pixracer" RGB LEDs
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 90
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 91
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 92
+
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
+
+# PWM output for buzzer
+PF9 TIM14_CH1 TIM14 GPIO(77) ALARM
+
+# RC input
+PI5 TIM8_CH1 TIM8 RCININT PULLDOWN LOW
+
+# barometer: BMP390 on the internal I2C bus, handled by the BMP388 driver
+BARO BMP388 I2C:0:0x77
+
+# compass: BMM150 on the internal I2C bus.  ROTATION_NONE: the die is aligned
+# with the body FRD frame, and an internal compass ignores COMPASS_ORIENT.
+define AP_COMPASS_PROBING_ENABLED 1
+COMPASS BMM150 I2C:0:0x10 false ROTATION_NONE
+
+# compensate for the magnetic field generated by the IMU heater (BMM150),
+# measured on this board.
+define HAL_HEATER_MAG_OFFSET_BMM150 AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C,0,0x10,0x05),Vector3f(25,19,-15)
+define HAL_HEATER_MAG_OFFSET {HAL_HEATER_MAG_OFFSET_BMM150}
+
+# --- Simplifly Neo SPI sensor devices (fixed population) ---
+# IMU: BMI088 on SPI3, accel CS PI4 (SP3_CS1), gyro CS PI8 (SP3_CS2)
+SPIDEV bmi088_a  SPI3 DEVID2  SP3_CS1  MODE3  10*MHZ  10*MHZ
+SPIDEV bmi088_g  SPI3 DEVID1  SP3_CS2  MODE3  10*MHZ  10*MHZ
+# FRAM (parameter storage) on SPI5, CS PG7
+SPIDEV ramtron   SPI5 DEVID1  FRAM_CS  MODE3  8*MHZ   8*MHZ
+
+# --- Simplifly Neo IMU (single, fixed) ---
+# BMI088 on SPI3, mounted inverted relative to the board frame: the die's
+# (x,y,z) maps to body (-x,y,-z), which is PITCH_180. Flight verified.
+IMU BMI088 SPI:bmi088_a SPI:bmi088_g ROTATION_PITCH_180
+
+# enable RAMTRON parameter storage
+define HAL_STORAGE_SIZE 32768
+define HAL_WITH_RAMTRON 1
+
+# INA226 battery monitor
+define HAL_BATTMON_INA2XX_BUS 1
+define HAL_BATTMON_INA2XX_ADDR 0
+define HAL_BATT_MONITOR_DEFAULT 21
+
+# allow to have have a dedicated safety switch pin
+define HAL_HAVE_SAFETY_SWITCH 1
+
+DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
+DMA_NOSHARE SPI3* TIM*
+
+# enable FAT filesystem support (needs a microSD defined via SDMMC)
+define HAL_OS_FATFS_IO 1
+
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
+
+# enable DFU reboot for installing bootloader
+# note that if firmware is build with --secure-bl then DFU is
+# disabled
+ENABLE_DFU_BOOT 1
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True
+
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_BIDIR_DSHOT 1
