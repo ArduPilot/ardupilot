@@ -508,8 +508,6 @@ impl<'ctx, 'host> Applet<'ctx, 'host> {
             return Ok(());
         };
         let current_altitude = current_location.alt() as f32 * 0.01;
-        let vehicle_airspeed =
-            retry(context, || context.ahrs().airspeed_eas())?.ok_or(Error::Unavailable)?;
         let current_target = retry(context, || context.vehicle().get_target_location())?;
         let target = retry(context, || {
             context.follow().get_target_location_and_velocity()
@@ -533,6 +531,8 @@ impl<'ctx, 'host> Applet<'ctx, 'host> {
             self.handle_lost_target(context)?;
             return Ok(());
         }
+        let vehicle_airspeed =
+            retry(context, || context.ahrs().airspeed_eas())?.ok_or(Error::Unavailable)?;
         self.lost_target_countdown = self.lost_target_timeout;
         self.now_follow_lost_ms = self.now_ms;
 
