@@ -415,6 +415,10 @@
 // WebAssembly cannot execute native module machine code.
 #elif defined(__EMSCRIPTEN__) || (defined(AP_SCRIPTING_ENABLED) && !AP_SCRIPTING_ENABLED)
 #define AP_MODULE_ENABLED 0
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && \
+    !defined(STM32H743xx) && !defined(STM32H757xx) && !defined(STM32F405xx)
+// Executable allocations require a verified MCU memory map.
+#define AP_MODULE_ENABLED 0
 #else
 #define AP_MODULE_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 2048)
 #endif
