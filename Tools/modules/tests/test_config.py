@@ -127,3 +127,25 @@ def test_host_runtime_defaults(tmp_path, flags, enabled, board, number):
                              '-I', str(tmp_path), '-I', str(ROOT / 'libraries'), f'-DCONFIG_HAL_BOARD={number}',
                              *flags, '-'], input=source, text=True, capture_output=True)
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize('mcu,enabled', [
+    ('STM32H743xx', 1), ('STM32H757xx', 1), ('STM32F405xx', 1),
+    ('STM32H750xx', 0), ('STM32H753xx', 0), ('STM32H755xx', 0),
+    ('STM32H723xx', 0), ('STM32H730xx', 0), ('STM32F765xx', 0),
+])
+@pytest.mark.parametrize('override', [None, 0, 1])
+def test_chibios_runtime_defaults_require_supported_mcu(tmp_path, mcu, enabled, override):
+    header = tmp_path / 'AP_HAL/board/chibios.h'
+    header.parent.mkdir(parents=True)
+    header.write_text('#define HAL_PROGRAM_SIZE_LIMIT_KB 8192\n'
+                      '#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE\n')
+    expected = enabled if override is None else override
+    source = '#include <AP_HAL/AP_HAL_Boards.h>\n'
+    for name in ('AP_MODULE_ENABLED', 'HAL_OWNED_THREADS_ENABLED', 'HAL_EXECUTABLE_MEMORY_ENABLED'):
+        source += f'static_assert(bool({name}) == bool({expected}), "{name}");\n'
+    flags = [] if override is None else [f'-DAP_MODULE_ENABLED={override}']
+    result = subprocess.run(['g++', '-x', 'c++', '-std=c++17', '-fsyntax-only', '-nostdinc++',
+                             '-I', str(tmp_path), '-I', str(ROOT / 'libraries'), '-DCONFIG_HAL_BOARD=10',
+                             '-D' + mcu, *flags, '-'], input=source, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
