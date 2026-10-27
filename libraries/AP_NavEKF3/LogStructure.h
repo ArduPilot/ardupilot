@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include <AP_Common/float16.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 
 #define LOG_IDS_FROM_NAVEKF3 \
@@ -197,11 +198,11 @@ struct PACKED log_XKF4 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t core;
-    int16_t sqrtvarV;
-    int16_t sqrtvarP;
-    int16_t sqrtvarH;
-    int16_t sqrtvarM;
-    int16_t sqrtvarVT;
+    Float16_t sqrtvarV;
+    Float16_t sqrtvarP;
+    Float16_t sqrtvarH;
+    Float16_t sqrtvarM;
+    Float16_t sqrtvarVT;
     float   tiltErr;
     float  offsetNorth;
     float  offsetEast;
@@ -463,7 +464,7 @@ struct PACKED log_XKV {
     { LOG_XKF3_MSG, sizeof(log_XKF3), \
       "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGGd?--", "F-BBBBBBCCCBB00" , true }, \
     { LOG_XKF4_MSG, sizeof(log_XKF4), \
-      "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
+      "XKF4","QBgggggfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
       "XKF5","QBBhhhcccCCffff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,TOfs,RI,rng,Herr,eAng,eVel,ePos,BOf", "s#----m???mrnmm", "F-----BBBBB0000" , true }, \
     { LOG_XKFA_MSG, sizeof(log_XKFA), \
