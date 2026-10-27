@@ -3694,10 +3694,10 @@ class TestSuite(abc.ABC):
         def __init__(self, suite):
             self.suite = suite
 
-        def process(self):
+        def process(self, mav, m) -> None:
             pass
 
-        def progress_prefix(self):
+        def progress_prefix(self) -> str:
             return ""
 
         def progress(self, string):
@@ -3717,10 +3717,10 @@ class TestSuite(abc.ABC):
             self.texts = texts
             self.regex = regex
 
-        def progress_prefix(self):
+        def progress_prefix(self) -> str:
             return "FFST: "
 
-        def process(self, mav, m):
+        def process(self, mav, m) -> None:
             if m.get_type() != 'STATUSTEXT':
                 return
 
@@ -3745,7 +3745,7 @@ class TestSuite(abc.ABC):
             self.last_print = 0
             self.min_print_interval = 1  # seconds
 
-        def progress_prefix(self):
+        def progress_prefix(self) -> str:
             return "VIPASS: "
 
         def process(self, mav, m):
@@ -3772,6 +3772,35 @@ class TestSuite(abc.ABC):
 
         def hook_removed(self):
             self.progress(f"Maximum divergence was {self.max_divergence}m (max={self.max_allowed_divergence}m)")
+
+    def wait_simstate_divergence_below(self, maximum, minimum_duration=0, timeout=60):
+        """wait for the EKF's reported position to agree with the simulator's
+        to within `maximum` metres, held for `minimum_duration` seconds.
+
+        A gate for tests which arm as soon as the vehicle is armable and
+        then assert on position: the filter may still be converging, and
+        the residual lands in whatever the test measures next."""
+        tstart = self.get_sim_time()
+        good_since = None
+        divergence = None
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException(
+                    "position still %s from simstate after %us" %
+                    ("%.2fm" % divergence if divergence is not None else "unknown",
+                     timeout))
+            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+            simstate = self.assert_receive_message('SIMSTATE')
+            divergence = self.get_distance_int(gpi, simstate)
+            if divergence > maximum:
+                good_since = None
+                continue
+            if good_since is None:
+                good_since = now
+                self.progress("position within %.2fm of simstate" % divergence)
+            if now - good_since >= minimum_duration:
+                return
 
     class ValidateGlobalPositionIntAgainstSimState(ValidateIntPositionAgainstSimState):
         def __init__(self, suite, **kwargs):
@@ -5668,11 +5697,6 @@ class TestSuite(abc.ABC):
                 continue
             return m
 
-    def assert_receive_named_value_float_value(self, name, value, epsilon=0.0001, timeout=10):
-        m = self.assert_receive_named_value_float_value(name, timeout=timeout)
-        if abs(m.value - value) > epsilon:
-            raise NotAchievedException("Bad %s want=%f got=%f" % (name, value, m.value))
-
     def assert_rally_files_same(self, file1, file2):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
         f1 = open(file1)
@@ -6325,13 +6349,13 @@ class TestSuite(abc.ABC):
             timeout=30
         )
 
-    def armed(self, cached=False):
+    def armed(self, cached=False, poll=True):
         """Return True if vehicle is armed and safetyoff"""
         m = None
         if cached:
             m = self.mav.messages.get("HEARTBEAT", None)
         if m is None:
-            m = self.wait_heartbeat()
+            m = self.wait_heartbeat(poll=poll)
         return (m.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) != 0
 
     def send_mavlink_arm_command(self):
@@ -7867,7 +7891,13 @@ class TestSuite(abc.ABC):
         self.progress("Changing mode to %s" % mode)
         tstart = self.get_sim_time()
         self.send_cmd_do_set_mode(mode)
-        while not self.mode_is(mode):
+        # the polled heartbeat is generated after the command is
+        # processed, so a successful change is seen without waiting
+        # for a scheduled heartbeat.  If the vehicle refuses the mode
+        # change, pace the resends on the scheduled heartbeat instead:
+        poll = True
+        while not self.mode_is(mode, poll=poll):
+            poll = False
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))
@@ -9302,7 +9332,7 @@ class TestSuite(abc.ABC):
             wp_dist_m = m.wp_dist
 
             # if we changed mode, fail
-            if not self.mode_is('AUTO'):
+            if not self.mode_is('AUTO', poll=False):
                 self.progress(f"{self.mav.flightmode} vs {self.get_mode_from_mode_mapping(mode)}")
                 ignore_mode_change = (
                     (ignore_RTL_mode_change and self.mode_is('RTL', cached=True)) or
@@ -9341,16 +9371,18 @@ class TestSuite(abc.ABC):
         '''returns the most-recently received instance of message_type'''
         return self.mav.messages[message_type]
 
-    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True):
+    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True, poll=True):
         if not cached:
-            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly)
+            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly, poll=poll)
         return self.mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode)
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
-        while not self.mode_is(mode, drain_mav=False):
+        # poll=False: pace this loop on the scheduled heartbeat lest
+        # we spin at poll-round-trip rate, printing as we go
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))
@@ -9589,11 +9621,13 @@ class TestSuite(abc.ABC):
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
 
-    def wait_heartbeat(self, drain_mav=True, quiet=False, *args, **x):
+    def wait_heartbeat(self, drain_mav=True, quiet=False, poll=False, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
 Also, ignores heartbeats not from our target system'''
         if drain_mav:
             self.drain_mav(quiet=quiet)
+        if poll:
+            self.send_poll_message('HEARTBEAT', quiet=True)
         orig_timeout = x.get("timeout", 20)
         x["timeout"] = 1
         tstart = time.time()
@@ -11420,7 +11454,6 @@ Also, ignores heartbeats not from our target system'''
             self.check_zero_mag_parameters(params)
             self.check_zeros_mag_orient()
             self.progress("Send acceptation and check value")
-            self.wait_heartbeat()
             self.run_cmd(
                 mavutil.mavlink.MAV_CMD_DO_ACCEPT_MAG_CAL,
                 p1=target_mask, # p1: mag_mask
@@ -12244,7 +12277,6 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(
                     "Disarmed with rudder when ARMING_RUDDER=0")
             self.disarm_vehicle()
-            self.wait_heartbeat()
             self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
             self.set_parameter("ARMING_RUDDER", 1)
             self.arm_vehicle()
@@ -12256,7 +12288,6 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(
                     "Disarmed with rudder with ARMING_RUDDER=1")
             self.disarm_vehicle()
-            self.wait_heartbeat()
             self.set_parameter("ARMING_RUDDER", 2)
 
             if self.is_copter():
@@ -12276,7 +12307,6 @@ Also, ignores heartbeats not from our target system'''
                 if self.armed():
                     raise NotAchievedException("Armed with switch when interlock enabled")
                 self.disarm_vehicle()
-                self.wait_heartbeat()
                 self.set_rc(arming_switch, 1000)
                 self.set_rc(interlock_channel, 1000)
                 if self.is_heli():
@@ -12346,7 +12376,6 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_ekf_happy()
                 self.change_mode(mode)
                 self.arm_vehicle()
-                self.wait_heartbeat()
                 self.disarm_vehicle()
                 self.progress("PASS arm mode : %s" % mode)
                 self.progress("Not armable mode without Position : %s" % mode)
@@ -12557,6 +12586,8 @@ Also, ignores heartbeats not from our target system'''
             raise NotAchievedException("Did not read same interval back from autopilot: want=%d got=%d)" %
                                        (want, m.interval_us))
         m = self.assert_receive_message('COMMAND_ACK', mav=mav)
+        if m.command != mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL:
+            raise NotAchievedException("ACK not for GET_MESSAGE_INTERVAL (got=%u)" % m.command)
         if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
             raise NotAchievedException("Expected ACCEPTED for reading message interval")
 
@@ -12673,6 +12704,8 @@ Also, ignores heartbeats not from our target system'''
             if m.interval_us != 0:
                 raise NotAchievedException("Supposed to get 0 back for unsupported stream")
             m = self.assert_receive_message('COMMAND_ACK')
+            if m.command != mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL:
+                raise NotAchievedException("ACK not for GET_MESSAGE_INTERVAL (got=%u)" % m.command)
             if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
                 raise NotAchievedException("Getting rate of unsupported message is a failure")
 
@@ -19586,6 +19619,49 @@ SERIAL5_BAUD 128
                 continue
             on_radius_start_heading = None
             circle_time_start = now
+
+    def wait_circle_direction(self,
+                              centre_loc,
+                              radius_m,
+                              ccw,
+                              sweep_deg=180,
+                              epsilon_m=10,
+                              timeout=180):
+        '''wait for vehicle to travel sweep_deg around centre_loc, raising if
+        it travels in the wrong direction.  Bearing is only accumulated
+        while the vehicle is within epsilon_m of the circle, so the
+        flight out to the edge of the circle is not counted'''
+        direction_name = "counter-clockwise" if ccw else "clockwise"
+        self.progress("Waiting for %udeg of %s circle" % (sweep_deg, direction_name))
+        # bearing from the centre increases as the vehicle flies clockwise:
+        want_sign = -1 if ccw else 1
+        tstart = self.get_sim_time()
+        swept_deg = 0
+        last_bearing = None
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not circle %s" % direction_name)
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+            got_radius_m = self.get_distance(centre_loc, here)
+            if abs(got_radius_m - radius_m) > epsilon_m:
+                # vehicle is not on the circle; start accumulating again
+                last_bearing = None
+                swept_deg = 0
+                continue
+            bearing = self.get_bearing(centre_loc, here)
+            if last_bearing is not None:
+                swept_deg += (bearing - last_bearing + 180) % 360 - 180
+                self.progress("radius=%0.1f/%0.1f bearing=%0.1f swept=%0.1f/%d" %
+                              (got_radius_m, radius_m, bearing, swept_deg, want_sign * sweep_deg))
+                if -want_sign * swept_deg > 20:
+                    raise NotAchievedException(
+                        "Circling in wrong direction (swept %0.1fdeg, wanted %s)" %
+                        (swept_deg, direction_name))
+                if want_sign * swept_deg > sweep_deg:
+                    self.progress("Swept %0.1fdeg %s" % (swept_deg, direction_name))
+                    return
+            last_bearing = bearing
 
     def create_junit_report(self, test_name: str, results: List[Result], skip_list: List[Tuple[Test, Dict[str, str]]]) -> None:
         """Generate Junit report from the autotest results"""

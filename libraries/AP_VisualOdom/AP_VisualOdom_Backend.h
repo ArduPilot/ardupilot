@@ -33,7 +33,7 @@ public:
     // -1 means failed, 0 means unknown, 1 is worst, 100 is best
     int8_t quality() const { return _quality; }
 
-#if HAL_GCS_ENABLED
+#if HAL_MAVLINK_BINDINGS_ENABLED
     // consume vision_position_delta mavlink messages
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
 #endif

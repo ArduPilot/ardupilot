@@ -5155,7 +5155,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
-        while not self.mode_is("HOLD"):
+        while not self.mode_is("HOLD", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not move to hold")
             m = self.assert_receive_message('VFR_HUD')
@@ -6482,6 +6482,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.install_message_hook_context(
             vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(
                 self, max_allowed_divergence=5))
+        # wait for the beacon-derived position to agree with the true one
+        # before driving.  Polling change_mode() and armed() get us here
+        # sooner in simulated time than they used to, and the EKF's
+        # position is still converging: the divergence hook above then
+        # tripped on the residual, at 5.27-5.41m against its 5m limit.
+        # This is a condition rather than a delay, so a position which
+        # never settles fails here instead of mid-drive.
+        self.wait_simstate_divergence_below(2, minimum_duration=5, timeout=60)
         self.change_mode('MANUAL')
         self.arm_vehicle()
         self.set_rc(3, 2000)   # full throttle forward

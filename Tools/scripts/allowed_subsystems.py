@@ -147,6 +147,7 @@ class AllowedSubsystems(object):
         'BUILD.md': ['Tools'],
         'CODE_OF_CONDUCT.md': ['Tools'],
         'COPYING.txt': ['Tools'],
+        'CITATION.cff': ['Tools'],
     }
 
     def __init__(self, repo_root=None):

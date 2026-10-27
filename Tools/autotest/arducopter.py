@@ -2618,7 +2618,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.progress("Push time up")
                 break
             # make sure we don't RTL:
-            if not self.mode_is(using_mode):
+            if not self.mode_is(using_mode, poll=False):
                 raise NotAchievedException("Changed mode away from %s" % using_mode)
             distance = self.distance_to_home(use_cached_home=True)
             inner_radius = fence_radius - fence_margin
@@ -2709,7 +2709,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Waiting for fence breach")
         tstart = self.get_sim_time()
-        while not self.mode_is("RTL"):
+        while not self.mode_is("RTL", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not breach fence")
 
@@ -3226,7 +3226,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("Circle and Polygon fences in ([0-9]+[.])?[0-9]?m", regex=True)
         self.progress("Waiting for fence breach")
         tstart = self.get_sim_time()
-        while not self.mode_is("RTL"):
+        while not self.mode_is("RTL", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not breach fence")
 
@@ -3265,6 +3265,32 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         raise AutoTestTimeoutException(
             "Fence test failed to reach home (%fm distance) - "
             "timed out after %u seconds" % (home_distance, timeout,))
+
+    def FenceMarginTypeChange(self):
+        '''Test removing a margin-breached fence from FENCE_TYPE in flight'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 2,    # circle fence
+            "FENCE_RADIUS": 50,
+            "FENCE_MARGIN": 5,
+            "AVOID_ENABLE": 0,
+            "FENCE_OPTIONS": 4,  # notify on margin breach
+        })
+        self.context_collect('STATUSTEXT')
+
+        self.takeoff(10, mode="GUIDED")
+        # inside the circle fence but within its margin:
+        self.fly_guided_move_local(47.5, 0, 10)
+        self.wait_statustext("Circle fence in", check_context=True)
+
+        self.progress("Replacing the circle fence with a polygon fence")
+        self.set_parameter("FENCE_TYPE", 4)
+        # only the fence whose margin breach was cleared should be
+        # named; the whole complemented FENCE_TYPE mask used to be
+        # reported, indexing off the end of the fence names table
+        self.wait_statustext("Circle fence cleared margin breach", check_context=True)
+
+        self.do_RTL()
 
     def FenceUpload_MissionItem(self, timeout=180):
         '''Test MISSION_ITEM fence upload/download'''
@@ -6270,7 +6296,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # ensure vehicle remain in Loiter for 15 seconds
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 15:
-            if not self.mode_is('LOITER'):
+            if not self.mode_is('LOITER', poll=False):
                 raise NotAchievedException("Expected to stay in loiter for >15 seconds")
 
         # re-enable vicon
@@ -6283,7 +6309,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # ensure vehicle remain in Loiter for 15 seconds
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 15:
-            if not self.mode_is('LOITER'):
+            if not self.mode_is('LOITER', poll=False):
                 raise NotAchievedException("Expected to stay in loiter for >15 seconds")
 
         # RTL and check vehicle arrives within 10m of home
@@ -6351,7 +6377,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         last_mission_current_msg = 0
         last_seq = None
-        while self.armed(): # we RTL at end of mission
+        while self.armed(poll=False): # we RTL at end of mission
             now = self.get_sim_time_cached()
             if now - tstart > 200:
                 raise AutoTestTimeoutException("Did not disarm as expected")
@@ -7150,7 +7176,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1600)
         count_stop = -1
         tstart = self.get_sim_time()
-        while self.armed(): # we RTL at end of mission
+        while self.armed(poll=False): # we RTL at end of mission
             now = self.get_sim_time_cached()
             if now - tstart > 240:
                 raise AutoTestTimeoutException("Did not disarm as expected")
@@ -7190,7 +7216,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # should not take off for about least 77 seconds
         tstart = self.get_sim_time()
         took_off = False
-        while self.armed():
+        while self.armed(poll=False):
             now = self.get_sim_time_cached()
             if now - tstart > 200:
                 # timeout
@@ -8584,7 +8610,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
 
-            self.disarm_vehicle(force=True)
+            # land so the body-yaw subtest takes off from the ground.
+            # After a force-disarm in the air it re-armed shortly after
+            # the falling vehicle hit the ground, and polling
+            # change_mode() and armed() moved that re-arm closer still
+            # to the impact; the vehicle then never got home:
+            #     Mount/MountTopotek: "Did not get home"
+            self.land_and_disarm()
 
             self.test_mount_body_yaw()
 
@@ -20241,7 +20273,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time_cached() - tstart > 60:
                 break
-            if self.armed():
+            if self.armed(poll=False):
                 raise NotAchievedException("Armed after reboot with switch high")
             armmsg = self.statustext_in_collections('Arm: ')
             if armmsg is not None:
@@ -22473,14 +22505,28 @@ RTL_ALT_M 111
 
         self.do_RTL(timeout=600)
 
-    def mission_NAV_LOITER_TURNS(self):
-        '''test that loiter turns basically works'''
+    def fly_mission_NAV_LOITER_TURNS(self, ccw=False, circle_centre_loc=None, radius_m=30):
+        '''fly a mission containing a single LOITER_TURNS item, checking the
+        circle is flown in the direction the mission item asks for.  A
+        negative loiter radius asks for a counter-clockwise circle.  If
+        circle_centre_loc is None then no location is supplied in the
+        mission item, so the vehicle circles where it is when the item
+        starts - which is over home'''
+        lat = 0
+        lng = 0
+        if circle_centre_loc is None:
+            circle_centre_loc = self.home_position_as_location()
+        else:
+            lat = int(circle_centre_loc.lat*1e7)
+            lng = int(circle_centre_loc.lng*1e7)
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
             self.create_MISSION_ITEM_INT(
                 mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
                 p1=1,
-                p3=30,
+                p3=-radius_m if ccw else radius_m,
+                x=lat,
+                y=lng,
                 z=30,  # circle is 10m higher than takeoff
                 frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
             ),
@@ -22490,33 +22536,28 @@ RTL_ALT_M 111
         self.set_parameter('AUTO_OPTIONS', 3)
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        self.wait_current_waypoint(2)
+        self.wait_circle_direction(circle_centre_loc, radius_m, ccw)
         self.wait_disarmed()
+
+    def mission_NAV_LOITER_TURNS(self):
+        '''test that loiter turns basically works'''
+        self.fly_mission_NAV_LOITER_TURNS()
+
+    def mission_NAV_LOITER_TURNS_ccw(self):
+        '''test that a negative loiter radius gives a counter-clockwise circle'''
+        self.fly_mission_NAV_LOITER_TURNS(ccw=True)
 
     def mission_NAV_LOITER_TURNS_off_center(self):
         '''test that loiter turns basically works - copter on edge of circle'''
         self.start_subtest("Start circle when on edge of circle")
-        radius = 30
+        radius_m = 30
         self.wait_ready_to_arm()
         here = self.get_location()
-        circle_centre_loc = self.offset_location_ne(here, radius, 0)
-        self.upload_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
-            self.create_MISSION_ITEM_INT(
-                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
-                p1=1,
-                p3=radius,
-                x=int(circle_centre_loc.lat*1e7),
-                y=int(circle_centre_loc.lng*1e7),
-                z=30,  # circle is 10m higher than takeoff
-                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-            ),
-            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
-        ])
-        self.change_mode('AUTO')
-        self.set_parameter('AUTO_OPTIONS', 3)
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.wait_disarmed()
+        self.fly_mission_NAV_LOITER_TURNS(
+            circle_centre_loc=self.offset_location_ne(here, radius_m, 0),
+            radius_m=radius_m,
+        )
 
     def mission_NAV_LOITER_TURNS_speed(self):
         '''LOITER_TURNS orbits at WP_SPD, not at CIRCLE_RATE * radius'''
@@ -23875,6 +23916,7 @@ return update, 1000
             self.MinAltFence,
             self.FenceFloorAutoDisableLanding,
             self.FenceMargin,
+            self.FenceMarginTypeChange,
             self.GPSGlitchAuto,
             self.GPSGlitchVelocity,
             self.MotorFail,
@@ -23946,6 +23988,7 @@ return update, 1000
             self.FenceRelativeToAMSLCliff,
             self.PositionWhenGPSIsZero,
             self.mission_NAV_LOITER_TURNS,
+            self.mission_NAV_LOITER_TURNS_ccw,
             self.mission_NAV_LOITER_TURNS_speed,
             Test(self.GyroFFT, attempts=1, speedup=8),
             self.CompassReordering,
