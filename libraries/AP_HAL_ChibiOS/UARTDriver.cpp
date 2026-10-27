@@ -1462,6 +1462,8 @@ void UARTDriver::configure_parity(uint8_t v)
         return;
     }
 #if HAL_USE_SERIAL == TRUE
+    WITH_SEMAPHORE(_line_config_sem);
+
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
@@ -1531,6 +1533,8 @@ void UARTDriver::set_stop_bits(int n)
         return;
     }
 #if HAL_USE_SERIAL
+    WITH_SEMAPHORE(_line_config_sem);
+
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
