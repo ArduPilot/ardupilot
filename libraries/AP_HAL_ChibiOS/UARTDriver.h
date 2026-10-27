@@ -257,8 +257,8 @@ private:
     bool parity_enabled;
 #endif
 #if HAL_USE_SERIAL == TRUE
-    // held while the port is restarted to change parity or stop bits, as
-    // these can be called from more than one thread
+    // held while the port's line settings (parity, stop bits and options)
+    // are changed, as these can be called from more than one thread
     HAL_Semaphore _line_config_sem;
 #endif
 

@@ -1626,6 +1626,8 @@ bool UARTDriver::set_options(uint16_t options)
     _last_options = options;
 
 #if HAL_USE_SERIAL == TRUE
+    WITH_SEMAPHORE(_line_config_sem);
+
     SerialDriver *sd = (SerialDriver*)(sdef.serial);
     uint32_t cr2 = sd->usart->CR2;
     uint32_t cr3 = sd->usart->CR3;
@@ -1725,6 +1727,10 @@ bool UARTDriver::set_options(uint16_t options)
         ret = false;
     }
 #endif // STM32xx
+
+    // keep the config used when the port is restarted in step, so a later
+    // parity or stop bit change doesn't bring back the old inversion
+    sercfg.cr2 = _cr2_options;
 
     // both F4 and F7 can do half-duplex
     if (options & OPTION_HDPLEX) {
