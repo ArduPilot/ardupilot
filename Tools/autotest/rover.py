@@ -211,6 +211,25 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.progress("Loiter or Hold as throttle failsafe OK")
 
+    def FailsafeFrameValuesIgnored(self):
+        """Channel values from a failsafe frame must not reach the RC channels"""
+        self.set_parameter('RC_OPTIONS', 1 << 2)  # IGNORE_FAILSAFE
+        good = {1: 1600, 3: 1400}
+        self.set_rc_from_map(good)
+
+        # the simulated receiver now sends failsafe frames whose channels
+        # all read 1456
+        self.set_parameter('SIM_RC_FAIL', 3)
+        self.delay_sim_time(2, 'failsafe frames to arrive')
+        for i in range(10):
+            for chan, pwm in good.items():
+                self.assert_rc_channel_value(chan, pwm)
+            self.delay_sim_time(0.2, 'check channels are held')
+
+        # a good frame is accepted again
+        self.set_parameter('SIM_RC_FAIL', 0)
+        self.set_rc_from_map({1: 1700, 3: 1300})
+
     def CrashCheck(self):
         """Test crash detection with FS_CRASH_CHECK 1 (hold) and 2 (hold+disarm)"""
         self.set_parameters({
@@ -8264,6 +8283,7 @@ return update()
             self.SafetySwitch,
             self.EnterModeOnSafetySwitch,
             self.ThrottleFailsafe,
+            self.FailsafeFrameValuesIgnored,
             self.CrashCheck,
             self.DriveEachFrame,
             self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
