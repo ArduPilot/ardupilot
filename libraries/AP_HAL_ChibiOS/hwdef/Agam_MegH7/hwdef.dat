@@ -154,8 +154,10 @@ PD0 CAN1_RX CAN1
 PD1 CAN1_TX CAN1
 
 # interrupt and data-ready lines on the SPI4 connector, readable as GPIOs
-PD3 EXTI_SPI4 INPUT GPIO(87)
-PD4 DRDY_SPI4 INPUT GPIO(89)
+# pulled up so they read high, and so an attached PMW3901/PAA3905 reads as
+# idle, rather than floating when the connector is empty
+PD3 EXTI_SPI4 INPUT PULLUP GPIO(87)
+PD4 DRDY_SPI4 INPUT PULLUP GPIO(89)
 
 # camera control pad (CC), exposed as RELAY2
 PA7 CAM_CTRL OUTPUT GPIO(88) LOW
