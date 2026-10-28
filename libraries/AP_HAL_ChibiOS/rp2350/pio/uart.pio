@@ -32,7 +32,9 @@
 ; Transmitter, 8N1/8N2. In half duplex the receiver shares the pin, so the
 ; line is released between frames - but only once nothing more is queued.
 ; Full duplex sets SET_COUNT to 0, which makes both `set pindirs` no-ops while
-; side-set still drives the pin. Y holds the number of extra stop bits.
+; side-set still drives the pin. Y holds the number of extra stop bits. Flag
+; sm goes up as the line is released, after the receiver has pushed the last
+; byte of our own echo, and the CPU takes it as the end of that echo.
 .program uart_tx
 .origin 0
 .side_set 1 opt
@@ -52,6 +54,7 @@ bitloop:
 tx_next:
     mov    x, status              ; X = ~0 iff the TX FIFO is empty
     jmp    !x, tx_await           ; more queued: hold the line, skip the release
+    irq    nowait 0 rel           ; nothing queued: end of transmission
 .wrap
 
 ; Receiver, 8N1/8N2. The stop bit is checked before the byte is pushed. A
@@ -59,7 +62,7 @@ tx_next:
 ; INTE), then waits for an idle line: a line held low would otherwise satisfy
 ; `wait 0 pin` at once and stream 0x00 at full baud.
 .program uart_rx
-.origin 10
+.origin 11
 start:
     wait   0 pin, 0               ; start bit
     set    x, 7               [10] ; delay to the centre of bit 0
@@ -76,7 +79,7 @@ good_stop:
 ; SBUS receiver, 8E2. The wire is inverted by GPIO INOVER before it reaches
 ; the state machine, so the levels here are ordinary UART levels.
 .program uart_rx_sbus
-.origin 19
+.origin 20
 start:
     wait   0 pin, 0               ; start bit
     set    x, 7               [10] ; delay to the centre of bit 0

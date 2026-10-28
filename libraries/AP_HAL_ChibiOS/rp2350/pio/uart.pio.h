@@ -13,7 +13,7 @@
 // ------- //
 
 #define uart_tx_wrap_target 0
-#define uart_tx_wrap 9
+#define uart_tx_wrap 10
 #define uart_tx_pio_version 0
 
 static const uint16_t uart_tx_program_instructions[] = {
@@ -28,13 +28,14 @@ static const uint16_t uart_tx_program_instructions[] = {
     0xbf42, //  7: nop                    side 1 [7]
     0xa025, //  8: mov    x, status
     0x0021, //  9: jmp    !x, 1
+    0xc010, // 10: irq    nowait 0 rel
             //     .wrap
 };
 
 #if !PICO_NO_HARDWARE
 static const struct pio_program uart_tx_program = {
     .instructions = uart_tx_program_instructions,
-    .length = 10,
+    .length = 11,
     .origin = 0,
     .pio_version = uart_tx_pio_version,
 #if PICO_PIO_VERSION > 0
@@ -77,7 +78,7 @@ static const uint16_t uart_rx_program_instructions[] = {
 static const struct pio_program uart_rx_program = {
     .instructions = uart_rx_program_instructions,
     .length = 9,
-    .origin = 10,
+    .origin = 11,
     .pio_version = uart_rx_pio_version,
 #if PICO_PIO_VERSION > 0
     .used_gpio_ranges = 0x0
@@ -118,7 +119,7 @@ static const uint16_t uart_rx_sbus_program_instructions[] = {
 static const struct pio_program uart_rx_sbus_program = {
     .instructions = uart_rx_sbus_program_instructions,
     .length = 10,
-    .origin = 19,
+    .origin = 20,
     .pio_version = uart_rx_sbus_pio_version,
 #if PICO_PIO_VERSION > 0
     .used_gpio_ranges = 0x0

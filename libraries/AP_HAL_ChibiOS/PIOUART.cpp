@@ -455,33 +455,63 @@ void PIORXDriver::_start_rx_sm(uint32_t int_div, uint32_t frac_div)
   ArduPilot's convention is the other way round, and the ST driver drops it in
   the HAL behind `hd_tx_active`. Same thing here.
 
-  The purge has to happen before the flag clears and with the interrupt held
-  off, or the last echoed byte - which reaches the FIFO at its stop bit, right
-  as the transmitter finishes - gets committed by an interrupt landing in
-  between.
+  The window closes on the transmitter's own end-of-transmission flag, raised
+  just before it releases the line. The receiver pushes each byte at the centre
+  of its stop bit, so the last echoed byte is already in the FIFO when the flag
+  goes up, and nothing from the far end can start before the release. Closing
+  it from flush() or available() instead discards any reply that lands before
+  the caller next looks, and FPort and SRXL2 never flush.
+
+  The window opens in _drain_tx_fifo(), as each byte goes to the FIFO. That
+  runs under the same lock as this, so neither core can close the window on a
+  byte the other has just sent. The flag can also belong to a transmission that
+  ended before more was sent, and the window then stays open for the later
+  transmission's own flag. A byte the state machine has already pulled is in
+  the shift register, with its program counter past the pull; one still in the
+  ring has not been sent, and opens the window again when it is. The FIFO is
+  read before the program counter: nothing refills it while this holds the
+  lock, so a byte it held a moment ago is in the shift register by then.
+
+  If this interrupt is itself held off past the far end's turnaround, the
+  first bytes of the reply are in the FIFO with the echo and go with it.
  */
 void PIORXDriver::_hd_echo_check()
 {
-    if (!_hd_echo_active || tx_pending()) {
+    PIO_TypeDef *const pio   = cfg().pio;
+    const uint8_t      sm_tx = cfg().sm_tx;
+    const uint8_t      sm_rx = cfg().sm_rx;
+
+    if ((pio->IRQ & PIO_IRQ_TX_DONE_FLAG(sm_tx)) == 0U) {
         return;
     }
-    const uint32_t basepri = _lock_thread();
-    {
-        PIO_TypeDef *const pio = cfg().pio;
-        const uint8_t      sm  = cfg().sm_rx;
-        while (!(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm)))) {
-            (void)pio->RXF[sm];
-        }
-        _hd_echo_active = false;
+    pio->IRQ = PIO_IRQ_TX_DONE_FLAG(sm_tx);
+
+    if (!_hd_echo_active
+        || !(pio->FSTAT & (1u << (PIO_FSTAT_TXEMPTY_LSB + sm_tx)))) {
+        return;
     }
-    _unlock_thread(basepri);
+    const uint32_t pc = pio->SM[sm_tx].ADDR;
+    if (pc > PIO_UART_TX_PROG_OFFSET + 1U
+        && pc < PIO_UART_TX_PROG_OFFSET + PIO_UART_TX_PROG_LEN - 1U) {
+        return;
+    }
+    while (!(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm_rx)))) {
+        (void)pio->RXF[sm_rx];
+    }
+    _hd_echo_active = false;
 }
 
 void PIORXDriver::_enable_rx_irq()
 {
     PIO_TypeDef *const pio   = cfg().pio;
     const uint8_t      sm_rx = cfg().sm_rx;
-    const uint32_t rx_mask = PIO_INTE_RX_NOTEMPTY(sm_rx);
+    uint32_t rx_mask = PIO_INTE_RX_NOTEMPTY(sm_rx);
+    if (_hd_enabled) {
+        // the transmitter's end-of-transmission flag closes the echo window;
+        // full duplex leaves it raised, which would interrupt at once
+        pio->IRQ = PIO_IRQ_TX_DONE_FLAG(cfg().sm_tx);
+        rx_mask |= PIO_IRQ_SM(cfg().sm_tx);
+    }
 
 // Drop any stale pending data before enabling IRQ-driven RX.
 // During bring-up, random FIFO residue can otherwise cause an immediate IRQ retrigger loop before the driver is fully initialized.
@@ -572,6 +602,7 @@ void PIORXDriver::_service_irq()
     _poll_pio_errors();
     _service_rx_fifo();
     _drain_tx_fifo();
+    _hd_echo_check();
     _unlock_isr();
 
 #if HAL_UART_STATS_ENABLED
@@ -826,7 +857,8 @@ void PIORXDriver::_end()
     // the PIO's own enables reach both cores, unlike the vector; a stopped
     // transmitter's FIFO is never full, so its source would fire for ever
     const uint32_t basepri = _lock_thread();
-    *_inte_reg() &= ~(PIO_INTE_RX_NOTEMPTY(sm_rx) | PIO_INTE_TX_NOTFULL(sm_tx));
+    *_inte_reg() &= ~(PIO_INTE_RX_NOTEMPTY(sm_rx) | PIO_INTE_TX_NOTFULL(sm_tx)
+                      | PIO_IRQ_SM(sm_tx));
     _unlock_thread(basepri);
 
     _initialized = false;
@@ -852,14 +884,12 @@ void PIORXDriver::_flush()
     while (tx_pending() && (AP_HAL::millis() - start_ms) < 50U) {
         hal.scheduler->delay_microseconds(50);
     }
-    _hd_echo_check();
 }
 
 uint32_t PIORXDriver::_available()
 {
     if (_initialized) {
         _poll_pio_errors();
-        _hd_echo_check();
     }
     if (!_initialized || !_readbuf) {
         return 0;
@@ -908,6 +938,10 @@ void PIORXDriver::_drain_tx_fifo()
     uint8_t byte;
     while (pio_tx_level(pio, sm) < PIO_TX_FIFO_DEPTH
            && _writebuf->read_byte(&byte)) {
+        // in half duplex the byte comes back to us; see _hd_echo_check()
+        if (_hd_enabled) {
+            _hd_echo_active = true;
+        }
         pio->TXF[sm] = (uint32_t)byte;
     }
 
@@ -944,10 +978,6 @@ size_t PIORXDriver::_write(const uint8_t *buffer, size_t size)
     {
         WITH_SEMAPHORE(_write_mutex);
         written = _writebuf->write(buffer, size);
-    }
-
-    if (_hd_enabled && written > 0) {
-        _hd_echo_active = true;
     }
 
     // Start it moving now rather than waiting for the first interrupt, then
