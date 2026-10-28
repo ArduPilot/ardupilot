@@ -479,7 +479,6 @@ void PIORXDriver::_hd_echo_check()
 {
     PIO_TypeDef *const pio   = cfg().pio;
     const uint8_t      sm_tx = cfg().sm_tx;
-    const uint8_t      sm_rx = cfg().sm_rx;
 
     if ((pio->IRQ & PIO_IRQ_TX_DONE_FLAG(sm_tx)) == 0U) {
         return;
@@ -495,9 +494,7 @@ void PIORXDriver::_hd_echo_check()
         && pc < PIO_UART_TX_PROG_OFFSET + PIO_UART_TX_PROG_LEN - 1U) {
         return;
     }
-    while (!(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm_rx)))) {
-        (void)pio->RXF[sm_rx];
-    }
+    _purge_rx_fifo();
     _hd_echo_active = false;
 }
 
@@ -515,9 +512,7 @@ void PIORXDriver::_enable_rx_irq()
 
 // Drop any stale pending data before enabling IRQ-driven RX.
 // During bring-up, random FIFO residue can otherwise cause an immediate IRQ retrigger loop before the driver is fully initialized.
-    while (!(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm_rx)))) {
-        (void)pio->RXF[sm_rx];
-    }
+    _purge_rx_fifo();
 
     if (sm_rx <= 1U) {
 // Enable exactly one RXNEMPTY source for this instance.
@@ -648,7 +643,8 @@ void PIORXDriver::_service_rx_fifo()
 
 // Always drain hardware FIFO if data is present.
 // If this runs before normal initialization has completed, discarding bytes here prevents an IRQ retrigger storm that can starve the main loop.
-    while (!(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm)))) {
+    while (drained < PIO_RX_FIFO_MAX_READS
+           && !(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm)))) {
 // For right-shifted UART RX, the received byte is left-justified in RXF bits [31:24].
 // The RP2350 datasheet's UART RX example reads the FIFO as an 8-bit access at RXF+3, which pops the FIFO and returns that upper byte directly.
         const uint8_t byte = *rxfifo_byte;
@@ -820,11 +816,7 @@ void PIORXDriver::_begin(uint32_t b, uint16_t rxSpace, uint16_t txSpace)
     // under the port lock as _discard_input() does
     const uint32_t basepri = _lock_thread();
     {
-        PIO_TypeDef *const pio = cfg().pio;
-        const uint8_t sm = cfg().sm_rx;
-        while (!(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm)))) {
-            (void)pio->RXF[sm];
-        }
+        _purge_rx_fifo();
         if (_readbuf) {
             _readbuf->clear();
         }
@@ -907,11 +899,7 @@ bool PIORXDriver::_discard_input()
 // _begin() does the same purge, also under the port lock.
     const uint32_t basepri = _lock_thread();
     {
-        PIO_TypeDef *const pio = cfg().pio;
-        const uint8_t      sm  = cfg().sm_rx;
-        while (!(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm)))) {
-            (void)pio->RXF[sm];
-        }
+        _purge_rx_fifo();
         _readbuf->clear();
     }
     _unlock_thread(basepri);
