@@ -45,6 +45,8 @@ mcu = {
         'AP_MAVLINK_FTP_THREAD_PRIORITY_OFFSET' : '121',
         # bidirectional DShot is the only ESC telemetry source, with no passthrough or CAN
         'HAL_WITH_ESC_TELEM' : '1',
+        # the boot flash is the XIP window, where @SYS/flash.bin reads from
+        'AP_FILESYSTEM_SYS_FLASH_BASE' : '0x10000000',
         # The M33 FPU is single precision (fpv5-sp-d16), so a double position
         # type is software emulated. HAL_WITH_EKF_DOUBLE follows
         # HAL_HAVE_HARDWARE_DOUBLE, which is 0 here, so the input is single
