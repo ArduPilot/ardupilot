@@ -7,3 +7,6 @@ include hwdef.inc
 
 # build ABIN for flash-from-bootloader support:
 env BUILD_ABIN True
+
+define AP_PACKAUTH_ENABLED 1
+define AP_PACKAUTH_DEBUG 1

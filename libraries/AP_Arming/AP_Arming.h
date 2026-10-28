@@ -9,6 +9,7 @@
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
 #include "AP_Proximity/AP_Proximity_config.h"
+#include <AP_PackAuth/AP_PackAuth.h>
 
 class AP_Arming {
 public:
@@ -324,6 +325,11 @@ private:
     bool report_immediately; // set to true when check goes from true to false, to trigger immediate report
 
     void update_arm_gpio();
+    
+    #if AP_PACKAUTH_ENABLED
+    AP_PackAuth _packauth;
+    bool packauth_checks(bool report);
+#endif
 
 #if !AP_GPS_BLENDED_ENABLED
     bool blending_auto_switch_checks(bool report);

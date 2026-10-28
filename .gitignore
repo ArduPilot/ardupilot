@@ -156,6 +156,8 @@ build.tmp.binaries/
 tasklist.json
 modules/esp_idf
 
+/libraries/AP_PackAuth/smartpack_key.h
+
 # lua-language-server linter
 ScriptingDocs.md
 /lua-language-server/

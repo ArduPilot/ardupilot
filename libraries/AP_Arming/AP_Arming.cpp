@@ -196,6 +196,12 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     AP_GROUPINFO("NEED_LOC", 12, AP_Arming, require_location, float(AP_ARMING_NEED_LOC_DEFAULT)),
 #endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
+#if AP_PACKAUTH_ENABLED && AP_PACKAUTH_PARAMS_ENABLED
+    // @Group: PKA_
+    // @Path: ../AP_PackAuth/AP_PackAuth.cpp
+    AP_SUBGROUPINFO(_packauth, "PKA_", 13, AP_Arming, AP_PackAuth),
+#endif
+
     AP_GROUPEND
 };
 
@@ -222,6 +228,10 @@ AP_Arming::AP_Arming()
 // performs pre-arm checks. expects to be called at 1hz.
 void AP_Arming::update(void)
 {
+#if AP_PACKAUTH_ENABLED
+    _packauth.init();    // starts the authenticator thread on the first call
+#endif
+
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
     // if we boot with no crashdump data present, reset the "ignore"
     // parameter so the user will need to acknowledge future crashes
@@ -1603,6 +1613,19 @@ bool AP_Arming::estop_checks(bool display_failure)
     return false;
 }
 
+
+#if AP_PACKAUTH_ENABLED
+bool AP_Arming::packauth_checks(bool report)
+{
+    char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+    if (!_packauth.gate_check(msg, sizeof(msg))) {
+        check_failed(report, "%s", msg);
+        return false;
+    }
+    return true;
+}
+#endif
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_COPTER_OR_HELI
@@ -1688,6 +1711,9 @@ bool AP_Arming::pre_arm_checks(bool report)
         & crashdump_checks(report)
 #endif
         &  serial_protocol_checks(report)
+        #if AP_PACKAUTH_ENABLED
+        &  packauth_checks(report)
+        #endif
         &  estop_checks(report);
 
     if (!checks_result && last_prearm_checks_result) { // check went from true to false
@@ -1792,6 +1818,18 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     if (armed) { //already armed
         return false;
     }
+    #if AP_PACKAUTH_ENABLED
+    {
+        char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+        if (!_packauth.gate_check(msg, sizeof(msg))) {
+            check_failed(true, "%s", msg);
+    #if HAL_LOGGING_ENABLED
+            AP::logger().arming_failure();
+    #endif
+            return false;
+        }
+    }
+    #endif
 
     running_arming_checks = true;  // so we show Arm: rather than Disarm: in messages
 
@@ -1911,6 +1949,12 @@ void AP_Arming::send_arm_disarm_statustext(const char *str) const
 
 AP_Arming::Required AP_Arming::arming_required() const
 {
+#if AP_PACKAUTH_ENABLED
+    // pack authentication is mandatory: arming can't be switched off
+    if (require != Required::YES_MIN_PWM && require != Required::YES_ZERO_PWM) {
+        return Required::YES_MIN_PWM;
+    }
+#endif
 #if AP_OPENDRONEID_ENABLED
     // cannot be disabled if OpenDroneID is present
     if (AP_OpenDroneID::get_singleton() != nullptr && AP::opendroneid().enabled()) {
