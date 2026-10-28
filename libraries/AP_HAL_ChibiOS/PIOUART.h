@@ -105,6 +105,11 @@
 
 #define PIO_UART_CYCLES_PER_BIT  8U
 
+// Most entries read in one pass over a receive FIFO, twice its joined depth of
+// 8. The loops stop on a status read alone, and without a count one that never
+// read empty would spin in the interrupt or with interrupts masked.
+#define PIO_RX_FIFO_MAX_READS   16U
+
 // Instruction memory layout (30 of 32 words used per PIO), assembled from
 // rp2350/pio/uart.pio: [0..10] uart_tx, [11..19] uart_rx, [20..29] uart_rx_sbus
 #define PIO_UART_TX_PROG_OFFSET       0U
@@ -285,6 +290,16 @@ private:
         }
     }
     __attribute__((always_inline)) void _unlock_isr() { __atomic_store_n(&_lock, 0U, __ATOMIC_RELEASE); }
+    // empty the receive FIFO, reading at most PIO_RX_FIFO_MAX_READS entries;
+    // inline, like _lock_isr(), so the interrupt does not call into flash
+    __attribute__((always_inline)) void _purge_rx_fifo() {
+        PIO_TypeDef *const pio = cfg().pio;
+        const uint8_t      sm  = cfg().sm_rx;
+        for (uint8_t n = 0; n < PIO_RX_FIFO_MAX_READS
+             && !(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm))); n++) {
+            (void)pio->RXF[sm];
+        }
+    }
     uint32_t _lock_thread();
     void _unlock_thread(uint32_t basepri);
 
