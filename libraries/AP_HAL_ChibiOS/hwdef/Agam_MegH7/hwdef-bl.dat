@@ -19,10 +19,10 @@ FLASH_RESERVE_START_KB 0
 # the H743 has 128k sized sectors
 FLASH_BOOTLOADER_LOAD_KB 128
 
-# order of UARTs (and USB). Allow bootloading on USB and telem1
+# order of UARTs (and USB). Allow bootloading on USB and the T4/R4 pads
 SERIAL_ORDER OTG1 UART4
 
-# UART4 (telem1)
+# UART4 (SERIAL4, the T4/R4 pads)
 PB9 UART4_TX UART4 NODMA
 PB8 UART4_RX UART4 NODMA
 
@@ -36,8 +36,11 @@ PA14 JTCK-SWCLK SWD
 # switch is enabled high, so this must match the HIGH used in hwdef.dat.
 PE5 PINIO1 OUTPUT HIGH
 
-PE3 LED_BOOTLOADER OUTPUT LOW
+PE4 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 0
+
+# hold the red LED off rather than leaving it undefined during DFU
+PE3 LED1 OUTPUT HIGH
 
 # Add CS pins to ensure they are high in bootloader
 PD11 IMU1_CS CS
