@@ -61,6 +61,9 @@ public:
     // called by the OSD thread once
     virtual void osd_thread_run_once() { return; }
 
+    // called by the OSD thread on every update, whether or not a script is drawing
+    virtual void osd_thread_update() { return; }
+
 #if OSD_ENABLED && AP_SCRIPTING_ENABLED
     // passthrough OSD functions for use by scripting
     bool display_disabled() const { return _osd.display_disabled(); }
