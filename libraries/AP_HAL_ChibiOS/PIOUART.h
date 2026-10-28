@@ -74,6 +74,9 @@
 // irq 4 rel from the RX programs lands on flag 4+sm, outside the 0-3 the
 // interrupt enable registers can reach.
 #define PIO_IRQ_FRAMING_FLAG(sm)     (1u << (4u + (sm)))
+// irq 0 rel from the TX program, at the end of each transmission, lands on
+// flag sm, which PIO_IRQ_SM(sm) routes to the interrupt
+#define PIO_IRQ_TX_DONE_FLAG(sm)     (1u << (sm))
 #define PIO_SHIFTCTRL_PULL_THRESH_LSB 25u
 
 #define PIO_PINCTRL_OUT_BASE_LSB      0u
@@ -102,13 +105,13 @@
 
 #define PIO_UART_CYCLES_PER_BIT  8U
 
-// Instruction memory layout (29 of 32 words used per PIO), assembled from
-// rp2350/pio/uart.pio: [0..9] uart_tx, [10..18] uart_rx, [19..28] uart_rx_sbus
+// Instruction memory layout (30 of 32 words used per PIO), assembled from
+// rp2350/pio/uart.pio: [0..10] uart_tx, [11..19] uart_rx, [20..29] uart_rx_sbus
 #define PIO_UART_TX_PROG_OFFSET       0U
 #define PIO_UART_TX_PROG_LEN         ARRAY_SIZE(uart_tx_program_instructions)
-#define PIO_UART_RX_PROG_OFFSET      10U
+#define PIO_UART_RX_PROG_OFFSET      11U
 #define PIO_UART_RX_PROG_LEN         ARRAY_SIZE(uart_rx_program_instructions)
-#define PIO_UART_RX_SBUS_PROG_OFFSET 19U
+#define PIO_UART_RX_SBUS_PROG_OFFSET 20U
 #define PIO_UART_RX_SBUS_PROG_LEN    ARRAY_SIZE(uart_rx_sbus_program_instructions)
 static_assert(PIO_UART_TX_PROG_OFFSET + PIO_UART_TX_PROG_LEN <= PIO_UART_RX_PROG_OFFSET &&
               PIO_UART_RX_PROG_OFFSET + PIO_UART_RX_PROG_LEN <= PIO_UART_RX_SBUS_PROG_OFFSET &&
@@ -255,7 +258,8 @@ private:
     // the receive program in use, which half duplex needs to restart the
     // receiver from the top once the line is handed back
     uint32_t _rx_prog_offset() const;
-    // drop what we just said back to ourselves, once it has all come back
+    // drop what we just said back to ourselves, once the transmitter flags
+    // that it has all come back; called from the interrupt
     void _hd_echo_check();
     void _enable_rx_irq();
     void _drain_tx_fifo();

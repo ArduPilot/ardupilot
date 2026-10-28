@@ -906,8 +906,8 @@ relative to GPIOBASE, so the pin window belongs to the block, not the SM.
 
 | Block | Owner | SMs | Slots | GPIOBASE |
 |---|---|---|---|---|
-| PIO0 | PIOUART0 (SM0 TX, SM1 RX), PIOUART1 (SM2, SM3) | 4 | 29 | 16 |
-| PIO1 | one of: OSD, NeoPixel, PIOUART2/3 | 1-4 | 31, 4 or 29 | 0; 16 for UARTs |
+| PIO0 | PIOUART0 (SM0 TX, SM1 RX), PIOUART1 (SM2, SM3) | 4 | 30 | 16 |
+| PIO1 | one of: OSD, NeoPixel, PIOUART2/3 | 1-4 | 31, 4 or 30 | 0; 16 for UARTs |
 | PIO2 | DShot, SM n drives output n+1 | 4 | 13 or 29 | 0 |
 
 | | Pico2 | Laurel | RPI_UAVFC |
@@ -955,7 +955,7 @@ Rules for adding a PIO user:
 
 | `rp2350/pio/` | Programs (slots) | From |
 |---|---|---|
-| `uart.pio` | `uart_tx` (10), `uart_rx` (9), `uart_rx_sbus` (10) | Betaflight, pico-examples |
+| `uart.pio` | `uart_tx` (11), `uart_rx` (9), `uart_rx_sbus` (10) | Betaflight, pico-examples |
 | `dshot.pio` | `dshot_600` (13), `dshot_600_bidir` (29) | Betaflight |
 | `ws2812.pio` | `ws2812` (4) | pico-examples via Betaflight |
 | `osd_tx.pio` | `osd_tx_pal`, `osd_tx_ntsc` (31) | Betaflight |
@@ -1041,10 +1041,19 @@ The RX SM then listens on the TX pin. The pad pulls down if either
 `OPTION_PULLDOWN_TX` or `_RX` is set, else up; SmartAudio asks for pull-down
 and needs it. Either inversion option implies both, as on STM32. The
 receiver hears our own frame, and as on the ST path the HAL drops it:
-`_write()` sets `_hd_echo_active`, the ISR discards while it is set, and
-`_hd_echo_check()` (from `_flush()` and `_available()`) clears it once
-`tx_pending()` is false, purging the RX FIFO under the lock first or the
-last echoed byte slips through. `AP_SmartAudio` needs this: replies open
+`_drain_tx_fifo()` sets `_hd_echo_active` as it puts each byte in the FIFO,
+and the ISR discards while it is set. `uart_tx` raises flag sm (`irq nowait 0
+rel`, routed by `PIO_IRQ_SM`) just before it releases the line, by which time
+the receiver has pushed the last echoed byte at the centre of its stop bit.
+`_hd_echo_check()`, in the ISR, then purges the RX FIFO and clears
+`_hd_echo_active`, unless the FIFO or the shift register still holds a byte,
+whose own flag comes later. Both run under the port lock, so neither core can
+close the window on a byte the other has just sent. A reply that reaches the
+FIFO before the ISR runs, because the ISR was held off past the far end's
+turnaround, is purged with the echo.
+Closing the window from `_flush()` or `_available()` instead drops any reply
+that lands before the caller next looks: SmartAudio flushes at once, FPort
+and SRXL2 do not. `AP_SmartAudio` needs the echo dropped: replies open
 with the same 0xAA 0x55 as requests. `tx_pending()` goes false as the stop
 bit starts; wait a bit time before switching anything on that edge.
 
