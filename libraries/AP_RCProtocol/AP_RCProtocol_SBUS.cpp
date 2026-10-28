@@ -86,6 +86,22 @@ AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted,
     ss{configured_baud, SoftSerial::SERIAL_CONFIG_8E2I}
 {}
 
+/*
+  as SBUS is such a weak protocol we additionally check if any of
+  the first 4 channels are at or below the minimum value of
+  875. We consider the frame as a failsafe in that case, which
+  means we log the data but won't use it
+ */
+static bool sbus_invalid_data(const uint16_t *values)
+{
+    for (uint8_t i=0; i<4; i++) {
+        if (values[i] <= SBUS_SCALE_OFFSET) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // decode a full SBUS frame
 bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
                                      bool &sbus_failsafe, uint16_t max_values)
@@ -113,24 +129,11 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
     /* note the number of channels decoded */
     *num_values = chancount;
 
-    /*
-      as SBUS is such a weak protocol we additionally check if any of
-      the first 4 channels are at or below the minimum value of
-      875. We consider the frame as a failsafe in that case, which
-      means we log the data but won't use it
-     */
-    bool invalid_data = false;
-    for (uint8_t i=0; i<4; i++) {
-        if (values[i] <= SBUS_SCALE_OFFSET) {
-            invalid_data = true;
-        }
-    }
-
     /* decode and handle failsafe and frame-lost flags */
     if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FAILSAFE_BIT)) { /* failsafe */
         /* report that we failed to read anything valid off the receiver */
         sbus_failsafe = true;
-    } else if (invalid_data) {
+    } else if (sbus_invalid_data(values)) {
         sbus_failsafe = true;
     } else if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FRAMELOST_BIT)) { /* a frame was lost */
         /* set a special warning flag
@@ -196,7 +199,14 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
         if (sbus_decode(byte_input.buf, values, &num_values,
                         sbus_failsafe, SBUS_INPUT_CHANNELS) &&
             num_values >= MIN_RCIN_CHANNELS) {
-            add_input(num_values, values, sbus_failsafe);
+            if (sbus_invalid_data(values)) {
+                // don't pass the values on even if RC_OPTIONS says to
+                // ignore the receiver's failsafe bit; repeated invalid
+                // frames give no input, so the RC timeout still applies
+                add_invalid_frame();
+            } else {
+                add_input(num_values, values, sbus_failsafe);
+            }
         }
         byte_input.ofs = 0;
     }

@@ -126,6 +126,15 @@ protected:
     } PACKED;
 
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1, int16_t rx_link_quality=-1);
+
+    // a frame whose channel values can't be used still shows the
+    // protocol is present, but is never input, even with
+    // RC_OPTIONS IGNORE_FAILSAFE
+    void add_invalid_frame(void) {
+        rc_frame_count++;
+        frontend.set_failsafe_active(true);
+    }
+
     AP_RCProtocol &frontend;
 
     void log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const;
