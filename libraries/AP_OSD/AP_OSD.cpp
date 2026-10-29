@@ -425,6 +425,10 @@ void AP_OSD::osd_thread()
 #else
         update_osd();
 #endif // AP_SCRIPTING_ENABLED
+        // only this thread can read a backend's uart; _sem keeps a reply out of a script's OSD call
+        for (uint8_t instance = 0; instance < _backend_count; instance++) {
+            _backends[instance]->osd_thread_update();
+        }
     }
 }
 

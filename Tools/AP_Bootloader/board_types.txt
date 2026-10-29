@@ -619,6 +619,7 @@ AP_HW_ZenFC_H743                     5740
 
 #IDs 5800-5809 reserved for Droneer
 AP_HW_DroneerF405                    5800
+AP_HW_DroneerX6                      5801
 
 #IDs 5810-5819 reserved for Brother Hobby
 AP_HW_BrotherHobbyH743               5810
@@ -629,6 +630,7 @@ AP_HW_VIMDRONES_BMS                  5820
 
 #IDs 5830 ~ 5839 reserved for CyberX
 AP_HW_CyberX-v10                     5830
+AP_HW_CyberX-Cube                    5831
 
 # IDs 5900-5904 reserved for NewBeeDrone PixNova
 AP_HW_NewBeeDrone_PixNova            5900
