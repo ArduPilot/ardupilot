@@ -177,9 +177,13 @@ void NavEKF3_core::setWindMagStateLearningMode()
     // release the Z variance has no path back: on the ground and level the bias
     // is nominally observable, so dvelBiasAxisInhibit[2] was never set. Give the
     // states the same starting uncertainty they get when first activated rather
-    // than one floored across an arbitrarily long disarmed period.
+    // than one floored across an arbitrarily long disarmed period. A hold that
+    // stays armed until it ends, such as leaving acro, only paused learning in
+    // flight: restarting it there would read any velocity error built up during
+    // the hold as bias, so the floored variance is kept.
     const bool vehicleInhibitAccelBias = frontend->getInhibitAccelBiasLearning();
-    if (prevVehicleInhibitAccelBias && !vehicleInhibitAccelBias && !inhibitDelVelBiasStates) {
+    vehicleInhibitAccelBiasArmedOnly = motorsArmed && (vehicleInhibitAccelBiasArmedOnly || !prevVehicleInhibitAccelBias);
+    if (prevVehicleInhibitAccelBias && !vehicleInhibitAccelBias && !inhibitDelVelBiasStates && !vehicleInhibitAccelBiasArmedOnly) {
         Pmut[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
         Pmut[14][14] = P[13][13];
         Pmut[15][15] = P[13][13];
