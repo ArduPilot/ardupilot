@@ -41,7 +41,7 @@ void NavEKF3_core::controlFilterModes()
 NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 {
     // force use of simple magnetic heading fusion for specified cores
-    if (frontend->_magMask & core_index) {
+    if (frontend->_magMask & (1U<<core_index)) {
         return MagCal::NEVER;
     }
 
