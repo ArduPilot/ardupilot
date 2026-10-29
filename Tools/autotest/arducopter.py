@@ -18571,6 +18571,81 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def AccelBiasAcroExitVelocityError(self):
+        '''Test leaving acro does not learn a velocity error as accel bias'''
+        # With ACC_ZBIAS_LEARN bit 3 the accel bias is held through acro. A short
+        # accel error there, such as a clipped shock, leaves a vertical velocity
+        # error and no lasting bias. With baro as the only vertical reference the
+        # error is still there when acro ends, and the bias must not take it up.
+        self.context_push()
+        self.set_parameters({
+            "ACC_ZBIAS_LEARN": 8,
+            "EK3_SRC1_VELZ": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(40, mode='LOITER')
+        self.delay_sim_time(20, "the accel bias to settle in hover")
+        self.change_mode('ACRO')
+        self.set_rc(3, 1500)
+        # the inhibit is written from the 1Hz loop
+        self.delay_sim_time(3, "the acro inhibit to engage")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 1.5,
+            "SIM_ACC2_BIAS_Z": 1.5,
+        })
+        self.delay_sim_time(0.5, "a short accel error")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0,
+            "SIM_ACC2_BIAS_Z": 0,
+        })
+        self.delay_sim_time(3, "acro after the accel error")
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(15, "alt hold after acro")
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=180)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        t_acro = None
+        t_exit = None
+        az = []
+        vel_d = []
+        true_vel_d = []
+        while True:
+            m = dfreader.recv_match(type=['MODE', 'XKF1', 'XKF2', 'SIM2'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'MODE':
+                if m.Mode == 1 and t_acro is None:
+                    t_acro = m.TimeUS
+                elif m.Mode == 2 and t_acro is not None and t_exit is None:
+                    t_exit = m.TimeUS
+            elif mtype == 'XKF1' and m.C == 0:
+                vel_d.append((m.TimeUS, m.VD))
+            elif mtype == 'XKF2' and m.C == 0:
+                az.append((m.TimeUS, m.AZ))
+            elif mtype == 'SIM2':
+                true_vel_d.append((m.TimeUS, m.VD))
+        if t_acro is None or t_exit is None:
+            raise NotAchievedException("no acro segment ending in ALT_HOLD in the log")
+
+        def at(series, t):
+            return min(series, key=lambda x: abs(x[0] - t))[1]
+
+        vel_err = at(vel_d, t_exit) - at(true_vel_d, t_exit)
+        az_exit = at(az, t_exit)
+        az_moved = max(abs(a - az_exit) for (t, a) in az if t_exit <= t <= t_exit + 10e6)
+        self.progress("velocity down error %.2f m/s when acro ended; XKF2.AZ moved %.3f m/s/s in the 10 s after" %
+                      (vel_err, az_moved))
+        if abs(vel_err) < 0.5:
+            raise NotAchievedException(
+                "accel error left only %.2f m/s of velocity error, so the check below proves nothing" % vel_err)
+        if az_moved > 0.2:
+            raise NotAchievedException("EKF learned %.3f m/s/s of accel bias from a velocity error" % az_moved)
+        self.context_pop()
+        self.reboot_sitl()
+
     def VibrationRectificationBiasLearning(self):
         '''Test hover Z-bias learning for vibration rectification'''
         # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
@@ -20125,6 +20200,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AccelBiasMovingPlatform,
             self.AccelBiasInhibitLoggedAfterLogRestart,
             self.AccelBiasLearningInhibitedInAcro,
+            self.AccelBiasAcroExitVelocityError,
         ])
         return ret
 
