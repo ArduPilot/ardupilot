@@ -188,12 +188,18 @@ void Copter::init_hover_bias_correction(void)
     seed_hover_bias_learning();
 }
 
-// seed_hover_bias_learning - start a flight from the saved bias, which a calibration may have changed
+// seed_hover_bias_learning - start a flight from the saved bias, which a calibration may have
+// changed, and record the bias the EKF holds for each IMU before the motors run
 void Copter::seed_hover_bias_learning(void)
 {
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
         _hover_bias_learning[imu] = AP::ins().get_accel_vrf_bias_z(imu);
         _hover_bias_learned[imu] = false;
+        _hover_bias_at_arm_ok[imu] = ahrs.get_accel_bias_z_for_imu(imu, _hover_bias_at_arm[imu]);
+        // with bit 2 the EKF learns no bias on the ground, and what it holds is the last flight's
+        if (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_DISARMED)) {
+            _hover_bias_at_arm[imu] = 0;
+        }
     }
 }
 
@@ -231,17 +237,18 @@ void Copter::update_hover_bias_learning(float dt)
     const float alpha = dt / (dt + HOVER_BIAS_TC_S);
 
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
-        // no core uses this IMU
+        // no core uses this IMU, or none did when the vehicle armed
         float bias_z_mss;
-        if (!ahrs.get_accel_bias_z_for_imu(imu, bias_z_mss)) {
+        if (!_hover_bias_at_arm_ok[imu] || !ahrs.get_accel_bias_z_for_imu(imu, bias_z_mss)) {
             continue;
         }
 
-        // the EKF only estimates what is left after the correction already
-        // applied to its IMU data, so add that back to get the total
+        // add back the correction already applied; the bias the EKF learnt on the ground is left out,
+        // as it learns that again before every flight and applying it from here would count it twice
         const float total_bias_mss = bias_z_mss + ahrs.get_hover_z_bias_correction(imu);
+        const float motors_on_bias_mss = total_bias_mss - _hover_bias_at_arm[imu];
 
-        _hover_bias_learning[imu] += alpha * (total_bias_mss - _hover_bias_learning[imu]);
+        _hover_bias_learning[imu] += alpha * (motors_on_bias_mss - _hover_bias_learning[imu]);
         _hover_bias_learned[imu] = true;
     }
 }
