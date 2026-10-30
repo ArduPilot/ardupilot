@@ -2247,7 +2247,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Unexpected error rate warnings for motors %s" % str(motors))
 
         self.start_subtest("Warn about every output of a motor with more than one")
-        # scoped so that motor 1 returns to SERVO1 on the reboot afterwards
+        # scoped so that context_pop() reboots and motor 1 returns to SERVO1
         self.context_push()
         self.set_parameters({
             'SIM_ESC_ERR_RATE': 5,
@@ -2261,7 +2261,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # on the "+" frame motor 1 is test order 2
         motors = self.run_motor_test_collecting_error_rates(2, 1)
         self.context_pop()
-        self.reboot_sitl()
         if sorted(set(motors)) != [5, 6]:
             raise NotAchievedException("Expected error rate warnings for motors 5 and 6, got %s" % str(motors))
 
