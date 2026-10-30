@@ -24,6 +24,7 @@ public:
     // temperature not available via analog backend
     bool get_temperature(float &temperature) override;
 
+#if AP_AIRSPEED_DRONECAN_DIRECT_ENABLED
     // true once the node has sent IndicatedAirspeed or TrueAirspeed. Latches
     // on permanently so that we never fall back to differential pressure
     // once a node has chosen to provide airspeed directly
@@ -31,6 +32,7 @@ public:
 
     // return airspeed (EAS) in m/s
     bool get_airspeed(float &airspeed) override;
+#endif
 
 #if AP_AIRSPEED_HYGROMETER_ENABLE
     // get hygrometer data
@@ -45,8 +47,13 @@ private:
 
     static void handle_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_RawAirData &msg);
     static void handle_hygrometer(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg);
+#if AP_AIRSPEED_DRONECAN_DIRECT_ENABLED
     static void handle_indicated_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_IndicatedAirspeed &msg);
     static void handle_true_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_TrueAirspeed &msg);
+
+    // common handling of IndicatedAirspeed and TrueAirspeed
+    void handle_direct_airspeed(float airspeed, bool is_tas);
+#endif
 
     static AP_Airspeed_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
 
@@ -54,6 +61,7 @@ private:
     float _temperature; // Celcius
     uint32_t _last_sample_time_ms;
 
+#if AP_AIRSPEED_DRONECAN_DIRECT_ENABLED
     // direct airspeed data, used in preference to differential pressure
     struct {
         float ias; // m/s
@@ -63,6 +71,7 @@ private:
         bool received;
         bool zero_offset_set;
     } _direct;
+#endif
 
     // hygrometer data
     struct {

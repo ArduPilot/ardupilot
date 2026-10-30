@@ -5,7 +5,9 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#if AP_AIRSPEED_DRONECAN_DIRECT_ENABLED
 #include <AP_AHRS/AP_AHRS.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -17,8 +19,10 @@ bool AP_Airspeed_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     const auto driver_index = ap_dronecan->get_driver_index();
 
     return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_airspeed, driver_index) != nullptr)
+#if AP_AIRSPEED_DRONECAN_DIRECT_ENABLED
         && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_indicated_airspeed, driver_index) != nullptr)
         && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_true_airspeed, driver_index) != nullptr)
+#endif
 #if AP_AIRSPEED_HYGROMETER_ENABLE
         && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_hygrometer, driver_index) != nullptr)
 #endif
@@ -106,41 +110,46 @@ void AP_Airspeed_DroneCAN::handle_airspeed(AP_DroneCAN *ap_dronecan, const Canar
     }
 }
 
-void AP_Airspeed_DroneCAN::handle_indicated_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_IndicatedAirspeed &msg)
+#if AP_AIRSPEED_DRONECAN_DIRECT_ENABLED
+void AP_Airspeed_DroneCAN::handle_direct_airspeed(float airspeed, bool is_tas)
 {
-    if (!isfinite(msg.indicated_airspeed)) {
+    if (!isfinite(airspeed)) {
         return;
     }
 
+    WITH_SEMAPHORE(_sem_airspeed);
+    if (is_tas) {
+        _direct.tas = MAX(airspeed, 0);
+        _direct.tas_last_sample_ms = AP_HAL::millis();
+    } else {
+        _direct.ias = MAX(airspeed, 0);
+        _direct.ias_last_sample_ms = AP_HAL::millis();
+    }
+    _direct.received = true;
+}
+
+void AP_Airspeed_DroneCAN::handle_indicated_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_IndicatedAirspeed &msg)
+{
     WITH_SEMAPHORE(_sem_registry);
 
     AP_Airspeed_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
 
     if (driver != nullptr) {
-        WITH_SEMAPHORE(driver->_sem_airspeed);
-        driver->_direct.ias = MAX(msg.indicated_airspeed, 0);
-        driver->_direct.ias_last_sample_ms = AP_HAL::millis();
-        driver->_direct.received = true;
+        driver->handle_direct_airspeed(msg.indicated_airspeed, false);
     }
 }
 
 void AP_Airspeed_DroneCAN::handle_true_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_TrueAirspeed &msg)
 {
-    if (!isfinite(msg.true_airspeed)) {
-        return;
-    }
-
     WITH_SEMAPHORE(_sem_registry);
 
     AP_Airspeed_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
 
     if (driver != nullptr) {
-        WITH_SEMAPHORE(driver->_sem_airspeed);
-        driver->_direct.tas = MAX(msg.true_airspeed, 0);
-        driver->_direct.tas_last_sample_ms = AP_HAL::millis();
-        driver->_direct.received = true;
+        driver->handle_direct_airspeed(msg.true_airspeed, true);
     }
 }
+#endif // AP_AIRSPEED_DRONECAN_DIRECT_ENABLED
 
 #if AP_AIRSPEED_HYGROMETER_ENABLE
 void AP_Airspeed_DroneCAN::handle_hygrometer(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg)
@@ -177,6 +186,7 @@ bool AP_Airspeed_DroneCAN::get_differential_pressure(float &pressure)
     return true;
 }
 
+#if AP_AIRSPEED_DRONECAN_DIRECT_ENABLED
 bool AP_Airspeed_DroneCAN::has_airspeed()
 {
     bool received;
@@ -219,6 +229,7 @@ bool AP_Airspeed_DroneCAN::get_airspeed(float &airspeed)
 
     return false;
 }
+#endif // AP_AIRSPEED_DRONECAN_DIRECT_ENABLED
 
 bool AP_Airspeed_DroneCAN::get_temperature(float &temperature)
 {
