@@ -18422,6 +18422,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.zero_throttle()
         self.reboot_sitl()
 
+    def ThrowDropArrestedShort(self):
+        '''A drop that stops short of THROW_ALT_DCSND must not stay at zero collective'''
+        # A short toss lands before it has fallen THROW_ALT_DCSND below the
+        # release point.  The descent gate alone would then hold it in
+        # Uprighting, armed with no collective, for as long as it sits there.
+        self.set_parameters({
+            "THROW_TYPE": 1,           # drop
+            "THROW_ALT_DCSND": 5,
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            "SIM_SHOVE_Z": -30,
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Stabilizing throw height", check_context=True, timeout=10)
+        self.wait_mode('ALT_HOLD', timeout=30)
+        # the ground strike leaves the land detector slow to settle, and the
+        # handoff is what is under test
+        self.disarm_vehicle(force=True)
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -20093,6 +20121,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowDropLongFall,
             self.ThrowSrcInitRestoredOnCompletion,
             self.ThrowUpwardNoPositionNextMode,
+            self.ThrowDropArrestedShort,
         ])
         return ret
 
