@@ -12244,6 +12244,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if repeats > steps * 0.1:
             raise NotAchievedException("Post-filter gyro log repeats %u of %u samples" % (repeats, steps))
 
+    def RateThreadTempCal(self):
+        """Check the rate thread stays off while a temperature calibration runs."""
+        # the calibration saves its own results, which would otherwise leak into later tests
+        self.context_preserve_parameters(["INS_TCAL1_TMIN"] + [
+            "INS_TCAL1_%s%u_%s" % (sensor, n, axis)
+            for sensor in ("ACC", "GYR")
+            for n in (1, 2, 3)
+            for axis in "XYZ"
+        ])
+        # learning starts at boot and this 20C to 35C calibration completes about 18s later
+        self.set_parameters({
+            "FSTRATE_ENABLE": 1,
+            "INS_TCAL1_ENABLE": 2,
+            "INS_TCAL1_TMAX": 35,
+            "SIM_IMUT_START": 20,
+            "SIM_IMUT_END": 45,
+            "SIM_IMUT_TCONST": 20,
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        self.wait_statustext("TCAL[1]: completed calibration", check_context=True, timeout=60)
+        # the rate thread announces every rate it sets, so until now it must have said nothing
+        for m in self.context_collection('STATUSTEXT'):
+            if "completed calibration" in m.text:
+                break
+            if "rate set to" in m.text:
+                raise NotAchievedException("Rate thread set its rates during the calibration (%s)" % m.text)
+        self.wait_statustext("rate set to", check_context=True, timeout=10)
+
     def hover_and_check_matched_frequency(self, *, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         '''do a simple up-and-down test flight with current vehicle state.
         Check that the onboard filter comes up with the same peak-frequency that
@@ -19554,6 +19584,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.DynamicRpmNotchesRateThread,
             self.RateThreadPostFilterGyroLog,
+            self.RateThreadTempCal,
             self.DynamicRpmNotchesESCMask,
             self.WPYawBehaviour1RTL,
             self.AHRSSwitchBackendPositionNEReset,
