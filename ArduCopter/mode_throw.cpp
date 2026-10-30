@@ -35,6 +35,7 @@ bool ModeThrow::init(bool ignore_checks)
     stage = Throw_Disarmed;
     nextmode_attempted = false;
     completion_started = false;
+    nextmode_wait_start_ms = 0;
     source_set_switched = false;
     xy_controller_active = false;
     drop_confirm_start_ms = 0;
@@ -182,6 +183,7 @@ void ModeThrow::run()
         // each throw starts afresh
         nextmode_attempted = false;
         completion_started = false;
+        nextmode_wait_start_ms = 0;
         xy_controller_active = false;
         drop_confirm_start_ms = 0;
 
@@ -1022,9 +1024,18 @@ void ModeThrow::throw_do_nextmode_handoff()
     Mode *next = nextmode();
     if (next != nullptr) {
         // The EKF takes a while to take up a new source set, and set_mode()
-        // refuses a mode that needs a position until it has, so wait.
+        // refuses a mode that needs a position until it has, so wait a few
+        // seconds.  After that the change is tried and refused as it always
+        // was, leaving the vehicle in throw.
         if (next->requires_position() && !copter.position_ok()) {
-            return;
+            const uint32_t now_ms = AP_HAL::millis();
+            if (nextmode_wait_start_ms == 0) {
+                nextmode_wait_start_ms = now_ms;
+                gcs().send_text(MAV_SEVERITY_INFO, "Throw: %s waiting for position", next->name());
+            }
+            if (now_ms - nextmode_wait_start_ms < THROW_NEXTMODE_POS_WAIT_MS) {
+                return;
+            }
         }
         set_mode(next->mode_number(), ModeReason::THROW_COMPLETE);
     }

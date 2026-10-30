@@ -513,6 +513,9 @@
 #ifndef THROW_SPOOLUP_ABORT_ACCEL_FRAC
  # define THROW_SPOOLUP_ABORT_ACCEL_FRAC 0.25f // below this fraction of g of downward acceleration a spool-up is treated as a false trigger
 #endif
+#ifndef THROW_NEXTMODE_POS_WAIT_MS
+ # define THROW_NEXTMODE_POS_WAIT_MS 5000 // ms the handoff waits for a position before trying, and failing, to change to a next mode that needs one
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PosHold parameter defaults
