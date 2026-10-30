@@ -18538,19 +18538,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def ThrowDropEKFFailsafePosHold(self):
-        '''An EKF failsafe while a drop holds position must be acted on'''
+        '''An EKF failsafe while a drop holds position is acted on only where a position is needed'''
         # Throw PosHold runs horizontal position control once it has a
-        # position, so losing that position there is as serious as in LOITER.
+        # position.  Staying in throw, losing it there is as serious as in
+        # LOITER.  On the way to a mode that flies without one, PosHold drops
+        # to a level hold and hands over as planned.
         self.set_parameters({
             "SIM_SHOVE_Z": -10.5,
             "THROW_TYPE": 1,           # drop
-            "THROW_NEXTMODE": 18,      # stay in throw, holding position
             "MOT_SPOOL_TIME": 0.5,
         })
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("next mode ALT_HOLD: the failsafe only reports")
+        self.set_parameters({
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            # a slow half-turn yaw alignment keeps the vehicle in PosHold
+            "THROW_YAW_TYPE": 3,
+            "THROW_YAW_DEG": 90,
+            "ATC_RATE_WPY_MAX": 20,
+        })
+        self.drop_to_throw_poshold()
+        self.set_parameter("FS_EKF_THRESH", 0.01)  # any variance trips the EKF failsafe
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=10)
+        self.wait_mode('ALT_HOLD', timeout=30)
+        if self.statustext_in_collections("EKF Failsafe: changed to"):
+            raise NotAchievedException("EKF failsafe changed mode on the way to ALT_HOLD")
+        self.set_parameter("FS_EKF_THRESH", 0.8)
+        self.set_rc(3, 1000)
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.reboot_sitl()
+
+        self.start_subtest("staying in throw: the failsafe lands")
+        self.set_parameters({
+            "THROW_NEXTMODE": 18,      # stay in throw, holding position
+            "THROW_YAW_TYPE": 0,
+        })
+        self.drop_to_throw_poshold()
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_statustext("EKF Failsafe: changed to Land Mode", check_context=True, timeout=60)
+        self.wait_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.reboot_sitl()
+
+    def drop_to_throw_poshold(self):
+        '''arm in throw, drop from height and wait for throw to hold position'''
         self.change_mode('THROW')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.context_collect('STATUSTEXT')
+        self.context_clear_collection('STATUSTEXT')
         try:
             self.set_parameter("SIM_SHOVE_TIME", 20000)
         except ValueError:
@@ -18560,12 +18598,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("Throw detected", check_context=True, timeout=30)
         self.wait_statustext("Throw height achieved, good position", check_context=True, timeout=30)
         self.wait_statustext("Throw holding position", check_context=True, timeout=10)
-
-        self.set_parameter("SIM_GPS1_ENABLE", 0)
-        self.wait_statustext("EKF Failsafe: changed to Land Mode", check_context=True, timeout=60)
-        self.wait_mode('LAND')
-        self.wait_disarmed(timeout=120)
-        self.reboot_sitl()
 
     def ThrowSrcSetHandoff(self):
         '''Completion leaves the EKF on the set to fly on, whether or not the next mode takes over'''
