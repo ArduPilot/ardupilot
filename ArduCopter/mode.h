@@ -1962,6 +1962,7 @@ private:
     bool nextmode_attempted;
     bool completion_started;        // true once the handoff has given its warnings and set the source set
     uint32_t nextmode_wait_start_ms; // system time the handoff started waiting for a position, 0 if not waiting
+    uint32_t srcset_change_ms;      // system time completion changed the EKF source set, 0 if it did not
     bool xy_controller_active;      // true when XY position controller was initialised
     bool source_set_switched;       // true if init() switched the EKF source set and exit() must restore it
     uint8_t saved_source_set;       // EKF source set active before init() switched it for the throw phase

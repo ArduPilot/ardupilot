@@ -516,6 +516,9 @@
 #ifndef THROW_UPRIGHT_TIMEOUT_MS
  # define THROW_UPRIGHT_TIMEOUT_MS 3000 // ms after which uprighting moves on whatever the attitude or, for a drop, the descent
 #endif
+#ifndef THROW_SRC_SETTLE_MS
+ # define THROW_SRC_SETTLE_MS 100 // ms after completion changes the EKF source set before the handoff reads the EKF's status
+#endif
 #ifndef THROW_NEXTMODE_POS_WAIT_MS
  # define THROW_NEXTMODE_POS_WAIT_MS 5000 // ms the handoff waits for a position before giving up on a next mode that needs one
 #endif

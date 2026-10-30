@@ -1023,13 +1023,21 @@ void ModeThrow::throw_do_nextmode_handoff()
             gcs().send_text(MAV_SEVERITY_WARNING, "Throttle low - losing altitude");
         }
         const int8_t srcset = g2.throw_srcset.get();
+        bool srcset_changed = source_set_switched;
         if (srcset >= 1 && srcset <= 3) {
             ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(srcset - 1));
             gcs().send_text(MAV_SEVERITY_INFO, "EKF Source Set %d", srcset);
             source_set_switched = false;
+            srcset_changed = true;
         }
         // with THROW_SRC_SET 0 the pre-throw set goes back now
         restore_source_set();
+        srcset_change_ms = srcset_changed ? AP_HAL::millis() : 0;
+    }
+    // A new source set reaches the EKF's status, and so position_ok(), only
+    // at its next updates, so nothing below reads that status until then.
+    if (srcset_change_ms != 0 && AP_HAL::millis() - srcset_change_ms < THROW_SRC_SETTLE_MS) {
+        return;
     }
     Mode *next = nextmode();
     if (next != nullptr) {
