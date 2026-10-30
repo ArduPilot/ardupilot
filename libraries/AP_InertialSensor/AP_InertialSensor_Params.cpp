@@ -148,7 +148,7 @@ const AP_Param::GroupInfo AP_InertialSensor_Params::var_info[] = {
 #if APM_BUILD_COPTER_OR_HELI
     // @Param{Copter}: ACC_VRFB_Z
     // @DisplayName: Accelerometer vibration rectification Z bias
-    // @Description: Total Z-axis accelerometer bias seen in hover, learned by Copter. This is the total in the EKF's own sign convention: it includes the residual sensor bias left after accel calibration as well as the vibration rectification offset, and is not the motors-on minus motors-off difference. Applied to the IMU data while armed so the EKF does not have to relearn it on every flight. The EKF will still learn the correct bias in flight even if this value is wrong.
+    // @Description: Z-axis accelerometer bias learned by Copter in hover, less the bias the EKF held when the vehicle armed: mostly the vibration rectification offset the motors cause, in the EKF's own sign convention. With ACC_ZBIAS_LEARN bit 2 set the EKF learns no accelerometer bias on the ground, and this is the whole bias seen in hover. With bit 2 clear, a value learned on a flight armed before the EKF has learned its ground bias includes the part not yet learned, and one learned on a flight armed on a moving platform includes the platform's acceleration. Applied to the IMU data while armed so the EKF does not have to relearn it on every flight. The EKF will still learn the correct bias in flight even if this value is wrong.
     // @Units: m/s/s
     // @Range: -0.6 0.6
     // @User: Advanced
