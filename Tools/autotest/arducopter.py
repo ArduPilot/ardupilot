@@ -18517,11 +18517,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.yawspeed) > 13', timeout=10)
         self.set_parameter("SIM_TWIST_Z", 3.0)
         self.delay_sim_time(3, "held and spinning for many confirmation windows; nothing should happen")
+        if self.statustext_in_collections("Throw detected"):
+            raise NotAchievedException("held spinning vehicle was detected as dropped")
         self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.roll) < 0.1 and abs(ATTITUDE.pitch) < 0.1')
         # still spinning past the crossover, or the hold proved nothing
         self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.yawspeed) > 10')
-        if self.statustext_in_collections("Throw detected"):
-            raise NotAchievedException("held spinning vehicle was detected as dropped")
 
         # let go, still spinning
         self.set_parameters({
