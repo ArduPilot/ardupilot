@@ -18522,9 +18522,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.roll) < 0.1 and abs(ATTITUDE.pitch) < 0.1')
         # still spinning past the crossover, or the hold proved nothing
         self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.yawspeed) > 10')
-        # and still not detected, through to the release
-        if self.statustext_in_collections("Throw detected"):
-            raise NotAchievedException("held spinning vehicle was detected as dropped")
 
         # let go, still spinning
         self.set_parameters({
@@ -18535,8 +18532,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
         self.wait_mode('ALT_HOLD')
 
-        # Time the detection from the release in the vehicle's own log: the
-        # parameter round trips here take most of a second.  The release lands
+        # The vehicle's own log covers the whole hold, up to the moment the
+        # release took effect, and times the detection from it: the parameter
+        # round trips here take most of a second.  The release lands
         # somewhere in a 500 ms confirmation window, which puts detection up
         # to about 0.35 s after it.
         dfreader = self.dfreader_for_current_onboard_log()
@@ -18549,7 +18547,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.get_type() == 'PARM':
                 if m.Name == 'SIM_SHOVE_Z':
                     release_us = m.TimeUS if m.Value == 0 else None
-            elif release_us is not None and m.Stage > 1:
+            elif m.Stage > 1:
+                if release_us is None:
+                    raise NotAchievedException("held spinning vehicle was detected as dropped")
                 detect_us = m.TimeUS
         delay = (detect_us - release_us) * 1e-6
         self.progress("detected %.2fs after release" % delay)
