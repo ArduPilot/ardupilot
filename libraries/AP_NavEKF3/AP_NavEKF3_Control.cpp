@@ -307,7 +307,9 @@ void NavEKF3_core::setAidingMode()
         }
         case AID_RELATIVE: {
             // Check if the fusion has timed out (flow measurements have been rejected for too long)
-            bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
+            // time the tilt check withheld flow for was not spent rejecting it, so it does not count
+            const uint32_t flowUnfused_ms = imuSampleTime_ms - prevFlowFuseTime_ms;
+            bool flowFusionTimeout = (flowUnfused_ms - MIN(flowWithheld_ms, flowUnfused_ms)) > 5000;
             // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
             bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
             // Enable switch to absolute position mode if GPS or range beacon data is available
@@ -448,6 +450,7 @@ void NavEKF3_core::setAidingMode()
                 // Reset time stamps
                 flowValidMeaTime_ms = imuSampleTime_ms;
                 prevFlowFuseTime_ms = imuSampleTime_ms;
+                flowWithheld_ms = 0;
             } else
 #endif
                 if (readyToUseBodyOdm()) {
