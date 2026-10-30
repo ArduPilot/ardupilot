@@ -283,7 +283,7 @@ void RCOutput::bdshot_prepare_for_next_pulse(pwm_group& group)
             _bdshot.erpm_errors[chan] = 0;
             _bdshot.erpm_last_stats_ms[chan] = now;
         }
-    } else if (group.dshot_state == DshotState::RECV_FAILED) {
+    } else if (group.dshot_state == DshotState::RECV_FAILED && !group.bdshot.command_sent) {
         // the DMA callback has already moved curr_telem_chan on to the next slot
         _bdshot.erpm_errors[group.chan[group.bdshot.prev_telem_chan]]++;
     }

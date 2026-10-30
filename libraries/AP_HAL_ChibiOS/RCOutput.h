@@ -423,6 +423,7 @@ private:
             uint8_t telem_tim_ch[4];
             uint8_t curr_telem_chan;
             uint8_t prev_telem_chan;
+            bool command_sent; // the last pulse sent a DShot command to the telemetry channel, which gets no reply
             Shared_DMA *curr_ic_dma_handle; // a shortcut to avoid logic errors involving the wrong lock
             uint16_t telempsc;
             dmar_uint_t dma_buffer_copy[GCR_TELEMETRY_BIT_LEN];
