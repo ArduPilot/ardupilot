@@ -9,8 +9,8 @@
 // check if we should enter esc calibration mode
 void Copter::esc_calibration_startup_check()
 {
-    if (BoardConfig.fast_boot_esc()) {
-        // ESC calibration startup check skipped in fast boot mode
+    if (g.esc_calibrate == ESCCalibrationModes::ESCCAL_DISABLED) {
+        // nothing to do, so do not wait for the radio below
         return;
     }
 
