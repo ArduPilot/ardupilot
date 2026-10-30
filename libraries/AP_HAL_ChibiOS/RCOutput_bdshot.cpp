@@ -870,7 +870,7 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
         _bdshot.erpm[chan] = erpm;
         _bdshot.update_mask |= 1U<<chan;
 #if HAL_WITH_ESC_TELEM
-        update_rpm(normalized_chan, erpm * 200U / _bdshot.motor_poles, get_erpm_error_rate(chan));
+        update_rpm(normalized_chan, erpm * 200U / _bdshot.motor_poles, get_erpm_error_rate(chan), true);
 #endif
     }
     return erpm < INVALID_ERPM;
