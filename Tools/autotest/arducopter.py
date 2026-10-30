@@ -18814,15 +18814,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         # the detecting stage after the last arm in the log must have no target
         dfreader = self.dfreader_for_current_onboard_log()
-        detecting = []
+        armings = []
         while True:
             m = dfreader.recv_match(type=['ARM', 'THRO'])
             if m is None:
                 break
             if m.get_type() == 'ARM' and m.ArmState == 1:
-                detecting = []
-            elif m.get_type() == 'THRO' and m.Stage == 1:
-                detecting.append(m)
+                armings.append([])
+            elif m.get_type() == 'THRO' and len(armings) > 0:
+                armings[-1].append(m)
+        if len(armings) < 2:
+            raise NotAchievedException("the aborted throw and the re-arm are not both in the log")
+        # the aborted throw must have set the target this leg looks for
+        if not any(m.Stage >= 2 and m.YSrc == 4 and abs(m.TYaw - 90) < 1 for m in armings[-2]):
+            raise NotAchievedException("the aborted throw never set a yaw target")
+        detecting = [m for m in armings[-1] if m.Stage == 1]
         if len(detecting) == 0:
             raise NotAchievedException("no detecting stage logged after the re-arm")
         if any(m.YSrc != 0 or abs(m.TYaw) > 0.1 for m in detecting):
