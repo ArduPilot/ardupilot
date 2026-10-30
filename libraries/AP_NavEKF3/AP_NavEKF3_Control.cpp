@@ -18,6 +18,16 @@ void NavEKF3_core::controlFilterModes()
         // set the time at which we arm to assist with checks
         timeAtArming_ms =  imuSampleTime_ms;
     }
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    if (!motorsArmed) {
+        // give flow aiding a fresh start for the next flight, whether or not the flow sensor is sending
+        flowVelResetUnhealthy = false;
+        memset(flowVelResetTimes_ms, 0, sizeof(flowVelResetTimes_ms));
+        flowVelResetNext = 0;
+        flowVelResetPauseStart_ms = 0;
+        flowVelResetPause_ms = 0;
+    }
+#endif
 
     // Detect if we are in flight on or ground
     detectFlight();
@@ -328,6 +338,9 @@ void NavEKF3_core::setAidingMode()
             const uint32_t flowUnfused_ms = imuSampleTime_ms - prevFlowFuseTime_ms;
             const uint32_t flowWithheldCounted_ms = (dal.get_time_flying_ms() > 0) ? MIN(flowWithheld_ms, flowUnfused_ms) : 0;
             bool flowFusionTimeout = (flowUnfused_ms - flowWithheldCounted_ms) > 5000;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            flowFusionTimeout |= flowVelResetUnhealthy;
+#endif
             // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
             bool bodyOdmFusionTimeout = ((imuSampleTime_ms - bodyOdm.prevFuseTime_ms) > 5000);
             // Enable switch to absolute position mode if GPS or range beacon data is available
@@ -474,6 +487,11 @@ void NavEKF3_core::setAidingMode()
                 flowValidMeaTime_ms = imuSampleTime_ms;
                 prevFlowFuseTime_ms = imuSampleTime_ms;
                 flowWithheld_ms = 0;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+                flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
+                memset(flowVelResetTimes_ms, 0, sizeof(flowVelResetTimes_ms));
+                flowVelResetNext = 0;
+#endif
             } else
 #endif
                 if (readyToUseBodyOdm()) {
@@ -591,6 +609,14 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
     if (flowRngBelowAltMin) {
         return false;
     }
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // a lockout sample the sensor itself reports as poor means flow cannot be trusted until disarm
+    // or until the sensor recovers. Without this the filter leaves AID_RELATIVE on the timeout
+    // below and re-enters on the next step.
+    if (flowVelResetUnhealthy) {
+        return false;
+    }
+#endif
 
     // We need stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use optical flow
     return (imuSampleTime_ms - flowMeaTime_ms < 200) && tiltAlignComplete && delAngBiasLearned;
