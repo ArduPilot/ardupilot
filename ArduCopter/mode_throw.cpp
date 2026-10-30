@@ -473,11 +473,15 @@ void ModeThrow::run()
 
 bool ModeThrow::throw_detected()
 {
-    // Check that we have a valid navigation solution
+    // Check that we have a valid navigation solution.  A drop confirmation
+    // window must not span a gap in it, or its start, start velocity and
+    // release altitude go stale.
     if (!ahrs.configured_backend_has_status(AP_AHRS::Status::ATTITUDE_VALID)) {
+        drop_confirm_start_ms = 0;
         return false;
     }
     if (!ahrs.configured_backend_has_status(AP_AHRS::Status::VERT_POS)) {
+        drop_confirm_start_ms = 0;
         return false;
     }
 
