@@ -22571,9 +22571,16 @@ RTL_ALT_M 111
         self.set_parameter("SIM_FLOW_ENABLE", 1)
         self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
 
-        self.start_subtest("EK3_FLOW_QMIN reads 50 on the signal strength, flashing below it")
-        # SITL's flow sensor always reports quality 51
+        self.start_subtest("EK3_FLOW_QMIN shows no floor without the AGL KF it acts through")
+        # SITL's flow sensor always reports quality 51, which reads 20 with no floor
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL\x0120")
         self.set_parameter("EK3_FLOW_QMIN", 51)
+        texts = [s[10] for s in self.osd_displayport_rows(msp, [10], 2)]
+        if not all(b"C1 REL\x0120" in t for t in texts):
+            raise NotAchievedException("quality floor shown without the AGL KF: %s" % texts)
+
+        self.start_subtest("EK3_FLOW_QMIN reads 50 on the signal strength, flashing below it")
+        self.set_parameter("EK3_OPTIONS", 8)  # AGL KF for optical flow
         self.wait_osd_ekf_lane(msp, 10, b"C1 REL\x0150")
         texts = [s[10] for s in self.osd_displayport_rows(msp, [10], 2)]
         if not all(b"C1 REL\x0150" in t for t in texts):
