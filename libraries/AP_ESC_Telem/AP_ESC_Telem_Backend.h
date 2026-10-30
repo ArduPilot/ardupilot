@@ -43,11 +43,12 @@ public:
     struct RpmData {
         float    rpm;               // rpm
         float    prev_rpm;          // previous rpm
-        float    error_rate;        // error rate, in percent if error_rate_is_pct is set
+        float    error_rate;        // error rate as the last driver reported it, a count for DroneCAN
+        float    error_rate_pct;    // error rate in percent, from drivers that report a percentage
+        uint32_t error_rate_pct_us; // last time error_rate_pct was updated, 0 if never
         uint32_t last_update_us;    // last update time, greater then 0 means we've gotten data at some point
         float    update_rate_hz;
         bool     data_valid;        // if this isn't set to true, then the ESC data should be ignored
-        bool     error_rate_is_pct; // error_rate is a percentage, not an error count
     };
 
     enum TelemetryType {

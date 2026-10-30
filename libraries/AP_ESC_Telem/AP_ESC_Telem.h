@@ -34,7 +34,7 @@ public:
     // get an individual ESC's raw rpm and error rate if available
     bool get_raw_rpm_and_error_rate(uint8_t esc_index, float& rpm, float& error_rate) const;
 
-    // get an individual ESC's error rate in percent, returns false if it does not report one
+    // get an individual ESC's error rate in percent, returns false if it has not reported one recently
     bool get_error_rate_pct(uint8_t esc_index, float& error_rate_pct) const;
 
     // get raw telemetry data, used by IOMCU
