@@ -1184,7 +1184,8 @@ void AP_CRSF_Telem::calc_device_info() {
     put_be32_ptr(&_telem.ext.info.payload[n], fwver.os_sw_version);   // software id
     n += 4;
 #if OSD_PARAM_ENABLED
-    _telem.ext.info.payload[n] = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; // param count
+    // param count, the Parameters folder and the OSD parameters in it
+    _telem.ext.info.payload[n] = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS + 1;
 #if AP_CRSF_SCRIPTING_ENABLED
     for (ScriptedMenu* m = &scripted_menus; m != nullptr; m = m->next_menu) {
         _telem.ext.info.payload[n] += m->num_params;
@@ -1290,22 +1291,14 @@ void AP_CRSF_Telem::calc_parameter() {
         _telem.ext.param_entry.payload[idx++] = 't';
         _telem.ext.param_entry.payload[idx++] = 0; // null terminator
 
+        _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // root parameter screen ardupilot menu
 #if AP_CRSF_SCRIPTING_ENABLED
-        if (scripted_menus.next_menu != nullptr) {
-            _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // root parameter screen ardupilot menu
-            for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; m = m->next_menu) {
-                if (m->parent_id == 0) {
-                    _telem.ext.param_entry.payload[idx++] = m->id;   // scripted menus
-                }
-            }
-        } else
-#endif // AP_CRSF_SCRIPTING_ENABLED
-        {
-            // write out all of the ids we are going to send
-            for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
-                _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID + i + 1;
+        for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; m = m->next_menu) {
+            if (m->parent_id == 0) {
+                _telem.ext.param_entry.payload[idx++] = m->id;   // scripted menus
             }
         }
+#endif // AP_CRSF_SCRIPTING_ENABLED
         _telem.ext.param_entry.payload[idx] = 0xFF; // terminator
 
         _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
@@ -1315,9 +1308,8 @@ void AP_CRSF_Telem::calc_parameter() {
         return;
     }
 
-#if AP_CRSF_SCRIPTING_ENABLED
-    // root folder request
-    if (scripted_menus.next_menu != nullptr && _param_request.param_num == PARAMETER_MENU_ID) {
+    // Parameters folder request
+    if (_param_request.param_num == PARAMETER_MENU_ID) {
         _telem.ext.param_entry.header.param_num = PARAMETER_MENU_ID;
         _telem.ext.param_entry.header.chunks_left = 0;
         _telem.ext.param_entry.payload[idx++] = 0; // parent folder
@@ -1339,6 +1331,7 @@ void AP_CRSF_Telem::calc_parameter() {
         return;
     }
 
+#if AP_CRSF_SCRIPTING_ENABLED
     // scripted menu folder request indexed as the set of parameter ids from SCRIPTED_MENU_START_ID
     AP_CRSF_Telem::ScriptedMenu* menu = scripted_menus.find_menu(_param_request.param_num);
 
@@ -1391,7 +1384,7 @@ void AP_CRSF_Telem::calc_parameter() {
     }
 #endif
     _telem.ext.param_entry.header.chunks_left = 0;
-    _telem.ext.param_entry.payload[idx++] = 0; // parent folder
+    _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // parent folder
     idx++;  // leave a gap for the type
     setting->copy_name_camel_case((char*)&_telem.ext.param_entry.payload[idx], 17);
     idx += strnlen((char*)&_telem.ext.param_entry.payload[idx], 16) + 1;
@@ -1628,7 +1621,7 @@ void AP_CRSF_Telem::calc_text_selection(AP_OSD_ParamSetting* param, uint8_t chun
     // chunk the output
     BufferChunker chunker(_telem.ext.param_entry.payload, CHUNK_SIZE, chunk);
 
-    chunker.put_byte(0);  // parent folder
+    chunker.put_byte(PARAMETER_MENU_ID);  // parent folder
     chunker.put_byte(ParameterType::TEXT_SELECTION);  // parameter type
 
     char name[17];
