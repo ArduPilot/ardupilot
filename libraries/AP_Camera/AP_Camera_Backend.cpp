@@ -346,7 +346,8 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
         quat_array,
         horizontal_fov() > 0 ? horizontal_fov() : NaNf,
         vertical_fov() > 0 ? vertical_fov() : NaNf,
-        _instance + 1       // camera_device_id
+        _instance + 1,      // camera_device_id
+        0                   // stream_id, 0 as FOV is not stream-specific
     );
 }
 #endif

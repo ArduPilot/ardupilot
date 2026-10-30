@@ -4,6 +4,8 @@
 
 def build(bld):
     if bld.env.BOARD_CLASS != 'SITL':
+        if bld.cmd == 'renode-physics':
+            bld.fatal('renode-physics needs ./waf configure --board sitl')
         return
 
     bld.ap_program(

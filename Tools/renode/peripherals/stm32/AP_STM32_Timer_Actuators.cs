@@ -5,6 +5,7 @@
 // complete frame.
 using System;
 using Antmicro.Renode.Core;
+using Antmicro.Renode.Exceptions;
 using Antmicro.Renode.Peripherals;
 using Antmicro.Renode.Peripherals.Bus;
 using Antmicro.Renode.Peripherals.Timers;
@@ -18,7 +19,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             int output1 = Unmapped, int output2 = Unmapped,
             int output3 = Unmapped, int output4 = Unmapped,
             bool complementary1 = false, bool complementary2 = false,
-            bool complementary3 = false, bool complementary4 = false)
+            bool complementary3 = false, bool complementary4 = false,
+            string physicsMachine = null)
         {
             this.timer = timer;
             outputs = new int[] { output1, output2, output3, output4 };
@@ -33,7 +35,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                         nameof(output1), "physics actuator output is out of range");
                 }
             }
-            AP_PhysicsState.ForMachine(machine).RegisterActuatorSource(this);
+            AP_PhysicsState.ForMachine(PhysicsMachine(machine, physicsMachine))
+                .RegisterActuatorSource(this);
         }
 
         public void Sample(AP_PhysicsActuator[] actuators)
@@ -80,6 +83,22 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     value, AP_PhysicsActuator.ProtocolPwm,
                     valid ? AP_PhysicsActuator.FlagValid : (byte)0);
             }
+        }
+
+        // a coprocessor such as the IOMCU drives the main machine's physics
+        private static IMachine PhysicsMachine(IMachine machine, string name)
+        {
+            if(string.IsNullOrEmpty(name))
+            {
+                return machine;
+            }
+            var emulation = EmulationManager.Instance.CurrentEmulation;
+            if(!emulation.TryGetMachine(name, out var target))
+            {
+                throw new RecoverableException(string.Format(
+                    "No machine named {0}", name));
+            }
+            return target;
         }
 
         public uint ReadDoubleWord(long offset) => 0;

@@ -77,7 +77,8 @@ It is continually being expanded to provide support for new emerging vehicle typ
 ## License
 
 The ArduPilot project is licensed under the GNU General Public
-License, version 3.
+License, version 3 or (at your option) any later version
+(SPDX identifier `GPL-3.0-or-later`).
 
 - [Overview of license](https://ardupilot.org/dev/docs/license-gplv3.html)
 

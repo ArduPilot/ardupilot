@@ -48,13 +48,6 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Range: 0.000 0.400
     // @User: Standard
 
-    // @Param: _RATE_FILT
-    // @DisplayName: Wheel rate control filter frequency
-    // @Description: Wheel rate control input filter.  Lower values reduce noise but add delay.
-    // @Range: 1.000 100.000
-    // @Units: Hz
-    // @User: Standard
-
     // @Param: _RATE_FLTT
     // @DisplayName: Wheel rate control target frequency in Hz
     // @Description: Wheel rate control target frequency in Hz
@@ -140,13 +133,6 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @DisplayName: Wheel rate control D gain
     // @Description: Wheel rate control D gain.  Compensates for short-term change in desired rate vs actual
     // @Range: 0.000 0.400
-    // @User: Standard
-
-    // @Param: 2_RATE_FILT
-    // @DisplayName: Wheel rate control filter frequency
-    // @Description: Wheel rate control input filter.  Lower values reduce noise but add delay.
-    // @Range: 1.000 100.000
-    // @Units: Hz
     // @User: Standard
 
     // @Param: 2_RATE_FLTT

@@ -36,4 +36,11 @@ define HAL_STORAGE_SIZE 16384
 # use a longer frame gap detector for more robust SBUS with H12 controller
 define HAL_SBUS_FRAME_GAP 5000U
 
+# the airframe is fixed as a quad tailsitter, so only AP_MotorsMatrix
+# with the QUAD frame is required:
+define AP_MOTORSMULTI_BACKEND_DEFAULT_ENABLED 0
+define AP_MOTORS_MATRIX_ENABLED 1
+define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
+define AP_MOTORS_FRAME_QUAD_ENABLED 1
+
 AUTOBUILD_TARGETS Plane

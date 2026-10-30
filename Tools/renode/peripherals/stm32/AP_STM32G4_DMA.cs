@@ -10,9 +10,13 @@ namespace Antmicro.Renode.Peripherals.DMA
     public class AP_STM32G4_DMA : IDoubleWordPeripheral, IKnownSize,
         IGPIOReceiver, INumberedGPIOOutput
     {
-        public AP_STM32G4_DMA(IMachine machine, int numberOfChannels)
+        // requestChannels: bitmask of channels whose peripheral-to-memory
+        // transfers wait for a request; the rest start when enabled
+        public AP_STM32G4_DMA(IMachine machine, int numberOfChannels,
+            uint requestChannels = 0xFFFFFFFF)
         {
             dma = new STM32G0DMA(machine, numberOfChannels);
+            this.requestChannels = requestChannels;
             channelEnabled = new bool[numberOfChannels];
             channelConfiguration = new uint[numberOfChannels];
             requestActive = new bool[numberOfChannels];
@@ -78,7 +82,8 @@ namespace Antmicro.Renode.Peripherals.DMA
             innerValue &= ~UnsupportedConfigurationBits;
             var memoryToMemory = (value & MemoryToMemory) != 0;
             var memoryToPeripheral = (value & MemoryToPeripheral) != 0;
-            if(!memoryToMemory && !memoryToPeripheral)
+            if(!memoryToMemory && !memoryToPeripheral &&
+                (requestChannels & (1U << channel)) != 0)
             {
                 // STM32G0DMA starts peripheral-to-memory transfers as soon as
                 // EN is written. STM32L4/G4 channels wait for a peripheral
@@ -168,6 +173,7 @@ namespace Antmicro.Renode.Peripherals.DMA
         private readonly bool[] channelEnabled;
         private readonly uint[] channelConfiguration;
         private readonly bool[] requestActive;
+        private readonly uint requestChannels;
         private uint requestSelection;
 
         private const uint ChannelEnable = 1U;

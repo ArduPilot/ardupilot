@@ -1,8 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py
 # for FMUv4pro hardware (Pixhawk 3 Pro)
 
-define BOARD_TYPE_DEFAULT 14
-
 # MCU class and specific type
 MCU STM32F4xx STM32F469xx
 

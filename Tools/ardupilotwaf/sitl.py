@@ -10,6 +10,8 @@ import os
 import sys
 import traceback
 
+import boards
+
 import hal_common
 
 from waflib.TaskGen import after_method
@@ -69,6 +71,7 @@ def generate_hwdef_h(env):
     hwdef_obj = sitl_hwdef.SITLHWDef(
         outdir=hwdef_out,
         hwdef=hwdef,
+        build_option_defines=boards.build_option_defines(env.OPTIONS),
         quiet=False,
     )
     hwdef_obj.run()

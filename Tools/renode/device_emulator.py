@@ -5,6 +5,8 @@
 import argparse
 import math
 import signal
+import socket
+import struct
 import sys
 import time
 
@@ -13,6 +15,70 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PYDRONECAN = ROOT / 'modules' / 'DroneCAN' / 'pydronecan'
 sys.path.insert(0, str(PYDRONECAN))
+
+# physics air data multicast by Renode's AP_CANMcast bridge beside each bus
+AIR_DATA_PORT = 57733
+AIR_DATA = struct.Struct('<4sBxxxQfff')
+SPECIFIC_GAS_CONSTANT = 287.05
+
+
+def parse_air_data(packet):
+    '''Return (airspeed m/s, pressure Pa, temperature K), or None.'''
+    if len(packet) != AIR_DATA.size:
+        return None
+    magic, version, _, airspeed, pressure, temperature = AIR_DATA.unpack(packet)
+    if (magic != b'APAD' or version != 1 or
+            not all(map(math.isfinite, (airspeed, pressure, temperature))) or
+            pressure <= 0 or temperature <= 0):
+        return None
+    return airspeed, pressure, temperature
+
+
+def differential_pressure(airspeed, pressure, temperature):
+    density = pressure / (SPECIFIC_GAS_CONSTANT * temperature)
+    return 0.5 * density * airspeed * airspeed
+
+
+class AirData:
+    '''Latest physics airspeed, static pressure and temperature for a bus.'''
+
+    def __init__(self, can_bus):
+        self.airspeed = 0.0
+        self.pressure = 101325.0
+        self.temperature = 288.15
+        group = '239.65.82.%u' % can_bus
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # as in pydronecan's mcast driver
+        self.sock.bind(('0.0.0.0' if sys.platform == 'win32' else group,
+                        AIR_DATA_PORT))
+        try:
+            self.sock.setsockopt(
+                socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+                struct.pack('4s4s', socket.inet_aton(group),
+                            socket.inet_aton('0.0.0.0')))
+        except OSError as error:
+            # no multicast route: report still air
+            print('no physics air data on %s: %s' % (group, error),
+                  file=sys.stderr)
+        self.sock.setblocking(False)
+
+    def update(self):
+        while True:
+            try:
+                packet = self.sock.recv(64)
+            except BlockingIOError:
+                return
+            sample = parse_air_data(packet)
+            if sample is not None:
+                self.airspeed, self.pressure, self.temperature = sample
+
+    def differential_pressure(self):
+        return differential_pressure(
+            self.airspeed, self.pressure, self.temperature)
+
+    def close(self):
+        self.sock.close()
 
 
 def run_dronecan_airspeed(can_bus, node_id, run_seconds=None):
@@ -32,15 +98,17 @@ def run_dronecan_airspeed(can_bus, node_id, run_seconds=None):
 
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
+    air_data = AirData(can_bus)
 
     def publish():
+        air_data.update()
         message = uavcan.equipment.air_data.RawAirData()
         message.flags = 0
-        message.static_pressure = 101325.0
-        message.differential_pressure = 0.0
-        message.static_pressure_sensor_temperature = 288.15
-        message.differential_pressure_sensor_temperature = 288.15
-        message.static_air_temperature = 288.15
+        message.static_pressure = air_data.pressure
+        message.differential_pressure = air_data.differential_pressure()
+        message.static_pressure_sensor_temperature = air_data.temperature
+        message.differential_pressure_sensor_temperature = air_data.temperature
+        message.static_air_temperature = air_data.temperature
         message.pitot_temperature = math.nan
         message.covariance = []
         node.broadcast(message)
@@ -58,6 +126,7 @@ def run_dronecan_airspeed(can_bus, node_id, run_seconds=None):
             node.spin(timeout=0)
             time.sleep(0.05)
     finally:
+        air_data.close()
         node.close()
 
 

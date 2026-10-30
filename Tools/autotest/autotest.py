@@ -99,7 +99,11 @@ def build_examples(**kwargs):
     for target in 'Pixhawk1', 'navio', 'linux', 'sitl':
         print("Running build.examples for %s" % target)
         try:
-            util.build_examples(target, **kwargs)
+            # --asan is only implemented for the sitl board
+            board_kwargs = dict(kwargs)
+            if target != 'sitl':
+                board_kwargs['asan'] = False
+            util.build_examples(target, **board_kwargs)
         except Exception as e:  # noqa: BLE001
             print("Failed build_examples on board=%s" % target)
             print(str(e))
@@ -108,9 +112,19 @@ def build_examples(**kwargs):
     return True
 
 
+def unit_test_boards(asan):
+    """Boards to build and run the unit tests for."""
+    if asan:
+        # --asan is only implemented for the sitl board, so building the
+        # linux tests here would just run them uninstrumented a second
+        # time - the unit-tests job already covers them
+        return ['sitl']
+    return ['linux', 'sitl']
+
+
 def build_unit_tests(**kwargs):
     """Build tests."""
-    for target in ['linux', 'sitl']:
+    for target in unit_test_boards(kwargs.get('asan')):
         print("Running build.unit_tests for %s" % target)
         try:
             util.build_tests(target, **kwargs)
@@ -125,14 +139,18 @@ def build_unit_tests(**kwargs):
 def run_unit_test(test):
     """Run unit test file."""
     print("Running (%s)" % test)
-    subprocess.check_call([test])
+    env = os.environ.copy()
+    # stop llvm-symbolizer fetching debug info over the network; ignored
+    # by tests which were not built with --asan
+    env["DEBUGINFOD_URLS"] = ""
+    subprocess.check_call([test], env=env)
 
 
-def run_unit_tests():
+def run_unit_tests(asan=False):
     """Run all unit tests files."""
     success = True
     fail_list = []
-    for target in ['linux', 'sitl']:
+    for target in unit_test_boards(asan):
         binary_dir = util.reltopdir(os.path.join('build',
                                                  target,
                                                  'tests',
@@ -581,7 +599,7 @@ def run_step(step):
         return build_examples(**build_opts)
 
     if step == 'run.examples':
-        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
+        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False, asan=opts.asan)
 
     if step == 'build.Parameters':
         return build_parameters()
@@ -593,7 +611,7 @@ def run_step(step):
         return build_unit_tests(**build_opts)
 
     if step == 'run.unit_tests':
-        return run_unit_tests()
+        return run_unit_tests(asan=opts.asan)
 
     if step == 'clang-scan-build':
         return run_clang_scan_build()

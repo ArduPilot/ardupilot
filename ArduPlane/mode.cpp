@@ -173,7 +173,7 @@ bool Mode::enter()
 
 bool Mode::is_vtol_man_throttle() const
 {
-#if HAL_QUADPLANE_ENABLED
+#if AP_PLANE_TAILSITTER_ENABLED
     if (plane.quadplane.tailsitter.is_in_fw_flight() &&
         plane.quadplane.assisted_flight) {
         // We are a tailsitter that has fully transitioned to Q-assisted forward flight.

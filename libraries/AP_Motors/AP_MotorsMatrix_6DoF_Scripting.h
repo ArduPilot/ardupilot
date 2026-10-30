@@ -1,5 +1,8 @@
 #pragma once
-#if AP_SCRIPTING_ENABLED
+
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
@@ -64,4 +67,4 @@ private:
 
 };
 
-#endif // AP_SCRIPTING_ENABLED
+#endif  // AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED

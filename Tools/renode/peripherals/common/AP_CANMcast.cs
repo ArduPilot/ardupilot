@@ -4,6 +4,9 @@
 // dronecan_gui_tool: 239.65.82.<bus>:57732 with a 10-byte header followed by
 // up to 64 data bytes. Both classic CAN and CAN FD frames are supported.
 //
+// Host-side CAN sensor nodes also need the vehicle state, so the physics air
+// data is multicast to the same group on port 57733 at 50Hz of virtual time.
+//
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -16,6 +19,7 @@ using Antmicro.Renode.Exceptions;
 using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals;
 using Antmicro.Renode.Peripherals.Bus;
+using Antmicro.Renode.Peripherals.Miscellaneous;
 
 namespace Antmicro.Renode.Peripherals.CAN
 {
@@ -25,6 +29,8 @@ namespace Antmicro.Renode.Peripherals.CAN
         public AP_CANMcast(IMachine machine)
         {
             bus = -1;
+            this.machine = machine;
+            AP_PhysicsState.ForMachine(machine).Updated += SendAirData;
         }
 
         public void Reset()
@@ -142,11 +148,44 @@ namespace Antmicro.Renode.Peripherals.CAN
             }
         }
 
+        private void SendAirData(AP_PhysicsTruth truth)
+        {
+            var socket = airDataSocket;
+            if(socket == null || (truth.TimestampUs >= lastAirDataUs &&
+               truth.TimestampUs - lastAirDataUs < AirDataIntervalUs))
+            {
+                return;
+            }
+            lastAirDataUs = truth.TimestampUs;
+            // "APAD", version, reserved, timestamp, airspeed, pressure, temperature
+            var packet = new byte[28];
+            packet[0] = (byte)'A';
+            packet[1] = (byte)'P';
+            packet[2] = (byte)'A';
+            packet[3] = (byte)'D';
+            packet[4] = AirDataVersion;
+            Array.Copy(BitConverter.GetBytes(truth.TimestampUs), 0, packet, 8, 8);
+            Array.Copy(BitConverter.GetBytes(truth.AirspeedMS), 0, packet, 16, 4);
+            Array.Copy(BitConverter.GetBytes(truth.PressurePa), 0, packet, 20, 4);
+            Array.Copy(BitConverter.GetBytes(truth.TemperatureK), 0, packet, 24, 4);
+            try
+            {
+                socket.Send(packet);
+            }
+            catch(SocketException)
+            {
+            }
+            catch(ObjectDisposedException)
+            {
+            }
+        }
+
         private void Open(int busNumber)
         {
             var group = IPAddress.Parse(string.Format("239.65.82.{0}", busNumber));
             Socket tx = null;
             Socket rx = null;
+            Socket airData = null;
             try
             {
                 tx = new Socket(AddressFamily.InterNetwork, SocketType.Dgram,
@@ -154,6 +193,12 @@ namespace Antmicro.Renode.Peripherals.CAN
                 tx.SetSocketOption(SocketOptionLevel.IP,
                     SocketOptionName.MulticastTimeToLive, 1);
                 tx.Connect(new IPEndPoint(group, Port));
+
+                airData = new Socket(AddressFamily.InterNetwork, SocketType.Dgram,
+                    ProtocolType.Udp);
+                airData.SetSocketOption(SocketOptionLevel.IP,
+                    SocketOptionName.MulticastTimeToLive, 1);
+                airData.Connect(new IPEndPoint(group, AirDataPort));
 
                 rx = new Socket(AddressFamily.InterNetwork, SocketType.Dgram,
                     ProtocolType.Udp);
@@ -167,12 +212,15 @@ namespace Antmicro.Renode.Peripherals.CAN
             {
                 tx?.Close();
                 rx?.Close();
+                airData?.Close();
                 throw new RecoverableException(string.Format(
                     "cannot open mcast bus {0}: {1}", busNumber, error.Message));
             }
 
             txSocket = tx;
             rxSocket = rx;
+            airDataSocket = airData;
+            lastAirDataUs = 0;
             bus = busNumber;
             rxThread = new Thread(() => ReceiveLoop(rx, tx))
             {
@@ -189,12 +237,15 @@ namespace Antmicro.Renode.Peripherals.CAN
             bus = -1;
             var tx = txSocket;
             var rx = rxSocket;
+            var airData = airDataSocket;
             var thread = rxThread;
             txSocket = null;
             rxSocket = null;
+            airDataSocket = null;
             rxThread = null;
             rx?.Close();
             tx?.Close();
+            airData?.Close();
             if(thread != null && !thread.Join(2000))
             {
                 this.Log(LogLevel.Warning, "mcast receive thread did not stop in time");
@@ -334,6 +385,9 @@ namespace Antmicro.Renode.Peripherals.CAN
         [PostDeserialization]
         private void AfterDeserialization()
         {
+            var physics = AP_PhysicsState.ForMachine(machine);
+            physics.Updated -= SendAirData;
+            physics.Updated += SendAirData;
             if(bus >= 0)
             {
                 Open(bus);
@@ -341,10 +395,14 @@ namespace Antmicro.Renode.Peripherals.CAN
         }
 
         private readonly object lifecycle = new object();
+        private readonly IMachine machine;
         [Transient]
         private volatile Socket txSocket;
         [Transient]
         private volatile Socket rxSocket;
+        [Transient]
+        private volatile Socket airDataSocket;
+        private ulong lastAirDataUs;
         [Transient]
         private Thread rxThread;
         private int bus;
@@ -359,6 +417,9 @@ namespace Antmicro.Renode.Peripherals.CAN
         private const uint ExtendedIdMask = 0x1FFFFFFF;
         private const uint StandardIdMask = 0x7FF;
         private const int Port = 57732;
+        private const int AirDataPort = Port + 1;
+        private const byte AirDataVersion = 1;
+        private const ulong AirDataIntervalUs = 20000;
         private const int HeaderLength = 10;
         private const int MaximumClassicDataLength = 8;
         private const int MaximumFdDataLength = 64;

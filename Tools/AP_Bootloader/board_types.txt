@@ -400,6 +400,9 @@ AP_HW_SPARKNAVI_F405                 1364
 AP_HW_SPARKNAVI_H743_R45             1365
 AP_HW_SPARKNAVI_ETH                  1366
 
+# IDs 1380-1389 reserved for Skandavel Dynamics
+AP_HW_Kao1                           1380
+
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
 AP_HW_PIXRACER_PERIPH                1402
@@ -416,6 +419,7 @@ AP_HW_RadiolinkPIX6                  1410
 
 AP_HW_JHEMCU-H743HD                  1411
 AP_HW_JHEMCUF405PRO                  1412
+AP_HW_DCD_FC                       1413
 
 AP_HW_TRITIUM_EAH743                 1415
 
@@ -487,6 +491,8 @@ AP_HW_AET-H743-AIR                   2509
 AP_HW_AET-U7                         2510
 AP_HW_AET-AT405A                     2511
 AP_HW_AET-405-Mini                   2512
+
+AP_HW_INDIH743                       2513
 
 AP_HW_SakuraRC-H743                  2714
 
@@ -613,6 +619,7 @@ AP_HW_ZenFC_H743                     5740
 
 #IDs 5800-5809 reserved for Droneer
 AP_HW_DroneerF405                    5800
+AP_HW_DroneerX6                      5801
 
 #IDs 5810-5819 reserved for Brother Hobby
 AP_HW_BrotherHobbyH743               5810
@@ -623,6 +630,7 @@ AP_HW_VIMDRONES_BMS                  5820
 
 #IDs 5830 ~ 5839 reserved for CyberX
 AP_HW_CyberX-v10                     5830
+AP_HW_CyberX-Cube                    5831
 
 # IDs 5900-5904 reserved for NewBeeDrone PixNova
 AP_HW_NewBeeDrone_PixNova            5900
@@ -648,6 +656,9 @@ AP_HW_SVehicle-E2-mini               6111
 
 # IDs 6120-6129 reserved for Partizan Security s.r.o
 AP_HW_PILOTIX                          6120
+
+# IDs 6130-6139 reserved for Saolah
+AP_HW_Saolah743                      6130
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
@@ -686,9 +697,18 @@ AP_HW_SED_GPS                        7151
 AP_HW_SED_AirSpeed                   7152
 AP_HW_SED_UGNSS                      7153
 
+# IDs 7160-7169 reserved for Viima Aerospace
+AP_HW_Viima-WH7-v2                   7162
+AP_HW_Viima-WH7-v3                   7163
+
 # IDs 7170-7179 reserved for Tykho Electronics
 AP_HW_TYKHO_TLS7V2                   7170
 AP_HW_TYKHO_TLS7-Wing                7171
+
+# IDs 7180-7189 reserved for Raspberry Pi
+AP_HW_RPI_UAVFC                      7180
+AP_HW_RASPBERRYPI_PICO2              7181
+AP_HW_RASPBERRYPI_LAUREL             7182
 
 # please fill gaps in the above ranges rather than adding past ID #7199
 

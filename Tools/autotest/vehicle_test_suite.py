@@ -2166,6 +2166,8 @@ class TestSuite(abc.ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
+        # nothing has run against a SITL we have not started yet:
+        self.sitl_is_freshly_started = False
         self.force_32bit = force_32bit
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
@@ -2624,6 +2626,54 @@ class TestSuite(abc.ABC):
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
         if mark_context:
             self.context_get().context_pop_requires_reboot = True
+        # nothing has run against the vehicle since it booted.  A reboot
+        # during a test is undone by run_one_test_attempt() when the test
+        # returns; one from the teardown - including context_pop()'s -
+        # stands, and saves the next test rebooting again.
+        self.sitl_is_freshly_started = True
+
+    def reboot_sitl_or_reset(self, **kwargs):
+        """Reboot the vehicle, restarting SITL if the reboot does not come back.
+
+        For the paths which tidy up after a test has already failed.  An
+        exception raised there escapes run_one_test_attempt(), and
+        run_tests() catches only pexpect.TIMEOUT, so it would reach
+        autotest.py and abandon every remaining test for the vehicle -
+        losing a whole step's results to the cleanup of a single test.
+        """
+        try:
+            self.reboot_sitl(**kwargs)
+        except Exception as e:  # noqa: BLE001
+            self.progress("Reboot after failed test did not complete (%s); resetting SITL" %
+                          str(e))
+            self.reset_SITL_commandline()
+
+    def reboot_sitl_before_test(self):
+        """Reboot so the test starts from a fresh boot.
+
+        Whatever the last test left in the vehicle's RAM - its position,
+        EKF state, home, mission progress, learned values - does not
+        reach the next one.  SITL reboots by execing its own command
+        line again, so the simulator comes back at the startup location
+        as well; storage (parameters, missions, fence) is a file and
+        survives, which is what the teardown's clears are for.
+
+        The exec replaces the vehicle process alone, so a simulated
+        peripheral started alongside it (a DroneCAN GPS, say) keeps
+        running with the state it had; a test which cares restarts its
+        peripherals itself.
+
+        A SITL we have only just started needs no reboot: nothing has
+        run against it yet.
+        """
+        if not self.sitl_is_freshly_started:
+            self.progress("Rebooting before test")
+            # Tracker is not disarmed by the post-test teardown, so it
+            # can arrive here armed:
+            self.reboot_sitl(force=self.is_tracker(), mark_context=False)
+        # this SITL is about to have a test run against it, whether we
+        # rebooted it or not:
+        self.sitl_is_freshly_started = False
 
     def assert_armed(self):
         if not self.armed():
@@ -3644,10 +3694,10 @@ class TestSuite(abc.ABC):
         def __init__(self, suite):
             self.suite = suite
 
-        def process(self):
+        def process(self, mav, m) -> None:
             pass
 
-        def progress_prefix(self):
+        def progress_prefix(self) -> str:
             return ""
 
         def progress(self, string):
@@ -3667,10 +3717,10 @@ class TestSuite(abc.ABC):
             self.texts = texts
             self.regex = regex
 
-        def progress_prefix(self):
+        def progress_prefix(self) -> str:
             return "FFST: "
 
-        def process(self, mav, m):
+        def process(self, mav, m) -> None:
             if m.get_type() != 'STATUSTEXT':
                 return
 
@@ -3695,7 +3745,7 @@ class TestSuite(abc.ABC):
             self.last_print = 0
             self.min_print_interval = 1  # seconds
 
-        def progress_prefix(self):
+        def progress_prefix(self) -> str:
             return "VIPASS: "
 
         def process(self, mav, m):
@@ -3722,6 +3772,35 @@ class TestSuite(abc.ABC):
 
         def hook_removed(self):
             self.progress(f"Maximum divergence was {self.max_divergence}m (max={self.max_allowed_divergence}m)")
+
+    def wait_simstate_divergence_below(self, maximum, minimum_duration=0, timeout=60):
+        """wait for the EKF's reported position to agree with the simulator's
+        to within `maximum` metres, held for `minimum_duration` seconds.
+
+        A gate for tests which arm as soon as the vehicle is armable and
+        then assert on position: the filter may still be converging, and
+        the residual lands in whatever the test measures next."""
+        tstart = self.get_sim_time()
+        good_since = None
+        divergence = None
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException(
+                    "position still %s from simstate after %us" %
+                    ("%.2fm" % divergence if divergence is not None else "unknown",
+                     timeout))
+            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+            simstate = self.assert_receive_message('SIMSTATE')
+            divergence = self.get_distance_int(gpi, simstate)
+            if divergence > maximum:
+                good_since = None
+                continue
+            if good_since is None:
+                good_since = now
+                self.progress("position within %.2fm of simstate" % divergence)
+            if now - good_since >= minimum_duration:
+                return
 
     class ValidateGlobalPositionIntAgainstSimState(ValidateIntPositionAgainstSimState):
         def __init__(self, suite, **kwargs):
@@ -4272,7 +4351,10 @@ class TestSuite(abc.ABC):
         if new_log_count != 10:
             raise NotAchievedException("Expected exactly 10 new logs got %u (%s) to (%s)" %
                                        (new_log_count, original_log_list, new_log_list))
-        self.progress("Directory contents: %s" % str(new_log_list))
+        # as in log_list(): a listing of every log is not something to
+        # send to the vehicle, which writes it into the log under test
+        self.progress("Directory contents: %s" % str(new_log_list),
+                      send_statustext=False)
 
         self.download_full_log_list()
         log_id = 5
@@ -4775,7 +4857,9 @@ class TestSuite(abc.ABC):
     def log_list(self):
         '''return a list of log files present in POSIX-style logging dir'''
         ret = sorted(glob.glob("logs/00*.BIN"))
-        self.progress("log list: %s" % str(ret))
+        # every log's name on one line: keep it out of STATUSTEXT, where it
+        # would land in the very log the caller is about to read
+        self.progress("log list: %s" % str(ret), send_statustext=False)
         return ret
 
     def assert_parameter_values(self, parameters, epsilon=None):
@@ -5613,11 +5697,6 @@ class TestSuite(abc.ABC):
                 continue
             return m
 
-    def assert_receive_named_value_float_value(self, name, value, epsilon=0.0001, timeout=10):
-        m = self.assert_receive_named_value_float_value(name, timeout=timeout)
-        if abs(m.value - value) > epsilon:
-            raise NotAchievedException("Bad %s want=%f got=%f" % (name, value, m.value))
-
     def assert_rally_files_same(self, file1, file2):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
         f1 = open(file1)
@@ -6270,13 +6349,13 @@ class TestSuite(abc.ABC):
             timeout=30
         )
 
-    def armed(self, cached=False):
+    def armed(self, cached=False, poll=True):
         """Return True if vehicle is armed and safetyoff"""
         m = None
         if cached:
             m = self.mav.messages.get("HEARTBEAT", None)
         if m is None:
-            m = self.wait_heartbeat()
+            m = self.wait_heartbeat(poll=poll)
         return (m.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) != 0
 
     def send_mavlink_arm_command(self):
@@ -6420,28 +6499,40 @@ class TestSuite(abc.ABC):
                           (delta, timeout))
             return
 
-    def wait_attitude(self, desroll=None, despitch=None, timeout=2, tolerance=10,
-                      message_type='ATTITUDE', use_cached_simtime=False):
-        '''wait for an attitude (degrees)'''
-        if desroll is None and despitch is None:
-            raise ValueError("despitch or desroll must be supplied")
+    def wait_attitude(self, desroll=None, despitch=None, desyaw=None, timeout=2, tolerance=10,
+                      message_type='ATTITUDE', use_cached_simtime=False, minimum_duration=None):
+        '''wait for an attitude (degrees).  If minimum_duration is
+        supplied the attitude must be held for that many seconds'''
+        if desroll is None and despitch is None and desyaw is None:
+            raise ValueError("desroll, despitch or desyaw must be supplied")
+        if minimum_duration is not None and minimum_duration >= timeout:
+            raise ValueError("minimum_duration must be less than timeout")
         if use_cached_simtime:
             tstart = self.get_sim_time()
         else:
             tstart = self.get_sim_time_cached()
+        achieved_start = None
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise AutoTestTimeoutException("Failed to achieve attitude")
             m = self.assert_receive_message(message_type, timeout=60)
             roll_deg = math.degrees(m.roll)
             pitch_deg = math.degrees(m.pitch)
-            self.progress("wait_att[%s]: roll=%f desroll=%s pitch=%f despitch=%s" %
-                          (message_type, roll_deg, desroll, pitch_deg, despitch))
-            if desroll is not None and abs(roll_deg - desroll) > tolerance:
+            yaw_deg = math.degrees(m.yaw)
+            self.progress("wait_att[%s]: roll=%f desroll=%s pitch=%f despitch=%s yaw=%f desyaw=%s" %
+                          (message_type, roll_deg, desroll, pitch_deg, despitch, yaw_deg, desyaw))
+            if ((desroll is not None and abs(roll_deg - desroll) > tolerance) or
+                    (despitch is not None and abs(pitch_deg - despitch) > tolerance) or
+                    (desyaw is not None and self.heading_delta(yaw_deg, desyaw) > tolerance)):
+                achieved_start = None
                 continue
-            if despitch is not None and abs(pitch_deg - despitch) > tolerance:
-                continue
-            return
+            if minimum_duration is None:
+                return
+            now = self.get_sim_time_cached()
+            if achieved_start is None:
+                achieved_start = now
+            if now - achieved_start >= minimum_duration:
+                return
 
     def wait_attitude_quaternion(self,
                                  desroll=None,
@@ -7800,7 +7891,13 @@ class TestSuite(abc.ABC):
         self.progress("Changing mode to %s" % mode)
         tstart = self.get_sim_time()
         self.send_cmd_do_set_mode(mode)
-        while not self.mode_is(mode):
+        # the polled heartbeat is generated after the command is
+        # processed, so a successful change is seen without waiting
+        # for a scheduled heartbeat.  If the vehicle refuses the mode
+        # change, pace the resends on the scheduled heartbeat instead:
+        poll = True
+        while not self.mode_is(mode, poll=poll):
+            poll = False
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))
@@ -9235,7 +9332,7 @@ class TestSuite(abc.ABC):
             wp_dist_m = m.wp_dist
 
             # if we changed mode, fail
-            if not self.mode_is('AUTO'):
+            if not self.mode_is('AUTO', poll=False):
                 self.progress(f"{self.mav.flightmode} vs {self.get_mode_from_mode_mapping(mode)}")
                 ignore_mode_change = (
                     (ignore_RTL_mode_change and self.mode_is('RTL', cached=True)) or
@@ -9274,16 +9371,18 @@ class TestSuite(abc.ABC):
         '''returns the most-recently received instance of message_type'''
         return self.mav.messages[message_type]
 
-    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True):
+    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True, poll=True):
         if not cached:
-            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly)
+            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly, poll=poll)
         return self.mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode)
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
-        while not self.mode_is(mode, drain_mav=False):
+        # poll=False: pace this loop on the scheduled heartbeat lest
+        # we spin at poll-round-trip rate, printing as we go
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))
@@ -9522,11 +9621,13 @@ class TestSuite(abc.ABC):
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
 
-    def wait_heartbeat(self, drain_mav=True, quiet=False, *args, **x):
+    def wait_heartbeat(self, drain_mav=True, quiet=False, poll=False, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
 Also, ignores heartbeats not from our target system'''
         if drain_mav:
             self.drain_mav(quiet=quiet)
+        if poll:
+            self.send_poll_message('HEARTBEAT', quiet=True)
         orig_timeout = x.get("timeout", 20)
         x["timeout"] = 1
         tstart = time.time()
@@ -9930,7 +10031,9 @@ Also, ignores heartbeats not from our target system'''
         else:
             text = text.encode("utf-8")
         seq = 0
-        while len(text):
+        # chunk_seq is a uint8, so nothing past the 256th chunk can be
+        # sent; the full text has already gone to our own output
+        while len(text) and seq <= 255:
             self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)
             text = text[50:]
             seq += 1
@@ -10078,6 +10181,7 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         try:
             self.check_rc_defaults()
+            self.reboot_sitl_before_test()
             self.change_mode(self.default_mode())
             # ArduPilot can still move the current waypoint from 0,
             # even if we are not in AUTO mode, so cehck_afterwards=False:
@@ -10098,6 +10202,10 @@ Also, ignores heartbeats not from our target system'''
                 if h not in start_message_hooks:
                     self.message_hooks.remove(h)
             hooks_removed = True
+        # a SITL the test restarted has had the rest of the test run
+        # against it, so it is not fresh for the next one; a restart by
+        # the teardown below marks it fresh again:
+        self.sitl_is_freshly_started = False
         # the test is done with any log it opened; release the
         # filehandles rather than holding them for the life of the run:
         self.close_dfreaders()
@@ -10150,7 +10258,7 @@ Also, ignores heartbeats not from our target system'''
             else:
                 self.progress("Force-rebooting SITL")
                 self.zero_throttle()
-                self.reboot_sitl(startup_location_dist_max=1000000) # that'll learn it
+                self.reboot_sitl_or_reset(startup_location_dist_max=1000000) # that'll learn it
             passed = False
         elif ardupilot_alive and not passed:  # implicit reboot after a failed test:
             if reset_needed:
@@ -10159,7 +10267,7 @@ Also, ignores heartbeats not from our target system'''
                 reset_needed = False
             else:
                 self.progress("Test failed but ArduPilot process alive; rebooting")
-                self.reboot_sitl() # that'll learn it
+                self.reboot_sitl_or_reset() # that'll learn it
 
         # a test which wanders off and stops somewhere else hands the
         # next test a displaced vehicle.  ArduCopter's tests require the
@@ -10385,6 +10493,7 @@ Also, ignores heartbeats not from our target system'''
             customisations.append("--sim-periph-lockstep")
             start_sitl_args["customisations"] = customisations
         self.sitl = util.start_SITL(binary, **start_sitl_args)
+        self.sitl_is_freshly_started = True
         self.expect_list_add(self.sitl)
         # stop the previous start's supplementary programs before we
         # forget them.  Simply resetting the list left them running,
@@ -11345,7 +11454,6 @@ Also, ignores heartbeats not from our target system'''
             self.check_zero_mag_parameters(params)
             self.check_zeros_mag_orient()
             self.progress("Send acceptation and check value")
-            self.wait_heartbeat()
             self.run_cmd(
                 mavutil.mavlink.MAV_CMD_DO_ACCEPT_MAG_CAL,
                 p1=target_mask, # p1: mag_mask
@@ -12169,7 +12277,6 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(
                     "Disarmed with rudder when ARMING_RUDDER=0")
             self.disarm_vehicle()
-            self.wait_heartbeat()
             self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
             self.set_parameter("ARMING_RUDDER", 1)
             self.arm_vehicle()
@@ -12181,7 +12288,6 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(
                     "Disarmed with rudder with ARMING_RUDDER=1")
             self.disarm_vehicle()
-            self.wait_heartbeat()
             self.set_parameter("ARMING_RUDDER", 2)
 
             if self.is_copter():
@@ -12201,7 +12307,6 @@ Also, ignores heartbeats not from our target system'''
                 if self.armed():
                     raise NotAchievedException("Armed with switch when interlock enabled")
                 self.disarm_vehicle()
-                self.wait_heartbeat()
                 self.set_rc(arming_switch, 1000)
                 self.set_rc(interlock_channel, 1000)
                 if self.is_heli():
@@ -12271,7 +12376,6 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_ekf_happy()
                 self.change_mode(mode)
                 self.arm_vehicle()
-                self.wait_heartbeat()
                 self.disarm_vehicle()
                 self.progress("PASS arm mode : %s" % mode)
                 self.progress("Not armable mode without Position : %s" % mode)
@@ -12482,6 +12586,8 @@ Also, ignores heartbeats not from our target system'''
             raise NotAchievedException("Did not read same interval back from autopilot: want=%d got=%d)" %
                                        (want, m.interval_us))
         m = self.assert_receive_message('COMMAND_ACK', mav=mav)
+        if m.command != mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL:
+            raise NotAchievedException("ACK not for GET_MESSAGE_INTERVAL (got=%u)" % m.command)
         if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
             raise NotAchievedException("Expected ACCEPTED for reading message interval")
 
@@ -12598,6 +12704,8 @@ Also, ignores heartbeats not from our target system'''
             if m.interval_us != 0:
                 raise NotAchievedException("Supposed to get 0 back for unsupported stream")
             m = self.assert_receive_message('COMMAND_ACK')
+            if m.command != mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL:
+                raise NotAchievedException("ACK not for GET_MESSAGE_INTERVAL (got=%u)" % m.command)
             if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
                 raise NotAchievedException("Getting rate of unsupported message is a failure")
 
@@ -19511,6 +19619,49 @@ SERIAL5_BAUD 128
                 continue
             on_radius_start_heading = None
             circle_time_start = now
+
+    def wait_circle_direction(self,
+                              centre_loc,
+                              radius_m,
+                              ccw,
+                              sweep_deg=180,
+                              epsilon_m=10,
+                              timeout=180):
+        '''wait for vehicle to travel sweep_deg around centre_loc, raising if
+        it travels in the wrong direction.  Bearing is only accumulated
+        while the vehicle is within epsilon_m of the circle, so the
+        flight out to the edge of the circle is not counted'''
+        direction_name = "counter-clockwise" if ccw else "clockwise"
+        self.progress("Waiting for %udeg of %s circle" % (sweep_deg, direction_name))
+        # bearing from the centre increases as the vehicle flies clockwise:
+        want_sign = -1 if ccw else 1
+        tstart = self.get_sim_time()
+        swept_deg = 0
+        last_bearing = None
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not circle %s" % direction_name)
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+            got_radius_m = self.get_distance(centre_loc, here)
+            if abs(got_radius_m - radius_m) > epsilon_m:
+                # vehicle is not on the circle; start accumulating again
+                last_bearing = None
+                swept_deg = 0
+                continue
+            bearing = self.get_bearing(centre_loc, here)
+            if last_bearing is not None:
+                swept_deg += (bearing - last_bearing + 180) % 360 - 180
+                self.progress("radius=%0.1f/%0.1f bearing=%0.1f swept=%0.1f/%d" %
+                              (got_radius_m, radius_m, bearing, swept_deg, want_sign * sweep_deg))
+                if -want_sign * swept_deg > 20:
+                    raise NotAchievedException(
+                        "Circling in wrong direction (swept %0.1fdeg, wanted %s)" %
+                        (swept_deg, direction_name))
+                if want_sign * swept_deg > sweep_deg:
+                    self.progress("Swept %0.1fdeg %s" % (swept_deg, direction_name))
+                    return
+            last_bearing = bearing
 
     def create_junit_report(self, test_name: str, results: List[Result], skip_list: List[Tuple[Test, Dict[str, str]]]) -> None:
         """Generate Junit report from the autotest results"""

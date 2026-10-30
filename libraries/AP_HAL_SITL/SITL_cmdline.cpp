@@ -497,10 +497,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _use_fg_view = true;
             break;
         case CMDLINE_AUTOTESTDIR:
+            // always heap: either the asprintf default above, or a
+            // previous use of this option
+            free(autotest_dir);
             autotest_dir = strdup(gopt.optarg);
+            LSAN_IGNORE_OBJECT(autotest_dir);
             break;
         case CMDLINE_DEFAULTS:
             defaults_path = strdup(gopt.optarg);
+            LSAN_IGNORE_OBJECT(defaults_path);
             break;
         case CMDLINE_UARTA:
         case CMDLINE_UARTB:

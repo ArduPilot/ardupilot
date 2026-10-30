@@ -36,6 +36,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <stdio.h>
 #include <AP_ROMFS/AP_ROMFS.h>
+#include <AP_ROMFS/AP_ROMFS_config.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
@@ -1637,7 +1638,7 @@ void AP_Param::reload_defaults_file(bool last_pass)
     if (default_file) {
 #if AP_FILESYSTEM_FILE_READING_ENABLED
         load_defaults_file_from_filesystem(default_file, last_pass);
-#elif defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#elif AP_ROMFS_ENABLED
         load_defaults_file_from_romfs(default_file, last_pass);
 #endif
     }
@@ -1672,7 +1673,7 @@ void AP_Param::load_defaults_file_from_filesystem(const char *default_file, bool
 }
 #endif  // AP_FILESYSTEM_FILE_READING_ENABLED
 
-#if defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#if AP_ROMFS_ENABLED
 void AP_Param::load_defaults_file_from_romfs(const char *default_file, bool last_pass)
 {
     const char *prefix = "@ROMFS/";
@@ -1695,7 +1696,7 @@ void AP_Param::load_defaults_file_from_romfs(const char *default_file, bool last
     AP_ROMFS::free(text);
 
 }
-#endif  // HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#endif  // AP_ROMFS_ENABLED
 
 /* 
    Load all variables from EEPROM for a particular object. This is
@@ -2532,7 +2533,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 }
 #endif // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
 /*
   count the number of parameter defaults present in supplied string
  */
@@ -2662,7 +2663,7 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
     purge_defaults_list_overrides();
 #endif
 }
-#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
 
 
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0

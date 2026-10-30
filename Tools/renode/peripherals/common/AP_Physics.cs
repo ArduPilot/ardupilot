@@ -266,7 +266,10 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             {
                 current = truth;
             }
+            Updated?.Invoke(truth);
         }
+
+        public event Action<AP_PhysicsTruth> Updated;
 
         public void RegisterActuatorSource(IAP_PhysicsActuatorSource source)
         {
@@ -412,6 +415,44 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     }
                 }
             }
+        }
+
+        // drive an ADC channel from battery truth, raw = value * countsPerUnit + offsetCounts
+        public void FeedAnalog(string adc, uint channel, string quantity,
+            double countsPerUnit, double offsetCounts, uint maximumCount, int shift = 0)
+        {
+            Func<AP_PhysicsTruth, double> source;
+            switch(quantity)
+            {
+            case "voltage":
+                source = truth => truth.BatteryVoltageV;
+                break;
+            case "current":
+                source = truth => truth.BatteryCurrentA;
+                break;
+            default:
+                throw new RecoverableException(string.Format(
+                    "unknown analog quantity {0}", quantity));
+            }
+            IPeripheral peripheral;
+            if(!machine.TryGetByName(adc, out peripheral))
+            {
+                throw new RecoverableException(string.Format("No peripheral named {0}", adc));
+            }
+            var feedSample = peripheral.GetType().GetMethod("FeedSample",
+                new[] { typeof(uint), typeof(uint), typeof(int) });
+            if(feedSample == null)
+            {
+                throw new RecoverableException(string.Format("{0} cannot be fed samples", adc));
+            }
+            Action<AP_PhysicsTruth> feed = truth =>
+            {
+                var raw = (uint)Math.Max(0.0, Math.Min(maximumCount,
+                    Math.Round(source(truth) * countsPerUnit + offsetCounts)));
+                feedSample.Invoke(peripheral, new object[] { raw << shift, channel, -1 });
+            };
+            feed(state.Current);
+            state.Updated += feed;
         }
 
         public void Disconnect()

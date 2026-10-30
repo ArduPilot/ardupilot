@@ -54,6 +54,21 @@ public:
 
     virtual const char *shortname() const = 0;
 
+    // how an (equivalent) airspeed estimate was derived; also stored in
+    // the log so the source of the estimate can be told apart:
+    enum AirspeedEstimateType : uint8_t {
+        NO_NEW_ESTIMATE = 0,
+        AIRSPEED_SENSOR = 1,
+        DCM_SYNTHETIC = 2,
+        EKF3_SYNTHETIC = 3,
+        SIM = 4,
+        // transient placeholder: a backend with no synthetic airspeed of its
+        // own asks the frontend to fill the estimate from the DCM backend.
+        // Never published - the frontend replaces it with DCM_SYNTHETIC.
+        // TODO: remove once ExternalAHRS/EKF supply their own wind.
+        DCM_FALLBACK = 5,  // internal placeholder, never logged
+    };
+
     // structure to retrieve results from backends:
     struct Estimates {
         // allow backends to set the private members:
@@ -187,6 +202,16 @@ public:
         Vector3f wind;
         bool wind_valid;
 
+        // an (equivalent) airspeed estimate published by this backend,
+        // and how it was derived.  airspeed_EAS_ok is false when the
+        // value is only a stale/dead-reckoned best guess.  airspeed_TAS
+        // is the same estimate scaled to true airspeed:
+        float airspeed_EAS;
+        bool airspeed_EAS_ok;
+        AirspeedEstimateType airspeed_estimate_type;
+        float airspeed_TAS;
+        bool airspeed_TAS_ok;
+
         /*
          * Sensor-related information
          */
@@ -286,11 +311,18 @@ public:
     void set_external_wind_estimate(float speed, float direction);
 #endif
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate.  have_velocity_source is the backend's
-    // published Estimates::have_velocity_source, gating the synthetic
-    // (wind-triangle) estimate.
-    virtual bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED;
+    // populate results.airspeed_EAS / airspeed_EAS_ok /
+    // airspeed_estimate_type from this backend's own airspeed sensor and
+    // state.  Called once per update after get_results() has filled the
+    // rest of the estimates:
+    void fill_airspeed_estimate(Estimates &results);
+
+    // return an (equivalent) airspeed estimate from this backend's own
+    // sensor or cached wind-triangle value.  Used by DCM's internal
+    // groundspeed_vector() and by AP_AHRS::fallback_synthetic_airspeed_EAS();
+    // the published estimate goes via fill_airspeed_estimate() instead.
+    // have_velocity_source gates the synthetic (wind-triangle) estimate.
+    bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
@@ -362,14 +394,37 @@ protected:
     // dead-reckoning and synthetic airspeed:
     float _last_airspeed_TAS;
 
+    // fill in a synthetic (non-sensor) EAS estimate for
+    // fill_airspeed_estimate().  The default has no air-data of its own: it
+    // returns DCM_FALLBACK, which the frontend fills in from the DCM backend
+    // (see AP_AHRS::fallback_synthetic_airspeed_EAS()).  Backends with their
+    // own synthetic airspeed (DCM, EKF3, SIM) override this:
+    virtual bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type);
+
+    // constrain an EAS estimate to the GPS ground speed +/- the wind
+    // limit, matching the constraint historically applied to both
+    // sensor and synthetic airspeed:
+    void constrain_airspeed_EAS_by_ground_speed(float &airspeed_ret) const;
+
 private:
 
-    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
-    //               airspeed as filled-in by an enabled airspeed sensor
-    //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
-    //               Or if none of the above, fills-in using the previous airspeed estimate
-    // Return false: if we are using the previous airspeed estimate
-    bool get_unconstrained_airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
+    // fill results.airspeed_EAS / airspeed_estimate_type from this
+    // backend's sensor or synthetic source; returns whether the estimate
+    // is valid.  fill_airspeed_estimate() wraps this and derives the TAS:
+    bool fill_airspeed_EAS_estimate(Estimates &results);
+
+#if AP_AIRSPEED_ENABLED
+    // fill results.airspeed_EAS from the active airspeed sensor if it should
+    // be used, applying the ground-speed constraint and tagging it
+    // AIRSPEED_SENSOR; returns false (for the synthetic to fill in) otherwise:
+    bool airspeed_from_sensor(Estimates &results) const;
+#endif
+
+    // fill airspeed_ret (unconstrained) from the primary airspeed sensor
+    // if usable, else the cached wind-triangle value; returns false when
+    // only the previous (dead-reckoned) estimate is available.  Used by
+    // airspeed_EAS():
+    bool get_unconstrained_airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const;
 
     // support for wind estimation
     Vector3f _last_fuse;

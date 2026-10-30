@@ -1,5 +1,9 @@
-// Physics-driven u-blox receiver. It emits a 3D fix using UBX NAV-PVT and
-// NAV-TIMEGPS messages understood by the production AP_GPS_UBLOX backend.
+// Physics-driven u-blox NEO-M9N. It emits a 3D fix using UBX NAV-PVT,
+// NAV-TIMEGPS and NAV-DOP messages understood by the production AP_GPS_UBLOX
+// backend, and answers the backend's configuration polls and writes so that
+// auto-configuration completes: CFG polls return the stored configuration,
+// CFG writes update it and are acknowledged, and the output follows the
+// configured measurement and message rates.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,21 +16,184 @@ namespace Antmicro.Renode.Peripherals.Sensors
     public class AP_UBlox : AP_UARTFrameDevice
     {
         public AP_UBlox(IMachine machine) : base(
-            machine, MessagesPerSecond, BaudRateBitsPerSecond)
+            machine, TicksPerSecond, BaudRateBitsPerSecond)
         {
             physics = AP_PhysicsState.ForMachine(machine);
+            Reset();
             StartTransmitter();
         }
 
         public override void Reset()
         {
             base.Reset();
-            itow = InitialTimeOfWeekMs;
+            lock(sync)
+            {
+                itow = InitialTimeOfWeekMs;
+                sinceSolutionMs = 0;
+                solutions = 0;
+                parsed.Clear();
+                replies.Clear();
+                messageRates.Clear();
+                // the receiver keeps its configuration in battery-backed RAM,
+                // so these are the defaults a fresh start reports
+                messageRates[(0x01, 0x07)] = 1; // NAV-PVT
+                messageRates[(0x01, 0x20)] = 1; // NAV-TIMEGPS
+                config.Clear();
+                config[(0x06, 0x08)] = new byte[] { 200, 0, 1, 0, 0, 0 }; // CFG-RATE 5Hz
+                var nav5 = new byte[36];
+                nav5[0] = 0xFF;
+                nav5[1] = 0x05;
+                nav5[3] = 3;    // auto 2D/3D
+                nav5[12] = 5;   // minimum elevation, degrees
+                config[(0x06, 0x24)] = nav5; // CFG-NAV5, portable dynamic model
+                config[(0x06, 0x16)] = new byte[] { 1, 3, 3, 0, 0, 0, 0, 0 }; // CFG-SBAS
+                config[(0x06, 0x3E)] = DefaultGnssConfig();
+                config[(0x06, 0x31)] = new byte[32]; // CFG-TP5, time pulse 0
+                var prt = new byte[20];
+                prt[0] = UartPort;
+                config[(0x06, 0x00)] = prt; // CFG-PRT
+            }
         }
 
+        public override void WriteChar(byte value)
+        {
+            base.WriteChar(value);
+            lock(sync)
+            {
+                parsed.Add(value);
+                if(parsed[0] != 0xB5 || (parsed.Count >= 2 && parsed[1] != 0x62))
+                {
+                    parsed.Clear();
+                    return;
+                }
+                if(parsed.Count < 6)
+                {
+                    return;
+                }
+                var length = parsed[4] | parsed[5] << 8;
+                if(length > MaximumPayload)
+                {
+                    parsed.Clear();
+                    return;
+                }
+                if(parsed.Count < length + 8)
+                {
+                    return;
+                }
+                byte checksumA = 0;
+                byte checksumB = 0;
+                for(var i = 2; i < length + 6; i++)
+                {
+                    checksumA += parsed[i];
+                    checksumB += checksumA;
+                }
+                if(checksumA == parsed[length + 6] && checksumB == parsed[length + 7])
+                {
+                    var reply = HandleMessage(parsed[2], parsed[3],
+                        parsed.GetRange(6, length).ToArray());
+                    if(reply != null)
+                    {
+                        replies.AddRange(reply);
+                    }
+                }
+                parsed.Clear();
+            }
+        }
+
+        private byte[] HandleMessage(byte messageClass, byte messageId, byte[] payload)
+        {
+            var output = new List<byte>();
+            if(messageClass == 0x0A && messageId == 0x04 && payload.Length == 0)
+            {
+                AppendFrame(output, 0x0A, 0x04, MonVer());
+                return output.ToArray();
+            }
+            if(messageClass != 0x06)
+            {
+                return null;
+            }
+            var key = (messageClass, messageId);
+            if(messageId == 0x01)
+            {
+                // CFG-MSG: poll is class and id, set is the 3 or 8 byte form
+                if(payload.Length < 2)
+                {
+                    return null;
+                }
+                var message = (payload[0], payload[1]);
+                if(payload.Length == 2)
+                {
+                    messageRates.TryGetValue(message, out var current);
+                    var rates = new List<byte> { payload[0], payload[1], 0, 0, 0, 0, 0, 0 };
+                    rates[2 + UartPort] = current;
+                    AppendFrame(output, 0x06, 0x01, rates);
+                    return output.ToArray();
+                }
+                messageRates[message] = payload.Length == 3 ? payload[2] :
+                    payload.Length == 8 ? payload[2 + UartPort] : (byte)0;
+            }
+            else if(payload.Length == 0 || (messageId == 0x00 && payload.Length == 1))
+            {
+                // poll; CFG-PRT may name the port being asked about
+                if(!config.TryGetValue(key, out var stored))
+                {
+                    return null;
+                }
+                AppendFrame(output, 0x06, messageId, new List<byte>(stored));
+                return output.ToArray();
+            }
+            else if(messageId == 0x24 && payload.Length == 36)
+            {
+                // CFG-NAV5 applies only the parameter groups set in its mask
+                var nav5 = config[key];
+                var mask = payload[0] | payload[1] << 8;
+                if((mask & 0x01) != 0)
+                {
+                    nav5[2] = payload[2];
+                }
+                if((mask & 0x02) != 0)
+                {
+                    nav5[12] = payload[12];
+                }
+            }
+            else if(config.ContainsKey(key) && messageId != 0x00)
+            {
+                config[key] = payload;
+            }
+            // acknowledge writes, including CFG-PRT baud changes and CFG-CFG saves
+            AppendFrame(output, 0x05, 0x01, new List<byte> { messageClass, messageId });
+            return output.ToArray();
+        }
+
+        // replies go out from here too: one producer keeps frames whole
         protected override byte[] BuildFrame()
         {
-            itow += 1000U / MessagesPerSecond;
+            lock(sync)
+            {
+                var output = new List<byte>(replies);
+                replies.Clear();
+                var rate = config[(0x06, 0x08)];
+                var measureMs = Math.Max(25, rate[0] | rate[1] << 8);
+                sinceSolutionMs += 1000U / TicksPerSecond;
+                if(sinceSolutionMs >= measureMs)
+                {
+                    sinceSolutionMs = 0;
+                    itow += (uint)measureMs;
+                    solutions++;
+                    output.AddRange(BuildSolution() ?? new byte[0]);
+                }
+                return output.Count == 0 ? null : output.ToArray();
+            }
+        }
+
+        private bool Due(byte messageClass, byte messageId)
+        {
+            return messageRates.TryGetValue((messageClass, messageId), out var rate) &&
+                rate != 0 && solutions % rate == 0;
+        }
+
+        private byte[] BuildSolution()
+        {
             var truth = physics.Current;
             var output = new List<byte>();
 
@@ -64,17 +231,72 @@ namespace Antmicro.Renode.Peripherals.Sensors
             AddInt32(pvt, 0);            // vehicle heading
             AddInt16(pvt, 0);            // magnetic declination
             AddUInt16(pvt, 0);           // magnetic accuracy
-            AppendFrame(output, 0x01, 0x07, pvt);
+            if(Due(0x01, 0x07))
+            {
+                AppendFrame(output, 0x01, 0x07, pvt);
+            }
 
-            var timeGps = new List<byte>();
-            AddUInt32(timeGps, itow);
-            AddInt32(timeGps, 0);
-            AddUInt16(timeGps, GpsWeek);
-            timeGps.Add(18);             // leap seconds
-            timeGps.Add(0x07);           // TOW, week and leap seconds valid
-            AddUInt32(timeGps, 10000);
-            AppendFrame(output, 0x01, 0x20, timeGps);
-            return output.ToArray();
+            if(Due(0x01, 0x04))
+            {
+                var dop = new List<byte>();
+                AddUInt32(dop, itow);
+                foreach(var value in new ushort[] { 150, 120, 80, 90, 80, 60, 50 })
+                {
+                    AddUInt16(dop, value); // g, p, t, v, h, n and e DOP, 0.01
+                }
+                AppendFrame(output, 0x01, 0x04, dop);
+            }
+
+            if(Due(0x01, 0x20))
+            {
+                var timeGps = new List<byte>();
+                AddUInt32(timeGps, itow);
+                AddInt32(timeGps, 0);
+                AddUInt16(timeGps, GpsWeek);
+                timeGps.Add(18);             // leap seconds
+                timeGps.Add(0x07);           // TOW, week and leap seconds valid
+                AddUInt32(timeGps, 10000);
+                AppendFrame(output, 0x01, 0x20, timeGps);
+            }
+            return output.Count == 0 ? null : output.ToArray();
+        }
+
+        private static List<byte> MonVer()
+        {
+            var payload = new List<byte>();
+            AddString(payload, "EXT CORE 4.04 (7f89f7)", 30);
+            AddString(payload, "00190000", 10);
+            foreach(var extension in new[] {
+                "ROM BASE 0x118B2060", "FWVER=SPG 4.04", "PROTVER=32.01",
+                "MOD=NEO-M9N", "GPS;GLO;GAL;BDS", "SBAS;QZSS" })
+            {
+                AddString(payload, extension, 30);
+            }
+            return payload;
+        }
+
+        // GPS, SBAS, Galileo, BeiDou, QZSS and GLONASS enabled
+        private static byte[] DefaultGnssConfig()
+        {
+            var blocks = new (byte id, byte reserved, byte maximum)[] {
+                (0, 8, 16), (1, 1, 3), (2, 4, 12), (3, 8, 16), (5, 0, 3), (6, 8, 12),
+            };
+            var payload = new List<byte> { 0, 32, 32, (byte)blocks.Length };
+            foreach(var block in blocks)
+            {
+                payload.AddRange(new byte[] { block.id, block.reserved, block.maximum, 0 });
+                AddUInt32(payload, 0x01010001); // enabled, L1 signals
+            }
+            return payload.ToArray();
+        }
+
+        private static void AddString(List<byte> output, string value, int size)
+        {
+            var bytes = Encoding.ASCII.GetBytes(value);
+            for(var i = 0; i < size; i++)
+            {
+                output.Add(i < bytes.Length ? bytes[i] : (byte)0);
+            }
         }
 
         private void AppendFrame(List<byte> output, byte messageClass,
@@ -130,9 +352,20 @@ namespace Antmicro.Renode.Peripherals.Sensors
         }
 
         private readonly AP_PhysicsState physics;
+        private readonly object sync = new object();
+        private readonly List<byte> parsed = new List<byte>();
+        private readonly List<byte> replies = new List<byte>();
+        private readonly Dictionary<(byte, byte), byte> messageRates =
+            new Dictionary<(byte, byte), byte>();
+        private readonly Dictionary<(byte, byte), byte[]> config =
+            new Dictionary<(byte, byte), byte[]>();
         private uint itow = InitialTimeOfWeekMs;
+        private uint sinceSolutionMs;
+        private uint solutions;
 
-        private const uint MessagesPerSecond = 5;
+        private const uint TicksPerSecond = 40;
+        private const int UartPort = 1;
+        private const int MaximumPayload = 1024;
         private const uint BaudRateBitsPerSecond = 230400;
         private const uint InitialTimeOfWeekMs = 518400000;
         private const ushort GpsWeek = 2430;

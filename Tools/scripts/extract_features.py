@@ -98,7 +98,14 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::(_calculate|update)\b',),
 
             ('AP_MOTORS_TRI_ENABLED', 'AP_MotorsTri::set_frame_class_and_type'),
+            ('AP_MOTORS_COAX_ENABLED', 'AP_MotorsCoax::output_armed_stabilizing'),
+            ('AP_MOTORS_SINGLE_ENABLED', 'AP_MotorsSingle::output_armed_stabilizing'),
+            ('AP_MOTORS_TAILSITTER_ENABLED', 'AP_MotorsTailsitter::output_armed_stabilizing'),
             ('AP_MOTORS_FRAME_{type}_ENABLED', r'AP_MotorsMatrix::setup_(?P<type>.*)_matrix\b',),
+            ('AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED', 'AP_MotorsMatrix_6DoF_Scripting::output_armed_stabilizing',),
+            ('AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED', 'AP_MotorsMatrix::set_throttle_factor',),
+            ('AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED', 'AP_MotorsMatrix_Scripting_Dynamic::add_motor',),
+            ('AP_PLANE_TAILSITTER_ENABLED', 'Tailsitter::speed_scaling',),
 
             ('HAL_MSP_ENABLED', r'AP_MSP::init\b',),
             ('HAL_MSP_{type}_ENABLED', r'AP_(?P<type>.*)_MSP::update\b',),
@@ -235,6 +242,7 @@ class ExtractFeatures(BuildScriptBase):
             ('EK3_FEATURE_OPTFLOW_FUSION', r'NavEKF3_core::FuseOptFlow'),
             ('EK3_FEATURE_OPTFLOW_SRTM', r'NavEKF3_core::writeTerrainData'),
             ('AP_AHRS_EKF_RESET_ENABLED', r'AP_AHRS::reset_configured_backend'),
+            ('AP_AHRS_POSITION_RESET_ENABLED', r'AP_AHRS::handle_external_position_estimate'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
             ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),

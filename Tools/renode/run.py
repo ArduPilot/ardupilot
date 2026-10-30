@@ -48,6 +48,8 @@ import fat_image
 import gen_board
 import renode_data
 
+EXT_FLASH_BASE = gen_board.EXT_FLASH_BASE
+SHF_ALLOC = 0x2
 IOMCU_FLASH_BASE = 0x08000000
 IOMCU_FLASH_SIZE = 64 * 1024
 IOMCU_APP_OFFSET = 4 * 1024
@@ -457,6 +459,22 @@ def _decode_apj(source, maximum_size, expected_board_id):
         sys.exit('failed to decode firmware %s: %s' % (source, error))
 
 
+def elf_sections_from(path, address):
+    '''Names of the allocated ELF sections at or above address.'''
+    data = Path(path).read_bytes()
+    shoff, = struct.unpack_from('<I', data, 0x20)
+    shentsize, shnum, shstrndx = struct.unpack_from('<HHH', data, 0x2E)
+    sections = [struct.unpack_from('<IIIII', data, shoff + i * shentsize)
+                for i in range(shnum)]
+    names = sections[shstrndx][4]
+    found = []
+    for name, _type, flags, addr, _offset in sections:
+        if flags & SHF_ALLOC and addr >= address:
+            end = data.index(b'\0', names + name)
+            found.append(data[names + name:end].decode())
+    return found
+
+
 def make_firmware_binary(source, destination, app_base=None, flash_size=None,
                          expected_board_id=None):
     '''Convert an APJ, BIN, HEX, or ELF firmware to a flash overlay.'''
@@ -503,10 +521,13 @@ def make_firmware_binary(source, destination, app_base=None, flash_size=None,
     objcopy = shutil.which('arm-none-eabi-objcopy') or shutil.which('objcopy')
     if objcopy is None:
         sys.exit('objcopy is required to make the Renode flash overlay')
+    # external flash sections are loaded from the ELF into their own memory
+    removed = ['--remove-section=%s' % name
+               for name in elf_sections_from(source, EXT_FLASH_BASE)]
     try:
         subprocess.check_call(
-            [objcopy, '-O', 'binary', '--gap-fill=0xff',
-             str(source), str(destination)],
+            [objcopy, '-O', 'binary', '--gap-fill=0xff'] + removed +
+            [str(source), str(destination)],
             stderr=subprocess.STDOUT,
         )
     except (OSError, subprocess.CalledProcessError) as error:
@@ -772,6 +793,9 @@ def main():
                         help='erase the IOMCU application so the FMU uploads it at startup')
     parser.add_argument('--port', type=int,
                         help='telnet monitor on this port instead of the interactive console')
+    parser.add_argument('--rc-channels', metavar='PWM,...',
+                        help='switch on the emulated R/C transmitter with these '
+                             'channel PWM values (SBUS receiver)')
     parser.add_argument('--exec', dest='extra', action='append', default=[],
                         help='extra monitor command to run after start (repeatable)')
     parser.add_argument('--gdb', action='store_true',
@@ -828,6 +852,14 @@ def main():
                          (args.cpusel, ','.join(str(cpu) for cpu in sorted(allowed))))
     if args.num_imus is not None and args.num_imus < 0:
         parser.error('--num-imus cannot be negative')
+    if args.rc_channels is not None:
+        try:
+            rc_channels = [int(value) for value in args.rc_channels.split(',')]
+        except ValueError:
+            parser.error('--rc-channels must be comma separated PWM values')
+        if not 1 <= len(rc_channels) <= 16 or not all(
+                800 <= value <= 2200 for value in rc_channels):
+            parser.error('--rc-channels takes 1 to 16 values from 800 to 2200')
 
     if args.reverse_debug and not args.gdb:
         parser.error('--reverse-debug requires --gdb')
@@ -1160,16 +1192,28 @@ def main():
             '{ uart: usart2 }"',
             'sysbus LoadBinary @%s 0x%08X' %
             (iomcu_flash, IOMCU_FLASH_BASE),
-            'gpioPortB OnGPIO 5 false',
-            'gpioPortC OnGPIO 14 true',
-            'gpioPortC OnGPIO 15 false',
-            'cpu VectorTableOffset 0x%08X' % IOMCU_FLASH_BASE,
+            # the FMU resets the IOMCU; without this it halts fetching
+            # its vector table from the unmapped address 0
+            'macro reset "cpu VectorTableOffset 0x%08X; '
+            'gpioPortB OnGPIO 5 false; gpioPortC OnGPIO 14 true; '
+            'gpioPortC OnGPIO 15 false"' % IOMCU_FLASH_BASE,
+            'runMacro $reset',
             'cpu PerformanceInMips 60',
             'connector Connect sysbus.iomcuUart iomcuHub',
             'machine LoadPlatformDescription @%s' % iomcu_persistence_repl,
+            'machine LoadPlatformDescription @%s' %
+            generated['iomcu_peripherals'],
+            'emulation CreateUARTHub "iomcuRcinHub"',
+            'connector Connect sysbus.usart3 iomcuRcinHub',
+            'connector Connect sysbus.iomcuSbus iomcuRcinHub',
             'emulation SetGlobalSerialExecution true',
             'emulation SetGlobalQuantum "%s"' % IOMCU_GLOBAL_QUANTUM,
             'mach set "ardupilot"',
+        ]
+    if args.rc_channels is not None and not generated['is_periph']:
+        commands += [
+            'rcInput SetChannels "%s"' % args.rc_channels,
+            'rcInput Enabled true',
         ]
     if args.unthrottled:
         commands.append('emulation SetGlobalAdvanceImmediately true')
@@ -1300,6 +1344,8 @@ def main():
     else:
         print('serial:  SERIAL%s/%s on tcp:localhost:%u' %
               (generated['serial_index'], generated['serial'], args.uart_port))
+    if generated['serial'] is not None and not generated['serial_mavlink']:
+        print('serial:  no UART speaks MAVLink by default')
     print('time:    %s' % ('unthrottled' if args.unthrottled else 'paced at 1x'))
     if args.watchdog:
         print('watchdog: reset enforced')

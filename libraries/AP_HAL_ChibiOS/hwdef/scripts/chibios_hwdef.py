@@ -1132,7 +1132,7 @@ class ChibiOSHWDef(hwdef.HWDef):
                     using_chibios_can = True
                 if d.split()[1] == 'AP_REBOOT_MASS_STORAGE_ENABLED':
                     continue
-                f.write('#define %s\n' % d[7:])
+                f.write(self.define_line(d))
 
         if self.intdefines.get('AP_NETWORKING_ENABLED', 0) == 1:
             self.enable_networking(f)
@@ -3201,6 +3201,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.process_hwdefs()
 
         self.validate_periph_defines()
+        # after validate_periph_defines(), which checks the board's own
+        # defines only, as it did before build options were applied
+        self.apply_build_option_defines()
 
         if "MCU" not in self.config:
             self.error("Missing MCU type in config")

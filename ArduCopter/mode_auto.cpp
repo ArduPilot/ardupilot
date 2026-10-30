@@ -1547,6 +1547,11 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
 // returns false if the location cannot be determined which only happens if the terrain data is unavailable
 bool ModeAuto::get_loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& loc) const
 {
+    if (!AP_Mission::cmd_has_location(cmd.id)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return false;
+    }
+
     loc = cmd.content.location;
 
     // use current lat, lon if zero
@@ -1889,9 +1894,11 @@ bool ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const
         return false;
     }
 
-    // if there is no delay at the end of this segment get next nav command
+    // Only location-bearing commands can be used as the next spline control point.
     AP_Mission::Mission_Command temp_cmd;
-    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
+    if (cmd.p1 == 0 &&
+        mission.get_next_nav_cmd(cmd.index+1, temp_cmd) &&
+        AP_Mission::cmd_has_location(temp_cmd.id)) {
         if (!get_loc_from_cmd(temp_cmd, dest_loc, next_dest_loc)) {
             return false;
         }

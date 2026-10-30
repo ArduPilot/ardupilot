@@ -61,6 +61,7 @@ BUILD_OPTIONS = [
     Feature('AHRS', 'EKF3_OPTFLOW', 'EK3_FEATURE_OPTFLOW_FUSION', 'Enable OpticalFlow fusion for EKF3', 0, 'EKF3,OPTICALFLOW'),
     Feature('AHRS', 'EKF3_OPTFLOW_SRTM', 'EK3_FEATURE_OPTFLOW_SRTM', 'Enable OpticalFlow using SRTM for EKF3', 0, 'EKF3_OPTFLOW'),  # noqa: E501
     Feature('AHRS', 'EKF3_RESET', 'AP_AHRS_EKF_RESET_ENABLED', 'Enable EKF bootstrap reset aux function', 1, 'EKF3'),
+    Feature('AHRS', 'AHRS_POS_RESET', 'AP_AHRS_POSITION_RESET_ENABLED', 'Enable setting position from external position estimates', 0, 'EKF3'),  # noqa: E501
     Feature('AHRS', 'BARO_WIND_COMP', 'HAL_BARO_WIND_COMP_ENABLED', 'Enable Baro wind compensation', 0, None),
 
     Feature('Safety', 'PARACHUTE', 'HAL_PARACHUTE_ENABLED', 'Enable Parachute', 0, None),
@@ -259,6 +260,11 @@ BUILD_OPTIONS = [
     Feature('Gimbal', 'POILOCK', 'AP_MOUNT_POI_LOCK_ENABLED', 'Enable Aux Switch POI lock', 0, "MOUNT"),
     Feature('Gimbal', 'MOUNT_WPNEXT_OFFSET', 'AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED', 'Enable tracking next waypoint with offset', 0, "MOUNT"),  # noqa
 
+    # note that while there's only one Frame for an AP_Motors backend
+    # subclass we can turn off the entire backend using the define for
+    # that subclass.  That simplifies the cbs interface, but it does
+    # mean we are mis-naming motor backends as frames in this list:
+    Feature('VTOL Frame', 'TAILSITTER', 'AP_MOTORS_TAILSITTER_ENABLED', 'Dual-motor tailsitter frame', 0, "QUADPLANE"),
     Feature('VTOL Frame', 'TRI', 'AP_MOTORS_TRI_ENABLED', 'TriCopters', 0, None),
     Feature('VTOL Frame', 'QUAD', 'AP_MOTORS_FRAME_QUAD_ENABLED', 'QUAD', 1, None),
     Feature('VTOL Frame', 'HEXA', 'AP_MOTORS_FRAME_HEXA_ENABLED', 'HEXA', 0, None),
@@ -267,6 +273,12 @@ BUILD_OPTIONS = [
     Feature('VTOL Frame', 'DODECAHEXA', 'AP_MOTORS_FRAME_DODECAHEXA_ENABLED', 'DODECAHEXA', 0, None),
     Feature('VTOL Frame', 'Y6', 'AP_MOTORS_FRAME_Y6_ENABLED', 'Y6', 0, None),
     Feature('VTOL Frame', 'OCTAQUAD', 'AP_MOTORS_FRAME_OCTAQUAD_ENABLED', 'OCTAQUAD', 0, None),
+    Feature('VTOL Frame', 'SINGLE', 'AP_MOTORS_SINGLE_ENABLED', 'SINGLE', 0, None),
+    Feature('VTOL Frame', 'COAX', 'AP_MOTORS_COAX_ENABLED', 'COAX', 0, None),
+    Feature('VTOL Frame', '6DOF_SCRIPTING', 'AP_MOTORS_FRAME_6DOF_SCRIPTING_ENABLED', '6DOF_SCRIPTING', 0, 'SCRIPTING'),
+    Feature('VTOL Frame', 'DYNAMIC_SCRIPTING', 'AP_MOTORS_FRAME_DYNAMIC_SCRIPTING_MATRIX_ENABLED', 'DYNAMIC_SCRIPTING', 0, 'SCRIPTING'),  # noqa: E501
+    Feature('VTOL Frame', 'SCRIPTING_MATRIX', 'AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED', 'SCRIPTING_MATRIX', 0, 'SCRIPTING'),  # noqa: E501
+    # Feature('VTOL Frame', '6DOF', 'AP_MOTORS_FRAME_6DOF_ENABLED', 'Sub 6DOF', 0, None),  # Sub fails to build without this  # noqa: E501
 
     Feature('Payload', 'GRIPPER', 'AP_GRIPPER_ENABLED', 'Enable Gripper', 0, None),
     Feature('Payload', 'SPRAYER', 'HAL_SPRAYER_ENABLED', 'Enable Sprayer', 0, None),
@@ -292,6 +304,7 @@ BUILD_OPTIONS = [
     Feature('Plane', 'PLANE_SYSTEMID', 'AP_PLANE_SYSTEMID_ENABLED', 'Enable systemID support', 0, 'QUADPLANE,Logging'),  # NOQA: E501
     # PLANE_CUSTOM_CONTROL depends on scripting due to SRV_Channels::set_output_pwm_chan_timeout.
     Feature('Plane', 'PLANE_CUSTOM_CONTROL', 'AP_PLANE_CUSTOMCONTROL_ENABLED', 'Enable custom plane controller', 0, "SCRIPTING"),  # NOQA: E501
+    Feature('Plane', 'PLANE_TAILSITTER', 'AP_PLANE_TAILSITTER_ENABLED', 'Enable quadplane tailsitter', 0, 'QUADPLANE'),  # NOQA: E501
 
     Feature('RC', 'RC_Protocol', 'AP_RCPROTOCOL_ENABLED', "Enable Serial RC Protocols", 0, None),   # NOQA: E501
     Feature('RC', 'RC_CRSF', 'AP_RCPROTOCOL_CRSF_ENABLED', "Enable CRSF", 0, "RC_Protocol"),   # NOQA: E501

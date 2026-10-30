@@ -452,8 +452,8 @@ void AP_Mount_Xacti::handle_gnss_status_req(AP_DroneCAN* ap_dronecan, const Cana
     xacti_gnss_status_msg.utc_hour = hour;
     xacti_gnss_status_msg.utc_minute = min;
     xacti_gnss_status_msg.utc_seconds = sec;
-    xacti_gnss_status_msg.latitude = loc.lat * 1e-7;
-    xacti_gnss_status_msg.longitude = loc.lng * 1e-7;
+    xacti_gnss_status_msg.latitude = (double)loc.lat / 1.0e7;
+    xacti_gnss_status_msg.longitude = (double)loc.lng / 1.0e7;
     xacti_gnss_status_msg.altitude = loc.alt * 1e-2;
     ap_dronecan->xacti_gnss_status.broadcast(xacti_gnss_status_msg);
 }

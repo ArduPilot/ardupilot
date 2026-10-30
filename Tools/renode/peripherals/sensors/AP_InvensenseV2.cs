@@ -22,6 +22,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             this.whoAmI = whoAmI;
             this.rotation = rotation;
             physics = AP_PhysicsState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
             registers = new byte[BankCount, RegisterCount];
             fifo = new Queue<byte>();
             if(whoAmI == WhoAmIIcm20948)
@@ -82,6 +83,18 @@ namespace Antmicro.Renode.Peripherals.Sensors
             transferByte = 0;
         }
 
+        public string AuxiliaryCompassHeaterInterference
+        {
+            get { return auxiliaryCompass == null ? "" : auxiliaryCompass.HeaterInterference; }
+            set
+            {
+                if(auxiliaryCompass != null)
+                {
+                    auxiliaryCompass.HeaterInterference = value;
+                }
+            }
+        }
+
         public byte AuxiliaryCompassRotation
         {
             get { return auxiliaryCompass == null ? (byte)0 : auxiliaryCompass.Rotation; }
@@ -110,6 +123,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
                     return (byte)fifo.Count;
                 case FifoReadWrite:
                     return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
+                case TemperatureHigh:
+                    return (byte)(TemperatureRaw() >> 8);
+                case TemperatureLow:
+                    return (byte)TemperatureRaw();
                 }
             }
             return registers[currentBank, register];
@@ -244,7 +261,13 @@ namespace Antmicro.Renode.Peripherals.Sensors
             PushWord(ScaleWord(gyro[1], GyroScale));
             PushWord(ScaleWord(gyro[0], GyroScale));
             PushWord(ScaleWord(-gyro[2], GyroScale));
-            PushWord(0);
+            PushWord(TemperatureRaw());
+        }
+
+        // the driver checks FIFO temperature against TEMP_OUT, so both use this
+        private short TemperatureRaw()
+        {
+            return ScaleWord((float)(thermal.TemperatureC - 21.0), 1.0 / 333.87);
         }
 
         private static short ScaleWord(float value, double scale)
@@ -262,6 +285,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly byte whoAmI;
         private readonly byte rotation;
         private readonly AP_PhysicsState physics;
+        private readonly AP_BoardThermalState thermal;
         private readonly byte[,] registers;
         private readonly Queue<byte> fifo;
         private readonly AP_AK09916 auxiliaryCompass;
@@ -287,6 +311,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte PowerManagement1 = 0x06;
         private const byte InterruptStatus1 = 0x1A;
         private const byte ExternalSensorData = 0x3B;
+        private const byte TemperatureHigh = 0x39;
+        private const byte TemperatureLow = 0x3A;
         private const byte FifoEnable2 = 0x67;
         private const byte FifoReset = 0x68;
         private const byte FifoCountHigh = 0x70;

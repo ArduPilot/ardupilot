@@ -1,5 +1,6 @@
 #pragma once
 
+#include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef SCRIPTING_DIRECTORY

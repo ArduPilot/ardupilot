@@ -37,6 +37,19 @@ ATTACHABLE_DEVICES = {
             ('GPS{instance}_TYPE', 2),
         ),
     },
+    'sbus-rc': {
+        'name': 'SBUS R/C receiver',
+        'category': 'R/C',
+        'bus': 'uart',
+        'model': 'Sensors.AP_SBusInput',
+        'driver': 'AP_RCProtocol/AP_RCProtocol_SBUS.cpp',
+        'feature': 'AP_RCPROTOCOL_SBUS_ENABLED',
+        'coverage': COVERAGE_DETECTION,
+        'hotplug': 'runtime',
+        'parameters': (
+            ('SERIAL{serial}_PROTOCOL', 23),
+        ),
+    },
     'nmea-gps': {
         'name': 'NMEA GPS',
         'category': 'GNSS',
@@ -4188,7 +4201,7 @@ SERIAL_PROTOCOL_CLASSIFICATIONS = {
     'NMEAOutput': ('output', 'supported'),
     'WindVane': ('device', 'planned'),
     'SLCAN': ('link', 'planned'),
-    'RCIN': ('device', 'planned'),
+    'RCIN': ('device', 'partial'),
     'EFI': ('device', 'planned'),
     'LTM_Telem': ('output', 'supported'),
     'RunCam': ('device', 'planned'),
