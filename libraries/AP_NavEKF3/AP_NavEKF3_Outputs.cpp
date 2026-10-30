@@ -598,11 +598,14 @@ void NavEKF3_core::getLaneStatus(nav_lane_status &status) const
     if (!status.flow_configured) {
         return;
     }
-    status.flow_quality_min = constrain_int16(frontend->_flowQualMin, 0, 255);
     const uint32_t fused_within_ms = 500;
     status.flow_x_fused = (flowPassTimeAxis_ms[0] != 0) && (imuSampleTime_ms - flowPassTimeAxis_ms[0] < fused_within_ms);
     status.flow_y_fused = (flowPassTimeAxis_ms[1] != 0) && (imuSampleTime_ms - flowPassTimeAxis_ms[1] < fused_within_ms);
 #if EK3_FEATURE_OPTFLOW_AGL_KF
+    // the floor gates only the lockout recovery, which runs on the AGL KF
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
+        status.flow_quality_min = constrain_int16(frontend->_flowQualMin, 0, 255);
+    }
     // half the lockout time, so resets back to back on a failing axis still read one at a time
     const uint32_t reset_shown_ms = 250;
     status.flow_x_reset = (flowVelResetAxis_ms[0] != 0) && (imuSampleTime_ms - flowVelResetAxis_ms[0] < reset_shown_ms);
