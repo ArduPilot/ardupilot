@@ -1074,7 +1074,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 #if AP_OSD_EKF_LANES_ENABLED
     // @Param: EKF0_EN
     // @DisplayName: EKF0_EN
-    // @Description: Displays EKF core 0: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength, scaled so the lane's EK3_FLOW_QMIN floor reads 50 and flashing below it, and which flow axes it is fusing
+    // @Description: Displays EKF core 0: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength, scaled so the lane's EK3_FLOW_QMIN floor, when it has one (EK3_OPTIONS bit 3), reads 50 and flashing below it, and which flow axes it is fusing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF0_X
@@ -1090,7 +1090,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF1_EN
     // @DisplayName: EKF1_EN
-    // @Description: Displays EKF core 1: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength, scaled so the lane's EK3_FLOW_QMIN floor reads 50 and flashing below it, and which flow axes it is fusing
+    // @Description: Displays EKF core 1: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength, scaled so the lane's EK3_FLOW_QMIN floor, when it has one (EK3_OPTIONS bit 3), reads 50 and flashing below it, and which flow axes it is fusing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF1_X
@@ -1106,7 +1106,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF2_EN
     // @DisplayName: EKF2_EN
-    // @Description: Displays EKF core 2: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength, scaled so the lane's EK3_FLOW_QMIN floor reads 50 and flashing below it, and which flow axes it is fusing
+    // @Description: Displays EKF core 2: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength, scaled so the lane's EK3_FLOW_QMIN floor, when it has one (EK3_OPTIONS bit 3), reads 50 and flashing below it, and which flow axes it is fusing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF2_X
