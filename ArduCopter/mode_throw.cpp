@@ -71,9 +71,6 @@ void ModeThrow::throw_setup()
 
     // Reset the IMU throw-direction integrator state.
     throw_dir_reset();
-    throw_target_yaw_valid = false;
-    throw_target_yaw_rad = 0.0f;
-    throw_yaw_source = ThrowYawSource::None;
 
     // while THROW_SRC_INI's set is still in use, keep what was captured before it
     if (source_set_switched) {
@@ -709,6 +706,10 @@ void ModeThrow::throw_dir_reset()
     throw_dir_last_us = 0;
     throw_dir_anchor_yaw_valid = false;
     throw_dir_anchor_yaw_rad = 0.0f;
+    // the recovery target belongs to the detection being abandoned
+    throw_target_yaw_valid = false;
+    throw_target_yaw_rad = 0.0f;
+    throw_yaw_source = ThrowYawSource::None;
 }
 
 void ModeThrow::throw_dir_update()
