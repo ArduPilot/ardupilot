@@ -554,7 +554,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 #if HAL_WITH_ESC_TELEM
     // @Param: TKOFF_RPM_MIN
     // @DisplayName: Auto Takeoff Check RPM minimum
-    // @Description: Auto takeoff (in Auto or Guided) is not permitted until motors report at least this RPM. Set to zero to disable check (which also disables Q_TKOFF_RPM_MAX).
+    // @Description: Auto takeoff (in Auto or Guided) is not permitted until motors report at least this RPM, and until every ESC that reports its error rate as a percentage (such as bidirectional DShot) reports 1% or less. Set to zero to disable both checks (which also disables Q_TKOFF_RPM_MAX).
     // @Range: 0 10000
     // @User: Standard
     AP_GROUPINFO("TKOFF_RPM_MIN", 40, QuadPlane, takeoff_rpm_min, 0),
