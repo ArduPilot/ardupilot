@@ -517,7 +517,7 @@
  # define THROW_UPRIGHT_TIMEOUT_MS 3000 // ms after which uprighting moves on whatever the attitude or, for a drop, the descent
 #endif
 #ifndef THROW_NEXTMODE_POS_WAIT_MS
- # define THROW_NEXTMODE_POS_WAIT_MS 5000 // ms the handoff waits for a position before trying, and failing, to change to a next mode that needs one
+ # define THROW_NEXTMODE_POS_WAIT_MS 5000 // ms the handoff waits for a position before giving up on a next mode that needs one
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

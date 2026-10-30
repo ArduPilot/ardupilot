@@ -149,11 +149,21 @@ Mode *ModeThrow::nextmode() const
     }
 }
 
-// staying in throw means holding a position in throw
+// True unless THROW_NEXTMODE flies without a position; staying in throw means
+// holding one in throw.  Decided by mode number, because a mode that has not
+// started yet can answer requires_position() from its last run: AUTO left in
+// NAV_ATTITUDE_TIME says it needs none.
 bool ModeThrow::nextmode_requires_position() const
 {
-    const Mode *next = nextmode();
-    return next == nullptr || next->requires_position();
+    switch ((Mode::Number)g2.throw_nextmode.get()) {
+    case Mode::Number::STABILIZE:
+    case Mode::Number::ALT_HOLD:
+    case Mode::Number::ACRO:
+    case Mode::Number::LAND:
+        return false;
+    default:
+        return true;
+    }
 }
 
 // runs the throw to start controller
@@ -1023,11 +1033,13 @@ void ModeThrow::throw_do_nextmode_handoff()
     }
     Mode *next = nextmode();
     if (next != nullptr) {
-        // The EKF takes a while to take up a new source set, and set_mode()
-        // refuses a mode that needs a position until it has, so wait a few
-        // seconds.  After that the change is tried and refused as it always
-        // was, leaving the vehicle in throw.
-        if (next->requires_position() && !copter.position_ok()) {
+        // The EKF takes a while to take up a new source set, so a next mode
+        // that needs a position waits a few seconds for one.  After that the
+        // handoff is refused, leaving the vehicle in throw as a refused change
+        // always has; set_mode() is not asked, as its own check reads the
+        // same answer from the mode's last run that nextmode_requires_position()
+        // avoids.
+        if (nextmode_requires_position() && !copter.position_ok()) {
             const uint32_t now_ms = AP_HAL::millis();
             if (nextmode_wait_start_ms == 0) {
                 nextmode_wait_start_ms = now_ms;
@@ -1036,8 +1048,10 @@ void ModeThrow::throw_do_nextmode_handoff()
             if (now_ms - nextmode_wait_start_ms < THROW_NEXTMODE_POS_WAIT_MS) {
                 return;
             }
+            gcs().send_text(MAV_SEVERITY_WARNING, "Throw: no position for %s, staying in throw", next->name());
+        } else {
+            set_mode(next->mode_number(), ModeReason::THROW_COMPLETE);
         }
-        set_mode(next->mode_number(), ModeReason::THROW_COMPLETE);
     }
     nextmode_attempted = true;
 }
