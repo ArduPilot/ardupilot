@@ -69,6 +69,12 @@ void ModeThrow::throw_setup()
     yaw_align_timeout_ms = THROW_YAW_ALIGN_TIMEOUT_MS;
     yaw_align_locked = false;
 
+    // Reset the IMU throw-direction integrator state.
+    throw_dir_reset();
+    throw_target_yaw_valid = false;
+    throw_target_yaw_rad = 0.0f;
+    throw_yaw_source = ThrowYawSource::None;
+
     // while THROW_SRC_INI's set is still in use, keep what was captured before it
     if (source_set_switched) {
         return;
@@ -93,12 +99,6 @@ void ModeThrow::throw_setup()
         throw_entry_yaw_rad = 0.0f;
         throw_entry_yaw_valid = false;
     }
-
-    // Reset the IMU throw-direction integrator state.
-    throw_dir_reset();
-    throw_target_yaw_valid = false;
-    throw_target_yaw_rad = 0.0f;
-    throw_yaw_source = ThrowYawSource::None;
 
     // A tumbling vehicle feeds garbage to flow and GPS, so THROW_SRC_INI can
     // move the EKF to a set with no horizontal aiding for the throw phase.
