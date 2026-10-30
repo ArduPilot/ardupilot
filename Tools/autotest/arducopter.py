@@ -2221,7 +2221,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         motors = []
         for m in self.context_collection('STATUSTEXT'):
-            match = re.match(r"Motor Test: error rate [0-9.]+ for motor (\d+) at", m.text)
+            match = re.match(r"Motor Test: motor (\d+) errors [0-9.]+% at", m.text)
             if match is not None and (len(motors) == 0 or motors[-1] != int(match.group(1))):
                 motors.append(int(match.group(1)))
         self.context_pop()
