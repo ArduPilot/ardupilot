@@ -1187,8 +1187,9 @@ void AP_CRSF_Telem::calc_device_info() {
     // param count, the Parameters folder and the OSD parameters in it
     _telem.ext.info.payload[n] = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS + 1;
 #if AP_CRSF_SCRIPTING_ENABLED
-    for (ScriptedMenu* m = &scripted_menus; m != nullptr; m = m->next_menu) {
-        _telem.ext.info.payload[n] += m->num_params;
+    {
+        WITH_SEMAPHORE(scr_sem);
+        _telem.ext.info.payload[n] += next_scripted_id - SCRIPTED_MENU_START_ID;
     }
 #endif // AP_CRSF_SCRIPTING_ENABLED
     n++;
@@ -1914,7 +1915,12 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::find_parameter(ui
 // called from lua
 AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uint8_t length, const char* data)
 {
-    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
+    AP_CRSF_Telem* telem = AP::crsf_telem();
+    WITH_SEMAPHORE(telem->get_semaphore());
+
+    if (telem->scripted_ids_exhausted()) {
+        return nullptr;
+    }
 
     ScriptedParameter* new_params = (ScriptedParameter*)mem_realloc(params,
         sizeof(ScriptedParameter) * num_params,
@@ -1925,7 +1931,6 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uin
     num_params++;
     params = new_params;
     ScriptedParameter& param = params[num_params-1];
-    param.id = id + num_params;
     param.parent_id = id;
     param.length = length;
     if (length > 0) {
@@ -1938,6 +1943,8 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uin
 
         memcpy((char*)param.data, data, length);
     }
+    // taken only once nothing can fail, as a gap in the ids would stall a transmitter
+    param.id = telem->next_scripted_id++;
     debug("adding menu item %d", param.id);
 
     return &param;
@@ -1987,11 +1994,16 @@ AP_CRSF_Telem::ScriptedMenu::~ScriptedMenu()
 // called from lua
 AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu)
 {
-    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
+    AP_CRSF_Telem* telem = AP::crsf_telem();
+    WITH_SEMAPHORE(telem->get_semaphore());
 
     // find the menu to create
     ScriptedMenu* tail = this;
     for (; tail->next_menu != nullptr; tail = tail->next_menu) {
+    }
+
+    if (telem->scripted_ids_exhausted()) {
+        return nullptr;
     }
 
     ScriptedMenu* menu = NEW_NOTHROW ScriptedMenu(menu_name, size, parent_menu);
@@ -1999,14 +2011,18 @@ AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::add_menu(const char* m
         return nullptr;
     }
 
-    menu->id = tail->id == 0 ? SCRIPTED_MENU_START_ID : tail->id + MAX_SCRIPTED_MENU_SIZE + 1;
-    tail->next_menu = menu;
-
-    // dummy parameter for a submenu
     if (parent_menu != 0) {
+        // a submenu takes the id of the dummy parameter linking it into its parent
         ScriptedParameter* param = add_parameter(0, nullptr);
-        param->id = menu->id;
+        if (param == nullptr) {
+            delete menu;
+            return nullptr;
+        }
+        menu->id = param->id;
+    } else {
+        menu->id = telem->next_scripted_id++;
     }
+    tail->next_menu = menu;
     return menu;
 }
 
@@ -2131,6 +2147,7 @@ void AP_CRSF_Telem::clear_menus()
         m = next;
     }
     scripted_menus.next_menu = nullptr;
+    next_scripted_id = SCRIPTED_MENU_START_ID;
 }
 
 #ifdef CRSF_DEBUG
