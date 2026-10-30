@@ -572,7 +572,7 @@ private:
 
     // flag to inhibit all accel bias learning, set by vehicle code
     bool _inhibitAccelBiasLearning;
-    // the value of _inhibitAccelBiasLearning the DAL last accepted
+    // the value of _inhibitAccelBiasLearning the DAL last accepted into the current log
     bool _inhibitAccelBiasLearningLogged;
 
     // update the yaw reset data to capture changes due to a lane switch
