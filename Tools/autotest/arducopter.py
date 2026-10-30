@@ -19237,6 +19237,73 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         for good_mask in [0b00001, 0b00101, 0b110000000000]:
             self.fettec_assert_good_mask(good_mask)
 
+    def OSDParamScreenSaveKeepsRange(self):
+        '''check OSD parameter screen ranges survive a reboot and saving a changed value'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 42,  # MSP DisplayPort
+            "OSD_TYPE": 5,           # MSP DisplayPort
+            "OSD1_ENABLE": 0,
+            "OSD5_ENABLE": 1,
+            "OSD_CHAN": 12,
+            "OSD_SW_METHOD": 1,      # select screen by PWM range
+            "OSD_BTN_DELAY": 2000,   # longer than a stick pulse, so it is one press
+            "LOG_BACKEND_TYPE": 1,
+            "TERRAIN_ENABLE": 0,
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port  # serial5 listens on localhost port
+        ])
+        self.set_rc(12, 1500)
+        self.wait_statustext("PreArm: In OSD menu", timeout=60)
+
+        def configure(request_id, slot, name, pmin, pmax, incr):
+            self.mav.mav.osd_param_config_send(1, 1, request_id, 5, slot, name.encode('ascii'), 0, pmin, pmax, incr)
+            m = self.assert_receive_message(
+                'OSD_PARAM_CONFIG_REPLY',
+                condition='OSD_PARAM_CONFIG_REPLY.request_id==%u' % request_id,
+                timeout=5,
+            )
+            if m.result != mavutil.mavlink.OSD_PARAM_SUCCESS:
+                raise NotAchievedException("Bad OSD_PARAM_CONFIG result %u" % m.result)
+
+        # slot 1 is changed from the menu, slot 2 has a range equal to the
+        # MIN and MAX defaults, which has to be stored to survive a reboot
+        configure(1, 1, "LOG_BACKEND_TYPE", 1, 3, 1)
+        configure(2, 2, "TERRAIN_ENABLE", 0, 1, 1)
+        want = {
+            "OSD5_PARAM1_MIN": 1, "OSD5_PARAM1_MAX": 3, "OSD5_PARAM1_INCR": 1,
+            "OSD5_PARAM2_MIN": 0, "OSD5_PARAM2_MAX": 1, "OSD5_PARAM2_INCR": 1,
+        }
+        self.assert_parameter_values(want)
+        self.reboot_sitl()
+        self.assert_parameter_values(want)
+        self.wait_statustext("PreArm: In OSD menu", timeout=60)
+
+        # menu gestures need throttle low and yaw centred. The menu repeats
+        # a held stick after OSD_BTN_DELAY, and ignores the sticks for that
+        # long after each change, so each press is short and followed by a
+        # longer pause
+        self.set_rc_from_map({1: 1500, 2: 1500, 3: 1000, 4: 1500})
+
+        def gesture(chan, pwm, what):
+            self.set_rc(chan, pwm)
+            self.delay_sim_time(0.2, reason=what)
+            self.set_rc(chan, 1500)
+            self.delay_sim_time(4.5, reason="stick re-centre")
+
+        gesture(1, 2000, "MENU_ENTER to modify slot 1")
+        gesture(2, 1000, "MENU_UP to increase the value")
+        gesture(1, 1000, "MENU_EXIT back to parameter select")
+        self.assert_parameter_value("LOG_BACKEND_TYPE", 2)
+        gesture(2, 1000, "MENU_UP to the SAVE button")
+        gesture(1, 2000, "MENU_ENTER on SAVE")
+
+        self.progress("Check the saved value and ranges")
+        self.reboot_sitl()
+        self.assert_parameter_value("LOG_BACKEND_TYPE", 2)
+        self.assert_parameter_values(want)
+
     def FETtecESC(self):
         '''Test FETtecESC'''
         self.set_parameters({
@@ -19680,6 +19747,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.SMART_RTL,
             self.ScriptParamRegistration,
             self.PerfInfo,
+            self.OSDParamScreenSaveKeepsRange,
             self.FETtecESC,
             self.DO_CHANGE_SPEED,
             self.GPSForYaw,
