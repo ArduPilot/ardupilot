@@ -94,6 +94,7 @@ void Copter::motor_test_output()
         if (!motors->output_test_seq(motor_test_seq, pwm)) {
             gcs().send_text(MAV_SEVERITY_INFO, "Motor Test: cancelled");
             motor_test_stop();
+            return;
         }
 #if HAL_WITH_ESC_TELEM
         // ESC telemetry is indexed by output channel, not by test order
@@ -109,7 +110,7 @@ void Copter::motor_test_output()
                 last_motor_message_ms = now;
             }
         }
-#endif
+#endif  // HAL_WITH_ESC_TELEM
     }
 }
 
