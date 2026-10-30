@@ -10,7 +10,8 @@
 //
 // The ceiling cannot separate falling from handled on its own: above about 9
 // rad/s it admits a 1g reading.  The confirmation in throw_detected() carries
-// that, by requiring a sustained downward velocity change.
+// that, by requiring a sustained downward velocity change wherever a sample
+// needed the spin allowance.
 static bool drop_body_in_freefall(float accel_mss, float gyro_rate)
 {
     constexpr float IMU_OFFSET_MAX_M = 0.06f;
@@ -592,11 +593,13 @@ bool ModeThrow::throw_detected()
         possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action && height_within_params;
     }
 
-    // For drops, require both a sustained low-g window (THROW_DROP_CNF) and
+    // For drops, require a sustained low-g window (THROW_DROP_CNF) and
     // evidence that the vehicle is genuinely accelerating downward.  The
     // freefall ceiling scales with spin rate and so cannot by itself tell a
     // falling vehicle from one being handled or carried; the velocity change
-    // can, and is the same discriminator the upward path uses.
+    // can, and is the same discriminator the upward path uses.  In constant
+    // position mode a window of plain freefall, under half a g throughout,
+    // confirms on the time alone.
     if (g2.throw_type == ThrowType::Drop) {
         if (possible_throw_detected) {
             if (drop_confirm_start_ms == 0) {

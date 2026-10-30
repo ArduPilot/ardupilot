@@ -514,7 +514,7 @@
  # define THROW_SPOOLUP_ABORT_ACCEL_FRAC 0.25f // below this fraction of g of downward acceleration a spool-up is treated as a false trigger
 #endif
 #ifndef THROW_UPRIGHT_TIMEOUT_MS
- # define THROW_UPRIGHT_TIMEOUT_MS 3000 // ms after which uprighting moves on whatever the attitude or, for a drop, the descent
+ # define THROW_UPRIGHT_TIMEOUT_MS 3000 // ms after which uprighting moves on whatever the attitude or, for a drop measured on EKF height, the descent
 #endif
 #ifndef THROW_SRC_SETTLE_MS
  # define THROW_SRC_SETTLE_MS 100 // ms after completion changes the EKF source set before the handoff reads the EKF's status

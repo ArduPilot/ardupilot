@@ -552,7 +552,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: THROW_ALT_DCSND
     // @DisplayName: Throw mode target altitude to descend
-    // @Description: Height below the release point that a drop is arrested at, and the distance the vehicle descends level under zero throttle before the arrest begins (must be positive). That descent lasts at most 3 s from the start of uprighting, so a drop that is caught or lands short is still arrested. Uprighting overshoots it, so the position controller then makes a trajectory-limited climb back up to it; the climb can never exceed the release point. Use 0 for hand drops and 3-5 for carrier releases that need separation before the arrest.
+    // @Description: Height below the release point that a drop is arrested at, and the distance the vehicle descends level under zero throttle before the arrest begins (must be positive). With a usable EKF height that descent lasts at most 3 s from the start of uprighting, so a drop that is caught or lands short is still arrested; in constant position mode it is timed from freefall instead. Uprighting overshoots it, so the position controller then makes a trajectory-limited climb back up to it; the climb can never exceed the release point. Use 0 for hand drops and 3-5 for carrier releases that need separation before the arrest.
     // @Units: m
     // @User: Advanced
     GSCALAR(throw_altitude_descend, "THROW_ALT_DCSND", 1.0),
