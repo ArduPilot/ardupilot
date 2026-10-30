@@ -495,6 +495,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @DisplayName: Fast boot
     // @Description: Bitmask of startup blocking procedures to skip for a faster boot. Set to 0 to disable all fast boot features and use normal startup. Only enable bits you understand and require.
     // @Bitmask: 0:AllFeatures, 1:DroneCAN
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("FAST_BOOT", 34, AP_BoardConfig, _fast_boot, 0),
 
