@@ -361,7 +361,8 @@ bool AP_AHRS::configured_backend_has_status(Status status) const {
 bool AP_AHRS::get_ekf_lane_status(uint8_t lane, nav_lane_status &status) const
 {
 #if HAL_NAVEKF3_AVAILABLE
-    if (active_EKF_type() == EKFType::THREE) {
+    // configured rather than active: the lanes keep running while AHRS has fallen back to DCM
+    if (configured_ekf_type() == EKFType::THREE && ekf3.started) {
         return ekf3.EKF3.getLaneStatus(lane, status);
     }
 #endif

@@ -502,7 +502,7 @@ public:
     // active estimator does not run cores
     int8_t get_primary_core_index() const { return active_estimates->primary_core_index; }
 
-    // what one EKF lane is navigating on; false unless EKF3 is active and has that lane
+    // what one EKF lane is navigating on; false unless EKF3 is configured, started and has that lane
     bool get_ekf_lane_status(uint8_t lane, nav_lane_status &status) const;
 
     // set and save the ALT_M_NSE parameter value
