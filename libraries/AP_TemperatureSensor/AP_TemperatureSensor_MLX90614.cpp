@@ -39,7 +39,9 @@ void AP_TemperatureSensor_MLX90614::init()
 
 void AP_TemperatureSensor_MLX90614::_timer()
 {
-    const uint16_t _crude_value = read_data(MLX90614_TA);
+    // read the temperature of the object the sensor is pointed at,
+    // not the sensor's own (ambient) temperature
+    const uint16_t _crude_value = read_data(MLX90614_TOBJ1);
     
     if (_crude_value == 0) {
         return;
