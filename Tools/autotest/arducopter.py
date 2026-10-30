@@ -17909,6 +17909,32 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_ekf_terrain_offset_above(2)
         self.assert_ekf_moved_since_arming_was_set()
 
+        self.start_subtest("A second sensor out of range low does not hide the first")
+        # Both sensors read the same simulated range. The first is in range on
+        # the ground; the second is short until 5m, and an on-ground range
+        # substituted for it would be fused in place of the first one's reading.
+        self.set_parameters({
+            "EK3_SRC1_POSZ": 2,
+            "RNGFND1_MIN": 0,
+            "RNGFND2_TYPE": 100,
+            "RNGFND2_GNDCLR": 0.4,
+            "RNGFND2_MIN": 5.0,
+            "RNGFND2_MAX": 60.0,
+        })
+        reboot_and_restream(startup_location_dist_max=2)
+        self.change_mode('ALT_HOLD')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1800)
+        # the latch's height term ends the substitution once 1.5m is flown and
+        # the estimate catches up soon after, so the damage shows in a short climb
+        self.assert_ekf_height_tracks_climb(3)
+        self.set_rc(3, 1500)
+        self.land_and_disarm()
+        self.zero_throttle()
+        # the next leg reboots, which removes the second sensor
+        self.set_parameter("RNGFND2_TYPE", 0)
+
         self.start_subtest("Indoor config, no vertical velocity source")
         # optical flow for XY, range finder for Z, no GPS. This is the config
         # the EKF3 playbook recommends indoors, and the one where the range
