@@ -18512,6 +18512,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_TWIST_Z", 3.0)
         self.delay_sim_time(3, "held and spinning for many confirmation windows; nothing should happen")
         self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.roll) < 0.1 and abs(ATTITUDE.pitch) < 0.1')
+        # still spinning past the crossover, or the hold proved nothing
+        self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.yawspeed) > 10')
         if self.statustext_in_collections("Throw detected"):
             raise NotAchievedException("held spinning vehicle was detected as dropped")
 
@@ -18524,7 +18526,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("Throw detected", check_context=True, timeout=10)
         delay = self.get_sim_time() - tstart
         self.progress("detected %.2fs after release" % delay)
-        if delay > 1.5:
+        # the release lands somewhere in a 500 ms confirmation window, which
+        # puts detection up to about 0.35 s after it
+        if delay > 0.6:
             raise NotAchievedException("release detected %.2fs late" % delay)
         self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
         self.wait_mode('ALT_HOLD')
