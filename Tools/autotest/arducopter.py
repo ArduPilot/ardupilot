@@ -17708,7 +17708,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "LOG_REPLAY": 1,
             "LOG_DISARMED": 1,
             "ACC_ZBIAS_LEARN": 4,
-            "SIM_PLAT_ACC_Z": -1.0,
         })
         self.reboot_sitl()
 
@@ -17720,10 +17719,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # earlier bits leave the sticks where their flights put them
         self.set_rc_default()
         self.wait_ready_to_arm()
+        self.set_parameter("SIM_PLAT_ACC_Z", -1.0)   # NED, so the platform is accelerating upwards
         self.delay_sim_time(30, "sit on the accelerating platform")
-        self.takeoff(10, mode='LOITER')
+        # with the inhibit nothing absorbs the platform's acceleration, so the EKF's
+        # vertical velocity runs away on it and is not fit to arm until the vehicle is off it
         self.set_parameter("SIM_PLAT_ACC_Z", 0)
-        self.delay_sim_time(10, "hover clear of the platform")
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(10, "hover")
         self.land_and_disarm()
 
         self.reboot_sitl()
@@ -18412,9 +18415,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(mean_high) > 0.5:
             raise NotAchievedException("EKF height is %+.2f m off truth after climbing out of ground effect" % mean_high)
 
-    def get_accel_bias_z_at_arm_from_current_onboard_log(self):
+    def get_accel_bias_z_at_arm_from_current_onboard_log(self, time_us=None):
         '''returns the primary core's Z accel bias state as it stood at the
-        moment of arming'''
+        moment of arming, or at time_us (microseconds since boot) if given'''
         dfreader = self.dfreader_for_current_onboard_log()
         armed_TimeUS = None
         last_az = None
@@ -18423,6 +18426,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             m = dfreader.recv_match(type=["EV", "XKF2"])
             if m is None:
                 break
+            if time_us is not None:
+                if m.TimeUS > time_us:
+                    break
+                if m.get_type() == "XKF2" and m.C == 0:
+                    last_az = m.AZ
+                continue
             if m.get_type() == "EV":
                 if m.Id == 10 and armed_TimeUS is None:  # armed
                     armed_TimeUS = m.TimeUS
@@ -18431,29 +18440,51 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.C != 0:
                 continue
             last_az = m.AZ
+        if time_us is not None:
+            if last_az is None:
+                raise NotAchievedException("No XKF2 data before %u us" % time_us)
+            return last_az
         if armed_TimeUS is None:
             raise NotAchievedException("Did not find an arming event in the log")
         if az_at_arm is None:
             raise NotAchievedException("No XKF2 data before arming")
         return az_at_arm
 
+    def assert_accel_bias_z_learnt_before_arming(self, bias):
+        '''the primary core must have learnt a static accel Z bias on the ground before
+        arming, or the hover Z-bias learner's baseline does not hold it'''
+        az = self.get_accel_bias_z_at_arm_from_current_onboard_log()
+        self.progress("primary core Z accel bias at arming %f, static bias %f" % (az, bias))
+        if abs(az - bias) > 0.06:
+            raise NotAchievedException(
+                "Z accel bias at arming was %f, not the static %f: the EKF had not converged on the ground" %
+                (az, bias))
+
     def accel_bias_at_arm_on_platform(self, zbias_learn, fly=False):
-        '''sit disarmed on an accelerating platform, arm, and return the Z accel
-        bias the filter had built up by then. With fly, take off afterwards so the
-        caller can assert on what the invented bias does to the height estimate'''
+        '''sit disarmed on an accelerating platform and return the Z accel bias the
+        filter had built up on it: at arming on the platform, or with fly as the
+        vehicle steps off it to take off, so the caller can assert on what that bias
+        does to the height estimate'''
         self.set_parameters({
-            "SIM_PLAT_ACC_Z": -1.0,   # NED, so the platform is accelerating upwards
+            "SIM_PLAT_ACC_Z": 0,   # off until the EKF is ready, whatever the last call left
             "ACC_ZBIAS_LEARN": zbias_learn,
         })
         self.reboot_sitl()
         self.wait_ready_to_arm()
+        self.set_parameter("SIM_PLAT_ACC_Z", -1.0)   # NED, so the platform is accelerating upwards
         self.delay_sim_time(60, "sit on the accelerating platform")
         if fly:
-            self.takeoff(10, mode='LOITER')
-            # the platform is behind us now; keep it from re-entering on touchdown
+            # with bit 2 nothing absorbs the platform's acceleration, so the EKF's vertical
+            # velocity runs away on it and is not fit to arm until the vehicle is off it
+            off_us = int(self.get_sim_time() * 1e6)
             self.set_parameter("SIM_PLAT_ACC_Z", 0)
-            self.delay_sim_time(20, "hover clear of the platform")
+            self.wait_ready_to_arm()
+            self.takeoff(10, mode='LOITER')
+            self.delay_sim_time(20, "hover")
             self.land_and_disarm()
+            az = self.get_accel_bias_z_at_arm_from_current_onboard_log(time_us=off_us)
+            self.progress("Z accel bias leaving the platform: %f m/s/s" % az)
+            return az
         else:
             self.arm_vehicle()
             self.disarm_vehicle()
@@ -18497,7 +18528,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         return sum(hover) / len(hover)
 
     def AccelBiasMovingPlatform(self):
-        '''Test accel bias is not learned when armed on an accelerating platform'''
+        '''Test accel bias is not learned while disarmed on an accelerating platform'''
         # A vehicle sitting on a car or a ship deck feels the platform's
         # acceleration. The EKF's movement check only compares the length of the
         # accel vector against gravity, so a steady acceleration well inside
@@ -18517,8 +18548,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(az) > 0.2:
             raise NotAchievedException(
                 "EKF learned the platform acceleration as accel bias (%f m/s/s)" % az)
-        # the invented bias is only harmful once airborne: carrying -0.99 m/s/s into
-        # the climb costs about 4.5m of height error against about 1.6m without it
+        # the invented bias is only harmful once airborne, where it shows as height error
         self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=2.5)
         self.reboot_sitl()
 
@@ -18695,15 +18725,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode='LOITER')
         self.delay_sim_time(30, "hover so the Z bias converges")
         self.land_and_disarm()
+        self.assert_accel_bias_z_learnt_before_arming(0.3)
         learned1 = self.get_parameter("INS_ACC_VRFB_Z")
         learned2 = self.get_parameter("INS_ACC2_VRFB_Z")
         self.progress("INS_ACC_VRFB_Z=%f INS_ACC2_VRFB_Z=%f" % (learned1, learned2))
         if abs(learned1) > 0.001:
             raise NotAchievedException(
                 "INS_ACC_VRFB_Z should have stayed 0 with the first accel unused, got %f" % learned1)
-        if learned2 < 0.15:
+        # only the motors-on offset is learnt: the static 0.3 is the EKF's to learn on the
+        # ground, and saving it as well would apply it twice on the next flight
+        if abs(learned2 - vrf) > 0.06:
             raise NotAchievedException(
-                "INS_ACC2_VRFB_Z=%f did not learn the second accel's bias" % learned2)
+                "INS_ACC2_VRFB_Z=%f is not the motors-on offset %f" % (learned2, vrf))
 
         self.start_subtest("An accel that learnt nothing keeps a value set while armed")
         # the second accel learns while the first is unused; after touchdown, where nothing
@@ -18730,15 +18763,80 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(5, "first accel back in use, still armed on the ground")
         self.disarm_vehicle()
         self.set_rc(3, 1500)
+        self.assert_accel_bias_z_learnt_before_arming(0.3)
         kept1 = self.get_parameter("INS_ACC_VRFB_Z")
         learned2 = self.get_parameter("INS_ACC2_VRFB_Z")
         self.progress("INS_ACC_VRFB_Z=%f INS_ACC2_VRFB_Z=%f" % (kept1, learned2))
         if abs(kept1 - 0.07) > 0.001:
             raise NotAchievedException(
                 "INS_ACC_VRFB_Z set to 0.07 while armed was saved as %f on disarm" % kept1)
-        if learned2 < 0.15:
+        if abs(learned2 - vrf) > 0.06:
             raise NotAchievedException(
-                "INS_ACC2_VRFB_Z=%f did not learn the second accel's bias" % learned2)
+                "INS_ACC2_VRFB_Z=%f is not the motors-on offset %f" % (learned2, vrf))
+
+        self.start_subtest("A static bias on the first accel is learnt once and not saved")
+        # with both accels in use the EKF learns the static 0.3 on the ground, so only the
+        # motors-on offset is saved, and applying it does not count the static part twice
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0.3,
+            "SIM_ACC2_BIAS_Z": 0,
+            "INS_USE": 1,
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+            "ACC_ZBIAS_LEARN": 3,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover so the Z bias converges")
+        self.land_and_disarm()
+        self.assert_accel_bias_z_learnt_before_arming(0.3)
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        learned2 = self.get_parameter("INS_ACC2_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z=%f INS_ACC2_VRFB_Z=%f with a static 0.3 on the first accel" %
+                      (learned, learned2))
+        if abs(learned - vrf) > 0.06:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z=%f is not the motors-on offset %f" % (learned, vrf))
+        # the second accel has no static bias, so each accel is learnt against its own baseline
+        if abs(learned2 - vrf) > 0.06:
+            raise NotAchievedException(
+                "INS_ACC2_VRFB_Z=%f is not the motors-on offset %f" % (learned2, vrf))
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(20, "hover with the saved bias applied")
+        self.land_and_disarm()
+        self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=0.35)
+
+        self.start_subtest("With bit 2 every flight saves the whole bias")
+        # with bit 2 the learner does not trust the bias the EKF holds at arming, so each
+        # flight must save the whole bias, not its change since arming. Bit 2 also stops the
+        # EKF learning the static 0.3 on the ground, and an EKF that has not learnt it reads a
+        # vertical velocity at rest, so each flight boots with bit 2 clear for the EKF to learn
+        # it, and sets bit 2 just before arming, where the learner reads it
+        self.set_parameters({
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+        })
+        for flight in range(3):
+            self.set_parameter("ACC_ZBIAS_LEARN", 3)
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.set_parameter("ACC_ZBIAS_LEARN", 7)
+            self.takeoff(10, mode='LOITER')
+            self.delay_sim_time(30, "hover so the Z bias converges")
+            self.land_and_disarm()
+            # the whole bias differs from the change since arming only if the EKF held one
+            az = self.get_accel_bias_z_at_arm_from_current_onboard_log()
+            if abs(az - 0.3) > 0.06:
+                raise NotAchievedException(
+                    "flight %u armed with the EKF holding %f, not the static 0.3" % (flight, az))
+            learned = self.get_parameter("INS_ACC_VRFB_Z")
+            self.progress("flight %u saved INS_ACC_VRFB_Z=%f" % (flight, learned))
+            if abs(learned - (0.3 + vrf)) > 0.06:
+                raise NotAchievedException(
+                    "flight %u saved INS_ACC_VRFB_Z=%f, not the whole bias %f" % (flight, learned, 0.3 + vrf))
 
         self.context_pop()
         self.reboot_sitl()
