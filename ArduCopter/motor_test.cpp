@@ -96,13 +96,18 @@ void Copter::motor_test_output()
             motor_test_stop();
         }
 #if HAL_WITH_ESC_TELEM
-        float rpm, error_rate_pct;
-        if (AP::esc_telem().get_error_rate_pct(motor_test_seq, error_rate_pct)
-            && error_rate_pct > 1.0f
-            && now - last_motor_message_ms > 1000
-            && AP::esc_telem().get_rpm(motor_test_seq, rpm)) {
-            gcs().send_text(MAV_SEVERITY_WARNING,"Motor Test: error rate %f for motor %u at %f rpm", error_rate_pct, motor_test_seq, rpm);
-            last_motor_message_ms = now;
+        // ESC telemetry is indexed by output channel, not by test order
+        const uint32_t output_mask = motors->get_test_seq_output_mask(motor_test_seq);
+        for (uint8_t chan = 0; chan < ESC_TELEM_MAX_ESCS; chan++) {
+            float rpm, error_rate_pct;
+            if (BIT_IS_SET(output_mask, chan)
+                && AP::esc_telem().get_error_rate_pct(chan, error_rate_pct)
+                && error_rate_pct > 1.0f
+                && now - last_motor_message_ms > 1000
+                && AP::esc_telem().get_rpm(chan, rpm)) {
+                gcs().send_text(MAV_SEVERITY_WARNING,"Motor Test: error rate %f for motor %u at %f rpm", error_rate_pct, unsigned(chan + 1), rpm);
+                last_motor_message_ms = now;
+            }
         }
 #endif
     }
