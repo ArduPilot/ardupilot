@@ -22604,6 +22604,24 @@ RTL_ALT_M 111
         if texts[-1][10:12] != bytes([0x68, 0x64]):
             raise NotAchievedException("flow arrows not mapped to the Betaflight font: %s" % texts[-1])
 
+        self.start_subtest("A latched quality floor still shows once EK3_OPTIONS bit 3 is cleared")
+        # a lockout below the floor latches the flow lane out until disarm or until the
+        # sensor recovers past the floor, whatever EK3_OPTIONS says by then
+        self.set_parameters({"EK3_OPTIONS": 8, "EK3_FLOW_QMIN": 40, "SIM_FLOW_QUAL": 10})
+        self.context_collect('STATUSTEXT')
+        self.wait_ready_to_arm()
+        self.takeoff(altitude_min=3, mode='ALT_HOLD')
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("flow quality 10 too low", check_context=True, timeout=60)
+        self.set_parameter("EK3_OPTIONS", 0)
+        # still below the floor and its release, quality 20 reads 25 and flashes against it
+        # and 7 without it.  Nothing read the OSD through the flight, so the screens drawn
+        # before this change are still queued ahead of it
+        self.set_parameter("SIM_FLOW_QUAL", 20)
+        self.wait_osd_ekf_lane(msp, 10, b"\x0125", flashing=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
         self.reboot_sitl()
 
     def ScriptingOSD(self):
