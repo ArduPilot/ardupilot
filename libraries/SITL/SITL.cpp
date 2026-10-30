@@ -618,6 +618,14 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("UART_LOSS", 42, SIM,  uart_byte_loss_pct, 0),
 
+    // @Param: ESC_ERR_RATE
+    // @DisplayName: ESC telemetry error rate
+    // @Description: Error rate reported by the simulated ESC telemetry for every motor
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("ESC_ERR_RATE", 43, SIM,  esc_error_rate_pct, 0),
+
     // @Group: ARSPD_
     // @Path: ./SITL_Airspeed.cpp
     AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, AirspeedParm),

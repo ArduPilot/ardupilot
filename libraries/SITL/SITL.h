@@ -615,6 +615,8 @@ public:
     AP_Int8 esc_telem;
     // RPM when motors are armed
     AP_Float esc_rpm_armed;
+    // ESC telemetry error rate in percent
+    AP_Float esc_error_rate_pct;
 
     struct {
         // LED state, for serial LED emulation
