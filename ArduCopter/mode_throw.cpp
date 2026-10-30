@@ -10,7 +10,8 @@
 //
 // The ceiling cannot separate falling from handled on its own: above about 9
 // rad/s it admits a 1g reading.  The confirmation in throw_detected() carries
-// that, by requiring a sustained downward velocity change.
+// that, by requiring a sustained downward velocity change wherever a sample
+// needed the spin allowance.
 static bool drop_body_in_freefall(float accel_mss, float gyro_rate)
 {
     constexpr float IMU_OFFSET_MAX_M = 0.06f;
@@ -574,11 +575,13 @@ bool ModeThrow::throw_detected()
         possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action && height_within_params;
     }
 
-    // For drops, require both a sustained low-g window (THROW_DROP_CNF) and
+    // For drops, require a sustained low-g window (THROW_DROP_CNF) and
     // evidence that the vehicle is genuinely accelerating downward.  The
     // freefall ceiling scales with spin rate and so cannot by itself tell a
     // falling vehicle from one being handled or carried; the velocity change
-    // can, and is the same discriminator the upward path uses.
+    // can, and is the same discriminator the upward path uses.  In constant
+    // position mode a window of plain freefall, under half a g throughout,
+    // confirms on the time alone.
     if (g2.throw_type == ThrowType::Drop) {
         if (possible_throw_detected) {
             if (drop_confirm_start_ms == 0) {
@@ -857,7 +860,7 @@ bool ModeThrow::throw_uprighting_complete() const
     if (cos_tilt > 0.866f && elapsed_ms > 2000) {  // ~30deg
         return true;
     }
-    return (elapsed_ms > 3000);
+    return (elapsed_ms > THROW_UPRIGHT_TIMEOUT_MS);
 }
 
 bool ModeThrow::throw_drop_distance_reached() const
@@ -878,7 +881,7 @@ bool ModeThrow::throw_drop_distance_reached() const
         // a fall that is caught or lands short of DCSND never gets there, so
         // the uprighting safety timeout ends this too
         return (drop_release_alt_m - pos_control->get_pos_estimate_U_m() >= dcsnd_m) ||
-               (AP_HAL::millis() - uprighting_start_ms > 3000);
+               (AP_HAL::millis() - uprighting_start_ms > THROW_UPRIGHT_TIMEOUT_MS);
     }
     // Fallback: estimate distance from freefall physics.  This
     // overestimates after motors start (thrust slows the fall) so the
