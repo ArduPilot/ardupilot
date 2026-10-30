@@ -1939,6 +1939,7 @@ private:
     bool throw_velocity_good() const;
     bool throw_attitude_good() const;
     void throw_do_nextmode_handoff();
+    void restore_source_set();
     bool nextmode_requires_position() const;
     void throw_apply_yaw_align(const Vector3f& thrust_vector);
     bool throw_yaw_converged() const;
@@ -1958,6 +1959,7 @@ private:
     ThrowModeStage prev_stage = Throw_Disarmed;
     uint32_t last_log_ms;
     bool nextmode_attempted;
+    bool completion_started;        // true once the handoff has given its warnings and set the source set
     bool xy_controller_active;      // true when XY position controller was initialised
     bool source_set_switched;       // true if init() switched the EKF source set and exit() must restore it
     uint8_t saved_source_set;       // EKF source set active before init() switched it for the throw phase
