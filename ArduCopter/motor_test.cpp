@@ -12,6 +12,7 @@ static uint32_t motor_test_start_ms;        // system time the motor test began
 static uint32_t motor_test_timeout_ms;      // test will timeout this many milliseconds after the motor_test_start_ms
 #if HAL_WITH_ESC_TELEM
 static uint32_t last_motor_message_ms;      // last time we output a message about poor error rates
+static uint8_t last_motor_message_chan;     // output named in the last message about poor error rates
 #endif
 static uint8_t motor_test_seq;              // motor sequence number of motor being tested
 static uint8_t motor_test_count;            // number of motors to test
@@ -97,19 +98,19 @@ void Copter::motor_test_output()
             return;
         }
 #if HAL_WITH_ESC_TELEM
-        // ESC telemetry is indexed by output channel, not by test order
+        // ESC telemetry is indexed by output channel, not by test order. Name one faulty
+        // output a second, taking a motor's outputs in turn, in one STATUSTEXT
         const uint32_t output_mask = motors->get_test_seq_output_mask(motor_test_seq);
-        // decided once per pass, so every faulty output of the motor is named
-        const bool warning_due = now - last_motor_message_ms > 1000;
-        for (uint8_t chan = 0; chan < ESC_TELEM_MAX_ESCS; chan++) {
+        for (uint8_t i = 1; i <= ESC_TELEM_MAX_ESCS && now - last_motor_message_ms > 1000; i++) {
+            const uint8_t chan = (last_motor_message_chan + i) % ESC_TELEM_MAX_ESCS;
             float rpm, error_rate_pct;
-            if (warning_due
-                && BIT_IS_SET(output_mask, chan)
+            if (BIT_IS_SET(output_mask, chan)
                 && AP::esc_telem().get_error_rate_pct(chan, error_rate_pct)
                 && error_rate_pct > 1.0f
                 && AP::esc_telem().get_rpm(chan, rpm)) {
-                gcs().send_text(MAV_SEVERITY_WARNING,"Motor Test: error rate %f for motor %u at %f rpm", error_rate_pct, unsigned(chan + 1), rpm);
+                gcs().send_text(MAV_SEVERITY_WARNING, "Motor Test: motor %u errors %.1f%% at %.0f rpm", unsigned(chan + 1), error_rate_pct, rpm);
                 last_motor_message_ms = now;
+                last_motor_message_chan = chan;
             }
         }
 #endif  // HAL_WITH_ESC_TELEM
