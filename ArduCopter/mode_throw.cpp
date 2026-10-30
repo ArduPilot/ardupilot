@@ -857,7 +857,7 @@ bool ModeThrow::throw_uprighting_complete() const
     if (cos_tilt > 0.866f && elapsed_ms > 2000) {  // ~30deg
         return true;
     }
-    return (elapsed_ms > 3000);
+    return (elapsed_ms > THROW_UPRIGHT_TIMEOUT_MS);
 }
 
 bool ModeThrow::throw_drop_distance_reached() const
@@ -878,7 +878,7 @@ bool ModeThrow::throw_drop_distance_reached() const
         // a fall that is caught or lands short of DCSND never gets there, so
         // the uprighting safety timeout ends this too
         return (drop_release_alt_m - pos_control->get_pos_estimate_U_m() >= dcsnd_m) ||
-               (AP_HAL::millis() - uprighting_start_ms > 3000);
+               (AP_HAL::millis() - uprighting_start_ms > THROW_UPRIGHT_TIMEOUT_MS);
     }
     // Fallback: estimate distance from freefall physics.  This
     // overestimates after motors start (thrust slows the fall) so the
