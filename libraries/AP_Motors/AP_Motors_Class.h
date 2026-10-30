@@ -301,6 +301,9 @@ public:
     //  return true if output was successful, false if not possible
     bool                output_test_seq(uint8_t motor_seq, int16_t pwm);
 
+    // return a bitmask of the outputs that output_test_seq() drives for motor_seq, 0 if not known
+    virtual uint32_t    get_test_seq_output_mask(uint8_t motor_seq) const { return 0; }
+
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint32_t    get_motor_mask() = 0;
