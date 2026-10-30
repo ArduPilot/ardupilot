@@ -112,9 +112,13 @@ void ModeThrow::exit()
 // Drops are designed to operate without horizontal aiding -- detection is
 // body-frame / baro based -- so a drop can arm GPS-free.  Upward throws keep
 // the upstream requirement of a position estimate (GPS or flow-relative)
-// unless the next mode flies without one.
+// unless the next mode flies without one.  Once PosHold is holding a
+// horizontal position, either type needs one, so the EKF failsafe acts there.
 bool ModeThrow::requires_position() const
 {
+    if (stage == Throw_PosHold && xy_controller_active) {
+        return true;
+    }
     return g2.throw_type != ThrowType::Drop && nextmode_requires_position();
 }
 
