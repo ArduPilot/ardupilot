@@ -124,8 +124,9 @@ bool ModeLand::init(bool ignore_checks)
 // desired climb rate above which the position controller is still shedding a climb
 #define LAND_FS_SHEDDING_CLIMB_MS 0.25f
 // PI gains of the throttle ceiling on the baro climb rate error, as a fraction of hover per m/s.
-// The integrator trims the hover throttle error, so it only runs while the error is small,
-// otherwise what it winds up arresting a climb leaves no headroom to arrest the dive after it
+// The integrator trims the hover throttle error, so it only runs while the error is no larger than
+// the landing speed (its value on the ground) plus a band, otherwise what it winds up arresting a
+// climb leaves no headroom to arrest the dive after it
 #define LAND_FS_CAP_P             0.1f
 #define LAND_FS_CAP_I             0.1f
 #define LAND_FS_CAP_I_BAND_MS     1.0f
@@ -192,7 +193,7 @@ void ModeLand::update_advanced_failsafe()
         // the landing speed; on the ground the integrator winds the ceiling
         // through zero and the motors reach their lower limit
         const float rate_err_ms = copter.barometer.get_climb_rate() + fabsf(get_land_speed_ms());
-        if (fabsf(rate_err_ms) < LAND_FS_CAP_I_BAND_MS) {
+        if (fabsf(rate_err_ms) < LAND_FS_CAP_I_BAND_MS + fabsf(get_land_speed_ms())) {
             adv_fs_cap_i = constrain_float(adv_fs_cap_i + rate_err_ms * LAND_FS_CAP_I * G_Dt, 0.0f, 1.05f);
         }
         adv_fs_throttle_cap = constrain_float(1.0f - rate_err_ms * LAND_FS_CAP_P - adv_fs_cap_i, -0.05f, LAND_FS_CAP_MAX) * motors->get_throttle_hover();
