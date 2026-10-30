@@ -1971,6 +1971,7 @@ private:
     uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
     float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met
     float drop_confirm_start_vel_u_ms;  // vertical velocity when drop conditions first sustained
+    bool drop_confirm_spun;         // true once the open window has let a sample in only on the spin allowance
     uint32_t spoolup_start_ms;      // system time the spool-up stage was entered
     float spoolup_start_vel_u_ms;   // vertical velocity when the spool-up stage was entered
     uint32_t yaw_align_start_ms;    // system time YawAlign stage was entered
