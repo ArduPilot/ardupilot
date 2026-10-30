@@ -18721,10 +18721,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             pass
         self.wait_altitude(30, 1000, timeout=60, relative=True)
         self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        # only this throw's completion counts from here
+        self.context_clear_collection('STATUSTEXT')
         self.wait_statustext("Throw: Auto waiting for position", check_context=True, timeout=30)
+        self.assert_mode('THROW')
         self.wait_mode('AUTO', timeout=20)
         self.change_mode('LAND')
         self.wait_disarmed(timeout=120)
+
+        # AUTO must have taken over only once the EKF failsafe that held the
+        # position back had cleared
+        dfreader = self.dfreader_for_current_onboard_log()
+        wait_us = None
+        cleared_us = None
+        auto_us = None
+        while auto_us is None:
+            m = dfreader.recv_match(type=['MSG', 'MODE'])
+            if m is None:
+                raise NotAchievedException("the wait or the handoff is missing from the log")
+            if m.get_type() == 'MSG':
+                if m.Message == "Throw: Auto waiting for position":
+                    wait_us = m.TimeUS
+                elif m.Message == "EKF Failsafe Cleared" and wait_us is not None:
+                    cleared_us = m.TimeUS
+            elif wait_us is not None and m.Mode == 3:
+                auto_us = m.TimeUS
+        if cleared_us is None:
+            raise NotAchievedException("AUTO took over before the EKF failsafe cleared")
+        self.progress("AUTO %.2fs after the wait began" % ((auto_us - wait_us) * 1e-6))
         self.reboot_sitl()
 
     def ThrowDropTwiceWithoutReentry(self):
