@@ -1304,6 +1304,46 @@ class CRSF(Telem):
     def write_data_id(self, dataid):
         self.do_write(self.data_id_map[dataid])
 
+    @staticmethod
+    def crc8_dvb_s2(data):
+        crc = 0
+        for b in data:
+            crc ^= b
+            for _ in range(8):
+                crc = ((crc << 1) ^ 0xD5) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+        return crc
+
+    def write_extended_frame(self, frame_type, destination, origin, payload):
+        body = bytearray([frame_type, destination, origin]) + bytearray(payload)
+        self.do_write(bytearray([0xC8, len(body) + 1]) + body + bytearray([self.crc8_dvb_s2(body)]))
+
+    def write_rc_frame(self, value=992):
+        '''send 16 channels of packed 11-bit RC values'''
+        bits = 0
+        for i in range(16):
+            bits |= value << (11 * i)
+        body = bytearray([0x16]) + bytearray(bits.to_bytes(22, 'little'))
+        self.do_write(bytearray([0xC8, len(body) + 1]) + body + bytearray([self.crc8_dvb_s2(body)]))
+
+    def read_frames(self):
+        '''return a list of (type, payload) for the complete frames received'''
+        self.buffer += self.do_read()
+        frames = []
+        while len(self.buffer) >= 2:
+            length = self.buffer[1]
+            if length < 2 or length > 62:
+                self.buffer = self.buffer[1:]
+                continue
+            if len(self.buffer) < length + 2:
+                break
+            frame = self.buffer[2:length+2]
+            if self.crc8_dvb_s2(frame[:-1]) != frame[-1]:
+                self.buffer = self.buffer[1:]
+                continue
+            frames.append((frame[0], frame[1:-1]))
+            self.buffer = self.buffer[length+2:]
+        return frames
+
     def progress_tag(self):
         return "CRSF"
 
@@ -16351,6 +16391,125 @@ switch value'''
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
+    def crsf_parameter_menu_check(self, script=None):
+        '''read every CRSF parameter menu field and check each is in a folder
+        that lists it.  Returns the CRSF connection and a function to send
+        a request and wait for the reply'''
+        if script is not None:
+            self.install_example_script_context(script)
+            self.set_parameter("SCR_ENABLE", 1)
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 23, # serial5 is RCIN input
+            "RC_PROTOCOLS": 512,    # CRSF only, so SITL's own RC input doesn't take over
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port # serial5 reads from to localhost port
+        ])
+        crsf = CRSF(("127.0.0.1", port))
+        crsf.connect()
+
+        self.progress("Sending CRSF RC frames so the port is detected as CRSF")
+        tstart = self.get_sim_time_cached()
+        while self.get_sim_time_cached() - tstart < 5:
+            crsf.write_rc_frame()
+            crsf.read_frames()
+            self.drain_mav()
+
+        DEVICE_PING = 0x28
+        DEVICE_INFO = 0x29
+        PARAMETER_ENTRY = 0x2B
+        PARAMETER_READ = 0x2C
+        FC = 0xC8
+        RADIO = 0xEA
+        FOLDER = 11
+
+        def request(frame_type, payload, want_type, check, what):
+            # the request is resent until answered, as a transmitter does
+            tstart = self.get_sim_time_cached()
+            while self.get_sim_time_cached() - tstart < 10:
+                crsf.write_extended_frame(frame_type, FC, RADIO, payload)
+                tsent = self.get_sim_time_cached()
+                while self.get_sim_time_cached() - tsent < 0.5:
+                    # replies are sent in the gap after RC frames
+                    crsf.write_rc_frame()
+                    self.drain_mav()
+                    for (t, p) in crsf.read_frames():
+                        if t == want_type and p[0] == RADIO and check(p):
+                            return p
+            raise NotAchievedException("No reply to %s" % what)
+
+        info = request(DEVICE_PING, [], DEVICE_INFO, lambda p: True, "ping")
+        name_end = info.index(0, 2)
+        field_count = info[name_end + 13]
+        self.progress("Device %s has %u fields" % (info[2:name_end].decode(), field_count))
+
+        fields = {}
+        for field_id in range(field_count + 1):
+            p = request(PARAMETER_READ, [field_id, 0], PARAMETER_ENTRY,
+                        lambda p: p[2] == field_id, "field %u" % field_id)
+            parent = p[4]
+            field_type = p[5] & 0x7F
+            name_end = p.index(0, 6)
+            name = p[6:name_end].decode()
+            children = []
+            if field_type == FOLDER:
+                children = list(p[name_end+1:p.index(0xFF, name_end+1)])
+            self.progress("field %u: %s parent=%u children=%s" % (field_id, name, parent, children))
+            fields[field_id] = (name, parent, children)
+
+        for field_id in range(1, field_count + 1):
+            parent = fields[field_id][1]
+            if parent not in fields or field_id not in fields[parent][2]:
+                raise NotAchievedException("field %u has parent %u which does not list it" % (field_id, parent))
+        for field_id, (name, parent, children) in fields.items():
+            for child in children:
+                if child not in fields:
+                    raise NotAchievedException("field %u lists %u, beyond the %u fields" % (field_id, child, field_count))
+        return (fields, request)
+
+    def CRSFParameterMenu(self):
+        '''Test every CRSF parameter menu entry can be read and is in a folder that lists it'''
+        self.context_push()
+        ex = None
+        try:
+            (fields, request) = self.crsf_parameter_menu_check()
+            if len(fields) != 20:
+                raise NotAchievedException("Expected 19 fields, got %u" % (len(fields) - 1))
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
+    def CRSFParameterMenuScripted(self):
+        '''Test the CRSF parameter menu with the scripted example menu'''
+        self.context_push()
+        ex = None
+        try:
+            (fields, request) = self.crsf_parameter_menu_check(script="crsf-menu.lua")
+            names = [name for (name, parent, children) in fields.values()]
+            for want in "Example Menu", "Another Menu", "Beethoven":
+                if want not in names:
+                    raise NotAchievedException("%s not in the menu" % want)
+
+            # writes come back through the script, which echoes the value
+            options = [f for f in fields if fields[f][0] == "Options" and fields[fields[f][1]][0] == "Example Menu"][0]
+            self.context_collect('STATUSTEXT')
+            PARAMETER_WRITE = 0x2D
+            request(PARAMETER_WRITE, [options, 2], PARAMETER_WRITE,
+                    lambda p: p[2] == options, "write to field %u" % options)
+            self.wait_statustext("Selected option 2", check_context=True)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+        self.context_pop()
         self.reboot_sitl()
         if ex is not None:
             raise ex
