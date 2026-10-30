@@ -507,6 +507,7 @@ bool ModeThrow::throw_detected()
     // catches a vertical spin axis, where centripetal stays in the body XY
     // plane.  Upward throws keep the earth-frame check.
     bool free_falling;
+    bool spin_admitted = false;
     if (g2.throw_type == ThrowType::Drop) {
         const float accel_mss = copter.ins.get_accel().length();
         const float gyro_rate = copter.ins.get_gyro().length();
@@ -514,6 +515,8 @@ bool ModeThrow::throw_detected()
         const bool spin_freefall = fabsf(ahrs.get_accel_ef().z) < 0.5f * GRAVITY_MSS
                                 && gyro_rate > 10.0f;
         free_falling = body_freefall || spin_freefall;
+        // at half a g or more only the spin allowances let the sample in
+        spin_admitted = free_falling && accel_mss >= 0.5f * GRAVITY_MSS;
     } else {
         free_falling = ahrs.get_accel_ef().z > -0.25f * GRAVITY_MSS;
     }
@@ -556,12 +559,20 @@ bool ModeThrow::throw_detected()
                 drop_confirm_start_ms = AP_HAL::millis();
                 drop_release_alt_m = pos_control->get_pos_estimate_U_m();
                 drop_confirm_start_vel_u_ms = pos_control->get_vel_estimate_U_ms();
+                drop_confirm_spun = false;
             }
+            drop_confirm_spun |= spin_admitted;
             const float confirm_time_s = MAX(g2.throw_drop_confirm_time.get(), 0.0f);
             const uint32_t confirm_ms = MAX((uint32_t)THROW_DROP_CONFIRM_MS,
                                             (uint32_t)(confirm_time_s * 1000.0f));
             const uint32_t elapsed_ms = AP_HAL::millis() - drop_confirm_start_ms;
             const bool time_confirmed = (elapsed_ms >= confirm_ms);
+            // A window that never needed the spin allowance is plain freefall
+            // on the IMU alone, so with no velocity aiding it keeps to the
+            // timer rather than wait on an unaided vertical velocity.
+            if (!drop_confirm_spun && ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+                return time_confirmed;
+            }
             // A falling vehicle sheds upward velocity at close to g; one being
             // held or carried does not, whatever it is doing about its axes.
             // The estimate only has to be differentiable, not accurate - a
