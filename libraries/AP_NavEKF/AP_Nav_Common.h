@@ -106,6 +106,25 @@ union nav_gps_status {
 static_assert(sizeof(uint16_t) == sizeof(nav_gps_status), "nav_gps_status must be uint16_t");
 
 /*
+  status of one estimator lane, for reporting what each lane is navigating on
+ */
+struct nav_lane_status {
+    nav_filter_status filter_status;
+    bool gps_pos_configured;    // the lane's source set takes horizontal position from GPS
+    bool flow_configured;       // the lane's source set takes horizontal velocity from optical flow
+    bool flow_x_fused;          // flow X, from sideways motion, fused within the last 500 ms
+    bool flow_y_fused;          // flow Y, from forward motion, fused within the last 500 ms
+    // why neither flow axis is fusing, when flow is configured
+    enum class FlowStop : uint8_t {
+        NONE,
+        NO_DATA,    // no flow samples arriving
+        QUALITY,    // samples arriving but discarded as poor quality or out of range
+        TILT,       // tilted past the limit for flow fusion
+        REJECTED,   // samples failing the innovation consistency check
+    } flow_stop;
+};
+
+/*
   structure to hold EKF timing statistics
  */
 struct ekf_timing {

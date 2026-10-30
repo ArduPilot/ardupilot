@@ -22212,6 +22212,81 @@ RTL_ALT_M 111
         self.wait_waypoint(num_wp-1, num_wp-1, timeout=120)
         self.wait_disarmed(timeout=60)
 
+    def OSDEKFLanes(self):
+        '''OSD EKF lane items show each lane and the state of its optical flow'''
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            # each lane runs the source set with its own index: lane 0 on GPS,
+            # lane 1 on optical flow
+            "EK3_SRC_OPTIONS": 8,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SERIAL5_PROTOCOL": 42,  # MSP DisplayPort
+            "OSD_TYPE": 5,           # MSP DisplayPort
+            "OSD1_EKF0_EN": 1,
+            "OSD1_EKF0_X": 1,
+            "OSD1_EKF0_Y": 9,
+            "OSD1_EKF1_EN": 1,
+            "OSD1_EKF1_X": 1,
+            "OSD1_EKF1_Y": 10,
+            # SITL's range finder measures to cached terrain, 0.55 m below home at
+            # CMAC, leaving the lane REL for only 1 s once its flow stops
+            "SIM_TERRAIN": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port
+        ])
+        self.wait_ready_to_arm()
+        msp = self.msp_connect(port)
+
+        self.start_subtest("Both lanes report, the GPS lane marked as the one flying")
+        # 0xEA is the right arrow marking the lane flying the vehicle
+        self.wait_osd_ekf_lane(msp, 9, b"C0\xeaABS")
+        texts = self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
+        # the flow signal strength after the RSSI symbol (0x01 in both symbol
+        # tables), then a forward and a sideways arrow
+        if re.fullmatch(rb"\x01[ 0-9][0-9]", texts[-1][7:10]) is None:
+            raise NotAchievedException("flow lane shows no signal strength: %s" % texts[-1])
+        arrows = texts[-1][10:12]
+        if len(arrows) != 2 or b" " in arrows:
+            raise NotAchievedException("flow lane shows no flow arrows: %s" % texts[-1])
+
+        self.start_subtest("A lane with no flow data flashes its position type")
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL", flashing=True)
+        texts = [s[10] for s in self.osd_displayport_rows(msp, [10], 2)]
+        if any(len(t) > 10 for t in texts):
+            raise NotAchievedException("flow arrows shown with no flow data: %s" % texts)
+        if not any(t[7:10] == b"\x01--" for t in texts):
+            raise NotAchievedException("no flow data not shown as -- signal strength: %s" % texts)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
+
+        self.start_subtest("A GPS lane coasting on its last fix reads CST, flashing")
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_osd_ekf_lane(msp, 9, b"CST", flashing=True)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+
+        self.start_subtest("The flow arrows map to the Betaflight font")
+        self.set_parameter("MSP_OPTIONS", 4)  # DisplayPort uses the Betaflight symbol table
+        self.reboot_sitl()
+        msp = self.msp_connect(port)
+        texts = self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
+        # Betaflight's north and east direction arrows
+        if texts[-1][10:12] != bytes([0x68, 0x64]):
+            raise NotAchievedException("flow arrows not mapped to the Betaflight font: %s" % texts[-1])
+
+        self.reboot_sitl()
+
     def ScriptingOSD(self):
         '''test OSD scripting with waypoint mission - requires SFML OSD'''
         # This test requires SITL to be built with SFML support:
@@ -23974,6 +24049,7 @@ return update, 1000
             self.ScriptingOSDDisplayPortReplies,
             self.TestEKF3CompassFailover,
             self.EKF3SRCPerCore,
+            self.OSDEKFLanes,
         ])
         return ret
 

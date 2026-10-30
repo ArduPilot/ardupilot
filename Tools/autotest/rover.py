@@ -7719,6 +7719,40 @@ return update()
         if self.statustext_in_collections("AHRS: EKF3 active"):
             raise NotAchievedException("AHRS used EKF3 without EKF height data")
 
+    def OSDEKFLanesDCMFallback(self):
+        '''OSD EKF lane items still show while AHRS has fallen back to DCM'''
+        self.set_parameters({
+            "AHRS_OPTIONS": 0,       # allow the DCM fallback
+            "SERIAL5_PROTOCOL": 42,  # MSP DisplayPort
+            "OSD_TYPE": 5,           # MSP DisplayPort
+            "OSD1_EKF0_EN": 1,
+            "OSD1_EKF0_X": 1,
+            "OSD1_EKF0_Y": 9,
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port
+        ])
+        self.wait_ready_to_arm()
+        msp = self.msp_connect(port)
+        self.wait_osd_ekf_lane(msp, 9, b"ABS")
+        self.arm_vehicle()
+
+        self.context_collect('STATUSTEXT')
+        # the glitch keeps the 3D fix while the lanes reject GPS, so after 4 s
+        # they coast on their last fix and the armed Rover falls back to DCM,
+        # until the lanes reset to the glitched fix about 6 s later
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0.001)
+        self.wait_statustext("AHRS: DCM active", check_context=True, timeout=30)
+        # no marker, as no lane is flying the vehicle
+        self.wait_osd_ekf_lane(msp, 9, b"C0 CST", flashing=True)
+        if self.statustext_in_collections("AHRS: EKF3 active"):
+            raise NotAchievedException("EKF3 took over again before the lane was seen coasting")
+
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0)
+        self.wait_statustext("AHRS: EKF3 active", check_context=True, timeout=60)
+        self.disarm_vehicle()
+
     def SafetySwitch(self):
         '''check safety switch works'''
         self.start_subtest("Make sure we don't start moving when safety switch enabled")
@@ -8260,6 +8294,7 @@ return update()
             self.BatteryInvalid,
             self.REQUIRE_LOCATION_FOR_ARMING,
             self.AHRSOptionsDCMFallback,
+            self.OSDEKFLanesDCMFallback,
             self.GetMessageInterval,
             self.SafetySwitch,
             self.EnterModeOnSafetySwitch,
