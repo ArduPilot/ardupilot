@@ -120,21 +120,39 @@ void ModeThrow::restore_source_set()
 // body-frame / baro based -- so a drop can arm GPS-free.  Upward throws keep
 // the upstream requirement of a position estimate (GPS or flow-relative)
 // unless the next mode flies without one.  Once PosHold is holding a
-// horizontal position, either type needs one, so the EKF failsafe acts there.
+// horizontal position on the way to a mode that needs one, or to stay in throw,
+// either type needs one, so the EKF failsafe acts there.
 bool ModeThrow::requires_position() const
 {
-    if (stage == Throw_PosHold && xy_controller_active) {
-        return true;
-    }
-    return g2.throw_type != ThrowType::Drop && nextmode_requires_position();
+    return ((stage == Throw_PosHold && xy_controller_active) || g2.throw_type != ThrowType::Drop) &&
+           nextmode_requires_position();
 }
 
+// The mode THROW_NEXTMODE hands over to, or nullptr if the vehicle stays in throw
+Mode *ModeThrow::nextmode() const
+{
+    const Mode::Number num = (Mode::Number)g2.throw_nextmode.get();
+    switch (num) {
+    case Mode::Number::AUTO:
+    case Mode::Number::GUIDED:
+    case Mode::Number::RTL:
+    case Mode::Number::LAND:
+    case Mode::Number::BRAKE:
+    case Mode::Number::LOITER:
+    case Mode::Number::STABILIZE:
+    case Mode::Number::ALT_HOLD:
+    case Mode::Number::ACRO:
+        return copter.mode_from_mode_num(num);
+    default:
+        return nullptr;
+    }
+}
+
+// staying in throw means holding a position in throw
 bool ModeThrow::nextmode_requires_position() const
 {
-    const Mode::Number nextmode = (Mode::Number)g2.throw_nextmode.get();
-    return (nextmode != Mode::Number::STABILIZE &&
-            nextmode != Mode::Number::ALT_HOLD &&
-            nextmode != Mode::Number::ACRO);
+    const Mode *next = nextmode();
+    return next == nullptr || next->requires_position();
 }
 
 // runs the throw to start controller
@@ -365,6 +383,12 @@ void ModeThrow::run()
 
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+        // a position lost on the way to a mode that flies without one is no
+        // reason to stop: hold level instead, and hand over as planned
+        if (xy_controller_active && !copter.position_ok() && !nextmode_requires_position()) {
+            xy_controller_active = false;
+        }
 
         if (xy_controller_active) {
             // use position controller to stop
@@ -995,28 +1019,14 @@ void ModeThrow::throw_do_nextmode_handoff()
         // with THROW_SRC_SET 0 the pre-throw set goes back now
         restore_source_set();
     }
-    switch ((Mode::Number)g2.throw_nextmode.get()) {
-        case Mode::Number::AUTO:
-        case Mode::Number::GUIDED:
-        case Mode::Number::RTL:
-        case Mode::Number::LAND:
-        case Mode::Number::BRAKE:
-        case Mode::Number::LOITER:
-        case Mode::Number::STABILIZE:
-        case Mode::Number::ALT_HOLD:
-        case Mode::Number::ACRO: {
-            // The EKF takes a while to take up a new source set, and set_mode()
-            // refuses a mode that needs a position until it has, so wait.
-            const Mode *new_mode = copter.mode_from_mode_num((Mode::Number)g2.throw_nextmode.get());
-            if (new_mode != nullptr && new_mode->requires_position() && !copter.position_ok()) {
-                return;
-            }
-            set_mode((Mode::Number)g2.throw_nextmode.get(), ModeReason::THROW_COMPLETE);
-            break;
+    Mode *next = nextmode();
+    if (next != nullptr) {
+        // The EKF takes a while to take up a new source set, and set_mode()
+        // refuses a mode that needs a position until it has, so wait.
+        if (next->requires_position() && !copter.position_ok()) {
+            return;
         }
-        default:
-            // do nothing
-            break;
+        set_mode(next->mode_number(), ModeReason::THROW_COMPLETE);
     }
     nextmode_attempted = true;
 }

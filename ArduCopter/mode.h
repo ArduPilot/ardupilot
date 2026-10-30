@@ -1940,6 +1940,7 @@ private:
     bool throw_attitude_good() const;
     void throw_do_nextmode_handoff();
     void restore_source_set();
+    Mode *nextmode() const;
     bool nextmode_requires_position() const;
     void throw_apply_yaw_align(const Vector3f& thrust_vector);
     bool throw_yaw_converged() const;
