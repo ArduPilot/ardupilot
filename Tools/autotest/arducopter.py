@@ -18689,7 +18689,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''AUTO last left in NAV_ATTITUDE_TIME still needs a position as a throw next mode'''
         # Until it starts again AUTO answers requires_position() from the
         # submode it was last in, and NAV_ATTITUDE_TIME needs none.  Throw must
-        # not take that answer: with no position at completion it waits.
+        # not take that answer: with no position at completion it waits, and
+        # refuses AUTO when none comes.
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 10),
             self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_ATTITUDE_TIME, p1=60),
@@ -18708,7 +18709,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_SHOVE_Z": -10.5,
             "THROW_TYPE": 1,           # drop
             "THROW_NEXTMODE": 3,       # AUTO
-            "THROW_SRC_INI": 2,        # no horizontal aiding until completion
+            "THROW_SRC_INI": 2,        # no horizontal aiding
+            "THROW_SRC_SET": 2,        # and none after completion
             "EK3_SRC2_POSXY": 0,
             "EK3_SRC2_VELXY": 0,
             "MOT_SPOOL_TIME": 0.5,
@@ -18727,32 +18729,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # only this throw's completion counts from here
         self.context_clear_collection('STATUSTEXT')
         self.wait_statustext("Throw: Auto waiting for position", check_context=True, timeout=30)
-        self.wait_mode('AUTO', timeout=20)
+        self.wait_statustext("Throw: no position for Auto, staying in throw", check_context=True, timeout=10)
+        self.assert_mode('THROW')
         self.change_mode('LAND')
         self.wait_disarmed(timeout=120)
-
-        # AUTO must have taken over, from throw, only once the EKF failsafe
-        # that held the position back had cleared
-        dfreader = self.dfreader_for_current_onboard_log()
-        wait_us = None
-        cleared_us = None
-        auto_us = None
-        while auto_us is None:
-            m = dfreader.recv_match(type=['MSG', 'MODE'])
-            if m is None:
-                raise NotAchievedException("the wait or the handoff is missing from the log")
-            if m.get_type() == 'MSG':
-                if m.Message == "Throw: Auto waiting for position":
-                    wait_us = m.TimeUS
-                elif m.Message == "EKF Failsafe Cleared" and wait_us is not None:
-                    cleared_us = m.TimeUS
-            elif wait_us is not None and m.Mode == 3:
-                auto_us = m.TimeUS
-                if m.Rsn != 16:    # ModeReason::THROW_COMPLETE
-                    raise NotAchievedException("AUTO was entered other than by throw's handoff (reason %u)" % m.Rsn)
-        if cleared_us is None:
-            raise NotAchievedException("AUTO took over before the EKF failsafe cleared")
-        self.progress("AUTO %.2fs after the wait began" % ((auto_us - wait_us) * 1e-6))
         self.reboot_sitl()
 
     def ThrowDropTwiceWithoutReentry(self):
