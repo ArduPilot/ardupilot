@@ -2246,6 +2246,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if len(motors) != 0:
             raise NotAchievedException("Unexpected error rate warnings for motors %s" % str(motors))
 
+        self.start_subtest("Warn about every output of a motor with more than one")
+        # scoped so that motor 1 returns to SERVO1 on the reboot afterwards
+        self.context_push()
+        self.set_parameters({
+            'SIM_ESC_ERR_RATE': 5,
+            'SERVO5_FUNCTION': 33, # motor 1 on outputs 5 and 6
+            'SERVO6_FUNCTION': 33,
+            'SIM_VIB_MOT_MASK': (1 << 4) | (1 << 5), # simulate ESC telemetry for them
+        })
+        self.reboot_sitl()
+        # simulated ESC telemetry only starts 6 seconds after boot
+        self.wait_ready_to_arm()
+        # on the "+" frame motor 1 is test order 2
+        motors = self.run_motor_test_collecting_error_rates(2, 1)
+        self.context_pop()
+        self.reboot_sitl()
+        if sorted(set(motors)) != [5, 6]:
+            raise NotAchievedException("Expected error rate warnings for motors 5 and 6, got %s" % str(motors))
+
     def assert_dataflash_message_field_level_at(self,
                                                 mtype,
                                                 field,
