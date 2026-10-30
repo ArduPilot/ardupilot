@@ -18609,6 +18609,68 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_disarmed(timeout=120)
             self.reboot_sitl()
 
+    def ThrowDropTwiceWithoutReentry(self):
+        '''A second throw armed without leaving throw mode starts afresh'''
+        # A throw that ends on the ground stays in throw with THROW_NEXTMODE
+        # 18, and can be disarmed and armed again from there.  The second
+        # throw must not inherit the first one's position hold or completed
+        # handoff: here it has no position and must still hand over.
+        self.set_parameters({
+            "THROW_TYPE": 1,           # drop
+            "THROW_ALT_DCSND": 5,
+            "THROW_NEXTMODE": 18,      # stay in throw
+            "SIM_SHOVE_Z": -30,
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        # a short toss that lands, then holds its position in throw
+        self.wait_statustext("Throw height achieved, good position", check_context=True, timeout=30)
+        self.wait_statustext("Throw holding position", check_context=True, timeout=10)
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("second throw, with no position and a next mode to go to")
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 0,
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            "SIM_SHOVE_Z": -10.5,
+        })
+        self.wait_statustext("position lost", check_context=True, timeout=30)
+        self.assert_mode('THROW')
+        self.context_clear_collection('STATUSTEXT')
+        self.arm_vehicle()
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+        self.wait_mode('ALT_HOLD', timeout=30)
+        # running the position controller uninitialised is an internal error
+        if self.statustext_in_collections("Internal Errors"):
+            raise NotAchievedException("second throw raised an internal error")
+        self.set_rc(3, 1000)
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        # an internal error would survive until reboot, so arming must be
+        # possible again once the position comes back
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 3,
+            "EK3_SRC1_VELXY": 3,
+        })
+        self.wait_ready_to_arm()
+        self.reboot_sitl()
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -20284,6 +20346,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowDropHeldSpinNoPosition,
             self.ThrowDropEKFFailsafePosHold,
             self.ThrowSrcSetHandoff,
+            self.ThrowDropTwiceWithoutReentry,
         ])
         return ret
 
