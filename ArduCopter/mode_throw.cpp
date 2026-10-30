@@ -34,6 +34,7 @@ bool ModeThrow::init(bool ignore_checks)
     // init state
     stage = Throw_Disarmed;
     nextmode_attempted = false;
+    completion_started = false;
     source_set_switched = false;
     xy_controller_active = false;
     drop_confirm_start_ms = 0;
@@ -101,6 +102,12 @@ bool ModeThrow::init(bool ignore_checks)
 // handoff already claimed it.  Without this a throw that is left part way
 // through strands the vehicle on the throw source set.
 void ModeThrow::exit()
+{
+    restore_source_set();
+}
+
+// Put back the source set THROW_SRC_INI replaced, if it is still in use.
+void ModeThrow::restore_source_set()
 {
     if (source_set_switched) {
         ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(saved_source_set));
@@ -253,11 +260,6 @@ void ModeThrow::run()
         // throw_apply_yaw_align) so we don't pay extra wall-clock time
         // for it on top of the height/position settle.
         if (!nextmode_attempted) {
-            const bool yaw_target_active = throw_target_yaw_valid &&
-                                           (ThrowYawType)g2.throw_yaw_type.get() != ThrowYawType::None;
-            if (yaw_target_active && !throw_yaw_converged()) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Throw yaw align timeout");
-            }
             throw_do_nextmode_handoff();
         }
     }
@@ -950,22 +952,27 @@ bool ModeThrow::throw_yaw_align_done() const
 
 void ModeThrow::throw_do_nextmode_handoff()
 {
-    // Final transition to THROW_NEXTMODE shared by the PosHold (no-yaw)
-    // and YawAlign exit paths.  Issues throttle warning, applies the
-    // optional EKF source-set switch, and attempts the mode change.
-    if (channel_throttle->get_control_in() < copter.get_throttle_mid() - copter.g.throttle_deadzone) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Throttle low - losing altitude");
-    }
-    const int8_t srcset = g2.throw_srcset.get();
-    if (srcset >= 1 && srcset <= 3) {
-        ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(srcset - 1));
-        gcs().send_text(MAV_SEVERITY_INFO, "EKF Source Set %d", srcset);
-        // Completion owns the source set from here, so stop exit() putting the
-        // pre-throw set back over it.  set_mode() below calls exit()
-        // synchronously, hence clearing this first.  When THROW_SRC_SET is 0
-        // the flag stays set and exit() restores the pre-throw set, which is
-        // what "no change" has to mean once THROW_SRC_INI has moved it.
-        source_set_switched = false;
+    // Final transition to THROW_NEXTMODE.  The warnings and the source set
+    // are dealt with once, before any mode change is tried, so neither a
+    // refused change nor staying in throw leaves the THROW_SRC_INI set in use.
+    if (!completion_started) {
+        completion_started = true;
+        const bool yaw_target_active = throw_target_yaw_valid &&
+                                       (ThrowYawType)g2.throw_yaw_type.get() != ThrowYawType::None;
+        if (yaw_target_active && !throw_yaw_converged()) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Throw yaw align timeout");
+        }
+        if (channel_throttle->get_control_in() < copter.get_throttle_mid() - copter.g.throttle_deadzone) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Throttle low - losing altitude");
+        }
+        const int8_t srcset = g2.throw_srcset.get();
+        if (srcset >= 1 && srcset <= 3) {
+            ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(srcset - 1));
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF Source Set %d", srcset);
+            source_set_switched = false;
+        }
+        // with THROW_SRC_SET 0 the pre-throw set goes back now
+        restore_source_set();
     }
     switch ((Mode::Number)g2.throw_nextmode.get()) {
         case Mode::Number::AUTO:
@@ -976,9 +983,16 @@ void ModeThrow::throw_do_nextmode_handoff()
         case Mode::Number::LOITER:
         case Mode::Number::STABILIZE:
         case Mode::Number::ALT_HOLD:
-        case Mode::Number::ACRO:
+        case Mode::Number::ACRO: {
+            // The EKF takes a while to take up a new source set, and set_mode()
+            // refuses a mode that needs a position until it has, so wait.
+            const Mode *new_mode = copter.mode_from_mode_num((Mode::Number)g2.throw_nextmode.get());
+            if (new_mode != nullptr && new_mode->requires_position() && !copter.position_ok()) {
+                return;
+            }
             set_mode((Mode::Number)g2.throw_nextmode.get(), ModeReason::THROW_COMPLETE);
             break;
+        }
         default:
             // do nothing
             break;
