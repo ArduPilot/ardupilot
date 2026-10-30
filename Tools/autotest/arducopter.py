@@ -18756,13 +18756,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def ThrowDropTwiceWithoutReentry(self):
-        '''A second throw armed without leaving throw mode starts afresh'''
-        # A throw that ends on the ground stays in throw with THROW_NEXTMODE
-        # 18, and can be disarmed and armed again from there.  The second
-        # throw must not inherit the first one's position hold, completion or
-        # handoff, and must be set up as entry sets up the first: back on the
-        # THROW_SRC_INI set.  Here that set has no position for it, and it must
-        # still hand over.
+        '''Throws armed again without leaving throw mode are each set up afresh'''
+        # Throw can be disarmed and armed again without leaving the mode, and
+        # a throw that ends on the ground stays in throw with THROW_NEXTMODE
+        # 18.  A throw must not inherit an earlier one's position hold,
+        # completion or handoff, and must be set up as entry sets up the
+        # first: back on the THROW_SRC_INI set.  The last one here has no
+        # position on that set, and must still hand over.
         self.set_parameters({
             "THROW_TYPE": 1,           # drop
             "THROW_ALT_DCSND": 5,
@@ -18782,9 +18782,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('THROW')
         self.wait_statustext("^Throw: EKF Source Set 2$", check_context=True, regex=True)
 
-        self.start_subtest("a throw disarmed before completion leaves nothing for the next")
-        # disarmed in the air with the THROW_SRC_INI set still in use; the
-        # absolute heading gives the aborted throw a recovery target to leave
+        self.start_subtest("a throw disarmed before completion: set kept, per-throw state reset")
+        # Disarmed in the air, the THROW_SRC_INI set stays in use, so the
+        # setup keeps what it captured before the switch; the per-throw state
+        # that does not depend on the set must still be reset.  The logged
+        # recovery target is what shows it: the absolute heading gives the
+        # aborted throw one to leave.  The direction integrator is reset with
+        # it, but re-anchors at the first held-still sample anyway, which on
+        # the ground is at once, so this cannot see that.
         self.set_parameters({
             "THROW_YAW_TYPE": 3,
             "THROW_YAW_DEG": 90,
@@ -18796,9 +18801,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # the shove resets this to zero
             pass
         self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.context_clear_collection('STATUSTEXT')
         self.disarm_vehicle(force=True)
         self.wait_statustext("SIM Hit ground", check_context=True, timeout=30)
         self.set_parameter("THROW_YAW_TYPE", 0)
+        self.wait_ready_to_arm()
+        # still on set 2, so the setup took its early return
+        if self.statustext_in_collections("EKF Source Set"):
+            raise NotAchievedException("the source set changed on the aborted throw's disarm")
         self.arm_vehicle()
         self.delay_sim_time(1, "a few THRO records while detecting")
         self.disarm_vehicle()
@@ -18818,7 +18828,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if any(m.YSrc != 0 or abs(m.TYaw) > 0.1 for m in detecting):
             raise NotAchievedException("re-armed throw kept the aborted throw's yaw target")
 
-        self.start_subtest("first throw, completing in throw")
+        self.start_subtest("a throw that completes in throw")
         self.context_clear_collection('STATUSTEXT')
         self.arm_vehicle()
         try:
@@ -18834,7 +18844,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.wait_statustext("^Throw: EKF Source Set 2$", check_context=True, regex=True)
 
-        self.start_subtest("second throw, with no position and a next mode to go to")
+        self.start_subtest("the throw after it, with no position and a next mode to go to")
         self.set_parameters({
             "EK3_SRC2_POSXY": 0,
             "EK3_SRC2_VELXY": 0,
