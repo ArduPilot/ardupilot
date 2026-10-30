@@ -18528,16 +18528,30 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_SHOVE_Z": 0,
             "SIM_TWIST_Z": 0,
         })
-        tstart = self.get_sim_time()
         self.wait_statustext("Throw detected", check_context=True, timeout=10)
-        delay = self.get_sim_time() - tstart
-        self.progress("detected %.2fs after release" % delay)
-        # the release lands somewhere in a 500 ms confirmation window, which
-        # puts detection up to about 0.35 s after it
-        if delay > 0.6:
-            raise NotAchievedException("release detected %.2fs late" % delay)
         self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
         self.wait_mode('ALT_HOLD')
+
+        # Time the detection from the release in the vehicle's own log: the
+        # parameter round trips here take most of a second.  The release lands
+        # somewhere in a 500 ms confirmation window, which puts detection up
+        # to about 0.35 s after it.
+        dfreader = self.dfreader_for_current_onboard_log()
+        release_us = None
+        detect_us = None
+        while detect_us is None:
+            m = dfreader.recv_match(type=['PARM', 'THRO'])
+            if m is None:
+                raise NotAchievedException("release or detection missing from the log")
+            if m.get_type() == 'PARM':
+                if m.Name == 'SIM_SHOVE_Z':
+                    release_us = m.TimeUS if m.Value == 0 else None
+            elif release_us is not None and m.Stage > 1:
+                detect_us = m.TimeUS
+        delay = (detect_us - release_us) * 1e-6
+        self.progress("detected %.2fs after release" % delay)
+        if delay > 0.6:
+            raise NotAchievedException("release detected %.2fs late" % delay)
         self.set_rc(3, 1000)
         self.wait_disarmed(timeout=120)
         self.zero_throttle()
@@ -18567,6 +18581,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.drop_to_throw_poshold()
         self.set_parameter("FS_EKF_THRESH", 0.01)  # any variance trips the EKF failsafe
         self.wait_statustext("EKF Failsafe", check_context=True, timeout=10)
+        self.assert_mode('THROW')      # the failsafe came while throw held position
         self.wait_mode('ALT_HOLD', timeout=30)
         if self.statustext_in_collections("EKF Failsafe: changed to"):
             raise NotAchievedException("EKF failsafe changed mode on the way to ALT_HOLD")
@@ -18582,6 +18597,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "THROW_YAW_TYPE": 0,
         })
         self.drop_to_throw_poshold()
+        self.assert_mode('THROW')
         self.set_parameter("SIM_GPS1_ENABLE", 0)
         self.wait_statustext("EKF Failsafe: changed to Land Mode", check_context=True, timeout=60)
         self.wait_mode('LAND')
