@@ -18671,12 +18671,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_statustext("Throw detected", check_context=True, timeout=30)
             self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
             self.wait_statustext(want_text, check_context=True, regex=True, timeout=10)
-            if nextmode == 5:
-                self.wait_statustext("Throw: Loiter waiting for position", check_context=True, timeout=10)
             if want_mode == 'THROW' and nextmode == 5:
+                self.wait_statustext("Throw: Loiter waiting for position", check_context=True, timeout=10)
                 self.wait_statustext("Throw: no position for Loiter, staying in throw", check_context=True, timeout=10)
                 self.assert_mode('THROW')
             else:
+                # the EKF can take an aided set up within the settling time,
+                # so whether LOITER has to wait for its position varies
                 self.wait_mode(want_mode, timeout=30)
             if nextmode == 18:
                 # the restored set has to bring horizontal aiding back with it
