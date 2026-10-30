@@ -493,7 +493,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
     // @Param: FAST_BOOT
     // @DisplayName: Fast boot
-    // @Description: Bitmask of startup blocking procedures to skip for a faster boot. Set to 0 to disable all fast boot features and use normal startup. Only enable bits you understand and require.
+    // @Description: Bitmask of startup blocking procedures to skip for a faster boot. Set to 0 to disable all fast boot features and use normal startup. Only enable bits you understand and require. With DroneCAN set, DroneCAN barometers and airspeed sensors may not be detected.
     // @Bitmask: 0:AllFeatures, 1:DroneCAN
     // @RebootRequired: True
     // @User: Advanced
