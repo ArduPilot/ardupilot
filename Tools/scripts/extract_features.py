@@ -39,6 +39,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_USB_DEBUG_STARTUP_WAIT_ENABLED', r'ChibiOS::usb_debug_startup_wait\b',),
             ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
             ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
+            ('AP_AIRSPEED_DRONECAN_DIRECT_ENABLED', r'AP_Airspeed_DroneCAN::handle_indicated_airspeed',),
 
             ('AC_PRECLAND_ENABLED', 'AC_PrecLand::AC_PrecLand',),
             ('AC_PRECLAND_ENABLED', 'AC_PrecLand::AC_PrecLand',),
