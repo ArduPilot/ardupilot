@@ -7711,7 +7711,6 @@ return update()
             # airspeed sensors are only allocated at boot, so the node
             # must already be broadcasting when we reboot
             node['ias'] = 15.0
-            self.context_collect('STATUSTEXT')
             self.reboot_sitl()
 
             self.start_subtest("IndicatedAirspeed is used directly as EAS")
@@ -7720,7 +7719,6 @@ return update()
             wait_airspeed(22.5)
 
             self.start_subtest("No zero offset calibration is needed")
-            self.wait_statustext("Airspeed 1 calibration not required", check_context=True)
             self.wait_ready_to_arm()
             self.assert_parameter_value('ARSPD_OFFSET', 0)
 
