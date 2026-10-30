@@ -22212,61 +22212,6 @@ RTL_ALT_M 111
         self.wait_waypoint(num_wp-1, num_wp-1, timeout=120)
         self.wait_disarmed(timeout=60)
 
-    def osd_displayport_rows(self, msp, rows, duration):
-        '''collect the text drawn on the given rows over MSP DisplayPort for a
-        while, one entry per screen drawn'''
-        MSP_DISPLAYPORT = 182
-        CLEAR_SCREEN = 2
-        WRITE_STRING = 3
-        DRAW_SCREEN = 4
-        screens = []
-        current = {}
-        cleared = []
-
-        def collect(cmd, data):
-            if cmd != MSP_DISPLAYPORT or len(data) == 0:
-                return
-            if data[0] == CLEAR_SCREEN:
-                current.clear()
-                cleared.append(True)
-            elif not cleared:
-                # joined part way through a screen, which would read as a flash
-                return
-            elif data[0] == WRITE_STRING and len(data) >= 4 and data[1] in rows:
-                row = current.setdefault(data[1], {})
-                for i, c in enumerate(data[4:]):
-                    row[data[2] + i] = c
-            elif data[0] == DRAW_SCREEN:
-                screens.append({r: bytes(current.get(r, {}).get(c, 32) for c in range(60)).rstrip()
-                                for r in rows})
-        msp.callback = collect
-        tstart = self.get_sim_time()
-        try:
-            while self.get_sim_time_cached() - tstart < duration:
-                msp.update()
-                self.drain_mav(quiet=True)
-        finally:
-            msp.callback = None
-        if len(screens) == 0:
-            raise NotAchievedException("no OSD screens drawn over MSP DisplayPort")
-        return screens
-
-    def wait_osd_ekf_lane(self, msp, row, want, flashing=False, timeout=30):
-        '''wait for an OSD EKF lane item to show the wanted text, optionally
-        checking the text also disappears between screens as it flashes'''
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time_cached() - tstart > timeout:
-                raise NotAchievedException("OSD row %u never showed %s" % (row, want))
-            texts = [s[row] for s in self.osd_displayport_rows(msp, [row], 2)]
-            shown = [want in t for t in texts]
-            self.progress("OSD row %u: %s" % (row, texts[-1]))
-            if not any(shown):
-                continue
-            if flashing and all(shown):
-                continue
-            return texts
-
     def OSDEKFLanes(self):
         '''OSD EKF lane items show each lane and the state of its optical flow'''
         self.set_parameters({
