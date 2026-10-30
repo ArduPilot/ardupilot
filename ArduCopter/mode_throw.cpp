@@ -160,6 +160,12 @@ void ModeThrow::run()
 
     } else if (stage == Throw_Disarmed && motors->armed()) {
         stage = Throw_Detecting;
+        // throw can be disarmed and armed again without leaving the mode, so
+        // each throw starts afresh
+        nextmode_attempted = false;
+        completion_started = false;
+        xy_controller_active = false;
+        drop_confirm_start_ms = 0;
 
     } else if (stage == Throw_Detecting && throw_detected()){
         copter.set_land_complete(false);
