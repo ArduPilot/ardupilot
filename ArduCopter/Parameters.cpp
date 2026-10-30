@@ -980,7 +980,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     // @Param: TKOFF_RPM_MIN
     // @DisplayName: Takeoff Check RPM minimum
-    // @Description: Takeoff is not permitted until motors report at least this RPM, and until every ESC that reports its error rate as a percentage (such as bidirectional DShot) reports 1% or less.  Set to zero to disable both checks
+    // @Description: Takeoff is not permitted until motors report at least this RPM, and until every ESC that reports its error rate as a percentage (such as bidirectional DShot) reports 1% or less.  Set to zero to disable both checks (which also disables TKOFF_RPM_MAX)
     // @Range: 0 10000
     // @User: Standard
     AP_GROUPINFO("TKOFF_RPM_MIN", 58, ParametersG2, takeoff_rpm_min, 0),
