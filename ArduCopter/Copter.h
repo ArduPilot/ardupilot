@@ -301,9 +301,11 @@ private:
     AP_AHRS_View *ahrs_view;
 
     // Hover accel bias learning state (per-IMU)
-    // Tracks total Z-axis bias during hover for vibration rectification compensation
+    // Tracks the Z-axis bias in hover less the bias at arming, for vibration rectification compensation
     float _hover_bias_learning[INS_MAX_INSTANCES];
     bool _hover_bias_learned[INS_MAX_INSTANCES];  // learning has run for this IMU since the learner was seeded
+    float _hover_bias_at_arm[INS_MAX_INSTANCES];  // EKF Z accel bias of each IMU when the vehicle armed, zero with ACC_ZBIAS_LEARN bit 2, m/s/s
+    bool _hover_bias_at_arm_ok[INS_MAX_INSTANCES];  // an EKF core was using the IMU when the vehicle armed
     bool _hover_z_bias_reported;
 
     // Arming/Disarming management class
