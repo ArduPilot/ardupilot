@@ -4353,6 +4353,82 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.fly_generic_mission("CMAC-copter-navtest.txt")
 
+    def OpticalFlowTiltNoTimeout(self):
+        '''flow withheld by the tilt check does not time a flow lane out'''
+        # core 0 on GPS, core 1 on optical flow alone
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_SRC_OPTIONS": 8,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "ACRO_TRAINER": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.takeoff(10, mode='LOITER')
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("Flow that stops still times out")
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.wait_statustext("IMU1 stopped aiding", timeout=30, check_context=True)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_statustext("IMU1 fusing optical flow", timeout=30, check_context=True)
+
+        self.start_subtest("A bank past 45 degrees held longer than the flow timeout")
+        self.set_rc(3, 1800)
+        self.wait_altitude(55, 65, relative=True, timeout=120)
+        self.set_rc(3, 1500)
+        hold = {"active": False, "forbid_timeout": True, "min_roll_deg": 180.0}
+
+        def check_bank(mav, m):
+            if hold["forbid_timeout"] and m.get_type() == 'STATUSTEXT' and "IMU1 stopped aiding" in m.text:
+                raise NotAchievedException("flow lane timed out while banked: %s" % m.text)
+            if hold["active"] and m.get_type() == 'ATTITUDE':
+                hold["min_roll_deg"] = min(hold["min_roll_deg"], math.degrees(m.roll))
+
+        self.context_push()
+        self.install_message_hook_context(check_bank)
+        self.change_mode('ACRO')
+        self.set_rc(3, 1700)
+        self.set_rc(1, 1550)
+        self.wait_roll(55, 5)
+        self.set_rc(1, 1500)
+        hold["active"] = True
+        # the bank is the stimulus: flow is withheld for as long as it lasts, and
+        # it has to outlast the 5 s flow timeout
+        self.delay_sim_time(7, "hold the bank past the flow timeout")
+
+        self.start_subtest("Flow that stops while banked still times out")
+        hold["forbid_timeout"] = False
+        self.context_collect('STATUSTEXT')
+        tstart = self.get_sim_time_cached()
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.wait_statustext("IMU1 stopped aiding", timeout=10, check_context=True)
+        stopped_after_s = self.get_sim_time_cached() - tstart
+        hold["active"] = False
+        self.progress("flow lane timed out %.1f s after its flow stopped, roll at least %.1f deg" %
+                      (stopped_after_s, hold["min_roll_deg"]))
+        if hold["min_roll_deg"] < 47:
+            raise NotAchievedException("bank not held past the flow tilt limit: roll fell to %.1f deg" %
+                                       hold["min_roll_deg"])
+        if stopped_after_s < 4:
+            raise NotAchievedException("flow lane timed out %.1f s after its flow stopped, not about 5 s" %
+                                       stopped_after_s)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.set_rc(1, 1450)
+        self.wait_roll(0, 5)
+        self.set_rc(1, 1500)
+        self.set_rc(3, 1500)
+        self.change_mode('LOITER')
+        self.wait_groundspeed(0, 2, timeout=120)
+        self.context_pop()
+
+        self.do_RTL()
+
     def OpticalFlowLimits(self):
         '''test EKF navigation limiting'''
         self.set_parameters({
@@ -19713,6 +19789,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ModeAltHold,
             self.OpticalFlow,
             self.OpticalFlowLimits,
+            self.OpticalFlowTiltNoTimeout,
             self.BodyFrameOdom,
             self.RTLSpeed,
             self.MountYawVehicleForMountROI,
