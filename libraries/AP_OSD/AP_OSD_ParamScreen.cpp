@@ -346,6 +346,7 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
     }
 
     _requires_save |= 1 << (number-1);
+    _requires_new_param_save |= 1 << (number-1);
 
     AP_OSD_ParamSetting& setting = params[number-1];
     AP_Param* param;
@@ -582,10 +583,15 @@ void AP_OSD_ParamScreen::save_parameters()
             if (p != nullptr) {
                 p->save();
             }
-            params[i].save_as_new();
+            // only reset the range if a different parameter was selected,
+            // not when just its value was changed
+            if (_requires_new_param_save & (1 << i)) {
+                params[i].save_as_new();
+            }
         }
     }
     _requires_save = 0;
+    _requires_new_param_save = 0;
 }
 
 // handle OSD configuration messages
