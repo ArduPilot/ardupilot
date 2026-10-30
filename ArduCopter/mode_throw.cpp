@@ -819,7 +819,10 @@ bool ModeThrow::throw_drop_distance_reached() const
     // const-position mode the integrated velocity drifts far enough to
     // overshoot the release point and wedge this check.
     if (ahrs.configured_backend_has_status(AP_AHRS::Status::VERT_POS) && !ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE)) {
-        return (drop_release_alt_m - pos_control->get_pos_estimate_U_m() >= dcsnd_m);
+        // a fall that is caught or lands short of DCSND never gets there, so
+        // the uprighting safety timeout ends this too
+        return (drop_release_alt_m - pos_control->get_pos_estimate_U_m() >= dcsnd_m) ||
+               (AP_HAL::millis() - uprighting_start_ms > 3000);
     }
     // Fallback: estimate distance from freefall physics.  This
     // overestimates after motors start (thrust slows the fall) so the
