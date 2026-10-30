@@ -25,7 +25,8 @@ void AP_TemperatureSensor_MLX90614::init()
 {
     _params.bus_address.set_default(MLX90614_I2CDEFAULTADDR);
     
-    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address);
+    // the sensor's SMBus runs at up to 100kHz
+    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address, 100000);
     if (!_dev) {
         return;
     }
