@@ -18450,6 +18450,71 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # handoff is what is under test
         self.disarm_vehicle(force=True)
 
+    def ThrowDropHeldSpinNoPosition(self):
+        '''A held, spinning vehicle with no velocity aiding is not a drop'''
+        # Above about 9.5 rad/s the spin-scaled freefall ceiling admits the 1g a
+        # held vehicle reads, and only the vertical velocity change separates
+        # held from falling.  With no horizontal aiding the EKF is in constant
+        # position mode, which must not skip that check.  The release that
+        # follows, still spinning, must then be detected promptly.
+        self.set_parameters({
+            "GPS1_TYPE": 0,
+            "SIM_GPS1_ENABLE": 0,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 0,
+            "SIM_IMU_POS_X": 0.03,
+            "THROW_TYPE": 1,           # drop
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            "SIM_SHOVE_Z": -10.5,
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.reboot_sitl()
+
+        self.change_mode('THROW')
+        self.wait_prearm_sys_status_healthy(timeout=120)
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 60000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_altitude(40, 1000, timeout=60, relative=True)
+
+        # carry it at a shade over 1g and hold the spin near 14 rad/s; much
+        # faster for longer and SITL's AHRS loses its attitude, which no
+        # detector built on it can survive
+        self.set_message_rate_hz('ATTITUDE', 20)
+        self.set_parameters({
+            "SIM_SHOVE_Z": -9.9,
+            "SIM_TWIST_Z": 15.0,
+            "SIM_TWIST_TIME": 60000,
+        })
+        self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.yawspeed) > 13', timeout=10)
+        self.set_parameter("SIM_TWIST_Z", 3.0)
+        self.delay_sim_time(3, "held and spinning for many confirmation windows; nothing should happen")
+        self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.roll) < 0.1 and abs(ATTITUDE.pitch) < 0.1')
+        if self.statustext_in_collections("Throw detected"):
+            raise NotAchievedException("held spinning vehicle was detected as dropped")
+
+        # let go, still spinning
+        self.set_parameters({
+            "SIM_SHOVE_Z": 0,
+            "SIM_TWIST_Z": 0,
+        })
+        tstart = self.get_sim_time()
+        self.wait_statustext("Throw detected", check_context=True, timeout=10)
+        delay = self.get_sim_time() - tstart
+        self.progress("detected %.2fs after release" % delay)
+        if delay > 1.5:
+            raise NotAchievedException("release detected %.2fs late" % delay)
+        self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+        self.wait_mode('ALT_HOLD')
+        self.set_rc(3, 1000)
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.reboot_sitl()
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -20122,6 +20187,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowSrcInitRestoredOnCompletion,
             self.ThrowUpwardNoPositionNextMode,
             self.ThrowDropArrestedShort,
+            self.ThrowDropHeldSpinNoPosition,
         ])
         return ret
 
