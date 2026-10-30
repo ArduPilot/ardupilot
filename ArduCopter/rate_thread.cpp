@@ -170,9 +170,8 @@ void Copter::rate_controller_thread()
                                                      DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
     uint8_t rate_decimation = target_rate_decimation;
 
-    // set up the decimation rates
-    RateControllerRates rates;
-    rate_controller_set_rates(rate_decimation, rates, false);
+    // set by enable_fast_rate_loop(), so a thread parked from boot changes nothing
+    RateControllerRates rates {};
 
     uint32_t rate_loop_count = 0;
     uint32_t prev_loop_count = 0;
