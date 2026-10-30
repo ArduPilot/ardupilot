@@ -1059,7 +1059,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 #if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     // @Param: TKOFF_RPM_MAX
     // @DisplayName: Takeoff Check RPM maximum
-    // @Description: Takeoff is not permitted until motors report no more than this RPM.  Set to zero to disable check
+    // @Description: Takeoff is not permitted until motors report no more than this RPM.  Set to zero to disable check. TKOFF_RPM_MIN must also be set to a non-zero value to enable this check.
     // @Range: 0 10000
     // @User: Standard
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
