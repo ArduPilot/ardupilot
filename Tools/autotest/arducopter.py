@@ -18727,13 +18727,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # only this throw's completion counts from here
         self.context_clear_collection('STATUSTEXT')
         self.wait_statustext("Throw: Auto waiting for position", check_context=True, timeout=30)
-        self.assert_mode('THROW')
         self.wait_mode('AUTO', timeout=20)
         self.change_mode('LAND')
         self.wait_disarmed(timeout=120)
 
-        # AUTO must have taken over only once the EKF failsafe that held the
-        # position back had cleared
+        # AUTO must have taken over, from throw, only once the EKF failsafe
+        # that held the position back had cleared
         dfreader = self.dfreader_for_current_onboard_log()
         wait_us = None
         cleared_us = None
@@ -18749,6 +18748,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     cleared_us = m.TimeUS
             elif wait_us is not None and m.Mode == 3:
                 auto_us = m.TimeUS
+                if m.Rsn != 16:    # ModeReason::THROW_COMPLETE
+                    raise NotAchievedException("AUTO was entered other than by throw's handoff (reason %u)" % m.Rsn)
         if cleared_us is None:
             raise NotAchievedException("AUTO took over before the EKF failsafe cleared")
         self.progress("AUTO %.2fs after the wait began" % ((auto_us - wait_us) * 1e-6))
