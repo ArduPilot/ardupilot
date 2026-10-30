@@ -201,10 +201,20 @@ void ModeAutoLand::update()
 {
     plane.calc_nav_roll();
 
-    // Apply level roll limit in climb stage
-    if (stage == AutoLandStage::CLIMB) {
+    switch (stage) {
+    case AutoLandStage::CLIMB:
+        // Apply level roll limit in climb stage
         plane.roll_limit_cd = MIN(plane.roll_limit_cd, plane.g.level_roll_limit*100);
         plane.nav_roll_cd = constrain_int16(plane.nav_roll_cd, -plane.roll_limit_cd, plane.roll_limit_cd);
+        break;
+
+    case AutoLandStage::LOITER:
+        break;
+
+    case AutoLandStage::LANDING:
+        // allow landing to restrict the roll limits
+        plane.nav_roll_cd = plane.landing.constrain_roll(plane.nav_roll_cd, plane.g.level_roll_limit*100);
+        break;
     }
 
     plane.calc_nav_pitch();
