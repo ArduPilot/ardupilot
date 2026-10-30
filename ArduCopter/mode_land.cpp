@@ -32,7 +32,7 @@ const AP_Param::GroupInfo ModeLand::var_info[] = {
 
     // @Param: FS_OPTIONS
     // @DisplayName: Land failsafe options
-    // @Description: Options for a LAND flown while a radio, GCS or EKF failsafe is active (so the failsafe action must be Land), kept for the rest of that landing once engaged. Bit 0 forces the vibration compensation on so a corrupt EKF vertical estimate cannot make LAND add throttle and climb away, and caps the throttle from the barometer climb rate if the baro still shows a net climb of more than 10 m that the position controller did not command.
+    // @Description: Options for LAND mode while a radio, GCS or EKF failsafe is active, whatever selected LAND and whatever action that failsafe is set to take (an EKF failsafe set to report only counts), kept for the rest of that landing once engaged. Bit 0 forces the vibration compensation on so a corrupt EKF vertical estimate cannot make LAND add throttle and climb away, and caps the throttle from the barometer climb rate if the baro still shows a net climb of more than 10 m that the position controller did not command.
     // @Bitmask: 0:Advanced land failsafe
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 4, ModeLand, fs_options, 0),
