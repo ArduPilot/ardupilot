@@ -38,6 +38,17 @@ void NavEKF3_core::readRangeFinder(void)
         // reset the timer used to control the measurement rate
         lastRngMeasTime_ms =  imuSampleTime_ms;
 
+        // the sensors share one buffer and recall takes the newest sample due, so
+        // a range substituted for one sensor would replace a good one from the other
+        bool anyRngGood = false;
+        for (uint8_t sensorIndex = 0; sensorIndex < ARRAY_SIZE(rngMeasIndex); sensorIndex++) {
+            const auto *sensor = _rng->get_backend(sensorIndex);
+            if ((sensor != nullptr) && (sensor->orientation() == ROTATION_PITCH_270) &&
+                (sensor->status() == AP_DAL_RangeFinder::Status::Good)) {
+                anyRngGood = true;
+            }
+        }
+
         // store samples and sample time into a ring buffer if valid
         // use data from two range finders if available
         for (uint8_t sensorIndex = 0; sensorIndex < ARRAY_SIZE(rngMeasIndex); sensorIndex++) {
@@ -53,7 +64,7 @@ void NavEKF3_core::readRangeFinder(void)
             if (sensor->status() == AP_DAL_RangeFinder::Status::Good) {
                 // get the current range measurement
                 range_distance = sensor->distance();
-            } else if (!movedSinceArming && sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow) {
+            } else if (!movedSinceArming && !anyRngGood && sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow) {
                 // assume the on-ground range until the vehicle moves
                 range_distance = rngOnGnd;
             } else {
