@@ -18801,6 +18801,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # the shove resets this to zero
             pass
         self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        # LOG_FILE_RATEMAX drops THRO's stage-change record at detection, so
+        # the target reaches the log only with the next 10 Hz record; no
+        # message marks it, and the next stage message comes after landing
+        self.delay_sim_time(0.3, "THRO logs the detected throw")
         self.context_clear_collection('STATUSTEXT')
         self.disarm_vehicle(force=True)
         self.wait_statustext("SIM Hit ground", check_context=True, timeout=30)
