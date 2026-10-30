@@ -98,6 +98,8 @@ public:
 
     // returns false if the event should be written again later: logging has not started, or the logger refused it
     bool log_event3(Event event);
+    // true while the DAL is logging; it writes all its records again each time this becomes true
+    bool is_logging() const { return logging_started; }
     void log_SetOriginLLH3(const Location &loc);
     void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
 
