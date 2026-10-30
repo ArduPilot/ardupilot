@@ -16953,6 +16953,8 @@ return update, 1000
             self.SixCompassCalibrationAndReordering,
             self.CRSF,
             self.SerialPassthroughRCIN,
+            self.CRSFParameterMenu,
+            self.CRSFParameterMenuScripted,
             self.MotorTest,
             self.AltEstimation,
             self.EKFSource,
