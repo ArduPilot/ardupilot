@@ -22131,6 +22131,32 @@ RTL_ALT_M 111
         self.assert_parameter_value("RTL_ALT_M", 750)
         self.assert_parameter_value("DISARM_DELAY", 20)
 
+    def SerialPassthru(self):
+        '''test serial passthrough timeout and recovery'''
+        self.context_collect('STATUSTEXT')
+
+        # test timeout recovery
+        self.set_parameters({
+            "SERIAL_PASSTIMO": 2,
+            "SERIAL_PASS1": 0,
+            "SERIAL_PASS2": 2,
+        })
+        self.wait_statustext("Passthru enabled", check_context=True, timeout=10, wallclock_timeout=True)
+        self.wait_statustext("Passthru timed out", check_context=True, timeout=15, wallclock_timeout=True)
+        # Verify MAVLink on port 0 responds after passthrough timeout
+        self.assert_parameter_value("MAV_SYSID", 1)
+
+        # test manual disable recovery
+        self.set_parameters({
+            "SERIAL_PASSTIMO": 15,
+            "SERIAL_PASS1": 0,
+            "SERIAL_PASS2": 2,
+        })
+        self.wait_statustext("Passthru enabled", check_context=True, timeout=10, wallclock_timeout=True)
+        self.set_parameter("SERIAL_PASS2", -1)
+        self.wait_statustext("Passthru disabled", check_context=True, timeout=10, wallclock_timeout=True)
+        self.assert_parameter_value("MAV_SYSID", 1)
+
     def ScriptingFlipMode(self):
         '''test adding custom mode from scripting'''
         # Really it would be nice to check for the AVAILABLE_MODES message, but pymavlink does not understand them yet.
@@ -24000,6 +24026,7 @@ return update, 1000
             self.LoweheiserManual,
             self.Weathervane,
             self.ReadOnlyDefaults,
+            self.SerialPassthru,
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
             self.mission_NAV_LOITER_TURNS_direction,
