@@ -604,9 +604,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FS_THR_ENABLE": 3,     # RC failsafe action = LAND
         })
 
-        for option in [0, 1]:
-            self.start_subtest("LAND_FS_OPTIONS=%u" % option)
-            self.set_parameter("LAND_FS_OPTIONS", option)
+        # the ceiling must also wind down on the ground at the top of the LAND_SPD_MS range
+        for option, land_speed in [(0, 0.5), (1, 0.5), (1, 2.0)]:
+            self.start_subtest("LAND_FS_OPTIONS=%u LAND_SPD_MS=%.1f" % (option, land_speed))
+            self.set_parameters({
+                "LAND_FS_OPTIONS": option,
+                "LAND_SPD_MS": land_speed,
+            })
             self.reboot_sitl()  # applies the EKF setup and resets the vehicle between subtests
             # the estimate is about to be corrupted, so altitude is read from the simulator
             ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
