@@ -18134,6 +18134,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             pass
 
         self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        # still spinning hard at detection, or the gate was never tested
+        self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.yawspeed) > 15')
         self.set_rc(3, 1500)       # so LOITER holds height once it takes over
         self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
         self.wait_mode('LOITER')
@@ -18219,6 +18221,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             pass
 
         self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        # still tumbling hard at detection, or the gate was never tested
+        self.assert_receive_message(
+            'ATTITUDE',
+            condition='ATTITUDE.rollspeed**2 + ATTITUDE.pitchspeed**2 + ATTITUDE.yawspeed**2 > 144')
         self.set_rc(3, 1500)       # so LOITER holds height once it takes over
         self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
         self.wait_mode('LOITER')
