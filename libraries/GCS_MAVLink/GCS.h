@@ -1408,6 +1408,8 @@ private:
         uint32_t last_port1_data_ms;
         uint32_t baud1;
         uint32_t baud2;
+        uint32_t orig_baud1;
+        uint32_t orig_baud2;
         uint8_t parity1;
         uint8_t parity2;
         uint8_t timeout_s;
