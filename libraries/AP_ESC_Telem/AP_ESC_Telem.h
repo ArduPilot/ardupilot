@@ -34,6 +34,9 @@ public:
     // get an individual ESC's raw rpm and error rate if available
     bool get_raw_rpm_and_error_rate(uint8_t esc_index, float& rpm, float& error_rate) const;
 
+    // get an individual ESC's error rate in percent, returns false if it does not report one
+    bool get_error_rate_pct(uint8_t esc_index, float& error_rate_pct) const;
+
     // get raw telemetry data, used by IOMCU
     const volatile AP_ESC_Telem_Backend::TelemetryData& get_telem_data(uint8_t esc_index) const {
         return _telem_data[esc_index];
@@ -116,7 +119,7 @@ public:
 
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
     // can also be called from scripting
-    void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate);
+    void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate, const bool error_rate_is_pct = false);
 
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, const uint16_t data_mask);
