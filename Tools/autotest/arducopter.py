@@ -18861,7 +18861,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "THROW_NEXTMODE": 2,       # ALT_HOLD
             "SIM_SHOVE_Z": -10.5,
         })
-        self.wait_statustext("position lost", check_context=True, timeout=30)
+        # disarmed, Copter takes a predicted position as well
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_HORIZ_ABS | mavutil.mavlink.EKF_PRED_POS_HORIZ_ABS, timeout=30)
         self.assert_mode('THROW')
         self.context_clear_collection('STATUSTEXT')
         self.arm_vehicle()
