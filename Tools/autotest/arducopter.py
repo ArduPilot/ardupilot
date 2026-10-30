@@ -18655,7 +18655,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if nextmode == 5:
                 self.wait_statustext("Throw: Loiter waiting for position", check_context=True, timeout=10)
             if want_mode == 'THROW' and nextmode == 5:
-                self.wait_statustext("Mode change to Loiter failed: requires position", check_context=True, timeout=10)
+                self.wait_statustext("Throw: no position for Loiter, staying in throw", check_context=True, timeout=10)
                 self.assert_mode('THROW')
             else:
                 self.wait_mode(want_mode, timeout=30)
@@ -18665,6 +18665,51 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.change_mode('LAND')
             self.wait_disarmed(timeout=120)
             self.reboot_sitl()
+
+    def ThrowNextModeAutoStaleSubmode(self):
+        '''AUTO last left in NAV_ATTITUDE_TIME still needs a position as a throw next mode'''
+        # Until it starts again AUTO answers requires_position() from the
+        # submode it was last in, and NAV_ATTITUDE_TIME needs none.  Throw must
+        # not take that answer: with no position at completion it waits.
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 10),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_ATTITUDE_TIME, p1=60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 10),
+        ])
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.set_rc(3, 1500)
+        self.wait_current_waypoint(2, timeout=60)
+        self.change_mode('LAND')       # leaving AUTO in NAV_ATTITUDE_TIME
+        self.wait_disarmed(timeout=120)
+        self.set_rc(3, 1000)
+
+        self.set_parameters({
+            "SIM_SHOVE_Z": -10.5,
+            "THROW_TYPE": 1,           # drop
+            "THROW_NEXTMODE": 3,       # AUTO
+            "THROW_SRC_INI": 2,        # no horizontal aiding until completion
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 0,
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.wait_ready_to_arm()
+        self.change_mode('THROW')
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw: Auto waiting for position", check_context=True, timeout=30)
+        self.wait_mode('AUTO', timeout=20)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.reboot_sitl()
 
     def ThrowDropTwiceWithoutReentry(self):
         '''A second throw armed without leaving throw mode starts afresh'''
@@ -20404,6 +20449,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowDropEKFFailsafePosHold,
             self.ThrowSrcSetHandoff,
             self.ThrowDropTwiceWithoutReentry,
+            self.ThrowNextModeAutoStaleSubmode,
         ])
         return ret
 
