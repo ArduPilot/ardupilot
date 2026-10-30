@@ -33,17 +33,45 @@ bool ModeThrow::init(bool ignore_checks)
 
     // init state
     stage = Throw_Disarmed;
+    source_set_switched = false;
+    last_msg_stage = Throw_Disarmed;
+    throw_setup();
+
+    // initialise pos controller speed and acceleration
+    pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), BRAKE_MODE_DECEL_RATE_MSS);
+    pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), BRAKE_MODE_DECEL_RATE_MSS);
+
+    // set vertical speed and acceleration limits
+    if (g2.throw_type == ThrowType::Drop) {
+        const float ag = MAX(g2.throw_drop_ag, 1.0f);
+        pos_control->D_set_max_speed_accel_m(THROW_DROP_SPEED_Z_MS * ag, THROW_DROP_SPEED_Z_MS * ag, THROW_DROP_DECEL_RATE_MSS * ag);
+        pos_control->D_set_correction_speed_accel_m(THROW_DROP_SPEED_Z_MS * ag, THROW_DROP_SPEED_Z_MS * ag, THROW_DROP_DECEL_RATE_MSS * ag);
+    } else {
+        pos_control->D_set_max_speed_accel_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
+        pos_control->D_set_correction_speed_accel_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
+    }
+
+    return true;
+}
+
+// Set up for a throw: on entry, and again each time a throw is disarmed,
+// since throw can be armed again without leaving the mode.
+void ModeThrow::throw_setup()
+{
     nextmode_attempted = false;
     completion_started = false;
     nextmode_wait_start_ms = 0;
-    source_set_switched = false;
     xy_controller_active = false;
     drop_confirm_start_ms = 0;
     drop_release_alt_m = 0;
-    last_msg_stage = Throw_Disarmed;
     yaw_align_start_ms = 0;
     yaw_align_timeout_ms = THROW_YAW_ALIGN_TIMEOUT_MS;
     yaw_align_locked = false;
+
+    // while THROW_SRC_INI's set is still in use, keep what was captured before it
+    if (source_set_switched) {
+        return;
+    }
 
     // Capture the throw-direction fallbacks before SRC_INI moves the source
     // set.  A moving carrier's inherited velocity is invisible to the IMU
@@ -81,22 +109,6 @@ bool ModeThrow::init(bool ignore_checks)
         ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(src_init - 1));
         gcs().send_text(MAV_SEVERITY_INFO, "Throw: EKF Source Set %d", src_init);
     }
-
-    // initialise pos controller speed and acceleration
-    pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), BRAKE_MODE_DECEL_RATE_MSS);
-    pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), BRAKE_MODE_DECEL_RATE_MSS);
-
-    // set vertical speed and acceleration limits
-    if (g2.throw_type == ThrowType::Drop) {
-        const float ag = MAX(g2.throw_drop_ag, 1.0f);
-        pos_control->D_set_max_speed_accel_m(THROW_DROP_SPEED_Z_MS * ag, THROW_DROP_SPEED_Z_MS * ag, THROW_DROP_DECEL_RATE_MSS * ag);
-        pos_control->D_set_correction_speed_accel_m(THROW_DROP_SPEED_Z_MS * ag, THROW_DROP_SPEED_Z_MS * ag, THROW_DROP_DECEL_RATE_MSS * ag);
-    } else {
-        pos_control->D_set_max_speed_accel_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
-        pos_control->D_set_correction_speed_accel_m(BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_SPEED_Z_MS, BRAKE_MODE_DECEL_RATE_MSS);
-    }
-
-    return true;
 }
 
 // Put back the EKF source set THROW_SRC_INI replaced, unless the completion
@@ -185,17 +197,13 @@ void ModeThrow::run()
 
     if (!motors->armed()) {
         // state machine entry is always from a disarmed state
+        if (stage != Throw_Disarmed) {
+            throw_setup();
+        }
         stage = Throw_Disarmed;
 
     } else if (stage == Throw_Disarmed && motors->armed()) {
         stage = Throw_Detecting;
-        // throw can be disarmed and armed again without leaving the mode, so
-        // each throw starts afresh
-        nextmode_attempted = false;
-        completion_started = false;
-        nextmode_wait_start_ms = 0;
-        xy_controller_active = false;
-        drop_confirm_start_ms = 0;
 
     } else if (stage == Throw_Detecting && throw_detected()){
         copter.set_land_complete(false);
