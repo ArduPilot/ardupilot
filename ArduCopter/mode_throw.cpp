@@ -557,6 +557,12 @@ bool ModeThrow::throw_detected()
             const float elapsed_s = elapsed_ms * 0.001f;
             const float vel_change_ms = pos_control->get_vel_estimate_U_ms() - drop_confirm_start_vel_u_ms;
             const bool fall_confirmed = vel_change_ms <= -THROW_DROP_CONFIRM_ACCEL_FRAC * GRAVITY_MSS * elapsed_s;
+            // A window that has run half a second, as the upward path's does,
+            // without confirming starts again, so time spent held while
+            // spinning cannot dilute a fall that begins after it.
+            if (!fall_confirmed && elapsed_ms >= MAX(confirm_ms, 500U)) {
+                drop_confirm_start_ms = 0;
+            }
             return time_confirmed && fall_confirmed;
         }
         drop_confirm_start_ms = 0;
