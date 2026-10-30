@@ -941,6 +941,10 @@ void NavEKF3::UpdateFilter(void)
     // the vehicle can set the inhibit before logging starts or from another thread, and the
     // DAL drops an event it cannot write, so log it until the DAL has the current level
     const bool inhibit = _inhibitAccelBiasLearning;
+    if (!dal.is_logging()) {
+        // Replay starts each log with the inhibit clear, so a restarted log needs a set again
+        _inhibitAccelBiasLearningLogged = false;
+    }
     if (core && (inhibit != _inhibitAccelBiasLearningLogged) &&
         dal.log_event3(inhibit ? AP_DAL::Event::setInhibitAccelBiasLearning :
                                  AP_DAL::Event::unsetInhibitAccelBiasLearning)) {
