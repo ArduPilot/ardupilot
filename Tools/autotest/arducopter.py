@@ -18119,20 +18119,30 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # Wait until the vehicle has cleared the shove climb and is
         # nearing apogee, then inject yaw spin.  TWIST is angular
-        # acceleration; the SITL gyro clamps at 35 rad/s, so this
-        # saturates within ~1.2 s and stays there.  Applying twist late
-        # ensures the vehicle is in genuine freefall (not under shove)
-        # by the time the spool-up freefall check runs.
+        # acceleration, applied for about a second so it ends near the
+        # release with the vehicle spinning at about 25 rad/s.  The SITL
+        # gyro clips at 35 rad/s; a twist that runs on drives the spin
+        # past that, the AHRS loses its attitude and no recovery is
+        # possible.  Applying twist late ensures the vehicle is in genuine
+        # freefall (not under shove) by the time the spool-up freefall
+        # check runs.
         self.wait_altitude(50, 1000, timeout=60, relative=True)
         try:
             self.set_parameter("SIM_TWIST_Z", 30.0)
-            self.set_parameter("SIM_TWIST_TIME", 12000)
+            self.set_parameter("SIM_TWIST_TIME", 1000)
         except ValueError:
             pass
 
         self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.set_rc(3, 1500)       # so LOITER holds height once it takes over
         self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
         self.wait_mode('LOITER')
+
+        # recovered, not just detected: clear of the ground at the handoff,
+        # and holding height in LOITER after it
+        if self.statustext_in_collections("SIM Hit ground"):
+            raise NotAchievedException("spinning drop hit the ground")
+        self.wait_altitude(30, 1000, relative=True, minimum_duration=5, timeout=30)
 
         # The spin-aware spool-up check should admit the freefall
         # without a single abort.  Any "Throw: freefall lost, resetting"
@@ -18190,26 +18200,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             pass
 
         # Wait until the vehicle is near apogee, then inject twist on
-        # all three axes.  Combined gyro magnitude saturates at
-        # sqrt(3)*35 ~ 60 rad/s per the SITL per-axis 35 rad/s clamp,
-        # well above the single-axis 30 rad/s used in ThrowSpinDrop.
+        # all three axes for about a second, ending near the release.
         # The off-vertical spin axis means earth-Z accel oscillates
         # under the resulting attitude tumble, so the earth-frame
-        # fallback cannot mask a broken body ceiling.
+        # fallback cannot mask a broken body ceiling.  Each axis stays
+        # inside the SITL gyro's 35 rad/s clip, so the attitude, though
+        # disturbed through the tumble, comes back and the vehicle can
+        # recover.
         self.wait_altitude(50, 1000, timeout=60, relative=True)
         try:
             self.set_parameters({
                 "SIM_TWIST_X": 20.0,
                 "SIM_TWIST_Y": 20.0,
                 "SIM_TWIST_Z": 20.0,
-                "SIM_TWIST_TIME": 12000,
+                "SIM_TWIST_TIME": 1000,
             })
         except ValueError:
             pass
 
         self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.set_rc(3, 1500)       # so LOITER holds height once it takes over
         self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
         self.wait_mode('LOITER')
+
+        # recovered, not just detected: clear of the ground at the handoff,
+        # and holding height in LOITER after it
+        if self.statustext_in_collections("SIM Hit ground"):
+            raise NotAchievedException("tumbling drop hit the ground")
+        self.wait_altitude(30, 1000, relative=True, minimum_duration=5, timeout=30)
 
         # Detection passing alone isn't sufficient -- the spool-up
         # freefall check runs every loop on the same gate, so a too-
