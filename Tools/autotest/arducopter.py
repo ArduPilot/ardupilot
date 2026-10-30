@@ -17763,8 +17763,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             m = dfreader.recv_match(type='XKF5')
             if m is None:
                 break
-            if m.C != 0:
-                continue
+            # XKF5 is logged for the primary core only, so read every record
             # XKF5.TOfs is the terrain position relative to the EKF datum,
             # logged as int16 centimetres and scaled by the reader. Feeding the
             # estimator a range that never leaves the ground drags the terrain up
