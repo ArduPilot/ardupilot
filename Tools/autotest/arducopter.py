@@ -14,6 +14,7 @@ import pathlib
 import re
 import shutil
 import socket
+import struct
 import subprocess
 import tempfile
 import time
@@ -18396,6 +18397,68 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=2.5)
         self.reboot_sitl()
 
+    def accel_bias_inhibit_set_in_log(self, path):
+        dfreader = self.dfreader_for_path(path)
+        while True:
+            m = dfreader.recv_match(type="REV3")
+            if m is None:
+                return False
+            if m.Event == 16:  # setInhibitAccelBiasLearning
+                return True
+
+    def wait_accel_bias_inhibit_set_in_current_onboard_log(self, timeout=20):
+        path = self.current_onboard_log_filepath()
+        tstart = self.get_sim_time()
+        while True:
+            # the event can still be in the logger's write buffer, and a log
+            # being written can end part way through a record
+            try:
+                if self.accel_bias_inhibit_set_in_log(path):
+                    return
+            except (OSError, ValueError, struct.error):
+                pass
+            if self.get_sim_time() - tstart > timeout:
+                raise NotAchievedException("accel bias inhibit never reached %s" % path)
+            self.delay_sim_time(1, "logger to write the inhibit event")
+
+    def AccelBiasInhibitLoggedAfterLogRestart(self):
+        '''Test a log restarted while disarmed carries the accel bias inhibit'''
+        # Replay starts every log with accel bias learning allowed, so a log
+        # that starts while ACC_ZBIAS_LEARN bit 2 holds the inhibit must say so,
+        # or Replay of it learns through the hold
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "ACC_ZBIAS_LEARN": 4,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.start_subtest("Positive control: the boot log carries the inhibit")
+        self.wait_accel_bias_inhibit_set_in_current_onboard_log()
+
+        self.start_subtest("A log restarted while disarmed carries it too")
+        erase_time_us = self.get_sim_time() * 1e6
+        # erasing stops logging, which restarts once the erase is done
+        self.mav.mav.log_erase_send(self.sysid_thismav(), 1)
+        tstart = self.get_sim_time()
+        while True:
+            logs = self.log_list()
+            m = None
+            if len(logs) > 0:
+                try:
+                    m = self.dfreader_for_path(logs[-1]).recv_match(type="PARM")
+                except (OSError, ValueError, struct.error):
+                    # deleted since the listing, or the new log ends part way through a record
+                    pass
+            if m is not None and m.TimeUS > erase_time_us:
+                break
+            if self.get_sim_time() - tstart > 120:
+                raise NotAchievedException("logging did not restart after the erase")
+            self.delay_sim_time(1, "logging to restart")
+        self.wait_accel_bias_inhibit_set_in_current_onboard_log()
+        self.reboot_sitl()
+
     def VibrationRectificationBiasLearning(self):
         '''Test hover Z-bias learning for vibration rectification'''
         # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
@@ -19948,6 +20011,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeAltResetTest,
             self.VibrationRectificationBiasLearning,
             self.AccelBiasMovingPlatform,
+            self.AccelBiasInhibitLoggedAfterLogRestart,
         ])
         return ret
 
