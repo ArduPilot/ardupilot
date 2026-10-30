@@ -256,8 +256,8 @@ public:
     void save_accel_vrf_bias_z(uint8_t instance) {
         _accel_vrf_bias_z(instance).save();
     }
-    // zero the learned hover bias, which is a total including the residual
-    // sensor bias and so is invalidated by a new accel calibration
+    // zero the learned hover bias, which can include residual sensor bias
+    // that a new accel calibration changes
     void clear_accel_vrf_bias_z(uint8_t instance);
 
     // return the temperature if supported. Zero is returned if no
