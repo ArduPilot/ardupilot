@@ -550,10 +550,7 @@ bool ModeThrow::throw_detected()
             // held or carried does not, whatever it is doing about its axes.
             // The estimate only has to be differentiable, not accurate - a
             // dead-reckoned velocity still integrates the real acceleration -
-            // but with no velocity aiding at all there is nothing to compare.
-            if (ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE)) {
-                return time_confirmed;
-            }
+            // so this holds in constant position mode too.
             const float elapsed_s = elapsed_ms * 0.001f;
             const float vel_change_ms = pos_control->get_vel_estimate_U_ms() - drop_confirm_start_vel_u_ms;
             const bool fall_confirmed = vel_change_ms <= -THROW_DROP_CONFIRM_ACCEL_FRAC * GRAVITY_MSS * elapsed_s;
