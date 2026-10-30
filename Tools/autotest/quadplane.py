@@ -3584,6 +3584,17 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.test_takeoff_check_mode("AUTO", force_disarm=True)
         self.context_pop()
 
+        self.start_subtest("Ensure blocked with in-range RPM and a high ESC error rate")
+        self.context_push()
+        self.set_parameters({
+            'SIM_ESC_ARM_RPM': 1000,
+            'SIM_ESC_ERR_RATE': 5,
+            'Q_TKOFF_RPM_MIN': 900,
+            'Q_TKOFF_RPM_MAX': 1100,
+        })
+        self.test_takeoff_check_mode("AUTO", force_disarm=True)
+        self.context_pop()
+
     def PlaneWindFailsafe(self):
         '''test the plane-wind-failsafe.lua example script'''
         self.install_example_script_context("plane-wind-failsafe.lua")
