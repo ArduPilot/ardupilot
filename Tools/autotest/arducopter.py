@@ -18604,20 +18604,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # THROW_SRC_INI moves the EKF to a set with no horizontal aiding for the
         # throw.  Completion has to put it on the set to fly on even when the
         # next mode is throw itself, and a next mode that needs a position can
-        # only take over once the EKF has taken that set up.
+        # only take over once the EKF has taken that set up.  If no position
+        # comes the handoff is refused after a wait, leaving the vehicle in
+        # throw as a refused handoff always has.
         self.set_parameters({
             "SIM_SHOVE_Z": -10.5,
             "THROW_TYPE": 1,           # drop
             "THROW_SRC_INI": 2,
             "EK3_SRC2_POSXY": 0,
             "EK3_SRC2_VELXY": 0,
+            # SRC3 aids as SRC1 does, so a switch to it is told apart from a restore
+            "EK3_SRC3_POSXY": 3,
+            "EK3_SRC3_VELXY": 3,
+            "EK3_SRC3_POSZ": 1,
+            "EK3_SRC3_VELZ": 3,
+            "EK3_SRC3_YAW": 1,
             "MOT_SPOOL_TIME": 0.5,
         })
         self.context_collect('STATUSTEXT')
         for (nextmode, srcset, want_text, want_mode) in [
-                (5, 0, "Throw: restored EKF Source Set 1", 'LOITER'),
-                (5, 1, "EKF Source Set 1", 'LOITER'),
-                (18, 0, "Throw: restored EKF Source Set 1", 'THROW'),
+                (5, 0, "^Throw: restored EKF Source Set 1$", 'LOITER'),
+                (5, 3, "^EKF Source Set 3$", 'LOITER'),
+                (18, 0, "^Throw: restored EKF Source Set 1$", 'THROW'),
+                (5, 2, "^EKF Source Set 2$", 'THROW'),   # no aiding: no position comes
         ]:
             self.start_subtest("THROW_NEXTMODE=%u THROW_SRC_SET=%u" % (nextmode, srcset))
             self.set_parameters({
@@ -18636,9 +18645,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_altitude(30, 1000, timeout=60, relative=True)
             self.wait_statustext("Throw detected", check_context=True, timeout=30)
             self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
-            self.wait_statustext(want_text, check_context=True, timeout=10)
-            self.wait_mode(want_mode, timeout=30)
-            if want_mode == 'THROW':
+            self.wait_statustext(want_text, check_context=True, regex=True, timeout=10)
+            if nextmode == 5:
+                self.wait_statustext("Throw: Loiter waiting for position", check_context=True, timeout=10)
+            if want_mode == 'THROW' and nextmode == 5:
+                self.wait_statustext("Mode change to Loiter failed: requires position", check_context=True, timeout=10)
+                self.assert_mode('THROW')
+            else:
+                self.wait_mode(want_mode, timeout=30)
+            if nextmode == 18:
                 # the restored set has to bring horizontal aiding back with it
                 self.change_mode('LOITER', timeout=30)
             self.change_mode('LAND')
