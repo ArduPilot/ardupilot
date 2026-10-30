@@ -18515,6 +18515,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.zero_throttle()
         self.reboot_sitl()
 
+    def ThrowDropEKFFailsafePosHold(self):
+        '''An EKF failsafe while a drop holds position must be acted on'''
+        # Throw PosHold runs horizontal position control once it has a
+        # position, so losing that position there is as serious as in LOITER.
+        self.set_parameters({
+            "SIM_SHOVE_Z": -10.5,
+            "THROW_TYPE": 1,           # drop
+            "THROW_NEXTMODE": 18,      # stay in throw, holding position
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved, good position", check_context=True, timeout=30)
+        self.wait_statustext("Throw holding position", check_context=True, timeout=10)
+
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_statustext("EKF Failsafe: changed to Land Mode", check_context=True, timeout=60)
+        self.wait_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.reboot_sitl()
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -20188,6 +20218,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowUpwardNoPositionNextMode,
             self.ThrowDropArrestedShort,
             self.ThrowDropHeldSpinNoPosition,
+            self.ThrowDropEKFFailsafePosHold,
         ])
         return ret
 
