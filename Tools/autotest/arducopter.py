@@ -2160,6 +2160,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Spurious takeoff blocked message: %s" % m.text)
         self.context_pop()
 
+        self.start_subtest("Test blocking with in-range RPM and a high ESC error rate")
+        self.context_push()
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            'SIM_ESC_TELEM': 1,
+            'SIM_ESC_ARM_RPM': 1000,
+            'SIM_ESC_ERR_RATE': 5,
+            'TKOFF_RPM_MIN': 900,
+            'TKOFF_RPM_MAX': 1100,
+        })
+        self.test_takeoff_check_mode("STABILIZE")
+        self.context_pop()
+
         self.set_parameters({
             "AHRS_EKF_TYPE": 10,
             'SIM_ESC_TELEM': 1,
@@ -2190,6 +2203,66 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.test_takeoff_check_mode("GUIDED", True)
         self.test_takeoff_check_mode("POSHOLD")
         # self.test_takeoff_check_mode("SPORT")
+
+    def run_motor_test_collecting_error_rates(self, start_motor, motor_count):
+        '''run a motor test and return the motors named in its error rate warnings, in order'''
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+            p1=start_motor,
+            p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM,
+            p3=1300, # pwm-to-output
+            p4=2, # timeout in seconds
+            p5=motor_count,
+            p6=0, # compass learning
+        )
+        self.wait_statustext("finished motor test", check_context=True, timeout=60)
+        self.wait_disarmed()
+        motors = []
+        for m in self.context_collection('STATUSTEXT'):
+            match = re.match(r"Motor Test: motor (\d+) errors [0-9.]+% at", m.text)
+            if match is not None and (len(motors) == 0 or motors[-1] != int(match.group(1))):
+                motors.append(int(match.group(1)))
+        self.context_pop()
+        # wait_disarmed is not sufficient here, see _MotorTest
+        self.delay_sim_time(10, reason="motors to fully disarm")
+        return motors
+
+    def MotorTestErrorRate(self):
+        '''Test the motor test warns about a high ESC error rate on the motor it spins'''
+        self.set_parameters({
+            'SIM_ESC_TELEM': 1,
+            'SIM_ESC_ERR_RATE': 5,
+        })
+        # on the default "+" frame motor test order 1 to 4 spins motors 3, 1, 4 and 2
+        motors = self.run_motor_test_collecting_error_rates(1, 4)
+        if motors != [3, 1, 4, 2]:
+            raise NotAchievedException("Expected error rate warnings for motors [3, 1, 4, 2], got %s" % str(motors))
+
+        self.start_subtest("No warning below a 1% error rate")
+        self.set_parameter('SIM_ESC_ERR_RATE', 0.5)
+        motors = self.run_motor_test_collecting_error_rates(1, 4)
+        if len(motors) != 0:
+            raise NotAchievedException("Unexpected error rate warnings for motors %s" % str(motors))
+
+        self.start_subtest("Warn about every output of a motor with more than one")
+        # scoped so that context_pop() reboots and motor 1 returns to SERVO1
+        self.context_push()
+        self.set_parameters({
+            'SIM_ESC_ERR_RATE': 5,
+            'SERVO5_FUNCTION': 33, # motor 1 on outputs 5 and 6
+            'SERVO6_FUNCTION': 33,
+            'SIM_VIB_MOT_MASK': (1 << 4) | (1 << 5), # simulate ESC telemetry for them
+        })
+        self.reboot_sitl()
+        # simulated ESC telemetry only starts 6 seconds after boot
+        self.wait_ready_to_arm()
+        # on the "+" frame motor 1 is test order 2
+        motors = self.run_motor_test_collecting_error_rates(2, 1)
+        self.context_pop()
+        if sorted(set(motors)) != [5, 6]:
+            raise NotAchievedException("Expected error rate warnings for motors 5 and 6, got %s" % str(motors))
 
     def assert_dataflash_message_field_level_at(self,
                                                 mtype,
@@ -19660,6 +19733,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
             self.SetpointGlobalPos,
             self.TakeoffCheck,
+            self.MotorTestErrorRate,
             self.MaxAltFenceAvoid,
             self.GPSGlitchLoiter2,
             self.SuperSimpleCircle,
