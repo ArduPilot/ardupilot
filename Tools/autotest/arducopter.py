@@ -18753,6 +18753,45 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_collect('STATUSTEXT')
         self.change_mode('THROW')
         self.wait_statustext("^Throw: EKF Source Set 2$", check_context=True, regex=True)
+
+        self.start_subtest("a throw disarmed before completion leaves nothing for the next")
+        # disarmed in the air with the THROW_SRC_INI set still in use; the
+        # absolute heading gives the aborted throw a recovery target to leave
+        self.set_parameters({
+            "THROW_YAW_TYPE": 3,
+            "THROW_YAW_DEG": 90,
+        })
+        self.arm_vehicle()
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+        self.wait_statustext("SIM Hit ground", check_context=True, timeout=30)
+        self.set_parameter("THROW_YAW_TYPE", 0)
+        self.arm_vehicle()
+        self.delay_sim_time(1, "a few THRO records while detecting")
+        self.disarm_vehicle()
+        # the detecting stage after the last arm in the log must have no target
+        dfreader = self.dfreader_for_current_onboard_log()
+        detecting = []
+        while True:
+            m = dfreader.recv_match(type=['ARM', 'THRO'])
+            if m is None:
+                break
+            if m.get_type() == 'ARM' and m.ArmState == 1:
+                detecting = []
+            elif m.get_type() == 'THRO' and m.Stage == 1:
+                detecting.append(m)
+        if len(detecting) == 0:
+            raise NotAchievedException("no detecting stage logged after the re-arm")
+        if any(m.YSrc != 0 or abs(m.TYaw) > 0.1 for m in detecting):
+            raise NotAchievedException("re-armed throw kept the aborted throw's yaw target")
+
+        self.start_subtest("first throw, completing in throw")
+        self.context_clear_collection('STATUSTEXT')
         self.arm_vehicle()
         try:
             self.set_parameter("SIM_SHOVE_TIME", 500)
