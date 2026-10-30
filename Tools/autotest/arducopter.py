@@ -22501,19 +22501,28 @@ RTL_ALT_M 111
 
     def wait_osd_ekf_lane(self, msp, row, want, flashing=False, timeout=30):
         '''wait for an OSD EKF lane item to show the wanted text, optionally
-        checking the text also disappears between screens as it flashes'''
+        checking the text then goes and comes back as it flashes'''
         tstart = self.get_sim_time()
+        texts = []
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
-                raise NotAchievedException("OSD row %u never showed %s" % (row, want))
-            texts = [s[row] for s in self.osd_displayport_rows(msp, [row], 2)]
-            shown = [want in t for t in texts]
+                raise NotAchievedException("OSD row %u never showed %s%s" %
+                                           (row, want, " flashing" if flashing else ""))
+            texts.extend(s[row] for s in self.osd_displayport_rows(msp, [row], 2))
             self.progress("OSD row %u: %s" % (row, texts[-1]))
+            shown = [want in t for t in texts]
             if not any(shown):
+                texts = []
                 continue
-            if flashing and all(shown):
-                continue
-            return texts
+            # screens from before the text first showed are not a flash, and
+            # a flash may run on into the next sample
+            first = shown.index(True)
+            texts = texts[first:]
+            shown = shown[first:]
+            if not flashing:
+                return texts
+            if False in shown and True in shown[shown.index(False):]:
+                return texts
 
     def OSDEKFLanes(self):
         '''OSD EKF lane items show each lane and the state of its optical flow'''
