@@ -18545,6 +18545,52 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed(timeout=120)
         self.reboot_sitl()
 
+    def ThrowSrcSetHandoff(self):
+        '''Completion leaves the EKF on the set to fly on, whether or not the next mode takes over'''
+        # THROW_SRC_INI moves the EKF to a set with no horizontal aiding for the
+        # throw.  Completion has to put it on the set to fly on even when the
+        # next mode is throw itself, and a next mode that needs a position can
+        # only take over once the EKF has taken that set up.
+        self.set_parameters({
+            "SIM_SHOVE_Z": -10.5,
+            "THROW_TYPE": 1,           # drop
+            "THROW_SRC_INI": 2,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 0,
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.context_collect('STATUSTEXT')
+        for (nextmode, srcset, want_text, want_mode) in [
+                (5, 0, "Throw: restored EKF Source Set 1", 'LOITER'),
+                (5, 1, "EKF Source Set 1", 'LOITER'),
+                (18, 0, "Throw: restored EKF Source Set 1", 'THROW'),
+        ]:
+            self.start_subtest("THROW_NEXTMODE=%u THROW_SRC_SET=%u" % (nextmode, srcset))
+            self.set_parameters({
+                "THROW_NEXTMODE": nextmode,
+                "THROW_SRC_SET": srcset,
+            })
+            self.wait_ready_to_arm()   # EKF healthy on SRC1 before THROW moves it
+            self.change_mode('THROW')
+            self.arm_vehicle()
+            self.context_clear_collection('STATUSTEXT')
+            try:
+                self.set_parameter("SIM_SHOVE_TIME", 20000)
+            except ValueError:
+                # the shove resets this to zero
+                pass
+            self.wait_altitude(30, 1000, timeout=60, relative=True)
+            self.wait_statustext("Throw detected", check_context=True, timeout=30)
+            self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+            self.wait_statustext(want_text, check_context=True, timeout=10)
+            self.wait_mode(want_mode, timeout=30)
+            if want_mode == 'THROW':
+                # the restored set has to bring horizontal aiding back with it
+                self.change_mode('LOITER', timeout=30)
+            self.change_mode('LAND')
+            self.wait_disarmed(timeout=120)
+            self.reboot_sitl()
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -20219,6 +20265,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowDropArrestedShort,
             self.ThrowDropHeldSpinNoPosition,
             self.ThrowDropEKFFailsafePosHold,
+            self.ThrowSrcSetHandoff,
         ])
         return ret
 
