@@ -230,6 +230,9 @@ void ModeThrow::run()
         stage = Throw_Detecting;
         drop_confirm_start_ms = 0;
         free_fall_start_ms = 0;
+        // the direction integrator stopped at detection, so its attitude is
+        // stale; it starts again from the next held-still sample
+        throw_dir_reset();
         AP_Notify::flags.waiting_for_throw = true;
 
     } else if (stage == Throw_Wait_Throttle_Unlimited &&
