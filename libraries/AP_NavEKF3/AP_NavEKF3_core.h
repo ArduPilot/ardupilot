@@ -1529,6 +1529,7 @@ private:
     Vector3F gyro_prev;                 // gyro vector from previous time step (rad/s)
     Vector3F accel_prev;                // accelerometer vector from previous time step (m/s/s)
     bool onGroundNotMoving;             // true when on the ground and not moving
+    bool velDCheckedAtRest;             // true once the vertical velocity has been checked since the vehicle came to rest
     uint32_t lastMoveCheckLogTime_ms;   // last time the movement check data was logged (msec)
 
 	// variables used to inhibit accel bias learning

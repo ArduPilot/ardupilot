@@ -647,6 +647,25 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
 
+    // A disarmed vehicle the IMU reads as still is taken to have no vertical velocity, so one
+    // the EKF reports with no measured vertical velocity agreeing, as after a drop whose impact
+    // the IMU clipped, is reset away with the height when the vehicle comes to rest. Only then:
+    // a velocity that builds while it stays still comes from an accel bias, which repeated
+    // resets would stop the EKF learning.
+    if (!onGroundNotMoving) {
+        velDCheckedAtRest = false;
+    } else if (fuseHgtData && !velDCheckedAtRest) {
+        velDCheckedAtRest = true;
+        if (!measuredVertVelAgrees() && (fabsF(stateStruct.velocity.z) > 0.5f)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u vertical velocity reset at rest", (unsigned)imu_index);
+            ResetHeight();
+            fuseHgtData = false;
+            // the vertical state now agrees with a still vehicle, so the disagreement filtered
+            // before the reset no longer applies
+            hgtInnovFiltState = 0.0f;
+        }
+    }
+
     // If we are operating without any aiding, fuse in constant position of constant
     // velocity measurements to constrain tilt drift. This assumes a non-manoeuvring
     // vehicle. Do this to coincide with the height fusion.
