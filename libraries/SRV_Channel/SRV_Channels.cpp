@@ -51,6 +51,9 @@ uint32_t SRV_Channels::invalid_mask;
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
 bool SRV_Channels::emergency_stop;
+#ifndef HAL_BUILD_AP_PERIPH
+bool SRV_Channels::failsafe_active;
+#endif
 Bitmask<SRV_Channel::k_nr_aux_servo_functions> SRV_Channels::function_mask;
 SRV_Channels::srv_function SRV_Channels::functions[SRV_Channel::k_nr_aux_servo_functions];
 SRV_Channels::slew_list *SRV_Channels::_slew;
