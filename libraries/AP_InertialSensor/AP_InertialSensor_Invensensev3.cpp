@@ -1037,6 +1037,12 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
         sampling_rate_hz = 6400;
     }
 
+#ifdef ICM45686_CLKIN
+    // AN-000364 erratum 2.5: 6.4kHz ODR with CLKIN can corrupt sensor data,
+    // so run from the internal clock when 6.4kHz is selected
+    const bool use_clkin = sampling_rate_hz <= 3200;
+#endif
+
     // Disable FIFO first. ICM-56686 FIFO_DEPTH 000111 is 2K; 000000 is reserved.
     register_write(reg456(INV3REG_456_FIFO_CONFIG3), 0x00);
     register_write(reg456(INV3REG_456_FIFO_CONFIG0),
@@ -1055,11 +1061,35 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     // 45686: ACCEL_LP_CLK_SEL is SMC_CONTROL_0 bit4.
     // 56686: that bit is reserved; selector is PWR_MGMT0 bit5 (deferred —
     // no in-tree 56686+CLKIN board). Do not poke the reserved SMC bit.
-    if (inv3_type == Invensensev3_Type::ICM45686) {
+    if (use_clkin && inv3_type == Invensensev3_Type::ICM45686) {
         reg |= (0x1<<4U); // ACCEL_LP_CLK_SEL
     }
 #endif
     register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58, reg | 0x01);
+
+#ifdef ICM45686_CLKIN
+    // RTC_MODE must only be set once ACCEL_LP_CLK_SEL is 1 (AN-000478 7.3)
+    if (use_clkin) {
+        // override INT2 pad as CLKIN, AUX1 disabled
+        register_write(reg456(INV3REG_456_IOC_PAD_SCENARIO_OVRD), (0x1 << 2)| 0x2 , true);
+
+        // IOC_PAD_SCENARIO_AUX_OVRD is at 0x34 on 56686 (+4 of 456xy 0x30).
+        // Skip on 56686: AUX1 already forced off via PWR_MGMT_AUX1 = 0x00.
+        if (inv3_type == Invensensev3_Type::ICM45686) {
+            register_write(INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD, (0x1<<1U), true);
+        }
+
+        // enable RTC MODE (bit5). On 56686 this register is OTP_HEATER_RTC_CONFIG
+        // with live bits in [4:0] -- RMW so those are preserved. 45686: keep the
+        // blind 0x20 write (unchanged behaviour).
+        if (inv3_type == Invensensev3_Type::ICM56686) {
+            const uint8_t rtc = register_read(reg456(INV3REG_456_RTC_CONFIG));
+            register_write(reg456(INV3REG_456_RTC_CONFIG), rtc | (0x1<<5U));
+        } else {
+            register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U));
+        }
+    }
+#endif
 
     if (inv3_type == Invensensev3_Type::ICM56686) {
         // DS-000563 v1.1 §23.36 FIFO_CONFIG4 @ 0x26: bit0 FIFO_TMST_FSYNC_EN, bit1 FIFO_COMP_EN.
@@ -1331,28 +1361,6 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
             register_write(INV3REG_456_PWR_MGMT0, 0x0f);
         }
 
-#ifdef ICM45686_CLKIN
-        /*************************CLKIN setting*************************/
-        // override INT2 pad as CLKIN, AUX1 disabled
-        register_write(reg456(INV3REG_456_IOC_PAD_SCENARIO_OVRD), (0x1 << 2)| 0x2 , true);
-
-        // IOC_PAD_SCENARIO_AUX_OVRD is at 0x34 on 56686 (+4 of 456xy 0x30).
-        // Skip on 56686: AUX1 already forced off via PWR_MGMT_AUX1 = 0x00.
-        if (inv3_type == Invensensev3_Type::ICM45686) {
-            register_write(INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD, (0x1<<1U), true);
-        }
-
-        // enable RTC MODE (bit5). On 56686 this register is OTP_HEATER_RTC_CONFIG
-        // with live bits in [4:0] -- RMW so those are preserved. 45686: keep the
-        // blind 0x20 write (unchanged behaviour).
-        if (inv3_type == Invensensev3_Type::ICM56686) {
-            const uint8_t rtc = register_read(reg456(INV3REG_456_RTC_CONFIG));
-            register_write(reg456(INV3REG_456_RTC_CONFIG), rtc | (0x1<<5U));
-        } else {
-            register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U));
-        }
-#endif
-        /*************************CLKIN setting*************************/
         if (inv3_type == Invensensev3_Type::ICM45686) {
             // disable STC
             uint8_t reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x68);  // I3C_STC_MODE b2
