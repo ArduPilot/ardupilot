@@ -517,6 +517,8 @@ private:
     uint32_t _transition_count;
 #endif
     uint16_t _requires_save;
+    // settings whose selected parameter has changed, so their range is reset
+    uint16_t _requires_new_param_save;
 };
 
 #endif // OSD_PARAM_ENABLED

@@ -328,10 +328,14 @@ bool AP_OSD_ParamSetting::set_by_name(const char* name, uint8_t config_type, flo
     _type.set_and_save_ifchanged(config_type);
 
     if (config_type == uint8_t(Type::NONE) && !is_zero(pincr)) {
-        // ranges
-        _param_min.set_and_save_ifchanged(pmin);
-        _param_max.set_and_save_ifchanged(pmax);
-        _param_incr.set_and_save_ifchanged(pincr);
+        // ranges, always stored so they count as configured and aren't
+        // replaced by guessed ranges, even if they equal the defaults
+        _param_min.set(pmin);
+        _param_min.save(true);
+        _param_max.set(pmax);
+        _param_max.save(true);
+        _param_incr.set(pincr);
+        _param_incr.save(true);
     } else {
         guess_ranges(true);
     }
