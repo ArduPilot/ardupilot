@@ -32,6 +32,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "RTCM3_Parser.h"
 #include <stdio.h>
+#include <AP_Common/time.h>
 
 #ifndef UBLOX_SPEED_CHANGE
     #define UBLOX_SPEED_CHANGE 0
@@ -1586,6 +1587,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         _check_new_itow(_buffer.solution.itow);
         if (havePvtMsg) {
             state.time_week = _buffer.solution.week;
+            _have_receiver_week = true;
             break;
         }
         if (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) {
@@ -1612,6 +1614,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             state.last_gps_time_ms = AP_HAL::millis();
             state.time_week_ms    = _buffer.solution.itow;
             state.time_week       = _buffer.solution.week;
+            _have_receiver_week = true;
         }
 #if UBLOX_FAKE_3DLOCK
         next_fix = state.status;
@@ -1763,6 +1766,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         
         // time
         state.time_week_ms    = _buffer.pvt.itow;
+        if (!_have_receiver_week) {
+            _set_week_from_pvt_date();
+        }
 #if UBLOX_FAKE_3DLOCK
         state.location.lng = 1491652300L;
         state.location.lat = -353632610L;
@@ -1786,6 +1792,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             state.time_week_ms = _buffer.timegps.itow;
             state.time_week = _buffer.timegps.week;
             state.last_gps_time_ms = AP_HAL::millis();
+            _have_receiver_week = true;
         }
         break;
     case MSG_VELNED:
@@ -2295,6 +2302,61 @@ void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
 void AP_GPS_UBLOX::_check_new_itow(uint32_t itow)
 {
     check_new_itow(itow, _payload_length + sizeof(ubx_header) + 2);
+}
+
+/*
+  derive the GPS week from the UTC date and time in a NAV-PVT
+  message. The receiver's iTOW is used as the reference and the result
+  is rounded to the nearest week, so an error of a few seconds in the
+  UTC time or leap second count can't give the wrong week
+ */
+bool AP_GPS_UBLOX::_week_from_pvt_date(const struct ubx_nav_pvt &pvt, uint16_t &week)
+{
+    const uint8_t date_time_valid = UBX_PVT_VALID_DATE | UBX_PVT_VALID_TIME;
+    if ((pvt.valid & date_time_valid) != date_time_valid ||
+        pvt.year < 2020 || pvt.year >= 2100 ||
+        pvt.month < 1 || pvt.month > 12 ||
+        pvt.day < 1 || pvt.day > 31) {
+        return false;
+    }
+    struct tm tm {};
+    tm.tm_year = pvt.year - 1900;
+    tm.tm_mon  = pvt.month - 1;
+    tm.tm_mday = pvt.day;
+    tm.tm_hour = pvt.hour;
+    tm.tm_min  = pvt.min;
+    tm.tm_sec  = pvt.sec;
+    const uint32_t sec_per_week = AP_SEC_PER_WEEK;
+    const uint32_t gps_sec = uint32_t(ap_mktime(&tm)) - uint32_t(UNIX_OFFSET_MSEC / AP_MSEC_PER_SEC);
+    const uint32_t week_start_sec = gps_sec - pvt.itow / 1000U;
+    week = (week_start_sec + sec_per_week / 2U) / sec_per_week;
+    return true;
+}
+
+/*
+  some u-blox compatible receivers (eg. Unicore UM626N based modules)
+  only send NAV-PVT and never send NAV-SOL or NAV-TIMEGPS, so without
+  this we would never get the GPS week and never have a valid GPS
+  time. This is called for each NAV-PVT until the receiver gives us the
+  week itself, so it also handles the week rollover.
+ */
+void AP_GPS_UBLOX::_set_week_from_pvt_date(void)
+{
+    uint16_t week;
+    if (!_week_from_pvt_date(_buffer.pvt, week)) {
+        return;
+    }
+    state.time_week = week;
+
+    // u-blox receivers send the week shortly after the first NAV-PVT,
+    // so only tell the user if we are still relying on the date later on
+    const uint32_t now_ms = AP_HAL::millis();
+    if (_pvt_week_start_ms == 0) {
+        _pvt_week_start_ms = now_ms;
+    } else if (!_pvt_week_announced && now_ms - _pvt_week_start_ms > 5000) {
+        _pvt_week_announced = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: week from NAV-PVT date", unsigned(state.instance + 1));
+    }
 }
 
 // support for retrieving RTCMv3 data from a moving baseline base

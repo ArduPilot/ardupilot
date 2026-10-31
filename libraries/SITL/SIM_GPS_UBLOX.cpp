@@ -5,6 +5,7 @@
 #include "SIM_GPS_UBLOX.h"
 
 #include <SITL/SITL.h>
+#include <time.h>
 
 using namespace SITL;
 
@@ -286,13 +287,19 @@ void GPS_UBlox::publish(const GPS_Data *d)
     dop.eDOP = 65535;
 
     pvt.itow = gps_tow.ms;
-    pvt.year = 0;
-    pvt.month = 0;
-    pvt.day = 0;
-    pvt.hour = 0;
-    pvt.min = 0;
-    pvt.sec = 0;
-    pvt.valid = 0; // invalid utc date
+    // UTC date and time matching the GPS time of week
+    const uint32_t gps_epoch_unix = 315964800;  // 1980-01-06 00:00:00 UTC
+    const uint32_t leap_seconds = 18;           // as used by gps_time()
+    const time_t utc_sec = gps_epoch_unix + time_t(gps_tow.week) * AP_SEC_PER_WEEK + gps_tow.ms / 1000U - leap_seconds;
+    struct tm utc {};
+    gmtime_r(&utc_sec, &utc);
+    pvt.year = utc.tm_year + 1900;
+    pvt.month = utc.tm_mon + 1;
+    pvt.day = utc.tm_mday;
+    pvt.hour = utc.tm_hour;
+    pvt.min = utc.tm_min;
+    pvt.sec = utc.tm_sec;
+    pvt.valid = d->have_lock ? 0x07 : 0x00; // validDate | validTime | fullyResolved
     pvt.t_acc = 0;
     pvt.nano = 0;
     pvt.fix_type = sol.fix_type;
@@ -334,22 +341,28 @@ void GPS_UBlox::publish(const GPS_Data *d)
         break;
     }
 
-    send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
-    send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
-    send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
     const bool is_f9p = (_sitl->gps[instance].options & static_cast<int32_t>(SITL::SIM::GPSOptions::UBX_IS_F9P)) != 0;
+    // some u-blox compatible receivers only send NAV-PVT, so never
+    // give us the week number
+    const bool pvt_only = (_sitl->gps[instance].options & static_cast<int32_t>(SITL::SIM::GPSOptions::UBX_PVT_ONLY)) != 0;
 
-    if (is_f9p) {
-        const uint32_t now_ms = AP_HAL::millis();
-        if ((int32_t)(now_ms - _next_timegps_send_ms) >= 0) {
-            _next_timegps_send_ms = now_ms + 1000;
-            send_ubx(MSG_TIMEGPS, (uint8_t*)&timegps, sizeof(timegps));
+    if (!pvt_only) {
+        send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
+        send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
+        send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
+
+        if (is_f9p) {
+            const uint32_t now_ms = AP_HAL::millis();
+            if ((int32_t)(now_ms - _next_timegps_send_ms) >= 0) {
+                _next_timegps_send_ms = now_ms + 1000;
+                send_ubx(MSG_TIMEGPS, (uint8_t*)&timegps, sizeof(timegps));
+            }
+        } else {
+            // F9P and later use TIMEGPS to set week number, older u-blox use SOL
+            send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
         }
-    } else {
-        // F9P and later use TIMEGPS to set week number, older u-blox use SOL
-        send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
+        send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop));
     }
-    send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop));
     send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt));
     if (_sitl->gps[instance].hdg_enabled > SITL::SIM::GPS_HEADING_NONE) {
         send_ubx(MSG_RELPOSNED,    (uint8_t*)&relposned, sizeof(relposned));

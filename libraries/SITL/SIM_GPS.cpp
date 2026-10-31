@@ -150,7 +150,7 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: GPS Options
     // @Description: GPS Options bitmask
-    // @Bitmask: 0:UBlox GPS is F9P
+    // @Bitmask: 0:UBlox GPS is F9P, 1:UBlox GPS only sends NAV-PVT
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
 
