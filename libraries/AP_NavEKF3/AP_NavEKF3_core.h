@@ -1627,7 +1627,7 @@ private:
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 
-    // true when on the ground with a height error, unless aided with a measured vertical velocity agreeing
+    // true when on the ground and not falling with a height error, unless aided with a measured vertical velocity agreeing
     bool onGroundHgtError(void) const;
 
     // true when a recently fused measured velocity agrees with the state in the vertical

@@ -39,13 +39,16 @@ bool NavEKF3_core::healthy(void) const
 
 /*
   return true when on the ground with more than 1 m of filtered height
-  innovation. Aided modes are excluded while a measured vertical velocity
-  agrees with the state: the vertical velocity is then known good, and baro
+  innovation. onGround only means disarmed, so a vehicle disarmed in the air
+  is excluded while it falls freely, with over 0.5 g of filtered kinematic
+  acceleration down, and the re-arm that could recover it is not refused.
+  Aided modes are excluded while a measured vertical velocity agrees with
+  the state: the vertical velocity is then known good, and baro
   disturbances on the ground against it are a source of false positives.
 */
 bool NavEKF3_core::onGroundHgtError(void) const
 {
-    if (!onGround) {
+    if (!onGround || (velDotNEDfilt.z > 0.5f * GRAVITY_MSS)) {
         return false;
     }
     return ((PV_AidingMode == AID_NONE) || !measuredVertVelAgrees()) && (fabsF(hgtInnovFiltState) > 1.0f);
