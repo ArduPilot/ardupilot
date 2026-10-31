@@ -361,6 +361,33 @@ void AP_RCProtocol::check_added_uart(void)
     if (!added.uart) {
         return;
     }
+    if (added.uart->is_write_locked()) {
+        // another user (e.g. SERIAL_PASS serial passthrough) has the
+        // port. When it takes it, undo the parity, stop bits and inversion
+        // of a search config we may have left it in, then leave it alone:
+        // reconfiguring it again would restart the UART under them and
+        // lose the bytes in flight. Only what the config changed is
+        // undone, so the UART is not restarted otherwise, and passthrough
+        // then sets the parity the USB host asks for. Our config is
+        // re-applied once the port is released
+        if (!added.locked) {
+            added.locked = true;
+            const SerialConfig &applied = serial_configs[added.applied_config];
+            if (applied.parity != 0) {
+                added.uart->configure_parity(0);
+            }
+            if (applied.stop_bits != 1) {
+                added.uart->set_stop_bits(1);
+            }
+            const uint16_t options = added.uart->get_options();
+            if (options & AP_HAL::UARTDriver::OPTION_RXINV) {
+                added.uart->set_options(options & ~AP_HAL::UARTDriver::OPTION_RXINV);
+            }
+        }
+        added.opened = false;
+        return;
+    }
+    added.locked = false;
     uint32_t now = AP_HAL::millis();
     bool searching = should_search(now);
     if (!searching && !_detected_with_bytes) {
@@ -370,6 +397,7 @@ void AP_RCProtocol::check_added_uart(void)
     if (!added.opened) {
         added.opened = true;
         added.last_config_change_ms = AP_HAL::millis();
+        added.applied_config = added.config_num;
         serial_configs[added.config_num].apply_to_uart(added.uart);
     }
 #if AP_RC_CHANNEL_ENABLED

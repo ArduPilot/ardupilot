@@ -296,8 +296,10 @@ void AP_RCProtocol_CRSF::skip_to_next_frame(uint32_t timestamp_us)
 
 void AP_RCProtocol_CRSF::update(void)
 {
-    // if we are in standalone mode, process data from the uart
-    if (_uart) {
+    // if we are in standalone mode, process data from the uart. Leave it
+    // alone while another user (e.g. serial passthrough) has it locked, as
+    // restarting it would lose their bytes in flight
+    if (_uart && !_uart->is_write_locked()) {
         uint32_t now = AP_HAL::millis();
         // for some reason it's necessary to keep trying to start the uart until we get data
         if (now - _last_uart_start_time_ms > 1000U && _last_frame_time_us == 0) {
