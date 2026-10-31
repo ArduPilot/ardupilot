@@ -383,6 +383,7 @@ void AP_Mount_Backend::clear_roi_target()
     }
 
     clear_roi_pending = true;
+    roi_clear_count++;
 }
 
 #if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
@@ -1160,6 +1161,7 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
             yaw_lock_state = false;  // not locked onto the scenery
             break;
         case MountTargetType::LOCATION:
+        case MountTargetType::SURVEY:
             yaw_lock_state = true;
             break;        
         }
@@ -1332,6 +1334,11 @@ void AP_Mount_Backend::_update_mnt_target()
 
 void AP_Mount_Backend::send_target_to_gimbal()
 {
+    // a gimbal pointing itself gets nothing, including a cleared ROI
+    if (mnt_target.target_type == MountTargetType::SURVEY) {
+        return;
+    }
+
     // process any pending clear-roi-target 
     // it is assumed that we have already zeroed _roi_target
     if (clear_roi_pending && natively_supports(MountTargetType::LOCATION)) {
@@ -1356,6 +1363,8 @@ void AP_Mount_Backend::send_target_to_gimbal()
             return;
         case MountTargetType::LOCATION:
             send_target_location(_roi_target);
+            return;
+        case MountTargetType::SURVEY:
             return;
         }
         return;  // should not reach this as all cases return
@@ -1405,6 +1414,9 @@ void AP_Mount_Backend::send_target_to_gimbal()
             return;
         }
         break;
+    case MountTargetType::SURVEY:
+        // the gimbal is pointing itself
+        return;
     }
 
     send_warning_to_GCS("Failed to convert mount target to command gimbal");

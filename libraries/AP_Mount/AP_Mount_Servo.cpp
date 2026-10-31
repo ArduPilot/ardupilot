@@ -111,6 +111,7 @@ void AP_Mount_Servo::update_angle_outputs(const MountAngleTarget& angle_rad)
     case MountTargetType::ANGLE:
     case MountTargetType::RATE:
     case MountTargetType::LOCATION:
+    case MountTargetType::SURVEY:
         break;
     }
 
