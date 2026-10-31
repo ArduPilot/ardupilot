@@ -1,0 +1,7 @@
+# Request
+uint8 camera_id          # 0 = all cameras, 1,2,3... = specific camera
+---
+# Response
+bool success
+string message
+uint16 total_captured    # Total images captured
