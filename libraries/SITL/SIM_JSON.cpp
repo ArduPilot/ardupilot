@@ -31,6 +31,14 @@
 #include <AP_HAL/utility/replace.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <stddef.h>
+#include <time.h>
+#include <unistd.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#include <AP_HAL_SITL/HAL_SITL_Class.h>
+extern const HAL_SITL& hal_sitl;
+#endif
 
 #define UDP_TIMEOUT_MS 100
 
@@ -99,6 +107,98 @@ void JSON::set_interface_ports(const char* address, const int port_in, const int
     printf("JSON control interface set to %s:%u\n", target_ip, control_port);
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+static uint64_t ride_wall_micros(void)
+{
+    struct timespec ts {};
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL;
+}
+
+/*
+  the ride-along exchange runs over the cluster's shared memory segment
+  instead of the UDP sockets when this instance was started with
+  --cluster (the master must be too)
+*/
+bool JSON::ride_shmem_active(void) const
+{
+    return hal_sitl.get_sitl_state()->_shared_mem.is_initialised();
+}
+
+// publish our servo packet in our own slot's ride-along channel
+void JSON::ride_shmem_send(const void *pkt, uint32_t len)
+{
+    auto &shm = hal_sitl.get_sitl_state()->_shared_mem;
+    static AP_SITL_RideAlongChannel ch;
+    ch.magic = AP_SITL_RIDE_SERVO_MAGIC;
+    ch.len = MIN(len, (uint32_t)sizeof(ch.data));
+    memcpy(ch.data, pkt, ch.len);
+    ch.seq = ++ride_out_seq;
+    shm.write_payload(&ch, offsetof(AP_SITL_RideAlongChannel, data) + ch.len,
+                      AP_SITL_SHMEM_RIDE_OFFSET);
+}
+
+/*
+  poll the master's slot for a fresh fdm JSON line; mirrors
+  sock.recv(buf, size, timeout_ms) semantics, returning 0 on timeout
+*/
+ssize_t JSON::ride_shmem_recv(uint8_t *buf, uint32_t size, uint32_t timeout_ms)
+{
+    auto &shm = hal_sitl.get_sitl_state()->_shared_mem;
+    const uint64_t deadline_us = ride_wall_micros() + timeout_ms * 1000ULL;
+    uint32_t spins = 0;
+    while (true) {
+        if (ride_master_slot < 0) {
+            // discover which slot carries the fdm channel (usually the
+            // master's instance 0, but any slot with the magic works;
+            // give each ride-along group its own --cluster id)
+            for (uint8_t i = 0; i < AP_SITL_SHMEM_MAX_INSTANCES; i++) {
+                AP_SITL_RideAlongChannel hdr;
+                if (shm.instance_active(i) &&
+                    shm.read_payload(i, &hdr, offsetof(AP_SITL_RideAlongChannel, data),
+                                     AP_SITL_SHMEM_RIDE_OFFSET) &&
+                    hdr.magic == AP_SITL_RIDE_FDM_MAGIC) {
+                    ride_master_slot = i;
+                    printf("JSON: ride-along fdm found in shared-memory slot %u\n", i);
+                    break;
+                }
+            }
+        }
+        if (ride_master_slot >= 0) {
+            static AP_SITL_RideAlongChannel ch;
+            if (shm.read_payload(ride_master_slot, &ch, sizeof(ch),
+                                 AP_SITL_SHMEM_RIDE_OFFSET) &&
+                ch.magic == AP_SITL_RIDE_FDM_MAGIC &&
+                ch.seq != ride_in_seq) {
+                ride_in_seq = ch.seq;
+                const uint32_t n = MIN(ch.len, MIN((uint32_t)sizeof(ch.data), size));
+                memcpy(buf, ch.data, n);
+                return n;
+            }
+        }
+        if (ride_wall_micros() >= deadline_us) {
+            return 0;
+        }
+        if (++spins > 5000) {
+            usleep(100);
+            spins = 0;
+        }
+    }
+}
+#endif  // HAL_BOARD_SITL && !HAL_BUILD_AP_PERIPH
+
+ssize_t JSON::transport_recv(uint32_t timeout_ms)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    if (ride_shmem_active()) {
+        return ride_shmem_recv(&sensor_buffer[sensor_buffer_len],
+                               sizeof(sensor_buffer)-sensor_buffer_len, timeout_ms);
+    }
+#endif
+    return sock.recv(&sensor_buffer[sensor_buffer_len],
+                     sizeof(sensor_buffer)-sensor_buffer_len, timeout_ms);
+}
+
 /*
     Decode and send servos
 */
@@ -114,6 +214,12 @@ void JSON::output_servos(const struct sitl_input &input)
           pkt.pwm[i] = input.servos[i];
       }
       pkt_size = sizeof(pkt);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+      if (ride_shmem_active()) {
+          ride_shmem_send(&pkt, pkt_size);
+          send_ret = pkt_size;
+      } else
+#endif
       send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
     } else {
       servo_packet_16 pkt;
@@ -123,6 +229,12 @@ void JSON::output_servos(const struct sitl_input &input)
           pkt.pwm[i] = input.servos[i];
       }
       pkt_size = sizeof(pkt);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+      if (ride_shmem_active()) {
+          ride_shmem_send(&pkt, pkt_size);
+          send_ret = pkt_size;
+      } else
+#endif
       send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
     }
 
@@ -303,7 +415,7 @@ uint64_t JSON::parse_sensors(const char *json)
 void JSON::recv_fdm(const struct sitl_input &input)
 {
     // Receive sensor packet
-    ssize_t ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+    ssize_t ret = transport_recv(UDP_TIMEOUT_MS);
     uint32_t wait_ms = UDP_TIMEOUT_MS;
 
     if (state.no_lockstep && ret <= 0) {
@@ -320,7 +432,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     while (ret <= 0) {
         //printf("No JSON sensor message received - %s\n", strerror(errno));
-        ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+        ret = transport_recv(UDP_TIMEOUT_MS);
         wait_ms += UDP_TIMEOUT_MS;
         // if no sensor message is received after 10 second resend servos, this help cope with SITL and the physics getting out of sync
         if (wait_ms > 1000) {
