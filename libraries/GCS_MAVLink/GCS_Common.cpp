@@ -235,8 +235,10 @@ bool GCS_MAVLINK::init(uint8_t instance)
         load_signing_key();
 #endif  // AP_MAVLINK_SIGNING_ENABLED
     } else {
+#if AP_GCS_MAVLINK1_ENABLED
         // user has asked to only send MAVLink1
         _channel_status.flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+#endif  // AP_GCS_MAVLINK1_ENABLED
     }
 
 #if HAL_HIGH_LATENCY2_ENABLED
@@ -1869,6 +1871,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
         mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
     }
+#if AP_GCS_MAVLINK1_ENABLED
     const auto mavlink_protocol = uartstate->get_protocol();
     if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
         (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
@@ -1879,6 +1882,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         // MAVLink2
         _channel_status.flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
     }
+#endif  // AP_GCS_MAVLINK1_ENABLED
 }
 
 void GCS_MAVLINK::raw_packetReceived(uint8_t framing_status,
@@ -2161,10 +2165,12 @@ void GCS_MAVLINK::send_system_time() const
 }
 
 
+#if AP_GCS_MAVLINK1_ENABLED
 bool GCS_MAVLINK::sending_mavlink1() const
 {
     return ((_channel_status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0);
 }
+#endif  // AP_GCS_MAVLINK1_ENABLED
 
 #if AP_RC_CHANNEL_ENABLED
 /*
