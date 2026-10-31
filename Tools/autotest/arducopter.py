@@ -19523,6 +19523,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Sprayer OK")
 
+    def CPUFailsafeRecovery(self):
+        '''check the vehicle is properly disarmed after a main loop stall trips the CPU failsafe'''
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # the CPU failsafe disarms the motors once the main loop has
+        # not run for 2 seconds; stall it for longer than that
+        self.progress("Stalling the main loop")
+        tstart = self.get_sim_time()
+        self.send_cmd_create_long_loop(4000)
+        self.wait_disarmed(timeout=30, tstart=tstart)
+
+        # a vehicle whose motors were disarmed underneath it still
+        # thinks it is armed: it accepts the arm command without
+        # arming the motors, and refuses to reboot.  It should instead
+        # be disarmed, and refuse to arm until it is rebooted
+        self.progress("Checking the vehicle refuses to arm")
+        self.try_arm(result=False, expect_msg="Internal errors")
+
+        # a forced arm skips the arming checks, including the
+        # internal error and the GPS, which the stall leaves unhealthy
+        # for a while
+        self.progress("Checking the vehicle can be force-armed")
+        self.arm_vehicle(force=True)
+        self.disarm_vehicle()
+
+        self.progress("Checking the vehicle agrees it is disarmed")
+        self.reboot_sitl()
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
@@ -19748,6 +19777,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.Clamp,
             self.ScriptingFlyVelocity,
             self.PLDNoParameters,
+            self.CPUFailsafeRecovery,
         ])
         return ret
 
