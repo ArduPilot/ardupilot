@@ -277,6 +277,14 @@ public:
     // and flashing LEDs as appropriate
     void reboot(bool hold_in_bootloader);
 
+#if AP_POWEROFF_ENABLED
+    void poweroff_start();
+    void poweroff();
+
+    // true if a delayed power off has been started
+    bool poweroff_pending() const;
+#endif // AP_POWEROFF_ENABLED
+
     /*
       get the distance to next wp in meters
       return false if failed or n/a
@@ -622,6 +630,12 @@ private:
     AP_Filters filters;
 #endif
 
+#if AP_POWEROFF_ENABLED
+    void poweroff_update();
+#if AP_POWEROFF_DELAY_MS
+    uint32_t _poweroff_start_ms;
+#endif // AP_POWEROFF_DELAY_MS
+#endif // AP_POWEROFF_ENABLED
 };
 
 namespace AP {
