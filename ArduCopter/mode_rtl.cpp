@@ -626,6 +626,26 @@ bool ModeRTL::get_wp(Location& destination) const
     return false;
 }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+bool ModeRTL::get_wp_prev(Location& origin) const
+{
+    // provide segment start in states which use wp_nav
+    switch (_state) {
+    case SubMode::STARTING:
+    case SubMode::INITIAL_CLIMB:
+    case SubMode::FLY_TO_RETURN_POINT:
+    case SubMode::HOLD_AT_RETURN_POINT:
+    case SubMode::FINAL_DESCENT:
+        return wp_nav->get_wp_origin_loc(origin);
+    case SubMode::LAND:
+        return false;
+    }
+
+    // we should never get here but just in case
+    return false;
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
 float ModeRTL::wp_distance_m() const
 {
     return wp_nav->get_wp_distance_to_destination_m();
