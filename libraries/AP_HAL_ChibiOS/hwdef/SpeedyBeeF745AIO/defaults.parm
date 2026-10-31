@@ -1,0 +1,17 @@
+# WS2812 LED
+SERVO5_FUNCTION 120
+
+MOT_PWM_TYPE 6 # DShot600
+SERVO_DSHOT_ESC 2 # Bluejay
+
+# All motors with BiDir
+SERVO_BLH_BDMASK 15
+
+# Pass-through on all motors
+# Needed to connect with esc-configurator.com
+SERVO_BLH_AUTO 1
+
+# With bi-directional dshot RPM data is readily available:
+RPM1_TYPE 5
+# average rpm over all 4 motor outputs:
+RPM1_ESC_MASK 15
