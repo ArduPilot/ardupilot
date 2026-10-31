@@ -1211,6 +1211,8 @@ private:
     bool tiltAlignComplete;         // true when tilt alignment is complete
     bool yawAlignComplete;          // true when yaw alignment is complete
     uint8_t yawAlignGpsValidCount;  // number of continuous good GPS velocity samples used for in flight yaw alignment
+    uint32_t lastYawAlignGpsTime_ms; // time of the last GPS sample counted in yawAlignGpsValidCount
+    bool yawAlignGpsBadMagYaw;      // badMagYaw state of the samples counted in yawAlignGpsValidCount
     bool magStateInitComplete;      // true when the magnetic field states have been initialised
     uint8_t stateIndexLim;          // Max state index used during matrix and array operations
     imu_elements imuDataDelayed;    // IMU data at the fusion time horizon
