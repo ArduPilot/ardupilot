@@ -102,7 +102,7 @@ void Shared_DMA::unlock_stream(uint8_t stream_id, bool success)
     if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
         chMtxUnlock(&locks[stream_id].mutex);
         if (success && _contention_stats != nullptr) {
-            _contention_stats[stream_id1].transactions++;
+            _contention_stats[stream_id1].transactions = _contention_stats[stream_id1].transactions + 1;
         }
     }
 }
@@ -156,16 +156,16 @@ void Shared_DMA::lock_core(void)
     if (_contention_stats != nullptr) {
         if (stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
             if (contention) {
-                _contention_stats[stream_id1].contended_locks++;
+                _contention_stats[stream_id1].contended_locks = _contention_stats[stream_id1].contended_locks + 1;
             } else {
-                _contention_stats[stream_id1].uncontended_locks++;
+                _contention_stats[stream_id1].uncontended_locks = _contention_stats[stream_id1].uncontended_locks + 1;
             }
         }
         if (stream_id2 < SHARED_DMA_MAX_STREAM_ID) {
             if (contention) {
-                _contention_stats[stream_id2].contended_locks++;
+                _contention_stats[stream_id2].contended_locks = _contention_stats[stream_id2].contended_locks + 1;
             } else {
-                _contention_stats[stream_id2].uncontended_locks++;
+                _contention_stats[stream_id2].uncontended_locks = _contention_stats[stream_id2].uncontended_locks + 1;
             }
         }
     }
@@ -189,7 +189,7 @@ bool Shared_DMA::lock_nonblock(void)
         if (locks[stream_id1].obj != nullptr && locks[stream_id1].obj != this) {
             locks[stream_id1].obj->contention = true;
             if (_contention_stats != nullptr) {
-                _contention_stats[stream_id1].contended_locks++;
+                _contention_stats[stream_id1].contended_locks = _contention_stats[stream_id1].contended_locks + 1;
             }
         }
         chSysEnable();
@@ -198,7 +198,7 @@ bool Shared_DMA::lock_nonblock(void)
     }
 
     if (_contention_stats != nullptr && stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
-        _contention_stats[stream_id1].uncontended_locks++;
+        _contention_stats[stream_id1].uncontended_locks = _contention_stats[stream_id1].uncontended_locks + 1;
     }
 
     if (!lock_stream_nonblocking(stream_id2)) {
@@ -207,7 +207,7 @@ bool Shared_DMA::lock_nonblock(void)
         if (locks[stream_id2].obj != nullptr && locks[stream_id2].obj != this) {
             locks[stream_id2].obj->contention = true;
             if (_contention_stats != nullptr) {
-                _contention_stats[stream_id2].contended_locks++;
+                _contention_stats[stream_id2].contended_locks = _contention_stats[stream_id2].contended_locks + 1;
             }
         }
         chSysEnable();
@@ -216,7 +216,7 @@ bool Shared_DMA::lock_nonblock(void)
     }
     lock_core();
     if (_contention_stats != nullptr && stream_id2 < SHARED_DMA_MAX_STREAM_ID) {
-        _contention_stats[stream_id2].uncontended_locks++;
+        _contention_stats[stream_id2].uncontended_locks = _contention_stats[stream_id2].uncontended_locks + 1;
     }
     return true;
 }
