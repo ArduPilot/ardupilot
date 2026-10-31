@@ -1952,6 +1952,9 @@ public:
     // Return true if this mode is enabled, used by MAVLink available modes
     bool enabled() const override;
 
+    // disarm and stay disarmed until the mode is entered again
+    void shutdown_motors();
+
 protected:
     const char *name() const override { return "Turtle"; }
     const char *name4() const override { return "TRTL"; }
