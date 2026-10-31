@@ -248,6 +248,16 @@ public:
     HAL_Semaphore& get_semaphore() { return scr_sem; }
 
     void clear_menus();
+    // scripted menu ids leave gaps, but a transmitter asks for the fields from
+    // 1 up to the count it is given, so scripted menus and parameters are sent
+    // as consecutive field numbers from SCRIPTED_MENU_START_ID
+    bool scripted_field(uint8_t &n, uint8_t &id);
+    uint8_t scripted_field_count();
+#endif
+    // convert between the field numbers sent to the transmitter and our ids
+    uint8_t field_to_id(uint8_t field);
+    uint8_t id_to_field(uint8_t id);
+#if AP_CRSF_SCRIPTING_ENABLED
     bool process_scripted_param_write(ParameterSettingsWriteFrame* write, uint8_t length);
     bool process_scripted_param_read(ParameterSettingsReadFrame* read);
     void dump_menu_structure();
