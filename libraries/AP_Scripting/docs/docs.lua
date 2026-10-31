@@ -2037,6 +2037,14 @@ function Motors_dynamic:add_motor(motor_num, testing_order) end
 function Motors_dynamic:init(expected_num_motors) end
 
 
+---@class util
+util = {}
+
+-- True for this boot if the watchdog reset the vehicle while it was armed.
+-- This describes the reset history, not the current arming state.
+---@return boolean
+function util:was_watchdog_armed() end
+
 -- desc
 analog = {}
 
