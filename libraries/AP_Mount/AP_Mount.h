@@ -159,13 +159,14 @@ public:
     bool has_pan_control(uint8_t instance) const;
 
     // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
-    enum MAV_MOUNT_MODE get_mode() const { return get_mode(_primary); }
-    enum MAV_MOUNT_MODE get_mode(uint8_t instance) const;
+    using Mode = AP_Mount_Params::Mode;
+    Mode get_mode() const { return get_mode(_primary); }
+    Mode get_mode(uint8_t instance) const;
 
     // set_mode - sets mount's mode
     //  returns true if mode is successfully set
-    void set_mode(enum MAV_MOUNT_MODE mode) { return set_mode(_primary, mode); }
-    void set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode);
+    void set_mode(Mode mode) { return set_mode(_primary, mode); }
+    void set_mode(uint8_t instance, Mode mode);
 
     // set_mode_to_default - restores the mode to it's default mode held in the MNTx_DEFLT_MODE parameter
     //      this operation requires 60us on a Pixhawk/PX4

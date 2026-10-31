@@ -14,8 +14,22 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Mount_Params);
 
+    // mount modes.  Values match MAV_MOUNT_MODE so MAVLink and
+    // parameter values can be cast directly into this enumeration
+    // (checked by static asserts in AP_Mount_Backend.cpp)
+    enum class Mode : uint8_t {
+        RETRACT = 0,
+        NEUTRAL = 1,
+        MAVLINK_TARGETING = 2,
+        RC_TARGETING = 3,
+        GPS_POINT = 4,
+        SYSID_TARGET = 5,
+        HOME_LOCATION = 6,
+        WPNEXT_OFFSET = 7,
+    };
+
     AP_Int8     type;               // mount type (see Mount::Type enum)
-    AP_Int8     default_mode;       // default mode on startup and when control is returned from autopilot
+    AP_Enum<Mode> default_mode;     // default mode on startup and when control is returned from autopilot
     AP_Int16    rc_rate_max;        // Pilot rate control's maximum rate.  Set to zero to use angle control
     AP_Int16    roll_angle_min;     // roll angle min in degrees
     AP_Int16    roll_angle_max;     // roll angle max in degrees

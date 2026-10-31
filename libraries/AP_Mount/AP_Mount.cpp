@@ -262,11 +262,11 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
 }
 
 // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
-MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
+AP_Mount::Mode AP_Mount::get_mode(uint8_t instance) const
 {
     const auto *backend = get_instance(instance);
     if (backend == nullptr) {
-        return MAV_MOUNT_MODE_RETRACT;
+        return Mode::RETRACT;
     }
 
     // ask backend its mode
@@ -281,11 +281,11 @@ void AP_Mount::set_mode_to_default(uint8_t instance)
     if (backend == nullptr) {
         return;
     }
-    backend->set_mode((enum MAV_MOUNT_MODE)_params[instance].default_mode.get());
+    backend->set_mode(_params[instance].default_mode);
 }
 
 // set_mode - sets mount's mode
-void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
+void AP_Mount::set_mode(uint8_t instance, Mode mode)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
@@ -370,7 +370,14 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_int
         return MAV_RESULT_FAILED;
     }
 
-    backend->set_mode((MAV_MOUNT_MODE)packet.param1);
+    // range-check before converting; out-of-range float to integer conversion is undefined
+    const float mode = packet.param1;
+    if (isnan(mode) || mode < 0 || mode > UINT8_MAX) {
+        return MAV_RESULT_DENIED;
+    }
+    if (!backend->set_mode((Mode)uint8_t(mode))) {
+        return MAV_RESULT_DENIED;
+    }
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -397,12 +404,12 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     // check flags for change to RETRACT
     const uint32_t flags = packet.x;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        backend->set_mode(Mode::RETRACT);
         return MAV_RESULT_ACCEPTED;
     }
     // check flags for change to NEUTRAL
     if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        backend->set_mode(Mode::NEUTRAL);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -459,13 +466,13 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg)
     // check flags for change to RETRACT
     const uint32_t flags = packet.flags;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        backend->set_mode(Mode::RETRACT);
         return;
     }
 
     // check flags for change to NEUTRAL
     if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        backend->set_mode(Mode::NEUTRAL);
         return;
     }
 
@@ -516,12 +523,12 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     // check flags for change to RETRACT
     uint32_t flags = (uint32_t)packet.flags;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        backend->set_mode(Mode::RETRACT);
         return;
     }
     // check flags for change to NEUTRAL
     if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        backend->set_mode(Mode::NEUTRAL);
         return;
     }
 
