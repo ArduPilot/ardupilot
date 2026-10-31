@@ -432,6 +432,10 @@ void AP_GyroFFT::update()
 // called from FFT thread
 uint16_t AP_GyroFFT::run_cycle()
 {
+    if (!_config.valid) {
+        return 0;
+    }
+
     if (!analysis_enabled()) {
         return 0;
     }
@@ -555,8 +559,21 @@ void AP_GyroFFT::update_parameters(bool force)
 
     WITH_SEMAPHORE(_sem);
 
-    // don't allow MAXHZ to go to Nyquist
-    _fft_max_hz.set(MIN(_fft_max_hz, _fft_sampling_rate_hz * 0.48));
+    if (_fft_min_hz >= _fft_max_hz) {
+        // the parameters were just configured badly
+        _config.valid = false;
+        return;
+    }
+
+    const float nyquist_limit_hz = _fft_sampling_rate_hz * 0.48;
+    if (_fft_min_hz >= nyquist_limit_hz) {
+        // we don't get data fast enough to run an FFT above the
+        // minimum configured frequency
+        _config.valid = false;
+        return;
+    }
+
+    _fft_max_hz.set(MIN(_fft_max_hz, nyquist_limit_hz));
     _config._snr_threshold_db = _snr_threshold_db;
     _config._fft_min_hz = _fft_min_hz;
     _config._fft_max_hz = _fft_max_hz;
@@ -566,6 +583,7 @@ void AP_GyroFFT::update_parameters(bool force)
     _config._fft_end_bin = MIN(ceilf(_fft_max_hz.get() / _state->_bin_resolution), _state->_bin_count);
     // actual attenuation from the db value
     _config._attenuation_cutoff = powf(10.0f, -_attenuation_power_db * 0.1f);
+    _config.valid = true;
 }
 
 // thread for processing gyro data via FFT
@@ -615,9 +633,27 @@ bool AP_GyroFFT::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len)
         return true;
     }
 
+    // checked before _calibrated as arming attempts set _calibrated
+    if (!_config.valid) {
+        if (_fft_min_hz >= _fft_max_hz) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "FFT config MINHZ >= MAXHZ");
+        } else if (_fft_min_hz >= _fft_sampling_rate_hz * 0.48f) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "FFT config MINHZ must be < %uHz", unsigned(ceilf(_fft_sampling_rate_hz * 0.48f)));
+        } else {
+            hal.util->snprintf(failure_msg, failure_msg_len, "FFT config invalid");
+        }
+        return false;
+    }
+
     // already calibrated
     if (_calibrated) {
         return true;
+    }
+
+    // make sure the frequency maximum is below Nyquist
+    if (_fft_max_hz > _fft_sampling_rate_hz * 0.5f) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "FFT config MAXHZ %dHz > %dHz", _fft_max_hz.get(), _fft_sampling_rate_hz / 2);
+        return false;
     }
 
     // analysis is started in the main thread, don't trample on in-flight analysis
@@ -629,12 +665,6 @@ bool AP_GyroFFT::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len)
     // still calibrating noise so not ready
     if (_global_state._noise_needs_calibration) {
         hal.util->snprintf(failure_msg, failure_msg_len, "FFT calibrating noise");
-        return false;
-    }
-
-    // make sure the frequency maximum is below Nyquist
-    if (_fft_max_hz > _fft_sampling_rate_hz * 0.5f) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "FFT config MAXHZ %dHz > %dHz", _fft_max_hz.get(), _fft_sampling_rate_hz / 2);
         return false;
     }
 
