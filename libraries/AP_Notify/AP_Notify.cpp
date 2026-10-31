@@ -31,6 +31,7 @@
 #include "ToneAlarm.h"
 #include "ToshibaLED_I2C.h"
 #include "LP5562.h"
+#include "LM2755.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
@@ -182,7 +183,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal, 15:IS31FL3195 External, 16: IS31FL3195 Internal, 17: DiscreteRGB, 18: NeoPixelRGB, 19:ProfiLED_IOMCU
+    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal, 15:IS31FL3195 External, 16: IS31FL3195 Internal, 17: DiscreteRGB, 18: NeoPixelRGB, 19:ProfiLED_IOMCU, 19:LM2755 External, 20:LM2755 Internal
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
 
@@ -350,6 +351,17 @@ void AP_Notify::add_backends(void)
 #if HAL_WITH_IO_MCU && AP_IOMCU_PROFILED_SUPPORT_ENABLED
             case Notify_LED_ProfiLED_IOMCU:
                 ADD_BACKEND(NEW_NOTHROW ProfiLED_IOMCU());
+#endif
+#if AP_NOTIFY_LM2755_ENABLED
+            case Notify_LED_LM2755_I2C_External:
+                FOREACH_I2C_EXTERNAL(b) {
+                    ADD_BACKEND(new LM2755(b, LM2755_LED_I2C_ADDR));
+                }
+                break;
+            case Notify_LED_LM2755_I2C_Internal:
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new LM2755(b, LM2755_LED_I2C_ADDR));
+                }
                 break;
 #endif
 #if AP_NOTIFY_LP5562_ENABLED
