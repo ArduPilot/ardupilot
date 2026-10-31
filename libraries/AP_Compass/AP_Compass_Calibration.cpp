@@ -576,8 +576,10 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
     Matrix3f dcm;
     dcm.from_euler(AP::ahrs().get_roll_rad(), AP::ahrs().get_pitch_rad(), radians(yaw_deg));
 
-    // Rotate into body frame using provided yaw
-    field = dcm.transposed() * field;
+    // Rotate into body frame using provided yaw. The AHRS roll and
+    // pitch are for the vehicle body frame (AHRS_TRIM applied), while
+    // the compasses report in the autopilot body frame
+    field = AP::ahrs().get_rotation_vehicle_body_to_autopilot_body() * (dcm.transposed() * field);
 
     for (uint8_t i=0; i<get_count(); i++) {
         if (compass_mask != 0 && ((1U<<i) & compass_mask) == 0) {
