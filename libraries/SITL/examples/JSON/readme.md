@@ -126,6 +126,19 @@ Volts, current in Amps:
 "battery":{"voltage":50.39,"current":64.01}
 ```
 
+## Motor RPM
+
+The controller can provide motor speed in rev/min as an array of up
+to 32 values. Element i is servo output i+1, the same order as the
+servo packet. A negative value marks an output that is not a motor.
+The outputs with a value are the motor mask used by RPM-driven IMU
+vibration (`SIM_VIB_MOT_*`), the SITL RPM sensor (`RPM1_TYPE` 10) and
+SITL ESC telemetry:
+
+```json
+"rpm":[8120.5,8090.0,8130.2,8101.7]
+```
+
 ## Debugging
 
 When first connecting you will see a message reporting what fields were successfully received. If any of the mandatory fields are missing SITL will stop, however it will run without the optional fields. This message can be used to double check SITL is receiving everything being sent by the physics backend.
