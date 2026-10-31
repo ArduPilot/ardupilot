@@ -301,6 +301,7 @@ void NavEKF3_core::ResetHeight(void)
     // clear the timeout flags and counters
     hgtTimeout = false;
     lastHgtPassTime_ms = imuSampleTime_ms;
+    hgtInnovFiltTime_ms = imuSampleTime_ms;
 
     // reset the corresponding covariances
     zeroStatesVarCov(9, 9);
@@ -1049,13 +1050,14 @@ void NavEKF3_core::FuseVelPosNED()
                 // Calculate a filtered value to be used by pre-flight health checks
                 // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
                 if (onGround) {
-                    ftype dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms) * 1.0e-3;
+                    ftype dtBaro = (imuSampleTime_ms - hgtInnovFiltTime_ms) * 1.0e-3;
                     const ftype hgtInnovFiltTC = 2.0;
                     ftype alpha = constrain_ftype(dtBaro/(dtBaro+hgtInnovFiltTC), 0.0, 1.0);
                     hgtInnovFiltState += (innovVelPos[5] - hgtInnovFiltState)*alpha;
                 } else {
                     hgtInnovFiltState = 0.0f;
                 }
+                hgtInnovFiltTime_ms = imuSampleTime_ms;
 
                 if (hgtTimeout) {
                     ResetHeight();
