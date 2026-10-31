@@ -1144,7 +1144,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_MAG_CAL_REPORT,        MSG_MAG_CAL_REPORT},
 #endif
 #if AP_AHRS_ENABLED
+#if AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
         { MAVLINK_MSG_ID_EKF_STATUS_REPORT,     MSG_EKF_STATUS_REPORT},
+#endif  // AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
 #endif  // AP_AHRS_ENABLED
         { MAVLINK_MSG_ID_PID_TUNING,            MSG_PID_TUNING},
         { MAVLINK_MSG_ID_VIBRATION,             MSG_VIBRATION},
@@ -1207,6 +1209,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
         { MAVLINK_MSG_ID_UTM_GLOBAL_POSITION, MSG_UTM_GLOBAL_POSITION},
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+#if AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
+        { MAVLINK_MSG_ID_ESTIMATOR_STATUS,      MSG_ESTIMATOR_STATUS},
+#endif  // AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -6678,12 +6683,19 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif // AP_BATTERY_ENABLED
 
-#if AP_AHRS_ENABLED
+#if AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
     case MSG_EKF_STATUS_REPORT:
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         AP::ahrs().send_ekf_status_report(*this);
         break;
-#endif
+#endif  // AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
+
+#if AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
+    case MSG_ESTIMATOR_STATUS:
+        CHECK_PAYLOAD_SIZE(ESTIMATOR_STATUS);
+        AP::ahrs().send_estimator_status(*this);
+        break;
+#endif  // AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
 
     case MSG_MEMINFO:
         CHECK_PAYLOAD_SIZE(MEMINFO);

@@ -6,6 +6,7 @@
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include <AP_Arming/AP_Arming_config.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 1
@@ -146,6 +147,23 @@
 #ifndef AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
 #define AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED HAL_GCS_ENABLED && AP_ARMING_ENABLED
 #endif  // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+
+// EKF_STATUS_REPORT is ArduPilot's own (ardupilotmega.xml) version of
+// the common ESTIMATOR_STATUS: the same flags up to bit 512 and the same
+// innovation test ratios.  It is slated to be replaced by
+// ESTIMATOR_STATUS:
+// CODE_REMOVAL
+// ArduPilot 4.8 adds ESTIMATOR_STATUS (on request) and allows EKF_STATUS_REPORT to be compiled out
+// ArduPilot 4.9 streams ESTIMATOR_STATUS in place of EKF_STATUS_REPORT (still available on request)
+// ArduPilot 4.10 stops compiling EKF_STATUS_REPORT in by default
+// ArduPilot 4.11 removes the code entirely
+#ifndef AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
+#define AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED (HAL_GCS_ENABLED && AP_AHRS_ENABLED)
+#endif  // AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
+
+#ifndef AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
+#define AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED (HAL_GCS_ENABLED && AP_AHRS_ENABLED && (HAL_PROGRAM_SIZE_LIMIT_KB > 1024))
+#endif  // AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
 
 #ifndef AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
 #define AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED (HAL_GCS_ENABLED && AP_AHRS_ENABLED && (HAL_PROGRAM_SIZE_LIMIT_KB > 2048))

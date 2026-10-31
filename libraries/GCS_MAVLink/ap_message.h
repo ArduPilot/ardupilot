@@ -73,7 +73,9 @@ enum ap_message : uint8_t {
     MSG_OPTICAL_FLOW                   =  52,
     MSG_MAG_CAL_PROGRESS               =  53,
     MSG_MAG_CAL_REPORT                 =  54,
+#if AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
     MSG_EKF_STATUS_REPORT              =  55,
+#endif  // AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
     MSG_LOCAL_POSITION                 =  56,
     MSG_PID_TUNING                     =  57,
     MSG_VIBRATION                      =  58,
@@ -116,5 +118,8 @@ enum ap_message : uint8_t {
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
     MSG_UTM_GLOBAL_POSITION            = 101,
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+#if AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
+    MSG_ESTIMATOR_STATUS               = 102,
+#endif  // AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
