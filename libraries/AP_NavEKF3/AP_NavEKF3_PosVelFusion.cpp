@@ -651,10 +651,13 @@ void NavEKF3_core::SelectVelPosFusion()
     // the EKF reports with no measured vertical velocity agreeing, as after a drop whose impact
     // the IMU clipped, is reset away with the height when the vehicle comes to rest. Only then:
     // a velocity that builds while it stays still comes from an accel bias, which repeated
-    // resets would stop the EKF learning.
+    // resets would stop the EKF learning. The check waits while a measured vertical velocity is
+    // being fused: it is correcting the state already, and can be measuring real vertical motion
+    // the IMU reads as still, such as a deck rising at a steady rate. The height check still
+    // refuses arming while it disagrees.
     if (!onGroundNotMoving) {
         velDCheckedAtRest = false;
-    } else if (fuseHgtData && !velDCheckedAtRest) {
+    } else if (fuseHgtData && !velDCheckedAtRest && !measuredVertVelFused()) {
         velDCheckedAtRest = true;
         if (!measuredVertVelAgrees() && (fabsF(stateStruct.velocity.z) > 0.5f)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u vertical velocity reset at rest", (unsigned)imu_index);
