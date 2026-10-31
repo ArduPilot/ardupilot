@@ -2445,6 +2445,146 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3HardLandingRearm(self):
+        '''re-arm safely when a drop or a hard landing leaves the EKF vertical state wrong'''
+        # A disarm in the air drops the vehicle, and an impact the IMUs clip leaves the EKF on
+        # the ground still descending. Re-armed, ALT_HOLD then keeps climbing after takeoff with
+        # the throttle at minimum. Once the vehicle is still the EKF resets that velocity, and a
+        # height that disagrees with the height sensor refuses arming.
+        ignore = ["Need Alt Estimate", "EKF attitude is bad"]
+        reset_text = "vertical velocity reset at rest"
+
+        def hover_and_drop():
+            # hover first, as the flight that found this did
+            self.takeoff(altitude_min=2.1, mode='ALT_HOLD', require_absolute=False)
+            self.wait_rangefinder_distance(1.0, 3.0, timeout=40, minimum_duration=20)
+            self.disarm_vehicle(force=True)
+            self.wait_rangefinder_distance(0, 0.3, minimum_duration=0.5)
+            self.zero_throttle()
+            self.context_clear_collection('STATUSTEXT')
+
+        def accel_bias(value):
+            self.set_parameters({"SIM_ACC1_BIAS_Z": value, "SIM_ACC2_BIAS_Z": value})
+
+        def baro_glitch(value):
+            self.set_parameters({"SIM_BARO_GLITCH": value, "SIM_BAR2_GLITCH": value})
+
+        def impact():
+            # an accel bias stands in for the impact deceleration the IMUs clipped, held until
+            # the EKF reports the vehicle descending at 4 m/s
+            accel_bias(4.7)
+            self.assert_receive_message('LOCAL_POSITION_NED', condition='LOCAL_POSITION_NED.vz>4', timeout=10)
+            accel_bias(0)
+
+        def fly_and_land():
+            # take off, then throttle to minimum: the vehicle has to come down, not climb
+            self.set_rc(3, 1700)
+            self.wait_rangefinder_distance(1.2, 3.0, timeout=20)
+            self.set_rc(3, 1000)
+            r0 = self.get_rangefinder_distance()
+            rmax = r0
+            tstart = self.get_sim_time_cached()
+            while True:
+                r = self.get_rangefinder_distance()
+                rmax = max(rmax, r)
+                if r > r0 + 0.6:
+                    raise NotAchievedException("climbed %.2f m with the throttle at minimum" % (r - r0))
+                if r < 0.3:
+                    break
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("did not land with the throttle at minimum")
+            self.progress("rose %.2f m after the throttle went to minimum" % (rmax - r0))
+            self.disarm_vehicle(force=True)
+
+        def quick_rearm():
+            hover_and_drop()
+            impact()
+            self.delay_sim_time(1, "re-arm a second after the impact")
+            reset_before_arm = any(reset_text in x.text for x in self.context_collection('STATUSTEXT'))
+            self.arm_vehicle()
+            fly_and_land()
+            # the arm went up clean because the EKF had reset the velocity once the vehicle was still
+            if not reset_before_arm:
+                raise NotAchievedException("no vertical velocity reset before the re-arm")
+
+        self.set_parameters({
+            "SIM_TERRAIN": 0,  # flat ground, so the range finder reads zero once landed
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("GPS: a baro step does not refuse arming while the GPS measures the vertical velocity")
+        self.wait_ready_to_arm()
+        # the step and its removal are both 3 m steps
+        for value in (3, 0):
+            self.context_clear_collection('STATUSTEXT')
+            baro_glitch(value)
+            tstart = self.get_sim_time_cached()
+            while self.get_sim_time_cached() - tstart < 10:
+                self.send_mavlink_run_prearms_command()
+                m = self.assert_receive_message('EKF_STATUS_REPORT', timeout=5)
+                if not (m.flags & mavutil.mavlink.ESTIMATOR_ATTITUDE):
+                    raise NotAchievedException("EKF unhealthy after a baro step")
+                self.delay_sim_time(0.25, "poll")
+            refusals = [x.text for x in self.context_collection('STATUSTEXT') if "PreArm" in x.text]
+            if refusals:
+                raise NotAchievedException("refused arming after a baro step: %s" % refusals[0])
+        self.wait_ready_to_arm()
+
+        self.start_subtest("GPS: a quick re-arm after a hard landing goes up clean")
+        quick_rearm()
+
+        self.start_subtest("no aiding: a baro step refuses arming on the height error")
+        # GPS stays off from here on, so no later leg has a vertical velocity measurement
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.reboot_sitl()
+        self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_ATTITUDE | mavutil.mavlink.ESTIMATOR_CONST_POS_MODE, 0, timeout=60)
+        self.delay_sim_time(30, "height variance to settle after the reboot")
+        baro_glitch(3)
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_ATTITUDE, timeout=3)
+        self.assert_arm_failure("height error", ignore_prearm_failures=ignore)
+        baro_glitch(0)
+
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.reboot_sitl()
+
+        self.start_subtest("flow: a quick re-arm after a hard landing goes up clean")
+        quick_rearm()
+
+        self.start_subtest("flow: a re-arm while falling after a disarm in the air is accepted")
+        # high enough that the fall outlasts the time the harness takes to re-arm
+        self.takeoff(altitude_min=25, mode='ALT_HOLD', require_absolute=False)
+        self.wait_altitude(20, 35, relative=True, timeout=60, minimum_duration=3)
+        self.zero_throttle()
+        # the baro disagrees with the state during the fall, as it did on real drops; set
+        # before the disarm, as the EKF only rejects it for the moment it is armed
+        baro_glitch(20)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, p1=0, p2=21196)
+        # faster than the descent the throttle asks for, so the vehicle is falling
+        self.assert_receive_message('VFR_HUD', condition='VFR_HUD.climb<-3.5', timeout=5)
+        self.delay_sim_time(0.3, "height filter past 1 m")
+        self.arm_vehicle()
+        if self.get_rangefinder_distance() < 1.0:
+            raise NotAchievedException("armed only once on the ground")
+        baro_glitch(0)
+        self.wait_rangefinder_distance(0, 0.3, timeout=60)
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("flow: a baro step the EKF rejects refuses arming on the height error")
+        self.set_parameter("EK3_ALT_M_NSE", 0.5)
+        self.wait_ready_to_arm(require_absolute=False)
+        baro_glitch(5)
+        # the EKF reports the height test ratio as the vertical position variance
+        self.assert_receive_message('EKF_STATUS_REPORT', condition='EKF_STATUS_REPORT.pos_vert_variance>1', timeout=3)
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_ATTITUDE, timeout=3)
+        self.assert_arm_failure("height error", ignore_prearm_failures=ignore)
+        baro_glitch(0)
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -19707,6 +19847,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EK3AccelBias,
             self.EK3_OptflowTerrainScaleHeight,
             self.EK3_AccelBiasZeroVelOptFlow,
+            self.EK3HardLandingRearm,
             self.ThrowDoubleDrop,
             self.HorizontalFence,
             self.MaxAltFence,
