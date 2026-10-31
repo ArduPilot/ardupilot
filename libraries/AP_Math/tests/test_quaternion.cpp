@@ -251,4 +251,59 @@ TEST(QuaternionTest, Quaternion_length_squared)
     EXPECT_FLOAT_EQ(q.length_squared(), 1.44);
 }
 
+// AP_AHRS applies the board-mounting trim to each backend's attitude by
+// composing the NED-from-autopilot-body quaternion with
+// get_quat_vehicle_body_to_autopilot_body(), which is
+// from_euler(trim).inverse(), and deriving the rotation matrix from the
+// result.  That must be identical to the historical matrix form
+// R_backend * rotation_vehicle_body_to_autopilot_body (where that matrix
+// is from_euler(trim).transposed()), including for a trim that is non-zero
+// on all three axes at once.
+TEST(QuaternionTest, TrimCompositionMatchesRotationMatrix)
+{
+    const Vector3f attitudes[] {
+        {0.0f, 0.0f, 0.0f},
+        {radians(10), radians(-20), radians(30)},
+        {radians(-45), radians(60), radians(170)},
+        {radians(80), radians(-85), radians(-120)},
+    };
+    const Vector3f trims[] {
+        {0.0f, 0.0f, 0.0f},
+        {radians(3), radians(-2), 0.0f},
+        {radians(5), radians(4), radians(6)},   // all three axes at once
+    };
+    for (const auto &att : attitudes) {
+        Quaternion q_backend;
+        q_backend.from_euler(att);
+        Matrix3f R_backend;
+        q_backend.rotation_matrix(R_backend);
+        for (const auto &trim : trims) {
+            // the trim quaternion and matrix as AP_AHRS builds them:
+            Quaternion q_trim;
+            q_trim.from_euler(trim);
+            q_trim = q_trim.inverse();
+            Matrix3f rot_autopilot_to_vehicle;
+            rot_autopilot_to_vehicle.from_euler(trim.x, trim.y, trim.z);
+            const Matrix3f rot_vehicle_to_autopilot = rot_autopilot_to_vehicle.transposed();
+
+            Quaternion q_vehicle = q_backend;
+            q_vehicle *= q_trim;
+            Matrix3f R_from_quat;
+            q_vehicle.rotation_matrix(R_from_quat);
+
+            const Matrix3f R_expected = R_backend * rot_vehicle_to_autopilot;
+
+            EXPECT_NEAR(R_from_quat.a.x, R_expected.a.x, 1e-4f);
+            EXPECT_NEAR(R_from_quat.a.y, R_expected.a.y, 1e-4f);
+            EXPECT_NEAR(R_from_quat.a.z, R_expected.a.z, 1e-4f);
+            EXPECT_NEAR(R_from_quat.b.x, R_expected.b.x, 1e-4f);
+            EXPECT_NEAR(R_from_quat.b.y, R_expected.b.y, 1e-4f);
+            EXPECT_NEAR(R_from_quat.b.z, R_expected.b.z, 1e-4f);
+            EXPECT_NEAR(R_from_quat.c.x, R_expected.c.x, 1e-4f);
+            EXPECT_NEAR(R_from_quat.c.y, R_expected.c.y, 1e-4f);
+            EXPECT_NEAR(R_from_quat.c.z, R_expected.c.z, 1e-4f);
+        }
+    }
+}
+
 AP_GTEST_MAIN()
