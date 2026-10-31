@@ -3510,6 +3510,13 @@ return update()
         )
 
         self.wait_ready_to_arm()
+
+        # external AHRS backends don't supply innovation test ratios
+        m = self.poll_message('ESTIMATOR_STATUS')
+        for field in 'vel_ratio', 'pos_horiz_ratio', 'pos_vert_ratio', 'mag_ratio', 'hagl_ratio', 'tas_ratio':
+            if not math.isnan(getattr(m, field)):
+                raise NotAchievedException(f"Expected NaN {field} from external AHRS, got {m}")
+
         self.arm_vehicle()
         self.fly_generic_mission("externalahrs.txt", dist_to_final_wp_threshold_m=dist_to_final_wp_threshold_m)
         self.check_EAHRS_position_lag(max_position_lag_m)
