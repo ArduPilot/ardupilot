@@ -1071,6 +1071,14 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_SUBGROUPINFO(ground_effect, "GNDEFF_", 24, ParametersG2, AP_GroundEffect),
 #endif
 
+    // @Param: ACC_ZBIAS_LEARN
+    // @DisplayName: Accel Z-axis Bias Learning
+    // @Description: Bitmask controlling learning of the Z-axis accelerometer bias seen in hover, to help the EKF converge on the correct bias faster after arming. The value learned is the hover bias less the bias the EKF held at arming, mostly the vibration rectification offset: the residual sensor bias the EKF learns on the ground before every flight is left out so that it is not counted twice. With bit 2 set the EKF learns no accelerometer bias on the ground, and the whole hover bias is learned, so relearn after changing bit 2. The EKF will still learn the correct bias in flight regardless of these settings. Only active when using EKF3 (AHRS_EKF_TYPE=3). Bit 0: learn the bias during hover and save it to INS_ACC_VRFB_Z on disarm. Bit 1: apply the saved bias as an IMU level correction for as long as the vehicle is armed. Bit 2: inhibit EKF accelerometer bias learning on all three axes while disarmed. Set this when the vehicle may be armed on something that is moving, such as a car or a boat: the EKF's on-ground movement check compares only the length of the accelerometer vector against gravity, so a steady platform acceleration looks identical to standing still and is learned as accelerometer bias that does not exist once airborne. With it clear, a bias learned on a flight armed on a moving platform carries the platform's acceleration into the flights that apply it.
+    // @Bitmask: 0:Learn and Save,1:Use Saved Values,2:Inhibit Disarmed Learning
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("ACC_ZBIAS_LEARN", 25, ParametersG2, accel_zbias_learn, 0),
+
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
     // @Description: EKF Failsafe filter cutoff frequency. EKF variances are filtered using this value to avoid spurious failsafes from transient high variances. A higher value means the failsafe is more likely to trigger.

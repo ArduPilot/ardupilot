@@ -701,6 +701,39 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // indexes 57 and 58 used by INS_HNTC3 and INS_HNTC4
 
+#if APM_BUILD_COPTER_OR_HELI
+    // @Param{Copter}: _ACC_VRFB_Z
+    // @DisplayName: Accelerometer vibration rectification Z bias
+    // @Description: Z-axis accelerometer bias learned by Copter in hover, less the bias the EKF held when the vehicle armed: mostly the vibration rectification offset the motors cause, in the EKF's own sign convention. With ACC_ZBIAS_LEARN bit 2 set the EKF learns no accelerometer bias on the ground, and this is the whole bias seen in hover. With bit 2 clear, a value learned on a flight armed before the EKF has learned its ground bias includes the part not yet learned, and one learned on a flight armed on a moving platform includes the platform's acceleration. Applied to the IMU data while armed so the EKF does not have to relearn it on every flight. The EKF will still learn the correct bias in flight even if this value is wrong.
+    // @Units: m/s/s
+    // @Range: -0.6 0.6
+    // @User: Advanced
+    // @Calibration: 1
+    AP_GROUPINFO("_ACC_VRFB_Z", 59, AP_InertialSensor, _accel_vrf_bias_z_old_param[0], 0),
+
+#if INS_MAX_INSTANCES > 1
+    // @Param{Copter}: _ACC2_VRFB_Z
+    // @DisplayName: Accelerometer2 vibration rectification Z bias
+    // @Description: Z-axis accelerometer bias learned by Copter in hover, less the bias the EKF held when the vehicle armed: mostly the vibration rectification offset the motors cause, in the EKF's own sign convention. With ACC_ZBIAS_LEARN bit 2 set the EKF learns no accelerometer bias on the ground, and this is the whole bias seen in hover. With bit 2 clear, a value learned on a flight armed before the EKF has learned its ground bias includes the part not yet learned, and one learned on a flight armed on a moving platform includes the platform's acceleration. Applied to the IMU data while armed so the EKF does not have to relearn it on every flight. The EKF will still learn the correct bias in flight even if this value is wrong.
+    // @Units: m/s/s
+    // @Range: -0.6 0.6
+    // @User: Advanced
+    // @Calibration: 1
+    AP_GROUPINFO("_ACC2_VRFB_Z", 60, AP_InertialSensor, _accel_vrf_bias_z_old_param[1], 0),
+#endif
+
+#if INS_MAX_INSTANCES > 2
+    // @Param{Copter}: _ACC3_VRFB_Z
+    // @DisplayName: Accelerometer3 vibration rectification Z bias
+    // @Description: Z-axis accelerometer bias learned by Copter in hover, less the bias the EKF held when the vehicle armed: mostly the vibration rectification offset the motors cause, in the EKF's own sign convention. With ACC_ZBIAS_LEARN bit 2 set the EKF learns no accelerometer bias on the ground, and this is the whole bias seen in hover. With bit 2 clear, a value learned on a flight armed before the EKF has learned its ground bias includes the part not yet learned, and one learned on a flight armed on a moving platform includes the platform's acceleration. Applied to the IMU data while armed so the EKF does not have to relearn it on every flight. The EKF will still learn the correct bias in flight even if this value is wrong.
+    // @Units: m/s/s
+    // @Range: -0.6 0.6
+    // @User: Advanced
+    // @Calibration: 1
+    AP_GROUPINFO("_ACC3_VRFB_Z", 61, AP_InertialSensor, _accel_vrf_bias_z_old_param[2], 0),
+#endif
+#endif  // APM_BUILD_COPTER_OR_HELI
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -2393,6 +2426,13 @@ bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz,
 }
 #endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
+void AP_InertialSensor::clear_accel_vrf_bias_z(uint8_t instance)
+{
+#if APM_BUILD_COPTER_OR_HELI
+    _accel_vrf_bias_z(instance).set_and_save(0.0f);
+#endif
+}
+
 /*
     set and save accelerometer bias along with trim calculation
 */
@@ -2404,6 +2444,7 @@ void AP_InertialSensor::_acal_save_calibrations()
             _accel_calibrator[i].get_calibration(bias, gain);
             _accel_offset(i).set_and_save(bias);
             _accel_scale(i).set_and_save(gain);
+            clear_accel_vrf_bias_z(i);
             _accel_id(i).save();
             _accel_id_ok[i] = true;
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
@@ -2674,6 +2715,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
             new_accel_offset[k] -= rotated_gravity;
             _accel_offset(k).set_and_save(new_accel_offset[k]);
             _accel_scale(k).save();
+            clear_accel_vrf_bias_z(k);
             _accel_id(k).save();
             _accel_id_ok[k] = true;
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
