@@ -39,6 +39,7 @@ class BuildBoards(BuildScriptBase):
                  jobs=None,
                  configure_only=False,
                  progress_file=None,
+                 consistent_builds=False,
                  ):
         super().__init__(progress_file=progress_file)
 
@@ -62,6 +63,7 @@ class BuildBoards(BuildScriptBase):
         self.parallel_copies = parallel_copies
         self.jobs = jobs
         self.configure_only = configure_only
+        self.consistent_builds = consistent_builds
 
         self.resolve_board_and_vehicle_lists(
             all_boards=all_boards,
@@ -99,6 +101,8 @@ class BuildBoards(BuildScriptBase):
 
     def build_vehicles_for_board(self, board, vehicles, source_dir=None, jobs=None):
         waf_configure_args = ["configure", "--board", board]
+        if self.consistent_builds:
+            waf_configure_args.append("--consistent-builds")
 
         extra_hwdef = self.extra_hwdef_file([])
         if extra_hwdef is not None:
@@ -225,6 +229,11 @@ def main():
                         action='store_true',
                         default=False,
                         help="only run waf configure for each board, do not build")
+    parser.add_argument("--consistent-builds",
+                        action='store_true',
+                        default=False,
+                        help="configure with --consistent-builds, as size_compare_branches.py does, "
+                        "so builds can share a ccache with it")
     parser.add_argument("--progress-file",
                         type=str,
                         default=None,
@@ -258,6 +267,7 @@ def main():
         jobs=args.jobs,
         configure_only=args.configure_only,
         progress_file=args.progress_file,
+        consistent_builds=args.consistent_builds,
     )
     failures = bb.run()
     if failures:

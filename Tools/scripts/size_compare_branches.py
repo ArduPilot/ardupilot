@@ -80,11 +80,13 @@ class SizeCompareBranches(BuildScriptBase):
                  extra_hwdef_branch: list | None = None,
                  extra_hwdef_master: list | None = None,
                  parallel_copies=None,
+                 pair_builds=False,
                  jobs=None,
                  features=False,
                  symbols=False,
                  compare_object_files=False,
                  progress_file=None,
+                 no_wipe_build_dir=False,
                  ):
         super().__init__(progress_file=progress_file)
 
@@ -120,10 +122,12 @@ class SizeCompareBranches(BuildScriptBase):
         self.show_empty = show_empty
         self.show_unchanged = show_unchanged
         self.parallel_copies = parallel_copies
+        self.pair_builds = pair_builds
         self.jobs = jobs
         self.features = features
         self.symbols = symbols
         self.compare_object_files = compare_object_files
+        self.no_wipe_build_dir = no_wipe_build_dir
 
         if modified_boards and not all_boards:
             self.board = self.find_modified_boards(
@@ -155,7 +159,28 @@ class SizeCompareBranches(BuildScriptBase):
         build_dir = "build"
         if source_dir is not None:
             build_dir = os.path.join(source_dir, "build")
-        shutil.rmtree(build_dir, ignore_errors=True)
+        if not self.no_wipe_build_dir:
+            shutil.rmtree(build_dir, ignore_errors=True)
+        elif source_dir is not None and os.path.isdir(build_dir):
+            # a source copy is thrown away at the end of the run, so
+            # only this board's build products can be reused; remove
+            # other boards' build directories so they don't pile up.
+            # Their waf configuration has to go too, or waf finds
+            # the configuration's files missing and refuses to build.
+            # Without --parallel-copies the build directory is kept,
+            # so later runs can reuse every board's build products
+            for entry in os.listdir(build_dir):
+                if entry != board and entry in self.boards_by_name:
+                    shutil.rmtree(os.path.join(build_dir, entry), ignore_errors=True)
+                    cache = os.path.join(build_dir, "c4che", entry + "_cache.py")
+                    if os.path.exists(cache):
+                        os.remove(cache)
+        if self.no_wipe_build_dir:
+            # waf doesn't remove outputs a previous build made which
+            # this one doesn't, and results are looked for by name
+            # (e.g. iofirmware_highpolh.bin before iofirmware.bin), so
+            # remove the binaries; waf relinks them
+            shutil.rmtree(os.path.join(build_dir, board, "bin"), ignore_errors=True)
         waf_configure_args = ["configure", "--board", board]
         waf_build_args = []
         if self.waf_consistent_builds:
@@ -202,14 +227,19 @@ class SizeCompareBranches(BuildScriptBase):
                 shutil.rmtree(dsdl_generated_path, ignore_errors=True)
             self.run_waf(bootloader_waf_configure_args, show_output=False, source_dir=source_dir)
             self.run_waf([*waf_build_args, v], show_output=False, source_dir=source_dir)
-        self.run_program("rsync", ["rsync", "-ap", "build/", outdir], cwd=source_dir)
+        # copy out only this board's build directory; with
+        # no_wipe_build_dir the build directory can hold other boards:
+        os.makedirs(outdir, exist_ok=True)
+        board_build_dir = os.path.join("build", board, "")
+        self.run_program("rsync", ["rsync", "-ap", board_build_dir, os.path.join(outdir, board)], cwd=source_dir)
         if source_dir is not None:
             pathlib.Path(outdir, "scb_sourcepath.txt").write_text(source_dir)
 
     def parallel_progress_hook(self, tasks):
-        # write out a progress CSV:
+        # write out a progress CSV.  tasks may be TaskGroups, so use
+        # the individual tasks:
         task_results = []
-        for task in tasks:
+        for task in self.tasks:
             task_results.append(self.gather_results_for_task(task))
         # progress CSV:
         pairs = self.pairs_from_task_results(task_results)
@@ -234,6 +264,14 @@ class SizeCompareBranches(BuildScriptBase):
 
         def __str__(self):
             return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file} {self.toolchain})"  # NOQA:E501
+
+    class TaskGroup():
+        '''tasks built one after another in the same source tree'''
+        def __init__(self, tasks: list) -> None:
+            self.tasks = tasks
+
+        def __str__(self):
+            return "TaskGroup(" + ", ".join([str(task) for task in self.tasks]) + ")"
 
     def run(self):
         '''run tests for boards and vehicles passed in constructor'''
@@ -279,7 +317,15 @@ class SizeCompareBranches(BuildScriptBase):
         self.tasks = tasks
 
         if self.parallel_copies is not None:
-            self.run_build_tasks_in_parallel(tasks)
+            work = tasks
+            if self.pair_builds and len(tasks) > self.parallel_copies:
+                # build each board's master and branch one after the
+                # other in the same source tree, so the branch build
+                # finds the master build's objects in ccache (or, with
+                # no_wipe_build_dir, in the build directory) rather
+                # than racing to compile them:
+                work = [SizeCompareBranches.TaskGroup(tasks[i:i+2]) for i in range(0, len(tasks), 2)]
+            self.run_build_tasks_in_parallel(work)
             task_results = []
             for task in tasks:
                 task_results.append(self.gather_results_for_task(task))
@@ -455,6 +501,20 @@ class SizeCompareBranches(BuildScriptBase):
         return open(file1, "rb").read() == open(file2, "rb").read()
 
     def run_build_task(self, task, source_dir=None, jobs=None):
+        if isinstance(task, SizeCompareBranches.TaskGroup):
+            # build every task in the group even if one of them fails
+            failure = None
+            for t in task.tasks:
+                try:
+                    self.run_build_task(t, source_dir=source_dir, jobs=jobs)
+                except Exception as ex:  # noqa: BLE001 — record failure, build the rest of the group
+                    self.progress(f"Failed to build {t}: {ex}")
+                    if failure is None:
+                        failure = ex
+            if failure is not None:
+                raise failure
+            return
+
         self.progress(f"Building {task}")
         shutil.rmtree(task.outdir, ignore_errors=True)
         self.build_branch_into_dir(
@@ -848,12 +908,29 @@ def main():
                       type=int,
                       default=None,
                       help="Copy source dir this many times, build from those copies in parallel")
+    parser.add_option("",
+                      "--no-wipe-build-dir",
+                      action='store_true',
+                      default=False,
+                      help="Do not remove the build directory before each build, "
+                      "so waf can reuse the previous build's products")
     parser.add_option("-j",
                       "--jobs",
                       type=int,
                       default=None,
                       help="Passed to waf -j; number of build jobs.  If running with --parallel-copies, this is divided by the number of remaining threads before being passed.")  # noqa
+    parser.add_option("",
+                      "--pair-builds",
+                      action='store_true',
+                      default=False,
+                      help="With --parallel-copies, build each board's master and branch one after the other "
+                      "in the same source copy")
     cmd_opts, cmd_args = parser.parse_args()
+
+    if cmd_opts.compare_object_files and cmd_opts.no_wipe_build_dir:
+        # waf leaves object files whose sources have been removed in
+        # the build directory, so they would be reported as unchanged
+        parser.error("--compare-object-files cannot be used with --no-wipe-build-dir")
 
     vehicle = []
     for v in cmd_opts.vehicle:
@@ -885,11 +962,13 @@ def main():
         show_empty=cmd_opts.show_empty,
         show_unchanged=not cmd_opts.hide_unchanged,
         parallel_copies=cmd_opts.parallel_copies,
+        pair_builds=cmd_opts.pair_builds,
         jobs=cmd_opts.jobs,
         features=cmd_opts.features,
         symbols=cmd_opts.symbols,
         compare_object_files=cmd_opts.compare_object_files,
         progress_file=cmd_opts.progress_file,
+        no_wipe_build_dir=cmd_opts.no_wipe_build_dir,
     )
     x.run()
 
