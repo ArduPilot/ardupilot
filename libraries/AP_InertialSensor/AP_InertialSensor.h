@@ -534,6 +534,8 @@ public:
         float last_bandwidth_hz[INS_MAX_INSTANCES];
         float last_attenuation_dB[INS_MAX_INSTANCES];
         bool inactive;
+        // have we already warned about BW being clamped for this instance?
+        bool bandwidth_ratio_warned[INS_MAX_INSTANCES];
     } harmonic_notches[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
 #endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
