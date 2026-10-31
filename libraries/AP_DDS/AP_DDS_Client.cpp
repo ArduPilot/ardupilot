@@ -702,8 +702,8 @@ bool AP_DDS_Client::update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg)
         return false;
     }
     target_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
-    msg.position.latitude = target_loc.lat * 1e-7;
-    msg.position.longitude = target_loc.lng * 1e-7;
+    msg.position.latitude = (double)target_loc.lat / 1.0e7;
+    msg.position.longitude = (double)target_loc.lng / 1.0e7;
     msg.position.altitude = target_loc.alt * 1e-2;
 
     // Check whether the goal has changed or if the topic has never been published.
