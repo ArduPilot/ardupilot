@@ -21,6 +21,8 @@
 #include "RPM_Backend.h"
 
 #include <Filter/Filter.h>
+#define RPM_PIN_BUFFER_SIZE 16 //must be power of 2 for buffer to work correctly
+
 
 class AP_RPM_Pin : public AP_RPM_Backend
 {
@@ -33,15 +35,16 @@ public:
 
 private:
 
-    ModeFilterFloat_Size5 signal_quality_filter {3};
+    HampelFilter<float, 5> signal_quality_filter;
     int8_t last_pin = -1;       // last pin number checked vs PIN parameter
     bool interrupt_attached;    // true if an interrupt has been attached to last_pin
     struct IrqState {
         uint32_t last_pulse_us;
-        uint32_t dt_sum;
-        uint32_t dt_count;
+        uint32_t buffer[RPM_PIN_BUFFER_SIZE];
+        uint8_t last_sample;
     };
     static struct IrqState irq_state[RPM_MAX_INSTANCES];
+    uint8_t last_sample_used;
 
     void irq_handler(uint8_t pin,
                      bool pin_state,
