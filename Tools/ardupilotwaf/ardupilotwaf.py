@@ -447,6 +447,9 @@ def ap_program(bld,
 
     tg.env.vehicle_binary = vehicle_binary
 
+    if bld.env.SONAME_PATTERN:
+        tg.env.append_value('LINKFLAGS', ['-Wl,-soname,' + bld.env.SONAME_PATTERN % program_name])
+
     if 'use' in kw and bld.env.STATIC_LINKING:
         # ensure we link against vehicle library
         tg.env.STLIB += [kw['use']]

@@ -2,7 +2,6 @@
 # flake8: noqa
 
 import pathlib
-import platform
 
 def configure(cfg):
 
@@ -10,7 +9,7 @@ def configure(cfg):
         return
 
     # networking doesn't build with clang unless using macOS
-    if platform.system() != 'Darwin' and 'clang++' in cfg.env.COMPILER_CXX:
+    if cfg.env.DEST_OS != 'darwin' and 'clang++' in cfg.env.COMPILER_CXX:
        return
 
     extra_src = [
