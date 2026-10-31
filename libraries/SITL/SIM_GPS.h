@@ -170,6 +170,9 @@ private:
     Vector3f vel_glitch_pos_ofs;
     uint32_t last_vel_glitch_ms;
 
+    // samples sent so far with the glitch armed by SIM_GPSn_GLT_N
+    uint16_t glitch_samples_sent;
+
     bool _gps_has_basestation_position;
     GPS_Data _gps_basestation_data;
 
