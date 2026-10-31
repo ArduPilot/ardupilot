@@ -82,7 +82,8 @@ static bool create_interrupt_storm()
 
 /*
   handle a crash trigger, sent as MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN
-  with params 42/24/71 and the trigger type in param4. Returns
+  with params 42/24/71, the trigger type in param4 and any argument
+  in param5. Returns
   MAV_RESULT_UNSUPPORTED if param4 is not a crash trigger
  */
 MAV_RESULT GCS_MAVLINK::handle_crash_trigger(const mavlink_command_int_t &packet)
@@ -127,10 +128,11 @@ MAV_RESULT GCS_MAVLINK::handle_crash_trigger(const mavlink_command_int_t &packet
         return MAV_RESULT_ACCEPTED;
     }
     if (is_equal(packet.param4, 97.0f)) {
-        // create a really long loop
+        // create a really long loop; param5 optionally gives its
+        // length in milliseconds (default 250ms, at most 10s)
+        const uint32_t loop_ms = packet.x > 0 ? MIN(uint32_t(packet.x), 10000U) : 250U;
         send_text(MAV_SEVERITY_WARNING,"Creating long loop");
-        // 250ms:
-        for (uint8_t i=0; i<250; i++) {
+        for (uint32_t i=0; i<loop_ms; i++) {
             hal.scheduler->delay_microseconds(1000);
         }
         return MAV_RESULT_ACCEPTED;

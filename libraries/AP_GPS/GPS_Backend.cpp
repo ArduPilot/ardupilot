@@ -228,6 +228,8 @@ void AP_GPS_Backend::set_uart_timestamp(uint16_t nbytes)
 void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 {
     if (itow != _last_itow_ms) {
+        const uint32_t prev_itow_ms = _last_itow_ms;
+        const bool had_itow = _have_itow;
         _last_itow_ms = itow;
         _have_itow = true;
 
@@ -282,6 +284,16 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // round to calculated message rate
         dt_ms = ((dt_ms + (_rate_ms/2)) / _rate_ms) * _rate_ms;
+
+        // a message which waited in the UART (eg. while the main loop
+        // was stalled) is processed long after its GPS time, so the
+        // time since the last message was processed overstates how far
+        // it moved on.  When the GPS's own time step is sane, use that
+        const uint32_t itow_dt_ms = itow - prev_itow_ms;
+        if (had_itow && itow_dt_ms > 0 && itow_dt_ms <= 2000 &&
+            itow_dt_ms % gps_min_period_ms == 0) {
+            dt_ms = itow_dt_ms;
+        }
 
         // calculate pseudo-itow
         _pseudo_itow += dt_ms * 1000U;
