@@ -229,7 +229,7 @@ void Tiltrotor::continuous_update(void)
 
         max_change = tilt_max_change(false);
 
-        float new_throttle = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01, 0, 1);
+        float new_throttle = constrain_float(plane.apply_cached_throttle_limits(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))*0.01, 0, 1);
         if (current_tilt < get_fully_forward_tilt()) {
             current_throttle = constrain_float(new_throttle,
                                                     current_throttle-max_change,
@@ -363,7 +363,7 @@ void Tiltrotor::binary_update(void)
         // all the way forward and run them as a forward motor
         binary_slew(true);
 
-        float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
+        float new_throttle = plane.apply_cached_throttle_limits(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))*0.01f;
         if (current_tilt >= 1) {
             const uint32_t mask = is_zero(new_throttle) ? 0 : tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
