@@ -196,7 +196,7 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
     Mission_Command cmd = {};
     // check a maximum of 16 items, remembering that missions can have
     // loops in them
-    for (uint8_t i=0; i<16; i++, cmd_index++) {
+    for (uint8_t i=0; i<16; i++) {
         if (!get_next_nav_cmd(cmd_index, cmd)) {
             return false;
         }
@@ -210,6 +210,8 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
         // we "start with a takeoff command"
         case MAV_CMD_DO_AUX_FUNCTION:
         case MAV_CMD_NAV_DELAY:
+            // continue after the skipped command, which a DO_JUMP may have moved away from cmd_index
+            cmd_index = cmd.index + 1;
             continue;
         default:
             return false;
@@ -562,8 +564,10 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
-    // search until the end of the mission command list
-    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+    // a lookahead never changes a jump's count, so the search is deterministic per row:
+    // visiting more rows than the mission holds means it is looping over DO commands only
+    uint16_t cmd_index = start_index;
+    for (uint16_t i = 0; i < (unsigned)_cmd_total && cmd_index < (unsigned)_cmd_total; i++) {
         // get next command
         if (!get_next_cmd(cmd_index, cmd, false)) {
             // no more commands so return failure
@@ -573,6 +577,8 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
         if (is_nav_cmd(cmd)) {
             return true;
         }
+        // continue after the command returned, which a DO_JUMP may have moved away from cmd_index
+        cmd_index = cmd.index + 1;
     }
 
     // if we got this far we did not find a navigation command
@@ -1237,10 +1243,22 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
-    case MAV_CMD_NAV_ARC_WAYPOINT:                      // MAV ID: 36
+    case MAV_CMD_NAV_ARC_WAYPOINT: {                    // MAV ID: 36
         cmd.content.location.loiter_ccw = is_negative(packet.param1); // re-use loiter_cw for arc direction
         cmd.p1 = fabsf(packet.param1);                  // arc angle in deg
+        // arc plane rotation in 45 degree steps, see get_arc_axis_rot_rad(); NaN means not set
+        float arc_rot_steps = 0.0f;
+        if (!isnan(packet.param2)) {
+            const float steps = packet.param2 * (1.0f / 45.0f);
+            arc_rot_steps = roundf(steps);
+            // 0.01 degrees covers float rounding without accepting a rotation that is not a step
+            if (fabsf(steps - arc_rot_steps) > 0.01f * (1.0f / 45.0f) || is_negative(arc_rot_steps) || arc_rot_steps > 3.0f) {
+                return MAV_MISSION_INVALID_PARAM2;
+            }
+        }
+        cmd.type_specific_bits = uint8_t(arc_rot_steps);
         break;
+    }
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -1788,6 +1806,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_NAV_ARC_WAYPOINT: {                    // MAV ID: 36
         const float sign = cmd.content.location.loiter_ccw == 0 ? 1.0 : -1.0; // Mavlink command specifies positiive is CW
         packet.param1 = float(cmd.p1) * sign;
+        packet.param2 = float(cmd.type_specific_bits & 0x3) * 45.0f;
         break;
     }
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82

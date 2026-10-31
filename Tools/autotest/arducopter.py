@@ -803,6 +803,405 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         return (cx, cy), R
 
+    def ArcSplineAggro(self):
+        '''a diving arc and spline that ask for more than 1g downward stay upright without PSC_TVEC_EN'''
+        self.aggro_dive_cases(0)
+
+    def ArcSplineAggroTV(self):
+        '''the same dives with PSC_TVEC_EN point the thrust downward to fly them'''
+        self.aggro_dive_cases(1)
+
+    def aggro_dive_cases(self, tvec):
+        self.set_parameters({
+            "PSC_TVEC_EN": tvec,
+            "AUTO_OPTIONS": 3,
+            "WP_SPD": 30,
+            "WP_SPD_UP": 20,
+            "WP_SPD_DN": 30,
+            "WP_ACC": 10,
+            "WP_ACC_CNR": 20,
+            "WP_ACC_Z": 15,
+            # WP_JERK is only read when Auto starts, so it is set before the mission
+            "WP_JERK": 30,
+            "ATC_ANGLE_MAX": 80,
+        })
+        self.reboot_sitl()
+
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        TO = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        SPL = mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT
+        RTL = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+
+        # A 180 degree arc of radius 10 m descending 180 m is a path 80 degrees from
+        # level, and WP_ACC_Z 15 along it asks for 1.5g downward; the spline flies the
+        # same geometry.  Pointing the thrust downward is the only way to fly either.
+        cases = [
+            ("arc dive", [
+                (TO, 0, 0, 200),
+                (WP, 120, 60, 200),
+                (WP, 120, 0, 200),
+                (ARC, 100, 0, 20, {"p1": -180}),
+                (RTL, 0, 0, 0),
+            ]),
+            ("spline dive", [
+                (TO, 0, 0, 200),
+                (WP, 120, 60, 200),
+                (WP, 120, 0, 200),
+                (SPL, 117.07, -7.07, 155.0),
+                (SPL, 110.0, -10.0, 110.0),
+                (SPL, 102.93, -7.07, 65.0),
+                (SPL, 100.0, 0.0, 20.0),
+                (RTL, 0, 0, 0),
+            ]),
+        ]
+
+        for (name, items) in cases:
+            self.start_subtest(name)
+            # cos(roll)cos(pitch) is the vertical component of the thrust axis: negative is
+            # thrust pointing downward, and unlike Euler roll it does not fold at the apex
+            state = {"active": False, "min_cos": 1.0, "min_alt": None, "climb": 0.0, "att_n": 0}
+
+            def hook(mav, m):
+                if not state["active"]:
+                    return
+                if m.get_type() == 'ATTITUDE':
+                    state["att_n"] += 1
+                    state["min_cos"] = min(state["min_cos"], math.cos(m.roll) * math.cos(m.pitch))
+                elif m.get_type() == 'GLOBAL_POSITION_INT':
+                    alt = m.relative_alt * 0.001
+                    state["min_alt"] = alt if state["min_alt"] is None else min(state["min_alt"], alt)
+                elif m.get_type() == 'VFR_HUD':
+                    state["climb"] = m.climb
+            # each case has its own hook, removed when its context is popped
+            self.context_push()
+            self.install_message_hook_context(hook)
+            self.change_mode('STABILIZE')
+            self.start_flying_simple_relhome_mission(items)
+            self.wait_current_waypoint(4, timeout=300)
+            state["active"] = True
+            # the RTL that follows the dive; the inserted home item makes it seq len(items).
+            # Keep watching until the descent is arrested, so the end of the dive's stop counts
+            self.wait_current_waypoint(len(items), timeout=300)
+            tstart = self.get_sim_time()
+            while state["climb"] < -0.5 and self.get_sim_time_cached() - tstart < 30:
+                self.assert_receive_message('VFR_HUD')
+            if state["climb"] < -0.5:
+                raise NotAchievedException("%s: still descending %.1f m/s 30 s into RTL" % (name, -state["climb"]))
+            state["active"] = False
+            self.wait_disarmed(timeout=180)
+            self.context_pop()
+            # a check on samples that never arrived would pass
+            if state["att_n"] == 0 or state["min_alt"] is None:
+                raise NotAchievedException("%s: no attitude or position received during the dive" % name)
+            self.progress("%s: min cos(roll)cos(pitch) %.3f, min alt %.1f m" %
+                          (name, state["min_cos"], state["min_alt"]))
+            if tvec:
+                if state["min_cos"] > -0.5:
+                    raise NotAchievedException("%s: thrust never pointed downward (min %.3f)" % (name, state["min_cos"]))
+            elif state["min_cos"] < 0:
+                raise NotAchievedException("%s: thrust pointed downward without PSC_TVEC_EN (min %.3f)" %
+                                           (name, state["min_cos"]))
+            # the dive ends 20 m up, and the stop must not carry it to the ground
+            if state["min_alt"] < 5:
+                raise NotAchievedException("%s: dive ended at %.1f m" % (name, state["min_alt"]))
+
+    def WPArcLoop(self):
+        '''fly a vertical loop as two chained vertical arcs, then stop on a straight climb'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+            "WP_SPD": 20,
+            "WP_SPD_UP": 20,
+            "WP_SPD_DN": 20,
+            "WP_ACC": 15,
+            "WP_ACC_CNR": 30,
+            "WP_ACC_Z": 15,
+            "WP_JERK": 30,
+            "ATC_ANGLE_MAX": 75,
+            "PSC_TVEC_EN": 1,
+        })
+        self.reboot_sitl()
+
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        TO = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        RTL = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+
+        # Two 180 degree arcs in the vertical plane sharing a 40 m chord but bulging to
+        # opposite sides trace one circle of radius 20 m centred at (120, 0, 60), entered
+        # and left climbing.  Over the top v^2/r points down and exceeds gravity, so the
+        # vehicle inverts.  The straight climb after it is arrested at WP_ACC_Z, which
+        # also exceeds gravity, but slowing down along the path must not invert.
+        state = {"seq": 0, "min_cos": {}}
+
+        def hook(mav, m):
+            if m.get_type() == 'MISSION_CURRENT':
+                state["seq"] = m.seq
+            elif m.get_type() == 'ATTITUDE':
+                s = state["seq"]
+                state["min_cos"][s] = min(state["min_cos"].get(s, 1.0), math.cos(m.roll) * math.cos(m.pitch))
+        self.install_message_hook_context(hook)
+        self.change_mode('STABILIZE')
+        self.start_flying_simple_relhome_mission([
+            (TO, 0, 0, 30),
+            (WP, 100, 0, 30),
+            (WP, 100, 0, 60),
+            (ARC, 140, 0, 60, {"p1": 180, "p2": 90}),     # over the top
+            (ARC, 100, 0, 60, {"p1": -180, "p2": 90}),    # round the bottom
+            (WP, 100, 0, 90),                             # straight climb to a stop
+            (RTL, 0, 0, 0),
+        ])
+        self.wait_altitude(76, 86, relative=True, timeout=240)
+        self.wait_altitude(36, 44, relative=True, timeout=120)
+        self.wait_altitude(85, 95, relative=True, timeout=120)
+        self.wait_disarmed(timeout=180)
+
+        if 4 not in state["min_cos"] or 6 not in state["min_cos"]:
+            raise NotAchievedException("no attitude recorded over the top or on the exit climb")
+        over_top = state["min_cos"][4]
+        exit_climb = state["min_cos"][6]
+        self.progress("min cos(roll)cos(pitch): over the top %.3f, exit climb %.3f" % (over_top, exit_climb))
+        if over_top > -0.5:
+            raise NotAchievedException("did not invert over the top of the loop (%.3f)" % over_top)
+        if exit_climb < 0.5:
+            raise NotAchievedException("inverted to stop the exit climb (%.3f)" % exit_climb)
+
+    def ArcSplineYawBehaviour(self):
+        '''a vertical loop and an upright spline fly under WP_YAW_BEHAVIOR 0 and 2'''
+        # LOOK_AT_NEXT_WP asks for an absolute world-frame heading, which only means
+        # anything while the vehicle is near upright.  Nothing else in the suite varies
+        # WP_YAW_BEHAVIOR over a curved path, so a change to the heading source can
+        # break a vertical manoeuvre, or ordinary upright flight, unnoticed.
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+            "WP_SPD": 20,
+            "WP_SPD_UP": 20,
+            "WP_SPD_DN": 20,
+            "WP_ACC": 10,
+            "WP_ACC_CNR": 25,  # must clear v^2/r = 20 or the arc speed cap throttles the leg
+            "WP_ACC_Z": 10,
+            "WP_JERK": 20,
+            "ATC_ANGLE_MAX": 80,
+            "PSC_TVEC_EN": 1,
+        })
+        self.reboot_sitl()
+
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        TO = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        SPL = mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT
+        RTL = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+
+        # A loop of radius 20 m in the North-Down plane built from four quarter arcs.  The
+        # arc plane is rotated about each chord's ground track, so all four lie in the one
+        # vertical plane; param1 is the side of the chord each bulges to, above (+) or
+        # below (-), so the two lower quarters are negative and the two upper ones positive.
+        loop = [
+            (TO, 0, 0, 40),
+            (WP, 60, 0, 40),
+            (WP, 120, 0, 40),                             # bottom, tangent +North
+            (ARC, 140, 0, 60, {"p1": -90, "p2": 90}),     # up the front
+            (ARC, 120, 0, 80, {"p1": 90, "p2": 90}),      # over the top, inverted
+            (ARC, 100, 0, 60, {"p1": 90, "p2": 90}),      # down the back
+            (ARC, 120, 0, 40, {"p1": -90, "p2": 90}),     # back to the bottom
+            (RTL, 0, 0, 0),
+        ]
+        # the spline stays upright throughout, so the steep-tilt heading fallback never engages
+        # and it must fly as it always has
+        spline = [
+            (TO, 0, 0, 30),
+            (WP, 100, 60, 30),
+            (WP, 100, 0, 30),
+            (SPL, 108.79, -21.21, 45.0),
+            (SPL, 130.0, -30.0, 60.0),
+            (SPL, 151.21, -21.21, 75.0),
+            (SPL, 160.0, 0.0, 90.0),
+            (RTL, 0, 0, 0),
+        ]
+
+        # 0 is WP_YAW_BEHAVIOR_NONE, 2 is LOOK_AT_NEXT_WP_EXCEPT_RTL and the default
+        for behaviour in 0, 2:
+            for name, mission, last_seq in [("arc loop", loop, 7), ("spline helix", spline, 7)]:
+                self.start_subtest("%s with WP_YAW_BEHAVIOR=%u" % (name, behaviour))
+                self.set_parameter("WP_YAW_BEHAVIOR", behaviour)
+                state = {"active": False, "min_cos": 1.0, "inv_yaw_rate": 0.0, "max_east": 0.0, "max_alt": 0.0,
+                         "ground": None, "vel": None, "max_course_err": 0.0, "att_n": 0, "course_n": 0}
+
+                def hook(mav, m):
+                    if m.get_type() == 'LOCAL_POSITION_NED' and state["ground"] is None:
+                        # home is set where each case arms, which after the first is not the EKF origin
+                        state["ground"] = (m.y, m.z)
+                    if not state["active"]:
+                        return
+                    if m.get_type() == 'ATTITUDE':
+                        state["att_n"] += 1
+                        c = math.cos(m.roll) * math.cos(m.pitch)
+                        state["min_cos"] = min(state["min_cos"], c)
+                        if c < 0:
+                            state["inv_yaw_rate"] = max(state["inv_yaw_rate"], abs(math.degrees(m.yawspeed)))
+                        if state["vel"] is not None and math.hypot(*state["vel"]) > 5:
+                            course = math.degrees(math.atan2(state["vel"][1], state["vel"][0]))
+                            err = abs(mavextra.wrap_180(math.degrees(m.yaw) - course))
+                            state["max_course_err"] = max(state["max_course_err"], err)
+                            state["course_n"] += 1
+                    elif m.get_type() == 'LOCAL_POSITION_NED' and state["ground"] is not None:
+                        state["vel"] = (m.vx, m.vy)
+                        state["max_east"] = max(state["max_east"], abs(m.y - state["ground"][0]))
+                        state["max_alt"] = max(state["max_alt"], -(m.z - state["ground"][1]))
+                # each case has its own hook, removed when its context is popped
+                self.context_push()
+                self.install_message_hook_context(hook)
+                self.change_mode('STABILIZE')
+                self.start_flying_simple_relhome_mission(mission)
+                self.wait_current_waypoint(4, timeout=300)
+                state["active"] = True
+                self.wait_current_waypoint(last_seq + 1, timeout=300)
+                state["active"] = False
+                self.wait_disarmed(timeout=180)
+                self.context_pop()
+                self.progress("%s: min cos %.3f, inverted yaw rate %.0f deg/s, max east %.2f m, max alt %.1f m, "
+                              "heading off track %.0f deg" % (
+                                  name, state["min_cos"], state["inv_yaw_rate"], state["max_east"], state["max_alt"],
+                                  state["max_course_err"]))
+                # a check on samples that never arrived would pass
+                if state["att_n"] == 0 or state["course_n"] == 0:
+                    raise NotAchievedException("%s: no attitude or velocity received in flight" % name)
+                if mission is spline:
+                    if state["min_cos"] < 0:
+                        raise NotAchievedException("spline helix inverted (%.3f)" % state["min_cos"])
+                    # upright, LOOK_AT_NEXT_WP must still point along the track; it flies within
+                    # about 50 degrees of it, and a held heading is up to 180 degrees off
+                    if behaviour == 2 and state["max_course_err"] > 90:
+                        raise NotAchievedException("spline heading %.0f deg off the track" % state["max_course_err"])
+                    continue
+                if state["min_cos"] > -0.5:
+                    raise NotAchievedException("loop did not invert over the top (%.3f)" % state["min_cos"])
+                if state["max_alt"] < 76 or state["max_alt"] > 86:
+                    raise NotAchievedException("loop topped out at %.1f m, not 80" % state["max_alt"])
+                if state["max_east"] > 2:
+                    raise NotAchievedException("loop left its plane by %.2f m" % state["max_east"])
+                # LOOK_AT_NEXT_WP must not chase a heading while inverted; with no heading
+                # demand at all (0) the loop is flown diagonally by design and not checked
+                if behaviour == 2 and state["inv_yaw_rate"] > 20:
+                    raise NotAchievedException("yawed at %.0f deg/s while inverted" % state["inv_yaw_rate"])
+
+    def ArcInvertedModeChange(self):
+        '''leaving Auto while the thrust points downward ends inverted thrust at once'''
+        self.set_parameters({
+            "PSC_TVEC_EN": 1,
+            "AUTO_OPTIONS": 3,
+            "WP_SPD": 30,
+            "WP_SPD_UP": 20,
+            "WP_SPD_DN": 30,
+            "WP_ACC": 10,
+            "WP_ACC_CNR": 20,
+            "WP_ACC_Z": 15,
+            "WP_JERK": 30,
+            "ATC_ANGLE_MAX": 80,
+        })
+        self.reboot_sitl()
+
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        TO = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        RTL = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+
+        # AltHold flies upright lean angles, so if inverted thrust survived the mode change
+        # its throttle law would turn a demand to descend into more upward thrust
+        self.change_mode('STABILIZE')
+        self.start_flying_simple_relhome_mission([
+            (TO, 0, 0, 200),
+            (WP, 120, 60, 200),
+            (WP, 120, 0, 200),
+            (ARC, 100, 0, 20, {"p1": -180}),
+            (RTL, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(4, timeout=300)
+        # centred, so AltHold holds height rather than asking to climb or descend
+        self.set_rc(3, 1500)
+        tstart = self.get_sim_time()
+        while True:
+            m = self.assert_receive_message('ATTITUDE')
+            if math.cos(m.roll) * math.cos(m.pitch) < 0:
+                break
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("dive never pointed the thrust downward")
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(5, reason='let AltHold settle')
+        # the dive's 30 m/s descent limit is no speed to land at
+        self.set_parameter('WP_SPD_DN', 3)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=300)
+
+        # LogEvent::INVERTED_THRUST_START and _STOP
+        dfreader = self.dfreader_for_current_onboard_log()
+        althold_us = None
+        stop_us = None
+        active = False
+        while True:
+            m = dfreader.recv_match(type=['MODE', 'EV'])
+            if m is None:
+                break
+            if m.get_type() == 'MODE' and m.Mode == 2 and althold_us is None:
+                if not active:
+                    raise NotAchievedException("inverted thrust was not active when ALT_HOLD was entered")
+                althold_us = m.TimeUS
+            elif m.get_type() == 'EV' and m.Id in (91, 92):
+                active = m.Id == 91
+                if m.Id == 92 and althold_us is not None and stop_us is None:
+                    stop_us = m.TimeUS
+        if althold_us is None or stop_us is None:
+            raise NotAchievedException("no ALT_HOLD entry and inverted thrust stop in the log")
+        delay = (stop_us - althold_us) * 1.0e-6
+        self.progress("inverted thrust stopped %.3f s after entering ALT_HOLD" % delay)
+        if delay > 0.1:
+            raise NotAchievedException("inverted thrust carried on %.3f s into ALT_HOLD" % delay)
+
+    def ArcWaypointPlaneParam(self):
+        '''ARC_WAYPOINT param2 round trips for each plane rotation and rejects anything else'''
+        ARC = mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT
+        WP = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+        MISSION = mavutil.mavlink.MAV_MISSION_TYPE_MISSION
+        frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+        home = self.home_position_as_location()
+        lat = int(home.lat * 1e7)
+        lng = int(home.lng * 1e7)
+
+        def items(p2):
+            return [
+                self.create_MISSION_ITEM_INT(WP, seq=0, x=lat, y=lng, z=0, frame=frame),
+                self.create_MISSION_ITEM_INT(ARC, seq=1, p1=90, p2=p2, x=lat + 1000, y=lng, z=20, frame=frame),
+            ]
+
+        def downloaded_param2():
+            return self.download_using_mission_protocol(MISSION)[1].param2
+
+        # the four rotations the storage holds come back as they went up, and an unset (NaN)
+        # param2 means the horizontal arc
+        for p2, want in (0, 0), (45, 45), (90, 90), (135, 135), (float('nan'), 0):
+            self.start_subtest("param2 %s" % p2)
+            self.upload_using_mission_protocol(MISSION, items(p2))
+            got = downloaded_param2()
+            if got != want:
+                raise NotAchievedException("param2 %s downloaded as %f, want %f" % (p2, got, want))
+
+        # anything else is refused rather than snapped to the nearest step
+        acks = []
+
+        def hook(mav, m):
+            if m.get_type() == 'MISSION_ACK':
+                acks.append(m.type)
+        self.install_message_hook_context(hook)
+        for p2 in 30, -45, 180, 46, 45.4:
+            self.start_subtest("param2 %s is rejected" % p2)
+            del acks[:]
+            try:
+                self.upload_using_mission_protocol(MISSION, items(p2))
+            except NotAchievedException:
+                pass
+            if mavutil.mavlink.MAV_MISSION_INVALID_PARAM2 not in acks:
+                raise NotAchievedException("param2 %s was not rejected (acks %s)" % (p2, acks))
+
     def WPArcs2(self):
         '''more tests for waypoint arcs'''
         self.set_parameters({
@@ -882,7 +1281,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.disarm_vehicle()
 
-        # this will move but won't arc (it should...):
+        # the arc follows a takeoff so is not preloaded; WPArcStartWaypoint checks it is flown as an arc
         self.start_subtest("Should move if no start waypoint")
         self.context_push()
         self.start_flying_simple_relhome_mission([
@@ -1062,6 +1461,183 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_distance_to_home(10, 20)
         self.wait_disarmed(timeout=600)
         self.context_pop()
+
+    def WPArcStartWaypoint(self):
+        '''arcs are flown only when the vehicle has just completed the command above them'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+
+        def offset_from_chord(pos, start, end):
+            chord = (end[0] - start[0], end[1] - start[1])
+            rel = (pos[0] - start[0], pos[1] - start[1])
+            return abs(chord[0] * rel[1] - chord[1] * rel[0]) / math.hypot(chord[0], chord[1])
+
+        def fly_recording_offsets(items, chords):
+            '''fly items, returning the max offset from the chord on each visit to a
+            seq in chords; chords maps seq to a list of (start NE, end NE), one per visit'''
+            offsets = {seq: [] for seq in chords}
+            current_seq = [None]
+
+            def record_offset(mav, m):
+                m_type = m.get_type()
+                if m_type == 'MISSION_CURRENT':
+                    if m.seq != current_seq[0] and m.seq in chords:
+                        offsets[m.seq].append(0.0)
+                    current_seq[0] = m.seq
+                    return
+                if m_type != 'LOCAL_POSITION_NED' or current_seq[0] not in chords:
+                    return
+                visit = len(offsets[current_seq[0]]) - 1
+                if visit >= len(chords[current_seq[0]]):
+                    return
+                (start, end) = chords[current_seq[0]][visit]
+                offsets[current_seq[0]][visit] = max(offsets[current_seq[0]][visit], offset_from_chord((m.x, m.y), start, end))
+
+            self.change_mode('STABILIZE')  # needed to ensure Copter mission state machine works
+            self.context_push()
+            self.install_message_hook_context(record_offset)
+            self.start_flying_simple_relhome_mission(items)
+            self.wait_disarmed(timeout=600)
+            self.context_pop()
+            return offsets
+
+        def loiter_turns(n, e, radius):
+            loc = self.offset_location_ne(self.home_position_as_location(), n, e)
+            return self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=1,
+                p3=radius,
+                x=int(loc.lat * 1e7),
+                y=int(loc.lng * 1e7),
+                z=20,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            )
+
+        failures = []
+
+        # every 180 degree arc below follows a command it can start from, so must bulge
+        # half its chord length away from the chord
+        self.start_subtest("Arcs after each command an arc can start from")
+        arcs = {
+            2: ("takeoff", (0, 0), (0, 40)),
+            4: ("waypoint with a hold time", (0, 60), (40, 60)),
+            6: ("spline", (60, 60), (60, 20)),
+            8: ("loiter time", (60, 0), (100, 0)),
+            10: ("loiter to alt", (120, 0), (120, 40)),
+            13: ("waypoint then delay", (120, 60), (80, 60)),
+            15: ("loiter turns", (80, 70), (80, 110)),
+        }
+        offsets = fly_recording_offsets([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 0, 40, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 60, 20, {"p1": 1}),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 40, 60, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT, 60, 60, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 60, 20, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME, 60, 0, 20,
+             {"p1": 1, "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT}),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 100, 0, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT, 120, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 120, 40, 30, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 120, 60, 20),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_DELAY, p1=1),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 80, 60, 20, {"p1": 180}),
+            loiter_turns(80, 80, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 80, 110, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {seq: [(start, end)] for (seq, (_, start, end)) in arcs.items()})
+        for (seq, (name, start, end)) in arcs.items():
+            sagitta = 0.5 * math.hypot(end[0] - start[0], end[1] - start[1])
+            offset = max(offsets[seq], default=0.0)
+            self.progress(f"arc after {name}: max offset from chord {offset:.1f}m, sagitta {sagitta:.1f}m")
+            if offset < 0.7 * sagitta:
+                failures.append(f"arc after {name} was flown straight")
+
+        # jumping to an arc does not start it from the command above it, so the second
+        # visit flies straight from waypoint B to the arc's end
+        self.start_subtest("Jump to an arc flies straight")
+        offsets = fly_recording_offsets([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 10, 40, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 40, 20),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=3, p2=1),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {3: [((10, 0), (10, 40)), ((50, 40), (10, 40))]})
+        visits = offsets[3]
+        self.progress(f"arc visits, max offset from chord: {[round(v, 1) for v in visits]}")
+        if len(visits) < 2:
+            failures.append(f"arc was visited {len(visits)} times, expected 2")
+        else:
+            if visits[0] < 0.7 * 20:
+                failures.append("arc after its waypoint was flown straight")
+            if visits[1] > 3:
+                failures.append("arc reached by a jump was flown as an arc")
+
+        if len(failures) > 0:
+            raise NotAchievedException(f"{failures}")
+
+    def DoJumpToDoCommand(self):
+        '''a jump whose target is a DO command must not preload the waypoint after the jump'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+
+        # while flying the loop the vehicle stays within the L-A box; the waypoint
+        # after the jump is 200m east, so heading for it breaks the bound quickly
+        loop_seqs = (3, 4)
+        max_east = 60
+        current_seq = [None]
+        loop_east = [0.0]
+
+        def record_loop_east(mav, m):
+            m_type = m.get_type()
+            if m_type == 'MISSION_CURRENT':
+                current_seq[0] = m.seq
+                return
+            if m_type != 'LOCAL_POSITION_NED':
+                return
+            if current_seq[0] in loop_seqs:
+                loop_east[0] = max(loop_east[0], m.y)
+
+        loop_end = (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 200, 20)
+        missions = {
+            "DO_JUMP": [
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p1=1, p2=8),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 20),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 40, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=2, p2=2),
+                loop_end,
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            ],
+            "DO_JUMP_TAG": [
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_JUMP_TAG, p1=7),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 20),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 40, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP_TAG, p1=7, p2=2),
+                loop_end,
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            ],
+        }
+        left_loop = []
+        for (name, items) in missions.items():
+            self.start_subtest(f"{name} to a DO command")
+            self.change_mode('STABILIZE')  # needed to ensure Copter mission state machine works
+            current_seq[0] = None
+            loop_east[0] = 0.0
+            self.context_push()
+            self.install_message_hook_context(record_loop_east)
+            self.start_flying_simple_relhome_mission(items)
+            self.wait_disarmed(timeout=300)
+            self.context_pop()
+            self.progress(f"{name}: furthest east while in the loop {loop_east[0]:.1f}m (limit {max_east}m)")
+            if loop_east[0] > max_east:
+                left_loop.append(name)
+        if len(left_loop) > 0:
+            raise NotAchievedException(f"{left_loop} left the loop toward the waypoint after the jump")
 
     # test circle speed - should be constant degrees/second:
     def CircleSpeed(self):
@@ -19529,6 +20105,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ret.extend([
             self.SetModesViaModeSwitch,
             self.WPArcs2,
+            self.WPArcStartWaypoint,
+            self.DoJumpToDoCommand,
+            self.ArcSplineAggro,
+            self.ArcSplineAggroTV,
+            self.WPArcLoop,
+            self.ArcSplineYawBehaviour,
+            self.ArcInvertedModeChange,
+            self.ArcWaypointPlaneParam,
             self.BatteryFailsafeBrakeLandNoGPS,
             self.AC_Avoidance_Proximity,
             self.AC_Avoidance_Fence,

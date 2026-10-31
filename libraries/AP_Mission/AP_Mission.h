@@ -460,10 +460,27 @@ public:
         /*
           return the arc angle in radians for an ARC_WAYPOINT command
           this has special handling for arc waypoints using cmd.p1 and loiter_ccw
+          positive is a clockwise arc, which bulges left of the chord in the horizontal
+          plane and above it in the vertical plane, whichever way the chord runs
          */
         float get_arc_angle_rad(void) const {
             const float sign = (content.location.loiter_ccw == 0) ? 1.0f : -1.0f;
             return radians(float(p1) * sign);
+        }
+
+        /*
+          return the arc plane rotation in radians for an ARC_WAYPOINT command
+          the plane is rotated from horizontal about the chord's ground track.  for a
+          positive (clockwise) arc angle, 0 bulges left of the chord, 45 up and to the
+          left, 90 straight up and 135 up and to the right; a negative arc angle bulges
+          the opposite way, so the two together cover every 45 degree direction.  only
+          two bits of type_specific_bits reach storage, so param2 must be 0, 45, 90 or
+          135 to within 0.01 degrees and anything else is rejected on upload.  a leg
+          within about half a degree of vertical has no ground track to rotate about
+          and is flown in the horizontal plane
+         */
+        float get_arc_axis_rot_rad(void) const {
+            return radians(float(type_specific_bits & 0x3) * 45.0f);
         }
     };
 
