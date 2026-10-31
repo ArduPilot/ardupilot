@@ -20094,6 +20094,30 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if self.statustext_in_collections("Internal Errors"):
             raise NotAchievedException("Internal error raised while armed inverted")
 
+    def GPSHealthAfterLongLoop(self):
+        '''check the GPS recovers quickly from a main loop stall'''
+        self.wait_ready_to_arm()
+
+        # GPS data piles up in the UART while the main loop is stalled.
+        # That used to make every later GPS message look lagged, and so
+        # the GPS unhealthy, for 20 to 40 seconds.  The gap in the GPS
+        # data itself still pulls the average message rate below what
+        # is healthy for several seconds.  Whether a stall used to
+        # trigger it depends on where it falls in the GPS's 200ms
+        # output cycle, so stall at a few different points in it
+        for i in range(3):
+            if i > 0:
+                self.delay_sim_time(0.07, reason="move the stall in the GPS cycle")
+            self.progress("Stalling the main loop")
+            self.run_cmd_create_long_loop(1000)
+            self.delay_sim_time(1, reason="the GPS to react to the stall")
+            self.wait_gps_sys_status_not_present_or_enabled_and_healthy(timeout=15)
+
+            self.progress("Checking the GPS stays healthy")
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 10:
+                self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
@@ -20321,6 +20345,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptingFlyVelocity,
             self.PLDNoParameters,
             self.ArmedInvertedTakeoff,
+            self.GPSHealthAfterLongLoop,
         ])
         return ret
 
