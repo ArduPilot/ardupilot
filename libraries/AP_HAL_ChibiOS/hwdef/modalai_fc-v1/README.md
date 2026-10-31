@@ -43,7 +43,7 @@ See Flight Core Datasheet [Here](https://docs.modalai.com/flight-core-datasheets
 
 For detailed pinout descriptions see [FlightCore Pinout](https://docs.modalai.com/flight-core-datasheets-connectors/)
 
-## Dimensions
+## Physical
 
 ![ModalAI-fc-dims](flight_core_v1_imu_locations.png "modal-fc-dims")
 
