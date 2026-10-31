@@ -74,12 +74,19 @@ bool ModeTurtle::allows_arming(AP_Arming::Method method) const
 
 void ModeTurtle::exit()
 {
-    shutdown = true;
-
-    disarm_motors();
+    shutdown_motors();
 
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
+}
+
+// disarm, restoring the motor direction and failsafes, and stay
+// disarmed until the mode is entered again
+void ModeTurtle::shutdown_motors()
+{
+    shutdown = true;
+
+    disarm_motors();
 }
 
 void ModeTurtle::disarm_motors()

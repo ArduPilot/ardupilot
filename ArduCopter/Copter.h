@@ -846,6 +846,7 @@ private:
     // failsafe.cpp
     void failsafe_enable();
     void failsafe_disable();
+    void failsafe_check_disarm();
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
