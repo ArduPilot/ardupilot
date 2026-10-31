@@ -83,6 +83,9 @@ bool ModeLand::init(bool ignore_checks)
     }
 
     land_start_time = millis();
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    land_start_alt_m = get_alt_above_ground_m();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     land_pause = false;
 
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
@@ -191,6 +194,20 @@ void ModeLand::nogps_run()
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(target_roll_rad, target_pitch_rad, auto_yaw.get_heading().yaw_rate_rads);
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+bool ModeLand::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    get_descent_progress(progress, land_start_alt_m);
+    UNUSED_RESULT(get_nav_target(target));
+    return true;
+}
+
+bool ModeLand::get_nav_target(Location &target) const
+{
+    return get_land_target(target);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
 // do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
 //  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS

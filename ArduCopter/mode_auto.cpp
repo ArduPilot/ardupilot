@@ -538,6 +538,10 @@ void ModeAuto::land_start()
 
     // set submode
     set_submode(SubMode::LAND);
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    land_descent_start_alt_m = get_alt_above_ground_m();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 }
 
 // circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
@@ -958,6 +962,51 @@ float ModeAuto::wp_bearing_deg() const
     return degrees(wp_nav->get_wp_bearing_to_destination_rad());
 }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// the target of the current navigation task of the mission item being flown
+bool ModeAuto::get_nav_target(Location &target) const
+{
+    switch (_mode) {
+    case SubMode::TAKEOFF:
+        return auto_takeoff.get_target(target);
+    case SubMode::WP:
+    case SubMode::LOITER:
+    case SubMode::LOITER_TO_ALT:
+    case SubMode::CIRCLE_MOVE_TO_EDGE:
+        return get_wp_target(target);
+    case SubMode::CIRCLE: {
+        Location origin;
+        if (!AP::ahrs().get_origin(origin)) {
+            return false;
+        }
+        target = Location::from_ekf_offset_NED_m(copter.circle_nav->get_center_NED_m(), copter.circle_nav->center_is_terrain_alt() ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        return true;
+    }
+    case SubMode::LAND:
+        if (land_state == LandState::FlyToLocation) {
+            return get_wp_target(target);
+        }
+        return get_land_target(target);
+    case SubMode::RTL:
+        return copter.mode_rtl.get_nav_target(target);
+    case SubMode::NAV_GUIDED:
+        return copter.mode_guided.get_nav_target(target);
+#if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
+    case SubMode::NAV_PAYLOAD_PLACE:
+        if (payload_place.state == PayloadPlace::State::FlyToLocation) {
+            return get_wp_target(target);
+        }
+        return get_land_target(target);
+#endif // AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
+    case SubMode::STARTING:
+    case SubMode::NAV_SCRIPT_TIME:
+    case SubMode::NAV_ATTITUDE_TIME:
+        break;
+    }
+    return false;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
 bool ModeAuto::get_wp(Location& destination) const
 {
     switch (_mode) {
@@ -1000,7 +1049,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     //
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:
-        cmd_complete = verify_takeoff();
+        cmd_complete = verify_takeoff(cmd);
         break;
 
     case MAV_CMD_NAV_WAYPOINT:
@@ -1010,17 +1059,28 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:
-        cmd_complete = verify_land();
+        cmd_complete = verify_land(cmd);
         break;
 
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         cmd_complete = payload_place.verify();
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        {
+            AP_Mission::ItemProgress progress;
+            if (payload_place.state == PayloadPlace::State::FlyToLocation) {
+                get_wp_progress(progress);
+            } else {
+                payload_place.get_progress(progress);
+            }
+            mission.set_item_progress(cmd.index, progress);
+        }
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         break;
 #endif
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        cmd_complete = verify_loiter_unlimited();
+        cmd_complete = verify_loiter_unlimited(cmd);
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:
@@ -1032,10 +1092,10 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
-        return verify_loiter_to_alt();
+        return verify_loiter_to_alt(cmd);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        cmd_complete = verify_RTL();
+        cmd_complete = verify_RTL(cmd);
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
@@ -1054,7 +1114,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
-        cmd_complete = verify_nav_script_time();
+        cmd_complete = verify_nav_script_time(cmd);
         break;
 #endif
 
@@ -1294,6 +1354,26 @@ void ModeAuto::nav_attitude_time_run()
 }
 
 #if AC_PAYLOAD_PLACE_ENABLED
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// progress of the descent and ascent, e.g. distance still to descend
+void PayloadPlace::get_progress(AP_Mission::ItemProgress &progress) const
+{
+    switch (state) {
+    case State::Descent:
+        // descends until the payload touches down, or at most descent_max_m
+        if (is_positive(descent_max_m)) {
+            progress.set_distance_traveled(descent_start_altitude_m - copter.pos_control->get_pos_desired_U_m(), descent_max_m);
+        }
+        break;
+    case State::Ascent:
+        progress.set_distance_remaining(MAX(descent_start_altitude_m - copter.pos_control->get_pos_estimate_U_m(), 0.0f));
+        break;
+    default:
+        break;
+    }
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
 // PayloadPlace::run - places an object in auto mode
 //      called by run at 100hz or more
 void PayloadPlace::run()
@@ -1825,6 +1905,9 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     loiter_to_alt.loiter_start_done = false;
     loiter_to_alt.reached_alt = false;
     loiter_to_alt.alt_error_m = 0;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    loiter_to_alt.initial_alt_error_m = copter.current_loc.alt * 0.01 - loiter_to_alt.alt_m;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     // set vertical speed and acceleration limits
     pos_control->D_set_max_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
@@ -2138,8 +2221,14 @@ void ModeAuto::do_RTL(void)
 /********************************************************************************/
 
 // verify_takeoff - check if we have completed the takeoff
-bool ModeAuto::verify_takeoff()
+bool ModeAuto::verify_takeoff(const AP_Mission::Mission_Command& cmd)
 {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    AP_Mission::ItemProgress progress;
+    auto_takeoff.get_progress(progress);
+    mission.set_item_progress(cmd.index, progress);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
 #if AP_LANDINGGEAR_ENABLED
     // if we have reached our destination
     if (auto_takeoff.complete) {
@@ -2152,9 +2241,21 @@ bool ModeAuto::verify_takeoff()
 }
 
 // verify_land - returns true if landing has been completed
-bool ModeAuto::verify_land()
+bool ModeAuto::verify_land(const AP_Mission::Mission_Command& cmd)
 {
     bool retval = false;
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    {
+        AP_Mission::ItemProgress progress;
+        if (land_state == LandState::FlyToLocation) {
+            get_wp_progress(progress);
+        } else {
+            get_descent_progress(progress, land_descent_start_alt_m);
+        }
+        mission.set_item_progress(cmd.index, progress);
+    }
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     switch (land_state) {
         case LandState::FlyToLocation:
@@ -2216,8 +2317,16 @@ bool PayloadPlace::verify()
 }
 #endif
 
-bool ModeAuto::verify_loiter_unlimited()
+bool ModeAuto::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // only the approach to the loiter point has an end to report
+    AP_Mission::ItemProgress progress;
+    if (!copter.wp_nav->reached_wp_destination()) {
+        get_wp_progress(progress);
+    }
+    mission.set_item_progress(cmd.index, progress);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     return false;
 }
 
@@ -2226,6 +2335,9 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     // return immediately if we haven't reached our destination
     if (!copter.wp_nav->reached_wp_destination()) {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        set_item_progress_wp_distance(cmd);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
@@ -2234,8 +2346,13 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
         loiter_time = millis();
     }
 
+    const uint32_t loiter_time_elapsed_s = (millis() - loiter_time) / 1000;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_time_elapsed(cmd.index, loiter_time_elapsed_s, loiter_time_max);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // check if loiter timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (loiter_time_elapsed_s >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -2245,19 +2362,36 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 
 // verify_loiter_to_alt - check if we have reached both destination
 // (roughly) and altitude (precisely)
-bool ModeAuto::verify_loiter_to_alt() const
+bool ModeAuto::verify_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     if (loiter_to_alt.reached_destination_xy &&
         loiter_to_alt.reached_alt) {
         return true;
     }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // Copter nav flies a straight line in 3D space to get to the Loiter Alt
+    // waypoint (it doesn't fly to the xy pos then ascend/descend).
+    const Vector2f vector_m = Vector2f(copter.wp_nav->get_wp_distance_to_destination_m(), (copter.current_loc.alt * 0.01 - loiter_to_alt.alt_m));
+    const float distance_m = vector_m.length();
+    const float leg_m = (copter.wp_nav->get_wp_leg_destination_NED_m().xy() - copter.wp_nav->get_wp_leg_origin_NED_m().xy()).tofloat().length();
+    const float total_m = Vector2f(leg_m, loiter_to_alt.initial_alt_error_m).length();
+    mission.set_item_progress_distance_remaining(cmd.index, distance_m, total_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     return false;
 }
 
 // verify_RTL - return true once RTL has completed successfully
 // do_RTL should have been called once first to initialise all variables
-bool ModeAuto::verify_RTL()
+bool ModeAuto::verify_RTL(const AP_Mission::Mission_Command& cmd)
 {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    AP_Mission::ItemProgress progress;
+    Location target;
+    copter.mode_rtl.get_nav_progress(progress, target);
+    mission.set_item_progress(cmd.index, progress);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     return copter.mode_rtl.is_complete();
 }
 
@@ -2293,11 +2427,25 @@ bool ModeAuto::verify_yaw()
     return auto_yaw.reached_fixed_yaw_target();
 }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// report the distance remaining to the waypoint controller's destination
+// as a part of the leg it is flying from its origin
+void ModeAuto::set_item_progress_wp_distance(const AP_Mission::Mission_Command& cmd)
+{
+    AP_Mission::ItemProgress progress;
+    get_wp_progress(progress);
+    mission.set_item_progress(cmd.index, progress);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
 // verify_nav_wp - check if we have reached the next way point
 bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
     if ( !copter.wp_nav->reached_wp_destination() ) {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        set_item_progress_wp_distance(cmd);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
@@ -2310,8 +2458,17 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         }
     }
 
+    const uint32_t loiter_time_elapsed_s = (millis() - loiter_time) / 1000;
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // only publish progress if we have a loiter time defined
+    if (loiter_time_max > 0) {
+        mission.set_item_progress_time_elapsed(cmd.index, loiter_time_elapsed_s, loiter_time_max);
+    }
+#endif //AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (loiter_time_elapsed_s >= loiter_time_max) {
         if (loiter_time_max == 0) {
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
@@ -2331,6 +2488,9 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
             // start circling
             circle_start();
         }
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        set_item_progress_wp_distance(cmd);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
@@ -2341,12 +2501,19 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
         // weathervaning, changes where the aircraft points without changing how long the
         // command runs.  AC_Circle's angle counter behaved the same way
         const float angle_swept_rad = circle.panorama_rate_rads * (millis() - circle.panorama_start_ms) * 0.001;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        mission.set_item_progress_count_completed(cmd.index, angle_swept_rad / M_2PI, fabsf(circle.turns_signed));
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return angle_swept_rad >= fabsf(circle.turns_signed) * M_2PI;
     }
 
     // report each whole turn as it is completed.  The angle comes from the orbit leg itself, so
     // it tracks the path actually flown rather than an independently integrated rate
-    const uint16_t turns_done = copter.wp_nav->get_circle_angle_covered_rad() / M_2PI;
+    const float turns_completed = copter.wp_nav->get_circle_angle_covered_rad() / M_2PI;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_count_completed(cmd.index, turns_completed, fabsf(circle.turns_signed));
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    const uint16_t turns_done = turns_completed;
     if (turns_done > circle.turns_reported) {
         circle.turns_reported = turns_done;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: circled %u/%.1f turns",
@@ -2363,6 +2530,9 @@ bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
     if ( !copter.wp_nav->reached_wp_destination() ) {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        set_item_progress_wp_distance(cmd);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
@@ -2370,6 +2540,13 @@ bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     if (loiter_time == 0) {
         loiter_time = millis();
     }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // only publish progress if we have a loiter time defined
+    if (loiter_time_max > 0) {
+        mission.set_item_progress_time_elapsed(cmd.index, (millis() - loiter_time) / 1000, loiter_time_max);
+    }
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
@@ -2396,7 +2573,16 @@ bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
+    const uint32_t delay_time_elapsed_ms = millis() - nav_delay_time_start_ms;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_time_elapsed(
+        cmd.index,
+        delay_time_elapsed_ms / 1000.0f,
+        nav_delay_time_max_ms / 1000.0f
+    );
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
+    if (delay_time_elapsed_ms > nav_delay_time_max_ms) {
         nav_delay_time_max_ms = 0;
         return true;
     }
@@ -2405,8 +2591,17 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 
 #if AP_SCRIPTING_ENABLED
 // check if verify_nav_script_time command has completed
-bool ModeAuto::verify_nav_script_time()
+bool ModeAuto::verify_nav_script_time(const AP_Mission::Mission_Command& cmd)
 {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // the timeout is the longest the command can take
+    AP_Mission::ItemProgress progress;
+    if (nav_scripting.timeout_s > 0) {
+        progress.set_time_elapsed((AP_HAL::millis() - nav_scripting.start_ms) * 0.001f, nav_scripting.timeout_s);
+    }
+    mission.set_item_progress(cmd.index, progress);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // if done or timeout then return true
     if (nav_scripting.done ||
         ((nav_scripting.timeout_s > 0) &&
@@ -2420,6 +2615,9 @@ bool ModeAuto::verify_nav_script_time()
 // check if nav_attitude_time command has completed
 bool ModeAuto::verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd)
 {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_time_elapsed(cmd.index, (AP_HAL::millis() - nav_attitude_time.start_ms) * 0.001f, cmd.content.nav_attitude_time.time_sec);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     return ((AP_HAL::millis() - nav_attitude_time.start_ms) > (cmd.content.nav_attitude_time.time_sec * 1000));
 }
 

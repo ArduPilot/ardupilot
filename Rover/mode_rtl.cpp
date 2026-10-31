@@ -82,3 +82,17 @@ bool ModeRTL::set_desired_speed(float speed_ms)
 {
     return g2.wp_nav.set_speed_max(speed_ms);
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+bool ModeRTL::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    get_wp_progress(progress);
+    UNUSED_RESULT(get_nav_target(target));
+    return true;
+}
+
+bool ModeRTL::get_nav_target(Location &target) const
+{
+    return get_wp_target(target);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED

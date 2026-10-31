@@ -78,6 +78,13 @@ void GCS_MAVLINK_Sub::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", sub.motors.get_frame_string());
 }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+bool GCS_MAVLINK_Sub::get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    return sub.get_mode_nav_progress(progress, target);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+
 void GCS_MAVLINK_Sub::send_nav_controller_output() const
 {
     const Vector3f &targets = sub.attitude_control.get_att_target_euler_cd();

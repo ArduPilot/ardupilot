@@ -567,3 +567,26 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     }
     return ret;
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// distance remaining to the waypoint navigator's destination, as a part of the leg from its
+// origin, ignoring any object avoidance
+void Mode::get_wp_progress(AP_Mission::ItemProgress &progress) const
+{
+    if (!g2.wp_nav.is_destination_valid()) {
+        return;
+    }
+    const Location &destination = g2.wp_nav.get_leg_destination();
+    progress.set_distance_remaining(rover.current_loc.get_distance(destination), g2.wp_nav.get_leg_origin().get_distance(destination));
+}
+
+// the waypoint navigator's destination, ignoring any object avoidance
+bool Mode::get_wp_target(Location &target) const
+{
+    if (!g2.wp_nav.is_destination_valid()) {
+        return false;
+    }
+    target = g2.wp_nav.get_leg_destination();
+    return true;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED

@@ -508,6 +508,14 @@ private:
     bool should_log(uint32_t mask);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // progress for NAV_CONTROLLER_PROGRESS
+    void update_mission_item_progress(const AP_Mission::Mission_Command& cmd);
+    void get_wp_progress(AP_Mission::ItemProgress &progress) const;
+public:
+    bool get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target);
+private:
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
 
     bool do_guided(const AP_Mission::Mission_Command& cmd);

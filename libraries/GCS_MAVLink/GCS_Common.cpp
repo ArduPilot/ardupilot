@@ -1207,6 +1207,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
         { MAVLINK_MSG_ID_UTM_GLOBAL_POSITION, MSG_UTM_GLOBAL_POSITION},
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        { MAVLINK_MSG_ID_NAV_CONTROLLER_PROGRESS, MSG_NAV_CONTROLLER_PROGRESS},
+#endif  // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -6518,6 +6521,63 @@ void GCS_MAVLINK::send_flight_information()
 }
 #endif // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+void GCS_MAVLINK::send_nav_controller_progress() const
+{
+#if AP_MISSION_ENABLED
+#if AP_VEHICLE_ENABLED
+    const bool mission_mode = AP::vehicle()->current_mode_requires_mission();
+#else
+    const bool mission_mode = false;
+#endif // AP_VEHICLE_ENABLED
+
+    AP_Mission::ItemProgress progress;
+    uint16_t seq = 0;
+    // navigation which is not part of a mission or rally plan is reported as MAV_MISSION_TYPE_ALL
+    uint8_t mission_type = MAV_MISSION_TYPE_ALL;
+    Location target;
+
+    if (mission_mode) {
+        seq = AP::mission().get_current_nav_index();
+        progress = AP::mission().get_item_progress(seq);
+        mission_type = MAV_MISSION_TYPE_MISSION;
+        if (!get_mission_nav_target(target)) {
+            target = Location();
+        }
+    } else if (get_mode_nav_progress(progress, target)) {
+        if (progress.index != AP_Mission::ItemProgress{}.index) {
+            seq = progress.index;
+            mission_type = MAV_MISSION_TYPE_MISSION;
+        }
+    } else {
+        return;
+    }
+
+    int32_t x = INT32_MAX;
+    int32_t y = INT32_MAX;
+    float z = NAN;
+    if (target.initialised()) {
+        x = target.lat;
+        y = target.lng;
+        if (!target.get_alt_m(Location::AltFrame::ABSOLUTE, z)) {
+            z = NAN;
+        }
+    }
+
+    mavlink_msg_nav_controller_progress_send(
+        chan,
+        progress.percentage_complete,
+        progress.distance_remaining_m,
+        progress.time_remaining_s,
+        progress.count_remaining,
+        mission_type,
+        seq,
+        x, y, z, MAV_FRAME_GLOBAL
+    );
+#endif // AP_MISSION_ENABLED
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
 void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)
 {
     // we're not expecting very many of these ever, so a tiny bit of
@@ -7055,6 +7115,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         // ADSB should be moved down into here
     case MSG_ADSB_VEHICLE:
         break;
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    case MSG_NAV_CONTROLLER_PROGRESS:
+        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_PROGRESS);
+        send_nav_controller_progress();
+        break;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     default:
         // try_send_message must always at some stage return true for

@@ -56,6 +56,28 @@ void Mode::_TakeOff::start_m(float alt_m)
     take_off_complete_alt_m  = take_off_start_alt_m + alt_m;
 }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// altitude still to climb, as a part of the whole climb
+void Mode::_TakeOff::get_progress(AP_Mission::ItemProgress &progress) const
+{
+    const float remaining_m = MAX(take_off_complete_alt_m - copter.pos_control->get_pos_estimate_U_m(), 0.0f);
+    progress.set_distance_remaining(remaining_m, take_off_complete_alt_m - take_off_start_alt_m);
+}
+
+// the point above the vehicle at the takeoff altitude
+bool Mode::_TakeOff::get_target(Location &target) const
+{
+    Location origin;
+    if (!AP::ahrs().get_origin(origin)) {
+        return false;
+    }
+    Vector3p target_ned_m = copter.pos_control->get_pos_estimate_NED_m();
+    target_ned_m.z = -take_off_complete_alt_m;
+    target = Location::from_ekf_offset_NED_m(target_ned_m, Location::AltFrame::ABOVE_ORIGIN);
+    return true;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
 // stop takeoff
 void Mode::_TakeOff::stop()
 {
@@ -227,6 +249,9 @@ void _AutoTakeoff::start_m(float _complete_alt_m, bool _is_terrain_alt)
     complete_alt_m = _complete_alt_m;
     is_terrain_alt = _is_terrain_alt;
     complete = false;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    start_alt_u_m = copter.pos_control->get_pos_estimate_U_m();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     // initialise auto_takeoff_no_nav_alt_m
     const auto &g2 = copter.g2;
     no_nav_alt_m = copter.pos_control->get_pos_estimate_U_m() + g2.wp_navalt_min_m;
@@ -237,6 +262,38 @@ void _AutoTakeoff::start_m(float _complete_alt_m, bool _is_terrain_alt)
         no_nav_active = false;
     }
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// altitude still to climb, as a part of the whole climb
+void _AutoTakeoff::get_progress(AP_Mission::ItemProgress &progress) const
+{
+    if (complete) {
+        progress.set_distance_remaining(0, 1);
+        return;
+    }
+    float terrain_u_m = 0.0f;
+    if (is_terrain_alt && !copter.wp_nav->get_terrain_U_m(terrain_u_m)) {
+        // progress unknown without terrain data
+        return;
+    }
+    const float target_u_m = complete_alt_m + terrain_u_m;
+    const float remaining_m = MAX(target_u_m - copter.pos_control->get_pos_estimate_U_m(), 0.0f);
+    progress.set_distance_remaining(remaining_m, target_u_m - start_alt_u_m);
+}
+
+// the point above the vehicle at the takeoff altitude
+bool _AutoTakeoff::get_target(Location &target) const
+{
+    Location origin;
+    if (!AP::ahrs().get_origin(origin)) {
+        return false;
+    }
+    Vector3p target_ned_m = copter.pos_control->get_pos_estimate_NED_m();
+    target_ned_m.z = -complete_alt_m;
+    target = Location::from_ekf_offset_NED_m(target_ned_m, is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+    return true;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
 // return takeoff final target position in m from the EKF origin if takeoff has completed successfully
 bool _AutoTakeoff::get_completion_pos_ned_m(Vector3p& pos_ned_m)

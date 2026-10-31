@@ -144,6 +144,14 @@ bool Sub::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 // check if current mission command has completed
 bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // report progress as it stood before this check; do and condition
+    // commands are also verified here, but progress is of the nav command
+    if (AP_Mission::is_nav_cmd(cmd)) {
+        update_mission_item_progress(cmd);
+    }
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     switch (cmd.id) {
         //
         // navigation commands
@@ -651,3 +659,108 @@ void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)
     camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
 #endif
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// 3D distance remaining to the waypoint controller's destination, as a part of the leg from its origin
+void Sub::get_wp_progress(AP_Mission::ItemProgress &progress) const
+{
+    const Vector3p &destination_ned_m = wp_nav.get_wp_leg_destination_NED_m();
+    const Vector3p &origin_ned_m = wp_nav.get_wp_leg_origin_NED_m();
+    Vector3p pos_ned_m = pos_control.get_pos_estimate_NED_m();
+    if (wp_nav.leg_is_terrain_alt()) {
+        // the leg is relative to the terrain, so measure the position from it too
+        pos_ned_m.z -= pos_control.get_pos_terrain_D_m();
+    }
+    progress.set_distance_remaining((destination_ned_m - pos_ned_m).tofloat().length(), (destination_ned_m - origin_ned_m).tofloat().length());
+}
+
+// work out the progress of the current mission item from the navigation state
+void Sub::update_mission_item_progress(const AP_Mission::Mission_Command& cmd)
+{
+    AP_Mission::ItemProgress progress;
+
+    switch (cmd.id) {
+    case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_LOITER_TIME:
+        if (!wp_nav.reached_wp_destination()) {
+            get_wp_progress(progress);
+        } else if (loiter_time_max > 0 && loiter_time != 0) {
+            progress.set_time_elapsed((AP_HAL::millis() - loiter_time) * 0.001f, loiter_time_max);
+        }
+        break;
+
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        // only the approach has an end to report
+        if (!wp_nav.reached_wp_destination()) {
+            get_wp_progress(progress);
+        }
+        break;
+
+    case MAV_CMD_NAV_LAND:
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        // the approach and then the ascent to the surface are both waypoint legs
+        get_wp_progress(progress);
+        break;
+
+    case MAV_CMD_NAV_LOITER_TURNS:
+        if (auto_mode == Auto_CircleMoveToEdge) {
+            get_wp_progress(progress);
+        } else {
+            progress.set_count_completed(fabsf(circle_nav.get_angle_total_rad() / M_2PI), cmd.get_loiter_turns());
+        }
+        break;
+
+    case MAV_CMD_NAV_DELAY:
+        if (nav_delay_time_max_ms > 0) {
+            progress.set_time_elapsed((AP_HAL::millis() - nav_delay_time_start_ms) * 0.001f, nav_delay_time_max_ms * 0.001f);
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    mission.set_item_progress(cmd.index, progress);
+}
+
+// progress towards the navigation target of the current mode
+bool Sub::get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target)
+{
+    switch (flightmode->number()) {
+    case Mode::Number::AUTO: {
+        // Sub does not report AUTO as requiring a mission, so report the mission item here
+        const uint16_t index = mission.get_current_nav_index();
+        if (index == 0) {
+            return false;
+        }
+        progress = mission.get_item_progress(index);
+        progress.index = index;
+        if (auto_mode == Auto_Circle) {
+            // circling the centre
+            Location origin;
+            if (AP::ahrs().get_origin(origin)) {
+                target = Location::from_ekf_offset_NED_m(circle_nav.get_center_NED_m(), circle_nav.center_is_terrain_alt() ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+            }
+        } else {
+            UNUSED_RESULT(wp_nav.get_wp_leg_destination_loc(target));
+        }
+        return true;
+    }
+    case Mode::Number::GUIDED:
+        if (guided_mode != Guided_WP) {
+            return false;
+        }
+        get_wp_progress(progress);
+        UNUSED_RESULT(wp_nav.get_wp_leg_destination_loc(target));
+        return true;
+    case Mode::Number::SURFACE:
+        mode_surface.get_progress(progress);
+        // the surface above the vehicle
+        target = Location(current_loc.lat, current_loc.lng, 0, Location::AltFrame::ABOVE_HOME);
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
