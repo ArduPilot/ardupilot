@@ -1,32 +1,42 @@
-# XPlane DREF map file for a simple plane
-# assumes: Aileron, Elevator, Throttle, Rudder, flaps
+# XPlane DREF map file for a tilt-tri rotor v-tail plane
+# assumes: left-right Vtail, left-right front motors, left-right motor tilts, aileron
 
 {
     "settings" : { "debug" : 0 },
 
-    "sim/operation/override/override_joystick" : { "type" : "fixed", "value" : 1 },
+    "sim/operation/override/override_control_surfaces" : { "type" : "fixed", "value" : 1 },
     "sim/operation/override/override_throttles" : { "type" : "fixed", "value" : 1 },
 
-    # forward throttle, up to 4 engines
-    "sim/flightmodel/engine/ENGN_thro_use[0]" : { "type" : "range", "range" : 1, "channel" : 3 },
-    "sim/flightmodel/engine/ENGN_thro_use[1]" : { "type" : "range", "range" : 1, "channel" : 3 },
-    "sim/flightmodel/engine/ENGN_thro_use[2]" : { "type" : "range", "range" : 1, "channel" : 3 },
-    "sim/flightmodel/engine/ENGN_thro_use[3]" : { "type" : "range", "range" : 1, "channel" : 3 },
+    # rear throttle
+    "sim/flightmodel/engine/ENGN_thro_use[4]" : { "type" : "range", "range" : 1, "channel" : 4 },
 
-    # control surfaces, using yoke positions not surface overrides
-    "sim/joystick/yoke_roll_ratio" : { "type" : "angle", "range" : 1, "channel" : 1 },
-    "sim/joystick/yoke_pitch_ratio" : { "type" : "angle", "range" : 1, "channel" : 2 },
-    "sim/joystick/yoke_heading_ratio" : { "type" : "angle", "range" : 1, "channel" : 4 },
+    # front throttle
+    "sim/flightmodel/engine/ENGN_thro_use[0]" : { "type" : "range", "range" : 1, "channel" : 5 },
+    "sim/flightmodel/engine/ENGN_thro_use[1]" : { "type" : "range", "range" : 1, "channel" : 6 },
+    "sim/flightmodel/engine/ENGN_thro_use[2]" : { "type" : "range", "range" : 1, "channel" : 7 },
+    "sim/flightmodel/engine/ENGN_thro_use[3]" : { "type" : "range", "range" : 1, "channel" : 8 },
 
-    # assume flaps on channel 5
-    "sim/cockpit2/controls/flap_ratio" : { "type" : "range", "range" : 1, "channel" : 5 },
+    # aileron, using surface overrides
+    "sim/flightmodel2/wing/aileron1_deg[0]" : { "type" : "angle", "range" : -30, "channel" : 3 },
+    "sim/flightmodel2/wing/aileron1_deg[1]" : { "type" : "angle", "range" : 30, "channel" : 3 },
+    
+    # elevator, using surface overrides
+    "sim/flightmodel2/wing/elevator1_deg[8]" : { "type" : "angle", "range" : 30, "channel" : 1 },
+    "sim/flightmodel2/wing/elevator1_deg[9]" : { "type" : "angle", "range" : 30, "channel" : 2 },
 
+    # left-right motor tilts
+    "sim/aircraft/prop/acf_vertcant[1]" : { "type" : "angle", "range" : 90, "channel" : 16 },
+    "sim/aircraft/prop/acf_vertcant[2]" : { "type" : "angle", "range" : 90, "channel" : 16 },
+    
     # joystick inputs
-    "axis6" : { "type" : "joyaxis", "channel" : 1, "input_min" : 0.2, "input_max" : 0.8 },
-    "axis5" : { "type" : "joyaxis", "channel" : 2, "input_min" : 0.2, "input_max" : 0.8 },
-    "axis4" : { "type" : "joyaxis", "channel" : 3, "input_min" : 0.8, "input_max" : 0.2 },
-    "axis2" : { "type" : "joyaxis", "channel" : 4, "input_min" : 0.2, "input_max" : 0.9 },
-    "axis3" : { "type" : "joyaxis", "channel" : 5, "input_min" : 0.2, "input_max" : 0.9 },
+    "axis1" : { "type" : "joyaxis", "channel" : 1, "input_min" : 0.2, "input_max" : 0.8 },
+    "axis2" : { "type" : "joyaxis", "channel" : 2, "input_min" : 0.2, "input_max" : 0.8 },
+    "axis3" : { "type" : "joyaxis", "channel" : 3, "input_min" : 0.2, "input_max" : 0.8 },
+    "axis4" : { "type" : "joyaxis", "channel" : 4, "input_min" : 0.2, "input_max" : 0.8 },
+    "axis5" : { "type" : "joyaxis", "channel" : 5, "input_min" : 0.2, "input_max" : 0.8 },
+    "axis6" : { "type" : "joyaxis", "channel" : 6, "input_min" : 0.2, "input_max" : 0.8 },
+    "axis7" : { "type" : "joyaxis", "channel" : 7, "input_min" : 0.2, "input_max" : 0.8 },
+    "axis8" : { "type" : "joyaxis", "channel" : 8, "input_min" : 0.2, "input_max" : 0.8 },
     "button1" : { "channel" : 6, "mask" : 1 },
     "button2" : { "channel" : 7, "mask" : 2 },
     "button3" : { "type" : "joybutton", "channel" : 8, "mask" : 24 },
