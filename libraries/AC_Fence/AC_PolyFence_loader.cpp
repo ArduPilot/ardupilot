@@ -1181,6 +1181,7 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
     if (!format()) {
         return false;
     }
+    _change_count++;
 
     uint16_t total_vertex_count = 0;
     uint16_t offset = 4; // skipping magic
@@ -1278,6 +1279,8 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
         new_total = total_vertex_count+2;
     }
     _total.set_and_save(new_total);
+
+    _change_count++;
 
     return true;
 }

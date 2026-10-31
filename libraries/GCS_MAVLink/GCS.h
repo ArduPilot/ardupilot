@@ -226,7 +226,8 @@ public:
                                      msg.sysid,
                                      msg.compid,
                                      result,
-                                     mission_type);
+                                     mission_type,
+                                     opaque_id_for_mission_type(mission_type));
     }
 
     // packetReceived is called on any successful decode of a mavlink
@@ -328,6 +329,7 @@ public:
     // generate a MISSION_STATE enumeration value for where the
     // mission is up to:
     virtual MISSION_STATE mission_state(const class AP_Mission &mission) const;
+    uint32_t opaque_id_for_mission_type(MAV_MISSION_TYPE type) const;
     // send a mission_current message for the supplied waypoint
     void send_mission_current(const class AP_Mission &mission, uint16_t seq);
 
