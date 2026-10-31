@@ -1713,7 +1713,7 @@ void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 #if AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
 // send an ESTIMATOR_STATUS for the configured EKF.  This carries the
 // same flags and innovation test ratios as EKF_STATUS_REPORT, plus
-// position and velocity accuracies
+// position accuracies
 void AP_AHRS::send_estimator_status(GCS_MAVLINK &link) const
 {
     if (!configured_estimates->filter_status_valid ||
@@ -1769,7 +1769,7 @@ void AP_AHRS::send_estimator_status(GCS_MAVLINK &link) const
     }
 
     const Vector3f &magVar = configured_estimates->magVar;
-    const mavlink_estimator_status_t packet {
+    mavlink_estimator_status_t packet {
         time_usec : AP_HAL::micros64(),
         vel_ratio : configured_estimates->velVar,
         pos_horiz_ratio : configured_estimates->posVar,
@@ -1781,6 +1781,19 @@ void AP_AHRS::send_estimator_status(GCS_MAVLINK &link) const
         pos_vert_accuracy : pos_vert_accuracy,
         flags : flags,
     };
+
+#if AP_AHRS_EXTERNAL_ENABLED
+    if (configured_ekf_type() == EKFType::EXTERNAL) {
+        // External AHRS backends supply scaled sensor accuracies
+        // rather than innovation test ratios:
+        packet.vel_ratio = NaNf;
+        packet.pos_horiz_ratio = NaNf;
+        packet.pos_vert_ratio = NaNf;
+        packet.mag_ratio = NaNf;
+        packet.hagl_ratio = NaNf;
+        packet.tas_ratio = NaNf;
+    }
+#endif
 
     mavlink_msg_estimator_status_send_struct(link.get_chan(), &packet);
 }
