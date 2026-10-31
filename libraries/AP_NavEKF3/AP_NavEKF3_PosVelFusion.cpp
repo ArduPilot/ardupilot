@@ -301,6 +301,7 @@ void NavEKF3_core::ResetHeight(void)
     // clear the timeout flags and counters
     hgtTimeout = false;
     lastHgtPassTime_ms = imuSampleTime_ms;
+    hgtInnovFiltTime_ms = imuSampleTime_ms;
 
     // reset the corresponding covariances
     zeroStatesVarCov(9, 9);
@@ -645,6 +646,28 @@ void NavEKF3_core::SelectVelPosFusion()
         }
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
+
+    // A disarmed vehicle the IMU reads as still is taken to have no vertical velocity, so one
+    // the EKF reports with no measured vertical velocity agreeing, as after a drop whose impact
+    // the IMU clipped, is reset away with the height when the vehicle comes to rest. Only then:
+    // a velocity that builds while it stays still comes from an accel bias, which repeated
+    // resets would stop the EKF learning. The check waits while a measured vertical velocity is
+    // being fused: it is correcting the state already, and can be measuring real vertical motion
+    // the IMU reads as still, such as a deck rising at a steady rate. The height check still
+    // refuses arming while it disagrees.
+    if (!onGroundNotMoving) {
+        velDCheckedAtRest = false;
+    } else if (fuseHgtData && !velDCheckedAtRest && !measuredVertVelFused()) {
+        velDCheckedAtRest = true;
+        if (!measuredVertVelAgrees() && (fabsF(stateStruct.velocity.z) > 0.5f)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u vertical velocity reset at rest", (unsigned)imu_index);
+            ResetHeight();
+            fuseHgtData = false;
+            // the vertical state now agrees with a still vehicle, so the disagreement filtered
+            // before the reset no longer applies
+            hgtInnovFiltState = 0.0f;
+        }
+    }
 
     // If we are operating without any aiding, fuse in constant position of constant
     // velocity measurements to constrain tilt drift. This assumes a non-manoeuvring
@@ -1042,21 +1065,24 @@ void NavEKF3_core::FuseVelPosNED()
                 lastHgtPassTime_ms = imuSampleTime_ms;
             }
 
+            // Calculate a filtered value to be used by pre-flight health checks
+            // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
+            // Samples the gate rejects count up to the gate, so a sustained disagreement fails the checks and a single outlier does not
+            if (onGround) {
+                const ftype innovLimit = sqrtF(maxTestRatio * varInnovVelPos[5]) * MAX(0.01 * (ftype)frontend->_hgtInnovGate, 1.0);
+                ftype dtBaro = (imuSampleTime_ms - hgtInnovFiltTime_ms) * 1.0e-3;
+                const ftype hgtInnovFiltTC = 2.0;
+                ftype alpha = constrain_ftype(dtBaro/(dtBaro+hgtInnovFiltTC), 0.0, 1.0);
+                hgtInnovFiltState += (constrain_ftype(innovVelPos[5], -innovLimit, innovLimit) - hgtInnovFiltState)*alpha;
+            } else {
+                hgtInnovFiltState = 0.0f;
+            }
+            hgtInnovFiltTime_ms = imuSampleTime_ms;
+
             // Use height data if innovation check passed or timed out or if bad IMU data
             // Always fuse data if bad IMU to prevent aliasing and clipping pulling the state estimate away
             // from the measurement un-opposed if test threshold is exceeded.
             if (hgtCheckPassed || hgtTimeout || badIMUdata) {
-                // Calculate a filtered value to be used by pre-flight health checks
-                // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
-                if (onGround) {
-                    ftype dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms) * 1.0e-3;
-                    const ftype hgtInnovFiltTC = 2.0;
-                    ftype alpha = constrain_ftype(dtBaro/(dtBaro+hgtInnovFiltTC), 0.0, 1.0);
-                    hgtInnovFiltState += (innovVelPos[5] - hgtInnovFiltState)*alpha;
-                } else {
-                    hgtInnovFiltState = 0.0f;
-                }
-
                 if (hgtTimeout) {
                     ResetHeight();
 
@@ -1075,6 +1101,9 @@ void NavEKF3_core::FuseVelPosNED()
             fuseData[1] = true;
             if (fuseVelVertData || fusingStationaryZeroVel) {
                 fuseData[2] = true;
+            }
+            if (fuseVelVertData && !fusingStationaryZeroVel && (PV_AidingMode != AID_NONE)) {
+                lastVelDFuseTime_ms = imuSampleTime_ms;
             }
         }
         if (fusePosData) {

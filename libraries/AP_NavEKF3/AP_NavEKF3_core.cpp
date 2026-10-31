@@ -208,6 +208,7 @@ void NavEKF3_core::InitialiseVariables()
     prevBetaDragStep_ms = imuSampleTime_ms;
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
+    lastVelDFuseTime_ms = 0;
     lastGpsPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;
@@ -270,6 +271,7 @@ void NavEKF3_core::InitialiseVariables()
     hgtRate = 0.0f;
     onGround = true;
     prevOnGround = true;
+    velDCheckedAtRest = false;
     inFlight = false;
     prevInFlight = false;
     manoeuvring = false;
@@ -344,6 +346,7 @@ void NavEKF3_core::InitialiseVariables()
     posResetNE.zero();
     posResetD = 0.0f;
     hgtInnovFiltState = 0.0f;
+    hgtInnovFiltTime_ms = 0;
     imuDataDownSampledNew.delAng.zero();
     imuDataDownSampledNew.delVel.zero();
     imuDataDownSampledNew.delAngDT = 0.0f;
