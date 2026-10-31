@@ -168,7 +168,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     // @Param: CAN_FDBAUDRATE
     // @DisplayName: Set up bitrate for data section on CAN1
-    // @Description: This sets the bitrate for the data section of CAN1.
+    // @Description: This sets the bitrate for the data section of CAN1. A value above the board maximum from CANFD_SUPPORTED is reduced to the highest allowed rate.
     // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
     // @User: Advanced
     // @RebootRequired: True
@@ -178,7 +178,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN2_FDBAUDRATE
     // @CopyFieldsFrom: CAN_FDBAUDRATE
     // @DisplayName: Set up bitrate for data section on CAN2
-    // @Description: This sets the bitrate for the data section of CAN2.
+    // @Description: This sets the bitrate for the data section of CAN2. A value above the board maximum from CANFD_SUPPORTED is reduced to the highest allowed rate.
     GARRAY(can_fdbaudrate,    1, "CAN2_FDBAUDRATE", HAL_CANFD_SUPPORTED),
 #endif
 #endif
