@@ -1710,6 +1710,82 @@ void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 }
 #endif  // HAL_GCS_ENABLED
 
+#if AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
+// send an ESTIMATOR_STATUS for the configured EKF.  This carries the
+// same flags and innovation test ratios as EKF_STATUS_REPORT, plus
+// position and velocity accuracies
+void AP_AHRS::send_estimator_status(GCS_MAVLINK &link) const
+{
+    if (!configured_estimates->filter_status_valid ||
+        !configured_estimates->variances_valid) {
+        return;
+    }
+
+    const nav_filter_status &status = configured_estimates->filter_status;
+    uint16_t flags = 0;
+    if (status.flags.attitude) {
+        flags |= ESTIMATOR_ATTITUDE;
+    }
+    if (status.flags.horiz_vel) {
+        flags |= ESTIMATOR_VELOCITY_HORIZ;
+    }
+    if (status.flags.vert_vel) {
+        flags |= ESTIMATOR_VELOCITY_VERT;
+    }
+    if (status.flags.horiz_pos_rel) {
+        flags |= ESTIMATOR_POS_HORIZ_REL;
+    }
+    if (status.flags.horiz_pos_abs) {
+        flags |= ESTIMATOR_POS_HORIZ_ABS;
+    }
+    if (status.flags.vert_pos) {
+        flags |= ESTIMATOR_POS_VERT_ABS;
+    }
+    if (status.flags.terrain_alt) {
+        flags |= ESTIMATOR_POS_VERT_AGL;
+    }
+    if (status.flags.const_pos_mode) {
+        flags |= ESTIMATOR_CONST_POS_MODE;
+    }
+    if (status.flags.pred_horiz_pos_rel) {
+        flags |= ESTIMATOR_PRED_POS_HORIZ_REL;
+    }
+    if (status.flags.pred_horiz_pos_abs) {
+        flags |= ESTIMATOR_PRED_POS_HORIZ_ABS;
+    }
+    if (status.flags.gps_glitching) {
+        flags |= ESTIMATOR_GPS_GLITCH;
+    }
+    if (!status.flags.initalized) {
+        flags |= ESTIMATOR_UNINITIALIZED;
+    }
+
+    // position accuracies come from the active EKF, and are NaN when
+    // unknown:
+    float pos_horiz_accuracy, pos_vert_accuracy, unused_vel_m_s;
+    if (!get_pos_vel_uncertainty(pos_horiz_accuracy, pos_vert_accuracy, unused_vel_m_s)) {
+        pos_horiz_accuracy = NaNf;
+        pos_vert_accuracy = NaNf;
+    }
+
+    const Vector3f &magVar = configured_estimates->magVar;
+    const mavlink_estimator_status_t packet {
+        time_usec : AP_HAL::micros64(),
+        vel_ratio : configured_estimates->velVar,
+        pos_horiz_ratio : configured_estimates->posVar,
+        pos_vert_ratio : configured_estimates->hgtVar,
+        mag_ratio : MAX(MAX(magVar.x, magVar.y), magVar.z),
+        hagl_ratio : configured_estimates->terrain_alt_variance_valid ? configured_estimates->terrain_alt_variance : NaNf,
+        tas_ratio : configured_estimates->tasVar,
+        pos_horiz_accuracy : pos_horiz_accuracy,
+        pos_vert_accuracy : pos_vert_accuracy,
+        flags : flags,
+    };
+
+    mavlink_msg_estimator_status_send_struct(link.get_chan(), &packet);
+}
+#endif  // AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
+
 // return origin for a specified EKF type
 bool AP_AHRS::_get_origin(EKFType type, Location &ret) const
 {

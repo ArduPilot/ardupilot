@@ -22,6 +22,7 @@
  */
 
 #include "AP_AHRS_config.h"
+#include <GCS_MAVLink/GCS_config.h>
 
 #include <AP_HAL/Semaphores.h>
 
@@ -384,6 +385,11 @@ public:
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(class GCS_MAVLINK &link) const;
+
+#if AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
+    // send an ESTIMATOR_STATUS for the configured EKF
+    void send_estimator_status(class GCS_MAVLINK &link) const;
+#endif  // AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
