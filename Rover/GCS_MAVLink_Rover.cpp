@@ -558,6 +558,12 @@ void GCS_MAVLINK_Rover::handle_message(const mavlink_message_t &msg)
         handle_set_position_target_global_int(msg);
         break;
 
+#if AP_WHEELENCODER_MAV_ENABLED
+    case MAVLINK_MSG_ID_WHEEL_DISTANCE:
+        rover.g2.wheel_encoder.handle_msg(msg);
+        break;
+#endif
+
     default:
         GCS_MAVLINK::handle_message(msg);
         break;

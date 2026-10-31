@@ -42,6 +42,13 @@ void Rover::update_wheel_encoder()
         wheel_encoder_last_index_sent = 0;
     }
 
+    // skip instances without a working sensor, such as an unconfigured
+    // instance below the highest configured one, or a streamed sensor
+    // whose data has stopped arriving
+    if (!g2.wheel_encoder.healthy(wheel_encoder_last_index_sent)) {
+        return;
+    }
+
     // get current time, total delta angle (since startup) and update time from sensor
     const float curr_angle_rad = g2.wheel_encoder.get_delta_angle(wheel_encoder_last_index_sent);
     const uint32_t sensor_reading_ms = g2.wheel_encoder.get_last_reading_ms(wheel_encoder_last_index_sent);
@@ -55,7 +62,19 @@ void Rover::update_wheel_encoder()
 
     // calculate delta time using time between sensor readings or time since last send to ekf (whichever is shorter)
     uint32_t sensor_diff_ms = sensor_reading_ms - wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent];
-    if (sensor_diff_ms == 0 || sensor_diff_ms > 100) {
+    if (g2.wheel_encoder.streamed(wheel_encoder_last_index_sent)) {
+        // a streamed sensor reports at its own rate, so an unchanged
+        // reading means no new data rather than no movement. Wait for a
+        // new reading, and re-baseline rather than send one spanning a
+        // gap in the stream
+        if (sensor_diff_ms == 0) {
+            return;
+        }
+        wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent] = sensor_reading_ms;
+        if (sensor_diff_ms > WHEELENCODER_STREAM_TIMEOUT_MS) {
+            return;
+        }
+    } else if (sensor_diff_ms == 0 || sensor_diff_ms > 100) {
         // if no sensor update or time difference between sensor readings is too long use time since last send to ekf
         sensor_diff_ms = now_ms - wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent];
         wheel_encoder_last_reading_ms[wheel_encoder_last_index_sent] = now_ms;
