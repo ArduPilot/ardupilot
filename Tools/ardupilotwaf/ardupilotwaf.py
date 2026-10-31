@@ -84,6 +84,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Parachute',
     'AP_RAMTRON',
     'AP_RCProtocol',
+    'AP_CRSF',
     'AP_Radio',
     'AP_TempCalibration',
     'AP_VisualOdom',
