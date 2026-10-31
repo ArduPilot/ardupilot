@@ -1638,7 +1638,7 @@ void AP_AHRS::resetHeightDatum(void)
     }
 }
 
-#if HAL_GCS_ENABLED
+#if AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
 // send a EKF_STATUS_REPORT for configured EKF
 void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 {
@@ -1708,7 +1708,7 @@ void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
     // send message
     mavlink_msg_ekf_status_report_send_struct(link.get_chan(), &packet);
 }
-#endif  // HAL_GCS_ENABLED
+#endif  // AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
 
 #if AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
 // send an ESTIMATOR_STATUS for the configured EKF.  This carries the
