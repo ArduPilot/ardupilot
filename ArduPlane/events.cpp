@@ -111,7 +111,7 @@ void Plane::rc_failsafe_short_on_event()
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
 {
 
-    if (reason == ModeReason::GCS_FAILSAFE) {
+    if (fstype == FAILSAFE_GCS) {
         AP_Notify::flags.failsafe_gcs = true;
     }
 
@@ -237,7 +237,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #endif
         break;
     }
-    gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: switched to %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", control_mode->name());
+    gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: switched to %s", (fstype == FAILSAFE_GCS) ? "GCS" : "RC Long", control_mode->name());
 }
 
 void Plane::rc_failsafe_short_off_event()

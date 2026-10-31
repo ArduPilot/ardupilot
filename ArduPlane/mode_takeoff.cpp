@@ -193,7 +193,9 @@ void ModeTakeoff::update()
         //check if in long failsafe due to being in initial TAKEOFF stage; if it is, recall long failsafe now to get fs action via events call
         if (plane.long_failsafe_pending) {
             plane.long_failsafe_pending = false;
-            plane.failsafe_long_on_event(FAILSAFE_LONG, ModeReason::MODE_TAKEOFF_FAILSAFE);
+            // keep the failsafe type (RC or GCS) set when the action was deferred
+            plane.failsafe_long_on_event(plane.failsafe.state == FAILSAFE_GCS ? FAILSAFE_GCS : FAILSAFE_LONG,
+                                         ModeReason::MODE_TAKEOFF_FAILSAFE);
         }
     }
 }
