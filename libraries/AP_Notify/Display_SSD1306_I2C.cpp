@@ -14,6 +14,8 @@
  */
 #include "Display_SSD1306_I2C.h"
 
+#if AP_NOTIFY_DISPLAY_SSD1306_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 
@@ -143,3 +145,5 @@ void Display_SSD1306_I2C::clear_screen()
 {
      memset(_displaybuffer, 0, SSD1306_COLUMNS * SSD1306_ROWS_PER_PAGE);
 }
+
+#endif // AP_NOTIFY_DISPLAY_SSD1306_ENABLED
