@@ -29,6 +29,9 @@ extern const AP_HAL::HAL& hal;
 #define AP_NETWORKING_PORT_STACK_SIZE 1300
 #endif
 
+// how long to wait for TCP send space before trying again
+#define AP_NETWORKING_TCP_SEND_WAIT_MS 5
+
 const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Port type
@@ -348,9 +351,7 @@ bool AP_Networking::Port::send_receive(void)
         uint8_t buf[n];
         const auto ret = sock->recv(buf, n, 0);
         if (close_on_recv_error && ret == 0) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP[%u]: closed connection", unsigned(state.idx));
-            delete sock;
-            sock = nullptr;
+            tcp_disconnect("closed connection");
             return false;
         }
         if (ret > 0) {
@@ -454,18 +455,31 @@ bool AP_Networking::Port::send_receive(void)
             writebuffer->advance(ret);
             tx_stats_bytes += ret;
             active = true;
-        } else if (errno == ENOTCONN &&
-            (type == NetworkPortType::TCP_CLIENT || type == NetworkPortType::TCP_SERVER)) {
-            // close socket and mark as disconnected, so we can reconnect with another client or when server comes back
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP[%u]: disconnected", unsigned(state.idx));
-            sock->close();
-            delete sock;
-            sock = nullptr;
-            connected = false;
+        } else if (type == NetworkPortType::TCP_CLIENT || type == NetworkPortType::TCP_SERVER) {
+            if (errno == ENOTCONN) {
+                // close socket and mark as disconnected, so we can reconnect with another client or when server comes back
+                tcp_disconnect("disconnected");
+            } else {
+                // wait for send space rather than polling at full rate
+                sock->pollout(AP_NETWORKING_TCP_SEND_WAIT_MS);
+            }
         }
     }
 
     return active;
+}
+
+/*
+  drop a TCP connection, discarding any data queued for it
+ */
+void AP_Networking::Port::tcp_disconnect(const char *reason)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP[%u]: %s", unsigned(state.idx), reason);
+    delete sock;
+    sock = nullptr;
+    connected = false;
+    WITH_SEMAPHORE(sem);
+    writebuffer->clear();
 }
 
 /*
