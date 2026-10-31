@@ -36,6 +36,7 @@
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_InertialLabs.h>
+#include <SITL/SIM_Xsens.h>
 #include <SITL/SIM_Aeron.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
@@ -215,6 +216,8 @@ private:
     // simulated InertialLabs INS-U
     SITL::InertialLabs *inertiallabs;
 
+    // simulated Xsens INS
+    SITL::Xsens *xsens;
 #if AP_SIM_AERON_ENABLED
     // simulated Aeron INS PLX3
     SITL::Aeron *aeron;

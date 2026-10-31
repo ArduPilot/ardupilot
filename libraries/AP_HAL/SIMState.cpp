@@ -252,6 +252,9 @@ void SIMState::fdm_input_local(void)
     if (inertiallabs != nullptr) {
         inertiallabs->update();
     }
+    if (xsens != nullptr) {
+        xsens->update();
+    }
 #if AP_SIM_AERON_ENABLED
     if (aeron != nullptr) {
         aeron->update();
