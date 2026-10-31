@@ -323,8 +323,8 @@ void AC_AutoTune::run()
     pos_control->D_update_controller();
 }
 
-// return true if vehicle is close to level
-bool AC_AutoTune::currently_level()
+// Return attitude qualification and report the instantaneous rate qualification separately.
+bool AC_AutoTune::currently_level(bool &rate_ok)
 {
     // abort AutoTune if we pass 2 * AUTOTUNE_LEVEL_TIMEOUT_MS
     const uint32_t now_ms = AP_HAL::millis();
@@ -342,6 +342,11 @@ bool AC_AutoTune::currently_level()
     // relax threshold if we pass AUTOTUNE_LEVEL_TIMEOUT_MS
     const float threshold_mul = constrain_float((float)(now_ms - level_start_time_ms) / (float)AUTOTUNE_LEVEL_TIMEOUT_MS, 0.0, 2.0);
 
+    const Vector3f &gyro = ahrs_view->get_gyro();
+    rate_ok = !(fabsf(gyro.x) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD) ||
+                fabsf(gyro.y) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD) ||
+                fabsf(gyro.z) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_Y_CD));
+
     if (fabsf(ahrs_view->get_roll_rad() - desired_roll_rad) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
@@ -349,15 +354,6 @@ bool AC_AutoTune::currently_level()
         return false;
     }
     if (fabsf(wrap_PI(ahrs_view->get_yaw_rad() - desired_yaw_rad)) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
-        return false;
-    }
-    if (ahrs_view->get_gyro().x > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
-        return false;
-    }
-    if (ahrs_view->get_gyro().y > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
-        return false;
-    }
-    if (ahrs_view->get_gyro().z > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_Y_CD)) {
         return false;
     }
     return true;
@@ -380,12 +376,13 @@ void AC_AutoTune::control_attitude()
         
         attitude_control->input_euler_angle_roll_pitch_yaw_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rad, true);
 
-        // Require a short stable period before executing the next test
-        if (!currently_level()) {
+        // Require continuous attitude settling; check rate magnitude only at test entry.
+        bool rate_ok;
+        if (!currently_level(rate_ok)) {
             step_start_time_ms = now_ms;
         }
 
-        if (now_ms - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
+        if (now_ms - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS && rate_ok) {
             // Begin the test phase
             step = Step::EXECUTING_TEST;
             step_start_time_ms = now_ms;
