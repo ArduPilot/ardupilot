@@ -16,6 +16,12 @@ public:
     bool healthy(uint8_t sensor_id) const {
         return _RBRI[sensor_id].healthy;
     }
+    bool use(uint8_t sensor_id) const {
+        return _RBRI[sensor_id].use;
+    }
+    bool use() const {
+        return use(get_primary());
+    }
     uint32_t get_last_update(uint8_t sensor_id) const {
         return _RBRI[sensor_id].last_update_ms;
     }
