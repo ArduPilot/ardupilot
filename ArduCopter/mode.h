@@ -222,6 +222,9 @@ protected:
     // Return stopping point as a location with above origin alt frame
     Location get_stopping_point() const;
 
+    // Return stopping point as a location with above origin alt frame, but with the altitude constrained to be within the range of PILOT_TKO_ALT_M_MIN and PILOT_TKO_ALT_M_MAX
+    float get_constrained_takeoff_alt() const;
+
     // functions to control normal landing.  pause_descent is true if vehicle should not descend
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
