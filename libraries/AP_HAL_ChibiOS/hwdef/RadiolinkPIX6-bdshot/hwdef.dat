@@ -1,0 +1,12 @@
+# Bi-directional dshot version of RadiolinkPIX6
+
+include ../RadiolinkPIX6/hwdef.dat
+
+undef PA10 PE9
+undef DMA_PRIORITY
+
+# This gives bi-dir dshot on the first four channels
+PA10 TIM1_CH3 TIM1 PWM(2) GPIO(51) BIDIR
+PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53) BIDIR
+
+DMA_PRIORITY SDMMC* UART8* ADC* TIM1_UP TIM1_CH3 TIM1_CH1 SPI* TIM*
