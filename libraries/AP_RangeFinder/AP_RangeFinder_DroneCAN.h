@@ -23,7 +23,7 @@ public:
     static void handle_measurement(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_range_sensor_Measurement &msg);
 
 protected:
-    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+    virtual AP_RangeFinder_DistanceSensorType _get_distance_sensor_type() const override {
         return _sensor_type;
     }
 private:
@@ -35,6 +35,6 @@ private:
     AP_DroneCAN* _ap_dronecan;
     uint8_t _node_id;
     bool new_data;
-    MAV_DISTANCE_SENSOR _sensor_type;
+    AP_RangeFinder_DistanceSensorType _sensor_type;
 };
 #endif  // AP_RANGEFINDER_DRONECAN_ENABLED
