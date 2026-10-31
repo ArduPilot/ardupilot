@@ -1,0 +1,31 @@
+# Simulation-on-Hardware defaults for a bare Pico 2: the SITL AHRS, a
+# simulated GPS and a quad frame, so the board runs with nothing attached
+# but USB.
+AHRS_EKF_TYPE 10
+GPS1_TYPE 100
+
+# small accel offsets and scales so the two simulated IMUs count as calibrated
+INS_ACCOFFS_X   0.001
+INS_ACCOFFS_Y   0.001
+INS_ACCOFFS_Z   0.001
+INS_ACCSCAL_X   1.001
+INS_ACCSCAL_Y   1.001
+INS_ACCSCAL_Z   1.001
+INS_ACC2OFFS_X   0.001
+INS_ACC2OFFS_Y   0.001
+INS_ACC2OFFS_Z   0.001
+INS_ACC2SCAL_X   1.001
+INS_ACC2SCAL_Y   1.001
+INS_ACC2SCAL_Z   1.001
+
+FRAME_CLASS 1
+FRAME_TYPE 0
+
+BATT_MONITOR 0
+
+# The physics model steps once per main loop and sync_frame_time() sleeps to
+# hold SIM_RATE_HZ, so the two want to match.
+SIM_RATE_HZ 200
+SCHED_LOOP_RATE 200
+
+BRD_RTC_TYPES 2

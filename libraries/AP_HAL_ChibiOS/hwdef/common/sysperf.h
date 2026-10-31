@@ -89,6 +89,8 @@ extern "C" {
   bool            sysStopLoadMeasure(void);
   sys_cpu_load_t  sysGetCPUPeakLoad(void);
   sys_cpu_load_t  sysGetCPUAverageLoad(void);
+  sys_cpu_load_t  sysGetCoreCPUPeakLoad(unsigned core);
+  sys_cpu_load_t  sysGetCoreCPUAverageLoad(unsigned core);
   msg_t           sysGetCPULoadStatistics(sys_load_stats_t *stats);
 #endif /* HAL_USE_LOAD_MEASURE == TRUE */
   void            sysIdleEnterMeasure(void);

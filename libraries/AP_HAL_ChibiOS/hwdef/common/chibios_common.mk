@@ -185,7 +185,12 @@ ECHO = echo "[$C/$T] ChibiOS:"
 endif
 all: PRE_MAKE_ALL_RULE_HOOK $(OBJS) $(CRASHCATCHER_ASMXOBJS) $(OUTFILES) POST_MAKE_ALL_RULE_HOOK
 
+ifneq ($(findstring RP2350,$(CHIBIOS_PLATFORM_MK)),)
 PRE_MAKE_ALL_RULE_HOOK:
+	@touch $(BUILDROOT)/rp2350_ramfunc2_sections.ld
+else
+PRE_MAKE_ALL_RULE_HOOK:
+endif
 
 POST_MAKE_ALL_RULE_HOOK:
 
@@ -324,7 +329,7 @@ else
 	@echo Done
 endif
 
-lib: $(OBJS) $(CRASHCATCHER_ASMXOBJS) $(BUILDDIR)/lib$(PROJECT).a pass
+lib: PRE_MAKE_ALL_RULE_HOOK $(OBJS) $(CRASHCATCHER_ASMXOBJS) $(BUILDDIR)/lib$(PROJECT).a pass
 
 $(BUILDDIR)/lib$(PROJECT).a: $(OBJS)
 	@$(AR) -r $@ $^
