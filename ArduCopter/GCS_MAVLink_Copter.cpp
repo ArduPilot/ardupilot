@@ -579,7 +579,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet)
 {
-    if (packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT) {
+    if (packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+        packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
         return MAV_RESULT_DENIED;  // meaning some parameters are bad
     }
 
