@@ -30,6 +30,7 @@ class AC_WeatherVane {
             NOSE_OR_TAIL_IN = 2, // Nose in or tail into wind, which ever is closest
             SIDE_IN = 3, // Side into wind for copter tailsitters
             TAIL_IN = 4, // backwards, for tailsitters, makes it easier to descend
+            ZERO_SIDESLIP = 5, // Yaw to zero lateral body acceleration (sideslip)
         };
 
         enum class Options {
