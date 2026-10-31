@@ -77,7 +77,7 @@ exec "$GDB" \
     -ex "set pagination off" \
     -ex "set remotetimeout 300" \
     -ex "target remote 127.0.0.1:$PORT" \
-    "$ELF"
+    $EXTRA"$ELF"
 '''
 
 
@@ -812,6 +812,9 @@ def main():
     parser.add_argument('--renode-gdb-port', type=int,
                         help='internal Renode GDB port (default: --gdb-port + 1)')
     parser.add_argument('--gdb-bin', help='gdb to use (default: arm-none-eabi-gdb)')
+    parser.add_argument('--gdb-continue', action='store_true',
+                        help='with --gdb, have gdb continue from reset '
+                             'instead of waiting for a command')
     parser.add_argument('--no-xterm', action='store_true',
                         help='with --gdb, print the attach command instead of '
                              'opening a terminal')
@@ -861,6 +864,8 @@ def main():
                 800 <= value <= 2200 for value in rc_channels):
             parser.error('--rc-channels takes 1 to 16 values from 800 to 2200')
 
+    if args.gdb_continue and not args.gdb:
+        parser.error('--gdb-continue requires --gdb')
     if args.reverse_debug and not args.gdb:
         parser.error('--reverse-debug requires --gdb')
     if args.reverse_gdb_limit < 0:
@@ -1255,6 +1260,8 @@ def main():
         launcher = outdir / 'gdb.sh'
         launcher.write_text(GDB_LAUNCH.replace('$PORT', str(args.gdb_port))
                                       .replace('$GDB', gdb)
+                                      .replace('$EXTRA', '-ex continue \\\n    '
+                                               if args.gdb_continue else '')
                                       .replace('$ELF', str(firmware))
                                       .replace('$READY', str(outdir / 'gdb-proxy.ready')))
         launcher.chmod(0o755)
@@ -1279,6 +1286,8 @@ def main():
             if args.reverse_gdb_limit:
                 reverse_command += ' %u' % args.reverse_gdb_limit
             commands.append(reverse_command)
+        commands.append('include @%s' % (
+            root / 'Tools' / 'renode' / 'peripherals' / 'common' / 'AP_GdbTime.cs'))
         commands.append('machine StartGdbServer %d' % renode_gdb_port)
         proxy_ready = outdir / 'gdb-proxy.ready'
         try:
