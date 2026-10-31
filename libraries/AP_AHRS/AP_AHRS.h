@@ -383,8 +383,10 @@ public:
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
     void resetHeightDatum();
 
+#if AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(class GCS_MAVLINK &link) const;
+#endif  // AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
 
 #if AP_MAVLINK_MSG_ESTIMATOR_STATUS_ENABLED
     // send an ESTIMATOR_STATUS for the configured EKF
