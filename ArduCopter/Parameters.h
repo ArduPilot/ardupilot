@@ -478,6 +478,7 @@ public:
         LAND                 = 1,
         ALTHOLD              = 2,
         LAND_EVEN_STABILIZE  = 3,
+        VALT                 = 4,
     };
 
     AP_Enum<FS_EKF_Action> fs_ekf_action;
@@ -547,6 +548,10 @@ public:
 #if AP_GROUNDEFFECT_ENABLED
     // ground effect detector
     AP_GroundEffect ground_effect;
+#endif
+
+#if MODE_VALT_ENABLED
+    AP_Float valt_pos_expo;    // VALT stick-to-position-authority blend expo (0 = hard cutoff)
 #endif
 
 #if AP_TEMPCALIBRATION_ENABLED
