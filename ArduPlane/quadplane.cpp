@@ -103,14 +103,6 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ASSIST_SPEED", 24, QuadPlane, assist.speed, 0),
 
-    // @Param: YAW_RATE_MAX
-    // @DisplayName: Maximum yaw rate
-    // @Description: This is the maximum yaw rate for pilot input on rudder stick in degrees/second and weathervaning is limited to half of this value
-    // @Units: deg/s
-    // @Range: 50 500
-    // @Increment: 1
-    // @User: Standard
-
     // YAW_RATE_MAX index 25
 
     // @Param: LAND_FINAL_SPD
