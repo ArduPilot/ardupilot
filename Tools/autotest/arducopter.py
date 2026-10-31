@@ -19523,6 +19523,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Sprayer OK")
 
+    def ArmedInvertedTakeoff(self):
+        '''check raising the throttle on a vehicle armed upside down doesn't raise an internal error'''
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        # make the vehicle believe it is upside down
+        self.set_parameters({
+            "AHRS_ORIENTATION": 8,  # ROLL_180
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(20, reason="AHRS to settle")
+        self.change_mode('STABILIZE')
+
+        # the arming checks would refuse an upside-down vehicle
+        self.arm_vehicle(force=True)
+        self.set_rc(3, 1500)
+        self.delay_sim_time(5, reason="motors to spool up")
+        self.set_rc(3, 1000)
+        if self.armed():
+            self.disarm_vehicle(force=True)
+
+        if self.statustext_in_collections("Internal Errors"):
+            raise NotAchievedException("Internal error raised while armed inverted")
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
@@ -19748,6 +19775,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.Clamp,
             self.ScriptingFlyVelocity,
             self.PLDNoParameters,
+            self.ArmedInvertedTakeoff,
         ])
         return ret
 
