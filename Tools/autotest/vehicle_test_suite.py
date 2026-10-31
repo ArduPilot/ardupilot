@@ -16216,6 +16216,63 @@ switch value'''
         finally:
             msp.callback = None
 
+    def msp_vtx_config_frames(self, msp, seconds, poll=False):
+        '''MSP_VTX_CONFIG frames from the FC over the given time, as (kind,
+        band, channel, power, pitmode, freq) tuples, band and channel one
+        based. kind is "reply" for MSPv1 replies to polls (sent when poll is
+        True) and "push" for MSPv2 frames an MSP DisplayPort link sends
+        unprompted; both are parsed from the raw stream, as they interleave'''
+        MSP_VTX_CONFIG = 88
+        buf = bytearray()
+        frames = []
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < seconds:
+            self.drain_mav()
+            if poll:
+                msp.send_command(MSP_VTX_CONFIG)
+            buf.extend(msp.do_read())
+            while True:
+                starts = [i for i in (buf.find(b'$M>'), buf.find(b'$X>')) if i >= 0]
+                if not starts:
+                    break
+                i = min(starts)
+                if buf[i+1] == ord('M'):
+                    if len(buf) < i + 5:
+                        break
+                    size = buf[i+3]
+                    cmd = buf[i+4]
+                    data_start = i + 5
+                    kind = "reply"
+                else:
+                    if len(buf) < i + 8:
+                        break
+                    cmd, size = struct.unpack("<HH", bytes(buf[i+4:i+8]))
+                    data_start = i + 8
+                    kind = "push"
+                end = data_start + size + 1
+                if len(buf) < end:
+                    break
+                data = bytes(buf[data_start:data_start+size])
+                del buf[:end]
+                if cmd == MSP_VTX_CONFIG and len(data) >= 8:
+                    (t, band, channel, power, pitmode, freq, ready) = struct.unpack("<BBBBBHB", data[:8])
+                    frames.append((kind, band, channel, power, pitmode, freq))
+        return frames
+
+    def wait_msp_vtx_config_reply(self, msp, band, channel, freq, timeout=10):
+        '''poll MSP_VTX_CONFIG on an MSP DisplayPort link until the FC replies
+        with the given band, channel (one based) and frequency'''
+        tstart = self.get_sim_time()
+        last = None
+        while self.get_sim_time_cached() - tstart < timeout:
+            for f in self.msp_vtx_config_frames(msp, 0.5, poll=True):
+                if f[0] == "reply":
+                    last = f
+                    if f[1:3] == (band, channel) and f[5] == freq:
+                        return
+        raise NotAchievedException("MSP_VTX_CONFIG reply never matched band %u channel %u freq %u (last %s)" %
+                                   (band, channel, freq, str(last)))
+
     def check_msp_set_vtx_config(self, msp):
         '''drive MSP_SET_VTX_CONFIG over the supplied client and check the
         configured VTX band/channel/frequency/power update accordingly'''
@@ -16322,6 +16379,80 @@ switch value'''
         self.wait_ready_to_arm()
         msp = self.msp_connect(port)
         self.check_msp_set_vtx_config(msp)
+        self.reboot_sitl()
+
+    def MSPVTXUserBands(self):
+        '''test MSP VTX control with user-defined VTX bands: an added band is
+        sent as a raw frequency, and selecting a disabled channel commands
+        nothing while power and pit mode changes still go out'''
+        MSP_SET_VTX_CONFIG = 89
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 42,  # MSP DisplayPort
+            "OSD_TYPE": 5,           # MSP DisplayPort
+            "VTX_ENABLE": 1,
+            "VTX_BND1_CH1": 5870,
+            "VTX_BND1_CH2": -1,
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port  # serial5 listens on localhost port
+        ])
+        self.wait_ready_to_arm()
+        msp = self.msp_connect(port)
+
+        def set_vtx_config(band, channel, freq):
+            # MSP API 1.42 payload: band and channel one based, band 0 is a
+            # raw frequency. The legacy field is the raw frequency the VTX is
+            # on, which the 1.42 fields supersede
+            payload = struct.pack("<H", 5870)       # legacy field
+            payload += struct.pack("<BB", 1, 0)     # power index, pitmode
+            payload += struct.pack("<B", 0)         # lowPowerDisarm
+            payload += struct.pack("<H", 0)         # pitModeFreq
+            payload += struct.pack("<BBH", band, channel, freq)
+            return [(MSP_SET_VTX_CONFIG, payload)]
+
+        def pushes_in(seconds):
+            # (band, channel, power, pitmode, freq) of the frames pushed
+            return [f[1:] for f in self.msp_vtx_config_frames(msp, seconds) if f[0] == "push"]
+
+        # the VTX reports a raw frequency, which is the added band
+        self.msp_send_until_parameters(msp, set_vtx_config(0, 0, 5870), {
+            "VTX_BAND": 11,
+            "VTX_CHANNEL": 0,
+            "VTX_FREQ": 5870,
+        })
+        self.wait_msp_vtx_config_reply(msp, 0, 1, 5870)
+
+        self.set_parameter("VTX_POWER", 800)
+        pushes = pushes_in(3)
+        if not any(p[0] == 0 and p[4] == 5870 for p in pushes):
+            raise NotAchievedException("added band not pushed as a raw frequency: %s" % pushes)
+        last_power = pushes[-1][2]
+
+        # a disabled channel is never commanded
+        self.set_parameter("VTX_CHANNEL", 1)
+        pushes = pushes_in(3)
+        if pushes:
+            raise NotAchievedException("disabled channel pushed: %s" % pushes)
+        self.wait_msp_vtx_config_reply(msp, 0, 1, 5870)
+
+        # but power and pit mode changes still go out, on the last channel
+        self.set_parameter("VTX_POWER", 25)
+        pushes = pushes_in(3)
+        if not any(p[2] != last_power and p[4] == 5870 for p in pushes):
+            raise NotAchievedException("power change not pushed on a disabled channel: %s" % pushes)
+        self.set_parameter("VTX_OPTIONS", 1)
+        pushes = pushes_in(3)
+        if not any(p[3] == 1 and p[4] == 5870 for p in pushes):
+            raise NotAchievedException("pit mode not pushed on a disabled channel: %s" % pushes)
+        self.set_parameter("VTX_OPTIONS", 0)
+
+        # a VTX reporting an empty user band (Z, band 13 one based) is ignored
+        self.set_parameter("VTX_CHANNEL", 0)
+        for i in range(5):
+            msp.send_command(MSP_SET_VTX_CONFIG, set_vtx_config(13, 1, 0)[0][1])
+            self.delay_sim_time(0.2, reason="let the FC process the frame")
+        self.assert_parameter_values({"VTX_BAND": 11, "VTX_CHANNEL": 0, "VTX_FREQ": 5870})
         self.reboot_sitl()
 
     def CRSF(self):
