@@ -211,7 +211,7 @@ $ ros2 service list
 ---
 ```
 
-The static transforms for enabled sensors are also published, and can be received like so:
+The static transforms for the GPS and IMU are also published, and can be received like so:
 
 ```bash
 ros2 topic echo /ap/tf_static --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
