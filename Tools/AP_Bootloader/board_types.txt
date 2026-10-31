@@ -632,6 +632,9 @@ AP_HW_VIMDRONES_BMS                  5820
 AP_HW_CyberX-v10                     5830
 AP_HW_CyberX-Cube                    5831
 
+# IDs 5840-5849 reserved for BABYLON-AUS
+AP_HW_BBL-Ei-1                       5841
+
 # IDs 5900-5904 reserved for NewBeeDrone PixNova
 AP_HW_NewBeeDrone_PixNova            5900
 
