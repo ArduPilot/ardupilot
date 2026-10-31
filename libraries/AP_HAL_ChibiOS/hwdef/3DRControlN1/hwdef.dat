@@ -1,0 +1,10 @@
+# hw definition file for 3DR Control N1
+
+include hwdef.inc
+
+# Board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_3DRControlN1
+
+# USB setup
+USB_PRODUCT 0x1186
+USB_STRING_PRODUCT "ControlN1"
