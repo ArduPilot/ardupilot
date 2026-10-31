@@ -16,6 +16,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_RANGEFINDER_PORT_DEFAULT 3
 #endif
 
+#ifndef AP_PERIPH_PRX_PORT_DEFAULT
+#define AP_PERIPH_PRX_PORT_DEFAULT 3
+#endif
+
 #ifndef HAL_PERIPH_GPS_PORT_DEFAULT
 #define HAL_PERIPH_GPS_PORT_DEFAULT 3
 #endif
@@ -534,7 +538,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    GSCALAR(proximity_port, "PRX_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
+    GSCALAR(proximity_port, "PRX_PORT", AP_PERIPH_PRX_PORT_DEFAULT),
 
     // @Param: PRX_MAX_RATE
     // @DisplayName: Proximity Sensor max rate
