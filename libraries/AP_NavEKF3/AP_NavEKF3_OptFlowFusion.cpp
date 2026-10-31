@@ -22,6 +22,16 @@
 // select fusion of optical flow measurements
 void NavEKF3_core::SelectFlowFusion()
 {
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // Update the IMU-aided AGL KF when either consumer is enabled: optflow scaling
+    // or fusing its velocity as a velD observation. It integrates each step's IMU
+    // data, so it runs ahead of the load levelling below, which skips a step
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) ||
+        frontend->option_is_enabled(NavEKF3::Option::AglKfVelForVelD)) {
+        UpdateAglKf();
+    }
+#endif
+
     // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
     // If so, don't fuse measurements on this time step to reduce frame over-runs
     // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
@@ -58,13 +68,6 @@ void NavEKF3_core::SelectFlowFusion()
         // Estimate the terrain offset (runs a one state EKF)
         EstimateTerrainOffset(ofDataDelayed);
     }
-
-#if EK3_FEATURE_OPTFLOW_AGL_KF
-    // Update the IMU-aided AGL KF every IMU step when enabled, regardless of flow/RF data presence.
-    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
-        UpdateAglKf();
-    }
-#endif
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
@@ -791,13 +794,14 @@ void NavEKF3_core::UpdateAglKf()
     // Negate: downward acceleration reduces AGL rate.
     aglKfV -= velDotNED.z * imuDt;
 
-    // First-order decay of v_agl toward zero when RF is absent (tau = 2 s).
-    // Without range measurements v_agl is unobservable; accumulated IMU bias
-    // error will cause it to drift, pulling h_agl to the floor during
-    // subsequent climbs.  The decay limits that drift.
-    // At the aglKfRngTimeout_ms validity timeout (5 s), |v| is at most
-    // exp(-5/2) ~ 8% of its value at last RF fusion, so the hard reset finds v near zero.
-    if (!rangeDataToFuse) {
+    // First-order decay of v_agl toward zero once the range finder has stopped
+    // arriving (tau = 2 s).  Without range measurements v_agl is unobservable and
+    // accumulated IMU bias error makes it drift, pulling h_agl to the floor during
+    // subsequent climbs.  The test is on elapsed time since the last fusion rather
+    // than on rangeDataToFuse: range data is capped at 20 Hz while the filter steps
+    // at about 83 Hz, so decaying whenever no sample was due would run on most steps
+    // and bias v_agl low by roughly half in a sustained climb or descent.
+    if (imuSampleTime_ms - lastAglRngFuseTime_ms > aglKfRngGapMax_ms) {
         const ftype tauV = 2.0f;
         aglKfV *= expf(-imuDt / tauV);
     }
@@ -845,8 +849,9 @@ void NavEKF3_core::UpdateAglKf()
     aglKfP[0][0] = MIN(aglKfP[0][0], 100.0f);  // 10 m std-dev cap
     aglKfP[1][1] = MIN(aglKfP[1][1], 100.0f);  // 10 m/s std-dev cap
 
-    // mark invalid if RF has been absent too long
-    if (!rangeDataToFuse) {
+    // mark invalid if RF has been absent too long. On a step SelectVelPosFusion() delayed for
+    // magnetometer fusion, rangeDataToFuse still holds the previous step's sample, already used
+    if (!rangeDataToFuse || posVelFusionDelayed) {
         if (imuSampleTime_ms - lastAglRngFuseTime_ms > aglKfRngTimeout_ms) {
             aglKfValid = false;
         }
@@ -868,6 +873,7 @@ void NavEKF3_core::UpdateAglKf()
         aglKfP[0][1] = aglKfP[1][0] = 0.0f;
         aglKfP[1][1] = 1.0f;                    // 1 m/s velocity uncertainty after reset
         lastAglRngFuseTime_ms = imuSampleTime_ms;
+        aglKfLastHgtInnov = 0.0f;
         aglKfValid = true;
         return;  // skip measurement update this cycle (just used the reading for reset)
     }
@@ -899,6 +905,15 @@ void NavEKF3_core::UpdateAglKf()
         return;
     }
 
+    // the AGL KF reads a step in the ground as vertical motion, and with R from EK3_RNG_M_NSE
+    // its velocity takes seconds to recover, so note the step for the velD fusion. The prediction
+    // carries the IMU, so a lagging velocity or an accel bias moves the innovation slowly and a
+    // step moves it in one sample, however long since the last one. 25 ms of jitter in when the
+    // samples were taken is allowed for
+    if (fabsF(hgtInnov - aglKfLastHgtInnov) > aglKfStepMin + 0.025f * fabsF(aglKfV)) {
+        aglKfStepTime_ms = imuSampleTime_ms;
+    }
+
     // Kalman gain:  K = P*H' / innovVar = [P[0][0]/innovVar, P[1][0]/innovVar]'
     // (H = [1, 0], so P*H' = first column of P)
     const ftype Kh = aglKfP[0][0] / innovVar;
@@ -924,6 +939,7 @@ void NavEKF3_core::UpdateAglKf()
     aglKfP[1][1] = MAX(Pvv - 2.0f * Kv * Phv + sq(Kv) * innovVar, 0.0f);
 
     lastAglRngFuseTime_ms = imuSampleTime_ms;
+    aglKfLastHgtInnov = hgtInnov;
     aglKfValid = true;
 }
 
