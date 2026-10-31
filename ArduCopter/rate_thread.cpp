@@ -170,9 +170,8 @@ void Copter::rate_controller_thread()
                                                      DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
     uint8_t rate_decimation = target_rate_decimation;
 
-    // set up the decimation rates
-    RateControllerRates rates;
-    rate_controller_set_rates(rate_decimation, rates, false);
+    // set by enable_fast_rate_loop(), so a thread parked from boot changes nothing
+    RateControllerRates rates {};
 
     uint32_t rate_loop_count = 0;
     uint32_t prev_loop_count = 0;
@@ -215,7 +214,11 @@ void Copter::rate_controller_thread()
 #endif
 
         // allow changing option at runtime
-        if (get_fast_rate_type() == FastRateType::FAST_RATE_DISABLED) {
+        if (get_fast_rate_type() == FastRateType::FAST_RATE_DISABLED
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+            || ins.temperature_cal_running()
+#endif
+            ) {
             if (was_using_rate_thread) {
                 disable_fast_rate_loop(rates);
                 was_using_rate_thread = false;
