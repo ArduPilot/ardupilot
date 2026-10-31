@@ -689,6 +689,9 @@ void NavEKF2_core::readBaroData()
     // check to see if baro measurement has changed so we know if a new measurement has arrived
     // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
     const auto &baro = dal.baro();
+    if (!baro.use()) {
+        return;
+    }
     if (baro.get_last_update() - lastBaroReceived_ms > 70) {
 
         baroDataNew.hgt = baro.get_altitude();
