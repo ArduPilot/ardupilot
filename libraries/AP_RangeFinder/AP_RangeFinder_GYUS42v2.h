@@ -30,7 +30,12 @@ protected:
 
 private:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_GYUS42v2(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // GY-US42v2 maximum useful range is around 4m
+        params.max_distance.set_default(4.0f);
+    }
 
     // get a reading
     bool get_reading(float &reading_m) override;

@@ -45,7 +45,13 @@ protected:
     }
 
 private:
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_RDS02UF(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // match the range this driver clamps readings to
+        params.min_distance.set_default(RDS02UF_DIST_MIN);
+        params.max_distance.set_default(RDS02UF_DIST_MAX);
+    }
 
     // find a RDS02UF message in the buffer, starting at
     // initial_offset.  If found, that message (or partial message) will

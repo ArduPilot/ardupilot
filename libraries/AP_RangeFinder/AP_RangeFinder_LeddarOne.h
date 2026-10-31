@@ -60,7 +60,13 @@ protected:
 
 private:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_LeddarOne(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // LeddarOne spec sheet: up to 40m
+        params.min_distance.set_default(0.05f);
+        params.max_distance.set_default(40.0f);
+    }
 
     // get a reading
     bool get_reading(float &reading_m) override;

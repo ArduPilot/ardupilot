@@ -34,7 +34,12 @@ static const uint8_t MEASUREMENT_TIME_MS = 50; // Start continuous readings at a
 
 AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
     : AP_RangeFinder_Backend(_state, _params)
-    , dev(std::move(_dev)) {}
+    , dev(std::move(_dev))
+{
+    // VL53L1X datasheet: 4cm minimum, 1.3m in short mode, 3.6m in long mode
+    params.min_distance.set_default(0.05f);
+    params.max_distance.set_default((type() == RangeFinder::Type::VL53L1X_Short) ? 1.3f : 3.6f);
+}
 
 /*
    detect if a VL53L1X rangefinder is connected. We'll detect by
