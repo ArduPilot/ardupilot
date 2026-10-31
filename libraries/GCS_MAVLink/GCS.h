@@ -455,6 +455,10 @@ public:
 
     bool is_unicast() const { return option_enabled(Option::UNICAST); }
 
+    // return true if GCS::send_to_active_channels() can ever send on
+    // this channel:
+    bool eligible_for_active_channel_sends() const;
+
 #if HAL_HIGH_LATENCY2_ENABLED
     // true if this is a high latency link
     bool is_high_latency_link;
@@ -1206,7 +1210,9 @@ public:
         _sysid_gcs_last_seen_time_ms = seen_time_ms;
     }
 
-    void send_to_active_channels(uint32_t msgid, const char *pkt);
+    // send a message to all active channels; only channels with a
+    // bit set in chan_mask are considered:
+    void send_to_active_channels(uint32_t msgid, const char *pkt, mavlink_channel_mask_t chan_mask=~(mavlink_channel_mask_t)0);
 
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
@@ -1219,9 +1225,9 @@ public:
     uint8_t num_gcs() const { return _num_gcs; };
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
-    void send_named_float(const char *name, float value) const;
-    void send_named_int(const char *name, int32_t value) const;
-    void send_named_string(const char *name, const char *value) const;
+    void send_named_float(const char *name, float value, mavlink_channel_mask_t chan_mask=~(mavlink_channel_mask_t)0) const;
+    void send_named_int(const char *name, int32_t value, mavlink_channel_mask_t chan_mask=~(mavlink_channel_mask_t)0) const;
+    void send_named_string(const char *name, const char *value, mavlink_channel_mask_t chan_mask=~(mavlink_channel_mask_t)0) const;
 
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
