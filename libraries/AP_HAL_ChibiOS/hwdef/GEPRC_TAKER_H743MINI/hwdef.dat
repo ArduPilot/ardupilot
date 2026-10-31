@@ -1,0 +1,166 @@
+# Experimental ArduPilot hwdef for GEPRC TAKER H743MINI
+# Pin mapping cross-checked against Betaflight target GEPRC_TAKER_H743MINI.
+# Oscillator frequency, exact barometer address, board ID, and ADC calibration
+# still require verification against the actual PCB/schematic.
+# Betaflight reference: https://support.betaflight.com/targets/GEPRC_TAKER_H743MINI
+
+MCU STM32H7xx STM32H743xx
+
+# Provisional local-build ID; allocate a unique ID before distributing firmware.
+APJ_BOARD_ID AP_HW_GEPRC_TAKER_H743MINI
+OSCILLATOR_HZ 8000000
+MCU_CLOCKRATE_MHZ 480
+FLASH_SIZE_KB 2048
+FLASH_RESERVE_START_KB 384
+STM32_ST_USE_TIMER 2
+
+# USB and SWD
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART5 UART7 UART8
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# I2C1: onboard barometer; Betaflight BARO_I2C_INSTANCE I2CDEV_1
+# I2C2: external compass/accessory pads; Betaflight MAG_I2C_INSTANCE I2CDEV_2
+I2C_ORDER I2C1 I2C2
+PB8  I2C1_SCL I2C1
+PB9  I2C1_SDA I2C1
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+# SPI2: primary ICM42688P IMU
+PB13 SPI2_SCK SPI2
+PC2  SPI2_MISO SPI2
+PC3  SPI2_MOSI SPI2
+PB12 ICM42688P_CS CS
+PB2  IMU1_DRDY INPUT
+
+# SPI3: onboard W25Q128FV 16 MB dataflash
+PC10 SPI3_SCK SPI3
+PC11 SPI3_MISO SPI3
+PC12 SPI3_MOSI SPI3
+PA15 FLASH_CS CS
+
+# SPI4: AT7456E/MAX7456-compatible analog OSD
+PE2 SPI4_SCK SPI4
+PE5 SPI4_MISO SPI4
+PE6 SPI4_MOSI SPI4
+PE4 MAX7456_CS CS
+
+DMA_NOSHARE SPI2* SPI3* SPI4* TIM8*
+
+# UART1: VTX/MSP DisplayPort
+PA9  USART1_TX USART1
+PA10 USART1_RX USART1
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_MSP_DisplayPort
+define AP_MSP_VIDEOTX_ENABLED 1
+
+# UART2: receiver / SBUS input from digital VTX
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_RCIN
+
+# UART3: external serial receiver / peripheral
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
+
+# UART4: GPS
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_GPS
+
+# UART5 RX-only: ESC telemetry input
+PB5 UART5_RX UART5
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
+
+# UART7: general-purpose connector
+PE8 UART7_TX UART7
+PE7 UART7_RX UART7
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_None
+
+# UART8: onboard Bluetooth (Betaflight MSP UART)
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_None
+
+# Motor outputs: Betaflight MOTOR1_PIN..MOTOR8_PIN order.
+PC6  TIM8_CH1 TIM8 PWM(1) GPIO(50) BIDIR # M1
+PC7  TIM8_CH2 TIM8 PWM(2) GPIO(51) BIDIR # M2
+PC8  TIM8_CH3 TIM8 PWM(3) GPIO(52) BIDIR # M3
+PC9  TIM8_CH4 TIM8 PWM(4) GPIO(53) BIDIR # M4
+PE9  TIM1_CH1 TIM1 PWM(5) GPIO(54)  # M5
+PE11 TIM1_CH2 TIM1 PWM(6) GPIO(55)  # M6
+PE13 TIM1_CH3 TIM1 PWM(7) GPIO(56)  # M7
+PE14 TIM1_CH4 TIM1 PWM(8) GPIO(57)  # M8
+
+# Addressable LED strip output
+PD12 TIM4_CH1 TIM4 GPIO(58)
+
+# Battery voltage/current sense. Calibrate scales against measured values.
+PC1 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC0 BATT_CURRENT_SENS ADC1 SCALE(1)
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 11
+define HAL_BATT_CURR_PIN 10
+define HAL_BATT_VOLT_SCALE 11.0
+define HAL_BATT_CURR_SCALE 100.0
+
+# Betaflight PINIO outputs
+PC5 PINIO1 OUTPUT LOW GPIO(70)
+PD3 PINIO2 OUTPUT LOW GPIO(71)
+define HAL_PINIO_COUNT 2
+define HAL_PINIO_PINS 70 71
+
+# betaflight LIGHTS_OFF
+#define RELAY1_PIN_DEFAULT 70
+# 12V BEC power control (Betaflight PINIO2)
+#define RELAY2_PIN_DEFAULT 71
+
+# Status LED and active-low buzzer
+PB7 LED0 OUTPUT LOW GPIO(90)
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+define AP_NOTIFY_GPIO_LED_1_PIN 90
+PD2 BUZZER OUTPUT LOW GPIO(80)
+define HAL_BUZZER_PIN 80
+define HAL_BUZZER_ACTIVE_LOW 1
+
+# Barometer: Betaflight enables BMP280, DPS310, and MS5611 drivers and assigns
+# the barometer to I2C1. The target config does not specify fitted chip/address.
+BARO BMP280 I2C:0:0x76
+BARO BMP280 I2C:0:0x77
+BARO DPS310 I2C:0:0x76
+BARO DPS310 I2C:0:0x77
+BARO MS5611 I2C:0:0x76
+BARO MS5611 I2C:0:0x77
+define AP_BARO_BMP280_ENABLED 1
+define AP_BARO_DPS310_ENABLED 1
+define AP_BARO_MS5611_ENABLED 1
+
+# IMU
+SPIDEV icm42688 SPI2 DEVID1 ICM42688P_CS MODE3 1*MHZ 16*MHZ
+IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180
+define HAL_DEFAULT_INS_FAST_SAMPLE 3
+
+# External compass probing on I2C2
+# Betaflight target maps MAG_I2C_INSTANCE to I2C2.
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# OSD
+SPIDEV osd SPI4 DEVID4 MAX7456_CS MODE0 10*MHZ 10*MHZ
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# SPI flash for onboard logging (W25Q128FV, 16 MB)
+SPIDEV dataflash SPI3 DEVID1 FLASH_CS MODE3 1*MHZ 20*MHZ
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+# Internal flash storage; confirm reserved sectors against bootloader layout.
+define HAL_STORAGE_SIZE 16384
+STORAGE_FLASH_PAGE 14
+
+# PB0 is the Betaflight gyro clock input; not enabled as a peripheral here.
