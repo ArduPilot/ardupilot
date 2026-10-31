@@ -150,7 +150,9 @@ uint8_t AP_ESC_Telem::get_num_active_escs() const {
 
 // return the whether all the motors in servo_channel_mask are running
 // max_error_rate is in percent and only applies to ESCs that report their error rate as a percentage.
-// An ESC whose percentage has gone stale fails, as bidirectional DShot only reports one on a good frame
+// An ESC whose percentage has gone stale fails. Bidirectional DShot republishes each ESC's latest reading
+// every pulse until a corrupt reply replaces it, with the current rate, which counts missed replies and
+// right after a restart of its counts is no less than its last full window's
 bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm, float max_error_rate) const
 {
 
