@@ -10,6 +10,7 @@
 #include "tf2_msgs/msg/TFMessage.h"
 #include "AP_Math/vector3.h"
 #include "AP_Math/quaternion.h"
+#include <AP_RTC/JitterCorrection.h>
 
 class AP_DDS_External_Odom
 {
@@ -27,6 +28,10 @@ public:
     // ros_transform is in ENU
     // translation is in NED
     static void convert_transform(const geometry_msgs_msg_Transform& ros_transform, Vector3f& translation, Quaternion& rotation);
+
+private:
+
+    static JitterCorrection jitter_correction;
 
 };
 
