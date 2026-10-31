@@ -113,10 +113,20 @@ private:
     ///
     /// This gives a theoretical resolution limit of around 1cm.
     ///
-    /// @returns		The value expressed by the string in _term,
-    ///					multiplied by 1e7.
+    /// @param	value	Receives the value expressed by the string in
+    ///					_term, multiplied by 1e7.
+    /// @returns		False if the term is not a plausible angle; value
+    ///					is then left untouched.
     ///
-    uint32_t    _parse_degrees();
+    bool        _parse_degrees(int32_t &value);
+
+    /// Stop using the sentence currently being decoded: the remaining
+    /// terms are skipped and the checksum handler publishes nothing from
+    /// it, which is the path an unrecognised sentence type already takes.
+    void        _discard_sentence()
+    {
+        _sentence_type = _GPS_SENTENCE_OTHER;
+    }
 
     /// Processes the current term when it has been deemed to be
     /// complete.
