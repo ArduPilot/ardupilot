@@ -23575,7 +23575,7 @@ return update()
                 gdb=self.gdb,
                 valgrind=self.valgrind,
                 customisations=[
-                    '-I', str(1),
+                    '-I', str(1 + self.sitl_instance),
                     '--serial0', 'mcast:',
                     '--serial1', 'tcp:2',
                     '--serial2', 'tcp:3',
@@ -23619,7 +23619,7 @@ return update()
             self.progress("Connect to the serial port on the peripheral, which should be talking mavlink")
             self.drain_mav()
             mav2 = mavutil.mavlink_connection(
-                "tcp:localhost:5772",
+                "tcp:localhost:%u" % self.adjust_ardupilot_port(5772),
                 robust_parsing=True,
                 source_system=9,
                 source_component=9,
@@ -23630,7 +23630,7 @@ return update()
             self.progress("Connect to the other serial port on the peripheral, which should also be talking mavlink")
             self.drain_mav()
             mav3 = mavutil.mavlink_connection(
-                "tcp:localhost:5773",
+                "tcp:localhost:%u" % self.adjust_ardupilot_port(5773),
                 robust_parsing=True,
                 source_system=10,
                 source_component=10,
