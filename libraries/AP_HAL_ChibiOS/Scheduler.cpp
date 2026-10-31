@@ -877,6 +877,14 @@ void Scheduler::try_force_mutex(void)
         chSysUnlock();
         return;
     }
+    // only a holder that is itself waiting on a mutex can be in a lock
+    // ordering deadlock. Any other holder is part way through slow work,
+    // such as a microSD transfer, and taking the mutex from it lets two
+    // threads into code that isn't reentrant
+    if (wtmtx->owner->state != CH_STATE_WTMTX) {
+        chSysUnlock();
+        return;
+    }
     char thdname[17] {};
     uint16_t sem_line = hal.util->persistent_data.semaphore_line;
     strncpy(thdname, wtmtx->owner->name, sizeof(thdname)-1);
