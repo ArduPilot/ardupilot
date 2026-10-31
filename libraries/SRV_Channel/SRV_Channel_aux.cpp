@@ -282,7 +282,7 @@ void SRV_Channels::enable_aux_servos()
     // propagate channel masks to the ESCS
     hal.rcout->update_channel_masks();
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#if HAVE_AP_BLHELI_SUPPORT
     blheli.update();
 #endif
 }
