@@ -63,6 +63,8 @@ The 14 PWM outputs are:
 M1 - M8 are connected to the IOMCU
 A1 - A6 are connected to the FMU
 
+DShot on M1 - M8 requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller.
+
 M1 - M8 support DShot and are in 3 groups:
 
 - M1, M2 in group 1

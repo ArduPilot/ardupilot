@@ -67,6 +67,8 @@ The G-Pilot P1 provides a total of 14 PWM output channels divided into PWM pins 
 | **Aux Group 1**  | Channels 9, 10, 11, 12 | TIM1         | PWM  / DShot        |
 | **Aux Group 2**  | Channels 13, 14        | TIM4         | PWM  / DShot        |
 
+DShot on the Main (IOMCU) outputs requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller. Doing so disables PPM, DSM, iBus, SUMD, SRXL and ST24 input on the IO controller's RC input pin. SBUS and FPort on that pin, and DSM receivers on the DSM port, continue to work.
+
 **PWM Voltage Selector:** Users can switch the main servo PWM voltage level between **3.3V** and **5V** via the Full Parameter List using the `BRD_PWM_VOLT_SEL` parameter. By default, it is configured for **3.3V** output (`BRD_PWM_VOLT_SEL = 0`). Setting this parameter to `1` shifts the voltage max to 5V to help reduce ESC noise interference. Please note that this option only affects the **8 main outputs** controlled by the IOMCU, not the **6 auxiliary outputs** driven by the FMU.
 
 ## Power Monitor

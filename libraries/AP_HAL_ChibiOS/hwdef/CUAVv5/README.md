@@ -50,7 +50,10 @@ marked RC in the above diagram. This pin supports all RC protocols.
 
 The CUAVv5 supports up to 14 PWM outputs. First first 8 outputs (labelled
 "MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
-outputs support all PWM output formats, but not DShot.
+outputs support all PWM output formats. DShot can be enabled on them by
+setting [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to 1
+and rebooting, which loads the DShot firmware onto the IO controller.
+Doing so disables PPM, DSM, iBus, SUMD, SRXL and ST24 input on the IO controller's RC input pin. SBUS and FPort on that pin, and DSM receivers on the DSM port, continue to work.
 
 The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxiliary"
 outputs. These are directly attached to the STM32F765 and support all
