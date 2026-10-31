@@ -301,7 +301,7 @@ public:
     virtual void rate_controller_run() = 0;
 
     // reset the rate controller target loop updates
-    void rate_controller_target_reset();
+    virtual void rate_controller_target_reset();
 
     // Run the angular velocity controller with a specified timestep. Must be implemented by derived class.
     virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
