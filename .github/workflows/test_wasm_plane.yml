@@ -54,7 +54,6 @@ on:
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
       - 'Tools/autotest/swarminit.txt'
@@ -67,17 +66,14 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
       - '!.github/workflows/test_wasm_plane.yml'  # except this one
@@ -134,7 +130,6 @@ on:
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
       - 'Tools/autotest/swarminit.txt'
@@ -147,17 +142,14 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
       - '!.github/workflows/test_wasm_plane.yml'  # except this one
