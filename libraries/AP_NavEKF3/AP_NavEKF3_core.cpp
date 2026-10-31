@@ -208,6 +208,7 @@ void NavEKF3_core::InitialiseVariables()
     prevBetaDragStep_ms = imuSampleTime_ms;
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
+    lastVelDFuseTime_ms = 0;
     lastGpsPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;

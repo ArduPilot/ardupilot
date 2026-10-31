@@ -38,12 +38,36 @@ bool NavEKF3_core::healthy(void) const
 }
 
 /*
-  return true when on the ground and not navigating with more than 1 m of
-  filtered height innovation
+  return true when on the ground with more than 1 m of filtered height
+  innovation. Aided modes are excluded while a measured vertical velocity
+  agrees with the state: the vertical velocity is then known good, and baro
+  disturbances on the ground against it are a source of false positives.
 */
 bool NavEKF3_core::onGroundHgtError(void) const
 {
-    return onGround && (PV_AidingMode == AID_NONE) && (fabsF(hgtInnovFiltState) > 1.0f);
+    if (!onGround) {
+        return false;
+    }
+    return ((PV_AidingMode == AID_NONE) || !measuredVertVelAgrees()) && (fabsF(hgtInnovFiltState) > 1.0f);
+}
+
+/*
+  return true when a measured velocity fused in the last 2 s agrees with the
+  state in the vertical: GPS or external nav vertical velocity in an aided
+  mode, or a body frame velocity, all three of whose axes must agree since a
+  tilted vehicle puts the vertical on any of them. Being fused is not enough:
+  with a small velocity variance a fused measurement barely moves the state,
+  and past the gate it is rejected until the velocity timeout. The navigation
+  velocity innovation changes only when a sample is fused, so the combined
+  test ratio, which each tested sample sets, catches one rejected since.
+*/
+bool NavEKF3_core::measuredVertVelAgrees(void) const
+{
+    const bool navVelAgrees = ((imuSampleTime_ms - lastVelDFuseTime_ms) < 2000) && (fabsF(innovVelPos[2]) < 0.5f) &&
+                              (velTestRatio < 1.0f);
+    const bool bodyVelAgrees = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) < 2000) &&
+                               (norm(innovBodyVel[0], innovBodyVel[1], innovBodyVel[2]) < 0.5f);
+    return navVelAgrees || bodyVelAgrees;
 }
 
 /*

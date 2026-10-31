@@ -1165,6 +1165,7 @@ private:
     uint32_t lastBaroReceived_ms;   // time last time we received baro height data
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime_ms;    // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
+    uint32_t lastVelDFuseTime_ms;   // time stamp when a measured vertical velocity was last fused (msec)
     uint32_t lastGpsPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTasPassTime_ms;    // time stamp when airspeed measurement last passed innovation consistency check (msec)
@@ -1626,8 +1627,11 @@ private:
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 
-    // true when on the ground with a height error that healthy() fails on
+    // true when on the ground with a height error, unless aided with a measured vertical velocity agreeing
     bool onGroundHgtError(void) const;
+
+    // true when a recently fused measured velocity agrees with the state in the vertical
+    bool measuredVertVelAgrees(void) const;
 
     // vehicle specific initial gyro bias uncertainty
     ftype InitialGyroBiasUncertainty(void) const;
