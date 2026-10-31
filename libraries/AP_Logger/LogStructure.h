@@ -14,6 +14,7 @@ Format characters in the format string for binary log messages
   i   : int32_t
   I   : uint32_t
   f   : float
+  g   : float16 (IEEE half precision)
   d   : double
   n   : char[4]
   N   : char[16]
