@@ -43,7 +43,9 @@ public:
     struct RpmData {
         float    rpm;               // rpm
         float    prev_rpm;          // previous rpm
-        float    error_rate;        // error rate in percent
+        float    error_rate;        // error rate as the last driver reported it, a count for DroneCAN
+        float    error_rate_pct;    // error rate in percent, from drivers that report a percentage
+        uint32_t error_rate_pct_us; // last time error_rate_pct was updated, 0 if never
         uint32_t last_update_us;    // last update time, greater then 0 means we've gotten data at some point
         float    update_rate_hz;
         bool     data_valid;        // if this isn't set to true, then the ESC data should be ignored
@@ -78,7 +80,7 @@ public:
 
 protected:
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
-    void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate = 0.0f);
+    void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate = 0.0f, const bool error_rate_is_pct = false);
 
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t esc_index, const TelemetryData& new_data, const uint16_t data_present_mask);

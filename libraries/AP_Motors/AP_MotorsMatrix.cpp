@@ -461,18 +461,39 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
     }
 }
 
+// return a bitmask of the motors that _output_test_seq() spins for motor_seq
+//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+uint32_t AP_MotorsMatrix::get_test_seq_motor_mask(uint8_t motor_seq) const
+{
+    // loop through all the possible orders finding any motors that match that description
+    uint32_t mask = 0;
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i] && _test_order[i] == motor_seq) {
+            mask |= 1U << i;
+        }
+    }
+    return mask;
+}
+
 // output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
 void AP_MotorsMatrix::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
-    // loop through all the possible orders spinning any motors that match that description
+    const uint32_t mask = get_test_seq_motor_mask(motor_seq);
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i] && _test_order[i] == motor_seq) {
+        if (mask & (1U << i)) {
             // turn on this motor
             rc_write(i, pwm);
         }
     }
+}
+
+// return a bitmask of the outputs that output_test_seq() drives for motor_seq,
+// allowing for SERVOn_FUNCTION mappings and more than one output per motor
+uint32_t AP_MotorsMatrix::get_test_seq_output_mask(uint8_t motor_seq) const
+{
+    return motor_mask_to_srv_channel_mask(get_test_seq_motor_mask(motor_seq));
 }
 
 // output_test_num - spin a motor connected to the specified output channel

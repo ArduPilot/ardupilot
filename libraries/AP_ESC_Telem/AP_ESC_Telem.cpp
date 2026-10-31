@@ -149,7 +149,9 @@ uint8_t AP_ESC_Telem::get_num_active_escs() const {
 }
 
 // return the whether all the motors in servo_channel_mask are running
-bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm) const
+// max_error_rate is in percent and only applies to ESCs that report their error rate as a percentage.
+// An ESC whose percentage has gone stale fails, as bidirectional DShot only reports one on a good frame
+bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm, float max_error_rate) const
 {
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
@@ -163,6 +165,11 @@ bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm
                 return false;
             }
             if ((max_rpm > 0) && (rpmdata.rpm > max_rpm)) {
+                return false;
+            }
+            float error_rate_pct;
+            if (!is_zero(min_rpm) && !is_zero(max_error_rate) && rpmdata.error_rate_pct_us != 0
+                && (!get_error_rate_pct(i, error_rate_pct) || error_rate_pct > max_error_rate)) {
                 return false;
             }
         }
@@ -228,6 +235,27 @@ bool AP_ESC_Telem::get_raw_rpm_and_error_rate(uint8_t esc_index, float& rpm, flo
 
     rpm = rpmdata.rpm;
     error_rate = rpmdata.error_rate;
+
+    return true;
+}
+
+// get an individual ESC's error rate in percent, returns false if the ESC has not reported
+// a percentage within ESC_RPM_CHECK_TIMEOUT_US, for example a DroneCAN ESC, which reports a count
+bool AP_ESC_Telem::get_error_rate_pct(uint8_t esc_index, float& error_rate_pct) const
+{
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
+    const volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[esc_index];
+
+    // copy the timestamp to avoid any race with the driver updating it
+    const uint32_t error_rate_pct_us = rpmdata.error_rate_pct_us;
+    if (error_rate_pct_us == 0 || AP_HAL::timeout_expired(error_rate_pct_us, AP_HAL::micros(), ESC_RPM_CHECK_TIMEOUT_US)) {
+        return false;
+    }
+
+    error_rate_pct = rpmdata.error_rate_pct;
     return true;
 }
 
@@ -591,7 +619,9 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
 
 // record an update to the RPM together with timestamp, this allows the notch values to be slewed
 // this should be called by backends when new telemetry values are available
-void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate)
+// error_rate is stored as reported, for logging; a percentage is also kept apart with its own
+// timestamp, so BLHeli serial telemetry alongside bidirectional DShot does not replace it
+void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate, const bool error_rate_is_pct)
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS) {
         return;
@@ -608,6 +638,10 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, cons
     rpmdata.update_rate_hz = 1.0e6f / constrain_uint32((now - last_update_us), 100, 1000000U*10U); // limit the update rate 0.1Hz to 10KHz 
     rpmdata.last_update_us = now;
     rpmdata.error_rate = error_rate;
+    if (error_rate_is_pct) {
+        rpmdata.error_rate_pct = error_rate;
+        rpmdata.error_rate_pct_us = now;
+    }
     rpmdata.data_valid = true;
 
 #ifdef ESC_TELEM_DEBUG
