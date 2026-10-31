@@ -224,6 +224,7 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
             _error = _error_notch->apply(_error);
         }
 #endif
+        _notched_measurement = _target - _error;
         // Clear derivative history to avoid spikes after reset
         _derivative = 0.0f;
         _target_derivative = 0.0f;
@@ -250,6 +251,7 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
             error = _error_notch->apply(error);
         }
 #endif
+        _notched_measurement = _target - error;
         // apply notch filters before FTLD/FLTE to minimize shot noise
         _error += get_filt_E_alpha(dt) * (error - _error);
 

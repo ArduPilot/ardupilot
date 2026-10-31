@@ -133,6 +133,9 @@ protected:
     virtual void test_init() = 0;
     virtual void test_run(AxisType test_axis, const float dir_sign) = 0;
 
+    // body rates the tests are judged on, in rad/s
+    virtual Vector3f rate_measurement_rads() const { return ahrs_view->get_gyro(); }
+
     // return true if user has enabled autotune for roll, pitch or yaw axis
     bool roll_enabled() const;
     bool pitch_enabled() const;

@@ -142,6 +142,13 @@ void AC_AutoTune_Multi::do_gcs_announcements()
     last_announce_ms = now_ms;
 }
 
+Vector3f AC_AutoTune_Multi::rate_measurement_rads() const
+{
+    return Vector3f{attitude_control->get_rate_roll_pid().get_notched_measurement(),
+                    attitude_control->get_rate_pitch_pid().get_notched_measurement(),
+                    attitude_control->get_rate_yaw_pid().get_notched_measurement()};
+}
+
 // Prepares all tuning state variables and target values for a new twitch test.
 void AC_AutoTune_Multi::test_init()
 {
@@ -240,19 +247,20 @@ void AC_AutoTune_Multi::test_run(AxisType test_axis, const float dir_sign)
     }
 
     // capture this iteration's rotation rate and lean angle
+    const Vector3f rate_rads = rate_measurement_rads();
     float gyro_reading = 0;
     switch (test_axis) {
     case AxisType::ROLL:
-        gyro_reading = ahrs_view->get_gyro().x;
+        gyro_reading = rate_rads.x;
         lean_angle = dir_sign * (ahrs_view->roll_sensor - (int32_t)start_angle);
         break;
     case AxisType::PITCH:
-        gyro_reading = ahrs_view->get_gyro().y;
+        gyro_reading = rate_rads.y;
         lean_angle = dir_sign * (ahrs_view->pitch_sensor - (int32_t)start_angle);
         break;
     case AxisType::YAW:
     case AxisType::YAW_D:
-        gyro_reading = ahrs_view->get_gyro().z;
+        gyro_reading = rate_rads.z;
         lean_angle = dir_sign * wrap_180_cd(ahrs_view->yaw_sensor-(int32_t)start_angle);
         break;
     }
