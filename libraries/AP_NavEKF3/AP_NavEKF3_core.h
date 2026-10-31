@@ -1256,6 +1256,7 @@ private:
     ftype yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
     QuaternionF prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
     ftype hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
+    uint32_t hgtInnovFiltTime_ms;   // time stamp when the height innovation filter last ran (msec)
     uint8_t magSelectIndex;         // Index of the magnetometer that is being used by the EKF
     bool runUpdates;                // boolean true when the EKF updates can be run
     uint32_t framesSincePredict;    // number of frames lapsed since EKF instance did a state prediction

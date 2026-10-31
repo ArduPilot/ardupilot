@@ -344,6 +344,7 @@ void NavEKF3_core::InitialiseVariables()
     posResetNE.zero();
     posResetD = 0.0f;
     hgtInnovFiltState = 0.0f;
+    hgtInnovFiltTime_ms = 0;
     imuDataDownSampledNew.delAng.zero();
     imuDataDownSampledNew.delVel.zero();
     imuDataDownSampledNew.delAngDT = 0.0f;
