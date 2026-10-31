@@ -69,9 +69,20 @@ def update_settings(bld):
     with open(vscode_setting_json_path, 'w') as f:
         json.dump(settings_json, f, indent=4)
 
+def _board_name(ctx):
+    board = getattr(getattr(ctx, 'options', None), 'board', None)
+    if not board and hasattr(ctx, 'env'):
+        board = ctx.env.get_flat('BOARD')
+    return board
+
 def update_openocd_cfg(cfg):
-    if cfg.options.board != 'sitl':
-        openocd_cfg_path = os.path.join(cfg.srcnode.abspath(), 'build', cfg.options.board, 'openocd.cfg')
+    board = _board_name(cfg)
+    if board and board != 'sitl':
+        openocd_cfg_path = os.path.join(cfg.srcnode.abspath(), 'build', board, 'openocd.cfg')
+        openocd_dir = os.path.dirname(openocd_cfg_path)
+        if not os.path.isdir(openocd_dir):
+            print(f"VS-LAUNCH: \033[91m{openocd_dir} does not exist yet, skipping openocd.cfg\033[0m")
+            return
         mcu_type = cfg.env.get_flat('APJ_BOARD_TYPE')
         openocd_target = ''
         if mcu_type.startswith("STM32H7"):
@@ -100,11 +111,25 @@ def update_openocd_cfg(cfg):
                 else:
                     f.write("$_TARGETNAME configure -rtos auto\n")
 
+def _vscode_dir(ctx):
+    return os.path.join(ctx.srcnode.abspath(), '.vscode')
+
+def _copy_if_missing(src, dst):
+    if os.path.exists(dst):
+        return
+    if not os.path.exists(src):
+        print(f"VS-LAUNCH: \033[91mmissing {src}, cannot create {os.path.basename(dst)}\033[0m")
+        return
+    print(f"Copying {src} to {dst}")
+    shutil.copy(src, dst)
+
 def init_launch_json_if_not_exist(cfg):
-    launch_json_path = os.path.join(cfg.srcnode.abspath(), '.vscode', 'launch.json')
-    launch_default_json_path = os.path.join(cfg.srcnode.abspath(),'.vscode', 'launch.default.json')
-    
-    if not os.path.exists(launch_json_path):
-        if os.path.exists(launch_default_json_path):
-            print(f"Copying {launch_default_json_path} to {launch_json_path}")
-            shutil.copy(launch_default_json_path, launch_json_path)
+    vscode_dir = _vscode_dir(cfg)
+    _copy_if_missing(
+        os.path.join(vscode_dir, 'launch.default.json'),
+        os.path.join(vscode_dir, 'launch.json'),
+    )
+    _copy_if_missing(
+        os.path.join(vscode_dir, 'settings.default.json'),
+        os.path.join(vscode_dir, 'settings.json'),
+    )
