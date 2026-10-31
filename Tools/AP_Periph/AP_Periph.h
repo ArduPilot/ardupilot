@@ -661,7 +661,7 @@ public:
 };
 
 #ifndef CAN_APP_NODE_NAME
-#define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
+#define CAN_APP_NODE_NAME "org.ardupilot." HAL_BOARD_NAME
 #endif
 
 namespace AP

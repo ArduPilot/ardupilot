@@ -4,7 +4,6 @@
 
 #include <AP_HAL_QURT/AP_HAL_QURT_Main.h>
 
-#define HAL_BOARD_NAME "QURT"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
 #define HAL_STORAGE_SIZE            32768

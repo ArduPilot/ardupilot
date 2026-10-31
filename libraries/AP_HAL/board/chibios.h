@@ -2,8 +2,6 @@
 
 #include <hwdef.h>
 
-#define HAL_BOARD_NAME "ChibiOS"
-
 #ifdef HAL_HAVE_PIXRACER_LED
 #error "use AP_NOTIFY_GPIO_LED_RGB_ENABLED in place of HAL_HAVE_PIXRACER_LED (and rename your pins!)"
 #endif
@@ -108,11 +106,6 @@
 
 #define HAL_COMPASS_HMC5843_NAME "hmc5843"
 #define HAL_COMPASS_LIS3MDL_NAME "lis3mdl"
-
-// allow for short names overridden in hwdef.dat
-#ifndef CHIBIOS_SHORT_BOARD_NAME
-#define CHIBIOS_SHORT_BOARD_NAME CHIBIOS_BOARD_NAME
-#endif
 
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE
 

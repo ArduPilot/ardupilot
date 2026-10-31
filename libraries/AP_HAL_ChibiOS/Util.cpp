@@ -350,8 +350,8 @@ bool Util::get_system_id(char buf[50])
 
     memcpy(serialid, (const void *)UDID_START, 12);
     // avoid board names greater than 23 chars (sizeof includes null char, so allow 24 bytes total)
-    static_assert(sizeof(CHIBIOS_SHORT_BOARD_NAME) <= 24, "CHIBIOS_SHORT_BOARD_NAME must be 23 characters or less");
-    strncpy(board_name, CHIBIOS_SHORT_BOARD_NAME, 23);
+    static_assert(sizeof(HAL_SHORT_BOARD_NAME) <= 24, "HAL_SHORT_BOARD_NAME must be 23 characters or less");
+    strncpy(board_name, HAL_SHORT_BOARD_NAME, 23);
     board_name[23] = 0;
 
     // this format is chosen to match the format used by HAL_PX4

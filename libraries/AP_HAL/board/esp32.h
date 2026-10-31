@@ -19,7 +19,6 @@
 #endif
 
 
-#define HAL_BOARD_NAME "ESP32"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
 #define HAL_WITH_DRONECAN 0
 #define HAL_WITH_UAVCAN 0
