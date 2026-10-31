@@ -15,6 +15,7 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <stdarg.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
@@ -298,6 +299,16 @@ void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate
 
 void NMI_Handler(void);
 void NMI_Handler(void) { while (1); }
+
+#if AP_SIM_ENABLED
+// SOHW simulation code uses abort; terminate without pulling in libc's _exit.
+void abort(void)
+{
+    chSysHalt("abort");
+    while (true) {
+    }
+}
+#endif
 
 #if defined(HAL_BOOTLOADER_BUILD) && HAL_ENABLE_DFU_BOOT
 void __entry_hook(void);
