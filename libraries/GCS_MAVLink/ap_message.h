@@ -73,7 +73,9 @@ enum ap_message : uint8_t {
     MSG_OPTICAL_FLOW                   =  52,
     MSG_MAG_CAL_PROGRESS               =  53,
     MSG_MAG_CAL_REPORT                 =  54,
+#if AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
     MSG_EKF_STATUS_REPORT              =  55,
+#endif  // AP_MAVLINK_MSG_EKF_STATUS_REPORT_ENABLED
     MSG_LOCAL_POSITION                 =  56,
     MSG_PID_TUNING                     =  57,
     MSG_VIBRATION                      =  58,
