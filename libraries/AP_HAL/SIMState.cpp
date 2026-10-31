@@ -258,6 +258,12 @@ void SIMState::fdm_input_local(void)
     }
 #endif  // AP_SIM_AERON_ENABLED
 
+#if AP_SIM_EAHRS_SBG_ENABLED
+    if (sbg != nullptr) {
+        sbg->update();
+    }
+#endif
+
 #if AP_SIM_AIS_ENABLED
     if (ais != nullptr) {
         ais->update();
