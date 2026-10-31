@@ -331,8 +331,9 @@ void NavEKF3_core::SelectMagFusion()
     // used for load levelling
     magFusePerformed = false;
 
-    // Store yaw angle when moving for use as a static reference when not moving
-    if (!onGroundNotMoving) {
+    // Store yaw angle when moving for use as a static reference when not moving, and once at the
+    // start, as a vehicle still from its first sample would otherwise fuse an unset reference
+    if (!onGroundNotMoving || (yawAngDataStatic.time_ms == 0)) {
         if (fabsF(prevTnb[0][2]) < fabsF(prevTnb[1][2])) {
             // A 321 rotation order is best conditioned because the X axis is closer to horizontal than the Y axis
             yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_321;
