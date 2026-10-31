@@ -1,0 +1,2 @@
+# turn on the CAN driver (CAN1 only - CAN2 is not fitted on this board)
+CAN_P1_DRIVER=1
