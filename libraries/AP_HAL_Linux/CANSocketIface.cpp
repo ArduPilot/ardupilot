@@ -260,7 +260,7 @@ void CANIface::_pollWrite()
 
 bool CANIface::_pollRead()
 {
-    uint8_t iterations_count = 0;
+    uint8_t iterations_count = 0, packets_read = 0;
     while (iterations_count < CAN_MAX_POLL_ITERATIONS_COUNT)
     {
         iterations_count++;
@@ -280,7 +280,7 @@ bool CANIface::_pollRead()
                 WITH_SEMAPHORE(sem);
                 _rx_queue.push(rx);
                 stats.rx_received++;
-                return true;
+                packets_read++;
             }
         } else if (res == 0) {
             break;
@@ -289,7 +289,7 @@ bool CANIface::_pollRead()
             break;
         }
     }
-    return false;
+    return packets_read > 0;
 }
 
 int CANIface::_write(const AP_HAL::CANFrame& frame) const
