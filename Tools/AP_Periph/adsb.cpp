@@ -61,7 +61,7 @@ void AP_Periph_FW::adsb_update(void)
         const uint8_t c = (uint8_t)uart->read();
 
         // Try to get a new message
-        if (mavlink_frame_char_buffer(&adsb.msg, &adsb.status, c, &adsb.msg, &adsb.status) == MAVLINK_FRAMING_OK) {
+        if (mavlink_parse_char_buffer(&adsb.msg, &adsb.status, c, &adsb.msg, &adsb.status) == MAVLINK_FRAMING_OK) {
             if (adsb.msg.msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
                 // decode and send as UAVCAN TrafficReport
                 static mavlink_adsb_vehicle_t msg;
