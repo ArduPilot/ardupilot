@@ -57,6 +57,8 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#include <AP_LeakDetector/AP_LeakDetector_config.h>
+
 // Local modules
 #include "AP_Arming_Rover.h"
 #include "sailboat.h"
@@ -151,6 +153,11 @@ private:
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
+
+#if AP_LEAKDETECTOR_ENABLED
+    AP_LeakDetector leak_detector;
+#endif
+
 #if AC_PRECLAND_ENABLED
     AC_PrecLand precland;
 #endif
@@ -309,10 +316,14 @@ private:
     void failsafe_ekf_off_event(void);
 
     // failsafe.cpp
-    void failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool on);
+    int8_t failsafe_action(uint8_t failsafe_bits) const;
+    void failsafe_trigger(uint8_t failsafe_type, bool on);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);
+#endif
+#if AP_LEAKDETECTOR_ENABLED
+    void failsafe_leak_check(void);
 #endif
 #if AP_FENCE_ENABLED
     // fence.cpp
