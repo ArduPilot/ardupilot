@@ -58,6 +58,10 @@
 #define EK3_FEATURE_OPTFLOW_AGL_KF EK3_FEATURE_OPTFLOW_FUSION
 #endif
 
+#if (EK3_FEATURE_OPTFLOW_AGL_KF) && !(EK3_FEATURE_OPTFLOW_FUSION)
+#error "EK3_FEATURE_OPTFLOW_AGL_KF requires EK3_FEATURE_OPTFLOW_FUSION"
+#endif
+
 // moving baseline GPS yaw corrected for vehicle attitude. The correction consumes
 // the antenna offset exported by the GPS driver, so it follows that switch, which
 // is already limited to the moving baseline GPS path on 2M boards

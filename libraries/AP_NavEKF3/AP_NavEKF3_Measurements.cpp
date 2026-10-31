@@ -122,24 +122,24 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - bodyOdmMeasTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
+    if (((timeStamp_ms - bodyOdm.measTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
         return;
     }
 
     // subtract delay from timestamp
     timeStamp_ms -= delay_ms;
 
-    bodyOdmDataNew.body_offset = posOffset.toftype();
-    bodyOdmDataNew.vel = delPos.toftype() * (1.0/delTime);
-    bodyOdmDataNew.time_ms = timeStamp_ms;
-    bodyOdmDataNew.angRate = (delAng * (1.0/delTime)).toftype();
-    bodyOdmMeasTime_ms = timeStamp_ms;
+    bodyOdm.dataNew.body_offset = posOffset.toftype();
+    bodyOdm.dataNew.vel = delPos.toftype() * (1.0/delTime);
+    bodyOdm.dataNew.time_ms = timeStamp_ms;
+    bodyOdm.dataNew.angRate = (delAng * (1.0/delTime)).toftype();
+    bodyOdm.measTime_ms = timeStamp_ms;
 
     // simple model of accuracy
     // TODO move this calculation outside of EKF into the sensor driver
-    bodyOdmDataNew.velErr = frontend->_visOdmVelErrMin + (frontend->_visOdmVelErrMax - frontend->_visOdmVelErrMin) * (1.0f - 0.01f * quality);
+    bodyOdm.dataNew.velErr = frontend->_visOdmVelErrMin + (frontend->_visOdmVelErrMax - frontend->_visOdmVelErrMin) * (1.0f - 0.01f * quality);
 
-    storedBodyOdm.push(bodyOdmDataNew);
+    bodyOdm.stored.push(bodyOdm.dataNew);
 #endif // EK3_FEATURE_BODY_ODOM
 }
 
@@ -167,7 +167,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     // the measurement time is moved back to the middle of the sampling period
     wheelOdmDataNew.time_ms = timeStamp_ms - (uint32_t)(500.0f * delTime);
 
-    storedWheelOdm.push(wheelOdmDataNew);
+    bodyOdm.storedWheel.push(wheelOdmDataNew);
 #endif // EK3_FEATURE_BODY_ODOM
 }
 
@@ -657,7 +657,7 @@ void NavEKF3_core::readGpsData()
 
     if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected) &&
         (lastTimeGpsReceived_ms - secondLastGpsTime_ms) > frontend->gpsNoFixTimeout_ms) {
-        const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
+        const bool doingBodyVelNav = (imuSampleTime_ms - bodyOdm.prevFuseTime_ms < 1000);
         const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
         const bool canDoWindRelNav = assume_zero_sideslip();
         const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || canDoWindRelNav || doingBodyVelNav);
@@ -743,7 +743,7 @@ void NavEKF3_core::readGpsYawData()
     uint32_t yaw_time_ms;
     if (gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D &&
         dal.gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg, yaw_time_ms) &&
-        yaw_time_ms != yawMeasTime_ms) {
+        yaw_time_ms != gpsYaw.measTime_ms) {
         // GPS modules are rather too optimistic about their
         // accuracy. Set to min of 5 degrees here to prevent
         // the user constantly receiving warnings about high
@@ -871,55 +871,55 @@ void NavEKF3_core::readAirSpdData()
     if (useAirspeed()) {
         const auto *airspeed = dal.airspeed();
         if (airspeed &&
-            (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
-            tasDataNew.allowFusion = airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
-            if (tasDataNew.allowFusion) {
-                tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
-                timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
-                tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
-                tasDataNew.tasVariance = sq(MAX(frontend->_easNoise * EAS2TAS, 0.5f));
+            (airspeed->last_update_ms(selected_airspeed) - tas.receivedTime_ms) > frontend->sensorIntervalMin_ms) {
+            tas.dataNew.allowFusion = airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
+            if (tas.dataNew.allowFusion) {
+                tas.dataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
+                tas.receivedTime_ms = airspeed->last_update_ms(selected_airspeed);
+                tas.dataNew.time_ms = tas.receivedTime_ms - frontend->tasDelay_ms;
+                tas.dataNew.tasVariance = sq(MAX(frontend->_easNoise * EAS2TAS, 0.5f));
                 // Correct for the average intersampling delay due to the filter update rate
-                tasDataNew.time_ms -= localFilterTimeStep_ms/2;
+                tas.dataNew.time_ms -= localFilterTimeStep_ms/2;
                 // Save data into the buffer to be fused when the fusion time horizon catches up with it
-                storedTAS.push(tasDataNew);
+                tas.stored.push(tas.dataNew);
             }
         }
         // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
-        tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
+        tas.dataToFuse = tas.stored.recall(tas.dataDelayed,imuDataDelayed.time_ms);
     } else if (assume_zero_sideslip()) {
         // synthetic airspeed is only valid for 'fly forward' vehicles that
         // do not sideslip; fusing it on a multicopter corrupts the attitude
         // and velocity states when dead reckoning (see issue #33451)
         if (is_positive(defaultAirSpeed)) {
             // this is the preferred method with the autopilot providing a model based airspeed estimate
-            if (imuDataDelayed.time_ms - prevTasStep_ms > 200 ) {
-                tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
-                tasDataDelayed.tasVariance = MAX(defaultAirSpeedVariance, sq(MAX(frontend->_easNoise, 0.5f)));
-                tasDataToFuse = true;
-                tasDataDelayed.allowFusion = true;
-                tasDataDelayed.time_ms = imuDataDelayed.time_ms;
+            if (imuDataDelayed.time_ms - tas.prevStepTime_ms > 200 ) {
+                tas.dataDelayed.tas = defaultAirSpeed * EAS2TAS;
+                tas.dataDelayed.tasVariance = MAX(defaultAirSpeedVariance, sq(MAX(frontend->_easNoise, 0.5f)));
+                tas.dataToFuse = true;
+                tas.dataDelayed.allowFusion = true;
+                tas.dataDelayed.time_ms = imuDataDelayed.time_ms;
             } else {
-                tasDataToFuse = false;
-                tasDataDelayed.allowFusion = false;
+                tas.dataToFuse = false;
+                tas.dataDelayed.allowFusion = false;
             }
         } else if (lastAspdEstIsValid && !windStateIsObservable) {
             // this uses the last airspeed estimated before dead reckoning started and
             // wind states became unobservable
-            if (lastAspdEstIsValid && imuDataDelayed.time_ms - prevTasStep_ms > 200) {
-                tasDataDelayed.tas = lastAirspeedEstimate;
+            if (lastAspdEstIsValid && imuDataDelayed.time_ms - tas.prevStepTime_ms > 200) {
+                tas.dataDelayed.tas = lastAirspeedEstimate;
                 // this airspeed estimate has a lot of uncertainty
-                tasDataDelayed.tasVariance = sq(MAX(MAX(frontend->_easNoise, 0.5f), 0.5f * lastAirspeedEstimate));
-                tasDataToFuse = true;
-                tasDataDelayed.allowFusion = true;
-                tasDataDelayed.time_ms = imuDataDelayed.time_ms;
+                tas.dataDelayed.tasVariance = sq(MAX(MAX(frontend->_easNoise, 0.5f), 0.5f * lastAirspeedEstimate));
+                tas.dataToFuse = true;
+                tas.dataDelayed.allowFusion = true;
+                tas.dataDelayed.time_ms = imuDataDelayed.time_ms;
             } else {
-                tasDataToFuse = false;
-                tasDataDelayed.allowFusion = false;
+                tas.dataToFuse = false;
+                tas.dataDelayed.allowFusion = false;
             }
         }
     } else {
-        tasDataToFuse = false;
-        tasDataDelayed.allowFusion = false;
+        tas.dataToFuse = false;
+        tas.dataDelayed.allowFusion = false;
     }
 }
 
@@ -1050,16 +1050,16 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
 {
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - yawMeasTime_ms) < frontend->sensorIntervalMin_ms) || !statesInitialised) {
+    if (((timeStamp_ms - gpsYaw.measTime_ms) < frontend->sensorIntervalMin_ms) || !statesInitialised) {
         return;
     }
 
-    yawAngDataNew.yawAng = yawAngle;
-    yawAngDataNew.yawAngErr = yawAngleErr;
+    gpsYaw.dataNew.yawAng = yawAngle;
+    gpsYaw.dataNew.yawAngErr = yawAngleErr;
     if (type == 2) {
-        yawAngDataNew.order = rotationOrder::TAIT_BRYAN_321;
+        gpsYaw.dataNew.order = rotationOrder::TAIT_BRYAN_321;
     } else if (type == 1) {
-        yawAngDataNew.order = rotationOrder::TAIT_BRYAN_312;
+        gpsYaw.dataNew.order = rotationOrder::TAIT_BRYAN_312;
     } else {
         return;
     }
@@ -1067,15 +1067,15 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     // this a configured delay larger than the fusion time horizon leaves every
     // measurement outside the recall window and the yaw source silently stops
     // fusing. The raw timestamp is still used for new-measurement detection and
-    // rate limiting via yawMeasTime_ms
-    yawAngDataNew.time_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
+    // rate limiting via gpsYaw.measTime_ms
+    gpsYaw.dataNew.time_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
 #if EK3_FEATURE_MOVING_BASELINE
-    yawAngDataNew.antOffset = antOffset.toftype();
+    gpsYaw.dataNew.antOffset = antOffset.toftype();
 #endif
 
-    storedYawAng.push(yawAngDataNew);
+    gpsYaw.stored.push(gpsYaw.dataNew);
 
-    yawMeasTime_ms = timeStamp_ms;
+    gpsYaw.measTime_ms = timeStamp_ms;
 }
 
 // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
@@ -1099,17 +1099,17 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) || !statesInitialised) {
+    if (((timeStamp_ms - extNav.measTime_ms) < frontend->extNavIntervalMin_ms) || !statesInitialised) {
         return;
     } else {
-        extNavMeasTime_ms = timeStamp_ms;
+        extNav.measTime_ms = timeStamp_ms;
     }
 
     ext_nav_elements extNavDataNew {};
 
-    if (resetTime_ms != extNavLastPosResetTime_ms) {
+    if (resetTime_ms != extNav.lastPosResetTime_ms) {
         extNavDataNew.posReset = true;
-        extNavLastPosResetTime_ms = resetTime_ms;
+        extNav.lastPosResetTime_ms = resetTime_ms;
     } else {
         extNavDataNew.posReset = false;
     }
@@ -1126,7 +1126,7 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     extNavDataNew.time_ms = timeStamp_ms;
 
     // store position data to buffer
-    storedExtNav.push(extNavDataNew);
+    extNav.stored.push(extNavDataNew);
 
     // protect against attitude or angle being NaN
     if (!quat.is_nan() && !isnan(angErr)) {
@@ -1138,7 +1138,7 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         extNavYawAngDataNew.yawAngErr = MAX(angErr, radians(5.0f)); // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
         extNavYawAngDataNew.order = rotationOrder::TAIT_BRYAN_321; // Euler rotation order is 321 (ZYX)
         extNavYawAngDataNew.time_ms = timeStamp_ms;
-        storedExtNavYawAng.push(extNavYawAngDataNew);
+        extNav.storedYawAng.push(extNavYawAngDataNew);
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
 }
@@ -1151,12 +1151,12 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
         return;
     }
 
-    if ((timeStamp_ms - extNavVelMeasTime_ms) < frontend->extNavIntervalMin_ms) {
+    if ((timeStamp_ms - extNav.velMeasTime_ms) < frontend->extNavIntervalMin_ms) {
         return;
     }
 
-    extNavVelMeasTime_ms = timeStamp_ms;
-    useExtNavVel = true;
+    extNav.velMeasTime_ms = timeStamp_ms;
+    extNav.useVel = true;
     // calculate timestamp
     timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter updaterate
@@ -1170,7 +1170,7 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
     extNavVelNew.err = err;
     extNavVelNew.corrected = false;
 
-    storedExtNavVel.push(extNavVelNew);
+    extNav.storedVel.push(extNavVelNew);
 #endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
@@ -1503,38 +1503,38 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
     const bool using_mcoef = mcoef > 0.001f;
     if (!using_bcoef_x && !using_bcoef_y && !using_mcoef) {
         // nothing to do
-        dragFusionEnabled = false;
+        drag.fusionEnabled = false;
         return;
     }
 
-    dragFusionEnabled = true;
+    drag.fusionEnabled = true;
 
     // down-sample the drag specific force data by accumulating and calculating the mean when
     // sufficient samples have been collected
 
-    dragSampleCount ++;
+    drag.sampleCount ++;
 
     // note acceleration is accumulated as a delta velocity
-    dragDownSampled.accelXY.x += imu.delVel.x;
-    dragDownSampled.accelXY.y += imu.delVel.y;
-    dragDownSampled.time_ms += imu.time_ms;
-    dragSampleTimeDelta += imu.delVelDT;
+    drag.downSampled.accelXY.x += imu.delVel.x;
+    drag.downSampled.accelXY.y += imu.delVel.y;
+    drag.downSampled.time_ms += imu.time_ms;
+    drag.sampleTimeDelta += imu.delVelDT;
 
     // calculate and store means from accumulated values
-    if (dragSampleTimeDelta > 0.2f - 0.5f * EKF_TARGET_DT) {
+    if (drag.sampleTimeDelta > 0.2f - 0.5f * EKF_TARGET_DT) {
         // note conversion from accumulated delta velocity to acceleration
-        dragDownSampled.accelXY.x /= dragSampleTimeDelta;
-        dragDownSampled.accelXY.y /= dragSampleTimeDelta;
-        dragDownSampled.time_ms /= dragSampleCount;
+        drag.downSampled.accelXY.x /= drag.sampleTimeDelta;
+        drag.downSampled.accelXY.y /= drag.sampleTimeDelta;
+        drag.downSampled.time_ms /= drag.sampleCount;
 
         // write to buffer
-        storedDrag.push(dragDownSampled);
+        drag.stored.push(drag.downSampled);
 
         // reset accumulators
-        dragSampleCount = 0;
-        dragDownSampled.accelXY.zero();
-        dragDownSampled.time_ms = 0;
-        dragSampleTimeDelta = 0.0f;
+        drag.sampleCount = 0;
+        drag.downSampled.accelXY.zero();
+        drag.downSampled.time_ms = 0;
+        drag.sampleTimeDelta = 0.0f;
     }
 #endif // EK3_FEATURE_DRAG_FUSION
 }
