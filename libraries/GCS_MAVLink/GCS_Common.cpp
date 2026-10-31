@@ -5325,27 +5325,53 @@ MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_lo
 
     // convert and run the command
     mavlink_command_int_t command_int;
-    convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
+    if (!convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame)) {
+        return MAV_RESULT_DENIED;
+    }
 
     return handle_command_int_packet(command_int, msg);
 }
 
-// returns a value suitable for COMMAND_INT.x or y based on a value
-// coming in from COMMAND_LONG.p5 or p6:
-static int32_t convert_COMMAND_LONG_loc_param(float param, bool stores_location)
+// converts a float from COMMAND_LONG param5 or param6 into an int32 suitable
+// for COMMAND_INT x or y. Returns true on successful conversion, false on
+// invalid or out-of-range values that cannot be represented in int32_t.
+static bool convert_COMMAND_LONG_loc_param(float param, bool stores_location, int32_t &out)
 {
     if (isnan(param)) {
-        return 0;
+        out = 0;
+        return true;
+    }
+
+    if (!isfinite(param)) {
+        out = 0;
+        return false;
     }
 
     if (stores_location) {
-        return param *1e7;
+        const double scaled = (double)param * 1.0e7;
+        if (scaled < (double)INT32_MIN || scaled > (double)INT32_MAX) {
+            out = 0;
+            return false;
+        }
+        const int64_t rounded = llrint(scaled);
+        if (rounded < INT32_MIN || rounded > INT32_MAX) {
+            out = 0;
+            return false;
+        }
+        out = (int32_t)rounded;
+        return true;
     }
 
-    return param;
+    if ((double)param < (double)INT32_MIN || (double)param > (double)INT32_MAX) {
+        out = 0;
+        return false;
+    }
+
+    out = (int32_t)param;
+    return true;
 }
 
-void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
+bool GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     out = {};
     out.target_system = in.target_system;
@@ -5359,9 +5385,10 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.param3 = in.param3;
     out.param4 = in.param4;
     const bool stores_location = command_long_stores_location((MAV_CMD)in.command);
-    out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
-    out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
+    const bool ok_x = convert_COMMAND_LONG_loc_param(in.param5, stores_location, out.x);
+    const bool ok_y = convert_COMMAND_LONG_loc_param(in.param6, stores_location, out.y);
     out.z = in.param7;
+    return ok_x && ok_y;
 }
 
 void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
