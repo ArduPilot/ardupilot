@@ -305,6 +305,8 @@ void ModeThrow::run()
         // throw_apply_yaw_align) so we don't pay extra wall-clock time
         // for it on top of the height/position settle.
         if (!nextmode_attempted) {
+            // run() carries on after a handoff: the next mode's init keeps
+            // controllers that are running, so they are updated this loop
             throw_do_nextmode_handoff();
         }
     }
@@ -405,6 +407,16 @@ void ModeThrow::run()
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
+        // a position that arrives after the height was reached, such as the
+        // restored source set's, is held: staying in throw, or after a refused
+        // handoff, nothing else would stop the vehicle drifting
+        if (copter.flightmode == this &&
+            !xy_controller_active && copter.position_ok() && nextmode_requires_position()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Throw position regained");
+            pos_control->NE_init_controller();
+            xy_controller_active = true;
+        }
+
         // a position lost on the way to a mode that flies without one is no
         // reason to stop: hold level instead, and hand over as planned
         if (xy_controller_active && !copter.position_ok() && !nextmode_requires_position()) {
@@ -435,8 +447,9 @@ void ModeThrow::run()
         break;
     }
 
-    // set the OSD mode string and announce each stage once as it is entered
-    {
+    // set the OSD mode string and announce each stage once as it is entered,
+    // until a handoff gives the string to the next mode
+    if (copter.flightmode == this) {
         const char *mode_str = "THRW";
         const char *stage_msg = nullptr;
         switch (stage) {
