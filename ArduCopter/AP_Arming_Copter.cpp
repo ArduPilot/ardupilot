@@ -788,8 +788,9 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 // arming.disarm - disarm motors
 bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
-    // return immediately if we are already disarmed
-    if (!copter.motors->armed()) {
+    // return immediately if we are already disarmed.  The main loop
+    // failsafe disarms the motors directly, so check our own state too
+    if (!copter.motors->armed() && !armed) {
         return true;
     }
 
