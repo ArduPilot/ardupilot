@@ -8,6 +8,8 @@ AP_FLAKE8_CLEAN
 import math
 import operator
 import os
+import socket
+import struct
 import tempfile
 
 import numpy
@@ -3848,6 +3850,159 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def ServoFailDetectRegression(self):
+        '''run servo failure regression cases in ArduPilot Lua'''
+        self.context_collect('STATUSTEXT')
+        self.install_script_module_context(self.script_applet_source_path("ServoFailDetect.lua"),
+                                           "ServoFailDetect.lua")
+        self.install_test_script_context("ServoFailDetect_test.lua")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_HEAP_SIZE": 600000,
+            # Each case runs many simulated applet updates in one callback.
+            # The CAN integration test uses the normal 10000 instruction limit.
+            "SCR_VM_I_COUNT": 1000000,
+        })
+        self.reboot_sitl()
+        self.wait_text("Passed 18 ServoFailDetect regression tests", check_context=True, timeout=60)
+
+    def ServoFailDetect(self):
+        '''test servo failure detection with CAN feedback and delayed Lua callbacks'''
+        import dronecan
+
+        self.context_set_speedup(3)
+        self.context_collect('STATUSTEXT')
+        self.install_script_module_context(self.script_applet_source_path("ServoFailDetect.lua"),
+                                           "ServoFailDetect.lua")
+        self.install_test_script_context("ServoFailDetect_sitl.lua")
+        # Keep the applet's supplied table unchanged. This is an armed-at-idle
+        # test; map Motor1/2 to its outputs 11/13 instead of the model's 5/6.
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_HEAP_SIZE": 300000,
+            "SCR_VM_I_COUNT": 10000,
+            "SCR_USER1": 0,
+            "CAN_P1_DRIVER": 1,
+            "CAN_D1_PROTOCOL": 1,
+            "SIM_CAN_TYPE1": 1,
+            "Q_TILT_ENABLE": 1,
+            "Q_TILT_TYPE": 2,
+            "Q_TILT_MASK": 3,
+            "Q_M_PWM_MIN": 1000,
+            "Q_M_PWM_MAX": 2000,
+            "SERVO5_FUNCTION": 0,
+            "SERVO6_FUNCTION": 0,
+            "SERVO11_FUNCTION": 33,
+            "SERVO13_FUNCTION": 34,
+            "SERVO15_FUNCTION": 75,
+            "SERVO16_FUNCTION": 76,
+            "SERVO15_MIN": 1000,
+            "SERVO15_MAX": 2000,
+            "SERVO16_MIN": 1000,
+            "SERVO16_MAX": 2000,
+            "FLTMODE_CH": 0,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.context_set_message_rate_hz('SERVO_OUTPUT_RAW', 50)
+        self.wait_text("SRVFAIL: Left Tilt servo 15 motor 11", check_context=True)
+        self.wait_text("SRVFAIL: Right Tilt servo 16 motor 13", check_context=True)
+
+        faulty = set()
+        missing = set()
+        enforce_motor_check = False
+        transfer_id = 0
+        # Use the same multicast framing as AP_HAL_SITL/CAN_Multicast.cpp.
+        # Sending in this process avoids a separately scheduled Python CAN
+        # node, and respects the test runner's interface and port isolation.
+        address = os.environ.get('SITL_MULTICAST_IF_ADDR') or '127.0.0.1'
+        port = int(os.environ.get('SITL_CAN_MCAST_PORT') or 57732)
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as can_socket:
+            can_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(address))
+
+            def feedback(mav, msg):
+                nonlocal transfer_id
+                if msg.get_type() == 'STATUSTEXT' and msg.text.startswith('Lua:'):
+                    raise NotAchievedException(msg.text)
+                if msg.get_type() != 'SERVO_OUTPUT_RAW' or msg.port != 0:
+                    return
+                if enforce_motor_check and msg.servo11_raw == 1000 and msg.servo13_raw == 1000:
+                    raise NotAchievedException("Both tilt motors stopped")
+                for channel in (15, 16):
+                    if channel in missing:
+                        continue
+                    pwm = getattr(msg, f'servo{channel}_raw')
+                    position = (pwm - 1000) * 115 / 1000 - 57.5
+                    if channel in faulty:
+                        position += 120
+                    status = dronecan.uavcan.equipment.actuator.Status(
+                        actuator_id=channel, position=math.radians(position),
+                        force=0, speed=0, power_rating_pct=127)
+                    transfer = dronecan.transport.Transfer(
+                        transfer_id=transfer_id, source_node_id=121, payload=status)
+                    transfer_id = (transfer_id + 1) % 32
+                    for frame in transfer.to_frames():
+                        body = struct.pack('<HI', 0, frame.message_id | (1 << 31)) + bytes(frame.bytes)
+                        packet = struct.pack('<HH', 0x2934, dronecan.dsdl.common.crc16_from_bytes(body)) + body
+                        can_socket.sendto(packet, ('239.65.82.0', port))
+
+            def check_outputs(left_cut, right_cut, duration=5):
+                start = self.get_sim_time()
+                checked = 0
+                while self.get_sim_time_cached() - start < duration:
+                    msg = self.assert_receive_message('SERVO_OUTPUT_RAW')
+                    if msg.port != 0 or self.get_sim_time_cached() - start < duration - 1:
+                        continue
+                    for channel, cut in ((11, left_cut), (13, right_cut)):
+                        pwm = getattr(msg, f'servo{channel}_raw')
+                        if (cut and pwm != 1000) or (not cut and pwm <= 1000):
+                            raise NotAchievedException(f"SERVO{channel}={pwm}, expected shutdown={cut}")
+                    checked += 1
+                if checked < 10:
+                    raise NotAchievedException("Insufficient motor output samples")
+
+            with self.Context(self):
+                self.context_collect('STATUSTEXT')
+                self.install_message_hook_context(feedback)
+                self.change_mode('QSTABILIZE')
+                self.set_rc(3, 1000)
+                self.wait_ready_to_arm()
+                self.arm_vehicle()
+                check_outputs(False, False)
+                enforce_motor_check = True
+
+                for name, bad, lost, expected in [
+                    ('left position error', {15}, set(), (True, False)),
+                    ('both position errors', {15, 16}, set(), (False, False)),
+                    ('right after left recovery', {16}, set(), (False, True)),
+                    ('position recovery', set(), set(), (False, False)),
+                    ('left feedback loss', set(), {15}, (True, False)),
+                    ('both feedback loss', set(), {15, 16}, (False, False)),
+                    ('feedback recovery', set(), set(), (False, False)),
+                    ('left fault before scheduling gap', {15}, set(), (True, False)),
+                ]:
+                    self.start_subtest(name)
+                    faulty, missing = bad, lost
+                    check_outputs(*expected)
+
+                self.start_subtest('override expires while applet is paused')
+                self.set_parameter('SCR_USER1', 2)
+                check_outputs(False, False, duration=2)
+                self.start_subtest('resume after five-second gap')
+                faulty.clear()
+                self.set_parameter('SCR_USER1', 1)
+                check_outputs(False, False, duration=9)
+                self.wait_text('SFD test: resumed without shutdown pulse', check_context=True)
+
+                self.start_subtest('failure detection resumes after scheduling gap')
+                self.set_parameter('SCR_USER1', 0)
+                faulty.add(16)
+                check_outputs(False, True)
+                faulty.clear()
+                check_outputs(False, False)
+                enforce_motor_check = False
+                self.disarm_vehicle()
+
     def CircuitStatusScript(self):
         '''test CircuitStatus lua driver against a CAN periph'''
         self.context_collect('STATUSTEXT')
@@ -4636,6 +4791,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.FenceRelativeToAMSLMinAlt,
             self.FenceRelativeToTerrainMaxAlt,
             self.FenceRelativeToTerrainMinAlt,
+            self.ServoFailDetectRegression,
+            self.ServoFailDetect,
             # anomalous: ~9 minutes on CI against ~20s on a desktop; to be investigated
             self.CircuitStatusScript,
         ])
