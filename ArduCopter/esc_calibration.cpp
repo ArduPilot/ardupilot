@@ -9,6 +9,11 @@
 // check if we should enter esc calibration mode
 void Copter::esc_calibration_startup_check()
 {
+    if (g.esc_calibrate == ESCCalibrationModes::ESCCAL_DISABLED) {
+        // nothing to do, so do not wait for the radio below
+        return;
+    }
+
     if (motors->is_brushed_pwm_type()) {
         // ESC cal not valid for brushed motors
         return;

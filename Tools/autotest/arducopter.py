@@ -19338,6 +19338,43 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def boot_log_start_s(self):
+        '''return how long after boot the current onboard log started'''
+        # the log starts once initialisation is done, so this measures the
+        # boot; the logger has no event to say its first block is written
+        self.delay_sim_time(5, "boot log to be written")
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match()
+            if m is None:
+                raise NotAchievedException("No timestamped message in boot log")
+            if getattr(m, 'TimeUS', 0):
+                return m.TimeUS * 1.0e-6
+
+    def ESCCalibrationStartup(self):
+        '''check the ESC calibration startup check consumes requests and skips the radio wait when disabled'''
+        self.start_subtest("a pending request is cleared on the next boot, whatever BRD_FAST_BOOT says")
+        self.set_parameters({
+            "ESC_CALIBRATION": 1,
+            "BRD_FAST_BOOT": 1,
+        })
+        self.reboot_sitl()
+        self.assert_parameter_value("ESC_CALIBRATION", 0)
+
+        self.start_subtest("ESC_CALIBRATION=9 does not wait for the radio")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        boot_s = {}
+        for esc_cal in 0, 9:
+            self.set_parameter("ESC_CALIBRATION", esc_cal)
+            self.reboot_sitl()
+            boot_s[esc_cal] = self.boot_log_start_s()
+            self.progress("ESC_CALIBRATION=%u: boot took %.3fs" % (esc_cal, boot_s[esc_cal]))
+        self.assert_parameter_value("ESC_CALIBRATION", 9)
+        # with no RC the check waits 2s for the first radio input
+        if boot_s[0] - boot_s[9] < 1.5:
+            raise NotAchievedException("ESC_CALIBRATION=9 still waited for the radio (%.3fs vs %.3fs)" %
+                                       (boot_s[9], boot_s[0]))
+
     def CorrectedDeltaVelocity(self):
         '''test that AHRS applies accel bias correctly'''
         self.change_mode('LOITER')
@@ -19703,6 +19740,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''return list of all tests'''
         ret = ([
             self.NoRCOnBootPreArmFailure,
+            self.ESCCalibrationStartup,
             self.BatteryFailsafeOptionsContinueLanding,
             self.EK3AccelBias,
             self.EK3_OptflowTerrainScaleHeight,
