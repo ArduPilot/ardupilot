@@ -216,6 +216,15 @@ void NavEKF3_core::InitialiseVariables()
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    memset(&rngOutOfRangeLowTime_ms, 0, sizeof(rngOutOfRangeLowTime_ms));
+#endif
+    flowFocusRngAgl = 0;
+    flowFocusRngPosD = 0;
+    flowFocusRngValid = false;
+    flowFocusBelow = false;
+    flowFocusResting = false;
+    flowFocusRestRng = 0;
     flowMeaTime_ms = 0;
     prevFlowFuseTime_ms = 0;
     gndHgtValidTime_ms = 0;

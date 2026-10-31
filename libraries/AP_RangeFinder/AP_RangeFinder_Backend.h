@@ -65,6 +65,9 @@ public:
     // true if sensor is returning data
     bool has_data() const;
 
+    // true if the reading puts the sensor at its ground clearance, so the vehicle is on the ground
+    bool on_ground() const { return RangeFinder::reading_on_ground(status(), distance(), ground_clearance()); }
+
     // returns count of consecutive good readings
     // note that this method returning zero does not mean that the device is unhealthy:
     uint8_t range_valid_count() const { return state.range_valid_count; }
