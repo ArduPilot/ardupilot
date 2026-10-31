@@ -1196,6 +1196,10 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         return false;
     }
     for (uint8_t i = 0; i < num_cores; i++) {
+        // run per-core pre-arm checks first, as their reasons are more specific than an unhealthy core's
+        if (!core[i].pre_arm_check(requires_position, failure_msg, failure_msg_len)) {
+            return false;
+        }
         if (!core[i].healthy()) {
             const char *failure = core[i].prearm_failure_reason();
             if (failure != nullptr) {
@@ -1203,10 +1207,6 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
             } else {
                 dal.snprintf(failure_msg, failure_msg_len, "EKF3 core %d unhealthy", (int)i);
             }
-            return false;
-        }
-        // run per-core pre-arm checks
-        if (!core[i].pre_arm_check(requires_position, failure_msg, failure_msg_len)) {
             return false;
         }
     }

@@ -26,12 +26,24 @@ bool NavEKF3_core::healthy(void) const
     }
     // position and height innovations must be within limits when on-ground and in a static mode of operation
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
-    if (onGround && (PV_AidingMode == AID_NONE) && ((horizErrSq > 1.0f) || (fabsF(hgtInnovFiltState) > 1.0f))) {
+    if (onGround && (PV_AidingMode == AID_NONE) && (horizErrSq > 1.0f)) {
+        return false;
+    }
+    if (onGroundHgtError()) {
         return false;
     }
 
     // all OK
     return true;
+}
+
+/*
+  return true when on the ground and not navigating with more than 1 m of
+  filtered height innovation
+*/
+bool NavEKF3_core::onGroundHgtError(void) const
+{
+    return onGround && (PV_AidingMode == AID_NONE) && (fabsF(hgtInnovFiltState) > 1.0f);
 }
 
 /*
@@ -53,6 +65,12 @@ bool NavEKF3_core::pre_arm_check(bool requires_position, char *failure_msg, uint
                          "EKF3[%u] vel error %.1f", unsigned(core_index)+1, hvel_innovation);
             return false;
         }
+    }
+
+    if (onGroundHgtError()) {
+        dal.snprintf(failure_msg, failure_msg_len,
+                     "EKF3[%u] height error %.1fm", unsigned(core_index)+1, fabsF(hgtInnovFiltState));
+        return false;
     }
 
     // all OK
