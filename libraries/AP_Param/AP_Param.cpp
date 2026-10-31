@@ -97,6 +97,8 @@ uint16_t AP_Param::_num_vars_base;
 AP_Param::Info *AP_Param::_var_info_dynamic;
 static const char *_empty_string = "";
 uint8_t AP_Param::_dynamic_table_sizes[AP_PARAM_MAX_DYNAMIC];
+bool AP_Param::_dynamic_table_persistent[AP_PARAM_MAX_DYNAMIC];
+HAL_Semaphore AP_Param::_dynamic_registration_sem;
 #endif
 
 // cached parameter count
@@ -123,6 +125,34 @@ bool AP_Param::registered_save_handler;
 bool AP_Param::done_all_default_params;
 
 AP_Param::defaults_list *AP_Param::default_list;
+
+#if AP_PARAM_DEFAULTS_ENABLED
+HAL_Semaphore AP_Param::_defaults_sem;
+std::atomic<bool> AP_Param::_defaults_locking{false};
+
+// Some defaults are registered by global constructors, before the semaphore
+// or HAL objects necessarily exist. Those calls are single-threaded. Once
+// setup() runs, all list readers and writers use the same lock, including purge.
+class AP_Param::DefaultsLock
+{
+public:
+    DefaultsLock() : _locked(_defaults_locking.load(std::memory_order_acquire))
+    {
+        if (_locked) {
+            _defaults_sem.take_blocking();
+        }
+    }
+    ~DefaultsLock()
+    {
+        if (_locked) {
+            _defaults_sem.give();
+        }
+    }
+    CLASS_NO_COPY(DefaultsLock);
+private:
+    const bool _locked;
+};
+#endif
 
 // we need a dummy object for the parameter save callback
 static AP_Param save_dummy;
@@ -361,6 +391,9 @@ void AP_Param::check_var_info(void)
 // setup the _var_info[] table
 bool AP_Param::setup(void)
 {
+#if AP_PARAM_DEFAULTS_ENABLED
+    _defaults_locking.store(true, std::memory_order_release);
+#endif
     struct EEPROM_header hdr {};
 
     // check the header
@@ -2964,6 +2997,7 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
     if (default_value == nullptr || ap == nullptr) {
         return;
     }
+    const DefaultsLock lock;
     if (default_list != nullptr) {
         for (defaults_list *item = default_list; item; item = item->next) {
             if (item->ap == ap) {
@@ -2981,6 +3015,7 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
 #if AP_PARAM_DEFAULTS_ENABLED
 void AP_Param::purge_defaults_list_overrides(void)
 {
+    const DefaultsLock lock;
     defaults_list **prev = &default_list;
     defaults_list *item = default_list;
     while (item != nullptr) {
@@ -3006,6 +3041,7 @@ void AP_Param::purge_defaults_list_overrides(void)
 
 void AP_Param::add_default(AP_Param *ap, float v)
 {
+    const DefaultsLock lock;
     // Embedded defaults trump runtime, don't allow override
     for (uint16_t i=0; i<num_param_overrides; i++) {
         if (ap == param_overrides[i].object_ptr) {
@@ -3096,7 +3132,8 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
 
 #if AP_PARAM_DEFAULTS_ENABLED
     uint16_t list_len = 0;
-    if (default_list != nullptr) {
+    {
+        const DefaultsLock lock;
         for (defaults_list *item = default_list; item; item = item->next) {
             list_len++;
         }
@@ -3118,6 +3155,36 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
     - the last GroupInfo is a footer
 */
 bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
+{
+    return add_table_internal(_key, prefix, num_params, false);
+}
+
+bool AP_Param::add_table_persistent(uint8_t key, const char *prefix, uint8_t num_params)
+{
+    if (prefix == nullptr || num_params == 0) {
+        return false;
+    }
+    return add_table_internal(key, prefix, num_params, true);
+}
+
+bool AP_Param::add_table_internal(uint8_t key, const char *prefix, uint8_t num_params, bool persistent)
+{
+    AP_Param *crc_param = nullptr;
+    bool success;
+    {
+        WITH_SEMAPHORE(_dynamic_registration_sem);
+        success = add_table_locked(key, prefix, num_params, persistent, crc_param);
+    }
+    // A full save queue can wait for the IO thread. Do not stall every other
+    // registration while enqueueing this immutable, firmware-owned CRC value.
+    if (success && crc_param != nullptr) {
+        crc_param->save(true);
+    }
+    return success;
+}
+
+bool AP_Param::add_table_locked(uint8_t _key, const char *prefix, uint8_t num_params, bool persistent,
+                                AP_Param *&crc_param)
 {
     // check if the key already exists. We only check base params to allow
     // for scripting reload without a conflict
@@ -3172,6 +3239,16 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
                 // prefix has changed, reject as two scripts running
                 // with the same key
                 return false;
+            }
+            if (_dynamic_table_persistent[i] != persistent) {
+                // A legacy registration must not reset a retained table, and
+                // a module must not adopt another registration's metadata.
+                return false;
+            }
+            if (persistent) {
+                // Names, indices and visibility must remain stable. Repeating
+                // initialization would lose the allocated parameter names.
+                return true;
             }
             break;
         }
@@ -3248,15 +3325,17 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
     }
     
     // make the group active
+    _dynamic_table_persistent[i] = persistent;
     info.key = key;
     info.type = AP_PARAM_GROUP;
 
     invalidate_count();
 
-    // save the CRC
-    AP_Int32 *crc_param = const_cast<AP_Int32 *>((AP_Int32 *)info.ptr);
-    crc_param->set(crc);
-    crc_param->save(true);
+    // Publish the CRC before releasing the registration lock. Its storage is
+    // retained until reboot, so the caller can enqueue the save afterwards.
+    AP_Int32 *crc_value = const_cast<AP_Int32 *>((AP_Int32 *)info.ptr);
+    crc_value->set(crc);
+    crc_param = crc_value;
 
     return true;
 }
@@ -3289,6 +3368,7 @@ bool AP_Param::load_int32(uint16_t key, uint32_t group_element, int32_t &value)
  */
 bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, float default_value)
 {
+    WITH_SEMAPHORE(_dynamic_registration_sem);
     if (_var_info_dynamic == nullptr) {
         // No dynamic tables available
         return false;
@@ -3320,6 +3400,13 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     auto &info = _var_info_dynamic[i];
     if (info.ptr == nullptr) {
         return false;
+    }
+
+    if (_dynamic_table_persistent[i]) {
+        const auto &entry = info.group_info[param_num];
+        if (entry.name != _empty_string && strcmp(entry.name, pname) != 0) {
+            return false;
+        }
     }
 
     // check CRC

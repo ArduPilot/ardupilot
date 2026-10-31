@@ -19,6 +19,10 @@
 #include "UARTDriver.h"
 #include "Util.h"
 
+#if HAL_OWNED_THREADS_ENABLED
+#include <AP_HAL/utility/OwnedThread_posix.h>
+#endif
+
 using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
@@ -366,8 +370,11 @@ void Scheduler::teardown()
 }
 
 // calculates an integer to be used as the priority for a newly-created thread
-uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority) const
+uint8_t Scheduler::calculate_thread_priority(priority_base base, int16_t priority) const
 {
+    if (base == PRIORITY_ABSOLUTE) {
+        return constrain_int16(priority, 1, APM_LINUX_MAX_PRIORITY);
+    }
     uint8_t thread_priority = APM_LINUX_IO_PRIORITY;
     static const struct {
         priority_base base;
@@ -388,7 +395,7 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
-            thread_priority = constrain_int16(priority_map[i].p + priority, 1, APM_LINUX_MAX_PRIORITY);
+            thread_priority = constrain_int32(int32_t(priority_map[i].p) + priority, 1, APM_LINUX_MAX_PRIORITY);
             break;
         }
     }
@@ -424,3 +431,25 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
 
     return true;
 }
+
+#if HAL_OWNED_THREADS_ENABLED
+uint8_t Scheduler::thread_priority_max() const { return APM_LINUX_MAX_PRIORITY; }
+
+AP_HAL::Scheduler::OwnedThread *Scheduler::thread_create_owned(AP_HAL::MemberProc proc, const char *name,
+                                                             uint32_t stack_size, priority_base base, int16_t priority)
+{
+    if (base == PRIORITY_ABSOLUTE && (priority < 1 || priority > APM_LINUX_MAX_PRIORITY)) {
+        return nullptr;
+    }
+    // Follow the active scheduler policy, not uid: root in a container may
+    // lack realtime privileges, and unit tests do not initialise the scheduler.
+    // Realtime workers still get their own low priority rather than inheriting it.
+    const int policy = sched_getscheduler(0);
+    if (policy == -1) {
+        return nullptr;
+    }
+    const bool realtime = policy == SCHED_FIFO || policy == SCHED_RR;
+    return OwnedThreadPosix::create(proc, name, stack_size, realtime ? SCHED_FIFO : SCHED_OTHER,
+                                    realtime ? calculate_thread_priority(base, priority) : 0);
+}
+#endif

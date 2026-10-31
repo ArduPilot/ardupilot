@@ -12,6 +12,9 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Scripting/AP_Scripting.h>
+#if AP_MODULE_ENABLED
+#include <AP_Module/Runtime.h>
+#endif
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AC_Fence/AC_Fence.h>
@@ -187,14 +190,25 @@ bool AP_Mission::start_command_do_sprayer(const AP_Mission::Mission_Command& cmd
 bool AP_Mission::start_command_do_scripting(const AP_Mission::Mission_Command& cmd)
 {
 #if AP_SCRIPTING_ENABLED
+    bool handled = false;
+#if AP_SCRIPTING_LUA_ENABLED
     AP_Scripting *scripting = AP_Scripting::get_singleton();
-    if (scripting == nullptr) {
-        return false;
+    if (scripting != nullptr) {
+        scripting->handle_mission_command(cmd);
+        handled = true;
     }
+#endif
 
-    scripting->handle_mission_command(cmd);
+#if AP_MODULE_ENABLED
+    AP_Module::Runtime *runtime = AP_Module::Runtime::get_singleton();
+    if (runtime != nullptr) {
+        runtime->handle_mission_command(cmd.p1, cmd.content.scripting.p1,
+                                        cmd.content.scripting.p2, cmd.content.scripting.p3);
+        handled = true;
+    }
+#endif
 
-    return true;
+    return handled;
 #else
     return false;
 #endif // AP_SCRIPTING_ENABLED

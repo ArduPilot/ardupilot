@@ -137,6 +137,7 @@ CSRC += $(HWDEF)/common/stubs.c \
         $(HWDEF)/common/malloc.c \
         $(HWDEF)/common/hrt.c \
         $(HWDEF)/common/stm32_util.c \
+        $(HWDEF)/common/stack_guard.c \
         $(HWDEF)/common/bouncebuffer.c \
         $(HWDEF)/common/watchdog.c \
         $(HWDEF)/common/sysperf.c

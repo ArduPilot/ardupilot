@@ -125,6 +125,7 @@ class AllowedSubsystems(object):
         'waf': ['waf', 'Tools'],
         'wscript': ['waf', 'Tools'],
         'Makefile': ['waf', 'Tools'],
+        'build_demo.sh': ['Tools'],
         'Dockerfile': ['waf', 'Tools'],
         '.dockerignore': ['waf', 'Tools'],
         'Vagrantfile': ['Tools'],

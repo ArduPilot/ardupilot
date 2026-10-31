@@ -21,11 +21,12 @@ jobs:
         python-version: 3.x
     - uses: pre-commit/action@v3.0.1
     - run: python3 -m pip install --upgrade pip
-    - run: python3 -m pip install pytest
+    - run: python3 -m pip install pytest pyelftools
     - name: Check out Waf for the build-system tests
       run: git submodule update --init --depth 1 modules/waf
-    - name: Install compiler and linker for the symbol tests
+    - name: Install native and ARM compilers and linkers for the build-system tests
       run: |
         sudo apt-get update
-        sudo apt-get install --yes build-essential binutils
-    - run: PYTHONPATH="." pytest tests/ Tools/ardupilotwaf/tests/
+        sudo apt-get install --yes --no-install-recommends build-essential binutils \
+          gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi
+    - run: PYTHONPATH="." pytest tests/ Tools/ardupilotwaf/tests/ libraries/AP_HAL/tests/

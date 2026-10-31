@@ -1,0 +1,12 @@
+-- SPDX-License-Identifier: GPL-3.0-or-later
+-- Module-local static data needs no binder; dynamic elaboration is unsupported.
+pragma Restrictions (No_Elaboration_Code);
+pragma Restrictions (No_Tasking);
+pragma Restrictions (No_Allocators);
+pragma Restrictions (No_Implicit_Heap_Allocations);
+pragma Restrictions (No_Implicit_Dynamic_Code);
+pragma Restrictions (No_Finalization);
+pragma Restrictions (No_Secondary_Stack);
+pragma Restrictions (No_Exception_Handlers);
+pragma Restrictions (No_Exception_Propagation);
+pragma Restrictions (No_Streams);

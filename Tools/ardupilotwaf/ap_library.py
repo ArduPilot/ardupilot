@@ -63,7 +63,8 @@ _macros_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_macros))
 
 # some cpp files are not available at the time we run this check so need to be
 # unilaterally added
-_vehicle_cpp_need_macros = ['lua_generated_bindings.cpp']
+_vehicle_cpp_need_macros = ['lua_generated_bindings.cpp', 'BindingImports_generated.cpp',
+                            'BindingMath_generated.cpp', 'Bindings_generated.cpp']
 _macros_cpp_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_cpp_need_macros))
 
 def _remove_comments(s):
@@ -176,6 +177,10 @@ class ap_library_check_headers(Task.Task):
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
         'libraries/AP_Common/AP_FWVersionDefine.h',
         'libraries/AP_Scripting/lua_generated_bindings.h',
+        'libraries/AP_Module/BindingConfig.h',
+        'libraries/AP_Module/BindingIds.h',
+        'libraries/AP_Module/BindingLog_generated.h',
+        'libraries/AP_Module/HostApi.h',
         'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
         'libraries/AP_LandingGear/AP_LandingGear_config.h',
         'libraries/AP_InertialSensor/AP_InertialSensor_rate_config.h',

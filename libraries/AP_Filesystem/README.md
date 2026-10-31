@@ -121,7 +121,27 @@ implements parameter download via ftp.
 
 ## The @SYS VFS
 
-The @SYS VFS gives access to flight controller internals. For now the
-only file that is accessible is @SYS/threads.txt which gives
-information on the remaining stack space for all threads. This file is
-only accessible for ChibiOS builds.
+The @SYS VFS gives access to flight controller internals. `@SYS/threads.txt`
+reports HAL threads on ChibiOS and SITL and can be downloaded over MAVFTP.
+Stack values are `free/total` bytes, with free space measured by the stack's
+high-water mark. SITL reports `?` where measurements are unavailable: ordinary
+libc-managed stacks are not painted, while HAL-owned native worker stacks are.
+On SITL, `PRI` is the host scheduling priority, not an emulated ChibiOS priority.
+Returned owned workers remain listed as `EXITED` until reaped. The listing
+covers the main thread and HAL-created workers, not arbitrary host-library threads.
+
+With native module support enabled, `@SYS/modules.txt` reports loaded modules,
+including retained panicked workers. `HEAP`, `USED` and `FREE` are the current
+backing heap capacity, allocator usage and available bytes; `USED + FREE = HEAP`.
+`ALLOC` and `PEAK` track live and peak allocation charges including module
+alignment/bookkeeping, while `ALLOCS` counts live allocations. ChibiOS `USED`
+also includes underlying allocator overhead and rounding; POSIX heaps enforce
+a logical budget and do not include host malloc overhead. Free bytes may be
+fragmented and do not guarantee that a single allocation of that size will fit.
+
+The report also includes state, source, declared priority, reserved RX/RW and
+stack bytes. `LOAD` is the percentage of one CPU: a lifetime wall-clock average
+on Linux (including SITL), or the current thread-profiler window on ChibiOS
+when configured with `--enable-stats`. Reading it does not reset profiler counters; `threads.txt`
+does reset the ChibiOS sampling window. Unsupported measurements show `?`.
+Each open captures a snapshot that remains valid during module restarts.

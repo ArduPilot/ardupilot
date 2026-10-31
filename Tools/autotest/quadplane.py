@@ -1955,6 +1955,58 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed(timeout=120)
 
+    def VTOLQuicktuneRust(self):
+        '''VTOL Quicktune using the native Rust applet'''
+        self.context_push()
+        self.context_preserve_parameters(self.quicktune_saved_gains)
+        self.install_rust_applet_context(
+            "vtol_quicktune/main.rs",
+            install_name="vtol-quicktune.apmod",
+        )
+
+        self.set_parameters({
+            "SCR_ENABLE": 0,
+            "MOD_ENABLE": 1,
+            "MOD_HEAP_MAX": 32768,
+            "MOD_CODE_MAXSIZE": 131072,
+            "MOD_STACK_MAX": 32768,
+            "SIM_SPEEDUP": 20,
+            "RC7_OPTION": 300,
+        })
+        self.reboot_sitl()
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "QUIK_ENABLE": 1,
+            "QUIK_DOUBLE_TIME": 5,
+        })
+        self.rust_scripting_restart()
+        self.wait_text("Quicktune for quadplane loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.change_mode("QLOITER")
+        self.arm_vehicle()
+        self.takeoff(20, 'QLOITER')
+
+        self.set_rc(7, 1500)
+        self.wait_text("Tuning: starting tune", check_context=True)
+        for axis in ['RLL', 'PIT', 'YAW']:
+            self.wait_text("Starting %s tune" % axis, check_context=True)
+            self.wait_text("Tuning: %s_D done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s_P done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s done" % axis, check_context=True, timeout=120)
+
+        # Save through the same scripting auxiliary-function path as the Lua
+        # applet test, then reset it before deleting the running module.
+        self.run_auxfunc(300, 2)
+        self.wait_text("Tuning: saved", check_context=True)
+        self.run_auxfunc(300, 0)
+        self.change_mode("QLAND")
+        self.wait_disarmed(timeout=120)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def VTOLQuicktune_CPP(self):
         '''VTOL Quicktune in C++'''
         self.context_preserve_parameters(self.quicktune_saved_gains)
@@ -2096,6 +2148,72 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if error > 2:
             raise NotAchievedException("too far from target %.1fm" % error)
 
+    def PrecisionLandingRust(self):
+        '''VTOL precision landing using the native Rust applet'''
+
+        self.install_rust_applet_context(
+            "plane_precland/main.rs",
+            install_name="plane-precland.apmod",
+        )
+
+        self.set_parameters({
+            "MOD_ENABLE": 1,
+            "MOD_HEAP_MAX": 32768,
+            "MOD_CODE_MAXSIZE": 131072,
+            "MOD_STACK_MAX": 32768,
+            "SCR_ENABLE": 0,
+            "PLND_ENABLED": 1,
+            "PLND_TYPE": 4,
+            "SIM_PLD_ENABLE":   1,
+            "SIM_PLD_HEIGHT" : 0,
+            "SIM_PLD_ALT_LMT" : 50,
+            "SIM_PLD_DIST_LMT" : 30,
+            "RNGFND1_TYPE": 100,
+            "RNGFND1_PIN" : 0,
+            "RNGFND1_SCALING" : 12.2,
+            "RNGFND1_MAX" : 50.00,
+            "RNGFND_LANDING" : 1,
+        })
+
+        self.reboot_sitl()
+
+        self.set_parameters({
+            "PLND_ALT_CUTOFF" : 5,
+            "SIM_SPEEDUP" : 10,
+            })
+
+        self.context_collect('STATUSTEXT')
+
+        self.rust_scripting_restart()
+        self.wait_text("PLND: Loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+
+        # Keep this in lockstep with PrecisionLanding: the target must be based
+        # on the post-reboot spawn position.
+        here = self.get_location()
+        target = self.offset_location_ne(here, 20, 0)
+        self.set_parameters({
+            "SIM_PLD_LAT": target.lat,
+            "SIM_PLD_LON": target.lng,
+        })
+
+        self.change_mode("GUIDED")
+        self.arm_vehicle()
+        self.takeoff(60, 'GUIDED')
+        self.wait_altitude(58, 62, relative=True)
+        self.drain_mav()
+        self.change_mode("QRTL")
+
+        self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
+
+        self.wait_disarmed(timeout=180)
+        loc2 = self.get_location()
+        error = self.get_distance(target, loc2)
+        self.progress("Target error %.1fm" % error)
+        if error > 2:
+            raise NotAchievedException("too far from target %.1fm" % error)
+
     def ShipLanding(self):
         '''ship landing test'''
         self.install_applet_script_context("plane_ship_landing.lua")
@@ -2168,6 +2286,88 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException(f"Did not land within {max_distance}m of ship {distance=}")
 
         # we are not at the home location - reboot so the next test starts there
+        self.set_parameter("SIM_SHIP_ENABLE", 0)
+        self.reboot_sitl()
+
+    def ShipLandingRust(self):
+        '''ship landing test using the native Rust applet'''
+        self.install_rust_applet_context(
+            "plane_ship_landing/main.rs",
+            install_name="plane-ship-landing.apmod",
+        )
+
+        self.set_parameters({
+            "SCR_ENABLE": 0,
+            "MOD_ENABLE": 1,
+            "MOD_HEAP_MAX": 32768,
+            "MOD_CODE_MAXSIZE": 131072,
+            "MOD_STACK_MAX": 32768,
+            "SIM_SHIP_ENABLE": 1,
+            "SIM_SHIP_SPEED": 5,
+            "Q_WP_SPD": 7.0,
+            "Q_P_NE_POS_P": 0.25,
+            "Q_P_NE_VEL_D": 0.25,
+            "Q_P_NE_VEL_I": 0.25,
+            "Q_P_NE_VEL_P": 1.0,
+            "SIM_SHIP_DSIZE": 10,
+            "FOLL_ENABLE": 1,
+            "FOLL_SYSID": 17,
+            "FOLL_OFS_TYPE": 1,
+            "SIM_TERRAIN": 0,
+            "TERRAIN_ENABLE": 0,
+        })
+
+        self.load_mission_from_filepath(os.path.join(
+            testdir,
+            "ArduPlane_Tests/ShipLanding/takeoff100.txt",
+        ))
+
+        self.reboot_sitl(check_position=False)
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SHIP_ENABLE": 1,
+            "SIM_SPEEDUP": 10,
+        })
+
+        self.rust_scripting_restart()
+        self.wait_text("ShipLanding: loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.change_mode("AUTO")
+        self.arm_vehicle()
+        self.wait_altitude(95, 105, relative=True, timeout=90)
+        self.drain_mav()
+
+        self.wait_text("Mission complete, changing mode to RTL", check_context=True, timeout=60)
+        self.wait_text("Descending for approach", check_context=True, timeout=60)
+        self.wait_text("Reached target altitude", check_context=True, timeout=120)
+        self.wait_text("Starting approach", check_context=True, timeout=120)
+        self.wait_text("Land complete", check_context=True, timeout=120)
+
+        self.wait_disarmed(timeout=180)
+
+        # Confirm the aircraft is moving with the 10m ship deck after landing.
+        self.wait_groundspeed(4.8, 5.2)
+
+        tstart = self.get_sim_time_cached()
+        ship_gpi = None
+        vehicle_gpi = None
+        while ship_gpi is None or vehicle_gpi is None:
+            if self.get_sim_time_cached() - tstart > 5:
+                raise NotAchievedException("Did not get GPI for ship")
+            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+            if gpi.get_srcSystem() == 17:
+                ship_gpi = gpi
+            elif gpi.get_srcSystem() == 1:
+                vehicle_gpi = gpi
+
+        distance = self.get_distance_int(vehicle_gpi, ship_gpi)
+        self.progress(f"{distance=}")
+        max_distance = 1.2
+        if distance > max_distance:
+            raise NotAchievedException(f"Did not land within {max_distance}m of ship {distance=}")
+
         self.set_parameter("SIM_SHIP_ENABLE", 0)
         self.reboot_sitl()
 
@@ -3292,16 +3492,28 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(4, 1500)
         self.disarm_vehicle()
 
-    def ScriptedArmingChecksApplet(self):
+    def ScriptedArmingChecksApplet(self, rust=False):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
         self.start_subtest("Scripted Arming Checks Applet validation")
         self.context_collect("STATUSTEXT")
 
-        applet_script = "arming-checks.lua"
         """Initialize the FC"""
-        self.set_parameter("SCR_ENABLE", 1)
-        self.install_applet_script_context(applet_script)
+        if rust:
+            self.install_rust_applet_context(
+                "arming_checks/main.rs",
+                install_name="arming-checks.apmod",
+            )
+            self.set_parameters({
+                "SCR_ENABLE": 0,
+                "MOD_ENABLE": 1,
+                "MOD_HEAP_MAX": 32768,
+                "MOD_CODE_MAXSIZE": 65536,
+                "MOD_STACK_MAX": 32768,
+            })
+        else:
+            self.set_parameter("SCR_ENABLE", 1)
+            self.install_applet_script_context("arming-checks.lua")
         self.reboot_sitl()
         self.wait_ekf_happy()
         self.wait_text("ArduPilot Ready", check_context=True)
@@ -3322,11 +3534,15 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("Q_OPTIONS", 1)
         self.wait_text("ArmCk: note: Q will land", check_context=True)
 
+    def ScriptedArmingChecksAppletRust(self):
+        '''Native Rust sibling of ScriptedArmingChecksApplet'''
+        self.ScriptedArmingChecksApplet(rust=True)
+
     def FenceRelative_TakeoffMode(self):
         '''method for the FenceRelative test to call'''
         return 'QLOITER'
 
-    def terrain_avoid_applet_setup(self, cmtc_enable):
+    def terrain_avoid_applet_setup(self, cmtc_enable, rust=False):
         '''load quadplane_terrain_avoid.lua at the Top of the World, check we
         have terrain data there, and leave the vehicle in AUTO with the
         mission loaded and the applet activated'''
@@ -3357,15 +3573,30 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl(check_position=False)
 
         self.set_parameters({
-            "SCR_ENABLE": 1,
+            "SCR_ENABLE": 0 if rust else 1,
             "SIM_SPEEDUP": 20, # need to give some cycles to lua
             "RC7_OPTION": 305,
             "RTL_AUTOLAND": 2,
             "RNGFND1_TYPE": 100,
         })
 
-        self.install_applet_script_context("quadplane_terrain_avoid.lua")
-        self.install_script_module_context(self.script_modules_source_path("mavlink_wrappers.lua"), "mavlink_wrappers.lua")
+        if rust:
+            self.set_parameters({
+                "MOD_ENABLE": 1,
+                "MOD_HEAP_MAX": 65536,
+                "MOD_CODE_MAXSIZE": 262144,
+                "MOD_STACK_MAX": 65536,
+            })
+            self.install_rust_applet_context(
+                "quadplane_terrain_avoid/main.rs",
+                install_name="quadplane-terrain-avoid.apmod",
+            )
+        else:
+            self.install_applet_script_context("quadplane_terrain_avoid.lua")
+            self.install_script_module_context(
+                self.script_modules_source_path("mavlink_wrappers.lua"),
+                "mavlink_wrappers.lua",
+            )
         self.reboot_sitl(check_position=False)
         self.wait_ready_to_arm()
 
@@ -3385,7 +3616,18 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # it's not always consistent, perhaps due to wind, so the tests try to accommodate variances.
         filename = "TopOfTheWorldShort.waypoints"
         self.progress("Flying mission %s" % filename)
-        num_wp = self.load_mission(filename)
+        if rust:
+            # The Rust siblings exercise the same scenario and fixture as the
+            # original Lua test, but have distinct autotest names/directories.
+            mission = os.path.join(
+                os.path.dirname(self.test_filepath()),
+                "ArduPlane_Tests",
+                "TerrainAvoidApplet",
+                filename,
+            )
+            num_wp = self.load_mission_from_filepath(mission)
+        else:
+            num_wp = self.load_mission(filename)
         self.progress("Mission items %d" % num_wp)
 
         self.change_mode("AUTO")
@@ -3524,6 +3766,80 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.assert_statustext_count_in_collections(text, count)
 
         # ... and TA_CMTC_ENABLE really did disable CMTC:
+        seen = self.statustext_count_in_collections("TerrAvoid: CMTC")
+        if seen:
+            raise NotAchievedException("CMTC ran with TA_CMTC_ENABLE=0 (%u times)" % seen)
+
+        self.terrain_avoid_applet_teardown()
+
+    def TerrainAvoidAppletRust(self):
+        '''Terrain Avoidance with CMTC using the native Rust applet'''
+        self.terrain_avoid_applet_setup(cmtc_enable=1, rust=True)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_text("TerrAvoid: close to home", check_context=True)
+        self.wait_waypoint(2, 4, max_dist_to_final_wp_m=100)
+        self.wait_text("TerrAvoid: away from home", check_context=True, regex=True)
+        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
+        self.progress("CMTC alt #1 is %f" % self.get_altitude(relative=False, timeout=2))
+        self.wait_altitude(1150, 1190, timeout=60, relative=False, minimum_duration=5)
+
+        self.wait_text(
+            "TerrAvoid: CMTC Done|TerrAvoid: Quading overrides CMTC",
+            check_context=True,
+            regex=True,
+            timeout=60,
+        )
+        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True, timeout=60)
+        self.progress("CMTC alt #2 is %f" % self.get_altitude(relative=False, timeout=2))
+        self.wait_altitude(1070, 1180, timeout=60, relative=False, minimum_duration=5)
+        self.wait_text(
+            "TerrAvoid: CMTC Done|TerrAvoid: Quading overrides CMTC",
+            check_context=True,
+            regex=True,
+        )
+
+        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
+        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
+        self.progress("CMTC alt #3 is %f" % self.get_altitude(relative=False, timeout=2))
+        self.wait_altitude(1000, 1040, timeout=120, relative=False, minimum_duration=5)
+        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
+        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
+
+        self.wait_statustext('Land complete', timeout=600)
+        self.wait_disarmed(timeout=120)
+
+        for (text, count) in [
+                ("TerrAvoid: CMTC loiter", 4),
+                ("TerrAvoid: CMTC STOP", 4),
+                ("TerrAvoid: CMTC Done", 4),
+                ("TerrAvoid: Quading started", 1),
+                ("TerrAvoid: Quading DONE", 1),
+                ("TerrAvoid: terrain Ok", 1),
+        ]:
+            self.assert_statustext_count_in_collections(text, count)
+
+        self.terrain_avoid_applet_teardown()
+
+    def TerrainAvoidAppletPitchingRust(self):
+        '''Terrain Avoidance pitching with CMTC disabled using the Rust applet'''
+        self.terrain_avoid_applet_setup(cmtc_enable=0, rust=True)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_text("TerrAvoid: close to home", check_context=True)
+
+        self.wait_statustext('Land complete', timeout=600)
+        self.wait_disarmed(timeout=120)
+
+        for (text, count) in [
+                ("TerrAvoid: Pitching started", 1),
+                ("TerrAvoid: Pitching DONE", 1),
+                ("TerrAvoid: terrain Ok", 1),
+        ]:
+            self.assert_statustext_count_in_collections(text, count)
+
         seen = self.statustext_count_in_collections("TerrAvoid: CMTC")
         if seen:
             raise NotAchievedException("CMTC ran with TA_CMTC_ENABLE=0 (%u times)" % seen)
@@ -3850,16 +4166,35 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def CircuitStatusScript(self):
         '''test CircuitStatus lua driver against a CAN periph'''
+        self.CircuitStatusDriver(rust=False)
+
+    def CircuitStatusRust(self):
+        '''test CircuitStatus Rust driver against a CAN periph'''
+        self.CircuitStatusDriver(rust=True)
+
+    def CircuitStatusDriver(self, rust):
+        '''test a CircuitStatus scripting driver against a CAN periph'''
         self.context_collect('STATUSTEXT')
 
-        self.install_driver_script_context("CircuitStatus.lua")
+        if rust:
+            source = os.path.join(
+                self.rootdir(),
+                "libraries",
+                "AP_Module",
+                "drivers",
+                "CircuitStatus.rs",
+            )
+            self.install_rust_module_context(source, install_name="CircuitStatus.apmod")
+        else:
+            self.install_driver_script_context("CircuitStatus.lua")
 
         # CAN_P1_DRIVER=1 is needed so plane publishes the SITL multicast
         # sim state the periph blocks on at boot. BATT_MONITOR=8
         # (DroneCAN) gives a reference monitor fed by BatteryInfo from
         # the same periph battery the CircuitStatus messages come from.
         self.set_parameters({
-            "SCR_ENABLE": 1,
+            "SCR_ENABLE": 0 if rust else 1,
+            "MOD_ENABLE": 1 if rust else 0,
             "CAN_P1_DRIVER": 1,
             "BATT_MONITOR": 8,  # DroneCAN
             "BATT2_MONITOR": 29,  # scripting
@@ -4411,6 +4746,88 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if error > 2:
             raise NotAchievedException(f"Landed {error:.1f}m from target")
 
+    def LANDING_TARGET_Rust(self):
+        '''VTOL precision landing from LANDING_TARGET using the Rust applet'''
+        self.install_rust_applet_context(
+            "plane_precland/main.rs",
+            install_name="plane-precland.apmod",
+        )
+        self.set_parameters({
+            "MOD_ENABLE": 1,
+            "MOD_HEAP_MAX": 32768,
+            "MOD_CODE_MAXSIZE": 131072,
+            "MOD_STACK_MAX": 32768,
+            "SCR_ENABLE": 0,
+            "PLND_ENABLED": 1,
+            "PLND_TYPE": 1,  # MAVLink
+        })
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+        self.rust_scripting_restart()
+        self.wait_text("PLND: Loaded", check_context=True)
+        self.wait_ready_to_arm()
+
+        def send_landing_target(frame, angle_x, angle_y, distance):
+            self.mav.mav.landing_target_send(
+                0, # time_usec
+                1, # target_num
+                frame,
+                angle_x,
+                angle_y,
+                distance,
+                0.01, # size_x
+                0.01, # size_y
+            )
+
+        self.start_subtest("frames other than BODY_FRD and LOCAL_FRD are refused")
+        send_landing_target(mavutil.mavlink.MAV_FRAME_LOCAL_NED, 0, 0, 10)
+        self.wait_statustext("Plnd: Frame not supported", check_context=True)
+
+        takeoff_loc = self.get_location()
+        target = self.offset_location_ne(takeoff_loc, 20, 0)
+
+        def report_target(mav, m):
+            if m.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            attitude = self.mav.messages.get('ATTITUDE')
+            if attitude is None:
+                return
+            down = m.relative_alt * 0.001
+            if down < 1:
+                return
+            here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+            distance_ne = self.get_distance(here, target)
+            bearing = math.radians(self.get_bearing(here, target))
+            north = distance_ne * math.cos(bearing)
+            east = distance_ne * math.sin(bearing)
+            # rotate into a yaw-aligned forward-right-down frame:
+            yaw = attitude.yaw
+            forward = north * math.cos(yaw) + east * math.sin(yaw)
+            right = -north * math.sin(yaw) + east * math.cos(yaw)
+            send_landing_target(
+                mavutil.mavlink.MAV_FRAME_LOCAL_FRD,
+                math.atan2(right, down),
+                -math.atan2(forward, down),
+                math.sqrt(forward*forward + right*right + down*down),
+            )
+
+        self.context_set_message_rate_hz('GLOBAL_POSITION_INT', 10)
+        self.change_mode("GUIDED")
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=30)
+        self.install_message_hook_context(report_target)
+        self.wait_text("PrecLand: Target Found", check_context=True, timeout=60)
+
+        self.change_mode("QLAND")
+        self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
+        self.wait_disarmed(timeout=180)
+        landing_loc = self.get_location()
+        error = self.get_distance(target, landing_loc)
+        moved = self.get_distance(takeoff_loc, landing_loc)
+        self.progress(f"Target error {error:.1f}m, landed {moved:.1f}m from takeoff")
+        if error > 2:
+            raise NotAchievedException(f"Landed {error:.1f}m from target")
+
     def BatteryFailsafeLandAUTORefused(self):
         '''battery failsafe Land action falls back to RTL if AUTO is refused'''
         self.set_parameters({
@@ -4598,6 +5015,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.ShipLanding,
+            self.ShipLandingRust,
             Test(self.MotorTest, kwargs={  # tests motors 4 and 2
                 "mot1_servo_chan": 8,  # quad-x second motor cw from f-r
                 "mot4_servo_chan": 6,  # quad-x third motor cw from f-r
@@ -4617,6 +5035,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.FastInvertedRecovery,
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.TerrainAvoidAppletPitching,
+            self.TerrainAvoidAppletPitchingRust,
             self.MAVFTPBadReadOffset,
             self.FenceRelativeToHomeMaxAlt,
             self.FenceRelativeToHomeCliff,
@@ -4638,6 +5057,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.FenceRelativeToTerrainMinAlt,
             # anomalous: ~9 minutes on CI against ~20s on a desktop; to be investigated
             self.CircuitStatusScript,
+            self.CircuitStatusRust,
         ])
         return ret
 
@@ -4662,8 +5082,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.Ship,
             self.WindEstimateConsistency,
             self.VTOLQuicktune,
+            self.VTOLQuicktuneRust,
             self.VTOLQuicktune_CPP,
             self.PrecisionLanding,
+            self.PrecisionLandingRust,
             self.TransitionMinThrottle,
             self.BackTransitionMinThrottle,
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
@@ -4674,7 +5096,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.CruiseRecovery,
             self.RudderArmingWithARMING_CHECK_THROTTLEUnset,
             self.ScriptedArmingChecksApplet,
+            self.ScriptedArmingChecksAppletRust,
             self.TerrainAvoidApplet,
+            self.TerrainAvoidAppletRust,
             self.TakeoffCheck,
             self.FenceRelativeToHomeMaxAltOriginAbove,
             self.FenceRelativeToHomeMinAltOriginAbove,
@@ -4690,6 +5114,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.HIGH_LATENCY2_VTOL,
             self.VTOLCommandRejections,
             self.LANDING_TARGET,
+            self.LANDING_TARGET_Rust,
             self.BatteryFailsafeLandAUTORefused,
             self.TiltrotorVectoringRoll,
         ])

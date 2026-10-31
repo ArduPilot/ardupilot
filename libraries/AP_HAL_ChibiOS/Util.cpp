@@ -395,18 +395,18 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
     if (AP_BoardConfig::use_idle_stats()) {
-        str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
+        str.printf("%-20.20s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
     } else
 #endif
     str.printf("ThreadsV2\n");
 #if HAL_ENABLE_THREAD_STATISTICS
-    str.printf("ISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
+    str.printf("%-20.20s PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n", "ISR",
                 &__main_stack_base__,
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size), 100.0f * float(currcore->kernel_stats.m_crit_isr.cumulative) / float(cumulative_cycles));
     currcore->kernel_stats.m_crit_isr.cumulative = 0U;
 #else
-    str.printf("ISR           PRI=255 sp=%p STACK=%u/%u\n",
+    str.printf("%-20.20s PRI=255 sp=%p STACK=%u/%u\n", "ISR",
                 &__main_stack_base__,
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size));
@@ -424,7 +424,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 #if HAL_ENABLE_THREAD_STATISTICS
         time_measurement_t stats = tp->stats;
         if (stats.n > 0) { // has run since the last read
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
+            str.printf("%-20.20s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
                         tp->name, unsigned(tp->realprio), tp->wabase,
                         unsigned(stack_free(tp->wabase)), unsigned(total_stack),
                         100.0f * float(stats.cumulative) / float(cumulative_cycles),
@@ -434,7 +434,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                         tp != chThdGetSelfX() && unsigned(RTC2US(HAL_EXPECTED_SYSCLOCK, stats.worst)) > 5000
                             && tp != get_main_thread() && tp->realprio != 1 ? "*" : "");
         } else {
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",
+            str.printf("%-20.20s PRI=%3u sp=%p STACK=%4u/%4u\n",
                         tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
         }
         // Giovanni thinks this is dangerous, but we can't get useable data without it
@@ -444,7 +444,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
             tp->stats.cumulative = 0U;
         }
 #else
-        str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
+        str.printf("%-20.20s PRI=%3u sp=%p STACK=%u/%u\n",
                     tp->name, unsigned(tp->realprio), tp->wabase,
                     unsigned(stack_free(tp->wabase)), unsigned(total_stack));
 #endif

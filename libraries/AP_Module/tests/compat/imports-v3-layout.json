@@ -1,0 +1,1896 @@
+[
+  {
+    "id": 1,
+    "hash": "f9551cac1e91fb39",
+    "contract": {
+      "name": "ahrs.airspeed_EAS",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "f32-le",
+          "direction": "optional-out"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 1,
+    "hash": "db49861ec60e3b87",
+    "contract": {
+      "name": "ahrs.airspeed_estimate",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "f32-le",
+          "direction": "optional-out"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 2,
+    "hash": "ca592db70a667e4f",
+    "contract": {
+      "name": "ahrs.get_EAS2TAS",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": "f32-le",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 3,
+    "hash": "bf3cd237cb197e14",
+    "contract": {
+      "name": "ahrs.get_gyro",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": {
+        "name": "Vector3f",
+        "fields": [
+          [
+            "x",
+            "f32-le"
+          ],
+          [
+            "y",
+            "f32-le"
+          ],
+          [
+            "z",
+            "f32-le"
+          ]
+        ]
+      },
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 4,
+    "hash": "f5dffba5e28995bc",
+    "contract": {
+      "name": "ahrs.get_hagl",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "f32-le",
+          "direction": "optional-out"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 5,
+    "hash": "ae75f89d969839dc",
+    "contract": {
+      "name": "ahrs.get_pitch_rad",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": "f32-le",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 6,
+    "hash": "d88e9a433b6ba8a9",
+    "contract": {
+      "name": "ahrs.get_quaternion",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "optional-out"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 7,
+    "hash": "c4cf4a0871cd9f31",
+    "contract": {
+      "name": "ahrs.get_relative_position_NED_origin",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "optional-out"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 8,
+    "hash": "1ea9d2e813723d57",
+    "contract": {
+      "name": "ahrs.get_roll_rad",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": "f32-le",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 9,
+    "hash": "ec83e33ab55bbb0a",
+    "contract": {
+      "name": "ahrs.get_velocity_NED",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "optional-out"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 10,
+    "hash": "2ed8baf19bb3493e",
+    "contract": {
+      "name": "ahrs.get_yaw_rad",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": "f32-le",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 11,
+    "hash": "75e2151149b590b8",
+    "contract": {
+      "name": "arming.is_armed",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": null,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 12,
+    "hash": "07f8f8b6f6730e08",
+    "contract": {
+      "name": "gps.num_sensors",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": "u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": null,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 13,
+    "hash": "fa6feba45f6eb45f",
+    "contract": {
+      "name": "gps.primary_sensor",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": "u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": null,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 14,
+    "hash": "9dd39954bae0a578",
+    "contract": {
+      "name": "param.add_param",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "u8",
+          "direction": "in",
+          "range": [
+            0,
+            200
+          ]
+        },
+        {
+          "type": "u8",
+          "direction": "in",
+          "range": [
+            1,
+            63
+          ]
+        },
+        {
+          "type": "nonempty-nul-free-bytes-max16-zero-pad17",
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": null,
+        "adapter": "v1:nonempty-nul-free-bytes-max16-zero-pad17,finite-inputs,checked-integer-range,persistent-tables",
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 15,
+    "hash": "f4b2846ae32fbb22",
+    "contract": {
+      "name": "param.add_table",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "u8",
+          "direction": "in",
+          "range": [
+            0,
+            200
+          ]
+        },
+        {
+          "type": "nonempty-nul-free-bytes-max16-zero-pad17",
+          "direction": "in"
+        },
+        {
+          "type": "u8",
+          "direction": "in",
+          "range": [
+            1,
+            63
+          ]
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": null,
+        "adapter": "v1:nonempty-nul-free-bytes-max16-zero-pad17,finite-inputs,checked-integer-range,persistent-tables",
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 16,
+    "hash": "8a5747d4e32d0caa",
+    "contract": {
+      "name": "param.get",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "nonempty-nul-free-bytes-max16-zero-pad17",
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "optional-out"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": null,
+        "adapter": "v1:nonempty-nul-free-bytes-max16-zero-pad17,finite-inputs,checked-integer-range,persistent-tables",
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 17,
+    "hash": "81f91fa7200a5aef",
+    "contract": {
+      "name": "param.set_and_save",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "nonempty-nul-free-bytes-max16-zero-pad17",
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": null,
+        "adapter": "v1:nonempty-nul-free-bytes-max16-zero-pad17,finite-inputs,checked-integer-range,persistent-tables",
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 18,
+    "hash": "3b24241b5e4c1af1",
+    "contract": {
+      "name": "param.set",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "nonempty-nul-free-bytes-max16-zero-pad17",
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": null,
+        "adapter": "v1:nonempty-nul-free-bytes-max16-zero-pad17,finite-inputs,checked-integer-range,persistent-tables",
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 19,
+    "hash": "a8ebf8b7c85c55c9",
+    "contract": {
+      "name": "param.set_default",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "nonempty-nul-free-bytes-max16-zero-pad17",
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": null,
+        "adapter": "v1:nonempty-nul-free-bytes-max16-zero-pad17,finite-inputs,checked-integer-range,persistent-tables",
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 20,
+    "hash": "355c3b2e2a075b59",
+    "contract": {
+      "name": "vehicle.get_mode",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": "u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 21,
+    "hash": "8e35e994074106ef",
+    "contract": {
+      "name": "rc.get_pwm",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "u8",
+          "direction": "in",
+          "range": [
+            1,
+            "firmware-bound"
+          ]
+        },
+        {
+          "type": "u16-le",
+          "direction": "optional-out"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": {
+        "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+        "lock_timeout_ms": 20,
+        "adapter": null,
+        "outputs": "copy-under-lock,zero-on-false"
+      }
+    }
+  },
+  {
+    "id": 22,
+    "hash": "3b3d1f3dd64e40fc",
+    "contract": {
+      "name": "Parameter.configured",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "Parameter",
+          "direction": "opaque-receiver-le-u64"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": "v2:Parameter,placement-init,host-layout,trivial-drop,receiver-le-u64,checked-f32"
+    }
+  },
+  {
+    "id": 23,
+    "hash": "6514733bdda53a2b",
+    "contract": {
+      "name": "Parameter.get",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "Parameter",
+          "direction": "opaque-receiver-le-u64"
+        },
+        {
+          "type": "f32-le",
+          "direction": "optional-out"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": "v2:Parameter,placement-init,host-layout,trivial-drop,receiver-le-u64,checked-f32"
+    }
+  },
+  {
+    "id": 24,
+    "hash": "fa436343eed86cc9",
+    "contract": {
+      "name": "Parameter.init",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "Parameter",
+          "direction": "opaque-receiver-le-u64"
+        },
+        {
+          "type": "nonempty-nul-free-bytes-max16-zero-pad17",
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": "v2:Parameter,placement-init,host-layout,trivial-drop,receiver-le-u64,checked-f32"
+    }
+  },
+  {
+    "id": 25,
+    "hash": "3d6f129b7717e7cc",
+    "contract": {
+      "name": "Parameter.set",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "Parameter",
+          "direction": "opaque-receiver-le-u64"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": "v2:Parameter,placement-init,host-layout,trivial-drop,receiver-le-u64,checked-f32"
+    }
+  },
+  {
+    "id": 26,
+    "hash": "54c51489a097079f",
+    "contract": {
+      "name": "Parameter.set_and_save",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "Parameter",
+          "direction": "opaque-receiver-le-u64"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": "v2:Parameter,placement-init,host-layout,trivial-drop,receiver-le-u64,checked-f32"
+    }
+  },
+  {
+    "id": 27,
+    "hash": "d7547b8622271eed",
+    "contract": {
+      "name": "Parameter.set_default",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": "Parameter",
+          "direction": "opaque-receiver-le-u64"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": "v2:Parameter,placement-init,host-layout,trivial-drop,receiver-le-u64,checked-f32"
+    }
+  },
+  {
+    "id": 28,
+    "hash": "40ef527b24426565",
+    "contract": {
+      "name": "Parameter.__layout",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [],
+      "result": {
+        "fields": [
+          [
+            "size",
+            "u32-le"
+          ],
+          [
+            "alignment",
+            "u32-le"
+          ]
+        ]
+      },
+      "policy": {
+        "ownership": "module-heap,trivial-drop",
+        "size_min": 1,
+        "size_max": 16777216,
+        "alignment": "power-of-two,size-multiple",
+        "alignment_max": 4096
+      }
+    }
+  },
+  {
+    "id": 29,
+    "hash": "6f279e053e0416dd",
+    "contract": {
+      "name": "Quaternion.earth_to_body",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "inout"
+        }
+      ],
+      "result": "void",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 30,
+    "hash": "0451aa175f549daa",
+    "contract": {
+      "name": "Quaternion.from_angular_velocity",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "inout"
+        },
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "void",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 31,
+    "hash": "80046aeedc246257",
+    "contract": {
+      "name": "Quaternion.from_axis_angle",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "inout"
+        },
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "void",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 32,
+    "hash": "a8e069fb234e44fa",
+    "contract": {
+      "name": "Quaternion.from_euler",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "inout"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "void",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 33,
+    "hash": "a61ea6fedeb77d30",
+    "contract": {
+      "name": "Quaternion.get_euler_pitch",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "f32-le",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 34,
+    "hash": "a1d67e83dcc387cb",
+    "contract": {
+      "name": "Quaternion.get_euler_roll",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "f32-le",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 35,
+    "hash": "7f0335333d47463a",
+    "contract": {
+      "name": "Quaternion.get_euler_yaw",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "f32-le",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 36,
+    "hash": "b33f50e5b776bd2f",
+    "contract": {
+      "name": "Quaternion.inverse",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": {
+        "name": "Quaternion",
+        "fields": [
+          [
+            "q1",
+            "f32-le"
+          ],
+          [
+            "q2",
+            "f32-le"
+          ],
+          [
+            "q3",
+            "f32-le"
+          ],
+          [
+            "q4",
+            "f32-le"
+          ]
+        ]
+      },
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 37,
+    "hash": "c18908a367c221bb",
+    "contract": {
+      "name": "Quaternion.length",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "f32-le",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 38,
+    "hash": "e2f029ad16880ed3",
+    "contract": {
+      "name": "Quaternion.normalize",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "inout"
+        }
+      ],
+      "result": "void",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 39,
+    "hash": "d25dabce9463c630",
+    "contract": {
+      "name": "Quaternion.to_axis_angle",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "out"
+        }
+      ],
+      "result": "void",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 40,
+    "hash": "436567a920ba0a75",
+    "contract": {
+      "name": "Quaternion.mul",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": {
+            "name": "Quaternion",
+            "fields": [
+              [
+                "q1",
+                "f32-le"
+              ],
+              [
+                "q2",
+                "f32-le"
+              ],
+              [
+                "q3",
+                "f32-le"
+              ],
+              [
+                "q4",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": {
+        "name": "Quaternion",
+        "fields": [
+          [
+            "q1",
+            "f32-le"
+          ],
+          [
+            "q2",
+            "f32-le"
+          ],
+          [
+            "q3",
+            "f32-le"
+          ],
+          [
+            "q4",
+            "f32-le"
+          ]
+        ]
+      },
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 41,
+    "hash": "e3651d3b27ca9dc5",
+    "contract": {
+      "name": "Vector3f.angle",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "f32-le",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 42,
+    "hash": "fd09b0a3df721f92",
+    "contract": {
+      "name": "Vector3f.cross",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": {
+        "name": "Vector3f",
+        "fields": [
+          [
+            "x",
+            "f32-le"
+          ],
+          [
+            "y",
+            "f32-le"
+          ],
+          [
+            "z",
+            "f32-le"
+          ]
+        ]
+      },
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 43,
+    "hash": "7e8d21ca3d753cea",
+    "contract": {
+      "name": "Vector3f.dot",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "f32-le",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 44,
+    "hash": "b5cfca1b07c2b9f3",
+    "contract": {
+      "name": "Vector3f.is_inf",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 45,
+    "hash": "60fafd788e905aa3",
+    "contract": {
+      "name": "Vector3f.is_nan",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 46,
+    "hash": "74dfcbf084b57259",
+    "contract": {
+      "name": "Vector3f.is_zero",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "bool-u8",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 47,
+    "hash": "91750bd9ab1b1534",
+    "contract": {
+      "name": "Vector3f.length",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": "f32-le",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 48,
+    "hash": "27f6fe7e37c356e0",
+    "contract": {
+      "name": "Vector3f.normalize",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "inout"
+        }
+      ],
+      "result": "void",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 49,
+    "hash": "1379e4327397ab36",
+    "contract": {
+      "name": "Vector3f.rotate_xy",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "inout"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": "void",
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 50,
+    "hash": "4c186ec3c7dddb12",
+    "contract": {
+      "name": "Vector3f.scale",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": "f32-le",
+          "direction": "in"
+        }
+      ],
+      "result": {
+        "name": "Vector3f",
+        "fields": [
+          [
+            "x",
+            "f32-le"
+          ],
+          [
+            "y",
+            "f32-le"
+          ],
+          [
+            "z",
+            "f32-le"
+          ]
+        ]
+      },
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 51,
+    "hash": "cb0474e1c9677a9c",
+    "contract": {
+      "name": "Vector3f.add",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": {
+        "name": "Vector3f",
+        "fields": [
+          [
+            "x",
+            "f32-le"
+          ],
+          [
+            "y",
+            "f32-le"
+          ],
+          [
+            "z",
+            "f32-le"
+          ]
+        ]
+      },
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  },
+  {
+    "id": 52,
+    "hash": "764ad065185ed568",
+    "contract": {
+      "name": "Vector3f.sub",
+      "revision": 1,
+      "encoding": "AP_Module.bindings.v1:little-endian,IEEE754-f32,bool-u8,optional-presence-u8,exact-lengths",
+      "arguments": [
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        },
+        {
+          "type": {
+            "name": "Vector3f",
+            "fields": [
+              [
+                "x",
+                "f32-le"
+              ],
+              [
+                "y",
+                "f32-le"
+              ],
+              [
+                "z",
+                "f32-le"
+              ]
+            ]
+          },
+          "direction": "in"
+        }
+      ],
+      "result": {
+        "name": "Vector3f",
+        "fields": [
+          [
+            "x",
+            "f32-le"
+          ],
+          [
+            "y",
+            "f32-le"
+          ],
+          [
+            "z",
+            "f32-le"
+          ]
+        ]
+      },
+      "policy": "v1:component-le-f32,allow-nonfinite,cpp-math,copyback-on-success,no-allocation"
+    }
+  }
+]

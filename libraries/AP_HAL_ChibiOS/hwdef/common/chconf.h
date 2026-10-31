@@ -29,6 +29,7 @@
 #pragma once
 
 #include "hwdef.h"
+#include "stack_guard.h"
 
 #define _CHIBIOS_RT_CONF_
 #define _CHIBIOS_RT_CONF_VER_7_0_
@@ -736,8 +737,12 @@ extern "C" {
  * @details User fields added to the end of the @p thread_t structure.
  */
 #ifndef CH_CFG_THREAD_EXTRA_FIELDS
+#if HAL_STACK_GUARD_ENABLED
+#define CH_CFG_THREAD_EXTRA_FIELDS struct AP_StackGuard *stack_guard;
+#else
 #define CH_CFG_THREAD_EXTRA_FIELDS                                          \
   /* Add threads custom fields here.*/
+#endif
 #endif
 
 /**
@@ -747,9 +752,13 @@ extern "C" {
  * @note    It is invoked from within @p _thread_init() and implicitly from all
  *          the threads creation APIs.
  */
+#if HAL_STACK_GUARD_ENABLED
+#define CH_CFG_THREAD_INIT_HOOK(tp) { (tp)->stack_guard = NULL; }
+#else
 #define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
   /* Add threads initialization code here.*/                                \
 }
+#endif
 
 /**
  * @brief   Threads finalization hook.
@@ -763,9 +772,17 @@ extern "C" {
  * @brief   Context switch hook.
  * @details This hook is invoked just before switching between threads.
  */
+#if HAL_STACK_GUARD_ENABLED
+#define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                             \
+  if ((ntp)->stack_guard != NULL || (otp)->stack_guard != NULL) {          \
+    ap_stack_guard_switch(ntp);                                          \
+  }                                                                     \
+}
+#else
 #define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
   /* Context switch code here.*/                                            \
 }
+#endif
 
 /**
  * @brief   ISR enter hook.

@@ -7,7 +7,7 @@
 #include "AP_Scripting.h"
 #include "AP_Scripting_SerialAccess.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
 #define check_is_device_port() (is_device_port)
@@ -94,4 +94,4 @@ void AP_Scripting_SerialAccess::set_flow_control(enum AP_HAL::UARTDriver::flow_c
     }
 }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_SCRIPTING_LUA_ENABLED

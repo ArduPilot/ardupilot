@@ -36,11 +36,6 @@
 #pragma GCC optimize("Og")
 #endif
 
-#define MEM_REGION_FLAG_DMA_OK 1
-#define MEM_REGION_FLAG_FAST   2
-#define MEM_REGION_FLAG_AXI_BUS 4
-#define MEM_REGION_FLAG_ETH_SAFE 8
-
 #ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
 static mutex_t mem_mutex;
 #endif

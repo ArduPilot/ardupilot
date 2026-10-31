@@ -20,6 +20,22 @@
 
 #if AP_SCRIPTING_CAN_SENSOR_ENABLED
 
+static HAL_Semaphore sensor_sem;
+static ScriptingCANSensor *sensors[2];
+
+ScriptingCANSensor *get_scripting_can_sensor(uint8_t index)
+{
+    if (index >= ARRAY_SIZE(sensors)) {
+        return nullptr;
+    }
+    WITH_SEMAPHORE(sensor_sem);
+    if (sensors[index] == nullptr) {
+        const auto protocol = index == 0 ? AP_CAN::Protocol::Scripting : AP_CAN::Protocol::Scripting2;
+        sensors[index] = NEW_NOTHROW ScriptingCANSensor(protocol);
+    }
+    return sensors[index];
+}
+
 // handler for outgoing frames, using uint32
 bool ScriptingCANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
@@ -48,6 +64,24 @@ ScriptingCANBuffer* ScriptingCANSensor::add_buffer(uint32_t buffer_len)
     return new_buff;
 }
 
+bool ScriptingCANSensor::remove_buffer(ScriptingCANBuffer *buffer)
+{
+    if (buffer == nullptr) {
+        return false;
+    }
+    WITH_SEMAPHORE(sem);
+    ScriptingCANBuffer **link = &buffer_list;
+    while (*link != nullptr) {
+        if (*link == buffer) {
+            *link = buffer->next;
+            delete buffer;
+            return true;
+        }
+        link = &(*link)->next;
+    }
+    return false;
+}
+
 // Call main sensor write method
 bool ScriptingCANBuffer::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
@@ -57,12 +91,15 @@ bool ScriptingCANBuffer::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t
 // read a frame from the buffer
 bool ScriptingCANBuffer::read_frame(AP_HAL::CANFrame &frame)
 {
+    WITH_SEMAPHORE(sem);
     return buffer.pop(frame);
 }
 
 // add frame to buffer
 void ScriptingCANBuffer::handle_frame(AP_HAL::CANFrame &frame)
 {
+    WITH_SEMAPHORE(sem);
+
     // accept everything if no filters are setup
     bool accept = num_filters == 0;
 
@@ -74,8 +111,6 @@ void ScriptingCANBuffer::handle_frame(AP_HAL::CANFrame &frame)
         }
     }
 
-    WITH_SEMAPHORE(sem);
-
     // Add to buffer for scripting to read
     if (accept) {
         buffer.push(frame);
@@ -84,6 +119,8 @@ void ScriptingCANBuffer::handle_frame(AP_HAL::CANFrame &frame)
 
 // Add a filter, will pass ID's that match value given the mask
 bool ScriptingCANBuffer::add_filter(uint32_t mask, uint32_t value) {
+
+    WITH_SEMAPHORE(sem);
 
     // Run out of filters
     if (num_filters >= ARRAY_SIZE(filter)) {
