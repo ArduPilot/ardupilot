@@ -1932,6 +1932,10 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         return;
     }
 
+    if (!_port->is_owned_by_current_thread()) {
+        _port->begin(0);
+    }
+
     // receive new packets
     mavlink_message_t msg;
     mavlink_status_t status;
@@ -7422,6 +7426,8 @@ void GCS::update_passthru(void)
         _passthru.last_port1_data_ms = now;
         _passthru.baud1 = baud1;
         _passthru.baud2 = baud2;
+        _passthru.orig_baud1 = baud1;
+        _passthru.orig_baud2 = baud2;
         _passthru.parity1 = _passthru.port1->get_parity();
         _passthru.parity2 = _passthru.port2->get_parity();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru enabled");
@@ -7433,15 +7439,15 @@ void GCS::update_passthru(void)
         _passthru.enabled = false;
         _passthru.port1->lock_port(0, 0);
         _passthru.port2->lock_port(0, 0);
-        // Restore original baudrates
-        if (_passthru.baud1 != baud1) {
+        // Restore original baudrates and port ownership
+        if (_passthru.baud1 != _passthru.orig_baud1) {
             _passthru.port1->end();
-            _passthru.port1->begin(baud1);
         }
-        if (_passthru.baud2 != baud2) {
+        _passthru.port1->begin(_passthru.orig_baud1);
+        if (_passthru.baud2 != _passthru.orig_baud2) {
             _passthru.port2->end();
-            _passthru.port2->begin(baud2);
         }
+        _passthru.port2->begin(_passthru.orig_baud2);
         // Restore original parity
         if (_passthru.parity1 != _passthru.port1->get_parity()) {
             _passthru.port1->configure_parity(_passthru.parity1);
@@ -7458,15 +7464,15 @@ void GCS::update_passthru(void)
         _passthru.port1->lock_port(0, 0);
         _passthru.port2->lock_port(0, 0);
         AP::serialmanager().disable_passthru();
-        // Restore original baudrates
-        if (_passthru.baud1 != baud1) {
+        // Restore original baudrates and port ownership
+        if (_passthru.baud1 != _passthru.orig_baud1) {
             _passthru.port1->end();
-            _passthru.port1->begin(baud1);
         }
-        if (_passthru.baud2 != baud2) {
+        _passthru.port1->begin(_passthru.orig_baud1);
+        if (_passthru.baud2 != _passthru.orig_baud2) {
             _passthru.port2->end();
-            _passthru.port2->begin(baud2);
         }
+        _passthru.port2->begin(_passthru.orig_baud2);
         // Restore original parity
         if (_passthru.parity1 != _passthru.port1->get_parity()) {
             _passthru.port1->configure_parity(_passthru.parity1);
