@@ -95,16 +95,6 @@ void ELRS::update()
     sendQueuedData();
 }
 
-// Function to behave like MAVLink libs `mavlink_parse_char` but use local buffer
-uint8_t ELRS::mavlink_parse_char_helper(uint8_t c, mavlink_message_t* r_message, mavlink_status_t* r_mavlink_status)
-{
-    uint8_t msg_received = mavlink_frame_char_buffer(&mavlink.rxmsg, &mavlink.status, c, r_message, r_mavlink_status);
-    if ((msg_received == MAVLINK_FRAMING_BAD_CRC) || (msg_received == MAVLINK_FRAMING_BAD_SIGNATURE)) {
-        return 0;
-    }
-    return msg_received;
-}
-
 // Send incoming data to AP, this is a re-implementation of the ELRS function found here:
 // https://github.com/ExpressLRS/ExpressLRS/blob/0d31863f34ca16a036e94a9c2a56038ae56c7f9e/src/src/rx-serial/SerialMavlink.cpp#L78
 void ELRS::sendQueuedData()
@@ -147,7 +137,7 @@ void ELRS::sendQueuedData()
         mavlink_status_t status;
 
         // Try parse a mavlink message
-        if (mavlink_parse_char_helper(c, &msg, &status)) {
+        if (mavlink_parse_char_buffer(&mavlink.rxmsg, &mavlink.status, c, &msg, &status)) {
             // Message decoded successfully
 
             // Forward message to the UART
