@@ -3848,6 +3848,116 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def tiltrotor_throttle_limits(self, model, num_tilt_motors, extra_params=None, reboot_params=None,
+                                  zero_throttle_max_pwm=None):
+        '''Check that the tilt motors of the given frame honour THR_MAX'''
+        self.customise_SITL_commandline([], model=model, wipe=True)
+
+        if reboot_params is not None:
+            self.set_parameters(reboot_params)
+            self.reboot_sitl()
+
+        thr_max = 60
+        params = {
+            "THR_MAX": thr_max,
+        }
+        if extra_params is not None:
+            params.update(extra_params)
+        self.set_parameters(params)
+
+        self.takeoff(30, mode='QHOVER', timeout=120)
+        self.change_mode('FBWA')
+        # use full pilot throttle so an unlimited output is easy to detect
+        self.set_rc(3, 2000)
+        self.wait_airspeed(14, 100, timeout=180)
+        self.delay_sim_time(20, reason="tilt motors to settle in forward flight")
+
+        class CheckTiltMotorThrottle(vehicle_test_suite.TestSuite.MessageHook):
+            def __init__(self, suite, num_motors, min_pwm, max_pwm, limit_name):
+                super(CheckTiltMotorThrottle, self).__init__(suite)
+                self.num_motors = num_motors
+                self.limit_name = limit_name
+                self.min_pwm = min_pwm
+                self.max_pwm = max_pwm
+                self.num_samples = 0
+
+            def hook_removed(self):
+                if self.num_samples == 0:
+                    raise NotAchievedException("Did not get SERVO_OUTPUT_RAW")
+
+            def process(self, mav, m):
+                if m.get_type() != 'SERVO_OUTPUT_RAW':
+                    return
+
+                self.num_samples += 1
+                total = 0
+                for i in range(self.num_motors):
+                    total += getattr(m, 'servo%u_raw' % (5 + i))
+                # rudder differential cancels when averaged across the motors
+                mean_pwm = total / float(self.num_motors)
+
+                if mean_pwm > self.max_pwm:
+                    raise NotAchievedException("Tilt motors above %s (%.0f > %u)" %
+                                               (self.limit_name, mean_pwm, self.max_pwm))
+                if mean_pwm < self.min_pwm:
+                    raise NotAchievedException("Tilt motors below %s (%.0f < %u)" %
+                                               (self.limit_name, mean_pwm, self.min_pwm))
+
+        self.set_message_rate_hz('SERVO_OUTPUT_RAW', 200)
+
+        self.context_push()
+        self.install_message_hook_context(CheckTiltMotorThrottle(self,
+                                                                 num_tilt_motors,
+                                                                 1000 + 10*(thr_max-1),
+                                                                 1000 + 10*(thr_max+1),
+                                                                 "THR_MAX"))
+        self.delay_sim_time(10, reason="check tilt motors honour THR_MAX")
+        self.context_pop()
+
+        self.set_rc(3, 1000)
+        if zero_throttle_max_pwm is not None:
+            self.delay_sim_time(2, reason="tilt motors to follow zero throttle")
+            self.context_push()
+            self.install_message_hook_context(CheckTiltMotorThrottle(self,
+                                                                     num_tilt_motors,
+                                                                     0,
+                                                                     zero_throttle_max_pwm,
+                                                                     "zero throttle"))
+            self.delay_sim_time(3, reason="check tilt motors follow zero throttle")
+            self.context_pop()
+
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=200)
+
+    def TiltrotorThrottleLimits(self):
+        '''Ensure THR_MAX is applied to vectored tiltrotor forward thrust'''
+        self.tiltrotor_throttle_limits("quadplane-tilthvec", 4)
+
+    def TiltrotorBinaryThrottleLimits(self):
+        '''Ensure THR_MAX is applied to binary tiltrotor forward thrust'''
+        # Set type 1 explicitly; quadplane-tilttri defaults to continuous tilt.
+        self.tiltrotor_throttle_limits("quadplane-tilttri", 2,
+                                       extra_params={"Q_ASSIST_SPEED": 10,
+                                                     "Q_TILT_TYPE": 1})
+
+    def TiltrotorICEThrottleLimits(self):
+        '''Ensure an ICE engine that is not running does not zero tiltrotor forward thrust'''
+        # the engine is never started, so the ICE throttle override holds
+        # the forward throttle output at zero while armed
+        self.tiltrotor_throttle_limits("quadplane-tilthvec", 4,
+                                       reboot_params={"ICE_ENABLE": 1})
+
+    def TiltrotorICEIdleThrottle(self):
+        '''Ensure the ICE idle throttle does not drive tiltrotor forward thrust while the engine is off'''
+        # the engine is never started, so ICE_IDLE_PCT must not raise the
+        # tilt motors above zero pilot throttle. Disable assisted flight so
+        # the tilt motors stay forward while gliding at zero throttle.
+        self.tiltrotor_throttle_limits("quadplane-tilthvec", 4,
+                                       extra_params={"ICE_IDLE_PCT": 20,
+                                                     "Q_ASSIST_SPEED": -1},
+                                       reboot_params={"ICE_ENABLE": 1},
+                                       zero_throttle_max_pwm=1100)
+
     def CircuitStatusScript(self):
         '''test CircuitStatus lua driver against a CAN periph'''
         self.context_collect('STATUSTEXT')
@@ -4692,6 +4802,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.LANDING_TARGET,
             self.BatteryFailsafeLandAUTORefused,
             self.TiltrotorVectoringRoll,
+            self.TiltrotorThrottleLimits,
+            self.TiltrotorBinaryThrottleLimits,
+            self.TiltrotorICEThrottleLimits,
+            self.TiltrotorICEIdleThrottle,
         ])
         return ret
 

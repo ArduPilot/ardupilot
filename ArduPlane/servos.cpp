@@ -539,8 +539,13 @@ float Plane::apply_throttle_limits(float throttle_in)
     int8_t max_throttle = aparm.throttle_max.get();
 
 #if AP_ICENGINE_ENABLED
-    // Get the idle throttle (parameter or idle governor) from AP_ICEngine
-    min_throttle = MAX(min_throttle, g2.ice_control.get_min_throttle_pct());
+    // Get the idle throttle (parameter or idle governor) from AP_ICEngine.
+    // Only apply it while the engine is running, as the ICE throttle
+    // override replaces the engine's throttle when it is not, and the
+    // limited throttle also drives electric tiltrotor forward thrust
+    if (g2.ice_control.get_state() == AP_ICEngine::ICE_RUNNING) {
+        min_throttle = MAX(min_throttle, g2.ice_control.get_min_throttle_pct());
+    }
 #endif
 
     // If reverse thrust is enabled not allowed right now, the minimum throttle must not fall below 0.
@@ -923,6 +928,12 @@ void Plane::set_servos(void)
 
     // slew rate limit throttle
     throttle_slew_limit();
+
+#if HAL_QUADPLANE_ENABLED
+    // update tiltrotor outputs once the forward throttle is limited,
+    // before the disarmed and ICE engine overrides change it
+    quadplane.tiltrotor.update();
+#endif
 
     int8_t min_throttle = 0;
 #if AP_ICENGINE_ENABLED
