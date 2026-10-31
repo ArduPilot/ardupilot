@@ -634,6 +634,27 @@ public:
     bool allows_autoland_direction_capture() const override { return true; }
 #endif
 
+    // true if throttle min/max limits should be applied
+    bool use_throttle_limits() const override;
+
+    // Set glide failsafe flag
+    void set_glide_failsafe(bool b) {
+        should_glide = b;
+    }
+
+    // Return true if FBWA is in glide failsafe
+    bool glide_failsafe_active() const {
+        return should_glide;
+    }
+
+protected:
+    // Prepare for mode entry
+    bool _enter() override;
+
+private:
+    // True if FBWA should cut throttle and hold 0 roll and pitch due to glide failsafe
+    bool should_glide;
+
 };
 
 class ModeFBWB : public Mode
