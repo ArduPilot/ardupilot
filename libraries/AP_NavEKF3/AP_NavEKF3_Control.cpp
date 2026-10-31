@@ -765,7 +765,7 @@ void NavEKF3_core::recordYawResetsCompleted()
 void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
-    const ftype delAngBiasVarMax = sq(radians(0.15 * dtEkfAvg));
+    const ftype delAngBiasVarMax = sq(radians(EK3_GYRO_BIAS_LEARNED_LIMIT_DPS * dtEkfAvg));
     if (!recentYawFusion() ||
         (!use_compass() && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
          (yaw_source_last != AP_NavEKF_Source::SourceYaw::EXTNAV))) {
