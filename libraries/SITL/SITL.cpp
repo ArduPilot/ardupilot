@@ -19,6 +19,8 @@
 
 #include "SITL.h"
 
+#include <stdlib.h>
+
 #if AP_SIM_ENABLED
 
 #include <AP_Common/AP_Common.h>
@@ -531,6 +533,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: SITL odometry enabl
     // @Values: 0:Disable, 1:Enable
     AP_GROUPINFO("ODOM_ENABLE",   1, SIM,  odom_enable, 0),
+
+    // @Param: RAND_SEED
+    // @DisplayName: Random seed
+    // @Description: Seed for the simulation's random numbers (the C library generators behind rand_float and rand_normal, used by sensor noise and the GPS error models). 0 leaves the generators as they are (never seeded, so every run replays the same sequence; or at the last seed applied); a non-zero value gives a reproducible but different sequence per value, applied once at start or when the value changes. Only the random numbers drawn after it is applied are affected.
+    // @Range: 0 2147483647
+    // @User: Advanced
+    AP_GROUPINFO("RAND_SEED",   58, SIM,  rand_seed, 0),
 
     // @Param: LED_LAYOUT
     // @DisplayName: LED layout
@@ -1743,6 +1752,25 @@ void SIM::Log_Write_SIMSTATE()
  convert a set of roll rates from earth frame to body frame
  output values are in radians/second
 */
+/*
+  apply SIM_RAND_SEED: seed the C library generators (random() behind rand_float(), rand() behind
+  Aircraft::rand_normal()) once per distinct non-zero value, so a run can vary its noise per trial and repeat it per
+  seed where the draw order is the same. The GPS position error (HPSD) keeps its own generator seeded from this
+  value, so its realisation repeats per seed regardless of what else draws. Called from the aircraft model every
+  step; cheap when nothing changed. rand_normal()'s cached second Box-Muller value is not cleared: the first
+  normal draw after a runtime reseed may belong to the previous sequence.
+*/
+void SIM::apply_rand_seed(void)
+{
+    const int32_t seed = rand_seed.get();
+    if (seed == 0 || seed == rand_seed_applied) {
+        return;
+    }
+    srandom((unsigned)seed);
+    srand((unsigned)seed);
+    rand_seed_applied = seed;
+}
+
 void SIM::convert_body_frame(double rollDeg, double pitchDeg,
                               double rollRate, double pitchRate, double yawRate,
                               double *p, double *q, double *r)
