@@ -19,6 +19,7 @@
 
 #include "AP_TemperatureSensor_DroneCAN.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/Device.h>
 #include <AP_Math/AP_Math.h>
 
 AP_TemperatureSensor_DroneCAN* AP_TemperatureSensor_DroneCAN::_drivers[];
@@ -49,8 +50,13 @@ AP_TemperatureSensor_DroneCAN::AP_TemperatureSensor_DroneCAN(AP_TemperatureSenso
 {
     AP_Param::setup_object_defaults(this, var_info);
     _state.var_info = var_info;
+}
 
-    // Register self in static driver list
+void AP_TemperatureSensor_DroneCAN::init()
+{
+    // Register self in static driver list. This must not be done in the
+    // constructor as CAN is already running and _ID is not loaded until after
+    // construction, so a message for the default ID could be matched
     WITH_SEMAPHORE(_driver_sem);
     _drivers[_driver_instance] = this;
     _driver_instance++;
@@ -71,6 +77,16 @@ void AP_TemperatureSensor_DroneCAN::handle_temperature(AP_DroneCAN *ap_dronecan,
     for (uint8_t i = 0; i < _driver_instance; i++) {
         if ((_drivers[i] != nullptr) && (_drivers[i]->_ID.get() == msg.device_id)) {
             // Driver loaded and looking for this ID, set temp
+            if (_drivers[i]->_params.bus_id == 0) {
+                // only set once per boot, so that several nodes sending
+                // the same device_id can't cause a storage write per message
+                _drivers[i]->set_bus_id(AP_HAL::Device::make_bus_id(
+                    AP_HAL::Device::BUS_TYPE_UAVCAN,
+                    ap_dronecan->get_driver_index(),
+                    transfer.source_node_id,
+                    uint8_t(AP_TemperatureSensor_Params::Type::DRONECAN)
+                ));
+            }
             _drivers[i]->set_temperature(KELVIN_TO_C(msg.temperature));
         }
     }
