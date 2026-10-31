@@ -60,10 +60,10 @@ private:
     /*
       look up the model/vehicle in @ROMFS/vehicleinfo.json and set
       defaults_path to the matching comma-separated @ROMFS/... list
-      so AP_Param can load them. No-op if defaults_path is already
-      set or if no embedded JSON is found.
+      so AP_Param can load them. Returns the model to simulate, which
+      is the frame's "model" field when it has one.
     */
-    void resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str);
+    const char *resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str);
 
     /* dump @ROMFS/vehicleinfo.json to stdout (for --list-models) */
     static void list_models_and_exit(void);
