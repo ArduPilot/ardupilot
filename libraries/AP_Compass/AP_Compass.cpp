@@ -1050,7 +1050,11 @@ void Compass::add_backend(Compass::DriverType driver_type, AP_Compass_Backend *b
 void Compass::_probe_external_i2c_compasses(void)
 {
 #if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+#if AP_FEATURE_BOARD_DETECT
     bool all_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
+#else
+    const bool all_external = false;
+#endif  // AP_FEATURE_BOARD_DETECT
     (void)all_external;  // in case all backends using this are compiled out
 #endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
 
