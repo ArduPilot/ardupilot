@@ -1715,7 +1715,9 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
             source_set = AP_NavEKF_Source::SourceSetSelection::TERTIARY;
             break;
         }
-        AP::ahrs().set_posvelyaw_source_set(source_set);
+        if (!AP::ahrs().set_posvelyaw_source_set(source_set)) {
+            return false;
+        }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using EKF Source Set %u", uint8_t(source_set)+1);
         break;
     }
