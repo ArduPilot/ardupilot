@@ -375,6 +375,9 @@ public:
 #if AP_AHRS_EKF_RESET_ENABLED
         EKF_RESET =          187, // trigger full EKF bootstrap reset
 #endif  // AP_AHRS_EKF_RESET_ENABLED
+#if AP_ARMING_ENABLED
+        ARM =                188, // arm vehicle on high, nothing on low
+#endif  // AP_ARMING_ENABLED
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
