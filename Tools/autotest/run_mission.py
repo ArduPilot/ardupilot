@@ -13,14 +13,15 @@ os.environ['MAVLINK20'] = '1'
 import argparse  # noqa:E402
 import sys  # noqa:E402
 
+import autotest  # noqa:E402
 import vehicle_test_suite  # noqa:E402
 
 from pysim import util  # noqa:E402
 
 
 class RunMission(vehicle_test_suite.TestSuite):
-    def __init__(self, vehicle_binary, model, mission_filepath, speedup=None, sim_rate_hz=None):
-        super(RunMission, self).__init__(vehicle_binary)
+    def __init__(self, vehicle_binary, model, mission_filepath, speedup=None, sim_rate_hz=None, instance=0):
+        super(RunMission, self).__init__(vehicle_binary, instance=instance)
         self.mission_filepath = mission_filepath
         self.model = model
         self.speedup = speedup
@@ -97,14 +98,30 @@ if __name__ == "__main__":
         help='simulation physics rate',
         default=None,
     )
+    parser.add_argument(
+        '--instance',
+        type=int,
+        help='SITL instance number; offsets the ports we bind, so a caller '
+             'running at a non-zero instance does not land on instance 0',
+        default=0,
+    )
 
     args = parser.parse_args()
+
+    if args.instance < 0 or args.instance > autotest.MAX_AUTOTEST_INSTANCE:
+        # SITL stores the instance in a uint8_t, so --instance -1 has it
+        # listening on instance 255's ports while we wait on ports derived
+        # from -1, and --instance 256 wraps onto instance 0's
+        parser.error("--instance %d is outside 0..%u, the instances the "
+                     "per-instance port allocation supports" %
+                     (args.instance, autotest.MAX_AUTOTEST_INSTANCE))
 
     x = RunMission(
         args.vehicle_binary,
         args.model,
         args.mission_filepath,
         speedup=args.speedup,
-        sim_rate_hz=args.sim_rate_hz
+        sim_rate_hz=args.sim_rate_hz,
+        instance=args.instance,
     )
     x.run()
