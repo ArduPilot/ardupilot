@@ -215,7 +215,6 @@ private:
         uint32_t last_crash_warn_ms; // last time a crash warning was sent to gcs
         uint32_t last_ekf_warn_ms; // last time an ekf warning was sent to gcs
 #if AP_SUB_RC_ENABLED
-        int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
         uint8_t radio               : 1; // A status flag for the radio failsafe
 #endif    
 
@@ -471,7 +470,6 @@ private:
         // last valid RC input time
     uint32_t last_radio_update_ms;
     void set_failsafe_radio(bool b);
-    void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void failsafe_radio_off_event();
     void failsafe_radio_on_event();
 #endif

@@ -1,5 +1,7 @@
 #include "Rover.h"
 
+#include <AP_RCProtocol/AP_RCProtocol.h>
+
 /*
   allow for runtime change of control channel ordering
  */
@@ -63,18 +65,33 @@ void Rover::init_rc_in()
 
 void Rover::read_radio()
 {
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // update in case failsafe values have changed:
+    if (g.fs_throttle_enabled == FS_THR_DISABLED) {
+        // set flag values to disable filtering in AP_RCProtocol:
+        AP::RC().set_throttle_channel_and_failsafe_value(UINT8_MAX, UINT16_MAX);
+    } else {
+        AP::RC().set_throttle_channel_and_failsafe_value(
+            channel_throttle->ch(),
+            g.fs_throttle_value
+        );
+    }
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+
     if (!rc().read_input()) {
         // check if we lost RC link
-        radio_failsafe_check(channel_throttle->get_radio_in());
+        radio_failsafe_check();
         return;
     }
 
-    failsafe.last_valid_rc_ms = AP_HAL::millis();
+    if (rc().input_valid()) {
+        failsafe.last_valid_rc_ms = AP_HAL::millis();
+    }
     // check that RC value are valid
-    radio_failsafe_check(channel_throttle->get_radio_in());
+    radio_failsafe_check();
 }
 
-void Rover::radio_failsafe_check(uint16_t pwm)
+void Rover::radio_failsafe_check()
 {
     if (!g.fs_throttle_enabled) {
         // radio failsafe disabled
@@ -82,7 +99,9 @@ void Rover::radio_failsafe_check(uint16_t pwm)
         return;
     }
 
-    bool failed = pwm <= g.fs_throttle_value;
+    // the input we have been given is from a receiver in failsafe; we
+    // do not care how that was arrived at:
+    bool failed = rc().input_in_failsafe();
     if (AP_HAL::millis() - failsafe.last_valid_rc_ms > rc().get_fs_timeout_ms()) {
         // we haven't had a valid RC frame for RC_FS_TIMEOUT seconds
         failed = true;

@@ -46,7 +46,7 @@ bool RC_Channels_Sub::has_valid_input() const
     if (in_rc_failsafe()) {
         return false;
     }
-    if (sub.failsafe.radio_counter != 0) {
+    if (!input_valid()) {
         return false;
     }
     return RC_Channels::has_valid_input();
