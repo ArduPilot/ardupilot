@@ -258,6 +258,25 @@ void NavEKF3_core::ResetPositionD(ftype posD)
     // Calculate the position jump due to the reset
     posResetD = stateStruct.position.z - posDOrig;
 
+    // the terrain state is a D coordinate in the same datum, so a reset that moves the datum
+    // has to move it too, whether it is being fused or is ground measured earlier in the
+    // flight. Skipped where the range finder is becoming the height source, because hgtMea
+    // is referenced through terrainState there, and where the ground has never been
+    // measured. Leaving the range finder counts as measured: the terrain state is the datum
+    // position.z was being measured against, and gndOffsetValid cannot say so because it is
+    // held up by the height source alone while EstimateTerrainOffset() is inhibited, and so
+    // goes false in the very cycle the source changes
+    if ((gndOffsetValid || gndOffsetMeasured ||
+         (prevHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) &&
+        (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+        terrainState += posResetD;
+        terrainAnchorOffset += posResetD;
+    }
+    if (flatGndSaved.valid) {
+        flatGndSaved.terrainState += posResetD;
+        flatGndSaved.terrainAnchorOffset += posResetD;
+    }
+
     // Add the offset to the output observer states
     outputDataNew.position.z += posResetD;
     vertCompFiltState.pos = outputDataNew.position.z;
@@ -285,6 +304,25 @@ void NavEKF3_core::ResetHeight(void)
         // assume vehicle is sitting on the ground
         terrainState = stateStruct.position.z + rngOnGnd;
     } else {
+        // A timeout reset either moves the datum (the height measurement shifted) or corrects
+        // drift in position.z. A terrain state still being fused drifted along with
+        // position.z, so it follows the reset either way; one frozen above the range did not,
+        // and carrying it would move the remembered ground by the drift. One fused within the
+        // last 5 s, which gndOffsetValid covers, still follows: it misses at most 5 s of drift,
+        // where not carrying it would step height above ground by the whole of a datum move.
+        // A source change, as at an external nav start, moves the datum by definition, so
+        // remembered ground follows it
+        if ((gndOffsetValid || (prevHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) ||
+             (gndOffsetMeasured && (activeHgtSource != prevHgtSource))) &&
+            (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+            terrainState += stateStruct.position.z - posResetD;
+            terrainAnchorOffset += stateStruct.position.z - posResetD;
+        }
+        // the saved ground is frozen like one above the range, so only a datum move carries it
+        if (flatGndSaved.valid && (activeHgtSource != prevHgtSource)) {
+            flatGndSaved.terrainState += stateStruct.position.z - posResetD;
+            flatGndSaved.terrainAnchorOffset += stateStruct.position.z - posResetD;
+        }
         // can make no assumption other than vehicle is not below ground level
         terrainState = MAX(stateStruct.position.z + rngOnGnd , terrainState);
     }
@@ -1444,11 +1482,13 @@ void NavEKF3_core::selectHeightForFusion()
 
     // detect changes in source and reset height
     if ((activeHgtSource != prevHgtSource) && fuseHgtData) {
-        prevHgtSource = activeHgtSource;
         // a baro in ground effect is no height to reset to, so a switch to it keeps the height held
         if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO || !baroInGndEffect) {
+            // reset before recording the new source, so the reset can see which source is
+            // being left as well as which is being taken up
             ResetPositionD(-hgtMea);
         }
+        prevHgtSource = activeHgtSource;
     }
 
     // If we haven't fused height data for a while or have bad IMU data, then declare the height data as being timed out

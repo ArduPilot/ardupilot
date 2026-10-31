@@ -556,6 +556,11 @@ private:
     // origin set by one of the cores
     Location common_EKF_origin;
     bool common_origin_valid;
+
+    // warn while disarmed if flow navigation above the range finder may drift
+    void checkFlowRangeWarning(void);
+    bool flowRangeWarned;
+    uint32_t flowRangeCheck_ms;
     
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
