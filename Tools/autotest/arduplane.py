@@ -4729,6 +4729,123 @@ return update()
         has no per-core selection'''
         self._EKF3AirspeedAffinity(force_dcm=True)
 
+    def EKF3BaroExclusion(self):
+        '''Test disabling individual barometer instances from EKF usage (Issue #34755)'''
+        self.set_parameters({
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "AHRS_EKF_TYPE": 3,
+            "EK3_AFFINITY": 15,  # all affinity bits set, including baro (bit 1)
+            "EK3_IMU_MASK": 3,   # two IMUs, so two cores
+            "SIM_BARO_COUNT": 3,
+            "BARO1_USE": 1,
+            "BARO2_USE": 1,
+            "BARO3_USE": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+
+        self.start_subtest("Check arming with all three baros enabled")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("Check excluding Baro 1 via BARO1_USE=0 with 3 barometers")
+        self.set_parameter("BARO1_USE", 0)
+
+        # Vehicle must still be ready to arm because Baro 2 and Baro 3 are healthy and usable
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        t_start = self.get_sim_time()
+
+        # Let the vehicle run armed for a few seconds so XKFS messages are logged
+        self.delay_sim_time(5, reason="wait for initial XKFS samples")
+
+        # Apply drift to the excluded Baro 1 (instance 0)
+        self.set_parameter("SIM_BARO_DRIFT", 50.0)
+        self.delay_sim_time(5, reason="wait for samples with drift on baro1")
+        t_end = self.get_sim_time()
+
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("Check onboard log for baro selection across EKF cores")
+        dfreader = self.dfreader_for_current_onboard_log()
+        xkfs_count = {0: 0, 1: 0}
+        baro_selections = {0: set(), 1: set()}
+        while True:
+            m = dfreader.recv_match(type=['XKFS'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            if t < t_start or t > t_end:
+                continue
+            if m.C in (0, 1):
+                xkfs_count[m.C] += 1
+                baro_selections[m.C].add(m.BI)
+
+        for core in (0, 1):
+            if xkfs_count[core] == 0:
+                raise NotAchievedException("No XKFS messages logged for core %u" % core)
+
+        # Core 0 must fuse Baro 2 (index 1), and Core 1 must fuse Baro 3 (index 2).
+        # Neither core may fuse the excluded Baro 1 (index 0).
+        if baro_selections[0] != {1}:
+            raise NotAchievedException(
+                "Core 0 selected baro %s, expected {1} (BARO2)" % baro_selections[0])
+        if baro_selections[1] != {2}:
+            raise NotAchievedException(
+                "Core 1 selected baro %s, expected {2} (BARO3)" % baro_selections[1])
+
+        self.start_subtest("Check BARO_PRIMARY=2 with all three baros enabled")
+        self.set_parameters({
+            "BARO1_USE": 1,
+            "BARO2_USE": 1,
+            "BARO3_USE": 1,
+            "BARO_PRIMARY": 2,
+            "SIM_BARO_DRIFT": 0.0,
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        t_start_p2 = self.get_sim_time()
+        self.delay_sim_time(5, reason="wait for XKFS with BARO_PRIMARY=2")
+        t_end_p2 = self.get_sim_time()
+        self.disarm_vehicle(force=True)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        p2_selections = {0: set(), 1: set()}
+        while True:
+            m = dfreader.recv_match(type=['XKFS'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            if t < t_start_p2 or t > t_end_p2:
+                continue
+            if m.C in (0, 1):
+                p2_selections[m.C].add(m.BI)
+
+        # With BARO_PRIMARY=2: Core 0 gets primary (index 2), Core 1 gets first non-primary eligible (index 0)
+        if p2_selections[0] != {2}:
+            raise NotAchievedException(
+                "Core 0 selected baro %s, expected {2} (BARO3 as primary)" % p2_selections[0])
+        if p2_selections[1] != {0}:
+            raise NotAchievedException(
+                "Core 1 selected baro %s, expected {0} (BARO1)" % p2_selections[1])
+
+        self.start_subtest("Check arming failure when all baros are excluded")
+        self.set_parameter("BARO1_USE", 0)
+        self.set_parameter("BARO2_USE", 0)
+        self.set_parameter("BARO3_USE", 0)
+        self.try_arm(result=False, expect_msg="Baro: not healthy")
+
+        # Restore parameters
+        self.set_parameters({
+            "BARO1_USE": 1,
+            "BARO2_USE": 1,
+            "BARO3_USE": 1,
+            "BARO_PRIMARY": 0,
+            "SIM_BARO_DRIFT": 0.0,
+        })
+
     def AHRSActiveAirspeedIndex(self):
         '''every AHRS backend reports which airspeed sensor it is taking
         its airspeed from, and that follows ARSPD_PRIMARY.  Each backend
@@ -10527,6 +10644,7 @@ return update()
             self.Deadreckoning,
             self.EKF3AirspeedAffinity,
             self.EKF3AirspeedAffinityDCM,
+            self.EKF3BaroExclusion,
             self.AHRSActiveAirspeedIndex,
             self.RTL_CLIMB_MIN,
             self.SmartBattery,
