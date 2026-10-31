@@ -266,9 +266,9 @@ The parameters should be set:
 
 [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin) 5
 
-[BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult) 18
+[BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult) 21
 
-[BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt) 24
+[BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt) 17
 
 ### Power2 port(I2C)
 
