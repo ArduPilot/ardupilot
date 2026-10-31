@@ -1044,6 +1044,9 @@ class SITLBoard(Board):
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
 
+        if cfg.options.lua_coverage:
+            env.DEFINES.update(AP_SCRIPTING_LUA_COVERAGE_ENABLED=1)
+
         if cfg.options.enable_sfml_audio:
             if not cfg.check_SFML_Audio(env):
                 cfg.fatal("Failed to find SFML Audio libraries")

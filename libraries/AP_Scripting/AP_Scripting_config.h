@@ -32,3 +32,8 @@
 #ifndef AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 #define AP_SCRIPTING_BINDING_VEHICLE_ENABLED 1
 #endif  // AP_SCRIPTING_BINDING_VEHICLE_ENABLED
+
+// line-coverage instrumentation of Lua scripts, for use by autotest
+#ifndef AP_SCRIPTING_LUA_COVERAGE_ENABLED
+#define AP_SCRIPTING_LUA_COVERAGE_ENABLED 0
+#endif
