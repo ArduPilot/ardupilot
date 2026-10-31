@@ -17583,7 +17583,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "LOG_REPLAY": 1,
             "LOG_DISARMED": 1,
             "ACC_ZBIAS_LEARN": 4,
-            "SIM_PLAT_ACC_Z": -1.0,
         })
         self.reboot_sitl()
 
@@ -17595,10 +17594,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # earlier bits leave the sticks where their flights put them
         self.set_rc_default()
         self.wait_ready_to_arm()
+        self.set_parameter("SIM_PLAT_ACC_Z", -1.0)   # NED, so the platform is accelerating upwards
         self.delay_sim_time(30, "sit on the accelerating platform")
-        self.takeoff(10, mode='LOITER')
+        # with the inhibit nothing absorbs the platform's acceleration, so the EKF's
+        # vertical velocity runs away on it and is not fit to arm until the vehicle is off it
         self.set_parameter("SIM_PLAT_ACC_Z", 0)
-        self.delay_sim_time(10, "hover clear of the platform")
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(10, "hover")
         self.land_and_disarm()
 
         self.reboot_sitl()
@@ -18287,9 +18290,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(mean_high) > 0.5:
             raise NotAchievedException("EKF height is %+.2f m off truth after climbing out of ground effect" % mean_high)
 
-    def get_accel_bias_z_at_arm_from_current_onboard_log(self):
+    def get_accel_bias_z_at_arm_from_current_onboard_log(self, time_us=None):
         '''returns the primary core's Z accel bias state as it stood at the
-        moment of arming'''
+        moment of arming, or at time_us (microseconds since boot) if given'''
         dfreader = self.dfreader_for_current_onboard_log()
         armed_TimeUS = None
         last_az = None
@@ -18298,6 +18301,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             m = dfreader.recv_match(type=["EV", "XKF2"])
             if m is None:
                 break
+            if time_us is not None:
+                if m.TimeUS > time_us:
+                    break
+                if m.get_type() == "XKF2" and m.C == 0:
+                    last_az = m.AZ
+                continue
             if m.get_type() == "EV":
                 if m.Id == 10 and armed_TimeUS is None:  # armed
                     armed_TimeUS = m.TimeUS
@@ -18306,6 +18315,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.C != 0:
                 continue
             last_az = m.AZ
+        if time_us is not None:
+            if last_az is None:
+                raise NotAchievedException("No XKF2 data before %u us" % time_us)
+            return last_az
         if armed_TimeUS is None:
             raise NotAchievedException("Did not find an arming event in the log")
         if az_at_arm is None:
@@ -18313,22 +18326,30 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         return az_at_arm
 
     def accel_bias_at_arm_on_platform(self, zbias_learn, fly=False):
-        '''sit disarmed on an accelerating platform, arm, and return the Z accel
-        bias the filter had built up by then. With fly, take off afterwards so the
-        caller can assert on what the invented bias does to the height estimate'''
+        '''sit disarmed on an accelerating platform and return the Z accel bias the
+        filter had built up on it: at arming on the platform, or with fly as the
+        vehicle steps off it to take off, so the caller can assert on what that bias
+        does to the height estimate'''
         self.set_parameters({
-            "SIM_PLAT_ACC_Z": -1.0,   # NED, so the platform is accelerating upwards
+            "SIM_PLAT_ACC_Z": 0,   # off until the EKF is ready, whatever the last call left
             "ACC_ZBIAS_LEARN": zbias_learn,
         })
         self.reboot_sitl()
         self.wait_ready_to_arm()
+        self.set_parameter("SIM_PLAT_ACC_Z", -1.0)   # NED, so the platform is accelerating upwards
         self.delay_sim_time(60, "sit on the accelerating platform")
         if fly:
-            self.takeoff(10, mode='LOITER')
-            # the platform is behind us now; keep it from re-entering on touchdown
+            # with bit 2 nothing absorbs the platform's acceleration, so the EKF's vertical
+            # velocity runs away on it and is not fit to arm until the vehicle is off it
+            off_us = int(self.get_sim_time() * 1e6)
             self.set_parameter("SIM_PLAT_ACC_Z", 0)
-            self.delay_sim_time(20, "hover clear of the platform")
+            self.wait_ready_to_arm()
+            self.takeoff(10, mode='LOITER')
+            self.delay_sim_time(20, "hover")
             self.land_and_disarm()
+            az = self.get_accel_bias_z_at_arm_from_current_onboard_log(time_us=off_us)
+            self.progress("Z accel bias leaving the platform: %f m/s/s" % az)
+            return az
         else:
             self.arm_vehicle()
             self.disarm_vehicle()
@@ -18392,8 +18413,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(az) > 0.2:
             raise NotAchievedException(
                 "EKF learned the platform acceleration as accel bias (%f m/s/s)" % az)
-        # the invented bias is only harmful once airborne: carrying -0.99 m/s/s into
-        # the climb costs about 4.5m of height error against about 1.6m without it
+        # the invented bias is only harmful once airborne, where it shows as height error
         self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=2.5)
         self.reboot_sitl()
 
