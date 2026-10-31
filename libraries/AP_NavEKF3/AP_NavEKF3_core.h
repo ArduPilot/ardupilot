@@ -1694,6 +1694,9 @@ private:
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 
+    // true when on the ground with a height error that healthy() fails on
+    bool onGroundHgtError(void) const;
+
     // vehicle specific initial gyro bias uncertainty
     ftype InitialGyroBiasUncertainty(void) const;
 
