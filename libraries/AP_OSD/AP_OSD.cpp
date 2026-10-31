@@ -308,8 +308,10 @@ void AP_OSD::init()
         osd_types(osd_type.get()),
         osd_types(osd_type2.get())
     };
+    // keep started backends contiguous: if the first type fails to start,
+    // users of _backends[0.._backend_count-1] must not see a null backend
     for (uint8_t instance = 0; instance < OSD_MAX_INSTANCES; instance++) {
-        if (init_backend(types[instance], instance)) {
+        if (init_backend(types[instance], _backend_count)) {
             _backend_count++;
         }
     }
