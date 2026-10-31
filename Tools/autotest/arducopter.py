@@ -19523,6 +19523,30 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Sprayer OK")
 
+    def GPSHealthAfterLongLoop(self):
+        '''check the GPS recovers quickly from a main loop stall'''
+        self.wait_ready_to_arm()
+
+        # GPS data piles up in the UART while the main loop is stalled.
+        # That used to make every later GPS message look lagged, and so
+        # the GPS unhealthy, for 20 to 40 seconds.  The gap in the GPS
+        # data itself still pulls the average message rate below what
+        # is healthy for several seconds.  Whether a stall used to
+        # trigger it depends on where it falls in the GPS's 200ms
+        # output cycle, so stall at a few different points in it
+        for offset in 0, 0.07, 0.14:
+            if offset > 0:
+                self.delay_sim_time(offset, reason="move the stall in the GPS cycle")
+            self.progress("Stalling the main loop")
+            self.send_cmd_create_long_loop(1000)
+            self.delay_sim_time(2, reason="the stall to happen")
+            self.wait_gps_sys_status_not_present_or_enabled_and_healthy(timeout=15)
+
+            self.progress("Checking the GPS stays healthy")
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 10:
+                self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
@@ -19748,6 +19772,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.Clamp,
             self.ScriptingFlyVelocity,
             self.PLDNoParameters,
+            self.GPSHealthAfterLongLoop,
         ])
         return ret
 
