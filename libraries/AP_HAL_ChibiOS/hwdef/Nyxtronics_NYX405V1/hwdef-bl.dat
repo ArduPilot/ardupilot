@@ -1,0 +1,36 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Nyxtronics NYX405V1 bootloader
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_NYXTRONICS_NYX405V1
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 48
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# Chip select pins
+PB12 FLASH1_CS CS
+PA4 GYRO1_CS CS
+PB3 OSD1_CS CS
+
+# 12V BEC enable, kept on during bootloader
+PB4 PINIO1 OUTPUT HIGH
+
+PA8 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
