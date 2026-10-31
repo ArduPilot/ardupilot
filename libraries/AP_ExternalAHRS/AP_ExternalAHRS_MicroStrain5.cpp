@@ -160,6 +160,7 @@ void AP_ExternalAHRS_MicroStrain5::post_filter() const
         WITH_SEMAPHORE(state.sem);
         state.velocity = Vector3f{filter_data.ned_velocity_north, filter_data.ned_velocity_east, filter_data.ned_velocity_down};
         state.have_velocity = true;
+        state.last_velocity_update_us = AP_HAL::micros();
 
         state.location = Location{filter_data.lat, filter_data.lon, gnss_data[gnss_instance].msl_altitude, Location::AltFrame::ABSOLUTE};
         state.have_location = true;

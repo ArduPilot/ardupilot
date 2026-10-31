@@ -306,6 +306,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
             gps_data.ned_vel_east = state.velocity.y; // m/s
             gps_data.ned_vel_down = state.velocity.z; // m/s
             state.have_velocity = true;
+            state.last_velocity_update_us = AP_HAL::micros();
             last_vel_ms = now_ms;
             break;
         }

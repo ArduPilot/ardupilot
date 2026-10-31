@@ -660,6 +660,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_SUBGROUPINFO(vicon, "VICON_", 56, SIM, ViconParms),
 #endif  // AP_SIM_VICON_ENABLED
 
+    // @Param: ILABS_NO_VEL
+    // @DisplayName: InertialLabs velocity stall
+    // @Description: When set the simulated InertialLabs stops sending velocity messages while its other messages continue to flow, simulating a stalled velocity stream
+    // @Values: 0:SendVelocity,1:StallVelocity
+    // @User: Advanced
+    AP_GROUPINFO("ILABS_NO_VEL", 58, SIM, ilabs_no_velocity, 0),
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
