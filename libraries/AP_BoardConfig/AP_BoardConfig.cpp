@@ -549,12 +549,22 @@ bool AP_BoardConfig::_in_error_loop;
 
 void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list arg)
 {
+    if (_in_error_loop) {
+        AP_HAL::panic("Recursive config error");
+    }
     _in_error_loop = true;
+    throw_error_loop(err_type, fmt, arg);
+}
+
+// @StackMaxRecursion: 1
+// throw_error() stops a nested fatal error before it can enter this loop.
+void AP_BoardConfig::throw_error_loop(const char *err_type, const char *fmt, va_list arg)
+{
     /*
       to give the user the opportunity to connect to USB we keep
-      repeating the error.  The mavlink delay callback is initialised
-      before this, so the user can change parameters (and in
-      particular BRD_TYPE if needed)
+      repeating the error.  A restricted MAVLink receiver allows the user to
+      change parameters (and in particular BRD_TYPE if needed) without
+      running vehicle commands on a partially initialised system.
     */
     uint32_t last_print_ms = 0;
     while (true) {
@@ -580,11 +590,13 @@ void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list 
 #endif
         }
 #if HAL_GCS_ENABLED
-        gcs().update_receive();
+        gcs().update_receive_config_error();
         gcs().update_send();
 #endif
         EXPECT_DELAY_MS(10);
-        hal.scheduler->delay(5);
+        // delay() invokes the normal MAVLink delay callback, which must not run
+        // while handling a fatal configuration error.
+        hal.scheduler->delay_microseconds(5000);
     }
 }
 

@@ -616,6 +616,8 @@ size_t AP_IOMCU::write_wait(const uint8_t *pkt, uint8_t len)
 /*
   read count 16 bit registers
 */
+// @StackMaxRecursion: 2
+// Split requests recurse with count=PKT_MAX_REGS, which cannot split again.
 bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint16_t *regs)
 {
     while (count > PKT_MAX_REGS) {
@@ -718,6 +720,8 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
 /*
   write count 16 bit registers
 */
+// @StackMaxRecursion: 2
+// Split requests recurse with count=PKT_MAX_REGS, which cannot split again.
 bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs)
 {
     // The use of offset is very, very evil - it can either be a command within the page

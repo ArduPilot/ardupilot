@@ -412,6 +412,8 @@ void CompassCalibrator::reset_state()
     initialize_fit();
 }
 
+// @StackMaxRecursion: 2
+// WAITING_TO_START calls RUNNING_STEP_ONE, which makes no further status call.
 bool CompassCalibrator::set_status(CompassCalibrator::Status status)
 {
     if (status != Status::NOT_STARTED && _status == status) {
