@@ -179,7 +179,7 @@ void AC_AutoTune_Multi::test_init()
 
     if ((tune_type == TuneType::ANGLE_P_DOWN) || (tune_type == TuneType::ANGLE_P_UP)) {
         // TODO: Evaluate whether initializing rotation_rate_filt with start_rate improves results for other axes
-        rotation_rate_filt.reset(start_rate);
+        rotation_rate_filt.reset(positive_direction ? start_rate : -start_rate);
     } else {
         rotation_rate_filt.reset(0.0);
     }
