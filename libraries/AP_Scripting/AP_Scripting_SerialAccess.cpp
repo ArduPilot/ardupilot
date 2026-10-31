@@ -49,6 +49,24 @@ void AP_Scripting_SerialAccess::set_unbuffered_writes(bool on) {
     }
 }
 
+bool AP_Scripting_SerialAccess::set_options(uint16_t options)
+{
+    if (!check_is_device_port()) {
+        return stream->set_options(options);
+    }
+
+    return false;
+}
+
+uint16_t AP_Scripting_SerialAccess::get_options(void)
+{
+    if (!check_is_device_port()) {
+        return stream->get_options();
+    }
+
+    return 0U;
+}
+
 size_t AP_Scripting_SerialAccess::write(uint8_t c)
 {
     return write(&c, 1);
