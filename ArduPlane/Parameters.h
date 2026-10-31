@@ -594,6 +594,11 @@ public:
 #if AP_PLANE_SYSTEMID_ENABLED
     AP_SystemID systemid;
 #endif
+
+#if AP_TEMPCALIBRATION_ENABLED
+    // temperature calibration handling
+    AP_TempCalibration temp_calibration;
+#endif
 };
 
 extern const AP_Param::Info var_info[];
