@@ -43,7 +43,9 @@ void ModeTurtle::arm_motors()
 {
     WITH_SEMAPHORE(msem);
 
-    if (hal.util->get_soft_armed()) {
+    // shutdown_motors() may have run since the caller checked shutdown;
+    // don't re-arm after it has disarmed us
+    if (shutdown || hal.util->get_soft_armed()) {
         return;
     }
 
@@ -84,6 +86,8 @@ void ModeTurtle::exit()
 // disarmed until the mode is entered again
 void ModeTurtle::shutdown_motors()
 {
+    WITH_SEMAPHORE(msem);
+
     shutdown = true;
 
     disarm_motors();
