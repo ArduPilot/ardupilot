@@ -298,6 +298,14 @@ private:
         bool healthy;                   // true if sensor is healthy
         bool alt_ok;                    // true if calculated altitude is ok
         bool calibrated;                // true if calculated calibrated successfully
+#if AP_BARO_CALIBRATION_ENABLED
+        struct {
+            uint32_t start_ms;          // when this sensor started settling, 0 if it is not supplying data yet
+            float sum_pressure;         // sum of the pressure samples taken so far
+            uint8_t count;              // number of pressure samples taken so far
+            bool pending;               // calibrate() has asked for a calibration which has not completed
+        } cal;                          // calibration in progress; see update_deferred_calibration()
+#endif
         AP_UInt32 bus_id;
 #if HAL_BARO_WIND_COMP_ENABLED
         WindCoeff wind_coeff;
@@ -363,6 +371,27 @@ private:
 #endif
 
     AP_UInt16                          _options;
+
+#if AP_BARO_CALIBRATION_ENABLED
+    // calibrate() stores its save argument for update_deferred_calibration()
+    bool                               _cal_save;
+
+    // true from a calibrate() call which leaves no sensor with a
+    // ground pressure until a sensor has been calibrated or the
+    // deadline for one has passed
+    bool                               _awaiting_first_cal;
+
+    // set when that deadline passes; arming is refused until a reboot
+    bool                               _cal_timed_out;
+
+    // when the deadline for that first calibration started; 0 until
+    // the system is initialised
+    uint32_t                           _cal_start_ms;
+
+    // calibrate any sensor which calibrate() has asked to be
+    // calibrated and which is supplying data
+    void update_deferred_calibration(void);
+#endif
 
     // semaphore for API access from threads
     HAL_Semaphore                      _rsem;
