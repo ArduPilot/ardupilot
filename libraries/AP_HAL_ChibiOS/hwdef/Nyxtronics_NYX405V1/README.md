@@ -93,7 +93,7 @@ Any UART can be used for RC system connections in ArduPilot, and is compatible w
 The NYX405V1 supports up to 6 PWM outputs:
 
 - Outputs 1-4: motor pads M1-M4
-- Output 5: servo pad S1
+- Output 5: servo pad S
 - Output 6: LED strip pad
 
 All outputs support normal PWM and DShot. Outputs 1-4 support Bi-Directional DShot.
@@ -169,7 +169,7 @@ The default battery parameters are:
 - BATT_VOLT_MULT = 11.0
 - BATT_AMP_PERVLT = 125.0
 
-The current sensor is on the ESC, not on the flight controller. BATT_AMP_PERVLT must be set to match the ESC or current sensor actually used. The default value is `Nyxtronics AM32 4-in-1 80A 8S` and `Nyxtronics AM32 4-in-1 75A 6S` ESCs current sensor value.
+The current sensor is on the ESC, not on the flight controller. BATT_AMP_PERVLT must be set to match the ESC or current sensor actually used. The default value matches the Nyxtronics AM32 4-in-1 80A 8S and 75A 6S ESCs.
 
 ## Firmware
 
@@ -177,4 +177,4 @@ Firmware for the NYX405V1 is available from [ArduPilot Firmware Server](https://
 
 ## Loading Firmware
 
-To flash firmware initially, connect USB while holding the bootloader button and use DFU to load the `*_with_bl.hex` file. Subsequent updates can be applied using `*.apj` files through a ground station.
+To load ArduPilot firmware, hold the bootloader button (on the bottom of the board, right next to the USB connector, under the Nyxtronics "N" logo) while connecting USB. Then use the STM32CubeProgrammer app to load the `*_with_bl.hex` file. Subsequently, a ground station can update firmware using the `*.apj` files.
