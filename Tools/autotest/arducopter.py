@@ -18469,6 +18469,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def BaroDeferredCalibration(self):
+        """check a barometer which starts supplying data late is calibrated"""
+        # the barometers are calibrated from AP_Baro::update(), so one
+        # which is not supplying data when calibrate() is called is
+        # calibrated once it starts.  Until then it is not calibrated -
+        # which means not healthy - so arming must be refused rather than
+        # permitted against a ground pressure we do not know
+        delay_s = 60
+        for (instance, param) in (2, "SIM_BAR2_STRTDLY"), (1, "SIM_BARO_STRTDLY"):
+            self.start_subtest("Barometer %u supplies data %us after boot" %
+                               (instance, delay_s))
+            self.context_push()
+            self.set_parameter(param, delay_s)
+            self.context_collect("STATUSTEXT")
+            self.reboot_sitl()
+
+            # the autopilot is up, the EKF is happy and we are talking to
+            # it while that barometer is still silent: calibrating it no
+            # longer holds up startup
+            self.wait_ekf_happy()
+            self.assert_prearm_failure("Baro: #%u not calibrated" % instance)
+
+            # and it is calibrated when it does start supplying data,
+            # after which we are armable - which includes the arming
+            # check that the barometer agrees with GPS altitude, so the
+            # ground pressure it calibrated with is a real one
+            self.wait_statustext("Barometer %u calibration complete" % instance,
+                                 check_context=True, timeout=delay_s)
+            self.wait_ready_to_arm()
+            self.context_pop()
+
     def BaroDrivers(self):
         '''Test Baro Drivers'''
         sensors = [
@@ -25135,6 +25166,7 @@ return update, 1000
             self.ShipTakeoff,
             self.RangeFinder,
             self.BaroDrivers,
+            self.BaroDeferredCalibration,
             self.MAVProximity,
             self.LoweheiserAuto,
             self.clear_roi,
