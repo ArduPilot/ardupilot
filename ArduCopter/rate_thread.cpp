@@ -150,6 +150,25 @@
 
 #define DIV_ROUND_INT(x, d) ((x + d/2) / d)
 
+/*
+  the largest rate loop divisor which keeps the rate loop running at
+  least as often as the main loop.
+
+  The raw gyro rate is a filtered measurement of the sensor's output
+  rate (see AP_InertialSensor_Backend::_update_sensor_rate()), so it
+  sits a fraction of a hertz either side of the sensor's true rate.  A
+  gyro whose rate is an odd multiple of half the loop rate - 1000Hz
+  against a 400Hz loop, say - lands exactly on the rounding boundary,
+  and then the divisor, the rate loop's frequency and the attitude
+  controller's notch sample rates all move with that wobble.  Round the
+  rate to the nearest 10Hz, which the wobble cannot cross.
+ */
+static uint8_t rate_loop_max_decimation(uint16_t raw_gyro_rate_hz, uint16_t loop_rate_hz)
+{
+    const uint16_t gyro_rate_hz = DIV_ROUND_INT(raw_gyro_rate_hz, 10) * 10;
+    return MAX(1, DIV_ROUND_INT(gyro_rate_hz, loop_rate_hz));
+}
+
 uint8_t Copter::calc_gyro_decimation(uint8_t gyro_decimation, uint16_t rate_hz)
 {
     return MAX(uint8_t(DIV_ROUND_INT(ins.get_raw_gyro_rate_hz() / gyro_decimation, rate_hz)), 1U);
@@ -167,7 +186,8 @@ static inline bool run_decimated_callback(uint8_t decimation_rate, uint8_t& deci
 void Copter::rate_controller_thread()
 {
     uint8_t target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
-                                                     DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
+                                                     rate_loop_max_decimation(ins.get_raw_gyro_rate_hz(),
+                                                                              AP::scheduler().get_loop_rate_hz()));
     uint8_t rate_decimation = target_rate_decimation;
 
     // set up the decimation rates
@@ -362,7 +382,8 @@ void Copter::rate_controller_thread()
 
         // make sure we have the latest target rate
         target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
-                                                 DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
+                                                 rate_loop_max_decimation(ins.get_raw_gyro_rate_hz(),
+                                                                          AP::scheduler().get_loop_rate_hz()));
         if (now_ms - last_notch_sample_ms >= 1000 || !was_using_rate_thread) {
             // update the PID notch sample rate at 1Hz if we are
             // enabled at runtime
