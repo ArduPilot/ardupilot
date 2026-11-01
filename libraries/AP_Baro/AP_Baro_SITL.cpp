@@ -155,10 +155,18 @@ void AP_Baro_SITL::_timer()
     _has_sample = true;
 }
 
-// unhealthy if baro is turned off or beyond supported instances
+// unhealthy if baro is turned off, has not supplied a sample yet or is
+// beyond supported instances
 bool AP_Baro_SITL::healthy(uint8_t instance) 
 {
-    return _last_sample_time != 0 && !_sitl->baro[instance].disable;
+    // _timer() sets _last_sample_time before it has a sample to pass to
+    // the frontend, so require that a sample arrived as well - the
+    // frontend calculates an altitude as soon as we report healthy, and
+    // doing that with a zero pressure is an internal error.  This is the
+    // same condition the generic backend applies
+    return _last_sample_time != 0 &&
+        !is_zero(_frontend.sensors[instance].pressure) &&
+        !_sitl->baro[instance].disable;
 }
 
 // Read the sensor
