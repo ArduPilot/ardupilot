@@ -5803,6 +5803,45 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def EKF3LaneSwitchBack(self):
+        '''test EKF3 does not go back to the lane it left unless the primary fails'''
+        self.set_parameters({
+            "EK3_AFFINITY": 1,
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+        })
+        self.reboot_sitl()
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=20)
+        self.delay_sim_time(10, reason="lane selection to start")
+
+        self.context_collect('STATUSTEXT')
+        self.progress("force a lane change")
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0.0001)
+        self.wait_statustext("EKF3 lane switch 1", timeout=10, check_context=True)
+        switch_time = self.get_sim_time()
+
+        self.progress("make lane 0 better without failing the new primary")
+        self.set_parameters({
+            "SIM_GPS1_GLTCH_X": 0,
+            "SIM_GPS2_GLTCH_X": 0.000036,
+        })
+        self.delay_sim_time(4, reason="check for a switch back")
+        if self.statustext_in_collections("EKF3 lane switch 0"):
+            raise NotAchievedException("Switched back to the last primary lane within 10 seconds")
+
+        self.progress("fail the new primary")
+        self.set_parameter("SIM_GPS2_GLTCH_X", 0.0002)
+        self.wait_statustext("EKF3 lane switch 0", timeout=5, check_context=True)
+        switch_back_delay = self.get_sim_time() - switch_time
+        self.set_parameter("SIM_GPS2_GLTCH_X", 0)
+        if switch_back_delay > 9:
+            raise NotAchievedException(f"Took {switch_back_delay}s to leave a failed lane")
+
+        self.land_and_disarm()
+
     def test_EKF3_option_disable_lane_switch(self):
         '''Test that EK3_OPTION disables lane switching, and EK3_PRIMARY forces switch when re-enabled'''
 
@@ -24018,6 +24057,7 @@ return update, 1000
             self.GPSTypes,
             self.MultipleGPS,
             self.GuidedEKFLaneChange,
+            self.EKF3LaneSwitchBack,
             self.TerrainDBPreArm,
             self.MountTopotekNetwork,
             self.MountAVTCM62Dual,
