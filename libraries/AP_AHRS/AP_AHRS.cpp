@@ -1760,10 +1760,10 @@ void AP_AHRS::send_estimator_status(GCS_MAVLINK &link) const
         flags |= ESTIMATOR_UNINITIALIZED;
     }
 
-    // position accuracies come from the active EKF, and are NaN when
-    // unknown:
+    // like the rest of the message, position accuracies come from the
+    // configured EKF; they are NaN when unknown:
     float pos_horiz_accuracy, pos_vert_accuracy, unused_vel_m_s;
-    if (!get_pos_vel_uncertainty(pos_horiz_accuracy, pos_vert_accuracy, unused_vel_m_s)) {
+    if (!_get_pos_vel_uncertainty(configured_ekf_type(), pos_horiz_accuracy, pos_vert_accuracy, unused_vel_m_s)) {
         pos_horiz_accuracy = NaNf;
         pos_vert_accuracy = NaNf;
     }
@@ -1926,7 +1926,13 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 // get 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
 bool AP_AHRS::get_pos_vel_uncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const
 {
-    switch (active_EKF_type()) {
+    return _get_pos_vel_uncertainty(active_EKF_type(), pos_horiz_m, pos_vert_m, vel_m_s);
+}
+
+// get 1-sigma position and velocity uncertainty for a specified EKF type
+bool AP_AHRS::_get_pos_vel_uncertainty(EKFType type, float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const
+{
+    switch (type) {
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         return ekf3.EKF3.getPosVelUncertainty(pos_horiz_m, pos_vert_m, vel_m_s);

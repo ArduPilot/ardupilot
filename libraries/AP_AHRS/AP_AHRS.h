@@ -956,6 +956,9 @@ private:
     // return origin for a specified EKF type
     bool _get_origin(EKFType type, Location &ret) const;
 
+    // get 1-sigma position and velocity uncertainty for a specified EKF type
+    bool _get_pos_vel_uncertainty(EKFType type, float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const;
+
     // return a ground velocity in meters/second, North/East/Down
     // order. Must only be called if have_inertial_nav() is true
     bool _get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED;
