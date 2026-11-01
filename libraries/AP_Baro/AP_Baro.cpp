@@ -296,8 +296,13 @@ AP_Baro::AP_Baro()
 // the altitude() or climb_rate() interfaces can be used
 void AP_Baro::calibrate(bool save)
 {
-    // start by assuming all sensors are calibrated (for healthy() test)
+    // start by assuming all sensors are calibrated (for healthy() test),
+    // remembering which ones really are
+    uint8_t was_calibrated = 0;
     for (uint8_t i=0; i<_num_sensors; i++) {
+        if (sensors[i].calibrated) {
+            was_calibrated |= 1U<<i;
+        }
         sensors[i].calibrated = true;
         sensors[i].alt_ok = true;
     }
@@ -326,67 +331,118 @@ void AP_Baro::calibrate(bool save)
     // offset is supposed to be for within a flight
     _alt_offset.set_and_save(0);
 
-    // let the barometer settle for a full second after startup
-    // the MS5611 reads quite a long way off for the first second,
-    // leading to about 1m of error if we don't wait
-    for (uint8_t i = 0; i < 10; i++) {
-        uint32_t tstart = AP_HAL::millis();
-        do {
-            update();
-            if (AP_HAL::millis() - tstart > 500) {
-                AP_BoardConfig::config_error("Baro: unable to calibrate");
-            }
-            hal.scheduler->delay(10);
-        } while (!healthy());
-        hal.scheduler->delay(100);
+    // the calibration itself is done by update(), so that a sensor
+    // which is not supplying data yet does not hold up startup - and is
+    // still calibrated if it starts supplying data later.  A sensor
+    // which already has a ground pressure keeps it, and so stays
+    // healthy, until the new one has been measured
+    _cal_save = save;
+    if (was_calibrated == 0) {
+        // only a calibration which leaves no sensor with a ground
+        // pressure can declare the board unusable; see
+        // update_deferred_calibration()
+        _awaiting_first_cal = true;
     }
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        sensors[i].calibrated = (was_calibrated & (1U<<i)) != 0;
+        sensors[i].cal.pending = true;
+        sensors[i].cal.start_ms = 0;
+    }
+}
 
-    // now average over 5 values for the ground pressure settings
-    float sum_pressure[BARO_MAX_INSTANCES] = {0};
-    uint8_t count[BARO_MAX_INSTANCES] = {0};
+/*
+  calibrate any sensor for which calibrate() has requested a
+  calibration and which is supplying data.  Called from update() rather
+  than from calibrate() so that startup is not blocked waiting for a
+  sensor to come up, and so that a sensor which only starts supplying
+  data after calibrate() - an ExternalAHRS barometer whose driver has
+  not synchronised to the device's packet stream yet, for example - is
+  calibrated when it does rather than being left uncalibrated, and so
+  unhealthy, until the next reboot
+ */
+void AP_Baro::update_deferred_calibration(void)
+{
+    // the number of samples averaged for the ground pressure setting
     const uint8_t num_samples = 5;
+    // how long to wait for a sensor to supply data to calibrate with
+    // before declaring the board unusable.  Long enough for a sensor
+    // which starts supplying data late - an ExternalAHRS barometer, say
+    const uint32_t cal_timeout_ms = 10000;
+    const uint32_t now_ms = AP_HAL::millis();
 
-    for (uint8_t c = 0; c < num_samples; c++) {
-        uint32_t tstart = AP_HAL::millis();
-        do {
-            update();
-            if (AP_HAL::millis() - tstart > 500) {
-                AP_BoardConfig::config_error("Baro: unable to calibrate");
-            }
-        } while (!healthy());
-        for (uint8_t i=0; i<_num_sensors; i++) {
-            if (healthy(i)) {
-                sum_pressure[i] += sensors[i].pressure;
-                count[i] += 1;
-            }
-        }
-        hal.scheduler->delay(100);
-    }
     for (uint8_t i=0; i<_num_sensors; i++) {
-        if (count[i] == 0) {
-            sensors[i].calibrated = false;
-        } else {
-            if (save) {
-                float p0_sealevel = get_sealevel_pressure(sum_pressure[i] / count[i], _field_elevation_active);
-                sensors[i].ground_pressure.set_and_save(p0_sealevel);
+        if (!sensors[i].cal.pending) {
+            continue;
+        }
+        if (!sensors[i].healthy) {
+            // no data from this sensor; its settling time is measured
+            // from when it supplies some
+            sensors[i].cal.start_ms = 0;
+            continue;
+        }
+        if (_cal_save) {
+            if (sensors[i].cal.start_ms == 0) {
+                // sensors which are supplying data when calibration
+                // starts are sampled on the same update() calls, so
+                // their ground pressures come from the same moments
+                sensors[i].cal.start_ms = now_ms;
+                sensors[i].cal.sum_pressure = 0;
+                sensors[i].cal.count = 0;
+                continue;
             }
+            // let the barometer settle for a full second after it starts
+            // supplying data.  The MS5611 reads quite a long way off for
+            // the first second, leading to about 1m of error if we don't
+            // wait.  Then take the samples 100ms apart
+            const uint32_t sample_due_ms = 1000 + sensors[i].cal.count * 100U;
+            if (now_ms - sensors[i].cal.start_ms < sample_due_ms) {
+                continue;
+            }
+            sensors[i].cal.sum_pressure += sensors[i].pressure;
+            sensors[i].cal.count++;
+            if (sensors[i].cal.count < num_samples) {
+                continue;
+            }
+            const float p0_sealevel = get_sealevel_pressure(sensors[i].cal.sum_pressure / sensors[i].cal.count,
+                                                            _field_elevation_active);
+            sensors[i].ground_pressure.set_and_save(p0_sealevel);
         }
+        // with nothing to save, samples would be thrown away, so the
+        // sensor is calibrated as soon as it is supplying data - which
+        // ArduSub's calibrate(false) at startup relies on, as it checks
+        // its depth sensor's health straight afterwards
+        sensors[i].calibrated = true;
+        sensors[i].cal.pending = false;
+        _awaiting_first_cal = false;
+        _guessed_ground_temperature = get_external_temperature();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
     }
 
-    _guessed_ground_temperature = get_external_temperature();
-
-    // panic if all sensors are not calibrated
-    uint8_t num_calibrated = 0;
-    for (uint8_t i=0; i<_num_sensors; i++) {
-        if (sensors[i].calibrated) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
-            num_calibrated++;
-        }
-    }
-    if (num_calibrated) {
+    if (!_awaiting_first_cal) {
         return;
     }
-    AP_BoardConfig::config_error("Baro: all sensors uncalibrated");
+    // the deadline runs from when the vehicle is up rather than from
+    // calibrate(), which vehicles call during startup - before a gyro
+    // calibration which can take longer than the deadline, and during
+    // which update() is not called
+    if (!hal.scheduler->is_system_initialized()) {
+        return;
+    }
+    if (_cal_start_ms == 0) {
+        _cal_start_ms = now_ms;
+        return;
+    }
+    if (now_ms - _cal_start_ms > cal_timeout_ms) {
+        // nothing has supplied data to calibrate with.  Report it once
+        // rather than stopping the vehicle in the config error loop, as
+        // a vehicle may already be armed - a tracker boots armed.  A
+        // sensor which supplies data later is still calibrated, but a
+        // board whose barometer is that late should be looked at
+        // rather than flown, so arming is refused until a reboot
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Baro: unable to calibrate");
+        _cal_timed_out = true;
+        _awaiting_first_cal = false;
+    }
 }
 
 /*
@@ -653,6 +709,10 @@ void AP_Baro::init(void)
     probe_i2c_dev(AP_Baro_MS5611::probe, _ext_bus, HAL_BARO_MS5611_I2C_ADDR);
     RETURN_IF_NO_SPACE;
 #endif
+    // the same check as a real board gets below
+    if (sitl->baro_count != 0 && _num_sensors == 0) {
+        AP_BoardConfig::config_error("Baro: unable to initialise driver");
+    }
     // do not probe for other drivers when using simulation:
     return;
 #endif
@@ -891,6 +951,10 @@ void AP_Baro::update(void)
     for (uint8_t i=0; i<_num_drivers; i++) {
         drivers[i]->backend_update(i);
     }
+
+#if AP_BARO_CALIBRATION_ENABLED
+    update_deferred_calibration();
+#endif
 
 #if AP_BARO_THST_COMP_ENABLED
     update_thrust_filter();
@@ -1134,9 +1198,35 @@ void AP_Baro::handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt)
 }
 #endif  // AP_BARO_EXTERNALAHRS_ENABLED
 
+// returns false if a sensor has not been calibrated, in which case the buffer will be populated with a failure message
+bool AP_Baro::calibration_arming_checks(size_t buflen, char *buffer) const
+{
+#if AP_BARO_CALIBRATION_ENABLED
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        if (!sensors[i].calibrated) {
+            hal.util->snprintf(buffer, buflen, "#%u not calibrated", i+1);
+            return false;
+        }
+        if (sensors[i].cal.pending) {
+            hal.util->snprintf(buffer, buflen, "#%u calibrating", i+1);
+            return false;
+        }
+    }
+    if (_cal_timed_out) {
+        hal.util->snprintf(buffer, buflen, "calibrated late, reboot required");
+        return false;
+    }
+#endif
+    return true;
+}
+
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 bool AP_Baro::arming_checks(size_t buflen, char *buffer) const
 {
+    if (!calibration_arming_checks(buflen, buffer)) {
+        return false;
+    }
+
     if (!all_healthy()) {
         hal.util->snprintf(buffer, buflen, "not healthy");
         return false;
