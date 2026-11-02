@@ -148,6 +148,13 @@ void RCOutput::init()
         chVTObjectInit(&group.dma_timeout);
     }
 
+#ifdef HAL_WITH_BIDIR_DSHOT
+    // an output with no reply counted yet has shown nothing of its ESC's health
+    for (auto &rate : _bdshot.erpm_error_rate) {
+        rate = 100.0f;
+    }
+#endif
+
 #if HAL_WITH_IO_MCU
     if (iomcu_enabled) {
         iomcu.init();
@@ -1736,6 +1743,7 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
     group.dshot_waiter = rcout_thread_ctx;
 #ifdef HAL_WITH_BIDIR_DSHOT
     bdshot_prepare_for_next_pulse(group);
+    group.bdshot.command_sent = false;
 #endif
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
     bool armed = hal.util->get_soft_armed();
