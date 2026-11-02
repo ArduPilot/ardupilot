@@ -270,6 +270,7 @@ void NavEKF3_core::InitialiseVariables()
     onGround = true;
     prevOnGround = true;
     velDCheckedAtRest = false;
+    restStartTime_ms = 0;
     inFlight = false;
     prevInFlight = false;
     manoeuvring = false;
