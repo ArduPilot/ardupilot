@@ -14,6 +14,7 @@ import pathlib
 import re
 import shutil
 import socket
+import struct
 import subprocess
 import tempfile
 import time
@@ -15950,6 +15951,74 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def static_yaw_test_setup(self, params):
+        '''restart at a 90 deg heading, well away from the 0 deg yaw an EKF core with no
+        yaw source starts or is reset at, with params set and no yaw source in set 2'''
+        self.set_parameters(params)
+        # in source set 2 with no yaw source, a still disarmed vehicle drops to AID_NONE
+        # and holds its yaw by fusing the static yaw reference
+        self.set_parameter("EK3_SRC2_YAW", 0)
+        home = self.sitl_start_location()
+        self.customise_SITL_commandline(["--home", "%s,%s,%s,%s" % (
+            home.lat, home.lng, home.get_alt_m(AltFrame.ABSOLUTE), 90)])
+
+    def EKFBootstrapResetStaticYaw(self):
+        '''check a still vehicle with no yaw source retakes its static yaw reference after an EKF reset'''
+        self.static_yaw_test_setup({
+            "RC8_OPTION": 187,  # EKF_RESET
+        })
+
+        # fly, so the static yaw reference is the yaw the vehicle landed at
+        self.takeoff(3, mode='LOITER')
+        self.land_and_disarm()
+        self.delay_sim_time(5, "vehicle to come to rest")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        self.delay_sim_time(2, "source set to take effect")
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        reset_us = int(self.get_sim_time() * 1e6)
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF bootstrap reset performed", check_context=True, timeout=10)
+        self.set_rc(8, 1000)
+        self.context_pop()
+        self.delay_sim_time(15, "static yaw fusion after the reset")
+
+        # the reset puts the yaw at 0, and a reference left at the landing yaw would be
+        # fused against it and run up the Z gyro bias
+        cores = self.ekf3_yaw_change_and_max_gyro_bias_z(reset_us)
+        if len(cores) == 0:
+            raise NotAchievedException("no XKF1 records either side of the reset")
+        for core, (yaw_change, max_gz) in sorted(cores.items()):
+            self.progress("EKF3 core %u: yaw moved up to %.1f deg, max |GZ| %.2f deg/s" % (core, yaw_change, max_gz))
+            if yaw_change < 45:
+                raise NotAchievedException("core %u: the reset did not move the yaw away from the landing yaw" % core)
+            if max_gz > 0.5:
+                raise NotAchievedException("core %u: Z gyro bias ran up to %.2f deg/s after the reset" % (core, max_gz))
+
+    def ekf3_yaw_change_and_max_gyro_bias_z(self, since_us):
+        '''for each EKF3 core in the current onboard log, the largest yaw change from
+        its last yaw before since_us, and the largest Z gyro bias magnitude since then'''
+        dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
+        yaw_before = {}
+        cores = {}
+        while True:
+            try:
+                m = dfreader.recv_match(type="XKF1")
+            except (OSError, ValueError, struct.error):
+                break
+            if m is None:
+                break
+            if m.TimeUS < since_us:
+                yaw_before[m.C] = m.Yaw
+                continue
+            if m.C not in yaw_before:
+                continue
+            yaw_change, max_gz = cores.get(m.C, (0.0, 0.0))
+            cores[m.C] = (max(yaw_change, abs(mavextra.wrap_180(m.Yaw - yaw_before[m.C]))),
+                          max(max_gz, abs(m.GZ)))
+        return cores
+
     def AHRSSwitchBackendPositionReset(self):
         '''vehicle must not lurch when the active AHRS estimator is changed in flight'''
         # drift the baro so EKF3's altitude estimate (baro-based by
@@ -24300,6 +24369,7 @@ return update, 1000
             self.MSPDisplayPortVTXConfig,
             self.OSDParamConfig,
             self.EKFBootstrapReset,
+            self.EKFBootstrapResetStaticYaw,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
             self.SMART_RTL_EnterLeave,
