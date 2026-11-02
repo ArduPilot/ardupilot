@@ -171,7 +171,7 @@ protected:
 #endif
 
 private:
-    void handle_writing_from_writebuffer_to_device();
+    void handle_writing_from_writebuffer_to_device(bool ignore_baudlimit = false);
     void handle_reading_from_device_to_readbuffer();
 
     // statistics

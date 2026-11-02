@@ -162,7 +162,6 @@ private:
     bool _warned_ack_size;  // we have complained about a bad-sized reply
     void handle_periph_ack(const struct sitl_mcast_ack &ack, ssize_t len, const struct sockaddr_in &src);
     void wait_periph_acks(uint64_t timestamp_us);
-    static uint64_t wall_millis(void);
 
     // send out SITL state as UDP multicast
     void multicast_state_open(void);

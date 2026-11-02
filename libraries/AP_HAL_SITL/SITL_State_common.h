@@ -81,6 +81,8 @@ class HALSITL::SITL_State_Common {
     friend class HALSITL::Util;
     friend class HALSITL::GPIO;
 public:
+    static uint64_t wall_millis(void);
+
     virtual void init(int argc, char * const argv[]) = 0;
 
     enum vehicle_type {

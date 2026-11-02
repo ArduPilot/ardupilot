@@ -289,6 +289,15 @@ bool UARTDriver::_discard_input(void)
     return true;
 }
 
+/*
+  clock for _flush(). Only the main thread moves simulated time, so
+  while it waits in _flush() AP_HAL::millis() does not advance
+ */
+static uint64_t flush_clock_ms(bool main_thread)
+{
+    return main_thread ? SITL_State::wall_millis() : AP_HAL::millis64();
+}
+
 void UARTDriver::_flush(void)
 {
 #if HAL_SITL_WASM_ENABLED
@@ -297,24 +306,31 @@ void UARTDriver::_flush(void)
     }
 #endif
 
-    // flush the write buffer - but don't fail and don't
-    // infinitely-loop.  This is not a good definition of "flush", but
-    // it was judged that we had to return from this function even if
-    // we hadn't actually done our job.
-    uint32_t start_ms = AP_HAL::millis();
-    while (AP_HAL::millis() - start_ms < 1000) {
-        if (_writebuffer.available() == 0) {
+    // send everything in the write buffer and wait for the system
+    // queue to drain, giving up only when nothing has moved for a while
+    // (the remote end has stopped reading) so a stalled connection can
+    // not hang the caller, e.g. a reboot
+    const bool main_thread = hal.scheduler->in_main_thread();
+    // longer than Linux delays a TCP acknowledgement, at most 200ms
+    const uint32_t stall_timeout_ms = 500;
+    uint64_t last_progress_ms = flush_clock_ms(main_thread);
+    uint32_t least_pending = UINT32_MAX;
+    // a closed connection can never drain
+    while (_connected) {
+        const uint32_t pending = _writebuffer.available() + MAX(get_system_outqueue_length(), 0);
+        if (pending == 0) {
             break;
         }
-        _timer_tick();
-    }
-
-    // ensure that the outbound TCP queue is also empty...
-    start_ms = AP_HAL::millis();
-    while (AP_HAL::millis() - start_ms < 1000) {
-        if (((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length() == 0) {
+        const uint64_t now_ms = flush_clock_ms(main_thread);
+        if (pending < least_pending) {
+            least_pending = pending;
+            last_progress_ms = now_ms;
+        } else if (now_ms - last_progress_ms >= stall_timeout_ms) {
             break;
         }
+        // simulated time does not move on the main thread, so the baud
+        // limit would never release the remaining bytes
+        handle_writing_from_writebuffer_to_device(main_thread);
         usleep(1000);
     }
 }
@@ -1023,7 +1039,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
     return i;
 }
 
-void UARTDriver::handle_writing_from_writebuffer_to_device()
+void UARTDriver::handle_writing_from_writebuffer_to_device(bool ignore_baudlimit)
 {
 #if HAL_SITL_WASM_ENABLED
     if (_wasm) {
@@ -1040,7 +1056,7 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
     uint32_t max_bytes = 10000;
 #if !defined(HAL_BUILD_AP_PERIPH)
     SITL::SIM *_sitl = AP::sitl();
-    if (_sitl && _sitl->telem_baudlimit_enable) {
+    if (_sitl && _sitl->telem_baudlimit_enable && !ignore_baudlimit) {
         // limit byte rate to configured baudrate
         // Byte rate is bit rate divided by 10. 8 bits of data + start/stop bits
         max_bytes = baud_limits.write.max_bytes(float(_uart_baudrate) * 0.1);

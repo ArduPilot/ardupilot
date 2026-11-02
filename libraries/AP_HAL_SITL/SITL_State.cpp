@@ -625,15 +625,6 @@ void SITL_State::handle_periph_ack(const struct sitl_mcast_ack &ack, ssize_t len
     periph->last_heard_ms = wall_millis();
 }
 
-// wall-clock milliseconds; the simulation clock must not be used for
-// the lockstep eviction timeout as it is frozen while we wait
-uint64_t SITL_State::wall_millis(void)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return uint64_t(ts.tv_sec) * 1000ULL + ts.tv_nsec / 1000000ULL;
-}
-
 /*
   strict simulated-peripheral lockstep: do not return (and so do not
   advance the simulation) until every registered peripheral has
