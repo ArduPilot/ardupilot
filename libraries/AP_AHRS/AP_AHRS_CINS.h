@@ -82,7 +82,6 @@ private:
         AP_Float mag_acc_bias;
         AP_Float sat_acc_bias;
         AP_Float variance_lowpass;
-        AP_Float variance_scale;
     } gains;
 
     bool get_location(Location &loc) const
