@@ -1213,14 +1213,14 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
     // @Param: THROW_SRC_SET
     // @DisplayName: Throw mode EKF source set on completion
-    // @Description: EKF source set to activate when throw mode transitions to THROW_NEXTMODE. 0 to leave unchanged.
+    // @Description: EKF source set to activate when throw mode transitions to THROW_NEXTMODE. It is a standing instruction, so it applies even if another set was selected while in throw mode. 0 to leave unchanged.
     // @Values: 0:No change,1:Source1,2:Source2,3:Source3
     // @User: Advanced
     AP_GROUPINFO("THROW_SRC_SET", 60, ParametersG2, throw_srcset, 0),
 
     // @Param: THROW_SRC_INI
     // @DisplayName: Throw mode EKF source set on entry
-    // @Description: EKF source set to activate when throw mode is entered. Use a source set with no horizontal aiding to prevent EKF variance growth and nuisance failsafes during the tumble/freefall phase. On completion THROW_SRC_SET selects the source set to fly on; if it is 0 the source set in use before throw was entered is restored. 0 to leave unchanged.
+    // @Description: EKF source set to activate when throw mode is entered. Use a source set with no horizontal aiding to prevent EKF variance growth and nuisance failsafes during the tumble/freefall phase. On completion THROW_SRC_SET selects the source set to fly on; if it is 0 the source set in use before throw was entered is restored, unless another set was selected while in throw mode. 0 to leave unchanged.
     // @Values: 0:No change,1:Source1,2:Source2,3:Source3
     // @User: Advanced
     AP_GROUPINFO("THROW_SRC_INI", 63, ParametersG2, throw_src_init, 0),

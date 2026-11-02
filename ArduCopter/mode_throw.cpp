@@ -72,7 +72,8 @@ void ModeThrow::throw_setup()
     // Reset the IMU throw-direction integrator state.
     throw_dir_reset();
 
-    // while THROW_SRC_INI's set is still in use, keep what was captured before it
+    // re-armed in throw before THROW_SRC_INI's switch is undone: keep what was
+    // captured before it, not the set it switched to
     if (source_set_switched) {
         return;
     }
@@ -99,32 +100,45 @@ void ModeThrow::throw_setup()
 
     // A tumbling vehicle feeds garbage to flow and GPS, so THROW_SRC_INI can
     // move the EKF to a set with no horizontal aiding for the throw phase.
-    // exit() puts the previous set back unless completion claimed it.
+    // Leaving throw, or completing it with THROW_SRC_SET 0, puts the previous
+    // set back while THROW_SRC_INI's set is still the active one.
     const int8_t src_init = g2.throw_src_init.get();
     if (src_init >= 1 && src_init <= 3) {
         saved_source_set = ahrs.get_posvelyaw_source_set();
+        throw_source_set = src_init - 1;
         source_set_switched = true;
-        ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(src_init - 1));
+        ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(throw_source_set));
         gcs().send_text(MAV_SEVERITY_INFO, "Throw: EKF Source Set %d", src_init);
     }
 }
 
-// Put back the EKF source set THROW_SRC_INI replaced, unless the completion
-// handoff already claimed it.  Without this a throw that is left part way
-// through strands the vehicle on the throw source set.
+// Put back the EKF source set THROW_SRC_INI replaced, unless completion has
+// already dealt with it or another set was picked since.  Without this a throw
+// that is left part way through strands the vehicle on the throw source set.
 void ModeThrow::exit()
 {
     restore_source_set();
 }
 
-// Put back the source set THROW_SRC_INI replaced, if it is still in use.
-void ModeThrow::restore_source_set()
+// Put back the source set THROW_SRC_INI replaced, if it is still in use: a set
+// the pilot or GCS picked since is kept.  Returns true if it changed the set.
+bool ModeThrow::restore_source_set()
 {
-    if (source_set_switched) {
-        ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(saved_source_set));
-        gcs().send_text(MAV_SEVERITY_INFO, "Throw: restored EKF Source Set %d", saved_source_set + 1);
-        source_set_switched = false;
+    if (!source_set_switched) {
+        return false;
     }
+    source_set_switched = false;
+    const uint8_t active_set = ahrs.get_posvelyaw_source_set();
+    if (active_set == saved_source_set) {
+        return false;
+    }
+    if (active_set != throw_source_set) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Throw: keeping EKF Source Set %u", unsigned(active_set + 1));
+        return false;
+    }
+    ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(saved_source_set));
+    gcs().send_text(MAV_SEVERITY_INFO, "Throw: restored EKF Source Set %d", saved_source_set + 1);
+    return true;
 }
 
 // Drops are designed to operate without horizontal aiding -- detection is
@@ -1051,7 +1065,7 @@ void ModeThrow::throw_do_nextmode_handoff()
             gcs().send_text(MAV_SEVERITY_WARNING, "Throttle low - losing altitude");
         }
         const int8_t srcset = g2.throw_srcset.get();
-        bool srcset_changed = source_set_switched;
+        bool srcset_changed = false;
         if (srcset >= 1 && srcset <= 3) {
             ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(srcset - 1));
             gcs().send_text(MAV_SEVERITY_INFO, "EKF Source Set %d", srcset);
@@ -1059,7 +1073,7 @@ void ModeThrow::throw_do_nextmode_handoff()
             srcset_changed = true;
         }
         // with THROW_SRC_SET 0 the pre-throw set goes back now
-        restore_source_set();
+        srcset_changed |= restore_source_set();
         srcset_change_ms = srcset_changed ? AP_HAL::millis() : 0;
     }
     // A new source set reaches the EKF's status, and so position_ok(), only
