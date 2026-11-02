@@ -306,6 +306,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED', 'Compass::save_ekf_learned_offsets'),
             ('AP_CUSTOMROTATIONS_ENABLED', 'AP_CustomRotations::init'),
             ('AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', r'AP_OSD_Screen::draw_rc_tx_power'),
+            ('AP_OSD_EKF_LANES_ENABLED', r'AP_OSD_Screen::draw_ekf_lane'),
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
             ('AP_BARO_PROBE_EXTERNAL_I2C_BUSES', r'AP_Baro::_probe_i2c_barometers'),
             ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
