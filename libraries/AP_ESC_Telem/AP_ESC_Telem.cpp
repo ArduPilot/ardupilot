@@ -253,7 +253,8 @@ bool AP_ESC_Telem::get_error_rate_pct(uint8_t esc_index, float& error_rate_pct) 
 
     // copy the timestamp to avoid any race with the driver updating it
     const uint32_t error_rate_pct_us = rpmdata.error_rate_pct_us;
-    if (error_rate_pct_us == 0 || AP_HAL::timeout_expired(error_rate_pct_us, AP_HAL::micros(), ESC_RPM_CHECK_TIMEOUT_US)) {
+    if (error_rate_pct_us == 0 || !rpmdata.error_rate_pct_valid
+        || AP_HAL::timeout_expired(error_rate_pct_us, AP_HAL::micros(), ESC_RPM_CHECK_TIMEOUT_US)) {
         return false;
     }
 
@@ -643,6 +644,7 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, cons
     if (error_rate_is_pct) {
         rpmdata.error_rate_pct = error_rate;
         rpmdata.error_rate_pct_us = now;
+        rpmdata.error_rate_pct_valid = true;
     }
     rpmdata.data_valid = true;
 
@@ -842,10 +844,15 @@ void AP_ESC_Telem::update()
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         // copy the last_updated_us timestamp to avoid any race issues
         const uint32_t last_updated_us = _rpm_data[i].last_update_us;
+        const uint32_t error_rate_pct_us = _rpm_data[i].error_rate_pct_us;
         const uint32_t now_us = AP_HAL::micros();
         // Invalidate RPM data if not received for too long
         if (AP_HAL::timeout_expired(last_updated_us, now_us, ESC_RPM_DATA_TIMEOUT_US)) {
             _rpm_data[i].data_valid = false;
+        }
+        // latch a stale error percentage, or once micros() wraps its old timestamp reads as recent
+        if (AP_HAL::timeout_expired(error_rate_pct_us, now_us, ESC_RPM_CHECK_TIMEOUT_US)) {
+            _rpm_data[i].error_rate_pct_valid = false;
         }
         const uint32_t last_telem_data_ms = _telem_data[i].last_update_ms;
         const uint32_t now_ms = AP_HAL::millis();
