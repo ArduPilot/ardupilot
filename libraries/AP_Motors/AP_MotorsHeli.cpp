@@ -156,7 +156,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Param: CYC_ANG_MAX
     // @DisplayName: Cyclic Blade Pitch Angle Maximum
     // @Description: Maximum cyclic blade pitch angle in deg that corresponds to the setting for maximum cyclic pitch (H_CYC_MAX). Used for logging only. Zero disables swashplate logging.
-    // @Range: 5 20
+    // @Range: 0 20
     // @Units: deg
     // @Increment: 0.1
     // @User: Standard
