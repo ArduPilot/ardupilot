@@ -769,7 +769,7 @@ public:
     float get_hover_z_bias_correction(uint8_t imu_index) const;
 
     // get accel bias Z component for a specific IMU
-    bool get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z) const;
+    bool get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z);
 
     // inhibit all accel bias learning
     void set_inhibit_accel_bias_learning(bool inhibit);
