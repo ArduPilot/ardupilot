@@ -263,9 +263,10 @@ void AP_AHRS_CINS::update(void)
     const Vector3F gyro = (delta_angle / dangle_dt).toftype();
 
     // get delta velocity and convert to accel m/s/s
+    const uint8_t accel_index = ins.get_first_usable_accel();
     Vector3f delta_velocity;
     float dvel_dt;
-    if (!ins.get_delta_velocity(gyro_index, delta_velocity, dvel_dt) || dvel_dt <= 0) {
+    if (!ins.get_delta_velocity(accel_index, delta_velocity, dvel_dt) || dvel_dt <= 0) {
         // can't update, no delta velocity
         return;
     }
