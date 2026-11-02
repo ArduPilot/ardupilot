@@ -42,7 +42,9 @@
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#if AP_OSD_EKF_LANES_ENABLED
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
+#endif
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_MSP/AP_MSP.h>
@@ -1069,6 +1071,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Range: 0 21
     AP_SUBGROUPINFO(link_quality, "LINK_Q", 1, AP_OSD_Screen, AP_OSD_Setting),
 
+#if AP_OSD_EKF_LANES_ENABLED
     // @Param: EKF0_EN
     // @DisplayName: EKF0_EN
     // @Description: Displays EKF core 0 as C0, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows the flow sensor's signal strength after the RSSI symbol, 0 to 99, and a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes and the signal strength reads --, flashing
@@ -1116,6 +1119,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Description: Vertical position on screen
     // @Range: 0 21
     AP_SUBGROUPINFO(ekf2, "EKF2", 13, AP_OSD_Screen, AP_OSD_Setting),
+#endif
 
 #if HAL_WITH_MSP_DISPLAYPORT
     // @Param: TXT_RES
@@ -1637,6 +1641,7 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
     }
 }
 
+#if AP_OSD_EKF_LANES_ENABLED
 // one EKF lane: whether it is flying the vehicle, what kind of position it
 // gives, and if it uses optical flow, which flow axes it is fusing
 void AP_OSD_Screen::draw_ekf_lane(uint8_t lane, uint8_t x, uint8_t y)
@@ -1712,6 +1717,7 @@ void AP_OSD_Screen::draw_ekf_lane(uint8_t lane, uint8_t x, uint8_t y)
     }
     backend->write(flow_x, y, true, "%s", reason);
 }
+#endif  // AP_OSD_EKF_LANES_ENABLED
 
 void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
@@ -2783,6 +2789,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(eff);
     DRAW_SETTING(callsign);
     DRAW_SETTING(current2);
+#if AP_OSD_EKF_LANES_ENABLED
     if (ekf0.enabled) {
         draw_ekf_lane(0, ekf0.xpos, ekf0.ypos);
     }
@@ -2792,6 +2799,7 @@ void AP_OSD_Screen::draw(void)
     if (ekf2.enabled) {
         draw_ekf_lane(2, ekf2.xpos, ekf2.ypos);
     }
+#endif
 
 #if AP_OSD_EXTENDED_LNK_STATS
     DRAW_SETTING(rc_tx_power);
