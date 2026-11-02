@@ -1,0 +1,42 @@
+# extra hwdef used by build_ci.sh's mavlink-deprecations target to
+# check that ArduPilot can be built without using any work-in-progress,
+# deprecated or superseded MAVLink messages.  The generated MAVLink
+# headers attach these attributes to the functions for each flagged
+# message and to each flagged enum entry, and builds use
+# -Werror=deprecated-declarations
+
+define MAVLINK_WIP              __attribute__((deprecated("MAVLink WIP message used")))
+define MAVLINK_DEPRECATED       __attribute__((deprecated("MAVLink deprecated message used")))
+define MAVLINK_SUPERSEDED       __attribute__((deprecated("MAVLink superseded message used")))
+define MAVLINK_ENUM_WIP         __attribute__((deprecated("MAVLink WIP command/enum entry used")))
+define MAVLINK_ENUM_DEPRECATED  __attribute__((deprecated("MAVLink deprecated command/enum entry used")))
+define MAVLINK_ENUM_SUPERSEDED  __attribute__((deprecated("MAVLink superseded command/enum entry used")))
+
+# remove support for the flagged messages:
+define AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED 0
+define AP_MAVLINK_MAV_CMD_DO_MOUNT_CONFIGURE_ENABLED 0
+define AP_MAVLINK_MAV_CMD_DO_MOUNT_CONTROL_ENABLED 0
+define AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED 0
+define AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED 0
+define AP_MAVLINK_MAV_CMD_GET_MESSAGE_INTERVAL_ENABLED 0
+define AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED 0
+
+define AP_MAVLINK_MISSION_SET_CURRENT_ENABLED 0
+define AP_MAVLINK_MSG_MISSION_ITEM_ENABLED 0
+define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED 0
+define AP_MAVLINK_MSG_MISSION_REQUEST_SENDING_ENABLED 0
+define AP_MAVLINK_MSG_SET_MODE_ENABLED 0
+define AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED 0
+
+define AP_MOUNT_MAVLINK_CMD_DO_MOUNT_CONFIGURE_ENABLED 0
+define AP_MOUNT_MAVLINK_CMD_DO_MOUNT_CONTROL_ENABLED 0
+
+# disabled as a consequence of losing DO_MOUNT_CONTROL:
+define HAL_MOUNT_STORM32MAVLINK_ENABLED 0
+
+define AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED 0
+define AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED 0
+
+define AP_MISSION_GLOBAL_INT_FRAMES_ENABLED 0
+
+define AP_MAVLINK_PROTOCOL_CAPABILITY_PARAM_FLOAT_ENABLED 0
