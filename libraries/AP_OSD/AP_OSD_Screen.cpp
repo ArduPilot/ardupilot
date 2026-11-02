@@ -2380,8 +2380,17 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
 {
     AP_Baro &barometer = AP::baro();
-    float btmp = barometer.get_temperature(1);
-    backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, btmp), u_icon(TEMPERATURE));
+    WITH_SEMAPHORE(barometer.get_semaphore());
+    // display the first healthy baro that is not the primary
+    const uint8_t primary = barometer.get_primary();
+    for (uint8_t i = 0; i < barometer.num_instances(); i++) {
+        if (i == primary || !barometer.healthy(i)) {
+            continue;
+        }
+        const float btmp = barometer.get_temperature(i);
+        backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, btmp), u_icon(TEMPERATURE));
+        return;
+    }
 }
 #endif
 
