@@ -18481,10 +18481,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("Throw: restored EKF Source Set 1", check_context=True, timeout=30)
         self.delay_sim_time(10, reason="the EKF takes up the restored set's position")
         self.assert_mode('THROW')
-        start = self.mav.location()
+        # the simulator's position: an EKF with none would report it still
+        start = self.get_location('SIMSTATE')
         self.delay_sim_time(20, reason="watch the hold in the wind")
         self.assert_mode('THROW')
-        drift = self.get_distance(start, self.mav.location())
+        drift = self.get_distance(start, self.get_location('SIMSTATE'))
         self.progress("Drift over 20 s staying in throw: %.1f m" % drift)
         if drift > 5:
             raise NotAchievedException("Drifted %.1f m staying in throw with a position" % drift)
