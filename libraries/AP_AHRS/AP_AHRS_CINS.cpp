@@ -280,7 +280,7 @@ void AP_AHRS_CINS::update(void)
     // see if we have new GPS data
     const auto &gps = AP::gps();
     if (gps.status() >= AP_GPS_FixType::FIX_3D) {
-        const uint32_t last_gps_fix_ms = gps.last_message_time_ms(0);
+        const uint32_t last_gps_fix_ms = gps.last_message_time_ms(gps.primary_sensor());
         if (last_gps_update_ms != last_gps_fix_ms) {
             // don't allow for large gain if we lose and regain GPS
             const float gps_dt = MIN((last_gps_fix_ms - last_gps_update_ms)*0.001, 1);
