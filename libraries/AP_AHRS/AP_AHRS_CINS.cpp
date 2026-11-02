@@ -511,6 +511,10 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     }
     results.filter_status_valid = true;
 
+    get_control_limits(results.control_ground_speed_limit_ms,
+                       results.control_gain_scaler_XY,
+                       results.control_gain_scaler_Z);
+
     // drive the wind-triangle estimator from our own velocity and
     // fuselage forward direction, and publish the resulting synthetic
     // wind.  estimate_wind() self-gates on wind estimation being
