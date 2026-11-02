@@ -53,6 +53,8 @@
 #include "CrashDump.h"
 #endif
 #include "shared_dma.h"
+#include "rp2350_pc_sampler.h"
+#include "rp2350_perf_report.h"
 #include <AP_Common/ExpandingString.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -60,6 +62,11 @@
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
 #endif
+
+#if defined(RP2350)
+/* RP2350 reset-cause constants live in watchdog.h -- include for SCRATCH idx / sentinel defines */
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#endif  // defined(RP2350)
 
 using namespace ChibiOS;
 
@@ -94,6 +101,10 @@ THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
 #define AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED 1
 #endif
 
+#ifndef HAL_MAIN_LOOP_STUCK_THRESHOLD_MS
+#define HAL_MAIN_LOOP_STUCK_THRESHOLD_MS 500U
+#endif
+
 Scheduler::Scheduler()
 {
 }
@@ -123,12 +134,45 @@ void Scheduler::init()
 
 #ifndef HAL_NO_RCOUT_THREAD
     // setup the RCOUT thread - this will call tasks at 1kHz
+#if CH_CFG_SMP_MODE == TRUE
+    /*
+      chThdCreateStatic() has no way to name an instance, so build the
+      descriptor by hand, on the core the thread core table gives "rcout".
+     */
+    {
+        /*
+          Lay down the canary first. chThdCreateStatic() does this for you;
+          creating from a descriptor does not, and stack_free() measures
+          headroom by counting canary words from the base - so an unfilled area
+          reads as zero free and trips a stack_overflow internal error on a
+          thread that has barely touched its stack.
+         */
+#if CH_DBG_FILL_THREADS == TRUE
+        __thd_stackfill((uint8_t *)THD_WORKING_AREA_BASE(_rcout_thread_wa),
+                        (uint8_t *)THD_WORKING_AREA_END(_rcout_thread_wa));
+#endif  // CH_DBG_FILL_THREADS == TRUE
+        thread_descriptor_t td = {
+            .name     = "rcout",
+            .wbase    = THD_WORKING_AREA_BASE(_rcout_thread_wa),
+            .wend     = THD_WORKING_AREA_END(_rcout_thread_wa),
+            .prio     = APM_RCOUT_PRIORITY,
+            .funcp    = _rcout_thread,
+            .arg      = this,
+            .instance = thread_get_preferred_core("rcout"),
+        };
+        chSysLock();
+        _rcout_thread_ctx = chThdCreateSuspendedI(&td);
+        chSchWakeupS(_rcout_thread_ctx, MSG_OK);
+        chSysUnlock();
+    }
+#else
     _rcout_thread_ctx = chThdCreateStatic(_rcout_thread_wa,
                      sizeof(_rcout_thread_wa),
                      APM_RCOUT_PRIORITY,        /* Initial priority.    */
                      _rcout_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
 #endif
+#endif  // HAL_NO_RCOUT_THREAD
 
 #if HAL_RCIN_THREAD_ENABLED
     // setup the RCIN thread - this will call tasks at 1kHz
@@ -148,7 +192,13 @@ void Scheduler::init()
 #endif
 
 #ifndef HAL_USE_EMPTY_STORAGE
-    // the storage thread runs at just above IO priority
+    // the storage thread runs at just above IO priority.
+    // On RP2350 it must stay on core0: a flash write drops XIP, and the lockout
+    // protocol that parks the other core is driven from core0 (rpEflBeforeXipOff
+    // rings core1's doorbell). A flash write from core1 is never acknowledged
+    // and fails with FLASH_ERROR_HW_FAILURE after 10 ms. chThdCreateStatic()
+    // always creates on the calling core, which is core0, so this holds by
+    // construction rather than by a define.
     _storage_thread_ctx = chThdCreateStatic(_storage_thread_wa,
                      sizeof(_storage_thread_wa),
                      APM_STORAGE_PRIORITY,        /* Initial priority.      */
@@ -310,6 +360,11 @@ void Scheduler::reboot(bool hold_in_bootloader)
     set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
 #endif
 
+#if defined(RP2350)
+    // Breadcrumb for distinguishing explicit scheduler reboot from fault loops.
+    WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX] = RP2350_RESET_DIAG_SCHEDULER_REBOOT;
+#endif  // defined(RP2350)
+
     // disable all interrupt sources
     port_disable();
 
@@ -467,7 +522,7 @@ void Scheduler::_monitor_thread(void *arg)
             }
 #endif
         }
-        if (loop_delay >= 500 && !sched->in_expected_delay()) {
+        if (loop_delay >= HAL_MAIN_LOOP_STUCK_THRESHOLD_MS && !sched->in_expected_delay()) {
             // at 500ms we declare an internal error
             AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck, hal.util->persistent_data.semaphore_line);
             /*
@@ -572,12 +627,23 @@ void Scheduler::_io_thread(void* arg)
 #endif
 #if AP_CRASHDUMP_FATFS_ENABLED
     uint32_t last_crashdump_check_ms = 0;
+#endif  // AP_CRASHDUMP_FATFS_ENABLED
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
+    uint32_t last_perf_report_ms = 0;
 #endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
+
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
+        // 0.1 Hz
+        if (AP_HAL::millis() - last_perf_report_ms >= 10000) {
+            last_perf_report_ms = AP_HAL::millis();
+            rp2350_perf_report();
+        }
+#endif  // defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
 
 #if HAL_LOGGING_ENABLED || CH_DBG_ENABLE_STACK_CHECK == TRUE || AP_CRASHDUMP_FATFS_ENABLED
         uint32_t now = AP_HAL::millis();
@@ -687,6 +753,12 @@ void Scheduler::restore_interrupts(void *state)
 */
 void Scheduler::thread_create_trampoline(void *ctx)
 {
+#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
+    // the sampler arms its own core's alarm, so core1's is armed from a thread there
+    if (port_get_core_id() == 1U) {
+        rp2350_pc_sampler_init_core1();
+    }
+#endif  // defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
     AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
     (*t)();
     free(t);
@@ -749,6 +821,59 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     }
     return true;
 }
+
+#if CH_CFG_SMP_MODE == TRUE
+#if CH_DBG_STATISTICS == TRUE
+/*
+  ch1's idle thread is created inside chInstanceObjectInit() and is not
+  reachable from the instance, so find it once through the registry: it is
+  the only IDLEPRIO thread owned by ch1.
+ */
+rttime_t Scheduler::core1_idle_cumulative(void)
+{
+    static thread_t *idle_tp;
+    if (idle_tp == nullptr) {
+        for (thread_t *tp = chRegFirstThread(); tp != nullptr; tp = chRegNextThread(tp)) {
+            if (tp->owner == &ch1 && tp->hdr.pqueue.prio == IDLEPRIO) {
+                idle_tp = tp;
+                break;
+            }
+        }
+        if (idle_tp == nullptr) {
+            return 0;
+        }
+    }
+    return idle_tp->stats.cumulative;
+}
+#endif  // CH_DBG_STATISTICS == TRUE
+
+float Scheduler::core1_load_pct()
+{
+#if CH_DBG_STATISTICS == TRUE
+    // Measure idle time on ch1 and invert: load = 100% - idle%.
+    // This automatically includes all threads pinned to Core1.
+    const rttime_t cur_idle = core1_idle_cumulative();
+    const uint64_t cur_us = AP_HAL::micros64();
+    if (_core1_last_us == 0 || cur_idle < _core1_last_cumulative) {
+        // no interval yet, or a threads.txt read has zeroed the idle thread's
+        // counter since the last call: -2.0 tells the caller to skip this report
+        _core1_last_cumulative = cur_idle;
+        _core1_last_us = cur_us;
+        return -2.0f;
+    }
+    const uint64_t elapsed = cur_us - _core1_last_us;
+    if (elapsed == 0) {
+        return 0.0f;
+    }
+    const float idle_pct = (float)(cur_idle - _core1_last_cumulative) * 100.0f / elapsed;
+    _core1_last_cumulative = cur_idle;
+    _core1_last_us = cur_us;
+    return 100.0f - idle_pct;
+#else
+    return -1.0f;
+#endif  // CH_DBG_STATISTICS == TRUE
+}
+#endif // CH_CFG_SMP_MODE
 
 /*
   inform the scheduler that we are calling an operation from the
@@ -842,6 +967,14 @@ void Scheduler::check_stack_free(void)
         AP::internalerror().error(AP_InternalError::error_t::stack_overflow, 0xFFFF);
 #endif
     }
+#if CH_CFG_SMP_MODE == TRUE
+    if (stack_free(&__c1_main_stack_base__) < min_stack) {
+        // and 0xFFFE for core1's ISR stack
+#if AP_INTERNALERROR_ENABLED
+        AP::internalerror().error(AP_InternalError::error_t::stack_overflow, 0xFFFE);
+#endif  // AP_INTERNALERROR_ENABLED
+    }
+#endif  // CH_CFG_SMP_MODE == TRUE
 
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         if (stack_free(tp->wabase) < min_stack) {
