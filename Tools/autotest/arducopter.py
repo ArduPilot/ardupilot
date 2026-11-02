@@ -18528,7 +18528,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         return sum(hover) / len(hover)
 
     def AccelBiasMovingPlatform(self):
-        '''Test accel bias is not learned when armed on an accelerating platform'''
+        '''Test accel bias is not learned while disarmed on an accelerating platform'''
         # A vehicle sitting on a car or a ship deck feels the platform's
         # acceleration. The EKF's movement check only compares the length of the
         # accel vector against gravity, so a steady acceleration well inside
