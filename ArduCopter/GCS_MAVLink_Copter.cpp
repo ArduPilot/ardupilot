@@ -1065,9 +1065,9 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
 #if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         case MAV_FRAME_BODY_NED:
         case MAV_FRAME_BODY_OFFSET_NED:
-#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
             pos_ned_m.xy() = copter.ahrs.body_to_earth2D_p(pos_ned_m.xy());
             break;
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         default:
             break;
         }
@@ -1107,9 +1107,9 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
 #if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         case MAV_FRAME_BODY_NED:
         case MAV_FRAME_BODY_OFFSET_NED:
-#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
             vel_ned_ms.xy() = copter.ahrs.body_to_earth2D(vel_ned_ms.xy());
             break;
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         default:
             break;
         }
@@ -1124,9 +1124,9 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
 #if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         case MAV_FRAME_BODY_NED:
         case MAV_FRAME_BODY_OFFSET_NED:
-#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
             accel_ned_mss.xy() = copter.ahrs.body_to_earth2D(accel_ned_mss.xy());
             break;
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         default:
             break;
         }
@@ -1142,9 +1142,9 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
 #if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         case MAV_FRAME_BODY_NED:
         case MAV_FRAME_BODY_OFFSET_NED:
-#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
             yaw_relative = true;
             break;
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         default:
             break;
         }
