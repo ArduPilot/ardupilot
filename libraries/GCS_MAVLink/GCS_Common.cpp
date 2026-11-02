@@ -957,31 +957,36 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
-    mavlink_mission_item_int_t mission_item_int;
-    bool send_mission_item_warning = false;
-    if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
-        mavlink_mission_item_t mission_item;
-        mavlink_msg_mission_item_decode(&msg, &mission_item);
+    mavlink_mission_item_t mission_item;
+    mavlink_msg_mission_item_decode(&msg, &mission_item);
 #if AP_MISSION_ENABLED
-        MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
-        if (ret != MAV_MISSION_ACCEPTED) {
-            const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
-            send_mission_ack(msg, type, ret);
-            return;
-        }
-#else
-        // No mission library, so we can't convert from MISSION_ITEM
-        // to MISSION_ITEM_INT.  Since we shouldn't be receiving fence
-        // or rally items via MISSION_ITEM, we don't need to work hard
-        // here, just fail:
-        const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item.mission_type;
-        send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
+    mavlink_mission_item_int_t mission_item_int;
+    MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
+    if (ret != MAV_MISSION_ACCEPTED) {
+        const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
+        send_mission_ack(msg, type, ret);
         return;
-#endif
-        send_mission_item_warning = true;
-    } else {
-        mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
     }
+    handle_mission_item_int(msg, mission_item_int, true);
+#else
+    // No mission library, so we can't convert from MISSION_ITEM
+    // to MISSION_ITEM_INT.  Since we shouldn't be receiving fence
+    // or rally items via MISSION_ITEM, we don't need to work hard
+    // here, just fail:
+    const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item.mission_type;
+    send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
+#endif
+}
+
+void GCS_MAVLINK::handle_mission_item_int(const mavlink_message_t &msg)
+{
+    mavlink_mission_item_int_t mission_item_int;
+    mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
+    handle_mission_item_int(msg, mission_item_int, false);
+}
+
+void GCS_MAVLINK::handle_mission_item_int(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int, bool send_mission_item_warning)
+{
     const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
 
 #if AP_MISSION_ENABLED
@@ -1021,9 +1026,13 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
         return;
     }
 
+#if AP_MISSION_ENABLED
+    // only MISSION_ITEM, which needs AP_Mission to convert it, asks
+    // for this warning
     if (send_mission_item_warning) {
         prot->send_mission_item_warning();
     }
+#endif
 
     if (!prot->receiving) {
         send_mission_ack(msg, type, MAV_MISSION_ERROR);
@@ -4672,8 +4681,11 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
 
     // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
-    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
         handle_mission_item(msg);
+        break;
+
+    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
+        handle_mission_item_int(msg);
         break;
 
     // read an individual command from EEPROM and send it to the GCS
