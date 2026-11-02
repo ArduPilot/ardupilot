@@ -367,7 +367,7 @@ void MissionItemProtocol::queued_request_send()
         return;
     }
     CHECK_PAYLOAD_SIZE2_VOID(link->get_chan(), MISSION_REQUEST);
-    mavlink_msg_mission_request_send(
+    mavlink_msg_mission_request_int_send(
         link->get_chan(),
         dest_sysid,
         dest_compid,

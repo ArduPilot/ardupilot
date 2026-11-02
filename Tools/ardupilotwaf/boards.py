@@ -369,6 +369,7 @@ class Board:
             '-Werror=format-extra-args',
             '-Werror=ignored-qualifiers',
             '-Werror=undef',
+            '-Werror=deprecated-declarations',
             '-DARDUPILOT_BUILD',
         ]
 
@@ -471,6 +472,7 @@ class Board:
             '-Werror=unused-value',
             '-Werror=unused-variable',
             '-Werror=delete-non-virtual-dtor',
+            '-Werror=deprecated-declarations',
             '-Wfatal-errors',
             '-Wno-trigraphs',
             '-Werror=parentheses',
@@ -1289,7 +1291,6 @@ class chibios(Board):
             '--specs=nano.specs',
             '--specs=nosys.specs',
             '-D__USE_CMSIS',
-            '-Werror=deprecated-declarations',
             '-DNDEBUG=1'
         ]
         if not cfg.options.Werror:
