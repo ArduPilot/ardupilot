@@ -15996,6 +15996,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if max_gz > 0.5:
                 raise NotAchievedException("core %u: Z gyro bias ran up to %.2f deg/s after the reset" % (core, max_gz))
 
+    def StaticYawKeepsCompassYaw(self):
+        '''check a still vehicle that loses its yaw source keeps its compass aligned yaw'''
+        # hold the declination at 0 from the compass alignment on, so the yaw the
+        # alignment sets is the yaw the compass then keeps
+        self.static_yaw_test_setup({
+            "COMPASS_AUTODEC": 0,
+            "COMPASS_DEC": 0,
+            "EK3_MAG_EF_LIM": 0,
+        })
+        # never move: the static yaw reference is first taken before the compass aligns the yaw
+        self.wait_ready_to_arm()
+
+        switch_us = int(self.get_sim_time() * 1e6)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        self.delay_sim_time(15, "static yaw fusion with no yaw source")
+
+        # a reference left at the yaw from before the alignment would pull the yaw back toward it
+        cores = self.ekf3_yaw_change_and_max_gyro_bias_z(switch_us)
+        if len(cores) == 0:
+            raise NotAchievedException("no XKF1 records after the source set switch")
+        for core, (yaw_change, _) in sorted(cores.items()):
+            self.progress("EKF3 core %u: yaw moved up to %.1f deg" % (core, yaw_change))
+            if yaw_change > 5:
+                raise NotAchievedException("core %u: yaw moved %.1f deg with no yaw source" % (core, yaw_change))
+
     def ekf3_yaw_change_and_max_gyro_bias_z(self, since_us):
         '''for each EKF3 core in the current onboard log, the largest yaw change from
         its last yaw before since_us, and the largest Z gyro bias magnitude since then'''
@@ -24370,6 +24395,7 @@ return update, 1000
             self.OSDParamConfig,
             self.EKFBootstrapReset,
             self.EKFBootstrapResetStaticYaw,
+            self.StaticYawKeepsCompassYaw,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
             self.SMART_RTL_EnterLeave,
