@@ -211,6 +211,8 @@ private:
     struct {
         double internal_time;
         ObjectBuffer<stamped_Gal3F> stamped_inputs{CINS_MAX_HISTORY};
+        Gal3F pending_input; // inputs not yet pushed into stamped_inputs
+        double last_push_time; // internal_time of the last push
         Vector3F gps_vel;
         Vector3F gps_pos;
         Gal3F YR; // Primary right delay matrix
