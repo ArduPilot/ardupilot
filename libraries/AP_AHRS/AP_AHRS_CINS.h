@@ -106,6 +106,11 @@ private:
     bool get_compass_yaw(ftype &yaw_rad, ftype &dt);
     bool get_compass_vector(Vector3F &mag_vec, Vector3F &mag_ref, ftype &dt);
 
+#if HAL_LOGGING_ENABLED
+    void Log_Write();
+    uint32_t last_log_ms;
+#endif
+
     void compute_bias_update_imu(const SIM23& Gamma);
     void saturate_bias(Vector3F& bias_correction, const Vector3F& current_bias, const ftype& saturation, const ftype& dt) const;
 
