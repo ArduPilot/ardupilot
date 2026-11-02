@@ -22,7 +22,8 @@
 #endif
 
 #ifndef AP_AHRS_CINS_ENABLED
-#define AP_AHRS_CINS_ENABLED AP_AHRS_BACKEND_DEFAULT_ENABLED && AP_INERTIALSENSOR_ENABLED
+// CINS is developmental; build it in with --enable-CINS
+#define AP_AHRS_CINS_ENABLED 0
 #endif
 
 
