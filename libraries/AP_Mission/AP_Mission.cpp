@@ -959,7 +959,9 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_GO_AROUND:
     case MAV_CMD_DO_SET_ROI_LOCATION:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_PAYLOAD_PLACE:
@@ -1367,9 +1369,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                         // gimbal device id
         break;
 
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
         cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
         break;
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
 
     case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // MAV ID: 202
         cmd.content.digicam_configure.shooting_mode = packet.param1;
@@ -1390,12 +1394,14 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.digicam_control.cmd_id = packet.y;
         break;
 
+#if AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
         // TODO: this is only valid if packet.z == MAV_MOUNT_MODE_MAVLINK_TARGETING
         cmd.content.mount_control.pitch = packet.param1;
         cmd.content.mount_control.roll = packet.param2;
         cmd.content.mount_control.yaw = packet.param3;
         break;
+#endif  // AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
         cmd.content.cam_trigg_dist.meters = packet.param1;  // distance between camera shots in meters
@@ -1618,18 +1624,24 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
         case MAV_FRAME_MISSION:
         case MAV_FRAME_GLOBAL:
+#if AP_MISSION_GLOBAL_INT_FRAMES_ENABLED
         case MAV_FRAME_GLOBAL_INT:
+#endif  // AP_MISSION_GLOBAL_INT_FRAMES_ENABLED
             cmd.content.location.relative_alt = 0;
             break;
 
         case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+#if AP_MISSION_GLOBAL_INT_FRAMES_ENABLED
         case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+#endif  // AP_MISSION_GLOBAL_INT_FRAMES_ENABLED
             cmd.content.location.relative_alt = 1;
             break;
 
 #if AP_TERRAIN_AVAILABLE
         case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+#if AP_MISSION_GLOBAL_INT_FRAMES_ENABLED
         case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+#endif  // AP_MISSION_GLOBAL_INT_FRAMES_ENABLED
             // we mark it as a relative altitude, as it doesn't have
             // home alt added
             cmd.content.location.relative_alt = 1;
@@ -1911,9 +1923,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.p1;                         // gimbal device id
         break;
 
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
         packet.param1 = cmd.p1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
         break;
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
 
     case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // MAV ID: 202
         packet.param1 = cmd.content.digicam_configure.shooting_mode;
@@ -1934,12 +1948,14 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.y = cmd.content.digicam_control.cmd_id;
         break;
 
+#if AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
         packet.param1 = cmd.content.mount_control.pitch;
         packet.param2 = cmd.content.mount_control.roll;
         packet.param3 = cmd.content.mount_control.yaw;
         packet.z = MAV_MOUNT_MODE_MAVLINK_TARGETING;
         break;
+#endif  // AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
         packet.param1 = cmd.content.cam_trigg_dist.meters;  // distance between camera shots in meters
@@ -2970,8 +2986,10 @@ const char *AP_Mission::Mission_Command::type() const
         return "SetROILocation";
     case MAV_CMD_DO_SET_ROI_NONE:
         return "SetROINone";
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
         return "SetROI";
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_REVERSE:
         return "SetReverse";
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
@@ -3022,8 +3040,10 @@ const char *AP_Mission::Mission_Command::type() const
         return "Sprayer";
     case MAV_CMD_DO_AUX_FUNCTION:
         return "AuxFunction";
+#if AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
         return "MountControl";
+#endif  // AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_WINCH:
         return "Winch";
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
