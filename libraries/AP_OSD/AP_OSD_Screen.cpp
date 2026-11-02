@@ -1074,7 +1074,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 #if AP_OSD_EKF_LANES_ENABLED
     // @Param: EKF0_EN
     // @DisplayName: EKF0_EN
-    // @Description: Displays EKF core 0 as C0, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows the flow sensor's signal strength after the RSSI symbol, 0 to 99, and a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes and the signal strength reads --, flashing
+    // @Description: Displays EKF core 0: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength and which flow axes it is fusing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF0_X
@@ -1090,7 +1090,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF1_EN
     // @DisplayName: EKF1_EN
-    // @Description: Displays EKF core 1 as C1, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows the flow sensor's signal strength after the RSSI symbol, 0 to 99, and a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes and the signal strength reads --, flashing
+    // @Description: Displays EKF core 1: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength and which flow axes it is fusing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF1_X
@@ -1106,7 +1106,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF2_EN
     // @DisplayName: EKF2_EN
-    // @Description: Displays EKF core 2 as C2, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows the flow sensor's signal strength after the RSSI symbol, 0 to 99, and a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: left, up and right arrows in turn when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes and the signal strength reads --, flashing
+    // @Description: Displays EKF core 2: whether it is the primary core, its horizontal position type and, on an optical flow lane, the flow signal strength and which flow axes it is fusing
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF2_X
