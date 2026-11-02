@@ -1,6 +1,9 @@
+# AP_FLAKE8_CLEAN
+
 import numpy as np
-from scipy.linalg import expm
+
 from pylie import SO3
+from scipy.linalg import expm
 
 
 def generate_SIM23():

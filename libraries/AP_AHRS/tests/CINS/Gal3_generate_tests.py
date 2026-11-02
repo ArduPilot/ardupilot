@@ -1,4 +1,7 @@
+# AP_FLAKE8_CLEAN
+
 import numpy as np
+
 from pylie import SO3
 
 
