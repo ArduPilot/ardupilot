@@ -41,55 +41,95 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.active_airspeed_index = primary_airspeed_index();
 #endif  // AP_AIRSPEED_ENABLED
 
-    results.attitude_valid = extahrs.get_quaternion(results.quaternion);
-    results.derive_attitude_from_quaternion();
+    auto &state = extahrs.state;
+    {
+        // read the external AHRS state under a single lock so that
+        // the attitude, velocity and position published here all
+        // come from the same update of that state
+        WITH_SEMAPHORE(state.sem);
 
-    results.gyro_drift.zero();
-    if (!extahrs.get_gyro(results.gyro_estimate)) {
+        results.attitude_valid = state.have_quaternion;
+        if (state.have_quaternion) {
+            results.quaternion = state.quat;
+        }
+        results.derive_attitude_from_quaternion();
+
+        const bool have_imu = extahrs.has_sensor(AP_ExternalAHRS::AvailableSensor::IMU);
+
+        results.gyro_drift.zero();
+        if (have_imu) {
+            results.gyro_estimate = state.gyro;
+        } else {
 #if AP_INERTIALSENSOR_ENABLED
-        results.gyro_estimate = _ins.get_gyro();
+            results.gyro_estimate = _ins.get_gyro();
 #endif  // AP_INERTIALSENSOR_ENABLED
-    }
+        }
 
-    Vector3f accel;
-    if (!extahrs.get_accel(accel)) {
+        Vector3f accel;
+        if (have_imu) {
+            accel = state.accel;
+        } else {
 #if AP_INERTIALSENSOR_ENABLED
-        accel = _ins.get_accel();
+            accel = _ins.get_accel();
 #endif  // AP_INERTIALSENSOR_ENABLED
-    }
+        }
 
-    /*
-     * acceleration estimates
-     */
-    // results.accel_bias = {} - External does not estimate accel bias
-    const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
-    results.accel_ef = accel_ef;
+        /*
+         * acceleration estimates
+         */
+        // results.accel_bias = {} - External does not estimate accel bias
+        const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
+        results.accel_ef = accel_ef;
 
-    results.velocity_NED_valid = AP::externalAHRS().get_velocity_NED(results.velocity_NED);
-    // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    results.vert_pos_rate_D_valid = AP::externalAHRS().get_speed_down(results.vert_pos_rate_D);
+        if (state.have_velocity) {
+            results.velocity_NED = state.velocity;
+            results.velocity_NED_valid = true;
+            // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
+            // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
+            results.vert_pos_rate_D = state.velocity.z;
+            results.vert_pos_rate_D_valid = true;
+        }
 
-    // ground velocity estimate in meters/second, in North/East order
-    results.velocity_NE = AP::externalAHRS().get_groundspeed_vector();
+        // ground velocity estimate in meters/second, in North/East order
+        results.velocity_NE = state.velocity.xy();
 
-    /*
-     * position estimates
-     */
-    results.location_valid = AP::externalAHRS().get_location(results.location);
+        /*
+         * position estimates
+         */
+        if (state.have_location) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            if (!state.location.initialised()) {
+                AP_HAL::panic("Uninitialized location in AP_ExternalAHRS.");
+            }
+#endif
+            results.location = state.location;
+            if (state.last_location_update_us != 0 &&
+                state.have_velocity) {
+                // extrapolate position based on velocity to cope with slow backends
+                const float dt = (AP_HAL::micros() - state.last_location_update_us)*1.0e-6;
+                if (dt < 1) {
+                    // only extrapolate for 1s max
+                    Vector3p ofs = state.velocity.topostype();
+                    ofs *= dt;
+                    results.location.offset(ofs);
+                }
+            }
+            results.location_valid = true;
+        }
 
-    // origin-relative functions
-    results.provides_common_origin = true;
+        // origin-relative functions
+        results.provides_common_origin = true;
 
-    // origin-relative position:
-    Location orgn;
-    if (extahrs.get_origin(orgn) &&
-        results.location_valid) {
-        const Vector3p posNED = orgn.get_distance_NED_postype(results.location);
-        results.position_NE = posNED.xy();
-        results.position_NE_valid = true;
-        results.position_D = posNED.z;
-        results.position_D_valid = true;
+        // origin-relative position:
+        Location orgn;
+        if (extahrs.get_origin(orgn) &&
+            results.location_valid) {
+            const Vector3p posNED = orgn.get_distance_NED_postype(results.location);
+            results.position_NE = posNED.xy();
+            results.position_NE_valid = true;
+            results.position_D = posNED.z;
+            results.position_D_valid = true;
+        }
     }
 
     // hagl is not supplied:
