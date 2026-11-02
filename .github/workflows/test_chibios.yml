@@ -171,6 +171,7 @@ jobs:
             signing,
             CubeOrange-PPP,
             CubeOrange-EKF2,
+            mavlink-deprecations,
             SOHW,
             Pixhawk6X-PPPGW,
             new-check,
