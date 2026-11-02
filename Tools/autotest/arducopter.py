@@ -18067,13 +18067,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def ThrowAbortRestoresSourceSet(self):
-        '''Leaving throw without completing must restore the pre-throw EKF source set'''
-        # ModeThrow::init() switches to THROW_SRC_INI on entry; only a
-        # completed throw restores it (in the THROW_COMPLETE handoff).  Any
-        # other exit -- mode switched out, never thrown, disarm -- must
-        # restore the source set active before throw was entered, otherwise
-        # the vehicle stays stuck on the throw set for the rest of the
-        # session.  Prove the restore happens on the abort path.
+        '''Leaving throw restores the pre-throw EKF source set unless another was picked'''
+        # ModeThrow::init() switches to THROW_SRC_INI on entry.  Leaving throw
+        # before completion -- mode switched out, never thrown, disarm -- must
+        # put back the source set active before throw was entered while
+        # THROW_SRC_INI's set is still in use, otherwise the vehicle stays on
+        # the throw set for the rest of the session; a set picked in throw mode
+        # is kept instead.  Prove both on the abort path.
         self.set_parameters({
             "THROW_SRC_INI": 2,    # switch to SRC2 on throw entry
             "THROW_SRC_SET": 1,    # completion would restore SRC1 (not exercised here)
@@ -18088,6 +18088,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # leave throw without ever throwing; exit() must restore set 1
         self.change_mode('ALT_HOLD')
         self.wait_statustext("Throw: restored EKF Source Set 1", check_context=True)
+
+        # a set the GCS picks in throw mode is kept when throw is left
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode('THROW')
+        self.wait_statustext("Throw: EKF Source Set 2", check_context=True)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 3)
+        self.change_mode('ALT_HOLD')
+        self.wait_statustext("Throw: keeping EKF Source Set 3", check_context=True)
+        self.delay_sim_time(3, "the log to catch up")
+        if self.statustext_in_collections("Throw: restored EKF Source Set"):
+            raise NotAchievedException("leaving throw replaced the source set picked during it")
+        dfreader = self.dfreader_for_current_onboard_log()
+        source_set = None
+        while True:
+            m = dfreader.recv_match(type="XKFS")
+            if m is None:
+                break
+            if m.C == 0:
+                source_set = m.SS
+        if source_set != 2:
+            raise NotAchievedException("EKF on source set index %s after leaving throw, want 2" % source_set)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 1)
 
     def ThrowSpinDrop(self):
         '''Test that a heavily-spinning drop recovers via the spin-aware spool-up freefall check'''
@@ -18372,7 +18394,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def ThrowSrcInitRestoredOnCompletion(self):
-        '''THROW_SRC_INI must be undone on completion when THROW_SRC_SET is 0'''
+        '''THROW_SRC_INI is undone on completion when THROW_SRC_SET is 0, unless another set was picked'''
         # THROW_SRC_INI is documented for a source set with no horizontal
         # aiding.  With THROW_SRC_SET at its default 0 ("No change") nothing
         # else selects a set, so completion has to put the pre-throw set back -
@@ -18407,6 +18429,42 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # the restore is only real if horizontal aiding came back with it
         self.change_mode('LOITER', timeout=20)
 
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.reboot_sitl()
+
+        # a set the GCS picks while armed in throw mode is kept through completion
+        self.wait_ready_to_arm()
+        self.change_mode('THROW')
+        self.arm_vehicle()
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 3)
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+        self.wait_mode('ALT_HOLD')
+        self.wait_statustext("Throw: keeping EKF Source Set 3", check_context=True, timeout=10)
+        self.delay_sim_time(3, "the log to catch up")
+        if self.statustext_in_collections("Throw: restored EKF Source Set"):
+            raise NotAchievedException("completion replaced the source set picked in throw mode")
+        dfreader = self.dfreader_for_current_onboard_log()
+        source_set = None
+        while True:
+            m = dfreader.recv_match(type="XKFS")
+            if m is None:
+                break
+            if m.C == 0:
+                source_set = m.SS
+        if source_set != 2:
+            raise NotAchievedException("EKF on source set index %s after completion, want 2" % source_set)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 1)
         self.change_mode('LAND')
         self.wait_disarmed(timeout=120)
         self.zero_throttle()
