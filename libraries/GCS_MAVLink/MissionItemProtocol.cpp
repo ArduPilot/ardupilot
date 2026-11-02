@@ -366,8 +366,13 @@ void MissionItemProtocol::queued_request_send()
         INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
+#if AP_MAVLINK_MSG_MISSION_REQUEST_SENDING_ENABLED
     CHECK_PAYLOAD_SIZE2_VOID(link->get_chan(), MISSION_REQUEST);
     mavlink_msg_mission_request_send(
+#else
+    CHECK_PAYLOAD_SIZE2_VOID(link->get_chan(), MISSION_REQUEST_INT);
+    mavlink_msg_mission_request_int_send(
+#endif  // AP_MAVLINK_MSG_MISSION_REQUEST_SENDING_ENABLED
         link->get_chan(),
         dest_sysid,
         dest_compid,
