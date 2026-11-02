@@ -162,5 +162,7 @@ protected:
         Vector3f actuator_sysid;
         Vector3f pd_scale{1,1,1};
         Vector3f i_scale{1,1,1};
+        // the angle P scale the angle controller ran with, reported by get_last_angle_P_scale()
+        Vector3f angle_P_scale{1,1,1};
     } _rate_modifiers;
 };
