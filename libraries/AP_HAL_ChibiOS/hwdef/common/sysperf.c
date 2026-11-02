@@ -39,6 +39,24 @@ static sys_load_data_t  _load = {
   .state = SYS_MEASURE_STOP
 };
 
+/**
+ * @brief Per-reader load statistics window
+ */
+typedef struct {
+  uint64_t        run_snapshot;     /**< @brief _total_run at window start. */
+  uint64_t        idle_snapshot;    /**< @brief _total_idle at window start.*/
+  sys_cpu_load_t  peak;             /**< @brief peak load in this window.   */
+} sys_load_window_t;
+
+/* Per-reader windows, updated from the idle hooks, read and restarted by
+   each reader independently via sysReadResetCPULoad().*/
+static sys_load_window_t _windows[SYS_LOAD_READER_COUNT];
+
+/* Monotonic totals of measured run and idle cycles, updated from the idle
+   hooks. 64-bit so they never wrap in practice.*/
+static uint64_t _total_run;
+static uint64_t _total_idle;
+
 /*===========================================================================*/
 /* Module local functions.                                                   */
 /*===========================================================================*/
@@ -103,6 +121,56 @@ bool sysStopLoadMeasure(void) {
 sys_cpu_load_t sysGetCPUPeakLoad(void) {
 
   return _load.peak;
+}
+
+/**
+ * @brief Clear the peak CPU load so it restarts from the current load.
+ * @note  Called from thread context. No locking is needed: the idle hooks
+ *        that update the peak only run when no other thread is runnable.
+ *
+ * @api
+ */
+void sysClearCPUPeakLoad(void) {
+
+  _load.peak = (sys_cpu_load_t)0;
+}
+
+/**
+ * @brief Read a reader's windowed average/peak load and restart its window.
+ * @note  Each reader observes the load accumulated since its own previous
+ *        call, without disturbing the other readers or the moving average.
+ * @note  Called from thread context. No locking is needed: the idle hooks
+ *        that update the shared totals only run when no other thread is
+ *        runnable, so they can never interleave with this function.
+ *
+ * @param[in]  reader  the window to read and restart
+ * @param[out] avg     average load over the window (percentage * 100), or NULL
+ * @param[out] peak    peak load over the window (percentage * 100), or NULL
+ *
+ * @return True if the window contained measured cycles. False means no
+ *         data: measurement is stopped or not yet started, or the CPU had
+ *         no idle time at all during the window (the idle hooks never ran).
+ *
+ * @api
+ */
+bool sysReadResetCPULoad(sys_load_reader_t reader,
+                         sys_cpu_load_t *avg, sys_cpu_load_t *peak) {
+
+  sys_load_window_t *w = &_windows[reader];
+  const uint64_t run  = _total_run - w->run_snapshot;
+  const uint64_t idle = _total_idle - w->idle_snapshot;
+
+  if (avg != NULL) {
+    *avg = (run + idle > 0) ?
+           (sys_cpu_load_t)((run * SYS_CPU_MAX_LOAD) / (run + idle)) : 0;
+  }
+  if (peak != NULL) {
+    *peak = w->peak;
+  }
+  w->run_snapshot = _total_run;
+  w->idle_snapshot = _total_idle;
+  w->peak = 0;
+  return (run + idle) > 0;
 }
 
 /**
@@ -177,6 +245,7 @@ void sysIdleEnterMeasure(void) {
 
       /* Stop the run measurement.*/
       chTMStopMeasurementX(&_load.run);
+      _total_run += _load.run.last;
 
       /* Calculate current load from idle to run.*/
       rtcnt_t idle = _load.idle.cumulative / _load.idle.n;
@@ -190,6 +259,13 @@ void sysIdleEnterMeasure(void) {
       _load.average = current;
       if (current > _load.peak) {
         _load.peak = current;
+      }
+
+      /* Track the peak for each reader's window.*/
+      for (int i = 0; i < SYS_LOAD_READER_COUNT; i++) {
+        if (current > _windows[i].peak) {
+          _windows[i].peak = current;
+        }
       }
 
       /* Scale TM accumulator every second.*/
@@ -238,6 +314,7 @@ void sysIdleLeaveMeasure(void) {
 
       /* RTOS has exited idle so capture time now.*/
       chTMStopMeasurementX(&_load.idle);
+      _total_idle += _load.idle.last;
 
       /* Scale TM accumulator every second.*/
       if (_load.idle.cumulative > SystemCoreClock) {

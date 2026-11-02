@@ -25,6 +25,7 @@
 
 #include "AP_Scheduler.h"
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -440,6 +441,10 @@ void AP_Scheduler::update_logging()
         AP::logger().should_log(_log_performance_bit)) {
         Log_Write_Performance();
     }
+#if AP_CPU_IDLE_STATS_ENABLED
+    // gated by the Log bit of BRD_IDLE_STATS
+    Log_Write_CPU_Load();
+#endif
     perf_info.set_loop_rate(get_loop_rate_hz());
     perf_info.reset();
     // dynamically update the per-task perf counter
@@ -479,6 +484,29 @@ void AP_Scheduler::Log_Write_Performance()
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+
+#if AP_CPU_IDLE_STATS_ENABLED
+// write out PM2 message with windowed true CPU load (avg + peak since the
+// previous message)
+void AP_Scheduler::Log_Write_CPU_Load()
+{
+    // gated by the Log bit of BRD_IDLE_STATS, which also starts load
+    // measurement at boot
+    if (!AP_BoardConfig::idle_stats_enabled(AP_BoardConfig::IdleStats::TO_LOG)) {
+        return;
+    }
+    float cpu_avg = 0, cpu_peak = 0;
+    if (hal.util->consume_system_load(AP_HAL::Util::LoadReader::LOG, cpu_avg, cpu_peak)) {
+        const struct log_PM2 pm2_pkt {
+            LOG_PACKET_HEADER_INIT(LOG_PM2_MSG),
+            time_us   : AP_HAL::micros64(),
+            avg_load  : cpu_avg,
+            peak_load : cpu_peak,
+        };
+        AP::logger().WriteCriticalBlock(&pm2_pkt, sizeof(pm2_pkt));
+    }
+}
+#endif
 #endif  // HAL_LOGGING_ENABLED
 
 // display task statistics as text buffer for @SYS/tasks.txt
