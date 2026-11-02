@@ -319,8 +319,10 @@ bool NavEKF3_core::getLLH(Location &loc) const
         if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
             // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
             loc.set_alt_cm(origin.alt - posD*100.0, Location::AltFrame::ABSOLUTE);
-            if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
-                // The EKF is able to provide a position estimate
+            if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel ||
+                waitingForGpsChecks) {
+                // The EKF is able to provide a position estimate, including
+                // the dead-reckoned one while the GPS re-passes its checks
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
                 loc.offset(outputDataNew.position.x + posOffsetNED.x,
