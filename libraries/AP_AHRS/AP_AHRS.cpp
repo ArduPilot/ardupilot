@@ -2038,9 +2038,11 @@ float AP_AHRS::get_hover_z_bias_correction(uint8_t imu_index) const
     return 0.0f;
 }
 
-bool AP_AHRS::get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z) const
+bool AP_AHRS::get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z)
 {
 #if HAL_NAVEKF3_AVAILABLE
+    // arming and disarming from Lua or DDS call this off the main thread
+    WITH_SEMAPHORE(_rsem);
     Vector3f accel_bias;
     if (ekf3.EKF3.getAccelBiasForIMU(imu_index, accel_bias)) {
         bias_z = accel_bias.z;
@@ -2053,6 +2055,8 @@ bool AP_AHRS::get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z) const
 void AP_AHRS::set_inhibit_accel_bias_learning(bool inhibit)
 {
 #if HAL_NAVEKF3_AVAILABLE
+    // arming from Lua or DDS calls this off the main thread, and each core reads it mid-frame
+    WITH_SEMAPHORE(_rsem);
     ekf3.EKF3.setInhibitAccelBiasLearning(inhibit);
 #endif
 }
