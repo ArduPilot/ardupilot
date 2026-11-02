@@ -298,7 +298,23 @@ void AP_AHRS_CINS::update(void)
 
     update_attitude_from_compass();
 
-    // Write logging messages
+#if HAL_LOGGING_ENABLED
+    Log_Write();
+#endif
+}
+
+#if HAL_LOGGING_ENABLED
+/*
+  write the CINS log messages.  Like DCM, these are written whether
+  or not CINS is the selected backend, at 10Hz
+ */
+void AP_AHRS_CINS::Log_Write()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_log_ms < 100) {
+        return;
+    }
+    last_log_ms = now_ms;
 
     // @LoggerMessage: CINS
     // @Description: CINS state
@@ -392,6 +408,7 @@ void AP_AHRS_CINS::update(void)
                                 state.ZHat.W2().y,
                                 state.ZHat.W2().z);
 }
+#endif  // HAL_LOGGING_ENABLED
 
 void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
 {
