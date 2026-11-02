@@ -13,11 +13,15 @@ Also validates each new board directory:
     committed at Tools/bootloaders/<board>_bl.bin
   - defaults.parm does not set parameters that belong in hwdef.dat
 
+Also checks that no image added, modified or renamed with changes in a
+hwdef directory exceeds MAX_IMAGE_SIZE bytes.
+
 AP_FLAKE8_CLEAN
 '''
 
 from __future__ import annotations
 
+import ast
 import optparse
 import os
 import re
@@ -74,6 +78,47 @@ class TestNewBoards(BuildScriptBase):
 
         return ret
 
+    def get_added_or_modified_files(self) -> Set[str]:
+        '''returns the set of files added, modified, or renamed with changes
+        relative to the merge-base with master, as paths relative to the repo
+        root.  Files renamed without changes (R100) are not included.'''
+        current_commitish = self.find_current_git_branch_or_sha1()
+        merge_base = self.find_git_branch_merge_base(current_commitish, self.master_branch)
+        # pin the settings parse_name_status depends on so the result does
+        # not depend on the user's core.quotePath and diff.renames config
+        delta_files = self.run_git([
+            '-c', 'core.quotePath=true',
+            'diff',
+            '--name-status',
+            '--find-renames',
+            '--diff-filter=AMR',
+            f"{merge_base}",
+        ], show_output=False)
+        return self.parse_name_status(delta_files)
+
+    @staticmethod
+    def unquote_git_path(path: str) -> str:
+        '''undo git's C-style quoting of paths containing unusual characters
+        (e.g. non-ASCII).  -z and core.quotePath=false are no use here because
+        run_program() strips non-printable bytes from git's output.'''
+        if not path.startswith('"'):
+            return path
+        return ast.literal_eval('b' + path).decode('utf-8')
+
+    @classmethod
+    def parse_name_status(cls, output: str) -> Set[str]:
+        '''returns the new path of each entry in git diff --name-status
+        output, skipping files renamed without changes (R100)'''
+        ret = set()
+        for line in output.split("\n"):
+            parts = line.split("\t")
+            if len(parts) < 2:
+                continue
+            if parts[0] == 'R100':
+                continue
+            ret.add(cls.unquote_git_path(parts[-1]))
+        return ret
+
     def get_added_hwdef_paths(self) -> Set[str]:
         '''returns the newly added hwdef filepaths relative to the repo root.
         Only .dat files for both main and bootloader firmwares'''
@@ -124,6 +169,27 @@ class TestNewBoards(BuildScriptBase):
     IMG_MD_RE = re.compile(r'!\[[^\]]*\]\(([^)#?\s]+)')
 
     BOOTLOADER_DIR = 'Tools/bootloaders'
+
+    IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg')
+    MAX_IMAGE_SIZE = 1024 * 1024
+
+    def check_image_sizes(self, filepaths: Set[str]) -> None:
+        '''No image added, modified or renamed with changes in a hwdef
+        directory may exceed MAX_IMAGE_SIZE bytes.'''
+        oversized = []
+        for filepath in sorted(filepaths):
+            if "/hwdef/" not in filepath:
+                continue
+            if not filepath.lower().endswith(self.IMAGE_EXTENSIONS):
+                continue
+            size = os.path.getsize(filepath)
+            if size > self.MAX_IMAGE_SIZE:
+                oversized.append(f"  {filepath} ({size} bytes)")
+        if oversized:
+            raise ValueError(
+                f"images must not exceed {self.MAX_IMAGE_SIZE} bytes (1MB); "
+                f"resize or recompress:\n" + "\n".join(oversized)
+            )
 
     def check_new_bootloader_binary(self, board_name: str, added_files: Set[str]) -> None:
         '''A board that introduces a new bootloader hwdef (hwdef-bl.dat) must also
@@ -211,6 +277,8 @@ class TestNewBoards(BuildScriptBase):
         self.run_waf(["bootloader"], show_output=False)
 
     def run(self) -> None:
+        self.check_image_sizes(self.get_added_or_modified_files())
+
         added_files = self.get_added_files()
         hwdef_filepaths = self.get_added_hwdef_paths()
 
