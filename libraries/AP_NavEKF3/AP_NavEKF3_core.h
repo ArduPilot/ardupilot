@@ -848,6 +848,9 @@ private:
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
 
+    // store the current yaw as the static yaw reference
+    void storeStaticYaw();
+
     // determine when to perform fusion of true airspeed measurements
     void SelectTasFusion();
 
