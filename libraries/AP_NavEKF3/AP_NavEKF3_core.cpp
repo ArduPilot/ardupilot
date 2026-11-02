@@ -271,6 +271,8 @@ void NavEKF3_core::InitialiseVariables()
     prevOnGround = true;
     velDCheckedAtRest = false;
     restStartTime_ms = 0;
+    // a bootstrap of a still vehicle keeps onGroundNotMoving, so take the static yaw reference again
+    yawAngDataStatic.time_ms = 0;
     inFlight = false;
     prevInFlight = false;
     manoeuvring = false;

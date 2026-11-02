@@ -1590,6 +1590,9 @@ void NavEKF3_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, rotationO
 
     // Update the rotation matrix
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
+
+    // a still vehicle fuses the static yaw reference, so it follows the reset
+    storeStaticYaw();
     
     // calculate the change in the quaternion state and apply it to the output history buffer
     QuaternionF quat_delta = stateStruct.quat / quatBeforeReset;
