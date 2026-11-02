@@ -416,7 +416,7 @@ void AP_Logger::Write_Power(void)
 #endif
 }
 
-void AP_Logger::Write_Radio(const mavlink_radio_t &packet)
+void AP_Logger::Write_Radio(const mavlink_radio_status_t &packet)
 {
     const struct log_Radio pkt{
         LOG_PACKET_HEADER_INIT(LOG_RADIO_MSG),
