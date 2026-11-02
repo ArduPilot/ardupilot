@@ -602,6 +602,8 @@ protected:
     void handle_mission_count(const mavlink_message_t &msg);
     void handle_mission_write_partial_list(const mavlink_message_t &msg);
     void handle_mission_item(const mavlink_message_t &msg);
+    void handle_mission_item_int(const mavlink_message_t &msg);
+    void handle_mission_item_int(const mavlink_message_t &msg, const mavlink_mission_item_int_t mission_item_int, bool send_mission_item_warning);
 
     void handle_distance_sensor(const mavlink_message_t &msg);
     void handle_obstacle_distance(const mavlink_message_t &msg);
