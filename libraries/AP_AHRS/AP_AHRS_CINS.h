@@ -53,10 +53,13 @@ public:
     void send_ekf_status_report(class GCS_MAVLINK &link) const {
     }
 
-    void get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const {
-        // lower gains in VTOL controllers when flying on CINS
+    void get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler, float &ekfNavVelGainScaler_Z) const {
+        // lower gains in VTOL controllers when flying on CINS; these
+        // are the values DCM uses.  CINS has no baro, so its height
+        // comes from GPS alone:
         ekfGndSpdLimit = 50.0;
         ekfNavVelGainScaler = 0.5;
+        ekfNavVelGainScaler_Z = 0.25;
     }
 
 private:
