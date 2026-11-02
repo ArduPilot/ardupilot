@@ -1940,7 +1940,7 @@ private:
     bool throw_velocity_good() const;
     bool throw_attitude_good() const;
     void throw_do_nextmode_handoff();
-    void restore_source_set();
+    bool restore_source_set();
     Mode *nextmode() const;
     bool nextmode_requires_position() const;
     void throw_apply_yaw_align(const Vector3f& thrust_vector);
@@ -1965,8 +1965,9 @@ private:
     uint32_t nextmode_wait_start_ms; // system time the handoff started waiting for a position, 0 if not waiting
     uint32_t srcset_change_ms;      // system time completion changed the EKF source set, 0 if it did not
     bool xy_controller_active;      // true when XY position controller was initialised
-    bool source_set_switched;       // true if init() switched the EKF source set and exit() must restore it
+    bool source_set_switched;       // true if init() switched the EKF source set and exit() may restore it
     uint8_t saved_source_set;       // EKF source set active before init() switched it for the throw phase
+    uint8_t throw_source_set;       // EKF source set init() switched to for the throw phase
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
     uint32_t uprighting_start_ms;     // system time uprighting stage was entered
