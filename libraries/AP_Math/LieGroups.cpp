@@ -155,13 +155,13 @@ Gal3 Gal3::exponential(const Vector3F &S, const Vector3F &x,const Vector3F &w, f
         B = (1.0f - cosF(theta)) / (theta * theta);
         C = (1.0f - A) / (theta * theta);
         D = (theta - sinF(theta)) / (theta * theta * theta);
-        E = (1.0f - 0.5f*theta*theta - cosF(theta)) / (theta * theta * theta*theta);
+        E = (0.5f*theta*theta + cosF(theta) - 1.0f) / (theta * theta * theta*theta);
     } else {
         A = 1.0f;
         B = 0.5f;
         C = 1.0f / 6.0f;
-        D = 1.0f / 24.0f;
-        E = 1.0f / 120.0f;
+        D = 1.0f / 6.0f;
+        E = 1.0f / 24.0f;
     }
     //create Identity matrix
     Matrix3F identity_3;  // Declare an object of Matrix3

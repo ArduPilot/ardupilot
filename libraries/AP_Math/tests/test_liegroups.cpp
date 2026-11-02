@@ -301,6 +301,75 @@ INSTANTIATE_TEST_CASE_P(Gal3MultiplicationTests,
                         Gal3Test,
                         ::testing::ValuesIn(gal3_multiplication_params));
 
+// Gal3::exponential compared against the power series of the
+// equivalent 5x5 matrix.  A Gal3 element is
+//   [ R v p ]
+//   [ 0 1 t ]
+//   [ 0 0 1 ]
+// so the Lie algebra element (S, x, w, alpha) passed to exponential()
+// is [ skew(S) w x ; 0 0 alpha ; 0 0 0 ]
+static Gal3 gal3_exponential_series(const Vector3F &S, const Vector3F &x, const Vector3F &w, ftype alpha)
+{
+    double A[5][5] {};
+    A[0][1] = -S.z; A[0][2] =  S.y;
+    A[1][0] =  S.z; A[1][2] = -S.x;
+    A[2][0] = -S.y; A[2][1] =  S.x;
+    for (uint8_t i=0; i<3; i++) {
+        A[i][3] = w[i];
+        A[i][4] = x[i];
+    }
+    A[3][4] = alpha;
+
+    double sum[5][5] {};
+    double term[5][5] {};
+    for (uint8_t i=0; i<5; i++) {
+        sum[i][i] = 1;
+        term[i][i] = 1;
+    }
+    for (uint8_t k=1; k<40; k++) {
+        double next[5][5] {};
+        for (uint8_t i=0; i<5; i++) {
+            for (uint8_t j=0; j<5; j++) {
+                for (uint8_t m=0; m<5; m++) {
+                    next[i][j] += term[i][m] * A[m][j] / k;
+                }
+            }
+        }
+        for (uint8_t i=0; i<5; i++) {
+            for (uint8_t j=0; j<5; j++) {
+                term[i][j] = next[i][j];
+                sum[i][j] += term[i][j];
+            }
+        }
+    }
+    return Gal3(Matrix3F({ ftype(sum[0][0]), ftype(sum[0][1]), ftype(sum[0][2]) },
+                         { ftype(sum[1][0]), ftype(sum[1][1]), ftype(sum[1][2]) },
+                         { ftype(sum[2][0]), ftype(sum[2][1]), ftype(sum[2][2]) }),
+                Vector3F(sum[0][4], sum[1][4], sum[2][4]),
+                Vector3F(sum[0][3], sum[1][3], sum[2][3]),
+                sum[3][4]);
+}
+
+TEST(Gal3Exponential, MatchesSeries)
+{
+    const Vector3F x { 1.5, -0.7, 2.0 };
+    const Vector3F w { 3.0, -2.0, 1.0 };
+    const ftype alpha = 2.0;
+    // rotation vectors from large angles down to one small enough to
+    // take exponential()'s small-angle branch:
+    const Vector3F rotations[] {
+        { 0.9, -0.6, 0.7 },
+        { 0.1, 0.2, -0.15 },
+        { 1e-3, -2e-3, 5e-4 },
+        { 1e-9, -2e-9, 5e-10 },
+    };
+    for (const auto &S : rotations) {
+        const Gal3 expected = gal3_exponential_series(S, x, w, alpha);
+        const Gal3 result = Gal3::exponential(S, x, w, alpha);
+        expect_Gal3_near(result, expected);
+    }
+}
+
 AP_GTEST_MAIN()
 
 #pragma GCC diagnostic pop
