@@ -657,16 +657,15 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
         switch (packet.coordinate_frame) {
 #if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         case MAV_FRAME_BODY_NED:
-        case MAV_FRAME_BODY_OFFSET_NED:
-#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
-        {
+        case MAV_FRAME_BODY_OFFSET_NED: {
             // rotate from body-frame to NE frame
             const float ne_x = packet.x * rover.ahrs.cos_yaw() - packet.y * rover.ahrs.sin_yaw();
             const float ne_y = packet.x * rover.ahrs.sin_yaw() + packet.y * rover.ahrs.cos_yaw();
             // add offset to current location
             target_loc.offset(ne_x, ne_y);
-        }
             break;
+        }
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
 
         case MAV_FRAME_LOCAL_OFFSET_NED:
             // add offset to current location
@@ -698,9 +697,9 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
 #if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         case MAV_FRAME_BODY_NED:
         case MAV_FRAME_BODY_OFFSET_NED:
-#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
             target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
             break;
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         default:
             break;
         }
@@ -714,9 +713,9 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
 #if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         case MAV_FRAME_BODY_NED:
         case MAV_FRAME_BODY_OFFSET_NED:
-#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
             target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
             break;
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         default:
             break;
         }
