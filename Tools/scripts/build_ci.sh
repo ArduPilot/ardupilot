@@ -444,6 +444,17 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "mavlink-deprecations" ]; then
+        echo "Building CubeOrangePlus without WIP/deprecated/superseded MAVLink messages"
+        $waf configure --board CubeOrangePlus \
+             --extra-hwdef=Tools/autotest/mavlink-deprecations.hwdef
+        $waf clean
+        $waf copter plane rover sub antennatracker blimp
+        # heli shares objects with copter, so build it separately:
+        $waf heli
+        continue
+    fi
+
     if [ "$t" == "SOHW" ]; then
         echo "Building CubeOrange-SOHW"
         Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board CubeOrange --vehicle copter --simclass MultiCopter
