@@ -218,6 +218,7 @@ void AP_AHRS_CINS::init(void)
 
     delayer.YR = Gal3F::identity();
     delayer.YR_stepper = Gal3F::identity();
+    delayer.pending_input = Gal3F::identity();
 
     heapVars.I3.identity();
     heapVars.zero_vector.zero();
@@ -633,7 +634,26 @@ void AP_AHRS_CINS::update_imu(const Vector3F &gyro_rads, const Vector3F &accel_m
     // Update the delay matrices and buffer
     delayer.YR = delayer.YR * rightMat;
     delayer.internal_time += dt;
-    delayer.stamped_inputs.push({delayer.internal_time, rightMat});
+
+    // the buffer must hold the inputs spanning the GPS lag.  Push no
+    // more often than lets it do that, combining consecutive inputs
+    // into one entry when the loop rate is too high to keep one entry
+    // per input (above about 500Hz at the default lag):
+    delayer.pending_input = delayer.pending_input * rightMat;
+    const double min_push_interval = gains.gps_lag / (CINS_MAX_HISTORY - 2);
+    if (delayer.internal_time - delayer.last_push_time >= min_push_interval) {
+        if (delayer.stamped_inputs.space() == 0) {
+            // should not happen given the push interval; if it does,
+            // apply the oldest input early rather than lose it
+            struct stamped_Gal3F oldest;
+            if (delayer.stamped_inputs.pop(oldest)) {
+                delayer.YR_stepper = delayer.YR_stepper * oldest.gal3;
+            }
+        }
+        delayer.stamped_inputs.push({delayer.internal_time, delayer.pending_input});
+        delayer.pending_input = Gal3F::identity();
+        delayer.last_push_time = delayer.internal_time;
+    }
 
     struct stamped_Gal3F back;
     while (delayer.stamped_inputs.peek(back) &&
