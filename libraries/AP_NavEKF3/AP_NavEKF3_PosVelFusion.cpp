@@ -1071,9 +1071,11 @@ void NavEKF3_core::FuseVelPosNED()
 
             // Calculate a filtered value to be used by pre-flight health checks
             // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
-            // Samples the gate rejects count up to the gate, so a sustained disagreement fails the checks and a single outlier does not
+            // Samples the gate rejects count up to the gate, so a sustained disagreement fails the checks and a single outlier does not.
+            // The clip is no tighter than twice the height error threshold: a low height noise can make the gate narrower than
+            // the threshold, and the filter would then only reach it once the gate had widened while the samples were rejected
             if (onGround) {
-                const ftype innovLimit = sqrtF(maxTestRatio * varInnovVelPos[5]) * MAX(0.01 * (ftype)frontend->_hgtInnovGate, 1.0);
+                const ftype innovLimit = MAX(sqrtF(maxTestRatio * varInnovVelPos[5]) * MAX(0.01 * (ftype)frontend->_hgtInnovGate, 1.0), 2 * GND_HGT_ERR_LIMIT);
                 ftype dtBaro = (imuSampleTime_ms - hgtInnovFiltTime_ms) * 1.0e-3;
                 const ftype hgtInnovFiltTC = 2.0;
                 ftype alpha = constrain_ftype(dtBaro/(dtBaro+hgtInnovFiltTC), 0.0, 1.0);

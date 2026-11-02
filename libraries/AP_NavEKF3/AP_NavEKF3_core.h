@@ -124,6 +124,9 @@
 // maximum GPs ground course uncertainty allowed for yaw alignment (deg)
 #define GPS_VEL_YAW_ALIGN_MAX_ANG_ERR 15.0F
 
+// filtered height innovation on the ground (m) above which onGroundHgtError() reports a height error
+#define GND_HGT_ERR_LIMIT 1.0f
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:

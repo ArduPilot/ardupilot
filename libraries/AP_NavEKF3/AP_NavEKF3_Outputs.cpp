@@ -51,7 +51,7 @@ bool NavEKF3_core::onGroundHgtError(void) const
     if (!onGround || (velDotNEDfilt.z > 0.5f * GRAVITY_MSS)) {
         return false;
     }
-    return ((PV_AidingMode == AID_NONE) || !measuredVertVelAgrees()) && (fabsF(hgtInnovFiltState) > 1.0f);
+    return ((PV_AidingMode == AID_NONE) || !measuredVertVelAgrees()) && (fabsF(hgtInnovFiltState) > GND_HGT_ERR_LIMIT);
 }
 
 /*
