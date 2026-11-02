@@ -18106,7 +18106,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "THROW_NEXTMODE": 5,       # LOITER
             "MOT_SPOOL_TIME": 0.5,
         })
-        self.reboot_sitl()  # SIM_IMU_POS takes effect on reboot
+        self.reboot_sitl()
 
         self.change_mode('THROW')
         self.wait_ready_to_arm()
@@ -18190,7 +18190,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "THROW_NEXTMODE": 5,       # LOITER
             "MOT_SPOOL_TIME": 0.5,
         })
-        self.reboot_sitl()  # SIM_IMU_POS takes effect on reboot
+        self.reboot_sitl()
 
         self.change_mode('THROW')
         self.wait_ready_to_arm()
