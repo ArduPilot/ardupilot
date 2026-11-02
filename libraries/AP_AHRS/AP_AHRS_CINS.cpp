@@ -43,7 +43,6 @@
 #define CINS_GPS_DELAY (0.2) // seconds of delay
 // Variance gain for health checking
 #define CINS_VAR_LOWPASS (0.01) // low pass of measurement errors
-#define CINS_VAR_SCALE (2.) // accept measurements with normalised variance smaller than this
 // reject a GPS measurement whose squared error exceeds this multiple of
 // the low-passed running variance (a ~5-sigma innovation gate); this
 // stops jammed/grossly-wrong GPS from diverging the observer
@@ -182,12 +181,7 @@ const AP_Param::GroupInfo AP_AHRS_CINS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VARLP", 17, AP_AHRS_CINS, gains.variance_lowpass, CINS_VAR_LOWPASS),
 
-    // @Param: VARSC
-    // @DisplayName: CINS variance scale
-    // @Description: CINS variance scale used for health checks
-    // @Range: 1.0 5.0
-    // @User: Advanced
-    AP_GROUPINFO("VARSC", 18, AP_AHRS_CINS, gains.variance_scale, CINS_VAR_SCALE),
+    // 18 was VARSC
 
     AP_GROUPEND
 };
@@ -515,6 +509,9 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
                        results.control_gain_scaler_XY,
                        results.control_gain_scaler_Z);
 
+    // innovation test ratios, used by the vehicles' EKF failsafes:
+    results.variances_valid = get_variances(results.velVar, results.posVar, results.hgtVar, results.magVar, results.tasVar);
+
     // drive the wind-triangle estimator from our own velocity and
     // fuselage forward direction, and publish the resulting synthetic
     // wind.  estimate_wind() self-gates on wind estimation being
@@ -665,14 +662,14 @@ void AP_AHRS_CINS::update_imu(const Vector3F &gyro_rads, const Vector3F &accel_m
     const Vector3F& mu0_vel = YRInv.vel();
     const Vector3F mu_vel = delayer.gps_vel - left_delay_vel * ref_vel.x - left_delay_pos * ref_vel.y;
     const ftype velErrorSq = update_vector_measurement_cts(mu_vel, mu0_vel, ref_vel, gains.gpsvel_att.get(), gains.gps_vel.get(), gains.gps_vel_gyr_bias.get(), gains.gps_vel_acc_bias.get(), dt, state.variances.velVar);
-    state.variances.velTest = velErrorSq / (state.variances.velVar * gains.variance_scale);
+    state.variances.velTest = velErrorSq / (state.variances.velVar * CINS_GPS_INNOV_GATE);
 
 
     const Vector3F& mu0_pos = YRInv.pos();
     const Vector2F& ref_pos = Vector2F(-current_lag, 1.);
     const Vector3F mu_pos = delayer.gps_pos - left_delay_vel * ref_pos.x - left_delay_pos * ref_pos.y;
     const ftype posErrorSq = update_vector_measurement_cts(mu_pos, mu0_pos, ref_pos, gains.gpspos_att.get(), gains.gps_pos.get(), gains.gps_pos_gyr_bias.get(), gains.gps_pos_acc_bias.get(), dt, state.variances.posVar);
-    state.variances.posTest = posErrorSq / (state.variances.posVar * gains.variance_scale);
+    state.variances.posTest = posErrorSq / (state.variances.posVar * CINS_GPS_INNOV_GATE);
 
     // The CINS algorithm does not have an internal variance state like an EKF.
     // Instead, we compute the variance by applying a low-pass to the squared measurement errors.
@@ -940,7 +937,7 @@ void AP_AHRS_CINS::update_attitude_from_compass()
 
     Vector2F zero_2;
     const ftype magErrorSq = update_vector_measurement_cts(mag_ref, mag_vec, zero_2, gains.mag_att.get(), 0.0, gains.mag_gyr_bias.get(), gains.mag_acc_bias.get(), dt, state.variances.magVar);
-    state.variances.magTest = magErrorSq / (state.variances.magVar * gains.variance_scale.get());
+    state.variances.magTest = magErrorSq / (state.variances.magVar * CINS_GPS_INNOV_GATE);
 }
 
 void AP_AHRS_CINS::compute_bias_update_imu(const SIM23& Gamma)
@@ -1027,11 +1024,14 @@ bool AP_AHRS_CINS::get_variances(float &velVar, float &posVar, float &hgtVar, Ve
         return false;
     }
 
-    velVar = state.variances.velTest;
-    posVar = state.variances.posTest;
-    magVar.x = state.variances.magTest;
-    magVar.y = state.variances.magTest;
-    magVar.z = state.variances.magTest;
+    // like the EKFs, report the square root of each test ratio: the
+    // squared error as a fraction of the innovation gate, so 1.0 is
+    // the point at which CINS rejects the measurement:
+    velVar = sqrtF(state.variances.velTest);
+    posVar = sqrtF(state.variances.posTest);
+    magVar.x = sqrtF(state.variances.magTest);
+    magVar.y = magVar.x;
+    magVar.z = magVar.x;
 
     return true;
 }
