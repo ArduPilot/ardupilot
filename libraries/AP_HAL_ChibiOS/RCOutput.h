@@ -578,8 +578,9 @@ private:
 
     // handling of bi-directional dshot
 #ifdef HAL_WITH_BIDIR_DSHOT
-    // frames a stats window counts before its own error rate is reported: with fewer, a run of
-    // good frames makes an ESC failing 5% of its replies read under 1%
+    // frames a stats window counts before its own error rate is reported, and the fewest its errors
+    // are divided by: with fewer, a run of good frames makes an ESC failing 5% of its replies read
+    // under 1%, and a single miss counts for more
     static constexpr uint16_t BDSHOT_ERROR_RATE_MIN_FRAMES = 250;
 #endif
     struct {

@@ -244,11 +244,11 @@ void RCOutput::bdshot_ic_dma_deallocate(Shared_DMA *ctx)
 
 // the error rate of a channel's replies, percent. A window that has just restarted is too short
 // to stand alone, so it reports no less than the last full window, or 100% before there is one,
-// while still showing errors it has already counted
+// while still showing errors it has already counted, taken over no fewer frames than a window needs
 float RCOutput::bdshot_error_rate(uint8_t chan) const
 {
     const uint32_t frames = _bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan];
-    const float rate = frames == 0 ? 0.0f : 100.0f * float(_bdshot.erpm_errors[chan]) / frames;
+    const float rate = 100.0f * float(_bdshot.erpm_errors[chan]) / MAX(frames, uint32_t(BDSHOT_ERROR_RATE_MIN_FRAMES));
     if (frames >= BDSHOT_ERROR_RATE_MIN_FRAMES) {
         return rate;
     }
