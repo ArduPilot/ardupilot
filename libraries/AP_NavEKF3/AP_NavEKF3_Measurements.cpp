@@ -1443,12 +1443,15 @@ void NavEKF3_core::updateMovementCheck(void)
     // calculate a gyro rate of change metric
     Vector3F temp = (gyro - gyro_prev) * dtEkfAvgInv;
     gyro_prev = gyro;
-    gyro_diff = 0.99f * gyro_diff + 0.01f * temp.length();
+    // a shock reads far beyond the limits, so cap what one sample adds, or the metric
+    // holds the check off for seconds after the vehicle has stopped
+    const ftype diff_cap = 2.0f * frontend->_ognmTestScaleFactor;
+    gyro_diff = 0.99f * gyro_diff + 0.01f * MIN(temp.length(), diff_cap * gyro_diff_limit);
 
     // calculate a acceleration rate of change metric
     temp = (accel - accel_prev) * dtEkfAvgInv;
     accel_prev = accel;
-    accel_diff = 0.99f * accel_diff + 0.01f * temp.length();
+    accel_diff = 0.99f * accel_diff + 0.01f * MIN(temp.length(), diff_cap * accel_diff_limit);
 
     const ftype gyro_length_ratio = gyro.length() / gyro_limit;
     const ftype accel_length_ratio = (accel.length() - GRAVITY_MSS) / accel_limit;
