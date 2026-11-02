@@ -273,13 +273,11 @@ void Copter::save_hover_bias_learning(void)
 
 // update_accel_bias_inhibit - inhibit EKF accel bias learning while disarmed when
 // ACC_ZBIAS_LEARN bit 2 is set, so the motors-off bias is not learned as the correction.
-// Only sets the inhibit; arm() clears it.
+// arm() clears it at once; clearing it here too undoes a set that raced an arm from
+// another thread.
 // called from one_hz_loop
 void Copter::update_accel_bias_inhibit(void)
 {
     const bool inhibit_disarmed = (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_DISARMED)) != 0;
-    if (inhibit_disarmed && !motors->armed()) {
-        ahrs.set_inhibit_accel_bias_learning(true);
-    }
-    // clearing is done in arm()
+    ahrs.set_inhibit_accel_bias_learning(inhibit_disarmed && !motors->armed());
 }
