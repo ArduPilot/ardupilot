@@ -2220,6 +2220,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             max_allowed_divergence = 300
         else:
             max_allowed_divergence = 150
+        # sample the published position as fast as the link allows; a
+        # position glitch can last a single AHRS cycle, which the default
+        # 10Hz GLOBAL_POSITION_INT rate usually steps over.  0.8*loop rate
+        # is the fastest a message may be streamed:
+        fast_rate_hz = int(0.8 * self.get_parameter("SCHED_LOOP_RATE"))
+        self.set_message_rate_hz('GLOBAL_POSITION_INT', fast_rate_hz)
+        self.set_message_rate_hz('SIMSTATE', fast_rate_hz)
         self.install_message_hook_context(vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(self, max_allowed_divergence=max_allowed_divergence))  # noqa
 
         try:
