@@ -121,8 +121,6 @@ private:
     void saturate_bias(Vector3F& bias_correction, const Vector3F& current_bias, const ftype& saturation, const ftype& dt) const;
 
     struct {
-        Vector3F accel;
-        Vector3F gyro;
         Location origin;
         bool have_origin;
 

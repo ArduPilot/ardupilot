@@ -441,9 +441,14 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     //
     // angular rates and accels
     //
-    results.gyro_estimate = state.gyro.tofloat();
-    results.gyro_drift.zero();  // FIXME
-    results.accel_ef = state.accel.tofloat();  // FIXME: truly earth-frame?
+    // CINS's biases follow the measurement - truth convention, so the
+    // drift added to the gyro is the negated bias:
+    const auto &ins = AP::ins();
+    results.gyro_drift = -state.gyr_bias.tofloat();
+    results.gyro_estimate = ins.get_gyro(results.primary_gyro) + results.gyro_drift;
+    results.accel_bias = state.acc_bias.tofloat();
+    // XHat's rotation takes the autopilot body frame to NED:
+    results.accel_ef = (state.XHat.rot() * (ins.get_accel(results.primary_accel) - results.accel_bias).toftype()).tofloat();
 
     //
     // velocities
