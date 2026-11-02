@@ -363,6 +363,7 @@ void AP_Mount::set_rate_target(uint8_t instance, float roll_degs, float pitch_de
     backend->set_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_lock);
 }
 
+#if AP_MOUNT_MAVLINK_CMD_DO_MOUNT_CONFIGURE_ENABLED
 MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_int_t &packet)
 {
     auto *backend = get_primary();
@@ -381,7 +382,7 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_int
 
     return MAV_RESULT_ACCEPTED;
 }
-
+#endif  // AP_MOUNT_MAVLINK_CMD_DO_MOUNT_CONFIGURE_ENABLED
 
 MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_int_t &packet)
 {
@@ -596,10 +597,14 @@ MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t
 MAV_RESULT AP_Mount::handle_command(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
+#if AP_MOUNT_MAVLINK_CMD_DO_MOUNT_CONFIGURE_ENABLED
     case MAV_CMD_DO_MOUNT_CONFIGURE:
         return handle_command_do_mount_configure(packet);
+#endif  // AP_MOUNT_MAVLINK_CMD_DO_MOUNT_CONFIGURE_ENABLED
+#if AP_MOUNT_MAVLINK_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
         return handle_command_do_mount_control(packet);
+#endif  // AP_MOUNT_MAVLINK_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         return handle_command_do_gimbal_manager_pitchyaw(packet);
     case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
