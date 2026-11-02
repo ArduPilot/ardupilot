@@ -9,10 +9,17 @@
 #include "AP_AHRS_CINS.h"
 #include "AP_AHRS.h"
 
-#include <AP_DAL/AP_DAL.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Declination/AP_Declination.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/Util.h>
+
+#if !AP_COMPASS_ENABLED || !AP_GPS_ENABLED
+#error "CINS requires compass and GPS support"
+#endif
 
 // gains tested for 5Hz GPS
 #define CINS_GAIN_GPSPOS_ATT (1.0E-5)
@@ -234,13 +241,15 @@ void AP_AHRS_CINS::update(void)
         done_init = true;
     }
 
-    auto &dal = AP::dal();
-
     if (!done_yaw_init) {
         done_yaw_init = init_yaw();
     }
 
-    const auto &ins = dal.ins();
+    // read the sensor libraries directly, as DCM does.  CINS has no
+    // Replay support, and AP_DAL's sensor data is only refreshed when
+    // EKF2 or EKF3 start a frame, so it would go stale with both
+    // disabled:
+    const auto &ins = AP::ins();
 
     // Get delta angle and convert to gyro rad/s
     const uint8_t gyro_index = ins.get_first_usable_gyro();
@@ -268,7 +277,7 @@ void AP_AHRS_CINS::update(void)
     }
 
     // see if we have new GPS data
-    const auto &gps = dal.gps();
+    const auto &gps = AP::gps();
     if (gps.status() >= AP_GPS_FixType::FIX_3D) {
         const uint32_t last_gps_fix_ms = gps.last_message_time_ms(0);
         if (last_gps_update_ms != last_gps_fix_ms) {
@@ -316,8 +325,8 @@ void AP_AHRS_CINS::update(void)
                                 "s#dddnnnmmmDUm",
                                 "F-000000000GG0",
                                 "QBfffffffffLLf",
-                                dal.micros64(),
-                                DAL_CORE(0),
+                                AP_HAL::micros64(),
+                                0,
                                 degrees(roll_rad),
                                 degrees(pitch_rad),
                                 wrap_360(degrees(yaw_rad)),
@@ -342,8 +351,8 @@ void AP_AHRS_CINS::update(void)
                                 "s#nnn",
                                 "F-000",
                                 "QBfff",
-                                dal.micros64(),
-                                DAL_CORE(0),
+                                AP_HAL::micros64(),
+                                0,
                                 _wind.x,
                                 _wind.y,
                                 _wind.z);
@@ -368,8 +377,8 @@ void AP_AHRS_CINS::update(void)
                                 "s#kkkooonnnmmm",
                                 "F-000000000000",
                                 "QBffffffffffff",
-                                dal.micros64(),
-                                DAL_CORE(0),
+                                AP_HAL::micros64(),
+                                0,
                                 degrees(state.gyr_bias.x),
                                 degrees(state.gyr_bias.y),
                                 degrees(state.gyr_bias.z),
@@ -402,7 +411,7 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     // mounting offset is honoured, matching DCM's _body_dcm_matrix.  This
     // also feeds the trimmed fuselage axis into estimate_wind() below, so the
     // wind estimate is invariant to the board mounting offset.
-    results.dcm_matrix = (state.XHat.rot() * AP::dal().get_rotation_vehicle_body_to_autopilot_body().toftype()).tofloat();
+    results.dcm_matrix = (state.XHat.rot() * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body().toftype()).tofloat();
     results.quaternion.from_rotation_matrix(results.dcm_matrix);
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
     results.attitude_valid = healthy();
@@ -516,8 +525,6 @@ bool AP_AHRS_CINS::pre_arm_check(bool requires_position, char *failure_msg, uint
  */
 void AP_AHRS_CINS::update_gps(const Vector3F &pos, const Vector3F &vel, const ftype gps_dt)
 {
-    const auto &dal = AP::dal();
-
     // Update the delayer variables. The gps vel and pos are used at every time step through the delay structure.
     delayer.YR = delayer.YR_stepper.inverse() * delayer.YR;
     delayer.YR_stepper = Gal3F::identity();
@@ -526,7 +533,7 @@ void AP_AHRS_CINS::update_gps(const Vector3F &pos, const Vector3F &vel, const ft
 
     // use AHRS3 for debugging
     ftype roll_rad, pitch_rad, yaw_rad;
-    const auto rot = state.XHat.rot() * dal.get_rotation_vehicle_body_to_autopilot_body().toftype();
+    const auto rot = state.XHat.rot() * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body().toftype();
     rot.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
     Location loc;
     UNUSED_RESULT(get_location(loc));
@@ -795,8 +802,7 @@ bool AP_AHRS_CINS::init_yaw(void)
  */
 bool AP_AHRS_CINS::get_compass_yaw(ftype &yaw_rad, ftype &dt)
 {
-    auto &dal = AP::dal();
-    const auto &compass = dal.compass();
+    const auto &compass = AP::compass();
     if (compass.get_num_enabled() == 0) {
         return false;
     }
@@ -816,7 +822,7 @@ bool AP_AHRS_CINS::get_compass_yaw(ftype &yaw_rad, ftype &dt)
     dt = (last_us - last_mag_us) * 1.0e-6;
     last_mag_us = last_us;
 
-    const float declination_rad = dal.compass().get_declination();
+    const float declination_rad = compass.get_declination();
     if (is_zero(declination_rad)) {
         // wait for declination
         return false;
@@ -838,8 +844,7 @@ bool AP_AHRS_CINS::get_compass_yaw(ftype &yaw_rad, ftype &dt)
 
 bool AP_AHRS_CINS::get_compass_vector(Vector3F &mag_vec, Vector3F &mag_ref, ftype &dt)
 {
-    auto &dal = AP::dal();
-    const auto &compass = dal.compass();
+    const auto &compass = AP::compass();
     if (compass.get_num_enabled() == 0) {
         return false;
     }
