@@ -634,6 +634,7 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
     case MAV_FRAME_BODY_NED:
     case MAV_FRAME_BODY_OFFSET_NED:
 #endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+    case MAV_FRAME_BODY_FRD:
         break;
 
     default:
@@ -666,6 +667,14 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
             break;
         }
 #endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+
+        case MAV_FRAME_BODY_FRD: {
+            // rotate using the full attitude, not just the heading
+            const Vector3f ofs_ned_m = rover.ahrs.get_rotation_body_to_ned() * Vector3f{packet.x, packet.y, packet.z};
+            // add offset to current location
+            target_loc.offset(ofs_ned_m.x, ofs_ned_m.y);
+            break;
+        }
 
         case MAV_FRAME_LOCAL_OFFSET_NED:
             // add offset to current location
@@ -700,6 +709,13 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
             target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
             break;
 #endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_FRD: {
+            // rotate using the full attitude, not just the heading
+            const Vector3f vel_ned_ms = rover.ahrs.get_rotation_body_to_ned() * Vector3f{packet.vx, packet.vy, packet.vz};
+            target_speed = constrain_float(vel_ned_ms.xy().length(), -speed_max, speed_max);
+            target_yaw_cd = degrees(atan2f(vel_ned_ms.y, vel_ned_ms.x)) * 100.0f;
+            break;
+        }
         default:
             break;
         }
@@ -713,9 +729,10 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
 #if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         case MAV_FRAME_BODY_NED:
         case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_FRD:
             target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
             break;
-#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
         default:
             break;
         }
