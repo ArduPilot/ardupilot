@@ -304,13 +304,16 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84
-// If a calculated location isn't available and position source is GPS, return a raw GPS measurement
+// If a calculated location isn't available and position source is GPS, return a raw GPS measurement,
+// unless that GPS must re-pass its quality checks before we will fuse it again
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF3_core::getLLH(Location &loc) const
 {
     Location origin;
-    const bool pos_from_GPS = (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS);
+    // never fall back to reporting a GPS we are refusing to fuse
+    const bool pos_from_GPS = (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS) &&
+        !waitingForGpsChecks;
     if (getOriginLLH(origin)) {
         postype_t posD;
         if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
