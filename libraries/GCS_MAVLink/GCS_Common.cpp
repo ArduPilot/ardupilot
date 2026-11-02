@@ -904,8 +904,8 @@ bool GCS_MAVLINK::last_txbuf_is_greater(uint8_t txbuf_limit)
 
 void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 {
-    mavlink_radio_t packet;
-    mavlink_msg_radio_decode(&msg, &packet);
+    mavlink_radio_status_t packet;
+    mavlink_msg_radio_status_decode(&msg, &packet);
 
     const uint32_t now = AP_HAL::millis();
 
@@ -955,33 +955,44 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 #endif
 }
 
+#if AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
 void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
     mavlink_mission_item_int_t mission_item_int;
-    bool send_mission_item_warning = false;
-    if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
-        mavlink_mission_item_t mission_item;
-        mavlink_msg_mission_item_decode(&msg, &mission_item);
+
+    mavlink_mission_item_t mission_item;
+    mavlink_msg_mission_item_decode(&msg, &mission_item);
 #if AP_MISSION_ENABLED
-        MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
-        if (ret != MAV_MISSION_ACCEPTED) {
-            const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
-            send_mission_ack(msg, type, ret);
-            return;
-        }
-#else
-        // No mission library, so we can't convert from MISSION_ITEM
-        // to MISSION_ITEM_INT.  Since we shouldn't be receiving fence
-        // or rally items via MISSION_ITEM, we don't need to work hard
-        // here, just fail:
-        const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item.mission_type;
-        send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
+    MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
+    if (ret != MAV_MISSION_ACCEPTED) {
+        const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
+        send_mission_ack(msg, type, ret);
         return;
-#endif
-        send_mission_item_warning = true;
-    } else {
-        mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
     }
+#else
+    // No mission library, so we can't convert from MISSION_ITEM
+    // to MISSION_ITEM_INT.  Since we shouldn't be receiving fence
+    // or rally items via MISSION_ITEM, we don't need to work hard
+    // here, just fail:
+    const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item.mission_type;
+    send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
+    return;
+#endif
+
+    handle_mission_item_int(msg, mission_item_int, true);
+}
+#endif  // AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
+
+void GCS_MAVLINK::handle_mission_item_int(const mavlink_message_t &msg)
+{
+    mavlink_mission_item_int_t mission_item_int;
+    mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
+
+    handle_mission_item_int(msg, mission_item_int, false);
+}
+
+void GCS_MAVLINK::handle_mission_item_int(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int, bool send_mission_item_warning)
+{
     const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
 
 #if AP_MISSION_ENABLED
@@ -1021,9 +1032,13 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
         return;
     }
 
+#if AP_MISSION_ENABLED && AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
+    // only MISSION_ITEM, which needs AP_Mission to convert it, asks
+    // for this warning
     if (send_mission_item_warning) {
         prot->send_mission_item_warning();
     }
+#endif
 
     if (!prot->receiving) {
         send_mission_ack(msg, type, MAV_MISSION_ERROR);
@@ -2889,6 +2904,7 @@ void GCS::setup_uarts()
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
+#if AP_MAVLINK_MSG_SET_MODE_ENABLED
 /*
   handle a SET_MODE MAVLink message
  */
@@ -2902,6 +2918,7 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
 
     _set_mode_common(_base_mode, _custom_mode);
 }
+#endif  // AP_MAVLINK_MSG_SET_MODE_ENABLED
 
 /*
   code common to both SET_MODE mavlink message and command long set_mode msg
@@ -4389,9 +4406,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
+#if AP_MAVLINK_MSG_SET_MODE_ENABLED
     case MAVLINK_MSG_ID_SET_MODE:
         handle_set_mode(msg);
         break;
+#endif  // AP_MAVLINK_MSG_SET_MODE_ENABLED
 
 #if AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
@@ -4403,7 +4422,9 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
     case MAVLINK_MSG_ID_MISSION_COUNT:
     case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:
+#if AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
     case MAVLINK_MSG_ID_MISSION_ITEM:
+#endif  // AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
     case MAVLINK_MSG_ID_MISSION_REQUEST:
@@ -4670,10 +4691,15 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
         break;
     }
 
+#if AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
     // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
-    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
         handle_mission_item(msg);
+        break;
+#endif  // AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
+
+    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
+        handle_mission_item_int(msg);
         break;
 
     // read an individual command from EEPROM and send it to the GCS
@@ -5258,7 +5284,9 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
 {
     switch(command) {
     case MAV_CMD_DO_SET_HOME:
+#if AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI_LOCATION:
     // case MAV_CMD_NAV_TAKEOFF:  // technically yes, but we don't do lat/lng
     // case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -5297,7 +5325,9 @@ bool GCS_MAVLINK::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_co
         MAV_FRAME frame;
     } frame_map[] {
         { MAV_CMD_FIXED_MAG_CAL_YAW, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+#if AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
         { MAV_CMD_DO_SET_ROI, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+#endif  // AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
         { MAV_CMD_DO_SET_ROI_LOCATION, MAV_FRAME_GLOBAL_RELATIVE_ALT },
         { MAV_CMD_DO_SET_HOME, MAV_FRAME_GLOBAL },
     };
@@ -5522,7 +5552,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavl
 {
     switch (packet.frame) {
     case MAV_FRAME_GLOBAL:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
     case MAV_FRAME_GLOBAL_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         break;
     default:
         // we only support the global frame
@@ -5767,13 +5799,19 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_SET_ROI_LOCATION:
         return handle_command_do_set_roi_location(packet);
 
+#if AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
         return handle_command_do_set_roi(packet);
+#endif  // AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
 
 #if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_SET_ROI_SYSID:
+#if AP_MAVLINK_MAV_CMD_DO_MOUNT_CONFIGURE_ENABLED
     case MAV_CMD_DO_MOUNT_CONFIGURE:
+#endif  // AP_MAVLINK_MAV_CMD_DO_MOUNT_CONFIGURE_ENABLED
+#if AP_MAVLINK_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
+#endif  // AP_MAVLINK_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
     case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
         return handle_command_mount(packet, msg);
@@ -5888,8 +5926,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_SET_MESSAGE_INTERVAL:
         return handle_command_set_message_interval(packet);
 
+#if AP_MAVLINK_MAV_CMD_GET_MESSAGE_INTERVAL_ENABLED
     case MAV_CMD_GET_MESSAGE_INTERVAL:
         return handle_command_get_message_interval(packet);
+#endif  // AP_MAVLINK_MAV_CMD_GET_MESSAGE_INTERVAL_ENABLED
 
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);
@@ -7652,15 +7692,21 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
 {
     switch (coordinate_frame) {
     case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
     case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         frame = Location::AltFrame::ABOVE_HOME;
         return true;
     case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
     case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         frame = Location::AltFrame::ABOVE_TERRAIN;
         return true;
     case MAV_FRAME_GLOBAL:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
     case MAV_FRAME_GLOBAL_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         frame = Location::AltFrame::ABSOLUTE;
         return true;
     default:
@@ -7673,7 +7719,14 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
 
 uint64_t GCS_MAVLINK::capabilities() const
 {
-    uint64_t ret = MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+    uint64_t ret =
+#if AP_MAVLINK_PROTOCOL_CAPABILITY_PARAM_FLOAT_ENABLED
+        MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+#else
+        // PARAM_FLOAT is deprecated in favour of this, which describes
+        // how ArduPilot sends parameter values
+        MAV_PROTOCOL_CAPABILITY_PARAM_ENCODE_C_CAST |
+#endif  // AP_MAVLINK_PROTOCOL_CAPABILITY_PARAM_FLOAT_ENABLED
         MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION;
 
     const auto mavlink_protocol = uartstate->get_protocol();
