@@ -465,6 +465,16 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.location_valid = get_location(results.location) && healthy();
 
+    // origin-relative position: XHat's position is NED from our origin
+    // (see get_origin()):
+    if (healthy()) {
+        const Vector3F &pos = state.XHat.pos();
+        results.position_NE = Vector2p{postype_t(pos.x), postype_t(pos.y)};
+        results.position_NE_valid = true;
+        results.position_D = pos.z;
+        results.position_D_valid = true;
+    }
+
     /*
      * Sensor-related information
      */
