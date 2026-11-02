@@ -483,7 +483,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
 
     _pd_scale_used = pd_scale;
     _i_scale_used = _rate_modifiers.i_scale;
-    _angle_P_scale_used = _angle_P_scale;
+    _angle_P_scale_used = _rate_modifiers.angle_P_scale;
 }
 
 void AC_AttitudeControl_Multi::record_rate_modifiers()
@@ -492,6 +492,7 @@ void AC_AttitudeControl_Multi::record_rate_modifiers()
     _rate_modifiers.actuator_sysid = _actuator_sysid;
     _rate_modifiers.pd_scale = _pd_scale;
     _rate_modifiers.i_scale = _i_scale;
+    _rate_modifiers.angle_P_scale = _angle_P_scale;
 }
 
 // reset the rate controller target loop updates and apply the angle P boost for the next angle controller run
