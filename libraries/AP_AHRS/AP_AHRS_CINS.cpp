@@ -14,7 +14,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/Util.h>
 
 #if !AP_COMPASS_ENABLED || !AP_GPS_ENABLED
@@ -531,26 +530,6 @@ void AP_AHRS_CINS::update_gps(const Vector3F &pos, const Vector3F &vel, const ft
     delayer.YR_stepper = Gal3F::identity();
     delayer.gps_vel = vel;
     delayer.gps_pos = pos;
-
-    // use AHRS3 for debugging
-    ftype roll_rad, pitch_rad, yaw_rad;
-    const auto rot = state.XHat.rot() * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body().toftype();
-    rot.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
-    Location loc;
-    UNUSED_RESULT(get_location(loc));
-    const mavlink_ahrs3_t pkt {
-roll : float(roll_rad),
-pitch : float(pitch_rad),
-yaw : float(yaw_rad),
-altitude : float(-state.XHat.pos().z),
-lat: loc.lat,
-lng: loc.lng,
-        v1 : 0,
-        v2 : 0,
-        v3 : 0,
-        v4 : 0
-    };
-    gcs().send_to_active_channels(MAVLINK_MSG_ID_AHRS3, (const char *)&pkt);
 }
 
 
