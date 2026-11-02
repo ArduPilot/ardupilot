@@ -684,8 +684,13 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
         target_yaw_cd = degrees(atan2f(packet.vy, packet.vx)) * 100.0f;
 
         // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+        switch (packet.coordinate_frame) {
+        case MAV_FRAME_BODY_NED:
+        case MAV_FRAME_BODY_OFFSET_NED:
             target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
+            break;
+        default:
+            break;
         }
     }
 
@@ -693,8 +698,13 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
     if (!yaw_ignore) {
         target_yaw_cd = degrees(packet.yaw) * 100.0f;
         // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+        switch (packet.coordinate_frame) {
+        case MAV_FRAME_BODY_NED:
+        case MAV_FRAME_BODY_OFFSET_NED:
             target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
+            break;
+        default:
+            break;
         }
     }
     // consume yaw rate
