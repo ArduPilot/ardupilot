@@ -2494,7 +2494,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 if self.get_sim_time_cached() - tstart > 10:
                     raise NotAchievedException("did not land with the throttle at minimum")
             self.progress("rose %.2f m after the throttle went to minimum" % (rmax - r0))
+            self.context_clear_collection('STATUSTEXT')
             self.disarm_vehicle(force=True)
+            # a reset made before the EKF's fusion horizon reaches the landing is undone by the
+            # landing's own samples: one reset per rest has to be enough, and has to hold
+            self.delay_sim_time(2, "rest after the landing")
+            for imu in (0, 1):
+                n = len([x for x in self.context_collection('STATUSTEXT') if "IMU%u %s" % (imu, reset_text) in x.text])
+                if n > 1:
+                    raise NotAchievedException("IMU%u reset its vertical velocity %d times after the landing" % (imu, n))
+            vz = self.assert_receive_message('LOCAL_POSITION_NED').vz
+            if abs(vz) > 0.3:
+                raise NotAchievedException("vertical velocity %.2f m/s at rest after the landing" % vz)
 
         def quick_rearm():
             hover_and_drop()
@@ -2545,6 +2556,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_ATTITUDE, timeout=3)
         self.assert_arm_failure("height error", ignore_prearm_failures=ignore)
         baro_glitch(0)
+
+        self.start_subtest("no aiding: with a 0.01 m height noise a baro step is reported promptly")
+        # the gate is then narrower than the 1 m threshold, so the rejected samples reach it only
+        # through the clip's 2 m floor; clipped to the gate it took 3.6-3.8 s, close to the 5 s
+        # height timeout that resets the height, against 1.6 s with the floor
+        alt_noise = self.get_parameter("EK3_ALT_M_NSE")
+        self.set_parameter("EK3_ALT_M_NSE", 0.01)
+        self.delay_sim_time(30, "height variance to settle on the new noise")
+        baro_glitch(3)
+        tstart = self.get_sim_time()
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_ATTITUDE, timeout=2.5)
+        self.progress("height error reported %.1f s after the step" % (self.get_sim_time() - tstart))
+        self.assert_arm_failure("height error", ignore_prearm_failures=ignore)
+        baro_glitch(0)
+        self.set_parameter("EK3_ALT_M_NSE", alt_noise)
 
         self.set_parameters({
             "SIM_FLOW_ENABLE": 1,
