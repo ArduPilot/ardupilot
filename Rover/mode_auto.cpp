@@ -572,7 +572,9 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
         if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
             rover.camera_mount.clear_roi_target();
@@ -581,7 +583,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
             rover.camera_mount.set_roi_target(cmd.content.location);
         }
         break;
-#endif
+#endif  // HAL_MOUNT_ENABLED
 
     case MAV_CMD_DO_SET_REVERSE:
         do_set_reverse(cmd);
@@ -699,7 +701,9 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_REVERSE:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_GUIDED_LIMITS:
