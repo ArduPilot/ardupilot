@@ -43,6 +43,12 @@ protected:
 private:
 
     void handle_message(const mavlink_message_t &msg) override;
+    void handle_message_rc_channels_override(const mavlink_message_t &msg);
+    void handle_message_set_attitude_target(const mavlink_message_t &msg);
+    void handle_message_set_position_target_local_ned(const mavlink_message_t &msg);
+    void handle_message_set_position_target_global_int(const mavlink_message_t &msg);
+    void handle_message_sys_status(const mavlink_message_t &msg);
+
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     bool try_send_message(enum ap_message id) override;
 
