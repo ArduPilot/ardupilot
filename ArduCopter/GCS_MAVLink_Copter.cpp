@@ -1015,6 +1015,12 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
         case MAV_FRAME_BODY_OFFSET_NED:
             pos_ned_m.xy() = copter.ahrs.body_to_earth2D_p(pos_ned_m.xy());
             break;
+        case MAV_FRAME_BODY_FRD: {
+            // rotate using the full attitude, not just the heading
+            const Vector3f pos_rotated_m = copter.ahrs.get_rotation_body_to_ned() * pos_ned_m.tofloat();
+            pos_ned_m = Vector3p{pos_rotated_m.x, pos_rotated_m.y, pos_rotated_m.z};
+            break;
+        }
         default:
             break;
         }
@@ -1022,7 +1028,8 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
         switch (packet.coordinate_frame) {
         case MAV_FRAME_LOCAL_OFFSET_NED:
         case MAV_FRAME_BODY_NED:
-        case MAV_FRAME_BODY_OFFSET_NED: {
+        case MAV_FRAME_BODY_OFFSET_NED:
+        case MAV_FRAME_BODY_FRD: {
             Vector3p rel_pos_ned_m;
             if (!AP::ahrs().get_relative_position_NED_origin(rel_pos_ned_m)) {
                 // need position estimate to calculate target position
@@ -1071,6 +1078,10 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
         case MAV_FRAME_BODY_OFFSET_NED:
             accel_ned_mss.xy() = copter.ahrs.body_to_earth2D(accel_ned_mss.xy());
             break;
+        case MAV_FRAME_BODY_FRD:
+            // rotate using the full attitude, not just the heading
+            accel_ned_mss = copter.ahrs.get_rotation_body_to_ned() * accel_ned_mss;
+            break;
         default:
             break;
         }
@@ -1085,6 +1096,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
         switch (packet.coordinate_frame) {
         case MAV_FRAME_BODY_NED:
         case MAV_FRAME_BODY_OFFSET_NED:
+        case MAV_FRAME_BODY_FRD:
             yaw_relative = true;
             break;
         default:
