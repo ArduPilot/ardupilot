@@ -18696,6 +18696,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "MOT_SPOOL_TIME": 0.5,
         })
         self.context_collect('STATUSTEXT')
+        handoffs_tested = 0
         for (nextmode, srcset, want_text, want_mode) in [
                 (5, 0, "^Throw: restored EKF Source Set 1$", 'LOITER'),
                 (5, 3, "^EKF Source Set 3$", 'LOITER'),
@@ -18733,7 +18734,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.change_mode('LOITER', timeout=30)
             self.change_mode('LAND')
             self.wait_disarmed(timeout=120)
+            if want_mode == 'LOITER':
+                # once LOITER has taken over, throw must not go on acting as the
+                # running mode in the loop that handed over; only a handoff made
+                # as the position arrives, with no regain before it, tests that
+                handoff = False
+                regained_before = False
+                dfreader = self.dfreader_for_current_onboard_log()
+                while True:
+                    m = dfreader.recv_match(type=['MODE', 'MSG'])
+                    if m is None:
+                        break
+                    if m.get_type() == 'MODE':
+                        if m.Mode == 18:
+                            handoff = False
+                            regained_before = False
+                        elif m.Mode == 5 and m.Rsn == 16:  # ModeReason::THROW_COMPLETE
+                            handoff = True
+                    elif m.Message == "Throw position regained":
+                        if handoff:
+                            raise NotAchievedException("throw regained a position after handing over to LOITER")
+                        regained_before = True
+                if not handoff:
+                    raise NotAchievedException("no handoff to LOITER in the log")
+                if regained_before:
+                    self.progress("position regained before the handoff: the handoff loop is not tested")
+                else:
+                    handoffs_tested += 1
             self.reboot_sitl()
+        if handoffs_tested == 0:
+            raise NotAchievedException("no leg handed over to LOITER as its position arrived")
 
     def ThrowNextModeAutoStaleSubmode(self):
         '''AUTO last left in NAV_ATTITUDE_TIME still needs a position as a throw next mode'''
