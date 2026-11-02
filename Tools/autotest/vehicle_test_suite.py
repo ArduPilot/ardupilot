@@ -14971,6 +14971,16 @@ switch value'''
                            relative=True,
                            timeout=timeout)
 
+    def cins_built_in(self) -> bool:
+        '''returns True if the firmware includes the CINS AHRS backend,
+        which is not built by default'''
+        try:
+            self.get_parameter("AHRS_CINS_GPATT", timeout=5, verbose=False)
+        except NotAchievedException:
+            self.progress("CINS is not built in")
+            return False
+        return True
+
     def ahrstrim_attitude_correctness_test_attitude(self, ahrs_type: int):
         self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
         # CINS (type 12) is a developmental estimator with a larger at-rest
@@ -15069,7 +15079,10 @@ switch value'''
                 # section's reboot) performs anyway
 
             self.start_subtest("Testing non-ExternalAHRS backends")
-            for ahrs_type in [0, 2, 3, 12]:
+            ahrs_types = [0, 2, 3]
+            if self.cins_built_in():
+                ahrs_types.append(12)
+            for ahrs_type in ahrs_types:
                 self.start_subsubtest("Testing AHRS_TYPE=%u" % ahrs_type)
                 self.context_push()
                 self.set_parameter("AHRS_EKF_TYPE", ahrs_type)

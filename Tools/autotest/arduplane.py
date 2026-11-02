@@ -3596,7 +3596,10 @@ return update()
         self.wait_and_maintain_wind_estimate(
             5, 45, timeout=120, minimum_duration=10)
 
-        for ahrs_type in 0, 2, 3, 10, 12:
+        ahrs_types = [0, 2, 3, 10]
+        if self.cins_built_in():
+            ahrs_types.append(12)
+        for ahrs_type in ahrs_types:
             self.start_subtest("Checking AHRS_EKF_TYPE=%u" % ahrs_type)
             self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
             if ahrs_type in (0, 12):
@@ -3708,7 +3711,10 @@ return update()
         # DCM (0) and CINS (12) share the same lifted wind-triangle code, so
         # both must use the trimmed (vehicle) fuselage axis, not the raw board
         # axis:
-        for ahrs_type in 0, 12:
+        ahrs_types = [0]
+        if self.cins_built_in():
+            ahrs_types.append(12)
+        for ahrs_type in ahrs_types:
             self.start_subtest("Checking AHRS_EKF_TYPE=%u" % ahrs_type)
             check_type(ahrs_type)
         # fly home and land on DCM (as this test originally did): CINS as the
@@ -4077,7 +4083,10 @@ return update()
 
         # 0=DCM (deliberately sends no report), 2=EKF2, 3=EKF3,
         # 10=SIM, 11=EXTERNAL, 12=CINS (like DCM, sends no report):
-        for ahrs_type in [0, 2, 3, 10, 11, 12]:
+        ahrs_types = [0, 2, 3, 10, 11]
+        if self.cins_built_in():
+            ahrs_types.append(12)
+        for ahrs_type in ahrs_types:
             self.start_subtest("Checking EKF_STATUS_REPORT for AHRS_EKF_TYPE=%u" % ahrs_type)
             self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
             # allow the configured backend to switch over and produce a
@@ -6919,6 +6928,9 @@ return update()
 
     def ForcedCINS(self):
         '''Switch to CINS mid-flight'''
+        if not self.cins_built_in():
+            self.progress("Skipping: CINS is not built in")
+            return
         self.wait_ready_to_arm()
         self.arm_vehicle()
 

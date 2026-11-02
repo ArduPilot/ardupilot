@@ -2693,6 +2693,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             'SIM_WIND_SPD': 10,   # metres/second
             'SIM_WIND_DIR': 315,  # from the North-West
         })
+        # CINS's wind is only checked if it is built in:
+        estimates = ['DCM']
+        if self.cins_built_in():
+            estimates.append('CINW')
         self.change_mode('TAKEOFF')
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -2708,21 +2712,21 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         latest = {}
         while True:
             m = mlog.recv_match(
-                type=['DCM', 'CINW', 'XKF2'],
+                type=estimates + ['XKF2'],
                 blocking=True,
             )
             if m is None:
                 raise NotAchievedException("Did not see wind estimates match")
 
             latest[m.get_type()] = m
-            if not all(k in latest for k in ('DCM', 'CINW', 'XKF2')):
+            if not all(k in latest for k in estimates + ['XKF2']):
                 continue
 
             now = m.TimeUS * 1e-6
             xkf2 = latest['XKF2']
 
             matches = True
-            for name in ('DCM', 'CINW'):
+            for name in estimates:
                 est = latest[name]
                 if abs(est.VWE - xkf2.VWE) >= 1.5 or abs(est.VWN - xkf2.VWN) >= 1.5:
                     matches = False
