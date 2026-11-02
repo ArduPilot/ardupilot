@@ -48,6 +48,10 @@
 // the low-passed running variance (a ~5-sigma innovation gate); this
 // stops jammed/grossly-wrong GPS from diverging the observer
 #define CINS_GPS_INNOV_GATE (25.0)
+// CINS is unhealthy once it has not propagated from the IMU, or has
+// had no GPS data, for this long:
+#define CINS_HEALTH_IMU_TIMEOUT_MS 500U
+#define CINS_HEALTH_GPS_TIMEOUT_MS 5000U
 
 /*
   CINS is very fast, but stack hungry, using Os keeps stack usage down
@@ -274,6 +278,7 @@ void AP_AHRS_CINS::update(void)
 
     if (done_yaw_init && state.have_origin) {
         update_imu(gyro, accel, dangle_dt);
+        last_imu_update_ms = AP_HAL::millis();
     }
 
     // see if we have new GPS data
@@ -453,7 +458,7 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     results.vert_pos_rate_D = results.velocity_NED.z;
     results.vert_pos_rate_D_valid = healthy();
 
-    results.location_valid = get_location(results.location);
+    results.location_valid = get_location(results.location) && healthy();
 
     /*
      * Sensor-related information
@@ -469,7 +474,7 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     // overall backend health/initialisation, consumed by the frontend
     // now that AP_AHRS_Backend no longer exposes a healthy() virtual:
     results.healthy = healthy();
-    results.initialised = healthy();
+    results.initialised = initialised();
 
     // publish a nav filter status so the frontend selects CINS (the
     // fixed-wing/ground fallback logic demotes a backend to DCM when
@@ -528,8 +533,31 @@ bool AP_AHRS_CINS::synthetic_airspeed_EAS(const Estimates &results, float &airsp
     return true;
 }
 
+bool AP_AHRS_CINS::healthy(void) const
+{
+    if (!initialised()) {
+        return false;
+    }
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_imu_update_ms > CINS_HEALTH_IMU_TIMEOUT_MS) {
+        return false;
+    }
+    if (now_ms - last_gps_update_ms > CINS_HEALTH_GPS_TIMEOUT_MS) {
+        return false;
+    }
+    return true;
+}
+
 bool AP_AHRS_CINS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
+    if (!state.have_origin) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Waiting for GPS");
+        return false;
+    }
+    if (!done_yaw_init) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Waiting for compass yaw");
+        return false;
+    }
     if (!healthy()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
         return false;
@@ -819,10 +847,13 @@ bool AP_AHRS_CINS::get_compass_yaw(ftype &yaw_rad, ftype &dt)
     dt = (last_us - last_mag_us) * 1.0e-6;
     last_mag_us = last_us;
 
-    const float declination_rad = compass.get_declination();
+    float declination_rad = compass.get_declination();
     if (is_zero(declination_rad)) {
-        // wait for declination
-        return false;
+        // the compass learns its declination from the AHRS location,
+        // which CINS does not publish until its yaw is initialised, so
+        // use the declination at our own origin:
+        declination_rad = radians(AP_Declination::get_declination(state.origin.lat * 1.0e-7f,
+                                                                  state.origin.lng * 1.0e-7f));
     }
 
     // const float cos_pitch_sq = 1.0f-(state.XHat.rot().c.x*state.XHat.rot().c.x);

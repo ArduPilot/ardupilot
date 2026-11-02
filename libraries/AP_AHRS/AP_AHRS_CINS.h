@@ -28,9 +28,15 @@ public:
 
     bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
 
-    bool healthy(void) const {
-        return state.have_origin;
+    // true once CINS has an origin and has initialised its yaw from
+    // the compass, so that it is propagating its state from the IMU:
+    bool initialised(void) const {
+        return state.have_origin && done_yaw_init;
     }
+
+    // true while CINS is initialised, propagating from the IMU, and
+    // has recently had GPS data:
+    bool healthy(void) const;
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
@@ -81,7 +87,7 @@ private:
         loc = state.origin;
         loc.offset(state.XHat.pos().x, state.XHat.pos().y);
         loc.alt -= state.XHat.pos().z * 100;
-        return healthy();
+        return state.have_origin;
     }
     bool get_origin(Location &loc) const override {
         loc = state.origin;
@@ -212,6 +218,7 @@ private:
     } delayer;
 
     uint32_t last_gps_update_ms;
+    uint32_t last_imu_update_ms;
     bool done_yaw_init;
     bool done_init;
     uint32_t last_mag_us;
