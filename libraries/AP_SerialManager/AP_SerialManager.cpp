@@ -805,7 +805,7 @@ void AP_SerialManager::set_options(uint16_t i)
 
 // get the passthru ports if enabled
 bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
-                                    uint32_t &baud1, uint32_t &baud2)
+                                    uint32_t &baud1, uint32_t &baud2, uint16_t &options1, uint16_t &options2)
 {
     if (passthru_port2 < 0 ||
         passthru_port1 < 0) {
@@ -823,6 +823,8 @@ bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriv
     }
     baud1 = state1->baudrate();
     baud2 = state2->baudrate();
+    options1 = state1->options;
+    options2 = state2->options;
     timeout_s = MAX(passthru_timeout, 0);
     return true;
 }
