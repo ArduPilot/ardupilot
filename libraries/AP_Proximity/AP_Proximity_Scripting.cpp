@@ -128,6 +128,8 @@ bool AP_Proximity_Scripting::handle_script_3d_msg(const Vector3f &vec_to_obstacl
 // update the temporary (buffer) boundary
 bool AP_Proximity_Scripting::update_virtual_boundary()
 {
+    // a flush is sensor activity: a frame with nothing in range must not time out
+    _last_update_ms = AP_HAL::millis();
     temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
     temp_boundary.reset();
     return true;
