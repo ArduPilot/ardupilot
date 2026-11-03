@@ -237,6 +237,20 @@ INSTANTIATE_TEST_CASE_P(AngularVelocityTests,
                         AngularVelocityTest,
                         ::testing::ValuesIn(angular_velocity_params));
 
+// skew_symmetric(v) * u is the cross product v % u, however small v is
+TEST(Matrix3Test, SkewSymmetricSmallVector)
+{
+    const Vector3F u { 1.0, -2.0, 3.0 };
+    for (const ftype scale : { ftype(1.0), ftype(1e-7) }) {
+        const Vector3F v = Vector3F{ 0.3, 0.5, -0.4 } * scale;
+        const Vector3F expected = v % u;
+        const Vector3F result = Matrix3F::skew_symmetric(v) * u;
+        EXPECT_FLOAT_EQ(result.x, expected.x);
+        EXPECT_FLOAT_EQ(result.y, expected.y);
+        EXPECT_FLOAT_EQ(result.z, expected.z);
+    }
+}
+
 AP_GTEST_MAIN()
 
 #pragma GCC diagnostic pop
