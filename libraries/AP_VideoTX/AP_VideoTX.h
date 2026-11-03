@@ -262,6 +262,10 @@ public:
     bool set_defaults();
     // display the current VTX settings in the GCS
     void announce_vtx_settings() const;
+    // announce and log what the VTX reports whenever it changes
+    void report_state_changes();
+    // power the VTX reports it is putting out, or 0 in pit mode
+    uint16_t get_reported_power_mw() const;
     // force the current values to reflect the configured values
     void set_power_is_current();
     void set_freq_is_current();
@@ -340,6 +344,15 @@ private:
     bool _initialized;
     // when defaults have been configured
     bool _defaults_set;
+
+    // the VTX state last announced and logged
+    struct {
+        uint8_t band;
+        uint8_t channel;
+        uint16_t frequency;
+        uint16_t power_mw;
+        int32_t actual_power_mw;
+    } _last_reported;
 
     // the configuration the VTX did not take, see frequency_rejected()
     bool _rejected;
