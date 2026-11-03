@@ -77,7 +77,7 @@ bool HALSITL::UARTDriver::set_speed(int speed) const
     return true;
 }
 
-void HALSITL::UARTDriver::configure_parity(uint8_t v)
+void HALSITL::UARTDriver::_configure_parity(uint8_t v)
 {
     if (_fd < 0) {
         return;
@@ -115,7 +115,7 @@ void HALSITL::UARTDriver::configure_parity(uint8_t v)
 #endif
 }
 
-void HALSITL::UARTDriver::set_stop_bits(int n)
+void HALSITL::UARTDriver::_set_stop_bits(int n)
 {
     if (_fd < 0) {
         return;
