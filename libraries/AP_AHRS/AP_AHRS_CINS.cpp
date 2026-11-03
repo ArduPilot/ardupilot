@@ -505,20 +505,25 @@ void AP_AHRS_CINS::Log_Write()
 void AP_AHRS_CINS::update_baro_height()
 {
     const auto &baro = AP::baro();
-    if (!baro.healthy()) {
-        have_baro_offset = false;
-    } else if (fusing_gps()) {
+    const bool baro_healthy = baro.healthy();
+    if (baro_healthy && fusing_gps()) {
         baro_offset_D = state.XHat.pos().z + baro.get_altitude();
         have_baro_offset = true;
     }
 
-    const bool use_baro = healthy() && !fusing_gps() && have_baro_offset;
-    if (using_baro_height && !use_baro) {
-        // back on CINS's own height, which has moved independently
-        // of the baro's:
-        position_D_reset_count++;
+    // the offset is kept through a baro dropout, so the baro height
+    // can be used again when the baro recovers:
+    HeightSource source = HeightSource::NONE;
+    if (fusing_gps()) {
+        source = HeightSource::CINS;
+    } else if (healthy() && baro_healthy && have_baro_offset) {
+        source = HeightSource::BARO;
     }
-    using_baro_height = use_baro;
+    if (source != height_source) {
+        // the published height may step when its source changes:
+        position_D_reset_count++;
+        height_source = source;
+    }
 }
 
 void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
@@ -568,7 +573,7 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     // note: velocity_NE is significantly different to results.velocity_NED.xy()!
     results.velocity_NE = results.velocity_NED.xy();
 
-    if (using_baro_height) {
+    if (height_source == HeightSource::BARO) {
         results.vert_pos_rate_D = -AP::baro().get_climb_rate();
         results.vert_pos_rate_D_valid = true;
     } else {
@@ -595,7 +600,7 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
         results.position_NE_valid = true;
     }
     results.position_NE_reset_count = position_NE_reset_count;
-    if (using_baro_height) {
+    if (height_source == HeightSource::BARO) {
         results.position_D = baro_offset_D - AP::baro().get_altitude();
         results.position_D_valid = true;
     } else if (fusing_gps()) {
