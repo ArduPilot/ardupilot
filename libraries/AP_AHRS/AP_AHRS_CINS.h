@@ -114,6 +114,7 @@ private:
     ftype update_vector_measurement_cts(const Vector3F &measurement, const Vector3F& reference, const Vector2F &ref_base, const ftype& gain_R, const ftype& gain_V, const ftype& gain_gyr_bias, const ftype& gain_acc_bias, const ftype dt, ftype &variance, bool &accepted);
     void update_attitude_from_compass();
     bool init_attitude(const Vector3F &accel);
+    void reset_position_to_gps(const Vector3F &pos, const Vector3F &vel);
     // one-time estimator state initialisation, run lazily on the first
     // update() (the backend interface has no init() entry point):
     void init(void);

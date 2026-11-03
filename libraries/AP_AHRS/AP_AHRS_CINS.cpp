@@ -14,6 +14,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/Util.h>
 
 #if !AP_COMPASS_ENABLED || !AP_GPS_ENABLED
@@ -53,6 +54,11 @@
 // CINS stops claiming a horizontal position once it has not fused a GPS
 // position for this long:
 #define CINS_GPS_FUSION_TIMEOUT_MS 5000U
+// once CINS has not fused a GPS position for this long, it resets its
+// position and velocity to the next fix, as GPS which disagrees with
+// its estimate by more than the innovation gate is otherwise rejected
+// for ever:
+#define CINS_GPS_RESET_TIMEOUT_MS 10000U
 // longest interval between compass samples fused as one step:
 #define CINS_MAG_MAX_DT 0.2
 
@@ -233,6 +239,38 @@ void AP_AHRS_CINS::init(void)
     state.variances.magVar = 1.0;
     state.variances.steps_to_initialise = 100;
 }
+/*
+  start the observer from a GPS position and velocity, keeping the
+  attitude and the learnt biases.  The auxiliary state, the bias gain
+  matrices, the GPS delay buffer and the measurement variances restart
+  as they do at start-up, so the innovation gate is open until the
+  variances have been relearnt.
+ */
+void AP_AHRS_CINS::reset_position_to_gps(const Vector3F &pos, const Vector3F &vel)
+{
+    state.XHat = Gal3F(state.XHat.rot(), pos, vel, state.XHat.tau());
+    state.ZHat = SIM23::identity();
+
+    state.gyr_bias_gain_mat.rot.zero();
+    state.gyr_bias_gain_mat.vel.zero();
+    state.gyr_bias_gain_mat.pos.zero();
+    state.acc_bias_gain_mat.rot.zero();
+    state.acc_bias_gain_mat.vel.zero();
+    state.acc_bias_gain_mat.pos.zero();
+
+    delayer.YR = Gal3F::identity();
+    delayer.YR_stepper = Gal3F::identity();
+    delayer.pending_input = Gal3F::identity();
+    delayer.stamped_inputs.clear();
+    delayer.last_push_time = delayer.internal_time;
+
+    state.variances.velVar = 10.0;
+    state.variances.posVar = 10.0;
+    state.variances.steps_to_initialise = 100;
+
+    last_gps_fused_ms = AP_HAL::millis();
+}
+
 void AP_AHRS_CINS::reset_gyro_drift(void)
 {
     state.gyr_bias.zero();
@@ -322,8 +360,12 @@ void AP_AHRS_CINS::update(void)
             if (!done_pos_init) {
                 // start from the first fix, which need not be at the
                 // origin when the origin is a common one:
-                state.XHat = Gal3F(state.XHat.rot(), pos.toftype(), vel.toftype(), state.XHat.tau());
+                reset_position_to_gps(pos.toftype(), vel.toftype());
                 done_pos_init = true;
+            } else if (initialised() &&
+                       AP_HAL::millis() - last_gps_fused_ms > CINS_GPS_RESET_TIMEOUT_MS) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CINS: reset position to GPS");
+                reset_position_to_gps(pos.toftype(), vel.toftype());
             }
 
             update_gps(pos.toftype(), vel.toftype(), gps_dt);
