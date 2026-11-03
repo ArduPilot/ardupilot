@@ -1137,15 +1137,13 @@ void AP_AHRS_CINS::compute_bias_update_imu(const SIM23& Gamma)
 
 void AP_AHRS_CINS::saturate_bias(Vector3F& bias_correction, const Vector3F& current_bias, const ftype& saturation, const ftype& dt) const
 {
-    // Ensure that no part of the bias exceeds the saturation limit
-    if (abs(bias_correction.x) > 1E-8) {
-        bias_correction.x *= MIN(1., (saturation - abs(current_bias.x)) / (dt * abs(bias_correction.x)));
-    }
-    if (abs(bias_correction.y) > 1E-8) {
-        bias_correction.y *= MIN(1., (saturation - abs(current_bias.y)) / (dt * abs(bias_correction.y)));
-    }
-    if (abs(bias_correction.z) > 1E-8) {
-        bias_correction.z *= MIN(1., (saturation - abs(current_bias.z)) / (dt * abs(bias_correction.z)));
+    // limit the correction so that no part of the resulting bias
+    // exceeds the saturation limit.  Limiting the resulting bias,
+    // rather than scaling the correction by the remaining headroom,
+    // still lets a saturated bias move back towards zero:
+    for (uint8_t i=0; i<3; i++) {
+        const ftype next_bias = constrain_ftype(current_bias[i] + bias_correction[i] * dt, -saturation, saturation);
+        bias_correction[i] = (next_bias - current_bias[i]) / dt;
     }
 }
 
