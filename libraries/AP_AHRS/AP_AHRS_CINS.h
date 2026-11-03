@@ -239,7 +239,11 @@ private:
     // height when it stopped fusing GPS:
     ftype baro_offset_D;      // position_D = baro_offset_D - baro altitude
     bool have_baro_offset;
-    bool using_baro_height;
+    enum class HeightSource : uint8_t {
+        NONE,
+        CINS,
+        BARO,
+    } height_source;
     uint16_t position_D_reset_count;
     uint16_t position_NE_reset_count;
 
