@@ -82,8 +82,10 @@ public:
     // get current parity for passthrough use
     uint8_t get_parity(void);
     
-    // control optional features
-    virtual bool set_options(uint16_t options) { _last_options = options; return options==0; }
+    // control optional features. If the port is locked then false is
+    // returned and the options are unchanged
+    bool set_options(uint16_t options);
+    bool set_options_locked(uint16_t options, uint32_t write_key);
     virtual uint16_t get_options(void) const { return _last_options; }
 
     enum Option {
@@ -113,14 +115,21 @@ public:
         FLOW_CONTROL_AUTO=2,
         FLOW_CONTROL_RTS_DE=3, // RTS pin is used as a driver enable (used in RS-485)
     };
-    virtual void set_flow_control(enum flow_control flow_control_setting) {};
+    void set_flow_control(enum flow_control flow_control_setting);
     virtual enum flow_control get_flow_control(void) { return FLOW_CONTROL_DISABLE; }
 
     // Return true if flow control is currently enabled
     bool flow_control_enabled() { return flow_control_enabled(get_flow_control()); }
 
-    virtual void configure_parity(uint8_t v){};
-    virtual void set_stop_bits(int n){};
+    /*
+      set the parity and stop bits. If the port is locked these are
+      ignored unless the locked versions are used with the write_key
+      from lock_port()
+     */
+    void configure_parity(uint8_t v);
+    void configure_parity_locked(uint8_t v, uint32_t write_key);
+    void set_stop_bits(int n);
+    void set_stop_bits_locked(int n, uint32_t write_key);
 
     /* unbuffered writes bypass the ringbuffer and go straight to the
      * file descriptor
@@ -278,6 +287,12 @@ protected:
 
     // discard incoming data on the port
     virtual bool _discard_input(void) = 0;
+
+    // backend line setting methods
+    virtual bool _set_options(uint16_t options) { _last_options = options; return options==0; }
+    virtual void _set_flow_control(enum flow_control flow_control_setting) {}
+    virtual void _configure_parity(uint8_t v) {}
+    virtual void _set_stop_bits(int n) {}
 
     // Helper to check if flow control is enabled given the passed setting
     bool flow_control_enabled(enum flow_control flow_control_setting) const;
