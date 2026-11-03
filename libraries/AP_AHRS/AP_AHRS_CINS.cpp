@@ -1128,6 +1128,10 @@ bool AP_AHRS_CINS::get_compass_yaw(ftype roll_rad, ftype pitch_rad, ftype &yaw_r
     if (compass.get_num_enabled() == 0) {
         return false;
     }
+    if (compass.is_calibrating()) {
+        // the offsets and scaling are being replaced
+        return false;
+    }
     const uint8_t mag_idx = compass.get_first_usable();
     if (!compass.healthy(mag_idx)) {
         return false;
@@ -1167,6 +1171,10 @@ bool AP_AHRS_CINS::get_compass_vector(Vector3F &mag_vec, Vector3F &mag_ref, ftyp
 {
     const auto &compass = AP::compass();
     if (compass.get_num_enabled() == 0) {
+        return false;
+    }
+    if (compass.is_calibrating()) {
+        // the offsets and scaling are being replaced
         return false;
     }
     const uint8_t mag_idx = compass.get_first_usable();
@@ -1219,6 +1227,14 @@ void AP_AHRS_CINS::update_attitude_from_compass()
         return;
     }
     mag_vec *= 1.e-3; // Convert mag measurement from milliGauss to Gauss
+
+    // the innovation gate is open while the variances initialise, so
+    // don't fuse a field whose strength is far from the expected earth
+    // field, e.g. from an uncalibrated compass:
+    const ftype field_ratio = mag_vec.length() / mag_ref.length();
+    if (field_ratio < 0.5 || field_ratio > 2.0) {
+        return;
+    }
 
 
     Vector2F zero_2;
