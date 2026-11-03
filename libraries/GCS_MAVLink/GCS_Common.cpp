@@ -7413,8 +7413,9 @@ void GCS::update_passthru(void)
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
     uint32_t baud1, baud2;
+    uint16_t options1, options2;
     bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
-                                                    baud1, baud2);
+                                                    baud1, baud2, options1, options2);
     if (enabled && !_passthru.enabled) {
         _passthru.start_ms = now;
         _passthru.last_ms = 0;
@@ -7422,8 +7423,9 @@ void GCS::update_passthru(void)
         _passthru.last_port1_data_ms = now;
         _passthru.baud1 = baud1;
         _passthru.baud2 = baud2;
-        _passthru.parity1 = _passthru.port1->get_parity();
-        _passthru.parity2 = _passthru.port2->get_parity();
+        _passthru.options1 = options1;
+        _passthru.options2 = options2;
+        _passthru.ports_set_up = false;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru enabled");
         if (!_passthru.timer_installed) {
             _passthru.timer_installed = true;
@@ -7442,13 +7444,7 @@ void GCS::update_passthru(void)
             _passthru.port2->end();
             _passthru.port2->begin(baud2);
         }
-        // Restore original parity
-        if (_passthru.parity1 != _passthru.port1->get_parity()) {
-            _passthru.port1->configure_parity(_passthru.parity1);
-        }
-        if (_passthru.parity2 != _passthru.port2->get_parity()) {
-            _passthru.port2->configure_parity(_passthru.parity2);
-        }
+        restore_passthru_line_settings();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru disabled");
     } else if (enabled &&
                _passthru.timeout_s &&
@@ -7467,14 +7463,37 @@ void GCS::update_passthru(void)
             _passthru.port2->end();
             _passthru.port2->begin(baud2);
         }
-        // Restore original parity
-        if (_passthru.parity1 != _passthru.port1->get_parity()) {
-            _passthru.port1->configure_parity(_passthru.parity1);
-        }
-        if (_passthru.parity2 != _passthru.port2->get_parity()) {
-            _passthru.port2->configure_parity(_passthru.parity2);
-        }
+        restore_passthru_line_settings();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru timed out");
+    }
+}
+
+/*
+  put back the parity, options and stop bits the ports had when passthrough took them,
+  as a protocol that has been detected doesn't set them again
+ */
+void GCS::restore_passthru_line_settings()
+{
+    if (!_passthru.ports_set_up) {
+        // passthrough ended before it took the ports: nothing was changed
+        return;
+    }
+    _passthru.ports_set_up = false;
+    // always, as on ChibiOS a begin() to restore the baud rate drops the
+    // parity without get_parity() knowing
+    _passthru.port1->configure_parity(_passthru.parity1);
+    _passthru.port2->configure_parity(_passthru.parity2);
+    if (_passthru.start_options1 != _passthru.port1->get_options()) {
+        _passthru.port1->set_options(_passthru.start_options1);
+    }
+    if (_passthru.start_options2 != _passthru.port2->get_options()) {
+        _passthru.port2->set_options(_passthru.start_options2);
+    }
+    if (_passthru.stop_bits1 != _passthru.port1->get_stop_bits()) {
+        _passthru.port1->set_stop_bits(_passthru.stop_bits1);
+    }
+    if (_passthru.stop_bits2 != _passthru.port2->get_stop_bits()) {
+        _passthru.port2->set_stop_bits(_passthru.stop_bits2);
     }
 }
 
@@ -7489,6 +7508,10 @@ void GCS::passthru_timer(void)
         // it has been disabled after starting
         return;
     }
+    // while pass-thru is enabled lock both ports. They remain
+    // locked until disabled again, or reboot
+    const uint32_t lock_key = 0x3256AB9F;
+
     if (_passthru.start_ms != 0) {
         uint32_t now = AP_HAL::millis();
         if (now - _passthru.start_ms < 1000) {
@@ -7496,13 +7519,38 @@ void GCS::passthru_timer(void)
             return;
         }
         _passthru.start_ms = 0;
-        _passthru.port1->begin(_passthru.baud1);
-        _passthru.port2->begin(_passthru.baud2);
+        // lock the ports before setting them up so their other users,
+        // such as RC input searching for a protocol, can't change them
+        _passthru.port1->lock_port(lock_key, lock_key);
+        _passthru.port2->lock_port(lock_key, lock_key);
+        // what to put back when passthrough ends, saved now rather than when
+        // it was enabled, as RC input may have detected a protocol since
+        _passthru.parity1 = _passthru.port1->get_parity();
+        _passthru.parity2 = _passthru.port2->get_parity();
+        _passthru.start_options1 = _passthru.port1->get_options();
+        _passthru.start_options2 = _passthru.port2->get_options();
+        _passthru.stop_bits1 = _passthru.port1->get_stop_bits();
+        _passthru.stop_bits2 = _passthru.port2->get_stop_bits();
+        _passthru.ports_set_up = true;
+        // those users may have left a different inversion, parity or
+        // stop bits, so go back to the configured options with 8N1. The
+        // USB host's parity is set below if one port is USB. Set no parity
+        // explicitly, as on ChibiOS begin() drops it without updating
+        // get_parity()
+        if (_passthru.port1->get_options() != _passthru.options1) {
+            _passthru.port1->set_options_locked(_passthru.options1, lock_key);
+        }
+        if (_passthru.port2->get_options() != _passthru.options2) {
+            _passthru.port2->set_options_locked(_passthru.options2, lock_key);
+        }
+        _passthru.port1->configure_parity_locked(0, lock_key);
+        _passthru.port2->configure_parity_locked(0, lock_key);
+        _passthru.port1->set_stop_bits_locked(1, lock_key);
+        _passthru.port2->set_stop_bits_locked(1, lock_key);
+        _passthru.port1->begin_locked(_passthru.baud1, 0, 0, lock_key);
+        _passthru.port2->begin_locked(_passthru.baud2, 0, 0, lock_key);
     }
 
-    // while pass-thru is enabled lock both ports. They remain
-    // locked until disabled again, or reboot
-    const uint32_t lock_key = 0x3256AB9F;
     _passthru.port1->lock_port(lock_key, lock_key);
     _passthru.port2->lock_port(lock_key, lock_key);
 
@@ -7514,11 +7562,14 @@ void GCS::passthru_timer(void)
             _passthru.baud2 = baud;
             _passthru.port2->end();
             _passthru.port2->begin_locked(baud, 0, 0, lock_key);
+            // begin() may drop the parity without get_parity() knowing
+            _passthru.port2->configure_parity_locked(parity, lock_key);
         }
 
-        if (_passthru.parity2 != parity) {
-            _passthru.parity2 = parity;
-            _passthru.port2->configure_parity(parity);
+        // compare with the port's parity, not what we last set, as the
+        // port's other user may have changed it before we locked it
+        if (_passthru.port2->get_parity() != parity) {
+            _passthru.port2->configure_parity_locked(parity, lock_key);
         }
     }
 
@@ -7529,11 +7580,12 @@ void GCS::passthru_timer(void)
             _passthru.baud1 = baud;
             _passthru.port1->end();
             _passthru.port1->begin_locked(baud, 0, 0, lock_key);
+            // begin() may drop the parity without get_parity() knowing
+            _passthru.port1->configure_parity_locked(parity, lock_key);
         }
 
-        if (_passthru.parity1 != parity) {
-            _passthru.parity1 = parity;
-            _passthru.port1->configure_parity(parity);
+        if (_passthru.port1->get_parity() != parity) {
+            _passthru.port1->configure_parity_locked(parity, lock_key);
         }
     }
 
