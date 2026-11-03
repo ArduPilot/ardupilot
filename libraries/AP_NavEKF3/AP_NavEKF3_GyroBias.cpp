@@ -16,9 +16,9 @@ void NavEKF3_core::resetGyroBias(void)
     Pmut[12][12] = P[10][10];
 }
 
-// zero the gyro bias states of the active and inactive IMUs. A bootstrap keeps the gyro
-// biases it finds, so a reset the EKF makes itself starts from the biases already learned;
-// a commanded reset calls this first, so it starts them from zero as a full reset should
+// zero the gyro bias states of the active and inactive IMUs. A bootstrap keeps the Z gyro
+// biases it finds, so a reset the EKF makes itself starts from the Z bias already learned;
+// a commanded reset calls this first, so it starts them all from zero as a full reset should
 void NavEKF3_core::zeroGyroBiases(void)
 {
     stateStruct.gyro_bias.zero();

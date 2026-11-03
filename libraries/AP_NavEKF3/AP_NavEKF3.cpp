@@ -1987,7 +1987,7 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
 // Do a reset and bootstrap alignment of all EKF cores
 // return true if successful for all cores
 // Gyros are not recalibrated here, and the gyro biases start again from
-// zero; the EKF's own reset keeps them.
+// zero; the EKF's own reset keeps Z.
 bool NavEKF3::InitialiseFilterBootstrap()
 {
     // ignore any data if the EKF is not started
@@ -2004,7 +2004,7 @@ bool NavEKF3::InitialiseFilterBootstrap()
     for (uint8_t i=0; i<num_cores; i++) {
         // clear the statesInitialised status to allow a bootstrap alignment
         core[i].clearStatesInitialised();
-        // a commanded reset relearns the gyro biases, where the EKF's own reset keeps them
+        // a commanded reset relearns the gyro biases, where the EKF's own reset keeps Z
         core[i].zeroGyroBiases();
         // perform a bootstrap alignment
         core[i].InitialiseFilterBootstrap();
