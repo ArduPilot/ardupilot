@@ -1440,6 +1440,107 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index(uint16_t now16_ms)
     return next_deferred_message_to_send_cache;
 }
 
+/*
+  results of recently-executed commands which carried a non-zero
+  command_opaque_id, shared between all links so a command which
+  arrives over several links is only executed once.  Allocated when
+  the first such command arrives.  When full the oldest entry is
+  overwritten, so the sender loses idempotency for that command
+  rather than having a new command rejected.  An entry for a command
+  which is still running as a GCS_MAVLINK_InProgress task is kept
+  fresh by that task and gets the task's final result.  An entry is
+  forgotten 60 seconds after the command's last result, the longest
+  a recipient may remember an id according to the mavlink definition.
+
+  An entry is created before the command's handler runs, so a repeat
+  which arrives while the handler is blocking (e.g. from the scheduler
+  delay callback) gets IN_PROGRESS rather than running the command
+  again.  A CRC of the command's parameters is kept so that a sender
+  re-using an opaque id for a different command gets that command
+  executed rather than the earlier result.
+ */
+static constexpr uint8_t RECENT_COMMANDS_SIZE = 32;
+static constexpr uint32_t RECENT_COMMANDS_TIMEOUT_MS = 60000;
+static struct RecentCommand {
+    uint32_t received_ms;
+    uint32_t sysid;
+    uint32_t command_opaque_id;  // 0 means this entry is unused
+    uint16_t command;
+    uint16_t payload_crc;
+    uint8_t compid;
+    uint8_t result : 7;  // MAV_RESULT
+    uint8_t dispatching : 1;  // handler has not yet returned
+} *recent_commands;
+static uint8_t recent_commands_next;
+
+static RecentCommand *find_recent_command(uint16_t command, uint32_t command_opaque_id, uint32_t sysid, uint8_t compid)
+{
+    if (recent_commands == nullptr || command_opaque_id == 0) {
+        return nullptr;
+    }
+    const uint32_t now_ms = AP_HAL::millis();
+    for (uint8_t i=0; i<RECENT_COMMANDS_SIZE; i++) {
+        RecentCommand &recent = recent_commands[i];
+        if (recent.command_opaque_id == command_opaque_id &&
+            recent.sysid == sysid &&
+            recent.compid == compid &&
+            recent.command == command &&
+            (recent.dispatching || now_ms - recent.received_ms < RECENT_COMMANDS_TIMEOUT_MS)) {
+            return &recent;
+        }
+    }
+    return nullptr;
+}
+
+static uint16_t command_payload_crc(const mavlink_command_int_t &packet)
+{
+    const struct PACKED {
+        float param1;
+        float param2;
+        float param3;
+        float param4;
+        int32_t x;
+        int32_t y;
+        float z;
+        uint8_t frame;
+    } payload {
+        packet.param1,
+        packet.param2,
+        packet.param3,
+        packet.param4,
+        packet.x,
+        packet.y,
+        packet.z,
+        packet.frame,
+    };
+    return crc16_ccitt((const uint8_t *)&payload, sizeof(payload), 0);
+}
+
+// record the task's latest result against its command so a retry of
+// the command gets it, and restart the entry's timeout
+void GCS_MAVLINK_InProgress::update_recent_command(MAV_RESULT result)
+{
+    RecentCommand *recent = find_recent_command(mav_cmd, requesting_command_opaque_id, requesting_sysid, requesting_compid);
+    if (recent == nullptr) {
+        return;
+    }
+    recent->result = result;
+    recent->received_ms = AP_HAL::millis();
+}
+
+void GCS_MAVLINK_InProgress::set_reply_channel(MAV_CMD cmd, uint32_t sysid, uint8_t compid, uint32_t command_opaque_id, mavlink_channel_t _chan)
+{
+    for (auto &_task : in_progress_tasks) {
+        if (_task.task != Type::NONE &&
+            _task.mav_cmd == cmd &&
+            _task.requesting_sysid == sysid &&
+            _task.requesting_compid == compid &&
+            _task.requesting_command_opaque_id == command_opaque_id) {
+            _task.chan = _chan;
+        }
+    }
+}
+
 bool GCS_MAVLINK_InProgress::send_ack(MAV_RESULT result)
 {
     if (!HAVE_PAYLOAD_SPACE(chan, COMMAND_ACK)) {
@@ -1463,11 +1564,15 @@ bool GCS_MAVLINK_InProgress::send_ack(MAV_RESULT result)
 
 bool GCS_MAVLINK_InProgress::send_in_progress()
 {
+    update_recent_command(MAV_RESULT_IN_PROGRESS);
     return send_ack(MAV_RESULT_IN_PROGRESS);
 }
 
 bool GCS_MAVLINK_InProgress::conclude(MAV_RESULT result)
 {
+    // record the result first so a retry gets it even while there is
+    // no space to send this ACK
+    update_recent_command(result);
     if (!send_ack(result)) {
         return false;
     }
@@ -5345,7 +5450,7 @@ MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_lo
     mavlink_command_int_t command_int;
     convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
 
-    return handle_command_int_packet(command_int, msg);
+    return handle_command_int_packet_idempotent(command_int, msg);
 }
 
 // returns a value suitable for COMMAND_INT.x or y based on a value
@@ -5673,6 +5778,95 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
 }
 #endif  // AP_MAVLINK_FOLLOW_HANDLING_ENABLED
 
+/*
+  commands which act on or reply over only the link they arrive on, and
+  which are harmless to repeat.  A sender resending one of these, perhaps
+  over another link because the reply was lost, needs it run again, so
+  they are not remembered in recent_commands.
+ */
+static bool command_is_link_local(uint16_t command)
+{
+    switch (command) {
+    case MAV_CMD_REQUEST_MESSAGE:
+    case MAV_CMD_SET_MESSAGE_INTERVAL:
+    case MAV_CMD_GET_MESSAGE_INTERVAL:
+    case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES:
+    case MAV_CMD_GET_HOME_POSITION:
+    case MAV_CMD_DO_SEND_BANNER:
+    case MAV_CMD_CAN_FORWARD:
+        return true;
+    }
+    return false;
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_int_packet_idempotent(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    // zero is what senders which predate the field send
+    if (packet.command_opaque_id == 0 || command_is_link_local(packet.command)) {
+        return handle_command_int_packet(packet, msg);
+    }
+
+    const uint16_t payload_crc = command_payload_crc(packet);
+    RecentCommand *recent = find_recent_command(packet.command, packet.command_opaque_id, msg.sysid, msg.compid);
+    if (recent != nullptr) {
+        if (recent->payload_crc == payload_crc) {
+            // a repeat; the sender is retrying on this link, so send
+            // any remaining task ACKs here in case the original link
+            // is gone
+            GCS_MAVLINK_InProgress::set_reply_channel((MAV_CMD)packet.command, msg.sysid, msg.compid, packet.command_opaque_id, chan);
+            if (recent->dispatching) {
+                return MAV_RESULT_IN_PROGRESS;
+            }
+            return (MAV_RESULT)recent->result;
+        }
+        // the id has been re-used for a different command; forget
+        // the old one and run this one
+        if (!recent->dispatching) {
+            recent->command_opaque_id = 0;
+        }
+    }
+
+    if (recent_commands == nullptr) {
+        recent_commands = NEW_NOTHROW RecentCommand[RECENT_COMMANDS_SIZE];
+        if (recent_commands == nullptr) {
+            return handle_command_int_packet(packet, msg);
+        }
+    }
+    RecentCommand &entry = recent_commands[recent_commands_next];
+    recent_commands_next = (recent_commands_next + 1) % RECENT_COMMANDS_SIZE;
+    entry.received_ms = AP_HAL::millis();
+    entry.sysid = msg.sysid;
+    entry.command = packet.command;
+    entry.command_opaque_id = packet.command_opaque_id;
+    entry.payload_crc = payload_crc;
+    entry.compid = msg.compid;
+    entry.result = MAV_RESULT_IN_PROGRESS;
+    entry.dispatching = true;
+
+    const MAV_RESULT result = handle_command_int_packet(packet, msg);
+
+    // commands received while the handler ran may have re-used the entry
+    if (entry.command_opaque_id != packet.command_opaque_id ||
+        entry.sysid != msg.sysid ||
+        entry.compid != msg.compid ||
+        entry.command != packet.command ||
+        entry.payload_crc != payload_crc ||
+        !entry.dispatching) {
+        return result;
+    }
+
+    if (result == MAV_RESULT_TEMPORARILY_REJECTED) {
+        // the sender is expected to retry a temporarily-rejected command
+        entry.command_opaque_id = 0;
+    } else {
+        entry.result = result;
+        entry.received_ms = AP_HAL::millis();
+    }
+    entry.dispatching = false;
+
+    return result;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -5925,7 +6119,7 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
-    const MAV_RESULT result = handle_command_int_packet(packet, msg);
+    const MAV_RESULT result = handle_command_int_packet_idempotent(packet, msg);
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result,
