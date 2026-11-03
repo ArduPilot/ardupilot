@@ -16120,21 +16120,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def StaticYawKeepsCompassYaw(self):
         '''check a still vehicle that loses its yaw source keeps its compass aligned yaw'''
-        # hold the declination at 0 from the compass alignment on, so the yaw the
-        # alignment sets is the yaw the compass then keeps
-        self.static_yaw_test_setup({
-            "COMPASS_AUTODEC": 0,
-            "COMPASS_DEC": 0,
-            "EK3_MAG_EF_LIM": 0,
-        })
-        # never move: the static yaw reference is first taken before the compass aligns the yaw
+        # with the default COMPASS_AUTODEC the declination arrives from the GPS after the
+        # compass alignment and turns the yaw with no reset
+        self.static_yaw_test_setup({})
+        # never move, so the reference is the one stored while the compass was fused
         self.wait_ready_to_arm()
 
         switch_us = int(self.get_sim_time() * 1e6)
         self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
         self.delay_sim_time(15, "static yaw fusion with no yaw source")
 
-        # a reference left at the yaw from before the alignment would pull the yaw back toward it
+        # a reference left at the yaw from before the declination arrived would pull the yaw back toward it
         cores = self.ekf3_yaw_change_and_max_gyro_bias_z(switch_us)
         if len(cores) == 0:
             raise NotAchievedException("no XKF1 records after the source set switch")
@@ -16142,6 +16138,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("EKF3 core %u: yaw moved up to %.1f deg" % (core, yaw_change))
             if yaw_change > 5:
                 raise NotAchievedException("core %u: yaw moved %.1f deg with no yaw source" % (core, yaw_change))
+
+    def StaticYawLearnsBiasAwaitingGPSYaw(self):
+        '''check a still vehicle waiting for GPS yaw learns its Z gyro bias from the static yaw reference'''
+        # with GPS yaw and compass fallback the compass is not fused on the ground, so until GPS
+        # yaw arrives the static yaw reference is the only heading observation, and one that
+        # followed the yaw would learn nothing
+        bias_dps = 0.6
+        tolerance_dps = 0.15
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        params = {
+            "EK3_SRC1_YAW": 3,  # GPS with compass fallback
+            "SIM_GPS2_ENABLE": 0,  # no moving baseline rover, so no GPS yaw
+            # no boot calibration and no stored offsets, so the EKF learns the simulated bias
+            "INS_GYR_CAL": 0,
+        }
+        for n in (1, 2):
+            params["SIM_GYR%u_BIAS_Z" % n] = math.radians(bias_dps)
+            for axis in "XYZ":
+                params["INS_GYR%sOFFS_%s" % ("" if n == 1 else str(n), axis)] = 0
+        self.set_parameters(params)
+        self.reboot_sitl()
+        self.delay_sim_time(40, "static yaw fusion while waiting for GPS yaw")
+        end_us = int(self.get_sim_time() * 1e6)
+        # a yaw sensor that aligned the yaw would learn the bias itself, and the static yaw
+        # reference would not be under test
+        dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
+        while True:
+            try:
+                m = dfreader.recv_match(type="MSG")
+            except (OSError, ValueError, struct.error):
+                break
+            if m is None:
+                break
+            if "yaw align" in m.Message:
+                raise NotAchievedException("the yaw was aligned while waiting for GPS yaw: %s" % m.Message)
+        for core, (_, lowest, highest) in sorted(self.ekf3_gyro_bias_around(end_us - 2000000, end_us).items()):
+            self.progress("EKF3 core %u: GZ %.2f to %.2f deg/s after 40 s waiting for GPS yaw" % (core, lowest, highest))
+            if lowest < bias_dps - tolerance_dps or highest > bias_dps + tolerance_dps:
+                raise NotAchievedException("core %u: learned %.2f-%.2f of the %.2f deg/s Z gyro bias" % (
+                    core, lowest, highest, bias_dps))
 
     def ekf3_yaw_change_and_max_gyro_bias_z(self, since_us):
         '''for each EKF3 core in the current onboard log, the largest yaw change from
@@ -24519,6 +24555,7 @@ return update, 1000
             self.EKFBootstrapResetStaticYaw,
             self.EKFResetGyroBias,
             self.StaticYawKeepsCompassYaw,
+            self.StaticYawLearnsBiasAwaitingGPSYaw,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
             self.SMART_RTL_EnterLeave,
