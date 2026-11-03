@@ -355,11 +355,13 @@ TEST(Gal3Exponential, MatchesSeries)
     const Vector3F x { 1.5, -0.7, 2.0 };
     const Vector3F w { 3.0, -2.0, 1.0 };
     const ftype alpha = 2.0;
-    // rotation vectors from large angles down to one small enough to
-    // take exponential()'s small-angle branch:
+    // rotation vectors from large angles down to ones taking
+    // exponential()'s small-angle series:
     const Vector3F rotations[] {
         { 0.9, -0.6, 0.7 },
         { 0.1, 0.2, -0.15 },
+        { 0.08, -0.06, 0.05 },    // just above the series threshold
+        { 0.06, -0.05, 0.04 },    // just below it
         { 1e-3, -2e-3, 5e-4 },
         { 1e-9, -2e-9, 5e-10 },
     };
