@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_AHRS_CINS::var_info[] = {
     // @Param: GPATT
     // @DisplayName: CINS GPS position attitude gain
     // @Description: CINS GPS position attitude gain
-    // @Range: 0.0001 0.001
+    // @Range: 0.000001 0.0001
     // @User: Advanced
     AP_GROUPINFO("GPATT", 1, AP_AHRS_CINS, gains.gpspos_att, CINS_GAIN_GPSPOS_ATT),
 
@@ -136,14 +136,14 @@ const AP_Param::GroupInfo AP_AHRS_CINS::var_info[] = {
     // @Param: MAGGB
     // @DisplayName: CINS magnetometer - gyro bias gain
     // @Description: CINS magnetometer (compass) gyro bias gain
-    // @Range: 0.001 0.0001
+    // @Range: 0.0005 0.05
     // @User: Advanced
     AP_GROUPINFO("MAGGB", 11, AP_AHRS_CINS, gains.mag_gyr_bias, CINS_GAIN_MAG_GYR_BIAS),
 
     // @Param: SATGB
     // @DisplayName: CINS gyro bias saturation
     // @Description: CINS gyro bias saturation
-    // @Range: 0.05 0.1
+    // @Range: 0.01 0.1
     // @User: Advanced
     AP_GROUPINFO("SATGB", 12, AP_AHRS_CINS, gains.sat_gyr_bias, CINS_SAT_GYR_BIAS),
 
@@ -151,28 +151,28 @@ const AP_Param::GroupInfo AP_AHRS_CINS::var_info[] = {
     // @Param: GPPAB
     // @DisplayName: CINS GPS position - accel. bias gain
     // @Description: CINS GPS position - accel. bias gain
-    // @Range: 0.0000001 0.000001
+    // @Range: 0.0001 0.01
     // @User: Advanced
     AP_GROUPINFO("GPPAB", 13, AP_AHRS_CINS, gains.gps_pos_acc_bias, CINS_GAIN_POS_ACC_BIAS),
 
     // @Param: GPVAB
     // @DisplayName: CINS GPS velocity - accel. bias gain
     // @Description: CINS GPS velocity - accel. bias gain
-    // @Range: 0.0000001 0.000001
+    // @Range: 0.0001 0.01
     // @User: Advanced
     AP_GROUPINFO("GPVAB", 14, AP_AHRS_CINS, gains.gps_vel_acc_bias, CINS_GAIN_VEL_ACC_BIAS),
 
     // @Param: MAGAB
     // @DisplayName: CINS magnetometer - accel. bias gain
     // @Description: CINS magnetometer (compass) accel. bias gain
-    // @Range: 0.001 0.0001
+    // @Range: 0.0005 0.05
     // @User: Advanced
     AP_GROUPINFO("MAGAB", 15, AP_AHRS_CINS, gains.mag_acc_bias, CINS_GAIN_MAG_ACC_BIAS),
 
     // @Param: SATAB
     // @DisplayName: CINS accel. bias saturation
     // @Description: CINS accel. bias saturation
-    // @Range: 0.05 0.1
+    // @Range: 0.1 1.0
     // @User: Advanced
     AP_GROUPINFO("SATAB", 16, AP_AHRS_CINS, gains.sat_acc_bias, CINS_SAT_ACC_BIAS),
 
