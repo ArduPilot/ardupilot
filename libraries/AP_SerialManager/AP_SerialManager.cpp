@@ -319,15 +319,14 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: _PASS1
     // @DisplayName: Serial passthru first port
     // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port
-    // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6,7:Serial7,8:Serial8,9:Serial9
+    // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6,7:Serial7,8:Serial8,9:Serial9,21:Network Port1,22:Network Port2,23:Network Port3,24:Network Port4,41:CAN1 Serial1,42:CAN1 Serial2,43:CAN1 Serial3,51:CAN2 Serial1,52:CAN2 Serial2,53:CAN2 Serial3,61:Scripting Serial1,62:Scripting Serial2,63:Scripting Serial3
     // @User: Advanced
     AP_GROUPINFO("_PASS1",  20, AP_SerialManager, passthru_port1, 0),
 
     // @Param: _PASS2
+    // @CopyFieldsFrom: SERIAL_PASS1
     // @DisplayName: Serial passthru second port
     // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port. This parameter is normally reset to -1 on reboot, disabling passthrough. If SERIAL_PASSTIMO is set to -1 then it is not reset on reboot.
-    // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6,7:Serial7,8:Serial8,9:Serial9
-    // @User: Advanced
     AP_GROUPINFO("_PASS2",  21, AP_SerialManager, passthru_port2, -1),
 
     // @Param: _PASSTIMO
