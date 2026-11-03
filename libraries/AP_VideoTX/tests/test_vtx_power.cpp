@@ -91,6 +91,59 @@ TEST(VTXPowerSwitch, MidTablePitmode)
 
 // built-in levels: the top position offers VTX_MAX_POWER even when the
 // largest active level is below it
+// with the user table the power channel's whole range is split evenly between
+// the used entries, so a pot reaches each one over an equal share of its travel
+
+// the input, 0 to 1, for a pulse width on a channel with the given range
+static float channel_input(uint16_t pwm, uint16_t min, uint16_t max)
+{
+    return float(pwm - min) / float(max - min);
+}
+
+TEST(VTXPowerLevel, LevelsSkipIgnoredEntries)
+{
+    const int16_t table[VTX_USER_POWER_LEVELS] = {0, -1, 25, 400, -1, 1000};
+    uint16_t power;
+    ASSERT_TRUE(AP_VideoTX::table_level_power_mw(0, table, VTX_USER_POWER_LEVELS, power));
+    EXPECT_EQ(power, 0);
+    ASSERT_TRUE(AP_VideoTX::table_level_power_mw(1, table, VTX_USER_POWER_LEVELS, power));
+    EXPECT_EQ(power, 25);
+    ASSERT_TRUE(AP_VideoTX::table_level_power_mw(2, table, VTX_USER_POWER_LEVELS, power));
+    EXPECT_EQ(power, 400);
+    ASSERT_TRUE(AP_VideoTX::table_level_power_mw(3, table, VTX_USER_POWER_LEVELS, power));
+    EXPECT_EQ(power, 1000);
+    EXPECT_FALSE(AP_VideoTX::table_level_power_mw(4, table, VTX_USER_POWER_LEVELS, power));
+}
+
+// four levels on a pot calibrated to 987-2011: a quarter of the travel each
+TEST(VTXPowerLevel, PotEqualShares)
+{
+    const uint16_t min = 987, max = 2011;
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(987, min, max), 4), 0);
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(1240, min, max), 4), 0);
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(1245, min, max), 4), 1);
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(1497, min, max), 4), 1);
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(1501, min, max), 4), 2);
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(1753, min, max), 4), 2);
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(1757, min, max), 4), 3);
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(2011, min, max), 4), 3);
+    // out of range input stays on the end levels
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(-0.2f, 4), 0);
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(1.2f, 4), 3);
+    EXPECT_EQ(AP_VideoTX::power_level_for_input(0.5f, 0), 0);
+}
+
+// a 6-position switch with six entries still selects one entry per position,
+// with the channel at its default range or calibrated to the switch's ends
+TEST(VTXPowerLevel, SixPositionSwitch)
+{
+    const uint16_t positions[6] = {1165, 1295, 1425, 1555, 1685, 1815};
+    for (uint8_t i = 0; i < 6; i++) {
+        EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(positions[i], 1100, 1900), 6), i);
+        EXPECT_EQ(AP_VideoTX::power_level_for_input(channel_input(positions[i], 1165, 1815), 6), i);
+    }
+}
+
 TEST(VTXPowerSwitch, BuiltInTopPositionReachesMaxPower)
 {
     const int16_t table[VTX_USER_POWER_LEVELS] = { -1, -1, -1, -1, -1, -1 };
