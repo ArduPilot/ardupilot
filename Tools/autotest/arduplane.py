@@ -9876,6 +9876,7 @@ return update()
             16: "Initialising",
             24: "Thermal",
             26: "Autoland",
+            27: "Glide FS",
         }
         initialising = self.get_mode_from_mode_mapping("INITIALISING")
         modes = self.assert_available_modes(expected_modes, not_user_selectable=[initialising])
@@ -9886,8 +9887,9 @@ return update()
         self.start_subtest("modes blocked by FLTMODE_GCSBLOCK are not user-selectable")
         circle = self.get_mode_from_mode_mapping("CIRCLE")
         guided = self.get_mode_from_mode_mapping("GUIDED")
-        self.set_parameter("FLTMODE_GCSBLOCK", (1 << 1) | (1 << 13))  # CIRCLE and GUIDED
-        self.assert_available_modes(expected_modes, not_user_selectable=[initialising, circle, guided])
+        glide_fs = 27  # GLFS, need pymavlink support to use text name
+        self.set_parameter("FLTMODE_GCSBLOCK", (1 << 1) | (1 << 13) | (1 << 22))  # CIRCLE, GUIDED and Glide FS
+        self.assert_available_modes(expected_modes, not_user_selectable=[initialising, circle, guided, glide_fs])
         self.set_parameter("FLTMODE_GCSBLOCK", 0)
 
         self.start_subtest("request the first and last modes by index")
