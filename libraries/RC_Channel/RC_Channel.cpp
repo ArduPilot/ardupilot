@@ -223,7 +223,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Rover}: 155:Set steering trim to current servo and RC
     // @Values{Plane}: 155:Set roll pitch and yaw trim to current servo and RC
     // @Values{Rover}: 156:Torqeedo Clear Err
-    // @Values{Plane}: 157:Force FS Action to FBWA
+    // @Values{Plane}: 157:Force FS Action to Glide FS
     // @Values{Copter, Plane}: 158:Optflow Calibration
     // @Values{Copter}: 159:Force IS_Flying
     // @Values{Plane}: 160:Weathervane Enable
