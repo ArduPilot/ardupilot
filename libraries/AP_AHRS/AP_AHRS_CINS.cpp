@@ -693,6 +693,16 @@ bool AP_AHRS_CINS::pre_arm_check(bool requires_position, char *failure_msg, uint
         hal.util->snprintf(failure_msg, failure_msg_len, "Waiting for variances");
         return false;
     }
+    // a test ratio above one means CINS is currently rejecting that
+    // sensor's measurements at its innovation gate:
+    if (state.variances.velTest > 1 || state.variances.posTest > 1) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "GPS inconsistent");
+        return false;
+    }
+    if (state.variances.magTest > 1) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Compass inconsistent");
+        return false;
+    }
     return true;
 }
 
