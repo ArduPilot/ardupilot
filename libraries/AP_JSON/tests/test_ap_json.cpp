@@ -74,6 +74,30 @@ TEST(AP_JSON, DuplicateKeysRejected)
     EXPECT_TRUE(parses("{\"a\":{\"k\":1},\"b\":{\"k\":2}}"));
 }
 
+static std::string nested(const char *open, const char *close, unsigned depth)
+{
+    std::string s;
+    for (unsigned i = 0; i < depth; i++) {
+        s += open;
+    }
+    s += "1";
+    for (unsigned i = 0; i < depth; i++) {
+        s += close;
+    }
+    return s;
+}
+
+TEST(AP_JSON, NestingDepthLimited)
+{
+    EXPECT_TRUE(parses(nested("[", "]", 16).c_str()));
+    EXPECT_FALSE(parses(nested("[", "]", 17).c_str()));
+    EXPECT_TRUE(parses(nested("{\"k\":", "}", 16).c_str()));
+    EXPECT_FALSE(parses(nested("{\"k\":", "}", 17).c_str()));
+    EXPECT_FALSE(parses(nested("[{\"k\":", "}]", 9).c_str()));
+    // deep enough to overflow the stack without the limit
+    EXPECT_FALSE(parses(nested("[", "]", 1000000).c_str()));
+}
+
 TEST(AP_JSON, NumbersAreExact)
 {
     value v;
