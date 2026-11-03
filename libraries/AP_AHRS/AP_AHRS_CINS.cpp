@@ -247,12 +247,13 @@ void AP_AHRS_CINS::init(void)
   as they do at start-up, so the innovation gate is open until the
   variances have been relearnt.
  */
-void AP_AHRS_CINS::reset_position_to_gps(const Vector3F &pos, const Vector3F &vel)
+void AP_AHRS_CINS::reset_position_to_gps(const Vector3F &pos, const Vector3F &vel, ResetEvent event)
 {
     if (done_pos_init) {
         // tell the position controllers our position has stepped:
         position_NE_reset_count++;
         position_D_reset_count++;
+        log_reset(event, pos - state.XHat.pos());
     }
     state.XHat = Gal3F(state.XHat.rot(), pos, vel, state.XHat.tau());
     state.ZHat = SIM23::identity();
@@ -367,12 +368,12 @@ void AP_AHRS_CINS::update(void)
             if (!done_pos_init) {
                 // start from the first fix, which need not be at the
                 // origin when the origin is a common one:
-                reset_position_to_gps(pos.toftype(), vel.toftype());
+                reset_position_to_gps(pos.toftype(), vel.toftype(), ResetEvent::GPS);
                 done_pos_init = true;
             } else if (initialised() &&
                        AP_HAL::millis() - last_gps_fused_ms > CINS_GPS_RESET_TIMEOUT_MS) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CINS: reset position to GPS");
-                reset_position_to_gps(pos.toftype(), vel.toftype());
+                reset_position_to_gps(pos.toftype(), vel.toftype(), ResetEvent::GPS);
             }
 
             update_gps(pos.toftype(), vel.toftype(), gps_dt);
@@ -526,8 +527,62 @@ void AP_AHRS_CINS::update_baro_height()
     if (source != height_source) {
         // the published height may step when its source changes:
         position_D_reset_count++;
+        ftype old_D, new_D;
+        const bool have_step = published_height_D(height_source, old_D) &&
+                               published_height_D(source, new_D);
         height_source = source;
+        log_reset(ResetEvent::HEIGHT_SOURCE, Vector3F{0, 0, have_step ? new_D - old_D : 0});
     }
+}
+
+// the down position published for a height source:
+bool AP_AHRS_CINS::published_height_D(HeightSource source, ftype &posD) const
+{
+    switch (source) {
+    case HeightSource::CINS:
+        posD = state.XHat.pos().z;
+        return true;
+    case HeightSource::BARO:
+        posD = baro_offset_D - AP::baro().get_altitude();
+        return true;
+    case HeightSource::NONE:
+        break;
+    }
+    return false;
+}
+
+/*
+  log a reset of the position, or a change in the published height's
+  source.  step is the change in the NED position
+ */
+void AP_AHRS_CINS::log_reset(ResetEvent event, const Vector3F &step) const
+{
+#if HAL_LOGGING_ENABLED
+    // @LoggerMessage: CINR
+    // @Description: CINS position resets and height source changes
+    // @Field: TimeUS: Time since system startup
+    // @Field: I: instance
+    // @Field: Ev: event: 0=reset to GPS, 1=common origin adopted, 2=height source changed
+    // @Field: HS: height source after the event: 0=none, 1=CINS, 2=baro
+    // @Field: NEC: NE position reset count
+    // @Field: DC: down position reset count
+    // @Field: DN: position step north
+    // @Field: DE: position step east
+    // @Field: DD: position step down
+    AP::logger().Write("CINR", "TimeUS,I,Ev,HS,NEC,DC,DN,DE,DD",
+                       "s#----mmm",
+                       "F-----000",
+                       "QBBBHHfff",
+                       AP_HAL::micros64(),
+                       0,
+                       uint8_t(event),
+                       uint8_t(height_source),
+                       position_NE_reset_count,
+                       position_D_reset_count,
+                       float(step.x),
+                       float(step.y),
+                       float(step.z));
+#endif
 }
 
 void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
@@ -735,7 +790,7 @@ bool AP_AHRS_CINS::set_origin(const Location &loc)
     origin_is_own = false;
     if (have_position) {
         // keep our location, now relative to the new origin:
-        reset_position_to_gps(loc.get_distance_NED_double(current_loc).toftype(), state.XHat.vel());
+        reset_position_to_gps(loc.get_distance_NED_double(current_loc).toftype(), state.XHat.vel(), ResetEvent::ORIGIN);
     }
     return true;
 }
