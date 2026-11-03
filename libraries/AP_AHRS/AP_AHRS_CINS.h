@@ -132,7 +132,7 @@ private:
     void check_divergence();
     void reset_position_to_gps(const Vector3F &pos, const Vector3F &vel, ResetEvent event);
     void log_reset(ResetEvent event, const Vector3F &step) const;
-    void update_baro_height();
+    void update_baro_height(bool gps_fused);
     // one-time estimator state initialisation, run lazily on the first
     // update() (the backend interface has no init() entry point):
     void init(void);
@@ -257,7 +257,6 @@ private:
     // height at the last fused GPS sample:
     ftype baro_offset_D;      // position_D = baro_offset_D - baro altitude
     bool have_baro_offset;
-    uint32_t baro_offset_fused_ms;  // last_gps_fused_ms when the offset was taken
     enum class HeightSource : uint8_t {
         NONE,
         CINS,

@@ -342,6 +342,8 @@ void AP_AHRS_CINS::update(void)
         done_attitude_init = init_attitude(accel);
     }
 
+    const uint32_t last_gps_fused_before_ms = last_gps_fused_ms;
+
     if (initialised()) {
         update_imu(gyro, accel, dangle_dt);
         last_imu_update_ms = AP_HAL::millis();
@@ -385,7 +387,7 @@ void AP_AHRS_CINS::update(void)
     update_attitude_from_compass();
     check_divergence();
 
-    update_baro_height();
+    update_baro_height(last_gps_fused_ms != last_gps_fused_before_ms);
 
 #if HAL_LOGGING_ENABLED
     Log_Write();
@@ -506,16 +508,15 @@ void AP_AHRS_CINS::Log_Write()
   instead, offset to match CINS's own height at the last fused GPS
   sample
  */
-void AP_AHRS_CINS::update_baro_height()
+void AP_AHRS_CINS::update_baro_height(bool gps_fused)
 {
     const auto &baro = AP::baro();
     const bool baro_healthy = baro.healthy();
-    if (baro_healthy && last_gps_fused_ms != baro_offset_fused_ms) {
-        // anchor to our height when a GPS sample has just been fused,
-        // so the IMU drift until fusion stops doesn't stay in the
+    if (baro_healthy && gps_fused) {
+        // anchor to our height only when a GPS sample has been fused
+        // in this update, so IMU drift since then doesn't stay in the
         // baro height:
         baro_offset_D = state.XHat.pos().z + baro.get_altitude();
-        baro_offset_fused_ms = last_gps_fused_ms;
         have_baro_offset = true;
     }
 
