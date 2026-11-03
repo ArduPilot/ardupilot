@@ -333,8 +333,11 @@ private:
     // Updates attitude controller targets and evaluates test responses to tune gains.
     void control_attitude();
 
-    // Return attitude qualification and report the instantaneous rate qualification separately.
-    bool currently_level(bool &rate_ok);
+    // returns true if attitude is close to level
+    bool currently_level();
+
+    // returns true if angular rates are within the settling limits
+    bool rates_within_limit() const;
 
     bool     pilot_override;        // true = pilot is overriding controls so we suspend tuning temporarily
     bool     use_poshold;           // true = enable position hold
