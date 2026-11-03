@@ -9,6 +9,7 @@
 #include "AP_AHRS_CINS.h"
 #include "AP_AHRS.h"
 
+#include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Declination/AP_Declination.h>
 #include <AP_GPS/AP_GPS.h>
@@ -374,6 +375,8 @@ void AP_AHRS_CINS::update(void)
 
     update_attitude_from_compass();
 
+    update_baro_height();
+
 #if HAL_LOGGING_ENABLED
     Log_Write();
 #endif
@@ -486,6 +489,32 @@ void AP_AHRS_CINS::Log_Write()
 }
 #endif  // HAL_LOGGING_ENABLED
 
+/*
+  CINS has no height source other than GPS, so without GPS fusion its
+  height and vertical velocity come from the IMU alone and drift
+  without bound.  While it is not fusing GPS, publish the baro height
+  instead, offset to be continuous with CINS's own height at the point
+  GPS fusion stopped
+ */
+void AP_AHRS_CINS::update_baro_height()
+{
+    const auto &baro = AP::baro();
+    if (!baro.healthy()) {
+        have_baro_offset = false;
+    } else if (fusing_gps()) {
+        baro_offset_D = state.XHat.pos().z + baro.get_altitude();
+        have_baro_offset = true;
+    }
+
+    const bool use_baro = healthy() && !fusing_gps() && have_baro_offset;
+    if (using_baro_height && !use_baro) {
+        // back on CINS's own height, which has moved independently
+        // of the baro's:
+        position_D_reset_count++;
+    }
+    using_baro_height = use_baro;
+}
+
 void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
 {
     // not using a specific sensor:
@@ -524,15 +553,22 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     //
     // velocities
     //
+    // without GPS the velocity comes from integrating the
+    // accelerometers and drifts, so only claim it while fusing GPS:
     results.velocity_NED = state.XHat.vel().tofloat();
-    results.velocity_NED_valid = healthy();
+    results.velocity_NED_valid = fusing_gps();
 
     // ground velocity estimate in meters/second, in North/East order
     // note: velocity_NE is significantly different to results.velocity_NED.xy()!
     results.velocity_NE = results.velocity_NED.xy();
 
-    results.vert_pos_rate_D = results.velocity_NED.z;
-    results.vert_pos_rate_D_valid = healthy();
+    if (using_baro_height) {
+        results.vert_pos_rate_D = -AP::baro().get_climb_rate();
+        results.vert_pos_rate_D_valid = true;
+    } else {
+        results.vert_pos_rate_D = results.velocity_NED.z;
+        results.vert_pos_rate_D_valid = fusing_gps();
+    }
 
     // without GPS the horizontal position is unconstrained, so only
     // claim one while fusing GPS:
@@ -552,10 +588,14 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
         results.position_NE = Vector2p{postype_t(pos.x), postype_t(pos.y)};
         results.position_NE_valid = true;
     }
-    if (healthy()) {
+    if (using_baro_height) {
+        results.position_D = baro_offset_D - AP::baro().get_altitude();
+        results.position_D_valid = true;
+    } else if (fusing_gps()) {
         results.position_D = pos.z;
         results.position_D_valid = true;
     }
+    results.position_D_reset_count = position_D_reset_count;
 
     /*
      * Sensor-related information
@@ -576,17 +616,21 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     // publish a nav filter status so the frontend selects CINS (the
     // fixed-wing/ground fallback logic demotes a backend to DCM when
     // it reports no valid nav outputs).  While propagating from the
-    // IMU we provide attitude, velocity and height; the horizontal
-    // position, and use of GPS, only while fusing GPS:
+    // IMU we provide attitude, and height from the baro; velocity,
+    // position and use of GPS only while fusing GPS:
     memset(&results.filter_status, 0, sizeof(results.filter_status));
     if (healthy()) {
         results.filter_status.flags.attitude = true;
-        results.filter_status.flags.horiz_vel = true;
-        results.filter_status.flags.vert_vel = true;
-        results.filter_status.flags.vert_pos = true;
         results.filter_status.flags.initalized = true;
     }
+    if (results.vert_pos_rate_D_valid) {
+        results.filter_status.flags.vert_vel = true;
+    }
+    if (results.position_D_valid) {
+        results.filter_status.flags.vert_pos = true;
+    }
     if (fusing_gps()) {
+        results.filter_status.flags.horiz_vel = true;
         results.filter_status.flags.horiz_pos_rel = true;
         results.filter_status.flags.horiz_pos_abs = true;
         results.filter_status.flags.pred_horiz_pos_rel = true;
