@@ -83,7 +83,7 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     // @DisplayName: Barometer startup delay
     // @Description: Delay in seconds before barometer starts producing data. Simulates slow-starting sensors like external AHRS.
     // @Units: s
-    // @Range: 0 30
+    // @Range: 0 120
     // @User: Advanced
     AP_GROUPINFO("STRTDLY", 14, SIM::BaroParm, start_delay, 0),
 
