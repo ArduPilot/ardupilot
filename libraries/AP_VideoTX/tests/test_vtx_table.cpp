@@ -406,14 +406,13 @@ TEST(VTXReport, SmartAudioChannelModeUsesChannel)
 }
 #endif
 
-// AP_VideoTX is a singleton, so the tests share one. Parameter saves are
-// queued for an IO thread that does not run here, so the tests only change
-// parameters on their first run
-static AP_VideoTX &test_vtx()
-{
-    static AP_VideoTX vtx;
-    return vtx;
-}
+// a fresh AP_VideoTX for each test, so the tests don't depend on each other
+// or on the order they run in. It is the singleton while it exists, and new
+// gives it zeroed memory as at boot
+struct TestVTX {
+    AP_VideoTX &vtx = *new AP_VideoTX();
+    ~TestVTX() { delete &vtx; }
+};
 
 // a reported frequency that is not in the table is kept, so the VTX is
 // retuned, only for a custom band or for a VTX commanded by frequency that is
@@ -429,10 +428,10 @@ TEST(VTXDefaults, KeepReportedFrequency)
 }
 
 // band A with A1 edited to F1's frequency, end to end through AP_VideoTX.
-// The values are the same on every run, so repeated runs save nothing
 TEST(VTXDefaults, EditedFactoryBand)
 {
-    AP_VideoTX &vtx = test_vtx();
+    TestVTX test_vtx;
+    AP_VideoTX &vtx = test_vtx.vtx;
     AP_VideoTX_Table &t = vtx.table();
     const int16_t a1_is_f1[8] = { 5740, 0, 0, 0, 0, 0, 0, 0 };
     set_user_band(t, 0, a1_is_f1);
@@ -461,29 +460,6 @@ TEST(VTXDefaults, EditedFactoryBand)
     EXPECT_EQ(vtx.get_configured_frequency_mhz(), 5740);
 }
 
-// the reply tests change the shared VTX's state and parameters: put them back
-// afterwards, and the factory bands, so the other tests see what they expect
-struct VTXStateRestore {
-    AP_VideoTX &vtx;
-    const uint8_t band, channel, cfg_band, cfg_channel;
-    const uint16_t freq, cfg_freq;
-    VTXStateRestore(AP_VideoTX &v) :
-        vtx(v),
-        band(v.get_band()), channel(v.get_channel()),
-        cfg_band(v.get_configured_band()), cfg_channel(v.get_configured_channel()),
-        freq(v.get_frequency_mhz()), cfg_freq(v.get_configured_frequency_mhz()) {}
-    ~VTXStateRestore() {
-        const int16_t none[8] {};
-        set_user_band(vtx.table(), -1, none);
-        vtx.set_band(band);
-        vtx.set_channel(channel);
-        vtx.set_frequency_mhz(freq);
-        vtx.set_configured_band(cfg_band);
-        vtx.set_configured_channel(cfg_channel);
-        vtx.set_configured_frequency_mhz(cfg_freq);
-    }
-};
-
 // a frequency command's reply is taken as the configured frequency, unless
 // the configuration changed while the command was in flight. Seen on a
 // SmartAudio VTX: VTX_BAND set to user band Y with channel 1 sent Y1's
@@ -491,14 +467,10 @@ struct VTXStateRestore {
 // configuration to Airwave channel 2, which also has 5760MHz
 TEST(VTXCommandReply, FrequencyChangedInFlight)
 {
-    // this has to change parameters, so only runs once (see test_vtx())
-    static bool ran;
-    if (ran) {
-        GTEST_SKIP();
-    }
-    ran = true;
-    AP_VideoTX &vtx = test_vtx();
-    VTXStateRestore restore(vtx);
+    TestVTX test_vtx;
+    AP_VideoTX &vtx = test_vtx.vtx;
+    // the VTX has been seen, so changes are sent
+    vtx.set_defaults();
     const int16_t y_freqs[8] = { 5760, 5800, 5840, 0, 0, 0, 0, 0 };
     set_user_band(vtx.table(), -1, y_freqs);
 
@@ -527,13 +499,10 @@ TEST(VTXCommandReply, FrequencyChangedInFlight)
 // the same for a channel command's reply
 TEST(VTXCommandReply, ChannelChangedInFlight)
 {
-    static bool ran;
-    if (ran) {
-        GTEST_SKIP();
-    }
-    ran = true;
-    AP_VideoTX &vtx = test_vtx();
-    VTXStateRestore restore(vtx);
+    TestVTX test_vtx;
+    AP_VideoTX &vtx = test_vtx.vtx;
+    // the VTX has been seen, so changes are sent
+    vtx.set_defaults();
     const int16_t none[8] {};
     set_user_band(vtx.table(), -1, none);
     // R1 was sent, then VTX_BAND changed to band A
