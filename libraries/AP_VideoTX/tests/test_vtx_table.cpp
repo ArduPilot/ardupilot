@@ -25,6 +25,7 @@ const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 #include <AP_VideoTX/AP_VideoTX_Table.h>
 #include <AP_VideoTX/AP_VideoTX.h>
+#include <AP_VideoTX/AP_SmartAudio.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
 // AP_VideoTX::set_defaults() announces the settings via gcs()
@@ -377,6 +378,33 @@ TEST(VTXReport, DisabledEntryNotSelectable)
     EXPECT_FALSE(AP_VideoTX::selectable(t, 12, 0));
     EXPECT_TRUE(AP_VideoTX::selectable(t, 4, 0));
 }
+
+#if AP_SMARTAUDIO_ENABLED
+// a SmartAudio VTX in channel mode on R2 reports its stored user frequency,
+// often A1's 5865MHz, as the settings frequency. With default parameters
+// (A1) that made it look like it was on A1, so it was never retuned while
+// shown on 5865MHz. It is on the channel's frequency
+TEST(VTXReport, SmartAudioChannelModeUsesChannel)
+{
+    AP_VideoTX_Table t;
+    AP_SmartAudio::Settings s {};
+    s.mode = 0;       // channel mode
+    s.band = 4;       // R2
+    s.channel = 1;
+    s.frequency = 5865;
+    uint8_t band = s.band, channel = s.channel;
+    uint16_t freq = AP_SmartAudio::reported_frequency(s);
+    AP_VideoTX::resolve_reported(t, 0, 0, (s.mode & 1) != 0, band, channel, freq);
+    EXPECT_EQ(band, 4);
+    EXPECT_EQ(channel, 1);
+    EXPECT_EQ(freq, 5695);
+
+    // in frequency mode the settings frequency is the one it is on
+    s.mode = 1;
+    s.frequency = 5695;
+    EXPECT_EQ(AP_SmartAudio::reported_frequency(s), 5695);
+}
+#endif
 
 // AP_VideoTX is a singleton, so the tests share one. Parameter saves are
 // queued for an IO thread that does not run here, so the tests only change
