@@ -150,18 +150,23 @@ Gal3 Gal3::exponential(const Vector3F &S, const Vector3F &x,const Vector3F &w, f
     const ftype theta = S.length();
     Matrix3F input_matrix = Matrix3F::skew_symmetric(S); //example of using statics
     ftype A, B, C, D, E;
-    if (theta > 0.0000001f) {
+    if (theta > 0.1f) {
         A = sinF(theta) / theta;
         B = (1.0f - cosF(theta)) / (theta * theta);
         C = (1.0f - A) / (theta * theta);
         D = (theta - sinF(theta)) / (theta * theta * theta);
         E = (0.5f*theta*theta + cosF(theta) - 1.0f) / (theta * theta * theta*theta);
     } else {
-        A = 1.0f;
-        B = 0.5f;
-        C = 1.0f / 6.0f;
-        D = 1.0f / 6.0f;
-        E = 1.0f / 24.0f;
+        // the closed forms above cancel badly at small angles in
+        // single precision (E is entirely lost at one IMU step's
+        // rotation), so use their series, whose truncation error here
+        // is below 1e-9:
+        const ftype t2 = theta * theta;
+        A = 1.0f - t2 / 6.0f + t2 * t2 / 120.0f;
+        B = 0.5f - t2 / 24.0f + t2 * t2 / 720.0f;
+        C = 1.0f / 6.0f - t2 / 120.0f + t2 * t2 / 5040.0f;
+        D = C;
+        E = 1.0f / 24.0f - t2 / 720.0f + t2 * t2 / 40320.0f;
     }
     //create Identity matrix
     Matrix3F identity_3;  // Declare an object of Matrix3
