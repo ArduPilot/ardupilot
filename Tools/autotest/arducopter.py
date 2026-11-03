@@ -16002,9 +16002,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         return reset_us
 
-    def ekf3_gyro_bias_z_around(self, since_us, until_us):
-        '''for each EKF3 core in the current onboard log, its Z gyro bias just before since_us and
-        the lowest and highest it reads from then until until_us, in deg/s'''
+    def ekf3_gyro_bias_around(self, since_us, until_us, axis="Z"):
+        '''for each EKF3 core in the current onboard log, its gyro bias on one axis just before
+        since_us and the lowest and highest it reads from then until until_us, in deg/s'''
         dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
         before = {}
         after = {}
@@ -16015,20 +16015,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 break
             if m is None or m.TimeUS > until_us:
                 break
+            bias = getattr(m, "G" + axis)
             if m.TimeUS < since_us:
-                before[m.C] = m.GZ
+                before[m.C] = bias
             elif m.C in before:
-                lowest, highest = after.get(m.C, (m.GZ, m.GZ))
-                after[m.C] = (min(lowest, m.GZ), max(highest, m.GZ))
+                lowest, highest = after.get(m.C, (bias, bias))
+                after[m.C] = (min(lowest, bias), max(highest, bias))
         if len(after) == 0:
             raise NotAchievedException("no XKF1 records either side of %.1f s" % (since_us * 1e-6))
         return {core: (before[core],) + after[core] for core in after}
 
     def EKFResetGyroBias(self):
-        '''check the EKF's own reset keeps the learned gyro bias and a commanded reset zeroes it'''
+        '''check the EKF's own reset keeps the Z gyro bias and relearns X and Y, and EKF_RESET zeroes all three'''
         # with no yaw reference the Z gyro bias is learned only at rest, and a flight holds it,
         # so a reset that dropped it would leave a flight armed soon after with the part not
-        # yet relearned. The EKF_RESET aux function is a full reset and relearns it. The bias
+        # yet relearned. X and Y are relearned from gravity at rest, and ones learned while the
+        # vehicle was carried powered are wrong, so they start from zero. The EKF_RESET aux
+        # function is a full reset and relearns them all. The bias
         # state is a delta angle per EKF step, so a reset that restarted the step average at
         # 12 ms would apply a kept bias at the wrong rate on a 50 Hz loop, the Plane default
         for loop_rate in (400, 50):
@@ -16055,7 +16058,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "INS_GYR_CAL": 0,
         }
         for n in (1, 2):
-            params["SIM_GYR%u_BIAS_Z" % n] = math.radians(bias_dps)
+            for axis in "XYZ":
+                params["SIM_GYR%u_BIAS_%s" % (n, axis)] = math.radians(bias_dps)
             for axis in "XYZ":
                 params["INS_GYR%sOFFS_%s" % ("" if n == 1 else str(n), axis)] = 0
         self.set_parameters(params)
@@ -16064,20 +16068,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.wait_ready_to_arm(require_absolute=False)
 
-        def check_learned(core, when, before):
+        def check_learned(core, axis, when, before):
             if abs(before - bias_dps) > tolerance_dps:
-                raise NotAchievedException("core %u: learned %.2f of the %.2f deg/s bias before the %s" % (
-                    core, before, bias_dps, when))
+                raise NotAchievedException("core %u: learned %.2f of the %.2f deg/s %s bias before the %s" % (
+                    core, before, bias_dps, axis, when))
 
         self.delay_sim_time(30, "static yaw fusion to learn the gyro bias")
         reset_us = self.ekf_reset_by_switch()
         self.delay_sim_time(3, "the first seconds after the commanded reset")
-        for core, (before, lowest, highest) in sorted(self.ekf3_gyro_bias_z_around(reset_us, reset_us + 2000000).items()):
-            self.progress("EKF3 core %u: GZ %.2f deg/s before the commanded reset, %.2f to %.2f after" % (
-                core, before, lowest, highest))
-            check_learned(core, "commanded reset", before)
-            if lowest > tolerance_dps:
-                raise NotAchievedException("core %u: the commanded reset kept a %.2f deg/s Z gyro bias" % (core, lowest))
+        for axis in "XYZ":
+            for core, (before, lowest, highest) in sorted(self.ekf3_gyro_bias_around(
+                    reset_us, reset_us + 2000000, axis).items()):
+                self.progress("EKF3 core %u: G%s %.2f deg/s before the commanded reset, %.2f to %.2f after" % (
+                    core, axis, before, lowest, highest))
+                check_learned(core, axis, "commanded reset", before)
+                if lowest > tolerance_dps:
+                    raise NotAchievedException("core %u: the commanded reset kept a %.2f deg/s %s gyro bias" % (
+                        core, lowest, axis))
 
         # with no GPS a baro step the height gate rejects drops every status flag at rest, as
         # more than 1 m of height innovation on the ground is a height error, and the EKF resets
@@ -16091,14 +16098,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         reset_us = int(self.get_sim_time() * 1e6)
         self.delay_sim_time(3, "the first seconds after the EKF's own reset")
         self.context_pop()
-        for core, (before, lowest, highest) in sorted(self.ekf3_gyro_bias_z_around(glitch_us, reset_us + 2000000).items()):
-            self.progress("EKF3 core %u: GZ %.2f deg/s before the baro step, %.2f to %.2f until 2 s after the reset" % (
-                core, before, lowest, highest))
-            check_learned(core, "EKF's own reset", before)
-            if lowest < before - tolerance_dps or highest > before + tolerance_dps:
-                raise NotAchievedException(
-                    "core %u: the EKF's own reset moved the Z gyro bias from %.2f to %.2f-%.2f deg/s" % (
-                        core, before, lowest, highest))
+        for axis in "XYZ":
+            relearned = self.ekf3_gyro_bias_around(reset_us + 1500000, reset_us + 2000000, axis)
+            for core, (before, lowest, highest) in sorted(self.ekf3_gyro_bias_around(
+                    glitch_us, reset_us + 2000000, axis).items()):
+                self.progress("EKF3 core %u: G%s %.2f deg/s before the baro step, %.2f to %.2f until 2 s after the reset" % (
+                    core, axis, before, lowest, highest))
+                check_learned(core, axis, "EKF's own reset", before)
+                if axis != "Z":
+                    if lowest > tolerance_dps:
+                        raise NotAchievedException("core %u: the EKF's own reset kept a %.2f deg/s %s gyro bias" % (
+                            core, lowest, axis))
+                    # zeroed rather than kept is safe only because gravity relearns it at rest
+                    if relearned[core][1] < before - tolerance_dps:
+                        raise NotAchievedException("core %u: %s gyro bias %.2f deg/s 1.5 s after the reset, not %.2f" % (
+                            core, axis, relearned[core][1], before))
+                elif lowest < before - tolerance_dps or highest > before + tolerance_dps:
+                    raise NotAchievedException(
+                        "core %u: the EKF's own reset moved the Z gyro bias from %.2f to %.2f-%.2f deg/s" % (
+                            core, before, lowest, highest))
 
     def StaticYawKeepsCompassYaw(self):
         '''check a still vehicle that loses its yaw source keeps its compass aligned yaw'''
@@ -16155,7 +16173,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 break
             if "yaw align" in m.Message:
                 raise NotAchievedException("the yaw was aligned while waiting for GPS yaw: %s" % m.Message)
-        for core, (_, lowest, highest) in sorted(self.ekf3_gyro_bias_z_around(end_us - 2000000, end_us).items()):
+        for core, (_, lowest, highest) in sorted(self.ekf3_gyro_bias_around(end_us - 2000000, end_us).items()):
             self.progress("EKF3 core %u: GZ %.2f to %.2f deg/s after 40 s waiting for GPS yaw" % (core, lowest, highest))
             if lowest < bias_dps - tolerance_dps or highest > bias_dps + tolerance_dps:
                 raise NotAchievedException("core %u: learned %.2f-%.2f of the %.2f deg/s Z gyro bias" % (
