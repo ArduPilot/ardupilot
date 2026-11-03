@@ -1418,14 +1418,21 @@ private:
         uint32_t orig_baud2;
         uint8_t orig_parity1;
         uint8_t orig_parity2;
-        uint8_t parity1;
-        uint8_t parity2;
+        uint16_t options1;
+        uint16_t options2;
+        uint16_t start_options1;
+        uint16_t start_options2;
+        uint8_t stop_bits1;
+        uint8_t stop_bits2;
+        // the ports have been taken and set up, see passthru_timer()
+        bool ports_set_up;
         uint8_t timeout_s;
         HAL_Semaphore sem;
     } _passthru;
 
     // timer called to implement pass-thru
     void passthru_timer();
+    void restore_passthru_line_settings();
 
     // this contains the index of the GCS_MAVLINK backend we will
     // first call update_send on.  It is incremented each time
