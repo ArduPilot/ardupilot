@@ -189,6 +189,9 @@ public:
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
+    // zero the gyro bias states of every IMU so the next bootstrap starts them from zero
+    void zeroGyroBiases(void);
+
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKF origin height so that the EKF height + origin height is the same as before
