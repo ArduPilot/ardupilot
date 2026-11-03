@@ -830,6 +830,10 @@ void Plane::force_flare(void)
     if (control_mode->is_vtol_mode()) {
         return;
     }
+    if ((control_mode == &mode_initializing) || (control_mode == &mode_glide)) {
+        // Don't allow flare in initializing or glide modes
+        return;
+    }
     /* to be active must be:
        -manual throttle mode
        -in an enabled flare mode (RC switch active)

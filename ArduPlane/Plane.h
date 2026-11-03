@@ -181,6 +181,7 @@ public:
 #if MODE_AUTOLAND_ENABLED
     friend class ModeAutoLand;
 #endif
+    friend class ModeGlide;
 #if AP_EXTERNAL_CONTROL_ENABLED
     friend class AP_ExternalControl_Plane;
 #endif
@@ -339,6 +340,7 @@ private:
 #if HAL_SOARING_ENABLED
     ModeThermal mode_thermal;
 #endif
+    ModeGlide mode_glide;
 
 #if AP_QUICKTUNE_ENABLED
     AP_Quicktune quicktune;

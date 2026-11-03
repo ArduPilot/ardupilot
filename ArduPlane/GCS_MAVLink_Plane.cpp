@@ -49,6 +49,7 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
 #endif
 #endif  // HAL_QUADPLANE_ENABLED
     case Mode::Number::CRUISE:
+    case Mode::Number::GLIDE:
         _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
     case Mode::Number::AUTO:
@@ -80,12 +81,13 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
     }
 
-    if (plane.control_mode != &plane.mode_manual && plane.control_mode != &plane.mode_initializing) {
+    const bool init_mode = plane.control_mode == &plane.mode_initializing;
+    if (plane.control_mode != &plane.mode_manual && !init_mode) {
         // stabiliser of some form is enabled
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
-    if (plane.g.stick_mixing != StickMixing::NONE && plane.control_mode != &plane.mode_initializing) {
+    if (plane.g.stick_mixing != StickMixing::NONE && !init_mode && (plane.control_mode != &plane.mode_glide)) {
         if ((plane.g.stick_mixing != StickMixing::VTOL_YAW) || (plane.control_mode == &plane.mode_auto)) {
             // all modes except INITIALISING have some form of manual
             // override if stick mixing is enabled
@@ -94,7 +96,7 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
     }
 
     // we are armed if we are not initialising
-    if (plane.control_mode != &plane.mode_initializing && plane.arming.is_armed()) {
+    if (!init_mode && plane.arming.is_armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -1303,6 +1305,7 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
 #if MODE_AUTOLAND_ENABLED
         &plane.mode_autoland,
 #endif
+        &plane.mode_glide,
     };
 
     const uint8_t fw_mode_count = ARRAY_SIZE(fw_modes);

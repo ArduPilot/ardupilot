@@ -38,7 +38,7 @@ enum gcs_failsafe {
 enum failsafe_action_short {
     FS_ACTION_SHORT_BESTGUESS = 0,      // CIRCLE/no change(if already in AUTO|GUIDED|LOITER)
     FS_ACTION_SHORT_CIRCLE = 1,
-    FS_ACTION_SHORT_FBWA = 2,
+    FS_ACTION_SHORT_GLIDE = 2,
     FS_ACTION_SHORT_DISABLED = 3,
     FS_ACTION_SHORT_FBWB = 4,
 };
