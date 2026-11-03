@@ -1031,8 +1031,8 @@ ftype AP_AHRS_CINS::update_vector_measurement_cts(const Vector3F &measurement, c
     state.gyr_bias += state.gyr_bias_correction * dt;
     state.acc_bias += state.acc_bias_correction * dt;
     heapVars.Omega_Delta += state.gyr_bias_gain_mat.rot * state.gyr_bias_correction + state.acc_bias_gain_mat.rot * state.acc_bias_correction;
-    heapVars.W_Delta1 += state.gyr_bias_gain_mat.pos * state.gyr_bias_correction + state.acc_bias_gain_mat.pos * state.acc_bias_correction;
-    heapVars.W_Delta2 += state.gyr_bias_gain_mat.vel * state.gyr_bias_correction + state.acc_bias_gain_mat.vel * state.acc_bias_correction;
+    heapVars.W_Delta1 += state.gyr_bias_gain_mat.vel * state.gyr_bias_correction + state.acc_bias_gain_mat.vel * state.acc_bias_correction;
+    heapVars.W_Delta2 += state.gyr_bias_gain_mat.pos * state.gyr_bias_correction + state.acc_bias_gain_mat.pos * state.acc_bias_correction;
 
     // Construct the correction term Delta
     heapVars.Delta_SIM23 = SIM23(Matrix3F::from_angular_velocity(heapVars.Omega_Delta*dt), heapVars.W_Delta1*dt, heapVars.W_Delta2*dt, GL2::identity());
