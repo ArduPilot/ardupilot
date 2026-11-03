@@ -175,6 +175,13 @@ jobs:
         run: |
           Tools/autotest/unittest/annotate_params_unittest.py
 
+      - name: Unittest test_new_boards
+        env:
+          PYTHONPATH: "${{ github.workspace }}/Tools/scripts"
+        if: matrix.config == 'unit-tests'
+        run: |
+          python3 Tools/autotest/unittest/test_new_boards_unittest.py
+
       - name: Archive buildlog artifacts
         uses: actions/upload-artifact@v7
         if: failure()
