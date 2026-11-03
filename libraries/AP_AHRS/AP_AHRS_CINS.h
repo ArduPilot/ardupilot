@@ -28,10 +28,11 @@ public:
 
     bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
 
-    // true once CINS has an origin and has initialised its yaw from
-    // the compass, so that it is propagating its state from the IMU:
+    // true once CINS has an origin and has initialised its attitude
+    // from the accelerometer and compass, so that it is propagating
+    // its state from the IMU:
     bool initialised(void) const {
-        return state.have_origin && done_yaw_init;
+        return state.have_origin && done_attitude_init;
     }
 
     // true while CINS is initialised, propagating from the IMU, and
@@ -107,11 +108,11 @@ private:
     void update_gps(const Vector3F &pos, const Vector3F &vel, const ftype gps_dt);
     ftype update_vector_measurement_cts(const Vector3F &measurement, const Vector3F& reference, const Vector2F &ref_base, const ftype& gain_R, const ftype& gain_V, const ftype& gain_gyr_bias, const ftype& gain_acc_bias, const ftype dt, ftype &variance);
     void update_attitude_from_compass();
-    bool init_yaw(void);
+    bool init_attitude(const Vector3F &accel);
     // one-time estimator state initialisation, run lazily on the first
     // update() (the backend interface has no init() entry point):
     void init(void);
-    bool get_compass_yaw(ftype &yaw_rad, ftype &dt);
+    bool get_compass_yaw(ftype roll_rad, ftype pitch_rad, ftype &yaw_rad);
     bool get_compass_vector(Vector3F &mag_vec, Vector3F &mag_ref, ftype &dt);
 
 #if HAL_LOGGING_ENABLED
@@ -221,7 +222,7 @@ private:
 
     uint32_t last_gps_update_ms;
     uint32_t last_imu_update_ms;
-    bool done_yaw_init;
+    bool done_attitude_init;
     bool done_init;
     uint32_t last_mag_us;
 };

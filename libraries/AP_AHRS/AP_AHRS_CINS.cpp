@@ -241,10 +241,6 @@ void AP_AHRS_CINS::update(void)
         done_init = true;
     }
 
-    if (!done_yaw_init) {
-        done_yaw_init = init_yaw();
-    }
-
     // read the sensor libraries directly, as DCM does.  CINS has no
     // Replay support, and AP_DAL's sensor data is only refreshed when
     // EKF2 or EKF3 start a frame, so it would go stale with both
@@ -273,7 +269,11 @@ void AP_AHRS_CINS::update(void)
     // turn delta velocity into a accel vector
     const Vector3F accel = (delta_velocity / dvel_dt).toftype();
 
-    if (done_yaw_init && state.have_origin) {
+    if (!done_attitude_init) {
+        done_attitude_init = init_attitude(accel);
+    }
+
+    if (done_attitude_init && state.have_origin) {
         update_imu(gyro, accel, dangle_dt);
         last_imu_update_ms = AP_HAL::millis();
     }
@@ -573,7 +573,7 @@ bool AP_AHRS_CINS::pre_arm_check(bool requires_position, char *failure_msg, uint
         hal.util->snprintf(failure_msg, failure_msg_len, "Waiting for GPS");
         return false;
     }
-    if (!done_yaw_init) {
+    if (!done_attitude_init) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Waiting for compass yaw");
         return false;
     }
@@ -607,7 +607,7 @@ void AP_AHRS_CINS::update_imu(const Vector3F &gyro_rads, const Vector3F &accel_m
     // Update the bias gain matrices
     // In mathematical terms, \dot{M} = B = - Ad_{Z^{-1} \hat{X}} [I_3, 0_3; 0_3, I_3; 0_3, 0_3].
     // Here, we split B into its parts and add them to the parts of the bias gain matrix.
-    if (done_yaw_init) {
+    if (done_attitude_init) {
         const SIM23 XInv_Z = SIM23(state.XHat.inverse()) * state.ZHat;
         state.gyr_bias_gain_mat.rot += -state.XHat.rot() * dt;
         state.gyr_bias_gain_mat.vel += Matrix3F::skew_symmetric(XInv_Z.W1()) * XInv_Z.R().transposed() * dt;
@@ -845,17 +845,20 @@ ftype AP_AHRS_CINS::update_vector_measurement_cts(const Vector3F &measurement, c
 }
 
 /*
-  initialise yaw from compass, if available
+  initialise the attitude from the accelerometer and compass
  */
-bool AP_AHRS_CINS::init_yaw(void)
+bool AP_AHRS_CINS::init_attitude(const Vector3F &accel)
 {
-    ftype mag_yaw, dt;
-    if (!get_compass_yaw(mag_yaw, dt)) {
+    // take roll and pitch from the accelerometer, assuming the vehicle
+    // is not accelerating (e.g. it is on the ground), and yaw from the
+    // compass, tilt-compensated by them
+    const ftype roll_rad = atan2F(-accel.y, -accel.z);
+    const ftype pitch_rad = atan2F(accel.x, sqrtF(sq(accel.y) + sq(accel.z)));
+    ftype yaw_rad;
+    if (!get_compass_yaw(roll_rad, pitch_rad, yaw_rad)) {
         return false;
     }
-    ftype roll_rad, pitch_rad, yaw_rad;
-    state.XHat.rot().to_euler(&roll_rad, &pitch_rad, &yaw_rad);
-    state.XHat.rot().from_euler(roll_rad, pitch_rad, mag_yaw);
+    state.XHat.rot().from_euler(roll_rad, pitch_rad, yaw_rad);
 
     return true;
 }
@@ -863,7 +866,7 @@ bool AP_AHRS_CINS::init_yaw(void)
 /*
   get yaw from compass
  */
-bool AP_AHRS_CINS::get_compass_yaw(ftype &yaw_rad, ftype &dt)
+bool AP_AHRS_CINS::get_compass_yaw(ftype roll_rad, ftype pitch_rad, ftype &yaw_rad)
 {
     const auto &compass = AP::compass();
     if (compass.get_num_enabled() == 0) {
@@ -882,27 +885,23 @@ bool AP_AHRS_CINS::get_compass_yaw(ftype &yaw_rad, ftype &dt)
         // no new data
         return false;
     }
-    dt = (last_us - last_mag_us) * 1.0e-6;
     last_mag_us = last_us;
 
     float declination_rad = compass.get_declination();
     if (is_zero(declination_rad)) {
         // the compass learns its declination from the AHRS location,
-        // which CINS does not publish until its yaw is initialised, so
+        // which CINS does not publish until its attitude is initialised, so
         // use the declination at our own origin:
         declination_rad = radians(AP_Declination::get_declination(state.origin.lat * 1.0e-7f,
                                                                   state.origin.lng * 1.0e-7f));
     }
 
-    // const float cos_pitch_sq = 1.0f-(state.XHat.rot().c.x*state.XHat.rot().c.x);
-    // const float headY = field.y * state.XHat.rot().c.z - field.z * state.XHat.rot().c.y;
-
-    // // Tilt compensated magnetic field X component:
-    // const float headX = field.x * cos_pitch_sq - state.XHat.rot().c.x * (field.y * state.XHat.rot().c.y + field.z * state.XHat.rot().c.z);
-
-    // return magnetic yaw
-
-    yaw_rad = wrap_PI(-atan2f(field.y,field.x) + declination_rad);
+    // rotate the field into a level frame using the roll and pitch,
+    // and take the magnetic heading from its horizontal components:
+    Matrix3F tilt;
+    tilt.from_euler(roll_rad, pitch_rad, 0);
+    const Vector3F field_level = tilt * field.toftype();
+    yaw_rad = wrap_PI(atan2F(-field_level.y, field_level.x) + declination_rad);
 
     return true;
 }
@@ -954,7 +953,7 @@ void AP_AHRS_CINS::update_attitude_from_compass()
 
     // the attitude is only meaningful, and the observer only
     // propagating, once it has been initialised:
-    if (!done_yaw_init) {
+    if (!done_attitude_init) {
         return;
     }
 
