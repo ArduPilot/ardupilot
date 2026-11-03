@@ -48,7 +48,7 @@
 // stops jammed/grossly-wrong GPS from diverging the observer
 #define CINS_GPS_INNOV_GATE (25.0)
 // CINS is unhealthy once it has not propagated from the IMU, or has
-// had no GPS data, for this long:
+// not fused a GPS position, for this long:
 #define CINS_HEALTH_IMU_TIMEOUT_MS 500U
 #define CINS_HEALTH_GPS_TIMEOUT_MS 5000U
 // longest interval between compass samples fused as one step:
@@ -561,7 +561,7 @@ bool AP_AHRS_CINS::healthy(void) const
     if (now_ms - last_imu_update_ms > CINS_HEALTH_IMU_TIMEOUT_MS) {
         return false;
     }
-    if (now_ms - last_gps_update_ms > CINS_HEALTH_GPS_TIMEOUT_MS) {
+    if (now_ms - last_gps_fused_ms > CINS_HEALTH_GPS_TIMEOUT_MS) {
         return false;
     }
     return true;
@@ -575,6 +575,10 @@ bool AP_AHRS_CINS::pre_arm_check(bool requires_position, char *failure_msg, uint
     }
     if (!done_attitude_init) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Waiting for compass yaw");
+        return false;
+    }
+    if (AP_HAL::millis() - last_gps_fused_ms > CINS_HEALTH_GPS_TIMEOUT_MS) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Not fusing GPS");
         return false;
     }
     if (!healthy()) {
@@ -689,15 +693,21 @@ void AP_AHRS_CINS::update_imu(const Vector3F &gyro_rads, const Vector3F &accel_m
     const Vector2F& ref_vel = Vector2F(1., 0.);
     const Vector3F& mu0_vel = YRInv.vel();
     const Vector3F mu_vel = delayer.gps_vel - left_delay_vel * ref_vel.x - left_delay_pos * ref_vel.y;
-    const ftype velErrorSq = update_vector_measurement_cts(mu_vel, mu0_vel, ref_vel, gains.gpsvel_att.get(), gains.gps_vel.get(), gains.gps_vel_gyr_bias.get(), gains.gps_vel_acc_bias.get(), dt, state.variances.velVar);
+    bool vel_accepted;
+    const ftype velErrorSq = update_vector_measurement_cts(mu_vel, mu0_vel, ref_vel, gains.gpsvel_att.get(), gains.gps_vel.get(), gains.gps_vel_gyr_bias.get(), gains.gps_vel_acc_bias.get(), dt, state.variances.velVar, vel_accepted);
     state.variances.velTest = velErrorSq / (state.variances.velVar * CINS_GPS_INNOV_GATE);
 
 
     const Vector3F& mu0_pos = YRInv.pos();
     const Vector2F& ref_pos = Vector2F(-current_lag, 1.);
     const Vector3F mu_pos = delayer.gps_pos - left_delay_vel * ref_pos.x - left_delay_pos * ref_pos.y;
-    const ftype posErrorSq = update_vector_measurement_cts(mu_pos, mu0_pos, ref_pos, gains.gpspos_att.get(), gains.gps_pos.get(), gains.gps_pos_gyr_bias.get(), gains.gps_pos_acc_bias.get(), dt, state.variances.posVar);
+    bool pos_accepted;
+    const ftype posErrorSq = update_vector_measurement_cts(mu_pos, mu0_pos, ref_pos, gains.gpspos_att.get(), gains.gps_pos.get(), gains.gps_pos_gyr_bias.get(), gains.gps_pos_acc_bias.get(), dt, state.variances.posVar, pos_accepted);
     state.variances.posTest = posErrorSq / (state.variances.posVar * CINS_GPS_INNOV_GATE);
+
+    if (pos_accepted) {
+        last_gps_fused_ms = AP_HAL::millis();
+    }
 
     // The CINS algorithm does not have an internal variance state like an EKF.
     // Instead, we compute the variance by applying a low-pass to the squared measurement errors.
@@ -709,7 +719,7 @@ void AP_AHRS_CINS::update_imu(const Vector3F &gyro_rads, const Vector3F &accel_m
 
 }
 
-ftype AP_AHRS_CINS::update_vector_measurement_cts(const Vector3F &measurement, const Vector3F& reference, const Vector2F &ref_base, const ftype& gain_R, const ftype& gain_V, const ftype& gain_gyr_bias, const ftype& gain_acc_bias, const ftype dt, ftype &variance)
+ftype AP_AHRS_CINS::update_vector_measurement_cts(const Vector3F &measurement, const Vector3F& reference, const Vector2F &ref_base, const ftype& gain_R, const ftype& gain_V, const ftype& gain_gyr_bias, const ftype& gain_acc_bias, const ftype dt, ftype &variance, bool &accepted)
 {
     // Compute and apply an update for an arbitrary vector-type measurement.
     // The measurement is of the form $\mu = R \mu_0 + V C$, where
@@ -734,8 +744,10 @@ ftype AP_AHRS_CINS::update_vector_measurement_cts(const Vector3F &measurement, c
     const ftype measurementErrorSq = sq((measurement - muHat).length());
     if (state.variances.steps_to_initialise == 0 &&
         measurementErrorSq > variance * CINS_GPS_INNOV_GATE) {
+        accepted = false;
         return measurementErrorSq;
     }
+    accepted = true;
     variance = gains.variance_lowpass * measurementErrorSq + (1.0 - gains.variance_lowpass) * variance;
 
     heapVars.ZInv = state.ZHat.inverse();
@@ -972,7 +984,8 @@ void AP_AHRS_CINS::update_attitude_from_compass()
 
 
     Vector2F zero_2;
-    const ftype magErrorSq = update_vector_measurement_cts(mag_ref, mag_vec, zero_2, gains.mag_att.get(), 0.0, gains.mag_gyr_bias.get(), gains.mag_acc_bias.get(), dt, state.variances.magVar);
+    bool mag_accepted;
+    const ftype magErrorSq = update_vector_measurement_cts(mag_ref, mag_vec, zero_2, gains.mag_att.get(), 0.0, gains.mag_gyr_bias.get(), gains.mag_acc_bias.get(), dt, state.variances.magVar, mag_accepted);
     state.variances.magTest = magErrorSq / (state.variances.magVar * CINS_GPS_INNOV_GATE);
 }
 

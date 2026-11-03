@@ -36,7 +36,7 @@ public:
     }
 
     // true while CINS is initialised, propagating from the IMU, and
-    // has recently had GPS data:
+    // has recently fused a GPS position:
     bool healthy(void) const;
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
@@ -106,7 +106,7 @@ public:
 private:
     void update_imu(const Vector3F &gyro_rads, const Vector3F &accel_mss, const ftype dt);
     void update_gps(const Vector3F &pos, const Vector3F &vel, const ftype gps_dt);
-    ftype update_vector_measurement_cts(const Vector3F &measurement, const Vector3F& reference, const Vector2F &ref_base, const ftype& gain_R, const ftype& gain_V, const ftype& gain_gyr_bias, const ftype& gain_acc_bias, const ftype dt, ftype &variance);
+    ftype update_vector_measurement_cts(const Vector3F &measurement, const Vector3F& reference, const Vector2F &ref_base, const ftype& gain_R, const ftype& gain_V, const ftype& gain_gyr_bias, const ftype& gain_acc_bias, const ftype dt, ftype &variance, bool &accepted);
     void update_attitude_from_compass();
     bool init_attitude(const Vector3F &accel);
     // one-time estimator state initialisation, run lazily on the first
@@ -221,6 +221,7 @@ private:
     } delayer;
 
     uint32_t last_gps_update_ms;
+    uint32_t last_gps_fused_ms;   // last time a GPS position passed the innovation gate
     uint32_t last_imu_update_ms;
     bool done_attitude_init;
     bool done_init;
