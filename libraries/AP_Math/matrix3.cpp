@@ -261,24 +261,16 @@ template <typename T>
 Matrix3<T> Matrix3<T>::skew_symmetric(const Vector3<T> &v)
 {
     Matrix3<T> result;
-    const float EPSILON = 1e-6;
-
-    if (fabsF(v.x) < EPSILON && fabsF(v.y) < EPSILON && fabsF(v.z) < EPSILON) {
-        result.zero();
-        return result;
-    }
-    else {
-        result.a.x = 0;
-        result.a.y = -v.z;
-        result.a.z = v.y;
-        result.b.x = v.z;
-        result.b.y = 0;
-        result.b.z = -v.x;
-        result.c.x = -v.y;
-        result.c.y = v.x;
-        result.c.z = 0;
-        return result;
-    }
+    result.a.x = 0;
+    result.a.y = -v.z;
+    result.a.z = v.y;
+    result.b.x = v.z;
+    result.b.y = 0;
+    result.b.z = -v.x;
+    result.c.x = -v.y;
+    result.c.y = v.x;
+    result.c.z = 0;
+    return result;
 }
 
 template <typename T>
