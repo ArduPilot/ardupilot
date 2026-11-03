@@ -249,6 +249,11 @@ void AP_AHRS_CINS::init(void)
  */
 void AP_AHRS_CINS::reset_position_to_gps(const Vector3F &pos, const Vector3F &vel)
 {
+    if (done_pos_init) {
+        // tell the position controllers our position has stepped:
+        position_NE_reset_count++;
+        position_D_reset_count++;
+    }
     state.XHat = Gal3F(state.XHat.rot(), pos, vel, state.XHat.tau());
     state.ZHat = SIM23::identity();
 
@@ -588,6 +593,7 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
         results.position_NE = Vector2p{postype_t(pos.x), postype_t(pos.y)};
         results.position_NE_valid = true;
     }
+    results.position_NE_reset_count = position_NE_reset_count;
     if (using_baro_height) {
         results.position_D = baro_offset_D - AP::baro().get_altitude();
         results.position_D_valid = true;
