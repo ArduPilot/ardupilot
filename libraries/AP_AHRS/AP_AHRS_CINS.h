@@ -35,9 +35,11 @@ public:
         return done_pos_init && done_attitude_init;
     }
 
-    // true while CINS is initialised, propagating from the IMU, and
-    // has recently fused a GPS position:
+    // true while CINS is initialised and propagating from the IMU:
     bool healthy(void) const;
+
+    // true while CINS is healthy and has recently fused a GPS position:
+    bool fusing_gps(void) const;
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
