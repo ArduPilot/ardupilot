@@ -66,8 +66,6 @@ public:
         bool evaluate_as_boolean() const;
         const value &get(const size_t idx) const;
         const value &get(const std::string &key) const;
-        value &get(const size_t idx);
-        value &get(const std::string &key);
 
         bool contains(const size_t idx) const;
         bool contains(const std::string &key) const;
