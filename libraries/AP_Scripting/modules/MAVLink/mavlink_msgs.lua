@@ -180,6 +180,8 @@ function mavlink_msgs.decode(message, msg_map, wide_sysid)
 end
 
 ---Encode the payload section of a given message
+---Extension fields which are not set are sent as zero (an empty string for
+---char arrays); any other field which is not set raises an error
 ---@param msgname string -- name of message to encode
 ---@param message table -- table containing key value pairs representing the data fields in the message
 ---@return integer -- message id
@@ -195,10 +197,17 @@ function mavlink_msgs.encode(msgname, message)
   local packedTable = {}
   local packedIndex = 1
   for i,v in ipairs(message_map.fields) do
+    local value = message[v[1]]
+    -- an extension field may be unset, e.g. because it was added after the
+    -- script was written
+    if value == nil and not (message_map.extensions_start and i > message_map.extensions_start) then
+      error("Missing field " .. v[1] .. " in MAVLink message " .. msgname)
+    end
     if v[3] then
       packString = (packString .. string.rep(string.sub(v[2], 2), v[3]))
+      local array = value or {}
       for j = 1, v[3] do
-        packedTable[packedIndex] = message[message_map.fields[i][1]][j]
+        packedTable[packedIndex] = array[j]
         if packedTable[packedIndex] == nil then
           packedTable[packedIndex] = 0
         end
@@ -206,7 +215,14 @@ function mavlink_msgs.encode(msgname, message)
       end
     else
       packString = (packString .. string.sub(v[2], 2))
-      packedTable[packedIndex] = message[message_map.fields[i][1]]
+      if value == nil then
+        if string.sub(v[2], 2, 2) == 'c' then
+          value = ""
+        else
+          value = 0
+        end
+      end
+      packedTable[packedIndex] = value
       packedIndex = packedIndex + 1
     end
   end
