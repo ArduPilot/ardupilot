@@ -70,6 +70,7 @@ public:
 #if MODE_AUTOLAND_ENABLED
         AUTOLAND      = 26,
 #endif
+        GLIDE_FAILSAFE = 27,
 
     // Mode number 30 reserved for "offboard" for external/lua control.
     };
@@ -1087,3 +1088,21 @@ protected:
 };
 
 #endif
+
+class ModeGlideFailsafe : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::GLIDE_FAILSAFE; }
+    const char *name() const override { return "Glide FS"; }
+    const char *name4() const override { return "GLFS"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    void run() override;
+
+    // true if throttle min/max limits should be applied
+    bool use_throttle_limits() const override;
+
+};

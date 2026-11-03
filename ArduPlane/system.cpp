@@ -230,10 +230,11 @@ bool Plane::gcs_mode_enabled(const Mode::Number mode_num) const
 #else
         0xFF,
 #endif // MODE_AUTOLAND_ENABLED
+        (uint8_t)Mode::Number::GLIDE_FAILSAFE,
     };
 
     // Place holders should mean that array is always the same size
-    static_assert(ARRAY_SIZE(mode_list) == 22, "mode_list placeholders incorrect");
+    static_assert(ARRAY_SIZE(mode_list) == 23, "mode_list placeholders incorrect");
 
     return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
 }

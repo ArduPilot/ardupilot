@@ -49,6 +49,7 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
 #endif
 #endif  // HAL_QUADPLANE_ENABLED
     case Mode::Number::CRUISE:
+    case Mode::Number::GLIDE_FAILSAFE:
         _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
     case Mode::Number::AUTO:
@@ -1309,6 +1310,7 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
 #if MODE_AUTOLAND_ENABLED
         &plane.mode_autoland,
 #endif
+        &plane.mode_glide_failsafe,
     };
 
     const uint8_t fw_mode_count = ARRAY_SIZE(fw_modes);
