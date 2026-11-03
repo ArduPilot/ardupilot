@@ -19,6 +19,7 @@
 
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -727,6 +728,62 @@ void AP_VideoTX::update(void)
         }
     }
 
+    report_state_changes();
+}
+
+uint16_t AP_VideoTX::get_reported_power_mw() const
+{
+    if (get_pitmode()) {
+        return 0;
+    }
+    // prefer the power the VTX says it is putting out, where it reports one
+    return _actual_power_mw >= 0 ? uint16_t(_actual_power_mw) : get_power_mw();
+}
+
+void AP_VideoTX::report_state_changes()
+{
+    if (!_defaults_set) {
+        return;
+    }
+    // the power the VTX has taken, and separately what it says it is putting
+    // out, as a VTX can take a power and not deliver it
+    const uint16_t power_mw = get_pitmode() ? 0 : get_power_mw();
+    if (_last_reported.band == _current_band &&
+        _last_reported.channel == _current_channel &&
+        _last_reported.frequency == _current_frequency &&
+        _last_reported.power_mw == power_mw &&
+        _last_reported.actual_power_mw == _actual_power_mw) {
+        return;
+    }
+    _last_reported.band = _current_band;
+    _last_reported.channel = _current_channel;
+    _last_reported.frequency = _current_frequency;
+    _last_reported.power_mw = power_mw;
+    _last_reported.actual_power_mw = _actual_power_mw;
+
+    announce_vtx_settings();
+
+#if HAL_LOGGING_ENABLED
+    // @LoggerMessage: VTX
+    // @Description: Video transmitter state as the VTX reports it, with the configuration being sent to it
+    // @Field: TimeUS: Time since system startup
+    // @Field: Band: band the VTX is on
+    // @Field: Chan: channel the VTX is on (0 is channel 1)
+    // @Field: Freq: frequency the VTX is on
+    // @Field: Pwr: power the VTX has taken, 0 in pit mode
+    // @Field: APwr: power the VTX says it is putting out, -1 if it doesn't report one
+    // @Field: CBand: configured band (VTX_BAND)
+    // @Field: CChan: configured channel (VTX_CHANNEL)
+    // @Field: CFreq: configured frequency (VTX_FREQ)
+    // @Field: CPwr: configured power (VTX_POWER)
+    AP::logger().Write("VTX", "TimeUS,Band,Chan,Freq,Pwr,APwr,CBand,CChan,CFreq,CPwr",
+                       "s---------", "F---------", "QBBHHiBBHH",
+                       AP_HAL::micros64(),
+                       _current_band, _current_channel, _current_frequency, power_mw,
+                       int32_t(_actual_power_mw),
+                       uint8_t(_band.get()), uint8_t(_channel.get()), uint16_t(_frequency_mhz.get()),
+                       uint16_t(_power_mw.get()));
+#endif
 }
 
 bool AP_VideoTX::update_options() const
@@ -1011,17 +1068,25 @@ bool AP_VideoTX::set_defaults()
 
     _defaults_set = true;
 
-    announce_vtx_settings();
-
+    // announced and logged by report_state_changes()
     return true;
 }
 
 void AP_VideoTX::announce_vtx_settings() const
 {
-    // Output a friendly message so the user knows the VTX has been detected
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %c%d %dMHz, PWR: %dmW",
-        _table.band_letter(_band.get()), _channel.get() + 1, _frequency_mhz.get(),
-        has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get());
+    // what the VTX reports it is on, not what is being asked of it. The power
+    // is the one it has taken, with what it says it is putting out if that
+    // differs
+    const uint16_t power_mw = get_pitmode() ? 0 : get_power_mw();
+    if (!get_pitmode() && _actual_power_mw >= 0 && _actual_power_mw != power_mw) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %c%d %dMHz, PWR: %dmW (actual %dmW)",
+            _table.band_letter(_current_band), _current_channel + 1, _current_frequency,
+            power_mw, int(_actual_power_mw));
+    } else {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %c%d %dMHz, PWR: %dmW",
+            _table.band_letter(_current_band), _current_channel + 1, _current_frequency,
+            power_mw);
+    }
 }
 
 // change the video power based on switch input
