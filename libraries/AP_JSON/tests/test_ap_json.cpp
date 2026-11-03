@@ -66,6 +66,14 @@ TEST(AP_JSON, TrailingCharactersRejected)
     EXPECT_TRUE(parses("{\"a\":1} \t\r\n"));
 }
 
+TEST(AP_JSON, DuplicateKeysRejected)
+{
+    EXPECT_FALSE(parses("{\"a\":1,\"a\":2}"));
+    EXPECT_FALSE(parses("{\"o\":{\"k\":1,\"b\":2,\"k\":3}}"));
+    // the same key in different objects is fine
+    EXPECT_TRUE(parses("{\"a\":{\"k\":1},\"b\":{\"k\":2}}"));
+}
+
 TEST(AP_JSON, NumbersAreExact)
 {
     value v;

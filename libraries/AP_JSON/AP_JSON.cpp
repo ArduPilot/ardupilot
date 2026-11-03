@@ -755,7 +755,12 @@ public:
     template <typename Iter> bool parse_object_item(input<Iter> &in, const std::string &key)
     {
         object &o = out_->get<object>();
-        default_parse_context ctx(&o[key]);
+        // a repeated key would silently replace the earlier value
+        std::pair<object::iterator, bool> item = o.emplace(key, value());
+        if (!item.second) {
+            return false;
+        }
+        default_parse_context ctx(&item.first->second);
         return _parse(ctx, in);
     }
 
