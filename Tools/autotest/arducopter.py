@@ -16028,10 +16028,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''check the EKF's own reset keeps the learned gyro bias and a commanded reset zeroes it'''
         # with no yaw reference the Z gyro bias is learned only at rest, and a flight holds it,
         # so a reset that dropped it would leave a flight armed soon after with the part not
-        # yet relearned. The EKF_RESET aux function is a full reset and relearns it.
+        # yet relearned. The EKF_RESET aux function is a full reset and relearns it. The bias
+        # state is a delta angle per EKF step, so a reset that restarted the step average at
+        # 12 ms would apply a kept bias at the wrong rate on a 50 Hz loop, the Plane default
+        for loop_rate in (400, 50):
+            self.start_subtest("SCHED_LOOP_RATE %u" % loop_rate)
+            # each loop rate needs its own reboot, and the context restores the parameters after it
+            self.context_push()
+            self.ekf_reset_gyro_bias_at(loop_rate)
+            self.context_pop()
+        self.reboot_sitl()
+
+    def ekf_reset_gyro_bias_at(self, loop_rate):
+        '''EKFResetGyroBias at one loop rate'''
         bias_dps = 0.6
         tolerance_dps = 0.15
         params = {
+            "SCHED_LOOP_RATE": loop_rate,
             "RC8_OPTION": 187,  # EKF_RESET
             "SIM_FLOW_ENABLE": 1,
             "FLOW_TYPE": 10,
