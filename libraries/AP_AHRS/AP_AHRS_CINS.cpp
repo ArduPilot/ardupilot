@@ -51,6 +51,8 @@
 // had no GPS data, for this long:
 #define CINS_HEALTH_IMU_TIMEOUT_MS 500U
 #define CINS_HEALTH_GPS_TIMEOUT_MS 5000U
+// longest interval between compass samples fused as one step:
+#define CINS_MAG_MAX_DT 0.2
 
 /*
   CINS is very fast, but stack hungry, using Os keeps stack usage down
@@ -925,7 +927,9 @@ bool AP_AHRS_CINS::get_compass_vector(Vector3F &mag_vec, Vector3F &mag_ref, ftyp
         // no new data
         return false;
     }
-    dt = (last_us - last_mag_us) * 1.0e-6;
+    // bound the step, e.g. for the first sample, or after the compass
+    // has been unavailable:
+    dt = MIN((last_us - last_mag_us) * 1.0e-6, CINS_MAG_MAX_DT);
     last_mag_us = last_us;
 
     Location loc;
@@ -947,6 +951,13 @@ void AP_AHRS_CINS::update_attitude_from_compass()
     // largely ineffectual at holding yaw during a GPS blackout - the correction
     // is too weak to arrest gyro-bias-driven yaw drift, so heading remains
     // effectively observable only through GPS.
+
+    // the attitude is only meaningful, and the observer only
+    // propagating, once it has been initialised:
+    if (!done_yaw_init) {
+        return;
+    }
+
     ftype dt;
     Vector3F mag_vec, mag_ref;
     if (!get_compass_vector(mag_vec, mag_ref, dt)) {
