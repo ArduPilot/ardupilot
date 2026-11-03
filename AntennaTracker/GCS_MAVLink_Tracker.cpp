@@ -332,9 +332,9 @@ void GCS_MAVLINK_Tracker::mavlink_check_target(const mavlink_message_t &msg)
     tracker.target_set = true;
 }
 
-MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    MAV_RESULT ret = GCS_MAVLINK::_handle_command_preflight_calibration_baro(msg);
+    MAV_RESULT ret = GCS_MAVLINK::_handle_command_preflight_calibration_baro(packet, msg);
     if (ret == MAV_RESULT_ACCEPTED) {
         // zero the altitude difference on next baro update
         tracker.nav_status.need_altitude_calibration = true;
