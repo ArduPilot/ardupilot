@@ -47,10 +47,12 @@
 // the low-passed running variance (a ~5-sigma innovation gate); this
 // stops jammed/grossly-wrong GPS from diverging the observer
 #define CINS_GPS_INNOV_GATE (25.0)
-// CINS is unhealthy once it has not propagated from the IMU, or has
-// not fused a GPS position, for this long:
+// CINS is unhealthy once it has not propagated from the IMU for this
+// long:
 #define CINS_HEALTH_IMU_TIMEOUT_MS 500U
-#define CINS_HEALTH_GPS_TIMEOUT_MS 5000U
+// CINS stops claiming a horizontal position once it has not fused a GPS
+// position for this long:
+#define CINS_GPS_FUSION_TIMEOUT_MS 5000U
 // longest interval between compass samples fused as one step:
 #define CINS_MAG_MAX_DT 0.2
 
@@ -490,7 +492,9 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     results.vert_pos_rate_D = results.velocity_NED.z;
     results.vert_pos_rate_D_valid = healthy();
 
-    results.location_valid = get_location(results.location) && healthy();
+    // without GPS the horizontal position is unconstrained, so only
+    // claim one while fusing GPS:
+    results.location_valid = get_location(results.location) && fusing_gps();
 
     // CINS takes a common origin from the other backends.  It only
     // offers its own when it is the configured backend: its origin is
@@ -501,10 +505,12 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
 
     // origin-relative position: XHat's position is NED from our origin
     // (see get_origin()):
-    if (healthy()) {
-        const Vector3F &pos = state.XHat.pos();
+    const Vector3F &pos = state.XHat.pos();
+    if (fusing_gps()) {
         results.position_NE = Vector2p{postype_t(pos.x), postype_t(pos.y)};
         results.position_NE_valid = true;
+    }
+    if (healthy()) {
         results.position_D = pos.z;
         results.position_D_valid = true;
     }
@@ -527,20 +533,22 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
 
     // publish a nav filter status so the frontend selects CINS (the
     // fixed-wing/ground fallback logic demotes a backend to DCM when
-    // it reports no valid nav outputs).  Once we have converged (have
-    // an origin) we provide the standard attitude/velocity/position
-    // outputs from our own GPS-aided solution:
+    // it reports no valid nav outputs).  While propagating from the
+    // IMU we provide attitude, velocity and height; the horizontal
+    // position, and use of GPS, only while fusing GPS:
     memset(&results.filter_status, 0, sizeof(results.filter_status));
     if (healthy()) {
         results.filter_status.flags.attitude = true;
         results.filter_status.flags.horiz_vel = true;
         results.filter_status.flags.vert_vel = true;
+        results.filter_status.flags.vert_pos = true;
+        results.filter_status.flags.initalized = true;
+    }
+    if (fusing_gps()) {
         results.filter_status.flags.horiz_pos_rel = true;
         results.filter_status.flags.horiz_pos_abs = true;
-        results.filter_status.flags.vert_pos = true;
         results.filter_status.flags.pred_horiz_pos_rel = true;
         results.filter_status.flags.pred_horiz_pos_abs = true;
-        results.filter_status.flags.initalized = true;
         results.filter_status.flags.using_gps = true;
     }
     results.filter_status_valid = true;
@@ -598,10 +606,13 @@ bool AP_AHRS_CINS::healthy(void) const
     if (now_ms - last_imu_update_ms > CINS_HEALTH_IMU_TIMEOUT_MS) {
         return false;
     }
-    if (now_ms - last_gps_fused_ms > CINS_HEALTH_GPS_TIMEOUT_MS) {
-        return false;
-    }
     return true;
+}
+
+bool AP_AHRS_CINS::fusing_gps(void) const
+{
+    return healthy() &&
+        AP_HAL::millis() - last_gps_fused_ms <= CINS_GPS_FUSION_TIMEOUT_MS;
 }
 
 bool AP_AHRS_CINS::set_origin(const Location &loc)
@@ -626,7 +637,7 @@ bool AP_AHRS_CINS::pre_arm_check(bool requires_position, char *failure_msg, uint
         hal.util->snprintf(failure_msg, failure_msg_len, "Waiting for compass yaw");
         return false;
     }
-    if (AP_HAL::millis() - last_gps_fused_ms > CINS_HEALTH_GPS_TIMEOUT_MS) {
+    if (AP_HAL::millis() - last_gps_fused_ms > CINS_GPS_FUSION_TIMEOUT_MS) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Not fusing GPS");
         return false;
     }
