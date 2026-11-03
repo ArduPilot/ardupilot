@@ -70,6 +70,7 @@ public:
 #if MODE_AUTOLAND_ENABLED
         AUTOLAND      = 26,
 #endif
+        GLIDE = 27,
 
     // Mode number 30 reserved for "offboard" for external/lua control.
     };
@@ -1089,3 +1090,24 @@ protected:
 };
 
 #endif
+
+// Glide mode that maintains 0 roll and pitch and zero throttle.
+// There is no pilot input.
+// This is a failsafe mode.
+class ModeGlide : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::GLIDE; }
+    const char *name() const override { return "Glide"; }
+    const char *name4() const override { return "GLID"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    void run() override;
+
+    // true if throttle min/max limits should be applied
+    bool use_throttle_limits() const override;
+
+};
