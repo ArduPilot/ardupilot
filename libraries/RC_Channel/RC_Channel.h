@@ -579,6 +579,7 @@ private:
     void reset_mode_switch();
     void read_mode_switch();
     bool debounce_completed(int8_t position);
+    bool debounce_completed(int8_t position, uint32_t debounce_ms);
     // returns true if the first time we successfully read the
     // channel's three-position-switch position we should record that
     // position as the current position *without* executing the

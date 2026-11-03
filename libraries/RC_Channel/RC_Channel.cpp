@@ -62,6 +62,9 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Parachute/AP_Parachute_config.h>
 #include <AP_Scripting/AP_Scripting.h>
 #define SWITCH_DEBOUNCE_TIME_MS  200
+// a VTX power level is only sent once the input has settled on it, so moving
+// a pot across several levels sends one change
+#define VTX_POWER_LEVEL_SETTLE_MS 500
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
@@ -649,6 +652,11 @@ void RC_Channel::read_mode_switch()
 
 bool RC_Channel::debounce_completed(int8_t position)
 {
+    return debounce_completed(position, SWITCH_DEBOUNCE_TIME_MS);
+}
+
+bool RC_Channel::debounce_completed(int8_t position, uint32_t debounce_ms)
+{
     // switch change not detected
     if (switch_state.current_position == position) {
         // reset debouncing
@@ -661,7 +669,7 @@ bool RC_Channel::debounce_completed(int8_t position)
         if (switch_state.debounce_position != position) {
             switch_state.debounce_position = position;
             switch_state.last_edge_time_ms = tnow_ms;
-        } else if (tnow_ms - switch_state.last_edge_time_ms >= SWITCH_DEBOUNCE_TIME_MS) {
+        } else if (tnow_ms - switch_state.last_edge_time_ms >= debounce_ms) {
             // position estabilished; debounce completed
             switch_state.current_position = position;
             return true;
@@ -1003,9 +1011,25 @@ bool RC_Channel::read_aux()
         return false;
 #if AP_VIDEOTX_ENABLED
     } else if (_option == AUX_FUNC::VTX_POWER) {
+        AP_VideoTX &vtx = AP::vtx();
+        const uint8_t levels = vtx.power_channel_levels();
+        if (levels > 0) {
+            // the whole range split evenly between the power table's levels
+            const uint16_t pulsewidth = get_radio_in();
+            if (pulsewidth <= RC_MIN_LIMIT_PWM || pulsewidth >= RC_MAX_LIMIT_PWM) {
+                return false;
+            }
+            const float input = (norm_input_ignore_trim() + 1) * 0.5f;
+            const int8_t level = AP_VideoTX::power_level_for_input(input, levels);
+            if (debounce_completed(level, VTX_POWER_LEVEL_SETTLE_MS)) {
+                vtx.change_power_level(level);
+                return true;
+            }
+            return false;
+        }
         int8_t position;
         if (read_6pos_switch(position)) {
-            AP::vtx().change_power(position);
+            vtx.change_power(position);
             return true;
         }
         return false;
