@@ -495,8 +495,9 @@ void AP_Tramp::set_frequency(uint16_t freq)
         retry_count = VTX_TRAMP_MAX_RETRIES;
     } else {
         debug("requested frequency %u is invalid", freq);
-        // not valid reset to default
-        AP::vtx().set_configured_frequency_mhz(AP::vtx().get_frequency_mhz());
+        // out of the VTX's range: don't ask for it again until the
+        // configuration changes, leaving the user's setting alone
+        AP::vtx().frequency_rejected();
     }
 }
 
@@ -539,43 +540,20 @@ void AP_Tramp::update()
         if (vtx.update_frequency() || vtx.update_band() || vtx.update_channel()) {
             // the retries ran out without the VTX taking the frequency last
             // requested (many VTXs only accept their own channel
-            // frequencies): drop it, or it would override every later
-            // band/channel change. Follow VTX_BAND/VTX_CHANNEL if they have
-            // moved on to an enabled channel, otherwise return to the
-            // frequency the VTX is on
+            // frequencies, and one still starting up can miss them all):
+            // stop asking for it until the configuration changes, so other
+            // changes can go out. VTX_BAND, VTX_CHANNEL and VTX_FREQ are left
+            // as the user set them, so a reboot tries again
             bool returned = false;
             if (!vtx.configured_selectable() && vtx.get_frequency_mhz() != 0) {
                 // a band parameter change has disabled the selected
-                // channel: there is nothing to command, so stay on the
-                // frequency the VTX is on, without a warning
-                vtx.set_configured_frequency_mhz(vtx.get_frequency_mhz());
-                _last_conf_freq = vtx.get_frequency_mhz();
+                // channel: there is nothing to command, without a warning
+                vtx.frequency_rejected(false);
                 returned = true;
             } else if (vtx.update_frequency() && vtx.get_configured_frequency_mhz() == _last_conf_freq &&
                 vtx.get_frequency_mhz() != 0) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: rejected frequency %uMHz", unsigned(_last_conf_freq));
-                vtx.update_configured_frequency();
-                const uint16_t next_freq = vtx.get_configured_frequency_mhz();
-                if (next_freq == _last_conf_freq || next_freq == 0) {
-                    // stay on the VTX's frequency, and on its slot if the
-                    // table has one. Without a slot, return VTX_BAND and
-                    // VTX_CHANNEL to the last slot the VTX was on: left on
-                    // the refused slot they would bring the refused
-                    // frequency straight back
-                    const uint16_t vtx_freq = vtx.get_frequency_mhz();
-                    vtx.set_configured_frequency_mhz(vtx_freq);
-                    uint8_t band, channel;
-                    if (vtx.table().band_and_channel_for_frequency(vtx_freq, band, channel)) {
-                        vtx.update_configured_channel_and_band();
-                    } else {
-                        vtx.set_configured_band(vtx.get_band());
-                        vtx.set_configured_channel(vtx.get_channel());
-                    }
-                    // nothing to send; selecting the refused frequency
-                    // again sends it again
-                    _last_conf_freq = vtx_freq;
-                    returned = true;
-                }
+                vtx.frequency_rejected();
+                returned = true;
             }
             if (!returned) {
                 if (vtx.update_frequency()) {

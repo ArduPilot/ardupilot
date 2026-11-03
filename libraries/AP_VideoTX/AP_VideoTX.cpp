@@ -721,9 +721,12 @@ void AP_VideoTX::update(void)
         if (_power_levels[find_current_power()].active == PowerActive::Inactive) {
             // reset to something we know works
             debug("power reset to %dmw from %dmw", get_power_mw(), _power_mw.get());
-            _power_mw.set_and_save(get_power_mw());
+            // for this boot only: what the VTX supports is never saved over
+            // the user's setting
+            _power_mw.set(get_power_mw());
         }
     }
+
 }
 
 bool AP_VideoTX::update_options() const
@@ -871,29 +874,23 @@ void AP_VideoTX::resolve_reported(const AP_VideoTX_Table &table, uint8_t cfg_ban
     }
 }
 
-void AP_VideoTX::frequency_rejected()
+void AP_VideoTX::frequency_rejected(bool warn)
 {
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: rejected frequency %uMHz", unsigned(_frequency_mhz.get()));
-    if (_current_frequency != 0) {
-        _frequency_mhz.set_and_save_ifchanged(_current_frequency);
+    if (warn && !configured_rejected()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: rejected frequency %uMHz", unsigned(_frequency_mhz.get()));
     }
-    _band.set_and_save_ifchanged(_current_band);
-    _channel.set_and_save_ifchanged(_current_channel);
+    _rejected = true;
+    _rejected_band = _band;
+    _rejected_channel = _channel;
+    _rejected_frequency = _frequency_mhz;
 }
 
-// the VTX has replied to a frequency command. Take the frequency it tuned as
-// the configured one, as it may not be exactly what was asked for, unless the
-// configuration was changed while the command was in flight: the new one is
-// sent next, and taking the reply would undo it, or move VTX_BAND/VTX_CHANNEL
-// to another slot with the reply's frequency
+// the VTX has replied to a frequency command. The reply says what the VTX is
+// now on; the configuration is what the user set and is left alone, so a
+// change made while the command was in flight is still sent
 void AP_VideoTX::frequency_command_reply(uint8_t sent_band, uint8_t sent_channel, uint16_t sent_freq, uint16_t freq)
 {
     set_reported_frequency(freq);
-    if (_band != sent_band || _channel != sent_channel || _frequency_mhz != sent_freq) {
-        return;
-    }
-    set_configured_frequency_mhz(get_frequency_mhz());
-    update_configured_channel_and_band();
 }
 
 // the VTX has replied to a channel command, as above
@@ -901,12 +898,7 @@ void AP_VideoTX::channel_command_reply(uint8_t sent_band, uint8_t sent_channel, 
 {
     set_band(band);
     set_channel(channel);
-    if (_band != sent_band || _channel != sent_channel) {
-        return;
-    }
-    set_configured_channel(channel);
-    set_configured_band(band);
-    update_configured_frequency();
+    set_frequency_mhz(get_frequency_mhz(band, channel));
 }
 
 bool AP_VideoTX::keep_reported_frequency(bool custom_band, bool by_index, uint16_t freq)
@@ -990,24 +982,26 @@ bool AP_VideoTX::set_defaults()
         }
     }
 
+    // settings the user has not set follow the VTX, for this boot only: what
+    // the VTX reports is never saved over the parameters
     if (!_options.configured()) {
-        _options.set_and_save(_current_options);
-    }
-    if (!_channel.configured()) {
-        _channel.set_and_save(_current_channel);
-    }
-    if (!_band.configured()) {
-        _band.set_and_save(_current_band);
+        _options.set(_current_options);
     }
     if (!_power_mw.configured()) {
-        _power_mw.set_and_save(get_power_mw());
+        _power_mw.set(get_power_mw());
     }
-    if (!_frequency_mhz.configured()) {
-        _frequency_mhz.set_and_save(_current_frequency);
-    }
-
-    // Now check that the user didn't screw up by selecting incompatible options
-    if (_frequency_mhz != get_frequency_mhz(_band, _channel)) {
+    // band, channel and frequency are one setting: if the user has set any of
+    // them (a channel of 1 is the default, so it is often not stored) the VTX
+    // is tuned to it, otherwise it follows the VTX
+    if (!_band.configured() && !_channel.configured() && !_frequency_mhz.configured()) {
+        // take the VTX's slot with the table's frequency for it, so a VTX
+        // on a factory frequency the user bands have edited away is retuned
+        _band.set(_current_band);
+        _channel.set(_current_channel);
+        const uint16_t slot_freq = get_frequency_mhz(_current_band, _current_channel);
+        _frequency_mhz.set(slot_freq != 0 ? slot_freq : _current_frequency);
+    } else if (_frequency_mhz != get_frequency_mhz(_band, _channel)) {
+        // the user's settings disagree, e.g. a frequency set without a band
         if (_frequency_mhz > 0) {
             update_configured_channel_and_band();
         } else {
