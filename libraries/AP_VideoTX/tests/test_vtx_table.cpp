@@ -460,11 +460,11 @@ TEST(VTXDefaults, EditedFactoryBand)
     EXPECT_EQ(vtx.get_configured_frequency_mhz(), 5740);
 }
 
-// a frequency command's reply is taken as the configured frequency, unless
-// the configuration changed while the command was in flight. Seen on a
-// SmartAudio VTX: VTX_BAND set to user band Y with channel 1 sent Y1's
-// 5760MHz, and the reply arrived after VTX_CHANNEL was set to 3, moving the
-// configuration to Airwave channel 2, which also has 5760MHz
+// a command's reply only says what the VTX is now on: the configuration is
+// what the user set and is never changed by it. Seen on a SmartAudio VTX:
+// VTX_BAND set to user band Y with channel 1 sent Y1's 5760MHz, and the reply
+// arrived after VTX_CHANNEL was set to 3; taking the reply as configured moved
+// the configuration to Airwave channel 2, which also has 5760MHz
 TEST(VTXCommandReply, FrequencyChangedInFlight)
 {
     TestVTX test_vtx;
@@ -486,8 +486,7 @@ TEST(VTXCommandReply, FrequencyChangedInFlight)
     // Y3 is still to be sent
     EXPECT_TRUE(vtx.update_channel());
 
-    // with no change in flight the reply is taken, and the configuration
-    // stays on its slot
+    // the VTX on the configured frequency: nothing more to send
     vtx.set_configured_frequency_mhz(5840);
     vtx.frequency_command_reply(11, 2, 5840, 5840);
     EXPECT_EQ(vtx.get_configured_band(), 11);
@@ -515,12 +514,53 @@ TEST(VTXCommandReply, ChannelChangedInFlight)
     EXPECT_EQ(vtx.get_channel(), 0);
     EXPECT_TRUE(vtx.update_band());
 
-    // with no change in flight the reply is taken
+    // the VTX on the configured slot: nothing more to send, and the reply
+    // gives the VTX's frequency without touching VTX_FREQ
+    const uint16_t cfg_freq = vtx.get_configured_frequency_mhz();
     vtx.channel_command_reply(0, 0, 0, 0);
     EXPECT_EQ(vtx.get_configured_band(), 0);
     EXPECT_EQ(vtx.get_configured_channel(), 0);
-    EXPECT_EQ(vtx.get_configured_frequency_mhz(), 5865);
+    EXPECT_EQ(vtx.get_configured_frequency_mhz(), cfg_freq);
+    EXPECT_EQ(vtx.get_frequency_mhz(), 5865);
     EXPECT_FALSE(vtx.update_band());
+}
+
+// a VTX that does not take the configured slot (or was moved with its own
+// button and then ignored the retune) stops being asked, but VTX_BAND,
+// VTX_CHANNEL and VTX_FREQ stay as the user set them, so the next boot or
+// configuration change tries again. They used to be overwritten and saved
+// with what the VTX was on
+TEST(VTXRejected, ConfigurationKept)
+{
+    TestVTX test_vtx;
+    AP_VideoTX &vtx = test_vtx.vtx;
+    const int16_t none[8] {};
+    set_user_band(vtx.table(), -1, none);
+    vtx.set_defaults();
+
+    // configured R1, VTX on R4
+    vtx.set_configured_band(4);
+    vtx.set_configured_channel(0);
+    vtx.set_configured_frequency_mhz(5658);
+    vtx.set_band(4);
+    vtx.set_channel(3);
+    vtx.set_frequency_mhz(5769);
+    EXPECT_TRUE(vtx.update_channel());
+    EXPECT_TRUE(vtx.update_frequency());
+
+    vtx.frequency_rejected();
+    EXPECT_EQ(vtx.get_configured_band(), 4);
+    EXPECT_EQ(vtx.get_configured_channel(), 0);
+    EXPECT_EQ(vtx.get_configured_frequency_mhz(), 5658);
+    EXPECT_FALSE(vtx.update_band());
+    EXPECT_FALSE(vtx.update_channel());
+    EXPECT_FALSE(vtx.update_frequency());
+
+    // a new configuration is sent
+    vtx.set_configured_channel(1);
+    vtx.set_configured_frequency_mhz(5695);
+    EXPECT_TRUE(vtx.update_channel());
+    EXPECT_TRUE(vtx.update_frequency());
 }
 
 #endif  // AP_VIDEOTX_ENABLED

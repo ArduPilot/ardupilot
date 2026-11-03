@@ -142,12 +142,17 @@ public:
     uint16_t get_frequency_mhz() const { return _current_frequency; }
     uint16_t get_configured_frequency_mhz() const { return _frequency_mhz; }
     // a disabled (0 MHz) table entry is never commanded
-    bool update_frequency() const { return _defaults_set && _frequency_mhz != 0 && _frequency_mhz != _current_frequency; }
+    bool update_frequency() const { return _defaults_set && _frequency_mhz != 0 && _frequency_mhz != _current_frequency && !configured_rejected(); }
     void update_configured_frequency();
     // the VTX has not taken the configured frequency after repeated attempts:
-    // warn and return the configuration to the VTX's current state, so that
-    // other changes can go out
-    void frequency_rejected();
+    // stop asking for it, so that other changes can go out, until the
+    // configuration changes. The parameters are left as the user set them
+    void frequency_rejected(bool warn=true);
+    // true if the configured band, channel and frequency are the ones the
+    // VTX did not take
+    bool configured_rejected() const {
+        return _rejected && _band == _rejected_band && _channel == _rejected_channel && _frequency_mhz == _rejected_frequency;
+    }
     // the VTX has replied to a frequency or channel command sent for the
     // given configured band, channel and frequency
     void frequency_command_reply(uint8_t sent_band, uint8_t sent_channel, uint16_t sent_freq, uint16_t freq);
@@ -224,13 +229,13 @@ public:
     void set_configured_band(uint8_t band) { _band.set_and_save_ifchanged(band); }
     uint8_t get_configured_band() const { return _band; }
     uint8_t get_band() const { return _current_band; }
-    bool update_band() const { return _defaults_set && _band != _current_band && selectable(_table, _band, _channel); }
+    bool update_band() const { return _defaults_set && _band != _current_band && selectable(_table, _band, _channel) && !configured_rejected(); }
     // get / set the frequency channel
     void set_channel(uint8_t channel) { _current_channel = channel; }
     void set_configured_channel(uint8_t channel) { _channel.set_and_save_ifchanged(channel); }
     uint8_t get_configured_channel() const { return _channel; }
     uint8_t get_channel() const { return _current_channel; }
-    bool update_channel() const { return _defaults_set && _channel != _current_channel && selectable(_table, _band, _channel); }
+    bool update_channel() const { return _defaults_set && _channel != _current_channel && selectable(_table, _band, _channel) && !configured_rejected(); }
     void update_configured_channel_and_band();
     // get / set vtx option
     void set_options(uint16_t options) { _current_options = options; }
@@ -335,6 +340,12 @@ private:
     bool _initialized;
     // when defaults have been configured
     bool _defaults_set;
+
+    // the configuration the VTX did not take, see frequency_rejected()
+    bool _rejected;
+    uint8_t _rejected_band;
+    uint8_t _rejected_channel;
+    uint16_t _rejected_frequency;
     // true when configuration have been applied successfully to the VTX
     bool _configuration_finished;
 
