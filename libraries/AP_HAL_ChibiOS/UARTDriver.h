@@ -53,7 +53,6 @@ public:
     void _tx_timer_tick(void);
 
     // control optional features
-    bool set_options(uint16_t options) override;
     uint16_t get_options(void) const override;
 
     struct SerialDef {
@@ -89,7 +88,6 @@ public:
 
     bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
 
-    void set_flow_control(enum flow_control flow_control) override;
     enum flow_control get_flow_control(void) override { return _flow_control; }
 
     // allow for low latency writes
@@ -98,9 +96,6 @@ public:
 #if AP_USB_DEBUG_ENABLED
     static void usb_debug_lock(bool lock);
 #endif
-
-    void configure_parity(uint8_t v) override;
-    void set_stop_bits(int n) override;
 
     /*
       software control of the CTS/RTS pins if available. Return false if
@@ -297,6 +292,10 @@ protected:
     ssize_t _read(uint8_t *buffer, uint16_t count) override;
     uint32_t _available() override;
     bool _discard_input() override;
+    bool _set_options(uint16_t options) override;
+    void _set_flow_control(enum flow_control flow_control) override;
+    void _configure_parity(uint8_t v) override;
+    void _set_stop_bits(int n) override;
 
 #if HAL_UART_STATS_ENABLED
     // Getters for cumulative tx and rx counts
