@@ -161,6 +161,10 @@ public:
     // init threads and lookup for io uart.
     bool init();
 
+    // the frequency a settings report says the VTX is on, or 0 if it is
+    // given by the report's band and channel
+    static uint16_t reported_frequency(const Settings &settings);
+
 private:
     // serial interface
     AP_HAL::UARTDriver *_port;                  // UART used to send data to SmartAudio VTX

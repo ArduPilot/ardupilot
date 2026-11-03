@@ -541,6 +541,14 @@ void AP_SmartAudio::print_settings(const Settings* settings)
             settings->channel, settings->power, settings->power_in_dbm, settings->frequency, settings->band);
 }
 
+// in channel mode the settings frequency is the VTX's stored user
+// frequency, not the one it is on, so use the channel then. Mode bit 0 is
+// set in frequency mode, as print_settings() and Betaflight read it
+uint16_t AP_SmartAudio::reported_frequency(const Settings &settings)
+{
+    return (settings.mode & 1) ? settings.frequency : 0;
+}
+
 void AP_SmartAudio::update_vtx_settings(const Settings& settings)
 {
     AP_VideoTX& vtx = AP::vtx();
