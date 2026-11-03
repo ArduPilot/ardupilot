@@ -252,7 +252,7 @@ private:
     bool done_init;
     uint32_t last_mag_us;
 
-    // CINS's height comes from GPS.  While it is not fusing GPS it
+    // CINS's height comes from GPS.  Once it stops fusing GPS it
     // publishes the baro height instead, offset to match its own
     // height at the last fused GPS sample:
     ftype baro_offset_D;      // position_D = baro_offset_D - baro altitude

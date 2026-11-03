@@ -55,6 +55,10 @@
 // CINS stops claiming a horizontal position once it has not fused a GPS
 // position for this long:
 #define CINS_GPS_FUSION_TIMEOUT_MS 5000U
+
+// with a healthy baro, CINS publishes the baro height once it has not
+// fused a GPS position for this long:
+#define CINS_GPS_HEIGHT_TIMEOUT_MS 1000U
 // once CINS has not fused a GPS position for this long, it resets its
 // position and velocity to the next fix, as GPS which disagrees with
 // its estimate by more than the innovation gate is otherwise rejected
@@ -504,7 +508,7 @@ void AP_AHRS_CINS::Log_Write()
 /*
   CINS has no height source other than GPS, so without GPS fusion its
   height and vertical velocity come from the IMU alone and drift
-  without bound.  While it is not fusing GPS, publish the baro height
+  without bound.  Once it stops fusing GPS, publish the baro height
   instead, offset to match CINS's own height at the last fused GPS
   sample
  */
@@ -520,13 +524,18 @@ void AP_AHRS_CINS::update_baro_height(bool gps_fused)
         have_baro_offset = true;
     }
 
-    // the offset is kept through a baro dropout, so the baro height
-    // can be used again when the baro recovers:
+    // switch to the baro as soon as GPS samples stop being fused.
+    // The offset is kept through a baro dropout, so the baro height
+    // can be used again when the baro recovers.  Without a baro,
+    // CINS's own height is kept for as long as its horizontal
+    // position:
     HeightSource source = HeightSource::NONE;
-    if (fusing_gps()) {
+    if (healthy() && AP_HAL::millis() - last_gps_fused_ms <= CINS_GPS_HEIGHT_TIMEOUT_MS) {
         source = HeightSource::CINS;
     } else if (healthy() && baro_healthy && have_baro_offset) {
         source = HeightSource::BARO;
+    } else if (fusing_gps()) {
+        source = HeightSource::CINS;
     }
     if (source != height_source) {
         // the published height may step when its source changes:
@@ -678,7 +687,7 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
         results.vert_pos_rate_D_valid = true;
     } else {
         results.vert_pos_rate_D = results.velocity_NED.z;
-        results.vert_pos_rate_D_valid = fusing_gps();
+        results.vert_pos_rate_D_valid = (height_source == HeightSource::CINS);
     }
 
     // without GPS the horizontal position is unconstrained, so only
@@ -703,7 +712,7 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     if (height_source == HeightSource::BARO) {
         results.position_D = baro_offset_D - AP::baro().get_altitude();
         results.position_D_valid = true;
-    } else if (fusing_gps()) {
+    } else if (height_source == HeightSource::CINS) {
         results.position_D = pos.z;
         results.position_D_valid = true;
     }
