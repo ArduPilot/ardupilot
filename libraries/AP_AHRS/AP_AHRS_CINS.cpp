@@ -345,6 +345,7 @@ void AP_AHRS_CINS::update(void)
     if (initialised()) {
         update_imu(gyro, accel, dangle_dt);
         last_imu_update_ms = AP_HAL::millis();
+        check_divergence();
     }
 
     // see if we have new GPS data
@@ -377,10 +378,12 @@ void AP_AHRS_CINS::update(void)
             }
 
             update_gps(pos.toftype(), vel.toftype(), gps_dt);
+            check_divergence();
         }
     }
 
     update_attitude_from_compass();
+    check_divergence();
 
     update_baro_height();
 
@@ -535,6 +538,43 @@ void AP_AHRS_CINS::update_baro_height()
     }
 }
 
+// true if the estimator state is finite and physically plausible:
+bool AP_AHRS_CINS::state_is_sane() const
+{
+    const Vector3F &pos = state.XHat.pos();
+    const Vector3F &vel = state.XHat.vel();
+    const Matrix3F &rot = state.XHat.rot();
+    if (pos.is_nan() || pos.is_inf() || vel.is_nan() || vel.is_inf() ||
+        rot.a.is_nan() || rot.b.is_nan() || rot.c.is_nan() ||
+        state.gyr_bias.is_nan() || state.acc_bias.is_nan()) {
+        return false;
+    }
+    return pos.length() < CINS_MAX_POSITION_M && vel.length() < CINS_MAX_VELOCITY_MS;
+}
+
+/*
+  restart the estimator if it has diverged, rather than publish its
+  state or let it overflow.  The origin is kept; the attitude and
+  position are initialised again from the sensors
+ */
+void AP_AHRS_CINS::check_divergence()
+{
+    if (!initialised() || state_is_sane()) {
+        return;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CINS: diverged, reinitialising");
+    position_NE_reset_count++;
+    position_D_reset_count++;
+    init();
+    state.gyr_bias_correction.zero();
+    state.acc_bias_correction.zero();
+    delayer.stamped_inputs.clear();
+    delayer.last_push_time = delayer.internal_time;
+    done_attitude_init = false;
+    done_pos_init = false;
+    log_reset(ResetEvent::DIVERGED, Vector3F{});
+}
+
 // the down position published for a height source:
 bool AP_AHRS_CINS::published_height_D(HeightSource source, ftype &posD) const
 {
@@ -562,7 +602,7 @@ void AP_AHRS_CINS::log_reset(ResetEvent event, const Vector3F &step) const
     // @Description: CINS position resets and height source changes
     // @Field: TimeUS: Time since system startup
     // @Field: I: instance
-    // @Field: Ev: event: 0=reset to GPS, 1=common origin adopted, 2=height source changed
+    // @Field: Ev: event: 0=reset to GPS, 1=common origin adopted, 2=height source changed, 3=diverged and restarted
     // @Field: HS: height source after the event: 0=none, 1=CINS, 2=baro
     // @Field: NEC: NE position reset count
     // @Field: DC: down position reset count

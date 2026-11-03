@@ -16,6 +16,11 @@
 
 #define CINS_MAX_HISTORY 100
 
+// beyond these the estimator has diverged; the position limit also
+// keeps Location::offset() within its range:
+#define CINS_MAX_POSITION_M 1.0e7
+#define CINS_MAX_VELOCITY_MS 1000.0
+
 class AP_AHRS_CINS : public AP_AHRS_Backend
 {
 public:
@@ -91,9 +96,12 @@ private:
     bool get_location(Location &loc) const
     {
         loc = state.origin;
+        if (!state.have_origin || !state_is_sane()) {
+            return false;
+        }
         loc.offset(state.XHat.pos().x, state.XHat.pos().y);
         loc.alt -= state.XHat.pos().z * 100;
-        return state.have_origin;
+        return true;
     }
     bool set_origin(const Location &loc) override;
     bool get_origin(Location &loc) const override {
@@ -118,7 +126,10 @@ private:
         GPS = 0,            // position and velocity reset to GPS
         ORIGIN = 1,         // a common origin was adopted
         HEIGHT_SOURCE = 2,  // the published height changed source
+        DIVERGED = 3,       // the estimator diverged and was restarted
     };
+    bool state_is_sane() const;
+    void check_divergence();
     void reset_position_to_gps(const Vector3F &pos, const Vector3F &vel, ResetEvent event);
     void log_reset(ResetEvent event, const Vector3F &step) const;
     void update_baro_height();
