@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+
+def build(bld):
+    bld.ap_find_tests(
+        use='ap',
+        # compares parsed values against double literals
+        DOUBLE_PRECISION_SOURCES=['test_ap_json.cpp'],
+    )
