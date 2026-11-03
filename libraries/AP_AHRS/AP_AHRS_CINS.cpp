@@ -359,6 +359,7 @@ void AP_AHRS_CINS::update(void)
                 // no common origin has been set into us; use this fix
                 state.have_origin = true;
                 state.origin = loc;
+                origin_is_own = true;
             }
             const auto & vel = gps.velocity();
             const Vector3d pos = state.origin.get_distance_NED_double(loc);
@@ -709,13 +710,24 @@ bool AP_AHRS_CINS::fusing_gps(void) const
 
 bool AP_AHRS_CINS::set_origin(const Location &loc)
 {
-    // take a common origin from another backend, if we don't already
-    // have one of our own:
-    if (state.have_origin) {
+    // take a common origin from another backend if we have no
+    // origin.  When CINS is not the configured backend its own origin,
+    // taken from its first fix, only stands in until the configured
+    // backend chooses one, so a later common origin replaces it;
+    // otherwise switching to CINS would change the navigation frame:
+    if (state.have_origin &&
+        (!origin_is_own || AP::ahrs().configured_ekf_type() == AP_AHRS::EKFType::CINS)) {
         return false;
     }
+    Location current_loc;
+    const bool have_position = done_pos_init && get_location(current_loc);
     state.origin = loc;
     state.have_origin = true;
+    origin_is_own = false;
+    if (have_position) {
+        // keep our location, now relative to the new origin:
+        reset_position_to_gps(loc.get_distance_NED_double(current_loc).toftype(), state.XHat.vel());
+    }
     return true;
 }
 

@@ -242,6 +242,8 @@ private:
     bool using_baro_height;
     uint16_t position_D_reset_count;
     uint16_t position_NE_reset_count;
+
+    bool origin_is_own;         // origin is our own first fix, not a common one
 };
 
 #endif // AP_AHRS_CINS_ENABLED
