@@ -155,6 +155,58 @@ bool AP_HAL::UARTDriver::discard_input()
 }
 
 /*
+  changing the line settings restarts the UART on some boards, which
+  would lose data for the user of a locked port, so they are only
+  allowed with the write key
+ */
+bool AP_HAL::UARTDriver::set_options(uint16_t options)
+{
+    return set_options_locked(options, 0);
+}
+
+bool AP_HAL::UARTDriver::set_options_locked(uint16_t options, uint32_t write_key)
+{
+    if (lock_write_key != 0 && write_key != lock_write_key) {
+        return false;
+    }
+    return _set_options(options);
+}
+
+void AP_HAL::UARTDriver::set_flow_control(enum flow_control flow_control_setting)
+{
+    if (lock_write_key != 0) {
+        return;
+    }
+    _set_flow_control(flow_control_setting);
+}
+
+void AP_HAL::UARTDriver::configure_parity(uint8_t v)
+{
+    configure_parity_locked(v, 0);
+}
+
+void AP_HAL::UARTDriver::configure_parity_locked(uint8_t v, uint32_t write_key)
+{
+    if (lock_write_key != 0 && write_key != lock_write_key) {
+        return;
+    }
+    _configure_parity(v);
+}
+
+void AP_HAL::UARTDriver::set_stop_bits(int n)
+{
+    set_stop_bits_locked(n, 0);
+}
+
+void AP_HAL::UARTDriver::set_stop_bits_locked(int n, uint32_t write_key)
+{
+    if (lock_write_key != 0 && write_key != lock_write_key) {
+        return;
+    }
+    _set_stop_bits(n);
+}
+
+/*
   default implementation of receive_time_constraint_us() will be used
   for subclasses that don't implement the call (eg. network
   sockets). Best we can do is to use the current timestamp as we don't
