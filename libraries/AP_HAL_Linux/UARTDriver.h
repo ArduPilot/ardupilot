@@ -32,13 +32,6 @@ public:
         return _device->get_flow_control();
     }
 
-    void configure_parity(uint8_t v) override;
-
-    virtual void set_flow_control(enum flow_control flow_control_setting) override
-   {
-       _device->set_flow_control(flow_control_setting);
-   }
-
     /*
       return timestamp estimate in microseconds for when the start of
       a nbytes packet arrived on the uart. This should be treated as a
@@ -99,6 +92,11 @@ protected:
     uint32_t _available() override;
     size_t _write(const uint8_t *buffer, size_t size) override;
     ssize_t _read(uint8_t *buffer, uint16_t count) override WARN_IF_UNUSED;
+    void _configure_parity(uint8_t v) override;
+    void _set_flow_control(enum flow_control flow_control_setting) override
+    {
+        _device->set_flow_control(flow_control_setting);
+    }
 };
 
 }
