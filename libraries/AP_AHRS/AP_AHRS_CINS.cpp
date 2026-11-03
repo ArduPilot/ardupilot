@@ -581,6 +581,12 @@ bool AP_AHRS_CINS::pre_arm_check(bool requires_position, char *failure_msg, uint
         hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
         return false;
     }
+    if (state.variances.steps_to_initialise > 0) {
+        // until then CINS publishes no variances, so the vehicles'
+        // variance checks cannot run:
+        hal.util->snprintf(failure_msg, failure_msg_len, "Waiting for variances");
+        return false;
+    }
     return true;
 }
 
