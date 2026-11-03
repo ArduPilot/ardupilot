@@ -499,15 +499,19 @@ void AP_AHRS_CINS::Log_Write()
   CINS has no height source other than GPS, so without GPS fusion its
   height and vertical velocity come from the IMU alone and drift
   without bound.  While it is not fusing GPS, publish the baro height
-  instead, offset to be continuous with CINS's own height at the point
-  GPS fusion stopped
+  instead, offset to match CINS's own height at the last fused GPS
+  sample
  */
 void AP_AHRS_CINS::update_baro_height()
 {
     const auto &baro = AP::baro();
     const bool baro_healthy = baro.healthy();
-    if (baro_healthy && fusing_gps()) {
+    if (baro_healthy && last_gps_fused_ms != baro_offset_fused_ms) {
+        // anchor to our height when a GPS sample has just been fused,
+        // so the IMU drift until fusion stops doesn't stay in the
+        // baro height:
         baro_offset_D = state.XHat.pos().z + baro.get_altitude();
+        baro_offset_fused_ms = last_gps_fused_ms;
         have_baro_offset = true;
     }
 

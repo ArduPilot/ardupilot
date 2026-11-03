@@ -236,9 +236,10 @@ private:
 
     // CINS's height comes from GPS.  While it is not fusing GPS it
     // publishes the baro height instead, offset to match its own
-    // height when it stopped fusing GPS:
+    // height at the last fused GPS sample:
     ftype baro_offset_D;      // position_D = baro_offset_D - baro altitude
     bool have_baro_offset;
+    uint32_t baro_offset_fused_ms;  // last_gps_fused_ms when the offset was taken
     enum class HeightSource : uint8_t {
         NONE,
         CINS,
