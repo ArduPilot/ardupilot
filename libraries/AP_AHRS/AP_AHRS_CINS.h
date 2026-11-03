@@ -60,8 +60,7 @@ public:
 
     void get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler, float &ekfNavVelGainScaler_Z) const {
         // lower gains in VTOL controllers when flying on CINS; these
-        // are the values DCM uses.  CINS has no baro, so its height
-        // comes from GPS alone:
+        // are the values DCM uses:
         ekfGndSpdLimit = 50.0;
         ekfNavVelGainScaler = 0.5;
         ekfNavVelGainScaler_Z = 0.25;
@@ -115,6 +114,7 @@ private:
     void update_attitude_from_compass();
     bool init_attitude(const Vector3F &accel);
     void reset_position_to_gps(const Vector3F &pos, const Vector3F &vel);
+    void update_baro_height();
     // one-time estimator state initialisation, run lazily on the first
     // update() (the backend interface has no init() entry point):
     void init(void);
@@ -233,6 +233,14 @@ private:
     bool done_pos_init;
     bool done_init;
     uint32_t last_mag_us;
+
+    // CINS's height comes from GPS.  While it is not fusing GPS it
+    // publishes the baro height instead, offset to match its own
+    // height when it stopped fusing GPS:
+    ftype baro_offset_D;      // position_D = baro_offset_D - baro altitude
+    bool have_baro_offset;
+    bool using_baro_height;
+    uint16_t position_D_reset_count;
 };
 
 #endif // AP_AHRS_CINS_ENABLED
