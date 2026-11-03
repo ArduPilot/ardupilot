@@ -231,6 +231,28 @@ void AP_AHRS_CINS::init(void)
     state.variances.magVar = 1.0;
     state.variances.steps_to_initialise = 100;
 }
+void AP_AHRS_CINS::reset_gyro_drift(void)
+{
+    state.gyr_bias.zero();
+    state.gyr_bias_correction.zero();
+    state.gyr_bias_gain_mat.rot.zero();
+    state.gyr_bias_gain_mat.vel.zero();
+    state.gyr_bias_gain_mat.pos.zero();
+}
+
+void AP_AHRS_CINS::reset(void)
+{
+    reset_gyro_drift();
+    state.acc_bias.zero();
+    state.acc_bias_correction.zero();
+    state.acc_bias_gain_mat.rot.zero();
+    state.acc_bias_gain_mat.vel.zero();
+    state.acc_bias_gain_mat.pos.zero();
+    // re-initialise the attitude from the accelerometer and compass on
+    // the next update.  The origin, position and velocity are kept.
+    done_attitude_init = false;
+}
+
 /*
   update function, called at loop rate
  */

@@ -41,10 +41,12 @@ public:
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
-    void reset_gyro_drift(void) override { }  // FIXME
+    // forget the gyro bias, used on new gyro calibration
+    void reset_gyro_drift(void) override;
 
-    // reset the current attitude, used on new IMU calibration
-    void reset() override { }  // FIXME
+    // forget the IMU biases and re-initialise the attitude, used on
+    // new IMU calibration
+    void reset() override;
 
     // return a wind estimation vector, in m/s
     bool wind_estimate(Vector3f &wind) const { return false; }
