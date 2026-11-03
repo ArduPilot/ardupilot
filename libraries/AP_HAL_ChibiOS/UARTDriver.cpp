@@ -1461,8 +1461,9 @@ void UARTDriver::_configure_parity(uint8_t v)
         // not possible
         return;
     }
-    UARTDriver::parity = v;
 #if HAL_USE_SERIAL == TRUE
+    WITH_SEMAPHORE(_line_config_sem);
+
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
@@ -1515,6 +1516,11 @@ void UARTDriver::_configure_parity(uint8_t v)
     }
 #endif
 #endif // HAL_USE_SERIAL
+
+    // record the parity once the port has it, under the lock, so that a
+    // change that was waiting for the lock and is applied last is also the
+    // one get_parity() reports
+    UARTDriver::parity = v;
 }
 
 /*
@@ -1527,6 +1533,8 @@ void UARTDriver::_set_stop_bits(int n)
         return;
     }
 #if HAL_USE_SERIAL
+    WITH_SEMAPHORE(_line_config_sem);
+
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
@@ -1614,6 +1622,11 @@ bool UARTDriver::_set_options(uint16_t options)
         return (options == 0);
     }
     bool ret = true;
+
+#if HAL_USE_SERIAL == TRUE
+    // held from here so get_options() matches what the port is set to
+    WITH_SEMAPHORE(_line_config_sem);
+#endif
 
     _last_options = options;
 
