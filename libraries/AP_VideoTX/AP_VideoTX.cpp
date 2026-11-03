@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
     // @Param: PWRTBL_EN
     // @DisplayName: Enable user-defined VTX power table
-    // @Description: Enables the user-defined power table in VTX_PWRTBL1 to VTX_PWRTBL6, which replaces the built-in power levels and VTX_MAX_POWER for the VTX power aux switch. A value of -1 ignores a table entry, a 0 entry selects pit mode at its switch position, and the used entries in slot order are the switch choices. Only transports that accept arbitrary power levels (IRC Tramp) can use levels outside the built-in list.
+    // @Description: Enables the user-defined power table in VTX_PWRTBL1 to VTX_PWRTBL6, which replaces the built-in power levels and VTX_MAX_POWER for the VTX power aux switch. A value of -1 ignores a table entry and a 0 entry selects pit mode. The power channel's whole range (RCn_MIN to RCn_MAX) is split evenly between the used entries in slot order, so a pot or a switch can select them; a 6-position switch selects one entry per position when the channel's range is its default or calibrated to the switch. Only transports that accept arbitrary power levels (IRC Tramp) can use levels outside the built-in list.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("PWRTBL_EN", 9, AP_VideoTX, _power_table_enabled, 0),
@@ -1105,7 +1105,66 @@ void AP_VideoTX::change_power(int8_t position)
         return;
     }
     debug("pos %d selected power %dmw", position, power);
+    set_switch_power(power);
+}
 
+uint8_t AP_VideoTX::power_channel_levels() const
+{
+    if (!use_power_table()) {
+        return 0;
+    }
+    uint8_t levels = 0;
+    for (uint8_t i = 0; i < VTX_USER_POWER_LEVELS; i++) {
+        if (get_table_entry(i) >= 0) {
+            levels++;
+        }
+    }
+    return levels;
+}
+
+uint8_t AP_VideoTX::power_level_for_input(float input, uint8_t levels)
+{
+    if (levels == 0) {
+        return 0;
+    }
+    const int16_t level = int16_t(constrain_float(input, 0, 1) * levels);
+    return constrain_int16(level, 0, levels - 1);
+}
+
+bool AP_VideoTX::table_level_power_mw(uint8_t level, const int16_t *user_table, uint8_t user_table_len, uint16_t &power_mw)
+{
+    for (uint8_t i = 0; i < user_table_len; i++) {
+        if (user_table[i] < 0) {
+            continue;
+        }
+        if (level == 0) {
+            power_mw = uint16_t(user_table[i]);
+            return true;
+        }
+        level--;
+    }
+    return false;
+}
+
+void AP_VideoTX::change_power_level(uint8_t level)
+{
+    if (!_enabled) {
+        return;
+    }
+    int16_t table[VTX_USER_POWER_LEVELS];
+    for (uint8_t i = 0; i < VTX_USER_POWER_LEVELS; i++) {
+        table[i] = get_table_entry(i);
+    }
+    uint16_t power;
+    if (!table_level_power_mw(level, table, VTX_USER_POWER_LEVELS, power)) {
+        return;
+    }
+    debug("level %u selected power %umw", level, power);
+    set_switch_power(power);
+}
+
+void AP_VideoTX::set_switch_power(uint16_t power)
+{
     if (power == 0) {
         if (!hal.util->get_soft_armed()) {    // don't allow pitmode to be entered if already armed
             set_configured_options(get_configured_options() | uint8_t(VideoOptions::VTX_PITMODE));

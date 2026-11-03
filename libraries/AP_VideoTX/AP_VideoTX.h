@@ -213,6 +213,22 @@ public:
     bool update_power() const;
     // change the video power based on switch input
     void change_power(int8_t position);
+    // with the user power table in use the power channel's whole range is
+    // split evenly between the used entries, rather than read as a
+    // 6-position switch: the number of levels it selects between, or 0 to
+    // read it as a 6-position switch
+    uint8_t power_channel_levels() const;
+    // select the power of one of power_channel_levels() levels
+    void change_power_level(uint8_t level);
+    // the level for a power channel input, 0 at the bottom of its range to 1
+    // at the top, split evenly between the levels
+    static uint8_t power_level_for_input(float input, uint8_t levels);
+    // the power in mW of the user table's level'th used entry, 0 meaning pit
+    // mode. Static so the mapping can be unit tested
+    static bool table_level_power_mw(uint8_t level, const int16_t *user_table, uint8_t user_table_len,
+                                     uint16_t &power_mw);
+    // set the configured power and pit mode for a power selected on the power channel
+    void set_switch_power(uint16_t power);
     // the power in mW that the power aux switch (RCx_OPTION 94) selects for the
     // given switch position, 0 meaning pitmode. user_table holds the raw
     // VTX_PWRTBL values: a value of -1 ignores the entry, a 0 entry selects pit
