@@ -2,6 +2,7 @@
 #include <AP_JSON/AP_JSON.h>
 #include <AP_HAL/AP_HAL.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <type_traits>
@@ -132,5 +133,34 @@ static_assert(std::is_const<std::remove_reference<decltype(std::declval<value&>(
               "get(key) must return a const reference");
 static_assert(std::is_const<std::remove_reference<decltype(std::declval<value&>().get(0))>::type>::value,
               "get(idx) must return a const reference");
+
+static AP_JSON::value *load_json_text(const char *text)
+{
+    const char *path = "test_ap_json_load.json";
+    FILE *f = fopen(path, "w");
+    if (f == nullptr) {
+        return nullptr;
+    }
+    fputs(text, f);
+    fclose(f);
+    AP_JSON::value *v = AP_JSON::load_json(path);
+    remove(path);
+    return v;
+}
+
+TEST(AP_JSON, LoadJsonStripsComments)
+{
+    // # starts a comment outside strings only, including on the last
+    // line with no newline after it
+    AP_JSON::value *v = load_json_text("# header\n"
+                                       "{\"url\": \"http://x/#frag\", # comment\n"
+                                       " \"q\": \"a\\\"#b\", \"n\": 1}\n"
+                                       "# end");
+    ASSERT_NE(nullptr, v);
+    EXPECT_EQ(std::string("http://x/#frag"), v->get("url").get<std::string>());
+    EXPECT_EQ(std::string("a\"#b"), v->get("q").get<std::string>());
+    EXPECT_DOUBLE_EQ(1.0, v->get("n").get<double>());
+    delete v;
+}
 
 AP_GTEST_MAIN()

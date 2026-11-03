@@ -80,13 +80,26 @@ AP_JSON::value *AP_JSON::load_json(const char *filename)
     }
 
     /*
-      remove comments, as not allowed by the parser
+      remove comments, as not allowed by the parser, leaving any # in a
+      string alone
      */
-    for (char *p = strchr(start,'#'); p; p=strchr(p+1, '#')) {
-        // clear to end of line
-        do {
-            *p++ = ' ';
-        } while (*p != '\n' && *p != '\r' && *p);
+    bool in_string = false;
+    for (char *p = start; *p; p++) {
+        if (in_string) {
+            if (*p == '\\' && p[1]) {
+                p++;
+            } else if (*p == '"') {
+                in_string = false;
+            }
+        } else if (*p == '"') {
+            in_string = true;
+        } else if (*p == '#') {
+            // clear to end of line
+            while (*p && *p != '\n' && *p != '\r') {
+                *p++ = ' ';
+            }
+            p--;
+        }
     }
 
     AP_JSON::value *obj = NEW_NOTHROW AP_JSON::value;
