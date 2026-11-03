@@ -28,11 +28,11 @@ public:
 
     bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
 
-    // true once CINS has an origin and has initialised its attitude
-    // from the accelerometer and compass, so that it is propagating
-    // its state from the IMU:
+    // true once CINS has initialised its position from GPS and its
+    // attitude from the accelerometer and compass, so that it is
+    // propagating its state from the IMU:
     bool initialised(void) const {
-        return state.have_origin && done_attitude_init;
+        return done_pos_init && done_attitude_init;
     }
 
     // true while CINS is initialised, propagating from the IMU, and
@@ -94,6 +94,7 @@ private:
         loc.alt -= state.XHat.pos().z * 100;
         return state.have_origin;
     }
+    bool set_origin(const Location &loc) override;
     bool get_origin(Location &loc) const override {
         loc = state.origin;
         return state.have_origin;
@@ -226,6 +227,7 @@ private:
     uint32_t last_gps_fused_ms;   // last time a GPS position passed the innovation gate
     uint32_t last_imu_update_ms;
     bool done_attitude_init;
+    bool done_pos_init;
     bool done_init;
     uint32_t last_mag_us;
 };

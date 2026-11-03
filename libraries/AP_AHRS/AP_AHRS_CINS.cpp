@@ -295,7 +295,7 @@ void AP_AHRS_CINS::update(void)
         done_attitude_init = init_attitude(accel);
     }
 
-    if (done_attitude_init && state.have_origin) {
+    if (initialised()) {
         update_imu(gyro, accel, dangle_dt);
         last_imu_update_ms = AP_HAL::millis();
     }
@@ -310,11 +310,19 @@ void AP_AHRS_CINS::update(void)
             last_gps_update_ms = last_gps_fix_ms;
             const auto &loc = gps.location();
             if (!state.have_origin) {
+                // no common origin has been set into us; use this fix
                 state.have_origin = true;
                 state.origin = loc;
             }
             const auto & vel = gps.velocity();
             const Vector3d pos = state.origin.get_distance_NED_double(loc);
+
+            if (!done_pos_init) {
+                // start from the first fix, which need not be at the
+                // origin when the origin is a common one:
+                state.XHat = Gal3F(state.XHat.rot(), pos.toftype(), vel.toftype(), state.XHat.tau());
+                done_pos_init = true;
+            }
 
             update_gps(pos.toftype(), vel.toftype(), gps_dt);
         }
@@ -484,6 +492,9 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.location_valid = get_location(results.location) && healthy();
 
+    // our origin is shared with, and taken from, the other backends:
+    results.provides_common_origin = true;
+
     // origin-relative position: XHat's position is NED from our origin
     // (see get_origin()):
     if (healthy()) {
@@ -589,9 +600,21 @@ bool AP_AHRS_CINS::healthy(void) const
     return true;
 }
 
+bool AP_AHRS_CINS::set_origin(const Location &loc)
+{
+    // take a common origin from another backend, if we don't already
+    // have one of our own:
+    if (state.have_origin) {
+        return false;
+    }
+    state.origin = loc;
+    state.have_origin = true;
+    return true;
+}
+
 bool AP_AHRS_CINS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
-    if (!state.have_origin) {
+    if (!done_pos_init) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Waiting for GPS");
         return false;
     }
@@ -993,7 +1016,7 @@ void AP_AHRS_CINS::update_attitude_from_compass()
 
     // the attitude is only meaningful, and the observer only
     // propagating, once it has been initialised:
-    if (!done_attitude_init) {
+    if (!initialised()) {
         return;
     }
 
