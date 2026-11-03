@@ -704,13 +704,19 @@ template <typename Context, typename Iter> bool _parse(Context &ctx, input<Iter>
     return false;
 }
 
+// nested arrays and objects allowed, so a hostile document can not
+// recurse deep enough to overflow the stack
+#define AP_JSON_MAX_DEPTH 16
+
 class default_parse_context
 {
 protected:
     value *out_;
+    // arrays and objects that may still be opened below this value
+    size_t depth_;
 
 public:
-    default_parse_context(value *out) : out_(out)
+    default_parse_context(value *out, size_t depth = AP_JSON_MAX_DEPTH) : out_(out), depth_(depth)
     {
     }
     bool set_null()
@@ -735,6 +741,9 @@ public:
     }
     bool parse_array_start()
     {
+        if (depth_ == 0) {
+            return false;
+        }
         *out_ = value(array_type, false);
         return true;
     }
@@ -742,7 +751,7 @@ public:
     {
         array &a = out_->get<array>();
         a.push_back(value());
-        default_parse_context ctx(&a.back());
+        default_parse_context ctx(&a.back(), depth_ - 1);
         return _parse(ctx, in);
     }
     bool parse_array_stop(size_t)
@@ -751,6 +760,9 @@ public:
     }
     bool parse_object_start()
     {
+        if (depth_ == 0) {
+            return false;
+        }
         *out_ = value(object_type, false);
         return true;
     }
@@ -762,7 +774,7 @@ public:
         if (!item.second) {
             return false;
         }
-        default_parse_context ctx(&item.first->second);
+        default_parse_context ctx(&item.first->second, depth_ - 1);
         return _parse(ctx, in);
     }
 
