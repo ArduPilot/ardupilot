@@ -1718,6 +1718,10 @@ bool UARTDriver::_set_options(uint16_t options)
     }
 #endif // STM32xx
 
+    // keep the config used when the port is restarted in step, so a later
+    // parity or stop bit change doesn't bring back the old inversion
+    sercfg.cr2 = _cr2_options;
+
     // both F4 and F7 can do half-duplex
     if (options & OPTION_HDPLEX) {
         cr3 |= USART_CR3_HDSEL;
