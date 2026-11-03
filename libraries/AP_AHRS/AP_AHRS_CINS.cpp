@@ -492,8 +492,12 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.location_valid = get_location(results.location) && healthy();
 
-    // our origin is shared with, and taken from, the other backends:
-    results.provides_common_origin = true;
+    // CINS takes a common origin from the other backends.  It only
+    // offers its own when it is the configured backend: its origin is
+    // its first fix, without the GPS quality checks the EKFs make
+    // before setting theirs, so it must not become the origin of an
+    // EKF which has been chosen instead:
+    results.provides_common_origin = (AP::ahrs().configured_ekf_type() == AP_AHRS::EKFType::CINS);
 
     // origin-relative position: XHat's position is NED from our origin
     // (see get_origin()):
