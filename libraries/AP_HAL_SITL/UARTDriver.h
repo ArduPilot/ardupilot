@@ -43,8 +43,6 @@ public:
 
     enum flow_control get_flow_control(void) override { return FLOW_CONTROL_ENABLE; }
 
-    void configure_parity(uint8_t v) override;
-    void set_stop_bits(int n) override;
     bool set_unbuffered_writes(bool on) override;
 
     uint32_t bw_in_bytes_per_second() const override;
@@ -147,6 +145,8 @@ protected:
     void _end() override;
     void _flush() override;
     bool _discard_input() override;
+    void _configure_parity(uint8_t v) override;
+    void _set_stop_bits(int n) override;
 
 #if HAL_UART_STATS_ENABLED
     // Getters for cumulative tx and rx counts
