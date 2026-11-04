@@ -1693,7 +1693,6 @@ AP_GPS_UBLOX::_parse_gps(void)
                     state.have_gps_yaw_accuracy = true;
                     state.gps_yaw_accuracy = _buffer.daheading.accHeading * 1e-5f;
                     _last_daheading_ms = AP_HAL::millis();
-                    _last_daheading_itow = _buffer.daheading.iTOW;
                 }
                 state.relPosHeading = _buffer.daheading.relPosHeading * 1e-5f;
                 state.relPosLength  = _buffer.daheading.relPosLength * 0.001f;
@@ -1887,10 +1886,10 @@ AP_GPS_UBLOX::_parse_gps(void)
 
     if (state.have_gps_yaw) {
         if (_has_dual_antenna_heading) {
+            // X20D position might be the primary solution, don't hold it
+            // waiting for DAHEADING; just drop yaw once it goes stale
             if (AP_HAL::millis() - _last_daheading_ms > 400) {
                 state.have_gps_yaw = false;
-            } else if (_last_daheading_itow != _last_pvt_itow) {
-                return false;
             }
         } else {
             // when we are a rover we want to ensure we have both the new
