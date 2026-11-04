@@ -306,6 +306,8 @@ private:
     bool _hover_bias_learned[INS_MAX_INSTANCES];  // learning has run for this IMU since the learner was seeded
     float _hover_bias_at_arm[INS_MAX_INSTANCES];  // EKF Z accel bias of each IMU when the vehicle armed, zero with ACC_ZBIAS_LEARN bit 2, m/s/s
     bool _hover_bias_at_arm_ok[INS_MAX_INSTANCES];  // an EKF core was using the IMU when the vehicle armed
+    uint16_t _hover_bias_reset_count[INS_MAX_INSTANCES];  // EKF accel bias restarts for each IMU when the vehicle armed
+    bool _hover_bias_restarted[INS_MAX_INSTANCES];  // the EKF restarted the IMU's bias while the learner was taking it
     bool _hover_z_bias_reported;
 
     // Arming/Disarming management class
