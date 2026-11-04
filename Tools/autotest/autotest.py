@@ -1076,10 +1076,16 @@ def run_tests(steps):
     # never gets a SITL up, and the run sits waiting for a result which
     # is never coming - the runner only gives up when *every* worker has
     # died, so one stuck worker hangs the lot.  Say so now instead.
-    # a serial run uses only opts.instance; the parallel pass uses
-    # base+1..base+parallel, so only then does the range extend
+    # a serial run uses only opts.instance; the parallel pass uses the
+    # first opts.parallel instances above it, stepping over the ones the
+    # host has taken, so the highest is not base+parallel and has to
+    # come from the same allocation the pool itself uses: on macOS,
+    # where instance 14 is skipped, base+parallel is one short of the
+    # instance the workers really reach and this guard would pass a run
+    # whose top worker collides with instance 0
     if opts.parallel > 1:
-        highest_instance = opts.instance + opts.parallel
+        highest_instance = util.parallel_sitl_instances(opts.instance + 1,
+                                                        opts.parallel)[-1]
     else:
         highest_instance = opts.instance
     if highest_instance > MAX_AUTOTEST_INSTANCE:
@@ -1127,11 +1133,14 @@ def run_tests(steps):
     # run will use so per-instance logs/eeprom/etc. don't accumulate across
     # runs - but only this run's instance range, so concurrent runs started
     # with different -I values don't delete each other's directories.
-    lo = opts.instance
-    # the parallel pass uses base+1..base+parallel; a serial run uses only base
-    hi = opts.instance + opts.parallel if opts.parallel > 1 else opts.instance
-    instance_dirs = " ".join("parallel-autotest/%u" % n for n in range(lo, hi + 1))
-    print("Removing parallel autotest instance directories %u..%u" % (lo, hi))
+    # the parallel pass uses the first opts.parallel instances above base,
+    # stepping over any the host has taken; a serial run uses only base
+    instances = [opts.instance]
+    if opts.parallel > 1:
+        instances += util.parallel_sitl_instances(opts.instance + 1, opts.parallel)
+    instance_dirs = " ".join("parallel-autotest/%u" % n for n in instances)
+    print("Removing parallel autotest instance directories %s" %
+          ", ".join(str(n) for n in instances))
     util.run_cmd("rm -rf " + instance_dirs, checkfail=False)
 
     steps = expand_build_steps(steps)
@@ -1707,7 +1716,10 @@ if __name__ == "__main__":
         # all, and clamping to the bare subtraction asked for a run with
         # zero of them.  One means a serial run (see autotest()), which
         # is the right thing to degrade to.
-        room = max(MAX_AUTOTEST_INSTANCE - opts.instance, 1)
+        # and not the bare subtraction, which counts the instances the
+        # pool steps over as though they were available
+        room = max(util.parallel_sitl_instance_room(opts.instance,
+                                                    MAX_AUTOTEST_INSTANCE), 1)
         if opts.parallel > room:
             print("Note: clamping --parallel from %u to %u (instances above "
                   "%u are not available at -I %u)" %
