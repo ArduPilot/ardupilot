@@ -55,6 +55,7 @@ struct dirent {
 
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #ifndef AP_FILESYSTEM_FORMAT_ENABLED
