@@ -990,7 +990,10 @@ bool Plane::do_change_speed(SPEED_TYPE speedtype, float speed_target_ms, float t
         }
         break;
     case SPEED_TYPE_GROUNDSPEED:
-        gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
+        // not (unsigned): -2 is a valid target here, meaning "return to
+        // default", and converting a negative float to an unsigned
+        // integer is undefined behaviour
+        gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %.1f", (double)speed_target_ms);
         aparm.min_groundspeed.set(speed_target_ms);
         return true;
 
