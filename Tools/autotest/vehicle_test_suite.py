@@ -16479,16 +16479,16 @@ switch value'''
         # per-worker assignment channels must exist before the workers
         # fork:
         num_workers = min([parallel, len(tests)])
+        worker_instances = util.parallel_sitl_instances(base_instance, num_workers)
         self.assign_queues = {}
-        for i in range(num_workers):
-            self.assign_queues[base_instance + i] = mp.Queue()
+        for instance in worker_instances:
+            self.assign_queues[instance] = mp.Queue()
 
         # start processes.  The parallel pass numbers workers from 1
         # (instance 0 is the repo-root working directory, used by serial /
         # non-parallel runs and by the blacklist serial pass):
         self.workers = []
-        for i in range(num_workers):
-            instance = base_instance + i
+        for instance in worker_instances:
             t = mp.Process(
                 target=self.worker_process_main,
                 name='TestRunner-%u' % instance,

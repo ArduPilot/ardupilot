@@ -801,6 +801,44 @@ def gdbserver_port(instance):
     return 3333 + instance
 
 
+def unusable_sitl_instances():
+    '''instance numbers whose ports the host operating system has taken.
+
+    A vehicle's MAVLink endpoints sit in a 10-wide block at
+    5760+10*instance.  Instance 14's block therefore starts at 5900,
+    which on macOS is Screen Sharing: the suite connects to it happily
+    and then waits out its timeout for a heartbeat that cannot come.
+    '''
+    if sys.platform == 'darwin':
+        return {14}
+    return set()
+
+
+def parallel_sitl_instances(base_instance, count):
+    '''the instance numbers `count` parallel workers will use, starting at
+    base_instance and stepping over any the host has taken'''
+    unusable = unusable_sitl_instances()
+    instances = []
+    candidate = base_instance
+    while len(instances) < count:
+        if candidate not in unusable:
+            instances.append(candidate)
+        candidate += 1
+    return instances
+
+
+def parallel_sitl_instance_room(base_instance, max_instance):
+    '''how many parallel workers fit above base_instance without using an
+    instance past max_instance.
+
+    Not max_instance - base_instance: the pool steps over the instances
+    the host has taken, so each one inside the range costs a worker.
+    '''
+    unusable = unusable_sitl_instances()
+    return len([n for n in range(base_instance + 1, max_instance + 1)
+                if n not in unusable])
+
+
 def die_with_parent(expected_parent_pid):
     '''preexec_fn which asks the kernel to kill this process when the
     process that started it dies.
