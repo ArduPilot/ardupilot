@@ -99,8 +99,9 @@ private:
         if (!state.have_origin || !state_is_sane()) {
             return false;
         }
-        loc.offset(state.XHat.pos().x, state.XHat.pos().y);
-        loc.alt -= state.XHat.pos().z * 100;
+        const Vector3d pos = position_NED();
+        loc.offset(pos.x, pos.y);
+        loc.alt -= pos.z * 100;
         return true;
     }
     bool set_origin(const Location &loc) override;
@@ -130,7 +131,18 @@ private:
     };
     bool state_is_sane() const;
     void check_divergence();
-    void reset_position_to_gps(const Vector3F &pos, const Vector3F &vel, ResetEvent event);
+    void reset_position_to_gps(const Vector3d &pos, const Vector3F &vel, ResetEvent event);
+
+    // the observer runs in a frame whose origin is the position of its
+    // last reset to GPS, frame_offset_NED from our origin.  Its
+    // rotation correction depends on the position relative to its
+    // auxiliary state, which a reset restarts at the frame's origin,
+    // so a reset far from our origin gave enormous corrections:
+    Vector3d frame_offset_NED;
+    // our position, NED from our origin:
+    Vector3d position_NED() const {
+        return frame_offset_NED + state.XHat.pos().todouble();
+    }
     void log_reset(ResetEvent event, const Vector3F &step) const;
     void update_baro_height(bool gps_fused);
     // one-time estimator state initialisation, run lazily on the first
