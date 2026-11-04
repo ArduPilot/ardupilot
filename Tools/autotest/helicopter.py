@@ -1401,6 +1401,38 @@ class AutoTestHelicopter(AutoTestCopter):
         finally:
             self.set_output_to_trim(arming_channel)
 
+    def LandedAttitudeTargetFollowsCyclic(self):
+        '''check the attitude target follows the cyclic and the inverted switch on the ground'''
+        # helicopters keep their commanded attitude target on the ground
+        # so that the controls can be checked before flight
+        self.set_message_rate_hz('NAV_CONTROLLER_OUTPUT', 10)
+        self.set_parameter("RC10_OPTION", 43)  # inverted flight
+        self.set_rc(10, 1000)
+        self.change_mode('STABILIZE')
+        self.set_rc(8, 1000)
+        self.zero_throttle()
+
+        self.start_subtest("full cyclic")
+        self.set_rc(1, 2000)
+        self.set_rc(2, 1000)
+        self.delay_sim_time(2, reason="target to reach the stick command")
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 10:
+            nav = self.assert_receive_message('NAV_CONTROLLER_OUTPUT')
+            if nav.nav_roll < 10:
+                raise NotAchievedException(f"target roll={nav.nav_roll:.1f} with full cyclic")
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+
+        self.start_subtest("inverted switch")
+        self.set_rc(10, 2000)
+        tstart = self.get_sim_time()
+        while abs(self.assert_receive_message('NAV_CONTROLLER_OUTPUT').nav_roll) < 170:
+            if self.get_sim_time_cached() - tstart > 20:
+                raise NotAchievedException("target did not invert with the inverted switch")
+        self.set_rc(10, 1000)
+        self.wait_message_field_values('NAV_CONTROLLER_OUTPUT', {'nav_roll': 0}, epsilon=3, timeout=20)
+
     def StickArmingRequiresZeroThrottle(self):
         '''check that stick (rudder) arming requires the collective at zero'''
 
@@ -1464,6 +1496,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.HeliSingleInvertedFlight,
             self.MountFailsafeAction,
             self.StickArmingRequiresZeroThrottle,
+            self.LandedAttitudeTargetFollowsCyclic,
         ])
         return ret
 

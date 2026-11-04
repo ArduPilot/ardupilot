@@ -147,6 +147,7 @@ void ModePosHold::run()
     case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate(false);
+        attitude_control->reset_target_while_landed();
         pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
@@ -167,6 +168,7 @@ void ModePosHold::run()
         FALLTHROUGH;
 
     case AltHoldModeState::Landed_Pre_Takeoff:
+        attitude_control->reset_target_while_landed();
         attitude_control->reset_rate_controller_I_terms_smoothly();
         pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
 

@@ -638,6 +638,7 @@ void Mode::zero_throttle_and_relax_ac(bool spool_up)
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     }
+    attitude_control->reset_target_while_landed();
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
@@ -680,6 +681,9 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
         // while transitioning though active states continue to operate normally
         break;
     }
+
+    // the aircraft is on the ground, so hold the attitude target at the vehicle's attitude
+    attitude_control->reset_target_while_landed();
 
     pos_control->NE_relax_velocity_controller();
     pos_control->NE_update_controller();

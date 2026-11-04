@@ -116,11 +116,16 @@ void ModeDrift::run()
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         attitude_control->reset_yaw_target_and_rate(false);
+        attitude_control->reset_target_while_landed();
         attitude_control->reset_rate_controller_I_terms();
         break;
 
     case AP_Motors::SpoolState::GROUND_IDLE:
         attitude_control->reset_yaw_target_and_rate();
+        // GROUND_IDLE is also reached in flight with the throttle at zero
+        if (copter.ap.land_complete) {
+            attitude_control->reset_target_while_landed();
+        }
         attitude_control->reset_rate_controller_I_terms_smoothly();
         break;
 

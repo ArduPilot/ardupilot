@@ -148,6 +148,7 @@ void _AutoTakeoff::run()
         pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
         pos_control->D_update_controller();
         attitude_control->reset_yaw_target_and_rate();
+        attitude_control->reset_target_while_landed();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0);
         // update auto_takeoff_no_nav_alt_m
