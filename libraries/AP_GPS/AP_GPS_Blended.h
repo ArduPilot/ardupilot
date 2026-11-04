@@ -43,6 +43,8 @@ public:
 
     const char *name() const override { return "Blended"; }
 
+    bool is_blended() const override { return true; }
+
     bool get_lag(float &lag_sec) const override;
     const Vector3f &get_antenna_offset() const override {
         return _blended_antenna_offset;
@@ -53,6 +55,10 @@ public:
     bool calc_weights(void);
     // calculate the blended state
     void calc_state(void);
+    // mark the state as having no fix when no blended solution is available
+    void invalidate_state(void);
+    // true if the state holds a blended solution calculated on this update
+    bool blending_active() const { return _blending_active; }
 
     void zero_health_counter() {
         _blend_health_counter = 0;
@@ -76,6 +82,8 @@ private:
     AP_GPS_FixType _highest_supported_status;
 
     uint32_t new_timing_last_message_time_ms;
+
+    bool _blending_active;
 
     // returns true if instance at offset i should be included in this blend
     bool should_include_instance_in_blend(uint8_t i) const;

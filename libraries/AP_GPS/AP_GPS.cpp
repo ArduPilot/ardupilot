@@ -434,10 +434,20 @@ void AP_GPS::convert_parameters()
 
 // return number of active GPS sensors. Note that if the first GPS
 // is not present but the 2nd is then we return 2. Note that a blended
-// GPS solution is treated as an additional sensor.
+// GPS solution is treated as an additional sensor, but is not counted
+// while it is the highest instance and is not blending.
 uint8_t AP_GPS::num_sensors(void) const
 {
-    return num_instances;
+    uint8_t ret = num_instances;
+#if AP_GPS_BLENDED_ENABLED
+    while (ret > 0 &&
+           drivers[ret-1] != nullptr &&
+           drivers[ret-1]->is_blended() &&
+           !((const AP_GPS_Blended*)drivers[ret-1])->blending_active()) {
+        ret--;
+    }
+#endif
+    return ret;
 }
 
 bool AP_GPS::speed_accuracy(uint8_t instance, float &sacc) const
@@ -927,6 +937,14 @@ void AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
+#if AP_GPS_BLENDED_ENABLED
+    if (drivers[instance]->is_blended()) {
+        // a blended backend's state and timing are calculated from
+        // the other receivers in update_primary()
+        return;
+    }
+#endif
+
     if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
         send_blob_update(instance);
     }
@@ -1022,12 +1040,6 @@ void AP_GPS::update_instance(uint8_t instance)
 #endif
 
 #if HAL_LOGGING_ENABLED
-#if AP_GPS_BLENDED_ENABLED
-    if (type == GPS_TYPE_BLENDED) {
-        // Blended backend does its own logging:
-        new_data_or_timeout = false;
-    }
-#endif  // AP_GPS_BLENDED_ENABLED
     if (new_data_or_timeout && should_log()) {
         Write_GPS(instance);
     }
@@ -1106,9 +1118,8 @@ void AP_GPS::update(void)
     WITH_SEMAPHORE(rsem);
 
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
-        // note that blended instances have an empty update method;
-        // blending is updated in separate code in the
-        // "update_primary" call
+        // note that blended instances are not updated here; blending
+        // is calculated in the "update_primary" call
         update_instance(i);
     }
 
@@ -1177,28 +1188,32 @@ void AP_GPS::update_primary(void)
         }
     }
     const bool output_was_blended = _output_is_blended;
+    int8_t blended_primary = -1;
     for (uint8_t i=0; i<num_instances; i++) {
-        if (drivers[i] == nullptr) {
+        if (drivers[i] == nullptr || !drivers[i]->is_blended()) {
             continue;
         }
-        if (params[i].type != GPS_TYPE_BLENDED) {
-            continue;
-        }
+        auto *blended = (AP_GPS_Blended*)drivers[i];
         if (using_moving_base) {
-            _output_is_blended = false;
-            ((AP_GPS_Blended*)drivers[i])->zero_health_counter();
+            blended->zero_health_counter();
+            blended->invalidate_state();
             continue;
         }
-
-        _output_is_blended = ((AP_GPS_Blended*)drivers[i])->calc_weights();
-
-        if (_output_is_blended) {
-            // Use the weighting to calculate blended GPS states
-            ((AP_GPS_Blended*)drivers[i])->calc_state();
-            // set primary to the virtual instance
-            primary_instance = i;
-            return;
+        if (!blended->calc_weights()) {
+            blended->invalidate_state();
+            continue;
         }
+        // Use the weighting to calculate blended GPS states
+        blended->calc_state();
+        if (blended_primary == -1) {
+            blended_primary = i;
+        }
+    }
+    _output_is_blended = (blended_primary != -1);
+    if (_output_is_blended) {
+        // set primary to the virtual instance
+        primary_instance = blended_primary;
+        return;
     }
 
 #endif //   AP_GPS_BLENDED_ENABLED
