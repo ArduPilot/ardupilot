@@ -915,14 +915,14 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
             case 2:
                 CHECK_ARRAY(config_common_uart1)
 #if GPS_MOVING_BASELINE
-                if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && !ubx_backend.mb_use_uart2()) {
+                if (ubx_backend._has_dual_antenna_heading) {
+                    CHECK_ARRAY(config_DAHeading_uart1)
+                } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && !ubx_backend.mb_use_uart2()) {
                     CHECK_ARRAY(config_MB_Base_uart1)
                 } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && ubx_backend.mb_use_uart2()) {
                     CHECK_ARRAY(config_MB_Base_uart2)
                 } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
                     CHECK_ARRAY(config_MB_Rover_uart1)
-                } else if (ubx_backend._has_dual_antenna_heading) {
-                    CHECK_ARRAY(config_DAHeading_uart1)
                 }
 #endif
                 break;
@@ -975,7 +975,11 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
                 return false;
             }
 #if GPS_MOVING_BASELINE
-            if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && !ubx_backend.mb_use_uart2()) {
+            if (ubx_backend._has_dual_antenna_heading) {
+                if (!_push_cfg_array(config_DAHeading_uart1, ARRAY_SIZE(config_DAHeading_uart1), item_index)) {
+                    return false;
+                }
+            } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && !ubx_backend.mb_use_uart2()) {
                 if (!_push_cfg_array(config_MB_Base_uart1, ARRAY_SIZE(config_MB_Base_uart1), item_index)) {
                     return false;
                 }
@@ -985,10 +989,6 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
                 }
             } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
                 if (!_push_cfg_array(config_MB_Rover_uart1, ARRAY_SIZE(config_MB_Rover_uart1), item_index)) {
-                    return false;
-                }
-            } else if (ubx_backend._has_dual_antenna_heading) {
-                if (!_push_cfg_array(config_DAHeading_uart1, ARRAY_SIZE(config_DAHeading_uart1), item_index)) {
                     return false;
                 }
             }
