@@ -1127,11 +1127,14 @@ def run_tests(steps):
     # run will use so per-instance logs/eeprom/etc. don't accumulate across
     # runs - but only this run's instance range, so concurrent runs started
     # with different -I values don't delete each other's directories.
-    lo = opts.instance
-    # the parallel pass uses base+1..base+parallel; a serial run uses only base
-    hi = opts.instance + opts.parallel if opts.parallel > 1 else opts.instance
-    instance_dirs = " ".join("parallel-autotest/%u" % n for n in range(lo, hi + 1))
-    print("Removing parallel autotest instance directories %u..%u" % (lo, hi))
+    # the parallel pass uses the first opts.parallel instances above base,
+    # stepping over any the host has taken; a serial run uses only base
+    instances = [opts.instance]
+    if opts.parallel > 1:
+        instances += util.parallel_sitl_instances(opts.instance + 1, opts.parallel)
+    instance_dirs = " ".join("parallel-autotest/%u" % n for n in instances)
+    print("Removing parallel autotest instance directories %s" %
+          ", ".join(str(n) for n in instances))
     util.run_cmd("rm -rf " + instance_dirs, checkfail=False)
 
     steps = expand_build_steps(steps)
