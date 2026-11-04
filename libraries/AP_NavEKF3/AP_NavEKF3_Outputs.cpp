@@ -113,10 +113,9 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
 #else
         return false;
 #endif
-        // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
-        if (frontend->sources.getPosZSource(core_index) != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
-            height -= terrainState;
-        }
+        // compensate for the difference between terrain and EKF origin, with the range finder as the
+        // height reference too, as a fall back to another source and back moves the terrain state
+        height -= terrainState;
         return true;
     } else {
         return false;
