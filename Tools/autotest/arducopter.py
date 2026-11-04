@@ -22688,6 +22688,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # restore params to original values
         self.context_pop()
 
+    def AHRSOrientationInDefaultsFile(self):
+        '''test that AHRS_ORIENTATION in a defaults file is a config error'''
+        defaults_file = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults_file.write("AHRS_ORIENTATION 8\n")
+        defaults_file.close()
+        self.customise_SITL_commandline([],
+                                        defaults_filepath=defaults_file.name,
+                                        wipe=True)
+        # SYSTEM_TIME is not sent in the config error loop
+        self.wait_statustext("Config Error: AHRS_ORIENTATION in defaults file",
+                             wallclock_timeout=True)
+
     def ReadOnlyDefaults(self):
         '''test that defaults marked "readonly" can't be set'''
         defaults_filepath = tempfile.NamedTemporaryFile(mode='w', delete=False)
@@ -24786,6 +24798,7 @@ return update, 1000
             self.Weathervane,
             self.ReadOnlyDefaults,
             self.SerialPassthru,
+            self.AHRSOrientationInDefaultsFile,
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
             self.mission_NAV_LOITER_TURNS_direction,
