@@ -3057,26 +3057,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         last = {}
         errs = []
         ground = []
+        speed_ratios = []
         while True:
-            m = dfreader.recv_match(type=["XKF5", "SIM", "TERR"])
+            m = dfreader.recv_match(type=["XKF1", "XKF5", "SIM", "SIM2", "TERR"])
             if m is None:
                 break
-            if m.get_type() == "XKF5" and m.C != 0:
+            if m.get_type() in ["XKF1", "XKF5"] and m.C != 0:
                 continue
             last[m.get_type()] = m
             t = m.TimeUS * 1.0e-6
-            if m.get_type() == "XKF5" and "SIM" in last and "TERR" in last and mark < t < mark_end:
+            if not (mark < t < mark_end):
+                continue
+            if m.get_type() == "XKF5" and "SIM" in last and "TERR" in last:
                 errs.append(m.HAGL - (last["SIM"].Alt - last["TERR"].TerrH))
                 ground.append(last["TERR"].TerrH)
-        if len(errs) < 50:
-            raise NotAchievedException("too few XKF5 samples over the traverse")
+            # flow scaled by the wrong height reads speed in proportion, so once the ground has
+            # risen the true speed against the EKF's shows the height flow was scaled by
+            if m.get_type() == "XKF1" and "SIM2" in last and ground and ground[-1] - ground[0] > 5:
+                ekf_speed = math.hypot(m.VN, m.VE)
+                if ekf_speed > 2:
+                    speed_ratios.append(math.hypot(last["SIM2"].VN, last["SIM2"].VE) / ekf_speed)
+        if len(errs) < 50 or len(speed_ratios) < 20:
+            raise NotAchievedException("too few XKF samples over the traverse")
         rise = max(ground) - min(ground)
         worst = max(abs(e) for e in errs)
-        self.progress("terrain rose %.1f m; worst height above ground error %.1f m" % (rise, worst))
+        speed_ratio = sorted(speed_ratios)[len(speed_ratios)//2]
+        self.progress("terrain rose %.1f m; worst height above ground error %.1f m; true/EKF speed %.3f" %
+                      (rise, worst, speed_ratio))
         if rise < 5:
             raise NotAchievedException("the ground only changed %.1f m, so the leg proves nothing" % rise)
         if worst > 3:
             raise NotAchievedException("height above ground off by %.1f m over the terrain" % worst)
+        if not 0.9 < speed_ratio < 1.1:
+            raise NotAchievedException("true speed %.3f x the EKF's over the terrain" % speed_ratio)
         self.reboot_sitl()
 
     def EK3_TerrainStateFollowsHeightReset(self):
