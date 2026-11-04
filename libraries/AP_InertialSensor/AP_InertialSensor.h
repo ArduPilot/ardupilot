@@ -708,7 +708,8 @@ private:
     // control enable of detected sensors
     AP_UInt8    _enable_mask;
     
-    // board orientation from AHRS
+    // take the board orientation from AHRS_ORIENTATION
+    void update_board_orientation();
     enum Rotation _board_orientation;
 
     // per-sensor orientation to allow for board type defaults at runtime
