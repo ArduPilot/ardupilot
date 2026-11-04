@@ -1492,10 +1492,24 @@ AP_GPS_UBLOX::_parse_gps(void)
 
 #if UBLOX_RXM_RAW_LOGGING
     if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data != 0) {
-        log_rxm_raw(_buffer.rxm_raw);
+        const auto &raw = _buffer.rxm_raw;
+        const uint16_t header_len = offsetof(struct ubx_rxm_raw, svinfo);
+        const uint16_t expected_len = header_len + raw.numSV * sizeof(raw.svinfo[0]);
+        if (_payload_length != expected_len || raw.numSV > ARRAY_SIZE(raw.svinfo)) {
+            unexpected_message();
+            return false;
+        }
+        log_rxm_raw(raw);
         return false;
     } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data != 0) {
-        log_rxm_rawx(_buffer.rxm_rawx);
+        const auto &raw = _buffer.rxm_rawx;
+        const uint16_t header_len = offsetof(struct ubx_rxm_rawx, svinfo);
+        const uint16_t expected_len = header_len + raw.numMeas * sizeof(raw.svinfo[0]);
+        if (_payload_length != expected_len || raw.numMeas > ARRAY_SIZE(raw.svinfo)) {
+            unexpected_message();
+            return false;
+        }
+        log_rxm_rawx(raw);
         return false;
     }
 #endif // UBLOX_RXM_RAW_LOGGING
