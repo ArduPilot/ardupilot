@@ -18614,6 +18614,72 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_accel_bias_inhibit_set_in_current_onboard_log()
         self.reboot_sitl()
 
+    def ekf3_core0_accel_bias_resets_while_armed(self):
+        '''the number of times EKF3 core 0 zeroed its accel biases while armed in the current
+        onboard log, seen as its Z bias variance jumping off the 5e-9 floor'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        armed = False
+        prev = None
+        count = 0
+        while True:
+            m = dfreader.recv_match(type=["EV", "XKV2"])
+            if m is None:
+                break
+            if m.get_type() == "EV":
+                if m.Id == 10:
+                    armed = True
+                elif m.Id == 11:
+                    armed = False
+                continue
+            if m.C != 0:
+                continue
+            if armed and prev is not None and prev < 6e-9 and m.V15 > 10 * prev:
+                count += 1
+            prev = m.V15
+        return count
+
+    def HoverBiasNotSavedAfterEKFReset(self):
+        '''check a flight in which the EKF zeroes its accel biases saves no hover Z-bias'''
+        # With a low EK3_ABIAS_P_NSE the EKF's accel bias variance reaches its floor in a hover, and
+        # the EKF zeroes the biases and relearns them, which the learner would take for the vehicle's
+        # bias. A flight in which that happens keeps the bias saved before it.
+        saved = 0.05
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "SCHED_LOOP_RATE": 200,
+            "SIM_ACC_VRF_Z": 0.10,
+            "INS_ACC_VRFB_Z": saved,
+            "INS_ACC2_VRFB_Z": saved,
+            "INS_ACC3_VRFB_Z": saved,
+            # bit 0 learn and save on disarm, bit 1 apply what was saved
+            "ACC_ZBIAS_LEARN": 3,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("EK3_ABIAS_P_NSE", 0.005)
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False)
+        self.takeoff(altitude_min=2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        self.change_mode('LOITER')
+        self.set_rc(3, 1500)
+        # the first reset comes about 20 s into this hover
+        self.delay_sim_time(45, "hover until the EKF zeroes its accel biases")
+        self.context_collect('STATUSTEXT')
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=60)
+        self.wait_statustext("Hover Z-bias not saved", check_context=True)
+        resets = self.ekf3_core0_accel_bias_resets_while_armed()
+        if resets == 0:
+            raise NotAchievedException("the EKF did not zero its accel biases in the hover")
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z=%f after a flight with %u EKF accel bias resets" % (learned, resets))
+        if abs(learned - saved) > 0.0001:
+            raise NotAchievedException("INS_ACC_VRFB_Z changed from %f to %f over a flight with an EKF reset" % (
+                saved, learned))
+
     def VibrationRectificationBiasLearning(self):
         '''Test hover Z-bias learning for vibration rectification'''
         # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
@@ -20233,6 +20299,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
             self.VibrationRectificationBiasLearning,
+            self.HoverBiasNotSavedAfterEKFReset,
             self.AccelBiasMovingPlatform,
             self.AccelBiasInhibitLoggedAfterLogRestart,
         ])
