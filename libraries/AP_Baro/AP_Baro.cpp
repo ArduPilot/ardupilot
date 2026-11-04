@@ -363,7 +363,7 @@ void AP_Baro::calibrate(bool save)
                 AP_BoardConfig::config_error("Baro: unable to calibrate");
             }
             hal.scheduler->delay(10);
-        } while (!healthy());
+        } while (!_has_healthy_sensor());
         hal.scheduler->delay(100);
     }
 
@@ -379,7 +379,7 @@ void AP_Baro::calibrate(bool save)
             if (AP_HAL::millis() - tstart > 500) {
                 AP_BoardConfig::config_error("Baro: unable to calibrate");
             }
-        } while (!healthy());
+        } while (!_has_healthy_sensor());
         for (uint8_t i=0; i<_num_sensors; i++) {
             if (healthy(i)) {
                 sum_pressure[i] += sensors[i].pressure;
@@ -1019,6 +1019,19 @@ bool AP_Baro::healthy(uint8_t instance) const {
     return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated;
 }
 #endif
+
+/*
+  check if any physical sensor is healthy (independent of EKF use flag)
+ */
+bool AP_Baro::_has_healthy_sensor(void) const
+{
+    for (uint8_t i = 0; i < _num_sensors; i++) {
+        if (healthy(i)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 /*
   update field elevation value

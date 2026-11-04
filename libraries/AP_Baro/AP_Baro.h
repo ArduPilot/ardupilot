@@ -397,6 +397,9 @@ private:
 
     void update_field_elevation();
 
+    // check if any physical sensor is healthy (independent of EKF use flag)
+    bool _has_healthy_sensor(void) const;
+
     // atmosphere model functions
     float get_altitude_difference_extended(float base_pressure, float pressure) const;
     float get_EAS2TAS_extended(float pressure) const;
