@@ -308,6 +308,16 @@ private:
     bool _hover_bias_at_arm_ok[INS_MAX_INSTANCES];  // an EKF core was using the IMU when the vehicle armed
     uint16_t _hover_bias_reset_count[INS_MAX_INSTANCES];  // EKF accel bias restarts for each IMU when the vehicle armed
     bool _hover_bias_restarted[INS_MAX_INSTANCES];  // the EKF restarted the IMU's bias while the learner was taking it
+    uint16_t _hover_bias_rest_count[INS_MAX_INSTANCES];  // EKF accel bias restarts for each IMU last seen disarmed, or at disarm
+    uint32_t _hover_bias_rest_restart_ms[INS_MAX_INSTANCES];  // when a restart was seen disarmed with no flight since, 0 for none
+    enum class HoverBiasBaseline : uint8_t {
+        OK,         // the EKF's bias at arming was learnt at rest
+        TOO_SOON,   // armed before the bias settled after a restart at rest
+        NOT_FIRST,  // flown since the bias was last restarted at rest
+    };
+    HoverBiasBaseline _hover_bias_baseline[INS_MAX_INSTANCES];
+    bool _hover_bias_flew;  // airborne since arming
+    bool _hover_bias_inhibit_disarmed;  // ACC_ZBIAS_LEARN bit 2 when the vehicle armed
     bool _hover_z_bias_reported;
 
     // Arming/Disarming management class
@@ -740,6 +750,7 @@ private:
     void init_hover_bias_correction(void);
     void seed_hover_bias_learning(void);
     void report_hover_z_bias(void);
+    void update_hover_bias_rest(void);
     void update_hover_bias_learning(float dt);
     void save_hover_bias_learning(void);
     void update_accel_bias_inhibit(void);
