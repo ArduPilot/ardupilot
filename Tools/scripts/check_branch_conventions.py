@@ -26,6 +26,7 @@ import re
 import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import build_script_base
@@ -332,27 +333,38 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
 
     def _github_api_compare(self, owner_repo: str, sha: str) -> tuple:
         '''
-        Call the GitHub compare API to check whether sha is an ancestor of master
-        in the given canonical repo.
+        Call the GitHub compare API to check whether sha is an ancestor of the
+        default branch in the given canonical repo.
 
-        GET /repos/{owner_repo}/compare/master...{sha}
+        GET /repos/{owner_repo}/compare/{default_branch}...{sha}
 
         The REST API accesses the repository's own git database and is not subject
         to GitHub's fork-network object sharing (a git-protocol-level feature), so
         a commit that exists only in a personal fork will return HTTP 404/422 here.
 
         Returns (ok, message):
-          True,  ""      — sha is reachable from master ("behind" or "identical")
-          False, reason  — sha not in master's history or not in the canonical repo
+          True,  ""      — sha is reachable from the default branch
+          False, reason  — sha not in the default branch or canonical repo
           None,  reason  — unexpected API error; caller should treat as SKIP
         '''
-        api_url = f'https://api.github.com/repos/{owner_repo}/compare/master...{sha}'
         headers = {'Accept': 'application/vnd.github.v3+json'}
         token = os.environ.get('GITHUB_TOKEN', '')
         if token:
             headers['Authorization'] = f'Bearer {token}'
-        req = urllib.request.Request(api_url, headers=headers)
+
         try:
+            repo_url = f'https://api.github.com/repos/{owner_repo}'
+            req = urllib.request.Request(repo_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                repo_data = json.loads(resp.read())
+            default_branch = repo_data.get('default_branch')
+            if not default_branch:
+                return None, f"canonical repo {owner_repo} has no default branch"
+
+            base = urllib.parse.quote(default_branch, safe='')
+            head = urllib.parse.quote(sha, safe='')
+            compare_url = f'https://api.github.com/repos/{owner_repo}/compare/{base}...{head}'
+            req = urllib.request.Request(compare_url, headers=headers)
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read())
         except urllib.error.HTTPError as e:
@@ -365,19 +377,20 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         if status in ('behind', 'identical'):
             return True, ""
         if status == 'ahead':
-            return False, (f"exists in {owner_repo} but is not yet merged to master "
-                           f"(it is ahead of master)")
+            return False, (f"exists in {owner_repo} but is not yet merged to the "
+                           f"default branch (it is ahead)")
         if status == 'diverged':
-            return False, f"not reachable from master in {owner_repo} (diverged)"
+            return False, f"not reachable from the default branch in {owner_repo} (diverged)"
         return None, f"unexpected GitHub compare status {status!r}"
 
     def check_submodule_references_exist(self) -> bool:
         '''
         For PRs targeting master, verify that each submodule reference introduced
-        on this branch is reachable from master in the canonical submodule repo.
+        on this branch is reachable from the default branch in the canonical
+        submodule repo.
 
-        Uses the GitHub compare API (GET /repos/{owner}/compare/master...{sha})
-        which is repo-specific and is not affected by GitHub's fork-network object
+        Uses the GitHub repository and compare APIs. The latter is repo-specific
+        and is not affected by GitHub's fork-network object
         sharing (a git-protocol-level behaviour that allows any SHA present in any
         public fork to be fetched via the canonical URL).
 
@@ -426,14 +439,14 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
                 if ok_sha is None:
                     print(f"{SKIP} {label}: {msg}")
                 elif ok_sha:
-                    print(f"{PASS} {label}: reachable from master in {owner_repo}")
+                    print(f"{PASS} {label}: reachable from the default branch in {owner_repo}")
                 else:
                     print(f"{FAIL} {label}: {msg}")
                     ok = False
 
         if ok:
             if any_checked:
-                print(f"{PASS} All submodule references are reachable from master "
+                print(f"{PASS} All submodule references are reachable from the default branch "
                       f"in their canonical repos.")
             else:
                 print(f"{PASS} No submodule reference changes to check.")
