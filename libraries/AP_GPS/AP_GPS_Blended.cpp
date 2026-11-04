@@ -276,8 +276,27 @@ bool AP_GPS_Blended::calc_weights()
 /*
  calculate a blended GPS state
 */
+/*
+  called when no blended solution is available, so that nothing uses
+  the last blended solution as if it were current.  The timing is left
+  alone so the data also looks old.
+*/
+void AP_GPS_Blended::invalidate_state(void)
+{
+    _blending_active = false;
+    state.status = AP_GPS_FixType::NONE;
+    state.num_sats = 0;
+    state.hdop = GPS_UNKNOWN_DOP;
+    state.vdop = GPS_UNKNOWN_DOP;
+    state.have_speed_accuracy = false;
+    state.have_horizontal_accuracy = false;
+    state.have_vertical_accuracy = false;
+}
+
 void AP_GPS_Blended::calc_state(void)
 {
+    _blending_active = true;
+
     // initialise the blended states so we can accumulate the results using the weightings for each GPS receiver
     state.status = AP_GPS_FixType::NONE;
     state.time_week_ms = 0;

@@ -94,6 +94,11 @@ public:
 
     // driver specific health, returns true if the driver is healthy
     virtual bool is_healthy(void) const { return true; }
+
+#if AP_GPS_BLENDED_ENABLED
+    // true if this backend calculates its state from other backends
+    virtual bool is_blended() const { return false; }
+#endif
     // returns true if the GPS is doing any logging it is expected to
     virtual bool logging_healthy(void) const { return true; }
 
