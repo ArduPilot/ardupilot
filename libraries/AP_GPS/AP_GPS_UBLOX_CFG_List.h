@@ -164,6 +164,11 @@ static constexpr ubx_config_list config_MB_Rover_uart2[] = {
  { AP::UBXConfigKey::CFG_MSGOUT_RTCM_3X_TYPE1230_UART1, 0},
 };
 
+// ZED-X20D dual-antenna heading on UART1 (UART2 is input only)
+static constexpr ubx_config_list config_DAHeading_uart1[] = {
+ { AP::UBXConfigKey::CFG_MSGOUT_UBX_NAV_DAHEADING_UART1, 1},
+};
+
 #endif // GPS_MOVING_BASELINE
 
 /**********************************************************************
