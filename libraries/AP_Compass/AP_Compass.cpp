@@ -795,10 +795,7 @@ void Compass::init()
         }
     }
 
-#ifndef HAL_BUILD_AP_PERIPH
-    // updating the AHRS orientation updates our own orientation:
-    AP::ahrs().update_orientation();
-#endif
+    update_board_orientation();
 
     init_done = true;
     suppress_devid_save = false;
@@ -1753,12 +1750,30 @@ Compass::_detect_runtime(void)
 #endif  // AP_COMPASS_DRONECAN_ENABLED
 }
 
+/*
+  take the orientation the board is mounted in from AHRS_ORIENTATION.
+  Builds with no AHRS keep ROTATION_NONE, as they do today.
+ */
+void Compass::update_board_orientation()
+{
+#if AP_AHRS_ENABLED
+    AP_AHRS *ahrs = AP_AHRS::get_singleton();
+    if (ahrs == nullptr) {
+        return;
+    }
+    _board_orientation = ahrs->get_board_orientation();
+#endif
+}
+
 bool
 Compass::read(void)
 {
     if (!available()) {
         return false;
     }
+
+    // allow the board orientation to be changed at runtime
+    update_board_orientation();
 
 #if HAL_LOGGING_ENABLED
     const bool old_healthy = healthy();
