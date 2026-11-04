@@ -126,8 +126,11 @@ public:
     {}
 
     ~ObjectBuffer(void) {
-        if (!external_buf)
+#if HAL_HEAP_ENABLED
+        if (!external_buf) {
             delete buffer;
+        }
+#endif
     }
 
     // return size of ringbuffer
@@ -291,7 +294,9 @@ public:
         buffer = NEW_NOTHROW ByteBuffer(((_size+1) * sizeof(T)));
     }
     ~ObjectBuffer_TS(void) {
+#if HAL_HEAP_ENABLED
         delete buffer;
+#endif
     }
 
     // return size of ringbuffer
