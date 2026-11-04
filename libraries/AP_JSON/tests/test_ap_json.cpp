@@ -1,6 +1,7 @@
 #include <AP_gtest.h>
 #include <AP_JSON/AP_JSON.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -166,14 +167,14 @@ static_assert(std::is_const<std::remove_reference<decltype(std::declval<value&>(
 static_assert(std::is_const<std::remove_reference<decltype(std::declval<value&>().get(0))>::type>::value,
               "get(idx) must return a const reference");
 
-static AP_JSON::value *load_json_text(const char *text)
+static AP_JSON::value *load_json_text(const std::string &text)
 {
     const char *path = "test_ap_json_load.json";
     FILE *f = fopen(path, "w");
     if (f == nullptr) {
         return nullptr;
     }
-    fputs(text, f);
+    fwrite(text.data(), 1, text.size(), f);
     fclose(f);
     AP_JSON::value *v = AP_JSON::load_json(path);
     remove(path);
@@ -194,5 +195,72 @@ TEST(AP_JSON, LoadJsonStripsComments)
     EXPECT_DOUBLE_EQ(1.0, v->get("n").get<double>());
     delete v;
 }
+
+TEST(AP_JSON, LoadJsonParsesTheWholeFile)
+{
+    // comments before the value may contain anything
+    AP_JSON::value *v = load_json_text("# a { and a \" in a comment\n{\"n\": 1}\n");
+    ASSERT_NE(nullptr, v);
+    EXPECT_DOUBLE_EQ(1.0, v->get("n").get<double>());
+    delete v;
+
+    // anything else before or after it is an error
+    EXPECT_EQ(nullptr, load_json_text("junk {\"n\": 1}"));
+    EXPECT_EQ(nullptr, load_json_text("{\"n\": 1} junk"));
+    EXPECT_EQ(nullptr, load_json_text("# only a comment\n"));
+
+    // callers expect an object
+    EXPECT_EQ(nullptr, load_json_text("null"));
+    EXPECT_EQ(nullptr, load_json_text("[{\"n\": 1}]"));
+    EXPECT_EQ(nullptr, load_json_text("1"));
+}
+
+TEST(AP_JSON, LoadJsonSkipsByteOrderMark)
+{
+    AP_JSON::value *v = load_json_text("\xEF\xBB\xBF# comment\n{\"n\": 1}\n");
+    ASSERT_NE(nullptr, v);
+    EXPECT_DOUBLE_EQ(1.0, v->get("n").get<double>());
+    delete v;
+
+    // only at the start, and only a whole one
+    EXPECT_EQ(nullptr, load_json_text("{\"n\": 1}\xEF\xBB\xBF"));
+    EXPECT_EQ(nullptr, load_json_text("\xEF\xBB{\"n\": 1}"));
+    EXPECT_EQ(nullptr, load_json_text("\xEF"));
+}
+
+TEST(AP_JSON, LoadJsonRejectsNulInFile)
+{
+    EXPECT_EQ(nullptr, load_json_text(std::string("{\"n\":1}\0junk", 12)));
+    EXPECT_EQ(nullptr, load_json_text(std::string("{\"n\":1}\0", 8)));
+    // comments are removed past a NUL too, and what follows is parsed
+    EXPECT_EQ(nullptr, load_json_text(std::string("{\"n\":1}\n#\0\n{", 12)));
+    AP_JSON::value *v = load_json_text(std::string("{\"n\":1}\n#\0\n", 11));
+    ASSERT_NE(nullptr, v);
+    delete v;
+}
+
+#if AP_FILESYSTEM_ROMFS_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// every frame and model file SITL embeds must still load
+TEST(AP_JSON, EmbeddedModelsLoad)
+{
+    auto *d = AP::FS().opendir("@ROMFS/models");
+    ASSERT_NE(nullptr, d);
+    unsigned count = 0;
+    struct dirent *de;
+    while ((de = AP::FS().readdir(d)) != nullptr) {
+        const std::string name = de->d_name;
+        if (name.size() < 5 || name.compare(name.size() - 5, 5, ".json") != 0) {
+            continue;
+        }
+        AP_JSON::value *v = AP_JSON::load_json(("@ROMFS/models/" + name).c_str());
+        EXPECT_NE(nullptr, v) << name;
+        EXPECT_TRUE(v != nullptr && v->is<value::object>()) << name;
+        delete v;
+        count++;
+    }
+    AP::FS().closedir(d);
+    EXPECT_GT(count, 0u);
+}
+#endif
 
 AP_GTEST_MAIN()
