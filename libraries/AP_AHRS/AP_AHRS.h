@@ -83,6 +83,11 @@ public:
     // this makes initial config easier
     void update_orientation();
 
+    // return the orientation the board is mounted in, from
+    // AHRS_ORIENTATION.  Sensor drivers call this for themselves, so
+    // they do not depend on AHRS having been initialised first.
+    enum Rotation get_board_orientation();
+
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore(void) {
         return _rsem;
@@ -880,8 +885,10 @@ private:
     Matrix3f _rotation_autopilot_body_to_vehicle_body;
     Matrix3f _rotation_vehicle_body_to_autopilot_body;
 
-    // last time orientation was updated from AHRS_ORIENTATION:
+    // last time orientation was updated from AHRS_ORIENTATION, and
+    // the value read then:
     uint32_t last_orientation_update_ms;
+    enum Rotation board_orientation;
 
     // updates matrices responsible for rotating vectors from vehicle body
     // frame to autopilot body frame from _trim variables

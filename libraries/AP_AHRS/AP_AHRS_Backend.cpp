@@ -63,25 +63,40 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     }
 }
 
-// Set the board mounting orientation from AHRS_ORIENTATION parameter
-void AP_AHRS::update_orientation()
+/*
+  return the orientation the board is mounted in, from
+  AHRS_ORIENTATION.
+
+  The parameter is read at most once a second, and never while armed,
+  so that the rotation applied to sensor data can not change under a
+  flying vehicle and so that every sensor sees the same value.
+ */
+enum Rotation AP_AHRS::get_board_orientation()
 {
     const uint32_t now_ms = AP_HAL::millis();
-    if (last_orientation_update_ms != 0 &&
-        now_ms - last_orientation_update_ms < 1000) {
-        // only update once/second
-        return;
-    }
 
-    // never update while armed - unless we've never updated
-    // (e.g. mid-air reboot or ARMING_REQUIRED=NO on Plane):
-    if (hal.util->get_soft_armed() && last_orientation_update_ms != 0) {
-        return;
+    if (last_orientation_update_ms != 0) {
+        if (now_ms - last_orientation_update_ms < 1000) {
+            // only update once/second
+            return board_orientation;
+        }
+        if (hal.util->get_soft_armed()) {
+            // never update while armed - unless we've never updated
+            // (e.g. mid-air reboot or ARMING_REQUIRED=NO on Plane):
+            return board_orientation;
+        }
     }
 
     last_orientation_update_ms = now_ms;
+    board_orientation = (enum Rotation)_board_orientation.get();
 
-    const enum Rotation orientation = (enum Rotation)_board_orientation.get();
+    return board_orientation;
+}
+
+// Set the board mounting orientation from AHRS_ORIENTATION parameter
+void AP_AHRS::update_orientation()
+{
+    const enum Rotation orientation = get_board_orientation();
 
     AP::ins().set_board_orientation(orientation);
     AP::compass().set_board_orientation(orientation);
