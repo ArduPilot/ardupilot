@@ -346,6 +346,13 @@ void AP_AHRS_CINS::update(void)
 
     if (!done_attitude_init) {
         done_attitude_init = init_attitude(accel);
+        if (done_attitude_init) {
+            if (had_attitude) {
+                // tell the attitude controllers our attitude has stepped:
+                attitude_reset_count++;
+            }
+            had_attitude = true;
+        }
     }
 
     const uint32_t last_gps_fused_before_ms = last_gps_fused_ms;
@@ -555,10 +562,8 @@ bool AP_AHRS_CINS::state_is_sane() const
 {
     const Vector3F &pos = state.XHat.pos();
     const Vector3F &vel = state.XHat.vel();
-    const Matrix3F &rot = state.XHat.rot();
-    if (pos.is_nan() || pos.is_inf() || vel.is_nan() || vel.is_inf() ||
-        rot.a.is_nan() || rot.b.is_nan() || rot.c.is_nan() ||
-        state.gyr_bias.is_nan() || state.acc_bias.is_nan()) {
+    if (!attitude_is_sane() ||
+        pos.is_nan() || pos.is_inf() || vel.is_nan() || vel.is_inf()) {
         return false;
     }
     return pos.length() < CINS_MAX_POSITION_M &&
@@ -566,27 +571,46 @@ bool AP_AHRS_CINS::state_is_sane() const
         vel.length() < CINS_MAX_VELOCITY_MS;
 }
 
+// true if the attitude and the biases are finite:
+bool AP_AHRS_CINS::attitude_is_sane() const
+{
+    const Matrix3F &rot = state.XHat.rot();
+    return !(rot.a.is_nan() || rot.a.is_inf() ||
+             rot.b.is_nan() || rot.b.is_inf() ||
+             rot.c.is_nan() || rot.c.is_inf() ||
+             state.gyr_bias.is_nan() || state.gyr_bias.is_inf() ||
+             state.acc_bias.is_nan() || state.acc_bias.is_inf());
+}
+
 /*
   restart the estimator if it has diverged, rather than publish its
-  state or let it overflow.  The origin is kept; the attitude and
-  position are initialised again from the sensors
+  state or let it overflow.  The origin is kept.  If only the
+  position or velocity diverged, the attitude and biases are kept and
+  the position restarts from the next GPS fix; otherwise the attitude
+  is initialised again from the sensors too
  */
 void AP_AHRS_CINS::check_divergence()
 {
     if (!initialised() || state_is_sane()) {
         return;
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CINS: diverged, reinitialising");
     position_NE_reset_count++;
     position_D_reset_count++;
+    done_pos_init = false;
+    if (attitude_is_sane()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CINS: position diverged, resetting");
+        state.XHat = Gal3F(state.XHat.rot(), Vector3F{}, Vector3F{}, state.XHat.tau());
+        log_reset(ResetEvent::DIVERGED, Vector3F{});
+        return;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CINS: diverged, reinitialising");
     init();
     state.gyr_bias_correction.zero();
     state.acc_bias_correction.zero();
     delayer.stamped_inputs.clear();
     delayer.last_push_time = delayer.internal_time;
     done_attitude_init = false;
-    done_pos_init = false;
-    log_reset(ResetEvent::DIVERGED, Vector3F{});
+    log_reset(ResetEvent::ATTITUDE_DIVERGED, Vector3F{});
 }
 
 // the down position published for a height source:
@@ -616,7 +640,7 @@ void AP_AHRS_CINS::log_reset(ResetEvent event, const Vector3F &step) const
     // @Description: CINS position resets and height source changes
     // @Field: TimeUS: Time since system startup
     // @Field: I: instance
-    // @Field: Ev: event: 0=reset to GPS, 1=common origin adopted, 2=height source changed, 3=diverged and restarted
+    // @Field: Ev: event: 0=reset to GPS, 1=common origin adopted, 2=height source changed, 3=position or velocity diverged and restarted, 4=attitude diverged and everything restarted
     // @Field: HS: height source after the event: 0=none, 1=CINS, 2=baro
     // @Field: NEC: NE position reset count
     // @Field: DC: down position reset count
@@ -661,6 +685,9 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     results.quaternion.from_rotation_matrix(results.dcm_matrix);
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
     results.attitude_valid = healthy();
+    // re-initialising the attitude resets the yaw as well:
+    results.attitude_reset_count = attitude_reset_count;
+    results.yaw_reset_count = attitude_reset_count;
 
     //
     // angular rates and accels

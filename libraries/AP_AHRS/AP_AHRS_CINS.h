@@ -127,9 +127,11 @@ private:
         GPS = 0,            // position and velocity reset to GPS
         ORIGIN = 1,         // a common origin was adopted
         HEIGHT_SOURCE = 2,  // the published height changed source
-        DIVERGED = 3,       // the estimator diverged and was restarted
+        DIVERGED = 3,       // the position or velocity diverged and was restarted
+        ATTITUDE_DIVERGED = 4,  // the attitude or biases diverged; everything was restarted
     };
     bool state_is_sane() const;
+    bool attitude_is_sane() const;
     void check_divergence();
     void reset_position_to_gps(const Vector3d &pos, const Vector3F &vel, ResetEvent event);
 
@@ -279,6 +281,11 @@ private:
     uint16_t position_NE_reset_count;
 
     bool origin_is_own;         // origin is our own first fix, not a common one
+
+    // the attitude has been initialised before, so a further
+    // initialisation is an attitude reset:
+    bool had_attitude;
+    uint16_t attitude_reset_count;
 };
 
 #endif // AP_AHRS_CINS_ENABLED
