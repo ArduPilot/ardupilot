@@ -77,12 +77,6 @@ public:
     AP_AHRS_NavEKF3 ekf3;
 #endif
 
-    // periodically checks to see if we should update the AHRS
-    // orientation (e.g. based on the AHRS_ORIENTATION parameter)
-    // allow for runtime change of orientation
-    // this makes initial config easier
-    void update_orientation();
-
     // return the orientation the board is mounted in, from
     // AHRS_ORIENTATION.  Sensor drivers call this for themselves, so
     // they do not depend on AHRS having been initialised first.
