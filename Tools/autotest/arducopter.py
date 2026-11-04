@@ -3061,6 +3061,99 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def EK3_OptflowAnchorToRangeHeight(self):
+        """Taking the range finder as the height source ends the anchor without a height step"""
+        # The anchor follows the terrain database above the range under baro height. A source
+        # set with range finder height takes the height as the vehicle comes back into range,
+        # and its height reset forms the range height against the terrain state, so the
+        # anchored ground has to be the terrain state by then, not the ground held before it.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 1,
+            "TERRAIN_ENABLE": 1,
+            "EK3_IMU_MASK": 1,
+            "AVOID_ENABLE": 0,
+            "EK3_OPTIONS": 0,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_POSZ": 2,     # range finder height
+            "EK3_SRC2_YAW": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.reboot_sitl()
+        # terrain data needs a location, which needs an origin with no GPS
+        start = self.sitl_start_location()
+        self.set_origin(Location(start.lat, start.lng, start.get_alt_m(AltFrame.ABSOLUTE), AltFrame.ABSOLUTE))
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("terrain tiles did not load")
+            m = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
+            if m.pending == 0 and m.loaded > 0:
+                break
+
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+        self.change_mode("LOITER")
+        self.set_rc(3, 1800)
+        self.wait_altitude(30, 200, relative=True, timeout=90)
+        self.set_rc(3, 1500)
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
+        # bearing 240 from the SITL home rises about 10 m over the 500 m flown
+        self.change_mode("GUIDED")
+        typemask = (MAV_POS_TARGET_TYPE_MASK.POS_IGNORE | MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+        vn = 5 * math.cos(math.radians(240))
+        ve = 5 * math.sin(math.radians(240))
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 100:
+            self.mav.mav.set_position_target_local_ned_send(
+                0, 1, 1, mavutil.mavlink.MAV_FRAME_LOCAL_NED, typemask,
+                0, 0, 0, vn, ve, 0, 0, 0, 0, 0, 0)
+            self.delay_sim_time(0.2, reason="velocity target rate")
+        self.change_mode("LOITER")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=2)
+        mark = self.get_sim_time()
+        # down into the range finder's reach, where it takes the height
+        self.set_rc(3, 1300)
+        tstart = self.get_sim_time()
+        while self.poll_message('RANGEFINDER').distance > 4:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("did not descend into range")
+        self.set_rc(3, 1500)
+        self.delay_sim_time(15, reason="hold on range finder height")
+        mark_end = self.get_sim_time()
+        self.disarm_vehicle(force=True)
+
+        # SIM.Alt less TERR.TerrH is the true height above ground, as in EK3_OptflowAnchoredTerrain
+        dfreader = self.dfreader_for_current_onboard_log()
+        last = {}
+        errs = []
+        while True:
+            m = dfreader.recv_match(type=["XKF5", "SIM", "TERR"])
+            if m is None:
+                break
+            if m.get_type() == "XKF5" and m.C != 0:
+                continue
+            last[m.get_type()] = m
+            t = m.TimeUS * 1.0e-6
+            if mark < t < mark_end and m.get_type() == "XKF5" and "SIM" in last and "TERR" in last:
+                errs.append((t, m.HAGL - (last["SIM"].Alt - last["TERR"].TerrH)))
+        if len(errs) < 50:
+            raise NotAchievedException("too few XKF5 samples")
+        (t_worst, worst) = max(errs, key=lambda e: abs(e[1]))
+        self.progress("worst height above ground error %.1f m at %.1f s after the source change"
+                      % (worst, t_worst - mark))
+        if abs(worst) > 2:
+            raise NotAchievedException("height above ground stepped %.1f m as the range finder "
+                                       "took the height" % worst)
+        self.reboot_sitl()
+
     def EK3_OptflowAnchoredTerrain(self):
         """Above the rangefinder range the ground follows the terrain database from the last measurement"""
         # Only the shape of the terrain database is used: the ground height is anchored to
@@ -20984,6 +21077,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EK3_AccelBiasInhibitOnGroundMoving,
             self.EK3_OptflowAboveRangefinder,
             self.EK3_OptflowAnchoredTerrain,
+            self.EK3_OptflowAnchorToRangeHeight,
             self.EK3_TerrainStateFollowsHeightReset,
             self.EK3_TerrainStateFollowsDatumReset,
             self.EK3_TerrainStateHeldOnDriftReset,
