@@ -16706,7 +16706,7 @@ switch value'''
         self.wait_ready_to_arm()
         original_imu = self.assert_receive_message("RAW_IMU", verbose=True)
         self.set_parameter("AHRS_ORIENTATION", 16)  # roll-90
-        self.delay_sim_time(2, reason="AHRS_ORIENTATION to update")  # we update this on a timer
+        self.delay_sim_time(1, reason="new orientation to reach the sensor data")
         new_imu = self.assert_receive_message("RAW_IMU", verbose=True)
         delta_zacc = original_imu.zacc - new_imu.zacc
         delta_z_g = delta_zacc/1000.0  # milligravities -> gravities
@@ -16718,7 +16718,7 @@ switch value'''
             raise NotAchievedException("Magic AHRS_ORIENTATION update did not work (delta_y_g=%f)" % (delta_y_g,))
         self.context_pop()
         self.reboot_sitl()
-        self.delay_sim_time(2, reason="orientation update timer")  # we update orientation on a timer
+        self.delay_sim_time(2, reason="restored orientation to reach the sensor data")
 
     def GPSTypes(self):
         '''check each simulated GPS works'''
