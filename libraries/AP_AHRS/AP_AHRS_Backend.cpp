@@ -93,15 +93,6 @@ enum Rotation AP_AHRS::get_board_orientation()
     return board_orientation;
 }
 
-// Set the board mounting orientation from AHRS_ORIENTATION parameter
-void AP_AHRS::update_orientation()
-{
-    const enum Rotation orientation = get_board_orientation();
-
-    AP::ins().set_board_orientation(orientation);
-    AP::compass().set_board_orientation(orientation);
-}
-
 /*
   calculate sin and cos of roll/pitch/yaw from a body_to_ned rotation matrix
  */
