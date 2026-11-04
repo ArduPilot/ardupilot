@@ -1248,22 +1248,11 @@ void NavEKF3_core::update_baro_selection(void)
     selected_baro = baro.get_primary();
 
     if (frontend->_affinity & EKF_AFFINITY_BARO) {
-        const uint8_t primary = baro.get_primary();
-        if (core_index == 0) {
-            if (baro.healthy(primary) && baro.use(primary)) {
-                selected_baro = primary;
-            }
-        } else {
-            uint8_t count = 0;
-            for (uint8_t i = 0; i < baro.num_instances(); i++) {
-                if (i != primary && baro.healthy(i) && baro.use(i)) {
-                    count++;
-                    if (count == core_index) {
-                        selected_baro = i;
-                        break;
-                    }
-                }
-            }
+        if (core_index < baro.num_instances() &&
+            baro.healthy(core_index) &&
+            baro.use(core_index)) {
+            // use core_index baro if it is healthy and enabled
+            selected_baro = core_index;
         }
     }
 }
