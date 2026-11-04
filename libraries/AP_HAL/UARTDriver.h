@@ -130,6 +130,8 @@ public:
     void configure_parity_locked(uint8_t v, uint32_t write_key);
     void set_stop_bits(int n);
     void set_stop_bits_locked(int n, uint32_t write_key);
+    // the stop bits the port was last set to
+    uint8_t get_stop_bits(void) const { return _stop_bits; }
 
     /* unbuffered writes bypass the ringbuffer and go straight to the
      * file descriptor
@@ -256,6 +258,7 @@ protected:
     uint32_t lock_read_key;
 
     uint8_t parity;
+    uint8_t _stop_bits = 1;
 
     /*
       backend begin method

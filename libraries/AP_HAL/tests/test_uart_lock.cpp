@@ -106,6 +106,22 @@ TEST(UARTDriverLock, LockHolderCanChangeLine)
     EXPECT_EQ(uart.get_options(), uint16_t(AP_HAL::UARTDriver::OPTION_RXINV));
 }
 
+// the stop bits last set are reported, so a lock holder can put them back,
+// and a refused change leaves them alone
+TEST(UARTDriverLock, StopBitsReported)
+{
+    static LineCountUart uart;  // static so it starts zeroed, like a real port
+    EXPECT_EQ(uart.get_stop_bits(), 1U);
+    uart.set_stop_bits(2);
+    EXPECT_EQ(uart.get_stop_bits(), 2U);
+    ASSERT_TRUE(uart.lock_port(key, key));
+    uart.set_stop_bits(1);
+    EXPECT_EQ(uart.get_stop_bits(), 2U);
+    uart.set_stop_bits_locked(1, key);
+    EXPECT_EQ(uart.get_stop_bits(), 1U);
+    ASSERT_TRUE(uart.lock_port(0, 0));
+}
+
 // once the port is unlocked other users can change it again
 TEST(UARTDriverLock, UnlockAllowsChangesAgain)
 {
