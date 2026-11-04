@@ -1356,6 +1356,21 @@ bool NavEKF3::getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const
     return false;
 }
 
+// get the number of times any core has restarted its accel bias estimate for an IMU: zeroed it, as a
+// core does when it starts and when one bias variance reaches its floor, or switched onto or off the
+// IMU, which changes the estimate the core holds for it or the core getAccelBiasForIMU() reports.
+// A reader that needs one continuous estimate compares the count over the time it uses the bias.
+uint16_t NavEKF3::getAccelBiasResetCountForIMU(uint8_t imu_index) const
+{
+    uint16_t count = 0;
+    if (core && imu_index < INS_MAX_INSTANCES) {
+        for (uint8_t i = 0; i < num_cores; i++) {
+            count += core[i].getAccelBiasResetCount(imu_index);
+        }
+    }
+    return count;
+}
+
 // hover Z-bias correction for one IMU, from the DAL so a replay sees the same
 // value the flight applied
 float NavEKF3::hoverZBiasCorrection(uint8_t imu_index) const
