@@ -34,6 +34,9 @@ local function update()
     -- calculate dt
     local tnow = millis()
     local dt = (tnow - last_time_ms):tofloat() / 1000.0
+    if dt <= 0 then
+        return update, 1000 / RUN_HZ
+    end
     -- cap dt to avoid large integration steps if execution was delayed
     if (dt > 2.0 / RUN_HZ) then
         dt = 1.0 / RUN_HZ
