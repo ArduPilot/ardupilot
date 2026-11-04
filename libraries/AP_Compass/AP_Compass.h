@@ -563,7 +563,8 @@ private:
     // settable parameters
     AP_Enum<LearnType> _learn;
 
-    // board orientation from AHRS
+    // take the board orientation from AHRS_ORIENTATION
+    void update_board_orientation();
     enum Rotation _board_orientation = ROTATION_NONE;
 
     // declination in radians
