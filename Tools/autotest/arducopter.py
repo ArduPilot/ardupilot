@@ -18670,7 +18670,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_collect('STATUSTEXT')
         self.change_mode('LAND')
         self.wait_disarmed(timeout=60)
-        self.wait_statustext("Hover Z-bias not saved", check_context=True)
+        self.wait_statustext("Hover Z-bias not saved: EKF accel bias reset", check_context=True)
         resets = self.ekf3_core0_accel_bias_resets_while_armed()
         if resets == 0:
             raise NotAchievedException("the EKF did not zero its accel biases in the hover")
