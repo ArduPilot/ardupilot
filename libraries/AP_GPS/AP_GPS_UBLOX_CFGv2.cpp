@@ -286,6 +286,13 @@ bool AP_GPS_UBLOX_CFGv2::_identify_module()
         } else if (strstr(ubx_backend._module, "X20") != nullptr) {
             module = Module::X20;
             ubx_backend._hardware_generation = AP_GPS_UBLOX::UBLOX_X20;
+#if GPS_MOVING_BASELINE
+            if (strstr(ubx_backend._module, "X20D") != nullptr) {
+                // single module dual-antenna heading via UBX-NAV-DAHEADING
+                ubx_backend._has_dual_antenna_heading = true;
+                ubx_backend.state.gps_yaw_configured = true;
+            }
+#endif
         } else {
             module = Module::UNKNOWN;
         }
@@ -914,6 +921,8 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
                     CHECK_ARRAY(config_MB_Base_uart2)
                 } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
                     CHECK_ARRAY(config_MB_Rover_uart1)
+                } else if (ubx_backend._has_dual_antenna_heading) {
+                    CHECK_ARRAY(config_DAHeading_uart1)
                 }
 #endif
                 break;
@@ -976,6 +985,10 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
                 }
             } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
                 if (!_push_cfg_array(config_MB_Rover_uart1, ARRAY_SIZE(config_MB_Rover_uart1), item_index)) {
+                    return false;
+                }
+            } else if (ubx_backend._has_dual_antenna_heading) {
+                if (!_push_cfg_array(config_DAHeading_uart1, ARRAY_SIZE(config_DAHeading_uart1), item_index)) {
                     return false;
                 }
             }

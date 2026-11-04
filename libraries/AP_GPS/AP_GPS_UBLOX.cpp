@@ -1676,6 +1676,39 @@ AP_GPS_UBLOX::_parse_gps(void)
             }
         }
         break;
+
+#if AP_GPS_UBLOX_CFGV2_ENABLED
+    case MSG_DAHEADING:
+        if (_has_dual_antenna_heading && _buffer.daheading.version == 2) {
+            // HDG 2.0x firmware: relPosN/E/D/Length in mm
+            _check_new_itow(_buffer.daheading.iTOW);
+            const uint32_t dah_valid = static_cast<uint32_t>(DAHEADING::relPosHeadingValid) |
+                                       static_cast<uint32_t>(DAHEADING::relPosValid) |
+                                       static_cast<uint32_t>(DAHEADING::gnssFixOK) |
+                                       static_cast<uint32_t>(DAHEADING::carrSolnFixed);
+            const uint32_t dah_invalid = static_cast<uint32_t>(DAHEADING::carrSolnFloat);
+            if (((_buffer.daheading.flags & dah_valid) == dah_valid) &&
+                ((_buffer.daheading.flags & dah_invalid) == 0)) {
+                // relPosLength/relPosD are in mm; multiply by 0.001 for metres
+                if (calculate_moving_base_yaw(_buffer.daheading.relPosHeading * 1e-5f,
+                                              _buffer.daheading.relPosLength * 0.001f,
+                                              _buffer.daheading.relPosD * 0.001f)) {
+                    state.have_gps_yaw_accuracy = true;
+                    state.gps_yaw_accuracy = _buffer.daheading.accHeading * 1e-5f;
+                    _last_daheading_ms = AP_HAL::millis();
+                    _last_daheading_itow = _buffer.daheading.iTOW;
+                }
+                state.relPosHeading = _buffer.daheading.relPosHeading * 1e-5f;
+                state.relPosLength  = _buffer.daheading.relPosLength * 0.001f;
+                state.relPosD       = _buffer.daheading.relPosD * 0.001f;
+                state.accHeading    = _buffer.daheading.accHeading * 1e-5f;
+                state.relposheading_ts = AP_HAL::millis();
+            } else {
+                state.have_gps_yaw_accuracy = false;
+            }
+        }
+        break;
+#endif // AP_GPS_UBLOX_CFGV2_ENABLED
 #endif // GPS_MOVING_BASELINE
 
     case MSG_PVT:
@@ -1856,15 +1889,23 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
     if (state.have_gps_yaw) {
-        // when we are a rover we want to ensure we have both the new
-        // PVT and the new RELPOSNED message so that we give a
-        // consistent view
-        if (AP_HAL::millis() - _last_relposned_ms > 400) {
-            // we have stopped receiving valid RELPOSNED messages, disable yaw reporting
-            state.have_gps_yaw = false;
-        } else if (_last_relposned_itow != _last_pvt_itow) {
-            // wait until ITOW matches
-            return false;
+        if (_has_dual_antenna_heading) {
+            if (AP_HAL::millis() - _last_daheading_ms > 400) {
+                state.have_gps_yaw = false;
+            } else if (_last_daheading_itow != _last_pvt_itow) {
+                return false;
+            }
+        } else {
+            // when we are a rover we want to ensure we have both the new
+            // PVT and the new RELPOSNED message so that we give a
+            // consistent view
+            if (AP_HAL::millis() - _last_relposned_ms > 400) {
+                // we have stopped receiving valid RELPOSNED messages, disable yaw reporting
+                state.have_gps_yaw = false;
+            } else if (_last_relposned_itow != _last_pvt_itow) {
+                // wait until ITOW matches
+                return false;
+            }
         }
     }
 
