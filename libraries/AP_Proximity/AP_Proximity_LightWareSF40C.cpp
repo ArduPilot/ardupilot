@@ -294,12 +294,16 @@ void AP_Proximity_LightWareSF40C::process_message()
         }
         break;
     case MessageID::DISTANCE_OUTPUT: {
+        if (_msg.payload_recv < 14) {
+            break;
+        }
         _last_distance_received_ms = AP_HAL::millis();
         const uint16_t point_total = buff_to_uint16(_msg.payload[8], _msg.payload[9]);
         const uint16_t point_count = buff_to_uint16(_msg.payload[10], _msg.payload[11]);
         const uint16_t point_start_index = buff_to_uint16(_msg.payload[12], _msg.payload[13]);
         // sanity check point_total
-        if (point_total == 0) {
+        const uint16_t points_available = (_msg.payload_recv - 14U) / 2U;
+        if ((point_total == 0) || (point_count > points_available)) {
             break;
         }
 
