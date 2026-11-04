@@ -251,15 +251,17 @@ void AP_AHRS_CINS::init(void)
   as they do at start-up, so the innovation gate is open until the
   variances have been relearnt.
  */
-void AP_AHRS_CINS::reset_position_to_gps(const Vector3F &pos, const Vector3F &vel, ResetEvent event)
+void AP_AHRS_CINS::reset_position_to_gps(const Vector3d &pos, const Vector3F &vel, ResetEvent event)
 {
     if (done_pos_init) {
         // tell the position controllers our position has stepped:
         position_NE_reset_count++;
         position_D_reset_count++;
-        log_reset(event, pos - state.XHat.pos());
+        log_reset(event, (pos - position_NED()).toftype());
     }
-    state.XHat = Gal3F(state.XHat.rot(), pos, vel, state.XHat.tau());
+    // restart the observer's frame at this position:
+    frame_offset_NED = pos;
+    state.XHat = Gal3F(state.XHat.rot(), Vector3F{}, vel, state.XHat.tau());
     state.ZHat = SIM23::identity();
 
     state.gyr_bias_gain_mat.rot.zero();
@@ -375,15 +377,15 @@ void AP_AHRS_CINS::update(void)
             if (!done_pos_init) {
                 // start from the first fix, which need not be at the
                 // origin when the origin is a common one:
-                reset_position_to_gps(pos.toftype(), vel.toftype(), ResetEvent::GPS);
+                reset_position_to_gps(pos, vel.toftype(), ResetEvent::GPS);
                 done_pos_init = true;
             } else if (initialised() &&
                        AP_HAL::millis() - last_gps_fused_ms > CINS_GPS_RESET_TIMEOUT_MS) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CINS: reset position to GPS");
-                reset_position_to_gps(pos.toftype(), vel.toftype(), ResetEvent::GPS);
+                reset_position_to_gps(pos, vel.toftype(), ResetEvent::GPS);
             }
 
-            update_gps(pos.toftype(), vel.toftype(), gps_dt);
+            update_gps((pos - frame_offset_NED).toftype(), vel.toftype(), gps_dt);
             check_divergence();
         }
     }
@@ -444,9 +446,9 @@ void AP_AHRS_CINS::Log_Write()
                                 state.XHat.vel().x,
                                 state.XHat.vel().y,
                                 state.XHat.vel().z,
-                                state.XHat.pos().x,
-                                state.XHat.pos().y,
-                                state.XHat.pos().z,
+                                position_NED().x,
+                                position_NED().y,
+                                position_NED().z,
                                 loc.lat,
                                 loc.lng,
                                 loc.alt*0.01);
@@ -520,7 +522,7 @@ void AP_AHRS_CINS::update_baro_height(bool gps_fused)
         // anchor to our height only when a GPS sample has been fused
         // in this update, so IMU drift since then doesn't stay in the
         // baro height:
-        baro_offset_D = state.XHat.pos().z + baro.get_altitude();
+        baro_offset_D = position_NED().z + baro.get_altitude();
         have_baro_offset = true;
     }
 
@@ -559,7 +561,9 @@ bool AP_AHRS_CINS::state_is_sane() const
         state.gyr_bias.is_nan() || state.acc_bias.is_nan()) {
         return false;
     }
-    return pos.length() < CINS_MAX_POSITION_M && vel.length() < CINS_MAX_VELOCITY_MS;
+    return pos.length() < CINS_MAX_POSITION_M &&
+        position_NED().length() < CINS_MAX_POSITION_M &&
+        vel.length() < CINS_MAX_VELOCITY_MS;
 }
 
 /*
@@ -590,7 +594,7 @@ bool AP_AHRS_CINS::published_height_D(HeightSource source, ftype &posD) const
 {
     switch (source) {
     case HeightSource::CINS:
-        posD = state.XHat.pos().z;
+        posD = position_NED().z;
         return true;
     case HeightSource::BARO:
         posD = baro_offset_D - AP::baro().get_altitude();
@@ -701,9 +705,8 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     // EKF which has been chosen instead:
     results.provides_common_origin = (AP::ahrs().configured_ekf_type() == AP_AHRS::EKFType::CINS);
 
-    // origin-relative position: XHat's position is NED from our origin
-    // (see get_origin()):
-    const Vector3F &pos = state.XHat.pos();
+    // origin-relative position (see get_origin()):
+    const Vector3d pos = position_NED();
     if (fusing_gps()) {
         results.position_NE = Vector2p{postype_t(pos.x), postype_t(pos.y)};
         results.position_NE_valid = true;
@@ -833,14 +836,20 @@ bool AP_AHRS_CINS::set_origin(const Location &loc)
         (!origin_is_own || AP::ahrs().configured_ekf_type() == AP_AHRS::EKFType::CINS)) {
         return false;
     }
-    Location current_loc;
-    const bool have_position = done_pos_init && get_location(current_loc);
+    const bool had_origin = state.have_origin;
+    // our old origin, NED from the new one:
+    const Vector3d origin_shift = loc.get_distance_NED_double(state.origin);
     state.origin = loc;
     state.have_origin = true;
     origin_is_own = false;
-    if (have_position) {
-        // keep our location, now relative to the new origin:
-        reset_position_to_gps(loc.get_distance_NED_double(current_loc).toftype(), state.XHat.vel(), ResetEvent::ORIGIN);
+    if (had_origin && done_pos_init) {
+        // keep our location, now relative to the new origin.  The
+        // observer's own frame is unchanged:
+        frame_offset_NED += origin_shift;
+        baro_offset_D += origin_shift.z;
+        position_NE_reset_count++;
+        position_D_reset_count++;
+        log_reset(ResetEvent::ORIGIN, origin_shift.toftype());
     }
     return true;
 }
