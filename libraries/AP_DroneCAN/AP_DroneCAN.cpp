@@ -1874,9 +1874,11 @@ void AP_DroneCAN::handle_param_get_set_response(const CanardRxTransfer& transfer
         !param_string_cb) {
         return;
     }
+    char name[sizeof(rsp.name.data) + 1] {};
+    memcpy(name, rsp.name.data, MIN((size_t)rsp.name.len, sizeof(rsp.name.data)));
     if ((rsp.value.union_tag == UAVCAN_PROTOCOL_PARAM_VALUE_INTEGER_VALUE) && param_int_cb) {
         int32_t val = rsp.value.integer_value;
-        if ((*param_int_cb)(this, transfer.source_node_id, (const char*)rsp.name.data, val)) {
+        if ((*param_int_cb)(this, transfer.source_node_id, name, val)) {
             // we want the parameter to be set with val
             param_getset_req.index = 0;
             memcpy(param_getset_req.name.data, rsp.name.data, rsp.name.len);
@@ -1889,7 +1891,7 @@ void AP_DroneCAN::handle_param_get_set_response(const CanardRxTransfer& transfer
         }
     } else if ((rsp.value.union_tag == UAVCAN_PROTOCOL_PARAM_VALUE_REAL_VALUE) && param_float_cb) {
         float val = rsp.value.real_value;
-        if ((*param_float_cb)(this, transfer.source_node_id, (const char*)rsp.name.data, val)) {
+        if ((*param_float_cb)(this, transfer.source_node_id, name, val)) {
             // we want the parameter to be set with val
             param_getset_req.index = 0;
             memcpy(param_getset_req.name.data, rsp.name.data, rsp.name.len);
@@ -1903,7 +1905,7 @@ void AP_DroneCAN::handle_param_get_set_response(const CanardRxTransfer& transfer
     } else if ((rsp.value.union_tag == UAVCAN_PROTOCOL_PARAM_VALUE_STRING_VALUE) && param_string_cb) {
         string val;
         memcpy(&val, &rsp.value.string_value, sizeof(val));
-        if ((*param_string_cb)(this, transfer.source_node_id, (const char*)rsp.name.data, val)) {
+        if ((*param_string_cb)(this, transfer.source_node_id, name, val)) {
             // we want the parameter to be set with val
             param_getset_req.index = 0;
             memcpy(param_getset_req.name.data, rsp.name.data, rsp.name.len);

@@ -559,7 +559,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronec
         return false;
     } else if (strcmp(name, get_param_name_str(Param::DateTime)) == 0) {
         // display when time and date have been set
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s datetime set %s", send_text_prefix, (const char*)value.data);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s datetime set %.*s", send_text_prefix, (int)value.len, (const char*)value.data);
         return false;
     } else if (strcmp(name, get_param_name_str(Param::Status)) == 0) {
         // check for expected length
@@ -609,7 +609,7 @@ bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronec
     }
 
     // unhandled parameter get or set
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s get/set string %s res:%s", send_text_prefix, name, (const char*)value.data);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s get/set string %s res:%.*s", send_text_prefix, name, (int)value.len, (const char*)value.data);
     return false;
 }
 
