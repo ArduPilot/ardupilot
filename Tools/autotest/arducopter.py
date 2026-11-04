@@ -2858,6 +2858,76 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
+    def EK3_FlowHeightLimitAfterRangeFallback(self):
+        """The optical flow height limit stays at the range finder's reach after a fall back to baro"""
+        # With the range finder as the height source, a fall back to a displaced baro and
+        # back leaves the vertical position in the baro's datum and the terrain state moved
+        # with it, so the limit has to be taken from the terrain state, as for any other
+        # height source, or the ceiling moves by the displacement.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "SIM_BARO_GLITCH": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.set_parameters({
+            "EK3_IMU_MASK": 1,
+            "EK3_SRC1_POSZ": 2,     # range finder is the height source outright
+            "RNGFND1_MAX": 20,      # flow height limit 0.7 * 20 - 1 = 13 m
+        })
+        self.reboot_sitl()
+        ceiling = 13.0
+
+        ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+        self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        # point the range finder away with the baro displaced, so the height source falls
+        # back to baro across a datum step, then give the range finder back
+        mark = self.get_sim_time()
+        self.set_parameters({
+            "SIM_BARO_GLITCH": 8,
+            "RNGFND1_ORIENT": 0,
+        })
+        self.delay_sim_time(3, reason="let the height source fall back to baro")
+        self.set_parameter("RNGFND1_ORIENT", 25)  # ROTATION_PITCH_270
+        mark_end = self.get_sim_time()
+        self.delay_sim_time(5, reason="let the range finder take the height back")
+
+        self.set_rc(3, 1900)
+        tstart = self.get_sim_time()
+        highest = 0
+        while self.get_sim_time_cached() - tstart < 40:
+            height = self.get_altitude(altitude_source="SIM_STATE.alt") - ground_alt
+            highest = max(highest, height)
+        self.set_rc(3, 1500)
+        self.progress("climbed to %.1fm against a %.0fm flow height limit" % (highest, ceiling))
+        self.disarm_vehicle(force=True)
+        # without a step in the terrain state at the fall back the limit was never moved, and
+        # the climb would stop at the limit with or without the fix
+        dfreader = self.dfreader_for_current_onboard_log()
+        prev_tofs = None
+        tofs_step = 0
+        while True:
+            m = dfreader.recv_match(type="XKF5")
+            if m is None:
+                break
+            if m.C != 0:
+                continue
+            if mark < m.TimeUS * 1.0e-6 < mark_end and prev_tofs is not None:
+                tofs_step = max(tofs_step, abs(m.TOfs - prev_tofs))
+            prev_tofs = m.TOfs
+        self.progress("terrain state stepped %.2fm at the fall back" % tofs_step)
+        if tofs_step < 3:
+            raise NotAchievedException("no vertical datum reset happened, so the limit was never moved")
+        if abs(highest - ceiling) > 1.5:
+            raise NotAchievedException(
+                "full stick climb stopped at %.1fm, not at the %.0fm flow height limit"
+                % (highest, ceiling))
+
+        self.reboot_sitl()
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -20143,6 +20213,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EK3_TerrainStateFollowsDatumReset,
             self.EK3_TerrainStateHeldOnDriftReset,
             self.EK3_TerrainStateFollowsSourceChangeAboveRange,
+            self.EK3_FlowHeightLimitAfterRangeFallback,
             self.EK3_ZeroVelFusionNotUsedWithGPS,
             self.OBSTACLE_DISTANCE_3D,
             self.AC_Avoidance_Beacon,
