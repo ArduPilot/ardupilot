@@ -196,6 +196,7 @@ void ModeSystemId::run()
         case AP_Motors::SpoolState::SHUT_DOWN:
             // Motors Stopped
             attitude_control->reset_yaw_target_and_rate();
+            attitude_control->reset_target_while_landed();
             attitude_control->reset_rate_controller_I_terms();
             break;
 
@@ -205,6 +206,10 @@ void ModeSystemId::run()
             // init_targets_on_arming is always set true for multicopter.
             if (motors->init_targets_on_arming()) {
                 attitude_control->reset_yaw_target_and_rate();
+                // GROUND_IDLE is also reached in flight with the throttle at zero
+                if (copter.ap.land_complete) {
+                    attitude_control->reset_target_while_landed();
+                }
                 attitude_control->reset_rate_controller_I_terms_smoothly();
             }
             break;
