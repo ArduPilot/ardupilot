@@ -1393,6 +1393,15 @@ void NavEKF3_core::selectHeightForFusion()
             correctEkfOriginHeight();
     }
 
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // the range finder taking the height ends the anchor, and its height is formed against the
+    // terrain state below, so the anchored ground has to be there first rather than one step later
+    if (terrainAnchorInUse && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+        terrainState = anchoredTerrainState();
+        terrainAnchorInUse = false;
+    }
+#endif
+
     // Select the height measurement source
 #if EK3_FEATURE_EXTERNAL_NAV
     if (extNav.dataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV)) {

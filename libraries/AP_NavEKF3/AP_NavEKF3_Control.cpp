@@ -878,7 +878,7 @@ void NavEKF3_core::updateFlatGroundAssumed(void)
     // while a return is pending the terrain state is the returned surface's, so the two checks
     // below would judge it rather than the ground the fallback was holding
     if (!flatGndSaved.valid) {
-        const ftype hagl = terrainState - stateStruct.position.z;
+        const ftype hagl = flowTerrainState() - stateStruct.position.z;
         // trust the ground height only near where it was last known: over sloping ground the
         // error grows with distance flown, relative to height above it
         const ftype flatGndDistFactor = 10;
@@ -928,7 +928,46 @@ bool NavEKF3_core::terrainAltUsable(void) const
 {
     return terrain_srtm_alt_valid && frontend->option_is_enabled(NavEKF3::Option::OptflowMayUseTerrainAlt);
 }
+
+// the terrain database's height at the vehicle, moved by the anchor onto the ground the range
+// finder last measured
+ftype NavEKF3_core::anchoredTerrainState(void) const
+{
+    return terrainAnchorOffset - terrain_srtm_alt;
+}
 #endif
+
+// Above the range finder's reach, with the terrain database anchored to the height the range
+// finder last measured, optical flow in a source set and EK3_OPTIONS bit 2 clear, the ground
+// follows the database's shape from that anchor. Where the data stops its last height is held,
+// which is flat ground at the last anchored height. The terrain state stays with the terrain
+// estimator, but for the anchored ground written into it when the anchor ends and when an undone
+// brief return restores it. gndOffsetValid is set at the start of SelectFlowFusion(), so a range
+// sample fused since then, which re-initialises the terrain state, ends the anchor at once
+bool NavEKF3_core::terrainAnchored(void) const
+{
+#if EK3_FEATURE_OPTFLOW_SRTM
+    return !gndOffsetValid && ((imuSampleTime_ms - gndHgtValidTime_ms) >= 5000) && terrainAnchorValid &&
+           frontend->sources.optflow_enabled_on_any_source() &&
+           !frontend->option_is_enabled(NavEKF3::Option::OptflowMayUseTerrainAlt);
+#else
+    return false;
+#endif
+}
+
+// The ground height, NED down (m): the anchored terrain database height where terrainAnchored(),
+// otherwise the terrain state. The flow speed and height limits, the flat-ground checks and XKF5
+// read it, and FuseOptFlow() scales flow by it unless EK3_OPTIONS bit 2 or the AGL KF gives a
+// height of its own
+ftype NavEKF3_core::flowTerrainState(void) const
+{
+#if EK3_FEATURE_OPTFLOW_SRTM
+    if (terrainAnchored()) {
+        return anchoredTerrainState();
+    }
+#endif
+    return terrainState;
+}
 
 // Update the filter status
 void  NavEKF3_core::updateFilterStatus(void)
