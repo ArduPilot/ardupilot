@@ -81,7 +81,15 @@ void AR_WPNav_OA::update(float dt)
         case AP_OAPathPlanner::OA_ERROR:
             // during processing or in case of error, slow vehicle to a stop
             stop_vehicle = true;
-            _oa_active = false;
+            if (_oa_active) {
+                // reset target to original destination, otherwise the
+                // avoidance destination would be backed up as the original
+                if (!AR_WPNav::set_desired_location(_destination_oabak)) {
+                    // this should never happen because we should have an EKF origin and the destination must be valid
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                }
+                _oa_active = false;
+            }
             break;
 
         case AP_OAPathPlanner::OA_SUCCESS:
