@@ -771,6 +771,9 @@ public:
     // get accel bias Z component for a specific IMU
     bool get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z);
 
+    // get the number of times the EKF has restarted its accel bias estimate for an IMU
+    uint16_t get_accel_bias_reset_count_for_imu(uint8_t imu_index);
+
     // inhibit all accel bias learning
     void set_inhibit_accel_bias_learning(bool inhibit);
 

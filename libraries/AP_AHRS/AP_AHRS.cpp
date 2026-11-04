@@ -2052,6 +2052,18 @@ bool AP_AHRS::get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z)
     return false;
 }
 
+// get the number of times EKF3 has restarted its accel bias estimate for an IMU; after each,
+// get_accel_bias_z_for_imu() returns a bias that does not continue the one before
+uint16_t AP_AHRS::get_accel_bias_reset_count_for_imu(uint8_t imu_index)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    WITH_SEMAPHORE(_rsem);
+    return ekf3.EKF3.getAccelBiasResetCountForIMU(imu_index);
+#else
+    return 0;
+#endif
+}
+
 void AP_AHRS::set_inhibit_accel_bias_learning(bool inhibit)
 {
 #if HAL_NAVEKF3_AVAILABLE
