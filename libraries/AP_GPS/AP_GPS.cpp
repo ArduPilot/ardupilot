@@ -1235,7 +1235,7 @@ void AP_GPS::update_primary(void)
     if (output_was_blended) {
         primary_instance = 0;
         for (uint8_t i=1; i<ARRAY_SIZE(params); i++) {
-            if (params[i].type != GPS_TYPE_BLENDED) {
+            if (params[i].type == GPS_TYPE_BLENDED) {
                 continue;
             }
             // choose GPS with highest state or higher number of
