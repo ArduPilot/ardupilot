@@ -430,6 +430,9 @@ void NavEKF3_core::readIMUData(bool startPredictEnabled)
     if (accel_active != accel_index_active) {
         // switch to the learned accel bias for this IMU
         stateStruct.accel_bias = inactiveBias[accel_active].accel_bias;
+        // the bias reported for either accel may now come from another estimate
+        accelBiasResetCount[accel_index_active]++;
+        accelBiasResetCount[accel_active]++;
         accel_index_active = accel_active;
     }
 

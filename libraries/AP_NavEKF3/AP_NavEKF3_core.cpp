@@ -516,6 +516,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     // initialise static process model states
     stateStruct.gyro_bias.zero();
     stateStruct.accel_bias.zero();
+    accelBiasResetCount[accel_index_active]++;
     stateStruct.wind_vel.zero();
     stateStruct.earth_magfield.zero();
     stateStruct.body_magfield.zero();
@@ -1948,6 +1949,7 @@ void NavEKF3_core::ConstrainVariances()
             Pmut[14][14] = P[13][13];
             Pmut[15][15] = P[13][13];
             stateStruct.accel_bias.zero();
+            accelBiasResetCount[accel_index_active]++;
         }
 
     } else {
