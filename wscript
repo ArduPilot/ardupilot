@@ -166,6 +166,11 @@ def options(opt):
         default=False,
         help='Add debug symbolds to build.')
 
+    g.add_option('--stack-analysis',
+        action='store_true',
+        default=False,
+        help='Add compiler metadata and debug symbols for static stack analysis.')
+
     g.add_option('--vs-launch',
         action='store_true',
         default=False,
@@ -478,6 +483,9 @@ def configure(cfg):
     if cfg.options.board is None:
         cfg.options.board = 'sitl'
 
+    if cfg.options.stack_analysis:
+        cfg.options.debug_symbols = True
+
     boards_names = boards.get_boards_names()
     if not cfg.options.board in boards_names:
         for b in boards_names:
@@ -502,6 +510,7 @@ def configure(cfg):
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.VS_LAUNCH = cfg.options.vs_launch
     cfg.env.DEBUG_SYMBOLS = cfg.options.debug_symbols
+    cfg.env.STACK_ANALYSIS = cfg.options.stack_analysis
     cfg.env.COVERAGE = cfg.options.coverage
     cfg.env.FORCE32BIT = cfg.options.force_32bit
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
@@ -548,6 +557,15 @@ def configure(cfg):
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
+
+    if cfg.env.STACK_ANALYSIS:
+        if cfg.env.COMPILER_CXX != 'g++':
+            cfg.fatal('--stack-analysis requires GCC')
+        stack_usage_flags = ['-fstack-usage', '-fcallgraph-info=su']
+        cfg.env.append_unique('CFLAGS', stack_usage_flags)
+        cfg.env.append_unique('CXXFLAGS', stack_usage_flags + ['-fdump-ipa-cgraph'])
+        cfg.env.append_unique('LINKFLAGS', stack_usage_flags + ['-fdump-ipa-cgraph', '-save-temps'])
+        cfg.msg('Stack analysis', 'enabled')
 
     cfg.load('waf_unit_test')
     cfg.load('mavgen')

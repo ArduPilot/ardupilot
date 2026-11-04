@@ -155,6 +155,9 @@ void AP_Logger_Backend::Safe_Write_Emit_FMT(uint8_t msg_type)
     Write_Emit_FMT(msg_type);
 }
 
+// @StackMaxRecursion: 2
+// FMT blocks do not emit formats recursively. FMTU may need its own format,
+// which Write_Format marks as emitted before writing the nested FMTU block.
 bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)

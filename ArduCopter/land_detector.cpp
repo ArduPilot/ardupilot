@@ -204,6 +204,8 @@ void Copter::Log_LDET(uint16_t logging_flags, uint32_t detector_count)
 #endif
 
 // set land_complete flag and disarm motors if disarm-on-land is configured
+// @StackMaxRecursion: 2
+// The state is updated before disarming, so the nested call returns immediately.
 void Copter::set_land_complete(bool b)
 {
     // if no change, exit immediately

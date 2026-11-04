@@ -349,6 +349,7 @@ private:
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     Mode *control_mode = &mode_initializing;
     Mode *previous_mode = &mode_initializing;
+    uint8_t mode_change_depth;
 
     // time of last mode change
     uint32_t last_mode_change_ms;
