@@ -18680,6 +18680,146 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("INS_ACC_VRFB_Z changed from %f to %f over a flight with an EKF reset" % (
                 saved, learned))
 
+    def HoverBiasSavedFirstFlightAfterRest(self):
+        '''check only the first flight after an EKF accel bias restart at rest, armed 10 s after it, saves the hover Z-bias'''
+        # The learner saves the hover bias less the bias the EKF held at arming, which is the
+        # motors-off bias only once the EKF has had 10 s disarmed to learn it after a restart, and
+        # only until the vehicle flies: after a landing the EKF holds the hover bias at rest.
+        static = 0.20
+        vrf = 0.10
+        # what a correct first flight saves here: the EKF settles a little short of the motors-on offset
+        expected = 0.085
+        # a bit 2 flight saves the static and motors-on bias together, settling short in the same way
+        whole = 0.285
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "SIM_ACC1_BIAS_Z": static,
+            "SIM_ACC_VRF_Z": vrf,
+            "INS_ACC_VRFB_Z": 0,
+            # learn and save without applying, so the EKF's in-flight bias is the same on every flight
+            "ACC_ZBIAS_LEARN": 1,
+            "EK3_IMU_MASK": 1,
+            "RC9_OPTION": 187,  # EKF reset
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("EKF3 IMU0 initialised", check_context=True, timeout=60)
+        self.change_mode('ALT_HOLD')
+
+        def fly(arm_after, hover_throttle=1500, during_hover=None):
+            '''arm arm_after seconds from now, hover in ALT_HOLD and land; returns the saved bias'''
+            self.delay_sim_time(arm_after, "rest before arming")
+            self.context_clear_collection('STATUSTEXT')
+            # forced, as some legs arm before the EKF has settled after a reset
+            self.arm_vehicle(force=True)
+            self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+            self.set_rc(3, hover_throttle)
+            self.delay_sim_time(15, "hover")
+            if during_hover is not None:
+                during_hover()
+            self.delay_sim_time(15, "hover")
+            # LAND first, so centring the stick gives ALT_HOLD no steady hover to sample on the way down
+            self.change_mode('LAND')
+            self.set_rc(3, 1500)
+            self.wait_disarmed(timeout=60)
+            self.change_mode('ALT_HOLD')
+            saved = self.get_parameter("INS_ACC_VRFB_Z")
+            self.progress("INS_ACC_VRFB_Z %f (motors-on %f, static %f)" % (saved, vrf, static))
+            return saved
+
+        def arm_without_flying():
+            '''arm, stay on the ground with the throttle low until the auto-disarm, and check nothing is said'''
+            self.context_clear_collection('STATUSTEXT')
+            self.arm_vehicle(force=True)
+            self.set_rc(3, 1000)
+            self.wait_disarmed(timeout=30)
+            self.set_rc(3, 1500)
+            self.delay_sim_time(1, "any message at disarm")
+            for m in self.context_collection('STATUSTEXT'):
+                if "Hover Z-bias" in m.text:
+                    raise NotAchievedException("a disarm without a flight said '%s'" % m.text)
+
+        def ekf_reset():
+            self.context_clear_collection('STATUSTEXT')
+            self.set_rc(9, 2000)
+            self.wait_statustext("EKF bootstrap reset performed", check_context=True)
+            self.set_rc(9, 1000)
+
+        def assert_saved(saved, value, what):
+            if abs(saved - value) > 0.02:
+                raise NotAchievedException("%s saved %f, not %f" % (what, saved, value))
+
+        def assert_kept(saved, kept, text):
+            self.wait_statustext(text, check_context=True)
+            if abs(saved - kept) > 0.0001:
+                raise NotAchievedException("INS_ACC_VRFB_Z changed from %f to %f" % (kept, saved))
+
+        self.start_subtest("The first flight armed 15 s after the EKF started saves the motors-on bias")
+        first = fly(15)
+        assert_saved(first, expected, "the first flight")
+
+        self.start_subtest("A second flight keeps it: the bias at rest after a landing is the hover bias")
+        # a different motors-on offset, so a save would show in the value as well as the message
+        self.set_parameter("SIM_ACC_VRF_Z", 2 * vrf)
+        assert_kept(fly(2), first, "Hover Z-bias not saved: not first flight")
+        self.set_parameter("SIM_ACC_VRF_Z", vrf)
+
+        self.start_subtest("With bit 2 any flight saves, the whole hover bias")
+        self.set_parameter("ACC_ZBIAS_LEARN", 5)
+        assert_saved(fly(2), whole, "a bit 2 flight")
+        self.set_parameter("ACC_ZBIAS_LEARN", 1)
+        self.set_parameter("INS_ACC_VRFB_Z", first)
+
+        self.start_subtest("A flight armed 2 s after a reset at rest keeps it: the bias has not settled")
+        ekf_reset()
+        assert_kept(fly(2), first, "Hover Z-bias not saved: armed <10s after EKF reset")
+
+        self.start_subtest("Time armed on the ground after a reset is not rest")
+        ekf_reset()
+        self.delay_sim_time(3, "rest before arming")
+        arm_without_flying()
+        assert_kept(fly(0), first, "Hover Z-bias not saved: armed <10s after EKF reset")
+
+        self.start_subtest("An arm without a flight after a settled rest leaves the first flight open")
+        ekf_reset()
+        self.delay_sim_time(15, "rest before arming")
+        arm_without_flying()
+        self.set_parameter("INS_ACC_VRFB_Z", 0.5)
+        again = fly(0)
+        assert_saved(again, expected, "the first flight after a ground arm")
+
+        self.start_subtest("A first flight with no steady hover says so")
+        # the stick just above the throttle deadband is a small, steady climb demand, which the
+        # learner does not sample
+        ekf_reset()
+        kept = self.get_parameter("INS_ACC_VRFB_Z")
+        assert_kept(fly(15, hover_throttle=1605), kept, "Hover Z-bias not learned: no steady hover")
+
+        self.start_subtest("A core switching off the IMU in flight is a restart, reported though the IMU is not in use")
+        ekf_reset()
+        kept = self.get_parameter("INS_ACC_VRFB_Z")
+        assert_kept(fly(15, during_hover=lambda: self.set_parameter("INS_USE", 0)), kept,
+                    "Hover Z-bias not saved: EKF accel bias reset")
+        self.set_parameter("INS_USE", 1)
+
+        self.start_subtest("Bit 2 changed while armed keeps the value: the baseline was chosen without it")
+        self.set_parameter("INS_ACC_VRFB_Z", 0.5)
+        ekf_reset()
+        assert_kept(fly(15, during_hover=lambda: self.set_parameter("ACC_ZBIAS_LEARN", 5)), 0.5,
+                    "Hover Z-bias not saved: ACC_ZBIAS_LEARN changed")
+        self.set_parameter("ACC_ZBIAS_LEARN", 1)
+
+        self.start_subtest("A reset at rest opens another first flight")
+        self.set_parameter("INS_ACC_VRFB_Z", 0.5)
+        ekf_reset()
+        again = fly(15)
+        assert_saved(again, expected, "the first flight after a reset")
+
     def VibrationRectificationBiasLearning(self):
         '''Test hover Z-bias learning for vibration rectification'''
         # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
@@ -20300,6 +20440,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeAltResetTest,
             self.VibrationRectificationBiasLearning,
             self.HoverBiasNotSavedAfterEKFReset,
+            self.HoverBiasSavedFirstFlightAfterRest,
             self.AccelBiasMovingPlatform,
             self.AccelBiasInhibitLoggedAfterLogRestart,
         ])
