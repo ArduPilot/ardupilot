@@ -41,6 +41,9 @@
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
 
+// defined below, used by load_json()
+template <> bool AP_JSON::value::is<AP_JSON::value::object>() const;
+
 /*
   load JSON file, returning a value object or nullptr on failure
  */
@@ -69,24 +72,25 @@ AP_JSON::value *AP_JSON::load_json(const char *filename)
         return nullptr;
     }
     AP::FS().close(fd);
-    // strchr() and the parse below need the buffer terminated
+    // the comment removal and the parse below need the buffer terminated
     buf[st.st_size] = 0;
 
-    char *start = strchr(buf, '{');
-    if (!start) {
-        ::printf("Invalid json %s\n", filename);
-        delete[] buf;
-        return nullptr;
+    // skip a UTF-8 byte order mark, which some editors write
+    char *text = buf;
+    if (strncmp(text, "\xEF\xBB\xBF", 3) == 0) {
+        text += 3;
     }
+    // the whole file, so a NUL in it is a parse error
+    const char *end = buf + st.st_size;
 
     /*
       remove comments, as not allowed by the parser, leaving any # in a
       string alone
      */
     bool in_string = false;
-    for (char *p = start; *p; p++) {
+    for (char *p = text; p < end; p++) {
         if (in_string) {
-            if (*p == '\\' && p[1]) {
+            if (*p == '\\' && p + 1 < end) {
                 p++;
             } else if (*p == '"') {
                 in_string = false;
@@ -95,7 +99,7 @@ AP_JSON::value *AP_JSON::load_json(const char *filename)
             in_string = true;
         } else if (*p == '#') {
             // clear to end of line
-            while (*p && *p != '\n' && *p != '\r') {
+            while (p < end && *p != '\n' && *p != '\r') {
                 *p++ = ' ';
             }
             p--;
@@ -108,9 +112,16 @@ AP_JSON::value *AP_JSON::load_json(const char *filename)
         delete[] buf;
         return nullptr;
     }
-    std::string err = AP_JSON::parse(*obj, start);
+    std::string err = AP_JSON::parse(*obj, std::string(text, end - text));
     if (!err.empty()) {
-        ::printf("parse failed for json %s\n", filename);
+        ::printf("parse failed for json %s: %s\n", filename, err.c_str());
+        delete obj;
+        delete[] buf;
+        return nullptr;
+    }
+    // callers expect an object
+    if (!obj->is<AP_JSON::value::object>()) {
+        ::printf("json %s is not an object\n", filename);
         delete obj;
         delete[] buf;
         return nullptr;
