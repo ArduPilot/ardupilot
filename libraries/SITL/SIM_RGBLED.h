@@ -1,7 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+#ifdef WITH_SITL_RGBLED
 #include <pthread.h>
+#endif
 
 /*
   A class to create output of some description or another for RGB LEDs.
@@ -35,9 +37,11 @@ private:
     static constexpr uint8_t height = 50;
     static constexpr uint8_t width = height;
 
+#ifdef WITH_SITL_RGBLED
     pthread_t thread;
     static void *update_thread_start(void *obj);
     void update_thread(void);
+#endif
 
     uint32_t last_colour;
 };
