@@ -241,16 +241,21 @@ void Copter::update_hover_bias_learning(float dt)
     const float alpha = dt / (dt + HOVER_BIAS_TC_S);
 
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
-        // no core uses this IMU, or none did when the vehicle armed
-        float bias_z_mss;
-        if (!_hover_bias_at_arm_ok[imu] || !ahrs.get_accel_bias_z_for_imu(imu, bias_z_mss)) {
+        // no core used this IMU when the vehicle armed
+        if (!_hover_bias_at_arm_ok[imu]) {
             continue;
         }
+        float bias_z_mss;
+        const bool in_use = ahrs.get_accel_bias_z_for_imu(imu, bias_z_mss);
 
-        // the EKF has restarted the bias since arming, and from here holds a relearning; read the
-        // count after the bias, so that a restart between the two reads is not missed
+        // the EKF has restarted the bias since arming, and from here holds a relearning; read the count
+        // after the bias, so that a restart between the two reads is not missed, and before whether the
+        // IMU is in use, as a core switching off it is itself a restart
         if (ahrs.get_accel_bias_reset_count_for_imu(imu) != _hover_bias_reset_count[imu]) {
             _hover_bias_restarted[imu] = true;
+            continue;
+        }
+        if (!in_use) {
             continue;
         }
 
@@ -273,15 +278,20 @@ void Copter::save_hover_bias_learning(void)
     }
     bool reset = false;
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
-        // an IMU that learnt nothing keeps its saved value, which may have been set since the
-        // learner was seeded; and only an IMU some EKF core is actually using is saved
-        float bias_z;
-        if (!_hover_bias_learned[imu] || !ahrs.get_accel_bias_z_for_imu(imu, bias_z)) {
-            continue;
-        }
-        // the EKF restarted the bias while the learner was taking it
+        // the EKF restarted the bias while the learner was taking it, perhaps before its first sample or by
+        // switching the core off the IMU, so tested before whether the IMU is in use
         if (_hover_bias_restarted[imu]) {
             reset = true;
+            continue;
+        }
+        // only an IMU some EKF core is actually using is saved
+        float bias_z;
+        if (!ahrs.get_accel_bias_z_for_imu(imu, bias_z)) {
+            continue;
+        }
+        // an IMU that learnt nothing keeps its saved value, which may have been set since the
+        // learner was seeded
+        if (!_hover_bias_learned[imu]) {
             continue;
         }
         AP::ins().set_accel_vrf_bias_z(imu, _hover_bias_learning[imu]);
