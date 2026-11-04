@@ -2445,6 +2445,640 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3_OptflowAboveRangefinder(self):
+        """Optical flow navigation stays valid above the rangefinder range"""
+        # Above the range finder's range the terrain offset goes stale, and dropping optical
+        # flow relative position there trips the EKF failsafe on a vehicle navigating on flow
+        # alone. The EKF holds it instead, on the ground height last measured, above the
+        # optical flow height limit (0.7 x range finder max less 1 m) and within 10 x the
+        # height above ground of where the ground was last known. Assertions are on
+        # EKF_POS_HORIZ_REL, the flag the failsafe reads. A cleared flag is also what an
+        # unhealthy filter or a loss of aiding produces, so every negative leg checks
+        # EKF_VELOCITY_HORIZ and EKF_CONST_POS_MODE alongside it.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,   # single core, so the reported status is unambiguous
+            "AVOID_ENABLE": 0,   # the optical flow height limit would otherwise stop the climbs
+            # without terrain data the fallback is the flat-ground one; the terrain
+            # database path has its own test
+            "TERRAIN_ENABLE": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        # an 8 m range finder: height limit 4.6 m, last good reading needed 5.6 m
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        def ekf_flags():
+            # drain first, or the next report can predate the event just waited on
+            self.drain_mav()
+            return self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+
+        def horiz_pos_rel():
+            return (ekf_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL) != 0
+
+        def assert_offset_measured():
+            flags = ekf_flags()
+            if not flags & mavutil.mavlink.EKF_POS_VERT_AGL:
+                raise NotAchievedException("no terrain offset was measured, so the leg proves nothing")
+            if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+                raise NotAchievedException("relative position was not valid with a measured offset")
+
+        def assert_refused(flags, why):
+            if not flags & mavutil.mavlink.EKF_VELOCITY_HORIZ:
+                raise NotAchievedException("Filter was unhealthy, so a cleared flag proves nothing")
+            if flags & mavutil.mavlink.EKF_CONST_POS_MODE:
+                raise NotAchievedException("Aiding was lost, so a cleared flag proves nothing")
+            if flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+                raise NotAchievedException(why)
+
+        def wait_terrain_offset_stale(timeout=30):
+            # EKF_POS_VERT_AGL is gndOffsetValid; held clear for 2 s so a health blip
+            # cannot satisfy it
+            self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=timeout,
+                                minimum_duration=2)
+
+        def rangefinder_between(dist_min, dist_max):
+            # RANGEFINDER is not streamed by default
+            distance = self.poll_message('RANGEFINDER').distance
+            if dist_min <= distance <= dist_max:
+                return True
+            self.progress("range finder read %.2f m, not %.2f to %.2f m" % (distance, dist_min, dist_max))
+            return False
+
+        def assert_rangefinder_between(dist_min, dist_max):
+            if not rangefinder_between(dist_min, dist_max):
+                raise NotAchievedException("range finder outside %.2f to %.2f m" % (dist_min, dist_max))
+
+        def kill_rangefinder():
+            # full scale on every sample, so the range finder stays pointed down and reports
+            # out of range high, as a lidar that has lost its return does
+            self.set_parameter("SIM_SONAR_GLITCH", 1)
+
+        def revive_rangefinder():
+            self.set_parameter("SIM_SONAR_GLITCH", 0)
+
+        def climb_out_of_range(alt=20):
+            self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+            assert_offset_measured()
+            self.set_rc(3, 1800)
+            # no upper bound: a host hiccup can step several metres between samples
+            self.wait_altitude(alt, 200, relative=True, timeout=90)
+            self.set_rc(3, 1500)
+            wait_terrain_offset_stale()
+
+        self.start_subtest("Relative position stays valid above the rangefinder range")
+        self.set_parameter("EK3_OPTIONS", 0)
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("rangefinder max 8m, flow above may drift", check_context=True, timeout=30)
+        climb_out_of_range()
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("relative position lost above the rangefinder range")
+
+        # without and with the AGL KF for flow scaling (AglKfForOptflow), and a return that
+        # lasts most of the 2 s, which a break seen only 500 ms late must not let through. The
+        # EKF times a return about 0.1 s shorter than the log's first and last Good samples. The
+        # last case drops flow as a velocity source part way through, which must not leave the
+        # obstacle behind as the ground
+        cases = ((0, 0.3, 0, 1.4, False), (1 << 3, 0.3, 0, 1.4, False), (0, 1.6, 1.6, 2.0, False),
+                 (0, 0.8, 0, 1.9, True))
+
+        def fly_brief_return(hold, window_min, window_max, drop_flow):
+            '''fly one brief return; returns why the flight proves nothing, or None and what it measured'''
+            self.reboot_sitl()
+            climb_out_of_range()
+            if not horiz_pos_rel():
+                raise NotAchievedException("the climb out did not engage the fallback, so the leg proves nothing")
+            sonar_scale = self.get_parameter("SIM_SONAR_SCALE")
+            # eight times the metres per volt, so at 20-28 m it reads 2.5-3.5 m: close enough that
+            # the obstacle's height would be under the height limit, and under the 5.6 m a
+            # re-engagement needs, so the fallback has to have stayed on for the flag to survive
+            tset_us = self.get_sim_time() * 1e6
+            # sent without waiting for the acknowledgement, which takes a varying share of the
+            # return's length; the length is measured from the log afterwards
+            self.send_set_parameter("SIM_SONAR_SCALE", sonar_scale * 8, add_to_context=True)
+            if drop_flow:
+                # late enough that the return has been fused, which the log check below confirms
+                self.delay_sim_time(hold * 0.4, "the return is fused")
+                self.send_set_parameter_direct("EK3_SRC1_VELXY", 0)
+                self.delay_sim_time(hold * 0.4, "flow dropped as a velocity source")
+                self.send_set_parameter_direct("EK3_SRC1_VELXY", 5)
+                self.delay_sim_time(hold * 0.2, "the rest of the return")
+            else:
+                self.delay_sim_time(hold, "the return")
+            self.send_set_parameter_direct("SIM_SONAR_SCALE", sonar_scale)
+            # the return is undone once it has been gone 500 ms; one taken as the ground would hold
+            # the terrain offset valid for 5 s after it
+            self.delay_sim_time(2, "the return to be undone")
+            offset_fused = ekf_flags() & mavutil.mavlink.EKF_POS_VERT_AGL
+            tundone_us = self.get_sim_time() * 1e6
+            # past the 5 s the terrain offset stays valid for after a fusion
+            self.delay_sim_time(6, "outlast the terrain offset timeout")
+            flags = ekf_flags()
+            alt = self.get_altitude(relative=True)
+            tend_us = self.get_sim_time() * 1e6
+            self.disarm_vehicle(force=True)
+            # the sets above are not acknowledged, so a lost one would carry into the next flight
+            self.set_parameter("SIM_SONAR_SCALE", sonar_scale)
+            if drop_flow:
+                self.set_parameter("EK3_SRC1_VELXY", 5)
+            # the return's length as the EKF saw it, and its height above ground during and after it
+            good_us = []
+            hagl_during = None
+            hagl_after = None
+            agl_kf_valid_after = False
+            hagl_us = []
+            drop_us = None
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type=['XKF5', 'XKFA', 'RFND', 'PARM'])
+                if m is None:
+                    break
+                if not tset_us < m.TimeUS < tend_us:
+                    continue
+                if m.get_type() == 'PARM':
+                    if m.Name == 'EK3_SRC1_VELXY' and m.Value == 0 and drop_us is None:
+                        drop_us = m.TimeUS
+                elif m.get_type() == 'XKFA':
+                    if m.C == 0 and m.TimeUS > tundone_us and m.Valid:
+                        agl_kf_valid_after = True
+                elif m.get_type() == 'RFND':
+                    if m.Instance == 0 and m.Stat == 4 and m.TimeUS < tundone_us and 2 <= m.Dist <= 3.5:  # Good
+                        good_us.append(m.TimeUS)
+                elif m.C == 0 and m.TimeUS < tundone_us:
+                    hagl_during = m.HAGL if hagl_during is None else min(hagl_during, m.HAGL)
+                    hagl_us.append((m.TimeUS, m.HAGL))
+                elif m.C == 0:
+                    hagl_after = m.HAGL if hagl_after is None else min(hagl_after, m.HAGL)
+            if len(good_us) < 3:
+                return "the range finder read the return at 2-3.5 m only %u times" % len(good_us), None
+            if hagl_during is None or hagl_after is None:
+                return "no XKF5 around the return", None
+            window_us = good_us[-1] - good_us[0]
+            window = window_us * 1e-6
+            self.progress("return of %.1f s; height above ground min %.1f m during it, %.1f m after, at %.1f m up" %
+                          (window, hagl_during, hagl_after, alt))
+            if not round(window_min * 1e6) <= window_us <= round(window_max * 1e6):
+                return "the return lasted %.1f s, outside %.2f-%.2f s" % (window, window_min, window_max), None
+            if drop_flow:
+                # the drop has to land inside a return already fused, or no snapshot was at stake
+                fused_us = [t for t, h in hagl_us if h < alt - 10]
+                if drop_us is None or not fused_us or not fused_us[0] < drop_us < good_us[-1]:
+                    return "flow was not dropped inside a fused return", None
+            if hagl_during > alt - 10:
+                return "the return was not fused (height above ground %.1f m)" % hagl_during, None
+            return None, (offset_fused, flags, alt, hagl_after, agl_kf_valid_after)
+
+        for options, hold, window_min, window_max, drop_flow in cases:
+            self.start_subtest("A brief return from something passed over keeps it (EK3_OPTIONS %u, %.1f s%s)" %
+                               (options, hold, ", flow dropped" if drop_flow else ""))
+            # a second or so of in-range readings at height, as from a roof flown over, does not
+            # end the fallback, and is undone once it has gone; only ground measured again without
+            # a break for 2 s is taken as the ground
+            self.set_parameter("EK3_OPTIONS", options)
+            # the return's length depends on when unacknowledged parameter sets land, so a flight
+            # whose return missed its window, or was not fused, proves nothing and is flown again
+            for attempt in range(1, 4):
+                why, result = fly_brief_return(hold, window_min, window_max, drop_flow)
+                if why is None:
+                    break
+                self.progress("%s on attempt %u, so it proves nothing" % (why, attempt))
+            else:
+                raise NotAchievedException("%s on 3 attempts, so the leg proves nothing" % why)
+            offset_fused, flags, alt, hagl_after, agl_kf_valid_after = result
+            if offset_fused:
+                raise NotAchievedException("the brief return was fused as the ground")
+            if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+                raise NotAchievedException("relative position dropped after a brief in-range return at height")
+            if hagl_after < alt - 3:
+                raise NotAchievedException("the return was taken as the ground: height above ground %.1f m at %.1f m up" %
+                                           (hagl_after, alt))
+            # the AGL KF built on the return would otherwise scale flow by the obstacle's height for
+            # the 5 s it stays valid after its last range sample
+            if agl_kf_valid_after:
+                raise NotAchievedException("the AGL KF still used the brief return after it had gone")
+        self.set_parameter("EK3_OPTIONS", 0)
+
+        self.start_subtest("A range finder lost in range after a climb out and back drops it")
+        # the fallback ends once range data has been fused again for 2 s, so a later failure
+        # inside the range has to pass the last good reading check afresh: at 5 m it is over
+        # the 4.6 m height limit and short of the 5.6 m reading a climb out passes through
+        # a descent that settles outside the band proves nothing and is flown again
+        for attempt in range(1, 4):
+            self.reboot_sitl()
+            climb_out_of_range()
+            if not horiz_pos_rel():
+                raise NotAchievedException("the climb out did not engage the fallback, so the leg proves nothing")
+            self.set_rc(3, 1350)
+            self.wait_altitude(5.0, 5.4, relative=True, timeout=90)
+            self.set_rc(3, 1500)
+            self.wait_climbrate(-0.1, 0.1, minimum_duration=2)
+            assert_offset_measured()
+            if rangefinder_between(4.8, 5.5):
+                break
+            self.disarm_vehicle(force=True)
+        else:
+            raise NotAchievedException("the descent missed 4.8 to 5.5 m on 3 attempts, so the leg proves nothing")
+        kill_rangefinder()
+        wait_terrain_offset_stale()
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        revive_rangefinder()
+        assert_refused(flags, "relative position held on a range finder lost in range after a climb out")
+
+        self.start_subtest("A range finder lost below the height limit drops it")
+        self.reboot_sitl()
+        self.takeoff(2.5, mode="ALT_HOLD", require_absolute=False, altitude_max=3.5)
+        assert_offset_measured()
+        kill_rangefinder()
+        wait_terrain_offset_stale()
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        revive_rangefinder()
+        assert_refused(flags, "relative position held on a range finder lost below the height limit")
+
+        self.start_subtest("A short range finder that fails in range drops it")
+        # a 4 m range finder has a 1.8 m height limit, so at 2.5 m only the last good reading
+        # being short of 0.7 x 4 m tells a failure from a climb out of range
+        self.set_parameter("RNGFND1_MAX", 4)
+        self.reboot_sitl()
+        # the takeoff settles about 0.6 m above where it stops climbing
+        self.takeoff(2.8, mode="ALT_HOLD", require_absolute=False, altitude_max=3.2)
+        assert_offset_measured()
+        self.wait_climbrate(-0.1, 0.1, minimum_duration=2)
+        # below 1.8 m the height limit would refuse it instead, and the leg prove nothing
+        assert_rangefinder_between(2.0, 2.75)
+        kill_rangefinder()
+        wait_terrain_offset_stale()
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        revive_rangefinder()
+        assert_refused(flags, "relative position held on a short range finder that failed in range")
+
+        self.start_subtest("A range finder too short to tell a failure from a climb gets no fallback")
+        # a 2 m range finder has its height limit at the 1 m floor, so a climb out of range
+        # passes the last good reading check and only the floor refuses it
+        self.set_parameter("RNGFND1_MAX", 2)
+        self.reboot_sitl()
+        self.takeoff(1.5, mode="ALT_HOLD", require_absolute=False, altitude_max=1.8)
+        assert_offset_measured()
+        self.set_rc(3, 1800)
+        self.wait_altitude(8, 200, relative=True, timeout=90)
+        self.set_rc(3, 1500)
+        wait_terrain_offset_stale()
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        self.set_parameter("RNGFND1_MAX", 8)
+        assert_refused(flags, "relative position held above a range finder at the height limit floor")
+
+        def wait_terrain_loaded(timeout=60):
+            # terrain/ is gitignored, so tiles arrive over MAVLink at one request per 2 s
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < timeout:
+                m = self.assert_receive_message('TERRAIN_REPORT', timeout=timeout)
+                if m.pending == 0 and m.loaded > 0:
+                    return
+            raise NotAchievedException("terrain tiles did not load")
+
+        def horiz_pos_rel_no_height_source(terrain_enable, options_value=0):
+            # EK3_SRC1_POSZ=0 fuses a constant zero height, so position.z carries no height
+            # and no ground height differenced against it means anything
+            self.set_parameters({
+                "EK3_OPTIONS": options_value,
+                "EK3_SRC1_POSZ": 0,
+                "TERRAIN_ENABLE": terrain_enable,
+            })
+            # a reading outside the band proves nothing and the climb is flown again
+            for attempt in range(1, 4):
+                self.reboot_sitl()
+                self.wait_ready_to_arm(require_absolute=False)
+                if terrain_enable:
+                    wait_terrain_loaded()
+                # the takeoff helper would wait on the synthetic height, so climb open loop in
+                # STABILIZE against SIM truth, slowly, inside the range and above the limit
+                ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+                self.change_mode("STABILIZE")
+                self.zero_throttle()
+                self.arm_vehicle()
+                self.set_rc(3, 1560)
+                self.wait_altitude(ground_alt + 6, ground_alt + 7.5, timeout=90,
+                                   altitude_source="SIM_STATE.alt")
+                # over 5.6 m and in range, so only the missing height source can refuse it; open
+                # loop the climb carries on, so the reading is taken and the sensor killed at once
+                if rangefinder_between(5.8, 7.9):
+                    break
+                self.set_rc(3, 1000)
+                self.disarm_vehicle(force=True)
+            else:
+                raise NotAchievedException("the climb missed 5.8 to 7.9 m on 3 attempts, so the leg proves nothing")
+            kill_rangefinder()
+            self.set_rc(3, 1500)
+            assert_offset_measured()
+            wait_terrain_offset_stale()
+            flags = ekf_flags()
+            self.disarm_vehicle(force=True)
+            revive_rangefinder()
+            return flags
+
+        self.start_subtest("With no height source the fallback is refused")
+        assert_refused(horiz_pos_rel_no_height_source(terrain_enable=0),
+                       "relative position held with no height source")
+
+        self.start_subtest("Bit 2 still holds relative position on terrain data")
+        # bit 2 keeps master's direct use of the database height, which needs no height
+        # source; the leg above is its control
+        if not (horiz_pos_rel_no_height_source(terrain_enable=1, options_value=1 << 2)
+                & mavutil.mavlink.EKF_POS_HORIZ_REL):
+            raise NotAchievedException("bit 2 no longer holds relative position on terrain data")
+
+        def max_alt_climbing_on_terrain(options_value):
+            self.set_parameters({
+                "EK3_OPTIONS": options_value,
+                "EK3_SRC1_POSZ": 1,
+                "TERRAIN_ENABLE": 1,
+                "AVOID_ENABLE": 3,
+            })
+            self.reboot_sitl()
+            self.takeoff(3, mode="ALT_HOLD", require_absolute=False, altitude_max=4)
+            wait_terrain_loaded()
+            self.set_rc(3, 1900)
+            tstart = self.get_sim_time()
+            max_alt = 0
+            while self.get_sim_time_cached() - tstart < 20:
+                max_alt = max(max_alt, self.get_altitude(relative=True))
+            self.set_rc(3, 1500)
+            self.disarm_vehicle(force=True)
+            self.set_parameters({
+                "AVOID_ENABLE": 0,
+                "TERRAIN_ENABLE": 0,
+            })
+            return max_alt
+
+        self.start_subtest("Terrain data does not lift the height limit without bit 2")
+        # terrain data reaches the EKF whatever EK3_OPTIONS says, and only bit 2 may lift
+        # the optical flow height limit on it, so with avoidance at its default the climb
+        # has to stop near the 4.6 m limit; bit 2 is the control that it could go higher
+        max_alt = max_alt_climbing_on_terrain(0)
+        if not 4 < max_alt <= 7:
+            raise NotAchievedException("climbed to %.1f m, not to near the 4.6 m height limit" % max_alt)
+        max_alt = max_alt_climbing_on_terrain(1 << 2)
+        if max_alt <= 7:
+            raise NotAchievedException("bit 2 did not lift the height limit (%.1f m), so the leg proves nothing" %
+                                       max_alt)
+
+        self.start_subtest("The fallback does not carry over to another flight")
+        self.set_parameters({
+            "EK3_OPTIONS": 0,
+            "EK3_SRC1_POSZ": 1,
+            "TERRAIN_ENABLE": 0,
+        })
+        # inside the 8 m range and over 5.6 m, so the last good reading allows the fallback. A
+        # takeoff that overshoots out of that band proves nothing and is flown again
+        for attempt in range(1, 4):
+            self.reboot_sitl()
+            self.takeoff(7, mode="ALT_HOLD", require_absolute=False, altitude_max=7.7)
+            assert_offset_measured()
+            distance = self.poll_message('RANGEFINDER').distance
+            if 5.8 <= distance <= 7.9:
+                break
+            self.progress("range finder read %.2f m, not 5.8 to 7.9 m, on attempt %u" % (distance, attempt))
+            self.disarm_vehicle(force=True)
+        else:
+            raise NotAchievedException("the takeoff missed 5.8 to 7.9 m on 3 attempts, so the leg proves nothing")
+        kill_rangefinder()
+        wait_terrain_offset_stale()
+        if not horiz_pos_rel():
+            raise NotAchievedException("the first flight did not authorise the fallback")
+        self.land_and_disarm()
+        # disarming ends the flight; with the range finder still dead the second flight
+        # measures no ground of its own and must be refused, well clear of the limit
+        self.wait_prearm_sys_status_healthy()
+        self.change_mode("ALT_HOLD")
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_altitude(10, 20, relative=True, timeout=30)
+        self.set_rc(3, 1500)
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        revive_rangefinder()
+        assert_refused(flags, "the fallback carried over from a previous flight")
+
+        self.start_subtest("Flat ground is trusted only near where the ground was last known")
+        self.reboot_sitl()
+        climb_out_of_range(alt=20)
+        # 10 x the height above ground is about 200 m: held well inside it, dropped past it
+        start = self.assert_receive_message('LOCAL_POSITION_NED', timeout=10)
+        alt = self.get_altitude(relative=True)
+        self.change_mode("GUIDED")
+
+        typemask = (MAV_POS_TARGET_TYPE_MASK.POS_IGNORE | MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+        dropped_at = None
+        held_at = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 120 and dropped_at is None:
+            self.mav.mav.set_position_target_local_ned_send(
+                0, 1, 1, mavutil.mavlink.MAV_FRAME_LOCAL_NED, typemask,
+                0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0)
+            m = self.assert_receive_message('LOCAL_POSITION_NED', timeout=10)
+            distance = math.hypot(m.x - start.x, m.y - start.y)
+            flags = ekf_flags()
+            if flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+                held_at = distance
+            else:
+                assert_refused(flags, "unreachable")
+                dropped_at = distance
+            self.delay_sim_time(0.2, reason="velocity target rate")
+        self.disarm_vehicle(force=True)
+        self.progress("at %.1f m height above ground, held to %.0f m, dropped at %s m" %
+                      (alt, held_at, dropped_at))
+        # the bound is from where the ground was last measured, during the climb, a little
+        # behind the start of this flight
+        if dropped_at is None:
+            raise NotAchievedException("relative position held for the whole flight")
+        if not (7 * alt < dropped_at < 12 * alt):
+            raise NotAchievedException("relative position dropped at %.0f m, not near 10 x %.1f m" %
+                                       (dropped_at, alt))
+
+        self.start_subtest("The bound holds across a GPS flight that moves the origin")
+        # flying on GPS moves the EKF origin to the vehicle every second, so where the
+        # ground was last known has to move with it, or a switch to flow 300 m away
+        # would trust ground measured back at the takeoff
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 3,
+            "EK3_SRC1_VELXY": 3,
+            "EK3_SRC1_VELZ": 3,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_YAW": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        climb_out_of_range(alt=20)
+        start = self.get_location('SIMSTATE')
+        self.change_mode("GUIDED")
+        tstart = self.get_sim_time()
+        while self.get_distance(start, self.get_location('SIMSTATE')) < 300:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("did not fly 300 m on GPS")
+            self.mav.mav.set_position_target_local_ned_send(
+                0, 1, 1, mavutil.mavlink.MAV_FRAME_LOCAL_NED, typemask,
+                0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0)
+            self.delay_sim_time(0.2, reason="velocity target rate")
+        self.change_mode("ALT_HOLD")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        # GPS position counts as relative position until it times out
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_HORIZ_ABS, timeout=30)
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        assert_refused(flags, "flat ground trusted 300 m from where it was measured on GPS")
+
+        self.start_subtest("The failsafe it prevents: LOITER survives above the range")
+        self.reboot_sitl()
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+        # ekf_check does nothing without an origin, so without one holding LOITER would
+        # prove nothing. The simulated GPS gives one even though it is not a source
+        self.poll_message('GPS_GLOBAL_ORIGIN')
+        self.change_mode("LOITER")
+        self.set_rc(3, 1800)
+        self.wait_altitude(20, 200, relative=True, timeout=90)
+        self.set_rc(3, 1500)
+        wait_terrain_offset_stale()
+        # the assertion is that nothing happens; ekf_check needs about 1 s of bad samples
+        self.delay_sim_time(5, reason="give the EKF failsafe time to fire if it is going to")
+        if not self.mode_is("LOITER"):
+            raise NotAchievedException("EKF failsafe fired above the rangefinder range")
+        if not horiz_pos_rel():
+            raise NotAchievedException("LOITER held but relative position was not valid")
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+    def EK3_OptflowAnchoredTerrain(self):
+        """Above the rangefinder range the ground follows the terrain database from the last measurement"""
+        # Only the shape of the terrain database is used: the ground height is anchored to
+        # what the range finder last measured, so an error in the origin altitude cancels.
+        # The origin here is set 30 m low, which used directly would put the ground 30 m
+        # out; flying up rising ground, a frozen ground height would drift by the rise.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 1,
+            "TERRAIN_ENABLE": 1,
+            "EK3_IMU_MASK": 1,
+            "AVOID_ENABLE": 0,
+            "EK3_OPTIONS": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        start = self.sitl_start_location()
+
+        def start_flight():
+            self.reboot_sitl()
+            self.set_origin(Location(start.lat, start.lng,
+                                     start.get_alt_m(AltFrame.ABSOLUTE) - 30, AltFrame.ABSOLUTE))
+            # the anchor is taken during the climb, so the tiles have to be there first
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 60:
+                    raise NotAchievedException("terrain tiles did not load")
+                m = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
+                if m.pending == 0 and m.loaded > 0:
+                    break
+
+        self.start_subtest("A range finder failing just above the height limit is not hidden")
+        # between the 4.6 m limit and 5.6 m the anchored height clears the limit with no
+        # database error, so only the last good reading tells the failure from a climb out
+        start_flight()
+        # a slow last climb into the band, which a takeoff overshoots; GUIDED would stop at
+        # the 4.6 m height limit. Stopping the climb settles about 0.6 m higher
+        self.takeoff(3, mode="ALT_HOLD", require_absolute=False, altitude_max=4.5)
+        self.set_rc(3, 1650)
+        self.wait_altitude(4.4, 4.8, relative=True, timeout=60)
+        self.set_rc(3, 1500)
+        self.wait_climbrate(-0.1, 0.1, minimum_duration=2)
+        distance = self.poll_message('RANGEFINDER').distance
+        if not 4.8 <= distance <= 5.45:
+            raise NotAchievedException("range finder read %.2f m, not 4.8 to 5.45 m" % distance)
+        self.set_parameter("SIM_SONAR_GLITCH", 1)
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
+        self.drain_mav()
+        flags = self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+        self.disarm_vehicle(force=True)
+        self.set_parameter("SIM_SONAR_GLITCH", 0)
+        if not flags & mavutil.mavlink.EKF_VELOCITY_HORIZ:
+            raise NotAchievedException("Filter was unhealthy, so a cleared flag proves nothing")
+        if flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("relative position held on a range finder that failed in range")
+
+        self.start_subtest("The ground follows the terrain database above the range")
+        start_flight()
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+        self.change_mode("LOITER")
+        self.set_rc(3, 1800)
+        self.wait_altitude(30, 200, relative=True, timeout=90)
+        self.set_rc(3, 1500)
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
+        mark = self.get_sim_time()
+        # bearing 240 from the SITL home rises about 10 m over the 500 m flown
+        self.change_mode("GUIDED")
+        typemask = (MAV_POS_TARGET_TYPE_MASK.POS_IGNORE | MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+        vn = 5 * math.cos(math.radians(240))
+        ve = 5 * math.sin(math.radians(240))
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 100:
+            self.mav.mav.set_position_target_local_ned_send(
+                0, 1, 1, mavutil.mavlink.MAV_FRAME_LOCAL_NED, typemask,
+                0, 0, 0, vn, ve, 0, 0, 0, 0, 0, 0)
+            self.delay_sim_time(0.2, reason="velocity target rate")
+        self.drain_mav()
+        flags = self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+        mark_end = self.get_sim_time()
+        self.change_mode("LOITER")
+        self.disarm_vehicle(force=True)
+        if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("relative position lost over the terrain")
+
+        # SITL's ground is home altitude plus the database's change from home, so SIM.Alt less
+        # TERR.TerrH is the true height above ground to within the database's error at home
+        # (0.02 m here). The ground is the database itself, so this cannot see database error
+        dfreader = self.dfreader_for_current_onboard_log()
+        last = {}
+        errs = []
+        ground = []
+        while True:
+            m = dfreader.recv_match(type=["XKF5", "SIM", "TERR"])
+            if m is None:
+                break
+            if m.get_type() == "XKF5" and m.C != 0:
+                continue
+            last[m.get_type()] = m
+            t = m.TimeUS * 1.0e-6
+            if m.get_type() == "XKF5" and "SIM" in last and "TERR" in last and mark < t < mark_end:
+                errs.append(m.HAGL - (last["SIM"].Alt - last["TERR"].TerrH))
+                ground.append(last["TERR"].TerrH)
+        if len(errs) < 50:
+            raise NotAchievedException("too few XKF5 samples over the traverse")
+        rise = max(ground) - min(ground)
+        worst = max(abs(e) for e in errs)
+        self.progress("terrain rose %.1f m; worst height above ground error %.1f m" % (rise, worst))
+        if rise < 5:
+            raise NotAchievedException("the ground only changed %.1f m, so the leg proves nothing" % rise)
+        if worst > 3:
+            raise NotAchievedException("height above ground off by %.1f m over the terrain" % worst)
+        self.reboot_sitl()
+
     def EK3_TerrainStateFollowsHeightReset(self):
         """A height timeout reset carries the terrain state with the vertical datum"""
         # ResetHeight() snaps position.z onto the last height measurement. The terrain
@@ -20134,6 +20768,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.VibrationFailsafe,
             self.VibrationCompensationThrottle,
             self.EK3_AccelBiasInhibitOnGroundMoving,
+            self.EK3_OptflowAboveRangefinder,
+            self.EK3_OptflowAnchoredTerrain,
             self.EK3_TerrainStateFollowsHeightReset,
             self.EK3_TerrainStateFollowsDatumReset,
             self.EK3_TerrainStateHeldOnDriftReset,
