@@ -1574,7 +1574,7 @@ void AC_AutoTune_Heli::Log_AutoTuneSweep()
 // @Field: ACC: new max accel term
 
 // Write an Autotune summary data packet
-void AC_AutoTune_Heli::Log_Write_AutoTune(AxisType _axis, TuneType tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel_radss)
+void AC_AutoTune_Heli::Log_Write_AutoTune(AxisType _axis, TuneType tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel_cdss)
 {
     AP::logger().Write(
         "ATNH",
@@ -1592,7 +1592,7 @@ void AC_AutoTune_Heli::Log_Write_AutoTune(AxisType _axis, TuneType tune_step, fl
         new_gain_rp,
         new_gain_rd,
         new_gain_sp,
-        degrees(max_accel_radss));
+        max_accel_cdss*0.01f);
 }
 
 // Write an Autotune detailed data packet
