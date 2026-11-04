@@ -265,6 +265,11 @@ void NavEKF3_core::ResetPositionD(ftype posD)
          (prevHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) &&
         (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
         terrainState += posResetD;
+        terrainAnchorOffset += posResetD;
+    }
+    if (flatGndSaved.valid) {
+        flatGndSaved.terrainState += posResetD;
+        flatGndSaved.terrainAnchorOffset += posResetD;
     }
 
     // Add the offset to the output observer states
@@ -301,6 +306,12 @@ void NavEKF3_core::ResetHeight(void)
              (gndOffsetMeasured && (activeHgtSource != prevHgtSource))) &&
             (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
             terrainState += stateStruct.position.z - posResetD;
+            terrainAnchorOffset += stateStruct.position.z - posResetD;
+        }
+        // the saved ground is frozen like one above the range, so only a datum move carries it
+        if (flatGndSaved.valid && (activeHgtSource != prevHgtSource)) {
+            flatGndSaved.terrainState += stateStruct.position.z - posResetD;
+            flatGndSaved.terrainAnchorOffset += stateStruct.position.z - posResetD;
         }
         // can make no assumption other than vehicle is not below ground level
         terrainState = MAX(stateStruct.position.z + rngOnGnd , terrainState);
