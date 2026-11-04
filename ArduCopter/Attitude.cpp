@@ -31,6 +31,8 @@ void Copter::run_rate_controller_main()
 //  called at 100hz
 void Copter::update_throttle_hover()
 {
+    update_hover_bias_rest();
+
     // if not armed or landed or on standby then exit
     if (!motors->armed() || ap.land_complete || standby_active) {
         return;
@@ -165,6 +167,9 @@ float Copter::get_pilot_speed_dn_adjusted_ms() const
 // time constant of the hover bias learning filter
 static const float HOVER_BIAS_TC_S = 2.0f;
 
+// time at rest the EKF takes to settle the Z accel bias after restarting it, within 0.01 m/s/s in SITL
+static const uint32_t HOVER_BIAS_REST_MS = 10000;
+
 enum class AccZBiasLearn : uint8_t {
     SAVE             = (1U << 0),
     USE              = (1U << 1),
@@ -189,9 +194,12 @@ void Copter::init_hover_bias_correction(void)
 }
 
 // seed_hover_bias_learning - start a flight from the saved bias, which a calibration may have
-// changed, and record the bias the EKF holds for each IMU before the motors run
+// changed, and record the bias the EKF holds for each IMU before the motors run and whether
+// that is the motors-off bias it learnt at rest
 void Copter::seed_hover_bias_learning(void)
 {
+    const uint32_t now_ms = AP_HAL::millis();
+    _hover_bias_inhibit_disarmed = (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_DISARMED)) != 0;
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
         _hover_bias_learning[imu] = AP::ins().get_accel_vrf_bias_z(imu);
         _hover_bias_learned[imu] = false;
@@ -199,9 +207,44 @@ void Copter::seed_hover_bias_learning(void)
         // read before the bias, so that a restart between the two reads shows as a change
         _hover_bias_reset_count[imu] = ahrs.get_accel_bias_reset_count_for_imu(imu);
         _hover_bias_at_arm_ok[imu] = ahrs.get_accel_bias_z_for_imu(imu, _hover_bias_at_arm[imu]);
-        // with bit 2 the EKF learns no bias on the ground, and what it holds is the last flight's
-        if (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_DISARMED)) {
+        if (_hover_bias_inhibit_disarmed) {
+            // with bit 2 the EKF learns no bias on the ground, and what it holds is the last flight's
             _hover_bias_at_arm[imu] = 0;
+            _hover_bias_baseline[imu] = HoverBiasBaseline::OK;
+        } else if ((_hover_bias_reset_count[imu] != _hover_bias_rest_count[imu]) ||
+                   ((_hover_bias_rest_restart_ms[imu] != 0) && (now_ms - _hover_bias_rest_restart_ms[imu] < HOVER_BIAS_REST_MS))) {
+            // a restarted bias holds only part of the motors-off bias until it settles at rest
+            _hover_bias_baseline[imu] = HoverBiasBaseline::TOO_SOON;
+        } else if (_hover_bias_rest_restart_ms[imu] == 0) {
+            // after a flight the bias at rest stays the flight's, through the ~10 s measured at rest
+            _hover_bias_baseline[imu] = HoverBiasBaseline::NOT_FIRST;
+        } else {
+            _hover_bias_baseline[imu] = HoverBiasBaseline::OK;
+        }
+    }
+    _hover_bias_flew = false;
+}
+
+// update_hover_bias_rest - note, while disarmed, when the EKF restarts each IMU's accel bias (its
+// start at boot counts), and while armed, whether the vehicle has left the ground
+// called at 100Hz from update_throttle_hover(); an arm or disarm from Lua or DDS can interleave with
+// it for a few microseconds, as with the learner's other state
+void Copter::update_hover_bias_rest(void)
+{
+    if ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::SAVE)) == 0) {
+        return;
+    }
+    if (motors->armed()) {
+        if (!ap.land_complete) {
+            _hover_bias_flew = true;
+        }
+        return;
+    }
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        const uint16_t count = ahrs.get_accel_bias_reset_count_for_imu(imu);
+        if (count != _hover_bias_rest_count[imu]) {
+            _hover_bias_rest_count[imu] = count;
+            _hover_bias_rest_restart_ms[imu] = AP_HAL::millis();
         }
     }
 }
@@ -269,17 +312,37 @@ void Copter::update_hover_bias_learning(float dt)
     }
 }
 
-// save_hover_bias_learning - saves learned hover bias to EEPROM
+// save_hover_bias_learning - saves learned hover bias to EEPROM, from the first flight after
+// the EKF restarted the IMU's bias at rest only, as only then is the bias at arming motors-off
 // called on disarm
 void Copter::save_hover_bias_learning(void)
 {
     if ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::SAVE)) == 0) {
         return;
     }
+    // bit 2 as at arming chose the baseline; a value learnt against one setting is not saved under the other
+    const bool inhibit_disarmed = _hover_bias_inhibit_disarmed;
+    const bool bit2_changed = inhibit_disarmed != ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_DISARMED)) != 0);
     bool reset = false;
+    bool changed = false;
+    bool too_soon = false;
+    bool not_first = false;
+    bool not_learned = false;
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        const uint16_t count = ahrs.get_accel_bias_reset_count_for_imu(imu);
+        // a restart in or after a flight relearns the hover bias, so it opens no first flight; armed on
+        // the ground the EKF fuses no zero velocity, so a restart there, or a wait that had not settled
+        // the bias, settles again at rest from here
+        if (_hover_bias_flew) {
+            _hover_bias_rest_restart_ms[imu] = 0;
+        } else if ((count != _hover_bias_reset_count[imu]) || (_hover_bias_baseline[imu] == HoverBiasBaseline::TOO_SOON)) {
+            _hover_bias_rest_restart_ms[imu] = AP_HAL::millis();
+        }
+        _hover_bias_rest_count[imu] = count;
+
         // the EKF restarted the bias while the learner was taking it, perhaps before its first sample or by
-        // switching the core off the IMU, so tested before whether the IMU is in use
+        // switching the core off the IMU, so tested before whether the IMU is in use; the count is not
+        // compared here, as an accel brought back into use after landing moves the other accel's count
         if (_hover_bias_restarted[imu]) {
             reset = true;
             continue;
@@ -289,9 +352,23 @@ void Copter::save_hover_bias_learning(void)
         if (!ahrs.get_accel_bias_z_for_imu(imu, bias_z)) {
             continue;
         }
-        // an IMU that learnt nothing keeps its saved value, which may have been set since the
-        // learner was seeded
+        // an IMU that learnt nothing keeps its saved value, which may have been set since the learner
+        // was seeded; without bit 2 a first flight that could have learnt says so, as it was the only one
         if (!_hover_bias_learned[imu]) {
+            not_learned |= !inhibit_disarmed && _hover_bias_at_arm_ok[imu] && _hover_bias_flew &&
+                           (_hover_bias_baseline[imu] == HoverBiasBaseline::OK);
+            continue;
+        }
+        if (bit2_changed) {
+            changed = true;
+            continue;
+        }
+        if (_hover_bias_baseline[imu] == HoverBiasBaseline::TOO_SOON) {
+            too_soon = true;
+            continue;
+        }
+        if (_hover_bias_baseline[imu] == HoverBiasBaseline::NOT_FIRST) {
+            not_first = true;
             continue;
         }
         AP::ins().set_accel_vrf_bias_z(imu, _hover_bias_learning[imu]);
@@ -299,6 +376,14 @@ void Copter::save_hover_bias_learning(void)
     }
     if (reset) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Hover Z-bias not saved: EKF accel bias reset");
+    } else if (changed) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Hover Z-bias not saved: ACC_ZBIAS_LEARN changed");
+    } else if (too_soon) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Hover Z-bias not saved: armed <10s after EKF reset");
+    } else if (not_first) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Hover Z-bias not saved: not first flight");
+    } else if (not_learned) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Hover Z-bias not learned: no steady hover");
     }
 }
 
