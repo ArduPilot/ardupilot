@@ -17552,9 +17552,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # the next DISTANCE_SENSOR has to be one measured since we moved,
         # not one queued while we were still at the old altitude:
         self.drain_mav()
+        # fly_guided_move_local returns as soon as it is within 1m of the
+        # target, so the vehicle can still be climbing here; wait for the
+        # rangefinder to agree rather than sampling it once, which left no
+        # margin at all against that 1m and failed with 8.91m for 10m:
+        self.wait_rangefinder_distance(alt-1, alt+1)
         m = self.assert_receive_message('DISTANCE_SENSOR', verbose=True)
-        if abs(m.current_distance * 0.01 - alt) > 1:
-            raise NotAchievedException(f"Expected {alt}m range")
         self.assert_parameter_value("RNGFND1_MAX", m.max_distance * 0.01, epsilon=0.00001)
         self.assert_parameter_value("RNGFND1_MIN", m.min_distance * 0.01, epsilon=0.00001)
         self.send_statustext(text_out_of_range_high)
