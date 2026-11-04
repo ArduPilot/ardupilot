@@ -17977,6 +17977,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 current_ts = None
         self.progress(f"{max_errors=}")
 
+    def GPSBlendedStaleData(self):
+        '''check a blended GPS stops claiming a fix when blending stops'''
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "GPS_AUTO_SWITCH": 2,
+            "GPS3_TYPE": 27,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('GNSS', 10)
+
+        def wait_blended(predicate, timeout, failure):
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(f"Blended GNSS: {failure}")
+                m = self.assert_receive_message('GNSS')
+                if m.id != 2:
+                    continue
+                if predicate(m):
+                    return m
+
+        wait_blended(lambda m: m.fix_type >= 3, 60, "blending never started")
+
+        # with one GPS left there is nothing to blend:
+        self.set_parameter("SIM_GPS2_ENABLE", 0)
+        wait_blended(lambda m: m.fix_type < 3, 10, "still claims a fix after losing GPS2")
+
+        self.delay_sim_time(5, reason="blended state to stay unavailable")
+        m = wait_blended(lambda m: True, 5, "no message")
+        self.dump_message_verbose(m)
+        if m.fix_type >= 3:
+            raise NotAchievedException("Blended GNSS regained a fix with one GPS")
+
     def Callisto(self):
         '''Test Callisto'''
         self.customise_SITL_commandline(
@@ -20362,6 +20397,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FlyEachFrame,
             self.GPSBlendingLog,
             self.GPSBlendingAffinity,
+            self.GPSBlendedStaleData,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
