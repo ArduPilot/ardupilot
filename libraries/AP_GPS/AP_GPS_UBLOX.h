@@ -414,6 +414,27 @@ private:
         uint32_t flags;
     };
 
+    // UBX-NAV-DAHEADING (0x01 0x45) - single-module dual-antenna heading.
+    // ZED-X20D HDG 2.0x firmware, version=2, 60 bytes.
+    struct PACKED ubx_nav_daheading {
+        uint8_t  version;       // 0x02 for HDG 2.00
+        uint8_t  reserved0[3];
+        uint32_t iTOW;          // ms, GPS time of week
+        int32_t  relPosN;       // mm, North
+        int32_t  relPosE;       // mm, East
+        int32_t  relPosD;       // mm, Down
+        int32_t  relPosLength;  // mm, baseline length
+        int32_t  relPosHeading; // deg * 1e-5
+        uint8_t  reserved1[4];
+        uint32_t accN;          // mm
+        uint32_t accE;          // mm
+        uint32_t accD;          // mm
+        uint32_t accLength;     // mm
+        uint32_t accHeading;    // deg * 1e-5
+        uint8_t  reserved2[4];
+        uint32_t flags;
+    };
+
     struct PACKED ubx_nav_velned {
         uint32_t itow;                                  // GPS msToW
         int32_t ned_north;
@@ -654,6 +675,7 @@ private:
         ubx_cfg_valget valget;
         ubx_nav_svinfo_header svinfo_header;
         ubx_nav_relposned relposned;
+        ubx_nav_daheading daheading;
 #if UBLOX_RXM_RAW_LOGGING
         ubx_rxm_raw rxm_raw;
         ubx_rxm_rawx rxm_rawx;
@@ -665,6 +687,15 @@ private:
         ubx_mon_comms_header mon_comms;
 #endif
     } _buffer;
+
+    // Flags for UBX-NAV-DAHEADING, relPosHeadingValid is bit 6 here (bit 8 in RELPOSNED)
+    enum class DAHEADING {
+        gnssFixOK          = 1U << 0,
+        relPosValid        = 1U << 2,
+        carrSolnFloat      = 1U << 3,
+        carrSolnFixed      = 1U << 4,
+        relPosHeadingValid = 1U << 6,
+    };
 
     enum class RELPOSNED {
         gnssFixOK          = 1U << 0,
@@ -698,6 +729,7 @@ private:
         MSG_SOL = 0x6,
         MSG_PVT = 0x7,
         MSG_TIMEGPS = 0x20,
+        MSG_DAHEADING = 0x45,
         MSG_RELPOSNED = 0x3c,
         MSG_VELNED = 0x12,
         MSG_CFG_CFG = 0x09,
@@ -861,6 +893,9 @@ private:
     uint32_t        _last_pvt_itow;
     uint32_t        _last_relposned_itow;
     uint32_t        _last_relposned_ms;
+    uint32_t        _last_daheading_itow;
+    uint32_t        _last_daheading_ms;
+    bool            _has_dual_antenna_heading; // set by CFGv2 for ZED-X20D
 
     // the role set from GPS_TYPE
     AP_GPS::GPS_Role role;
