@@ -7060,11 +7060,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Accessing webserver main page")
         import urllib.request
 
-        main_page = urllib.request.urlopen(url).read().decode('utf-8')
+        # an opener with the proxies given explicitly, rather than
+        # urlopen's default of looking them up.  The vehicle is on
+        # loopback (or, for the PPP test, on the link to us), so a proxy
+        # in the environment must not be consulted - and on macOS that
+        # lookup is the first call into the ObjC runtime a forked
+        # parallel worker makes, which aborts the worker outright
+        # (objc_initializeAfterForkError).
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+        main_page = opener.open(url).read().decode('utf-8')
         if main_page.find('ArduPilot Web Server') == -1:
             raise NotAchievedException("Expected banner on main page")
 
-        board_status = urllib.request.urlopen(url + '/@DYNAMIC/board_status.shtml').read().decode('utf-8')
+        board_status = opener.open(url + '/@DYNAMIC/board_status.shtml').read().decode('utf-8')
         if board_status.find('0 hours') == -1:
             raise NotAchievedException("Expected uptime in board status")
         if board_status.find('40.713') == -1:
