@@ -3133,6 +3133,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         flags = self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
         mark_end = self.get_sim_time()
         self.change_mode("LOITER")
+        # setting bit 2 in flight ends the anchor with no range return, so the ground held from
+        # then on has to be the last anchored one, not the one measured before the climb
+        self.set_parameter("EK3_OPTIONS", 4)
+        mark_held = self.get_sim_time()
+        self.delay_sim_time(5, reason="hold with the anchor ended")
+        mark_held_end = self.get_sim_time()
         self.disarm_vehicle(force=True)
         if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
             raise NotAchievedException("relative position lost over the terrain")
@@ -3145,6 +3151,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         errs = []
         ground = []
         speed_ratios = []
+        held_errs = []
+        datum_errs = []
         while True:
             m = dfreader.recv_match(type=["XKF1", "XKF5", "SIM", "SIM2", "TERR"])
             if m is None:
@@ -3153,11 +3161,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 continue
             last[m.get_type()] = m
             t = m.TimeUS * 1.0e-6
+            if mark_held + 1 < t < mark_held_end and m.get_type() == "XKF5" and "SIM" in last and "TERR" in last:
+                held_errs.append(m.HAGL - (last["SIM"].Alt - last["TERR"].TerrH))
             if not (mark < t < mark_end):
                 continue
             if m.get_type() == "XKF5" and "SIM" in last and "TERR" in last:
                 errs.append(m.HAGL - (last["SIM"].Alt - last["TERR"].TerrH))
                 ground.append(last["TERR"].TerrH)
+            # XKF5 logs the anchored ground as TOfs, so TOfs less HAGL still moves with the vertical
+            # position; its spread, not its value, is checked, as PD is the output observer's
+            if m.get_type() == "XKF5" and "XKF1" in last and last["XKF1"].TimeUS == m.TimeUS:
+                datum_errs.append(m.TOfs - m.HAGL - last["XKF1"].PD)
             # flow scaled by the wrong height reads speed in proportion, so once the ground has
             # risen the true speed against the EKF's shows the height flow was scaled by
             if m.get_type() == "XKF1" and "SIM2" in last and ground and ground[-1] - ground[0] > 5:
@@ -3177,6 +3191,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("height above ground off by %.1f m over the terrain" % worst)
         if not 0.9 < speed_ratio < 1.1:
             raise NotAchievedException("true speed %.3f x the EKF's over the terrain" % speed_ratio)
+        if len(datum_errs) < 50:
+            raise NotAchievedException("too few XKF1 and XKF5 pairs over the traverse")
+        datum_spread = max(datum_errs) - min(datum_errs)
+        self.progress("XKF5 TOfs - HAGL against XKF1 PD spread %.2f m" % datum_spread)
+        if datum_spread > 1:
+            raise NotAchievedException("XKF5 TOfs - HAGL moved %.2f m off the vertical position" % datum_spread)
+        if len(held_errs) < 20:
+            raise NotAchievedException("too few XKF5 samples after the anchor ended")
+        worst_held = max(abs(e) for e in held_errs)
+        self.progress("worst height above ground error after the anchor ended %.1f m" % worst_held)
+        if worst_held > 3:
+            raise NotAchievedException("ground held %.1f m off once the anchor ended" % worst_held)
         self.reboot_sitl()
 
     def EK3_TerrainStateFollowsHeightReset(self):
