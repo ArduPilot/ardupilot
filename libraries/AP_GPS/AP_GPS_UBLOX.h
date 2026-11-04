@@ -893,7 +893,6 @@ private:
     uint32_t        _last_pvt_itow;
     uint32_t        _last_relposned_itow;
     uint32_t        _last_relposned_ms;
-    uint32_t        _last_daheading_itow;
     uint32_t        _last_daheading_ms;
     bool            _has_dual_antenna_heading; // set by CFGv2 for ZED-X20D
 
