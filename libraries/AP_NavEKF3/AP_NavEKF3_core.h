@@ -751,7 +751,16 @@ private:
 #if EK3_FEATURE_OPTFLOW_SRTM
     // true when bit 2 has the terrain database height used directly to scale optical flow
     bool terrainAltUsable(void) const;
+
+    // ground height, NED down (m), from the terrain database's shape and the anchor
+    ftype anchoredTerrainState(void) const;
 #endif
+
+    // true when above the range the ground follows the terrain database from the anchor
+    bool terrainAnchored(void) const;
+
+    // ground height, NED down (m): the anchored ground where terrainAnchored(), else the terrain state
+    ftype flowTerrainState(void) const;
 
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
@@ -1416,6 +1425,7 @@ private:
     bool gndOffsetMeasured;         // true when the ground offset state has been measured during this flight
     ftype terrainAnchorOffset;      // measured ground minus terrain database ground, both NED down (m)
     bool terrainAnchorValid;        // true when terrainAnchorOffset was measured during this flight
+    bool terrainAnchorInUse;        // true when terrainAnchored() at the last update
     Vector2F gndKnownNE;            // NE position where the ground height was last measured or anchored (m)
     ftype lastGoodRngMeas;          // last range measurement fused into the terrain estimator (m)
     bool flatGndEngaged;            // true while flow navigation continues on the flat-ground assumption

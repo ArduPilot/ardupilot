@@ -109,7 +109,7 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
         }
         // compensate for the difference between terrain and EKF origin, with the range finder as the
         // height reference too, as a fall back to another source and back moves the terrain state
-        height -= terrainState;
+        height -= flowTerrainState();
         return true;
     } else {
         return false;
@@ -375,10 +375,10 @@ void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
     // nav gains to prevent body rate feedback into flow rates destabilising the control loop
     if (PV_AidingMode == AID_RELATIVE && relyingOnFlowData) {
         // allow 1.0 rad/sec margin for angular motion
-        ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * MAX((terrainState - stateStruct.position[2]), rngOnGnd);
+        ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * MAX((flowTerrainState() - stateStruct.position[2]), rngOnGnd);
         // reduce the nav gain above _flowNavGainHgt to allow for flow velocity noise that grows with height
         const ftype gainHgt = MAX(frontend->_flowNavGainHgt.get(), 1.0f);
-        ekfNavVelGainScaler = gainHgt / MAX((terrainState - stateStruct.position[2]), gainHgt);
+        ekfNavVelGainScaler = gainHgt / MAX((flowTerrainState() - stateStruct.position[2]), gainHgt);
     } else {
         ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
         ekfNavVelGainScaler = 1.0f;
