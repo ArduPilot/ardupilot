@@ -161,6 +161,10 @@ public:
     // If reset_rate is false, only the attitude target is reset and current rate targets are preserved.
     void reset_target_and_rate(bool reset_rate = true);
 
+    // Holds the attitude and angular rate targets at the current vehicle state while landed,
+    // so that a target which has gone bad on the ground is never flown on takeoff.
+    virtual void reset_target_while_landed() { reset_target_and_rate(); }
+
     // Sets the yaw angle target to the vehicle's current heading. Optionally resets yaw rate to zero.
     void reset_yaw_target_and_rate(bool reset_rate = true);
 

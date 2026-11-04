@@ -51,6 +51,10 @@ public:
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
 
+    // helicopters keep their commanded target on the ground so that the controls can be
+    // checked before flight
+    void reset_target_while_landed() override {}
+
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) override {  _flags_heli.leaky_i = leaky_i; }
     
