@@ -308,11 +308,8 @@ void AP_AHRS::update_secondary_backend_pointers()
     secondary_estimates = estimates_for_type(secondary_type);
 }
 
-// init sets up INS board orientation
 void AP_AHRS::init()
 {
-    update_orientation();
-
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type.get() == 1) {
         AP_BoardConfig::config_error("EKF1 not available");
@@ -548,12 +545,6 @@ void AP_AHRS::update_reset_counters()
 // update run at loop rate
 void AP_AHRS::update(bool skip_ins_update)
 {
-    // periodically checks to see if we should update the AHRS
-    // orientation (e.g. based on the AHRS_ORIENTATION parameter)
-    // allow for runtime change of orientation
-    // this makes initial config easier
-    update_orientation();
-
     if (!skip_ins_update) {
         // tell the IMU to grab some data
         AP::ins().update();
