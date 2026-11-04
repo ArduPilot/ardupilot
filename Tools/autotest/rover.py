@@ -8779,6 +8779,11 @@ return update()
             "SlewRate": "got timing report failure on CI",
             "PolyFenceObjectAvoidanceBendyRuler": "unreliable",
         }
+        if sys.platform == "darwin":
+            # the test runs pppd under sudo; macOS ships pppd but has no
+            # /etc/ppp/options, without which it exits before parsing its
+            # arguments, and sudo there is not passwordless
+            ret["NetworkingWebServerPPP"] = "pppd is not usable unattended on macOS"
         for (frame, reason) in self.drive_each_frame_known_broken.items():
             ret["DriveFrame_%s" % frame] = reason
         return ret

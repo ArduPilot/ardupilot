@@ -9,6 +9,7 @@ import operator
 import os
 import re
 import signal
+import sys
 import time
 
 from pymavlink import mavextra
@@ -11678,6 +11679,8 @@ return update()
             # release up to v1.8.74; skipped only where it is missing, so
             # CI - which installs MAVProxy from git master - still runs it
             ret["MAVFTPCrcCompareMAVProxy"] = "needs a MAVProxy which has the ftp crclocal and crccmp commands; see https://github.com/ArduPilot/MAVProxy"  # noqa:E501
+        if sys.platform == "darwin":
+            ret["PPPPeriph"] = "PPP under SITL is unverified on macOS"
         for (frame, reason) in self.fly_each_frame_known_broken.items():
             ret["FlyFrame_%s" % frame] = reason
         for (frame, reason) in self.fly_each_frame_rc_input_known_broken.items():
