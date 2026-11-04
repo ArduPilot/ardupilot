@@ -147,13 +147,13 @@ protected:
     bool handle_byte(const uint8_t b, DescriptorSet& descriptor);
     // Returns true if the fletcher checksum for the packet is valid, else false.
     static bool valid_packet(const MicroStrain_Packet &packet);
-    // Calls the correct functions based on the packet descriptor of the packet
-    DescriptorSet handle_packet(const MicroStrain_Packet &packet);
+    // Calls the correct function based on the packet descriptor and returns true for a valid payload.
+    bool handle_packet(const MicroStrain_Packet &packet, DescriptorSet &descriptor);
     // Collects data from an imu packet into `imu_data`
-    void handle_imu(const MicroStrain_Packet &packet);
+    bool handle_imu(const MicroStrain_Packet &packet);
     // Collects data from a gnss packet into `gnss_data`
-    void handle_gnss(const MicroStrain_Packet &packet);
-    void handle_filter(const MicroStrain_Packet &packet);
+    bool handle_gnss(const MicroStrain_Packet &packet);
+    bool handle_filter(const MicroStrain_Packet &packet);
     static Vector3f populate_vector3f(const uint8_t* data, uint8_t offset);
     static Quaternion populate_quaternion(const uint8_t* data, uint8_t offset);
     // Depending on the descriptor, the data corresponds to a different GNSS instance.

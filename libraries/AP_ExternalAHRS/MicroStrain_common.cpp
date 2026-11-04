@@ -108,8 +108,8 @@ bool AP_MicroStrain::handle_byte(const uint8_t b, DescriptorSet& descriptor)
                 message_in.state = ParseState::WaitingFor_SyncOne;
                 message_in.index = 0;
 
-                if (valid_packet(message_in.packet)) {
-                    descriptor = handle_packet(message_in.packet);
+                if (valid_packet(message_in.packet) &&
+                    handle_packet(message_in.packet, descriptor)) {
                     return true;
                 }
             }
@@ -136,175 +136,250 @@ bool AP_MicroStrain::valid_packet(const MicroStrain_Packet & packet)
     return packet.checksum[0] == checksum_one && packet.checksum[1] == checksum_two;
 }
 
-AP_MicroStrain::DescriptorSet AP_MicroStrain::handle_packet(const MicroStrain_Packet& packet)
+bool AP_MicroStrain::handle_packet(const MicroStrain_Packet& packet, DescriptorSet& descriptor)
 {
-    const DescriptorSet descriptor = packet.descriptor_set();
+    descriptor = packet.descriptor_set();
     switch (descriptor) {
     case DescriptorSet::IMUData:
-        handle_imu(packet);
-        break;
+        return handle_imu(packet);
     case DescriptorSet::FilterData:
-        handle_filter(packet);
-        break;
+        return handle_filter(packet);
     case DescriptorSet::BaseCommand:
     case DescriptorSet::DMCommand:
     case DescriptorSet::SystemCommand:
-        break;
+        return true;
     case DescriptorSet::GNSSData:
     case DescriptorSet::GNSSRecv1:
     case DescriptorSet::GNSSRecv2:
-        handle_gnss(packet);
-        break;
+        return handle_gnss(packet);
     }
-    return descriptor;
+    return false;
 }
 
 
-void AP_MicroStrain::handle_imu(const MicroStrain_Packet& packet)
+bool AP_MicroStrain::handle_imu(const MicroStrain_Packet& packet)
 {
-    last_imu_pkt = AP_HAL::millis();
+    auto next_imu_data = imu_data;
 
     // Iterate through fields of varying lengths in INS packet
-    for (uint8_t i = 0; i < packet.payload_length(); i +=  packet.payload[i]) {
+    const uint16_t payload_len = packet.payload_length();
+    for (uint16_t i = 0; i < payload_len;) {
+        if (payload_len - i < 2) {
+            return false;
+        }
+        const uint8_t field_len = packet.payload[i];
+        if (field_len < 2 || field_len > payload_len - i) {
+            return false;
+        }
         switch ((INSPacketField) packet.payload[i+1]) {
         // Scaled Ambient Pressure
         case INSPacketField::PRESSURE: {
-            imu_data.pressure = be32tofloat_ptr(packet.payload, i+2) * 100; // Convert millibar to pascals
+            if (field_len < 6) {
+                return false;
+            }
+            next_imu_data.pressure = be32tofloat_ptr(packet.payload, i+2) * 100; // Convert millibar to pascals
             break;
         }
         // Scaled Magnetometer Vector
         case INSPacketField::MAG: {
-            imu_data.mag = populate_vector3f(packet.payload, i+2) * 1000; // Convert gauss to milligauss
+            if (field_len < 14) {
+                return false;
+            }
+            next_imu_data.mag = populate_vector3f(packet.payload, i+2) * 1000; // Convert gauss to milligauss
             break;
         }
         // Scaled Accelerometer Vector
         case INSPacketField::ACCEL: {
-            imu_data.accel = populate_vector3f(packet.payload, i+2) * GRAVITY_MSS; // Convert g's to m/s^2
+            if (field_len < 14) {
+                return false;
+            }
+            next_imu_data.accel = populate_vector3f(packet.payload, i+2) * GRAVITY_MSS; // Convert g's to m/s^2
             break;
         }
         // Scaled Gyro Vector
         case INSPacketField::GYRO: {
-            imu_data.gyro = populate_vector3f(packet.payload, i+2);
+            if (field_len < 14) {
+                return false;
+            }
+            next_imu_data.gyro = populate_vector3f(packet.payload, i+2);
             break;
         }
         // Quaternion
         case INSPacketField::QUAT: {
-            imu_data.quat = populate_quaternion(packet.payload, i+2);
+            if (field_len < 18) {
+                return false;
+            }
+            next_imu_data.quat = populate_quaternion(packet.payload, i+2);
             break;
         }
         }
+        i += field_len;
     }
+    imu_data = next_imu_data;
+    last_imu_pkt = AP_HAL::millis();
+    return true;
 }
 
 
-void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
+bool AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
 {
-    last_gps_pkt = AP_HAL::millis();
     uint8_t gnss_instance;
     const DescriptorSet descriptor  = DescriptorSet(packet.descriptor_set());
     if (!get_gnss_instance(descriptor, gnss_instance)) {
-        return;
+        return false;
     }
+    auto next_gnss_data = gnss_data[gnss_instance];
 
     // Iterate through fields of varying lengths in GNSS packet
-    for (uint8_t i = 0; i < packet.payload_length(); i += packet.payload[i]) {
+    const uint16_t payload_len = packet.payload_length();
+    for (uint16_t i = 0; i < payload_len;) {
+        if (payload_len - i < 2) {
+            return false;
+        }
+        const uint8_t field_len = packet.payload[i];
+        if (field_len < 2 || field_len > payload_len - i) {
+            return false;
+        }
         switch ((GNSSPacketField) packet.payload[i+1]) {
         case GNSSPacketField::GPS_TIMESTAMP: {
-            gnss_data[gnss_instance].tow_ms = double_to_uint32(be64todouble_ptr(packet.payload, i+2) * 1000); // Convert seconds to ms
-            gnss_data[gnss_instance].week = be16toh_ptr(&packet.payload[i+10]);
+            if (field_len < 12) {
+                return false;
+            }
+            next_gnss_data.tow_ms = double_to_uint32(be64todouble_ptr(packet.payload, i+2) * 1000); // Convert seconds to ms
+            next_gnss_data.week = be16toh_ptr(&packet.payload[i+10]);
             break;
         }
         case GNSSPacketField::FIX_INFO: {
+            if (field_len < 4) {
+                return false;
+            }
             switch ((GNSSFixType) packet.payload[i+2]) {
             case (GNSSFixType::FIX_RTK_FLOAT): {
-                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::RTK_FLOAT;
+                next_gnss_data.fix_type = AP_GPS_FixType::RTK_FLOAT;
                 break;
             }
             case (GNSSFixType::FIX_RTK_FIXED): {
-                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::RTK_FIXED;
+                next_gnss_data.fix_type = AP_GPS_FixType::RTK_FIXED;
                 break;
             }
             case (GNSSFixType::FIX_3D): {
-                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::FIX_3D;
+                next_gnss_data.fix_type = AP_GPS_FixType::FIX_3D;
                 break;
             }
             case (GNSSFixType::FIX_2D): {
-                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::FIX_2D;
+                next_gnss_data.fix_type = AP_GPS_FixType::FIX_2D;
                 break;
             }
             case (GNSSFixType::TIME_ONLY):
             case (GNSSFixType::NONE): {
-                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::NONE;
+                next_gnss_data.fix_type = AP_GPS_FixType::NONE;
                 break;
             }
             default:
             case (GNSSFixType::INVALID): {
-                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::NO_GPS;
+                next_gnss_data.fix_type = AP_GPS_FixType::NO_GPS;
                 break;
             }
             }
 
-            gnss_data[gnss_instance].satellites = packet.payload[i+3];
+            next_gnss_data.satellites = packet.payload[i+3];
             break;
         }
         case GNSSPacketField::LLH_POSITION: {
-            gnss_data[gnss_instance].lat = be64todouble_ptr(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
-            gnss_data[gnss_instance].lon = be64todouble_ptr(packet.payload, i+10) * 1.0e7;
-            gnss_data[gnss_instance].msl_altitude = be64todouble_ptr(packet.payload, i+26) * 1.0e2; // Meters to cm
-            gnss_data[gnss_instance].horizontal_position_accuracy = be32tofloat_ptr(packet.payload, i+34);
-            gnss_data[gnss_instance].vertical_position_accuracy = be32tofloat_ptr(packet.payload, i+38);
+            if (field_len < 42) {
+                return false;
+            }
+            next_gnss_data.lat = be64todouble_ptr(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
+            next_gnss_data.lon = be64todouble_ptr(packet.payload, i+10) * 1.0e7;
+            next_gnss_data.msl_altitude = be64todouble_ptr(packet.payload, i+26) * 1.0e2; // Meters to cm
+            next_gnss_data.horizontal_position_accuracy = be32tofloat_ptr(packet.payload, i+34);
+            next_gnss_data.vertical_position_accuracy = be32tofloat_ptr(packet.payload, i+38);
             break;
         }
         case GNSSPacketField::DOP_DATA: {
-            gnss_data[gnss_instance].hdop = be32tofloat_ptr(packet.payload, i+10);
-            gnss_data[gnss_instance].vdop = be32tofloat_ptr(packet.payload, i+14);
+            if (field_len < 18) {
+                return false;
+            }
+            next_gnss_data.hdop = be32tofloat_ptr(packet.payload, i+10);
+            next_gnss_data.vdop = be32tofloat_ptr(packet.payload, i+14);
             break;
         }
         case GNSSPacketField::NED_VELOCITY: {
-            gnss_data[gnss_instance].ned_velocity_north = be32tofloat_ptr(packet.payload, i+2);
-            gnss_data[gnss_instance].ned_velocity_east = be32tofloat_ptr(packet.payload, i+6);
-            gnss_data[gnss_instance].ned_velocity_down = be32tofloat_ptr(packet.payload, i+10);
-            gnss_data[gnss_instance].speed_accuracy = be32tofloat_ptr(packet.payload, i+26);
+            if (field_len < 30) {
+                return false;
+            }
+            next_gnss_data.ned_velocity_north = be32tofloat_ptr(packet.payload, i+2);
+            next_gnss_data.ned_velocity_east = be32tofloat_ptr(packet.payload, i+6);
+            next_gnss_data.ned_velocity_down = be32tofloat_ptr(packet.payload, i+10);
+            next_gnss_data.speed_accuracy = be32tofloat_ptr(packet.payload, i+26);
             break;
         }
         }
+        i += field_len;
     }
+    gnss_data[gnss_instance] = next_gnss_data;
+    last_gps_pkt = AP_HAL::millis();
+    return true;
 }
 
-void AP_MicroStrain::handle_filter(const MicroStrain_Packet &packet)
+bool AP_MicroStrain::handle_filter(const MicroStrain_Packet &packet)
 {
-    last_filter_pkt = AP_HAL::millis();
+    auto next_filter_data = filter_data;
+    auto next_filter_status = filter_status;
 
     // Iterate through fields of varying lengths in filter packet
-    for (uint8_t i = 0; i < packet.payload_length(); i += packet.payload[i]) {
+    const uint16_t payload_len = packet.payload_length();
+    for (uint16_t i = 0; i < payload_len;) {
+        if (payload_len - i < 2) {
+            return false;
+        }
+        const uint8_t field_len = packet.payload[i];
+        if (field_len < 2 || field_len > payload_len - i) {
+            return false;
+        }
         switch ((FilterPacketField) packet.payload[i+1]) {
         case FilterPacketField::GPS_TIMESTAMP: {
-            filter_data.tow_ms = be64todouble_ptr(packet.payload, i+2) * 1000; // Convert seconds to ms
-            filter_data.week = be16toh_ptr(&packet.payload[i+10]);
+            if (field_len < 12) {
+                return false;
+            }
+            next_filter_data.tow_ms = be64todouble_ptr(packet.payload, i+2) * 1000; // Convert seconds to ms
+            next_filter_data.week = be16toh_ptr(&packet.payload[i+10]);
             break;
         }
         case FilterPacketField::LLH_POSITION: {
-            filter_data.lat = be64todouble_ptr(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
-            filter_data.lon = be64todouble_ptr(packet.payload, i+10) * 1.0e7;
-            filter_data.hae_altitude = be64todouble_ptr(packet.payload, i+26) * 1.0e2; // Meters to cm
+            if (field_len < 34) {
+                return false;
+            }
+            next_filter_data.lat = be64todouble_ptr(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
+            next_filter_data.lon = be64todouble_ptr(packet.payload, i+10) * 1.0e7;
+            next_filter_data.hae_altitude = be64todouble_ptr(packet.payload, i+26) * 1.0e2; // Meters to cm
             break;
         }
         case FilterPacketField::NED_VELOCITY: {
-            filter_data.ned_velocity_north = be32tofloat_ptr(packet.payload, i+2);
-            filter_data.ned_velocity_east = be32tofloat_ptr(packet.payload, i+6);
-            filter_data.ned_velocity_down = be32tofloat_ptr(packet.payload, i+10);
+            if (field_len < 14) {
+                return false;
+            }
+            next_filter_data.ned_velocity_north = be32tofloat_ptr(packet.payload, i+2);
+            next_filter_data.ned_velocity_east = be32tofloat_ptr(packet.payload, i+6);
+            next_filter_data.ned_velocity_down = be32tofloat_ptr(packet.payload, i+10);
             break;
         }
         case FilterPacketField::ATTITUDE_QUAT: {
-            filter_data.attitude_quat = populate_quaternion(packet.payload, i+2);
-            filter_data.attitude_quat.normalize();
+            if (field_len < 18) {
+                return false;
+            }
+            next_filter_data.attitude_quat = populate_quaternion(packet.payload, i+2);
+            next_filter_data.attitude_quat.normalize();
             break;
         }
         case FilterPacketField::LLH_POSITION_UNCERTAINTY: {
+            if (field_len < 14) {
+                return false;
+            }
             const float north_pos_acc = be32tofloat_ptr(packet.payload, i+2);
             const float east_pos_acc = be32tofloat_ptr(packet.payload, i+6);
             const float down_pos_acc = be32tofloat_ptr(packet.payload, i+10);
-            filter_data.ned_position_uncertainty = Vector3f(
+            next_filter_data.ned_position_uncertainty = Vector3f(
                 north_pos_acc,
                 east_pos_acc,
                 down_pos_acc
@@ -312,10 +387,13 @@ void AP_MicroStrain::handle_filter(const MicroStrain_Packet &packet)
             break;
         }
         case FilterPacketField::NED_VELOCITY_UNCERTAINTY: {
+            if (field_len < 14) {
+                return false;
+            }
             const float north_vel_uncertainty = be32tofloat_ptr(packet.payload, i+2);
             const float east_vel_uncertainty = be32tofloat_ptr(packet.payload, i+6);
             const float down_vel_uncertainty = be32tofloat_ptr(packet.payload, i+10);
-            filter_data.ned_velocity_uncertainty = Vector3f(
+            next_filter_data.ned_velocity_uncertainty = Vector3f(
                 north_vel_uncertainty,
                 east_vel_uncertainty,
                 down_vel_uncertainty
@@ -323,13 +401,21 @@ void AP_MicroStrain::handle_filter(const MicroStrain_Packet &packet)
             break;
         }
         case FilterPacketField::FILTER_STATUS: {
-            filter_status.state = be16toh_ptr(&packet.payload[i+2]);
-            filter_status.mode = be16toh_ptr(&packet.payload[i+4]);
-            filter_status.flags = be16toh_ptr(&packet.payload[i+6]);
+            if (field_len < 8) {
+                return false;
+            }
+            next_filter_status.state = be16toh_ptr(&packet.payload[i+2]);
+            next_filter_status.mode = be16toh_ptr(&packet.payload[i+4]);
+            next_filter_status.flags = be16toh_ptr(&packet.payload[i+6]);
             break;
         }
         }
+        i += field_len;
     }
+    filter_data = next_filter_data;
+    filter_status = next_filter_status;
+    last_filter_pkt = AP_HAL::millis();
+    return true;
 }
 
 Vector3f AP_MicroStrain::populate_vector3f(const uint8_t *data, uint8_t offset)
