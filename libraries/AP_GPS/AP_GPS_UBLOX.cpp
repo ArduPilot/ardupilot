@@ -1631,8 +1631,8 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if GPS_MOVING_BASELINE
     case MSG_RELPOSNED:
         {
-            if (role != AP_GPS::GPS_ROLE_MB_ROVER) {
-                // ignore RELPOSNED if not configured as a rover
+            if (role != AP_GPS::GPS_ROLE_MB_ROVER || _has_dual_antenna_heading) {
+                // ignore RELPOSNED if not configured as a rover, or if yaw comes from DAHEADING
                 break;
             }
             // note that we require the yaw to come from a fixed solution, not a float solution
