@@ -1411,8 +1411,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         x = self.mav.messages.get("CAMERA_FEEDBACK", None)
         if x is not None:
             raise PreconditionFailedException("Receiving CAMERA_FEEDBACK?!")
+
+        # collect the feedback rather than waiting for it: the vehicle
+        # emits it as soon as it latches the new RC value, which can be
+        # before the RC_CHANNELS that set_rc() is itself waiting for -
+        # and that wait reads and discards every other message it sees,
+        # so the feedback is gone by the time we ask for it:
+        #     CAMERA_FEEDBACK  11:32:00.753
+        #     RC values good   11:32:00.754   <- swallowed it
+        #     Did not get CAMERA_FEEDBACK after 10.0 seconds
+        self.context_collect('CAMERA_FEEDBACK')
         self.set_rc(12, 2000)
-        x = self.assert_receive_message('CAMERA_FEEDBACK', timeout=10)
+        x = self.assert_receive_message('CAMERA_FEEDBACK', timeout=10, check_context=True)
         self.set_rc(12, 1000)
 
         self.wait_ready_to_arm()
@@ -1425,14 +1435,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # when it returns, so the camera below can fire well above the
         # window this test then asserts.  TAKEOFF levels off at TKOFF_ALT.
         self.takeoff(takeoff_alt, mode="TAKEOFF")
+        # clear the collection so the only feedback in it is the one this
+        # trigger produces; the altitudes below are asserted against it,
+        # and the message from the trigger on the ground was taken before
+        # the takeoff.
+        self.context_clear_collection('CAMERA_FEEDBACK')
         self.set_rc(12, 2000)
-        # wait for the feedback this trigger produces.  Reading the
-        # cached message instead races the vehicle: the only
-        # CAMERA_FEEDBACK cached at this point is the one from the
-        # trigger on the ground, so if the new one has not arrived yet
-        # the altitudes below are asserted against a message taken
-        # before the takeoff.
-        x = self.assert_receive_message('CAMERA_FEEDBACK')
+        x = self.assert_receive_message('CAMERA_FEEDBACK', check_context=True)
         self.set_rc(12, 1000)
         if abs(x.alt_rel - takeoff_alt) > 10:
             raise NotAchievedException("Bad relalt (want=%f vs got=%f)" % (takeoff_alt, x.alt_rel))
@@ -1451,7 +1460,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         expected_radius = 100
         self.wait_circling_point_with_radius(loc, expected_radius)
 
-        self.context_collect('CAMERA_FEEDBACK')
+        self.context_clear_collection('CAMERA_FEEDBACK')
         self.set_rc(12, 2000)
         self.delay_sim_time(1, reason="camera trigger to register")
         self.set_rc(12, 1000)
