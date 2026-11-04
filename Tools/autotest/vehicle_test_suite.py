@@ -12183,6 +12183,11 @@ Also, ignores heartbeats not from our target system'''
             "LOG_BITMASK": 14,
             "SIM_SPEEDUP": 1,  # there's a wallclock-time thread involved!
         })
+        # CINS, when it is built in, logs whether or not it is the
+        # selected backend, adding about 46kB to the appended log:
+        appended_log_size = (1950*1024, 1980*1024)
+        if self.cins_built_in():
+            appended_log_size = (1995*1024, 2025*1024)
         self.reboot_sitl()
 
         mavproxy = self.start_mavproxy()
@@ -12216,14 +12221,14 @@ Also, ignores heartbeats not from our target system'''
         self.wait_disarmed()
         self.delay_sim_time(15, reason="Allow log persistence to finish")
         self.assert_current_log_filesizes({
-            1: (1950*1024, 1980*1024),
+            1: appended_log_size,
         })
         self.progress("Creating a second log")
         self.arm_vehicle()
         self.wait_disarmed()
         self.delay_sim_time(15, reason="Allow log persistence to finish")
         self.assert_current_log_filesizes({
-            1: (1950*1024, 1980*1024),
+            1: appended_log_size,
             2: (1000*1024, 1100*1024),
         })
 
