@@ -382,7 +382,7 @@ void AC_AutoTune_Heli::do_post_test_gcs_announcements() {
                } else if (tune_type == TuneType::RATE_FF_UP) {
                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: rate_ff=%f", (double)(tune_rff));
                } else if (tune_type == TuneType::ANGLE_P_UP) {
-                   GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: angle_p=%f tune_accel=%f max_accel=%f", (double)(tune_sp), (double)(rad_to_cd(tune_accel_radss)), (double)(test_accel_max_cdss));
+                   GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: angle_p=%f tune_accel=%f max_accel=%f", (double)(tune_sp), (double)(degrees(tune_accel_radss)), (double)(test_accel_max_cdss * 0.01f));
                }
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: max_freq=%f max_gain=%f", (double)(sweep_tgt.maxgain.freq), (double)(sweep_tgt.maxgain.gain));
@@ -731,7 +731,7 @@ void AC_AutoTune_Heli::report_axis_gains(const char* axis_string, float rate_P, 
 {
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s complete", axis_string);
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s Rate: P:%0.4f, I:%0.4f, D:%0.5f, FF:%0.4f", axis_string, rate_P, rate_I, rate_D, rate_ff);
-    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s Angle P:%0.2f, Max Accel:%0.0f", axis_string, angle_P, rad_to_cd(max_accel_radss));
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s Angle P:%0.2f, Max Accel:%0.0f", axis_string, angle_P, degrees(max_accel_radss));
 }
 
 void AC_AutoTune_Heli::dwell_test_init(float start_frq, float stop_frq, float amplitude, float filt_freq, FreqRespInput freq_resp_input, FreqRespCalcType calc_type, AC_AutoTune_FreqResp::ResponseType resp_type, AC_AutoTune_FreqResp::InputType waveform_input_type)
