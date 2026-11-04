@@ -22187,6 +22187,76 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if first_att_us is None or first_att_us > ekf_active_us:
             raise NotAchievedException("No attitude logged before the AHRS switched to EKF3")
 
+    def LandedAttitudeTargetPinned(self):
+        '''check the attitude target is held at the vehicle's attitude while landed'''
+        # an attitude target which goes bad on the ground is flown as
+        # soon as the vehicle takes off, so while landed the target
+        # should be the vehicle's attitude, whatever the sticks say
+        self.set_message_rate_hz('NAV_CONTROLLER_OUTPUT', 10)
+        self.set_message_rate_hz('ATTITUDE', 10)
+
+        def assert_target_pinned(description):
+            self.progress(f"Checking attitude target is pinned: {description}")
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 3:
+                nav = self.assert_receive_message('NAV_CONTROLLER_OUTPUT')
+                att = self.assert_receive_message('ATTITUDE')
+                for axis, target, actual in (("roll", nav.nav_roll, math.degrees(att.roll)),
+                                             ("pitch", nav.nav_pitch, math.degrees(att.pitch))):
+                    if abs(target - actual) > 3:
+                        raise NotAchievedException(
+                            f"{description}: target {axis}={target:.1f} attitude {axis}={actual:.1f}")
+
+        def deflect_sticks():
+            self.set_rc(1, 2000)  # full right roll
+            self.set_rc(2, 1000)  # full forward pitch
+
+        def centre_sticks():
+            self.set_rc(1, 1500)
+            self.set_rc(2, 1500)
+
+        self.wait_ready_to_arm()
+        for mode in "STABILIZE", "ALT_HOLD", "LOITER":
+            self.change_mode(mode)
+            deflect_sticks()
+            assert_target_pinned(f"{mode} disarmed")
+            centre_sticks()
+            self.arm_vehicle()
+            deflect_sticks()
+            assert_target_pinned(f"{mode} armed, throttle low")
+            if mode != "STABILIZE":
+                # mid-stick throttle spools up for takeoff without climbing
+                self.set_rc(3, 1500)
+                assert_target_pinned(f"{mode} armed, waiting to take off")
+                self.set_rc(3, 1000)
+            centre_sticks()
+            self.disarm_vehicle()
+
+        # Stabilize also drops to ground idle in flight when the throttle
+        # is cut; the vehicle is not landed, so the target must still
+        # follow the sticks
+        self.start_subtest("Stabilize throttle cut in flight")
+        self.takeoff(50, mode="GUIDED")
+        self.set_rc(3, 1500)
+        self.change_mode("STABILIZE")
+        self.set_rc(3, 1000)
+        self.delay_sim_time(1.5, reason="throttle-zero debounce and spool down")
+        self.set_rc(1, 2000)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 2:
+                raise NotAchievedException("attitude target did not follow the sticks with the throttle cut")
+            nav = self.assert_receive_message('NAV_CONTROLLER_OUTPUT')
+            att = self.assert_receive_message('ATTITUDE')
+            if nav.nav_roll - math.degrees(att.roll) > 10:
+                break
+        centre_sticks()
+        self.set_rc(3, 1500)
+        self.change_mode("ALT_HOLD")
+        self.delay_sim_time(5, reason="recover from the throttle cut")
+        self.change_mode("LAND")
+        self.wait_disarmed(timeout=180)
+
     def AHRSOriginRecorded(self):
         """Test AHRS option to record and reuse origin"""
         self.context_push()
@@ -24215,6 +24285,7 @@ return update, 1000
             self.GuidedForceArm,
             self.AHRSOriginRecorded,
             self.InvertedBoardBootAttitudeTarget,
+            self.LandedAttitudeTargetPinned,
             self.ScriptingOSD,
             self.ScriptingOSDDisplayPortReplies,
             self.ScriptingOSDDrawScreen,
