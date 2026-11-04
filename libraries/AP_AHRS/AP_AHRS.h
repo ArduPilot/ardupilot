@@ -879,10 +879,10 @@ private:
     Matrix3f _rotation_autopilot_body_to_vehicle_body;
     Matrix3f _rotation_vehicle_body_to_autopilot_body;
 
-    // last time orientation was updated from AHRS_ORIENTATION, and
-    // the value read then:
-    uint32_t last_orientation_update_ms;
+    // the board orientation from AHRS_ORIENTATION, and whether it has
+    // been read yet:
     enum Rotation board_orientation;
+    bool board_orientation_known;
 
     // updates matrices responsible for rotating vectors from vehicle body
     // frame to autopilot body frame from _trim variables

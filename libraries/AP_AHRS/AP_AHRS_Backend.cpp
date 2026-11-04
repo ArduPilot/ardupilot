@@ -67,28 +67,20 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
   return the orientation the board is mounted in, from
   AHRS_ORIENTATION.
 
-  The parameter is read at most once a second, and never while armed,
-  so that the rotation applied to sensor data can not change under a
-  flying vehicle and so that every sensor sees the same value.
+  The value is held once the vehicle is armed, so that the rotation
+  applied to sensor data can not change under a flying vehicle.  A
+  vehicle which has never read it is the exception: after a mid-air
+  reboot, or on a Plane with ARMING_REQUIRED=NO, it has to be picked
+  up while armed or not at all.
  */
 enum Rotation AP_AHRS::get_board_orientation()
 {
-    const uint32_t now_ms = AP_HAL::millis();
-
-    if (last_orientation_update_ms != 0) {
-        if (now_ms - last_orientation_update_ms < 1000) {
-            // only update once/second
-            return board_orientation;
-        }
-        if (hal.util->get_soft_armed()) {
-            // never update while armed - unless we've never updated
-            // (e.g. mid-air reboot or ARMING_REQUIRED=NO on Plane):
-            return board_orientation;
-        }
+    if (board_orientation_known && hal.util->get_soft_armed()) {
+        return board_orientation;
     }
 
-    last_orientation_update_ms = now_ms;
     board_orientation = (enum Rotation)_board_orientation.get();
+    board_orientation_known = true;
 
     return board_orientation;
 }
