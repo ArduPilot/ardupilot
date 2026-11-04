@@ -16571,7 +16571,8 @@ switch value'''
                     result.passed = False
                     if abandoned_workers:
                         result.reason = ("Test runner hung and was abandoned "
-                                         "(thread stacks in run output)")
+                                         "(thread stacks in "
+                                         "buildlogs/hung-worker-*-stacks.txt)")
                     else:
                         result.reason = "Test runner exited without returning a result"
                     results.append(result)
@@ -16591,8 +16592,9 @@ switch value'''
             silence = time.monotonic() - last_result_time
             if silence > stack_dump_interval * (stack_dumps_sent + 1):
                 alive = [t for t in self.workers if t.is_alive()]
-                self.progress("No results for %us; dumping thread stacks of %u worker(s) to run output" %
-                              (silence, len(alive)))
+                self.progress("No results for %us; dumping thread stacks of %u worker(s) to %s" %
+                              (silence, len(alive),
+                               self.buildlogs_path("hung-worker-<instance>-stacks.txt")))
                 for t in alive:
                     os.kill(t.pid, signal.SIGUSR1)
                 stack_dumps_sent += 1
@@ -16819,9 +16821,21 @@ switch value'''
     def worker_process_main(self, instance):
         self.instance = instance
         # let the dispatcher interrogate us if we hang: SIGUSR1 makes
-        # faulthandler write every thread's stack to stderr (the run
-        # log) without killing us
-        faulthandler.register(signal.SIGUSR1, all_threads=True)
+        # faulthandler write every thread's stack out without killing
+        # us.  Each worker writes to a file of its own rather than to
+        # the shared stderr: the dispatcher signals every live worker
+        # at once, and faulthandler writes directly to the fd with no
+        # locking, so several workers dumping into the run log
+        # interleave character-by-character and destroy the one
+        # diagnostic this path exists to produce.  Append, so the
+        # dumps the dispatcher takes every stack_dump_interval
+        # accumulate.  Keep the file referenced for the life of the
+        # worker - faulthandler needs the fd to stay open.
+        self.stack_dump_path = self.buildlogs_path(
+            "hung-worker-%u-stacks.txt" % instance)
+        self.stack_dump_file = open(self.stack_dump_path, "a")
+        faulthandler.register(signal.SIGUSR1, file=self.stack_dump_file,
+                              all_threads=True)
         # move into this worker's private working directory; from here on
         # all cwd-relative paths (logs/, eeprom.bin, terrain/, ...) are
         # isolated from the other workers:
