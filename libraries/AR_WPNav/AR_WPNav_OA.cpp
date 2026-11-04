@@ -33,7 +33,15 @@ void AR_WPNav_OA::update(float dt)
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
         _desired_lat_accel = 0.0f;
         _desired_turn_rate_rads = 0.0f;
-        _oa_active = false;
+        if (_oa_active) {
+            // reset target to original destination, otherwise the
+            // avoidance destination would be backed up as the original.
+            // This fails without a position, in which case avoidance is
+            // left active so the original stays backed up
+            if (AR_WPNav::set_desired_location(_destination_oabak)) {
+                _oa_active = false;
+            }
+        }
         return;
     }
 
