@@ -570,10 +570,31 @@ void GCS_MAVLINK_Sub::handle_manual_control_axes(const mavlink_manual_control_t 
 void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
+    case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
+        handle_message_rc_channels_override(msg);
+        break;
+    case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
+        handle_message_set_attitude_target(msg);
+        break;
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
+        handle_message_set_position_target_local_ned(msg);
+        break;
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
+        handle_message_set_position_target_global_int(msg);
+        break;
+    case MAVLINK_MSG_ID_SYS_STATUS:
+        handle_message_sys_status(msg);
+        break;
+    default:
+        GCS_MAVLINK::handle_message(msg);
+        break;
+    }
+}
 
-    case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
+void GCS_MAVLINK_Sub::handle_message_rc_channels_override(const mavlink_message_t &msg)
+{
         if (!gcs().sysid_is_gcs(msg.sysid)) {
-            break;    // Only accept control from our gcs
+            return;    // Only accept control from our gcs
         }
 
         sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
@@ -581,11 +602,10 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         // from the ground station for failsafe purposes
         
         handle_rc_channels_override(msg);
-        break;
-    }
+}
 
-    
-    case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET: { // MAV ID: 82
+void GCS_MAVLINK_Sub::handle_message_set_attitude_target(const mavlink_message_t &msg)
+{
         // decode packet
         mavlink_set_attitude_target_t packet;
         mavlink_msg_set_attitude_target_decode(&msg, &packet);
@@ -598,7 +618,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
 
         // ensure type_mask specifies to use attitude and thrust
         if ((packet.type_mask & ((1<<7)|(1<<6))) != 0) {
-            break;
+            return;
         }
 
         // convert thrust to climb rate
@@ -614,17 +634,17 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
             climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_down_cms();
         }
         sub.mode_guided.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_cms);
-        break;
-    }
+}
 
-    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED: {   // MAV ID: 84
+void GCS_MAVLINK_Sub::handle_message_set_position_target_local_ned(const mavlink_message_t &msg)
+{
         // decode packet
         mavlink_set_position_target_local_ned_t packet;
         mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
         if ((sub.control_mode != Mode::Number::GUIDED) && !(sub.control_mode == Mode::Number::AUTO && sub.auto_mode == Auto_NavGuided)) {
-            break;
+            return;
         }
 
         // check for supported coordinate frames
@@ -633,7 +653,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
                 packet.coordinate_frame != MAV_FRAME_BODY_NED &&
                 packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED &&
                 packet.coordinate_frame != MAV_FRAME_BODY_FRD) {
-            break;
+            return;
         }
 
         bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
@@ -645,7 +665,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
 
         // Force inputs are not supported
         if (force_set && !acc_ignore) {
-            break;
+            return;
         }
 
         // prepare position
@@ -712,11 +732,10 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
             sub.mode_guided.guided_set_destination(pos_vector_neu_cm, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         }
+}
 
-        break;
-    }
-
-    case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT: {  // MAV ID: 86
+void GCS_MAVLINK_Sub::handle_message_set_position_target_global_int(const mavlink_message_t &msg)
+{
         // decode packet
         mavlink_set_position_target_global_int_t packet;
         mavlink_msg_set_position_target_global_int_decode(&msg, &packet);
@@ -725,7 +744,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         if ((sub.control_mode != Mode::Number::GUIDED)
             && !(sub.control_mode == Mode::Number::AUTO && sub.auto_mode == Auto_NavGuided)
             && !(sub.control_mode == Mode::Number::ALT_HOLD)) {
-            break;
+            return;
         }
 
         bool z_ignore        = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_Z_IGNORE;
@@ -742,24 +761,24 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
 
         // Force inputs are not supported
         if (force_set && !acc_ignore) {
-            break;
+            return;
         }
 
         if (!z_ignore && sub.control_mode == Mode::Number::ALT_HOLD) { // Control only target depth when in ALT_HOLD
             sub.pos_control.set_pos_desired_U_cm(packet.alt*100);
-            break;
+            return;
         }
 
         Location loc;
         if (!pos_ignore) {
             // sanity check location
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
-                break;
+                return;
             }
             Location::AltFrame frame;
             if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.coordinate_frame, frame)) {
                 // unknown coordinate frame
-                break;
+                return;
             }
             loc = {
                 packet.lat_int,
@@ -777,7 +796,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         if (!pos_ignore && !vel_ignore) {
             Vector3f pos_neu_cm;
             if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
-                break;
+                return;
             }
             sub.mode_guided.guided_set_posvelaccel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), acc_vector_neu_cmss);
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
@@ -785,12 +804,11 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
             sub.mode_guided.guided_set_destination(loc);
         }
+}
 
-        break;
-    }
-
+void GCS_MAVLINK_Sub::handle_message_sys_status(const mavlink_message_t &msg)
+{
     // Remote leak sensor support (e.g. in a separate enclosure), via MAVLink status messages.
-    case MAVLINK_MSG_ID_SYS_STATUS: {
         mavlink_sys_status_t packet;
         mavlink_msg_sys_status_decode(&msg, &packet);
         if ((msg.sysid == gcs().sysid_this_mav()) &&
@@ -799,14 +817,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
             !(packet.onboard_control_sensors_health_extended & MAV_SYS_STATUS_SENSOR_LEAK)) {
             sub.leak_detector.set_detect();
         }
-        break;
-    }
-
-    default:
-        GCS_MAVLINK::handle_message(msg);
-        break;
-    }     // end switch
-} // end handle mavlink
+}
 
 uint64_t GCS_MAVLINK_Sub::capabilities() const
 {
