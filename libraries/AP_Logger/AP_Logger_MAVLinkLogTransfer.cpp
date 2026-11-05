@@ -300,6 +300,11 @@ bool AP_Logger::handle_log_send_data()
 {
     WITH_SEMAPHORE(_log_send_sem);
 
+    // Only the radio on the download link can throttle this transfer.
+    if (!_log_sending_link->radio_txbuf_is_greater(33)) {
+        return false;
+    }
+
     if (!HAVE_PAYLOAD_SPACE(_log_sending_link->get_chan(), LOG_DATA)) {
         // no space
         return false;
