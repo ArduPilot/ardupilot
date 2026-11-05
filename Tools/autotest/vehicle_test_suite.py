@@ -16706,6 +16706,17 @@ switch value'''
                     result = self.result_queue.get(block=False)
                     self.progress("Received result (%s)" % str(result))
                     results.append(result)
+                    # each worker times its own tests into its own copy
+                    # of test_timings, which dies with the fork, so
+                    # --show-test-timings printed nothing at all under
+                    # --parallel - and build_ci.sh passes both.  The
+                    # time came back on the result all along; record it
+                    # here, where the parent can see it.  Keyed by
+                    # description, as the serial path keys it, so the
+                    # two produce the same table.  A result which never
+                    # ran its test carries 0.0 and is left out.
+                    if result.time_elapsed:
+                        self.test_timings[result.test.description] = result.time_elapsed
                     last_result_time = time.monotonic()
                     stack_dumps_sent = 0
                     if not hasattr(self, "fcu_firmware_version"):
