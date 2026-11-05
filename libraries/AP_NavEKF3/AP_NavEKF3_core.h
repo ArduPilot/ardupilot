@@ -230,6 +230,13 @@ public:
     // returns false if the origin has already been set
     bool setOriginLLH(const Location &loc);
 
+    // true once this core has its origin
+    bool haveOrigin() const { return validOrigin; }
+
+    // before this core has an origin, the origin it would set; see
+    // NavEKF3::getOriginCandidate()
+    bool getOriginCandidate(Location &origin) const;
+
     // Set the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty
     // The altitude element of the location is not used.
     // Returns true if the set was successful
@@ -1208,8 +1215,18 @@ private:
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsIsInUse;                // bool true when GPS data is being used to correct states estimates
     Location EKF_origin;     // LLH origin of the NED axis system, internal only
-    Location &public_origin; // LLH origin of the NED axis system, public functions
+    const Location &public_origin; // LLH origin of the NED axis system, public functions
     bool validOrigin;               // true when the EKF origin is valid
+
+    // the origin this core offers before it has one; see
+    // getOriginCandidate()
+    struct {
+        Location origin;        // the origin we would set
+        ftype hgtVar;           // variance of the origin height it gives (m^2)
+        double gpsRefHgt;       // ekfGpsRefHgt to take with the origin (m)
+        bool have_gpsRefHgt;    // true if gpsRefHgt is set
+        bool valid;
+    } originCandidate;
     ftype gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     ftype gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
     ftype gpsHgtAccuracy;           // estimated height accuracy in m returned by the GPS receiver

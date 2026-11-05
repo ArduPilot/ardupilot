@@ -685,30 +685,22 @@ void NavEKF3_core::readGpsData()
     // Read the GPS location in WGS-84 lat,long,height coordinates
     const Location &gpsloc = gps.location(selected_gps);
 
-    // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
+    // Once the GPS checks have passed, offer an origin if we have none.
+    // We don't set it ourselves: AP_AHRS establishes the common origin
+    // and gives it to us through setOriginLLH(), which also sets the
+    // magnetic field declination and the GPS reference height:
     if (gpsGoodToAlign && !validOrigin) {
-        Location gpsloc_fieldelevation = gpsloc; 
+        originCandidate.origin = gpsloc;
         // if flying, correct for height change from takeoff so that the origin is at field elevation
         if (inFlight) {
-            gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
+            originCandidate.origin.alt += (int32_t)(100.0f * stateStruct.position.z);
         }
-
-        if (!setOriginLLH(gpsloc_fieldelevation)) {
-            // set an error as an attempt was made to set the origin more than once
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            return;
-        }
-
-        // set the NE earth magnetic field states using the published declination
-        // and set the corresponding variances and covariances
-        alignMagStateDeclination();
-
-        // Set the height of the NED origin
-        ekfGpsRefHgt = (double)0.01 * (double)gpsloc.alt + (double)outputDataNew.position.z;
-
-        // Set the uncertainty of the GPS origin height
-        ekfOriginHgtVar = sq(gpsHgtAccuracy);
-
+        originCandidate.hgtVar = sq(gpsHgtAccuracy);
+        // the height of our local height datum, as when we set the
+        // origin ourselves:
+        originCandidate.gpsRefHgt = (double)0.01 * (double)gpsloc.alt + (double)outputDataNew.position.z;
+        originCandidate.have_gpsRefHgt = true;
+        originCandidate.valid = true;
     }
 
     if (gpsGoodToAlign && !have_table_earth_field) {
@@ -1008,19 +1000,15 @@ void NavEKF3_core::readRngBcnData()
         const ftype posDiffVar = sq(rngBcn.vehiclePosErr) + rngBcn.receiverPosCov[0][0] + rngBcn.receiverPosCov[1][1];
         if (posDiffSq < 9.0f * posDiffVar) {
             rngBcn.goodToAlign = true;
-            // Set the EKF origin and magnetic field declination if not previously set
+            // Offer the beacon system's origin if we have none.  As
+            // for GPS, the origin is given back to us by setOriginLLH()
             if (!validOrigin && (PV_AidingMode != AID_ABSOLUTE)) {
-                // get origin from beacon system
                 Location origin_loc;
                 if (beacon->get_origin(origin_loc)) {
-                    setOriginLLH(origin_loc);
-
-                    // set the NE earth magnetic field states using the published declination
-                    // and set the corresponding variances and covariances
-                    alignMagStateDeclination();
-
-                    // Set the uncertainty of the origin height
-                    ekfOriginHgtVar = sq(rngBcn.vehiclePosErr);
+                    originCandidate.origin = origin_loc;
+                    originCandidate.hgtVar = sq(rngBcn.vehiclePosErr);
+                    originCandidate.have_gpsRefHgt = false;
+                    originCandidate.valid = true;
                 }
             }
         } else {
