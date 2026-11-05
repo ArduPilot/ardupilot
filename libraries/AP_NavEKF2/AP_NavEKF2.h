@@ -139,9 +139,21 @@ public:
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
-    // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-    // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(const Location &loc);
+    // The filter does not choose an origin itself.  AP_AHRS gives it
+    // the common origin every update, and Replay gives it the origins
+    // recorded in the log.  It takes the origin if it, or a core which
+    // has been reset, has none, and ignores it otherwise; it is never
+    // given a different one.  Only the calls which give a core its
+    // origin are logged for Replay.
+    // Logs recorded before the filter stopped choosing its own origin
+    // have no record of the origin it chose, so the filter has no
+    // origin when they are replayed.
+    void setOriginLLH(const Location &loc);
+
+    // before the filter has an origin it offers the one it would set:
+    // the primary core's, or another core's if the primary has none.
+    // Returns false if it has no candidate, or already has an origin
+    bool getOriginCandidate(Location &origin) const;
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -408,9 +420,12 @@ private:
     const uint8_t fusionTimeStep_ms = 10;          // The minimum time interval between covariance predictions and measurement fusions in msec
     const float maxYawEstVelInnov = 2.0f;          // Maximum acceptable length of the velocity innovation returned by the EKF-GSF yaw estimator (m/s)
 
-    // origin set by one of the cores
-    Location common_EKF_origin;
-    bool common_origin_valid;
+    // the origin given by setOriginLLH(), which every core takes
+    Location public_origin;
+    bool public_origin_valid;
+
+    // true if the filter has no origin yet, or a core needs it again
+    bool originNeeded() const;
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
