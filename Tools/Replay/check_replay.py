@@ -49,6 +49,15 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
                 base_count += 1
                 base_counts[mtype] += 1
                 continue
+            if core-100 not in base[mtype]:
+                # a replayed message whose original we never saw: the log is
+                # not a faithful pair, and there is nothing to compare
+                # against.  Say so - indexing blind raises KeyError, whose
+                # str() is the bare core number, and the caller reports that
+                # as the whole reason for the failure.
+                progress("No base %s for core %u to compare against" % (mtype, core-100))
+                errors += 1
+                continue
             mb = base[mtype][core-100]
             count += 1
             counts[mtype] += 1
