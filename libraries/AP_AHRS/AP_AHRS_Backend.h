@@ -282,8 +282,17 @@ public:
         float hagl;
     };
 
+    // what AP_AHRS gives every backend's update(), as Estimates is
+    // what each backend gives back:
+    struct Inputs {
+        // the origin of the navigation frame, once AP_AHRS has one.
+        // Backends report origin-relative positions against it:
+        Location origin;
+        bool origin_ok;
+    };
+
     // Methods
-    virtual void update() = 0;
+    virtual void update(const Inputs &inputs) = 0;
 
     virtual void get_results(Estimates &results) = 0;
 

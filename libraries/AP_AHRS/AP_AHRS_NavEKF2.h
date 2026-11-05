@@ -37,7 +37,7 @@ public:
 
     void reset_gyro_drift() override { EKF2.resetGyroBias(); }
 
-    void update() override;
+    void update(const Inputs &inputs) override;
 
     void get_results(Estimates &results) override;
     void reset() override {

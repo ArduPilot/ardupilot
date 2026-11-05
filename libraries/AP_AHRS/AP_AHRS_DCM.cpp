@@ -71,8 +71,12 @@ AP_AHRS_DCM::reset_gyro_drift(void)
 
 // run a full DCM update round
 void
-AP_AHRS_DCM::update()
+AP_AHRS_DCM::update(const Inputs &inputs)
 {
+    if (inputs.origin_ok) {
+        common_origin = inputs.origin;
+    }
+
     AP_InertialSensor &_ins = AP::ins();
 
     // ask the IMU how much time this sensor reading represents
@@ -111,9 +115,6 @@ AP_AHRS_DCM::update()
     _sin_yaw = sinf(yaw);
 
     backup_attitude();
-
-    // remember the last origin for fallback support
-    IGNORE_RETURN(AP::ahrs().get_origin(last_origin));
 
     // update our wind estimate when a new GPS sample arrives and we
     // have a 3D fix; the GPS velocity is what feeds the wind triangle.
@@ -1506,7 +1507,7 @@ bool AP_AHRS_DCM::synthetic_airspeed_EAS(const Estimates &results, float &airspe
 */
 bool AP_AHRS_DCM::get_origin(Location &ret) const
 {
-    ret = last_origin;
+    ret = common_origin;
     if (ret.is_zero()) {
         // use home if we never have had an origin
         ret = AP::ahrs().get_home();

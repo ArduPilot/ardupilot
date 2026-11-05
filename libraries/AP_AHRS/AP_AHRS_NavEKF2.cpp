@@ -42,7 +42,7 @@ bool AP_AHRS_NavEKF2::start()
     return EKF2.InitialiseFilter();
 }
 
-void AP_AHRS_NavEKF2::update()
+void AP_AHRS_NavEKF2::update(const Inputs &inputs)
 {
     if (!started) {
         started = start();
@@ -50,6 +50,14 @@ void AP_AHRS_NavEKF2::update()
     if (!started) {
         return;
     }
+
+    // take the common origin if we don't have one yet; once started,
+    // the cores accept it:
+    Location ekf_origin;
+    if (inputs.origin_ok && !EKF2.getOriginLLH(ekf_origin)) {
+        IGNORE_RETURN(EKF2.setOriginLLH(inputs.origin));
+    }
+
     EKF2.UpdateFilter();
 
     // check the current primary core; if it has changed then assume
