@@ -593,6 +593,8 @@ public:
         uint8_t node_id;
         uint8_t protocol;
         uint32_t baudrate;
+        uint32_t last_init_attempt_ms;
+        uint32_t write_dropped;
         bool locked;
     } uart_monitors[SERIALMANAGER_MAX_PORTS];
     void send_serial_monitor_data_instance(UARTMonitor &monitor);

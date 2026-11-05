@@ -85,7 +85,7 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
     if (uart_num < 0) {
         return;
     }
-    if (uint8_t(uart_num) > ARRAY_SIZE(uart_monitors)) {
+    if (uint8_t(uart_num) >= ARRAY_SIZE(uart_monitors)) {
         return;
     }
     auto &uart_monitor = uart_monitors[uart_num];
@@ -121,24 +121,30 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
     }
     uart_monitor.node_id = transfer->source_node_id;
     uart_monitor.protocol = pkt.protocol.protocol;
-    if (pkt.baudrate != uart_monitor.baudrate || !was_locked) {
+    const uint32_t now_ms = AP_HAL::millis();
+    const bool retry_init = !uart_monitor.uart->is_initialized() &&
+                            now_ms - uart_monitor.last_init_attempt_ms >= 1000U;
+    if (pkt.baudrate != uart_monitor.baudrate || !was_locked || retry_init) {
         if (uart_monitor.locked && pkt.baudrate != 0) {
             // ensure we have enough buffer space for a uBlox fw update and fast uCenter data
+            uart_monitor.last_init_attempt_ms = now_ms;
             uart_monitor.uart->begin_locked(pkt.baudrate, 2048, 2048, TUNNEL_LOCK_KEY);
             debug("begin_locked %u", unsigned(pkt.baudrate));
         }
         uart_monitor.baudrate = pkt.baudrate;
     }
-    uart_monitor.last_request_ms = AP_HAL::millis();
+    uart_monitor.last_request_ms = now_ms;
 
     // write to device
     if (pkt.buffer.len > 0) {
+        size_t written;
         if (uart_monitor.locked) {
             debug("write_locked %u", unsigned(pkt.buffer.len));
-            uart_monitor.uart->write_locked(pkt.buffer.data, pkt.buffer.len, TUNNEL_LOCK_KEY);
+            written = uart_monitor.uart->write_locked(pkt.buffer.data, pkt.buffer.len, TUNNEL_LOCK_KEY);
         } else {
-            uart_monitor.uart->write(pkt.buffer.data, pkt.buffer.len);
+            written = uart_monitor.uart->write(pkt.buffer.data, pkt.buffer.len);
         }
+        uart_monitor.write_dropped += pkt.buffer.len - MIN(written, pkt.buffer.len);
     } else {
         debug("locked keepalive");
     }
@@ -179,7 +185,10 @@ void AP_Periph_FW::send_serial_monitor_data_instance(AP_Periph_FW::UARTMonitor &
          */
         uint8_t buf[120];
         for (uint8_t i=0; i<8; i++) {
-            if (uart_monitor.uart->read_locked(buf, sizeof(buf), TUNNEL_LOCK_KEY) <= 0) {
+            // read_locked consumes the UART data and copies it into the monitor.
+            // Leave data in the UART until the monitor has room for all of it.
+            const uint32_t count = MIN(sizeof(buf), uart_monitor.buffer->space());
+            if (count == 0 || uart_monitor.uart->read_locked(buf, count, TUNNEL_LOCK_KEY) <= 0) {
                 break;
             }
         }

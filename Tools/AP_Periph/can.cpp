@@ -1102,6 +1102,25 @@ bool AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
         return false;
     }
 
+#if AP_UART_MONITOR_ENABLED
+    if (data_type_id == UAVCAN_TUNNEL_TARGETTED_ID) {
+        // Leave room for RCInput, node status and receive reassembly. The
+        // serial monitor retains this transfer and retries after CAN drains.
+        uint16_t bytes_per_frame = CANARD_CAN_FRAME_MAX_DATA_LEN - 1U;
+#if CANARD_ENABLE_CANFD
+        if (canfdout()) {
+            bytes_per_frame = CANARD_CANFD_FRAME_MAX_DATA_LEN - 1U;
+        }
+#endif
+        const uint16_t frames = payload_len <= bytes_per_frame ? 1U :
+                                (payload_len + 2U + bytes_per_frame - 1U) / bytes_per_frame;
+        const auto stats = canardGetPoolAllocatorStatistics(&dronecan.canard);
+        if (stats.current_usage_blocks + frames > stats.capacity_blocks / 2U) {
+            return false;
+        }
+    }
+#endif
+
     uint8_t *tid_ptr = get_tid_ptr(MAKE_TRANSFER_DESCRIPTOR(data_type_signature, data_type_id, 0, CANARD_BROADCAST_NODE_ID));
     if (tid_ptr == nullptr) {
         return false;
