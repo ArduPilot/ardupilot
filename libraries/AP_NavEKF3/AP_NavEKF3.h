@@ -403,6 +403,9 @@ private:
     uint8_t primary;   // current primary core
     NavEKF3_core *core = nullptr;
 
+    // the core whose bias for an IMU getAccelBiasForIMU() returns, nullptr if none uses it
+    const NavEKF3_core *coreUsingAccel(uint8_t imu_index) const;
+
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
   
