@@ -1197,3 +1197,7 @@ singleton AP_OSD_Backend method draw_screen void
 singleton AP_OSD_Backend method get_aspect_ratio_correction float
 singleton AP_OSD_Backend method get_screen uint8_t
 singleton AP_OSD_Backend method display_disabled boolean
+
+-- Typed dynamic parameters for native modules; existing add_param remains float.
+singleton AP_Param method add_param_typed boolean uint8_t 0 200 uint8_t 1 63 string float'skip_check uint8_t 1 4 boolean
+singleton AP_Param method add_param_typed depends AP_PARAM_DYNAMIC_ENABLED
