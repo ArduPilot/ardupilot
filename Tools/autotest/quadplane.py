@@ -1504,12 +1504,64 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         )
         self.reboot_sitl()
 
+        self.fly_simple_transition('Transition FW done')
+
+        self.assert_transition_state_logging('TSTR', 'QB', [0, 2, 1, 0], absent='SLT')
+
+    def assert_transition_state_logging(self, msgtype, fmt, expected_states, absent):
+        '''check the current onboard log defines msgtype with format fmt,
+        that its Trn field passed through expected_states in order and
+        that no absent messages were logged'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        found_fmt = None
+        states = []
+        while True:
+            m = dfreader.recv_match(type=['FMT', msgtype, absent])
+            if m is None:
+                break
+            m_type = m.get_type()
+            if m_type == 'FMT':
+                if m.Name == msgtype:
+                    found_fmt = m.Format
+                continue
+            if m_type == absent:
+                raise NotAchievedException(f"Unexpected {absent} message logged")
+            if len(states) == 0 or states[-1] != m.Trn:
+                states.append(m.Trn)
+        if found_fmt != fmt:
+            raise NotAchievedException(f"{msgtype} format {found_fmt} want {fmt}")
+        self.progress(f"{msgtype}.Trn sequence: {states}")
+        if any(s not in (0, 1, 2) for s in states):
+            raise NotAchievedException(f"Bad {msgtype}.Trn value in {states}")
+        remaining = iter(states)
+        if not all(s in remaining for s in expected_states):
+            raise NotAchievedException(f"{msgtype}.Trn {states} does not pass through {expected_states}")
+
+    def fly_simple_transition(self, transition_done_text):
+        '''take off in VTOL, transition to fixed-wing, fly for a while
+        and return in QRTL, failing on any ground strike before the
+        final landing descent and on a hard one at any time'''
+        self.context_push()
+        self.install_message_hook_context(vehicle_test_suite.TestSuite.FailFastHardGroundStrike(self, 5))
         self.takeoff(30, mode='GUIDED')
+        self.context_push()
+        self.install_message_hook_context(vehicle_test_suite.TestSuite.FailFastStatusText(self, "SIM Hit ground"))
+        self.context_collect('STATUSTEXT')
         self.set_rc(3, 2000)
         self.change_mode('FBWA')
-        self.wait_groundspeed(5, 300)
+        self.wait_statustext(transition_done_text, check_context=True, timeout=120)
+        self.delay_sim_time(10, reason="fly fixed-wing")
         self.change_mode('QRTL')
-        self.wait_disarmed(timeout=600)
+        self.wait_statustext('Land final started', check_context=True, timeout=300)
+        self.context_pop()
+        self.wait_disarmed(timeout=300)
+        self.context_pop()
+
+    def SLTTransition(self):
+        '''simple transition for separate lift thrust quadplane'''
+        self.fly_simple_transition('Transition done')
+
+        self.assert_transition_state_logging('SLT', 'QB', [0, 1, 2], absent='TSTR')
 
     def CopterTailsitterTransition(self):
         '''simple transition for copter tailsitter'''
@@ -1521,12 +1573,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         )
         self.reboot_sitl()
 
-        self.takeoff(30, mode='GUIDED')
-        self.set_rc(3, 2000)
-        self.change_mode('FBWA')
-        self.wait_groundspeed(5, 300)
-        self.change_mode('QRTL')
-        self.wait_disarmed(timeout=600)
+        self.fly_simple_transition('Transition FW done')
+
+        self.assert_transition_state_logging('TSTR', 'QB', [0, 2, 1, 0], absent='SLT')
 
     def CopterTailsitter(self):
         '''copter tailsitter test'''
@@ -4623,6 +4672,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownload,
             self.QRTLGradualAltDescent,
             self.QAssist,
+            self.SLTTransition,
             self.CopterTailsitterTransition,
             self.CopterTailsitter,
             self.ICEngine,
