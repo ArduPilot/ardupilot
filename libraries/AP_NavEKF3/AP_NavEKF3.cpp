@@ -1339,21 +1339,31 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
     }
 }
 
-// get accel bias for a specific IMU by finding the core that uses it
-bool NavEKF3::getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const
+// the first core using an IMU's accel, nullptr if none does or the accel is not in use
+const NavEKF3_core *NavEKF3::coreUsingAccel(uint8_t imu_index) const
 {
     if (!core || imu_index >= INS_MAX_INSTANCES || !dal.ins().use_accel(imu_index)) {
-        return false;
+        return nullptr;
     }
     // a core whose preferred accel is unusable runs on another one, so match the
     // accel it is actually using rather than the one it was set up with
     for (uint8_t i = 0; i < num_cores; i++) {
         if (core[i].getAccelIndex() == imu_index) {
-            core[i].getAccelBias(accelBias);
-            return true;
+            return &core[i];
         }
     }
-    return false;
+    return nullptr;
+}
+
+// get accel bias for a specific IMU by finding the core that uses it
+bool NavEKF3::getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const
+{
+    const NavEKF3_core *c = coreUsingAccel(imu_index);
+    if (c == nullptr) {
+        return false;
+    }
+    c->getAccelBias(accelBias);
+    return true;
 }
 
 // get the number of times any core has restarted its accel bias estimate for an IMU: zeroed it, as a
