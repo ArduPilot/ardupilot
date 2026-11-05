@@ -240,6 +240,7 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
     }
     origin_NE *= 0.01f;
     destination_NE *= 0.01f;
+    _destination_NE = destination_NE;
 
     // calculate track to destination
     if (_fast_waypoint && !_scurve_next_leg.finished()) {
@@ -275,6 +276,7 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
                 return false;
             }
             next_destination_NE *= 0.01f;
+            _next_destination_NE = next_destination_NE;
             _scurve_next_leg.calculate_track(Vector3p{destination_NE.x, destination_NE.y, 0.0f},
                                              Vector3p{next_destination_NE.x, next_destination_NE.y, 0.0f},
                                              0.0, // arc length is zero for straight track
@@ -616,8 +618,7 @@ void AR_WPNav::update_limits()
     }
 
     // update limits
-    // Note this won't be applied to s-curve legs until the next waypoint, or (in 
-    // the case of fast waypoints, the waypoint-after-next)
+    // Note: accel/jerk changes cannot be applied to the current leg's s-curve mid-track without resetting progress
     const float accel_max = get_accel_max();
     const float jerk_max = get_jerk_max();
     const float speed_max = MAX(_base_speed_max, _nudge_speed_max);
@@ -640,9 +641,28 @@ void AR_WPNav::update_limits()
     // update position controller.
     _pos_control.set_limits(speed_max, accel_max, lat_accel_max, jerk_max);
 
-    // change track speed
+    // change track speed for the current leg (accel/jerk cannot change mid-track without resetting progress)
     _scurve_this_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
-    _scurve_next_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
+
+    // update next leg limits. This can only be done before blending with the _scurve_next_leg
+    if (_fast_waypoint && _orig_and_dest_valid) {
+        if (is_zero(_scurve_next_leg.get_time_elapsed())) {
+            _scurve_next_leg.calculate_track(Vector3p{_destination_NE.x, _destination_NE.y, 0.0f},
+                                             Vector3p{_next_destination_NE.x, _next_destination_NE.y, 0.0f},
+                                             0.0,
+                                             _pos_control.get_speed_max(),
+                                             _pos_control.get_speed_max(),
+                                             _pos_control.get_speed_max(),
+                                             _pos_control.get_accel_max(),
+                                             _pos_control.get_accel_max(),
+                                             _pos_control.get_accel_max(),
+                                             AR_WPNAV_SNAP_MAX,
+                                             _pos_control.get_jerk_max());
+        } else {
+            _scurve_next_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
+        }
+    }
+
 }
 
 float AR_WPNav::get_accel_max() const
