@@ -177,8 +177,15 @@ public:
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
-    // returns false if absolute aiding and GPS is being used or if the origin is already set
+    // returns false if the origin is already set
     bool setOriginLLH(const Location &loc);
+
+    // true once this core has its origin
+    bool haveOrigin() const { return validOrigin; }
+
+    // before this core has an origin, the origin it would set; see
+    // NavEKF2::getOriginCandidate()
+    bool getOriginCandidate(Location &origin) const;
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -865,6 +872,16 @@ private:
     uint8_t last_gps_idx;           // sensor ID of the GPS receiver used for the last fusion or reset
     Location EKF_origin;     // LLH origin of the NED axis system
     bool validOrigin;               // true when the EKF origin is valid
+
+    // the origin this core offers before it has one; see
+    // getOriginCandidate()
+    struct {
+        Location origin;        // the origin we would set
+        ftype hgtVar;           // variance of the origin height it gives (m^2)
+        double gpsRefHgt;       // ekfGpsRefHgt to take with the origin (m)
+        bool have_gpsRefHgt;    // true if gpsRefHgt is set
+        bool valid;
+    } originCandidate;
     ftype gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     ftype gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
     ftype gpsHgtAccuracy;           // estimated height accuracy in m returned by the GPS receiver
