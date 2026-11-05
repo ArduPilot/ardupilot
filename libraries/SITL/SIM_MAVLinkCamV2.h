@@ -57,6 +57,7 @@ private:
     void send_camera_capture_status();
     bool send_video_stream_information(uint8_t stream_id);
     void send_camera_command_ack(uint32_t target_sysid, uint8_t target_compid,
+                                  uint32_t command_opaque_id,
                                   MAV_CMD cmd, MAV_RESULT result);
 
     uint8_t  _camera_compid {MAV_COMP_ID_CAMERA};

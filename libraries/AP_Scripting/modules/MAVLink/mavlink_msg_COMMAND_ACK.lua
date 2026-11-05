@@ -1,6 +1,7 @@
 local COMMAND_ACK = {}
 COMMAND_ACK.id = 77
 COMMAND_ACK.crc_extra = 143
+COMMAND_ACK.extensions_start = 2
 COMMAND_ACK.fields = {
              { "command", "<I2" },
              { "result", "<B" },
@@ -8,5 +9,6 @@ COMMAND_ACK.fields = {
              { "result_param2", "<i4" },
              { "target_system", "<B" },
              { "target_component", "<B" },
+             { "command_opaque_id", "<I4" },
              }
 return COMMAND_ACK

@@ -81,6 +81,8 @@ void AP_Mount_SToRM32::send_target_angles(const MountAngleTarget& angle_target_r
                                   degrees(angle_target_rad.roll),
                                   -degrees(angle_target_rad.get_bf_yaw()),
                                   0, 0, 0,  // param4 ~ param6 unused
-                                  MAV_MOUNT_MODE_MAVLINK_TARGETING);
+                                  MAV_MOUNT_MODE_MAVLINK_TARGETING,
+                                  0  // opaque ID
+        );
 }
 #endif // HAL_MOUNT_STORM32MAVLINK_ENABLED

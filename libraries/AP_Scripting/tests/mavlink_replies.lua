@@ -36,7 +36,7 @@ for _, source in ipairs({42, 255, 256, 70000, 0x7fffffff, 0x80000000, 0xffffffff
         local is_param = script:find('param-lockdown', 1, true)
         local command = script:find('BQ40Z', 1, true) and 246 or 31000
         local payload = is_param and string.pack('<fBBc16B', 78, 1, 1, 'DISARM_DELAY', 9)
-            or string.pack('<fffffffHBBB', 2, 0, 0, 0, 0, 0, 0, command, 1, 1, 0)
+            or string.pack('<fffffffHBBBI4', 2, 0, 0, 0, 0, 0, 0, command, 1, 1, 0, 0x12345678)
         pending = string.pack('<I2BBBBBI4BI3', 0, 253, #payload, 2, 0, 0, source, component,
                               is_param and 23 or 76)
             .. payload .. string.rep('\0', 279 - #payload) .. string.pack('<I4', 0)
@@ -61,9 +61,11 @@ for _, source in ipairs({42, 255, 256, 70000, 0x7fffffff, 0x80000000, 0xffffffff
             assert(index == -1 and name:gsub('%z', '') == 'DISARM_DELAY' and result == 3)
         else
             assert(reply.id == 77)
-            local ack_command, result, progress, result_param2
-            ack_command, result, progress, result_param2, target, target_component = string.unpack('<HBBi4BB', reply.payload)
+            local ack_command, result, progress, result_param2, command_opaque_id
+            ack_command, result, progress, result_param2, target, target_component, command_opaque_id =
+                string.unpack('<HBBi4BBI4', reply.payload)
             assert(progress == 0 and result_param2 == 0)
+            assert(command_opaque_id == 0x12345678, script .. ' did not echo command_opaque_id')
             assert(ack_command == command and result == (command == 246 and 4 or 2))
         end
         -- The binding replaces the payload placeholder and supplies the header.

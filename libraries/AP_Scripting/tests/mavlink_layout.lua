@@ -46,4 +46,25 @@ for _, wide in ipairs({false, true}) do
   local value, _, _, name = string.unpack('<fBBc16', data, offset)
   assert(header.sysid == source and value == 123.5 and name:gsub('%z','') == 'CRUISE_SPEED')
 end
+-- Extension fields a script does not set, e.g. ones added after it was
+-- written, are encoded as zero, or as an empty string for char arrays.
+-- Any other unset field raises an error naming it.
+do
+  local id, payload = mav.encode('COMMAND_ACK', {command = 300, result = 4})
+  assert(id == 77 and payload == string.pack('<HBBi4BBI4', 300, 4, 0, 0, 0, 0, 0))
+  local ok, err = pcall(mav.encode, 'COMMAND_LONG', {
+    target_sytem = 1, target_component = 1, command = 400, confirmation = 0,
+    param1 = 1, param2 = 0, param3 = 0, param4 = 0, param5 = 0, param6 = 0, param7 = 0,
+  })
+  assert(not ok and string.find(err, 'target_system', 1, true), err)
+  package.loaded['MAVLink/mavlink_msg_ENCODE_TEST'] = {
+    id = 1, crc_extra = 0, extensions_start = 1,
+    fields = {{ 'value', '<f' }, { 'name', '<c4' }, { 'data', '<B', 2 }},
+  }
+  id, payload = mav.encode('ENCODE_TEST', {value = 1.5})
+  assert(id == 1 and payload == string.pack('<fc4BB', 1.5, '', 0, 0))
+  ok, err = pcall(mav.encode, 'ENCODE_TEST', {})
+  assert(not ok and string.find(err, 'value', 1, true), err)
+  package.loaded['MAVLink/mavlink_msg_ENCODE_TEST'] = nil
+end
 print('MAVLink layout and target tests passed')
