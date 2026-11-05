@@ -47,13 +47,6 @@ public:
         started = EKF2.InitialiseFilter();
     }
 
-    bool get_origin(Location &ret) const override {
-        return EKF2.getOriginLLH(ret);
-    }
-    bool set_origin(const Location &loc) override {
-        return EKF2.setOriginLLH(loc);
-    }
-
     bool use_compass() override {
         return EKF2.use_compass();
     }
