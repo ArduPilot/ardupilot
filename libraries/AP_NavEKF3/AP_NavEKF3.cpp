@@ -1346,13 +1346,22 @@ const NavEKF3_core *NavEKF3::coreUsingAccel(uint8_t imu_index) const
         return nullptr;
     }
     // a core whose preferred accel is unusable runs on another one, so match the
-    // accel it is actually using rather than the one it was set up with
+    // accel it is actually using rather than the one it was set up with. The core set up on
+    // the accel comes first: a core that switched onto it holds an estimate it only learnt
+    // while the accel was inactive, and reporting that would change the estimate returned
+    const NavEKF3_core *switched_core = nullptr;
     for (uint8_t i = 0; i < num_cores; i++) {
-        if (core[i].getAccelIndex() == imu_index) {
+        if (core[i].getAccelIndex() != imu_index) {
+            continue;
+        }
+        if (coreImuIndex[i] == imu_index) {
             return &core[i];
         }
+        if (switched_core == nullptr) {
+            switched_core = &core[i];
+        }
     }
-    return nullptr;
+    return switched_core;
 }
 
 // get accel bias for a specific IMU by finding the core that uses it
