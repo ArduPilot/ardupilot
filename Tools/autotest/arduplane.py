@@ -5724,17 +5724,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         loc = Location.latlon_only(-35.362938, 149.165085)
         if self.get_distance(loc, self.get_location()) > 35:
             raise NotAchievedException("Did not land close to home")
+        # bit 0 of AUTOLAND_OPTIONS is AUTOLAND_DIR_ON_ARM, which takes the
+        # direction from the compass at arming rather than from ground course
+        # later on.  TKOFF_OPTIONS bit 1, set here before, is not a defined
+        # bit at all.
         self.set_parameters({
-            "TKOFF_OPTIONS": 2,
+            "AUTOLAND_OPTIONS": 1,
         })
         self.wait_ready_to_arm()
         self.set_autodisarm_delay(0)
+        # the first arm put an "Autoland direction" into the collection, and
+        # matching that one would say nothing about this arm
+        self.context_clear_collection('STATUSTEXT')
         self.arm_vehicle()
         self.progress("Check the set dir on arm option")
         self.wait_text("Autoland direction", check_context=True)
-        # the statustext is already in the collection from the first arm, so
-        # this returns at once; disarm rather than leaving it to the
-        # auto-disarm which the context-pop restore happens to re-enable
+        # disarm rather than leaving it to the auto-disarm which the
+        # context-pop restore happens to re-enable
         self.disarm_vehicle()
 
     def RCDisableAirspeedUse(self):
