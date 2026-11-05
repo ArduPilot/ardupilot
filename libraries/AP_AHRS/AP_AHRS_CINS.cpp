@@ -765,6 +765,11 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
         results.position_D_valid = true;
     }
     results.position_D_reset_count = position_D_reset_count;
+    // the location's altitude follows the published height, so it is
+    // the baro's too while that is in use:
+    if (results.location_valid && height_source == HeightSource::BARO) {
+        results.location.alt = state.origin.alt - int32_t(results.position_D * 100);
+    }
 
     /*
      * Sensor-related information
