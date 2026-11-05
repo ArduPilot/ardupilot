@@ -726,6 +726,10 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     if (height_source == HeightSource::BARO) {
         results.vert_pos_rate_D = -AP::baro().get_climb_rate();
         results.vert_pos_rate_D_valid = true;
+        // the published height is the baro's, so pair it with the
+        // baro climb rate rather than the IMU's vertical velocity in
+        // the velocity vector the position controllers prefer:
+        results.velocity_NED.z = results.vert_pos_rate_D;
     } else {
         results.vert_pos_rate_D = results.velocity_NED.z;
         results.vert_pos_rate_D_valid = (height_source == HeightSource::CINS);
