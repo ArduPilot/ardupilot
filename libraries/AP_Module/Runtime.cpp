@@ -12,6 +12,9 @@
 #include "BindingDroneCAN.h"
 #include "BindingI2C.h"
 #include "BindingSharedState.h"
+#if defined(AP_MODULE_SX1280_ENABLED) && AP_MODULE_SX1280_ENABLED
+#include <AP_Radio/driver_sx1280_module.h>
+#endif
 #include "BindingMAVLink.h"
 #include "BindingNetwork.h"
 #include "BindingONVIF.h"
@@ -121,6 +124,15 @@ Runtime::Runtime()
         AP_HAL::panic("Duplicate module runtime");
     }
     _singleton = this;
+}
+
+bool Runtime::callback_address(void *context, uint32_t address, void *&rw)
+{
+    if (context == nullptr) {
+        return false;
+    }
+    const auto &slot = *static_cast<Slot *>(context);
+    return slot.module != nullptr && slot.module->callback_address(address, rw);
 }
 
 void Runtime::fail(const char *reason, bool preserve_error, const char *prearm_reason)
@@ -577,6 +589,11 @@ void Runtime::poll_modules()
             continue;
         }
         const auto state = module->state();
+#if defined(AP_MODULE_SX1280_ENABLED) && AP_MODULE_SX1280_ENABLED
+        if (state == Module::State::Returned || state == Module::State::Panicked) {
+            SX1280Module::remove(&slot);
+        }
+#endif
         if (state == Module::State::Panicked && !slot.panic_reported) {
             slot.panic_reported = true;
             char reason[80];
@@ -636,6 +653,9 @@ void Runtime::poll_modules()
         binding_dronecan_cleanup(&slot);
         binding_i2c_cleanup(&slot);
         binding_shared_state_cleanup(&slot);
+#if defined(AP_MODULE_SX1280_ENABLED) && AP_MODULE_SX1280_ENABLED
+        SX1280Module::remove(&slot);
+#endif
         binding_can_cleanup(&slot);
         binding_crsf_cleanup(&slot);
         binding_custom_mode_cleanup(&slot);
@@ -712,6 +732,9 @@ void Runtime::begin_stop(bool reload)
         auto &slot = *item;
         if (slot.module != nullptr) {
             slot.module->request_stop();
+#if defined(AP_MODULE_SX1280_ENABLED) && AP_MODULE_SX1280_ENABLED
+            SX1280Module::remove(&slot);
+#endif
         }
     }
     WITH_SEMAPHORE(_sem);

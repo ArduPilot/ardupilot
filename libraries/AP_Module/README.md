@@ -306,7 +306,9 @@ Module exit cleans up owned resources but does not undo ordinary vehicle state
 changes, such as modes, mission edits or RC/output overrides. Host calls can
 block on devices or filesystem/parameter locks and cannot be interrupted by stop.
 The module heap does not account for all host-owned queues/registry storage.
-No module function pointers are registered with firmware.
+The experimental AP_Periph SX1280 binding registers a trusted native event/action
+callback. Its host gate serializes calls, pins code/RWPI memory until return and
+revokes the callback before module release. It is not a general sandbox boundary.
 
 The optional H7 MPU stack guard (`--enable-STACK_GUARD`) defaults off and is
 compatible with USB debugging. It can recover a narrowly attributable stack

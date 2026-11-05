@@ -53,7 +53,13 @@ def test_invalid_model_is_rejected():
 def test_adapter_models_cover_shared_calls_and_not_source_templates():
     spec = bindings.specification()
     calls = model.calls(spec)
-    assert len(calls) == 51
+    assert len(calls) == 61
+    assert calls['periph.sx1280_register'].input_size == 8
+    assert calls['periph.sx1280_stats'].output_size == 20
+    assert (calls['periph.sx1280_configure'].input_size, calls['periph.sx1280_configure'].output_size) == (12, 1)
+    assert (calls['periph.sx1280_snapshot'].input_size, calls['periph.sx1280_snapshot'].output_size) == (4, 16)
+    assert calls['periph.elrs_codec_register'].input_size == 8
+    assert calls['periph.elrs_codec_stats'].output_size == 20
     assert calls['airspeed.get_backend'].output_size == 1
     assert calls['RangeFinderBackend.get_state'].output_size == 13
     assert calls['ProximityBackend.handle_script_3d_msg'].input_size == 14

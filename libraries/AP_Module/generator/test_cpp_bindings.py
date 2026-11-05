@@ -106,6 +106,10 @@ AirspeedBackend.handle_script_airspeed 5 1
 AirspeedBackend.handle_script_differential_pressure 5 1
 AirspeedBackend.handle_script_temperature 5 1
 periph.get_vehicle_state 0 8
+periph.elrs_shadow 0 36
+periph.elrs_codec_register 8 1
+periph.elrs_codec_stats 0 20
+periph.debug_write 256 0
 parameter.old_value 7 5
 MotorsDynamic.init 1 1
 MotorsDynamic.add_motor 2 1

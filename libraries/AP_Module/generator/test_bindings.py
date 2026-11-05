@@ -45,7 +45,7 @@ def selection():
 def test_contract_preserves_semantics(ir, selection):
     contract = select(ir, selection)
     methods = {method['rust_name']: method for method in contract['methods']}
-    assert len(methods) == 27
+    assert len(methods) == 28
     assert methods['ahrs_airspeed_eas']['aliases'] == ['ahrs_airspeed_estimate']
     assert methods['ahrs_get_hagl']['lock'] == 'semaphore'
     assert methods['vehicle_get_mode']['lock'] == 'scheduler-semaphore'
@@ -315,6 +315,9 @@ public:
     // No legacy add_table: selecting the wrong path must fail compilation.
     static bool add_table_persistent(uint8_t key, const char *name, uint8_t count) {
         parameter_calls++; return key == 200 && !strcmp(name, "TEST_") && count == 63;
+    }
+    static bool add_param_typed(uint8_t key, uint8_t index, const char *name, float v, uint8_t type, bool hidden) {
+        return type == 3 && hidden && add_param(key, index, name, v);
     }
     static bool add_param(uint8_t key, uint8_t index, const char *name, float v) {
         parameter_calls++; parameter_value = v; return key == 200 && index == 63 && !strcmp(name, "VALUE");
@@ -709,7 +712,14 @@ def test_parameter_wire_and_ranges(dispatcher):
     assert output.raw[0] == (1 if dynamic else ord('x'))
     assert call('add_param', bytes([200, 63]) + name_field('VALUE') + struct.pack('<f', 12)) == (0 if dynamic else -3)
     assert output.raw[0] == (1 if dynamic else ord('x'))
+    typed = bytes([200, 63]) + name_field('VALUE') + struct.pack('<f', 12)
+    assert call('add_param_typed', typed + bytes([3, 1])) == (0 if dynamic else -3)
+    assert output.raw[0] == (1 if dynamic else ord('x'))
     if dynamic:
+        for kind, hidden in ((0, 0), (5, 0), (3, 2)):
+            before = lib.param_calls()
+            assert call('add_param_typed', typed + bytes([kind, hidden])) == -1
+            assert lib.param_calls() == before
         before = lib.param_calls()
         for key, count in ((201, 1), (255, 1), (0, 0), (0, 64)):
             assert call('add_table', bytes([key]) + name_field('TEST_') + bytes([count])) == -1

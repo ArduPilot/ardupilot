@@ -70,12 +70,15 @@ PARAM_ARGUMENTS = {
     'get': [('string', False), ('float', True)],
     'add_table': [('uint8_t', False), ('string', False), ('uint8_t', False)],
     'add_param': [('uint8_t', False), ('uint8_t', False), ('string', False), ('float', False)],
+    'add_param_typed': [('uint8_t', False), ('uint8_t', False), ('string', False),
+                        ('float', False), ('uint8_t', False), ('boolean', False)],
     'set_by_name': [('string', False), ('float', False)],
     'set_and_save_by_name': [('string', False), ('float', False)],
     'set_default_by_name': [('string', False), ('float', False)],
 }
 PARAM_RANGES = {'add_table': {0: ['0', '200'], 2: ['1', '63']},
-                'add_param': {0: ['0', '200'], 1: ['1', '63']}}
+                'add_param': {0: ['0', '200'], 1: ['1', '63']},
+                'add_param_typed': {0: ['0', '200'], 1: ['1', '63'], 4: ['1', '4']}}
 PARAM_POLICY = 'v1:nonempty-nul-free-bytes-max16-zero-pad17,finite-inputs,checked-integer-range,persistent-tables'
 
 
@@ -987,6 +990,26 @@ def emit(contract):
         method = contract['periph']['methods'][0]
         cpp += [f'    case {method["id"]}:',
                 '        return binding_periph_get_vehicle_state(input, input_size, output, output_size);']
+        cpp += [f'    case {contract["periph"]["methods"][1]["id"]}:',
+                '        return binding_periph_elrs_shadow(input, input_size, output, output_size);']
+        cpp += [f'    case {contract["periph"]["methods"][2]["id"]}:',
+                '        return binding_periph_elrs_codec_register(context, input, input_size, output, output_size);',
+                f'    case {contract["periph"]["methods"][3]["id"]}:',
+                '        return binding_periph_elrs_codec_stats(input, input_size, output, output_size);']
+        cpp += [f'    case {contract["periph"]["methods"][4]["id"]}:',
+                '        return binding_periph_debug_write(input, input_size, output, output_size);']
+        cpp += [f'    case {contract["periph"]["methods"][5]["id"]}:',
+                '        return binding_periph_elrs_service_register(context, input, input_size, output, output_size);',
+                f'    case {contract["periph"]["methods"][6]["id"]}:',
+                '        return binding_periph_elrs_service_stats(input, input_size, output, output_size);']
+        cpp += [f'    case {contract["periph"]["methods"][7]["id"]}:',
+                '        return binding_periph_sx1280_register(context, input, input_size, output, output_size);',
+                f'    case {contract["periph"]["methods"][8]["id"]}:',
+                '        return binding_periph_sx1280_stats(input, input_size, output, output_size);']
+        cpp += [f'    case {contract["periph"]["methods"][9]["id"]}:',
+                '        return binding_periph_sx1280_configure(context, input, input_size, output, output_size);',
+                f'    case {contract["periph"]["methods"][10]["id"]}:',
+                '        return binding_periph_sx1280_snapshot(context, input, input_size, output, output_size);']
     if contract['old_parameter'] is not None:
         method = contract['old_parameter']['methods'][0]
         cpp += [f'    case {method["id"]}:',

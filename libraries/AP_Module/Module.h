@@ -92,6 +92,9 @@ public:
                         Source source_type = Source::File, const char **error_detail = nullptr);
     // Creates the heap and worker. Refuses repeated or stopped starts. Failed
     // creation leaves no worker; the prepared module can be retried or released.
+    // Trusted native callback export. Caller must revoke before release and pin
+    // RX/RW during calls; this only validates ownership, not callback behavior.
+    bool callback_address(uint32_t address, void *&rw) const;
     bool start();
     void request_stop();
     // May join the exit epilogue; call only from the low-priority manager.
@@ -144,6 +147,7 @@ private:
     AP_HAL::ExecutableMemory *_rx_memory{};
     void *_rw_allocation{};
     uint8_t *_rx{};
+    uint32_t _code_length{};
     uint8_t *_rw{};
     uint32_t _rw_allocation_size{};
     AP_HAL::Scheduler::OwnedThread *_thread{};

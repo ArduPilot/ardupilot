@@ -37,6 +37,7 @@ public:
         return _singleton;
     }
     static const AP_Param::GroupInfo var_info[];
+    static bool callback_address(void *context, uint32_t address, void *&rw);
     void init();
     bool enabled() const { return _enable != 0; }
     void update();

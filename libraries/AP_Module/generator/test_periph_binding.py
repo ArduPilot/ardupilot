@@ -18,7 +18,7 @@ def test_selection_and_rust_contract(tmp_path):
     assert 'pub fn get_vehicle_state(&self)' in generated
     source = tmp_path / 'periph.rs'
     source.write_text('''#![no_std]
-pub enum Error { Host } pub type Result<T=()> = core::result::Result<T,Error>;
+pub enum Error { Host, Invalid } pub type Result<T=()> = core::result::Result<T,Error>;
 pub fn result(v:i32)->Result {if v==0 {Ok(())} else {Err(Error::Host)}}
 pub struct Api { pub binding_call:Option<unsafe extern "C" fn(*mut core::ffi::c_void,u32,*const u8,u32,*mut u8,u32)->i32> }
 pub struct Context<'a>{raw:*mut core::ffi::c_void,api:&'a Api}
@@ -27,7 +27,11 @@ pub mod bindings {
     pub struct Periph<'context, 'api> { pub(crate) context: &'context Context<'api> }
 }
 pub mod imports {pub struct Import; impl Import {pub const fn slot(&self)->u32{0}}
-pub static BINDING_900:Import=Import;}
+pub static BINDING_900:Import=Import; pub static BINDING_901:Import=Import;
+pub static BINDING_902:Import=Import; pub static BINDING_903:Import=Import; pub static BINDING_904:Import=Import;
+pub static BINDING_905:Import=Import; pub static BINDING_906:Import=Import;
+pub static BINDING_907:Import=Import; pub static BINDING_908:Import=Import;
+pub static BINDING_909:Import=Import; pub static BINDING_910:Import=Import;}
 mod generated {
 ''' + generated + '}\n')
     subprocess.run([os.environ.get('RUSTC', 'rustc'), '--crate-type', 'lib', '--edition=2021',
@@ -72,3 +76,25 @@ extern "C" int call(uint8_t *output) {
     output = ctypes.create_string_buffer(8)
     assert lib.call(output) == 0
     assert output.raw == bytes.fromhex('1032547698badcfe')
+    # Reuse the stub board to exercise the actual STDOUT adapter, including
+    # literal percent signs and canonical zero padding.
+    source.write_text(r'''
+#include "BindingPeriph.h"
+#include <assert.h>
+int main() {
+    uint8_t text[256]{};
+    memcpy(text,"Rust 100% %s",12);
+    assert(AP_Module::binding_periph_debug_write(text,256,nullptr,0)==AP_MODULE_STATUS_OK);
+    text[255]=1;
+    assert(AP_Module::binding_periph_debug_write(text,256,nullptr,0)==AP_MODULE_STATUS_INVALID);
+    memset(text,'x',256);
+    assert(AP_Module::binding_periph_debug_write(text,256,nullptr,0)==AP_MODULE_STATUS_INVALID);
+    assert(AP_Module::binding_periph_debug_write(text,255,nullptr,0)==AP_MODULE_STATUS_INVALID);
+}
+''')
+    executable = tmp_path / 'stdout'
+    subprocess.run([os.environ.get('CXX', 'c++'), '-std=c++17', '-Wall', '-Wextra', '-Werror',
+                    '-DHAL_BUILD_AP_PERIPH=1', '-DHAL_STDOUT_SERIAL=1',
+                    '-I' + str(tmp_path / 'libraries'), '-I' + str(tmp_path), '-I' + str(bindings.ROOT),
+                    str(source), '-o', str(executable)], check=True)
+    assert subprocess.check_output([str(executable)]) == b'Rust 100% %s\r\n'

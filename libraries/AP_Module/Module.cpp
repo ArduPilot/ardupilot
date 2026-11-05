@@ -121,6 +121,7 @@ Module *Module::load(const uint8_t *source, size_t length, const char *name,
     if (module == nullptr) {
         return nullptr;
     }
+    module->_code_length = image.code_size();
     module->_initial_heap = image.initial_heap_size();
     module->_worker_stack = image.required_stack_size() + margin;
     module->_thread_priority = image.thread_priority();
@@ -204,6 +205,24 @@ bool Module::start()
     return _started;
 }
 
+bool Module::callback_address(uint32_t address, void *&rw) const
+{
+#if defined(__ARM_ARCH_7EM__)
+    const uintptr_t pc = address & ~uintptr_t(1);
+    const uintptr_t start = reinterpret_cast<uintptr_t>(_rx);
+    if ((address & 1) == 0 || pc < start || pc - start >= _code_length ||
+        _stop.load() || _returned.load() || _panicked.load()) {
+        return false;
+    }
+    rw = _rw;
+    return true;
+#else
+    (void)address;
+    (void)rw;
+    return false;
+#endif
+}
+
 void Module::run()
 {
     _result = invoke(_entry, &_api, this, _rw);
@@ -216,8 +235,8 @@ __attribute__((naked, noinline)) int32_t Module::invoke(Start entry, const AP_Mo
 {
     // The module's RWPI static base lives in r9. Preserve the firmware value
     // and LR across the native call while retaining 8-byte stack alignment.
-    // There are no firmware-to-module callbacks: the single initial entry
-    // passes this gate. Module-to-firmware callbacks obey AAPCS and therefore
+    // The worker entry passes this gate. A separately pinned pure callback
+    // must provide its own RWPI gate. Module-to-firmware calls obey AAPCS and therefore
     // preserve r9. A module fatal callback never returns or unwinds this
     // frame, so all module resources remain owned.
     asm volatile(
