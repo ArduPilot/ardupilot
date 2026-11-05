@@ -6,9 +6,15 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
-void AP_AHRS_External::update()
+void AP_AHRS_External::update(const Inputs &inputs)
 {
-    AP::externalAHRS().update();
+    auto &extahrs = AP::externalAHRS();
+    extahrs.update();
+
+    Location ext_origin;
+    if (inputs.origin_ok && !extahrs.get_origin(ext_origin)) {
+        IGNORE_RETURN(extahrs.set_origin(inputs.origin));
+    }
 }
 
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
