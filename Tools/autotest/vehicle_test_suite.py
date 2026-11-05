@@ -19529,12 +19529,16 @@ switch value'''
             # are the same place only at instance zero, so anywhere else the
             # log lands somewhere we never look:
             #     Expected exactly one new log from Replay, got ([])
+            # not output=True: run_cmd returns the captured output in that
+            # case and never looks at the exit status, so checkfail does
+            # nothing and a Replay which died is simply not noticed - the
+            # check below then compares against whatever log is lying around.
+            # Letting its output through to ours puts it in the test log.
             util.run_cmd(
                 [self.replay_tool, filepath],
                 directory=os.getcwd(),
                 checkfail=True,
                 show=True,
-                output=True,
             )
             # with the SITL stopped Replay is the only writer, so its output
             # is simply the log which appeared while it ran.  Work this out
