@@ -635,6 +635,8 @@ public:
     // registrations. This does not lock general parameter reads or writes.
     static bool add_table_persistent(uint8_t key, const char *prefix, uint8_t num_params);
     static bool add_param(uint8_t key, uint8_t param_num, const char *pname, float default_value);
+    static bool add_param_typed(uint8_t key, uint8_t param_num, const char *pname,
+                                float default_value, uint8_t type, bool hidden);
     static bool load_int32(uint16_t key, uint32_t group_element, int32_t &value);
 #endif
 

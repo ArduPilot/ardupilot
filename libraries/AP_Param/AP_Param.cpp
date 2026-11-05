@@ -3368,6 +3368,22 @@ bool AP_Param::load_int32(uint16_t key, uint32_t group_element, int32_t &value)
  */
 bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, float default_value)
 {
+    return add_param_typed(_key, param_num, pname, default_value, AP_PARAM_FLOAT, false);
+}
+
+bool AP_Param::add_param_typed(uint8_t _key, uint8_t param_num, const char *pname,
+                               float default_value, uint8_t type, bool hidden)
+{
+    if (pname == nullptr || type < AP_PARAM_INT8 || type > AP_PARAM_FLOAT || !std::isfinite(default_value)) {
+        return false;
+    }
+    if (type != AP_PARAM_FLOAT) {
+        const double lower = type == AP_PARAM_INT8 ? -128.0 : type == AP_PARAM_INT16 ? -32768.0 : -2147483648.0;
+        const double upper = type == AP_PARAM_INT8 ? 127.0 : type == AP_PARAM_INT16 ? 32767.0 : 2147483647.0;
+        if (default_value < lower || default_value > upper || truncf(default_value) != default_value) {
+            return false;
+        }
+    }
     WITH_SEMAPHORE(_dynamic_registration_sem);
     if (_var_info_dynamic == nullptr) {
         // No dynamic tables available
@@ -3404,7 +3420,9 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
 
     if (_dynamic_table_persistent[i]) {
         const auto &entry = info.group_info[param_num];
-        if (entry.name != _empty_string && strcmp(entry.name, pname) != 0) {
+        if (entry.name != _empty_string &&
+            (strcmp(entry.name, pname) != 0 || entry.type != type ||
+             bool(entry.flags & AP_PARAM_FLAG_HIDDEN) != hidden)) {
             return false;
         }
     }
@@ -3429,12 +3447,12 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
 
     // Get param object
     AP_Float *pvalues = const_cast<AP_Float *>((const AP_Float *)info.ptr);
-    AP_Float &p = pvalues[param_num];
+    AP_Param *p = reinterpret_cast<AP_Param *>(&pvalues[param_num]);
 
     // Check for conflicting name
     enum ap_var_type existingType;
     AP_Param* existingParam = find(fullName, &existingType);
-    if ((existingParam != nullptr) && ((existingType != AP_PARAM_FLOAT) || ((AP_Float*)existingParam != &p))) {
+    if ((existingParam != nullptr) && ((existingType != type) || (existingParam != p))) {
         // There is a existing parameter with this name (which is not this parameter from a previous script run)
         return false;
     }
@@ -3465,17 +3483,17 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     ginfo.idx = param_num;
     float *def_value = const_cast<float *>(&ginfo.def_value);
     *def_value = default_value;
-    ginfo.type = AP_PARAM_FLOAT;
+    ginfo.type = type;
 
     // load from storage if available, the param is hidden during this
     // load so the param is not visible to MAVLink until after it is
     // loaded
-    p.set_default(default_value);
-    p.load();
+    set_value(static_cast<ap_var_type>(type), p, default_value);
+    p->load();
 
     // clear the hidden flag if set and invalidate the count
     // so we recount the parameters
-    ginfo.flags = 0;
+    ginfo.flags = hidden ? AP_PARAM_FLAG_HIDDEN : 0;
     invalidate_count();
     
     return true;
