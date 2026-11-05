@@ -48,11 +48,11 @@ private:
     void expect_bool(const char *label, bool actual, bool expected);
     void worker_attempt(const char *label, bool expected);
 
-    volatile bool worker_result = false;
+    volatile bool worker_result;
 public:
     bool test_ok = true;
-    bool complete = false;
-    uint32_t complete_ms = 0;
+    bool complete;
+    uint32_t complete_ms;
 };
 
 void SemaphoreRecursionTest::expect_bool(const char *label, bool actual, bool expected)
