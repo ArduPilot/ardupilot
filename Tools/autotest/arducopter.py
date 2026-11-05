@@ -18767,6 +18767,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # a different motors-on offset, so a save would show in the value as well as the message
         self.set_parameter("SIM_ACC_VRF_Z", 2 * vrf)
         assert_kept(fly(2), first, "Hover Z-bias not saved: not first flight")
+
+        self.start_subtest("An accel switch at rest after a flight keeps it: it zeroes no bias")
+        # the core switches back onto the accel taking the bias it held for it, the hover bias
+        self.set_parameter("INS_USE", 0)
+        self.delay_sim_time(2, "the core runs on another accel")
+        self.set_parameter("INS_USE", 1)
+        assert_kept(fly(15), first, "Hover Z-bias not saved: not first flight")
         self.set_parameter("SIM_ACC_VRF_Z", vrf)
 
         self.start_subtest("With bit 2 any flight saves, the whole hover bias")
