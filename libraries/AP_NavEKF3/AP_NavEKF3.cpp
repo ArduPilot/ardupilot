@@ -1366,6 +1366,16 @@ bool NavEKF3::getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const
     return true;
 }
 
+// get the time in msec the accel bias getAccelBiasForIMU() returns for an IMU was last zeroed, as a
+// core does when it starts and when one bias variance reaches its floor. A core switching onto the
+// IMU, or another core taking over reporting it, zeroes nothing: the estimate it takes was zeroed
+// when its own time says. 0 if no core uses the IMU
+uint32_t NavEKF3::getAccelBiasZeroTimeForIMU(uint8_t imu_index) const
+{
+    const NavEKF3_core *c = coreUsingAccel(imu_index);
+    return (c == nullptr) ? 0 : c->getAccelBiasZeroTime_ms(imu_index);
+}
+
 // get the number of times any core has restarted its accel bias estimate for an IMU: zeroed it, as a
 // core does when it starts and when one bias variance reaches its floor, or switched onto or off the
 // IMU, which changes the estimate the core holds for it or the core getAccelBiasForIMU() reports.

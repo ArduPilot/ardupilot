@@ -109,6 +109,9 @@ public:
     // get the number of times any core has restarted its accel bias estimate for an IMU
     uint16_t getAccelBiasResetCountForIMU(uint8_t imu_index) const;
 
+    // get the time in msec the accel bias getAccelBiasForIMU() returns was last zeroed, 0 if no core uses this IMU
+    uint32_t getAccelBiasZeroTimeForIMU(uint8_t imu_index) const;
+
     // hover Z-bias correction for one IMU, clamped to +/-ACC_VRF_BIAS_Z_LIM
     float hoverZBiasCorrection(uint8_t imu_index) const;
 
