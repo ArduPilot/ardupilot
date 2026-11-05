@@ -504,6 +504,8 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
  */
 uint16_t AP_Logger_File::find_last_log()
 {
+    WITH_SEMAPHORE(lastlog_semaphore);
+
     unsigned ret = 0;
     char *fname = _lastlog_file_name();
     if (fname == nullptr) {
@@ -900,6 +902,8 @@ void AP_Logger_File::start_new_log(void)
  */
 bool AP_Logger_File::write_lastlog_file(uint16_t log_num)
 {
+    WITH_SEMAPHORE(lastlog_semaphore);
+
     // now update lastlog.txt with the new log number
     char *fname = _lastlog_file_name();
 
