@@ -26,6 +26,15 @@ void loop();
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// wait() for as long as it can. A SITL example has no simulation pacing its clock, so its timed
+// waits run about 800 times faster than real time, and a 1 s timeout failed a worker slow to wake
+// on a loaded machine. This is about 5 s of real time there
+static constexpr uint32_t WORKER_TIMEOUT_US = UINT32_MAX;
+#else
+static constexpr uint32_t WORKER_TIMEOUT_US = 1000000;
+#endif
+
 class SemaphoreRecursionTest {
 public:
     HAL_Semaphore mtx;
@@ -75,7 +84,7 @@ void SemaphoreRecursionTest::worker(void)
 void SemaphoreRecursionTest::worker_attempt(const char *label, bool expected)
 {
     worker_request.signal();
-    const bool done = worker_done.wait(1000000);
+    const bool done = worker_done.wait(WORKER_TIMEOUT_US);
     expect_bool("worker completion", done, true);
     if (done) {
         expect_bool(label, worker_result, expected);
