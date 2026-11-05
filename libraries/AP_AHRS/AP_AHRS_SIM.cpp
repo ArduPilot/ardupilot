@@ -51,10 +51,16 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
 
 bool AP_AHRS_SIM::get_origin(Location &ret) const
 {
+    if (common_origin_ok) {
+        ret = common_origin;
+        return true;
+    }
+
     if (_sitl == nullptr) {
         return false;
     }
 
+    // the simulation's home until there is a common origin
     ret = _sitl->state.home;
 
     return true;

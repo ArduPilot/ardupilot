@@ -58,7 +58,7 @@ public:
     void reset_gyro_drift() override;
 
     // Methods
-    void            update() override;
+    void            update(const Inputs &inputs) override;
     void            get_results(Estimates &results) override;
     void            reset() override { reset(false); }
 
@@ -233,8 +233,8 @@ private:
     // time when DCM was last reset
     uint32_t _last_startup_ms;
 
-    // last origin we returned, for DCM fallback from EKF
-    Location last_origin;
+    // the common origin, once AP_AHRS has one
+    Location common_origin;
 
     // Declare filter states for HPF and LPF used by complementary
     // filter in AP_AHRS::groundspeed_vector
