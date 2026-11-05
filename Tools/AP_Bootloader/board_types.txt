@@ -626,6 +626,7 @@ AP_HW_BrotherHobbyF405v3             5811
 
 #IDs 5820 ~ 5829 reserved for VimDrones
 AP_HW_VIMDRONES_BMS                  5820
+AP_HW_VIMDRONES_ELRS_RX_NANO         5821
 
 #IDs 5830 ~ 5839 reserved for CyberX
 AP_HW_CyberX-v10                     5830
