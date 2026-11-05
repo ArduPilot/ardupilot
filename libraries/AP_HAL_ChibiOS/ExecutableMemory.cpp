@@ -70,7 +70,8 @@ AP_HAL::ExecutableMemory::Target ChibiOS::Util::executable_memory_target() const
 #if defined(__ARM_PCS_VFP) && defined(__ARM_ARCH_7EM__)
 #if (defined(STM32H743xx) || defined(STM32H757xx)) && __CORTEX_M == 7U
     return AP_HAL::ExecutableMemory::Target::CortexM7HardFloat;
-#elif defined(STM32F405xx) && __CORTEX_M == 4U
+#elif (defined(STM32F405xx) || defined(STM32L431xx)) && __CORTEX_M == 4U
+    // L431 currently supports immutable ROMFS modules only.
     return AP_HAL::ExecutableMemory::Target::CortexM4HardFloat;
 #else
     return AP_HAL::ExecutableMemory::Target::Unsupported;
