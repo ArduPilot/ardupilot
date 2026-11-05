@@ -823,26 +823,27 @@ void NavEKF3_core::UpdateAglKf()
     // A range finder below its minimum delivers no reading, so after a touchdown nothing corrects
     // the velocity the landing left and the height coasts up off the ground. With the sensor
     // reporting out of range low and no sample arriving, stop the coast. A main filter moving
-    // vertically faster than 0.25 m/s, up or down, is a liftoff or touchdown still below the
-    // sensor minimum, which is left to the IMU
+    // vertically faster than a resting vehicle, up or down, is a liftoff or touchdown still below
+    // the sensor minimum, which is left to the IMU
     const uint32_t rngLowTime_ms = rngOutOfRangeLowTime_ms[rangeDataDelayed.sensor_idx];
-    if ((rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < 500) &&
-        (imuSampleTime_ms - rngValidMeaTime_ms > 200) && (fabsF(stateStruct.velocity.z) < 0.25f)) {
+    if ((rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < rngFreshTime_ms) &&
+        (imuSampleTime_ms - rngValidMeaTime_ms > rngOnGndNoDataTime_ms) &&
+        (fabsF(stateStruct.velocity.z) < aglKfStillVelZMax_m_s)) {
         aglKf.vel = 0.0f;
     }
     // That test trusts the main filter, which can believe it is climbing on the ground after a
-    // hard flight. A range last fused near the floor that has had no reading for a second is on
+    // hard flight. A range last fused near the floor that has had no reading for a while is on
     // the ground whatever the filter says, so a height well above that last reading is a coast:
     // hold it on the floor until the range finder reads again or stops reporting too low.
     // Known limit: a range finder that reads Good on the ground and then reports too low from
     // liftoff while in range (one returning zero on a lost return) pins the height to the floor
     // until the 5 s timeout
-    const bool rngLowNearFloor = (rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < 500) &&
-                                 (imuSampleTime_ms - rngValidMeaTime_ms > 1000) &&
-                                 (aglKfLastRngHgt < rngOnGnd + 0.5f);
+    const bool rngLowNearFloor = (rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < rngFreshTime_ms) &&
+                                 (imuSampleTime_ms - rngValidMeaTime_ms > aglKfFloorHoldNoRngTime_ms) &&
+                                 (aglKfLastRngHgt < rngOnGnd + aglKfFloorHoldNearFloor_m);
     if (!rngLowNearFloor) {
         aglKfHeldOnFloor = false;
-    } else if (aglKf.hgt > aglKfLastRngHgt + 0.3f) {
+    } else if (aglKf.hgt > aglKfLastRngHgt + aglKfFloorHoldCoast_m) {
         aglKfHeldOnFloor = true;
     }
     if (aglKfHeldOnFloor) {
