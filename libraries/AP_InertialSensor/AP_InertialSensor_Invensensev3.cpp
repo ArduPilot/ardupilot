@@ -261,12 +261,6 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensensev3::probe(AP_InertialSens
 
 void AP_InertialSensor_Invensensev3::fifo_reset()
 {
-    // True only for ICM-45686/56686. Other types (default branch writes
-    // INTF_CONFIG0=0xC0 with FIFO_HOLD_LAST_DATA_EN) treat 0x8000 as a
-    // legal full-scale sample.
-    fifo_invalid_marker = (inv3_type == Invensensev3_Type::ICM45686 ||
-                           inv3_type == Invensensev3_Type::ICM56686);
-
     if (inv3_type == Invensensev3_Type::ICM42670) {
         // FIFO_FLUSH
         register_write(INV3REG_70_SIGNAL_PATH_RESET, 0x04);
@@ -380,6 +374,8 @@ void AP_InertialSensor_Invensensev3::start()
         temp_sensitivity = 1.0 / 2.0;
         gyro_scale = GYRO_SCALE_4000DPS;
         accel_scale = ACCEL_SCALE_32G;
+        // FIFO marks invalid samples with 0x8000 (-32768)
+        fifo_invalid_marker = true;
         break;
     case Invensensev3_Type::ICM56686:
         devtype = DEVTYPE_INS_ICM56686;
@@ -388,6 +384,8 @@ void AP_InertialSensor_Invensensev3::start()
         // ICM-45686, per DS-000563 v1.1
         gyro_scale = GYRO_SCALE_4000DPS;
         accel_scale = ACCEL_SCALE_32G;
+        // FIFO marks invalid samples with 0x8000 (-32768)
+        fifo_invalid_marker = true;
         break;
     case Invensensev3_Type::ICM40609:
         devtype = DEVTYPE_INS_ICM40609;
