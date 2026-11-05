@@ -5841,7 +5841,6 @@ return update()
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
-            "plane-tailsitter": "unstable in hover; unflyable in cruise",
             "quadplane-can" : "needs CAN periph",
             "stratoblimp" : "not expected to fly normally",
             "glider" : "needs balloon lift",
@@ -5895,7 +5894,6 @@ return update()
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
-            "plane-tailsitter": "unstable in hover; unflyable in cruise",
             "stratoblimp": "not expected to fly normally",
             "glider": "needs balloon lift",
             "plane-ice": "ICE engine needs starting; different takeoff regime",
@@ -5922,6 +5920,9 @@ return update()
                 continue
             model = frame_bits.get("model", frame)
             self.customise_SITL_commandline([], model=model, wipe=True)
+            if self.get_parameter('Q_TAILSIT_ENABLE'):
+                # tailsitter needs extra re-boot to pick up the rotated AHRS view
+                self.reboot_sitl()
             rc_reversed = frame in rc_pitch_reversed_frames
             self.context_push()
             self.install_message_hook_context(vehicle_test_suite.TestSuite.FailFastHardGroundStrike(self, 10))
