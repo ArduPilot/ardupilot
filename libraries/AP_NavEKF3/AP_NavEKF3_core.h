@@ -1326,6 +1326,10 @@ private:
     Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
+    // a range sample older than this is stale, for the median of three and for range finder height
+    static constexpr uint32_t rngFreshTime_ms = 500;
+    // with no range sample for this long on the ground, the on-ground range is used in its place
+    static constexpr uint32_t rngOnGndNoDataTime_ms = 200;
 #if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     uint32_t rngOutOfRangeLowTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES]; // time stamps of the latest out of range low report from each downward range finder (msec)
 #endif
