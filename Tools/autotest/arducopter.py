@@ -21004,6 +21004,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.BatteryInternalUseOnly,
             self.CommonOriginExternalAHRS,
             self.CommonOriginExternalAHRSReceives,
+            self.CommonOriginLateEKF,
             self.AHRSExternalNoAttitudeAirspeedIndex,
             self.TestTetherStuck,
             self.EK3_EXT_NAV_vel_without_vert,
@@ -23383,6 +23384,61 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 saw_prearm = True
         if not saw_prearm:
             raise NotAchievedException("pre-arm checks did not run")
+
+    def assert_active_estimator_uses_origin(self, origin, max_error=5):
+        '''check the active estimator navigates from origin (a
+        GPS_GLOBAL_ORIGIN message).  GPS_GLOBAL_ORIGIN reports the
+        AHRS's common origin whichever estimator is active, so it can't
+        show which origin an EKF actually holds.  Instead, the active
+        estimator's position measured from origin must land on the GPS
+        fix: an EKF holding some other origin is off by the difference.'''
+        pos = self.poll_message('LOCAL_POSITION_NED')
+        gps = self.poll_message('GPS_RAW_INT')
+        origin_loc = Location.latlon_only(origin.latitude * 1e-7, origin.longitude * 1e-7)
+        estimated_loc = self.offset_location_ne(origin_loc, pos.x, pos.y)
+        gps_loc = Location.latlon_only(gps.lat * 1e-7, gps.lon * 1e-7)
+        error = self.get_distance(estimated_loc, gps_loc)
+        self.progress("Position from origin N=%.1f E=%.1f lands %.1fm from the GPS fix" % (pos.x, pos.y, error))
+        if error > max_error:
+            raise NotAchievedException(
+                "Active estimator is not navigating from the common origin (%.1fm off)" % error)
+
+    def CommonOriginLateEKF(self):
+        '''ensure an EKF which starts after the common origin is set still takes it'''
+        # EKF2 establishes the common origin while EKF3 is enabled but
+        # can not start, as it has no IMUs to run cores on, so it has no
+        # cores to take the origin.  EKF3 retries its start every update,
+        # so it starts once given an IMU, which is done here with the
+        # SITL GPS glitched about 100m: unless it is offered the common
+        # origin once it has started, it chooses its own glitched one.
+        self.set_parameters({
+            'EK2_ENABLE': 1,
+            'EK3_IMU_MASK': 0,
+        })
+        # collect before the reboot so the start-up messages are caught
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        self.wait_statustext("EKF2 IMU0 origin set", timeout=60, check_context=True)
+        self.wait_statustext("EKF2 IMU0 is using GPS", timeout=60, check_context=True)
+        # "AHRS: ... active" is only emitted when the active backend
+        # changes, so select EKF2 now rather than before the reboot:
+        self.set_parameter('AHRS_EKF_TYPE', 2)
+        self.wait_statustext("EKF2 active", timeout=60, check_context=True)
+        ek2_origin = self.poll_message('GPS_GLOBAL_ORIGIN')
+
+        self.set_parameters({
+            'SIM_GPS1_GLTCH_X': 0.001,  # about 100m
+            'EK3_IMU_MASK': 1,
+        })
+        self.wait_statustext("EKF3 IMU0 is using GPS", timeout=60, check_context=True)
+        self.set_parameter('AHRS_EKF_TYPE', 3)
+        self.wait_statustext("EKF3 active", timeout=60, check_context=True)
+
+        # EKF3 sees the glitched GPS, so from the common origin it is
+        # about 100m north; from an origin of its own it would be at 0:
+        self.progress("Common origin: %s" % str(ek2_origin))
+        self.assert_active_estimator_uses_origin(ek2_origin)
 
     def AHRSExternalNoAttitudeAirspeedIndex(self):
         '''the External AHRS backend reports which airspeed sensor is in
