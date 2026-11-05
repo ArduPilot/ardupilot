@@ -2444,6 +2444,28 @@ class TestSuite(abc.ABC):
         except OSError:
             return None
 
+    def sitl_panic_message(self):
+        """The message from SITL's most recent panic, or None.
+
+        AP_HAL::panic() prints "PANIC: <message>", dumps its stack and
+        core, and then spins for ever, so the process stays alive while
+        answering nothing.  Whatever the test was waiting for times out
+        first and reports itself, which says nothing about why; this
+        line is the part worth reading.
+        """
+        try:
+            handle = self.sitl_stdout_file()
+            if handle is not None:
+                handle.flush()
+            with open(self.sitl_stdout_filepath()) as f:
+                lines = f.read().splitlines()
+        except OSError:
+            return None
+        for line in reversed(lines):
+            if line.startswith("PANIC: "):
+                return line[len("PANIC: "):]
+        return None
+
     def progress_sitl_output_since(self, offset, max_lines=200):
         """Replay captured SITL output into the log of the running test.
 
@@ -11676,6 +11698,21 @@ Also, ignores heartbeats not from our target system'''
                 newname = os.path.join(to_dir, "%s-%s-%s.%u-%s" % (self.log_name(), name, stamp, uniq, bname))
             print("Renaming %s to %s" % (log, newname))
             shutil.move(log, newname)
+        # move the stack and core dumps SITL takes of itself when it
+        # panics, and the ones dump_process_status() asks for when it
+        # loses contact.  They are written beside the working directory
+        # and the next run's startup deletes them as stale, so the one
+        # artifact which says where a wedged SITL actually was does not
+        # survive the night on a host running back-to-back suites.
+        for log in sorted(glob.glob("dumpstack.sh_*") + glob.glob("dumpcore.sh_*")):
+            bname = os.path.basename(log)
+            newname = os.path.join(to_dir, "%s-%s-%s-%s" % (self.log_name(), name, stamp, bname))
+            uniq = 0
+            while os.path.exists(newname):
+                uniq += 1
+                newname = os.path.join(to_dir, "%s-%s-%s.%u-%s" % (self.log_name(), name, stamp, uniq, bname))
+            print("Renaming %s to %s" % (log, newname))
+            shutil.move(log, newname)
         # move core files
         save_binaries = False
         corefiles = []
@@ -11728,6 +11765,18 @@ Also, ignores heartbeats not from our target system'''
         if self.sitl is None:
             self.progress("No SITL to dump")
             return
+
+        # say so if it panicked.  A panicked SITL is alive and silent, so
+        # the failure the test reports is whichever wait timed out first:
+        # a "Failed to log replay block" panic was reported as
+        # "sim_time_cached is not updating!", and took a core dump to
+        # explain.
+        panic = self.sitl_panic_message()
+        if panic is not None:
+            reason = "SITL panic: %s" % panic
+            self.progress(reason)
+            result.reason = reason
+            result.passed = False
 
         if self.sitl.isalive():
             self.progress("pexpect says it is alive")
