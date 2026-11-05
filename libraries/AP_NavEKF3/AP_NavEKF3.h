@@ -148,9 +148,21 @@ public:
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
-    // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
-    // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(const Location &loc);
+    // The filter does not choose an origin itself.  AP_AHRS gives it
+    // the common origin every update, and Replay gives it the origins
+    // recorded in the log.  It takes the origin if it, or a core which
+    // has been reset, has none, and ignores it otherwise; it is never
+    // given a different one.  Only the calls which give a core its
+    // origin are logged for Replay.
+    // Logs recorded before the filter stopped choosing its own origin
+    // have no record of the origin it chose, so the filter has no
+    // origin when they are replayed.
+    void setOriginLLH(const Location &loc);
+
+    // before the filter has an origin it offers the one it would set:
+    // the primary core's, or another core's if the primary has none.
+    // Returns false if it has no candidate, or already has an origin
+    bool getOriginCandidate(Location &origin) const;
 
     // Set the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty
     // The altitude element of the location is not used.
@@ -553,9 +565,13 @@ private:
     float coreErrorScores[MAX_EKF_CORES];           // the instance error values used to update relative core error
     uint64_t coreLastTimePrimary_us[MAX_EKF_CORES]; // last time we were using this core as primary
 
-    // origin set by one of the cores
-    Location common_EKF_origin;
-    bool common_origin_valid;
+    // the origin given by setOriginLLH(), which every core reports
+    // positions against
+    Location public_origin;
+    bool public_origin_valid;
+
+    // true if the filter has no origin yet, or a core needs it again
+    bool originNeeded() const;
     
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary

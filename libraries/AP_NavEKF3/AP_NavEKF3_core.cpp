@@ -13,7 +13,7 @@
 NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend, AP_DAL &_dal) :
     dal(_dal),
     frontend(_frontend),
-    public_origin(frontend->common_EKF_origin)
+    public_origin(frontend->public_origin)
 {
     firstInitTime_ms = 0;
     lastInitFailReport_ms = 0;
@@ -281,6 +281,7 @@ void NavEKF3_core::InitialiseVariables()
     inhibitDelAngBiasStates = true;
     gndOffsetValid =  false;
     validOrigin = false;
+    originCandidate.valid = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
     gpsHgtAccuracy = 0.0f;
@@ -544,11 +545,6 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         inactiveBias[i].gyro_bias.zero();
         inactiveBias[i].accel_bias.zero();
-    }
-
-    // restore the navigation origin from the public origin if possible:
-    if (public_origin.initialised()) {
-        setOriginLLH(public_origin);
     }
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
@@ -2241,7 +2237,7 @@ void NavEKF3_core::verifyTiltErrorVariance()
 void NavEKF3_core::moveEKFOrigin(void)
 {
     // only move origin when we have a origin and we're using GPS
-    if (!frontend->common_origin_valid || !filterStatus.flags.using_gps) {
+    if (!frontend->public_origin_valid || !filterStatus.flags.using_gps) {
         return;
     }
 
