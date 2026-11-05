@@ -464,11 +464,10 @@ void AP_AHRS::update_state(void)
     state.ground_speed = state.ground_speed_vec.length();
     state.corrected_dv_valid = _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
 
-    // check if origin has been set
-    bool origin_ok = _get_origin(state.origin);
-    if (origin_ok && !state.origin_ok) {
-        // record origin from backend to AHRS state
-        state.origin_ok = origin_ok;
+    // check if the common origin has been set
+    state.origin = backend_inputs.origin;
+    if (backend_inputs.origin_ok && !state.origin_ok) {
+        state.origin_ok = true;
 
 #if HAL_LOGGING_ENABLED
         // log origin
@@ -492,12 +491,13 @@ void AP_AHRS::update_state(void)
 
 void AP_AHRS::try_set_common_origin(const AP_AHRS_Backend &source_backend, const AP_AHRS_Backend::Estimates &source_estimates)
 {
-    if (done_common_origin) {
+    if (backend_inputs.origin_ok) {
         return;
     }
 
     /*
-      if we now have an origin then set in all backends
+      the first backend to provide an origin establishes the common
+      origin; every backend is given it through its update()
     */
     if (!source_estimates.provides_common_origin) {
         // e.g. DCM doesn't provide an origin which can be set
@@ -509,19 +509,7 @@ void AP_AHRS::try_set_common_origin(const AP_AHRS_Backend &source_backend, const
         // no valid origin from this backend
         return;
     }
-    // set the origin in all backends which can take it (except
-    // the one which supplied it).  Invoking AP_AHRS::set_origin
-    // here will cause warnings from the EKFs.
-    for (auto &dest_backend_and_estimates : backends_and_estimates) {
-        if (&dest_backend_and_estimates.estimates == &source_estimates) {
-            continue;
-        }
-        // note that SITL and DCM ignore this set_origin call via
-        // an empty base-class implementation:
-        dest_backend_and_estimates.backend.set_origin(new_origin);
-    }
-
-    done_common_origin = true;
+    IGNORE_RETURN(set_origin(new_origin));
 }
 
 // method responsible for updating the reset counters in the AHRS.
@@ -583,7 +571,7 @@ void AP_AHRS::update(bool skip_ins_update)
     // loop-time-remaining and opt-out of their full update if there
     // isn't enough time left.  Copy back their results while we are
     // at it.
-    configured_backend->update();
+    configured_backend->update(backend_inputs);
     *configured_estimates = {};
     configured_backend->get_results(*configured_estimates);
     // if we don't have an origin, maybe set one:
@@ -594,7 +582,7 @@ void AP_AHRS::update(bool skip_ins_update)
             // already updated
             continue;
         }
-        backend_and_estimates.backend.update();
+        backend_and_estimates.backend.update(backend_inputs);
         backend_and_estimates.estimates = {};
         backend_and_estimates.backend.get_results(backend_and_estimates.estimates);
         // if we don't have an origin, maybe set one:
@@ -893,17 +881,14 @@ AP_AHRS_Backend::Estimates *AP_AHRS::estimates_for_type(EKFType type)
 bool AP_AHRS::set_origin(const Location &loc)
 {
     WITH_SEMAPHORE(_rsem);
-    for (auto &backend_and_estimates : backends_and_estimates) {
-        auto &backend = backend_and_estimates.backend;
-        if (&backend == active_backend) {
-            continue;
-        }
-        // note that SITL and DCM ignore this set_origin call via
-        // an empty base-class implementation:
-        backend.set_origin(loc);
+    if (backend_inputs.origin_ok) {
+        // the origin can't be moved once it is set
+        return false;
     }
-    // return success if active EKF's origin was set
-    return active_backend->set_origin(loc);
+    // every backend is given it through its next update():
+    backend_inputs.origin = loc;
+    backend_inputs.origin_ok = true;
+    return true;
 }
 
 // Record the current valid origin to parameters
@@ -1066,7 +1051,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
     Location originLLH;
     postype_t originD;
     if (!get_relative_position_D_origin(originD) ||
-        !_get_origin(originLLH)) {
+        !get_origin(originLLH)) {
 #if AP_GPS_ENABLED
         const auto &gps = AP::gps();
         if (_gps_use == GPSUse::EnableWithHeight &&
@@ -1709,37 +1694,6 @@ void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
     mavlink_msg_ekf_status_report_send_struct(link.get_chan(), &packet);
 }
 #endif  // HAL_GCS_ENABLED
-
-// return origin for a specified EKF type
-bool AP_AHRS::_get_origin(EKFType type, Location &ret) const
-{
-    auto *backend = backend_for_type(type);
-    if (backend == nullptr) {
-        // internal error?
-        return false;
-    }
-
-    return backend->get_origin(ret);
-}
-
-/*
-  return origin for the configured EKF type. If we are armed and the
-  configured EKF type cannot return an origin then return origin for
-  the active EKF type (if available)
-
-  This copes with users force arming a plane that is running on DCM as
-  the EKF has not fully initialised
- */
-bool AP_AHRS::_get_origin(Location &ret) const
-{
-    if (_get_origin(configured_ekf_type(), ret)) {
-        return true;
-    }
-    if (hal.util->get_soft_armed() && _get_origin(active_EKF_type(), ret)) {
-        return true;
-    }
-    return false;
-}
 
 bool AP_AHRS::set_home(const Location &loc, bool lock)
 {

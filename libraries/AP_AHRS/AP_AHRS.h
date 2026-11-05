@@ -941,12 +941,6 @@ private:
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     bool _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const WARN_IF_UNUSED;
 
-    // returns the inertial navigation origin in lat/lon/alt
-    bool _get_origin(Location &ret) const WARN_IF_UNUSED;
-
-    // return origin for a specified EKF type
-    bool _get_origin(EKFType type, Location &ret) const;
-
     // return a ground velocity in meters/second, North/East/Down
     // order. Must only be called if have_inertial_nav() is true
     bool _get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED;
@@ -1087,8 +1081,9 @@ public:
 private:
     AP_UInt16 _options;
 
-    // true when we have completed the common origin setup
-    bool done_common_origin;
+    // the inputs given to every backend's update(), including the
+    // common origin:
+    AP_AHRS_Backend::Inputs backend_inputs;
     void try_set_common_origin(const AP_AHRS_Backend &source_backend, const AP_AHRS_Backend::Estimates &source_estimates);
 
     // return a pointer to the backend for supplied type

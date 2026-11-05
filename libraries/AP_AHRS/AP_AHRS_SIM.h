@@ -58,7 +58,12 @@ public:
     void reset_gyro_drift() override {};
 
     // Methods
-    void            update() override { }
+    void            update(const Inputs &inputs) override {
+        if (inputs.origin_ok) {
+            common_origin = inputs.origin;
+            common_origin_ok = true;
+        }
+    }
     void            get_results(Estimates &results) override;
     void            reset() override { return; }
 
@@ -99,6 +104,10 @@ private:
 #endif
 
     class SITL::SIM *_sitl;
+
+    // the common origin, once AP_AHRS has one
+    Location common_origin;
+    bool common_origin_ok;
     uint32_t _last_body_odm_update_ms;
 };
 
