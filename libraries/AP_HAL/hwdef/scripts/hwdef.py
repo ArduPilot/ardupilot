@@ -4,8 +4,6 @@ base class for hwdef processing
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import fnmatch
 import os
 import re
