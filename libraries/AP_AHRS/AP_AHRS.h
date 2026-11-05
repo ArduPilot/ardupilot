@@ -1085,7 +1085,7 @@ private:
     // the inputs given to every backend's update(), including the
     // common origin:
     AP_AHRS_Backend::Inputs backend_inputs;
-    void try_set_common_origin(const AP_AHRS_Backend &source_backend, const AP_AHRS_Backend::Estimates &source_estimates);
+    void try_set_common_origin(const AP_AHRS_Backend::Estimates &source_estimates);
 
     // return a pointer to the backend for supplied type
     AP_AHRS_Backend *backend_for_type(EKFType type);

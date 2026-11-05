@@ -223,10 +223,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = get_location(results.location);
 
-    // origin-relative functions
-    // results.provides_common_origin = false;
-
-    // origin-relative position:
+    // origin-relative position, against the common origin.  We never
+    // offer one (location_suitable_as_origin):
     {
         // DCM calculates in global co-ordinates and here converts
         // back to relative-to-origin by subtracting the current
@@ -1503,7 +1501,8 @@ bool AP_AHRS_DCM::synthetic_airspeed_EAS(const Estimates &results, float &airspe
 }
 
 /*
-  relative-origin functions for fallback in AP_InertialNav
+  the origin we report positions against: the common origin, or home
+  until there is one
 */
 bool AP_AHRS_DCM::get_origin(Location &ret) const
 {
