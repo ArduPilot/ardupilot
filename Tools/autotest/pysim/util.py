@@ -410,8 +410,7 @@ def build_SITL_frame(
     # a unified multi-suite pool two frame-building tests can run at
     # once (CircuitStatusScript and PPPPeriph did, and their builds
     # destroyed each other in a shared build-frame).  Per frame and no
-    # finer: two tests wanting the same frame at once (the generated
-    # FlyFrame_nexus and NexusIMUs do) are kept apart by
+    # finer: two tests wanting the same frame at once are kept apart by
     # isolated_build_lock() instead, so that the second finds the
     # objects the first built rather than an empty directory.
     frame_isolation_dir = 'build-frame-%s' % frame
