@@ -75,6 +75,17 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
  */
 enum Rotation AP_AHRS::get_board_orientation()
 {
+    if (board_orientation_known && !hal.scheduler->in_main_thread()) {
+        // once the value is known the main thread alone stores it, so
+        // that two threads can not race to store one.  AP_Periph runs
+        // the IMU on its own thread when INS_SAMPLE_RATE is set, and
+        // that thread reaches this through AP_InertialSensor::update().
+        // The first read is let through whichever thread makes it:
+        // QURT does not count setup() as the main thread, and the
+        // sensors must get the orientation from their init() there.
+        return board_orientation;
+    }
+
     if (board_orientation_known && hal.util->get_soft_armed()) {
         return board_orientation;
     }
