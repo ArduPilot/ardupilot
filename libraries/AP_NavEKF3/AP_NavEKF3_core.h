@@ -944,6 +944,8 @@ private:
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
     void UpdateAglKf();
+    // fuse one height observation into the AGL Kalman filter
+    void FuseAglKfHeight(ftype hgtInnov, ftype measNoiseVar);
 #endif
 
 #if EK3_FEATURE_OPTFLOW_FUSION

@@ -948,6 +948,20 @@ void NavEKF3_core::UpdateAglKf()
         return;
     }
 
+    FuseAglKfHeight(hgtInnov, measNoiseVar);
+    aglKf.hgt  = MAX(aglKf.hgt, rngOnGnd);  // enforce physical constraint after update
+
+    aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
+    aglKfLastRngHgt = hgtMeas;
+    aglKf.valid = true;
+}
+
+// FuseAglKfHeight - fuse one height observation into the AGL KF, given its innovation (observed
+// height less the estimate, m) and its noise variance (m^2)
+void NavEKF3_core::FuseAglKfHeight(ftype hgtInnov, ftype measNoiseVar)
+{
+    const ftype innovVar = aglKf.cov[0][0] + measNoiseVar;
+
     // Kalman gain:  K = P*H' / innovVar = [P[0][0]/innovVar, P[1][0]/innovVar]'
     // (H = [1, 0], so P*H' = first column of P)
     const ftype Kh = aglKf.cov[0][0] / innovVar;
@@ -956,13 +970,12 @@ void NavEKF3_core::UpdateAglKf()
     // State update:  x += K * hgtInnov
     aglKf.hgt += Kh * hgtInnov;
     aglKf.vel += Kv * hgtInnov;
-    aglKf.hgt  = MAX(aglKf.hgt, rngOnGnd);  // enforce physical constraint after update
 
     // Covariance update P = (I-KH)*P*(I-KH)' + K*R*K'
     // With H = [1, 0], (I-KH) = [[1-Kh, 0], [-Kv, 1]]:
-    //   P[0][0] = (1-Kh)²*Phh + Kh²*R
+    //   P[0][0] = (1-Kh)^2*Phh + Kh^2*R
     //   P[0][1] = (1-Kh)*(Phv - Kv*Phh) + Kh*Kv*R
-    //   P[1][1] = Pvv - 2*Kv*Phv + Kv²*innovVar
+    //   P[1][1] = Pvv - 2*Kv*Phv + Kv^2*innovVar
     const ftype oneMinusKh = 1.0f - Kh;
     const ftype Phh = aglKf.cov[0][0];
     const ftype Phv = aglKf.cov[0][1];
@@ -971,10 +984,6 @@ void NavEKF3_core::UpdateAglKf()
     aglKf.cov[0][0] = MAX(sq(oneMinusKh) * Phh + sq(Kh) * measNoiseVar, 0.0f);
     aglKf.cov[0][1] = aglKf.cov[1][0] = oneMinusKh * (Phv - Kv * Phh) + Kh * Kv * measNoiseVar;
     aglKf.cov[1][1] = MAX(Pvv - 2.0f * Kv * Phv + sq(Kv) * innovVar, 0.0f);
-
-    aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
-    aglKfLastRngHgt = hgtMeas;
-    aglKf.valid = true;
 }
 
 #endif  // EK3_FEATURE_OPTFLOW_AGL_KF
