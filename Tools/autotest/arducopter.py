@@ -18792,6 +18792,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         arm_without_flying()
         assert_kept(fly(0), first, "Hover Z-bias not saved: armed <10s after EKF reset")
 
+        self.start_subtest("An accel switch at rest after a reset keeps it: the estimate it hands back never settled")
+        # the accel leaves use while its bias is still settling and its estimate freezes there; the core takes
+        # that back with the switch, and without the rule a flight armed well past the rest wait saved 0.092
+        ekf_reset()
+        self.set_parameter("INS_USE", 0)
+        self.delay_sim_time(7, "the core runs on another accel")
+        self.set_parameter("INS_USE", 1)
+        assert_kept(fly(25), first, "Hover Z-bias not saved: accel switched on ground")
+
         self.start_subtest("An arm without a flight after a settled rest leaves the first flight open")
         ekf_reset()
         self.delay_sim_time(15, "rest before arming")
