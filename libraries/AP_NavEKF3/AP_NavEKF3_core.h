@@ -425,6 +425,9 @@ public:
     // return the number of times this core has restarted its bias estimate for an accel
     uint16_t getAccelBiasResetCount(uint8_t accel_index) const { return accelBiasResetCount[accel_index]; }
 
+    // return the time in msec this core last zeroed its bias estimate for an accel, 0 if it never has
+    uint32_t getAccelBiasZeroTime_ms(uint8_t accel_index) const { return accelBiasZeroTime_ms[accel_index]; }
+
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const;
 
@@ -1275,6 +1278,7 @@ private:
     uint16_t posNEResetCount;       // number of NE position resets performed by this core
     uint16_t posDResetCount;        // number of D position resets performed by this core
     uint16_t accelBiasResetCount[INS_MAX_INSTANCES]; // times the bias estimate for each accel was restarted, kept across a restart of the core. Returned by getAccelBiasResetCount
+    uint32_t accelBiasZeroTime_ms[INS_MAX_INSTANCES]; // time the bias estimate for each accel was last zeroed (msec). Returned by getAccelBiasZeroTime_ms
     ftype yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
     QuaternionF prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
     ftype hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks

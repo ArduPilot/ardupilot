@@ -546,6 +546,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         inactiveBias[i].gyro_bias.zero();
         inactiveBias[i].accel_bias.zero();
+        accelBiasZeroTime_ms[i] = imuSampleTime_ms;
     }
 
     // restore the navigation origin from the public origin if possible:
@@ -1950,6 +1951,7 @@ void NavEKF3_core::ConstrainVariances()
             Pmut[15][15] = P[13][13];
             stateStruct.accel_bias.zero();
             accelBiasResetCount[accel_index_active]++;
+            accelBiasZeroTime_ms[accel_index_active] = imuSampleTime_ms;
         }
 
     } else {
