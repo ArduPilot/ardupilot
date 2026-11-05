@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -9,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -173,7 +175,11 @@ static void sig_alrm(int signum)
 {
     static char env[] = "SITL_WATCHDOG_RESET=1";
     putenv(env);
-    printf("GOT SIGALRM\n");
+    // not printf: printf is not async-signal-safe, and this handler
+    // runs at an arbitrary point in the program - including inside
+    // stdio itself
+    static const char msg[] = "GOT SIGALRM\n";
+    IGNORE_RETURN(::write(2, msg, sizeof(msg)-1));
     SocketAPM_native::cleanup_unix_paths();
     execv(new_argv[0], new_argv);
 }
