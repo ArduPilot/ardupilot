@@ -253,12 +253,14 @@ void AP_AHRS_CINS::init(void)
  */
 void AP_AHRS_CINS::reset_position_to_gps(const Vector3d &pos, const Vector3F &vel, ResetEvent event)
 {
-    if (done_pos_init) {
-        // tell the position controllers our position has stepped:
+    if (had_position) {
+        // tell the position controllers our position has stepped,
+        // including when it is restored after a divergence:
         position_NE_reset_count++;
         position_D_reset_count++;
         log_reset(event, (pos - position_NED()).toftype());
     }
+    had_position = true;
     // restart the observer's frame at this position:
     frame_offset_NED = pos;
     state.XHat = Gal3F(state.XHat.rot(), Vector3F{}, vel, state.XHat.tau());

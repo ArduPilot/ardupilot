@@ -282,6 +282,10 @@ private:
 
     bool origin_is_own;         // origin is our own first fix, not a common one
 
+    // a position has been initialised before, so a further
+    // initialisation is a position reset:
+    bool had_position;
+
     // the attitude has been initialised before, so a further
     // initialisation is an attitude reset:
     bool had_attitude;
