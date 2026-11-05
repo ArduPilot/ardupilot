@@ -486,6 +486,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
 #endif
 
+#if AP_MODULE_ENABLED
+    // @Group: MOD_
+    // @Path: ../../libraries/AP_Module/Runtime.cpp
+    GOBJECT(modules, "MOD_", AP_Module::Runtime),
+#endif
+
 #if AP_SCRIPTING_LUA_ENABLED
     // @Group: SCR_
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp

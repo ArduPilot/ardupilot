@@ -314,6 +314,10 @@ void AP_Periph_FW::init()
     scripting.init();
 #endif
 
+#if AP_MODULE_ENABLED
+    modules.init();
+#endif
+
 #if AP_PERIPH_ACTUATOR_TELEM_ENABLED
     actuator_telem.init();
 #endif
@@ -415,6 +419,10 @@ void AP_Periph_FW::show_stack_free()
 
 void AP_Periph_FW::update()
 {
+#if AP_MODULE_ENABLED
+    modules.update();
+#endif
+
 #if AP_STATS_ENABLED
     node_stats.update();
 #endif

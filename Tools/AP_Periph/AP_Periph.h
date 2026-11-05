@@ -26,6 +26,7 @@
 #include <AP_CANManager/AP_CAN.h>
 #include <AP_CANManager/AP_SLCANIface.h>
 #include <AP_Scripting/AP_Scripting.h>
+#include <AP_Module/Runtime.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
 #include <AP_RPM/AP_RPM.h>
@@ -465,6 +466,10 @@ public:
 
 #if AP_SCRIPTING_LUA_ENABLED
     AP_Scripting scripting;
+#endif
+
+#if AP_MODULE_ENABLED
+    AP_Module::Runtime modules;
 #endif
 
 #if HAL_LOGGING_ENABLED
