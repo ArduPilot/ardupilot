@@ -20181,6 +20181,10 @@ switch value'''
         while time.monotonic() - tstart < timeout:
             if os.path.exists(path) == present:
                 return
+            # MAVProxy blocks in write() once the buffer behind its
+            # output fills, and then does not send the command we are
+            # waiting on.  Every other wait in here drains it.
+            self.drain_all_pexpects()
             time.sleep(0.1)
         raise NotAchievedException(
             "%s did not %s" % (path, "appear" if present else "go away"))
