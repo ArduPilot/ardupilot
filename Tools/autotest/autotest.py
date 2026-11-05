@@ -1046,14 +1046,19 @@ def run_tests(steps):
               (opts.instance, MAX_AUTOTEST_INSTANCE))
         sys.exit(1)
 
-    # A serial, instance-0 run uses the repo-root working directory.  The
+    # An instance-0 run uses the repo-root working directory.  The
     # ArduPilot scripting engine loads every file in "scripts/", so stale
     # content there (e.g. left over from a previous run, or a dangling
     # symlink) silently pollutes the run.  Refuse to start rather than
-    # produce confusing failures.  Parallel runs - and serial "-I N" runs -
-    # each use their own fresh per-instance directory, so they are immune
-    # and exempt from this check.
-    if opts.parallel == 1 and opts.instance == 0:
+    # produce confusing failures.
+    #
+    # This applies to a --parallel run too, which is not exempt as this
+    # check first assumed: its parallel pass uses the instances above
+    # the base, but the tests blacklisted from parallel running go
+    # through run_tests_in_processes() at the base instance itself -
+    # the repo root, when that base is 0.  Serial "-I N" runs are
+    # genuinely immune, each having its own per-instance directory.
+    if opts.instance == 0:
         if os.path.isdir("scripts"):
             # "scripts/modules" is exempt: the engine reads it only when a
             # script requires a module rather than loading it on sight, and
@@ -1064,11 +1069,11 @@ def run_tests(steps):
                 if not (x == "modules" and os.path.isdir(os.path.join("scripts", x)))
             ]
             if len(scripts_contents) > 0:
-                print("ERROR: refusing to start: serial autotest runs in the "
-                      "repo-root working directory but 'scripts/' is not empty: "
-                      "%s" % sorted(scripts_contents))
-                print("Remove its contents first (parallel runs use "
-                      "per-instance directories and are unaffected).")
+                print("ERROR: refusing to start: autotest runs tests at "
+                      "instance 0 in the repo-root working directory but "
+                      "'scripts/' is not empty: %s" % sorted(scripts_contents))
+                print("Remove its contents first (a run at '-I N' uses its "
+                      "own per-instance directory and is unaffected).")
                 sys.exit(1)
 
     # The per-instance port formulas in vehicle_test_suite.py only stay
