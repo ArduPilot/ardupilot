@@ -261,6 +261,12 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensensev3::probe(AP_InertialSens
 
 void AP_InertialSensor_Invensensev3::fifo_reset()
 {
+    // True only for ICM-45686/56686. Other types (default branch writes
+    // INTF_CONFIG0=0xC0 with FIFO_HOLD_LAST_DATA_EN) treat 0x8000 as a
+    // legal full-scale sample.
+    fifo_invalid_marker = (inv3_type == Invensensev3_Type::ICM45686 ||
+                           inv3_type == Invensensev3_Type::ICM56686);
+
     if (inv3_type == Invensensev3_Type::ICM42670) {
         // FIFO_FLUSH
         register_write(INV3REG_70_SIGNAL_PATH_RESET, 0x04);
@@ -525,7 +531,9 @@ void AP_InertialSensor_Invensensev3::accumulate()
     // nothing to do
 }
 
-// the sensor marks an invalid FIFO sample with -32768 (0x8000) on an axis
+// ICM-45686/56686 mark an invalid FIFO sample with -32768 (0x8000) on an
+// axis. Other types with FIFO_HOLD_LAST_DATA_EN treat 0x8000 as a legal
+// full-scale sample; gate with fifo_invalid_marker.
 static inline bool fifo_sample_invalid(int16_t x, int16_t y, int16_t z)
 {
     return x == INT16_MIN || y == INT16_MIN || z == INT16_MIN;
@@ -561,13 +569,13 @@ bool AP_InertialSensor_Invensensev3::accumulate_samples(const FIFOData *data, ui
         const float temp = d.temperature * temp_sensitivity + temp_zero;
 
         // these four calls are about 40us
-        if (fifo_sample_invalid(d.accel[0], d.accel[1], d.accel[2])) {
+        if (fifo_invalid_marker && fifo_sample_invalid(d.accel[0], d.accel[1], d.accel[2])) {
             _inc_accel_error_count(accel_instance);
         } else {
             _rotate_and_correct_accel(accel_instance, accel);
             _notify_new_accel_raw_sample(accel_instance, accel, 0);
         }
-        if (fifo_sample_invalid(d.gyro[0], d.gyro[1], d.gyro[2])) {
+        if (fifo_invalid_marker && fifo_sample_invalid(d.gyro[0], d.gyro[1], d.gyro[2])) {
             _inc_gyro_error_count(gyro_instance);
         } else {
             _rotate_and_correct_gyro(gyro_instance, gyro);
@@ -598,7 +606,9 @@ static inline float uint20_to_float(uint8_t msb, uint8_t bits, uint8_t lsb)
     return float(value32bit);
 }
 
-// in hi-res frames the invalid marker is 0x8000 in the upper 16 bits of an axis
+// Hi-res: ICM-45686/56686 use 0x8000 in the upper 16 bits as the invalid
+// marker. Other types with FIFO_HOLD_LAST_DATA_EN treat that as a legal
+// full-scale sample; gate with fifo_invalid_marker.
 static inline bool fifo_highres_sample_invalid(const uint8_t v[6])
 {
     return (v[1] == 0x80 && v[0] == 0) ||
@@ -638,13 +648,13 @@ bool AP_InertialSensor_Invensensev3::accumulate_highres_samples(const FIFODataHi
         const float temp = d.temperature * temp_sensitivity + temp_zero;
 
         // these four calls are about 40us
-        if (fifo_highres_sample_invalid(d.accel)) {
+        if (fifo_invalid_marker && fifo_highres_sample_invalid(d.accel)) {
             _inc_accel_error_count(accel_instance);
         } else {
             _rotate_and_correct_accel(accel_instance, accel);
             _notify_new_accel_raw_sample(accel_instance, accel, 0);
         }
-        if (fifo_highres_sample_invalid(d.gyro)) {
+        if (fifo_invalid_marker && fifo_highres_sample_invalid(d.gyro)) {
             _inc_gyro_error_count(gyro_instance);
         } else {
             _rotate_and_correct_gyro(gyro_instance, gyro);
