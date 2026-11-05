@@ -10,9 +10,14 @@ void AP_AHRS_External::update(const Inputs &inputs)
     auto &extahrs = AP::externalAHRS();
     extahrs.update();
 
-    Location ext_origin;
-    if (inputs.origin_ok && !extahrs.get_origin(ext_origin)) {
-        IGNORE_RETURN(extahrs.set_origin(inputs.origin));
+    if (inputs.origin_ok) {
+        common_origin = inputs.origin;
+        common_origin_ok = true;
+        // an external AHRS with no origin of its own takes the common one
+        Location ext_origin;
+        if (!extahrs.get_origin(ext_origin)) {
+            IGNORE_RETURN(extahrs.set_origin(inputs.origin));
+        }
     }
 }
 
@@ -84,18 +89,20 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = AP::externalAHRS().get_location(results.location);
 
-    // origin-relative functions
-    results.provides_common_origin = true;
-
-    // origin-relative position:
+    // origin-relative position, against the common origin once there
+    // is one, and until then against the external AHRS's own origin.
+    // Either way our location moved back by our position is that
+    // origin, so it can establish the common origin; AP_AHRS recovers
+    // it to within about a centimetre:
     Location orgn;
-    if (extahrs.get_origin(orgn) &&
+    if (get_origin(orgn) &&
         results.location_valid) {
         const Vector3p posNED = orgn.get_distance_NED_postype(results.location);
         results.position_NE = posNED.xy();
         results.position_NE_valid = true;
         results.position_D = posNED.z;
         results.position_D_valid = true;
+        results.location_suitable_as_origin = true;
     }
 
     // hagl is not supplied:
@@ -161,12 +168,11 @@ bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, 
 
 bool AP_AHRS_External::get_origin(Location &ret) const
 {
+    if (common_origin_ok) {
+        ret = common_origin;
+        return true;
+    }
     return AP::externalAHRS().get_origin(ret);
-}
-
-bool AP_AHRS_External::set_origin(const Location &loc)
-{
-    return AP::externalAHRS().set_origin(loc);
 }
 
 #endif
