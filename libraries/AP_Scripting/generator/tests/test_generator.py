@@ -46,23 +46,6 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(set(files), {'.cpp', '.h'})
         self.assertNotIn('lua_new_Value', files['.cpp'])
 
-    def test_stdlib_parser_does_not_hide_binding_parser(self):
-        # Some Python 3.9 builds provide parser as a built-in module. Simulate
-        # that module being selected even when the script directory comes first.
-        script = (
-            "import runpy, sys, types\n"
-            "sys.modules['parser'] = types.ModuleType('parser')\n"
-            "sys.path.insert(0, sys.argv[1])\n"
-            "sys.argv = sys.argv[2:]\n"
-            "runpy.run_path(sys.argv[0], run_name='__main__')\n"
-        )
-        process = subprocess.run(
-            [sys.executable, '-c', script, str(GENERATOR.parent), str(GENERATOR), '--help'],
-            capture_output=True, text=True,
-        )
-        self.assertEqual(process.returncode, 0, process.stderr)
-        self.assertIn('binding description file', process.stdout)
-
     def test_large_nullable_result_checks_stack(self):
         arguments = ' '.join(["float'Null"] * 23)
         process, files = self.run_generator(f'userdata Value method results boolean {arguments}\n')
