@@ -813,12 +813,10 @@ void NavEKF3_core::UpdateAglKf()
         aglKf.vel *= expf(-imuDt / tauV);
     }
 
-    // AGL cannot go below the on-ground sensor reading, and resting on that floor holds
-    // the height innovation at zero, so a downward velocity there has nothing to correct it.
-    // Written so a NaN height is pulled back to the floor too
-    if (!(aglKf.hgt >= rngOnGnd)) {
+    // the floor below is fused as a measurement rather than clamped, so a NaN restarts from it here
+    if (isnan(aglKf.hgt) || isnan(aglKf.vel)) {
         aglKf.hgt = rngOnGnd;
-        aglKf.vel = MAX(aglKf.vel, 0.0f);
+        aglKf.vel = 0.0f;
     }
 
 #if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
@@ -893,6 +891,15 @@ void NavEKF3_core::UpdateAglKf()
     aglKf.cov[0][0] = MIN(aglKf.cov[0][0], 100.0f);  // 10 m std-dev cap
     aglKf.cov[1][1] = MIN(aglKf.cov[1][1], 100.0f);  // 10 m/s std-dev cap
 
+    // AGL cannot go below the on-ground sensor reading. Fuse that floor as a reading with the range
+    // finder's noise, so a downward velocity resting on it is corrected through the covariance.
+    // Overwriting the height and clearing the velocity instead counted a touchdown twice: once at the
+    // clear, and again as the impact decelerated the vehicle, which lifted the height off the ground.
+    // Not on a step with a range sample, which is floored already
+    if ((aglKf.hgt < rngOnGnd) && !rangeDataToFuse) {
+        FuseAglKfHeight(rngOnGnd - aglKf.hgt, sq(frontend->_rngNoise));
+    }
+
     // mark invalid if RF has been absent too long
     if (!rangeDataToFuse) {
         if (imuSampleTime_ms - aglKf.lastRngFuseTime_ms > aglKfRngTimeout_ms) {
@@ -949,7 +956,6 @@ void NavEKF3_core::UpdateAglKf()
     }
 
     FuseAglKfHeight(hgtInnov, measNoiseVar);
-    aglKf.hgt  = MAX(aglKf.hgt, rngOnGnd);  // enforce physical constraint after update
 
     aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
     aglKfLastRngHgt = hgtMeas;
