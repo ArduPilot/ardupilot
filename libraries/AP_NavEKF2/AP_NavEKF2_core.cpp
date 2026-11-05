@@ -194,6 +194,7 @@ void NavEKF2_core::InitialiseVariables()
     inhibitWindStates = true;
     gndOffsetValid =  false;
     validOrigin = false;
+    originCandidate.valid = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
     gpsHgtAccuracy = 0.0f;
