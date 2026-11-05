@@ -563,7 +563,10 @@ def run_specific_test(step, *args, **kwargs):
     if len(tests):
         print(f"Failed to find tests {tests}")
         sys.exit(1)
-    return tester.autotest(tests=run, allow_skips=False, step_name=step), tester
+    return tester.autotest(tests=run,
+                           allow_skips=False,
+                           step_name=step,
+                           parallel=opts.parallel), tester
 
 
 def make_build_opts():
