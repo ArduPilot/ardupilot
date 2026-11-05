@@ -13845,6 +13845,15 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(f"Expected positive log size got={size}")
             self.progress("Log size: %d" % size)
             self.reboot_sitl()
+            # ... and MAVProxy does not survive this reboot either: SITL
+            # execs itself, so every socket it held goes with it, and the
+            # log list below would be sent on a dead one and simply lost.
+            # The symptom is the same 60s wait for an answer which was
+            # never asked for:
+            #     Timed out after 60s looking for Log 1  numLogs 3 lastLog 3 size
+            self.stop_mavproxy(mavproxy)
+            mavproxy = self.start_mavproxy()
+            mavproxy.send("module load log\n")
             # This starts a new log with a time of 0, wait for arm so that we can insert the correct time
             self.wait_ready_to_arm()
             # Third log created here
