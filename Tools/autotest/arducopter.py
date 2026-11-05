@@ -4447,14 +4447,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def OpticalFlowAGLKfFloorVelocity(self):
         '''the AGL KF velocity does not latch downward while the height sits on its floor'''
-        # UpdateAglKf() clamps the AGL height to the on-ground range finder reading, and
-        # resting on that floor makes the height innovation zero, so nothing corrects the
-        # velocity that drove it there.
+        # The AGL height cannot go below the on-ground range finder reading, and on that
+        # floor the range innovation is zero, so only the floor itself, fused as a
+        # measurement, corrects the velocity that drove the height there.
         #
-        # The clamp is one-sided, so the provocation has to push the height DOWN onto the
-        # floor: an upward error lifts it off, which restores the innovation and corrects
-        # itself. Stepping the reported range up and then back down leaves exactly the
-        # state at issue - height on the floor, velocity still strongly negative.
+        # The floor is one-sided, so the provocation has to push the height DOWN onto it:
+        # an upward error lifts it off, which restores the innovation and corrects itself.
+        # Stepping the reported range up and then back down leaves exactly the state at
+        # issue - height on the floor, velocity still strongly negative.
         self.set_parameters({
             "SIM_FLOW_ENABLE": 1,
             "FLOW_TYPE": 10,
@@ -4511,15 +4511,92 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "AGL KF height did not return toward the floor (%.2f m)" % hgt)
 
-        # measured on this test over two runs each: +0.0001 m/s with the velocity clear at
-        # the clamp and -0.431 to -0.438 without it, so the bound sits between them with margin
-        # either side. One-sided deliberately - an upward velocity lifts the height off the
-        # floor and corrects itself, and it is only the downward one that the zeroed
-        # innovation leaves nothing to correct
+        # measured on this test: -0.0001 m/s with the floor fused, +0.0001 m/s with the
+        # velocity cleared at the floor, and -0.431 to -0.439 with neither, so the bound sits
+        # between them with margin either side. One-sided deliberately - an upward velocity
+        # lifts the height off the floor and corrects itself, and it is only the downward one
+        # that the zero range innovation leaves to the floor to correct
         if vel < -0.1:
             raise NotAchievedException(
-                "AGL KF velocity latched downward at the floor (%.3f m/s); the height "
-                "clamp has left it with no innovation to correct it" % vel)
+                "AGL KF velocity latched downward at the floor (%.3f m/s); nothing on the "
+                "floor corrected it" % vel)
+
+    def OpticalFlowAGLKfTouchdown(self):
+        '''the AGL KF height does not lift off the ground after a touchdown'''
+        # The AGL height reaches its floor with the descent still in its velocity, and the
+        # impact deceleration then takes that velocity out through the IMU. Removing it at
+        # the floor as well counts it twice and lifts the height off the ground for seconds.
+        # Whether the height reaches the floor before the impact varies from landing to
+        # landing (about three in four here), so the test lands three times
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,   # XKFA is EKF3 only
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "EK3_IMU_MASK": 1,    # single lane, so XKFA core 0 is the one that matters
+            "EK3_OPTIONS": 8,     # bit 3: AGL KF for optical flow scaling
+            "DISARM_DELAY": 0,    # stay armed on the ground
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        landings = 3
+        for i in range(landings):
+            self.takeoff(3, mode="LOITER")
+            self.delay_sim_time(5, reason="settle in the hover")
+            # the stick fully down descends at the mode's maximum, a hard touchdown
+            self.set_rc(3, 1000)
+            self.wait_rangefinder_distance(0, 0.1, timeout=30, minimum_duration=10)
+            self.disarm_vehicle(force=True)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        landed = []
+        xkfa = []
+        rfnd = []
+        vd = []
+        while True:
+            m = dfreader.recv_match(type=['XKFA', 'XKF1', 'RFND', 'EV'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            mtype = m.get_type()
+            if mtype == 'EV':
+                if m.Id == 18:  # LAND_COMPLETE
+                    landed.append(t)
+            elif mtype == 'RFND':
+                rfnd.append((t, m.Dist))
+            elif m.C != 0:
+                continue
+            elif mtype == 'XKF1':
+                vd.append((t, m.VD))
+            elif m.Valid:
+                xkfa.append((t, m.HAgl))
+        if len(landed) < landings:
+            raise NotAchievedException("%u LAND_COMPLETE events in the log, not %u" % (len(landed), landings))
+        # max_lift_m: 0.09-0.25 m measured with the floor fused, 2.45-2.57 m on the landings
+        # where the velocity cleared at the floor double-counts
+        max_lift_m = 0.5
+        for landed_s in landed:
+            # the provocation: a descent fast enough for the double count to show
+            descent = max([v for (t, v) in vd if landed_s - 3 < t < landed_s] or [0])
+            if descent < 1.0:
+                raise NotAchievedException("touchdown at %.2f m/s, too slow to test this" % descent)
+            # both lists are in time order, so walk the range finder alongside the AGL KF
+            worst = None
+            j = 0
+            for (t, h) in xkfa:
+                while j + 1 < len(rfnd) and rfnd[j + 1][0] <= t:
+                    j += 1
+                if not (landed_s < t < landed_s + 10) or len(rfnd) == 0 or rfnd[j][0] > t:
+                    continue
+                err = h - rfnd[j][1]
+                worst = err if worst is None else max(worst, err)
+            if worst is None:
+                raise NotAchievedException("no valid AGL KF samples after the touchdown at %.1f s" % landed_s)
+            self.progress("touchdown at %.2f m/s, AGL KF height at most %.2f m above the range finder after it" %
+                          (descent, worst))
+            if worst > max_lift_m:
+                raise NotAchievedException("AGL KF height lifted %.2f m off the ground after a touchdown" % worst)
 
     def OpticalFlowAGLKfNoCoastBelowMin(self):
         '''the AGL KF does not coast on its velocity while the range finder is below its minimum'''
@@ -20176,6 +20253,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptingFlipMode,
             self.UTMGlobalPosition,
             self.OpticalFlowAGLKfFloorVelocity,
+            self.OpticalFlowAGLKfTouchdown,
             self.OpticalFlowAGLKfNoCoastBelowMin,
             self.OpticalFlowAGLKfNoCoastAfterTouchdown,
             self.OpticalFlowAGLKfNoFloorHoldInHover,
