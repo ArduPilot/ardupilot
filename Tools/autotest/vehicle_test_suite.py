@@ -16039,13 +16039,25 @@ switch value'''
         logs_dirpath = pathlib.Path(self.sitl_log_dir())
         lastlog_filepath = logs_dirpath / "LASTLOG.TXT"
 
-        with lastlog_filepath.open(newline="") as f:
-            content = f.read()
+        # the vehicle rewrites this file in place, truncating it before
+        # it writes, so a read can land on an empty or half-written one:
+        #     Unable to parse logs/LASTLOG.TXT ('')
+        # The firmware takes a semaphore across its own read and write,
+        # but that does not help a reader outside the process.  Retry
+        # briefly rather than fail the test on a window a few
+        # microseconds wide.
+        tstart = time.monotonic()
+        while True:
+            with lastlog_filepath.open(newline="") as f:
+                content = f.read()
 
-        m = re.match(r"([0-9]+)(D?)\r\n\Z", content)
-        if m is None:
-            raise ValueError("Unable to parse %s (%r)" %
-                             (lastlog_filepath, content))
+            m = re.match(r"([0-9]+)(D?)\r\n\Z", content)
+            if m is not None:
+                break
+            if time.monotonic() - tstart > 5:
+                raise ValueError("Unable to parse %s (%r)" %
+                                 (lastlog_filepath, content))
+            time.sleep(0.05)
 
         (num, discard_marker) = m.groups()
         if discard_marker:
