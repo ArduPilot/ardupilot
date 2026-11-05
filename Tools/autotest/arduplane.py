@@ -1235,25 +1235,51 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         self.progress("check flaps are not deployed")
+        # collect from here, not from just before the deploy: the wait
+        # below consumes the sample which shows the flaps at min, and
+        # the next one to arrive is already on its way up, leaving
+        # nothing at min to time the slew from
+        self.context_collect('SERVO_OUTPUT_RAW')
         self.set_rc(flaps_ch, flaps_ch_min)
         self.wait_servo_channel_value(servo_ch, servo_ch_min, timeout=3)
         self.progress("deploy the flaps")
-        # start the clock before commanding, not after: set_rc() does not
-        # return until the vehicle confirms the new RC value, and on a
-        # busy machine that confirmation lags far enough behind that most
-        # of the slew has already happened by the time we would otherwise
-        # start timing, leaving us measuring one sample interval:
+        # time the slew from the servo samples' own timestamps rather
+        # than from a clock on this side.  set_rc() does not return
+        # until the vehicle confirms the new RC value, and its
+        # recv_match() discards the SERVO_OUTPUT_RAW arriving meanwhile,
+        # so on a busy machine neither side of that call is a usable
+        # start: after it most of the slew has already happened, leaving
+        # one sample interval to measure
         #     Flaps Slew not working (0.100000 seconds)
-        # The check is that the flaps slew rather than snap, so what
-        # matters is the lower bound; the upper one now has to have room
-        # for getting the command there as well.
-        tstart = self.get_sim_time()
+        # while before it the confirmation lag counts towards the slew,
+        # so the lower bound stops proving the flaps slewed at all.  The
+        # samples carry the time the vehicle produced them, so they do
+        # not care when we got round to reading them; collect across the
+        # command and measure from the last sample still at min to the
+        # first at max after it.
         self.set_rc(flaps_ch, flaps_ch_max)
         self.wait_servo_channel_value(servo_ch, servo_ch_max)
-        tstop = self.get_sim_time_cached()
-        delta_time = tstop - tstart
+        samples = self.context_stop_collecting('SERVO_OUTPUT_RAW')
+        field = "servo%u_raw" % servo_ch
+        times = [m.time_usec * 1.0e-6 for m in samples]
+        values = [getattr(m, field) for m in samples]
+        at_min = [x for x in range(len(values)) if values[x] == servo_ch_min]
+        if len(at_min) == 0:
+            raise NotAchievedException(
+                "Never saw the flaps at %u" % servo_ch_min)
+        left_min = at_min[-1]
+        at_max = [x for x in range(left_min, len(values))
+                  if values[x] == servo_ch_max]
+        if len(at_max) == 0:
+            raise NotAchievedException(
+                "Flaps never reached %u" % servo_ch_max)
+        delta_time = times[at_max[0]] - times[left_min]
+        # FLAP_SLEWRATE is 75%/s, so a full deploy takes 1.333s, and the
+        # bracket above can add up to two 0.1s sample intervals to that.
+        # Snapping measures one interval (0.101s with FLAP_SLEWRATE=0),
+        # so the lower bound has plenty of room to tell them apart.
         delta_time_min = 0.5
-        delta_time_max = 4.0
+        delta_time_max = 1.75
         if delta_time < delta_time_min or delta_time > delta_time_max:
             raise NotAchievedException((
                 "Flaps Slew not working (%f seconds)" % (delta_time,)))
