@@ -321,6 +321,7 @@ public:
     }
     static float telemetry_radio_rssi(); // 0==no signal, 1==full signal
     static bool last_txbuf_is_greater(uint8_t txbuf_limit);
+    bool radio_txbuf_is_greater(uint8_t txbuf_limit) const;
 
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
@@ -839,6 +840,9 @@ private:
         uint32_t received_ms; // time RADIO_STATUS received
         uint8_t txbuf = 100;
     } last_radio_status;
+
+    uint32_t _radio_status_received_ms = 0;
+    uint8_t _radio_status_txbuf = 100;
 
     enum class Flags {
         USING_SIGNING = (1<<0),

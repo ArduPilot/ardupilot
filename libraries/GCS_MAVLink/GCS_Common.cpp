@@ -904,6 +904,11 @@ bool GCS_MAVLINK::last_txbuf_is_greater(uint8_t txbuf_limit)
     return last_radio_status.txbuf > txbuf_limit;
 }
 
+bool GCS_MAVLINK::radio_txbuf_is_greater(uint8_t txbuf_limit) const
+{
+    return AP_HAL::millis() - _radio_status_received_ms > 5000 || _radio_status_txbuf > txbuf_limit;
+}
+
 void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 {
     mavlink_radio_t packet;
@@ -921,6 +926,8 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
     }
 
     last_radio_status.txbuf = packet.txbuf;
+    _radio_status_received_ms = now;
+    _radio_status_txbuf = packet.txbuf;
 
     // use the state of the transmit buffer in the radio to
     // control the stream rate, giving us adaptive software
