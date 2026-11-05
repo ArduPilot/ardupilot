@@ -6412,7 +6412,24 @@ return update()
             raise NotAchievedException("RLL_RATE_P=%f is not an expected value" % rll_rate_p)
 
         self.assert_parameter_value_pct("RLL_RATE_FF", 0.229291457, 2)
-        self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
+
+        # RLL_RATE_D lands on a lattice as well, but not the same one the P
+        # gains do.  AP_AutoTune raises D by *1.3 while it sees no
+        # oscillation and, once it does, lowers it a single time by *0.35
+        # and pins D_limit.  A --parallel=40 run reported 0.024599, which
+        # is 0.070284*0.35 to nine figures: one LOWER_D, not a tune which
+        # stopped early.  PTCH_RATE_D below is the same lattice - its five
+        # entries are the nominal, *1.3, /1.3, and the *0.35 of two of
+        # those.
+        #
+        # Only these two have been observed for roll.  The raise and the
+        # lowering compose, so more rungs exist, but they are left out
+        # until one is actually seen - a tune landing anywhere else should
+        # still fail rather than be waved through.
+        acceptable_rll_rate_d = [0.070284024, 0.024599408]
+        rll_rate_d = self.get_parameter("RLL_RATE_D")
+        if not any(abs(rll_rate_d - v) <= v * 0.02 for v in acceptable_rll_rate_d):
+            raise NotAchievedException("RLL_RATE_D=%f is not an expected value" % rll_rate_d)
 
         self.assert_parameter_value_pct("PTCH_RATE_FF", 0.503520715, 5)
 
