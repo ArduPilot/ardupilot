@@ -16062,19 +16062,47 @@ switch value'''
         logs_dirpath = pathlib.Path(self.sitl_log_dir())
         lastlog_filepath = logs_dirpath / "LASTLOG.TXT"
 
-        with lastlog_filepath.open(newline="") as f:
-            content = f.read()
+        # the vehicle rewrites this file in place, truncating it before
+        # it writes, so a read can land on an empty or half-written one:
+        #     Unable to parse logs/LASTLOG.TXT ('')
+        # The firmware takes a semaphore across its own read and write,
+        # but that does not help a reader outside the process.  Retry
+        # briefly rather than fail the test on a window a few
+        # microseconds wide.
+        tstart = time.monotonic()
+        while True:
+            with lastlog_filepath.open(newline="") as f:
+                content = f.read()
 
-        m = re.match(r"([0-9]+)(D?)\r\n\Z", content)
-        if m is None:
-            raise ValueError("Unable to parse %s (%r)" %
-                             (lastlog_filepath, content))
+            m = re.match(r"([0-9]+)(D?)\r\n\Z", content)
+            if m is not None:
+                break
+            if time.monotonic() - tstart > 5:
+                raise ValueError("Unable to parse %s (%r)" %
+                                 (lastlog_filepath, content))
+            time.sleep(0.05)
 
         (num, discard_marker) = m.groups()
         if discard_marker:
             self.progress("Vehicle has marked log %s for discard" % num)
 
-        return str(logs_dirpath / ("%08u.BIN" % int(num)))
+        path = logs_dirpath / ("%08u.BIN" % int(num))
+
+        # the vehicle writes LASTLOG.TXT before it creates the log it
+        # names, so a reader in between is handed a path to a file which
+        # does not exist yet:
+        #     [Errno 2] No such file or directory: 'logs/00000046.BIN'
+        # Wait for it, as we waited for LASTLOG.TXT itself.  A log the
+        # vehicle has not opened at all never appears, so this is
+        # bounded and still reports the missing file.
+        file_tstart = time.monotonic()
+        while not path.exists():
+            if time.monotonic() - file_tstart > 5:
+                self.progress("%s named by LASTLOG.TXT but never appeared" % path)
+                break
+            time.sleep(0.05)
+
+        return str(path)
 
     def dfreader_for_path(self, path):
         '''return a DFReader for path.  The reader holds an open filehandle
