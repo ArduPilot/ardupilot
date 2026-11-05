@@ -4535,6 +4535,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "EK3_IMU_MASK": 1,    # single lane, so XKFA core 0 is the one that matters
             "EK3_OPTIONS": 8,     # bit 3: AGL KF for optical flow scaling
             "DISARM_DELAY": 0,    # stay armed on the ground
+            # flat ground: over the CMAC terrain tile, which CI has, the range finder reads 0.55 m on
+            # the ground, and the landings wait for it to read zero
+            "SIM_TERRAIN": 0,
         })
         self.set_analog_rangefinder_parameters()
         self.reboot_sitl()
