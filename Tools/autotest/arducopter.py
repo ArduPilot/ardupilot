@@ -4,8 +4,6 @@ Fly Copter in SITL
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import copy
 import logging
 import math
