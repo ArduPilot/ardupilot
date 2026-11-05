@@ -317,6 +317,10 @@ BUILD_OPTIONS = [
     Feature('RC', 'RC_SUMD', 'AP_RCPROTOCOL_SUMD_ENABLED', "Enable SUMD", 0, "RC_Protocol"),   # NOQA: E501
     Feature('RC', 'RC_GHST', 'AP_RCPROTOCOL_GHST_ENABLED', "Enable Ghost", 0, "RC_Protocol"),   # NOQA: E501
     Feature('RC', 'RC_MAVLINK_RADIO', 'AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED', "Enable MAVLink", 0, "RC_Protocol"),   # NOQA: E501
+    Feature('RC', 'Periph_Module_RC', 'AP_PERIPH_MODULE_RC_ENABLED',
+            'AP_Periph module RC publication', 0, 'Module_SX1280'),
+    Feature('RC', 'Module_SX1280', 'AP_MODULE_SX1280_ENABLED',
+            'Native module SX1280 executor', 0, 'NATIVE_MODULES'),
     Feature('RC', 'RSSI', 'AP_RSSI_ENABLED', 'RSSI', 0, None),
 
     Feature('RC', 'RC_TRANSMITTER_TUNING', 'AP_RC_TRANSMITTER_TUNING_ENABLED', "Enable knob-based transmitter tuning", 0, None),  # NOQA: E501
