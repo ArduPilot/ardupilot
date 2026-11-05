@@ -9,7 +9,8 @@ PLANE=$ROOTDIR/build/sitl/bin/arduplane
 
 [ -x "$COPTER" -a -x "$PLANE" ] || {
     ./waf configure --board sitl
-    ./waf plane copter
+    ./waf plane
+    ./waf copter
 }
 
 # setup for either TCP or multicast
