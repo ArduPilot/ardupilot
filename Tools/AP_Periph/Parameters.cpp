@@ -611,7 +611,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 #endif
 
-#if AP_PERIPH_RCIN_ENABLED
+#if AP_PERIPH_RCIN_ENABLED || AP_PERIPH_MODULE_RC_ENABLED
     // @Group: RC
     // @Path: rc_in.cpp
     GOBJECT(g_rcin, "RC",  Parameters_RCIN),

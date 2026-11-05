@@ -515,6 +515,9 @@ void AP_Periph_FW::update()
 #if AP_PERIPH_RCIN_ENABLED
     rcin_update();
 #endif
+#if AP_PERIPH_MODULE_RC_ENABLED
+    module_rc_update();
+#endif
 
 #if AP_PERIPH_BATTERY_BALANCE_ENABLED
     batt_balance_update();

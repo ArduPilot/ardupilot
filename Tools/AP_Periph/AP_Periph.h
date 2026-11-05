@@ -412,10 +412,18 @@ public:
 #if AP_PERIPH_RCIN_ENABLED
     void rcin_init();
     void rcin_update();
-    void can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t nvalues, bool in_failsafe, bool quality_valid);
     bool rcin_initialised;
+    const char *rcin_rc_protocol;
+#endif
+#if AP_PERIPH_MODULE_RC_ENABLED
+    void module_rc_update();
+    bool module_rc_maintenance() const;
+    uint8_t module_rc_error(char *message = nullptr, uint8_t size = 0) const;
+    uint8_t module_rc_last_error;
+#endif
+#if AP_PERIPH_RCIN_ENABLED || AP_PERIPH_MODULE_RC_ENABLED
+    void can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t nvalues, bool in_failsafe, bool quality_valid);
     uint32_t rcin_last_sent_RCInput_ms;
-    const char *rcin_rc_protocol;  // protocol currently being decoded
     Parameters_RCIN g_rcin;
 #endif
 
@@ -616,6 +624,7 @@ public:
 #endif // HAL_PERIPH_CAN_MIRROR
     void cleanup_stale_transactions(uint64_t timestamp_usec);
     void update_rx_protocol_stats(int16_t res);
+    uint8_t node_status_health() const;
     void node_status_send(void);
     bool can_do_dna();
     uint8_t *get_tid_ptr(uint32_t transfer_desc);

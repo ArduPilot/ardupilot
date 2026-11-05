@@ -15,7 +15,9 @@
 
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 
-#if AP_PERIPH_RCIN_ENABLED
+#include "module_rc_config.h"
+
+#if AP_PERIPH_RCIN_ENABLED || AP_PERIPH_MODULE_RC_ENABLED
 
 #ifndef AP_PERIPH_RC1_PORT_DEFAULT
 #define AP_PERIPH_RC1_PORT_DEFAULT -1
@@ -25,13 +27,16 @@
 #define AP_PERIPH_RC1_PORT_OPTIONS_DEFAULT 0
 #endif
 
+#if AP_PERIPH_RCIN_ENABLED
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#endif
 #include "AP_Periph.h"
 #include <dronecan_msgs.h>
 
 extern const AP_HAL::HAL &hal;
 
 const AP_Param::GroupInfo Parameters_RCIN::var_info[] {
+#if AP_PERIPH_RCIN_ENABLED
     // RC_PROTOCOLS copied from RC_Channel/RC_Channels_Varinfo.h
     // @Param: _PROTOCOLS
     // @DisplayName: RC protocols enabled
@@ -40,16 +45,18 @@ const AP_Param::GroupInfo Parameters_RCIN::var_info[] {
     // @Bitmask: 0:All,1:PPM,2:IBUS,3:SBUS,4:SBUS_NI,5:DSM,6:SUMD,7:SRXL,8:SRXL2,9:CRSF,10:ST24,11:FPORT,12:FPORT2,13:FastSBUS
     AP_GROUPINFO("_PROTOCOLS", 1, Parameters_RCIN, rcin_protocols, 1),
 
-    // RC_PROTOCOLS copied from RC_Channel/RC_Channels_Varinfo.h
+#endif
+
     // @Param: _MSGRATE
     // @DisplayName: DroneCAN RC Message rate
     // @Description: Rate at which RC input is sent via DroneCAN
     // @User: Advanced
     // @Increment: 1
-    // @Range: 0 255
+    // @Range: 0 127
     // @Units: Hz
     AP_GROUPINFO("_MSGRATE", 2, Parameters_RCIN, rcin_rate_hz, 50),
 
+#if AP_PERIPH_RCIN_ENABLED
     // @Param: 1_PORT
     // @DisplayName: RC input port
     // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to RC input.
@@ -66,6 +73,10 @@ const AP_Param::GroupInfo Parameters_RCIN::var_info[] {
     AP_GROUPINFO("1_PORT_OPTIONS", 4, Parameters_RCIN, rcin1_port_options, AP_PERIPH_RC1_PORT_OPTIONS_DEFAULT),
     // @RebootRequired: True
 
+#endif
+
+    // Reserve indices 5-11 used by experimental ELRS firmware for module migration.
+
     AP_GROUPEND
 };
 
@@ -74,8 +85,13 @@ Parameters_RCIN::Parameters_RCIN(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+#if AP_PERIPH_RCIN_ENABLED
 void AP_Periph_FW::rcin_init()
 {
+#if AP_PERIPH_MODULE_RC_ENABLED
+    // The module owns RC input when selected, including when initialization fails.
+    return;
+#endif
     if (g_rcin.rcin1_port < 0) {
         return;
     }
@@ -104,6 +120,9 @@ void AP_Periph_FW::rcin_init()
 
 void AP_Periph_FW::rcin_update()
 {
+#if AP_PERIPH_MODULE_RC_ENABLED
+    return;
+#endif
     if (!rcin_initialised) {
         return;
     }
@@ -142,6 +161,8 @@ void AP_Periph_FW::rcin_update()
     can_send_RCInput((uint8_t)rssi, channels, num_channels, rc.failsafe_active(), rssi > 0 && rssi <256);
 }
 
+#endif // AP_PERIPH_RCIN_ENABLED
+
 /*
   send an RCInput CAN message
  */
@@ -176,4 +197,4 @@ void AP_Periph_FW::can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t n
                      total_size);
 }
 
-#endif  // AP_PERIPH_RCIN_ENABLED
+#endif  // AP_PERIPH_RCIN_ENABLED || AP_PERIPH_MODULE_RC_ENABLED

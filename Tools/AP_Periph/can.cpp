@@ -188,6 +188,7 @@ void AP_Periph_FW::handle_get_node_info(CanardInstance* canard_instance,
     node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
     pkt.status = node_status;
+    pkt.status.health = node_status_health();
     pkt.software_version.major = AP::fwversion().major;
     pkt.software_version.minor = AP::fwversion().minor;
     pkt.software_version.optional_field_flags = UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_VCS_COMMIT | UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_IMAGE_CRC;
@@ -1411,6 +1412,16 @@ uint16_t AP_Periph_FW::pool_peak_percent()
     return peak_percent;
 }
 
+uint8_t AP_Periph_FW::node_status_health() const
+{
+#if AP_PERIPH_MODULE_RC_ENABLED
+    if (module_rc_error() != 0) {
+        return MAX(node_status.health, UAVCAN_PROTOCOL_NODESTATUS_HEALTH_ERROR);
+    }
+#endif
+    return node_status.health;
+}
+
 void AP_Periph_FW::node_status_send(void)
 {
     {
@@ -1419,7 +1430,9 @@ void AP_Periph_FW::node_status_send(void)
 
         node_status.vendor_specific_status_code = MIN(hal.util->available_memory(), unsigned(UINT16_MAX));
 
-        uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer, !canfdout());
+        auto status = node_status;
+        status.health = node_status_health();
+        uint32_t len = uavcan_protocol_NodeStatus_encode(&status, buffer, !canfdout());
 
         canard_broadcast(UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
                                 UAVCAN_PROTOCOL_NODESTATUS_ID,
@@ -1496,6 +1509,19 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
     /*
      * Transmitting the node status message periodically.
      */
+#if AP_PERIPH_MODULE_RC_ENABLED
+    char message[63];
+    const uint8_t error = module_rc_error(message, sizeof(message));
+    if (error != module_rc_last_error &&
+        canardGetLocalNodeID(&dronecan.canard) != CANARD_BROADCAST_NODE_ID) {
+        if (error != 0) {
+            can_printf_severity(MAV_SEVERITY_ERROR, "%s", message);
+        } else {
+            can_printf_severity(MAV_SEVERITY_INFO, "Radio module recovered");
+        }
+        module_rc_last_error = error;
+    }
+#endif
     node_status_send();
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
@@ -1539,6 +1565,11 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
     }
 #endif
 
+#if AP_PERIPH_MODULE_RC_ENABLED
+    if (module_rc_maintenance()) {
+        node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
+    } else
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (hal.run_in_maintenance_mode()) {
         node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
