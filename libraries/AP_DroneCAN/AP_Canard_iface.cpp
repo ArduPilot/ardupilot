@@ -73,6 +73,23 @@ bool CanardInterface::broadcast(const Canard::Transfer &bcast_transfer) {
     }
     WITH_SEMAPHORE(_sem_tx);
 
+    if (bcast_transfer.data_type_id == UAVCAN_TUNNEL_TARGETTED_ID) {
+        // Bulk serial traffic must leave room for incoming multi-frame RC
+        // transfers and node status. The serial port retains rejected bytes.
+        uint16_t bytes_per_frame = CANARD_CAN_FRAME_MAX_DATA_LEN - 1U;
+#if CANARD_ENABLE_CANFD
+        if (bcast_transfer.canfd) {
+            bytes_per_frame = CANARD_CANFD_FRAME_MAX_DATA_LEN - 1U;
+        }
+#endif
+        const uint16_t frames = bcast_transfer.payload_len <= bytes_per_frame ? 1U :
+                                (bcast_transfer.payload_len + 2U + bytes_per_frame - 1U) / bytes_per_frame;
+        const auto stats = canardGetPoolAllocatorStatistics(&canard);
+        if (stats.current_usage_blocks + frames > stats.capacity_blocks / 2U) {
+            return false;
+        }
+    }
+
 #if AP_TEST_DRONECAN_DRIVERS
     if (this == &test_iface) {
         test_iface_sem.take_blocking();

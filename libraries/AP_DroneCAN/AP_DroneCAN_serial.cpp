@@ -56,7 +56,8 @@ void AP_DroneCAN_Serial::init(AP_DroneCAN *_dronecan)
         if (targetted == nullptr) {
             AP_BoardConfig::allocation_error("serial_tunnel_pub");
         }
-        targetted->set_timeout_ms(20);
+        // Allow queued serial bursts to drain while higher-priority CAN traffic is sent.
+        targetted->set_timeout_ms(200);
         targetted->set_priority(CANARD_TRANSFER_PRIORITY_MEDIUM);
     }
 }
