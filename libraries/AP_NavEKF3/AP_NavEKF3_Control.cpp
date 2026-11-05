@@ -450,8 +450,11 @@ void NavEKF3_core::setAidingMode()
                 // baro height is fused with the EKF origin height correction applied to the measurement
                 meaHgtAtTakeOff += (ftype)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
             }
-            // reset the vertical position state to faster recover from baro errors experienced during touchdown
-            stateStruct.position.z = -meaHgtAtTakeOff;
+            // reset the vertical position state to faster recover from baro errors experienced during touchdown,
+            // but not to a baro in ground effect, which would put its prop wash error into the height
+            if (!(motorsArmed && (dal.get_takeoff_expected() || dal.get_touchdown_expected()) && !assume_zero_sideslip())) {
+                stateStruct.position.z = -meaHgtAtTakeOff;
+            }
             // store the current height to be used to keep reporting
             // the last known position
             lastKnownPositionD = stateStruct.position.z;
