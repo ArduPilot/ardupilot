@@ -6,8 +6,6 @@ Parameter File Checker Unit Tests
 AP_FLAKE8_CLEAN
 """
 
-from __future__ import annotations
-
 import subprocess
 import time
 import unittest

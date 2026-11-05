@@ -2,8 +2,6 @@
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import atexit
 import math
 import os

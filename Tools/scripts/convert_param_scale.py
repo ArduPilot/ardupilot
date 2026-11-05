@@ -18,8 +18,6 @@ conversion scripts, e.g. convert_params_4_7.py.
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import argparse
 import dataclasses
 import logging

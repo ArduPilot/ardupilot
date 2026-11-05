@@ -9,8 +9,6 @@ based on build_binaries.sh by Andrew Tridgell, March 2013
 AP_FLAKE8_CLEAN
 """
 
-from __future__ import annotations
-
 import contextlib
 import datetime
 import gzip

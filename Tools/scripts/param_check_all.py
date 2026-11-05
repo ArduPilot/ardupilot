@@ -6,8 +6,6 @@ Check all default parameter files for all hwdef boards and sitl targets.
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import glob
 import os
 import sys

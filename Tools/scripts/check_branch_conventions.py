@@ -16,8 +16,6 @@ Validates:
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import argparse
 import json
 import os

@@ -29,8 +29,6 @@ AP_FLAKE8_CLEAN
 
 """
 
-from __future__ import annotations
-
 import glob
 import json
 import os

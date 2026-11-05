@@ -19,8 +19,6 @@ hwdef directory exceeds MAX_IMAGE_SIZE bytes.
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import ast
 import optparse
 import os

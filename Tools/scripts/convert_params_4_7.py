@@ -26,8 +26,6 @@ became ARM_C_RTL_ALT_M in metres.
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import argparse
 import dataclasses
 import logging
