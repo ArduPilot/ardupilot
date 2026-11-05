@@ -2064,6 +2064,18 @@ uint16_t AP_AHRS::get_accel_bias_reset_count_for_imu(uint8_t imu_index)
 #endif
 }
 
+// get the time in ms EKF3 last zeroed the accel bias estimate get_accel_bias_z_for_imu() returns for an
+// IMU, on the same clock as AP_HAL::millis(); a switch between estimates zeroes nothing. 0 if no core uses it
+uint32_t AP_AHRS::get_accel_bias_zero_time_ms_for_imu(uint8_t imu_index)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    WITH_SEMAPHORE(_rsem);
+    return ekf3.EKF3.getAccelBiasZeroTimeForIMU(imu_index);
+#else
+    return 0;
+#endif
+}
+
 void AP_AHRS::set_inhibit_accel_bias_learning(bool inhibit)
 {
 #if HAL_NAVEKF3_AVAILABLE
