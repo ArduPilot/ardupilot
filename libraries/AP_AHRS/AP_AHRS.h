@@ -774,6 +774,9 @@ public:
     // get the number of times the EKF has restarted its accel bias estimate for an IMU
     uint16_t get_accel_bias_reset_count_for_imu(uint8_t imu_index);
 
+    // get the time in ms the EKF last zeroed the accel bias get_accel_bias_z_for_imu() returns, 0 if none
+    uint32_t get_accel_bias_zero_time_ms_for_imu(uint8_t imu_index);
+
     // inhibit all accel bias learning
     void set_inhibit_accel_bias_learning(bool inhibit);
 
