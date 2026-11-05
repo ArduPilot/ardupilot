@@ -12103,6 +12103,26 @@ Also, ignores heartbeats not from our target system'''
 
         tee.close()
 
+        # the per-test output file is named for the test alone, so the
+        # next run of it overwrites the last - the next suite on this
+        # host, or the next point of a parallelism sweep.  A failure's
+        # own narration is then gone by morning: an overnight sweep left
+        # 63 failures whose reasons survived in the run summary but
+        # whose output, check_replay's complaint among it, did not.
+        # Keep a copy under the timestamp scheme the binary logs use.
+        if not passed:
+            stamp = time.strftime("%Y%m%d%H%M%S")
+            kept = self.buildlogs_path("%s-%s-%s.txt" % (self.log_name(), name, stamp))
+            uniq = 0
+            while os.path.exists(kept):
+                uniq += 1
+                kept = self.buildlogs_path("%s-%s-%s.%u.txt" % (self.log_name(), name, stamp, uniq))
+            try:
+                shutil.copy(test_output_filename, kept)
+                self.progress("Kept failing test's output as %s" % kept)
+            except OSError as e:  # noqa: BLE001
+                self.progress("Could not keep failing test's output: %s" % e)
+
         result.passed = passed
         return result
 

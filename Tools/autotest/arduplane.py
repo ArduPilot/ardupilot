@@ -4026,7 +4026,11 @@ return update()
 
         ok = check_replay.check_log(replay_log_filepath, self.progress, verbose=True)
         if not ok:
-            raise NotAchievedException("check_replay (%s) failed" % current_log_filepath)
+            # name the log which was checked, not the one Replay read:
+            # reporting the input sends whoever reads the failure to a
+            # flight log, which has no replayed messages in it at all
+            # and so "fails" the check however healthy the replay was.
+            raise NotAchievedException("check_replay (%s) failed" % replay_log_filepath)
 
     def test_replay_wind_and_airspeed_bit(self):
         self.set_parameters({
