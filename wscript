@@ -542,7 +542,7 @@ def configure(cfg):
     # Ubuntu releases: https://releases.ubuntu.com
     # also update `MIN_VER` in `./waf` and `target-version` in `pyproject.toml`
     cfg.load('python')
-    cfg.check_python_version(minver=(3, 9, 0))
+    cfg.check_python_version(minver=(3, 10, 0))
 
     cfg.load('ap_library')
 
