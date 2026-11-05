@@ -9,12 +9,18 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 
+// the tolerance is scaled by the expected value's magnitude when that
+// is above 1, as a single-precision ftype can't hold a large value to
+// within an absolute 1e-6:
+static ftype GL2_tol(ftype expected, ftype abs_tol) {
+    return abs_tol * MAX(1, fabsF(expected));
+}
 void expect_GL2_near(const GL2& A, const GL2& B, ftype abs_tol = 1e-6);
 void expect_GL2_near(const GL2& A, const GL2& B, ftype abs_tol) {
-    EXPECT_NEAR(A.a11(), B.a11(), abs_tol);
-    EXPECT_NEAR(A.a12(), B.a12(), abs_tol);
-    EXPECT_NEAR(A.a21(), B.a21(), abs_tol);
-    EXPECT_NEAR(A.a22(), B.a22(), abs_tol);
+    EXPECT_NEAR(A.a11(), B.a11(), GL2_tol(B.a11(), abs_tol));
+    EXPECT_NEAR(A.a12(), B.a12(), GL2_tol(B.a12(), abs_tol));
+    EXPECT_NEAR(A.a21(), B.a21(), GL2_tol(B.a21(), abs_tol));
+    EXPECT_NEAR(A.a22(), B.a22(), GL2_tol(B.a22(), abs_tol));
 }
 void expect_SIM23_near(const SIM23& A, const SIM23& B, ftype abs_tol = 1e-5);
 void expect_SIM23_near(const SIM23& A, const SIM23& B, ftype abs_tol) {
