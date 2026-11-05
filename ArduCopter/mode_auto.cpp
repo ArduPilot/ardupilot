@@ -2512,13 +2512,14 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
     // check if we've reached the edge
     if (_mode == SubMode::CIRCLE_MOVE_TO_EDGE) {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        // record the approach before circle_start() replaces it with the orbit leg
+        set_item_progress_wp_distance(cmd);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         if (copter.wp_nav->reached_wp_destination()) {
             // start circling
             circle_start();
         }
-#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
-        set_item_progress_wp_distance(cmd);
-#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
