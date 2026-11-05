@@ -431,8 +431,11 @@ void NavEKF3_core::setAidingMode()
             // this reduces the time required for the baro noise filter to settle before the filtered baro data can be used.
             // The offset is removed because height fusion works in that frame, and it is non-zero from the arming reset on
             meaHgtAtTakeOff = baroDataDelayed.hgt - baroHgtOffset;
-            // reset the vertical position state to faster recover from baro errors experienced during touchdown
-            stateStruct.position.z = -meaHgtAtTakeOff;
+            // reset the vertical position state to faster recover from baro errors experienced during touchdown,
+            // but not to a baro in ground effect, which would put its prop wash error into the height
+            if (!(motorsArmed && (dal.get_takeoff_expected() || dal.get_touchdown_expected()) && !assume_zero_sideslip())) {
+                stateStruct.position.z = -meaHgtAtTakeOff;
+            }
             // store the current height to be used to keep reporting
             // the last known position
             lastKnownPositionD = stateStruct.position.z;
