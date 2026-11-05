@@ -49,6 +49,7 @@ private:
     void worker_attempt(const char *label, bool expected);
 
     volatile bool worker_result;
+    bool worker_started;
 public:
     bool test_ok = true;
     bool complete;
@@ -83,6 +84,10 @@ void SemaphoreRecursionTest::worker(void)
 
 void SemaphoreRecursionTest::worker_attempt(const char *label, bool expected)
 {
+    if (!worker_started) {
+        // already reported as a failure, and the wait below could only time out
+        return;
+    }
     worker_request.signal();
     const bool done = worker_done.wait(WORKER_TIMEOUT_US);
     expect_bool("worker completion", done, true);
@@ -93,7 +98,7 @@ void SemaphoreRecursionTest::worker_attempt(const char *label, bool expected)
 
 void SemaphoreRecursionTest::setup(void)
 {
-    hal.scheduler->thread_create(
+    worker_started = hal.scheduler->thread_create(
         FUNCTOR_BIND_MEMBER(&SemaphoreRecursionTest::worker, void),
         "semrec",
         2048,
@@ -101,6 +106,7 @@ void SemaphoreRecursionTest::setup(void)
         0);
 
     hal.console->printf("Starting recursive semaphore test at %lu ms\n", (unsigned long)AP_HAL::millis());
+    expect_bool("worker thread started", worker_started, true);
 
     expect_bool("main first take", mtx.take_nonblocking(), true);
     expect_bool("main recursive take", mtx.take_nonblocking(), true);
