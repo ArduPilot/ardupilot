@@ -223,7 +223,7 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
             LOG_PACKET_HEADER_INIT(LOG_XKFA_MSG),
             time_us : time_us,
             core    : DAL_CORE(core_index),
-            hAgl    : (float)aglKf.hgt,                // AGL height estimate (m)
+            hAgl    : (float)MAX(aglKf.hgt, rngOnGnd), // AGL height estimate (m), the state can sit below its floor
             vAgl    : (float)aglKf.vel,                // AGL velocity estimate (m/s, +ve = climbing)
             hAglStd : (float)sqrtF(aglKf.cov[0][0]),   // std-dev of h_agl (m)
             vAglStd : (float)sqrtF(aglKf.cov[1][1]),   // std-dev of v_agl (m/s)
