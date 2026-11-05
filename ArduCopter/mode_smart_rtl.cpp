@@ -53,10 +53,16 @@ void ModeSmartRTL::set_submode(SubMode submode)
     case SubMode::PRELAND_POSITION:
         // wp destination is data-dependent and set by the caller
         break;
-    case SubMode::DESCEND:
-        set_descent_target_alt(copter.mode_rtl.get_alt_final_m() * 100);
+    case SubMode::DESCEND: {
+        // RTL_ALT_FINAL_M is above home, but the descent target is passed
+        // directly to the position controller so must be above the origin
+        Location descent_target = copter.current_loc;
+        descent_target.set_alt_m(copter.mode_rtl.get_alt_final_m(), Location::AltFrame::ABOVE_HOME);
+        descent_target.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
+        set_descent_target_alt(descent_target.alt);
         descent_start();
         break;
+    }
     case SubMode::LAND:
         land_start();
         break;
