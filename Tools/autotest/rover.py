@@ -7999,14 +7999,13 @@ return update()
         self.disarm_vehicle()
 
     def AutoModeAccelChanges(self):
-        '''verify WP_ACCEL mid-mission change bakes at the next WP crossing and takes effect n+2 legs later'''
-        # Change WP_ACCEL during WP1->WP2; bakes at WP2 crossing;
-        # WP2->WP3 may still propagate old value; WP3->WP4 is the reliable measurement leg.
+        '''verify WP_ACCEL mid-mission change takes effect on the immediately following leg'''
+        # Change WP_ACCEL during WP1->WP2; update_limits() recalculates _scurve_next_leg
+        # (WP2->WP3) immediately, so WP2->WP3 is the first reliable measurement leg.
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  300,    0, 0),  # WP1
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  300,  300, 0),  # WP2
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  300, 0),  # WP3
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  600, 0),  # WP4
         ])
         wp_accel    = 0.5   # m/s^2: slow enough for a clear ~2.0 s measurement
         accel_start = 4.0   # m/s
@@ -8022,11 +8021,11 @@ return update()
         self.change_mode('AUTO')
 
         self.wait_current_waypoint(2, timeout=120)     # rover is now on WP1->WP2
-        self.set_parameter("WP_ACCEL", wp_accel)       # bakes at WP2 crossing
+        self.set_parameter("WP_ACCEL", wp_accel)       # immediately recalculates next leg (WP2->WP3)
 
         expected_time = (accel_stop - accel_start) / wp_accel  # 2.0 s
-        self.wait_current_waypoint(4, timeout=120)     # WP3->WP4: first reliable leg
-        self.wait_groundspeed(0, accel_start - 0.5, timeout=30)  # wait for WP3 corner dip
+        self.wait_current_waypoint(3, timeout=120)     # WP2->WP3: first reliable leg
+        self.wait_groundspeed(0, accel_start - 0.5, timeout=30)  # wait for WP2 corner dip
         self.wait_groundspeed(accel_start, 100, timeout=30)
         tstart = self.get_sim_time()
         self.wait_groundspeed(accel_stop, 100, timeout=expected_time * 3)
