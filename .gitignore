@@ -1,5 +1,8 @@
 /.lock-waf*
+/.lock-autotest-isolated-build
 /.waf*
+/param-doc-work/
+/Replay-tool
 /Tools/autotest/aircraft/Rascal/reset.xml
 /Tools/autotest/ch7_mission.txt
 /Tools/autotest/param_metadata/Parameters.html
