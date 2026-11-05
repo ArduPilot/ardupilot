@@ -83,13 +83,14 @@ public:
         return true;
     }
 
-    // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
-
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
 
 private:
+
+    // the origin we report positions against: the common origin, or
+    // home until there is one
+    bool get_origin(Location &ret) const;
 
     // DCM maintains _last_airspeed_TAS in its drift correction; use it
     // directly rather than recomputing from the published velocity:

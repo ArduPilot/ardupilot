@@ -489,37 +489,28 @@ void AP_AHRS::update_state(void)
     state.velocity_NED_ok = active_estimates->get_velocity_NED(state.velocity_NED);
 }
 
-void AP_AHRS::try_set_common_origin(const AP_AHRS_Backend &source_backend, const AP_AHRS_Backend::Estimates &source_estimates)
+void AP_AHRS::try_set_common_origin(const AP_AHRS_Backend::Estimates &source_estimates)
 {
     if (backend_inputs.origin_ok) {
         return;
     }
 
     /*
-      the first backend to provide an origin establishes the common
+      the first backend to offer an origin establishes the common
       origin; every backend is given it through its update()
     */
-    if (source_estimates.location_suitable_as_origin) {
-        // the point where the backend's position is zero:
-        Location new_origin = source_estimates.location;
-        new_origin.offset(Vector3p{
-            -source_estimates.position_NE.x,
-            -source_estimates.position_NE.y,
-            -source_estimates.position_D});
-        IGNORE_RETURN(set_origin(new_origin));
+    if (!source_estimates.location_suitable_as_origin) {
+        // e.g. DCM never offers one
         return;
     }
-
-    if (!source_estimates.provides_common_origin) {
-        // e.g. DCM doesn't provide an origin which can be set
-        // into the other backends
-        return;
-    }
-    Location new_origin;
-    if (!source_backend.get_origin(new_origin)) {
-        // no valid origin from this backend
-        return;
-    }
+    // the point where the backend's position is zero.  This is exact
+    // only for a zero position; otherwise Location::offset() rounds it
+    // to about a centimetre (see location_suitable_as_origin):
+    Location new_origin = source_estimates.location;
+    new_origin.offset(Vector3p{
+        -source_estimates.position_NE.x,
+        -source_estimates.position_NE.y,
+        -source_estimates.position_D});
     IGNORE_RETURN(set_origin(new_origin));
 }
 
@@ -586,7 +577,7 @@ void AP_AHRS::update(bool skip_ins_update)
     *configured_estimates = {};
     configured_backend->get_results(*configured_estimates);
     // if we don't have an origin, maybe set one:
-    try_set_common_origin(*configured_backend, *configured_estimates);
+    try_set_common_origin(*configured_estimates);
 
     for (auto &backend_and_estimates : backends_and_estimates) {
         if (&backend_and_estimates.backend == configured_backend) {
@@ -597,7 +588,7 @@ void AP_AHRS::update(bool skip_ins_update)
         backend_and_estimates.estimates = {};
         backend_and_estimates.backend.get_results(backend_and_estimates.estimates);
         // if we don't have an origin, maybe set one:
-        try_set_common_origin(backend_and_estimates.backend, backend_and_estimates.estimates);
+        try_set_common_origin(backend_and_estimates.estimates);
     }
 
     // backends without a synthetic airspeed of their own publish

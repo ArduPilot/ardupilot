@@ -182,10 +182,8 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = get_location(results.location);
 
-    // origin-relative functions
-    // results.provides_common_origin = false;
-
-    // origin-relative position:
+    // origin-relative position, against the common origin.  We never
+    // offer one (location_suitable_as_origin):
     {
         Location orgn;
         if (get_origin(orgn)) {

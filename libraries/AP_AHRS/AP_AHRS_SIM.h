@@ -83,12 +83,13 @@ public:
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override { return true; }
 
-    // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
-
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
 
 private:
+
+    // the origin we report positions against: the common origin, or
+    // the simulation's home until there is one
+    bool get_origin(Location &ret) const;
 
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const;

@@ -56,10 +56,11 @@ public:
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
-    // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
-
 private:
+    // the origin we report positions against: the common origin, or
+    // the external AHRS's own until there is one
+    bool get_origin(Location &ret) const;
+
     // the common origin, once AP_AHRS has one
     Location common_origin;
     bool common_origin_ok;
