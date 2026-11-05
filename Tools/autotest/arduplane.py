@@ -8335,6 +8335,49 @@ return update()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def ReverseThrustTECS(self):
+        '''check TECS commands reverse thrust with a negative THR_MIN and no ICE'''
+        # checks the throttle TECS commands (CTUN.ThO); the simulated
+        # plane has no reverse thrust, so its flight is not checked
+        self.set_parameters({
+            "THR_MIN": -50,
+            "USE_REV_THRUST": 1024,  # GUIDED
+            "ICE_ENABLE": 0,
+        })
+        self.takeoff(alt=150)
+        # centre the throttle stick (zero thrust with reverse thrust) so it
+        # does not raise the GUIDED airspeed demand
+        self.set_rc(3, 1500)
+        self.change_mode("GUIDED")
+        # slowing to AIRSPEED_MIN while descending sheds more energy than
+        # zero thrust can, so TECS drives the throttle towards THR_MIN
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            p1=0,  # airspeed
+            p2=self.get_parameter("AIRSPEED_MIN"),
+        )
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+            p1=20,
+            p2=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.delay_sim_time(30, reason="slow down and descend towards 20 m")
+        self.disarm_vehicle(force=True)
+        count = 0
+        lowest = 0
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='CTUN')
+            if m is None:
+                break
+            count += 1
+            lowest = min(lowest, m.ThO)
+        if count == 0:
+            raise NotAchievedException("no CTUN messages in the onboard log")
+        self.progress("lowest ThO %.0f%% in %u CTUN messages" % (lowest, count))
+        if lowest > -10:
+            raise NotAchievedException("throttle stayed at %.0f%% or above" % lowest)
+
     def GuidedAttitudeNoGPS(self):
         '''test that guided-attitude still works with no GPS'''
         self.takeoff(30)
@@ -10853,6 +10896,7 @@ return update()
             self.MAV_CMD_MISSION_START,
             self.TerrainRally,
             self.ClimbThrottleSaturation,
+            self.ReverseThrustTECS,
             self.SetHomeAltChange,
             self.SetHomeAltChange3,
             self.ForceArm,
