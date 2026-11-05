@@ -499,6 +499,18 @@ void AP_AHRS::try_set_common_origin(const AP_AHRS_Backend &source_backend, const
       the first backend to provide an origin establishes the common
       origin; every backend is given it through its update()
     */
+    if (source_estimates.location_suitable_as_origin) {
+        // the point where the backend's position is zero:
+        Location new_origin = source_estimates.location;
+        new_origin.offset(Vector3p{
+            -source_estimates.position_NE.x,
+            -source_estimates.position_NE.y,
+            -source_estimates.position_D});
+        backend_inputs.origin = new_origin;
+        backend_inputs.origin_ok = true;
+        return;
+    }
+
     if (!source_estimates.provides_common_origin) {
         // e.g. DCM doesn't provide an origin which can be set
         // into the other backends

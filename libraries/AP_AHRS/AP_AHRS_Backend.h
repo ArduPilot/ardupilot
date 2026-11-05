@@ -181,6 +181,16 @@ public:
          */
         bool provides_common_origin;
 
+        // true if location, position_NE and position_D are good
+        // enough to establish the common origin from, whatever their
+        // _valid flags say: the origin is location moved back by the
+        // position, i.e. the point where this backend's position is
+        // zero.  A backend with no origin yet offers one this way.
+        // Location::offset() rounds to the nearest 1e-7 degree, so an
+        // origin offered as a location at a nonzero position is taken
+        // to within about a centimetre rather than exactly:
+        bool location_suitable_as_origin;
+
         // origin-relative position:
         Vector2p position_NE;
         bool position_NE_valid;  // true if position_NE is valid
