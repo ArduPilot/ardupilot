@@ -278,6 +278,7 @@ float Plane::dragCoeff(float alpha) const
 Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRudder, float inputThrust, const Vector3f &force) const
 {
     float alpha = angle_of_attack;
+    float sideslip = beta;
 
 	//calculate aerodynamic torque
     float effective_airspeed = airspeed;
@@ -286,10 +287,16 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
         /*
           tailsitters get airspeed from prop-wash
          */
-        effective_airspeed += inputThrust * 20;
+        const float propwash = inputThrust * 20;
+        effective_airspeed += propwash;
 
         // reduce effective angle of attack as thrust increases
         alpha *= constrain_float(1 - inputThrust, 0, 1);
+
+        // sideslip is relative to the prop-wash along the body x
+        // axis, otherwise it is arbitrary at low airspeed and the
+        // resulting moments overwhelm the control surfaces in hover
+        sideslip = atan2f(velocity_air_bf.y, velocity_air_bf.x + propwash);
     }
     
     const float s = coefficient.s;
@@ -330,9 +337,9 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	}
 	else
 	{
-		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*effective_airspeed) + c_l_r*b*r/(2*effective_airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
+		la = qbar*b*(c_l_0 + c_l_b*sideslip + c_l_p*b*p/(2*effective_airspeed) + c_l_r*b*r/(2*effective_airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
 		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*effective_airspeed) + c_m_deltae*inputElevator);
-		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*effective_airspeed) + c_n_r*b*r/(2*effective_airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
+		na = qbar*b*(c_n_0 + c_n_b*sideslip + c_n_p*b*p/(2*effective_airspeed) + c_n_r*b*r/(2*effective_airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
 	}
 
 
