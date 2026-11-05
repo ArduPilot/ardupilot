@@ -22132,7 +22132,9 @@ RTL_ALT_M 111
         self.assert_parameter_value("DISARM_DELAY", 20)
 
     def SerialPassthru(self):
-        '''test serial passthrough timeout and recovery'''
+        '''smoke test serial passthrough timeout and manual disable'''
+        # SITL does not enforce UART thread ownership, so this cannot
+        # reproduce the ChibiOS ownership failure.
         self.context_collect('STATUSTEXT')
 
         # test timeout recovery
@@ -22146,15 +22148,37 @@ RTL_ALT_M 111
         # Verify MAVLink on port 0 responds after passthrough timeout
         self.assert_parameter_value("MAV_SYSID", 1)
 
-        # test manual disable recovery
+        # Keep SERIAL0 available to disable passthrough after the ports lock.
+        self.set_parameters({"SERIAL1_PROTOCOL": -1, "SERIAL2_PROTOCOL": -1})
+        port1 = self.spare_network_port()
+        port2 = self.spare_network_port(1)
+        self.customise_SITL_commandline([
+            "--serial1=tcp:%u" % port1,
+            "--serial2=tcp:%u" % port2,
+        ])
+        self.context_clear_collection('STATUSTEXT')
         self.set_parameters({
-            "SERIAL_PASSTIMO": 15,
-            "SERIAL_PASS1": 0,
-            "SERIAL_PASS2": 2,
+            "SERIAL_PASSTIMO": 0,
+            "SERIAL_PASS1": 2,
+            "SERIAL_PASS2": 1,
         })
         self.wait_statustext("Passthru enabled", check_context=True, timeout=10, wallclock_timeout=True)
-        self.set_parameter("SERIAL_PASS2", -1)
-        self.wait_statustext("Passthru disabled", check_context=True, timeout=10, wallclock_timeout=True)
+        self.delay_sim_time(2, reason="wait for passthrough ports to lock")
+        with socket.create_connection(("127.0.0.1", port1), timeout=5) as serial1, \
+                socket.create_connection(("127.0.0.1", port2), timeout=5) as serial2:
+            for source, destination, data in ((serial1, serial2, b"serial1 to serial2"),
+                                              (serial2, serial1, b"serial2 to serial1")):
+                source.sendall(data)
+                received = b''
+                while len(received) < len(data):
+                    chunk = destination.recv(len(data) - len(received))
+                    if not chunk:
+                        raise NotAchievedException("Passthrough socket closed")
+                    received += chunk
+                if received != data:
+                    raise NotAchievedException("Passthrough data differs: %s" % received)
+            self.set_parameter("SERIAL_PASS2", -1)
+            self.wait_statustext("Passthru disabled", check_context=True, timeout=10, wallclock_timeout=True)
         self.assert_parameter_value("MAV_SYSID", 1)
 
     def ScriptingFlipMode(self):
