@@ -1,0 +1,20 @@
+#pragma once
+
+#ifdef CONFIG_HAL_BOARD
+#include <AP_HAL/AP_HAL_Boards.h>
+#endif
+
+#ifndef AP_RADIO_SX1280_ENABLED
+#if defined(AP_PERIPH_MODULE_RC_ENABLED) && AP_PERIPH_MODULE_RC_ENABLED
+#define AP_RADIO_SX1280_ENABLED 1
+#else
+#define AP_RADIO_SX1280_ENABLED 0
+#endif
+#endif
+
+#ifndef AP_MODULE_SX1280_ENABLED
+#define AP_MODULE_SX1280_ENABLED 0
+#endif
+#ifndef AP_RADIO_SX1280_UART
+#define AP_RADIO_SX1280_UART 1
+#endif
