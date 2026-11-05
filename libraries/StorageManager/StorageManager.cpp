@@ -98,7 +98,16 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
 #if STORAGE_NUM_AREAS >= 18
     { StorageParam,    16384, 1280},
     { StorageMission,  17664, 9842},
-    { StorageParamBak, 27506, 5262},
+    { StorageParamBak, 27506,
+#if HAL_EXTERNAL_NAV_TRUST_STORAGE
+      5006
+#else
+      5262
+#endif
+    },
+#if HAL_EXTERNAL_NAV_TRUST_STORAGE
+    { StorageExternalNavTrust, 32512, 256},
+#endif
 #endif
 };
 #endif // STORAGE_NUM_AREAS == 1
@@ -152,6 +161,7 @@ bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
     }
 #endif
 
+    uint8_t wrap_guard = 0;
     for (uint8_t i=0; i<STORAGE_NUM_AREAS; i++) {
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         uint16_t length = area.length;
@@ -163,6 +173,17 @@ bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
             // the data isn't in this area
             addr -= length;
             continue;
+        }
+        // boundary-crossing guard: addr==0 means we wrapped to the
+        // first matching area after crossing one boundary.  A second
+        // boundary crossing would mean writing past the last area of
+        // this type into an unrelated region of flash.  Only one
+        // wrap is allowed.
+        if (addr == 0) {
+            if (wrap_guard >= 1) {
+                break;
+            }
+            wrap_guard++;
         }
         uint16_t count = n;
         if (count+addr > length) {
@@ -210,6 +231,7 @@ bool StorageAccess::write_block(uint16_t addr, const void *data, size_t n) const
     }
 #endif
 
+    uint8_t wrap_guard = 0;
     for (uint8_t i=0; i<STORAGE_NUM_AREAS; i++) {
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         uint16_t length = area.length;
@@ -221,6 +243,17 @@ bool StorageAccess::write_block(uint16_t addr, const void *data, size_t n) const
             // the data isn't in this area
             addr -= length;
             continue;
+        }
+        // boundary-crossing guard: addr==0 means we wrapped to the
+        // first matching area after crossing one boundary.  A second
+        // boundary crossing would mean writing past the last area of
+        // this type into an unrelated region of flash.  Only one
+        // wrap is allowed.
+        if (addr == 0) {
+            if (wrap_guard >= 1) {
+                break;
+            }
+            wrap_guard++;
         }
         uint16_t count = n;
         if (count+addr > length) {
@@ -447,4 +480,3 @@ void StorageAccess::flush_file(void)
     }
 }
 #endif // AP_SDCARD_STORAGE_ENABLED
-
