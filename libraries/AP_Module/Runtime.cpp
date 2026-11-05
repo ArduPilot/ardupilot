@@ -17,6 +17,7 @@
 #include "BindingONVIF.h"
 #include "BindingSerialLED.h"
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_APMOD
 #include <AP_ROMFS/AP_ROMFS.h>
@@ -464,6 +465,7 @@ bool Runtime::load_generation()
         }
     }
 #endif
+#if AP_FILESYSTEM_FILE_WRITING_ENABLED
     auto &fs = AP::FS();
     errno = 0;
     auto *directory = fs.opendir(DIRECTORY);
@@ -511,6 +513,7 @@ bool Runtime::load_generation()
             return false;
         }
     }
+#endif // AP_FILESYSTEM_FILE_WRITING_ENABLED
     size_t count = 0;
     for (Slot *item = _slots; item != nullptr; item = item->next) {
         auto &slot = *item;

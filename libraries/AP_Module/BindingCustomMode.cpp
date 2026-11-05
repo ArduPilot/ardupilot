@@ -12,6 +12,7 @@
 namespace AP_Module
 {
 
+#if AP_VEHICLE_ENABLED
 static constexpr uint8_t MAX_HANDLES = 32;
 
 struct CustomModeEntry {
@@ -185,6 +186,27 @@ void binding_custom_mode_cleanup(void *context)
         }
     }
 }
+
+#else
+int32_t binding_custom_mode_register(void *, const uint8_t *, uint32_t, uint8_t *, uint32_t)
+{
+    return AP_MODULE_STATUS_UNAVAILABLE;
+}
+
+int32_t binding_custom_mode_get_allow_entry(void *, const uint8_t *, uint32_t, uint8_t *, uint32_t)
+{
+    return AP_MODULE_STATUS_UNAVAILABLE;
+}
+
+int32_t binding_custom_mode_set_allow_entry(void *, const uint8_t *, uint32_t, uint8_t *, uint32_t)
+{
+    return AP_MODULE_STATUS_UNAVAILABLE;
+}
+
+void binding_custom_mode_cleanup(void *)
+{
+}
+#endif // AP_VEHICLE_ENABLED
 
 }
 #endif
