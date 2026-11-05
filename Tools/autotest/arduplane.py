@@ -5872,9 +5872,14 @@ return update()
                 # tailsitter needs extra re-boot to pick up the rotated AHRS view
                 self.reboot_sitl()
             self.wait_ready_to_arm()
+            self.context_push()
+            # normal landings strike the ground at up to ~6m/s (plane-jet);
+            # crashes are well over 10m/s
+            self.install_message_hook_context(vehicle_test_suite.TestSuite.FailFastHardGroundStrike(self, 10))
             self.arm_vehicle()
             self.fly_mission(mission_file, strict=False, quadplane=quadplane, mission_timeout=400.0)
             self.wait_disarmed()
+            self.context_pop()
 
     def FlyEachFrameRCInput(self):
         '''Confirm each internal frame can be controlled with RC in the
@@ -5918,10 +5923,13 @@ return update()
             model = frame_bits.get("model", frame)
             self.customise_SITL_commandline([], model=model, wipe=True)
             rc_reversed = frame in rc_pitch_reversed_frames
+            self.context_push()
+            self.install_message_hook_context(vehicle_test_suite.TestSuite.FailFastHardGroundStrike(self, 10))
             if self.get_parameter('Q_ENABLE'):
                 self.check_rc_input_direction_vtol(rc_pitch_reversed=rc_reversed)
             else:
                 self.check_rc_input_direction_fixedwing(rc_pitch_reversed=rc_reversed)
+            self.context_pop()
         # we deliberately do not land each frame (some aerobatic frames do
         # not land cleanly, and the direction check does not need it) -
         # customise_SITL_commandline restarts SITL for the next frame.  Do
