@@ -367,6 +367,7 @@ class HWDef:
             self.progress("Removing %s" % u)
             self.config.pop(u, '')
             self.intdefines.pop(u, '')
+            self.env_vars.pop(u, None)
             # also remove all occurrences of defines in previous lines if any
             for line in self.alllines[:]:
                 if line.startswith('define') and u == line.split()[1]:
