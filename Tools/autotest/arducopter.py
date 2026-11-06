@@ -4720,6 +4720,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         dfreader = self.dfreader_for_current_onboard_log()
         hgts = []
+        hgts_valid = []
         vds = []
         rfnd_stat = []
         while True:
@@ -4727,7 +4728,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m is None:
                 break
             t = m.TimeUS * 1e-6
-            if not (bias_s + 1 < t < bias_s + 6):
+            # ends before the AGL KF's 5 s range timeout, which runs from its last reading, taken after
+            # bias_s (0.4 s here), so the filter has to be valid throughout
+            if not (bias_s + 1 < t < bias_s + 5):
                 continue
             mtype = m.get_type()
             if mtype == 'RFND':
@@ -4736,8 +4739,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 continue
             elif mtype == 'XKF1':
                 vds.append(abs(m.VD))
-            elif m.Valid:
+            else:
                 hgts.append(m.HAgl)
+                hgts_valid.append(m.Valid)
         self.disarm_vehicle(force=True)
         self.progress("main filter |velD| max %.2f m/s, AGL KF height %.3f-%.3f m, range finder status %s" %
                       (max(vds) if vds else float('nan'), min(hgts) if hgts else float('nan'),
@@ -4751,10 +4755,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                        (max(vds) if vds else float('nan')))
         if len(rfnd_stat) == 0 or any(st != 2 for st in rfnd_stat):  # RangeFinder::Status::OutOfRangeLow
             raise NotAchievedException("range finder was not below its minimum on the ground")
-        if len(hgts) < 20:
-            raise NotAchievedException("only %u valid AGL KF samples on the ground" % len(hgts))
+        # every sample has to be valid, or a coast can hide in the ones that are not; XKFA logs at
+        # 10 Hz armed, and 40 samples were measured here
+        if len(hgts) < 20 or not all(hgts_valid):
+            raise NotAchievedException("AGL KF invalid on the ground, or only %u samples" % len(hgts))
         rise = max(hgts) - min(hgts)
-        # 0.30 m measured, the 0.3 m above the last reading that starts the hold; 2.42 m without it
+        # 0.30 m measured, the 0.3 m above the last reading that starts the hold; 1.82 m without it
         if rise > 0.5:
             raise NotAchievedException("AGL KF height coasted %.2f m on the ground" % rise)
 
