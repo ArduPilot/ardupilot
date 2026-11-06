@@ -28,9 +28,6 @@ void Blimp::init_ardupilot()
 
     barometer.init();
 
-    // setup telem slots with serial ports
-    gcs().setup_uarts();
-
     init_rc_in();               // sets up rc channels from radio
 
     // allocate the motors class
