@@ -40,6 +40,41 @@ uint32_t AP_Filesystem_FATFS::io_size = AP_FATFS_MIN_IO_SIZE;
 // mkdir() inside sdcard_retry()
 static HAL_Semaphore sem;
 
+// a failing card can hold the lock for seconds while it retries the card
+// init, so once the system is running the main thread only waits this long
+// and fails the call with EBUSY rather than stall the main loop
+#define MAIN_THREAD_LOCK_TIMEOUT_MS 200
+// close() and closedir() can't fail without leaking, so the main thread
+// waits for them as an expected delay, long enough to cover a remount
+#define MAIN_THREAD_CLOSE_WAIT_MS 10000
+
+class FATFSLock {
+public:
+    FATFSLock(bool must_lock) {
+        if (!hal.scheduler->in_main_thread() || !hal.scheduler->is_system_initialized()) {
+            sem.take_blocking();
+            locked = true;
+        } else if (!must_lock) {
+            locked = sem.take(MAIN_THREAD_LOCK_TIMEOUT_MS);
+        } else if (!sem.take_nonblocking()) {
+            EXPECT_DELAY_MS(MAIN_THREAD_CLOSE_WAIT_MS);
+            sem.take_blocking();
+            locked = true;
+        } else {
+            locked = true;
+        }
+    }
+    ~FATFSLock() {
+        if (locked) {
+            sem.give();
+        }
+    }
+    bool locked;
+};
+
+#define FS_LOCK(retfail) FATFSLock _fs_lock(false); do { if (!_fs_lock.locked) { errno = EBUSY; return retfail; } } while (0)
+#define FS_LOCK_CLOSE() FATFSLock _fs_lock(true)
+
 typedef struct {
     FIL fobj; // should be first member; it's the most used
     char *name;
@@ -196,12 +231,18 @@ static int fatfs_to_errno(FRESULT Result)
  */
 static bool remount_file_system(void)
 {
-    EXPECT_DELAY_MS(3000);
     if (!remount_needed) {
         sdcard_stop();
-    }
-    if (!sdcard_retry()) {
         remount_needed = true;
+    }
+    // a remount can outlast the watchdog on a failing card, so once the
+    // system is running the main thread leaves it to retry_mount() in the
+    // IO thread
+    if (hal.scheduler->in_main_thread() && hal.scheduler->is_system_initialized()) {
+        return false;
+    }
+    EXPECT_DELAY_MS(3000);
+    if (!sdcard_retry()) {
         return false;
     }
     remount_needed = false;
@@ -236,7 +277,7 @@ int AP_Filesystem_FATFS::open(const char *pathname, int flags, bool allow_absolu
     int res;
 
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     CHECK_REMOUNT();
 
@@ -299,7 +340,7 @@ int AP_Filesystem_FATFS::close(int fileno)
     int res;
 
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK_CLOSE();
 
     errno = 0;
 
@@ -323,7 +364,7 @@ int32_t AP_Filesystem_FATFS::read(int fd, void *buf, uint32_t count)
     FIL *fh;
 
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     CHECK_REMOUNT();
 
@@ -375,7 +416,7 @@ int32_t AP_Filesystem_FATFS::write(int fd, const void *buf, uint32_t count)
     errno = 0;
 
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     CHECK_REMOUNT();
 
@@ -423,7 +464,7 @@ int AP_Filesystem_FATFS::fsync(int fileno)
     int res;
 
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     errno = 0;
 
@@ -446,7 +487,7 @@ off_t AP_Filesystem_FATFS::lseek(int fileno, off_t position, int whence)
     errno = 0;
 
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     fh = fileno_to_fatfs(fileno);
     if (fh == nullptr) { // unknown fileno?
@@ -492,7 +533,7 @@ int AP_Filesystem_FATFS::stat(const char *name, struct stat *buf)
     uint16_t mode;
 
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     CHECK_REMOUNT();
 
@@ -556,7 +597,7 @@ int AP_Filesystem_FATFS::stat(const char *name, struct stat *buf)
 int AP_Filesystem_FATFS::unlink(const char *pathname)
 {
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     errno = 0;
     int res = f_unlink(pathname);
@@ -570,7 +611,7 @@ int AP_Filesystem_FATFS::unlink(const char *pathname)
 int AP_Filesystem_FATFS::mkdir(const char *pathname)
 {
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     errno = 0;
 
@@ -586,7 +627,7 @@ int AP_Filesystem_FATFS::mkdir(const char *pathname)
 int AP_Filesystem_FATFS::rename(const char *oldpath, const char *newpath)
 {
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     errno = 0;
 
@@ -610,7 +651,7 @@ struct DIR_Wrapper {
 void *AP_Filesystem_FATFS::opendir(const char *pathdir)
 {
     FS_CHECK_ALLOWED(nullptr);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(nullptr);
 
     CHECK_REMOUNT_NULL();
 
@@ -638,7 +679,7 @@ void *AP_Filesystem_FATFS::opendir(const char *pathdir)
 struct dirent *AP_Filesystem_FATFS::readdir(void *dirp_void)
 {
     FS_CHECK_ALLOWED(nullptr);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(nullptr);
     DIR *dirp = (DIR *)dirp_void;
 
     struct DIR_Wrapper *d = (struct DIR_Wrapper *)dirp;
@@ -671,7 +712,7 @@ int AP_Filesystem_FATFS::closedir(void *dirp_void)
 {
     DIR *dirp = (DIR *)dirp_void;
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK_CLOSE();
 
     struct DIR_Wrapper *d = (struct DIR_Wrapper *)dirp;
     if (!d) {
@@ -694,7 +735,7 @@ int AP_Filesystem_FATFS::closedir(void *dirp_void)
 uint32_t AP_Filesystem_FATFS::bytes_until_fsync(int fd)
 {
     FS_CHECK_ALLOWED(0);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(0);
 
     FIL *fh = fileno_to_fatfs(fd);
     if (fh == nullptr) { // unknown fd?
@@ -711,7 +752,7 @@ uint32_t AP_Filesystem_FATFS::bytes_until_fsync(int fd)
 int64_t AP_Filesystem_FATFS::disk_free(const char *path)
 {
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     FATFS *fs;
     DWORD fre_clust, fre_sect;
@@ -733,7 +774,7 @@ int64_t AP_Filesystem_FATFS::disk_free(const char *path)
 int64_t AP_Filesystem_FATFS::disk_space(const char *path)
 {
     FS_CHECK_ALLOWED(-1);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(-1);
 
     CHECK_REMOUNT();
 
@@ -783,7 +824,7 @@ bool AP_Filesystem_FATFS::set_mtime(const char *filename, const uint32_t mtime_s
     fno.ftime = ftime;
 
     FS_CHECK_ALLOWED(false);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(false);
 
     return f_utime(filename, (FILINFO *)&fno) == FR_OK;
 }
@@ -794,7 +835,10 @@ bool AP_Filesystem_FATFS::set_mtime(const char *filename, const uint32_t mtime_s
 bool AP_Filesystem_FATFS::retry_mount(void)
 {
     FS_CHECK_ALLOWED(false);
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(false);
+    if (remount_needed) {
+        return remount_file_system();
+    }
     return sdcard_retry();
 }
 
@@ -813,7 +857,7 @@ void AP_Filesystem_FATFS::unmount(void)
 bool AP_Filesystem_FATFS::format(void)
 {
 #if FF_USE_MKFS
-    WITH_SEMAPHORE(sem);
+    FS_LOCK(false);
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Filesystem_FATFS::format_handler, void));
     // the format is handled asynchronously, we inform user of success
     // via a text message.  format_status can be polled for progress
