@@ -463,6 +463,9 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_
     case MAV_CMD_NAV_LAND:
         return handle_MAV_CMD_NAV_LAND(packet);
 
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        return handle_MAV_CMD_NAV_RETURN_TO_LAUNCH(packet);
+
     }
 
     return GCS_MAVLINK::handle_command_int_packet(packet, msg);
@@ -482,6 +485,18 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_LAND(const mavlink_command_int_t 
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_RETURN_TO_LAUNCH(const mavlink_command_int_t &packet)
+{
+    if (!sub.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
+        return MAV_RESULT_FAILED;
+    }
+    // navigate back to home, same as the MAV_CMD_NAV_RETURN_TO_LAUNCH
+    // mission item.  auto_wp_start() does not change modes, so this must
+    // be done after the switch to AUTO above.
+    sub.do_RTL();
+    return MAV_RESULT_ACCEPTED;
 }
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_CONDITION_YAW(const mavlink_command_int_t &packet)
