@@ -6697,54 +6697,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''fly a mission twice in a row without changing modes in between.
         Seeks to show bugs in mission state machine'''
 
-        ctx = self.context_push(snapshot_params=True, param_names=['AUTO_OPTIONS'])
-        try:
-            self.upload_simple_relhome_mission([
-                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
-                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 20),
-                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
-            ])
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
 
-            num_wp = self.get_mission_count()
-            self.set_parameter("AUTO_OPTIONS", 3)
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
-            for i in 1, 2:
-                self.progress("run %u" % i)
-                self.arm_vehicle()
-                self.wait_waypoint(num_wp-1, num_wp-1)
-                self.wait_disarmed()
-                self.delay_sim_time(20, reason="SITL to reset before next run")
-        finally:
-            self.context_pop(ctx)
+        num_wp = self.get_mission_count()
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        for i in 1, 2:
+            self.progress("run %u" % i)
+            self.arm_vehicle()
+            self.wait_waypoint(num_wp-1, num_wp-1)
+            self.wait_disarmed()
+            self.delay_sim_time(20, reason="SITL to reset before next run")
 
     def FlyMissionTwiceWithReset(self):
         '''Fly a mission twice in a row without changing modes in between.
         Allow the mission to complete, then reset the mission state machine and restart the mission.'''
 
-        ctx = self.context_push(snapshot_params=True, param_names=['AUTO_OPTIONS'])
-        try:
-            self.upload_simple_relhome_mission([
-                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
-                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 20),
-                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
-            ])
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
 
-            num_wp = self.get_mission_count()
-            self.set_parameter("AUTO_OPTIONS", 3)
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
+        num_wp = self.get_mission_count()
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
 
-            for i in 1, 2:
-                self.progress("run %u" % i)
-                # Use the "Reset Mission" param of DO_SET_MISSION_CURRENT to reset mission state machine
-                self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=0, reset=1)
-                self.arm_vehicle()
-                self.wait_waypoint(num_wp-1, num_wp-1)
-                self.wait_disarmed()
-                self.delay_sim_time(20, reason="SITL to reset before next run")
-        finally:
-            self.context_pop(ctx)
+        for i in 1, 2:
+            self.progress("run %u" % i)
+            # Use the "Reset Mission" param of DO_SET_MISSION_CURRENT to reset mission state machine
+            self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=0, reset=1)
+            self.arm_vehicle()
+            self.wait_waypoint(num_wp-1, num_wp-1)
+            self.wait_disarmed()
+            self.delay_sim_time(20, reason="SITL to reset before next run")
 
     def MissionIndexValidity(self):
         '''Confirm that attempting to select an invalid mission item is rejected.'''
@@ -18760,47 +18752,43 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
-        ctx = self.context_push(snapshot_params=True, param_names=['LOG_FILE_DSRMROT', 'GNDEFF_TMO'])
-        try:
-            self.change_mode('ALT_HOLD')
-            self.set_parameters({
-                "LOG_FILE_DSRMROT": 1,
-                "GNDEFF_TMO": 0,  # release on altitude alone
-            })
-            self.progress("Making sure we'll have a short log to look at")
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.disarm_vehicle()
+        self.change_mode('ALT_HOLD')
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "GNDEFF_TMO": 0,  # release on altitude alone
+        })
+        self.progress("Making sure we'll have a short log to look at")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
 
-            # arm the vehicle and let it disarm normally.  This should
-            # yield a log where the EKF considers a takeoff imminent until
-            # disarm
-            self.start_subtest("Check ground effect compensation remains set in EKF while we're at idle on the ground")
-            self.arm_vehicle()
-            self.wait_disarmed()
+        # arm the vehicle and let it disarm normally.  This should
+        # yield a log where the EKF considers a takeoff imminent until
+        # disarm
+        self.start_subtest("Check ground effect compensation remains set in EKF while we're at idle on the ground")
+        self.arm_vehicle()
+        self.wait_disarmed()
 
-            durations = self.get_takeoffexpected_durations_from_current_onboard_log()
-            duration = durations[0]
-            want = 9
-            self.progress("takeoff-expected duration: %fs" % (duration,))
-            if duration < want:  # assumes default 10-second DISARM_DELAY
-                raise NotAchievedException("Should have been expecting takeoff for longer than %fs (want>%f)" %
-                                           (duration, want))
+        durations = self.get_takeoffexpected_durations_from_current_onboard_log()
+        duration = durations[0]
+        want = 9
+        self.progress("takeoff-expected duration: %fs" % (duration,))
+        if duration < want:  # assumes default 10-second DISARM_DELAY
+            raise NotAchievedException("Should have been expecting takeoff for longer than %fs (want>%f)" %
+                                       (duration, want))
 
-            self.start_subtest("takeoffExpected should be false very soon after we launch into the air")
-            self.takeoff(mode='ALT_HOLD', altitude_min=5)
-            self.change_mode('LAND')
-            self.wait_disarmed()
-            durations = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
-            self.progress("touchdown-durations: %s" % str(durations))
-            duration = durations[0]
-            self.progress("takeoff-expected-duration %f" % (duration,))
-            want_lt = 5
-            if duration >= want_lt:
-                raise NotAchievedException("Was expecting takeoff for longer than expected; got=%f want<=%f" %
-                                           (duration, want_lt))
-        finally:
-            self.context_pop(ctx)
+        self.start_subtest("takeoffExpected should be false very soon after we launch into the air")
+        self.takeoff(mode='ALT_HOLD', altitude_min=5)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
+        self.progress("touchdown-durations: %s" % str(durations))
+        duration = durations[0]
+        self.progress("takeoff-expected-duration %f" % (duration,))
+        want_lt = 5
+        if duration >= want_lt:
+            raise NotAchievedException("Was expecting takeoff for longer than expected; got=%f want<=%f" %
+                                       (duration, want_lt))
 
     def TakeoffGroundEffectAlt(self):
         '''Test GNDEFF_ALT and GNDEFF_TMO gate the ground-effect compensation window'''
@@ -19100,32 +19088,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def GroundEffectCompensation_touchDownExpected(self):
         '''Test EKF's handling of touchdown-expected'''
-        ctx = self.context_push(snapshot_params=True, param_names=['LOG_FILE_DSRMROT', 'GNDEFF_ALT'])
-        try:
-            self.zero_throttle()
-            self.change_mode('ALT_HOLD')
-            self.set_parameters({
-                "LOG_FILE_DSRMROT": 1,
-                "GNDEFF_ALT": 0,  # no touchdown altitude gate: whole descent counts
-            })
-            self.progress("Making sure we'll have a short log to look at")
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.disarm_vehicle()
+        self.zero_throttle()
+        self.change_mode('ALT_HOLD')
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "GNDEFF_ALT": 0,  # no touchdown altitude gate: whole descent counts
+        })
+        self.progress("Making sure we'll have a short log to look at")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
 
-            self.start_subtest("Make sure touchdown-expected duration is about right")
-            self.takeoff(20, mode='ALT_HOLD')
-            self.change_mode('LAND')
-            self.wait_disarmed()
+        self.start_subtest("Make sure touchdown-expected duration is about right")
+        self.takeoff(20, mode='ALT_HOLD')
+        self.change_mode('LAND')
+        self.wait_disarmed()
 
-            durations = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
-            self.progress("touchdown-durations: %s" % str(durations))
-            duration = durations[-1]
-            expected = 23  # this is the time in the final descent phase of LAND
-            if abs(duration - expected) > 5:
-                raise NotAchievedException("Was expecting roughly %fs of touchdown expected, got %f" % (expected, duration))
-        finally:
-            self.context_pop(ctx)
+        durations = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        self.progress("touchdown-durations: %s" % str(durations))
+        duration = durations[-1]
+        expected = 23  # this is the time in the final descent phase of LAND
+        if abs(duration - expected) > 5:
+            raise NotAchievedException("Was expecting roughly %fs of touchdown expected, got %f" % (expected, duration))
 
         # we are not at the home location - reboot so the next test starts there
         self.reboot_sitl()
@@ -19493,43 +19477,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''check SmartRTL behaviour when entering/leaving'''
         # we had a bug where we would consume points when re-entering smartrtl
 
-        # Use new parameter tracking system
-        self.context_push(snapshot_params=True, param_names=['AUTO_OPTIONS'])
-
-        try:
-            self.upload_simple_relhome_mission([
-                #                                      N   E  U
-                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,   0, 0, 10),
-                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
-            ])
-            self.set_parameter('AUTO_OPTIONS', 3)
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
-            self.change_mode('ALT_HOLD')
-            self.change_mode('SMART_RTL')
-            self.change_mode('ALT_HOLD')
-            self.change_mode('SMART_RTL')
-        finally:
-            self.context_pop()
+        self.upload_simple_relhome_mission([
+            #                                      N   E  U
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,   0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.change_mode('ALT_HOLD')
+        self.change_mode('SMART_RTL')
+        self.change_mode('ALT_HOLD')
+        self.change_mode('SMART_RTL')
 
     def SMART_RTL_Repeat(self):
         '''Test whether Smart RTL catches the repeat'''
-
-        # Use new parameter tracking system for SmartRTL-related params
-        self.context_push(snapshot_params=True, param_names=[
-            'SMARTRTL_POINTS',
-            'SMARTRTL_ACCURACY',
-        ])
-
-        try:
-            self.takeoff(altitude_min=10, mode='GUIDED')
-            self.hover()
-            self.change_mode("CIRCLE")
-            self.delay_sim_time(1300, reason="SmartRTL to fill breadcrumb buffer")
-            self.change_mode("SMART_RTL")
-            self.wait_disarmed()
-        finally:
-            self.context_pop()
+        self.takeoff(altitude_min=10, mode='GUIDED')
+        self.hover()
+        self.change_mode("CIRCLE")
+        self.delay_sim_time(1300, reason="SmartRTL to fill breadcrumb buffer")
+        self.change_mode("SMART_RTL")
+        self.wait_disarmed()
 
     def GPSForYawCompassLearn(self):
         '''Moving baseline GPS yaw - with compass learning'''
@@ -23155,42 +23123,38 @@ return update()
         # after boot (OSD_TYPE requires process restart), so if not built with
         # --sitl-osd, the test will detect this and skip gracefully.
         # SIM_SPEEDUP=5 makes the OSD window visible longer for visual testing.
-        ctx = self.context_push(snapshot_params=True, param_names=['SCR_ENABLE', 'OSD_TYPE', 'SIM_SPEEDUP', 'AUTO_OPTIONS'])
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "OSD_TYPE": 2,  # SITL OSD (requires --sitl-osd at configure time)
+            "SIM_SPEEDUP": 5,  # Slow enough to see the OSD
+        })
+        self.reboot_sitl()
+
+        # The script prints "osd not available" when no OSD backend is present
+        # (SITL built without --sitl-osd); detect that and skip gracefully.
         try:
-            self.set_parameters({
-                "SCR_ENABLE": 1,
-                "OSD_TYPE": 2,  # SITL OSD (requires --sitl-osd at configure time)
-                "SIM_SPEEDUP": 5,  # Slow enough to see the OSD
-            })
-            self.reboot_sitl()
+            self.wait_statustext("osd not available", timeout=5, check_context=True)
+            self.progress("OSD scripting not functional (SFML not enabled), skipping test")
+            return
+        except AutoTestTimeoutException:
+            # no error message means the OSD is working
+            pass
 
-            # The script prints "osd not available" when no OSD backend is present
-            # (SITL built without --sitl-osd); detect that and skip gracefully.
-            try:
-                self.wait_statustext("osd not available", timeout=5, check_context=True)
-                self.progress("OSD scripting not functional (SFML not enabled), skipping test")
-                return
-            except AutoTestTimeoutException:
-                # no error message means the OSD is working
-                pass
+        # AUTO_OPTIONS=3 allows arming and taking off in AUTO
+        self.set_parameter("AUTO_OPTIONS", 3)
 
-            # AUTO_OPTIONS=3 allows arming and taking off in AUTO
-            self.set_parameter("AUTO_OPTIONS", 3)
+        # fly a mission while the script draws waypoint info to the OSD
+        # (type, north_offset_m, east_offset_m, alt_m)
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, 20),    # 50m North
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 50, 20),   # 50m North, 50m East
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 50, 20),    # 50m East
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
 
-            # fly a mission while the script draws waypoint info to the OSD
-            # (type, north_offset_m, east_offset_m, alt_m)
-            self.start_flying_simple_relhome_mission([
-                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
-                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, 20),    # 50m North
-                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 50, 20),   # 50m North, 50m East
-                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 50, 20),    # 50m East
-                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
-            ])
-
-            # Wait for mission to complete (land and disarm)
-            self.wait_disarmed(timeout=180)
-        finally:
-            self.context_pop(ctx)
+        # Wait for mission to complete (land and disarm)
+        self.wait_disarmed(timeout=180)
 
     def ScriptingOSDDisplayPortReplies(self):
         '''a VTX on MSP DisplayPort is still answered while a script draws the OSD'''
@@ -23887,60 +23851,52 @@ return update()
 
     def RTLStoppingDistanceSpeed(self):
         '''test stopping distance unaffected by RTL speed'''
-
-        # Use new parameter tracking system
-        self.context_push(snapshot_params=True, param_names=[
-            'RTL_SPEED_MS',
-            'AUTO_OPTIONS',
+        self.upload_simple_relhome_mission([
+            #                                              N  E   U
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,          0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,       200, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0,  0),
         ])
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+        self.context_push()
+        self.set_parameters({
+            'RTL_SPEED_MS': 1,  # m/s
+        })
 
-        try:
-            self.upload_simple_relhome_mission([
-                #                                              N  E   U
-                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,          0, 0, 20),
-                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,       200, 0, 20),
-                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0,  0),
-            ])
-            self.set_parameters({
-                "AUTO_OPTIONS": 3,
-            })
-            self.set_parameters({
-                'RTL_SPEED_MS': 1,  # m/s
-            })
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(2)
 
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.wait_current_waypoint(2)
+        self.progress("Waiting for vehicle to get up to speed")
+        wp_speed = self.get_parameter('WP_SPD')
+        self.wait_groundspeed(wp_speed-0.1, wp_speed+0.1)
 
-            self.progress("Waiting for vehicle to get up to speed")
-            wp_speed = self.get_parameter('WP_SPD')
-            self.wait_groundspeed(wp_speed-0.1, wp_speed+0.1)
+        rtl_start_pos = self.get_local_position_NED()
 
-            rtl_start_pos = self.get_local_position_NED()
+        # we accelerate so hard we can miss the zero value!
+        self.context_set_message_rate_hz('VFR_HUD', 50)
 
-            # we accelerate so hard we can miss the zero value!
-            self.context_set_message_rate_hz('VFR_HUD', 50)
+        # note that there's going to be a significant latency involved
+        # between taking rtl_start_pos and entering RTL, but we're
+        # really interested in deviation to the east/west, and we are
+        # travelling due North, ...
+        self.change_mode('RTL')
 
-            # note that there's going to be a significant latency involved
-            # between taking rtl_start_pos and entering RTL, but we're
-            # really interested in deviation to the east/west, and we are
-            # travelling due North, ...
-            self.change_mode('RTL')
+        self.progress("Waiting for vehicle to stop")
+        self.wait_groundspeed(-0.3, 0.3)
+        rtl_stopping_point_pos = self.get_local_position_NED()
 
-            self.progress("Waiting for vehicle to stop")
-            self.wait_groundspeed(-0.3, 0.3)
-            rtl_stopping_point_pos = self.get_local_position_NED()
-
-            self.progress("Checking vehicle deviation from track")
-            y_delta = abs(rtl_start_pos.y - rtl_stopping_point_pos.y)
-            self.progress(f"deviated {y_delta}m from track")
-            if y_delta > 0.2:
-                raise NotAchievedException(f"RTL deviated from track {y_delta}m")
-            self.change_mode('LOITER')
-            self.do_RTL()
-        finally:
-            self.context_pop()
+        self.progress("Checking vehicle deviation from track")
+        y_delta = abs(rtl_start_pos.y - rtl_stopping_point_pos.y)
+        self.progress(f"deviated {y_delta}m from track")
+        if y_delta > 0.2:
+            raise NotAchievedException(f"RTL deviated from track {y_delta}m")
+        self.context_pop()
+        self.change_mode('LOITER')
+        self.do_RTL()
 
     def ModeAllowsEntryWhenNoPilotInput(self):
         '''test we can't enter modes when no RC input'''
@@ -25260,22 +25216,14 @@ return update, 1000
         return ret
 
     def disabled_tests(self):
-        # Parameter-aware tests re-enabled with tracking:
-        # - FlyMissionTwiceWithReset: PASSED
-        # - GroundEffectCompensation_takeOffExpected: PASSED
-        # - GroundEffectCompensation_touchDownExpected: PASSED
-        # Tests still disabled due to pre-existing bugs (parameter tracking works):
-        # - SMART_RTL_EnterLeave: SMART_RTL re-entry panic bug (C++ code fix needed)
-        # - SMART_RTL_Repeat: SMARTRTL_POINTS parameter never initializes (C++ bug)
-        # - RTLStoppingDistanceSpeed: Vehicle can't reach hover speed (flight bug)
-        # - FlyMissionTwice: Mission timeout at waypoint 3 (flight bug)
-        # - ScriptingOSD: Context collection not active (test harness bug)
         return {
-            'test.Copter.SMART_RTL_EnterLeave': 'SMART_RTL re-entry panic (pre-existing C++ bug)',
-            'test.Copter.SMART_RTL_Repeat': 'SMARTRTL_POINTS parameter never initializes (pre-existing bug)',
-            'test.Copter.RTLStoppingDistanceSpeed': 'Vehicle cannot reach hover speed (pre-existing bug)',
-            'test.Copter.FlyMissionTwice': 'Mission timeout at waypoint 3 (pre-existing bug)',
-            'test.Copter.ScriptingOSD': 'Context collection not active (test harness bug)',
+            "GroundEffectCompensation_takeOffExpected": "Flapping",
+            "GroundEffectCompensation_touchDownExpected": "Flapping",
+            "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",
+            "SMART_RTL_EnterLeave": "Causes a panic",
+            "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
+            "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
+            "ScriptingOSD": "Requires SFML which is not available in CI",
         }
 
 
