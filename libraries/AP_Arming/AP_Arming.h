@@ -34,7 +34,8 @@ public:
         RC          = (1U << 6),
         VOLTAGE     = (1U << 7),
         BATTERY     = (1U << 8),
-        AIRSPEED    = (1U << 9),
+        AIRSPEED    = (1U << 9),    // plane only
+        LEVEL       = (1U << 9),    // copter only
         LOGGING     = (1U << 10),
         SWITCH      = (1U << 11),
         GPS_CONFIG  = (1U << 12),
