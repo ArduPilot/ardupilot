@@ -71,6 +71,34 @@ bool AP_RangeFinder_Backend::has_data() const
 // update status based on distance measurement
 void AP_RangeFinder_Backend::update_status(RangeFinder::RangeFinder_State &state_arg) const
 {
+    // add the user-set OFFSET to the measured distance for digital backends.
+    // The analog backend applies the offset as a voltage and the PWM backends
+    // apply the offset themselves, so these are not corrected here.
+    // When neither analog nor PWM is enabled, the switch compiles away entirely
+    // and the offset is always applied (which is correct since no backend will
+    // have applied it already).
+#if AP_RANGEFINDER_ANALOG_ENABLED || AP_RANGEFINDER_PWM_ENABLED
+    bool apply_offset = true;
+    switch (allocated_type()) {
+#if AP_RANGEFINDER_ANALOG_ENABLED
+    case RangeFinder::Type::ANALOG:
+#endif
+#if AP_RANGEFINDER_PWM_ENABLED
+    case RangeFinder::Type::PX4_PWM:
+    case RangeFinder::Type::PWM:
+#endif
+        apply_offset = false;
+        break;
+    default:
+        break;
+    }
+    if (apply_offset) {
+        state_arg.distance_m += params.offset * 0.01f;
+    }
+#else
+    state_arg.distance_m += params.offset * 0.01f;
+#endif
+
     // check distance
     if (state_arg.distance_m > max_distance()) {
         set_status(state_arg, RangeFinder::Status::OutOfRangeHigh);
