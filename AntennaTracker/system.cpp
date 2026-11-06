@@ -13,12 +13,9 @@ void Tracker::init_ardupilot()
     // initialise battery
     battery.init();
 
-    // init baro before we start the GCS, so that the CLI baro test works
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.init();
 
-    // setup telem slots with serial ports
-    gcs().setup_uarts();
     // update_send so that if the first packet we receive happens to
     // be an arm message we don't trigger an internal error when we
     // try to initialise stream rates in the main loop.
