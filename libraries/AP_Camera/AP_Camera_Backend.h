@@ -80,6 +80,9 @@ public:
         return stream_id <= 1 && record_video(start_recording);
     }
 
+    // set camera running mode
+    virtual MAV_RESULT set_camera_mode(uint8_t mode) { return MAV_RESULT_UNSUPPORTED; }
+
     // set zoom specified as a rate or percentage
     virtual bool set_zoom(ZoomType zoom_type, float zoom_value) { return false; }
 
@@ -88,7 +91,7 @@ public:
     virtual SetFocusResult set_focus(FocusType focus_type, float focus_value) { return SetFocusResult::UNSUPPORTED; }
 
     // set tracking to none, point or rectangle (see TrackingType enum)
-    // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+    // if POINT p1 is the point and p2.x its radius (fraction of image width), if RECTANGLE then p1 is top-left, p2 is bottom-right
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
     virtual bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) { return false; }
 
