@@ -33,6 +33,9 @@ public:
 
 private:
 
+    // validate a reading and add it to the temp boundary and object database
+    bool add_distance(float dist_m, float yaw_deg, float pitch_deg);
+
     // temp boundary to store and sort distances
     AP_Proximity_Temp_Boundary temp_boundary;
 
