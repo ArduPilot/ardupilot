@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
 
@@ -47,6 +48,16 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <signal.h>
+#include <unistd.h>
+
+// backtrace() lives in execinfo.h, which glibc and macOS have while
+// newlib (Cygwin) and emscripten do not
+#if (defined(__APPLE__) || defined(__GLIBC__)) && !defined(__EMSCRIPTEN__)
+#define AP_SITL_HAVE_EXECINFO 1
+#include <execinfo.h>
+#else
+#define AP_SITL_HAVE_EXECINFO 0
+#endif
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
@@ -65,6 +76,33 @@ static void _sig_fpe(int signum)
     fprintf(stderr, "ERROR: Floating point exception - aborting\n");
     AP_HAL::dump_stack_trace();
     AP_HAL::dump_core_file();
+    abort();
+}
+
+/*
+  catch an illegal instruction.
+
+  On arm64 macOS a trapped floating point exception arrives as SIGILL
+  (EXC_BAD_INSTRUCTION) rather than SIGFPE, so without this a SITL which
+  trips one of the exceptions enabled in Scheduler::set_system_initialized()
+  dies without a word: no message, no stack, and - because macOS delivers
+  no crash report for it either - nothing at all to go on.  The test
+  harness then reports only what the link saw, which is "connection
+  refused" against a vehicle that is no longer there.
+ */
+static void _sig_ill(int signum)
+{
+    static const char msg[] = "ERROR: illegal instruction - aborting\n";
+    IGNORE_RETURN(::write(2, msg, sizeof(msg)-1));
+#if AP_SITL_HAVE_EXECINFO
+    // not AP_HAL::dump_stack_trace(): that shells out to gdb, which is
+    // not present on macOS, where this signal is most likely to be seen
+    void *frames[64];
+    const int n = backtrace(frames, ARRAY_SIZE(frames));
+    backtrace_symbols_fd(frames, n, 2);
+#else
+    AP_HAL::dump_stack_trace();
+#endif
     abort();
 }
 
@@ -228,6 +266,19 @@ void SITL_State::_set_signal_handlers(void) const
     sigemptyset(&sa_segv.sa_mask);
     sa_segv.sa_handler = _sig_segv;
     sigaction(SIGSEGV, &sa_segv, nullptr);
+
+    struct sigaction sa_ill = {};
+    sigemptyset(&sa_ill.sa_mask);
+    sa_ill.sa_handler = _sig_ill;
+    sigaction(SIGILL, &sa_ill, nullptr);
+
+#if AP_SITL_HAVE_EXECINFO
+    // the first backtrace() loads libgcc_s and allocates; doing that
+    // from the handler risks hanging if the trap fired inside malloc,
+    // so get it over with here
+    void *frames[1];
+    (void)backtrace(frames, 1);
+#endif
 
 }
 

@@ -10225,7 +10225,10 @@ Also, ignores heartbeats not from our target system'''
                     result.reason = reason
                     result.passed = False
         else:
-            self.progress("pexpect says it is dead")
+            # how it died is the whole question: a signal says it crashed
+            # or was killed, an exit status says it chose to go
+            self.progress("pexpect says it is dead (exitstatus=%s signalstatus=%s)" %
+                          (self.sitl.exitstatus, self.sitl.signalstatus))
 
         # try dumping the process status file for more information:
         status_filepath = "/proc/%u/status" % self.sitl.pid
