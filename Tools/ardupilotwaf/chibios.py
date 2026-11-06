@@ -750,7 +750,7 @@ def build(bld):
     # runs pass again and both write include_dirs, so a variable only one of
     # them has changes that file after waf has hashed it; ENABLE_CRASHDUMP,
     # which adds AP_HAL to the include path, did exactly that
-    make_vars = "BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE}"
+    make_vars = "BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${HAL_MAX_STACK_FRAME_SIZE}"
     if bld.env.ENABLE_CRASHDUMP:
         make_vars += " ENABLE_CRASHDUMP=yes"
 

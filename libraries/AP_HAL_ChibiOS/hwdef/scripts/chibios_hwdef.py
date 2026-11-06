@@ -986,7 +986,6 @@ class ChibiOSHWDef(hwdef.HWDef):
 
     def write_mcu_config(self, f):
         '''write MCU config defines'''
-        f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % os.path.basename(os.path.dirname(self.hwdef[0])))
         f.write('// MCU type (ChibiOS define)\n')
         f.write('#define %s_MCUCONF\n' % self.get_config('MCU'))
         mcu_subtype = self.get_config('MCU', 1)

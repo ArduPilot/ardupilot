@@ -306,7 +306,7 @@ void BL_Network::web_server_trampoline(void *ctx)
 #define STR(x) STR_HELPER(x)
 
 BL_Network::web_var BL_Network::variables[] = {
-    { "BOARD_NAME", CHIBIOS_BOARD_NAME },
+    { "BOARD_NAME", HAL_BOARD_NAME },
     { "BOARD_ID", STR(APJ_BOARD_ID)  },
     { "FLASH_SIZE", STR(BOARD_FLASH_SIZE)  },
 };
