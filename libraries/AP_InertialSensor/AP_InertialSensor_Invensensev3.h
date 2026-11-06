@@ -173,8 +173,8 @@ private:
 
     // True only for ICM-45686/56686. Other types (default fifo_reset writes
     // INTF_CONFIG0=0xC0, FIFO_HOLD_LAST_DATA_EN) treat 0x8000 as a real
-    // full-scale sample.
-    bool fifo_invalid_marker = false;
+    // full-scale sample. Set in start() for those types.
+    bool fifo_invalid_marker;
 
     // buffer for fifo read
     void* fifo_buffer;
