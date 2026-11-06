@@ -66,6 +66,32 @@ const AP_Param::GroupInfo Networking_Periph::Passthru::var_info[] = {
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     AP_GROUPINFO("OPT2", 7,  Networking_Periph::Passthru, options2, 0),
 
+#if HAL_PERIPH_NETWORK_PASSTHRU_ENABLE_PARITY_STOP_BITS
+    // @Param: PAR1
+    // @DisplayName: Serial Port Parity
+    // @Description: UART Parity Configuration for Endpoint 1.Only applies to serial ports.
+    // @Values: 0: No parity, 1: Odd parity, 2: Even parity
+    AP_GROUPINFO("PAR1", 8, Networking_Periph::Passthru, parity1, -1),
+
+    // @Param: ST_BT1
+    // @DisplayName: Serial Port Stop Bits
+    // @Description: UART Stop Bits Configuration for Endpoint 1. Only applies to serial ports.
+    // @Values: 0: 0 stop bit, 1: 1 stop bits, 2: 2 stop bits
+    AP_GROUPINFO("ST_BT1", 9, Networking_Periph::Passthru, stop_bits1, -1),
+
+    // @Param: PAR2
+    // @DisplayName: Serial Port Parity
+    // @Description: UART Parity Configuration for Endpoint 2. Only applies to serial ports.
+    // @CopyFieldsFrom: NET_PASS1_PAR1
+    AP_GROUPINFO("PAR2", 10, Networking_Periph::Passthru, parity2, -1),
+
+    // @Param: ST_BT2
+    // @DisplayName: Serial Port Stop Bits
+    // @Description: UART Stop Bits Configuration for Endpoint 2. Only applies to serial ports.
+    // @CopyFieldsFrom: NET_PASS1_ST_BT1
+    AP_GROUPINFO("ST_BT2", 11, Networking_Periph::Passthru, stop_bits2, -1),
+#endif
+
     AP_GROUPEND
 };
 
@@ -89,13 +115,33 @@ void Networking_Periph::Passthru::init()
     port1 = AP::serialmanager().get_serial_by_id(ep1);
     port2 = AP::serialmanager().get_serial_by_id(ep2);
 
-    if (port1 != nullptr && port2 != nullptr) {
-        port1->set_options(options1);
-        port1->begin(baud1);
+#if HAL_PERIPH_NETWORK_PASSTHRU_ENABLE_PARITY_STOP_BITS
+    configure_serial_port(port1, baud1, options1, parity1, stop_bits1);
+    configure_serial_port(port2, baud2, options2, parity2, stop_bits2);
+#else
+    configure_serial_port(port1, baud1, options1, -1, -1);
+    configure_serial_port(port2, baud2, options2, -1, -1);
+#endif
+}
 
-        port2->set_options(options2);
-        port2->begin(baud2);
+void Networking_Periph::Passthru::configure_serial_port(AP_HAL::UARTDriver *port, uint32_t baud, uint32_t options, int8_t parity, int8_t stop_bits)
+{
+    if (port == nullptr) {
+        return;
     }
+
+    port->set_options(options);
+    port->begin(baud);
+
+#if HAL_PERIPH_NETWORK_PASSTHRU_ENABLE_PARITY_STOP_BITS
+    // Configure parity and stop bits if enabled
+    if (parity >= 0) {
+        port->configure_parity(parity);
+    }
+    if (stop_bits >= 0) {
+        port->set_stop_bits(stop_bits);
+    }
+#endif
 }
 
 void Networking_Periph::Passthru::update()
