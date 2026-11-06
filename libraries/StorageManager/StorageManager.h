@@ -23,14 +23,19 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig_config.h>
 
+// boards enable this in their hwdef. It adds the StorageBaroPROM area
+#ifndef AP_BARO_PROM_BACKUP_ENABLED
+#define AP_BARO_PROM_BACKUP_ENABLED 0
+#endif
+
 /*
   use just one area per storage type for boards with 4k of
   storage. Use larger areas for other boards
  */
 #if HAL_STORAGE_SIZE >= 32768
-#define STORAGE_NUM_AREAS 18
+#define STORAGE_NUM_AREAS (18 + AP_BARO_PROM_BACKUP_ENABLED)
 #elif HAL_STORAGE_SIZE >= 16384
-#define STORAGE_NUM_AREAS 15
+#define STORAGE_NUM_AREAS (15 + AP_BARO_PROM_BACKUP_ENABLED)
 #elif HAL_STORAGE_SIZE >= 15360 && defined(HAL_NUM_CAN_IFACES)
 #define STORAGE_NUM_AREAS 12
 #elif HAL_STORAGE_SIZE >= 15360
@@ -59,7 +64,8 @@ public:
         StorageKeys    = 4,
         StorageBindInfo= 5,
         StorageCANDNA  = 6,
-        StorageParamBak = 7
+        StorageParamBak = 7,
+        StorageBaroPROM = 8
     };
 
     // erase whole of storage
