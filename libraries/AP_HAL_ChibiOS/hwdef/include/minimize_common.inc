@@ -144,3 +144,6 @@ define AP_SERVO_TELEM_ENABLED 0
 
 # don't send extra flight information on small boards
 define AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED 0
+
+# disable nav controller progress message
+define AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED 0

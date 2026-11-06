@@ -42,6 +42,9 @@ bool ModeSmartRTL::init(bool ignore_checks)
 void ModeSmartRTL::set_submode(SubMode submode)
 {
     smart_rtl_state = submode;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    record_stage_start();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     switch (submode) {
     case SubMode::WAIT_FOR_PATH_CLEANUP:
@@ -49,6 +52,12 @@ void ModeSmartRTL::set_submode(SubMode submode)
         break;
     case SubMode::PATH_FOLLOW:
         path_follow_last_pop_fail_ms = 0;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        path_follow_start_points = g2.smart_rtl.get_num_points();
+        if (path_follow_start_points > 0) {
+            path_end_ned_m = g2.smart_rtl.get_point(0).topostype();
+        }
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         break;
     case SubMode::PRELAND_POSITION:
         // wp destination is data-dependent and set by the caller
@@ -205,6 +214,55 @@ void ModeSmartRTL::save_position()
 
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+bool ModeSmartRTL::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    switch (smart_rtl_state) {
+    case SubMode::WAIT_FOR_PATH_CLEANUP:
+        return false;
+    case SubMode::PATH_FOLLOW:
+        // count the points on the path still to be flown to, including the current one
+        progress.set_count_remaining(MIN(g2.smart_rtl.get_num_points() + 1U, path_follow_start_points), path_follow_start_points);
+        break;
+    case SubMode::PRELAND_POSITION:
+        get_wp_progress(progress);
+        break;
+    case SubMode::DESCEND:
+        get_final_descent_progress(progress);
+        break;
+    case SubMode::LAND:
+        get_land_progress(progress);
+        break;
+    }
+    UNUSED_RESULT(get_nav_target(target));
+    return true;
+}
+
+// the path ends where it started, which need not be home
+bool ModeSmartRTL::get_nav_target(Location &target) const
+{
+    target = Location::from_ekf_offset_NED_m(path_end_ned_m, Location::AltFrame::ABOVE_ORIGIN);
+    switch (smart_rtl_state) {
+    case SubMode::WAIT_FOR_PATH_CLEANUP:
+        return false;
+    case SubMode::PATH_FOLLOW:
+        break;
+    case SubMode::PRELAND_POSITION:
+        // positioning is to a point 2m above the end of the path
+        target.alt += 200;
+        break;
+    case SubMode::DESCEND:
+        // the descent target's altitude, which descent_run() treats as above the ekf origin
+        target.alt = get_alt_final_m() * 100;
+        break;
+    case SubMode::LAND:
+        target = Location(target.lat, target.lng, 0, Location::AltFrame::ABOVE_TERRAIN);
+        break;
+    }
+    return true;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
 bool ModeSmartRTL::get_wp(Location& destination) const
 {

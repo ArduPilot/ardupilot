@@ -110,6 +110,23 @@ public:
     // return straight-line distance (in meters) to destination
     virtual float get_distance_to_destination() const { return 0.0f; }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // progress towards this mode's navigation target, for NAV_CONTROLLER_PROGRESS.
+    // target is left uninitialised if there is no target location.
+    // Returns false if the mode has no progress to report.
+    virtual bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const { return false; }
+
+    // the target of the current navigation task, e.g. the waypoint being driven to.
+    // Returns false if there is none.
+    virtual bool get_nav_target(Location &target) const { return false; }
+
+    // distance remaining to the waypoint navigator's destination, as a part of the leg from its
+    // origin, ignoring any object avoidance
+    void get_wp_progress(AP_Mission::ItemProgress &progress) const;
+    // the waypoint navigator's destination, ignoring any object avoidance
+    bool get_wp_target(Location &target) const;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // return desired location (used in Guided, Auto, RTL, etc)
     // return true on success, false if there is no valid destination
     virtual bool get_desired_location(Location& destination) const WARN_IF_UNUSED { return false; }
@@ -337,6 +354,12 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
 
     bool verify_command(const AP_Mission::Mission_Command& cmd);
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    void update_mission_item_progress(const AP_Mission::Mission_Command& cmd);
+public:
+    bool get_nav_target(Location &target) const override;
+private:
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     void do_RTL(void);
     bool do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
@@ -430,6 +453,9 @@ public:
 
     // return the distance at which the vehicle is considered to be on track along the circle
     float get_reached_distance() const;
+
+    // circle center as a Location
+    const Location &get_center() const { return config.center_loc; }
 
     // initialise with specific center location, radius (in meters) and direction
     // replaces use of _enter when initialised from within Auto mode
@@ -534,6 +560,11 @@ public:
 
     // return if external control is allowed in this mode (Guided or Guided-within-Auto)
     bool in_guided_mode() const override { return true; }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+    bool get_nav_target(Location &target) const override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override;
@@ -727,6 +758,11 @@ public:
     float get_distance_to_destination() const override { return _distance_to_destination; }
     bool reached_destination() const override;
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+    bool get_nav_target(Location &target) const override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // set desired speed in m/s
     bool set_desired_speed(float speed_ms) override;
 
@@ -766,6 +802,11 @@ public:
     float get_distance_to_destination() const override { return _distance_to_destination; }
     bool reached_destination() const override { return smart_rtl_state == SmartRTLState::StopAtHome; }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const override;
+    bool get_nav_target(Location &target) const override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // set desired speed in m/s
     bool set_desired_speed(float speed_ms) override;
 
@@ -785,6 +826,10 @@ protected:
     bool _enter() override;
     bool _load_point;
     bool _loitering;        // true if loitering at end of SRTL
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    uint16_t path_follow_start_points;  // number of path points when following the path started
+    Vector3p path_end_ned_m;            // where the path ends, which is its first point
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 };
 
 
