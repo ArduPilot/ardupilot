@@ -357,6 +357,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
 
         // calculate observation jacobians and Kalman gains
         memset(&H_LOS[0], 0, sizeof(H_LOS));
+        uint32_t kalman_mask = 0;
         if (obsIndex == 0) {
             // calculate X axis observation Jacobian
             ftype t2 = 1.0f / range;
@@ -488,7 +489,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             Kfusion[6] = t78*(t70+P[6][0]*t2*t5-P[6][4]*t2*t7+P[6][1]*t2*t15+P[6][2]*t2*t19-P[6][3]*t2*t22+P[6][5]*t2*t27);
 
             // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
-            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
+            kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
                 kalman_mask |= (1<<10) | (1<<11);
@@ -653,7 +654,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             Kfusion[6] = -t78*(-t92+P[6][0]*t2*t5+P[6][5]*t2*t8+P[6][1]*t2*t16-P[6][2]*t2*t19+P[6][3]*t2*t22+P[6][4]*t2*t27);
 
             // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
-            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
+            kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
                 kalman_mask |= (1<<10) | (1<<11);
@@ -716,6 +717,15 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                     res += (Kfusion[i] * H_LOS[5]) * P[5][j];
                     res += (Kfusion[i] * H_LOS[6]) * P[6][j];
                     KHP[i][j] = res;
+                }
+            }
+            // a masked state's covariance with the others is still corrected, in KHP's
+            // column only: copy it to the row, or symmetrising applies half of it
+            for (unsigned i = 7; i<=stateIndexLim; i++) {
+                if (!(kalman_mask & (1U<<i))) {
+                    for (unsigned j = 0; j<=stateIndexLim; j++) {
+                        KHP[i][j] = KHP[j][i];
+                    }
                 }
             }
 
