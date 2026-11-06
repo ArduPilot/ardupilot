@@ -475,7 +475,9 @@ modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_serve_tx_interru
 (profiled)|Vector3<float>::operator+=
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|serve_interrupt
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|dmaChannelFreeI
-(profiled)|DerivativeFilter<float,
+(profiled)|DerivativeFilter<float, (unsigned char)7>::update
+(profiled)|DerivativeFilter<float, (unsigned char)7>::slope
+(profiled)|DerivativeFilter<float, (unsigned char)7>::reset
 (profiled)|ChibiOS::DeviceBus::bus_thread
 (profiled)|AP_InertialSensor::set_accel_peak_hold
 (profiled)|ByteBuffer::peekiovec
@@ -634,6 +636,7 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
 # reached when a filter cutoff actually changes.
 # newlib is not built with -ffunction-sections, so these have to be picked as
 # whole archive members rather than by symbol. Each member holds one function.
+# Newer newlib names them libm_a-<name>.o; the generator matches either.
 (archive)|lib_a-ef_atan2.o   # __ieee754_atan2f, 344 B
 (archive)|lib_a-wf_atan2.o   # atan2f wrapper, 4 B
 (archive)|lib_a-sf_atan.o    # atanf, 432 B
