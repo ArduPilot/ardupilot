@@ -591,7 +591,7 @@ class Board:
             ]
 
         if cfg.env.DEST_OS == 'darwin':
-            if self.cc_version_gte(cfg, 15, 0):
+            if self.cc_version_gte(cfg, 15, 0) and cfg.check_ld_classic():
                 env.LINKFLAGS += [
                     '-Wl,-dead_strip,-ld_classic',
                 ]
