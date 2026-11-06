@@ -106,6 +106,16 @@ void AP_DAL_RangeFinder_Backend::start_frame(AP_RangeFinder_Backend *backend) {
     WRITE_REPLAY_BLOCK_IFCHANGED(RRNI, _RRNI, old);
 }
 
+bool AP_DAL_RangeFinder_Backend::on_ground() const
+{
+    const auto *rangefinder = AP::dal().rangefinder();
+    if (rangefinder == nullptr) {
+        return false;
+    }
+    return RangeFinder::reading_on_ground((RangeFinder::Status)_RRNI.status, _RRNI.distance,
+                                          rangefinder->ground_clearance_orient(ROTATION_PITCH_270));
+}
+
 // return true if we have a range finder with the specified orientation
 bool AP_DAL_RangeFinder::has_orientation(enum Rotation orientation) const
 {
