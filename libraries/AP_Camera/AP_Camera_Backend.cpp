@@ -94,15 +94,24 @@ void AP_Camera_Backend::update()
         last_location = current_loc;
         return;
     }
-    if (last_location.lat == current_loc.lat && last_location.lng == current_loc.lng) {
-        // we haven't moved - this can happen as update() may
-        // be called without a new GPS fix
+    // check if vehicle has moved
+    if (last_location.lat == current_loc.lat &&
+        last_location.lng == current_loc.lng &&
+        (!_params.trigg_dist_3d || last_location.alt == current_loc.alt)) {
+        // we haven't moved
+        // this can happen as update() may be called without a new GPS fix
         return;
     }
-
     // check vehicle has moved at least trigg_dist meters
-    if (current_loc.get_distance(last_location) < _params.trigg_dist) {
-        return;
+    if (_params.trigg_dist_3d > 0) {
+        const Vector3f ned = current_loc.get_distance_NED_alt_frame(last_location);
+        if (norm(ned.x, ned.y, ned.z) < _params.trigg_dist) {
+            return;
+        }
+    } else {
+        if (current_loc.get_distance(last_location) < _params.trigg_dist) {
+            return;
+        }
     }
 
     take_picture();
