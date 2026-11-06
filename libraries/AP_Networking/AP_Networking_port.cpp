@@ -14,6 +14,9 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/packetise.h>
 #include <errno.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !AP_NETWORKING_NEED_LWIP
+#include <AP_HAL_SITL/SITL_Multicast.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -195,6 +198,12 @@ void AP_Networking::Port::udp_client_loop(void)
         // (IP_ADD_MEMBERSHIP) when the destination is one, which we must
         // not skip - and neither of these targets are point-to-point, so
         // they don't have the mismatched-reply-port problem above
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !AP_NETWORKING_NEED_LWIP
+        // keep multicast on the interface SITL_MULTICAST_IF_ADDR names,
+        // as SITL's own multicast links do; with it unset the routing
+        // table chooses, as before
+        sock->set_multicast_interface_address(sitl_multicast_interface_address());
+#endif
         if (!sock->connect(dest, port.get())) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP[%u]: Failed to connect to %s", (unsigned)state.idx, dest);
             delete sock;
