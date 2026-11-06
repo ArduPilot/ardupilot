@@ -62,6 +62,7 @@
 #include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <Filter/LowPassFilter.h>
 #include <Filter/HarmonicNotchFilter.h>
@@ -703,8 +704,10 @@ private:
     // control enable of detected sensors
     AP_UInt8    _enable_mask;
     
-    // take the board orientation from AHRS_ORIENTATION
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+    // take the board orientation from AP_BoardConfig
     void update_board_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
     enum Rotation _board_orientation;
 
     // per-sensor orientation to allow for board type defaults at runtime

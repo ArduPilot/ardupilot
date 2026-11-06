@@ -944,32 +944,34 @@ bool AP_InertialSensor::has_fft_notch() const
 }
 #endif
 
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
 void
 AP_InertialSensor::update_board_orientation()
 {
-#if AP_AHRS_ENABLED
     if (_calibrating_accel) {
         // simple_accel_cal() pins the orientation to ROTATION_NONE for
         // its duration and drives update() itself, so refreshing here
         // would rotate the samples it is calibrating from
         return;
     }
-    AP_AHRS *ahrs = AP_AHRS::get_singleton();
-    if (ahrs == nullptr) {
+    AP_BoardConfig *boardconfig = AP::boardConfig();
+    if (boardconfig == nullptr) {
         return;
     }
-    _board_orientation = ahrs->get_board_orientation();
-#endif
+    _board_orientation = boardconfig->get_orientation();
 }
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
 
 void
 AP_InertialSensor::init(uint16_t loop_rate)
 {
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
     // the gyro calibration below takes its samples in sensor frame, but
     // the accel rotation is applied unconditionally and DCM reads the
     // accel for its startup alignment, so the orientation has to be
     // known before sampling starts:
     update_board_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
 
     // remember the sample rate
     _loop_rate = loop_rate;
@@ -1936,8 +1938,10 @@ void AP_InertialSensor::set_primary(uint8_t instance)
  */
 void AP_InertialSensor::update(void)
 {
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
     // allow the board orientation to be changed at runtime
     update_board_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
 
     // during initialisation update() may be called without
     // wait_for_sample(), and a wait is implied
