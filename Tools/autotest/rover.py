@@ -5048,8 +5048,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if "hello, world" in m.text:
                 count += 1
         self.progress("Got %u hellos" % count)
-        if count < 3:
-            raise NotAchievedException("Expected at least three hellos")
+        if count < 10 or count > 200:
+            raise NotAchievedException("Expected 10-200 hellos, got %u (script may have crashed or run too long)" % count)
 
     def test_scripting_internal_test(self):
         self.start_subtest("Scripting internal test")
