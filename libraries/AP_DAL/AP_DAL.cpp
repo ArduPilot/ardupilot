@@ -44,6 +44,8 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     bool logging = AP::logger().logging_started() && AP::logger().allow_start_ekf();
     if (logging && !logging_started) {
         force_write = true;
+        _origin_logged2 = false;
+        _origin_logged3 = false;
     }
     logging_started = logging;
 #endif
@@ -200,12 +202,16 @@ void AP_DAL::log_SetOriginLLH2(const Location &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     end_frame();
+#if HAL_LOGGING_ENABLED
     struct log_RSO2 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
         alt            : loc.alt,
     };
-    WRITE_REPLAY_BLOCK(RSO2, pkt);
+    // the logger can refuse it, e.g. while it writes the startup
+    // messages of a new log; if so the EKF tries again:
+    _origin_logged2 = WriteLogMessage(LOG_RSO2_MSG, &pkt, nullptr, offsetof(log_RSO2, _end));
+#endif
 #endif
 }
 
@@ -235,12 +241,16 @@ void AP_DAL::log_SetOriginLLH3(const Location &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     end_frame();
+#if HAL_LOGGING_ENABLED
     struct log_RSO3 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
         alt            : loc.alt,
     };
-    WRITE_REPLAY_BLOCK(RSO3, pkt);
+    // the logger can refuse it, e.g. while it writes the startup
+    // messages of a new log; if so the EKF tries again:
+    _origin_logged3 = WriteLogMessage(LOG_RSO3_MSG, &pkt, nullptr, offsetof(log_RSO3, _end));
+#endif
 #endif
 }
 
@@ -299,24 +309,25 @@ uint8_t AP_DAL::logging_core(uint8_t c) const
 #if HAL_LOGGING_ENABLED
 // write out a DAL log message. If old_msg is non-null, then
 // only write if the content has changed
-void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size)
+bool AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size)
 {
     if (!logging_started) {
         // we're not logging
-        return;
+        return false;
     }
     // we use the _end byte to hold a flag for forcing output
     uint8_t &_end = ((uint8_t *)msg)[msg_size];
     if (old_msg && !force_write && _end == 0 && memcmp(msg, old_msg, msg_size) == 0) {
         // no change, skip this block write
-        return;
+        return true;
     }
     if (!AP::logger().WriteReplayBlock(msg_type, msg, msg_size)) {
         // mark for forced write next time
         _end = 1;
-    } else {
-        _end = 0;
+        return false;
     }
+    _end = 0;
+    return true;
 }
 #endif
 
