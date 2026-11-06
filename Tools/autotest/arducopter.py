@@ -4954,10 +4954,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(15, reason="AGL KF to settle on the on-ground reading")
         bias_std = self.xkfa_recent_mean('BiasStd')
         self.progress("AGL KF bias std on the floor: %.4f" % bias_std)
-        # measured 1.0 with the floor gate, 0.047 when it compared the reading after the
-        # position offset correction and 0.0175 without it, so the bound sits below them all
-        # but the last
-        if bias_std < 0.03:
+        # nothing on the floor learns the bias, so its std only grows from its initial 1.0:
+        # measured 1.0003, against 0.90 when the floor fused between range samples learns it,
+        # 0.042 when the floor gate tests only the corrected reading and 0.030 with no gate
+        if bias_std < 0.95:
             raise NotAchievedException(
                 "AGL KF bias std collapsed on the floor (%.4f) with nothing to learn "
                 "the bias from" % bias_std)
@@ -4969,7 +4969,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(15, reason="AGL KF to fuse the offset on-ground reading")
         bias_std = self.xkfa_recent_mean('BiasStd')
         self.progress("AGL KF bias std on the floor with an offset: %.4f" % bias_std)
-        if bias_std < 0.03:
+        # 1.0006 measured, against 0.90, 0.024 and 0.019 for the same three faults
+        if bias_std < 0.95:
             raise NotAchievedException(
                 "AGL KF bias std collapsed on the floor with a range finder offset (%.4f)" % bias_std)
         self.set_parameter("RNGFND1_POS_Z", 0)
