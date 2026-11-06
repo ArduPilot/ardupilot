@@ -16647,6 +16647,22 @@ switch value'''
                 if t.is_alive():
                     t.terminate()
             raise
+
+        # every result is in (or has been synthesised): shut the fleet
+        # down.  Tell each worker to stop before joining it - a worker
+        # puts its result and then immediately asks for more work, and
+        # the collection loop handles requests before it drains results,
+        # so the last result can leave that worker's request pending.  It
+        # is then sitting in its 600s assign-queue get(), and we would
+        # wait the whole timeout out.
+        for q in self.assign_queues.values():
+            q.put(None)
+        for t in self.join_workers():
+            reaped.add(t)
+            worker_failures.append(
+                (t.name, "%s (killed after hanging in its teardown; thread "
+                 "stacks in %s)" % (t.exitcode, self.worker_stack_dump_path(t))))
+        reap_finished_workers()
         return self.finalise_worker_results(results, worker_failures)
 
     def assign_next_test(self, instance, current_key):
@@ -16805,19 +16821,55 @@ switch value'''
                         # uninterruptible state ignores the latter
                         t.kill()
 
-        # tell every worker to stop before joining it.  A worker puts its
-        # result and then immediately asks for more work; this loop
-        # handles requests before it drains results, so the last result
-        # can end the loop with that worker's request still pending.  The
-        # worker is then sitting in its 600s assign-queue get(), and the
-        # join below waits the whole timeout out.  Costs time, not
-        # correctness - but it is ten minutes of it.
-        for q in self.assign_queues.values():
-            q.put(None)
-        for t in self.workers:
-            t.join()
-        reap_finished_workers()
         return results
+
+    def worker_stack_dump_path(self, worker):
+        '''the file a worker's SIGUSR1 thread-stack dumps land in; the
+        worker opens it by instance number (see worker_process_main)'''
+        return self.buildlogs_path("hung-worker-%s-stacks.txt" %
+                                   worker.name.split('-')[-1])
+
+    def join_workers(self, timeout=300, grace=60):
+        '''wait for the workers to exit, but not forever; return those
+        which had to be killed.
+
+        Every result is in by the time we are called, so a worker which
+        does not exit is wedged in its teardown - stopping its SITL,
+        joining its RC thread, scanning for sanitiser findings.  The
+        hung-worker watchdog cannot help here: it runs in the collection
+        loop and measures the silence since the last result, and that
+        loop has finished.  Joining without a bound therefore hangs the
+        run with every result in hand until the global timeout kills
+        autotest.py, taking the summary, the timings and the exit status
+        with it.'''
+        deadline = time.monotonic() + timeout
+        for t in self.workers:
+            t.join(timeout=max(0, deadline - time.monotonic()))
+        stuck = [t for t in self.workers if t.is_alive()]
+        if not len(stuck):
+            return []
+        self.progress("%u worker(s) still running %us after being told to stop; "
+                      "dumping thread stacks to %s" %
+                      (len(stuck), timeout,
+                       self.buildlogs_path("hung-worker-<instance>-stacks.txt")))
+        for t in stuck:
+            try:
+                os.kill(t.pid, signal.SIGUSR1)
+            except ProcessLookupError:
+                # exited between the check above and here
+                pass
+        deadline = time.monotonic() + grace
+        for t in stuck:
+            t.join(timeout=max(0, deadline - time.monotonic()))
+        killed = []
+        for t in stuck:
+            if not t.is_alive():
+                continue
+            self.progress("%s hung in its teardown; killing it" % t.name)
+            t.kill()
+            t.join(timeout=grace)
+            killed.append(t)
+        return killed
 
     def finalise_worker_results(self, results, worker_failures):
         while True:
