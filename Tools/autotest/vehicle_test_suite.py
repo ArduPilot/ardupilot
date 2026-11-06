@@ -15,6 +15,7 @@ import fnmatch
 import glob
 import importlib.util
 import io
+import json
 import math
 import operator
 import os
@@ -2849,6 +2850,58 @@ class TestSuite(abc.ABC):
             "CC_TYPE": 2,         # AC_CustomControl: PID backend (ArduCopter)
         }
 
+    def parameters_with_known_out_of_range_values(self):
+        '''parameters whose value on a running vehicle is outside the range
+        their documentation gives, but where it is not clear whether the
+        documentation or the value is the thing which is wrong.  Each of
+        these wants a decision from someone who knows the controller in
+        question; until then they are not failures.  Vehicle suites extend
+        this with the parameters peculiar to them.'''
+        return {
+            "LOG_MAX_FILES": "SITL defaults to 5000, real boards cap at 500",
+        }
+
+    def test_parameter_values_within_documented_ranges(self, parameters):
+        '''check the value each parameter holds on the running vehicle is
+        within the @Range its documentation gives for it.  param_parse.py
+        checks the defaults it can extract from the source code, but many
+        defaults come from #defines, enumerations or are set at runtime;
+        those only show up on a live vehicle.'''
+
+        # the json metadata was emitted alongside the xml, above:
+        json_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.json")
+        metadata = {}
+        for (group, group_params) in json.load(open(json_filepath)).items():
+            if group == 'json':
+                # this group holds the metadata format version
+                continue
+            metadata.update(group_params)
+
+        fail = False
+        for (param, value) in parameters.items():
+            if param in self.parameters_with_known_out_of_range_values():
+                continue
+            if param not in metadata:
+                # missing documentation is complained about above
+                continue
+            param_range = metadata[param].get('Range', None)
+            if param_range is None:
+                continue
+            (low, high) = (float(param_range['low']), float(param_range['high']))
+            # parameters come off the wire as single-precision floats, so
+            # a value which is exactly on a limit can land just outside
+            # it; don't complain about that:
+            if math.isclose(value, low, rel_tol=1e-6, abs_tol=1e-9):
+                continue
+            if math.isclose(value, high, rel_tol=1e-6, abs_tol=1e-9):
+                continue
+            if value < low or value > high:
+                self.progress("%s value %f is outside documented range %f to %f" %
+                              (param, value, low, high))
+                fail = True
+        if fail:
+            raise NotAchievedException("Parameter values outside documented ranges")
+
     def test_parameter_documentation_get_all_parameters(self):
 
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
@@ -2895,6 +2948,8 @@ class TestSuite(abc.ABC):
                 fail = True
         if fail:
             raise NotAchievedException("Downloaded parameters missing in XML")
+
+        self.test_parameter_values_within_documented_ranges(parameters)
 
         # FIXME: this should be doable if we filter out e.g BRD_* and CAN_*?
 #        self.progress("Checking no extra parameters present in XML")

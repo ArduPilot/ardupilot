@@ -103,7 +103,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Param: _RATE_D
     // @DisplayName: Yaw axis rate controller D gain
     // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate
-    // @Range: 0.001 0.03
+    // @Range: 0 0.03
     // @Increment: 0.001
     // @User: Standard
 
@@ -125,7 +125,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Param: _RATE_FLTE
     // @DisplayName: Yaw axis rate controller error frequency in Hz
     // @Description: Yaw axis rate controller error frequency in Hz
-    // @Range: 2 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard

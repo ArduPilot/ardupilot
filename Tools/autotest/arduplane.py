@@ -11179,6 +11179,15 @@ return update()
         ])
         return ret
 
+    def parameters_with_known_out_of_range_values(self):
+        ret = super().parameters_with_known_out_of_range_values()
+        ret.update({
+            "RLL2SRV_TCONST": "models/plane.parm sets 0.25, documented 0.4 to 1.0",
+            "PTCH2SRV_TCONST": "models/plane.parm sets 0.25, documented 0.4 to 1.0",
+            "YAW_RATE_P": "Plane ships 0.04, documented 0.08 to 0.35",
+        })
+        return ret
+
     def disabled_tests(self):
         ret = {
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",

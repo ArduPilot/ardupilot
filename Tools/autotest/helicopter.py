@@ -1467,6 +1467,18 @@ class AutoTestHelicopter(AutoTestCopter):
         ])
         return ret
 
+    def parameters_with_known_out_of_range_values(self):
+        # deliberately skip AutoTestCopter's list; those are multirotor
+        # parameters which advertise the helicopter's range, and a
+        # helicopter should stay within it:
+        ret = vehicle_test_suite.TestSuite.parameters_with_known_out_of_range_values(self)
+        ret.update({
+            "LOIT_BRK_JRK_M": "Heli ships 2.5, documented 5 to 50",
+            "AROT_FWD_I": "Heli ships 2.0, documented 0.02 to 1.0",
+            "PHLD_BRK_ANGLE": "Heli ships 8, documented 20 to 45",
+        })
+        return ret
+
     def disabled_tests(self):
         return {
         }

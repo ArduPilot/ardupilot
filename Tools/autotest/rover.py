@@ -8442,6 +8442,15 @@ return update()
         ])
         return ret
 
+    def parameters_with_known_out_of_range_values(self):
+        ret = super().parameters_with_known_out_of_range_values()
+        ret.update({
+            "PSC_POS_P": "Rover ships 0.2, documented 0.5 to 2.0",
+            "WRC_RATE_FF": "Rover ships 8, documented 0.1 to 2.0",
+            "WRC2_RATE_FF": "Rover ships 8, documented 0.1 to 2.0",
+        })
+        return ret
+
     def disabled_tests(self):
         return {
             "SlewRate": "got timing report failure on CI",
