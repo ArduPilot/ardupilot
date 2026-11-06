@@ -310,9 +310,9 @@ private:
     bool _hover_bias_restarted[INS_MAX_INSTANCES];  // the EKF restarted the IMU's bias while the learner was taking it
     uint32_t _hover_bias_zero_ms[INS_MAX_INSTANCES];  // when the EKF last zeroed each IMU's bias, read when the vehicle armed
     uint32_t _hover_bias_rest_start_ms[INS_MAX_INSTANCES];  // when an arm without a flight restarted the wait at rest, 0 for none
-    uint16_t _hover_bias_rest_count[INS_MAX_INSTANCES];  // EKF accel bias restarts for each IMU last seen disarmed
-    uint32_t _hover_bias_rest_zero_ms[INS_MAX_INSTANCES];  // when the EKF last zeroed each IMU's bias, last seen disarmed
-    bool _hover_bias_switched[INS_MAX_INSTANCES];  // an accel switch on the ground has handed the IMU an estimate since it was zeroed
+    uint16_t _hover_bias_rest_count[INS_MAX_INSTANCES];  // EKF accel bias restarts for each IMU last seen
+    uint32_t _hover_bias_rest_zero_ms[INS_MAX_INSTANCES];  // when the EKF last zeroed each IMU's bias, last seen
+    bool _hover_bias_switched[INS_MAX_INSTANCES];  // an accel switch has handed the IMU an estimate since it was zeroed
     uint32_t _hover_bias_flight_end_ms;  // when the last flight was disarmed, 0 for none
     enum class HoverBiasBaseline : uint8_t {
         OK,         // the EKF's bias at arming was learnt at rest
