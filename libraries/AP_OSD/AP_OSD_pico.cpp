@@ -203,8 +203,9 @@ void AP_OSD_pico::report_stats(void)
 #define OSD_TX_WRAP_TARGET  osd_tx_pal_wrap_target
 #define OSD_TX_WRAP         osd_tx_pal_wrap
 
-// The program wants a 75 MHz PIO clock. At 225 MHz that is exactly 3, so
-// unlike the bidirectional DShot decode there is no fractional divider here.
+// The program wants a 75 MHz PIO clock. At 225 MHz the divider is exactly 3;
+// at 200 MHz it is fractional, 75.07 MHz, and pixel edges move by up to one
+// system clock (5 ns) against a 133 ns pixel.
 #define OSD_PIO_HZ 75000000U
 
 bool AP_OSD_pico::claim_pio(void)
@@ -238,7 +239,7 @@ void AP_OSD_pico::configure_sm(void)
 
     pio->CTRL &= ~(1U << (PIO_CTRL_SM_ENABLE_LSB + sm));
 
-    // CLKDIV is 16.8 fixed point, and this one is an exact integer.
+    // CLKDIV is 16.8 fixed point.
     const uint32_t div256 = (uint32_t)(((uint64_t)RP_CLK_SYS_FREQ * 256U) / OSD_PIO_HZ);
     pio->SM[sm].CLKDIV = ((div256 >> 8) << PIO_CLKDIV_INT_LSB)
                        | ((div256 & 0xFFU) << PIO_CLKDIV_FRAC_LSB);
