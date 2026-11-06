@@ -163,15 +163,20 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
     float tempVar = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
     getFilterStatus(solutionStatus);
+    const auto to_float16 = [](float value) {
+        Float16_t ret;
+        ret.set(value);
+        return ret;
+    };
     const struct log_XKF4 pkt4{
         LOG_PACKET_HEADER_INIT(LOG_XKF4_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
-        sqrtvarV : (int16_t)(100*velVar),
-        sqrtvarP : (int16_t)(100*posVar),
-        sqrtvarH : (int16_t)(100*hgtVar),
-        sqrtvarM : (int16_t)(100*tempVar),
-        sqrtvarVT : (int16_t)(100*tasVar),
+        sqrtvarV : to_float16(velVar),
+        sqrtvarP : to_float16(posVar),
+        sqrtvarH : to_float16(hgtVar),
+        sqrtvarM : to_float16(tempVar),
+        sqrtvarVT : to_float16(tasVar),
         tiltErr : sqrtF(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
         offsetNorth : offset.x,
         offsetEast : offset.y,

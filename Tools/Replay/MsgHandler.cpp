@@ -22,6 +22,7 @@ void MsgHandler::init_field_types()
     add_field_type('d', sizeof(double));
     add_field_type('e', sizeof(int32_t));
     add_field_type('f', sizeof(float));
+    add_field_type('g', sizeof(uint16_t));
     add_field_type('h', sizeof(int16_t));
     add_field_type('i', sizeof(int32_t));
     add_field_type('n', sizeof(char[4]));
