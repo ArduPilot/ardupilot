@@ -795,7 +795,9 @@ void Compass::init()
         }
     }
 
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
     update_board_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
 
     init_done = true;
     suppress_devid_save = false;
@@ -1750,20 +1752,22 @@ Compass::_detect_runtime(void)
 #endif  // AP_COMPASS_DRONECAN_ENABLED
 }
 
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
 /*
-  take the orientation the board is mounted in from AHRS_ORIENTATION.
-  Builds with no AHRS keep ROTATION_NONE, as they do today.
+  take the orientation the board is mounted in from AP_BoardConfig.
+  AP_Periph has none, so it stays at ROTATION_NONE.  It did not apply
+  this orientation before either: it does not drive AP_AHRS, which is
+  what used to push the orientation into the sensors.
  */
 void Compass::update_board_orientation()
 {
-#if AP_AHRS_ENABLED
-    AP_AHRS *ahrs = AP_AHRS::get_singleton();
-    if (ahrs == nullptr) {
+    AP_BoardConfig *boardconfig = AP::boardConfig();
+    if (boardconfig == nullptr) {
         return;
     }
-    _board_orientation = ahrs->get_board_orientation();
-#endif
+    _board_orientation = boardconfig->get_orientation();
 }
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
 
 bool
 Compass::read(void)
@@ -1772,8 +1776,10 @@ Compass::read(void)
         return false;
     }
 
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
     // allow the board orientation to be changed at runtime
     update_board_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
 
 #if HAL_LOGGING_ENABLED
     const bool old_healthy = healthy();
