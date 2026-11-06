@@ -29,6 +29,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Camera/AP_Camera_shareddefs.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Follow/AP_Follow_config.h>
 #include "AP_Mount.h"
 
 class AP_Mount_Backend
