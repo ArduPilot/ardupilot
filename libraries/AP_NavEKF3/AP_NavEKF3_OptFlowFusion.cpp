@@ -67,12 +67,21 @@ void NavEKF3_core::SelectFlowFusion()
 #endif
 
     // Fuse optical flow data into the main filter
+    const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index);
     if (flowDataToFuse && tiltOK) {
-        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index);
         // Set the flow noise used by the fusion processes
         R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
         // Fuse the optical flow X and Y axis data into the main filter sequentially
         FuseOptFlow(ofDataDelayed, fuse_optflow);
+    } else if (flowDataToFuse && fuse_optflow && flowSampleTime_ms != 0) {
+        // a gap longer than the flow valid time is missing flow, not withheld flow
+        const uint32_t flowGap_ms = imuSampleTime_ms - flowSampleTime_ms;
+        if (flowGap_ms < 1000) {
+            flowWithheld_ms += flowGap_ms;
+        }
+    }
+    if (flowDataToFuse) {
+        flowSampleTime_ms = imuSampleTime_ms;
     }
 }
 
@@ -695,6 +704,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         if (really_fuse && (flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
+            flowWithheld_ms = 0;
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;
