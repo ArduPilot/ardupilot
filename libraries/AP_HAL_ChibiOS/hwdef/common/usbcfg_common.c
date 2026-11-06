@@ -57,7 +57,7 @@ void string_substitute(const char *str, char *str2)
 {
     const char *board = "%BOARD%";
     const char *serial = "%SERIAL%";
-    uint8_t new_len = strlen(str);
+    size_t new_len = strlen(str);
     if (string_contains(str, board)) {
         new_len += strlen(HAL_BOARD_NAME) - strlen(board);
     }
@@ -65,28 +65,34 @@ void string_substitute(const char *str, char *str2)
         new_len += 24 - strlen(serial);
     }
     if (new_len+1 > USB_DESC_MAX_STRLEN) {
-        strcpy(str2, str);
+        strncpy(str2, str, USB_DESC_MAX_STRLEN - 1);
+        str2[USB_DESC_MAX_STRLEN - 1] = '\0';
         return;
     }
     char *p = str2;
-    while (*str) {
+    char *end = str2 + USB_DESC_MAX_STRLEN - 1;
+    while (*str && p < end) {
         char c = *str;
         if (c == '%') {
             if (strncmp(str, board, strlen(board)) == 0) {
-                memcpy(p, HAL_BOARD_NAME, strlen(HAL_BOARD_NAME));
-                str += 7;
-                p += strlen(HAL_BOARD_NAME);
+                size_t board_len = strlen(HAL_BOARD_NAME);
+                if ((size_t)(end - p) < board_len) {
+                    board_len = end - p;
+                }
+                memcpy(p, HAL_BOARD_NAME, board_len);
+                str += strlen(board);
+                p += board_len;
                 continue;
             }
             if (strncmp(str, serial, strlen(serial)) == 0) {
                 const char *hex = "0123456789ABCDEF";
                 const uint8_t *cpu_id = (const uint8_t *)UDID_START;
                 uint8_t i;
-                for (i=0; i<12; i++) {
+                str += strlen(serial);
+                for (i=0; i<12 && p + 1 < end; i++) {
                     *p++ = hex[(cpu_id[i]>>4)&0xF];
                     *p++ = hex[cpu_id[i]&0xF];
                 }
-                str += 8;
                 continue;
             }
         }
