@@ -230,7 +230,9 @@ libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getGyroBias  # 40 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getAccelBias  # 40 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getEulerAngles  # 20 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getRotationBodyToNED  # 20 B (sram)
-libraries/AP_NavEKF3/AP_NavEKF3_AirDataFusion.cpp|NavEKF3_core::FuseAirspeed
+# FuseAirspeed runs only with an airspeed sensor in use, which a copter rarely
+# has; out of SRAM it returns 1.1 KB to the heap. A Plane port would want it.
+#libraries/AP_NavEKF3/AP_NavEKF3_AirDataFusion.cpp|NavEKF3_core::FuseAirspeed
 # SelectMagFusion + FuseMagnetometer (4.2 KB): in SRAM -- mag fusion runs every EKF cycle and is large
 # enough (4.2 KB) to cause XIP cache thrashing; measured read_AHRS MIN improvement 4129->2866us
 libraries/AP_NavEKF3/AP_NavEKF3_MagFusion.cpp|NavEKF3_core::SelectMagFusion  # 1596 B (sram)
@@ -255,8 +257,11 @@ libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::CovariancePrediction  # 1
 libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch_at_specified_rate  # 92 B (sram)
 libraries/GCS_MAVLink/GCS_Common.cpp|GCS::update_send  # 248 B (sram)
 libraries/GCS_MAVLink/GCS_Common.cpp|GCS::update_receive  # 46 B (sram)
-modules/ChibiOS/os/hal/lib/streams/chprintf.c|chvprintf
-modules/ChibiOS/os/hal/lib/streams/chprintf.c|chprintf
+# chvprintf is reached only from a bare printf() through __wrap_vprintf, which
+# is in flash, so SRAM made it neither faster nor usable while XIP is off.
+# Out of SRAM it returns 1.1 KB to the heap.
+#modules/ChibiOS/os/hal/lib/streams/chprintf.c|chvprintf
+#modules/ChibiOS/os/hal/lib/streams/chprintf.c|chprintf
 libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_gain_boost  # 140 B (sram)
 libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_rpy_mix  # 260 B (sram)
 # rate_controller_run_dt + AC_PID::update_all/update_i/get_ff moved to Scratch Y (SRAM9,
@@ -272,6 +277,71 @@ libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_to_motors  # 214
 libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_armed_stabilizing  # 932 B (sram)
 libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output  # 86 B (sram)
 libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output_logic  # 954 B (sram)
+# The rest of the core1 motor path, which the SRAM functions above called in
+# flash through veneers: the thrust curve (safe_sqrt whenever MOT_THST_EXPO is
+# non-zero), the current-limit check (virtual, returning early unless
+# MOT_BAT_CURR_MAX is set, so its battery callees stay in flash) and the
+# saturation flag set while roll, pitch and yaw use the full range. Armed on
+# RPI_UAVFC with the SWD PC sampler they were about 6% of core1's non-idle
+# time from flash and 0.8% from SRAM; core1 went from 55% to 50% busy.
+libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp|Thrust_Linearization::thrust_to_actuator  # 60 B (sram)
+libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp|Thrust_Linearization::apply_thrust_curve_and_volt_scaling  # 196 B (sram)
+libraries/AP_Math/AP_Math.cpp|float safe_sqrt<float>  # 28 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::get_current_limit_max_throttle  # 244 B (sram)
+libraries/AP_Motors/AP_Motors_Class.cpp|AP_Motors::AP_Motors_limit::set_rpy  # 8 B (sram)
+
+# What core1 still ran from flash with the motor path above in SRAM: about 11%
+# of its busy time, armed on RPI_UAVFC with bidirectional DShot, logging and
+# the PIO OSD running. Each is a small function whose hot caller is already in
+# SRAM or Scratch Y. The waits, wakes and locks of rcout, trigger_groups and
+# dshot_send, and the spinlock release the context switch reached in flash:
+modules/ChibiOS/os/rt/src/chevents.c|chEvtWaitOne  # 60 B (sram)
+modules/ChibiOS/os/rt/src/chevents.c|chEvtSignal  # 22 B (sram)
+modules/ChibiOS/os/rt/src/chevents.c|chEvtGetAndClearEvents  # 16 B (sram)
+modules/ChibiOS/os/rt/src/chevents.c|chEvtGetAndClearEventsI  # 26 B (sram)
+modules/ChibiOS/os/rt/src/chmtx.c|chMtxTryLock  # 16 B (sram)
+modules/ChibiOS/os/rt/src/chmtx.c|chMtxTryLockS  # 50 B (sram)
+modules/ChibiOS/os/rt/include/chschd.h|ch_sch_prio_insert  # 30 B (sram) [inlinable]
+modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/smp/rp2/chcoresmp.c|__port_spinlock_release  # 14 B (sram)
+modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/smp/rp2/chcoresmp.h|port_spinlock_take  # 18 B (sram) [inlinable]
+modules/ChibiOS/os/hal/src/hal_st.c|stStartAlarmN  # 52 B (sram)
+modules/ChibiOS/os/hal/src/hal_st.c|stStopAlarmN  # 16 B (sram)
+# The SIO FIFO interrupt, taken whenever the other core wakes a thread here.
+modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/smp/rp2/chcoresmp.c|VectorA4  # 80 B (sram)
+# The rate-loop logging chain: the logger's virtual checks, the rate limiter
+# and the parts of the write path not yet in SRAM.
+libraries/AP_Logger/AP_Logger_File.cpp|AP_Logger_File::StartNewLogOK  # 44 B (sram)
+libraries/AP_Logger/AP_Logger_File.cpp|AP_Logger_File::WritesOK  # 24 B (sram)
+libraries/AP_Logger/AP_Logger_File.cpp|AP_Logger_File::recent_open_error  # 34 B (sram)
+libraries/AP_Logger/AP_Logger_File.cpp|AP_Logger_File::logging_started  # 10 B (sram)
+libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::StartNewLogOK  # 48 B (sram)
+libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::ensure_format_emitted  # 82 B (sram)
+libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::message_type_from_block  # 46 B (sram)
+libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::df_stats_gather  # 36 B (sram)
+libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_RateLimiter::should_log_streaming  # 104 B (sram)
+libraries/AP_Common/Bitmask.h|Bitmask<(unsigned short)256>::get  # 46 B (sram) [inlinable]
+libraries/AP_Common/Bitmask.h|Bitmask<(unsigned short)256>::set  # 44 B (sram) [inlinable]
+ArduCopter/Log.cpp|Copter::Log_Write_Rate  # 16 B (sram)
+ArduCopter/Copter.cpp|Copter::landing_with_GPS  # 34 B (sram)
+ArduCopter/mode.h|Mode::logs_attitude  # 4 B (sram) [inlinable]
+libraries/AP_Math/vector3.cpp|Vector3<float>::operator!=  # 60 B (sram)
+# Bidirectional DShot, ESC telemetry and the IMU bus's pad switching.
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::timer_tick  # 40 B (sram)
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::dshot_send_command  # 198 B (sram)
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::send_pulses_DMAR  # 8 B (sram)
+libraries/AP_BLHeli/AP_BLHeli.cpp|AP_BLHeli::log_bidir_telemetry  # 252 B (sram)
+libraries/SRV_Channel/SRV_Channel.h|SRV_Channels::have_digital_outputs  # 24 B (sram) [inlinable]
+libraries/AP_ESC_Telem/AP_ESC_Telem_Backend.cpp|AP_ESC_Telem_Backend::update_rpm  # 6 B (sram)
+libraries/AP_Math/AP_Math.cpp|unsigned long constrain_value<unsigned long>  # 16 B (sram)
+libraries/AP_HAL_ChibiOS/hwdef/common/stm32_util.c|stm32_set_line_mode  # 40 B (sram)
+# The dynamic notch update and the rate controller's arithmetic leaves.
+libraries/Filter/HarmonicNotchFilter.cpp|HarmonicNotchFilter<Vector3<float>>::notch_count  # 44 B (sram)
+libraries/Filter/HarmonicNotchFilter.cpp|HarmonicNotchFilterParams::esc_mask  # 12 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNotch::update_freq_hz  # 16 B (sram)
+libraries/AP_BattMonitor/AP_BattMonitor.cpp|AP_BattMonitor::voltage  # 28 B (sram)
+libraries/AP_Math/AP_Math.h|MAX<float, float>  # 22 B per copy (sram) [inlinable]
+libraries/AP_Math/AP_Math.h|MIN<float, float>  # 22 B per copy (sram) [inlinable]
+libraries/AP_Math/vector3.cpp|Vector3<float>::operator*  # 30 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaVelocity
 libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaAngle
 # readBaroData: kept in flash -- A/B confirmed regression (same SRAM bus contention issue as SelectVelPosFusion)
