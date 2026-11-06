@@ -382,6 +382,7 @@ private:
         bool unused2_aux_switch_rc_override_allowed; // 24
         bool armed_with_airmode_switch;      // 25 we armed using a arming switch
         bool prec_land_active;               // 26 true if precland is active
+        bool disarmed_in_air;                // 27 true from a mid-air disarm until the vehicle has come to rest
     } ap;
 
     AirMode air_mode; // air mode is 0 = not-configured ; 1 = disabled; 2 = enabled;
