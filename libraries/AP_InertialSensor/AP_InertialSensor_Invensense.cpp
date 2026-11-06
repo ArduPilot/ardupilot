@@ -134,14 +134,17 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensense::probe(AP_InertialSensor
                                                                enum Rotation rotation)
 {
     if (!dev) {
+        DEV_PRINTF("Invensense: probe spi no device\n");
         return nullptr;
     }
     AP_InertialSensor_Invensense *sensor;
 
+    DEV_PRINTF("Invensense: probe spi begin\n");
     dev->set_read_flag(0x80);
 
     sensor = NEW_NOTHROW AP_InertialSensor_Invensense(imu, std::move(dev), rotation);
     if (!sensor || !sensor->_init()) {
+        DEV_PRINTF("Invensense: probe spi init failed\n");
         delete sensor;
         return nullptr;
     }
@@ -163,7 +166,9 @@ bool AP_InertialSensor_Invensense::_init()
     _drdy_pin->mode(HAL_GPIO_INPUT);
 #endif
 
+    DEV_PRINTF("Invensense: _init begin\n");
     bool success = _hardware_init();
+    DEV_PRINTF("Invensense: _init %s\n", success ? "ok" : "fail");
 
     return success;
 }
@@ -1014,6 +1019,7 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
         return true;
     }
     // not a value WHOAMI result
+    DEV_PRINTF("Invensense: unexpected WHOAMI 0x%02x\n", (unsigned)whoami);
     return false;
 }
 
@@ -1021,6 +1027,7 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
 bool AP_InertialSensor_Invensense::_hardware_init(void)
 {
     WITH_SEMAPHORE(_dev->get_semaphore());
+    DEV_PRINTF("Invensense: hw_init begin bus=%u\n", (unsigned)_dev->bus_type());
 
     // setup for register checking. We check much less often on I2C
     // where the cost of the checks is higher
@@ -1030,8 +1037,10 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
     if (!_check_whoami()) {
+        DEV_PRINTF("Invensense: hw_init whoami failed\n");
         return false;
     }
+    DEV_PRINTF("Invensense: hw_init whoami ok type=%u\n", (unsigned)_mpu_type);
 
     // Chip reset
     uint8_t tries;
@@ -1096,6 +1105,8 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         DEV_PRINTF("Failed to boot Invensense 5 times\n");
         return false;
     }
+
+    DEV_PRINTF("Invensense: hw_init boot ok tries=%u\n", (unsigned)(tries + 1));
 
     if (_mpu_type == Invensense_ICM20608 ||
         _mpu_type == Invensense_ICM20602 ||

@@ -1,90 +1,241 @@
-# Nick K on Discord
+# ESP32-S3 devkit board definition with native USB CDC SERIAL4 support
+#
+# This board definition enables the ESP32-S3 native USB OTG port as a
+# TinyUSB CDC MAVLink transport on SERIAL4 while keeping UART0 as the
+# console/debug port. UART1 and UART2 remain available as regular
+# hardware serial ports.
+#
+# ==== ESP32-S3 PINOUT ====
+# CAN:      TX=15 RX=18
+# SPI IMU:  MOSI=36 MISO=37 SCLK=35 CS=10
+# I2C:      SDA=13 SCL=12
+# UART0:    SERIAL0 USB-UART console/debug
+# UART1:    SERIAL3 auxiliary MAVLink / debug UART
+# UART2:    SERIAL2 auxiliary serial port
+# USB CDC:  SERIAL4 native USB OTG MAVLink
+# RCIN:     GPIO4
+# RCOUT:    GPIO9, GPIO11, GPIO5
+# ENCODERS: L(2,6) R(7,8)  (PCNT planned)
+#
+# Original ESP32 ArduPilot port by Nick K on Discord
 
 define HAL_ESP32_BOARD_NAME "esp32s3devkit"
 
-# SPI Buses; https://docs.espressif.com/projects/esp-idf/en/v5.3.4/esp32/api-reference/peripherals/spi_master.html
+# Native USB CDC / TinyUSB on ESP32-S3 OTG port
+define HAL_ESP32_S3_USB_SERIAL4_ENABLED 1
+
+# --------------------------------------------------------------------
+# SPI Buses
+# --------------------------------------------------------------------
+# ESP32-S3 GPIO matrix allows flexible SPI pin mapping.
+# Keep IMU on SPI for lower jitter and better noise robustness.
+#
 #            Host      DMA Channel     MOSI        MISO        SCLK
 ESP32_SPIBUS SPI3_HOST SPI_DMA_CH_AUTO GPIO_NUM_36 GPIO_NUM_37 GPIO_NUM_35
 
-# i2c Buses
+# --------------------------------------------------------------------
+# I2C Buses
+# --------------------------------------------------------------------
+# I2C reserved for low-speed sensors and peripherals.
+#
 #             Port       SDA         SCL          SPEED    INTERNAL SOFT
-ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_16 GPIO_NUM_15  400*KHZ  true     false
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_13 GPIO_NUM_12  400*KHZ  true     false
 
+# --------------------------------------------------------------------
 # SPI Devices
+# --------------------------------------------------------------------
+# Primary IMU on SPI.
+# CS is moved away from default GPIO34 to avoid ADC/reserved usage.
+#
 #            Name                Bus   Device  ChipSel      Mode LoSpeed HiSpeed
-ESP32_SPIDEV mpu9250             0     0       GPIO_NUM_34  0    2*MHZ   8*MHZ
-# ESP32_SPIDEV bmp280              0     0       GPIO_NUM_46  3    10*MHZ  10*MHZ
+ESP32_SPIDEV mpu9250             0     0       GPIO_NUM_10  0    2*MHZ   8*MHZ
 
+# Optional barometer over SPI, disabled by default.
+# ESP32_SPIDEV bmp280            0     1       GPIO_NUM_11  3    10*MHZ  10*MHZ
 
-define HAL_ESP32_RMT_RX_PIN_NUMBER GPIO_NUM_14
+# --------------------------------------------------------------------
+# CAN / TWAI
+# --------------------------------------------------------------------
+# ESP32-S3 TWAI controller needs an external CAN transceiver:
+# TJA1051T/3, TCAN332, SN65HVD230, etc.
+#
+# Recommended wiring:
+# GPIO15 -> TXD transceiver
+# GPIO18 <- RXD transceiver
+#
+define HAL_ESP32_CAN_TX_PIN GPIO_NUM_15
+define HAL_ESP32_CAN_RX_PIN GPIO_NUM_18
 
-# ADC is available on lots of pints on the esp32, but adc2 cant co-exist with wifi we choose to allow ADC on :
+# Optional local bring-up self-test.
+# 0 = normal
+# 1 = TWAI_MODE_NO_ACK test mode
+define HAL_ESP32_CAN_SELFTEST 0
 
-# two different pin numbering schemes, both are ok, but only one at a time:
-ESP32_ADC_PIN ADC_CHANNEL_4       11     1
-ESP32_ADC_PIN ADC_CHANNEL_3       11     2
-ESP32_ADC_PIN ADC_CHANNEL_1       11     3
-ESP32_ADC_PIN ADC_CHANNEL_0       11     4
+# --------------------------------------------------------------------
+# RMT / RC input
+# --------------------------------------------------------------------
+# RCIN is optional on this target.
+# GPIO14 is reserved for UART2 RX, so RCIN is moved to GPIO4.
+#
+define HAL_ESP32_RMT_RX_PIN_NUMBER GPIO_NUM_4
+define HAL_ESP32_RCIN GPIO_NUM_4
 
-# ESP32_ADC_PIN ADC_GPIO35_CHANNEL       11     35
-# ESP32_ADC_PIN ADC_GPIO34_CHANNEL       11     34
-# ESP32_ADC_PIN ADC_GPIO39_CHANNEL       11     39
-# ESP32_ADC_PIN ADC_GPIO36_CHANNEL       11     36
+# --------------------------------------------------------------------
+# ADC
+# --------------------------------------------------------------------
+# ADC kept available for fallback battery voltage/current sensing.
+# Preferred design: INA226/INA228 over I2C instead of raw ADC.
+#
+# Two different pin numbering schemes are supported by the ESP32 HAL.
+# Keep only one active at a time.
+#
+# ArduPilot logical ADC pins:
+ESP32_ADC_PIN ADC_CHANNEL_0       11     1
+ESP32_ADC_PIN ADC_CHANNEL_1       11     2
+ESP32_ADC_PIN ADC_CHANNEL_3       11     3
+ESP32_ADC_PIN ADC_CHANNEL_4       11     4
 
-#-----INS/IMU-----
+# Alternative direct GPIO numbering, disabled by default:
+# ESP32_ADC_PIN ADC_GPIO1_CHANNEL   11     1
+# ESP32_ADC_PIN ADC_GPIO2_CHANNEL   11     2
+# ESP32_ADC_PIN ADC_GPIO3_CHANNEL   11     3
+# ESP32_ADC_PIN ADC_GPIO4_CHANNEL   11     4
+
+# --------------------------------------------------------------------
+# INS / IMU
+# --------------------------------------------------------------------
+# This target keeps MPU9250 because it is already supported by the
+# current ESP32 ArduPilot hwdef.
+#
+# Future options:
+# - ICM20948 SPI
+# - BMI270/BMI088 SPI
+# depending on available ArduPilot driver support on ESP32.
+#
 IMU Invensense SPI:mpu9250 ROTATION_NONE
 # IMU Invensense SPI:mpu9250 ROTATION_ROLL_180
+
 define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
 define INS_MAX_INSTANCES 3  # only here for binary identicality
 
-#-----COMPASS-----
+# --------------------------------------------------------------------
+# Compass
+# --------------------------------------------------------------------
+# MPU9250 includes AK8963 magnetometer.
+# WARNING:
+# the magnetometer may be strongly disturbed by motors, power wiring,
+# and other high-current loads.
+#
 COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
 define AP_COMPASS_AK8963_ENABLED TRUE
 define AP_COMPASS_PROBING_ENABLED 1
 
-# -----BARO-----
+# --------------------------------------------------------------------
+# Barometer
+# --------------------------------------------------------------------
+# Keep optional BMP280 probing on I2C address 0x77.
+#
 BARO BMP280 I2C:0:0x77
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
-# 2 use udp, 1 use tcp...  for udp,client needs to connect as UDPCL in missionplanner etc to 192.168.4.1 port 14550
-define HAL_ESP32_WIFI 1
+# --------------------------------------------------------------------
+# WiFi
+# --------------------------------------------------------------------
+# WiFi/Bluetooth disabled by default.
+#
+define HAL_ESP32_WIFI 0
 
-#  tip: if u are ok getting mavlink-over-tcp or mavlink-over-udp and want to disable mavlink-over-serial-usb
-# then set ardupilot parameter SERIAL0_PROTOCOL = 0 and reboot.
-#  u also will/may want..
-# LOG_BACKEND_TYPE 1
-# LOG_DISARMED 1
-# SERIAL0_PROTOCOL 0
-
-
+# Kept only for debug if WiFi is re-enabled later.
 define WIFI_SSID "ardupilot123"
 define WIFI_PWD "ardupilot123"
 
-# RCOUT which pins are used?
-
-#-----RCOUT-----
-ESP32_RCOUT GPIO_NUM_11
-ESP32_RCOUT GPIO_NUM_10
+# --------------------------------------------------------------------
+# RCOUT / PWM fallback
+# --------------------------------------------------------------------
+# Optional PWM outputs.
+#
 ESP32_RCOUT GPIO_NUM_9
-ESP32_RCOUT GPIO_NUM_8
-ESP32_RCOUT GPIO_NUM_7
-ESP32_RCOUT GPIO_NUM_6
+ESP32_RCOUT GPIO_NUM_11
+ESP32_RCOUT GPIO_NUM_5
 
-# rcin on what pin?
-define HAL_ESP32_RCIN GPIO_NUM_14
+# --------------------------------------------------------------------
+# Wheel encoders / odometry
+# --------------------------------------------------------------------
+# Reserve four GPIOs for quadrature wheel encoders:
+#
+# LEFT_A  = GPIO2
+# LEFT_B  = GPIO6
+# RIGHT_A = GPIO7
+# RIGHT_B = GPIO8
+#
+# NOTE:
+# These defaults are reserved for a future ESP32 PCNT backend.
+define HAL_ESP32_WENC_LEFT_A  2
+define HAL_ESP32_WENC_LEFT_B  6
+define HAL_ESP32_WENC_RIGHT_A 7
+define HAL_ESP32_WENC_RIGHT_B 8
 
-#-----UARTS-----
+# --------------------------------------------------------------------
+# UARTS / SERIAL mapping
+# --------------------------------------------------------------------
+#
+# ArduPilot ESP32 HAL mapping:
+#
+# SERIAL0 = UART0  -> USB-UART console/debug
+# SERIAL2 = UART2  -> external controller / panel
+# SERIAL3 = UART1  -> companion fallback MAVLink
+# SERIAL4 = USB CDC / TinyUSB native ESP32-S3 OTG
+#
+# There is no normal SERIAL1 UART on this mapping.
+#
 #            port        RX           TX
 ESP32_SERIAL  UART_NUM_0  GPIO_NUM_44  GPIO_NUM_43
-ESP32_SERIAL  UART_NUM_1  GPIO_NUM_17  GPIO_NUM_18
+ESP32_SERIAL  UART_NUM_1  GPIO_NUM_16  GPIO_NUM_17
+ESP32_SERIAL  UART_NUM_2  GPIO_NUM_14  GPIO_NUM_21
 
+# SERIAL0 -> UART0 -> USB-UART console/debug
+# Do not set DEFAULT_SERIAL0_PROTOCOL here.
+# SERIAL0 is console-oriented in the ESP32 HAL and is intentionally kept
+# separate from the primary MAVLink backend.
+
+# SERIAL2 -> UART2 -> auxiliary serial port
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL2_BAUD 115
+
+# SERIAL3 -> UART1 -> auxiliary MAVLink / debug UART
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL3_BAUD 921
+
+# SERIAL4 -> Native USB CDC / TinyUSB MAVLink
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL4_BAUD 921
+
+# --------------------------------------------------------------------
+# Logging
+# --------------------------------------------------------------------
+
+# Log to flash/file by default.
+LOG_BACKEND_TYPE 1
+
+# Allow logs while disarmed, useful during bring-up.
+LOG_DISARMED 1
+
+# --------------------------------------------------------------------
+# Filesystem / logging
+# --------------------------------------------------------------------
 define HAVE_FILESYSTEM_SUPPORT 1
 
-define HAL_ESP32_SDMMC 1
-define HAL_ESP32_SDCARD 1
+# Disable SDMMC by default unless an SD slot is really wired.
+# Flash logging is usually enough for bring-up.
+#
+define HAL_ESP32_SDMMC 0
+define HAL_ESP32_SDCARD 0
+
 define LOGGER_MAVLINK_SUPPORT 1
 define HAL_OS_POSIX_IO 1
 
-# this becomes the default value for the ardupilot param LOG_BACKEND_TYPE, which most ppl want to be 1, for log-to-flash
-# setting to 2 means log-over-mavlink to a companion computer etc.
+# Default log backend:
+# 1 = flash/file logging
+# 2 = mavlink logging to companion computer
+#
 define HAL_LOGGING_BACKENDS_DEFAULT 1
