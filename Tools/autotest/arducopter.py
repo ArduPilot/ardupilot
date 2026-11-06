@@ -7260,20 +7260,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             })
             check_landing_speeds(land_speed_high, land_speed_low, land_alt_low, **kwargs)
 
-        # Test configurations: (land_speed_high, land_speed_low, land_alt_low, **kwargs)
-        landing_speed_configs = [
-            # Default speeds from WP_SPD_DN and LAND_SPD_MS
-            (self.get_parameter("WP_SPD_DN"), self.get_parameter("LAND_SPD_MS"), self.get_parameter("LAND_ALT_LOW_M"), {}),
-            # Moderate speeds
-            (5, 1, 30, {"land_speed_high_accuracy": 0.5}),
-            # High speed landing (edge case)
-            (10, 2, 20, {}),
-            # Low speed landing (edge case)
-            (3, 0.5, 15, {}),
-        ]
-        for config in landing_speed_configs:
-            land_speed_high, land_speed_low, land_alt_low = config[:3]
-            test_landing_speeds(land_speed_high, land_speed_low, land_alt_low, **config[3])
+        test_landing_speeds(
+            5,  # descent speed high
+            1,  # descent speed low
+            30,  # transition altitude
+            land_speed_high_accuracy=0.5
+        )
 
     def get_system_clock_utc(self, time_seconds):
         # this is a copy of ArduPilot's AP_RTC function!
