@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AC_WeatherVane::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Enable
     // @Description: Enable weather vaning.  When active, the aircraft will automatically yaw into wind when in a VTOL position controlled mode. Pilot yaw commands override the weathervaning action.
-    // @Values: -1:Only use during takeoffs or landing see weathervane takeoff and land override parameters,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind
+    // @Values: -1:Only use during takeoffs or landing see weathervane takeoff and land override parameters,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind,5:Zero sideslip
     // @User: Standard
     AP_GROUPINFO_FLAGS("ENABLE", 1, AC_WeatherVane, _direction, WVANE_PARAM_ENABLED, AP_PARAM_FLAG_ENABLE),
 
@@ -76,14 +76,14 @@ const AP_Param::GroupInfo AC_WeatherVane::var_info[] = {
     // @Param: TAKEOFF
     // @DisplayName: Takeoff override
     // @Description: Override the weather vaning behaviour when in takeoffs
-    // @Values: -1:No override,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind
+    // @Values: -1:No override,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind,5:Zero sideslip
     // @User: Standard
     AP_GROUPINFO("TAKEOFF", 7, AC_WeatherVane, _takeoff_direction, -1),
 
     // @Param: LAND
     // @DisplayName: Landing override
     // @Description: Override the weather vaning behaviour when in landing
-    // @Values: -1:No override,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind
+    // @Values: -1:No override,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind,5:Zero sideslip
     // @User: Standard
     AP_GROUPINFO("LAND", 8, AC_WeatherVane, _landing_direction, -1),
 
@@ -216,6 +216,30 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
             }
             dir_string = "tail in";
             break;
+
+        case Direction::ZERO_SIDESLIP: {
+            // Get the measured lateral acceleration corrected for roll and pitch
+            const Vector3f accel_body = AP::ahrs().get_accel() - AP::ahrs().get_accel_bias();
+            const Vector3f accel_NED = AP::ahrs().get_rotation_body_to_ned() * accel_body;
+            const float yaw = AP::ahrs().get_yaw_rad();
+            const float accel_y = -sinf(yaw) * accel_NED.x + cosf(yaw) * accel_NED.y;
+
+            // Expected acceleration from vertical thrust vector
+            const float expected_accel_y = GRAVITY_MSS * sinf(AP::ahrs().get_roll_rad()) * cosf(AP::ahrs().get_pitch_rad());
+
+            // Any difference in acceleration must be due to drag which we want to minimize
+            // Convert to a equivalent roll angle for similar behaviour to exiting methods
+            const float accel_cdeg = rad_to_cd(atan2f(expected_accel_y - accel_y, GRAVITY_MSS));
+
+            // Apply deadzone and restore sign
+            output = MAX(fabsf(accel_cdeg) - deadzone_cdeg, 0.0f);
+            if (is_negative(accel_cdeg)) {
+                output *= -1.0f;
+            }
+
+            dir_string = "zero sideslip";
+            break;
+        }
     }
 
     if (active_msg_dir != dir) {
