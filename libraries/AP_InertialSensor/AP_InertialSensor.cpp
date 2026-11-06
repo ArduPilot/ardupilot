@@ -1213,7 +1213,8 @@ AP_InertialSensor::detect_backends(void)
 #if AP_EXTERNAL_AHRS_ENABLED
     // if enabled, make the first IMU the external AHRS
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
-    if (serial_port >= 0) {
+    // serial_port: >=0 UART, -2 SPI, -1 not configured. Register for UART and SPI.
+    if (serial_port != -1) {
         const uint8_t count_before = _backend_count;
         ADD_BACKEND(NEW_NOTHROW AP_InertialSensor_ExternalAHRS(*this, serial_port));
         _first_onboard_imu_instance = _backend_count - count_before;   // Sets to 1 only if it actually registered.
