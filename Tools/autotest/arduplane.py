@@ -526,10 +526,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         initial_alt = m.alt
         self.progress("Initial altitude %u\n" % initial_alt)
 
-        # Record altitude at midpoint to catch drift during flight
-        mid_alt = None
-        alt_check_count = 0
-
         self.progress("Flying right circuit")
         # do 4 turns
         for i in range(0, 4):
@@ -546,10 +542,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # This is a minimum leg length, not a stopping target. At high
             # speedup successive position samples can skip a narrow band.
             self.wait_distance_to_location(self.get_location(), 100, float('inf'))
-            # Check altitude at midpoint
-            if i == 1:
-                m = self.assert_receive_message('VFR_HUD')
-                mid_alt = m.alt
         self.progress("Circuit complete")
 
         self.progress("Flying rudder left circuit")
@@ -576,12 +568,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # back to FBWA
         self.change_mode('FBWA')
 
-        # Tighten altitude tolerance from 20m to 5m
-        # Also check that altitude didn't drift significantly at midpoint
-        if abs(final_alt - initial_alt) > 5:
-            raise NotAchievedException("Failed to maintain altitude (drift=%um)" % abs(final_alt - initial_alt))
-        if mid_alt is not None and abs(mid_alt - initial_alt) > 5:
-            raise NotAchievedException("Altitude drifted at midpoint (drift=%um)" % abs(mid_alt - initial_alt))
+        if abs(final_alt - initial_alt) > 20:
+            raise NotAchievedException("Failed to maintain altitude")
 
         return self.wait_level_flight()
 

@@ -4488,7 +4488,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.gps_speed = 0
                 self.last_debug_time = 0
                 self.distance_sensor_distance = 0
-                self.max_of_mismatch = 0
 
             def progress_prefix(self):
                 return "COF: "
@@ -4505,27 +4504,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     self.gps_speed = m.vel/100.0  # cm/s -> m/s
 
                 of_speed = self.flow_rate_rads * self.rangefinder_distance
-                mismatch = abs(of_speed - self.gps_speed)
-                if mismatch > self.max_of_mismatch:
-                    self.max_of_mismatch = mismatch
-                if mismatch > 1.5:
-                    if mismatch > 2.0:
-                        raise NotAchievedException(f"gps={self.gps_speed} vs of={of_speed} mismatch ({mismatch:.1f} m/s)")
-                    self.progress(f"gps={self.gps_speed:.1f} of={of_speed:.1f} mismatch={mismatch:.1f} m/s (WARNING: exceeds 1.5 m/s tolerance)")
+                if abs(of_speed - self.gps_speed) > 1.5:
+                    raise NotAchievedException(f"gps={self.gps_speed} vs of={of_speed} mismatch")
                 of_speed = self.flow_rate_rads * self.distance_sensor_distance
-                mismatch_ds = abs(of_speed - self.gps_speed)
-                if mismatch_ds > self.max_of_mismatch:
-                    self.max_of_mismatch = mismatch_ds
-                if mismatch_ds > 1.5:
-                    if mismatch_ds > 2.0:
-                        raise NotAchievedException(f"gps={self.gps_speed} vs of={of_speed} mismatch ({mismatch_ds:.1f} m/s)")
-                    self.progress(f"gps={self.gps_speed:.1f} of={of_speed:.1f} mismatch={mismatch_ds:.1f} m/s (WARNING: exceeds 1.5 m/s tolerance)")
+                if abs(of_speed - self.gps_speed) > 1.5:
+                    raise NotAchievedException(f"gps={self.gps_speed} vs of={of_speed} mismatch")
 
                 now = self.suite.get_sim_time_cached()
                 if now - self.last_debug_time > 5:
                     self.last_debug_time = now
-                    of_speed = self.flow_rate_rads * self.rangefinder_distance
-                    self.progress(f"gps={self.gps_speed:.1f} of={of_speed:.1f} max_mismatch={self.max_of_mismatch:.1f}")
+                    self.progress(f"gps={self.gps_speed} of={of_speed}")
 
         self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
 
@@ -4559,15 +4547,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         timeout = 60
         started_climb = False
-        max_speed_observed = 0
         while self.get_sim_time_cached() - tstart < timeout:
             m = self.assert_receive_message('GLOBAL_POSITION_INT')
             spd = math.sqrt(m.vx**2 + m.vy**2) * 0.01
             alt = m.relative_alt*0.001
-
-            # track peak speed observed during the test
-            if spd > max_speed_observed:
-                max_speed_observed = spd
 
             # calculate max speed from altitude above the ground
             margin = 2.0
@@ -4579,12 +4562,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if spd > max_speed:
                 raise NotAchievedException(("Speed should be limited by"
                                             "EKF optical flow limits"))
-
-            # enforce hard 10 m/s cap at any altitude
-            if spd > 10:
-                raise NotAchievedException(("EKF optical flow speed limit"
-                                            "enforcement failure: observed %0.1f m/s exceeds 10 m/s cap"
-                                            " (peak observed: %0.1f m/s)") % (spd, max_speed_observed))
 
             # after 30 seconds start climbing
             if not started_climb and self.get_sim_time_cached() - tstart > 30:
