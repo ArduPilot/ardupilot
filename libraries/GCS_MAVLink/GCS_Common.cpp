@@ -903,8 +903,8 @@ bool GCS_MAVLINK::last_txbuf_is_greater(uint8_t txbuf_limit)
 
 void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 {
-    mavlink_radio_t packet;
-    mavlink_msg_radio_decode(&msg, &packet);
+    mavlink_radio_status_t packet;
+    mavlink_msg_radio_status_decode(&msg, &packet);
 
     const uint32_t now = AP_HAL::millis();
 
