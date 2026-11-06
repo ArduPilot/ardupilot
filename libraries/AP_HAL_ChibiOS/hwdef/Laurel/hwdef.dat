@@ -345,67 +345,49 @@ define CH_CFG_SMP_MODE TRUE
 define HAL_ENABLE_THREAD_STATISTICS TRUE
 # SMP: start core1 as the second ChibiOS instance.
 define RP_CORE1_START TRUE
-# CPU clock: 225 MHz (900 MHz VCO / POSTDIV1=4 / POSTDIV2=1).
-# Walked down from 375 MHz once the core1 rate path was relocated to SRAM and
-# core0 was given the XIP cache. This cuts the overclock from 2.5x to 1.5x the
-# 150 MHz spec. A 1500 MHz VCO cannot divide to 225 (1500/225 is non-integer),
-# so the VCO drops to 900 MHz (FBDIV 75) and POSTDIV 4x1 gives 225 MHz.
-# The on-chip VREG is set to 1.15 V (VSEL=0x0c) before the PLL switch (see
-# rp2350_vreg_init() in rp_clocks.c). 1.15 V supports ~312 MHz, giving 225 MHz
-# a comfortable margin while dropping the chip well below the 1.30 V it needed
-# when overclocked to 375 MHz. Stock 1.10 V (~276 MHz) would also cover 225 MHz.
-# Previous attempts:
-#   300 MHz at default 1.1 V (2026-04-12): LOCKUP - VREG not initialized first.
-#   375 MHz at 1.30 V: stable, but a 2.5x overclock.
-#   225 MHz at 1.30 V: stable (clock-drop verified before lowering voltage).
-define RP_PLL_SYS_VCO_FREQ 900000000
-define RP_PLL_SYS_POSTDIV1 4
+# CPU clock: 200 MHz (1200 MHz VCO, FBDIV 100, POSTDIV 6x1), a 1.33x
+# overclock of the RP2350 datasheet's 150 MHz clk_sys/clk_peri limit, chosen
+# for the 100 MHz flash clock it divides to, as on RPI_UAVFC. The on-chip
+# VREG is set to 1.15 V (VSEL=0x0c) before the PLL switch in
+# rp2350_vreg_init(). The datasheet does not qualify 200 MHz across process,
+# voltage and temperature. Bring-up ran at 375 MHz at 1.30 V, then at
+# 225 MHz with a 75 MHz flash clock. The bidirectional DShot and OSD
+# programs want a 75 MHz PIO clock, which 200 MHz reaches with a fractional
+# divider.
+define RP_PLL_SYS_VCO_FREQ 1200000000
+define RP_PLL_SYS_POSTDIV1 6
 define RP_PLL_SYS_POSTDIV2 1
 # The core clock the PLL defines above produce; system.cpp checks that the two
 # agree.
-MCU_CLOCKRATE_MHZ 225
-# On-chip VREG voltage select: 0x0c = 1.15 V (datasheet Table 481, VREG.VSEL),
-# ~312 MHz cap. Applied in rp_clocks.c before PLL_SYS is started. Stock is
-# 0x0b/1.10 V (~276 MHz cap), which would also cover 225 MHz.
+MCU_CLOCKRATE_MHZ 200
+# On-chip VREG voltage select: 0x0c = 1.15 V (datasheet Table 481, VREG.VSEL).
 define RP_VREG_VSEL 12
 
-# QMI flash timing (re-derived for 225 MHz; 375 MHz history kept below).
-# Formula: sample_from_falling = (CLKDIV + RXDELAY) / (2 x sysclk)
-# Constraints (must hold at BOTH 375 MHz app speed and 150 MHz dummy-read speed):
-#   setup: sample >= tCLQV (6 ns)  ->  CLKDIV + RXDELAY >= 4.5  ->  sum >= 5
-#   hold:  sample < SCK_period     ->  CLKDIV + RXDELAY < 2xCLKDIV  ->  RXDELAY < CLKDIV
-#   (RXDELAY = CLKDIV: sample = period boundary, works if flash tCHQX > 0)
-# W25Q64JVXGIM: fast-read max 133 MHz, tCLQV <= 6 ns.
-#
-# History of attempts at 375 MHz sysclk (half_cycle = 1.333 ns):
-#   CLKDIV  RXDELAY  SCK        sample (ns)          setup margin  hold margin  result
-#   6       6        62.5 MHz   (6+6)x1.333 = 16.0 = period        10.0 ns       0.0 ns  WORKS (original)
-#   6       7        62.5 MHz   (6+7)x1.333 = 17.3 > period (datasheet +1 rule)           WORKS
-#   5       6        75   MHz   (5+6)x1.333 = 14.7 > period 13.3     --            --     CRASH (sample past period)
-#   4       6        93.75 MHz  (4+6)x1.333 = 13.3 > period 10.7     --            --     CRASH (sample past period)
-#   4       1        93.75 MHz  (4+1)x1.333 =  6.7   0.67 ns         4.00 ns            CRASH (setup too tight for PCB trace)
-#   4       3        93.75 MHz  (4+3)x1.333 =  9.3   3.33 ns         1.33 ns            WORKS
-#   3       2        125  MHz   (3+2)x1.333 =  6.7   0.67 ns         1.33 ns            CRASH (setup too tight for PCB trace)
-#   3       3        125  MHz   (3+3)x1.333 =  8.0 = period          2.00 ns       0.0 ns  TRYING (same boundary case as 6/6 which WORKS)
-#
-# Prior CLKDIV=3 attempt (RXDELAY=2): the commit math showed 1.33 ns hold margin and
-# called it "tight but correct" -- but SETUP margin was only 0.67 ns, insufficient once
-# PCB trace delay is included. tCLQV max = 6 ns, sample at 6.67 ns => only 0.67 ns slack.
-# RXDELAY=3 gives 2.0 ns setup (matching 4/3 pattern) with 0 hold margin (period boundary),
-# same structure as the original CLKDIV=6/RXDELAY=6 which is proven to work.
-#
-# CLKDIV=6 RXDELAY=6: 62.5 MHz SCK -- was original "safe" setting, but bit-flip at 375 MHz sysclk.
-#   Datasheet rule: RXDELAY=CLKDIV+1 when sysclk>>200MHz for extra margin.
-# CLKDIV=6 RXDELAY=7: 62.5 MHz SCK, +1 RXDELAY margin for 375 MHz. WORKS.
-# Must be applied before PLL switch (see rp_clocks.c).
-#
-# At 225 MHz sysclk (half_cycle = 2.222 ns) the setup margin is far more
-# forgiving. CLKDIV=3 RXDELAY=2: SCK = 75 MHz, sample = (3+2)x2.222 = 11.1 ns,
-# setup margin 5.1 ns, hold margin 2.2 ns. Both healthy - and strictly better
-# than the 375 MHz CLKDIV=3/RXDELAY=3 case (hold = 0). 75 MHz SCK is well under
-# the W25Q64's 133 MHz limit.
-define RP_QMI_CLKDIV 3
+# QMI flash timing, as measured on RPI_UAVFC; not yet swept on this board.
+# Earlier comments named the flash a Winbond W25Q64JV (133 MHz, tCLQV 6 ns);
+# its JEDEC ID has not been read. The QMI samples
+# (CLKDIV + RXDELAY) / (2 x sysclk) after the SCK falling edge, but the
+# board's round trip delays the data. On RPI_UAVFC at 200 MHz with CLKDIV 2
+# (SCK 100 MHz) every byte read right with the sample 7.5 to 15 ns after the
+# edge (RXDELAY 1-4); RXDELAY 2 samples at 10 ns. It is also applied before
+# the PLL switch, on the ring oscillator, where RXDELAY above CLKDIV would
+# sample the next bit. On the bench this board read its whole 4 MB back
+# correctly with these settings, twice disarmed and once armed, but sweep
+# its window before flying it (rp2350/DEVELOPMENT.md, "Clock and flash
+# timing").
+define RP_QMI_CLKDIV 2
 define RP_QMI_RXDELAY 2
+# MIN_DESELECT counts system clocks: 3 is 15 ns at 200 MHz, against the JV
+# family's 10 ns /CS deselect time between reads (tSHSL1). The bootrom
+# leaves 7 (35 ns).
+define RP_QMI_MIN_DESELECT 3
+# Continuous read: mode byte 0xA0 (M5-4 = 10) leaves the flash expecting the
+# next read's address. The boot ROM leaves this board's flash in Dual I/O
+# (0xBB) rather than Quad I/O (0xEB), so an XIP cache miss takes 48 flash
+# clocks instead of 56, against 28 for a quad read. The port checks the
+# flash reads back correctly and keeps the ordinary format if not; on this
+# board it engages.
+define RP_QMI_CONT_READ_MODE 0xA0
 # define AP_XIP_PROFILER_ENABLED 1
 
 # Board-specific notes:
