@@ -465,6 +465,12 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
         return false;
     }
 
+#if AP_LOGGER_SEND_NAMED_VALUES_ENABLED
+    // a field of this message may be being streamed to the GCS as a
+    // named-value message:
+    _front.stream_named_value_capture(pBuffer, size);
+#endif  // AP_LOGGER_SEND_NAMED_VALUES_ENABLED
+
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
 }
 
