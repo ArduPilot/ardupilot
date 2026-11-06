@@ -530,12 +530,28 @@ function update()
            return
        end
    end
+   -- For quadplanes, refuse to tune unless in QSTABILIZE/QHOVER/QLOITER.
+   -- In fixed-wing flight the VTOL rate controllers are not active, so the
+   -- slew-rate oscillation gate cannot detect runaway and gains would ramp
+   -- unbounded. Auto-descent VTOL modes (QLAND/QRTL) and QAUTOTUNE/QACRO
+   -- are also excluded -- tuning needs a stable pilot-controlled hover.
+   local in_tunable_mode = true
+   if is_quadplane then
+      local m = vehicle:get_mode()
+      -- QSTABILIZE=17, QHOVER=18, QLOITER=19
+      in_tunable_mode = (m == 17 or m == 18 or m == 19)
+   end
    if sw_pos == sw_pos_tune and (not arming:is_armed() or not vehicle:get_likely_flying()) and get_time() > last_warning + 5 then
       gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: Must be flying to tune"))
       last_warning = get_time()
       return
    end
-   if sw_pos == 0 or not arming:is_armed() or not vehicle:get_likely_flying() then
+   if sw_pos == sw_pos_tune and not in_tunable_mode and get_time() > last_warning + 5 then
+      gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: requires QSTABILIZE/QHOVER/QLOITER"))
+      last_warning = get_time()
+      return
+   end
+   if sw_pos == 0 or not arming:is_armed() or not vehicle:get_likely_flying() or not in_tunable_mode then
       -- abort, revert parameters
       if need_restore then
          need_restore = false
