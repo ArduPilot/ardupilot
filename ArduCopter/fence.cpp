@@ -51,67 +51,73 @@ void Copter::fence_check()
         return;
     }
 
-    if (fence_breaches.new_breaches) {
+    if (fence_breaches.new_breaches != 0) {
+        handle_handle_new_breaches();
+    }
 
-        if (!copter.ap.land_complete) {
-            fence.print_fence_message("breached", fence_breaches.new_breaches);
+    fence_breaches.have_updates = false; // fence checking can now be processed again
+}
+
+void Copter::fence_handle_new_breaches()
+{
+    if (!copter.ap.land_complete) {
+        fence.print_fence_message("breached", fence_breaches.new_breaches);
+    }
+
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(fence_breaches.new_breaches));
+
+    // if the user wants some kind of response and motors are armed
+    const auto fence_act = fence.get_action();
+    if (fence_act == AC_Fence::Action::REPORT_ONLY ) {
+        return;
+    }
+
+    // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
+    // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
+    if (ap.land_complete || (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & AC_FENCE_TYPE_ALT_MAX)== 0))){
+        arming.disarm(AP_Arming::Method::FENCEBREACH);
+        return;
+    }
+
+    // if more than 100m outside the fence just force a land
+    if (fence.get_breach_distance(fence_breaches.new_breaches) > AC_FENCE_GIVE_UP_DISTANCE) {
+        set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
+        return;
+    }
+
+    switch (fence_act) {
+    case AC_Fence::Action::RTL_AND_LAND:
+    default:
+        // switch to RTL, if that fails then Land
+        if (!set_mode(Mode::Number::RTL, ModeReason::FENCE_BREACHED)) {
+            set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
         }
-
-        // if the user wants some kind of response and motors are armed
-        const auto fence_act = fence.get_action();
-        if (fence_act != AC_Fence::Action::REPORT_ONLY ) {
-
-            // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
-            // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
-            if (ap.land_complete || (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & AC_FENCE_TYPE_ALT_MAX)== 0))){
-                arming.disarm(AP_Arming::Method::FENCEBREACH);
-
-            } else {
-
-                // if more than 100m outside the fence just force a land
-                if (fence.get_breach_distance(fence_breaches.new_breaches) > AC_FENCE_GIVE_UP_DISTANCE) {
-                    set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
-                } else {
-                    switch (fence_act) {
-                    case AC_Fence::Action::RTL_AND_LAND:
-                    default:
-                        // switch to RTL, if that fails then Land
-                        if (!set_mode(Mode::Number::RTL, ModeReason::FENCE_BREACHED)) {
-                            set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
-                        }
-                        break;
-                    case AC_Fence::Action::ALWAYS_LAND:
-                        // if always land option mode is specified, land
-                        set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
-                        break;
-                    case AC_Fence::Action::SMART_RTL:
-                        // Try SmartRTL, if that fails, RTL, if that fails Land
-                        if (!set_mode(Mode::Number::SMART_RTL, ModeReason::FENCE_BREACHED)) {
-                            if (!set_mode(Mode::Number::RTL, ModeReason::FENCE_BREACHED)) {
-                                set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
-                            }
-                        }
-                        break;
-                    case AC_Fence::Action::BRAKE:
-                        // Try Brake, if that fails Land
-                        if (!set_mode(Mode::Number::BRAKE, ModeReason::FENCE_BREACHED)) {
-                            set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
-                        }
-                        break;
-                    case AC_Fence::Action::SMART_RTL_OR_LAND:
-                        // Try SmartRTL, if that fails, Land
-                        if (!set_mode(Mode::Number::SMART_RTL, ModeReason::FENCE_BREACHED)) {
-                            set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
-                        }
-                        break;
-                    }
-                }
+        break;
+    case AC_Fence::Action::ALWAYS_LAND:
+        // if always land option mode is specified, land
+        set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
+        break;
+    case AC_Fence::Action::SMART_RTL:
+        // Try SmartRTL, if that fails, RTL, if that fails Land
+        if (!set_mode(Mode::Number::SMART_RTL, ModeReason::FENCE_BREACHED)) {
+            if (!set_mode(Mode::Number::RTL, ModeReason::FENCE_BREACHED)) {
+                set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
             }
         }
-
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(fence_breaches.new_breaches));
+        break;
+    case AC_Fence::Action::BRAKE:
+        // Try Brake, if that fails Land
+        if (!set_mode(Mode::Number::BRAKE, ModeReason::FENCE_BREACHED)) {
+            set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
+        }
+        break;
+    case AC_Fence::Action::SMART_RTL_OR_LAND:
+        // Try SmartRTL, if that fails, Land
+        if (!set_mode(Mode::Number::SMART_RTL, ModeReason::FENCE_BREACHED)) {
+            set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
+        }
+        break;
     }
-    fence_breaches.have_updates = false; // fence checking can now be processed again
 }
 
 #endif
