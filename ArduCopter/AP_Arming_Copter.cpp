@@ -810,7 +810,7 @@ void AP_Arming_Copter::clear_pending_arm()
 }
 
 // update_pending_arm - retry arming periodically while pending
-// called at 10Hz from arm_motors_check
+// called at 10Hz from auto_disarm_check
 void AP_Arming_Copter::update_pending_arm()
 {
     if (!_pending_arm) {
