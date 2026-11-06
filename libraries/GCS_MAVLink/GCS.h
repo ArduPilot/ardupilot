@@ -267,6 +267,8 @@ public:
 
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
+    // true if this channel's port is a USB (physically local) link
+    bool port_is_usb() const { return _port != nullptr && _port->is_usb(); }
 
     // cap the MAVLink message rate. It can't be greater than 0.8 * SCHED_LOOP_RATE
     uint16_t cap_message_interval(uint16_t interval_ms) const;
