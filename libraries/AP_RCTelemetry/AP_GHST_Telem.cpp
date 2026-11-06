@@ -211,7 +211,8 @@ void AP_GHST_Telem::process_packet(uint8_t idx)
 bool AP_GHST_Telem::_process_frame(AP_RCProtocol_GHST::FrameType frame_type, void* data) {
     switch (frame_type) {
     // this means we are connected to an RC receiver and can send telemetry
-    case AP_RCProtocol_GHST::GHST_UL_RC_CHANS_RSSI: {
+    case AP_RCProtocol_GHST::GHST_UL_RC_CHANS_RSSI:
+    case AP_RCProtocol_GHST::GHST_UL_RC_CHANS_12_RSSI: {
         process_rf_mode_changes();
         _enable_telemetry = AP::ghost()->is_telemetry_supported();
         break;
@@ -279,8 +280,8 @@ void AP_GHST_Telem::calc_gps()
 void AP_GHST_Telem::calc_gps2()
 {
     debug("GPS2");
-    _telem.gps2.groundspeed = htole16(roundf(AP::gps().ground_speed() * 100000 / 3600));
-    _telem.gps2.gps_heading = htole16(roundf(AP::gps().ground_course() * 100.0f));
+    _telem.gps2.groundspeed = htole16(roundf(AP::gps().ground_speed() * 100.0f)); // cm/s
+    _telem.gps2.gps_heading = htole16(roundf(AP::gps().ground_course() * 10.0f)); // deci-degrees
     _telem.gps2.satellites = AP::gps().num_sats();
 
     AP_AHRS &_ahrs = AP::ahrs();
@@ -313,7 +314,7 @@ void AP_GHST_Telem::calc_attitude()
     WITH_SEMAPHORE(_ahrs.get_semaphore());
 
     float heading = AP::compass().calculate_heading(_ahrs.get_rotation_body_to_ned());
-    _telem.sensor.compass_heading = htole16(degrees(wrap_PI(heading)));
+    _telem.sensor.compass_heading = htole16(roundf(wrap_360(degrees(heading)) * 10.0f)); // deci-degrees
 
     float alt = AP::baro().get_altitude();
     _telem.sensor.baro_alt = htole16(roundf(alt));
