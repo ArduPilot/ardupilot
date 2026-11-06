@@ -16,7 +16,7 @@ without one.
 
 ## Features
 
-- RP2350A (QFN-60), dual Cortex-M33 at 225 MHz, running ChibiOS SMP
+- RP2350A (QFN-60), dual Cortex-M33 at 200 MHz, running ChibiOS SMP
   (the rate thread is pinned to core1)
 - 520 KB SRAM, 4 MB QSPI flash
 - No microSD or dataflash; MAVLink logging is built in but off by default
@@ -96,7 +96,7 @@ RP2350 port are in `libraries/AP_HAL_ChibiOS/rp2350/DEVELOPMENT.md`.
 
 ## Clock and flash timing
 
-The core runs at 225 MHz with the VREG raised to 1.15 V, and the QSPI flash
-at 75 MHz (`RP_QMI_CLKDIV 3`, `RP_QMI_RXDELAY 2`). These match Laurel and
-RPI_UAVFC, where they are characterised; the datasheet qualifies the RP2350
-at 150 MHz.
+The core runs at 200 MHz with the VREG raised to 1.15 V, and the QSPI flash
+at 100 MHz (`RP_QMI_CLKDIV 2`, `RP_QMI_RXDELAY 2`) in continuous read. These
+match RPI_UAVFC, where the flash read window was measured; it has not been
+measured on a Pico 2. The datasheet qualifies the RP2350 at 150 MHz.
