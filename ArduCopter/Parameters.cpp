@@ -287,6 +287,23 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
 
+    // @Param: FS_GND_ANGLE
+    // @DisplayName: Ground Crash Lean Angle Max
+    // @Description: Maximum lean angle when on ground before triggering immediate disarm. Set to 0 to disable.
+    // @Range: 0 90
+    // @Units: deg
+    // @User: Standard
+    GSCALAR(fs_ground_angle_max, "FS_GND_ANGLE", 45),
+
+    // @Param: FS_CRASH_TIME
+    // @DisplayName: Crash Check Trigger Time
+    // @Description: Time in seconds that vehicle must be out of control continuously in flight to trigger crash disarm. Smaller values (e.g. 0.2 to 0.5s) are recommended for micro quadcopters.
+    // @Range: 0.05 5.0
+    // @Units: s
+    // @Increment: 0.05
+    // @User: Standard
+    GSCALAR(fs_crash_time, "FS_CRASH_TIME", 2.0f),
+
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates
