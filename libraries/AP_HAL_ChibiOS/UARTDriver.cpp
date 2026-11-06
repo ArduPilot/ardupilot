@@ -520,7 +520,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     thread_init();
 
     // setup flow control
-    set_flow_control(_flow_control);
+    _set_flow_control(_flow_control);
 
     if (serial_num == 0 && _tx_initialised) {
 #ifndef HAL_STDOUT_SERIAL
@@ -1114,7 +1114,7 @@ void UARTDriver::write_pending_bytes(void)
         if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
             // it doesn't look like hw flow control is working
             DEV_PRINTF("disabling flow control on serial %u\n", sdef.get_index());
-            set_flow_control(FLOW_CONTROL_DISABLE);
+            _set_flow_control(FLOW_CONTROL_DISABLE);
         }
     }
 }
@@ -1331,7 +1331,7 @@ void UARTDriver::_tx_timer_tick(void)
 /*
   change flow control mode for port
  */
-void UARTDriver::set_flow_control(enum flow_control flowcontrol)
+void UARTDriver::_set_flow_control(enum flow_control flowcontrol)
 {
     if (sdef.is_usb) {
         // no hw flow control available
@@ -1410,7 +1410,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
             // No hardware support for DEM mode or
             // No alternative function, RTS GPIO pin is not a conected to the UART peripheral
             // This is typicaly fine becaues we do software flow control.
-            set_flow_control(FLOW_CONTROL_DISABLE);
+            _set_flow_control(FLOW_CONTROL_DISABLE);
         }
         break;
     }
@@ -1455,14 +1455,15 @@ bool UARTDriver::set_unbuffered_writes(bool on)
 /*
   setup parity
  */
-void UARTDriver::configure_parity(uint8_t v)
+void UARTDriver::_configure_parity(uint8_t v)
 {
     if (sdef.is_usb) {
         // not possible
         return;
     }
-    UARTDriver::parity = v;
 #if HAL_USE_SERIAL == TRUE
+    WITH_SEMAPHORE(_line_config_sem);
+
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
@@ -1515,18 +1516,25 @@ void UARTDriver::configure_parity(uint8_t v)
     }
 #endif
 #endif // HAL_USE_SERIAL
+
+    // record the parity once the port has it, under the lock, so that a
+    // change that was waiting for the lock and is applied last is also the
+    // one get_parity() reports
+    UARTDriver::parity = v;
 }
 
 /*
   set stop bits
  */
-void UARTDriver::set_stop_bits(int n)
+void UARTDriver::_set_stop_bits(int n)
 {
     if (sdef.is_usb) {
         // not possible
         return;
     }
 #if HAL_USE_SERIAL
+    WITH_SEMAPHORE(_line_config_sem);
+
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
@@ -1607,13 +1615,18 @@ void UARTDriver::set_pushpull(uint16_t options)
 }
 
 // set optional features, return true on success
-bool UARTDriver::set_options(uint16_t options)
+bool UARTDriver::_set_options(uint16_t options)
 {
     if (sdef.is_usb) {
         // no options allowed on USB
         return (options == 0);
     }
     bool ret = true;
+
+#if HAL_USE_SERIAL == TRUE
+    // held from here so get_options() matches what the port is set to
+    WITH_SEMAPHORE(_line_config_sem);
+#endif
 
     _last_options = options;
 
@@ -1632,7 +1645,7 @@ bool UARTDriver::set_options(uint16_t options)
     acts_line = GPIO::resolve_alt_config(sdef.cts_line, PERIPH_TYPE::OTHER, sdef.instance);
 
     // Check flow control, might have to disable if RTS line is gone
-    set_flow_control(_flow_control);
+    _set_flow_control(_flow_control);
 
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     // F7 has built-in support for inversion in all uarts
@@ -1717,6 +1730,10 @@ bool UARTDriver::set_options(uint16_t options)
         ret = false;
     }
 #endif // STM32xx
+
+    // keep the config used when the port is restarted in step, so a later
+    // parity or stop bit change doesn't bring back the old inversion
+    sercfg.cr2 = _cr2_options;
 
     // both F4 and F7 can do half-duplex
     if (options & OPTION_HDPLEX) {
