@@ -106,6 +106,9 @@ void flash_init(void)
         reserved += stm32_flash_getpagesize(num_pages-1);
         num_pages--;
     }
+
+    // subtract pages before the firmware to obtain its page count
+    num_pages -= flash_base_page;
 }
 
 void flash_set_keep_unlocked(bool set)
@@ -138,7 +141,7 @@ bool flash_func_write_words(uint32_t offset, uint32_t *v, uint8_t n)
 
 uint32_t flash_func_sector_size(uint32_t sector)
 {
-    if (sector >= num_pages-flash_base_page) {
+    if (sector >= num_pages) {
         return 0;
     }
     return stm32_flash_getpagesize(flash_base_page+sector);
