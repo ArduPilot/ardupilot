@@ -55,6 +55,7 @@
 #include "AP_Airspeed_AUAV.h"
 #include "AP_Airspeed_External.h"
 #include "AP_Airspeed_Scripting.h"
+#include "AP_Airspeed_SM9541.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
@@ -481,6 +482,12 @@ void AP_Airspeed::allocate()
             sensor[i] = NEW_NOTHROW AP_Airspeed_Scripting(*this, i);
             break;
 #endif  // AP_AIRSPEED_SCRIPTING_ENABLED
+#if AP_AIRSPEED_SM9541_ENABLED
+        case TYPE_I2C_SM9541:
+            // the +/-100 cmH2O part, the differential variant
+            sensor[i] = NEW_NOTHROW AP_Airspeed_SM9541(*this, i, 100);
+            break;
+#endif  // AP_AIRSPEED_SM9541_ENABLED
         }
         if (sensor[i] && !sensor[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
