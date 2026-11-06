@@ -1,0 +1,54 @@
+# hw definition file for processing by chibios_hwdef.py
+# for SPEEDYBEE_F745_AIO hardware.
+# thanks to betaflight for pin information
+
+# MCU class and specific type
+MCU STM32F7xx STM32F745xx
+
+# board ID for firmware load - see the matching note in hwdef.dat: this
+# must be registered in Tools/AP_Bootloader/board_types.txt first, and
+# must use the SAME numeric ID as hwdef.dat's APJ_BOARD_ID.
+APJ_BOARD_ID AP_HW_SpeedyBeeF745AIO
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 96
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# USART1
+PA10 USART1_RX USART1
+PA9  USART1_TX USART1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# Keep UART RX pins high to prevent ELRS going into bootloader mode (see BlitzF745AIO)
+# Not USART1_RX is left out since it's bootloader UART above
+PD6  USART2_RX USART2 OUTPUT HIGH
+PB11 USART3_RX USART3 OUTPUT HIGH
+PA1  UART4_RX  UART4  OUTPUT HIGH
+PC7  USART6_RX USART6 OUTPUT HIGH
+
+# Chip select pins
+PA4 FLASH1_CS CS
+PB12 OSD1_CS CS
+PE4 GYRO1_CS CS
+
+PA2 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
