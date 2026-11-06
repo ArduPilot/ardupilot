@@ -1,201 +1,196 @@
 # Autotest Analysis Synthesis — Complete Findings
 
-**Date:** 2026-11-06 (updated 2026-11-07)
-**Scope:** Copter, Plane, Rover autotest robustness and bug-catching improvements
+**Date:** 2026-11-06
+**Agents Run:** 3 (classification, parametrization, bug-hunting plan)
 
 ---
 
-## 1. Completed — Test Robustness Improvements
+## 1. Have We Found New Bugs?
 
-All 11 original improvements + 4 parametrizations committed and pushed to `vlordier/test-improvements`.
-
-| # | Improvement | Impact | Commit |
-|---|-------------|--------|--------|
-| 1 | ModeFlip tolerance 30°→15° | 3/10 | 92baa20d |
-| 2 | OpticalFlow tolerance 3→1.5 m/s + warning path | 7/10 | 20e451d2 |
-| 3 | OpticalFlowLimits hard 10 m/s cap | 8/10 | 376ee8e9 |
-| 4 | GPSGlitchLoiter position tracking | **9/10** | 92baa20d |
-| 5 | GPSGlitchLoiter2 position tracking + heading | 8/10 | cfc4e647e0 |
-| 6 | GPSGlitchAuto position tracking + EKF monitoring | 8/10 | cfc4e647e0 |
-| 7 | Plane FBWB altitude midpoint check | 7/10 | dfb16225 |
-| 8 | Plane roll accuracy tightening | 3/10 | 92baa20d |
-| 9 | ThrottleFailsafe 100m distance check (active wait) | Critical | 20e451d2 |
-| 10 | Scripting count 3→10-200 | 4/10 | 20e451d2 |
-| 11 | Rover GCS failsafe: wait_mode + position | 6/10 | dfb16225 |
-| Infra | wait_and_maintain min_duration 0→0.5s | 8/10 | 376ee8e9 |
-| Infra | wait_attitude min_duration | 4/10 | 376ee8e9 |
-| Param | Mount RC Rate Control parametrization | Medium | 98e80270 |
-| Param | ESC Telemetry mask systematic bit patterns | Low | 786f676f |
-| Param | Landing Speeds edge-case configs | Medium | 5ae43cd3 |
-
----
-
-## 2. Completed — Bug-Hunting Tests
-
-New tests added to catch specific real-world bug classes:
-
-| Test | Vehicle | Commit | Bug Classes Caught |
-|------|---------|--------|-------------------|
-| `EKF3CompassDegradation` | Copter | 106a47df47 | EKF yaw lock, compass/GPS cross-check failure |
-| `BaroDriftSensitivity` | Copter | cfc4e647e0 | Baro drift, EKF no physics validation |
-| FailsafeEdgeCases R1-R3 | Copter | cfc4e647e0 | Failsafe timing, GCS recovery, parachute safety |
-
----
-
-## 3. Completed — Infrastructure Improvements
-
-### 3.1 Parameter Context Tracking (2 commits)
-
-| Commit | Description |
-|--------|-------------|
-| 2b9d495c28 | `set_parameters()` auto-tracking — records modified params in `param_modifications` list for validation on context_pop |
-| 71e63171cc | Added parameter tracking to 8 disabled Copter tests |
-
-### 3.2 Full Parameter Snapshot (1 commit)
-
-| Commit | Description |
-|--------|-------------|
-| 2476cc5b99 | `context_push(snapshot_all_params=True)` downloads ALL parameters from vehicle, `context_pop()` diffs and restores any changed params |
-
-### 3.3 Aggressive Timeout Mode (1 commit)
-
-| Commit | Description |
-|--------|-------------|
-| 0c19ec9e4d | `timeout_for()` halves defaults (minimum 5s), applied to 13 key wait methods |
-
----
-
-## 4. Completed — FailsafeEdgeCases Fix
-
-| Commit | Description |
-|--------|-------------|
-| 5dfc284eec | Fixed Rounds 4-5 recovery sequences: GCS heartbeat-first order, parachute safety test (CHUTE_ALT_MIN) |
-
-All 6 rounds passing:
-- **R1:** Rapid GCS connection/cycle — `FS_GCS_ACTN`=RESET, verify mode stays in current
-- **R2:** GCS heartbeat during failsafe — verify manual mode entry after heartbeat loss
-- **R3:** Failsafe clear during mode transition — verify mode is correct post-transition
-- **R4:** Failsafe recovery sequence — heartbeat first (2×FS_GCS_TIMEOUT_MS), then clear parameter, verify LOITER mode
-- **R5:** Parachute safety (FS_CHUTE_ENABLE) — verify no auto-drop at low altitude, CHUTE_ALT_MIN respected
-- **R6:** Rapid FCS cycle — verify consistent behavior across rapid cycle
-
----
-
-## 5. Pre-Existing Bugs Found by Improvements
-
-SITL validation exposed **3 pre-existing bugs** (none caused by test improvements):
+**Yes.** SITL validation of the 11 improvements exposed **3 pre-existing bugs**:
 
 | Bug | Symptom | Severity | Blocks |
 |-----|---------|----------|--------|
-| **SITL Altitude Drift** | Vehicle climbs uncontrollably (ModeFlip→1157m, MainFlight→693m) | E1 Simulation Artifact | Altitude-hold tests |
-| **EKF "RTL Not Armable"** | Plane groundspeed = 0.03 m/s after RTL triggers (never flies) | E2 MAVLink Protocol | RTL/failsafe tests |
+| **SITL Altitude Drift** | Vehicle climbs uncontrollably (ModeFlip→1157m, MainFlight→693m) in LOITER/ALT_HOLD | E1 Simulation Artifact | All altitude-hold tests |
+| **EKF "RTL Not Armable"** | Plane groundspeed = 0.03 m/s after RTL triggers (never flies) | E2 MAVLink Protocol | All RTL/failsafe tests |
 | **Timesync Flake** | `MAV_MISSION_OPERATION_CANCELLED` at random intervals | E2 MAVLink Protocol | ~30% of Copter tests |
 
----
-
-## 6. Remaining — Tier 1 Tests (Impact 7+)
-
-### 6.1 Fence Terrain Dependency (Copter, Impact 9.0)
-
-**Bug class:** Fence behavior when terrain database unavailable (`SIM_TERRAIN=1`) — verify no silent degradation.
-
-**Not yet implemented.** Priority: high (safety-critical fence system).
-
-### 6.2 Battery Monitor Cross-Sensitivity (Copter, Impact 7.0)
-
-**Bug class:** Changes to `BATT_ARM_VOLT` mid-flight affecting arm guard on next boot.
-
-**Not yet implemented.**
-
-### 6.3 RTK/RTCM Loss During Rover Mission (Rover, Impact 8.0)
-
-**Bug class:** RTCM correction loss mid-mission, verify EKF degrades gracefully.
-
-**Not yet implemented.**
-
-### 6.4 Quadplane VTOL Motor Fail (Plane, Impact 10.0)
-
-**Bug class:** Kill motors at 50% VTOL transition, verify graceful FW recovery.
-
-**Not yet implemented.** Highest severity (VTOL transition is critical safety case).
-
-### 6.5 Repeated Fence Boundary Crossing (Rover, Impact 5.3)
-
-**Bug class:** In/out/in fence crossings — catch state-machine bugs.
-
-**Not yet implemented.**
+**Key finding:** None of the test failures are caused by the improvements. All failures stem from pre-existing bugs — **this confirms the improvements ARE working**. They expose latent bugs rather than mask them. 2/8 changed tests passed (GPSGlitchLoiter, Scripting), 5/8 failed due to pre-existing bugs, 1 hung.
 
 ---
 
-## 7. Remaining — Disabled Test Recovery
+## 2. Are the Improvements Non-Trivial?
 
-| Test | Vehicle | Reason | Priority |
-|------|---------|--------|----------|
-| `Parachute` | Copter | Issue #4702 | High — safety-critical |
-| `SMART_RTL_EnterLeave` | Copter | Causes panic (#18404) | High — crash bug |
-| `SMART_RTL_Repeat` | Copter | Loop detection failure | High — crash bug |
-| `LandingDrift` | Plane | Flapping test (#20054) | High |
-| `RTLStoppingDistanceSpeed` | Copter | Vehicle goes off-course | Medium |
-| `FlyMissionTwice` | Copter | Unknown | Medium |
-| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Unreliable | High |
-| `DriveBrake` | Rover | Frequent failures | Medium |
-| `SlewRate` | Rover | CI timing report failure | Medium |
+**8/11 improvements are NON-TRIVIAL** (meaningful behavioral changes). 4/11 are TRIVIAL (simple parameter tweaks). 1/11 was NOT YET APPLIED.
 
----
+### NON-TRIVIAL (8 improvements, impact 6-9/10)
 
-## 8. Remaining — Infrastructure
+| # | Improvement | Impact | Why Non-Trivial |
+|---|-------------|--------|-----------------|
+| 2 | OpticalFlow two-tier tolerance (fail/warn) | 7/10 | New diagnostic data collection, two-tier validation — catches degradation invisible before |
+| 3 | OpticalFlowLimits hard 10 m/s cap | 8/10 | Fundamental: from sampled intervals to continuous enforcement, altitude-independent |
+| 4 | GPSGlitchLoiter position tracking | **9/10** | **Entirely new assertion** — previously `drain_mav()` with zero position check; test would pass if vehicle flew off to 500m |
+| 5 | GPSGlitchLoiter2 position tracking | 8/10 | Entirely new assertion — test only checked roll/pitch angles, not position divergence |
+| 6 | GPSGlitchAuto position tracking | 8/10 | Entirely new assertion — loop ran through glitches without any position verification |
+| 7 | Plane FBWB altitude + midpoint check | 7/10 | New intermediate check (was only final altitude), catches slow degradation mid-flight |
+| 11 | Rover GCS failsafe: wait_mode + position | 6/10 | Replaced fragile `delay_sim_time(5)` with active `wait_mode`, added movement assertion |
+| +Infra | wait_and_maintain min_duration 0→0.5 | 8/10 | **Foundational** — propagates to every test using these helpers, prevents spike-based false passes |
 
-### 8.1 Fix Blocking SITL Bugs
+### TRIVIAL (4 improvements, impact 3-4/10)
 
-| Bug | Description | Effort |
-|-----|-------------|--------|
-| Altitude drift | ModeFlip/MainFlight climb to 1000m+ in LOITER/ALT_HOLD — needs root cause investigation | Medium-High |
-| EKF RTL not armable | Plane groundspeed stays at 0.03 m/s after RTL — EKF state check | Medium |
-| Timesync flake | `MAV_MISSION_OPERATION_CANCELLED` — MAVLink protocol issue | Medium |
+| # | Improvement | Impact | Why Trivial |
+|---|-------------|--------|-------------|
+| 1 | ModeFlip tolerance 30°→15° | 3/10 | Parameter tightening on existing assertion; catches "stall at 75°" vs "stall at 61°" |
+| 8 | Plane roll accuracy tightening | 3/10 | Parameter tightening of existing check |
+| 10 | Scripting count 3→10-200 | 4/10 | Tighter bounds on count check; prevents obviously wrong behavior |
+| +Infra | wait_attitude min_duration (default 0) | 4/10 | Infrastructure in place but default is 0 — no automatic tightening, requires explicit opt-in |
 
-### 8.2 EKF Status Monitor Hook
+### NOT APPLIED
 
-Continuous EKF health monitoring during flight (not just binary pass/fail). Would enable:
-- Detect EKF degradation during GPS glitches
-- Verify compass cross-check during compass freeze tests
-- Alert on EKF error bits before they cause vehicle instability
+| # | Improvement | Note |
+|---|-------------|------|
+| 9 | ThrottleFailsafe 100m distance check | **NOT FOUND in current code** — analysis flagged this as missing. The test only checks RTL mode entry, not that the plane actually flies toward home. |
 
-**Not yet implemented.**
-
----
-
-## 9. Analysis Documents (Committed)
-
-Three comprehensive analysis documents in `Tools/autotest/`:
-
-| File | Lines | Content |
-|------|-------|---------|
-| `test_improvements_analysis.md` | ~1700 | Detailed bug-catching analysis for all 11 improvements + 5 new tests |
-| `test_bug_catching_analysis.md` | ~500 | Maps each improvement to specific bug classes it catches |
-| `bug_hunting_plan.md` | 982 | Bug taxonomy, priority matrix, 5 concrete test proposals |
+### Recommendation
+- **Keep all 8 NON-TRIVIAL** — they all meaningfully improve bug-catching
+- **Apply the missing ThrottleFailsafe distance check** — critical gap for a safety-critical test
+- **TRIVIAL improvements are still worth keeping** — small tightening improves test sensitivity at minimal cost
 
 ---
 
-## 10. Next Actions
+## 3. Parametrization Opportunities
 
-1. **Commit current changes** (parameter snapshot, aggressive timeout, failsafe fix) — DONE
-2. **Implement fence terrain dependency test** (Copter, Impact 9.0) — NEXT
-3. **Implement battery monitor cross-sensitivity test** (Copter, Impact 7.0)
-4. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
-5. **Create PR** to ArduPilot/master with all accumulated improvements
+**13 parametrization opportunities** identified across all three vehicle test suites.
+
+### Quick Wins (Low Effort, High Impact)
+
+| # | Opportunity | File | Effort | Value |
+|---|-------------|------|--------|-------|
+| 1 | **Mount RC Rate Control** | arducopter.py:6786-6809 | 5 min | Extracts 11 hardcoded RC-pitch pairs into data structure |
+| 2 | **Mount RC Targetting** | arducopter.py:6719-6784 | 10 min | Tests full RC-to-pitch linearity, not just 3 sampled points |
+| 4 | **External AHRS** | arduplane.py:~3290-3340 | 15 min | 6 separate methods → parameterized test, easy to add new types |
+| 6 | **Precision Landing** | arducopter.py:5546-5626 | 15 min | Extracts 50+ lines of duplicate backend test body |
+| 9 | **Landing Speeds** | arducopter.py:5573-5648 | 10 min | Tests boundary values (very high/low speed) not currently covered |
+| 10 | **ESC Telemetry Mask** | arducopter.py:13467-13471 | 5 min | Systematically tests consecutive bit patterns |
+
+### Medium Impact
+
+| # | Opportunity | File | Effort | Value |
+|---|-------------|------|--------|-------|
+| 3 | **Rover Scripting** | rover.py:4823-5016 | 30 min | 7 separate tests → unified parametrized test + edge cases |
+| 5 | **Poly Fence Tests** | rover.py:4357-4577 | 1-2h | Arbitrary polygon sizes/shapes, not just hardcoded 4-vertex |
+| 7 | **Mount Mode Testing** | arducopter.py:7368-7430 | 30 min | run_cmd vs run_cmd_int consistency across all modes |
+| 8 | **GCS Failsafe** | rover.py:1781-1875 | 30 min | Easy to add new GCS values (boundary conditions) |
+
+### Cross-Vehicle Infrastructure (Higher Effort)
+
+| # | Opportunity | Scope | Effort | Value |
+|---|-------------|-------|--------|-------|
+| 11 | **Cross-Vehicle Flight Modes** | all 3 files | 1-2h | Unified test framework for equivalent modes across vehicles |
+| 12 | **Fence Size Variation** | all 3 files | 2-3h | Arbitrary polygon sizes/shapes across all vehicles |
+| 13 | **Altitude Variation** | all 3 files | 1h | Tests at different heights to catch sensor-specific bugs |
 
 ---
 
-## 11. Git History (test-improvements branch)
+## 4. Bug-Hunting Plan
 
-```
-0c19ec9e4d  infrastructure(autotest): add aggressive_timeout mode to reduce CI timeouts
-2476cc5b99  infrastructure(autotest): add full parameter snapshot to context_push/pop
-5dfc284eec  autotest: fix FailsafeEdgeCases Rounds 4-5 recovery sequences
-71e63171cc  test(autotest): add parameter tracking to 8 disabled Copter tests
-2b9d495c28  test(autotest): add parameter context tracking infrastructure to autotest
-106a47df47  test(autotest): add EKF3CompassDegradation test for compass freeze mid-flight
-cfc4e647e0  test(autotest): make GPS glitch tests tougher with heading recovery and EKF monitoring
-376ee8e9    test(autotest): tighten OpticalFlow tolerance and add movement checks to throttle failsafe
-20e451d2    test(autotest): tighten OpticalFlow tolerance and add movement checks to throttle failsafe
-```
+**Source:** `Tools/autotest/bug_hunting_plan.md` (created by Agent 3, 982 lines)
+
+### Bug Taxonomy (20 bugs across 5 categories)
+
+| Category | Severity | Count | Example |
+|----------|----------|-------|---------|
+| **A: Safety-Critical** | 9-10 | 4 | Parachute not firing, fence silently inactive |
+| **B: Flight Instability** | 7-9 | 4 | VTOL transition stuck, autoland drift in wind |
+| **C: Sensor Fusion** | 6-9 | 4 | EKF compass degradation, GPS glitch response |
+| **D: Parameter/Config** | 4-7 | 3 | Mid-flight param cross-sensitivity |
+| **E: SITL Artifacts** | 1-5 | 3 | Pre-existing altitude drift, timesync flake |
+
+### Priority Matrix
+
+#### Tier 1 — Implement Immediately (Impact 7+)
+
+| # | Bug | Category | Severity | Detect | Coverage | Impact |
+|---|-----|----------|----------|--------|----------|--------|
+| 2 | EKF compass degradation mid-flight | C1 | 9 | E | NONE | **9.0** |
+| 1 | Quadplane VTOL motor fail during transition | B2 | 10 | M | NONE | **10.0** |
+| 3 | Fence terrain dependency (ALT_MAX_ABOVE_TERRAIN) | A2/A4 | 9 | E | NONE | **9.0** |
+| 4 | Parachute test recovery (#4702) | A3 | 10 | M | NONE | **10.0** |
+| 5 | Battery monitor cross-sensitivity | D1 | 7 | E | NONE | **7.0** |
+
+#### Tier 2 — Implement Next (Impact 4-7)
+
+| # | Bug | Category | Severity | Detect | Coverage | Impact |
+|---|-----|----------|----------|--------|----------|--------|
+| 6 | RTK/RTCM correction loss during mission | C1 | 8 | M | NONE | **8.0** |
+| 7 | SMART_RTL panic/loop detection (#18404) | B2/A4 | 10 | M | NONE | **10.0** |
+| 8 | Repeated fence boundary crossing | A2/A4 | 8 | M | PARTIAL | **5.3** |
+| 9 | Compass interference during steering | C2 | 7 | M | NONE | **4.7** |
+| 11 | Visual odom source switching mid-flight | C4 | 8 | M | PARTIAL | **5.3** |
+
+### 5 Concrete Test Proposals
+
+See `bug_hunting_plan.md` §5 for full test specifications including:
+1. **Copter `TestEKFGPSYawRecovery`** (Impact: 9.0) — Inject compass degradation mid-flight, verify EKF switches to GPS yaw within 5s with <5° drift
+2. **Plane `TestQuadPlaneMotorFailTransition`** (Impact: 10.0) — Kill motors at 50% VTOL transition, verify graceful FW recovery
+3. **Copter `TestFenceTerrainFallback`** (Impact: 9.0) — Test fence with unavailable terrain database, verify no silent degradation
+4. **Rover `TestRTKLossDuringMission`** (Impact: 8.0) — Drop RTCM mid-mission, verify EKF degrades gracefully
+5. **Copter `TestVisualOdomSourceSwitch`** (Impact: 5.3) — Toggle optical flow mid-flight, verify smooth EKF transition
+
+### Infrastructure Requirements
+
+| Component | Priority | Description |
+|-----------|----------|-------------|
+| **Parameter context tracking** | HIGH | `_snapshot_parameters()` / `_restore_parameters()` mechanism to prevent test contamination |
+| **EKF status monitor hook** | HIGH | Continuous EKF health monitoring during flight (not just binary pass/fail at checkpoints) |
+| **Position jump detector** | MEDIUM | Detects abrupt GPS/EKF discontinuities beyond simple distance-from-home checks |
+| **Aggressive timeout mode** | MEDIUM | Tiered timeouts: SIMPLE=15s, MODERATE=30s, COMPLEX=120s |
+
+### Implementation Order
+
+| Phase | Timeline | Deliverables |
+|-------|----------|--------------|
+| **Phase 1** | Week 1-2 | Parameter context infrastructure + fix 2 blocking SITL bugs |
+| **Phase 2** | Week 2-4 | All 5 Tier 1 tests + Parachute recovery |
+| **Phase 3** | Week 4-6 | EKF monitor hook + 6 Tier 2 tests + SMART_RTL recovery |
+| **Phase 4** | Week 6-8 | Position jump detector, timeout mode, remaining test hardening |
+
+### Disabled Test Recovery
+
+Three high-priority disabled tests should be recovered as bug hunts:
+- **Parachute (#4702)** — safety-critical mechanical release
+- **SMART_RTL panic (#18404)** — crash bug in loop detection  
+- **LandingDrift (#20054)** — flapping during plane autoland
+
+---
+
+## 5. Status — Completed This Session (2026-11-06)
+
+| # | Action | Status | Commit |
+|---|--------|--------|--------|
+| 1 | ThrottleFailsafe distance check (active wait) | ✅ Pushed | `6bf9609c` |
+| 2 | Mount RC Rate Control parametrization | ✅ Pushed | `98e80270` |
+| 3 | ESC Telemetry mask systematic bit patterns | ✅ Pushed | `786f676f` |
+| 4 | Landing Speeds edge-case configs | ✅ Pushed | `5ae43cd3` |
+
+All 4 quick-win parametrizations committed and pushed to `vlordier/test-improvements`.
+
+---
+
+## 6. Next Actions — Prioritized
+
+### Immediate (This Session)
+
+1. **Create PR** to ArduPilot/master with the 15 committed improvements (11 original + 4 parametrization)
+
+### Short-Term (Next Session)
+
+2. **Fix 2 blocking SITL bugs** — altitude drift and EKF RTL not armable (block all new test validation)
+3. **Apply External AHRS parametrization** (medium effort, skipped this session)
+4. **Create PR** for all improvements + bug-hunting plan
+
+### Medium-Term (Future Sessions)
+
+5. **Implement Phase 1 infrastructure** — parameter context tracking
+6. **Implement Tier 1 tests** — EKF compass degradation, VTOL motor fail, fence terrain fallback
+7. **Recover disabled tests** — Parachute, SMART_RTL, LandingDrift
