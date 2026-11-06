@@ -117,20 +117,27 @@ extern const AP_HAL::HAL& hal;
 #define DSHOT600_BIDIR_PIO_HZ 75000000U
 
 /*
-  The bidirectional decoder converts sample counts to bit times against a fixed
-  75 MHz, so a fractional divider there would not just add jitter, it would put
-  the decode on the wrong scale. Require the system clock to be an exact
-  multiple. 225 MHz gives 3; Betaflight's 150 MHz gives 2.
-
-  The non-bidirectional program has no such constraint - it only has to hold
-  the line for the right fraction of a bit - so 24 MHz may be reached with a
-  fractional divider (9.375 at 225 MHz, exactly representable in 16.8).
+  The PIO clock divider for a program clock, in the 16.8 fixed point CLKDIV
+  takes. 225 MHz gives 75 MHz exactly (3) and Betaflight's 150 MHz too (2);
+  other system clocks get a fractional divider, within 0.1% of the wanted
+  clock at 200 MHz, whose PIO cycles are spaced unevenly by up to one system
+  clock. The non-bidirectional 24 MHz is fractional at 225 MHz already (9.375).
  */
-static_assert((RP_CLK_SYS_FREQ % DSHOT600_BIDIR_PIO_HZ) == 0,
-              "bidirectional DShot needs a system clock that is a multiple of 75MHz");
+static constexpr uint32_t pio_div256(uint32_t pio_hz)
+{
+    return (uint32_t)(((uint64_t)RP_CLK_SYS_FREQ * 256U) / pio_hz);
+}
 
-// 18 PIO cycles per sample at 75MHz against a 1/(5/4 * 600000) telemetry bit
-#define SAMPLES_TO_BITS ((18.0f / 75.0f) / (1.0f / 0.75f))
+static_assert(pio_div256(DSHOT600_BIDIR_PIO_HZ) >= 256U,
+              "bidirectional DShot needs a system clock of at least 75MHz");
+
+/*
+  18 PIO cycles per sample against a 1/(5/4 * 600000) telemetry bit, at the
+  PIO clock the divider actually gives, so the run-length decode stays on
+  scale at a system clock that is not a multiple of 75 MHz.
+ */
+#define SAMPLES_TO_BITS (18.0f * 750000.0f * pio_div256(DSHOT600_BIDIR_PIO_HZ) / \
+                         ((float)RP_CLK_SYS_FREQ * 256.0f))
 
 #define TELEM_WORDS   4     // 4 x 32 samples
 #define TELEM_MAX_EDGES 24  // 21 data bits plus the return to idle
@@ -272,11 +279,7 @@ void RCOutput_pico::start_sm(uint8_t chan, uint8_t gpio)
 
     rp2350_reg_clear_bits(&pio->CTRL, 1U << (PIO_CTRL_SM_ENABLE_LSB + sm));
 
-    const uint32_t pio_hz = _bidir ? DSHOT600_BIDIR_PIO_HZ : DSHOT600_PIO_HZ;
-
-    // CLKDIV is 16.8 fixed point. Compute in that scale so the fractional
-    // non-bidirectional divider is not rounded away.
-    const uint32_t div256 = (uint32_t)(((uint64_t)RP_CLK_SYS_FREQ * 256U) / pio_hz);
+    const uint32_t div256 = pio_div256(_bidir ? DSHOT600_BIDIR_PIO_HZ : DSHOT600_PIO_HZ);
     pio->SM[sm].CLKDIV = ((div256 >> 8) << PIO_CLKDIV_INT_LSB)
                        | ((div256 & 0xFFU) << PIO_CLKDIV_FRAC_LSB);
 
