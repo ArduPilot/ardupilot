@@ -311,104 +311,7 @@ Message count tightened from `count >= 3` to `10 <= count <= 200`. The old check
 
 ---
 
-## 12. GPSGlitchLoiter — Heading Tracking During/After Glitch
-
-**Date:** 2026-11-06
-**Files:** `arducopter.py` — `GPSGlitchLoiter()`
-
-### How it works
-
-Records starting yaw heading before the glitch sequence and tracks it throughout. After all glitches are removed, verifies the heading recovers to near its original value within 10 seconds. During the glitch phase, logs large yaw deviations (>45°) without immediately failing — this allows diagnosis of the yaw realignment process while still catching permanent heading locks.
-
-### Bugs this catches
-
-| Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
-| **EKF heading lock from glitched velocity** | After GPS glitch, `realignYawGPS()` locks heading to glitched track angle and doesn't recover | GPS glitch injects position offset → EKF computes velocity from glitched position → `atan2F(vel.y, vel.x)` gives wrong course → yaw resets to glitched angle → even after glitch removal, EKF position still slightly offset → heading stays locked at wrong angle. Test catches this by checking post-glitch heading recovery. |
-| **Yaw realignment during active glitch** | Vehicle enters uncommanded turn during GPS glitch, stays in turn | EKF yaw realigns to glitched velocity → vehicle banks and turns → position moves off course → new position still glitched → EKF continues turning → vehicle orbits. Logged via heading_delta > 45 warning. |
-| **EKF recovery after GPS corruption** | EKF never fully recovers after GPS glitch is removed | EKF position filter stuck at glitched position → even after glitch parameter is cleared → vehicle slowly drifts → heading never returns to original. Post-glitch heading check catches this. |
-
----
-
-## 13. GPSGlitchLoiter2 — Tightened Position + Heading Recovery
-
-**Date:** 2026-11-06
-**Files:** `arducopter.py` — `gps_glitch_loiter2_for_ekf_type()`
-
-### How it works
-
-Position limit tightened from 10m to 5m (this is a 20-second loiter test, so the vehicle should stay very close to home). After glitch removal, explicitly waits 5 seconds and checks heading recovery, logging the delta between starting and recovery heading.
-
-### Bugs this catches
-
-| Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
-| **EKF position excursion on glitch** | GPS position jump causes EKF to think vehicle moved → commands large correction → vehicle flies off course | Position innovation exceeds EK2_POSXY_MAX_INNO → EKF resets position estimate → vehicle thinks it's 30m from intended position → commands hard turn → flies 30m+ in wrong direction. Tightened 5m limit catches this. |
-| **GPS yaw/position glitch causing orbit** | EKF attitude enters turning loop after GPS glitch | Yaw from GPS heading jumps 90° during glitch → EKF thinks vehicle is heading wrong direction → initiates correction turn → overshoots → orbits instead of holding position. Heading recovery check catches persistent orbit. |
-| **EKF type-specific recovery** | EKF2 and EKF3 recover differently from the same glitch | Different internal position/velocity filter designs → EKF3 may recover faster but be more sensitive to large glitches, EKF2 may be more stable but slower to correct. Tests both independently. |
-
----
-
-## 14. GPSGlitchAuto — EKF Status Monitoring + Heading Recovery
-
-**Date:** 2026-11-06
-**Files:** `arducopter.py` — `GPSGlitchAuto()`
-
-### How it works
-
-Monitors `EKF_NEXT` message during the glitch phase, tracking `ekf_err_bits` error flags. After glitch removal, waits 10 seconds and samples 20 EKF_NEXT messages to verify error bits clear. Also tracks heading during glitch to detect yaw realignment.
-
-### Bugs this catches
-
-| Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
-| **EKF degradation during glitch** | EKF enters degraded mode (dead reckoning) during GPS glitch | GPS position innovation exceeds all thresholds → EKF rejects all GPS → enters `ESTIMATOR_CONST_POS_MODE` → vehicle navigates by dead reckoning → position error grows unbounded → may trigger fence or RTL. Error bit monitoring catches this before it causes excursion. |
-| **EKF error bits persist after recovery** | EKF doesn't clear error flags after GPS is restored | EKF detects GPS glitch → sets error bits → glitch removed → but error bits don't clear because timeout hasn't elapsed or because of a logic bug. Vehicle may fly in degraded mode without pilot awareness. |
-| **GPS glitch causing compass interference** | GPS yaw jump conflicts with compass reading | GPS provides heading during compass sensor timeout → GPS heading is wrong due to glitched velocity → EKF trusts GPS → compass gets calibrated to wrong heading → after recovery, compass reading is offset → EKF gets conflicting heading sources. |
-
----
-
-## 15. ModeLoiter Position Tolerance Tightening (5m → 3m)
-
-**Date:** 2026-11-06
-**Files:** `arducopter.py` — `ModeLoiter()`
-
-### How it works
-
-Position hold tolerance tightened from 5m to 3m radius. This is a 10-second loiter hold test — the vehicle should be able to hold within 3m with properly tuned PID gains and healthy GPS/compass.
-
-### Bugs this catches
-
-| Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
-| **Loiter oscillation** | Vehicle oscillates within loiter target but never settles | Loiter PID gains too aggressive → vehicle oscillates ±4m around position → passes 5m tolerance but fails 3m check. Catches tuning issues or sensor noise amplification. |
-| **GPS drift during loiter** | GPS position report slowly drifts → vehicle follows | GPS module has warmup drift or multipath error → reported position drifts 2m/s → vehicle follows the drift → position change exceeds 3m in 10s. Catches GPS quality issues. |
-| **Wind sensitivity** | Steady wind pushes vehicle outside tighter tolerance | 5m/s crosswind with weak position controller → vehicle drifts 4m from home → passes 5m tolerance but fails 3m check. Catches wind rejection tuning issues. |
-| **EKF position filter divergence** | EKF position filter gain too low → slow to reject bad GPS | EKF position filter time constant too long → when GPS momentarily corrupts → EKF takes several seconds to correct → vehicle follows EKF position error → loiter drifts beyond 3m. |
-
----
-
-## 16. BaroDriftSensitivity — New Test for Barometer Drift Design Issue
-
-**Date:** 2026-11-06
-**Files:** `arducopter.py` — `BaroDriftSensitivity()`
-
-### How it works
-
-New test that introduces `-0.35 m/s` barometer drift during AltHold mode, monitors altitude response, removes drift, and verifies the vehicle recovers to stable altitude. This catches the cumulative barometer drift design issue where `total_alt_drift` in `SITL_Baro.cpp` accumulates without bound.
-
-### Bugs this catches
-
-| Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
-| **Cumulative baro drift causing altitude excursion** | Barometer altitude drifts → EKF trusts it → vehicle climbs/descends to compensate | `SIM_BARO_DRIFT=-0.35` applied → after 20s, baro reads ~7m low → EKF trusts this as truth → position controller commands climb to reach drifted target → vehicle climbs 7m+ above original altitude. |
-| **EKF no validation against physics reference** | EKF has no cross-check against FDM altitude | EKF fuses baro altitude as truth without comparing to GPS-derived or FDM altitude → when baro drifts, EKF drifts with it → no mechanism to detect the baro is wrong. This is a design issue in EKF integration. |
-| **Drift recovery after parameter reset** | After SIM_BARO_DRIFT=0, EKF may take time to re-stabilize | Drift parameter removed → baro suddenly reads correctly → EKF has accumulated position error from 20s of drifted altitude → needs time to converge back to true altitude → test checks recovery within 15s window. |
-| **Baro glitch vs drift confusion** | EKF can't distinguish between gradual baro drift and gradual altitude change | Cumulative drift models real barometer behavior where pressure drifts due to temperature changes → but EKF can't tell this from the vehicle actually descending → position controller fights the "real" altitude change. |
-
----
-
-## Updated Critical Bugs Likely to Be Found First
+## Critical Bugs Likely to Be Found First
 
 Based on the severity and immediacy of detection, these are the most likely to surface immediately:
 
@@ -418,12 +321,6 @@ Based on the severity and immediacy of detection, these are the most likely to s
 
 3. **FLIP mode incomplete rotation** — `ModeFlip` with 15° tolerance + minimum_duration will detect if the flip stalls partway. This catches insufficient PID authority for large angle changes.
 
-4. **EKF heading lock from GPS glitch** — `GPSGlitchLoiter` heading tracking will catch heading that doesn't recover after glitch removal. **This is the bug proven in `pre_existing_bug_evidence.md`** — the `realignYawGPS()` function uses glitched velocity for yaw alignment without quality gate.
+4. **GPS glitch causing EKF position reset** — `GPSGlitchLoiter` position tracking will detect any EKF behavior where a GPS position jump causes the vehicle to fly >20m from start.
 
-5. **GPS glitch causing EKF position excursion** — `GPSGlitchLoiter2` tightened to 5m will detect any EKF behavior where a GPS position jump causes the vehicle to fly >5m from start.
-
-6. **Cumulative baro drift altitude excursion** — `BaroDriftSensitivity` will detect any case where AltHold allows unbounded altitude drift when barometer drift is introduced.
-
-7. **EKF error bits persisting after GPS recovery** — `GPSGlitchAuto` EKF monitoring will detect error flags that don't clear after glitch removal, indicating incomplete EKF recovery.
-
-8. **Loiter position hold degradation** — `ModeLoiter` tightened to 3m will detect loiter oscillation, GPS drift, wind sensitivity, or EKF filter divergence.
+5. **Optical flow speed limit bypass** — `OpticalFlowLimits` hard 10 m/s cap catches any code path that allows speeds >10 m/s during flow navigation.
