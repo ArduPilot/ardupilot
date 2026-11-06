@@ -360,9 +360,9 @@ void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vec
 
         // Shape the attitude error into angular velocity and acceleration targets with configured
         // rate and acceleration limits and time constants (roll/pitch use _input_tc, yaw uses _rate_y_tc).
-        attitude_command_model(wrap_PI(attitude_error_angle.x), 0.0, _ang_vel_target_rads.x, _ang_accel_target_rads.x, radians(_ang_vel_roll_max_degs), get_accel_roll_max_radss(), _input_tc, _dt_s);
-        attitude_command_model(wrap_PI(attitude_error_angle.y), 0.0, _ang_vel_target_rads.y, _ang_accel_target_rads.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
-        attitude_command_model(wrap_PI(attitude_error_angle.z), 0.0, _ang_vel_target_rads.z, _ang_accel_target_rads.z, radians(_ang_vel_yaw_max_degs), get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
+        attitude_command_model(wrap_PI(attitude_error_angle.x), 0.0, _ang_vel_target_rads.x, _ang_accel_target_radss.x, radians(_ang_vel_roll_max_degs), get_accel_roll_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(wrap_PI(attitude_error_angle.y), 0.0, _ang_vel_target_rads.y, _ang_accel_target_radss.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(wrap_PI(attitude_error_angle.z), 0.0, _ang_vel_target_rads.z, _ang_accel_target_radss.z, radians(_ang_vel_yaw_max_degs), get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
     } else {
         // No shaping: directly set attitude and angular velocity targets
         _attitude_target = attitude_desired_quat;
@@ -420,23 +420,23 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float e
 
         // Convert the body-frame angular acceleration target into an equivalent Euler-angle
         // acceleration target for the current attitude target.
-        Vector3f euler_accel_target_rads;
-        body_to_euler_derivative(_attitude_target, _ang_accel_target_rads, euler_accel_target_rads);
+        Vector3f euler_accel_target_radss;
+        body_to_euler_derivative(_attitude_target, _ang_accel_target_radss, euler_accel_target_radss);
 
         // Shape Euler roll/pitch angle error into Euler rate/acceleration targets.
         // The shaper applies Euler rate/acceleration limits and the configured input time constant.
-        attitude_command_model(wrap_PI(euler_roll_angle_rad - _euler_angle_target_rad.x), 0.0, _euler_rate_target_rads.x, euler_accel_target_rads.x, fabsf(euler_rate_max_rads.x), euler_accel_radss.x, _input_tc, _dt_s);
-        attitude_command_model(wrap_PI(euler_pitch_angle_rad - _euler_angle_target_rad.y), 0.0, _euler_rate_target_rads.y, euler_accel_target_rads.y, fabsf(euler_rate_max_rads.y), euler_accel_radss.y, _input_tc, _dt_s);
+        attitude_command_model(wrap_PI(euler_roll_angle_rad - _euler_angle_target_rad.x), 0.0, _euler_rate_target_rads.x, euler_accel_target_radss.x, fabsf(euler_rate_max_rads.x), euler_accel_radss.x, _input_tc, _dt_s);
+        attitude_command_model(wrap_PI(euler_pitch_angle_rad - _euler_angle_target_rad.y), 0.0, _euler_rate_target_rads.y, euler_accel_target_radss.y, fabsf(euler_rate_max_rads.y), euler_accel_radss.y, _input_tc, _dt_s);
 
         // Shape yaw rate input into Euler yaw rate/acceleration targets, applying the configured yaw rate time constant
         // and limiting Euler acceleration about the yaw axis.
-        attitude_command_model(0.0, euler_yaw_rate_rads, _euler_rate_target_rads.z, euler_accel_target_rads.z, fabsf(euler_rate_max_rads.z), euler_accel_radss.z, _rate_y_tc, _dt_s);
+        attitude_command_model(0.0, euler_yaw_rate_rads, _euler_rate_target_rads.z, euler_accel_target_radss.z, fabsf(euler_rate_max_rads.z), euler_accel_radss.z, _rate_y_tc, _dt_s);
 
         // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
         euler_derivative_to_body(_attitude_target, _euler_rate_target_rads, _ang_vel_target_rads);
 
         // Convert euler angle derivative of desired attitude into a body-frame angular acceleration vector for feedforward
-        euler_derivative_to_body(_attitude_target, euler_accel_target_rads, _ang_accel_target_rads);
+        euler_derivative_to_body(_attitude_target, euler_accel_target_radss, _ang_accel_target_radss);
     } else {
         // No shaping/feedforward: directly update roll/pitch attitude targets and integrate yaw target from yaw rate.
         _euler_angle_target_rad.x = euler_roll_angle_rad;
@@ -449,7 +449,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float e
         // Zero rate and acceleration feedforward targets
         _euler_rate_target_rads.zero();
         _ang_vel_target_rads.zero();
-        _ang_accel_target_rads.zero();
+        _ang_accel_target_radss.zero();
     }
 
     // Call quaternion attitude controller
@@ -496,17 +496,17 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_a
         const Vector3f euler_accel_radss = body_to_euler_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
         const Vector3f euler_rate_max_rads = body_to_euler_limit(_attitude_target, Vector3f{radians(_ang_vel_roll_max_degs), radians(_ang_vel_pitch_max_degs), yaw_rate_max_rads});
 
-        Vector3f euler_accel_target_rads;
-        body_to_euler_derivative(_attitude_target, _ang_accel_target_rads, euler_accel_target_rads);
-        attitude_command_model(wrap_PI(euler_roll_angle_rad - _euler_angle_target_rad.x), 0.0, _euler_rate_target_rads.x, euler_accel_target_rads.x, fabsf(euler_rate_max_rads.x), euler_accel_radss.x, _input_tc, _dt_s);
-        attitude_command_model(wrap_PI(euler_pitch_angle_rad - _euler_angle_target_rad.y), 0.0, _euler_rate_target_rads.y, euler_accel_target_rads.y, fabsf(euler_rate_max_rads.y), euler_accel_radss.y, _input_tc, _dt_s);
-        attitude_command_model(wrap_PI(euler_yaw_angle_rad - _euler_angle_target_rad.z), 0.0, _euler_rate_target_rads.z, euler_accel_target_rads.z, fabsf(euler_rate_max_rads.z), euler_accel_radss.z, _input_tc, _dt_s);
+        Vector3f euler_accel_target_radss;
+        body_to_euler_derivative(_attitude_target, _ang_accel_target_radss, euler_accel_target_radss);
+        attitude_command_model(wrap_PI(euler_roll_angle_rad - _euler_angle_target_rad.x), 0.0, _euler_rate_target_rads.x, euler_accel_target_radss.x, fabsf(euler_rate_max_rads.x), euler_accel_radss.x, _input_tc, _dt_s);
+        attitude_command_model(wrap_PI(euler_pitch_angle_rad - _euler_angle_target_rad.y), 0.0, _euler_rate_target_rads.y, euler_accel_target_radss.y, fabsf(euler_rate_max_rads.y), euler_accel_radss.y, _input_tc, _dt_s);
+        attitude_command_model(wrap_PI(euler_yaw_angle_rad - _euler_angle_target_rad.z), 0.0, _euler_rate_target_rads.z, euler_accel_target_radss.z, fabsf(euler_rate_max_rads.z), euler_accel_radss.z, _input_tc, _dt_s);
 
         // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
         euler_derivative_to_body(_attitude_target, _euler_rate_target_rads, _ang_vel_target_rads);
 
         // Convert euler angle derivative of desired attitude into a body-frame angular acceleration vector for feedforward
-        euler_derivative_to_body(_attitude_target, euler_accel_target_rads, _ang_accel_target_rads);
+        euler_derivative_to_body(_attitude_target, euler_accel_target_radss, _ang_accel_target_radss);
     } else {
         // No shaping/feedforward: directly update roll/pitch attitude targets and update yaw target
         // with optional slew limiting, then zero rate/accel feedforward targets.
@@ -528,7 +528,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_a
         // Zero rate and acceleration feedforward targets
         _euler_rate_target_rads.zero();
         _ang_vel_target_rads.zero();
-        _ang_accel_target_rads.zero();
+        _ang_accel_target_radss.zero();
     }
 
     // Call quaternion attitude controller
@@ -555,19 +555,19 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_rads(float euler_roll_r
 
         // Convert the body-frame angular acceleration target into an equivalent Euler-angle
         // acceleration target for the current attitude target.
-        Vector3f euler_accel_target_rads;
-        body_to_euler_derivative(_attitude_target, _ang_accel_target_rads, euler_accel_target_rads);
+        Vector3f euler_accel_target_radss;
+        body_to_euler_derivative(_attitude_target, _ang_accel_target_radss, euler_accel_target_radss);
 
         // Shape Euler rate inputs into Euler rate/acceleration targets, applying acceleration limits and time constants.
-        attitude_command_model(0.0, euler_roll_rate_rads, _euler_rate_target_rads.x, euler_accel_target_rads.x, 0.0, euler_accel_radss.x, _rate_rp_tc, _dt_s);
-        attitude_command_model(0.0, euler_pitch_rate_rads, _euler_rate_target_rads.y, euler_accel_target_rads.y, 0.0, euler_accel_radss.y, _rate_rp_tc, _dt_s);
-        attitude_command_model(0.0, euler_yaw_rate_rads, _euler_rate_target_rads.z, euler_accel_target_rads.z, 0.0, euler_accel_radss.z, _rate_y_tc, _dt_s);
+        attitude_command_model(0.0, euler_roll_rate_rads, _euler_rate_target_rads.x, euler_accel_target_radss.x, 0.0, euler_accel_radss.x, _rate_rp_tc, _dt_s);
+        attitude_command_model(0.0, euler_pitch_rate_rads, _euler_rate_target_rads.y, euler_accel_target_radss.y, 0.0, euler_accel_radss.y, _rate_rp_tc, _dt_s);
+        attitude_command_model(0.0, euler_yaw_rate_rads, _euler_rate_target_rads.z, euler_accel_target_radss.z, 0.0, euler_accel_radss.z, _rate_y_tc, _dt_s);
 
         // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
         euler_derivative_to_body(_attitude_target, _euler_rate_target_rads, _ang_vel_target_rads);
 
         // Convert euler angle derivative of desired attitude into a body-frame angular acceleration vector for feedforward
-        euler_derivative_to_body(_attitude_target, euler_accel_target_rads, _ang_accel_target_rads);
+        euler_derivative_to_body(_attitude_target, euler_accel_target_radss, _ang_accel_target_radss);
     } else {
         // No shaping/feedforward: integrate Euler angle targets from Euler rate inputs.
         // Pitch is constrained to ±85 degrees to avoid gimbal lock discontinuities.
@@ -578,7 +578,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_rads(float euler_roll_r
         // Zero rate and acceleration feedforward targets
         _euler_rate_target_rads.zero();
         _ang_vel_target_rads.zero();
-        _ang_accel_target_rads.zero();
+        _ang_accel_target_radss.zero();
 
         // Compute quaternion target attitude
         _attitude_target.from_euler(_euler_angle_target_rad.x, _euler_angle_target_rad.y, _euler_angle_target_rad.z);
@@ -617,9 +617,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_ra
     if (_rate_bf_ff_enabled) {
         // Shape body-frame rate inputs into body-frame angular velocity/acceleration targets,
         // applying acceleration limits and configured time constants.
-        attitude_command_model(0.0, roll_rate_bf_rads, _ang_vel_target_rads.x, _ang_accel_target_rads.x, 0.0, get_accel_roll_max_radss(), _rate_rp_tc, _dt_s);
-        attitude_command_model(0.0, pitch_rate_bf_rads, _ang_vel_target_rads.y, _ang_accel_target_rads.y, 0.0, get_accel_pitch_max_radss(), _rate_rp_tc, _dt_s);
-        attitude_command_model(0.0, yaw_rate_bf_rads, _ang_vel_target_rads.z, _ang_accel_target_rads.z, 0.0, get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
+        attitude_command_model(0.0, roll_rate_bf_rads, _ang_vel_target_rads.x, _ang_accel_target_radss.x, 0.0, get_accel_roll_max_radss(), _rate_rp_tc, _dt_s);
+        attitude_command_model(0.0, pitch_rate_bf_rads, _ang_vel_target_rads.y, _ang_accel_target_radss.y, 0.0, get_accel_pitch_max_radss(), _rate_rp_tc, _dt_s);
+        attitude_command_model(0.0, yaw_rate_bf_rads, _ang_vel_target_rads.z, _ang_accel_target_radss.z, 0.0, get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
 
         // Convert body-frame angular velocity into euler angle derivative of desired attitude
         body_to_euler_derivative(_attitude_target, _ang_vel_target_rads, _euler_rate_target_rads);
@@ -633,7 +633,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_ra
         // Zero rate and acceleration feedforward targets
         _euler_rate_target_rads.zero();
         _ang_vel_target_rads.zero();
-        _ang_accel_target_rads.zero();
+        _ang_accel_target_radss.zero();
     }
 
     // Call quaternion attitude controller
@@ -661,9 +661,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_rads(float roll_rate_bf_
 {
     // Shape body-frame rate inputs into body-frame angular velocity/acceleration targets,
     // applying acceleration limits and configured time constants.
-    attitude_command_model(0.0, roll_rate_bf_rads, _ang_vel_target_rads.x, _ang_accel_target_rads.x, 0.0, get_accel_roll_max_radss(), _rate_rp_tc, _dt_s);
-    attitude_command_model(0.0, pitch_rate_bf_rads, _ang_vel_target_rads.y, _ang_accel_target_rads.y, 0.0, get_accel_pitch_max_radss(), _rate_rp_tc, _dt_s);
-    attitude_command_model(0.0, yaw_rate_bf_rads, _ang_vel_target_rads.z, _ang_accel_target_rads.z, 0.0, get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
+    attitude_command_model(0.0, roll_rate_bf_rads, _ang_vel_target_rads.x, _ang_accel_target_radss.x, 0.0, get_accel_roll_max_radss(), _rate_rp_tc, _dt_s);
+    attitude_command_model(0.0, pitch_rate_bf_rads, _ang_vel_target_rads.y, _ang_accel_target_radss.y, 0.0, get_accel_pitch_max_radss(), _rate_rp_tc, _dt_s);
+    attitude_command_model(0.0, yaw_rate_bf_rads, _ang_vel_target_rads.z, _ang_accel_target_radss.z, 0.0, get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
 
     // Update attitude and Euler targets from the current vehicle attitude (used for conditioning mode transitions).
     _ahrs.get_quat_body_to_ned(_attitude_target);
@@ -714,9 +714,9 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_rads(float roll_rate_bf_
 
     // Shape body-frame rate inputs into body-frame angular velocity/acceleration targets,
     // applying acceleration limits and configured time constants.
-    attitude_command_model(0.0, roll_rate_bf_rads, _ang_vel_target_rads.x, _ang_accel_target_rads.x, 0.0, get_accel_roll_max_radss(), _rate_rp_tc, _dt_s);
-    attitude_command_model(0.0, pitch_rate_bf_rads, _ang_vel_target_rads.y, _ang_accel_target_rads.y, 0.0, get_accel_pitch_max_radss(), _rate_rp_tc, _dt_s);
-    attitude_command_model(0.0, yaw_rate_bf_rads, _ang_vel_target_rads.z, _ang_accel_target_rads.z, 0.0, get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
+    attitude_command_model(0.0, roll_rate_bf_rads, _ang_vel_target_rads.x, _ang_accel_target_radss.x, 0.0, get_accel_roll_max_radss(), _rate_rp_tc, _dt_s);
+    attitude_command_model(0.0, pitch_rate_bf_rads, _ang_vel_target_rads.y, _ang_accel_target_radss.y, 0.0, get_accel_pitch_max_radss(), _rate_rp_tc, _dt_s);
+    attitude_command_model(0.0, yaw_rate_bf_rads, _ang_vel_target_rads.z, _ang_accel_target_radss.z, 0.0, get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
 
     // Retrieve current vehicle attitude (body to NED)
     Quaternion attitude_body;
@@ -799,7 +799,7 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw_rad(float roll_angle
     // Zero rate and acceleration feedforward targets (pure attitude step)
     _euler_rate_target_rads.zero();
     _ang_vel_target_rads.zero();
-    _ang_accel_target_rads.zero();
+    _ang_accel_target_radss.zero();
 
     // Run quaternion attitude controller
     attitude_controller_run_quat();
@@ -818,7 +818,7 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_
     // Zero rate and acceleration feedforward targets so the controller cleanly returns to zero rate
     // after the step input is removed.
     _ang_vel_target_rads.zero();
-    _ang_accel_target_rads.zero();
+    _ang_accel_target_radss.zero();
     _euler_rate_target_rads.zero();
 
     // Apply the requested body-frame angular rate step directly to the rate controller input.
@@ -856,11 +856,11 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
     if (_rate_bf_ff_enabled) {
         // Shape roll/pitch attitude error into body-frame angular velocity/acceleration targets,
         // applying configured rate/acceleration limits and input time constant.
-        attitude_command_model(attitude_error.x, 0.0, _ang_vel_target_rads.x, _ang_accel_target_rads.x, radians(_ang_vel_roll_max_degs), get_accel_roll_max_radss(), _input_tc, _dt_s);
-        attitude_command_model(attitude_error.y, 0.0, _ang_vel_target_rads.y, _ang_accel_target_rads.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(attitude_error.x, 0.0, _ang_vel_target_rads.x, _ang_accel_target_radss.x, radians(_ang_vel_roll_max_degs), get_accel_roll_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(attitude_error.y, 0.0, _ang_vel_target_rads.y, _ang_accel_target_radss.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
 
         // Shape yaw rate input into yaw angular velocity/acceleration targets, applying yaw limits and time constant.
-        attitude_command_model(0.0, heading_rate_rads, _ang_vel_target_rads.z, _ang_accel_target_rads.z, yaw_rate_max_rads, get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
+        attitude_command_model(0.0, heading_rate_rads, _ang_vel_target_rads.z, _ang_accel_target_radss.z, yaw_rate_max_rads, get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
     } else {
         // No shaping/feedforward: directly update the attitude target using the thrust-vector correction and yaw increment.
         if (is_positive(yaw_rate_max_rads)) {
@@ -874,7 +874,7 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
         // Zero rate and acceleration feedforward targets
         _euler_rate_target_rads.zero();
         _ang_vel_target_rads.zero();
-        _ang_accel_target_rads.zero();
+        _ang_accel_target_radss.zero();
     }
 
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
@@ -908,9 +908,9 @@ void AC_AttitudeControl::input_thrust_vector_heading_rad(const Vector3f& thrust_
 
         // Shape attitude error and heading rate into body-frame angular velocity/acceleration targets,
         // applying configured rate/acceleration limits and time constants (roll/pitch use _input_tc, yaw uses _rate_y_tc).
-        attitude_command_model(attitude_error.x, 0.0, _ang_vel_target_rads.x, _ang_accel_target_rads.x, radians(_ang_vel_roll_max_degs), get_accel_roll_max_radss(), _input_tc, _dt_s);
-        attitude_command_model(attitude_error.y, 0.0, _ang_vel_target_rads.y, _ang_accel_target_rads.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
-        attitude_command_model(attitude_error.z, heading_rate_rads, _ang_vel_target_rads.z, _ang_accel_target_rads.z, get_slew_yaw_max_rads(), get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
+        attitude_command_model(attitude_error.x, 0.0, _ang_vel_target_rads.x, _ang_accel_target_radss.x, radians(_ang_vel_roll_max_degs), get_accel_roll_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(attitude_error.y, 0.0, _ang_vel_target_rads.y, _ang_accel_target_radss.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(attitude_error.z, heading_rate_rads, _ang_vel_target_rads.z, _ang_accel_target_radss.z, get_slew_yaw_max_rads(), get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
     } else {
         // No shaping/feedforward: directly set the attitude target to the desired attitude.
         _attitude_target = desired_attitude_quat;
@@ -918,7 +918,7 @@ void AC_AttitudeControl::input_thrust_vector_heading_rad(const Vector3f& thrust_
         // Zero rate and acceleration feedforward targets
         _euler_rate_target_rads.zero();
         _ang_vel_target_rads.zero();
-        _ang_accel_target_rads.zero();
+        _ang_accel_target_radss.zero();
     }
 
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
@@ -1131,12 +1131,12 @@ void AC_AttitudeControl::attitude_command_model(float error_angle, float desired
 
 // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
 // This function can be used to predict the delay associated with angle requests.
-void AC_AttitudeControl::command_model_rate_predictor(const Vector2f &error_angle_rad, Vector2f& target_ang_vel_rads, Vector2f& target_ang_accel_rads, float dt) const
+void AC_AttitudeControl::command_model_rate_predictor(const Vector2f &error_angle_rad, Vector2f& target_ang_vel_rads, Vector2f& target_ang_accel_radss, float dt) const
 {
     if (_rate_bf_ff_enabled) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
-        attitude_command_model(wrap_PI(error_angle_rad.x), 0.0, target_ang_vel_rads.x, target_ang_accel_rads.x, radians(_ang_vel_roll_max_degs), get_accel_roll_max_radss(), _input_tc, _dt_s);
-        attitude_command_model(wrap_PI(error_angle_rad.y), 0.0, target_ang_vel_rads.y, target_ang_accel_rads.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(wrap_PI(error_angle_rad.x), 0.0, target_ang_vel_rads.x, target_ang_accel_radss.x, radians(_ang_vel_roll_max_degs), get_accel_roll_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(wrap_PI(error_angle_rad.y), 0.0, target_ang_vel_rads.y, target_ang_accel_radss.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
     } else {
         const float angleP_roll = _p_angle_roll.kP() * _angle_P_scale.x;
         const float angleP_pitch = _p_angle_pitch.kP() * _angle_P_scale.y;
@@ -1257,7 +1257,7 @@ void AC_AttitudeControl::reset_target_and_rate(bool reset_rate)
 
     if (reset_rate) {
         _ang_vel_target_rads.zero();
-        _ang_accel_target_rads.zero();
+        _ang_accel_target_radss.zero();
         _euler_rate_target_rads.zero();
     }
 }
@@ -1275,7 +1275,7 @@ void AC_AttitudeControl::reset_yaw_target_and_rate(bool reset_rate)
     if (reset_rate) {
         // set yaw rate to zero
         _euler_rate_target_rads.z = 0.0f;
-        _ang_accel_target_rads.z = 0.0;
+        _ang_accel_target_radss.z = 0.0;
 
         // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
         euler_derivative_to_body(_attitude_target, _euler_rate_target_rads, _ang_vel_target_rads);

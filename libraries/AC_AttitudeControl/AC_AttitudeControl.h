@@ -433,7 +433,7 @@ public:
 
     // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
     // This function can be used to predict the delay associated with angle requests.
-    void command_model_rate_predictor(const Vector2f &error_angle_rad, Vector2f& target_ang_vel_rads, Vector2f& target_ang_accel_rads, float dt) const;
+    void command_model_rate_predictor(const Vector2f &error_angle_rad, Vector2f& target_ang_vel_rads, Vector2f& target_ang_accel_radss, float dt) const;
 
     // Limits angular velocity in roll, pitch, and yaw.
     // Roll and pitch are coupled: when both limits are set, they are scaled
@@ -625,7 +625,11 @@ protected:
     // the attitude controller as an angular velocity vector, in radians per second in
     // the target attitude frame.
     Vector3f            _ang_vel_target_rads;
-    Vector3f            _ang_accel_target_rads;
+
+    // This represents the angular acceleration of the target (setpoint) attitude used in
+    // the attitude controller as an angular acceleration vector, in radians per second
+    // per second in the target attitude frame.
+    Vector3f            _ang_accel_target_radss;
 
     // This represents the angular velocity in radians per second in the body frame, used in the angular
     // velocity controller and most importantly the rate controller.
