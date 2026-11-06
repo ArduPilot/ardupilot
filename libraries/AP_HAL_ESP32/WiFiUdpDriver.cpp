@@ -26,6 +26,7 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 
 #include "lwip/err.h"
 #include "lwip/sockets.h"
@@ -247,10 +248,16 @@ void WiFiUdpDriver::initialize_wifi()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    strncpy_noterm((char *)wifi_config.ap.ssid, WIFI_SSID, sizeof(wifi_config.ap.ssid));
+    uint8_t mac[6] = {0};
+    esp_err_t ret_mac = esp_efuse_mac_get_custom(mac);
+    if (ret_mac != ESP_OK) {
+        ret_mac = esp_efuse_mac_get_default(mac);
+    }
+    snprintf((char *)wifi_config.ap.ssid, sizeof(wifi_config.ap.ssid), "%s_%02X%02X%02X",
+             WIFI_SSID, mac[3], mac[4], mac[5]);
     strncpy((char *)wifi_config.ap.password, WIFI_PWD, sizeof(wifi_config.ap.password) - 1);
-    wifi_config.ap.ssid_len = MIN(strlen(WIFI_SSID), sizeof(wifi_config.ap.ssid)),
-    wifi_config.ap.max_connection = WIFI_MAX_CONNECTION,
+    wifi_config.ap.ssid_len = strlen((char *)wifi_config.ap.ssid);
+    wifi_config.ap.max_connection = WIFI_MAX_CONNECTION;
     wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
     wifi_config.ap.channel = WIFI_CHANNEL;
 
