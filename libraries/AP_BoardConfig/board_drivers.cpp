@@ -25,6 +25,7 @@
 #include "AP_BoardConfig.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/crc.h>
+#include <AP_Baro/AP_Baro_MS5611.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -206,9 +207,16 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
     }
 
     uint16_t crc_read = prom[7]&0xf;
-    prom[7] &= 0xff00;
+    uint16_t crc_check[8];
+    memcpy(crc_check, prom, sizeof(crc_check));
+    crc_check[7] &= 0xff00;
 
-    if (crc_read != crc_crc4(prom) || all_zero) {
+    bool crc_ok = crc_read == crc_crc4(crc_check);
+#if AP_BARO_PROM_BACKUP_ENABLED
+    crc_ok = crc_ok || AP_Baro_MS56XX::find_stored_prom(prom, dev->get_bus_id_devtype(0));
+#endif
+
+    if (!crc_ok || all_zero) {
 #if SPI_PROBE_DEBUG
         hal.console->printf("%s: crc fail\n", devname);
 #endif
