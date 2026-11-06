@@ -2798,9 +2798,14 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             '',
         ]
     if tick is not None and int(tick) in family['timers']:
+        # STM32_Timer drops a compare match at CCR1 == 0 and at CCR1 == ARR;
+        # a missed tickless alarm sleeps a whole counter wrap, and on 16-bit
+        # system timers ChibiOS then loses 65.536 ms of system time
         lines += [
             'sysbus SetHookBeforePeripheralWrite sysbus.timer%s '
-            '"if offset == 0x34 and value == 0: value = 1"' % tick,
+            '"value = 1 if offset == 0x34 and value == 0 else '
+            '(self.Limit - 1 if offset == 0x34 and value == self.Limit else value)"'
+            % tick,
             '',
         ]
     elif tick is not None:

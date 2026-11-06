@@ -577,7 +577,7 @@ def test_timer_actuators_start_at_output_one_without_iomcu(tmp_path):
     assert '    output4: 1\n' in repl
 
 
-def test_system_timer_compare_zero_is_kept_enabled(tmp_path):
+def test_system_timer_compare_zero_and_reload_are_kept_enabled(tmp_path):
     generated = gen_board.generate(
         launch.ROOT, 'KakuteF4', tmp_path / 'generated',
         state_dir=tmp_path)
@@ -585,7 +585,9 @@ def test_system_timer_compare_zero_is_kept_enabled(tmp_path):
     resc = generated['resc'].read_text()
     assert (
         'sysbus SetHookBeforePeripheralWrite sysbus.timer4 '
-        '"if offset == 0x34 and value == 0: value = 1"' in resc
+        '"value = 1 if offset == 0x34 and value == 0 else '
+        '(self.Limit - 1 if offset == 0x34 and value == self.Limit else value)"'
+        in resc
     )
 
 
