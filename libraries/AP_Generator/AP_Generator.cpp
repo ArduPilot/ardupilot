@@ -95,7 +95,8 @@ __INITFUNC__ void AP_Generator::init()
 
 #if AP_GENERATOR_LOWEHEISER_ENABLED
         case Type::LOWEHEISER:
-            _driver_ptr = NEW_NOTHROW AP_Generator_Loweheiser(*this);
+            _loweheiser_ptr = NEW_NOTHROW AP_Generator_Loweheiser(*this);
+            _driver_ptr = _loweheiser_ptr;
             break;
 #endif // AP_GENERATOR_LOWEHEISER_ENABLED
 
@@ -143,10 +144,7 @@ enum AP_Generator::Type AP_Generator::type() const
 #if AP_GENERATOR_LOWEHEISER_ENABLED
 AP_Generator_Loweheiser *AP_Generator::get_loweheiser()
 {
-    if (type() != Type::LOWEHEISER) {
-        return nullptr;
-    }
-    return (AP_Generator_Loweheiser*)_driver_ptr;
+    return _loweheiser_ptr;
 }
 #endif
 
