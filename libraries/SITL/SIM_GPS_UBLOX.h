@@ -29,6 +29,7 @@ public:
         M8N_SPG301 = 4,  // NEO-M8N, SPG 3.01, flash
         M9N_SPG404 = 5,  // NEO-M9N, SPG 4.04, flash
         M10_SPG510 = 6,  // M10, ROM SPG 5.10
+        X20P_HPG211 = 7, // ZED-X20P, HPG 2.11, flash
     };
 
 private:
@@ -95,6 +96,14 @@ private:
     };
     static const ConfigKeyInfo config_keys[10];
 
+    // the X20 is configured only through CFG-VALGET/VALSET/VALDEL;
+    // these are the keys the autopilot uses, with their defaults
+    struct X20KeyInfo {
+        uint32_t key;
+        uint32_t default_value;
+    };
+    static const X20KeyInfo x20_keys[46];
+
     // receiver configuration; RAM and saved copies of this are kept,
     // and the saved copy is stored in a file so it survives a reboot
     struct PACKED Config {
@@ -107,6 +116,8 @@ private:
         uint8_t gnss_len;
         uint8_t gnss[4+8*7];
         uint8_t key_value[ARRAY_SIZE(config_keys)];
+        uint32_t x20_value[ARRAY_SIZE(x20_keys)];
+        uint64_t x20_set;  // x20_keys set in this layer (saved copy only)
     };
     struct PACKED SavedConfig {
         uint32_t magic;
@@ -135,6 +146,14 @@ private:
     void send_mon_ver();
     void send_cfg_prt();
     void send_svinfo(uint32_t tow_ms, uint8_t num_sats);
+
+    int8_t x20_key_index(uint32_t key) const;
+    uint32_t x20_value(const Config &cfg, uint32_t key) const;
+    bool x20_signal_config_valid(const Config &cfg) const;
+    void x20_handle_valget(const uint8_t *payload, uint16_t len);
+    void x20_handle_valset(const uint8_t *payload, uint16_t len);
+    void x20_handle_valdel(const uint8_t *payload, uint16_t len);
+    void send_mon_comms();
 
     bool config_loaded;
     Model loaded_model;
