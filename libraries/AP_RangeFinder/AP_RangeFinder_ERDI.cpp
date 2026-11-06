@@ -101,11 +101,17 @@ bool AP_RangeFinder_ERDI::get_reading(float &reading_m)
         linebuf_len = 0;
         last_valid_frame_ms = now_ms;
 
-        if (raw == ERDI_DIST_OUT_OF_RANGE) {
+        const float frame_m = raw * scale;
+        if (raw == ERDI_DIST_OUT_OF_RANGE || frame_m > max_distance()) {
+            // 0xFFFF is the H series out-of-range code. A factory bench
+            // log of an LRF50H also showed occasional frames with a valid
+            // checksum but a distance far beyond the rated range, so any
+            // frame past RNGFNDx_MAX is counted as out-of-range instead of
+            // being averaged into the reading.
             count_out_of_range++;
             continue;
         }
-        sum_m += raw * scale;
+        sum_m += frame_m;
         count++;
     }
 
