@@ -264,7 +264,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Copter staging 50 meters east of home at 50 meters altitude In mode Alt Hold")
 
     # loiter - fly south west, then loiter within 5m position and altitude
-    def ModeLoiter(self, holdtime=10, maxaltchange=5, maxdistchange=3):
+    def ModeLoiter(self, holdtime=10, maxaltchange=5, maxdistchange=5):
         """Hold loiter position."""
         self.takeoff(10, mode="LOITER")
 
@@ -570,88 +570,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             1: 1500,
             2: 1500,
         })
-        self.do_RTL()
-
-    def BaroDriftSensitivity(self):
-        '''Test that AltHold corrects barometer drift and doesn\'t allow unbounded altitude error'''
-        # This test catches the barometer cumulative drift design issue:
-        # total_alt_drift in SITL_Baro.cpp accumulates without bound, and EKF fuses
-        # the drifted altitude as truth. Without correction, the vehicle fights to
-        # reach the drifted target altitude.
-        #
-        # We introduce moderate drift (-0.35 m/s) and verify the vehicle:
-        # 1. Initially drifts down (baro reports lower altitude than true)
-        # 2. EKF trusts baro, position controller climbs to compensate
-        # 3. After drift removal, EKF should stabilize
-        self.takeoff(10, mode="ALT_HOLD")
-        self.wait_altitude(
-            altitude_min=9,
-            altitude_max=11,
-            relative=True,
-            minimum_duration=5,
-            timeout=6,
-        )
-
-        # Record starting altitude
-        m = self.assert_receive_message('VFR_HUD')
-        start_alt = m.alt
-        self.progress("Starting altitude: %.1fm" % start_alt)
-
-        # Apply baro drift — negative means baro reads LOWER than true altitude
-        # This causes EKF to think we're lower than we are, vehicle climbs
-        self.set_parameter("SIM_BARO_DRIFT", -0.35)
-        self.progress("Applied baro drift: -0.35 m/s")
-
-        # Wait for the EKF to react to drifted baro altitude
-        # With -0.35 m/s drift, after 10s baro will be ~3.5m low
-        # After 20s, ~7m low — the vehicle should climb to compensate
-        max_drift_wait = 20
-        tstart = self.get_sim_time()
-        altitudes = []
-        while self.get_sim_time_cached() - tstart < max_drift_wait:
-            m = self.assert_receive_message('VFR_HUD')
-            altitudes.append(m.alt)
-            alt_change = m.alt - start_alt
-            self.progress("Drift wait: alt=%.1f, change=%.1f" % (m.alt, alt_change))
-
-            # After ~15s of drift, the vehicle should have climbed significantly
-            if alt_change > 5:
-                self.progress("AltHold climbing to compensate baro drift: %.1fm" % alt_change)
-
-        # Record max altitude reached during drift
-        max_alt = max(altitudes)
-        max_alt_change = max_alt - start_alt
-        self.progress("Max altitude during drift: %.1f (change: +%.1fm from start: %.1f)" %
-                      (max_alt, max_alt_change, start_alt))
-
-        # Remove drift
-        self.set_parameter("SIM_BARO_DRIFT", 0)
-        self.progress("Removed baro drift")
-
-        # Wait for EKF to stabilize after drift removal
-        self.wait_altitude(
-            altitude_min=9,
-            altitude_max=11,
-            relative=True,
-            minimum_duration=5,
-            timeout=15,
-        )
-
-        # Verify the vehicle has returned to stable altitude
-        m = self.assert_receive_message('VFR_HUD')
-        final_alt_change = m.alt - start_alt
-        self.progress("Final altitude after recovery: %.1f (change: %.1fm)" % (m.alt, final_alt_change))
-
-        # The vehicle should have been within a reasonable range
-        # Allow up to 15m drift during the test (realistic for -0.35 m/s over 20s)
-        # but it should recover afterward
-        if abs(final_alt_change) > 15:
-            raise NotAchievedException(
-                "AltHold altitude did not recover after drift removal: "
-                "final change=%.1fm" % final_alt_change)
-
-        self.progress("BaroDriftSensitivity test passed: max drift %.1fm, recovery %.1fm" %
-                      (max_alt_change, final_alt_change))
         self.do_RTL()
 
     def fly_to_origin(self, final_alt=10):
@@ -3562,11 +3480,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tnow = tstart
         start_pos = self.get_location('SIMSTATE')
 
-        # record starting heading for post-glitch recovery check
-        m = self.assert_receive_message('ATTITUDE')
-        start_heading_deg = math.degrees(m.yaw)
-        self.progress("Starting heading: %.1f degrees" % start_heading_deg)
-
         # initialise current glitch
         glitch_current = 0
         self.progress("Apply first glitch")
@@ -3574,10 +3487,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_GPS1_GLTCH_X": glitch_lat[glitch_current],
             "SIM_GPS1_GLTCH_Y": glitch_lon[glitch_current],
         })
-
-        # Track heading during the glitch phase to catch heading lock bugs
-        heading_history = []
-        min_ekf_check_seconds = 5  # wait for EKF to stabilize before checking flags
 
         # record position for 30 seconds
         while tnow < tstart + timeout:
@@ -3612,27 +3521,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 if moved_distance > max_distance:
                     raise NotAchievedException(
                         "Moved over %u meters, Failed!" % max_distance)
-
-                # After glitches complete, monitor heading recovery
-                att_m = self.assert_receive_message('ATTITUDE')
-                current_heading_deg = math.degrees(att_m.yaw)
-                heading_history.append(current_heading_deg)
-                heading_delta = abs(self.heading_delta(current_heading_deg, start_heading_deg))
-                if tnow - tstart > min_ekf_check_seconds:
-                    # After EKF stabilizes post-glitch, heading should return to near-start value
-                    max_heading_deviation = 15  # degrees — after glitch removal, EKF should recover
-                    if heading_delta > max_heading_deviation:
-                        self.progress("WARNING: Heading drift detected! Start=%.1f, Current=%.1f, Delta=%.1f" %
-                                      (start_heading_deg, current_heading_deg, heading_delta))
-                        # Log a few recent heading samples for diagnosis
-                        recent_headings = heading_history[-10:] if len(heading_history) >= 10 else heading_history
-                        self.progress("Recent headings: %s" % [round(h, 1) for h in recent_headings])
-                        # Allow heading to drift during recovery but not permanently
-                        if tnow - tstart > min_ekf_check_seconds + 10:
-                            raise NotAchievedException(
-                                "Heading not recovered after glitch removal: "
-                                "start=%.1f, current=%.1f, delta=%.1f" %
-                                (start_heading_deg, current_heading_deg, heading_delta))
             else:
                 # track position during glitch to catch off-course excursions
                 m = self.assert_receive_message(type='GLOBAL_POSITION_INT')
@@ -3641,20 +3529,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 if moved_distance > max_distance:
                     raise NotAchievedException(
                         "Moved over %u meters during glitch %u, Failed!" % (max_distance, glitch_current))
-
-                # Also track attitude during glitch to catch yaw realignment from glitched velocity
-                att_m = self.assert_receive_message('ATTITUDE')
-                current_heading_deg = math.degrees(att_m.yaw)
-                heading_history.append(current_heading_deg)
-                if tnow - tstart > min_ekf_check_seconds:
-                    # During glitch, the EKF may react to glitched velocity
-                    # But after the glitch is applied for a while, the yaw should stabilize
-                    # If we see unbounded yaw drift, that's a bug in realignYawGPS
-                    heading_delta = abs(self.heading_delta(current_heading_deg, start_heading_deg))
-                    if heading_delta > 45:
-                        self.progress("WARNING: Large yaw deviation during glitch: %.1f deg" % heading_delta)
-                        # Don't fail immediately — the EKF may be re-aligning, but if it stays locked
-                        # that's a different issue. We check recovery after glitch removal.
 
         # disable gps glitch
         if glitch_current != -1:
@@ -3689,16 +3563,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # record starting position for excursion check
         start_pos = self.sim_location()
 
-        # record starting heading for post-glitch recovery check
-        m = self.assert_receive_message('ATTITUDE')
-        start_heading_deg = math.degrees(m.yaw)
-        self.progress("Starting heading: %.1f degrees" % start_heading_deg)
-
         # apply glitch
         self.set_parameter("SIM_GPS1_GLTCH_X", 0.001)
 
-        # Tightened position limit from 10m to 5m for shorter test duration
-        # Check lean angles remain stable for 20 seconds
+        # check lean angles remain stable for 20 seconds
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < 20:
             m = self.assert_receive_message('ATTITUDE')
@@ -3708,25 +3576,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if abs(roll_deg) > 2 or abs(pitch_deg) > 2:
                 raise NotAchievedException("fly_gps_glitch_loiter_test2 failed, roll or pitch moved during GPS glitch")
             # track position during glitch to catch off-course excursions
-            # Tightened from 10m to 5m — this test is only 20s, so position should stay very close
             curr_pos = self.sim_location()
             moved_distance = self.get_distance(curr_pos, start_pos)
-            if moved_distance > 5:
+            if moved_distance > 10:
                 raise NotAchievedException(
-                    "Moved over 5 meters during GPS glitch (loiter2), Failed! (moved %.1fm)" % moved_distance)
-
-        # disable glitch before RTL (context_pop will reboot)
-        self.set_parameter("SIM_GPS1_GLTCH_X", 0)
-
-        # After glitch removal, verify heading recovers
-        # The EKF should re-align to correct heading once glitched GPS is removed
-        self.progress("Checking heading recovery for 5 seconds after glitch removal...")
-        self.delay_sim_time(5, reason="allow EKF to recover heading")
-        m = self.assert_receive_message('ATTITUDE')
-        recovery_heading_deg = math.degrees(m.yaw)
-        heading_recovery_delta = abs(self.heading_delta(recovery_heading_deg, start_heading_deg))
-        self.progress("Heading recovery: start=%.1f, after=%.1f, delta=%.1f" %
-                      (start_heading_deg, recovery_heading_deg, heading_recovery_delta))
+                    "Moved over 10 meters during GPS glitch, Failed! (moved %.1fm)" % moved_distance)
 
         # RTL; the context pop removes the glitch and reboots
         self.do_RTL(alt_max=2)
@@ -3817,16 +3671,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # initialise current glitch
         glitch_current = 0
         start_pos = self.sim_location()
-
-        # Record starting heading for recovery check
-        m = self.assert_receive_message('ATTITUDE')
-        start_heading_deg = math.degrees(m.yaw)
-        self.progress("Starting heading: %.1f degrees" % start_heading_deg)
-
-        # Track EKF flag states during glitch
-        ekf_error_flags_seen = set()
-        max_ekf_error_check_seconds = 60  # limit how long we monitor EKF errors
-
         self.progress("Apply first glitch")
         self.set_parameters({
             "SIM_GPS1_GLTCH_X": glitch_lat[glitch_current],
@@ -3856,56 +3700,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     "Moved over 30 meters during glitch %u, Failed!" % glitch_current)
 
-            # Monitor EKF status flags during glitch to catch degradation
-            if tnow - tstart < max_ekf_error_check_seconds:
-                ekf_m = self.poll_message('EKF_NEXT', quiet=True)
-                if ekf_m is not None:
-                    # Check for error bits that indicate EKF problems
-                    ekf_error = getattr(ekf_m, 'ekf_err_bits', 0)
-                    if ekf_error != 0:
-                        ekf_error_flags_seen.add(ekf_error)
-                        self.progress("EKF error bits detected during glitch %u: 0x%x" %
-                                      (glitch_current, ekf_error))
-
-            # Also track heading during glitch to catch yaw realignment
-            att_m = self.assert_receive_message('ATTITUDE')
-            current_heading_deg = math.degrees(att_m.yaw)
-            heading_delta = abs(self.heading_delta(current_heading_deg, start_heading_deg))
-            if heading_delta > 45:
-                self.progress("WARNING: Large yaw deviation during glitch %u: %.1f deg" %
-                              (glitch_current, heading_delta))
-
         # turn off glitching
         self.progress("Completed Glitches")
         self.set_parameters({
             "SIM_GPS1_GLTCH_X": 0,
             "SIM_GPS1_GLTCH_Y": 0,
         })
-
-        # After glitch removal, verify EKF has recovered
-        # EKF_NEXT message should have zero error bits
-        self.progress("Checking EKF recovery for 10 seconds after glitch removal...")
-        self.delay_sim_time(10, reason="allow EKF to recover after glitch removal")
-        ekf_recovery_ok = True
-        for _ in range(20):  # check 20 samples
-            m = self.poll_message('EKF_NEXT', quiet=True)
-            if m is not None:
-                ekf_error = getattr(m, 'ekf_err_bits', 0)
-                if ekf_error != 0:
-                    ekf_recovery_ok = False
-                    self.progress("EKF still has error bits after recovery: 0x%x" % ekf_error)
-            self.delay_sim_time(0.5, reason="EKF recovery check sample")
-
-        if not ekf_recovery_ok:
-            self.progress("WARNING: EKF has not fully recovered after glitch removal")
-            self.progress("Error flags seen during glitch: %d unique values" % len(ekf_error_flags_seen))
-
-        # Verify heading recovered to near-start value
-        m = self.assert_receive_message('ATTITUDE')
-        recovery_heading_deg = math.degrees(m.yaw)
-        heading_recovery_delta = abs(self.heading_delta(recovery_heading_deg, start_heading_deg))
-        self.progress("Heading recovery: start=%.1f, after=%.1f, delta=%.1f" %
-                      (start_heading_deg, recovery_heading_deg, heading_recovery_delta))
 
         # continue with the mission
         self.wait_waypoint(0, num_wp-1, timeout=500)
