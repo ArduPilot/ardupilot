@@ -4572,8 +4572,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 continue
             elif mtype == 'XKF1':
                 vd.append((t, m.VD))
-            elif m.Valid:
-                xkfa.append((t, m.HAgl))
+            else:
+                xkfa.append((t, m.Valid, m.HAgl))
         if len(landed) < landings:
             raise NotAchievedException("%u LAND_COMPLETE events in the log, not %u" % (len(landed), landings))
         # max_lift_m: 0.09-0.25 m measured with the floor fused, 2.45-2.57 m on the landings
@@ -4584,13 +4584,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             descent = max([v for (t, v) in vd if landed_s - 3 < t < landed_s] or [0])
             if descent < 1.0:
                 raise NotAchievedException("touchdown at %.2f m/s, too slow to test this" % descent)
+            # every sample has to be valid and finite, or the landing passes on the few that are;
+            # XKFA logs at 10 Hz armed and 5 Hz disarmed, and 100 samples were measured here
+            window = [s for s in xkfa if landed_s < s[0] < landed_s + 10]
+            if len(window) < 50:
+                raise NotAchievedException("only %u AGL KF samples in the 10 s after the touchdown at %.1f s" %
+                                           (len(window), landed_s))
+            if not all(valid and math.isfinite(h) for (t, valid, h) in window):
+                raise NotAchievedException("AGL KF invalid, or its height non-finite, after the touchdown at %.1f s" %
+                                           landed_s)
             # both lists are in time order, so walk the range finder alongside the AGL KF
             worst = None
             j = 0
-            for (t, h) in xkfa:
+            for (t, valid, h) in window:
                 while j + 1 < len(rfnd) and rfnd[j + 1][0] <= t:
                     j += 1
-                if not (landed_s < t < landed_s + 10) or len(rfnd) == 0 or rfnd[j][0] > t:
+                if len(rfnd) == 0 or rfnd[j][0] > t:
                     continue
                 err = h - rfnd[j][1]
                 worst = err if worst is None else max(worst, err)
