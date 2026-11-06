@@ -371,11 +371,6 @@ class Context(object):
         # snapshot of all tracked parameter values at context_push time;
         # key=param_name, value=float/int; used for post-test validation
         self.param_snapshot = {}
-        # full parameter snapshot at context_push time; set to dict of
-        # {name: value} when snapshot_all_params=True, else None.
-        # On context_pop(), any parameter that differs from this snapshot
-        # is restored to its snapshot value.
-        self.param_snapshot_all = None
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -7175,8 +7170,7 @@ class TestSuite(abc.ABC):
         if name not in already:
             self.context_get().preserved_attributes.append((name, getattr(self, name)))
 
-    def context_push(self, snapshot_params=False, param_names=None,
-                     snapshot_all_params=False):
+    def context_push(self, snapshot_params=False, param_names=None):
         """Save a copy of the parameters.
 
         Args:
@@ -7188,10 +7182,6 @@ class TestSuite(abc.ABC):
                 snapshot. If None and snapshot_params is True, no specific
                 names are recorded (snapshot is empty but tracking is
                 enabled for any params modified during this context).
-            snapshot_all_params: If True, download ALL parameters from the
-                vehicle at context push time and restore any that differ on
-                context pop. This provides comprehensive test isolation but
-                adds ~2-5s overhead per context push. Defaults to False.
         """
         context = Context()
         self.contexts.append(context)
@@ -7210,16 +7200,6 @@ class TestSuite(abc.ABC):
             # param_modifications during set_parameters())
             if param_names:
                 context.param_snapshot = self.get_parameters(param_names)
-
-        if snapshot_all_params:
-            # Download all parameters from vehicle for full isolation
-            self.progress("Taking full parameter snapshot for context")
-            try:
-                context.param_snapshot_all = self.download_parameters(
-                    self.sysid_thismav(), 1)[0]
-            except Exception as e:
-                self.progress("Parameter snapshot failed: %s" % str(e))
-                context.param_snapshot_all = None
 
     def context_backup_file(self, path):
         '''snapshot file contents and mode; on context_pop() the original
@@ -7474,41 +7454,6 @@ class TestSuite(abc.ABC):
             self.progress("Parameter snapshot failed: %s" % str(e))
             return None
 
-    def _restore_params_from_snapshot(self, snapshot):
-        """Restore parameters that differ from a snapshot taken at context push.
-
-        Compares current parameter values against the provided snapshot dict
-        and restores any that have changed. Skips parameters whose shape
-        changed (appeared or vanished due to enable-style params like
-        BATT_MONITOR or CAN_P1_DRIVER).
-
-        Args:
-            snapshot: dict of {param_name: param_value} from snapshot time
-        """
-        try:
-            current = self.download_parameters(self.sysid_thismav(), 1)[0]
-        except Exception as e:  # noqa: BLE001
-            self.progress("Failed to compare params against snapshot: %s" % str(e))
-            return
-
-        restore = {}
-        for name, snapshot_value in snapshot.items():
-            if name not in current:
-                # Parameter was removed (enable-style param reshaped tree)
-                continue
-            current_value = current[name]
-            if abs(snapshot_value - current_value) > max(
-                    abs(snapshot_value), abs(current_value)) * 1e-6:
-                restore[name] = snapshot_value
-
-        if restore:
-            self.progress(
-                "Restoring %u parameter(s) from context snapshot" % len(restore))
-            try:
-                self.set_parameters(restore, add_to_context=False, verbose=False)
-            except Exception as e:  # noqa: BLE001
-                self.progress("Could not restore all snapshot params: %s" % str(e))
-
     def check_parameter_leaks(self):
         """Report and repair parameters which have drifted from pristine.
 
@@ -7593,13 +7538,6 @@ class TestSuite(abc.ABC):
             dead_parameters_dict[p[0]] = p[1]
         if process_interaction_allowed:
             self.set_parameters(dead_parameters_dict, add_to_context=False)
-
-        # Restore parameters from full snapshot if enabled.
-        # This catches firmware-written parameters or changes made via
-        # means other than set_parameters() that would otherwise leak
-        # into subsequent tests.
-        if process_interaction_allowed and dead.param_snapshot_all:
-            self._restore_params_from_snapshot(dead.param_snapshot_all)
 
         # Validate parameter restoration if we tracked modifications
         if process_interaction_allowed and dead.param_modifications:
