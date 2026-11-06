@@ -2923,7 +2923,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     raise NotAchievedException(
                         "Moved over %u meters, Failed!" % max_distance)
             else:
-                self.drain_mav()
+                # track position during glitch to catch off-course excursions
+                m = self.assert_receive_message(type='GLOBAL_POSITION_INT')
+                curr_pos = self.sim_location()
+                moved_distance = self.get_distance(curr_pos, start_pos)
+                if moved_distance > max_distance:
+                    raise NotAchievedException(
+                        "Moved over %u meters during glitch %u, Failed!" % (max_distance, glitch_current))
 
         # disable gps glitch
         if glitch_current != -1:
@@ -2949,6 +2955,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # wait for vehicle to level
         self.wait_attitude(desroll=0, despitch=0, timeout=10, tolerance=1)
 
+        # record starting position for excursion check
+        start_pos = self.sim_location()
+
         # apply glitch
         self.set_parameter("SIM_GPS1_GLTCH_X", 0.001)
 
@@ -2961,6 +2970,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("checking att: roll=%f pitch=%f " % (roll_deg, pitch_deg))
             if abs(roll_deg) > 2 or abs(pitch_deg) > 2:
                 raise NotAchievedException("fly_gps_glitch_loiter_test2 failed, roll or pitch moved during GPS glitch")
+            # track position during glitch to catch off-course excursions
+            curr_pos = self.sim_location()
+            moved_distance = self.get_distance(curr_pos, start_pos)
+            if moved_distance > 10:
+                raise NotAchievedException(
+                    "Moved over 10 meters during GPS glitch, Failed! (moved %.1fm)" % moved_distance)
 
         # RTL, remove glitch and reboot sitl
         self.do_RTL(alt_max=2)
@@ -3042,6 +3057,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # initialise current glitch
         glitch_current = 0
+        start_pos = self.sim_location()
         self.progress("Apply first glitch")
         self.set_parameters({
             "SIM_GPS1_GLTCH_X": glitch_lat[glitch_current],
@@ -3061,6 +3077,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         "SIM_GPS1_GLTCH_X": glitch_lat[glitch_current],
                         "SIM_GPS1_GLTCH_Y": glitch_lon[glitch_current],
                     })
+
+            # track position during glitch to catch off-course excursions
+            m = self.assert_receive_message(type='GLOBAL_POSITION_INT')
+            curr_pos = self.sim_location()
+            moved_distance = self.get_distance(curr_pos, start_pos)
+            self.progress("Glitch %u: Moved %.1fm" % (glitch_current, moved_distance))
+            if moved_distance > 30:
+                raise NotAchievedException(
+                    "Moved over 30 meters during glitch %u, Failed!" % glitch_current)
 
         # turn off glitching
         self.progress("Completed Glitches")
@@ -3390,9 +3415,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Flipping in roll")
         self.set_rc(1, 1700)
         self.send_cmd_do_set_mode('FLIP') # don't wait for success
-        self.wait_attitude(despitch=0, desroll=45, tolerance=30)
-        self.wait_attitude(despitch=0, desroll=90, tolerance=30)
-        self.wait_attitude(despitch=0, desroll=-45, tolerance=30)
+        self.wait_attitude(despitch=0, desroll=45, tolerance=15)
+        self.wait_attitude(despitch=0, desroll=90, tolerance=15)
+        self.wait_attitude(despitch=0, desroll=-45, tolerance=15)
         self.progress("Waiting for level")
         self.set_rc(1, 1500) # can't change quickly enough!
         self.wait_attitude(despitch=0, desroll=0, tolerance=5)
@@ -3403,10 +3428,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Flipping in pitch")
         self.set_rc(2, 1700)
         self.send_cmd_do_set_mode('FLIP') # don't wait for success
-        self.wait_attitude(despitch=45, desroll=0, tolerance=30)
+        self.wait_attitude(despitch=45, desroll=0, tolerance=15)
         # can't check roll here as it flips from 0 to -180..
-        self.wait_attitude(despitch=90, tolerance=30)
-        self.wait_attitude(despitch=-45, tolerance=30)
+        self.wait_attitude(despitch=90, tolerance=15)
+        self.wait_attitude(despitch=-45, tolerance=15)
         self.progress("Waiting for level")
         self.set_rc(2, 1500) # can't change quickly enough!
         self.wait_attitude(despitch=0, desroll=0, tolerance=5)

@@ -448,9 +448,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while count > 0:
             self.progress("Starting roll")
             self.set_rc(1, 2000)
-            self.wait_roll(-150, accuracy=90)
-            self.wait_roll(150, accuracy=90)
-            self.wait_roll(0, accuracy=90)
+            self.wait_roll(-150, accuracy=15)
+            self.wait_roll(150, accuracy=15)
+            self.wait_roll(0, accuracy=15)
             count -= 1
 
         self.set_rc(1, 1500)
@@ -474,9 +474,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while count > 0:
             self.progress("Starting roll")
             self.set_rc(1, 1000)
-            self.wait_roll(-150, accuracy=90)
-            self.wait_roll(150, accuracy=90)
-            self.wait_roll(0, accuracy=90)
+            self.wait_roll(-150, accuracy=15)
+            self.wait_roll(150, accuracy=15)
+            self.wait_roll(0, accuracy=15)
             count -= 1
         self.set_rc(1, 1500)
 
@@ -491,8 +491,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while count > 0:
             self.progress("Starting loop")
             self.set_rc(2, 1000)
-            self.wait_pitch(-60, accuracy=20)
-            self.wait_pitch(0, accuracy=20)
+            self.wait_pitch(-60, accuracy=10)
+            self.wait_pitch(0, accuracy=10)
             count -= 1
 
         self.set_rc(2, 1500)
