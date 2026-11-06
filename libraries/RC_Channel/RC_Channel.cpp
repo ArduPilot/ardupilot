@@ -251,6 +251,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 185:Mount Roll/Pitch Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 186:Mount POI Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 187:EKF Reset
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 188:Arm
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -697,6 +698,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::COMPASS_LEARN:
 #if AP_ARMING_ENABLED
     case AUX_FUNC::DISARM:
+    case AUX_FUNC::ARM:
 #endif
     case AUX_FUNC::DO_NOTHING:
 #if AP_GRIPPER_ENABLED
@@ -1055,6 +1057,7 @@ bool RC_Channel::init_position_on_first_radio_read(AUX_FUNC func) const
     case AUX_FUNC::ARMDISARM_AIRMODE:
     case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::ARM_EMERGENCY_STOP:
+    case AUX_FUNC::ARM:
 #endif
 #if HAL_PARACHUTE_ENABLED
     case AUX_FUNC::PARACHUTE_RELEASE:
@@ -1609,6 +1612,12 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     case AUX_FUNC::DISARM:
         if (ch_flag == AuxSwitchPos::HIGH) {
             AP::arming().disarm(AP_Arming::Method::AUXSWITCH);
+        }
+        break;
+
+    case AUX_FUNC::ARM:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            AP::arming().arm(AP_Arming::Method::AUXSWITCH, true);
         }
         break;
 #endif
