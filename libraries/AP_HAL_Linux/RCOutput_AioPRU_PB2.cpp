@@ -139,7 +139,7 @@ void RCOutput_AioPRU_PB2::enable_ch(uint8_t ch)
 void RCOutput_AioPRU_PB2::disable_ch(uint8_t ch)
 {
    if(ch < RC_CHAN_COUNT) {
-      rcoutput->channelenable &= !(1U << ch);
+      rcoutput->channelenable &= ~(1U << ch);
    }
 }
 

@@ -58,12 +58,18 @@ uint16_t RCOutput_PRU::get_freq(uint8_t ch)
 
 void RCOutput_PRU::enable_ch(uint8_t ch)
 {
+    if (ch >= MAX_PWMS) {
+        return;
+    }
     sharedMem_cmd->enmask |= 1U<<chan_pru_map[ch];
 }
 
 void RCOutput_PRU::disable_ch(uint8_t ch)
 {
-    sharedMem_cmd->enmask &= !(1U<<chan_pru_map[ch]);
+    if (ch >= MAX_PWMS) {
+        return;
+    }
+    sharedMem_cmd->enmask &= ~(1U<<chan_pru_map[ch]);
 }
 
 void RCOutput_PRU::write(uint8_t ch, uint16_t period_us)
@@ -81,6 +87,9 @@ void RCOutput_PRU::write(uint8_t ch, uint16_t period_us)
 
 uint16_t RCOutput_PRU::read(uint8_t ch)
 {
+    if (ch >= MAX_PWMS) {
+        return 0;
+    }
     return (sharedMem_cmd->hilo_read[chan_pru_map[ch]][1]/TICK_PER_US);
 }
 
