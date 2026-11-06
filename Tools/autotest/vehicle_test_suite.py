@@ -364,13 +364,6 @@ class Context(object):
         # launched by restart_SITL_frame()) registered via
         # context_register_periph_child(); terminated on context_pop()
         self.periph_children = []
-        # parameter modifications tracking: list of (name, original_value)
-        # automatically populated when set_parameters() is called within
-        # this context; used for validation on context_pop()
-        self.param_modifications = []
-        # snapshot of all tracked parameter values at context_push time;
-        # key=param_name, value=float/int; used for post-test validation
-        self.param_snapshot = {}
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -6849,12 +6842,7 @@ class TestSuite(abc.ABC):
         self.set_parameters({name: value}, **kwargs)
 
     def set_parameters(self, parameters, add_to_context=True, epsilon_pct=0.00001, verbose=True, attempts=None):
-        """Set parameters from vehicle.
-
-        This method now automatically tracks parameter modifications for
-        context validation. Each modification is recorded in the current
-        context's param_modifications list.
-        """
+        """Set parameters from vehicle."""
 
         want = copy.copy(parameters)
         self.progress("set_parameters: (%s)" % str(want))
@@ -6879,17 +6867,6 @@ class TestSuite(abc.ABC):
 
         original_values = {}
         autopilot_values = {}
-
-        # Capture original values before any modifications (for tracking)
-        # Only capture values that haven't been modified yet in this context
-        context = self.context_get()
-        already_modified = {name for name, _ in context.param_modifications}
-        for name in want:
-            if name.upper() not in already_modified:
-                try:
-                    original_values[name] = self.get_parameter(name)
-                except Exception:
-                    original_values[name] = None
         for i in range(attempts):
             self.drain_mav(quiet=True)
             self.drain_all_pexpects()
@@ -6911,11 +6888,6 @@ class TestSuite(abc.ABC):
                         context_param_name_list = [p[0] for p in self.context_get().parameters]
                         if name.upper() not in context_param_name_list:
                             self.context_get().parameters.append((name, original_values[name]))
-                        # Automatic tracking: record this modification
-                        context = self.context_get()
-                        already_tracked = {n for n, _ in context.param_modifications}
-                        if name not in already_tracked and original_values.get(name) is not None:
-                            context.param_modifications.append((name, original_values[name]))
                     received.add(name)
                     continue
                 self.progress("Sending set (%s) to (%f) (old=%f)" % (name, value, original_values[name]))
@@ -7170,19 +7142,8 @@ class TestSuite(abc.ABC):
         if name not in already:
             self.context_get().preserved_attributes.append((name, getattr(self, name)))
 
-    def context_push(self, snapshot_params=False, param_names=None):
-        """Save a copy of the parameters.
-
-        Args:
-            snapshot_params: If True, take a snapshot of current parameter
-                values for post-test validation (new in this improvement).
-                This does NOT auto-track all params - only params modified
-                via set_parameters() are tracked in param_modifications.
-            param_names: Optional list of specific parameter names to
-                snapshot. If None and snapshot_params is True, no specific
-                names are recorded (snapshot is empty but tracking is
-                enabled for any params modified during this context).
-        """
+    def context_push(self):
+        """Save a copy of the parameters."""
         context = Context()
         self.contexts.append(context)
         # add a message hook so we can collect messages conveniently:
@@ -7192,14 +7153,6 @@ class TestSuite(abc.ABC):
             if t in context.collections:
                 context.collections[t].append(m)
         self.install_message_hook_context(mh)
-
-        # initialize parameter tracking for this context
-        if snapshot_params:
-            # Take a snapshot of specific params if provided, otherwise
-            # create empty snapshot (tracking will be done via
-            # param_modifications during set_parameters())
-            if param_names:
-                context.param_snapshot = self.get_parameters(param_names)
 
     def context_backup_file(self, path):
         '''snapshot file contents and mode; on context_pop() the original
@@ -7243,75 +7196,6 @@ class TestSuite(abc.ABC):
         if msg_type not in context.collections:
             raise NotAchievedException("Not collecting (%s)" % str(msg_type))
         return context.collections[msg_type]
-
-    def get_parameter_changes(self):
-        '''Return list of parameter changes in current context.
-
-        Returns:
-            List of (param_name, original_value, current_value) tuples.
-            Only includes parameters that have been modified within this
-            context. Returns empty list if no parameters modified.
-        '''
-        context = self.context_get()
-        changes = []
-        for param_name, original_value in context.param_modifications:
-            try:
-                current_value = self.get_parameter(param_name)
-                changes.append((param_name, original_value, current_value))
-            except Exception:
-                # Parameter may not exist or vehicle may be unresponsive
-                changes.append((param_name, original_value, None))
-        return changes
-
-    def get_uncommitted_changes(self):
-        '''Return list of parameters modified but not yet restored.
-
-        This is useful for debugging: it shows what changes are pending
-        restoration on context_pop().
-
-        Returns:
-            List of (param_name, original_value) tuples for modifications
-            in the current context.
-        '''
-        context = self.context_get()
-        return list(context.param_modifications)
-
-    def _validate_parameters_restored(self, modifications):
-        '''Validate that tracked parameters were restored to their original values.
-
-        This is called automatically by context_pop() after parameter restoration.
-        It checks each modified parameter and raises an exception if the current
-        value differs significantly from the original value.
-
-        Args:
-            modifications: List of (param_name, original_value) tuples to validate.
-        '''
-        failures = []
-        for param_name, original_value in modifications:
-            try:
-                current_value = self.get_parameter(param_name)
-                if original_value is None:
-                    continue
-                delta = abs(float(current_value) - float(original_value))
-                epsilon = 0.01 * abs(float(original_value))
-                if delta > epsilon:
-                    failures.append((param_name, original_value, current_value))
-            except Exception:
-                # Parameter may not exist - this could be expected if it was
-                # created during the test and then deleted
-                failures.append((param_name, original_value, "MISSING"))
-
-        if failures:
-            error_parts = []
-            for name, orig, curr in failures:
-                if curr == "MISSING":
-                    error_parts.append(f"{name} (was {orig}, now MISSING)")
-                else:
-                    error_parts.append(f"{name}: {orig} -> {curr}")
-            error_msg = "Parameter restoration validation failed: " + ", ".join(error_parts)
-            self.progress("WARNING: " + error_msg)
-            # Don't raise here - this is during cleanup. Log the warning but
-            # don't mask any exception that triggered context_pop().
 
     def context_clear_collection(self, msg_type):
         '''clear collection of message type msg_type'''
@@ -7505,9 +7389,7 @@ class TestSuite(abc.ABC):
                 self.set_parameters(restore, add_to_context=False, verbose=False)
             except Exception as e:  # noqa: BLE001
                 self.progress("Could not restore leaked parameters: %s" % str(e))
-                return described
-        # Restoration succeeded; no longer a leak for the next test
-        return None
+        return described
 
     def context_pop(self, process_interaction_allowed=True, hooks_already_removed=False):
         """Set parameters to origin values in reverse order."""
@@ -7538,10 +7420,6 @@ class TestSuite(abc.ABC):
             dead_parameters_dict[p[0]] = p[1]
         if process_interaction_allowed:
             self.set_parameters(dead_parameters_dict, add_to_context=False)
-
-        # Validate parameter restoration if we tracked modifications
-        if process_interaction_allowed and dead.param_modifications:
-            self._validate_parameters_restored(dead.param_modifications)
 
         # terminate any periph child processes registered via
         # context_register_periph_child() before restoring the SITL
