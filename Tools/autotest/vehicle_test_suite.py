@@ -2131,6 +2131,7 @@ class TestSuite(abc.ABC):
                  build_opts: dict | None = None,
                  enable_fgview=False,
                  move_logs_on_test_failure: bool = False,
+                 mavproxy_state_basedir: str | None = None,
                  asan=False,
                  check_parameter_leaks=True,
                  unix_domain_socket=False,
@@ -2173,6 +2174,7 @@ class TestSuite(abc.ABC):
         self.ubsan_abort = ubsan_abort
         self.build_opts = build_opts
         self.move_logs_on_test_failure = move_logs_on_test_failure
+        self.mavproxy_state_basedir = mavproxy_state_basedir
         self.num_aux_imus = num_aux_imus
         self.generate_junit = generate_junit
         if generate_junit:
@@ -10530,6 +10532,7 @@ Also, ignores heartbeats not from our target system'''
             options=options,
             pexpect_timeout=pexpect_timeout,
             sitl_rcin_port=sitl_rcin_port,
+            state_basedir=self.mavproxy_state_basedir,
         )
         mavproxy.expect(r'Telemetry log: (\S+)\r\n')
         self.logfile = mavproxy.match.group(1)
