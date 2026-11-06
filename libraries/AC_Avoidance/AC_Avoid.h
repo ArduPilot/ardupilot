@@ -44,6 +44,9 @@ public:
     // return true if any avoidance feature is enabled
     bool enabled() const { return _enabled != AC_AVOID_DISABLED; }
 
+    // return true if simple fence avoidance is enabled
+    bool fence_avoidance_enabled() const { return (_enabled & AC_AVOID_STOP_AT_FENCE) != 0; }
+
     // parameter conversion
     void convert_params();
 
