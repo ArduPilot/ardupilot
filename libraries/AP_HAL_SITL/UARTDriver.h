@@ -33,6 +33,9 @@ public:
     ssize_t get_system_outqueue_length() const;
     ssize_t get_system_outqueue_limit() const;
 
+    // true if the sim stalls while this port's output queue is full
+    bool pacing() const { return _pace_sim; }
+
     bool tx_pending() override {
         return false;
     }
@@ -41,6 +44,7 @@ public:
     uint32_t txspace() override;
 
     bool _unbuffered_writes;
+    bool _pace_sim;
 
     void set_flow_control(enum flow_control flow_control_setting) override;
     enum flow_control get_flow_control(void) override;
