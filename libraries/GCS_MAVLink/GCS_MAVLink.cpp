@@ -146,6 +146,30 @@ uint16_t comm_get_txspace(mavlink_channel_t chan)
 }
 
 /*
+  return true if anything written to a channel is dropped however much
+  space it has
+ */
+bool comm_send_suppressed(mavlink_channel_t chan)
+{
+#if HAL_HIGH_LATENCY2_ENABLED
+    // if it's a disabled high latency channel, don't send
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link->is_high_latency_link && !gcs().get_high_latency_status()) {
+        return true;
+    }
+#endif
+    if (gcs_alternative_active[chan]) {
+        // an alternative protocol is active
+        return true;
+    }
+    if (mavlink_comm_port[chan] != nullptr && mavlink_comm_port[chan]->is_write_locked()) {
+        // e.g. serial passthrough; our writes are dropped
+        return true;
+    }
+    return false;
+}
+
+/*
   send a buffer out a MAVLink channel
  */
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
@@ -153,15 +177,7 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
     if (!valid_channel(chan) || mavlink_comm_port[chan] == nullptr || chan_discard[chan]) {
         return;
     }
-#if HAL_HIGH_LATENCY2_ENABLED
-    // if it's a disabled high latency channel, don't send
-    GCS_MAVLINK *link = gcs().chan(chan);
-    if (link->is_high_latency_link && !gcs().get_high_latency_status()) {
-        return;
-    }
-#endif
-    if (gcs_alternative_active[chan]) {
-        // an alternative protocol is active
+    if (comm_send_suppressed(chan)) {
         return;
     }
     const size_t written = mavlink_comm_port[chan]->write(buf, len);

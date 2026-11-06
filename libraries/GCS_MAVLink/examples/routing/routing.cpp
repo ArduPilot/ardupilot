@@ -74,21 +74,22 @@ void loop(void)
     }
 
     // incoming targeted message for our system, but other compid
-    // should be processed locally
+    // should not be processed locally
     param_set.target_system = mavlink_system.sysid;
     param_set.target_component = mavlink_system.compid+1;
     mavlink_msg_param_set_encode_status(3, 1, &status, &msg, &param_set);
-    if (!routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
-        hal.console->printf("param set 3 should be processed locally\n");
+    if (routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
+        hal.console->printf("param set 3 should not be processed locally\n");
         err_count++;
     }
 
-    // incoming broadcast message should be processed locally
+    // incoming broadcast message for another compid should not be
+    // processed locally
     param_set.target_system = 0;
     param_set.target_component = mavlink_system.compid+1;
     mavlink_msg_param_set_encode_status(3, 1, &status, &msg, &param_set);
-    if (!routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
-        hal.console->printf("param set 4 should be processed locally\n");
+    if (routing.check_and_forward(uint8_t(MAVLINK_FRAMING_OK), *dummy_link, msg)) {
+        hal.console->printf("param set 4 should not be processed locally\n");
         err_count++;
     }
 
