@@ -52,6 +52,48 @@ args, unknown_args = parser.parse_known_args()
 extra_hwdef = None
 
 
+def get_board_mcu(board):
+    '''find MCU type for a ChibiOS board'''
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../..'))
+    hwdef_path = os.path.join(root_dir, 'libraries/AP_HAL_ChibiOS/hwdef', board, 'hwdef.dat')
+    if not os.path.exists(hwdef_path):
+        return None
+
+    visited = set()
+
+    def find_mcu(path):
+        if path in visited or not os.path.exists(path):
+            return None
+        visited.add(path)
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('MCU '):
+                    parts = line.split()
+                    if len(parts) >= 2:
+                        return parts[1]
+                elif line.startswith('include ') or line.startswith('3include '):
+                    inc_file = line.split()[1]
+                    inc_path = os.path.normpath(os.path.join(os.path.dirname(path), inc_file))
+                    mcu = find_mcu(inc_path)
+                    if mcu:
+                        return mcu
+        return None
+
+    return find_mcu(hwdef_path)
+
+
+if args.board:
+    mcu = get_board_mcu(args.board)
+    if mcu:
+        unsupported_prefixes = ('STM32F1', 'STM32F3', 'STM32F4', 'STM32G4')
+        if any(mcu.startswith(p) for p in unsupported_prefixes):
+            print(f"WARNING: Board '{args.board}' uses {mcu}. "
+                  f"SITL-on-Hardware requires high CPU throughput and hardware double-precision "
+                  f"floating point support (STM32H7 is recommended). "
+                  f"Cortex-M4/F4 MCUs lack sufficient performance to run real-time physics loops.")
+
+
 def run_program(cmd_list):
     '''run a program from a command list'''
     print("Running (%s)" % " ".join(cmd_list))
