@@ -141,23 +141,26 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 
 ### Priority 1 — Fix Flaky Tests That Mask Real Bugs
 
-1. ~~**Copter `ModeFlip`** — tighten tolerances, add minimum_duration~~ **Fixed (2026-11-06):** tolerance tightened from 30° to 15°.
-2. ~~**Plane `test_stabilize` / `test_acro`** — 90° accuracy is non-functional~~ **Fixed (2026-11-06):** roll accuracy tightened from 90° to 15°, pitch from 20° to 10°.
-3. **Rover `test_gcs_failsafe`** — replace fixed delays with mode assertions
-4. ~~**Copter `GPSGlitch*` tests** — add off-course distance assertions~~ **Fixed (2026-11-06):** all three tests (`GPSGlitchLoiter`, `GPSGlitchLoiter2`, `GPSGlitchAuto`) now track position during the glitch phase.
-5. **Rover `DriveSquare`** — tighten distance accuracy
+1. ~~**Copter `ModeFlip`** — tighten tolerances, add minimum_duration~~ **Fixed (2026-11-06, commit 92baa20d):** tolerance tightened from 30° to 15°.
+2. ~~**Plane `test_stabilize` / `test_acro`** — 90° accuracy is non-functional~~ **Already fixed** in repo (tolerances already at 15°).
+3. ~~**Rover `test_gcs_failsafe`** — replace fixed delays with mode assertions~~ **Fixed (2026-11-06, commit dfb16225):** added wait_distance in go_somewhere(), explicit wait_mode for MANUAL, and position tracking in AUTO subtest.
+4. ~~**Copter `GPSGlitch*` tests** — add off-course distance assertions~~ **Fixed (2026-11-06, commit 92baa20d):** all three tests now track position during glitch.
+5. ~~**Rover `DriveSquare`** — tighten distance accuracy~~ **Skipped:** uses interactive `reach_distance_manual()` (user-driven test, not automated).
 
 ### Priority 2 — Add Missing Bug-Catching Coverage
 
-6. **New: EKF compass degradation mid-flight test** (Copter)
-7. **New: Quadplane motor fail during transition** (Plane)
-8. **New: Fence breach during takeoff** (Plane)
-9. **New: RTK/RTCM loss during rover mission** (Rover)
-10. **New: Repeated fence boundary crossing** (Rover)
+6. ~~**OpticalFlow tolerance (Copter)** — 3m/s too loose~~ **Fixed (2026-11-06, commit 20e451d2):** tightened from 3m/s to 1.5m/s.
+7. ~~**Plane ThrottleFailsafe** — no movement assertion~~ **Fixed (2026-11-06, commit 20e451d2):** added 100m minimum distance check after both RTL phases.
+8. ~~**Rover test_scripting_simple_loop** — count < 3 too loose~~ **Fixed (2026-11-06, commit 20e451d2):** tightened to 10-200 range.
+9. **New: EKF compass degradation mid-flight test** (Copter)
+10. **New: Quadplane motor fail during transition** (Plane)
+11. **New: Fence breach during takeoff** (Plane)
+12. **New: RTK/RTCM loss during rover mission** (Rover)
+13. **New: Repeated fence boundary crossing** (Rover)
 
 ### Priority 3 — Infrastructure Improvements
 
-11. **`wait_and_maintain` default minimum_duration** — prevents spike-based false passes
-12. **Parameter context cleanup** — prevents test contamination
-13. **Aggressive timeout mode** — faster CI for simple test paths
-14. **Fix disabled high-priority tests** — parachute, SMART_RTL, LandingDrift
+14. **`wait_and_maintain` default minimum_duration** — prevents spike-based false passes
+15. **Parameter context cleanup** — prevents test contamination
+16. **Aggressive timeout mode** — faster CI for simple test paths
+17. **Fix disabled high-priority tests** — parachute, SMART_RTL, LandingDrift
