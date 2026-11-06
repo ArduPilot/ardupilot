@@ -41,9 +41,6 @@ void Plane::init_ardupilot()
     rssi.init();
 #endif
 
-    // setup telem slots with serial ports
-    gcs().setup_uarts();
-
 
 #if OSD_ENABLED
     osd.init();
