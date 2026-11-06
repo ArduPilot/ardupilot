@@ -1164,7 +1164,7 @@ is bob we will attempt to checkout bob-AVR'''
         self.progress("git hash: %s" % str(githash))
 
         self.hdate_ym = now.strftime("%Y-%m")
-        self.hdate_ymdhm = now.strftime("%Y-%m-%d-%H:%m")
+        self.hdate_ymdhm = now.strftime("%Y-%m-%d-%H:%M")
 
         self.binaries = os.path.join(self.buildlogs_dirpath(), "binaries")
         self.basedir = os.getcwd()
