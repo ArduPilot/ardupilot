@@ -308,12 +308,6 @@ Message count tightened from `count >= 3` to `10 <= count <= 200`. The old check
 | ThrottleFailsafe 100m movement check | 20e451d2 | EKF not armable, throttle not engaging, waypoint nav failure | Medium | Critical |
 | Rover GCS failsafe movement verification | dfb16225 | Failsafe timeout, disabled path bug, AUTO interaction | Immediate | Medium |
 | Scripting count 3→10-200 range | 20e451d2 | Script crash, infinite loop, blocking I/O | Immediate | Low |
-| ModeLoiter position tolerance 5m→3m | cfc4e647e0 | Loiter oscillation, GPS drift, wind sensitivity, EKF filter divergence | Immediate | Medium |
-| GPSGlitchLoiter heading recovery | cfc4e647e0 | EKF heading lock from glitched velocity, yaw realignment during active glitch | Immediate | High |
-| GPSGlitchLoiter2 position tighten + heading | cfc4e647e0 | EKF position excursion, GPS yaw/position glitch causing orbit | Immediate | High |
-| GPSGlitchAuto EKF monitoring | cfc4e647e0 | EKF degradation during glitch, error bits persisting, compass interference | Immediate | High |
-| BaroDriftSensitivity new test | cfc4e647e0 | Cumulative baro drift, EKF no physics validation, drift recovery | Immediate | High |
-| EKF3CompassDegradation new test | TBD | EKF yaw lock, compass/GPS cross-check failure, recovery | Immediate | Critical |
 
 ---
 
@@ -433,52 +427,3 @@ Based on the severity and immediacy of detection, these are the most likely to s
 7. **EKF error bits persisting after GPS recovery** — `GPSGlitchAuto` EKF monitoring will detect error flags that don't clear after glitch removal, indicating incomplete EKF recovery.
 
 8. **Loiter position hold degradation** — `ModeLoiter` tightened to 3m will detect loiter oscillation, GPS drift, wind sensitivity, or EKF filter divergence.
-
----
-
-## 17. EKF3CompassDegradation — New Test for Compass Freeze Mid-Flight
-
-**Date:** 2026-11-06
-**Files:** `arducopter.py` — `EKF3CompassDegradation()`
-
-### How it works
-
-3-phase test:
-1. **Baseline** (5s): Take off to 10m in LOITER, record yaw standard deviation (~1-2° in stable LOITER)
-2. **Degradation** (60s): Inject `SIM_MAG1_FAIL=2` (freeze compass — reports fixed value), command a sequence of yaw turns (left 6s / center 3s / right 6s × 3 cycles), sample ATTITUDE yaw throughout
-3. **Recovery** (15s): Restore compass (`SIM_MAG1_FAIL=0`), wait for EKF re-sync, check heading returns to within 30° of start
-
-The test exploits the fact that a frozen compass produces a static magnetic reading while the vehicle physically turns. If the EKF uses this frozen compass for yaw estimation and doesn't cross-check against GPS yaw, the estimated heading will diverge from the true heading.
-
-### Bugs this catches
-
-| Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
-| **EKF yaw lock to frozen compass** | EKF trusts compass data without validation → yaw estimate freezes while vehicle turns | Compass freezes at 0° → vehicle turns 180° → EKF still outputs 0° → position controller commands wrong correction → vehicle drifts off course. Position controller uses EKF heading for navigation. |
-| **EKF fails to cross-check compass against GPS** | No validation that compass-derived heading matches GPS-derived course-over-ground | EKF yaw fusion accepts any compass reading → frozen compass not detected → no fallback to GPS yaw. GPS yaw (`EK3_SRC1_YAW=1` default) should detect this mismatch but doesn't. |
-| **Compass health flag not propagated** | EKF detects compass failure but position controller continues using bad heading | EKF logs "switching to compass 0" but attitude message still contains the frozen heading → attitude controller doesn't know heading is wrong → vehicle executes maneuvers with incorrect yaw reference. |
-| **Recovery after compass restoration** | EKF doesn't re-sync heading after degraded compass is restored | Compass frozen for 60s → restored → EKF still thinks heading is at frozen value → takes >15s to re-sync (or never does) → vehicle starts maneuvering with wrong heading reference. |
-
----
-
-## Updated Critical Bugs Likely to Be Found First
-
-Based on the severity and immediacy of detection, these are the most likely to surface immediately:
-
-1. **Plane servo reversal** — `test_stabilize` with 15° accuracy will immediately fail if any aileron servo is wired backwards or has reversed output. This is a hardware installation check but also catches `RC1_DIR` / `RC2_DIR` parameter bugs.
-
-2. **EKF RTL not armable** — `ThrottleFailsafe` movement check will fail for any EKF state where `nav_takeoff()` or `rtl_armable()` returns false. The analysis document already notes this bug exists (groundspeed stays at 0.03 m/s).
-
-3. **FLIP mode incomplete rotation** — `ModeFlip` with 15° tolerance + minimum_duration will detect if the flip stalls partway. This catches insufficient PID authority for large angle changes.
-
-4. **EKF heading lock from GPS glitch** — `GPSGlitchLoiter` heading tracking will catch heading that doesn't recover after glitch removal. **This is the bug proven in `pre_existing_bug_evidence.md`** — the `realignYawGPS()` function uses glitched velocity for yaw alignment without quality gate.
-
-5. **EKF yaw lock to frozen compass** — `EKF3CompassDegradation` will catch yaw that doesn't recover after compass freeze is cleared. A frozen compass freezes the EKF heading estimate while the vehicle turns — test commands 360° turns and checks recovery.
-
-6. **GPS glitch causing EKF position excursion** — `GPSGlitchLoiter2` tightened to 5m will detect any EKF behavior where a GPS position jump causes the vehicle to fly >5m from start.
-
-7. **Cumulative baro drift altitude excursion** — `BaroDriftSensitivity` will detect any case where AltHold allows unbounded altitude drift when barometer drift is introduced.
-
-8. **EKF error bits persisting after GPS recovery** — `GPSGlitchAuto` EKF monitoring will detect error flags that don't clear after glitch removal, indicating incomplete EKF recovery.
-
-9. **Loiter position hold degradation** — `ModeLoiter` tightened to 3m will detect loiter oscillation, GPS drift, wind sensitivity, or EKF filter divergence.
