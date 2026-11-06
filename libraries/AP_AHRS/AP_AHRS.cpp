@@ -499,10 +499,35 @@ void AP_AHRS::try_set_common_origin(const AP_AHRS_Backend::Estimates &source_est
       the first backend to offer an origin establishes the common
       origin; every backend is given it through its update()
     */
-    if (!source_estimates.location_suitable_as_origin) {
-        // e.g. DCM never offers one
+#if AP_AHRS_DCM_ENABLED
+    if (&source_estimates == &dcm_estimates) {
+        // DCM's origin is home, whether or not it has a position.  As
+        // before, that is the vehicle's origin only if DCM is the
+        // configured backend, or the active one while armed (e.g. a
+        // plane armed before its EKF initialised):
+        if (_home_is_set &&
+            (configured_ekf_type() == EKFType::DCM ||
+             (hal.util->get_soft_armed() && active_EKF_type() == EKFType::DCM))) {
+            IGNORE_RETURN(set_origin(_home));
+        }
         return;
     }
+    if (configured_ekf_type() == EKFType::DCM) {
+        // the configured DCM's origin is home; no other backend's
+        return;
+    }
+#endif
+    if (!source_estimates.location_suitable_as_origin) {
+        return;
+    }
+#if AP_AHRS_SIM_ENABLED
+    // SIM offers the simulation's home, which is the vehicle's origin
+    // only if SIM is the configured backend:
+    if (&source_estimates == &sim_estimates &&
+        configured_ekf_type() != EKFType::SIM) {
+        return;
+    }
+#endif
     // the point where the backend's position is zero.  This is exact
     // only for a zero position; otherwise Location::offset() rounds it
     // to about a centimetre (see location_suitable_as_origin):
