@@ -639,8 +639,19 @@ bool NavEKF3_core::use_compass(void) const
     }
 
     const auto &compass = dal.compass();
-    return compass.use_for_yaw(magSelectIndex) &&
-           !allMagSensorsFailed;
+    if (!compass.use_for_yaw(magSelectIndex) || allMagSensorsFailed) {
+        return false;
+    }
+    if (imuSampleTime_ms - lastMagRead_ms <= frontend->magFailTimeLimit_ms) {
+        return true;
+    }
+    // no recent compass data, so only keep using compasses if one is healthy
+    for (uint8_t i = 0; i < compass.get_count(); i++) {
+        if (compass.healthy(i) && compass.use_for_yaw(i)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // return true if GPS, compass or external nav yaw has been fused within the last 5 seconds
