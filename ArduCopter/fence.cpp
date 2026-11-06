@@ -68,6 +68,12 @@ void Copter::fence_check()
 
             } else {
 
+                // a manual mode at zero throttle clears auto_armed, which would hold the new mode at ground idle
+                // but if the pilot has stopped the motors (interlock or e-stop) the new mode cannot fly
+                if (motors->get_interlock()) {
+                    set_auto_armed(true);
+                }
+
                 // if more than 100m outside the fence just force a land
                 if (fence.get_breach_distance(fence_breaches.new_breaches) > AC_FENCE_GIVE_UP_DISTANCE) {
                     set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
