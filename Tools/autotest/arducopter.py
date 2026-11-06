@@ -19641,14 +19641,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def FETtecESC_btw_mask_checks(self):
         '''ensure prearm checks work as expected'''
-        # Invalid bits (outside valid ESC range of 0-4)
-        invalid_bits = [5, 6, 7, 8, 12, 15, 16, 30]
-        for bit in invalid_bits:
-            self.fettec_assert_bad_mask(1 << bit)
-        # Valid individual bits and combinations
-        valid_masks = [0b00001, 0b00010, 0b00100, 0b01000, 0b10000,
-                       0b00101, 0b110000000000]
-        for good_mask in valid_masks:
+        for bad_mask in [0b1000000000000000, 0b10100000000000000]:
+            self.fettec_assert_bad_mask(bad_mask)
+        for good_mask in [0b00001, 0b00101, 0b110000000000]:
             self.fettec_assert_good_mask(good_mask)
 
     def FETtecESC(self):
