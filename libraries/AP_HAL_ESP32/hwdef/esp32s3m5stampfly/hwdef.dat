@@ -43,6 +43,14 @@ IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_90
 # one Baro:
 BARO BMP280 I2C:0:0x76
 
+# VL53L3CX XSHUT pins used by the original M5StampFly firmware.
+# The VL53L3CX driver uses RNGFNDx_ORIENT only to select which
+# same-address sensor is powered up on this board.
+define HAL_RANGEFINDER_VL53L3CX_XSHUT_DOWN 7
+define HAL_RANGEFINDER_VL53L3CX_XSHUT_FORWARD 9
+define HAL_RANGEFINDER_VL53L3CX_INT_DOWN 6
+define HAL_RANGEFINDER_VL53L3CX_INT_FORWARD 8
+
 # HARDWARE UARTS. UART 0 apparently goes over USB? so we assign it to pins we
 # don't have mapped to anything. might be fixable in the HAL...
 # UART 1 (SERIAL3) is the black grove connector

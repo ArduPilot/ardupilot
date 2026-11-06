@@ -36,6 +36,7 @@
 #include "AP_RangeFinder_TeraRanger_Serial.h"
 #include "AP_RangeFinder_VL53L0X.h"
 #include "AP_RangeFinder_VL53L1X.h"
+#include "AP_RangeFinder_VL53L3CX.h"
 #include "AP_RangeFinder_NMEA.h"
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake_TF02.h"
@@ -367,21 +368,39 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 #endif
     case Type::VL53L0X:
     case Type::VL53L1X_Short:
+#if AP_RANGEFINDER_VL53L3CX_ENABLED
+    case Type::VL53L3CX:
+#endif
             FOREACH_I2C(i) {
 #if AP_RANGEFINDER_VL53L0X_ENABLED
+                if (_type == Type::VL53L0X) {
                 if (_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
                                                                 hal.i2c_mgr->get_device(i, params[instance].address)),
                         instance)) {
                     break;
                 }
+                }
 #endif
 #if AP_RANGEFINDER_VL53L1X_ENABLED
+                if (_type == Type::VL53L0X || _type == Type::VL53L1X_Short) {
                 if (_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance], params[instance],
                                                                 hal.i2c_mgr->get_device(i, params[instance].address),
                                                                 _type == Type::VL53L1X_Short ?  AP_RangeFinder_VL53L1X::DistanceMode::Short :
                                                                 AP_RangeFinder_VL53L1X::DistanceMode::Long),
                                  instance)) {
                     break;
+                }
+                }
+#endif
+#if AP_RANGEFINDER_VL53L3CX_ENABLED
+                if (_type == Type::VL53L3CX) {
+                    const uint8_t addr = params[instance].address ? params[instance].address : VL53L3CX_I2C_ADDR_DEFAULT;
+                    if (_add_backend(AP_RangeFinder_VL53L3CX::detect(state[instance], params[instance],
+                                                                     hal.i2c_mgr->get_device(i, AP_RangeFinder_VL53L3CX::probe_address(addr)),
+                                                                     addr),
+                                     instance)) {
+                        break;
+                    }
                 }
 #endif
             }
