@@ -94,6 +94,9 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
     { StorageMission,  10028,  5204}, // leave 128 byte gap for expansion
     { StorageCANDNA,   15232,  1024},
     // 128 byte gap at end of first 16k
+#if AP_BARO_PROM_BACKUP_ENABLED
+    { StorageBaroPROM, 16256,   128},
+#endif
 #endif
 #if STORAGE_NUM_AREAS >= 18
     { StorageParam,    16384, 1280},
@@ -108,9 +111,22 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
  */
 void StorageManager::erase(void)
 {
+#if AP_BARO_PROM_BACKUP_ENABLED
+    // the baro PROM area is kept across an erase
+    const StorageAccess baro_prom(StorageBaroPROM);
+    uint8_t baro_prom_data[128];
+    const bool keep_baro_prom = baro_prom.read_block(baro_prom_data, 0, sizeof(baro_prom_data));
+#endif
+
     if (!hal.storage->erase()) {
         ::printf("StorageManager: erase failed\n");
     }
+
+#if AP_BARO_PROM_BACKUP_ENABLED
+    if (keep_baro_prom) {
+        baro_prom.write_block(0, baro_prom_data, sizeof(baro_prom_data));
+    }
+#endif
 }
 
 /*
