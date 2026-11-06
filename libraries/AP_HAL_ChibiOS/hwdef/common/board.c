@@ -225,6 +225,40 @@ static void stm32_gpio_init(void) {
 
 #endif //!STM32F100_MCUCONF
 
+#if defined(STM32H7)
+/*
+ * D2/AHB SRAM clocks are off at reset and may still be off when a bootloader
+ * jumps to us. Enable them before ChibiOS uses the stacks in __cpu_init();
+ * doing this in __early_init() is too late. This handler must not use a stack.
+ */
+#if defined(RCC_AHB2ENR_AHBSRAM1EN)
+_Static_assert((uintptr_t)&RCC->AHB2ENR == 0x5802453C, "Unexpected SRAM clock register");
+#else
+_Static_assert((uintptr_t)&RCC->AHB2ENR == 0x580244DC, "Unexpected SRAM clock register");
+#endif
+
+void __attribute__((naked)) Reset_Handler(void) {
+    __asm volatile (
+        "cpsid i\n"
+#if defined(RCC_AHB2ENR_AHBSRAM1EN)
+        "ldr r0, =0x5802453C\n" // RCC_AHB2ENR on H7A3/H7B3
+#else
+        "ldr r0, =0x580244DC\n" // RCC_AHB2ENR
+#endif
+        "ldr r1, [r0]\n"
+#if defined(RCC_AHB2ENR_D2SRAM3EN)
+        "orr r1, r1, #0xE0000000\n" // SRAM1, SRAM2 and SRAM3
+#else
+        "orr r1, r1, #0x60000000\n" // SRAM1 and SRAM2 on H7A3/H7B3/H72x/H73x
+#endif
+        "str r1, [r0]\n"
+        "ldr r1, [r0]\n"
+        "dsb\n"
+        "b _crt0_entry\n"
+    );
+}
+#endif
+
 /**
  * @brief   Early initialization code.
  * @details This initialization must be performed just after stack setup
