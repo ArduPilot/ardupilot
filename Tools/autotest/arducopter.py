@@ -13682,7 +13682,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 275,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 256,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1130,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 1200,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 680,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 625,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 967,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 760,
@@ -13741,31 +13741,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "--home", home_string,
             ])
             self.wait_ready_to_arm()
-            expected_distances_copy = copy.copy(expected_distances)
-            tstart = self.get_sim_time()
-            failed = False
-            wants = []
-            gots = []
+            # the ld06's YAW_135 sector is bistable: its scan picks up
+            # the nearest post on most sweeps and misses it on a few, so
+            # the sector reads that post for the large majority of
+            # samples and the object behind it for the rest,
+            # indefinitely.  Wait for every sector to read its expected
+            # distance at the same moment rather than taking each
+            # sector's first sample, which otherwise latches whichever
+            # state that sector happened to be in - and so moves with
+            # anything which shifts the timing of the boot.
             epsilon = 20
+            latest = {}
+            tstart = self.get_sim_time()
             while True:
-                if self.get_sim_time_cached() - tstart > 30:
-                    raise AutoTestTimeoutException("Failed to get distances")
-                if len(expected_distances_copy.keys()) == 0:
-                    break
                 m = self.assert_receive_message("DISTANCE_SENSOR")
-                if m.orientation not in expected_distances_copy:
-                    continue
-                got = m.current_distance
-                want = expected_distances_copy[m.orientation]
-                wants.append(want)
-                gots.append(got)
-                if abs(want - got) > epsilon:
-                    failed = True
-                del expected_distances_copy[m.orientation]
-            if failed:
-                raise NotAchievedException(
-                    "Distance too great (%s) (want=%s != got=%s)" %
-                    (name, wants, gots))
+                if m.orientation in expected_distances:
+                    latest[m.orientation] = m.current_distance
+                settled = (
+                    len(latest) == len(expected_distances) and
+                    all(abs(expected_distances[o] - latest[o]) <= epsilon
+                        for o in expected_distances)
+                )
+                if settled:
+                    break
+                if self.get_sim_time_cached() - tstart > 30:
+                    orientations = sorted(expected_distances.keys())
+                    raise NotAchievedException(
+                        "Distance too great (%s) (want=%s != got=%s)" %
+                        (name,
+                         [expected_distances[o] for o in orientations],
+                         [latest.get(o) for o in orientations]))
 
     def AC_Avoidance_Proximity_AVOID_ALT_MIN(self):
         '''Test proximity avoidance with AVOID_ALT_MIN'''
@@ -18003,6 +18008,63 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         if ex is not None:
             raise ex
+
+    def BaroDeferredCalibration(self):
+        """check a barometer which starts supplying data late is calibrated"""
+        # the barometers are calibrated from AP_Baro::update(), so one
+        # which is not supplying data when calibrate() is called is
+        # calibrated once it starts.  Until then it is not calibrated -
+        # which means not healthy - so arming must be refused rather than
+        # permitted against a ground pressure we do not know
+        delay_s = 60
+        for (instance, param) in (2, "SIM_BAR2_STRTDLY"), (1, "SIM_BARO_STRTDLY"):
+            self.start_subtest("Barometer %u supplies data %us after boot" %
+                               (instance, delay_s))
+            self.context_push()
+            self.set_parameter(param, delay_s)
+            self.context_collect("STATUSTEXT")
+            self.reboot_sitl()
+
+            # the autopilot is up, the EKF is happy and we are talking to
+            # it while that barometer is still silent: calibrating it no
+            # longer holds up startup
+            self.wait_ekf_happy()
+            self.assert_prearm_failure("Baro: #%u not calibrated" % instance)
+
+            # and it is calibrated when it does start supplying data,
+            # after which we are armable - which includes the arming
+            # check that the barometer agrees with GPS altitude, so the
+            # ground pressure it calibrated with is a real one
+            self.wait_statustext("Barometer %u calibration complete" % instance,
+                                 check_context=True, timeout=delay_s)
+            self.wait_ready_to_arm()
+            self.context_pop()
+
+        # with every barometer late there is no ground pressure at all.
+        # Ten seconds after startup that is reported, and the barometers
+        # are still calibrated when they start supplying data, but a
+        # board whose barometers are that late is not armable until it
+        # has been rebooted
+        delay_s = 40
+        self.start_subtest("All barometers supply data %us after boot" % delay_s)
+        self.context_push()
+        self.set_parameters({
+            "SIM_BARO_STRTDLY": delay_s,
+            "SIM_BAR2_STRTDLY": delay_s,
+        })
+        self.context_collect("STATUSTEXT")
+        self.reboot_sitl()
+        self.wait_statustext("Baro: unable to calibrate", check_context=True, timeout=delay_s)
+        # the EKF has no height source either, so it complains too:
+        self.assert_prearm_failure("Baro: #1 not calibrated", other_prearm_failures_fatal=False)
+        for instance in 1, 2:
+            self.wait_statustext("Barometer %u calibration complete" % instance,
+                                 check_context=True, timeout=delay_s)
+        self.assert_prearm_failure("Baro: calibrated late, reboot required",
+                                   other_prearm_failures_fatal=False)
+        self.context_pop()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
 
     def BaroDrivers(self):
         '''Test Baro Drivers'''
@@ -24542,6 +24604,7 @@ return update, 1000
             self.ShipTakeoff,
             self.RangeFinder,
             self.BaroDrivers,
+            self.BaroDeferredCalibration,
             self.MAVProximity,
             self.LoweheiserAuto,
             self.clear_roi,
