@@ -50,6 +50,39 @@ libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::update_cd_values  # 112 B (sram)
 libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::update  # 520 B (sram)
 libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::matrix_update  # 194 B (sram)
 libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::drift_correction  # 1792 B (sram)
+# The rest of the AHRS update that core0 ran from flash, armed on RPI_UAVFC at
+# 200 MHz with the SWD sampler: every function above 1% of core0's busy time
+# per KB, about 4.9% of that time in 3.6 KB. AP_AHRS_External::get_results
+# would qualify, but with no external AHRS configured its work is wasted, so
+# it is better not run than moved.
+libraries/AP_AHRS/AP_AHRS_NavEKF3.cpp|AP_AHRS_NavEKF3::get_results  # 728 B (sram)
+libraries/AP_AHRS/AP_AHRS_NavEKF3.cpp|AP_AHRS_NavEKF3::update  # 180 B (sram)
+libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update_state  # 400 B (sram)
+libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::_getCorrectedDeltaVelocityNED  # 128 B (sram)
+libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::try_set_common_origin  # 84 B (sram)
+libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update_configured_ekf_type  # 60 B (sram)
+libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::calc_trig  # 436 B (sram)
+libraries/AP_AHRS/AP_AHRS_Backend.h|AP_AHRS_Backend::Estimates::Estimates  # 114 B (sram) [inlinable]
+libraries/AP_AHRS/AP_AHRS_View.cpp|AP_AHRS_View::update  # 284 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::get_results  # 436 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::normalize  # 206 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::renorm  # 144 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::check_matrix  # 100 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::get_vert_pos_rate_D  # 68 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_Backend::fill_airspeed_estimate  # 46 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_Backend::fill_airspeed_EAS_estimate  # 52 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_Backend::get_unconstrained_airspeed_EAS  # 136 B (sram)
+# The maths those call on every update, about 1.6% of core0's busy time from
+# flash between them. The NavEKF3 getters that get_results calls stay in flash:
+# none is over 0.06%.
+libraries/AP_Math/matrix3.cpp|Matrix3<float>::operator*  # 226 + 90 B (sram)
+libraries/AP_Math/matrix3.cpp|Matrix3<float>::to_euler  # 66 B (sram)
+libraries/AP_Math/AP_Math.cpp|float safe_asin<float>  # 72 B (sram)
+libraries/AP_Math/quaternion.cpp|QuaternionT<float>::from_rotation_matrix  # 428 B (sram)
+libraries/AP_Math/quaternion.cpp|QuaternionT<float>::rotate  # 50 B (sram)
+libraries/AP_Math/vector3.cpp|Vector3<float>::operator-=  # 50 B (sram)
+libraries/AP_Math/vector3.cpp|Vector3<float>::operator%  # 54 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::get_delta_velocity  # 170 B (sram)
 
 # AP_DAL: the EKF's sensor abstraction, 3.8% of core0 non-idle in 2.3 KB and
 # entirely XIP-resident before this. Only the entries the profile actually hit
@@ -515,6 +548,8 @@ libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis32
 modules/ChibiOS/os/rt/src/chstats.c|__stats_ctxswc  # [needs HAL_ENABLE_THREAD_STATISTICS]
 (profiled)|SRV_Channels::set_output_scaled
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|Vector6C
+# core0's DMA vector, 0.5% of core0's busy time from flash on RPI_UAVFC
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|Vector68  # 56 B (sram)
 (profiled)|AP_MotorsMulticopter::update_throttle_filter
 (profiled)|AP_AHRS::get_air_density_ratio
 (profiled)|ChibiOS::Shared_DMA::lock_core
@@ -651,6 +686,8 @@ libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_finish_write
 modules/ChibiOS/os/rt/src/chsem.c|chSemWait
 (profiled)|ChibiOS::SPIDevice::transfer_fullduplex
 modules/ChibiOS/os/hal/ports/RP/LLD/TIMERv1/hal_st_lld.c|Vector44
+# core0's tick alarm, 0.9% of core0's busy time from flash on RPI_UAVFC
+modules/ChibiOS/os/hal/ports/RP/LLD/TIMERv1/hal_st_lld.c|Vector40  # 68 B (sram)
 (profiled)|AC_AttitudeControl_Multi::get_rate_yaw_pid
 (profiled)|ChibiOS::Util::safety_switch_state
 (profiled)|AP::srv
@@ -726,6 +763,17 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
 (archive)|lib_a-sf_finite.o  # finitef, 26 B
 (archive)|lib_a-wf_log.o     # logf wrapper, 108 B
 (archive)|lib_a-sf_tan.o     # tanf, 84 B
+# Core0, armed on RPI_UAVFC with the SWD sampler: memcmp, which
+# AP_DAL::WriteLogMessage runs on every replay message, 1.0% of core0's busy
+# time, and asinf and acosf for the Euler angles, 1.3%, all from flash. The
+# wrappers call __errno only on a domain error, so it stays in flash.
+(archive)|lib_a-memcmp.o     # memcmp, 32 B
+(archive)|lib_a-ef_asin.o    # __ieee754_asinf, 524 B
+(archive)|lib_a-wf_asin.o    # asinf wrapper, 104 B
+(archive)|lib_a-ef_acos.o    # __ieee754_acosf, 596 B
+(archive)|lib_a-wf_acos.o    # acosf wrapper, 104 B
+(archive)|lib_a-ef_sqrt.o    # __ieee754_sqrtf, 6 B
+(archive)|lib_a-sf_fabs.o    # fabsf, 14 B
 # Bidirectional DShot, the half that did not fit in Scratch Y. The hot send/decode chain is in
 # rp2350_scratchy_registry.txt; these are the outer rate-thread frame and the eRPM publish.
 # update_rpm belongs here rather than Scratch Y because core0 reads ESC telemetry state for
