@@ -2862,16 +2862,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # nested context so the altitude check is gone before landing
         self.context_push()
-        self.install_message_hook_context(check_alt)
+        try:
+            self.install_message_hook_context(check_alt)
 
-        # cut the throttle in STABILIZE and fall through the floor
-        self.change_mode("STABILIZE")
-        self.zero_throttle()
-        self.wait_mode("RTL", timeout=30)
+            # cut the throttle in STABILIZE and fall through the floor
+            self.change_mode("STABILIZE")
+            self.zero_throttle()
+            self.wait_mode("RTL", timeout=30)
 
-        # RTL must stop the fall rather than sit at ground idle
-        self.wait_climbrate(0.5, 10, timeout=30)
-        self.context_pop()
+            # RTL must stop the fall rather than sit at ground idle
+            self.wait_climbrate(0.5, 10, timeout=30)
+        finally:
+            self.context_pop()
 
         self.wait_rtl_complete()
 
