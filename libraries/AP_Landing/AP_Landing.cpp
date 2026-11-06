@@ -336,10 +336,11 @@ void AP_Landing::adjust_landing_slope_for_rangefinder_bump(AP_FixedWing::Rangefi
     }
 }
 
-// send out any required mavlink messages
+// send out any required mavlink messages; returns false if there was
+// no space to send them
 bool AP_Landing::send_landing_message(mavlink_channel_t chan) {
     if (!flags.in_progress) {
-        return false;
+        return true;
     }
 
     switch (type) {
@@ -349,7 +350,7 @@ bool AP_Landing::send_landing_message(mavlink_channel_t chan) {
 #endif
     case TYPE_STANDARD_GLIDE_SLOPE:
     default:
-        return false;
+        return true;
     }
 }
 

@@ -343,7 +343,8 @@ void AP_Camera_MAVLinkCamV2::send_camera_capture_status(mavlink_channel_t chan) 
     if (interval_active) {
         status.image_interval = time_interval_settings.time_interval_ms * 0.001f;
     }
-    send_camera_message(chan, MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS, &status);
+    // AP_Camera checks for space before calling this
+    IGNORE_RETURN(send_camera_message(chan, MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS, &status));
 }
 
 // send camera information message to GCS
@@ -361,7 +362,8 @@ void AP_Camera_MAVLinkCamV2::send_camera_information(mavlink_channel_t chan) con
     if (info.gimbal_device_id == 0 && _sysid == mavlink_system.sysid) {
         info.gimbal_device_id = get_gimbal_device_id();
     }
-    send_camera_message(chan, MAVLINK_MSG_ID_CAMERA_INFORMATION, &info);
+    // AP_Camera checks for space before calling this
+    IGNORE_RETURN(send_camera_message(chan, MAVLINK_MSG_ID_CAMERA_INFORMATION, &info));
 }
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED

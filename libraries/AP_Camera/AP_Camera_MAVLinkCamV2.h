@@ -72,7 +72,7 @@ public:
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     // send cached video stream information messages to GCS
-    bool send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const override;
+    bool send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const override WARN_IF_UNUSED;
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 private:
@@ -81,7 +81,7 @@ private:
     void find_camera();
 
     void resend_message(mavlink_channel_t chan, const mavlink_message_t &msg) const;
-    bool send_camera_message(mavlink_channel_t chan, uint32_t msgid, const void *packet) const;
+    bool send_camera_message(mavlink_channel_t chan, uint32_t msgid, const void *packet) const WARN_IF_UNUSED;
 
     // request CAMERA_INFORMATION (holds vendor and model name)
     void request_camera_information() const;
