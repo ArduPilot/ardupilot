@@ -348,7 +348,7 @@ bool AP_Arming::all_checks_enabled() const
 
 void AP_Arming::check_failed(const AP_Arming::Check check, bool report, const char *fmt, ...) const
 {
-    if (!report) {
+    if (!report || _pending_arm_quiet) {
         return;
     }
     char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
@@ -378,7 +378,7 @@ void AP_Arming::check_failed(const AP_Arming::Check check, bool report, const ch
 void AP_Arming::check_failed(bool report, const char *fmt, ...) const
 {
 #if HAL_GCS_ENABLED
-    if (!report) {
+    if (!report || _pending_arm_quiet) {
         return;
     }
     char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];

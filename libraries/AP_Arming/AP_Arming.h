@@ -202,6 +202,8 @@ protected:
     uint32_t                last_gyro_pass_ms;
     // pending arm flag
     bool _pending_arm;
+    // true while a pending arm retries quietly, so check failures are not reported
+    bool _pending_arm_quiet;
 
     virtual bool barometer_checks(bool report);
 
