@@ -1,4 +1,5 @@
 #include <AP_gtest.h>
+#include <vector>
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vector2.h>
@@ -333,7 +334,7 @@ TEST(SCurveTrack, climbing_arc_limit_from_arc_length)
 
 // The projected velocity must equal the derivative of the projected position, including for a
 // climbing arc. Regression: the arc velocity/acceleration previously used a unit horizontal tangent
-// where the horizontal fraction arc.length_ne/seg_length was required, tilting a climbing arc's
+// where the horizontal fraction arc.length/seg_length was required, tilting a climbing arc's
 // reported velocity too far toward horizontal (and inflating the centripetal term).
 TEST(SCurveTrack, arc_velocity_matches_position_derivative)
 {
@@ -536,6 +537,328 @@ TEST(SCurveCircle, prev_leg_handoff)
     EXPECT_NEAR((float)target_pos.x, (float)D.x, 0.05f);
     EXPECT_NEAR((float)target_pos.y, (float)D.y, 0.05f);
     EXPECT_NEAR((float)target_pos.z, (float)D.z, 0.05f);
+}
+
+// Sample a leg's path, returning every reported position.
+static void sample_path(SCurve &leg, const Vector3p &origin, std::vector<Vector3f> &out)
+{
+    SCurve prev, next;
+    prev.init();
+    next.init();
+    const float dt = 0.0025f;
+    Vector3p pos;
+    Vector3f vel, accel;
+    for (uint32_t i = 0; i < MAX_DRIVE_ITERS; i++) {
+        pos = origin;
+        vel.zero();
+        accel.zero();
+        const bool done = leg.advance_target_along_track(prev, next, 2.0f, 2.0f, false, dt, pos, vel, accel);
+        out.push_back((pos - origin).tofloat());
+        if (done) {
+            break;
+        }
+    }
+}
+
+// With no axis rotation the helix must be the horizontal arc the NE-only implementation
+// flew: a quarter turn from 20 m North of the centre to 20 m East of it is a circle of
+// radius 20 about (0,0), swept clockwise through the North-East quadrant, with the
+// altitude change spread linearly along it.
+TEST(SCurveTrack, arc_axis_rotation_zero_is_horizontal_arc)
+{
+    const Vector3p origin{20, 0, -50};
+    const Vector3p dest{0, 20, -20};
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI_2, 10.0f, 5.0f, 5.0f, 3.0f, 3.0f, 3.0f, 60.0f, 10.0f);
+
+    std::vector<Vector3f> path;
+    sample_path(leg, origin, path);
+    ASSERT_GT(path.size(), 100U);
+
+    float max_radius_err = 0.0f, max_z_err = 0.0f, min_x = 1e9f, min_y = 1e9f, min_mid_dist = 1e9f;
+    const Vector3f mid_abs{20.0f * cosf(M_PI_4), 20.0f * sinf(M_PI_4), -35.0f};
+    for (const Vector3f &d : path) {
+        const Vector3f abs = d + origin.tofloat();
+        max_radius_err = MAX(max_radius_err, fabsf(abs.xy().length() - 20.0f));
+        // altitude is linear in the swept angle
+        const float swept = atan2f(abs.y, abs.x);
+        max_z_err = MAX(max_z_err, fabsf(abs.z - (-50.0f + 30.0f * swept / M_PI_2)));
+        min_x = MIN(min_x, abs.x);
+        min_y = MIN(min_y, abs.y);
+        min_mid_dist = MIN(min_mid_dist, (abs - mid_abs).length());
+    }
+    EXPECT_LT(max_radius_err, 0.05f);
+    EXPECT_LT(max_z_err, 0.2f);
+    // the short way round, clockwise from North through North-East to East
+    EXPECT_GT(min_x, -0.05f);
+    EXPECT_GT(min_y, -0.05f);
+    EXPECT_LT(min_mid_dist, 0.2f);
+    const Vector3f end = path.back();
+    EXPECT_NEAR(end.x, -20.0f, 0.2f);
+    EXPECT_NEAR(end.y, 20.0f, 0.2f);
+    EXPECT_NEAR(end.z, 30.0f, 0.2f);
+}
+
+// With the axis rotated a quarter turn about the chord the arc must lie in the vertical
+// plane through the chord: a half circle over a 40 m horizontal chord bulges one radius
+// (20 m) vertically and stays on the chord's compass bearing.  A positive angle bulges
+// above the chord whichever way the chord runs, and a negative one below.
+TEST(SCurveTrack, vertical_arc_lies_in_vertical_plane)
+{
+    const struct {
+        const char *name;
+        Vector3p origin, dest;
+        float angle_rad;
+        bool above;
+    } cases[] = {
+        {"north +180", {0, 0, -50}, {40, 0, -50}, M_PI, true},
+        {"south +180", {40, 0, -50}, {0, 0, -50}, M_PI, true},
+        {"north -180", {0, 0, -50}, {40, 0, -50}, -M_PI, false},
+    };
+    for (const auto &c : cases) {
+        SCurve leg;
+        leg.calculate_track(c.origin, c.dest, c.angle_rad,
+                            20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+        std::vector<Vector3f> path;
+        sample_path(leg, c.origin, path);
+        ASSERT_GT(path.size(), 100U) << c.name;
+
+        float max_east = 0.0f, max_up = 0.0f, max_down = 0.0f;
+        for (const Vector3f &d : path) {
+            max_east = MAX(max_east, fabsf(d.y));
+            max_up = MAX(max_up, -d.z);
+            max_down = MAX(max_down, d.z);
+        }
+        // the arc plane contains no East component
+        EXPECT_LT(max_east, 0.05f) << c.name;
+        // and it bulges a full radius to the commanded side of the chord only
+        EXPECT_GT(c.above ? max_up : max_down, 19.0f) << c.name;
+        EXPECT_LT(c.above ? max_down : max_up, 0.5f) << c.name;
+        // the endpoint is still the commanded destination
+        const Vector3f end = path.back();
+        EXPECT_NEAR(end.x, (c.dest - c.origin).x, 0.2f) << c.name;
+        EXPECT_NEAR(end.z, 0.0f, 0.2f) << c.name;
+    }
+}
+
+// A vertical circle flown as four quarter arcs needs the sign to alternate: the arc
+// bulges away from the centre, so the two lower quarters bulge below their chords and
+// the two upper quarters above.  A convention that gave a loop a single sign would make
+// a lone vertical arc's side depend on its compass heading.
+TEST(SCurveTrack, vertical_circle_quarters_alternate_sign)
+{
+    const Vector3f centre{0.0f, 0.0f, -20.0f};
+    const Vector3p bottom{0, 0, 0}, front{20, 0, -20}, top{0, 0, -40}, back{-20, 0, -20};
+    const struct {
+        const char *name;
+        Vector3p origin, dest;
+        float angle_rad;
+    } quarters[] = {
+        {"bottom to front", bottom, front, -M_PI_2},
+        {"front to top", front, top, M_PI_2},
+        {"top to back", top, back, M_PI_2},
+        {"back to bottom", back, bottom, -M_PI_2},
+    };
+    const float signs[] = {1.0f, -1.0f};
+    for (const auto &q : quarters) {
+        for (const float sign : signs) {
+            SCurve leg;
+            leg.calculate_track(q.origin, q.dest, sign * q.angle_rad,
+                                20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+            std::vector<Vector3f> path;
+            sample_path(leg, q.origin, path);
+            ASSERT_GT(path.size(), 100U) << q.name;
+
+            float max_radius_err = 0.0f;
+            for (const Vector3f &d : path) {
+                max_radius_err = MAX(max_radius_err, fabsf((d + q.origin.tofloat() - centre).length() - 20.0f));
+            }
+            if (is_positive(sign)) {
+                EXPECT_LT(max_radius_err, 0.2f) << q.name;
+            } else {
+                // the other sign is the mirror image through the chord, well off the circle
+                EXPECT_GT(max_radius_err, 5.0f) << q.name << " with the sign flipped";
+            }
+        }
+    }
+}
+
+// The axis is rotated about the chord's ground track, not the chord itself, so a climbing
+// chord still gets an arc in the vertical plane through it: nothing leaves that plane.
+// Rotating about the 3D chord would tilt the plane and put an East component in the path.
+TEST(SCurveTrack, vertical_arc_on_climbing_chord_stays_in_plane)
+{
+    const Vector3p origin{0, 0, -50};
+    const Vector3p dest{40, 0, -80};   // 40 m North and 30 m up
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI,
+                        20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+    std::vector<Vector3f> path;
+    sample_path(leg, origin, path);
+    ASSERT_GT(path.size(), 100U);
+
+    float max_east = 0.0f;
+    for (const Vector3f &d : path) {
+        max_east = MAX(max_east, fabsf(d.y));
+    }
+    EXPECT_LT(max_east, 0.05f);
+    const Vector3f end = path.back();
+    EXPECT_NEAR(end.x, 40.0f, 0.2f);
+    EXPECT_NEAR(end.z, -30.0f, 0.2f);
+}
+
+// The reported velocity must stay tangent to the path for a tilted arc too, which is what
+// catches a projection that mixes the axis and in-plane components incorrectly.
+TEST(SCurveTrack, tilted_arc_velocity_matches_position_derivative)
+{
+    const float rotations[] = { M_PI_2, M_PI_4, radians(120.0f) };
+    for (float rot : rotations) {
+        const Vector3p origin{0, 0, -60};
+        const Vector3p dest{40, 10, -45};
+
+        SCurve leg;
+        leg.calculate_track(origin, dest, M_PI,
+                            20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, rot);
+
+        SCurve prev, next;
+        prev.init();
+        next.init();
+        const float dt = 0.0025f;
+        Vector3p pos, pos_prev;
+        Vector3f vel, accel;
+        bool have_prev = false;
+        float max_err = 0.0f;
+        for (uint32_t i = 0; i < MAX_DRIVE_ITERS; i++) {
+            pos = origin;
+            vel.zero();
+            accel.zero();
+            const bool done = leg.advance_target_along_track(prev, next, 2.0f, 2.0f, false, dt, pos, vel, accel);
+            if (have_prev && vel.length() > 3.0f) {
+                const Vector3f fd = (pos - pos_prev).tofloat() / dt;
+                max_err = MAX(max_err, (fd - vel).length());
+            }
+            pos_prev = pos;
+            have_prev = true;
+            if (done) {
+                break;
+            }
+        }
+        EXPECT_LT(max_err, 0.05f) << "arc_axis_rot_rad = " << rot;
+        // and the leg still arrives where it was sent
+        const Vector3f end = (pos - origin).tofloat();
+        const Vector3f want = (dest - origin).tofloat();
+        EXPECT_LT((end - want).length(), 0.2f) << "arc_axis_rot_rad = " << rot;
+    }
+}
+
+// A tilted arc is bounded by the tighter vertical speed limit, since it moves both up and
+// down along the path; holding only the horizontal limit, as a level helix does, would let a
+// vertical semicircle climb and descend at the full horizontal speed.
+TEST(SCurveTrack, vertical_arc_speed_held_to_vertical_limit)
+{
+    const Vector3p origin{0, 0, -50};
+    const Vector3p dest{40, 0, -50};
+
+    SCurve leg;
+    // 8 m/s horizontal, 3 up, 2 down
+    leg.calculate_track(origin, dest, M_PI, 8.0f, 3.0f, 2.0f, 5.0f, 5.0f, 10.0f, 60.0f, 30.0f, M_PI_2);
+    const LegPeak peak = drive_leg(leg, origin);
+    ASSERT_TRUE(peak.finished);
+    // the horizontal peak is at the top and the vertical one at the sides, both at path speed
+    EXPECT_GT(MAX(peak.speed_xy, peak.speed_z), 1.5f);
+    EXPECT_LT(peak.speed_xy, 2.05f);
+    EXPECT_LT(peak.speed_z, 2.05f);
+}
+
+// The acceleration reported for an arc in any plane, including the full 3D centripetal term,
+// must be the derivative of the velocity it reports.
+TEST(SCurveTrack, tilted_arc_accel_matches_velocity_derivative)
+{
+    const float rotations[] = { M_PI_4, M_PI_2, radians(120.0f) };
+    for (float rot : rotations) {
+        const Vector3p origin{0, 0, -60};
+        const Vector3p dest{40, 10, -45};
+
+        SCurve leg;
+        leg.calculate_track(origin, dest, M_PI, 20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, rot);
+
+        SCurve prev, next;
+        prev.init();
+        next.init();
+        const float dt = 0.0025f;
+        Vector3p pos;
+        Vector3f vel, accel, vel_prev;
+        bool have_prev = false;
+        bool done = false;
+        float max_err = 0.0f;
+        for (uint32_t i = 0; i < MAX_DRIVE_ITERS && !done; i++) {
+            pos = origin;
+            vel.zero();
+            accel.zero();
+            done = leg.advance_target_along_track(prev, next, 2.0f, 2.0f, false, dt, pos, vel, accel);
+            if (have_prev && vel.length() > 3.0f) {
+                max_err = MAX(max_err, ((vel - vel_prev) / dt - accel).length());
+            }
+            vel_prev = vel;
+            have_prev = true;
+        }
+        EXPECT_TRUE(done) << "arc_axis_rot_rad = " << rot;
+        EXPECT_LT(max_err, 0.05f) << "arc_axis_rot_rad = " << rot;
+    }
+}
+
+// A vertical arc on a climbing chord keeps the full bulge of the vertical plane through it,
+// on the upper side: a 180 degree arc over a 50 m chord is a semicircle of radius 25 m.
+TEST(SCurveTrack, vertical_arc_on_climbing_chord_keeps_full_bulge)
+{
+    const Vector3p origin{0, 0, -50};
+    const Vector3p dest{40, 0, -80};   // 40 m North and 30 m up, a 50 m chord
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI, 20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+    std::vector<Vector3f> path;
+    sample_path(leg, origin, path);
+    ASSERT_GT(path.size(), 100U);
+
+    // distance from the chord within the North-Down plane, positive above it
+    const Vector2f chord_unit = Vector2f{40.0f, -30.0f}.normalized();
+    float max_above = 0.0f, max_below = 0.0f;
+    for (const Vector3f &d : path) {
+        const float side = chord_unit.x * d.z - chord_unit.y * d.x;
+        max_above = MAX(max_above, -side);
+        max_below = MAX(max_below, side);
+    }
+    EXPECT_NEAR(max_above, 25.0f, 0.3f);
+    EXPECT_LT(max_below, 0.05f);
+}
+
+// Stacked waypoints a millimetre apart horizontally have no ground track to name a plane by,
+// so a rotated arc between them is flown straight rather than as a loop on whatever bearing
+// the millimetre points.
+TEST(SCurveTrack, near_vertical_chord_flies_straight)
+{
+    const Vector3p origin{0, 0, -20};
+    const Vector3p dest{0.001, 0, -70};
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI, 20.0f, 20.0f, 20.0f, 5.0f, 5.0f, 5.0f, 60.0f, 30.0f, M_PI_2);
+
+    std::vector<Vector3f> path;
+    sample_path(leg, origin, path);
+    ASSERT_GT(path.size(), 100U);
+
+    float max_horizontal = 0.0f;
+    for (const Vector3f &d : path) {
+        max_horizontal = MAX(max_horizontal, d.xy().length());
+    }
+    EXPECT_LT(max_horizontal, 0.1f);
+    EXPECT_NEAR(path.back().z, -50.0f, 0.2f);
 }
 
 AP_GTEST_MAIN()
