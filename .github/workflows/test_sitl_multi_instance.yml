@@ -1,0 +1,174 @@
+name: test SITL cluster clock sync
+
+on:
+  push:
+    paths-ignore:
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+
+  pull_request:
+    paths-ignore:
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+
+concurrency:
+  group: ci-${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
+    permissions:
+      contents: read
+      actions: write  # save-ccache deletes stale cache entries
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.2.0
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: cluster-base
+
+      - name: build arducopter and arduplane
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board sitl
+          ./waf copter plane
+          ccache -s
+
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: cluster-base
+
+      - name: upload SITL binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: sitl-cluster-binaries
+          path: |
+            build/sitl/bin/arducopter
+            build/sitl/bin/arduplane
+          retention-days: 1
+
+  test-multi-instance-sync:
+    needs: build
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
+    permissions:
+      contents: read
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.2.0
+      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
+
+    steps:
+      # the binaries come prebuilt from the build job; only the test
+      # script itself is needed from the tree
+      - uses: actions/checkout@v7
+        with:
+          submodules: false
+          persist-credentials: false
+          sparse-checkout: |
+            Tools/scripts/test_sitl_multi_instance.sh
+          sparse-checkout-cone-mode: false
+
+      - name: download SITL binaries
+        uses: actions/download-artifact@v4.1.3
+        with:
+          name: sitl-cluster-binaries
+          path: build/sitl/bin/
+
+      - name: make binaries executable
+        run: chmod +x build/sitl/bin/arducopter build/sitl/bin/arduplane
+
+      - name: run 5x SITL instances at speedup=100 and verify clock sync
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          Tools/scripts/test_sitl_multi_instance.sh build/sitl/bin/arducopter
+
+      - name: archive logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-instance-logs
+          path: /tmp/sitl_multi_*
+          retention-days: 7
+
+  test-cluster-follow:
+    needs: build
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
+    permissions:
+      contents: read
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.2.0
+      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
+
+    steps:
+      # the binaries come prebuilt from the build job; the tree is only
+      # needed for the harness itself plus the mavlink submodule, from
+      # which pymavlink is installed so the dialect always matches the
+      # revision the binaries were built from
+      - uses: actions/checkout@v7
+        with:
+          submodules: false
+          persist-credentials: false
+          sparse-checkout: |
+            .gitmodules
+            Tools/autotest/test_cluster_follow.py
+          sparse-checkout-cone-mode: false
+
+      - name: checkout mavlink submodule
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          git submodule update --init --recursive --depth 1 modules/mavlink
+
+      - name: download SITL binaries
+        uses: actions/download-artifact@v4.1.3
+        with:
+          name: sitl-cluster-binaries
+          path: build/sitl/bin/
+
+      - name: make binaries executable
+        run: chmod +x build/sitl/bin/arducopter build/sitl/bin/arduplane
+
+      - name: fly 2 copters following a plane in one cluster
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          python3 -m pip install modules/mavlink/pymavlink --upgrade --user
+          # Commanded at 100x; every other knob is a Settings constant
+          # inside the harness. The achieved rate is measured, reported
+          # per vehicle every two seconds, and the steady-state figure
+          # is gated against the commanded speedup.
+          python3 Tools/autotest/test_cluster_follow.py --speedup 100
+
+      - name: archive logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-follow-logs
+          path: /tmp/sitl_cluster_follow_*
+          retention-days: 7
