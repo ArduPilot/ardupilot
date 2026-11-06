@@ -923,8 +923,14 @@ void NavEKF3_core::UpdateAglKf()
     // its velocity takes seconds to recover, so note the step for the velD fusion. The prediction
     // carries the IMU, so a lagging velocity or an accel bias moves the innovation slowly and a
     // step moves it in one sample, however long since the last one. 25 ms of jitter in when the
-    // samples were taken is allowed for
-    if (fabsF(hgtInnov - aglKfLastHgtInnov) > aglKfStepMin + 0.025f * fabsF(aglKf.vel)) {
+    // samples were taken is allowed for. A jump only counts from a filter that agreed with the
+    // range: one already well off it may be its own velocity error showing, as after an accel
+    // clip, and holding the velocity out then leaves that error uncorrected. After a gap in the
+    // range the last innovation says nothing about the filter now, so any jump counts
+    const bool innovSettled = (imuSampleTime_ms - aglKf.lastRngFuseTime_ms > aglKfRngGapMax_ms) ||
+                              (fabsF(aglKfLastHgtInnov) < aglKfStepFromMax);
+    if (innovSettled &&
+        (fabsF(hgtInnov - aglKfLastHgtInnov) > aglKfStepMin + 0.025f * fabsF(aglKf.vel))) {
         aglKfStepTime_ms = imuSampleTime_ms;
     }
 

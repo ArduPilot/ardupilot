@@ -1359,6 +1359,7 @@ private:
     // ground, and the AGL KF velocity is not fused as velD for this long after one
     static constexpr ftype aglKfStepMin = 0.15f;
     static constexpr uint32_t aglKfStepHold_ms = 5000;
+    static constexpr ftype aglKfStepFromMax = 0.25f;     // m, largest prior innovation a step is counted from
     static constexpr ftype aglKfStepHgtNoiseMax = 5.0f;  // m, height noise beyond which there is no hold
     ftype aglKfLastHgtInnov;        // range innovation of the last AGL KF fusion
     uint32_t aglKfStepTime_ms;      // time of the last step in the ground under the range finder
