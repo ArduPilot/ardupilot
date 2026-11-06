@@ -64,39 +64,6 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
 }
 
 /*
-  return the orientation the board is mounted in, from
-  AHRS_ORIENTATION.
-
-  The value is held once the vehicle is armed, so that the rotation
-  applied to sensor data can not change under a flying vehicle.  A
-  vehicle which has never read it is the exception: after a mid-air
-  reboot, or on a Plane with ARMING_REQUIRED=NO, it has to be picked
-  up while armed or not at all.
- */
-enum Rotation AP_AHRS::get_board_orientation()
-{
-    if (board_orientation_known && !hal.scheduler->in_main_thread()) {
-        // once the value is known the main thread alone stores it, so
-        // that two threads can not race to store one.  AP_Periph runs
-        // the IMU on its own thread when INS_SAMPLE_RATE is set, and
-        // that thread reaches this through AP_InertialSensor::update().
-        // The first read is let through whichever thread makes it:
-        // QURT does not count setup() as the main thread, and the
-        // sensors must get the orientation from their init() there.
-        return board_orientation;
-    }
-
-    if (board_orientation_known && hal.util->get_soft_armed()) {
-        return board_orientation;
-    }
-
-    board_orientation = (enum Rotation)_board_orientation.get();
-    board_orientation_known = true;
-
-    return board_orientation;
-}
-
-/*
   calculate sin and cos of roll/pitch/yaw from a body_to_ned rotation matrix
  */
 void AP_AHRS::calc_trig(const Matrix3f &rot,

@@ -22,6 +22,7 @@
  */
 
 #include "AP_AHRS_config.h"
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 
 #include <AP_HAL/Semaphores.h>
 
@@ -76,11 +77,6 @@ public:
 #if AP_AHRS_NAVEKF3_ENABLED
     AP_AHRS_NavEKF3 ekf3;
 #endif
-
-    // return the orientation the board is mounted in, from
-    // AHRS_ORIENTATION.  Sensor drivers call this for themselves, so
-    // they do not depend on AHRS having been initialised first.
-    enum Rotation get_board_orientation();
 
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore(void) {
@@ -784,7 +780,10 @@ private:
      * Parameters
      */
     AP_Int8 _wind_max;
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+    // read by AP_BoardConfig, by name; AHRS makes no use of it itself:
     AP_Int8 _board_orientation;
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
     AP_Enum<EKFType> _ekf_type;
 
     /*
@@ -878,11 +877,6 @@ private:
 
     Matrix3f _rotation_autopilot_body_to_vehicle_body;
     Matrix3f _rotation_vehicle_body_to_autopilot_body;
-
-    // the board orientation from AHRS_ORIENTATION, and whether it has
-    // been read yet:
-    enum Rotation board_orientation;
-    bool board_orientation_known;
 
     // updates matrices responsible for rotating vectors from vehicle body
     // frame to autopilot body frame from _trim variables
