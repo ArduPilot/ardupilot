@@ -2444,6 +2444,172 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3HardLandingRearm(self):
+        '''re-arm safely when a drop or a hard landing leaves the EKF vertical state wrong'''
+        # A disarm in the air drops the vehicle, and an impact the IMUs clip leaves the EKF on
+        # the ground still descending. Re-armed, ALT_HOLD then keeps climbing after takeoff with
+        # the throttle at minimum. Once the vehicle is still the EKF resets that velocity, and a
+        # height that disagrees with the height sensor refuses arming.
+        ignore = ["Need Alt Estimate", "EKF attitude is bad"]
+        reset_text = "vertical velocity reset at rest"
+
+        def hover_and_drop():
+            # hover first, as the flight that found this did
+            self.takeoff(altitude_min=2.1, mode='ALT_HOLD', require_absolute=False)
+            self.wait_rangefinder_distance(1.0, 3.0, timeout=40, minimum_duration=20)
+            self.disarm_vehicle(force=True)
+            self.wait_rangefinder_distance(0, 0.3, minimum_duration=0.5)
+            self.zero_throttle()
+            self.context_clear_collection('STATUSTEXT')
+
+        def accel_bias(value):
+            self.set_parameters({"SIM_ACC1_BIAS_Z": value, "SIM_ACC2_BIAS_Z": value})
+
+        def baro_glitch(value):
+            self.set_parameters({"SIM_BARO_GLITCH": value, "SIM_BAR2_GLITCH": value})
+
+        def impact():
+            # an accel bias stands in for the impact deceleration the IMUs clipped, held until
+            # the EKF reports the vehicle descending at 4 m/s
+            accel_bias(4.7)
+            self.assert_receive_message('LOCAL_POSITION_NED', condition='LOCAL_POSITION_NED.vz>4', timeout=10)
+            accel_bias(0)
+
+        def fly_and_land():
+            # take off, then throttle to minimum: the vehicle has to come down, not climb
+            self.set_rc(3, 1700)
+            self.wait_rangefinder_distance(1.2, 3.0, timeout=20)
+            self.set_rc(3, 1000)
+            r0 = self.get_rangefinder_distance()
+            rmax = r0
+            tstart = self.get_sim_time_cached()
+            while True:
+                r = self.get_rangefinder_distance()
+                rmax = max(rmax, r)
+                if r > r0 + 0.6:
+                    raise NotAchievedException("climbed %.2f m with the throttle at minimum" % (r - r0))
+                if r < 0.3:
+                    break
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("did not land with the throttle at minimum")
+            self.progress("rose %.2f m after the throttle went to minimum" % (rmax - r0))
+            self.context_clear_collection('STATUSTEXT')
+            self.disarm_vehicle(force=True)
+            # a reset made before the EKF's fusion horizon reaches the landing is undone by the
+            # landing's own samples: one reset per rest has to be enough, and has to hold
+            self.delay_sim_time(2, "rest after the landing")
+            for imu in (0, 1):
+                n = len([x for x in self.context_collection('STATUSTEXT') if "IMU%u %s" % (imu, reset_text) in x.text])
+                if n > 1:
+                    raise NotAchievedException("IMU%u reset its vertical velocity %d times after the landing" % (imu, n))
+            vz = self.assert_receive_message('LOCAL_POSITION_NED').vz
+            if abs(vz) > 0.3:
+                raise NotAchievedException("vertical velocity %.2f m/s at rest after the landing" % vz)
+
+        def quick_rearm():
+            hover_and_drop()
+            impact()
+            self.delay_sim_time(1, "re-arm a second after the impact")
+            reset_before_arm = any(reset_text in x.text for x in self.context_collection('STATUSTEXT'))
+            self.arm_vehicle()
+            fly_and_land()
+            # the arm went up clean because the EKF had reset the velocity once the vehicle was still
+            if not reset_before_arm:
+                raise NotAchievedException("no vertical velocity reset before the re-arm")
+
+        self.set_parameters({
+            "SIM_TERRAIN": 0,  # flat ground, so the range finder reads zero once landed
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("GPS: a baro step does not refuse arming while the GPS measures the vertical velocity")
+        self.wait_ready_to_arm()
+        # the step and its removal are both 3 m steps
+        for value in (3, 0):
+            self.context_clear_collection('STATUSTEXT')
+            baro_glitch(value)
+            tstart = self.get_sim_time_cached()
+            while self.get_sim_time_cached() - tstart < 10:
+                self.send_mavlink_run_prearms_command()
+                m = self.assert_receive_message('EKF_STATUS_REPORT', timeout=5)
+                if not (m.flags & mavutil.mavlink.ESTIMATOR_ATTITUDE):
+                    raise NotAchievedException("EKF unhealthy after a baro step")
+                self.delay_sim_time(0.25, "poll")
+            refusals = [x.text for x in self.context_collection('STATUSTEXT') if "PreArm" in x.text]
+            if refusals:
+                raise NotAchievedException("refused arming after a baro step: %s" % refusals[0])
+        self.wait_ready_to_arm()
+
+        self.start_subtest("GPS: a quick re-arm after a hard landing goes up clean")
+        quick_rearm()
+
+        self.start_subtest("no aiding: a baro step refuses arming on the height error")
+        # GPS stays off from here on, so no later leg has a vertical velocity measurement
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.reboot_sitl()
+        self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_ATTITUDE | mavutil.mavlink.ESTIMATOR_CONST_POS_MODE, 0, timeout=60)
+        self.delay_sim_time(30, "height variance to settle after the reboot")
+        baro_glitch(3)
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_ATTITUDE, timeout=3)
+        self.assert_arm_failure("height error", ignore_prearm_failures=ignore)
+        baro_glitch(0)
+
+        self.start_subtest("no aiding: with a 0.01 m height noise a baro step is reported promptly")
+        # the gate is then narrower than the 1 m threshold, so the rejected samples reach it only
+        # through the clip's 2 m floor; clipped to the gate it took 3.6-3.8 s, close to the 5 s
+        # height timeout that resets the height, against 1.6 s with the floor
+        alt_noise = self.get_parameter("EK3_ALT_M_NSE")
+        self.set_parameter("EK3_ALT_M_NSE", 0.01)
+        self.delay_sim_time(30, "height variance to settle on the new noise")
+        baro_glitch(3)
+        tstart = self.get_sim_time()
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_ATTITUDE, timeout=2.5)
+        self.progress("height error reported %.1f s after the step" % (self.get_sim_time() - tstart))
+        self.assert_arm_failure("height error", ignore_prearm_failures=ignore)
+        baro_glitch(0)
+        self.set_parameter("EK3_ALT_M_NSE", alt_noise)
+
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.reboot_sitl()
+
+        self.start_subtest("flow: a quick re-arm after a hard landing goes up clean")
+        quick_rearm()
+
+        self.start_subtest("flow: a re-arm while falling after a disarm in the air is accepted")
+        # high enough that the fall outlasts the time the harness takes to re-arm
+        self.takeoff(altitude_min=25, mode='ALT_HOLD', require_absolute=False)
+        self.wait_altitude(20, 35, relative=True, timeout=60, minimum_duration=3)
+        self.zero_throttle()
+        # the baro disagrees with the state during the fall, as it did on real drops; set
+        # before the disarm, as the EKF only rejects it for the moment it is armed
+        baro_glitch(20)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, p1=0, p2=21196)
+        # faster than the descent the throttle asks for, so the vehicle is falling
+        self.assert_receive_message('VFR_HUD', condition='VFR_HUD.climb<-3.5', timeout=5)
+        self.delay_sim_time(0.3, "height filter past 1 m")
+        self.arm_vehicle()
+        if self.get_rangefinder_distance() < 1.0:
+            raise NotAchievedException("armed only once on the ground")
+        baro_glitch(0)
+        self.wait_rangefinder_distance(0, 0.3, timeout=60)
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("flow: a baro step the EKF rejects refuses arming on the height error")
+        self.set_parameter("EK3_ALT_M_NSE", 0.5)
+        self.wait_ready_to_arm(require_absolute=False)
+        baro_glitch(5)
+        # the EKF reports the height test ratio as the vertical position variance
+        self.assert_receive_message('EKF_STATUS_REPORT', condition='EKF_STATUS_REPORT.pos_vert_variance>1', timeout=3)
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_ATTITUDE, timeout=3)
+        self.assert_arm_failure("height error", ignore_prearm_failures=ignore)
+        baro_glitch(0)
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -16023,6 +16189,257 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def static_yaw_test_setup(self, params):
+        '''restart at a 90 deg heading, well away from the 0 deg yaw an EKF core with no
+        yaw source starts or is reset at, with params set and no yaw source in set 2'''
+        self.set_parameters(params)
+        # in source set 2 with no yaw source, a still disarmed vehicle drops to AID_NONE
+        # and holds its yaw by fusing the static yaw reference
+        self.set_parameter("EK3_SRC2_YAW", 0)
+        home = self.sitl_start_location()
+        self.customise_SITL_commandline(["--home", "%s,%s,%s,%s" % (
+            home.lat, home.lng, home.get_alt_m(AltFrame.ABSOLUTE), 90)])
+
+    def EKFBootstrapResetStaticYaw(self):
+        '''check a still vehicle with no yaw source retakes its static yaw reference after an EKF reset'''
+        self.static_yaw_test_setup({
+            "RC8_OPTION": 187,  # EKF_RESET
+        })
+
+        # fly, so the static yaw reference is the yaw the vehicle landed at
+        self.takeoff(3, mode='LOITER')
+        self.land_and_disarm()
+        self.delay_sim_time(5, "vehicle to come to rest")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        self.delay_sim_time(2, "source set to take effect")
+
+        reset_us = self.ekf_reset_by_switch()
+        self.delay_sim_time(15, "static yaw fusion after the reset")
+
+        # the reset puts the yaw at 0, and a reference left at the landing yaw would be
+        # fused against it and run up the Z gyro bias
+        cores = self.ekf3_yaw_change_and_max_gyro_bias_z(reset_us)
+        if len(cores) == 0:
+            raise NotAchievedException("no XKF1 records either side of the reset")
+        for core, (yaw_change, max_gz) in sorted(cores.items()):
+            self.progress("EKF3 core %u: yaw moved up to %.1f deg, max |GZ| %.2f deg/s" % (core, yaw_change, max_gz))
+            if yaw_change < 45:
+                raise NotAchievedException("core %u: the reset did not move the yaw away from the landing yaw" % core)
+            if max_gz > 0.5:
+                raise NotAchievedException("core %u: Z gyro bias ran up to %.2f deg/s after the reset" % (core, max_gz))
+
+    def ekf_reset_by_switch(self):
+        '''reset the EKF with the EKF_RESET aux function on RC8, returning the sim time in us'''
+        # collect STATUSTEXT only while waiting for the reset to be acknowledged
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        reset_us = int(self.get_sim_time() * 1e6)
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF bootstrap reset performed", check_context=True, timeout=10)
+        self.set_rc(8, 1000)
+        self.context_pop()
+        return reset_us
+
+    def ekf3_gyro_bias_around(self, since_us, until_us, axis="Z"):
+        '''for each EKF3 core in the current onboard log, its gyro bias on one axis just before
+        since_us and the lowest and highest it reads from then until until_us, in deg/s'''
+        dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
+        before = {}
+        after = {}
+        while True:
+            try:
+                m = dfreader.recv_match(type="XKF1")
+            except (OSError, ValueError, struct.error):
+                break
+            if m is None or m.TimeUS > until_us:
+                break
+            bias = getattr(m, "G" + axis)
+            if m.TimeUS < since_us:
+                before[m.C] = bias
+            elif m.C in before:
+                lowest, highest = after.get(m.C, (bias, bias))
+                after[m.C] = (min(lowest, bias), max(highest, bias))
+        if len(after) == 0:
+            raise NotAchievedException("no XKF1 records either side of %.1f s" % (since_us * 1e-6))
+        return {core: (before[core],) + after[core] for core in after}
+
+    def EKFResetGyroBias(self):
+        '''check the EKF's own reset keeps the Z gyro bias and relearns X and Y, and EKF_RESET zeroes all three'''
+        # with no yaw reference the Z gyro bias is learned only at rest, and a flight holds it,
+        # so a reset that dropped it would leave a flight armed soon after with the part not
+        # yet relearned. X and Y are relearned from gravity at rest, and ones learned while the
+        # vehicle was carried powered are wrong, so they start from zero. The EKF_RESET aux
+        # function is a full reset and relearns them all. The bias
+        # state is a delta angle per EKF step, so a reset that restarted the step average at
+        # 12 ms would apply a kept bias at the wrong rate on a 50 Hz loop, the Plane default
+        for loop_rate in (400, 50):
+            self.start_subtest("SCHED_LOOP_RATE %u" % loop_rate)
+            # each loop rate needs its own reboot, and the context restores the parameters after it
+            self.context_push()
+            self.ekf_reset_gyro_bias_at(loop_rate)
+            self.context_pop()
+        self.reboot_sitl()
+
+    def ekf_reset_gyro_bias_at(self, loop_rate):
+        '''EKFResetGyroBias at one loop rate'''
+        bias_dps = 0.6
+        tolerance_dps = 0.15
+        params = {
+            "SCHED_LOOP_RATE": loop_rate,
+            "RC8_OPTION": 187,  # EKF_RESET
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "SIM_GPS1_ENABLE": 0,
+            "EK3_SRC1_YAW": 0,
+            # no boot calibration and no stored offsets, so the EKF learns the simulated bias
+            "INS_GYR_CAL": 0,
+        }
+        for n in (1, 2):
+            for axis in "XYZ":
+                params["SIM_GYR%u_BIAS_%s" % (n, axis)] = math.radians(bias_dps)
+            for axis in "XYZ":
+                params["INS_GYR%sOFFS_%s" % ("" if n == 1 else str(n), axis)] = 0
+        self.set_parameters(params)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False)
+
+        def check_learned(core, axis, when, before):
+            if abs(before - bias_dps) > tolerance_dps:
+                raise NotAchievedException("core %u: learned %.2f of the %.2f deg/s %s bias before the %s" % (
+                    core, before, bias_dps, axis, when))
+
+        self.delay_sim_time(30, "static yaw fusion to learn the gyro bias")
+        reset_us = self.ekf_reset_by_switch()
+        self.delay_sim_time(3, "the first seconds after the commanded reset")
+        for axis in "XYZ":
+            for core, (before, lowest, highest) in sorted(self.ekf3_gyro_bias_around(
+                    reset_us, reset_us + 2000000, axis).items()):
+                self.progress("EKF3 core %u: G%s %.2f deg/s before the commanded reset, %.2f to %.2f after" % (
+                    core, axis, before, lowest, highest))
+                check_learned(core, axis, "commanded reset", before)
+                if lowest > tolerance_dps:
+                    raise NotAchievedException("core %u: the commanded reset kept a %.2f deg/s %s gyro bias" % (
+                        core, lowest, axis))
+
+        # with no GPS a baro step the height gate rejects drops every status flag at rest, as
+        # more than 1 m of height innovation on the ground is a height error, and the EKF resets
+        # itself 5 s later. A step inside the gate is fused away within a few seconds.
+        self.delay_sim_time(30, "static yaw fusion to relearn the gyro bias")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        glitch_us = int(self.get_sim_time() * 1e6)
+        self.set_parameters({"SIM_BARO_GLITCH": 15, "SIM_BAR2_GLITCH": 15})
+        self.wait_statustext("EKF3 IMU0 forced reset", check_context=True, timeout=30)
+        reset_us = int(self.get_sim_time() * 1e6)
+        self.delay_sim_time(3, "the first seconds after the EKF's own reset")
+        self.context_pop()
+        for axis in "XYZ":
+            relearned = self.ekf3_gyro_bias_around(reset_us + 1500000, reset_us + 2000000, axis)
+            for core, (before, lowest, highest) in sorted(self.ekf3_gyro_bias_around(
+                    glitch_us, reset_us + 2000000, axis).items()):
+                self.progress("EKF3 core %u: G%s %.2f deg/s before the baro step, %.2f to %.2f until 2 s after the reset" % (
+                    core, axis, before, lowest, highest))
+                check_learned(core, axis, "EKF's own reset", before)
+                if axis != "Z":
+                    if lowest > tolerance_dps:
+                        raise NotAchievedException("core %u: the EKF's own reset kept a %.2f deg/s %s gyro bias" % (
+                            core, lowest, axis))
+                    # zeroed rather than kept is safe only because gravity relearns it at rest
+                    if relearned[core][1] < before - tolerance_dps:
+                        raise NotAchievedException("core %u: %s gyro bias %.2f deg/s 1.5 s after the reset, not %.2f" % (
+                            core, axis, relearned[core][1], before))
+                elif lowest < before - tolerance_dps or highest > before + tolerance_dps:
+                    raise NotAchievedException(
+                        "core %u: the EKF's own reset moved the Z gyro bias from %.2f to %.2f-%.2f deg/s" % (
+                            core, before, lowest, highest))
+
+    def StaticYawKeepsCompassYaw(self):
+        '''check a still vehicle that loses its yaw source keeps its compass aligned yaw'''
+        # with the default COMPASS_AUTODEC the declination arrives from the GPS after the
+        # compass alignment and turns the yaw with no reset
+        self.static_yaw_test_setup({})
+        # never move, so the reference is the one stored while the compass was fused
+        self.wait_ready_to_arm()
+
+        switch_us = int(self.get_sim_time() * 1e6)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        self.delay_sim_time(15, "static yaw fusion with no yaw source")
+
+        # a reference left at the yaw from before the declination arrived would pull the yaw back toward it
+        cores = self.ekf3_yaw_change_and_max_gyro_bias_z(switch_us)
+        if len(cores) == 0:
+            raise NotAchievedException("no XKF1 records after the source set switch")
+        for core, (yaw_change, _) in sorted(cores.items()):
+            self.progress("EKF3 core %u: yaw moved up to %.1f deg" % (core, yaw_change))
+            if yaw_change > 5:
+                raise NotAchievedException("core %u: yaw moved %.1f deg with no yaw source" % (core, yaw_change))
+
+    def StaticYawLearnsBiasAwaitingGPSYaw(self):
+        '''check a still vehicle waiting for GPS yaw learns its Z gyro bias from the static yaw reference'''
+        # with GPS yaw and compass fallback the compass is not fused on the ground, so until GPS
+        # yaw arrives the static yaw reference is the only heading observation, and one that
+        # followed the yaw would learn nothing
+        bias_dps = 0.6
+        tolerance_dps = 0.15
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        params = {
+            "EK3_SRC1_YAW": 3,  # GPS with compass fallback
+            "SIM_GPS2_ENABLE": 0,  # no moving baseline rover, so no GPS yaw
+            # no boot calibration and no stored offsets, so the EKF learns the simulated bias
+            "INS_GYR_CAL": 0,
+        }
+        for n in (1, 2):
+            params["SIM_GYR%u_BIAS_Z" % n] = math.radians(bias_dps)
+            for axis in "XYZ":
+                params["INS_GYR%sOFFS_%s" % ("" if n == 1 else str(n), axis)] = 0
+        self.set_parameters(params)
+        self.reboot_sitl()
+        self.delay_sim_time(40, "static yaw fusion while waiting for GPS yaw")
+        end_us = int(self.get_sim_time() * 1e6)
+        # a yaw sensor that aligned the yaw would learn the bias itself, and the static yaw
+        # reference would not be under test
+        dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
+        while True:
+            try:
+                m = dfreader.recv_match(type="MSG")
+            except (OSError, ValueError, struct.error):
+                break
+            if m is None:
+                break
+            if "yaw align" in m.Message:
+                raise NotAchievedException("the yaw was aligned while waiting for GPS yaw: %s" % m.Message)
+        for core, (_, lowest, highest) in sorted(self.ekf3_gyro_bias_around(end_us - 2000000, end_us).items()):
+            self.progress("EKF3 core %u: GZ %.2f to %.2f deg/s after 40 s waiting for GPS yaw" % (core, lowest, highest))
+            if lowest < bias_dps - tolerance_dps or highest > bias_dps + tolerance_dps:
+                raise NotAchievedException("core %u: learned %.2f-%.2f of the %.2f deg/s Z gyro bias" % (
+                    core, lowest, highest, bias_dps))
+
+    def ekf3_yaw_change_and_max_gyro_bias_z(self, since_us):
+        '''for each EKF3 core in the current onboard log, the largest yaw change from
+        its last yaw before since_us, and the largest Z gyro bias magnitude since then'''
+        dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
+        yaw_before = {}
+        cores = {}
+        while True:
+            try:
+                m = dfreader.recv_match(type="XKF1")
+            except (OSError, ValueError, struct.error):
+                break
+            if m is None:
+                break
+            if m.TimeUS < since_us:
+                yaw_before[m.C] = m.Yaw
+                continue
+            if m.C not in yaw_before:
+                continue
+            yaw_change, max_gz = cores.get(m.C, (0.0, 0.0))
+            cores[m.C] = (max(yaw_change, abs(mavextra.wrap_180(m.Yaw - yaw_before[m.C]))),
+                          max(max_gz, abs(m.GZ)))
+        return cores
+
     def AHRSSwitchBackendPositionReset(self):
         '''vehicle must not lurch when the active AHRS estimator is changed in flight'''
         # drift the baro so EKF3's altitude estimate (baro-based by
@@ -20072,6 +20489,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EK3AccelBias,
             self.EK3_OptflowTerrainScaleHeight,
             self.EK3_AccelBiasZeroVelOptFlow,
+            self.EK3HardLandingRearm,
             self.ThrowDoubleDrop,
             self.HorizontalFence,
             self.MaxAltFence,
@@ -24422,6 +24840,10 @@ return update, 1000
             self.MSPDisplayPortVTXConfig,
             self.OSDParamConfig,
             self.EKFBootstrapReset,
+            self.EKFBootstrapResetStaticYaw,
+            self.EKFResetGyroBias,
+            self.StaticYawKeepsCompassYaw,
+            self.StaticYawLearnsBiasAwaitingGPSYaw,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
             self.SMART_RTL_EnterLeave,

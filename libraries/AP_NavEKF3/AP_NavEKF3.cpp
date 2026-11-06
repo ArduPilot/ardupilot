@@ -1196,6 +1196,10 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         return false;
     }
     for (uint8_t i = 0; i < num_cores; i++) {
+        // run per-core pre-arm checks first, as their reasons are more specific than an unhealthy core's
+        if (!core[i].pre_arm_check(requires_position, failure_msg, failure_msg_len)) {
+            return false;
+        }
         if (!core[i].healthy()) {
             const char *failure = core[i].prearm_failure_reason();
             if (failure != nullptr) {
@@ -1203,10 +1207,6 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
             } else {
                 dal.snprintf(failure_msg, failure_msg_len, "EKF3 core %d unhealthy", (int)i);
             }
-            return false;
-        }
-        // run per-core pre-arm checks
-        if (!core[i].pre_arm_check(requires_position, failure_msg, failure_msg_len)) {
             return false;
         }
     }
@@ -1986,8 +1986,8 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
 
 // Do a reset and bootstrap alignment of all EKF cores
 // return true if successful for all cores
-// Gyros are not recalibrated here: the filter always resets with the
-// existing gyro biases, whether on the ground or in flight.
+// Gyros are not recalibrated here, and the gyro biases start again from
+// zero; the EKF's own reset keeps Z.
 bool NavEKF3::InitialiseFilterBootstrap()
 {
     // ignore any data if the EKF is not started
@@ -2004,6 +2004,8 @@ bool NavEKF3::InitialiseFilterBootstrap()
     for (uint8_t i=0; i<num_cores; i++) {
         // clear the statesInitialised status to allow a bootstrap alignment
         core[i].clearStatesInitialised();
+        // a commanded reset relearns the gyro biases, where the EKF's own reset keeps Z
+        core[i].zeroGyroBiases();
         // perform a bootstrap alignment
         core[i].InitialiseFilterBootstrap();
         if (!core[i].isStatesInitialised()) {

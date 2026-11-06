@@ -208,6 +208,7 @@ void NavEKF3_core::InitialiseVariables()
     prevBetaDragStep_ms = imuSampleTime_ms;
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
+    lastVelDFuseTime_ms = 0;
     lastGpsPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
@@ -268,6 +269,10 @@ void NavEKF3_core::InitialiseVariables()
     hgtRate = 0.0f;
     onGround = true;
     prevOnGround = true;
+    velDCheckedAtRest = false;
+    restStartTime_ms = 0;
+    // a bootstrap of a still vehicle keeps onGroundNotMoving, so take the static yaw reference again
+    yawAngDataStatic.time_ms = 0;
     inFlight = false;
     prevInFlight = false;
     manoeuvring = false;
@@ -333,6 +338,7 @@ void NavEKF3_core::InitialiseVariables()
     posResetNE.zero();
     posResetD = 0.0f;
     hgtInnovFiltState = 0.0f;
+    hgtInnovFiltTime_ms = 0;
     imuDataDownSampledNew.delAng.zero();
     imuDataDownSampledNew.delVel.zero();
     imuDataDownSampledNew.delAngDT = 0.0f;
@@ -484,8 +490,25 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
         return false;
     }
 
+    // preserve the Z gyro bias across re-initialisation, which with no yaw reference is learned only
+    // at rest. X and Y, wrong if learned while the vehicle was carried powered, are relearned from gravity
+    Vector3F savedGyroBias = stateStruct.gyro_bias;
+    if (savedGyroBias.is_nan() || savedGyroBias.is_inf()) {
+        savedGyroBias.zero();
+    }
+    savedGyroBias.x = 0;
+    savedGyroBias.y = 0;
+    // and, for a core that has run, its EKF step average, as the bias states are delta angles
+    // per step; before the first initialisation the average holds the accumulation window's
+    // unpredicted frames, not EKF steps
+    const bool hasRun = ekfStartTime_ms != 0;
+    const ftype savedDtEkfAvg = dtEkfAvg;
+
     // set re-used variables to zero
     InitialiseVariables();
+    if (hasRun) {
+        dtEkfAvg = savedDtEkfAvg;
+    }
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
     Vector3F initAccVec;
@@ -513,7 +536,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     stateStruct.position.zero();
 
     // initialise static process model states
-    stateStruct.gyro_bias.zero();
+    stateStruct.gyro_bias = savedGyroBias;
     stateStruct.accel_bias.zero();
     stateStruct.wind_vel.zero();
     stateStruct.earth_magfield.zero();
@@ -540,9 +563,13 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     // set to true now that states have be initialised
     statesInitialised = true;
 
-    // reset inactive biases
+    // reset inactive biases, keeping the Z gyro biases as for the active IMU
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        inactiveBias[i].gyro_bias.zero();
+        if (inactiveBias[i].gyro_bias.is_nan() || inactiveBias[i].gyro_bias.is_inf()) {
+            inactiveBias[i].gyro_bias.zero();
+        }
+        inactiveBias[i].gyro_bias.x = 0;
+        inactiveBias[i].gyro_bias.y = 0;
         inactiveBias[i].accel_bias.zero();
     }
 

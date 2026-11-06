@@ -124,6 +124,9 @@
 // maximum GPs ground course uncertainty allowed for yaw alignment (deg)
 #define GPS_VEL_YAW_ALIGN_MAX_ANG_ERR 15.0F
 
+// filtered height innovation on the ground (m) above which onGroundHgtError() reports a height error
+#define GND_HGT_ERR_LIMIT 1.0f
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
@@ -185,6 +188,9 @@ public:
 
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
+
+    // zero the gyro bias states of every IMU so the next bootstrap starts them from zero
+    void zeroGyroBiases(void);
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
@@ -845,6 +851,9 @@ private:
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
 
+    // store the current yaw as the static yaw reference
+    void storeStaticYaw();
+
     // determine when to perform fusion of true airspeed measurements
     void SelectTasFusion();
 
@@ -1179,6 +1188,7 @@ private:
     uint32_t lastBaroReceived_ms;   // time last time we received baro height data
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime_ms;    // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
+    uint32_t lastVelDFuseTime_ms;   // time stamp when a measured vertical velocity was last fused (msec)
     uint32_t lastGpsPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTimeGpsReceived_ms;// last time we received GPS data
@@ -1264,6 +1274,7 @@ private:
     ftype yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
     QuaternionF prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
     ftype hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
+    uint32_t hgtInnovFiltTime_ms;   // time stamp when the height innovation filter last ran (msec)
     uint8_t magSelectIndex;         // Index of the magnetometer that is being used by the EKF
     bool runUpdates;                // boolean true when the EKF updates can be run
     uint32_t framesSincePredict;    // number of frames lapsed since EKF instance did a state prediction
@@ -1448,7 +1459,7 @@ private:
         uint8_t fallbackGoodCounter;
     } gpsYaw;
 
-    yaw_elements yawAngDataStatic;      // yaw angle (regardless of yaw source) when the vehicle was last on ground and not moving
+    yaw_elements yawAngDataStatic;      // yaw angle (regardless of yaw source) fused as a reference while on ground and not moving, once no yaw sensor has been fused for 5 s
 
     // Range Beacon Sensor Fusion
 #if EK3_FEATURE_BEACON_FUSION
@@ -1560,6 +1571,8 @@ private:
     Vector3F gyro_prev;                 // gyro vector from previous time step (rad/s)
     Vector3F accel_prev;                // accelerometer vector from previous time step (m/s/s)
     bool onGroundNotMoving;             // true when on the ground and not moving
+    bool velDCheckedAtRest;             // true once the vertical velocity has been checked since the vehicle came to rest
+    uint32_t restStartTime_ms;          // IMU time of the latest sample at which the vehicle came to rest (msec)
     uint32_t lastMoveCheckLogTime_ms;   // last time the movement check data was logged (msec)
 
 	// variables used to inhibit accel bias learning
@@ -1662,6 +1675,15 @@ private:
     
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
+
+    // true when on the ground and not falling with a height error, unless aided with a measured vertical velocity agreeing
+    bool onGroundHgtError(void) const;
+
+    // true when a recently fused measured velocity agrees with the state in the vertical
+    bool measuredVertVelAgrees(void) const;
+
+    // true when a measured velocity observing the vertical is being fused
+    bool measuredVertVelFused(void) const;
 
     // vehicle specific initial gyro bias uncertainty
     ftype InitialGyroBiasUncertainty(void) const;
