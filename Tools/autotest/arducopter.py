@@ -20105,6 +20105,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MountSiyiZT30,
             self.CircleSpeed,
             self.ArmSwitchAfterReboot,
+            self.PendingArmOnSwitch,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_SET_EKF_SOURCE_SET,
             self.MAV_CMD_NAV_TAKEOFF,
@@ -20645,6 +20646,85 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if armmsg is not None:
                 raise NotAchievedException("statustext(%s) means we tried to arm" % armmsg.text)
         self.progress("Did not arm via arming switfch after a reboot")
+
+    def PendingArmOnSwitch(self):
+        '''test a pending arm from the arming switch completes, cancels and resets the EKF only when it should'''
+        self.set_parameters({
+            "RC8_OPTION": 153,  # ARMDISARM
+            "ARMING_OPTIONS": 8,  # pending arm on switch
+            "ARMING_PEND_TIM": 1,
+        })
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("arm-time failure: reported every 3s, no EKF reset, arms once it clears")
+        self.set_rc(3, 1800)
+        self.set_rc(8, 2000)
+        self.wait_statustext("Arm pending", check_context=True)
+        # the reports are counted over a fixed window, so there is no event to wait for
+        self.delay_sim_time(10, "pending arm to retry")
+        count = self.statustext_count_in_collections("Throttle too high")
+        if count > 6:
+            raise NotAchievedException(f"Throttle failure reported {count} times in 10s")
+        if self.statustext_in_collections("EKF bootstrap reset") is not None:
+            raise NotAchievedException("EKF reset for a throttle failure")
+        self.set_rc(3, 1000)
+        self.wait_armed()
+        self.wait_statustext("Arm pending complete", check_context=True)
+        self.set_rc(8, 1000)
+        self.wait_disarmed()
+
+        acro_bal_roll = self.get_parameter("ACRO_BAL_ROLL")
+        for (name, cancel) in (
+                ("moving the switch low", lambda: self.set_rc(8, 1000)),
+                ("a disarm command while disarmed", lambda: self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, p1=0)),
+        ):
+            self.start_subtest(f"{name} cancels a pending arm")
+            self.context_clear_collection('STATUSTEXT')
+            self.set_parameter("ACRO_BAL_ROLL", -1)
+            self.set_rc(8, 2000)
+            self.wait_statustext("Arm pending", check_context=True)
+            cancel()
+            self.wait_statustext("Arm pending cancelled", check_context=True)
+            self.set_parameter("ACRO_BAL_ROLL", acro_bal_roll)
+            self.wait_ready_to_arm()
+            # a live pending arm completes within 250ms of its checks passing
+            self.delay_sim_time(2, "a cancelled pending arm to stay cancelled")
+            if self.armed():
+                raise NotAchievedException(f"Armed after {name} cancelled the pending arm")
+            self.set_rc(8, 1000)
+
+        self.start_subtest("AHRS failure: the EKF is reset once")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_ACC1_BIAS_X", 5)
+        self.assert_prearm_failure("AHRS: EKF3 Roll/Pitch inconsistent",
+                                   timeout=60,
+                                   other_prearm_failures_fatal=False)
+        self.set_rc(8, 2000)
+        self.wait_statustext("Arm pending: EKF bootstrap reset", check_context=True, timeout=10)
+        # the reset is one-shot; a repeat would come on the next 10Hz call
+        self.delay_sim_time(3, "a second EKF reset")
+        count = self.statustext_count_in_collections("EKF bootstrap reset")
+        if count != 1:
+            raise NotAchievedException(f"Expected one EKF reset, got {count}")
+        self.set_rc(8, 1000)
+        self.wait_statustext("Arm pending cancelled", check_context=True)
+        self.set_parameter("SIM_ACC1_BIAS_X", 0)
+        self.wait_ready_to_arm()
+
+        self.start_subtest("waiting for a late first GPS fix: no EKF reset")
+        self.set_parameter("SIM_GPS1_LCKTIME", 40)
+        self.reboot_sitl()
+        self.change_mode('LOITER')
+        self.wait_gps_fix_type_gte(3, timeout=120)
+        self.set_rc(8, 2000)
+        self.wait_statustext("Arm pending", check_context=True)
+        self.wait_armed(timeout=30)
+        if self.statustext_in_collections("EKF bootstrap reset") is not None:
+            raise NotAchievedException("EKF reset while waiting for GPS")
+        self.set_rc(8, 1000)
+        self.wait_disarmed()
 
     def GuidedYawRate(self):
         '''ensuer guided yaw rate is not affected by rate of sewt-attitude messages'''
