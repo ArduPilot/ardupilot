@@ -42,7 +42,8 @@ uint32_t RF_Nooploop::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t bufle
     buffer[8] = alt_scaled >> 8 & 0xff;
     buffer[9] = alt_scaled >> 16 & 0xff;
     buffer[10] = alt_scaled >> 24 & 0xff;
-    buffer[11] = 0x00;
+    // beyond its 8m range the TOFSense flags weak signal strength
+    buffer[11] = alt_m > 8 ? 12 : 0;
     buffer[12] = 0x03;
     buffer[13] = 0x00;
     buffer[14] = 0x06;
