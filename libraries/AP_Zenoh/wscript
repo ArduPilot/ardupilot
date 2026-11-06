@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+
+# flake8: noqa
+
+import pathlib
+import sys
+
+
+def configure(cfg):
+    if cfg.env.OPTIONS.get('enable_Zenoh', False) is False:
+        return
+
+    extra_src = [
+        'modules/zenoh-pico/src/api/*.c',
+        'modules/zenoh-pico/src/collections/*.c',
+        'modules/zenoh-pico/src/link/*.c',
+        'modules/zenoh-pico/src/link/config/*.c',
+        'modules/zenoh-pico/src/link/unicast/*.c',
+        'modules/zenoh-pico/src/link/multicast/*.c',
+        'modules/zenoh-pico/src/net/*.c',
+        'modules/zenoh-pico/src/protocol/*.c',
+        'modules/zenoh-pico/src/protocol/codec/*.c',
+        'modules/zenoh-pico/src/protocol/definitions/*.c',
+        'modules/zenoh-pico/src/session/*.c',
+        'modules/zenoh-pico/src/transport/*.c',
+        'modules/zenoh-pico/src/transport/common/*.c',
+        'modules/zenoh-pico/src/transport/unicast/*.c',
+        'modules/zenoh-pico/src/transport/multicast/*.c',
+        'modules/zenoh-pico/src/transport/raweth/*.c',
+        'modules/zenoh-pico/src/utils/*.c',
+        'modules/zenoh-pico/src/system/common/*.c',
+        'modules/zenoh-pico/src/system/unix/*.c',
+        'modules/zenoh-pico/src/system/unix/link/*.c',
+    ]
+
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_Zenoh'] = []
+    for pattern in extra_src:
+        s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
+        for x in s:
+            cfg.env.AP_LIB_EXTRA_SOURCES['AP_Zenoh'].append(str(x))
+
+    extra_src_inc = [
+        'modules/zenoh-pico/include',
+    ]
+    for inc in extra_src_inc:
+        cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
+
+    if sys.platform == 'darwin':
+        cfg.env.append_value('DEFINES', 'ZENOH_MACOS=1')
+    else:
+        cfg.env.append_value('DEFINES', 'ZENOH_LINUX=1')
+    cfg.env.append_value('DEFINES', 'ZENOH_C_STANDARD=11')
+
+    cfg.env.append_value('CFLAGS', [
+        '-Wno-implicit-fallthrough',
+        '-Wno-shadow',
+        '-Wno-cast-align',
+        '-Wno-unused-variable',
+        '-Wno-unused-but-set-variable',
+        '-Wno-missing-braces',
+    ])
+
+    cfg.env.append_value('GIT_SUBMODULES', 'zenoh-pico')
+
+
+def build(bld):
+    if bld.env.OPTIONS.get('enable_Zenoh', False) is False:
+        return
+
+    config_h_in_files = [
+        ('modules/zenoh-pico/include/zenoh-pico/config.h.in',
+         'modules/zenoh-pico/include/zenoh-pico/config.h'),
+        ('modules/zenoh-pico/include/zenoh-pico.h.in',
+         'modules/zenoh-pico/include/zenoh-pico.h'),
+    ]
+
+    extra_bld_inc = [
+        'modules/zenoh-pico/include',
+    ]
+    for inc in extra_bld_inc:
+        bld.env.INCLUDES += [bld.bldnode.find_or_declare(inc).abspath()]
+
+    for h_in_path, h_path in config_h_in_files:
+        h_in_node = bld.srcnode.make_node(h_in_path)
+        h_node = bld.bldnode.find_or_declare(h_path)
+        bld(
+            source=h_in_node,
+            target=h_node,
+            rule="%s %s/%s %s %s"
+            % (
+                bld.env.get_flat('PYTHON'),
+                bld.env.SRCROOT,
+                "libraries/AP_Zenoh/gen_zenoh_config_h.py",
+                h_in_node.abspath(),
+                h_node.abspath(),
+            ),
+            group='dynamic_sources',
+        )
