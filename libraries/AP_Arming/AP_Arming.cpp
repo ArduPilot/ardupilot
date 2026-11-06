@@ -204,6 +204,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SKIPCHK", 13, AP_Arming, checks_to_skip, 0),
 
+#if AP_AHRS_EKF_RESET_ENABLED
     // @Param: PEND_TIM
     // @DisplayName: Pending Arm EKF Reset Time
     // @Description: When pending arm on switch is active (ARMING_OPTIONS bit 3), the EKF bootstrap will be reset after this many seconds if arming has not yet succeeded. Set to 0 to disable the EKF reset.
@@ -211,6 +212,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Range: 0 30
     // @User: Advanced
     AP_GROUPINFO("PEND_TIM", 15, AP_Arming, _pending_arm_timeout_s, 5),
+#endif  // AP_AHRS_EKF_RESET_ENABLED
 
     AP_GROUPEND
 };

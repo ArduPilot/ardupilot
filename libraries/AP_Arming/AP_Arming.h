@@ -5,6 +5,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS_config.h>
 #include <AP_BoardConfig/IMU_heater_config.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
@@ -194,7 +195,9 @@ protected:
     AP_UInt32               _arming_options;
     AP_Int16                magfield_error_threshold;
     AP_Enum<RequireLocation> require_location;
+#if AP_AHRS_EKF_RESET_ENABLED
     AP_Float                 _pending_arm_timeout_s;
+#endif
 
     // internal members
     bool                    armed;
