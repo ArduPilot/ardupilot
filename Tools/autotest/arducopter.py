@@ -2444,6 +2444,414 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3_TerrainStateFollowsHeightReset(self):
+        """A height timeout reset carries the terrain state with the vertical datum"""
+        # ResetHeight() snaps position.z onto the last height measurement. The terrain
+        # state is a D coordinate in the same datum, so height above ground must not
+        # move across the reset.
+        #
+        # lastHgtPassTime_ms only advances when the height innovation check passes, so
+        # a baro glitch that is rejected for longer than the height retry time reaches
+        # the timeout and the reset. With GPS vertical velocity in use, as here, that is
+        # hgtRetryTimeMode0_ms (10s), not hgtRetryTimeMode12_ms (5s). The glitch has to
+        # be well outside the gate, which is 5 sigma on sqrt(P + EK3_ALT_NSE^2): 8m is
+        # simply accepted and the filter follows it with no reset at all.
+        self.set_parameters({
+            "EK3_IMU_MASK": 1,      # single core, so there is one XKF stream to read
+            "SIM_BARO_GLITCH": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        # both resets, onto the glitch and back off it, have to happen in range: a ground
+        # height frozen above the range is deliberately not moved by a height timeout reset
+        self.set_parameter("RNGFND1_MAX", 60)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='ALT_HOLD')
+        self.delay_sim_time(10, reason="let the terrain state settle on the rangefinder")
+        self.set_parameter("SIM_BARO_GLITCH", 30)
+        self.delay_sim_time(16, reason="past the 10s height retry time so hgtTimeout fires")
+        self.set_parameter("SIM_BARO_GLITCH", 0)
+        self.delay_sim_time(8, reason="let it settle back")
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        xkf5 = []
+        xkf1 = []
+        while True:
+            m = dfreader.recv_match(type=['XKF5', 'XKF1'])
+            if m is None:
+                break
+            if m.C != 0:
+                continue
+            if m.get_type() == 'XKF5':
+                xkf5.append((m.TimeUS/1e6, m.HAGL))
+            else:
+                xkf1.append((m.TimeUS/1e6, m.PD))
+        if len(xkf5) < 50 or len(xkf1) < 50:
+            raise NotAchievedException("insufficient XKF samples")
+
+        # a reset is a single-sample move in the vertical position state far larger
+        # than flight dynamics can produce
+        resets = []
+        for i in range(1, len(xkf1)):
+            move = xkf1[i][1] - xkf1[i-1][1]
+            if abs(move) > 5:
+                resets.append((xkf1[i][0], move))
+        if not resets:
+            raise NotAchievedException("no height reset occurred, so nothing was tested")
+
+        for t, move in resets:
+            before = [r for r in xkf5 if r[0] < t]
+            after = [r for r in xkf5 if r[0] >= t]
+            if not before or not after:
+                raise NotAchievedException(
+                    "no XKF5 sample on both sides of the reset at %.2fs" % t)
+            agl_move = after[0][1] - before[-1][1]
+            self.progress("reset at %.2fs moved the datum %+.2f m and the AGL %+.2f m"
+                          % (t, move, agl_move))
+            if abs(agl_move) > 0.5:
+                raise NotAchievedException(
+                    "height above ground moved %+.2f m across a %+.2f m datum reset"
+                    % (agl_move, move))
+
+        self.start_subtest("A reset within 5 s of losing the range still carries the ground")
+        # the terrain state stops being fused when the range goes, but for 5 s it is still
+        # taken as following position.z, so a datum move then carries it rather than stepping
+        # height above ground by the whole move
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='ALT_HOLD')
+        self.delay_sim_time(10, reason="let the terrain state settle on the rangefinder")
+        self.set_parameter("SIM_BARO_GLITCH", 30)
+        self.delay_sim_time(8, reason="2 s short of the 10 s height retry time")
+        # out of range above 5 m, so the range is lost 2 s before the reset
+        self.set_parameter("RNGFND1_MAX", 5)
+        cut = self.get_sim_time()
+        self.delay_sim_time(8, reason="past the height timeout")
+        self.set_parameters({
+            "SIM_BARO_GLITCH": 0,
+            "RNGFND1_MAX": 60,
+        })
+        self.delay_sim_time(8, reason="let it settle back")
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        xkf5 = []
+        xkf1 = []
+        rng_good = []
+        while True:
+            m = dfreader.recv_match(type=['XKF5', 'XKF1', 'RFND'])
+            if m is None:
+                break
+            if m.get_type() == 'RFND':
+                if m.Instance == 0 and m.Stat == 4:  # Good
+                    rng_good.append(m.TimeUS/1e6)
+                continue
+            if m.C != 0:
+                continue
+            if m.get_type() == 'XKF5':
+                xkf5.append((m.TimeUS/1e6, m.HAGL))
+            else:
+                xkf1.append((m.TimeUS/1e6, m.PD))
+        # the log also holds the first flight
+        resets = [(xkf1[i][0], xkf1[i][1] - xkf1[i-1][1]) for i in range(1, len(xkf1))
+                  if abs(xkf1[i][1] - xkf1[i-1][1]) > 5 and xkf1[i][0] > cut]
+        if not resets:
+            raise NotAchievedException("no height reset occurred, so nothing was tested")
+        # the reset onto the glitch is the one within 5 s of the range going, measured from the
+        # last Good reading the log holds rather than from when the parameter was set
+        t, move = resets[0]
+        last_good = max([g for g in rng_good if g < t] or [0])
+        if last_good < cut - 1:
+            raise NotAchievedException("the range was lost %.2f s before the cut, not by it" % (cut - last_good))
+        gap = t - last_good
+        if not 0.5 < gap < 5:
+            raise NotAchievedException("reset %.2f s after the last Good range, want 0.5-5 s" % gap)
+        before = [r for r in xkf5 if r[0] < t]
+        after = [r for r in xkf5 if r[0] >= t]
+        if not before or not after:
+            raise NotAchievedException("no XKF5 sample on both sides of the reset at %.2fs" % t)
+        agl_move = after[0][1] - before[-1][1]
+        self.progress("reset %.2fs after the last Good range moved the datum %+.2f m and the AGL %+.2f m"
+                      % (gap, move, agl_move))
+        if abs(agl_move) > 0.5:
+            raise NotAchievedException(
+                "height above ground moved %+.2f m across a %+.2f m datum reset %.2f s after range loss"
+                % (agl_move, move, gap))
+
+    def EK3_TerrainStateFollowsDatumReset(self):
+        """A height source change carries the terrain state with the vertical datum"""
+        # ResetPositionD() re-expresses position.z against a different height reference.
+        # terrainState is a D coordinate in the same datum, so it has to move with it or
+        # the implied height above ground changes by the whole reset.
+        #
+        # No optical flow is needed to reach this: EstimateTerrainOffset() runs on range
+        # data alone.
+        #
+        # EK3_SRC1_POSZ=2 rather than EK3_RNG_USE_HGT: the height switch that parameter
+        # controls also needs terrainHgtStable, which Copter only reports while a
+        # commanded takeoff or a landing is running (update_ekf_terrain_height_stable),
+        # so an EK3_RNG_USE_HGT version of this reaches the reset only on the way down.
+        # Naming the range finder as the source puts it in charge whenever its data is
+        # fresh, which makes taking the data away the whole trigger.
+        self.set_parameters({
+            "EK3_IMU_MASK": 1,      # single core, so there is one XKF5 stream to read
+            "EK3_SRC1_POSZ": 2,     # range finder is the height source outright
+            "SIM_BARO_GLITCH": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.reboot_sitl()
+
+        self.takeoff(3, mode="ALT_HOLD", altitude_max=5)
+        mark = self.get_sim_time()
+        # take the range data away, so selectHeightForFusion falls back to baro, and
+        # displace the baro in the same breath. The displacement has to be a step: while
+        # the range finder is the height source calcFiltBaroOffset() tracks the baro
+        # against it at 10% per sample, so a drift is absorbed and the fallback comes out
+        # seamless, which is what it is designed to do. Only a change faster than that
+        # filter leaves the fallback a datum to move. Point the sensor away, so there is no
+        # range data at all
+        self.set_parameters({
+            "SIM_BARO_GLITCH": 8,
+            "RNGFND1_ORIENT": 0,
+        })
+        self.delay_sim_time(5, reason="let the height source fall back to baro")
+        # the switch back onto the range finder below can land in the log, so the window
+        # closes here
+        mark_end = self.get_sim_time()
+        self.disarm_vehicle(force=True)
+        self.set_parameters({
+            "RNGFND1_ORIENT": 25,  # ROTATION_PITCH_270
+            "SIM_BARO_GLITCH": 0,
+        })
+
+        # XKF5 carries terrainState as TOfs and terrainState-position.z as HAGL in the
+        # same message, so position.z is their difference and the two sides of the reset
+        # are read at one timestamp with no cross-message pairing to get wrong
+        dfreader = self.dfreader_for_current_onboard_log()
+        prev = None
+        resets = []
+        while True:
+            m = dfreader.recv_match(type="XKF5")
+            if m is None:
+                break
+            if m.C != 0:
+                continue
+            t = m.TimeUS * 1.0e-6
+            posd = m.TOfs - m.HAGL
+            # only the fallback above is in scope. A switch the other way, into the range
+            # finder, is the exclusion: it re-anchors position.z inside the datum instead
+            # of moving it, and there height above ground is meant to snap onto the range
+            if mark < t < mark_end and prev is not None and abs(posd - prev[0]) > 1:
+                resets.append((t, posd - prev[0], m.HAGL - prev[1]))
+            prev = (posd, m.HAGL)
+
+        # a run that never switched height source would also pass the check below
+        if not resets:
+            raise NotAchievedException(
+                "no vertical datum reset happened, so the carry was never exercised")
+        for (t, moved, hagl_moved) in resets:
+            self.progress("datum reset at %.1fs moved %.2fm, height above ground %+.2fm"
+                          % (t, moved, hagl_moved))
+            if abs(hagl_moved) > 0.5:
+                raise NotAchievedException(
+                    "the datum moved %.2fm at %.1fs and took the height above ground "
+                    "%.2fm with it; the terrain state did not follow"
+                    % (moved, t, hagl_moved))
+
+        self.reboot_sitl()
+
+    def EK3_TerrainStateHeldOnDriftReset(self):
+        """A height timeout reset that corrects drift leaves a ground height frozen above the range alone"""
+        # Above the range the ground height is frozen, so drift in position.z while the baro
+        # is lost is not shared with it. When the baro returns, the height timeout reset
+        # corrects position.z; carrying the ground with it would move the remembered ground
+        # by the whole drift.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,
+            "AVOID_ENABLE": 0,
+            "TERRAIN_ENABLE": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.reboot_sitl()
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+        self.set_rc(3, 1800)
+        self.wait_altitude(25, 200, relative=True, timeout=90)
+        self.set_rc(3, 1500)
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
+        ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt") - self.get_altitude(relative=True)
+        self.set_parameters({
+            "SIM_BARO_DISABLE": 1,
+            "SIM_BAR2_DISABLE": 1,
+            "SIM_ACC1_BIAS_Z": 0.6,
+            "SIM_ACC2_BIAS_Z": 0.6,
+        })
+        self.delay_sim_time(12, reason="the height drifts with no baro")
+        mark = self.get_sim_time()
+        self.set_parameters({
+            "SIM_BARO_DISABLE": 0,
+            "SIM_BAR2_DISABLE": 0,
+            "SIM_ACC1_BIAS_Z": 0,
+            "SIM_ACC2_BIAS_Z": 0,
+        })
+        self.delay_sim_time(10, reason="height timeout reset and settle")
+        # disarming resets the height onto the ground while the vehicle is still falling
+        mark_end = self.get_sim_time()
+        self.disarm_vehicle(force=True)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        last_sim = None
+        prev_pd = None
+        reset_seen = False
+        errs = []
+        while True:
+            m = dfreader.recv_match(type=["XKF1", "XKF5", "SIM"])
+            if m is None:
+                break
+            if m.get_type() == "SIM":
+                last_sim = m
+                continue
+            if m.C != 0 or not (mark < m.TimeUS * 1.0e-6 < mark_end):
+                continue
+            if m.get_type() == "XKF1":
+                if prev_pd is not None and abs(m.PD - prev_pd) > 5:
+                    reset_seen = True
+                prev_pd = m.PD
+            elif reset_seen and last_sim is not None:
+                errs.append(m.HAGL - (last_sim.Alt - ground_alt))
+        # without a reset the leg would pass on a filter that never corrected the drift
+        if not reset_seen:
+            raise NotAchievedException("no height reset when the baro came back")
+        if len(errs) < 50:
+            raise NotAchievedException("too few XKF5 samples after the reset")
+        worst = max(abs(e) for e in errs[-50:])
+        self.progress("height above ground error after the reset: worst %.1f m" % worst)
+        if worst > 5:
+            raise NotAchievedException("height above ground off by %.1f m after the reset" % worst)
+        self.reboot_sitl()
+
+    def EK3_TerrainStateFollowsSourceChangeAboveRange(self):
+        """A height source change above the range carries ground measured earlier in the flight"""
+        # Above the range the terrain state is frozen and stops being valid after 5 s, but
+        # the ground was measured this flight, so a source change that moves the datum has to
+        # move it too. A GPS altitude step too large for the GPS height reference filter to
+        # take leaves the GPS and baro heights that far apart when the source changes.
+        self.set_parameters({
+            "EK3_IMU_MASK": 1,      # single core, so there is one XKF5 stream to read
+            "EK3_SRC2_POSXY": 3,
+            "EK3_SRC2_VELXY": 3,
+            "EK3_SRC2_POSZ": 3,     # GPS height
+            "EK3_SRC2_VELZ": 3,
+            "EK3_SRC2_YAW": 1,
+            "SIM_GPS1_GLTCH_Z": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.reboot_sitl()
+
+        self.takeoff(4, mode="ALT_HOLD", altitude_max=6)
+        self.delay_sim_time(5, reason="measure the ground with the range finder")
+        self.set_rc(3, 1800)
+        self.wait_altitude(18, 200, relative=True, timeout=60)
+        self.set_rc(3, 1500)
+        # the ground is no longer valid, so only having been measured can carry it
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
+        mark = self.get_sim_time()
+        self.set_parameter("SIM_GPS1_GLTCH_Z", 10)
+        self.delay_sim_time(1, reason="let the GPS altitude step arrive")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=2)
+        self.delay_sim_time(5, reason="let the height source change to GPS")
+        mark_end = self.get_sim_time()
+        self.disarm_vehicle(force=True)
+
+        # XKF5 carries terrainState as TOfs and terrainState-position.z as HAGL
+        dfreader = self.dfreader_for_current_onboard_log()
+        prev = None
+        resets = []
+        while True:
+            m = dfreader.recv_match(type="XKF5")
+            if m is None:
+                break
+            if m.C != 0:
+                continue
+            t = m.TimeUS * 1.0e-6
+            posd = m.TOfs - m.HAGL
+            if mark < t < mark_end and prev is not None and abs(posd - prev[0]) > 1:
+                resets.append((t, posd - prev[0], m.HAGL - prev[1]))
+            prev = (posd, m.HAGL)
+
+        # a run that never changed height source would also pass the check below
+        if not resets:
+            raise NotAchievedException(
+                "no vertical datum reset happened, so the carry was never exercised")
+        for (t, moved, hagl_moved) in resets:
+            self.progress("datum reset at %.1fs moved %.2fm, height above ground %+.2fm"
+                          % (t, moved, hagl_moved))
+            if abs(hagl_moved) > 0.5:
+                raise NotAchievedException(
+                    "the datum moved %.2fm at %.1fs and took the height above ground "
+                    "%.2fm with it; the terrain state did not follow"
+                    % (moved, t, hagl_moved))
+
+        self.reboot_sitl()
+
+    def EK3_FlowHeightLimitAfterRangeFallback(self):
+        """The optical flow height limit stays at the range finder's reach after a fall back to baro"""
+        # With the range finder as the height source, a fall back to a displaced baro and
+        # back leaves the vertical position in the baro's datum and the terrain state moved
+        # with it, so the limit has to be taken from the terrain state, as for any other
+        # height source, or the ceiling moves by the displacement.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "SIM_BARO_GLITCH": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.set_parameters({
+            "EK3_IMU_MASK": 1,
+            "EK3_SRC1_POSZ": 2,     # range finder is the height source outright
+            "RNGFND1_MAX": 20,      # flow height limit 0.7 * 20 - 1 = 13 m
+        })
+        self.reboot_sitl()
+        ceiling = 13.0
+
+        ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+        self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        # point the range finder away with the baro displaced, so the height source falls
+        # back to baro across a datum step, then give the range finder back
+        self.set_parameters({
+            "SIM_BARO_GLITCH": 8,
+            "RNGFND1_ORIENT": 0,
+        })
+        self.delay_sim_time(3, reason="let the height source fall back to baro")
+        self.set_parameter("RNGFND1_ORIENT", 25)  # ROTATION_PITCH_270
+        self.delay_sim_time(5, reason="let the range finder take the height back")
+
+        self.set_rc(3, 1900)
+        tstart = self.get_sim_time()
+        highest = 0
+        while self.get_sim_time_cached() - tstart < 40:
+            height = self.get_altitude(altitude_source="SIM_STATE.alt") - ground_alt
+            highest = max(highest, height)
+        self.set_rc(3, 1500)
+        self.progress("climbed to %.1fm against a %.0fm flow height limit" % (highest, ceiling))
+        self.disarm_vehicle(force=True)
+        if abs(highest - ceiling) > 1.5:
+            raise NotAchievedException(
+                "full stick climb stopped at %.1fm, not at the %.0fm flow height limit"
+                % (highest, ceiling))
+
+        self.reboot_sitl()
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -19966,6 +20374,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.VibrationFailsafe,
             self.VibrationCompensationThrottle,
             self.EK3_AccelBiasInhibitOnGroundMoving,
+            self.EK3_TerrainStateFollowsHeightReset,
+            self.EK3_TerrainStateFollowsDatumReset,
+            self.EK3_TerrainStateHeldOnDriftReset,
+            self.EK3_TerrainStateFollowsSourceChangeAboveRange,
+            self.EK3_FlowHeightLimitAfterRangeFallback,
             self.EK3_ZeroVelFusionNotUsedWithGPS,
             self.OBSTACLE_DISTANCE_3D,
             self.AC_Avoidance_Beacon,
