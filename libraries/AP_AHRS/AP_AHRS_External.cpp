@@ -94,8 +94,8 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // Either way our location moved back by our position is that
     // origin, so it can establish the common origin; AP_AHRS recovers
     // it to within about a centimetre:
-    Location orgn;
-    if (get_origin(orgn) &&
+    Location orgn = common_origin;
+    if ((common_origin_ok || extahrs.get_origin(orgn)) &&
         results.location_valid) {
         const Vector3p posNED = orgn.get_distance_NED_postype(results.location);
         results.position_NE = posNED.xy();
@@ -164,15 +164,6 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     return AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len);
-}
-
-bool AP_AHRS_External::get_origin(Location &ret) const
-{
-    if (common_origin_ok) {
-        ret = common_origin;
-        return true;
-    }
-    return AP::externalAHRS().get_origin(ret);
 }
 
 #endif
