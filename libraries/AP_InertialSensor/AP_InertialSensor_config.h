@@ -8,6 +8,24 @@
    than 1 then redundant sensors may be available
  */
 
+#ifndef INS_AUX_INSTANCES
+#define INS_AUX_INSTANCES 0
+#endif
+
+#ifndef INS_MAX_INSTANCES
+#define INS_MAX_INSTANCES (3+INS_AUX_INSTANCES)
+#endif
+
+#if INS_MAX_INSTANCES < 3 && INS_AUX_INSTANCES > 0
+#error "INS_AUX_INSTANCES must be zero if INS_MAX_INSTANCES is less than 3"
+#endif
+
+#if INS_MAX_INSTANCES > 3 && INS_AUX_INSTANCES == 0
+#error "INS_AUX_INSTANCES must be non-zero if INS_MAX_INSTANCES is greater than 3"
+#endif
+
+#define XYZ_AXIS_COUNT    3
+
 #ifndef AP_INERTIALSENSOR_ENABLED
 #define AP_INERTIALSENSOR_ENABLED 1
 #endif
