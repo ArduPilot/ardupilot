@@ -170,6 +170,10 @@ static const float HOVER_BIAS_TC_S = 2.0f;
 // time at rest the EKF takes to settle the Z accel bias after restarting it, within 0.01 m/s/s in SITL
 static const uint32_t HOVER_BIAS_REST_MS = 10000;
 
+// age by which the 100Hz learner hook has seen an EKF accel bias zeroing, with margin for overruns; an estimate
+// that comes into view sooner after its zeroing stalled for at most a tenth of the rest wait
+static const uint32_t HOVER_BIAS_ZERO_SEEN_MS = 1000;
+
 enum class AccZBiasLearn : uint8_t {
     SAVE             = (1U << 0),
     USE              = (1U << 1),
@@ -238,8 +242,8 @@ void Copter::seed_hover_bias_learning(void)
     _hover_bias_flew = false;
 }
 
-// update_hover_bias_rest - note, while disarmed, an accel switch that hands an IMU a bias estimate
-// without zeroing it, and while armed, whether the vehicle has left the ground
+// update_hover_bias_rest - note an accel switch that hands an IMU a bias estimate without zeroing it,
+// and while armed, whether the vehicle has left the ground
 // called at 100Hz from update_throttle_hover(); an arm or disarm from Lua or DDS can interleave with
 // it for a few microseconds, as with the learner's other state
 void Copter::update_hover_bias_rest(void)
@@ -247,16 +251,16 @@ void Copter::update_hover_bias_rest(void)
     if ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::SAVE)) == 0) {
         return;
     }
-    if (motors->armed()) {
-        if (!ap.land_complete) {
-            _hover_bias_flew = true;
-        }
-        return;
+    if (motors->armed() && !ap.land_complete) {
+        _hover_bias_flew = true;
     }
+    const uint32_t now_ms = AP_HAL::millis();
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
         const uint16_t count = ahrs.get_accel_bias_reset_count_for_imu(imu);
         const uint32_t zero_ms = ahrs.get_accel_bias_zero_time_ms_for_imu(imu);
-        if ((zero_ms != 0) && (zero_ms != _hover_bias_rest_zero_ms[imu])) {
+        // polled armed or not, a zeroing is seen at once; an older time is an estimate coming into view, as
+        // when an accel out of use when the EKF zeroed it comes back, and is left to the count
+        if ((zero_ms != 0) && (zero_ms != _hover_bias_rest_zero_ms[imu]) && (now_ms - zero_ms < HOVER_BIAS_ZERO_SEEN_MS)) {
             _hover_bias_rest_zero_ms[imu] = zero_ms;
             _hover_bias_switched[imu] = false;
         } else if (count != _hover_bias_rest_count[imu]) {
