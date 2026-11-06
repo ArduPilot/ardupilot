@@ -51,6 +51,15 @@ extern const AP_HAL::HAL& hal;
 // a quiet nan for invalid values
 #define QNAN nanf("GPS")
 
+#if AP_GPS_NMEA_TESEO_ENABLED
+#define TESEO_REPLY_TIMEOUT_MS 500U
+#define TESEO_SAVE_TIMEOUT_MS 1000U
+#define TESEO_MAX_RETRIES 3U
+#define TESEO_MAX_CONFIG_ATTEMPTS 3U
+
+uint8_t AP_GPS_NMEA::_teseo_config_attempts[GPS_MAX_RECEIVERS];
+#endif // AP_GPS_NMEA_TESEO_ENABLED
+
 // Convenience macros //////////////////////////////////////////////////////////
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
@@ -525,6 +534,18 @@ bool AP_GPS_NMEA::_term_complete()
                 break;
             }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
+#if AP_GPS_NMEA_TESEO_ENABLED
+            case _GPS_SENTENCE_PSTMKFCOV:
+            case _GPS_SENTENCE_PSTMPVRAW:
+            case _GPS_SENTENCE_PSTMVER:
+            case _GPS_SENTENCE_PSTMSETPAROK:
+            case _GPS_SENTENCE_PSTMSETPARERROR:
+            case _GPS_SENTENCE_PSTMSAVEPAROK:
+            case _GPS_SENTENCE_PSTMSETPAR:
+            case _GPS_SENTENCE_PSTMGETPARERROR:
+                teseo_sentence_complete(now);
+                break;
+#endif // AP_GPS_NMEA_TESEO_ENABLED
             }
             // see if we got a good message
             return _have_new_message();
@@ -557,6 +578,18 @@ bool AP_GPS_NMEA::_term_complete()
         }
         if (strcmp(_term, "UNIHEADINGA") == 0 && _expect_agrica) {
             _sentence_type = _GPS_SENTENCE_UNIHEADINGA;
+            return false;
+        }
+#endif
+#if AP_GPS_NMEA_TESEO_ENABLED
+        // must come before the talker ID check, which would take
+        // these as talker "PS"
+        if (_is_teseo && strncmp(_term, "PSTM", 4) == 0) {
+            _sentence_type = teseo_sentence_type(&_term[4]);
+            // empty terms aren't parsed, so start from nothing
+            _pstmkfcov = {};
+            _pstmpvraw = {};
+            _teseo_reply = {};
             return false;
         }
 #endif
@@ -669,10 +702,14 @@ bool AP_GPS_NMEA::_term_complete()
             _phd.itow = strtoul(_term, nullptr, 10);
             break;
         case _GPS_SENTENCE_PHD + 6 ... _GPS_SENTENCE_PHD + 11: // PHD message, fields
-            _phd.fields[_term_number-6] = atol(_term);
+            if (_sentence_type == _GPS_SENTENCE_PHD) {
+                _phd.fields[_term_number-6] = atol(_term);
+            }
             break;
-        case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 22: // KSXT message, fields
-            _ksxt.fields[_term_number-1] = atof(_term);
+        case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 21: // KSXT message, fields
+            if (_sentence_type == _GPS_SENTENCE_KSXT) {
+                _ksxt.fields[_term_number-1] = atof(_term);
+            }
             break;
 #if AP_GPS_NMEA_UNICORE_ENABLED
         case _GPS_SENTENCE_AGRICA + 1 ... _GPS_SENTENCE_AGRICA + 65: // AGRICA message
@@ -686,6 +723,11 @@ bool AP_GPS_NMEA::_term_complete()
             parse_uniheadinga_field(_term_number, _term);
             break;
 #endif
+#endif
+#if AP_GPS_NMEA_TESEO_ENABLED
+        case _GPS_SENTENCE_PSTMKFCOV + 1 ... _GPS_SENTENCE_PSTMGETPARERROR: // PSTM sentences
+            parse_teseo_field(_term_number, _term);
+            break;
 #endif
         }
     }
@@ -811,6 +853,451 @@ void AP_GPS_NMEA::parse_versiona_field(uint16_t term_number, const char *term)
 }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
 
+#if AP_GPS_NMEA_TESEO_ENABLED
+/*
+  match a $PSTM sentence name, given without the PSTM prefix. Other
+  $PSTM sentences, such as the $PSTMSWCONFIG lines of the boot
+  banner, are ignored
+ */
+uint16_t AP_GPS_NMEA::teseo_sentence_type(const char *name)
+{
+    static const struct {
+        const char *name;
+        uint16_t type;
+    } types[] {
+        { "KFCOV", _GPS_SENTENCE_PSTMKFCOV },
+        { "PVRAW", _GPS_SENTENCE_PSTMPVRAW },
+        { "VER", _GPS_SENTENCE_PSTMVER },
+        { "SETPAROK", _GPS_SENTENCE_PSTMSETPAROK },
+        { "SETPARERROR", _GPS_SENTENCE_PSTMSETPARERROR },
+        { "SAVEPAROK", _GPS_SENTENCE_PSTMSAVEPAROK },
+        { "SETPAR", _GPS_SENTENCE_PSTMSETPAR },
+        { "GETPARERROR", _GPS_SENTENCE_PSTMGETPARERROR },
+    };
+    for (const auto &t : types) {
+        if (strcmp(name, t.name) == 0) {
+            return t.type;
+        }
+    }
+    return _GPS_SENTENCE_OTHER;
+}
+
+/*
+  parse a $PSTM sentence term
+
+  Examples:
+    $PSTMKFCOV,8.7,50.9,25.4,150.7,0.4,0.1,0.0,0.2*49
+    $PSTMPVRAW,144056.000,5131.12414,N,00005.31484,W,2,09,1.2,043.31,M,47.0,M,-0.6,0.1,0.6*58
+    $PSTMSETPAR,3200,410000*<checksum>
+ */
+void AP_GPS_NMEA::parse_teseo_field(uint16_t term_number, const char *term)
+{
+    switch (_sentence_type) {
+    case _GPS_SENTENCE_PSTMKFCOV:
+        switch (term_number) {
+        case 1:
+            _pstmkfcov.pos_std = strtof(term, nullptr);
+            break;
+        case 2 ... 4:
+            _pstmkfcov.pos_cov[term_number - 2] = strtof(term, nullptr);
+            break;
+        case 5:
+            _pstmkfcov.vel_std = strtof(term, nullptr);
+            break;
+        case 6 ... 8:
+            _pstmkfcov.vel_cov[term_number - 6] = strtof(term, nullptr);
+            break;
+        }
+        if (term_number >= 1 && term_number <= 8) {
+            // mark which KFCOV fields were received
+            _pstmkfcov.have |= 1U << (term_number-1);
+        }
+        break;
+    case _GPS_SENTENCE_PSTMPVRAW:
+        switch (term_number) {
+        case 6:
+            _pstmpvraw.quality = atol(term);
+            break;
+        case 13 ... 15:
+            _pstmpvraw.vel_NEV[term_number - 13] = strtof(term, nullptr);
+            _pstmpvraw.have |= 1U << (term_number-13);
+            break;
+        }
+        break;
+    case _GPS_SENTENCE_PSTMVER:
+        if (term_number == 1) {
+            strncpy_noterm(_teseo_reply.version, term, sizeof(_teseo_reply.version)-1);
+        }
+        break;
+    case _GPS_SENTENCE_PSTMSETPAROK:
+    case _GPS_SENTENCE_PSTMSETPARERROR:
+    case _GPS_SENTENCE_PSTMSETPAR:
+        switch (term_number) {
+        case 1:
+            // <block><id>, e.g. 1200 is CDB 200 in the current configuration
+            _teseo_reply.param = strtoul(term, nullptr, 10);
+            break;
+        case 2:
+            if (_sentence_type == _GPS_SENTENCE_PSTMSETPAR) {
+                // integers are in hex, with or without 0x
+                _teseo_reply.value = strtoul(term, nullptr, 16);
+                _teseo_reply.value_float = strtof(term, nullptr);
+            }
+            break;
+        }
+        break;
+    }
+}
+
+/*
+  use a $PSTM sentence which passed its checksum
+ */
+void AP_GPS_NMEA::teseo_sentence_complete(uint32_t now)
+{
+    auto &t = _teseo;
+    switch (_sentence_type) {
+    case _GPS_SENTENCE_PSTMKFCOV: {
+        _have_KFCOV = true;
+        // PosStd, PosVcov and VelStd, all empty without a fix
+        const uint8_t needed = (1U<<0) | (1U<<3) | (1U<<4);
+        if ((_pstmkfcov.have & needed) != needed) {
+            break;
+        }
+        // PosStd is the horizontal 1-sigma: in the example it is
+        // sqrt(PosNcov + PosEcov)
+        state.horizontal_accuracy = _pstmkfcov.pos_std;
+        state.vertical_accuracy = safe_sqrt(_pstmkfcov.pos_cov.z);
+        state.speed_accuracy = _pstmkfcov.vel_std;
+        state.have_horizontal_accuracy = true;
+        state.have_vertical_accuracy = true;
+        state.have_speed_accuracy = true;
+        _last_vaccuracy_ms = now;
+        break;
+    }
+    case _GPS_SENTENCE_PSTMPVRAW:
+        if (_pstmpvraw.quality == 0 || _pstmpvraw.have != 7) {
+            break;
+        }
+        // unfiltered north, east and vertical velocity. ST don't
+        // document the sign of Vel_V, but it follows the altitude
+        // rate, so assume it is positive up
+        state.velocity.x = _pstmpvraw.vel_NEV.x;
+        state.velocity.y = _pstmpvraw.vel_NEV.y;
+        state.velocity.z = -_pstmpvraw.vel_NEV.z;
+        state.have_vertical_velocity = true;
+        _last_vvelocity_ms = now;
+        // we prefer a true 3D velocity when available
+        velocity_to_speed_course(state);
+        _last_3D_velocity_ms = now;
+        break;
+    case _GPS_SENTENCE_PSTMVER:
+        if (strncmp(_teseo_reply.version, "BINIMG", 6) == 0 &&
+            strcmp(_teseo_reply.version, t.version) != 0) {
+            memcpy(t.version, _teseo_reply.version, sizeof(t.version));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: Teseo %s", unsigned(state.instance+1), t.version);
+        }
+        break;
+    case _GPS_SENTENCE_PSTMSETPAROK:
+        if (t.state == TeseoConfigState::SET &&
+            _teseo_reply.param == 1000U + t.cmds[t.index].id) {
+            t.have_reply = true;
+        }
+        break;
+    case _GPS_SENTENCE_PSTMSETPARERROR:
+        // may not name the parameter, but only one command is ever in flight
+        if (t.state == TeseoConfigState::SET) {
+            t.have_reply = true;
+            t.reply_error = true;
+        }
+        break;
+    case _GPS_SENTENCE_PSTMSAVEPAROK:
+        if (t.state == TeseoConfigState::SAVE) {
+            t.have_reply = true;
+        }
+        break;
+    case _GPS_SENTENCE_PSTMSETPAR:
+        // reply to $PSTMGETPAR of the NVM stored configuration
+        if (t.state == TeseoConfigState::VERIFY &&
+            _teseo_reply.param == 3000U + t.cmds[t.index].id) {
+            t.have_reply = true;
+            t.reply_match = teseo_reply_matches(t.cmds[t.index]);
+        }
+        break;
+    case _GPS_SENTENCE_PSTMGETPARERROR:
+        // can't read it back, so write it
+        if (t.state == TeseoConfigState::VERIFY) {
+            t.have_reply = true;
+            t.reply_match = false;
+        }
+        break;
+    }
+}
+
+/*
+  true if the value in a $PSTMGETPAR reply already has what cmd would set
+ */
+bool AP_GPS_NMEA::teseo_reply_matches(const TeseoCommand &cmd) const
+{
+    if (cmd.is_float) {
+        return fabsf(_teseo_reply.value_float - cmd.value_float) < 0.001f;
+    }
+    const uint32_t v = _teseo_reply.value;
+    switch (cmd.mode) {
+    case TeseoSetMode::VALUE:
+        return v == cmd.value;
+    case TeseoSetMode::OR:
+        return (v & cmd.value) == cmd.value;
+    case TeseoSetMode::CLEAR:
+        return (v & cmd.value) == 0;
+    }
+    return false;
+}
+
+/*
+  configuration failed: count it, and leave the module alone until
+  the next detection
+ */
+void AP_GPS_NMEA::teseo_config_failed(void)
+{
+    if (state.instance < ARRAY_SIZE(_teseo_config_attempts)) {
+        _teseo_config_attempts[state.instance]++;
+    }
+    _teseo.state = TeseoConfigState::DONE;
+}
+
+/*
+  queue a $PSTMSETPAR for teseo_config_update() to send, returning
+  nullptr if the queue is full
+ */
+AP_GPS_NMEA::TeseoCommand *AP_GPS_NMEA::teseo_add_command(uint16_t id, TeseoSetMode mode, uint32_t value)
+{
+    auto &t = _teseo;
+    if (t.num_cmds >= ARRAY_SIZE(t.cmds)) {
+        return nullptr;
+    }
+    TeseoCommand &cmd = t.cmds[t.num_cmds++];
+    cmd = {};
+    cmd.id = id;
+    cmd.mode = mode;
+    cmd.value = value;
+    return &cmd;
+}
+
+/*
+  configure a Teseo when it is detected, rather than resending config
+  every period: $PSTMSETPAR only changes the RAM copy of the
+  configuration, $PSTMSAVEPAR writes flash and $PSTMSRR reboots the
+  module from it.
+
+  Read back each configuration data block (CDB) we care about from
+  NVM. If any differs, or GPS_SAVE_CFG=1 and this is the first attempt
+  since boot, write them all, save to NVM and restart the
+  module so they take effect. The module is not written to while
+  armed. If the baud rate changed, AP_GPS times out this driver and
+  finds the module again at the new rate, and the new driver finds it
+  already configured. One command is in flight at a time, as
+  $PSTMSETPARERROR may not say which parameter it is for.
+ */
+void AP_GPS_NMEA::teseo_config_update(void)
+{
+    auto &t = _teseo;
+    const uint32_t now_ms = AP_HAL::millis();
+    const unsigned instance = state.instance+1;
+
+    if (t.waiting) {
+        if (!t.have_reply) {
+            const uint32_t timeout_ms = t.state == TeseoConfigState::SAVE ? TESEO_SAVE_TIMEOUT_MS : TESEO_REPLY_TIMEOUT_MS;
+            if (now_ms - t.sent_ms < timeout_ms) {
+                return;
+            }
+            t.waiting = false;
+            if (++t.retries > TESEO_MAX_RETRIES) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: Teseo config failed, no reply", instance);
+                teseo_config_failed();
+            }
+            // else resend
+            return;
+        }
+
+        // act on the reply
+        t.waiting = false;
+        t.retries = 0;
+        if (t.reply_error) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: Teseo rejected CDB %u", instance, t.cmds[t.index].id);
+            teseo_config_failed();
+            return;
+        }
+        switch (t.state) {
+        case TeseoConfigState::VERIFY: {
+            bool write = !t.reply_match;
+            if (!write && ++t.index >= t.num_cmds) {
+                // GPS_SAVE_CFG=1 saves once per boot even if unchanged
+                write = gps._save_config == 1 && _teseo_config_attempts[state.instance] == 0;
+                if (!write) {
+                    t.state = TeseoConfigState::DONE;
+                    return;
+                }
+            }
+            if (write) {
+                _teseo_config_attempts[state.instance]++;
+                t.state = TeseoConfigState::SET;
+                t.index = 0;
+            }
+            break;
+        }
+        case TeseoConfigState::SET:
+            if (++t.index >= t.num_cmds) {
+                t.state = TeseoConfigState::SAVE;
+            }
+            break;
+        case TeseoConfigState::SAVE:
+            t.state = TeseoConfigState::RESTART;
+            break;
+        default:
+            break;
+        }
+    }
+
+    if ((t.state == TeseoConfigState::SET ||
+         t.state == TeseoConfigState::SAVE ||
+         t.state == TeseoConfigState::RESTART) &&
+        hal.util->get_soft_armed()) {
+        // wait for disarm rather than change or restart it in flight
+        return;
+    }
+
+    switch (t.state) {
+    case TeseoConfigState::START: {
+        if (state.instance >= ARRAY_SIZE(_teseo_config_attempts) ||
+            _teseo_config_attempts[state.instance] >= TESEO_MAX_CONFIG_ATTEMPTS) {
+            t.state = TeseoConfigState::DONE;
+            return;
+        }
+        if (gps._save_config == 0) {
+            // writing would only change RAM, and it takes a restart
+            // from NVM to apply
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: Teseo not configured, GPS_SAVE_CFG=0", instance);
+            t.state = TeseoConfigState::DONE;
+            return;
+        }
+        // what we want, from the parameters
+        t.num_cmds = 0;
+        t.index = 0;
+        t.retries = 0;
+        // CPU clock from the 192f0 source, undivided
+        teseo_add_command(130, TeseoSetMode::VALUE, 0x0U);
+        // message list: only GGA, RMC, VTG and $PSTMKFCOV.
+        teseo_add_command(201, TeseoSetMode::VALUE, 0x2U | 0x10U | 0x40U | 0x8000000U);
+        // message list, high word: only $PSTMPVRAW
+        teseo_add_command(228, TeseoSetMode::VALUE, 0x4000U);
+        // fix period in seconds
+        TeseoCommand *period = teseo_add_command(303, TeseoSetMode::VALUE, 0);
+        if (period != nullptr) {
+            period->is_float = true;
+            period->value_float = gps.get_rate_ms(state.instance) * 0.001f;
+        }
+        const uint16_t gnss_mode = params.gnss_mode;
+        if (gnss_mode != 0) {
+            // GPS_GNSS_MODE bits for constellations.
+            const uint16_t GPS = 1U<<0, SBAS = 1U<<1, GALILEO = 1U<<2, BEIDOU = 1U<<3;
+            const uint16_t QZSS = 1U<<5, GLONASS = 1U<<6, NAVIC = 1U<<7;
+            const struct {
+                uint16_t mode_bit;
+                uint16_t cdb_id;
+                uint32_t bits;
+            } constellations[] {
+                { GPS, 200, 0x410000U },
+                { GLONASS, 200, 0x220000U },
+                { QZSS, 200, 0x800080U },
+                { SBAS, 200, 0x4U },
+                { GALILEO, 227, 0xC0U },
+                { BEIDOU, 227, 0x300U },
+                { NAVIC, 227, 0x18000000U },
+            };
+
+            // Set or clear each of the constellations
+            const uint16_t systems = gnss_mode & (GPS | GALILEO | BEIDOU | QZSS | GLONASS | NAVIC);
+            if (systems != 0) {
+                const uint16_t cdb_ids[] { 200, 227 };
+                for (const uint16_t id : cdb_ids) {
+                    uint32_t set_bits = 0, clear_bits = 0;
+                    for (const auto &c : constellations) {
+                        if (c.cdb_id != id) {
+                            continue;
+                        }
+                        if (gnss_mode & c.mode_bit) {
+                            set_bits |= c.bits;
+                        } else {
+                            clear_bits |= c.bits;
+                        }
+                    }
+                    if (set_bits != 0) {
+                        teseo_add_command(id, TeseoSetMode::OR, set_bits);
+                    }
+                    if (clear_bits != 0) {
+                        teseo_add_command(id, TeseoSetMode::CLEAR, clear_bits);
+                    }
+                }
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS %u: Teseo can't use GNSS_MODE %u", instance, unsigned(gnss_mode));
+            }
+        }
+        // NMEA baud rate 230400
+        teseo_add_command(102, TeseoSetMode::VALUE, 0xBU);
+        t.state = TeseoConfigState::VERIFY;
+        FALLTHROUGH;
+    }
+
+    case TeseoConfigState::VERIFY:
+        // block 3 is the configuration stored in NVM
+        if (!nmea_printf(port, "$PSTMGETPAR,3%03u", t.cmds[t.index].id)) {
+            return;
+        }
+        break;
+
+    case TeseoConfigState::SET: {
+        const TeseoCommand &cmd = t.cmds[t.index];
+        bool sent;
+        if (cmd.is_float) {
+            sent = nmea_printf(port, "$PSTMSETPAR,1%03u,%.3g", cmd.id, cmd.value_float);
+        } else if (cmd.mode == TeseoSetMode::VALUE) {
+            sent = nmea_printf(port, "$PSTMSETPAR,1%03u,0x%X", cmd.id, unsigned(cmd.value));
+        } else {
+            // mode 1 ORs the bits in, mode 2 clears them
+            sent = nmea_printf(port, "$PSTMSETPAR,1%03u,0x%X,%u", cmd.id, unsigned(cmd.value), unsigned(cmd.mode));
+        }
+        if (!sent) {
+            return;
+        }
+        break;
+    }
+
+    case TeseoConfigState::SAVE:
+        if (!nmea_printf(port, "$PSTMSAVEPAR")) {
+            return;
+        }
+        break;
+
+    case TeseoConfigState::RESTART:
+        if (!nmea_printf(port, "$PSTMSRR")) {
+            return;
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: Teseo config saved, restarting", instance);
+        t.state = TeseoConfigState::DONE;
+        return;
+
+    case TeseoConfigState::DONE:
+        return;
+    }
+
+    t.waiting = true;
+    t.have_reply = false;
+    t.reply_error = false;
+    t.reply_match = false;
+    t.sent_ms = now_ms;
+}
+#endif // AP_GPS_NMEA_TESEO_ENABLED
+
 /*
   detect a NMEA GPS. Adds one byte, and returns true if the stream
   matches a NMEA string
@@ -858,10 +1345,20 @@ void AP_GPS_NMEA::send_config(void)
     const auto type = get_type();
     _expect_agrica = (type == AP_GPS::GPS_TYPE_UNICORE_NMEA ||
                       type == AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA);
+#if AP_GPS_NMEA_TESEO_ENABLED
+    _is_teseo = (type == AP_GPS::GPS_TYPE_TESEO_NMEA);
+#endif
     if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         // not doing auto-config
         return;
     }
+#if AP_GPS_NMEA_TESEO_ENABLED
+    if (_is_teseo) {
+        // configured once, not resent every period
+        teseo_config_update();
+        return;
+    }
+#endif
     uint32_t now_ms = AP_HAL::millis();
     if (now_ms - last_config_ms < AP_GPS_NMEA_CONFIG_PERIOD_MS) {
         return;
@@ -950,6 +1447,13 @@ bool AP_GPS_NMEA::is_healthy(void) const
         // we should get vertical velocity and accuracy from PHD
         return _last_vvelocity_ms != 0 && _last_vaccuracy_ms != 0;
 
+#if AP_GPS_NMEA_TESEO_ENABLED
+    case AP_GPS::GPS_TYPE_TESEO_NMEA:
+        // we should get accuracy from $PSTMKFCOV, which has empty
+        // fields until there is a fix
+        return _have_KFCOV;
+#endif
+
     default:
         break;
     }
@@ -985,6 +1489,13 @@ void AP_GPS_NMEA::Write_AP_Logger_Log_Startup_messages() const
                                     _versiona.type,
                                     _versiona.version,
                                     _versiona.build_date);
+    }
+#endif
+#if AP_GPS_NMEA_TESEO_ENABLED
+    if (_teseo.version[0] != 0) {
+        AP::logger().Write_MessageF("NMEA %u Teseo %s",
+                                    state.instance+1,
+                                    _teseo.version);
     }
 #endif
 }
