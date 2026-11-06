@@ -74,6 +74,7 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     // initialisation complete some time after ekf has started
     results.initialised = (started && (now_ms - start_time_ms > 20000));
 
+    results.started = started;
     results.healthy = started && EKF3.healthy();
 
     const AP_InertialSensor &_ins = AP::ins();

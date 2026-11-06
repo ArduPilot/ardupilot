@@ -175,6 +175,7 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // always initialised
     results.initialised = true;
+    results.started = true;
 
     // consider ourselves healthy if there have been no failures for 5 seconds
     results.healthy = (_last_failure_ms == 0 || now_ms - _last_failure_ms > 5000);
