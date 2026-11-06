@@ -49,7 +49,7 @@ bool AP_ServoRelayEvents::do_set_servo(uint8_t _channel, uint16_t pwm)
         // SRV_Channel::aux_servo_function_setup
         int16_t angle_scaled = constrain_uint16(pwm, 1000, 2000);
         angle_scaled = (angle_scaled - 1500) * 9; // 1000 ... 2000 -> -500 ... 500 -> -4500 ... 4500
-        pwm = c->pwm_from_scaled_value(angle_scaled);
+        pwm = c->pwm_from_angle(angle_scaled);
         break;
     }
     default:
@@ -114,7 +114,7 @@ bool AP_ServoRelayEvents::do_repeat_servo(uint8_t _channel, uint16_t _servo_valu
         // SRV_Channel::aux_servo_function_setup
         int16_t angle_scaled = constrain_uint16(_servo_value, 1000, 2000);
         angle_scaled = (angle_scaled - 1500) * 9; // 1000 ... 2000 -> -500 ... 500 -> -4500 ... 4500
-        _servo_value = c->pwm_from_scaled_value(angle_scaled);
+        _servo_value = c->pwm_from_angle(angle_scaled);
         break;
     }
     default:
