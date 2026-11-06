@@ -765,8 +765,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("SFC_NOBARO_THST", 22, ParametersG2, surface_nobaro_thrust, 10),
 
     // @Group: ACTUATOR
-    // @Path: ../ArduSub/actuators.cpp
-    AP_SUBGROUPINFO(actuators, "ACTUATOR", 23, ParametersG2, Actuators),
+    // @Path: ../libraries/AP_Actuators/AP_Actuators.cpp
+    AP_SUBGROUPINFO(actuators, "ACTUATOR", 23, ParametersG2, AP_Actuators),
 
     // Hidden param used as a flag for param conversion
     // This allows one time conversion while allowing user to flash between versions with and without converted params
