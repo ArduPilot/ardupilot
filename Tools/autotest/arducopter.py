@@ -18836,6 +18836,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         again = fly(15)
         assert_saved(again, expected, "the first flight after a reset")
 
+        self.start_subtest("An accel out of use when the EKF starts keeps it on its return: its estimate never settled")
+        # no core reports the accel until it comes back, and the learner then sees the EKF's boot zeroing for
+        # the first time; without the rule it took that for a fresh one and saved about 0.235
+        kept = self.get_parameter("INS_ACC_VRFB_Z")
+        self.set_parameter("INS_USE", 0)
+        self.context_clear_collection('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("EKF3 IMU0 initialised", check_context=True, timeout=60)
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(9, "the core runs on another accel")
+        self.set_parameter("INS_USE", 1)
+        assert_kept(fly(5), kept, "Hover Z-bias not saved: accel switched on ground")
+
     def VibrationRectificationBiasLearning(self):
         '''Test hover Z-bias learning for vibration rectification'''
         # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
