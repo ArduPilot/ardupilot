@@ -167,6 +167,9 @@ public:
 private:
 #if HAL_GCS_ENABLED
     static uint8_t session_key[8];
+    static uint32_t last_secure_command_sequence;
+    static bool have_secure_command_sequence;
+    static bool is_new_secure_command_sequence(uint32_t sequence);
 #endif
 };
 
