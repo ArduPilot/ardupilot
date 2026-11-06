@@ -28,6 +28,7 @@
 #include <SITL/SIM_RF_Benewake_TFmini.h>
 #include <SITL/SIM_RF_BLping.h>
 #include <SITL/SIM_RF_DTS6012M.h>
+#include <SITL/SIM_RF_ERDI.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_RF_JRE.h>
 #include <SITL/SIM_RF_Lanbao.h>
@@ -58,6 +59,8 @@ static const struct {
     { "benewake_tfmini", SITL::RF_Benewake_TFmini::create },
     { "blping", SITL::RF_BLping::create },
     { "dts6012m", SITL::RF_DTS6012M::create },
+    { "erdi_vb", SITL::RF_ERDI_VB::create },
+    { "erdi_h", SITL::RF_ERDI_H::create },
     { "gyus42v2", SITL::RF_GYUS42v2::create },
     { "jre", SITL::RF_JRE::create },
     { "lanbao", SITL::RF_Lanbao::create },
