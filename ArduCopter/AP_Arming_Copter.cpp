@@ -817,6 +817,12 @@ void AP_Arming_Copter::update_pending_arm()
         return;
     }
 
+    // armed by another route, so the request is met and the reset below must not run
+    if (copter.motors->armed()) {
+        _pending_arm = false;
+        return;
+    }
+
     const uint32_t now_ms = millis();
 
     // run pre-arm checks at 4Hz (every 250ms) for faster response
