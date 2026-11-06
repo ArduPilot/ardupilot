@@ -668,6 +668,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
         // search until we find next nav command or reach end of command list
         while (!_flags.nav_cmd_loaded) {
             if (max_loops-- == 0) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mission: no nav command found, giving up");
                 _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
                 return false;
             }
@@ -2195,7 +2196,14 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     uint8_t max_loops = 255;
 
     // search until we find next nav command or reach end of command list
-    while (!_flags.nav_cmd_loaded && max_loops-- > 0) {
+    while (!_flags.nav_cmd_loaded) {
+        if (max_loops-- == 0) {
+            // infinite loop.  This can happen if there's a loop involving
+            // only nav commands (no DO commands) which won't start()
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mission: no nav command found, giving up");
+            return false;
+        }
+
         // get next command
         Mission_Command cmd;
         if (!get_next_cmd(cmd_index, cmd, true)) {
@@ -2246,12 +2254,6 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
         }
         // move onto next command
         cmd_index = cmd.index+1;
-    }
-
-    if (max_loops == 0) {
-        // infinite loop.  This can happen if there's a loop involving
-        // only nav commands (no DO commands) which won't start()
-        return false;
     }
 
     // if we have not found a do command then set flag to show there are no do-commands to be run before nav command completes
