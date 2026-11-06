@@ -17,12 +17,7 @@ void ModeFBWA::update()
     if (plane.fly_inverted()) {
         plane.nav_pitch_cd = -plane.nav_pitch_cd;
     }
-    if (plane.failsafe.rc_failsafe && plane.g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-        // FBWA failsafe glide
-        plane.nav_roll_cd = 0;
-        plane.nav_pitch_cd = 0;
-        SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::MIN);
-    }
+
     RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER);
     if (chan != nullptr) {
         // check for the user enabling FBWA taildrag takeoff mode
