@@ -116,6 +116,21 @@ bool AP_Baro_BMP388::init()
 
     dev->setup_checked_registers(4);
 
+    // Configure oversampling, output data rate and the IIR filter.  The
+    // device leaves soft reset at osr x1 with the filter disabled, which
+    // is its noisiest mode.
+    //
+    // osr_p x4 (bits 2:0 = 0b010), osr_t x1 (bits 5:3 = 0b000).  x4
+    // converts in ~11ms; x8 would need ~19ms against our 20ms poll.
+    dev->write_register(BMP388_REG_OSR, 0x02, true);
+
+    // 50Hz, matching the periodic callback below.  The reset default of
+    // 200Hz is faster than the conversion time.
+    dev->write_register(BMP388_REG_ODR, 0x02, true);
+
+    // IIR filter coefficient 3 (bits 3:1 = 0b010)
+    dev->write_register(BMP388_REG_CONFIG, 0x04, true);
+
     // normal mode, temp and pressure
     dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
 
