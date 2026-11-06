@@ -54,6 +54,7 @@ private:
     AP_Int8 temp_min;
     AP_Int8 temp_max;
     AP_Float baro_exponent;
+    AP_Float baro_exponent_set;
     
     Vector3f last_accels;
 
@@ -63,6 +64,15 @@ private:
     uint16_t learn_i;
     float *learn_values;
     uint32_t last_learn_ms;
+
+    // TCAL_BARO_EX_SET value in use, only updated while disarmed
+    float active_exponent_set = -1;
+    // correction when active_exponent_set was last latched
+    float latch_correction;
+    // max change in TCAL_BARO_EX_SET correction while armed, in metres
+    const float max_set_alt_change = 5;
+    // true once the limit has been reported to the GCS
+    bool limit_reported;
 
     // temperature at which baro correction starts
     const float Tzero = 25;
