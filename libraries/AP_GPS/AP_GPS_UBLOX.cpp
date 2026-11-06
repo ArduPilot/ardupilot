@@ -1676,7 +1676,11 @@ AP_GPS_UBLOX::_parse_gps(void)
 
 #if AP_GPS_UBLOX_CFGV2_ENABLED
     case MSG_DAHEADING:
-        if (_has_dual_antenna_heading && _buffer.daheading.version == 2) {
+        if (_buffer.daheading.version == 2) {
+            // receiving this is enough to know yaw comes from DAHEADING, CFGv2
+            // doesn't identify the module with GPS_AUTO_CONFIG=0
+            _has_dual_antenna_heading = true;
+            state.gps_yaw_configured = true;
             // HDG 2.0x firmware: relPosN/E/D/Length in mm
             _check_new_itow(_buffer.daheading.iTOW);
             const uint32_t dah_valid = static_cast<uint32_t>(DAHEADING::relPosHeadingValid) |
