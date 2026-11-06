@@ -87,10 +87,6 @@ public:
 
 private:
 
-    // the origin we report positions against: the common origin, or
-    // the simulation's home until there is one
-    bool get_origin(Location &ret) const;
-
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const;
 

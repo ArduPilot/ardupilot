@@ -88,10 +88,6 @@ public:
 
 private:
 
-    // the origin we report positions against: the common origin, or
-    // home until there is one
-    bool get_origin(Location &ret) const;
-
     // DCM maintains _last_airspeed_TAS in its drift correction; use it
     // directly rather than recomputing from the published velocity:
     bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
@@ -236,6 +232,7 @@ private:
 
     // the common origin, once AP_AHRS has one
     Location common_origin;
+    bool common_origin_ok;
 
     // Declare filter states for HPF and LPF used by complementary
     // filter in AP_AHRS::groundspeed_vector
