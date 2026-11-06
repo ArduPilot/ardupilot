@@ -553,6 +553,15 @@ void SITL_State_Common::sim_update(void)
     }
 }
 
+// wall-clock milliseconds, for timeouts in code which waits with the
+// simulation clock frozen
+uint64_t SITL_State_Common::wall_millis(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return uint64_t(ts.tv_sec) * 1000ULL + ts.tv_nsec / 1000000ULL;
+}
+
 /*
   set voltage and current pin values
  */
