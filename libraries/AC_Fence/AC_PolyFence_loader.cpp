@@ -4,6 +4,7 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Avoidance/AP_Avoidance_config.h>
 
 #ifndef AC_FENCE_DUMMY_METHODS_ENABLED
 #define AC_FENCE_DUMMY_METHODS_ENABLED  (!(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub) | (AP_FENCE_ENABLED == 1)))
@@ -338,6 +339,113 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     // no fence breached
     return false;
 }
+
+#if AP_OA_SCRIPTING_ENABLED
+// returns the closest distance in metres from (start_NE_cm, end_NE_cm) to the inclusion fences,
+// positive while inside the inclusion and negative once it has been breached, or FLT_MAX when no
+// inclusion fence is loaded.  fence_type reports which kind of inclusion area the distance belongs
+// to, so a caller can name the fence it is avoiding.
+//
+// Circles and polygons are considered together because FENCE_OPTIONS INCLUSION_UNION spans both:
+// by default the inclusion areas intersect, so every one of them must be satisfied and the worst
+// clearance governs; with INCLUSION_UNION being inside any single area is legal, so the best
+// clearance governs instead.  Taking the minimum under union semantics would report a disjoint
+// area the vehicle is not required to be inside as a blocking fence, and because AC_Fence itself
+// correctly reports no breach, nothing downstream would correct it.
+float AC_PolyFence_loader::distance_line_to_inclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm,
+                                                      AC_PolyFenceType &fence_type) const
+{
+    const bool use_union = AC_Fence::option_enabled(AC_Fence::OPTIONS::INCLUSION_UNION, _options);
+    float distance_new_m = FLT_MAX;
+    bool found = false;
+
+    for (uint8_t i=0; i<_num_loaded_circle_inclusion_boundaries; i++) {
+        const InclusionCircle &circle = _loaded_circle_inclusion_boundary[i];
+        Vector2f centre_cm = circle.pos_cm;
+        if (circle.is_home_centered()) {
+            // Express home as an offset from EKF origin in the NE frame, matching
+            // start_NE_cm/end_NE_cm - see the identical pattern in get_inclusion_circle().
+            Location origin;
+            if (!AP::ahrs().get_origin(origin)) {
+                continue;   // cannot place this circle yet
+            }
+            centre_cm = origin.get_distance_NE(AP::ahrs().get_home()) * 100.0f;
+        }
+        // the segment is closest to exiting the circle at whichever endpoint
+        // lies farthest from the centre
+        const float far_cm = MAX((start_NE_cm - centre_cm).length(), (end_NE_cm - centre_cm).length());
+        const float distance_m = circle.radius - far_cm * 0.01f;
+        if (!found || (use_union ? (distance_m > distance_new_m) : (distance_m < distance_new_m))) {
+            distance_new_m = distance_m;
+            fence_type = AC_PolyFenceType::CIRCLE_INCLUSION;
+            found = true;
+        }
+    }
+
+    for (uint8_t i=0; i<_num_loaded_inclusion_boundaries; i++) {
+        const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
+        // Polygon_closest_distance_line() is signed only when the segment actually
+        // crosses the boundary (negative); a segment wholly outside (or wholly inside)
+        // returns a positive nearest-edge distance either way, and only that case needs
+        // the side sign applied - re-signing an already-negative crossing result would
+        // double-negate it. Establish the sign from the start point's own inside/outside
+        // test first, matching the pattern already used in AP_OABendyRuler.cpp's
+        // inclusion-polygon margin calculation.
+        const float sign = Polygon_outside(start_NE_cm, boundary.points, boundary.count) ? -1.0f : 1.0f;
+        const float raw_cm = Polygon_closest_distance_line(boundary.points, boundary.count, start_NE_cm, end_NE_cm);
+        const float distance_m = (raw_cm < 0) ? raw_cm * 0.01f : sign * raw_cm * 0.01f;
+        if (!found || (use_union ? (distance_m > distance_new_m) : (distance_m < distance_new_m))) {
+            distance_new_m = distance_m;
+            fence_type = AC_PolyFenceType::POLYGON_INCLUSION;
+            found = true;
+        }
+    }
+
+    // no inclusion fence loaded is no constraint at all
+    return found ? distance_new_m : FLT_MAX;
+}
+
+// returns distance_new_m the closest distance from (start_NE_cm, end_NE_cm) and any circle exclusion fence.
+// distance_new_m will be positive if we are outside the exclusion, or -ve if we have already breached
+// result is true if a fence is found or false if no fence is found
+float AC_PolyFence_loader::distance_line_to_circle_exclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const
+{
+    float distance_new_m = FLT_MAX;
+
+    for (uint8_t i=0; i<_num_loaded_circle_exclusion_boundaries; i++) {
+        const ExclusionCircle &circle = _loaded_circle_exclusion_boundary[i];
+        float distance_m = Vector2f::closest_distance_between_line_and_point(start_NE_cm, end_NE_cm, circle.pos_cm) * 0.01f - circle.radius;
+        distance_new_m = (distance_m < distance_new_m) ? distance_m : distance_new_m;
+    }
+    return distance_new_m;
+}
+
+// returns distance_new_m the closest distance from (start_NE_cm, end_NE_cm) and any polygon exclusion fence.
+// distance_new_m will be positive if we are outside the exclusion, or -ve if we have already breached
+// result is true if a fence is found or false if no fence is found
+float AC_PolyFence_loader::distance_line_to_polygon_exclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const
+{
+    float distance_new_m = FLT_MAX;
+
+    // check how far we are outside any polygon exclusion zone: Return the minimum distance;
+    for (uint8_t i=0; i<_num_loaded_exclusion_boundaries; i++) {
+        const ExclusionBoundary &boundary = _loaded_exclusion_boundary[i];
+        // Same signing rule as distance_line_to_inclusion() above: only an unsigned
+        // nearest-edge distance needs the side sign - a crossing is already negative
+        // from Polygon_closest_distance_line() itself.
+        const float sign = Polygon_outside(start_NE_cm, boundary.points, boundary.count) ? 1.0f : -1.0f;
+        const float raw_cm = Polygon_closest_distance_line(boundary.points, boundary.count, start_NE_cm, end_NE_cm);
+        const float distance_m = (raw_cm < 0) ? raw_cm * 0.01f : sign * raw_cm * 0.01f;
+        distance_new_m = (distance_m < distance_new_m) ? distance_m : distance_new_m;
+    }
+
+    return distance_new_m;
+}
+#else
+float AC_PolyFence_loader::distance_line_to_inclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm, AC_PolyFenceType &fence_type) const { return FLT_MAX; }
+float AC_PolyFence_loader::distance_line_to_circle_exclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const { return FLT_MAX; }
+float AC_PolyFence_loader::distance_line_to_polygon_exclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const { return FLT_MAX; }
+#endif  // AP_OA_SCRIPTING_ENABLED
 
 bool AC_PolyFence_loader::formatted() const
 {
