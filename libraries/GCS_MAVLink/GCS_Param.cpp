@@ -450,13 +450,13 @@ void GCS_MAVLINK::send_param_error(const mavlink_message_t &msg, const mavlink_p
  */
 void GCS_MAVLINK::send_param_error(const GCS_MAVLINK::pending_param_reply &reply, MAV_PARAM_ERROR error)
 {
-    if (!HAVE_PAYLOAD_SPACE(chan, PARAM_ERROR)) {
+    if (!HAVE_PAYLOAD_SPACE(reply.chan, PARAM_ERROR)) {
         return;
     }
     char param_id[MAVLINK_MSG_PARAM_ERROR_FIELD_PARAM_ID_LEN] {};
     strncpy_noterm(param_id, reply.param_name, ARRAY_SIZE(param_id));
     mavlink_msg_param_error_send(
-        chan,
+        reply.chan,
         reply.src_system_id,
         reply.src_component_id,
         param_id,
@@ -478,21 +478,22 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
             return async_replies_sent_count;
         }
 
-        uint16_t required_space;
-        if (reply.param_error == MAV_PARAM_ERROR_NO_ERROR) {
-            required_space = PAYLOAD_SIZE(chan, PARAM_VALUE);
-        } else {
-            required_space = PAYLOAD_SIZE(chan, PARAM_ERROR);
-        }
-
         /*
           we reserve some space for sending parameters if the client ever
           fails to get a parameter due to lack of space
         */
         uint32_t saved_reserve_param_space_start_ms = reserve_param_space_start_ms;
         reserve_param_space_start_ms = 0; // bypass packet_overhead_chan reservation checking
-        if (txspace() < required_space) {
-            out_of_space_to_send();
+        // param_replies is shared by all channels, so the reply may belong
+        // to a channel other than the one draining it; check for space on
+        // the channel the request arrived on
+        bool have_space;
+        if (reply.param_error == MAV_PARAM_ERROR_NO_ERROR) {
+            have_space = HAVE_PAYLOAD_SPACE(reply.chan, PARAM_VALUE);
+        } else {
+            have_space = HAVE_PAYLOAD_SPACE(reply.chan, PARAM_ERROR);
+        }
+        if (!have_space) {
             reserve_param_space_start_ms = AP_HAL::millis();
             return async_replies_sent_count;
         }
