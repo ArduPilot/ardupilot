@@ -679,7 +679,7 @@ void AC_AutoTune_Multi::report_axis_gains(const char* axis_string, float rate_P,
 {
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s complete", axis_string);
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s Rate: P:%0.3f, I:%0.3f, D:%0.4f", axis_string, rate_P, rate_I,rate_D);
-    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s Angle P:%0.3f, Max Accel:%0.0f", axis_string, angle_P, rad_to_cd(max_accel_radss));
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s Angle P:%0.3f, Max Accel:%0.0f", axis_string, angle_P, degrees(max_accel_radss));
 }
 
 // Measures peak angular rates and bounce-back behavior during rate tuning.
@@ -1259,7 +1259,7 @@ void AC_AutoTune_Multi::Log_Write_AutoTune(AxisType _axis, TuneType tune_step, f
     AP::logger().Write(
         "ATUN",
         "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt",
-        "s--ddd---o",
+        "s--ddd---e",
         "F--000---0",
         "QBBfffffff",
         AP_HAL::micros64(),
@@ -1271,7 +1271,7 @@ void AC_AutoTune_Multi::Log_Write_AutoTune(AxisType _axis, TuneType tune_step, f
         new_gain_rp,
         new_gain_rd,
         new_gain_sp,
-        new_ddt);
+        new_ddt*0.01);
 }
 
 // Write an Autotune data packet
