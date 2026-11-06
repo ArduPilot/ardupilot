@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_CANManager::CANIface_Params::var_info[] = {
 #if HAL_CANFD_SUPPORTED
     // @Param: FDBITRATE
     // @DisplayName: Bitrate of CANFD interface
-    // @Description: Bit rate can be set up to from 1000000 to 8000000
+    // @Description: CAN FD data-phase rate in Mbit/s. A value above the board maximum from CANFD_SUPPORTED is reduced to the highest allowed rate.
     // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
     // @User: Advanced
     AP_GROUPINFO("FDBITRATE", 3, AP_CANManager::CANIface_Params, _fdbitrate, HAL_CANFD_SUPPORTED),
