@@ -362,7 +362,7 @@ void AP_Baro_SPL06::_update_pressure(int32_t press_raw)
 		break;
 	case Type::SPA06:
 		pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * ((float)_c30 + press_raw_sc * _c40)));
-		press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * ((float)_c21) + press_raw_sc * _c31));
+        press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * ((float)_c21 + press_raw_sc * _c31)));
 		break;
 	default:
 		break;
