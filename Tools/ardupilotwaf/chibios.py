@@ -153,7 +153,7 @@ class rp2350_ramfunc2_gen(Task.Task):
         buildroot = self.env.BUILDROOT
         script = os.path.join(self.env.SRCROOT,
                               'libraries/AP_HAL_ChibiOS/rp2350/rp2350_ramfunc2_sections.sh')
-        cmd = ['bash', script, buildroot]
+        cmd = ['bash', script, buildroot, '--toolchain', self.env.get_flat('TOOLCHAIN')]
         if self.strict:
             cmd.append('--strict')
         ret = subprocess.call(cmd)
