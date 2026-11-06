@@ -4963,7 +4963,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if resets == 0:
             raise NotAchievedException("no reset once the heights agreed again")
 
-        # The recovery scales the recovered velocity by the AGL KF height, and aglKfValid
+        # The recovery scales the recovered velocity by the AGL KF height, and aglKf.valid
         # outlives the last range fusion by 5 s - long enough for that height to coast metres
         # low.  Take the range finder out of range first and inject into that window: a fault
         # injected while the range is fresh is recovered by one reset, and that reset
