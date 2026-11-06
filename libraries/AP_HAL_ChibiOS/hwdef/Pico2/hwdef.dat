@@ -202,22 +202,36 @@ define CH_CFG_SMP_MODE TRUE
 
 # SMP: start core1 as the second ChibiOS instance.
 define RP_CORE1_START TRUE
-# CPU clock: 225 MHz (900 MHz VCO / POSTDIV1=4 / POSTDIV2=1), a 1.5x overclock
-# of the RP2350 datasheet's 150 MHz clk_sys/clk_peri limit, as on Laurel and
-# RPI_UAVFC. The on-chip VREG is set to 1.15 V (VSEL=0x0c) before the PLL
-# switch in rp2350_vreg_init().
-define RP_PLL_SYS_VCO_FREQ 900000000
-define RP_PLL_SYS_POSTDIV1 4
+# CPU clock: 200 MHz (1200 MHz VCO, FBDIV 100, POSTDIV 6x1), a 1.33x
+# overclock of the RP2350 datasheet's 150 MHz clk_sys/clk_peri limit, chosen
+# for the 100 MHz flash clock it divides to, as on RPI_UAVFC. The on-chip
+# VREG is set to 1.15 V (VSEL=0x0c) before the PLL switch in
+# rp2350_vreg_init().
+define RP_PLL_SYS_VCO_FREQ 1200000000
+define RP_PLL_SYS_POSTDIV1 6
 define RP_PLL_SYS_POSTDIV2 1
-MCU_CLOCKRATE_MHZ 225
+MCU_CLOCKRATE_MHZ 200
 # On-chip VREG voltage select: 0x0c = 1.15 V (datasheet Table 481, VREG.VSEL).
 define RP_VREG_VSEL 12
 
-# QMI flash timing at 225 MHz sysclk, the same as Laurel and RPI_UAVFC:
-# SCK = 75 MHz, sample point 11.1 ns after the falling edge, which covers the
-# 6 ns tCLQV of a 133 MHz Winbond part with 5.1 ns to spare.
-define RP_QMI_CLKDIV 3
+# QMI flash timing, as measured on RPI_UAVFC and not yet swept on a Pico 2.
+# The Pico 2's flash is a Winbond W25Q32RV (Pico 2 datasheet). On RPI_UAVFC
+# at 200 MHz with CLKDIV 2 (SCK 100 MHz) every byte read right with the
+# sample 7.5 to 15 ns after the SCK falling edge (RXDELAY 1-4); RXDELAY 2
+# samples at 10 ns, and on the boot ring oscillator RXDELAY above CLKDIV
+# would sample the next bit. Sweep the window before relying on it
+# (rp2350/DEVELOPMENT.md, "Clock and flash timing").
+define RP_QMI_CLKDIV 2
 define RP_QMI_RXDELAY 2
+# MIN_DESELECT counts system clocks: 3 is 15 ns at 200 MHz. The W25Q32RV's
+# /CS deselect time between reads (tSHSL1) is not checked; the W25Q32BV's is
+# 7 ns and the W25Q32JV's 10 ns. The bootrom leaves 7 (35 ns).
+define RP_QMI_MIN_DESELECT 3
+# Continuous read: mode byte 0xA0 (M5-4 = 10) leaves the flash expecting the
+# next read's address, so an XIP cache miss takes 28 flash clocks instead of
+# 36. The port checks the flash reads back correctly and keeps the ordinary
+# format if not.
+define RP_QMI_CONT_READ_MODE 0xA0
 
 # The main loop shares core0 with the estimators; the GCS tasks are polled at a
 # lower rate than the 400 Hz default to leave cycles for them.
