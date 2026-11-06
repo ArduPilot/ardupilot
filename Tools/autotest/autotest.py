@@ -35,6 +35,7 @@ import quadplane
 import rover
 import sailboat
 
+from build_binaries_results import add_build_failure_results
 from pysim import util
 from vehicle_test_suite import Test
 
@@ -88,7 +89,11 @@ def build_binaries():
         copy = util.reltopdir('./%s' % os.path.basename(thing))
         shutil.copy2(orig, copy)
 
-    if util.run_cmd("./build_binaries.py", directory=util.reltopdir('.')) != 0:
+    build_start_time = time.time()
+    return_code = util.run_cmd("./build_binaries.py", directory=util.reltopdir('.'))
+    add_build_failure_results(results, buildlogs_path("build_binaries_history.sqlite"),
+                              build_start_time)
+    if return_code != 0:
         print("Failed build_binaries.py")
         return False
     return True
