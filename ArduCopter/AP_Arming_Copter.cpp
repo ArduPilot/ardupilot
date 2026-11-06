@@ -833,8 +833,11 @@ void AP_Arming_Copter::update_pending_arm()
         // display failure reason every 3 seconds
         const bool display = (now_ms - _pending_arm_last_display_ms >= 3000);
         if (pre_arm_checks(display)) {
-            // checks pass — attempt to arm
-            if (arm(AP_Arming::Method::AUXSWITCH)) {
+            // checks pass - attempt to arm, reporting a failure as often as the pre-arm ones
+            _pending_arm_quiet = !display;
+            const bool success = arm(AP_Arming::Method::AUXSWITCH);
+            _pending_arm_quiet = false;
+            if (success) {
                 if (_pending_arm_airmode) {
                     copter.ap.armed_with_airmode_switch = true;
                 }
