@@ -257,7 +257,7 @@ void AP_Radio::handle_data_packet(mavlink_channel_t chan, const mavlink_data96_t
 void AP_Radio::play_tune(const char *tune_str)
 {
     mavlink_data96_t pkt {};
-    uint8_t len = MIN(strlen(tune_str), 92);
+    uint8_t len = MIN(strlen(tune_str), size_t(92));
     pkt.len = len;
     pkt.type = 43;
     memcpy(&pkt.data[0], tune_str, len);
