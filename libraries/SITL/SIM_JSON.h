@@ -89,6 +89,7 @@ private:
         DATA_VECTOR3D,
         QUATERNION,
         BOOLEAN,
+        FLOAT_ARRAY32,
     };
 
     struct {
@@ -110,6 +111,10 @@ private:
         float bat_volt;
         float bat_amp;
         struct {
+            float value[32];
+            uint8_t count;
+        } rpm;
+        struct {
             float direction;
             float speed;
         } wind_vane_apparent;
@@ -125,7 +130,7 @@ private:
         void *ptr;
         enum data_type type;
         bool required;
-    } keytable[36] {
+    } keytable[37] {
         { "", "timestamp", &state.timestamp_s, DATA_DOUBLE, true },
         { "", "latitude", &state.latitude, DATA_DOUBLE, false },
         { "", "longitude", &state.longitude, DATA_DOUBLE, false },
@@ -162,6 +167,7 @@ private:
         { "rc", "rc_12", &state.rc[11], DATA_FLOAT, false },
         { "battery", "voltage", &state.bat_volt, DATA_FLOAT, false },
         { "battery", "current", &state.bat_amp, DATA_FLOAT, false },
+        { "", "rpm", &state.rpm, FLOAT_ARRAY32, false },
     };
 
     // Enum coresponding to the ordering of keys in the keytable.
@@ -202,6 +208,7 @@ private:
         RC_12       = 0x0000000200000000ULL, // 1ULL << 33
         BAT_VOLT    = 0x0000000400000000ULL, // 1ULL << 34
         BAT_AMP     = 0x0000000800000000ULL, // 1ULL << 35
+        RPM         = 0x0000001000000000ULL, // 1ULL << 36
     };
     uint64_t last_received_bitmask;
 
