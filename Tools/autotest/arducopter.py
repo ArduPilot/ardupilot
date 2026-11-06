@@ -2842,6 +2842,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.min_alt_fence_frame(1, 20)    # above home
 
+    def MinAltFenceZeroThrottle(self):
+        '''check RTL holds altitude after a min alt fence breach at zero throttle'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 8,
+            "FENCE_ALT_MIN": 65,
+        })
+
+        # the floor auto-enables once we climb above it
+        self.takeoff(80, mode="GUIDED")
+
+        def check_alt(mav, m):
+            if m.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            alt = m.relative_alt * 0.001
+            if alt < 40:
+                raise NotAchievedException("Fell to %.1fm after the fence breach" % alt)
+
+        # nested context so the altitude check is gone before landing
+        self.context_push()
+        self.install_message_hook_context(check_alt)
+
+        # cut the throttle in STABILIZE and fall through the floor
+        self.change_mode("STABILIZE")
+        self.zero_throttle()
+        self.wait_mode("RTL", timeout=30)
+
+        # RTL must stop the fall rather than sit at ground idle
+        self.wait_climbrate(0.5, 10, timeout=30)
+        self.context_pop()
+
+        self.wait_rtl_complete()
+
     def FenceAltFrameComparison(self):
         '''check the alt fence limits are compared in a common frame'''
         # FENCE_ALT_MIN and FENCE_ALT_MAX each carry their own frame, so
@@ -19030,6 +19063,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MaxAltFence,
              self.MaxAltFenceAvoid,
              self.MinAltFence,
+             self.MinAltFenceZeroThrottle,
              self.FenceAltFrameComparison,
              self.MinAltFenceAvoid,
              self.FenceFloorEnabledLanding,
