@@ -16,6 +16,7 @@ void spiUnselectHook(SPIDriver *spip);
 void spiIgnoreHook(SPIDriver *spip,size_t n);
 void spiSendHook(SPIDriver *spip,size_t n, const void *txbuf);
 void spiReceiveHook(SPIDriver *spip, size_t n, void *rxbuf);
+void spiExchangeHook(SPIDriver *spip, size_t n, const void *txbuf, void *rxbuf);
 #endif
 
 #ifdef __cplusplus
