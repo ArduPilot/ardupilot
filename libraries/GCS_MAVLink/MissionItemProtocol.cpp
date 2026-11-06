@@ -22,6 +22,11 @@ void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
 
     link = &_link;
 
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    // a new transfer supersedes any ack still waiting for an opaque ID
+    send_deferred_mission_ack(true);
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+
     timelast_request_ms = AP_HAL::millis();
     link->send_message(next_item_ap_message_id());
 
@@ -32,10 +37,15 @@ void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
 void MissionItemProtocol::handle_mission_clear_all(const GCS_MAVLINK &_link,
                                                    const mavlink_message_t &msg)
 {
-    bool success = true;
-    success = success && cancel_upload(_link, msg);
-    success = success && clear_all_items();
-    send_mission_ack(_link, msg, success ? MAV_MISSION_ACCEPTED : MAV_MISSION_ERROR);
+    if (!cancel_upload(_link, msg)) {
+        send_mission_ack(_link, msg, MAV_MISSION_ERROR);
+        return;
+    }
+    if (!clear_all_items()) {
+        send_mission_ack(_link, msg, MAV_MISSION_ERROR);
+        return;
+    }
+    send_transfer_ack(_link, msg, MAV_MISSION_ACCEPTED);
 }
 
 bool MissionItemProtocol::mavlink2_requirement_met(const GCS_MAVLINK &_link, const mavlink_message_t &msg) const
@@ -105,6 +115,11 @@ void MissionItemProtocol::handle_mission_count(
 
     if (packet.count == 0) {
         // no requests to send...
+        link = &_link;
+        receiving = true;
+        dest_sysid = msg.sysid;
+        dest_compid = msg.compid;
+        timelast_receive_ms = AP_HAL::millis();
         transfer_is_complete(_link, msg);
         return;
     }
@@ -136,7 +151,8 @@ void MissionItemProtocol::handle_mission_request_list(
                                    msg.sysid,
                                    msg.compid,
                                    item_count(),
-                                   mission_type());
+                                   mission_type(),
+                                   current_opaque_id());
 }
 
 void MissionItemProtocol::handle_mission_request_int(GCS_MAVLINK &_link,
@@ -165,7 +181,8 @@ void MissionItemProtocol::handle_mission_request_int(GCS_MAVLINK &_link,
                                                msg.sysid,
                                                msg.compid,
                                                item_count(),
-                                               mission_type());
+                                               mission_type(),
+                                               current_opaque_id());
             }
         }
         // send failure message
@@ -323,10 +340,42 @@ void MissionItemProtocol::handle_mission_item(const mavlink_message_t &msg, cons
 void MissionItemProtocol::transfer_is_complete(const GCS_MAVLINK &_link, const mavlink_message_t &msg)
 {
     const MAV_MISSION_RESULT result = complete(_link);
-    send_mission_ack(_link, msg, result);
     free_upload_resources();
+    if (!receiving) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
     receiving = false;
     link = nullptr;
+    send_transfer_ack(_link, msg, result);
+}
+
+// send the MISSION_ACK which completes an upload or a clear
+void MissionItemProtocol::send_transfer_ack(const GCS_MAVLINK &_link,
+                                            const mavlink_message_t &msg,
+                                            MAV_MISSION_RESULT result)
+{
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    send_deferred_mission_ack(true);
+    uint32_t _opaque_id;
+    if (result == MAV_MISSION_ACCEPTED && !opaque_id(_opaque_id) &&
+        deferred_mission_ack.link == nullptr) {
+        // the opaque ID can't currently be calculated; we definitely
+        // want to have it in the mission ack to avoid race
+        // conditions.  The transfer itself is finished, so downloads
+        // and new uploads are not blocked while update() waits to
+        // send the ack.  If an older ack still occupies the slot
+        // this one is sent now, without an ID:
+        deferred_mission_ack.link = &_link;
+        deferred_mission_ack.superseded = false;
+        deferred_mission_ack.sysid = msg.sysid;
+        deferred_mission_ack.compid = msg.compid;
+        deferred_mission_ack.start_ms = AP_HAL::millis();
+        deferred_mission_ack.count = item_count();
+        deferred_mission_ack.items_change_count = items_change_count();
+        return;
+    }
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    send_mission_ack(_link, msg, result);
 }
 
 void MissionItemProtocol::send_mission_ack(const mavlink_message_t &msg,
@@ -342,12 +391,41 @@ void MissionItemProtocol::send_mission_ack(const GCS_MAVLINK &_link,
                                            const mavlink_message_t &msg,
                                            MAV_MISSION_RESULT result) const
 {
+    send_mission_ack(_link, msg.sysid, msg.compid, result);
+}
+void MissionItemProtocol::send_mission_ack(const GCS_MAVLINK &_link,
+                                           uint32_t sysid,
+                                           uint8_t compid,
+                                           MAV_MISSION_RESULT result) const
+{
+    send_mission_ack(_link, sysid, compid, result, current_opaque_id());
+}
+void MissionItemProtocol::send_mission_ack(const GCS_MAVLINK &_link,
+                                           uint32_t sysid,
+                                           uint8_t compid,
+                                           MAV_MISSION_RESULT result,
+                                           uint32_t _opaque_id) const
+{
     CHECK_PAYLOAD_SIZE2_VOID(_link.get_chan(), MISSION_ACK);
     mavlink_msg_mission_ack_send(_link.get_chan(),
-                                 msg.sysid,
-                                 msg.compid,
+                                 sysid,
+                                 compid,
                                  result,
-                                 mission_type());
+                                 mission_type(),
+                                 _opaque_id);
+}
+
+// returns the opaque ID of the current items, or zero if it is not
+// available
+uint32_t MissionItemProtocol::current_opaque_id() const
+{
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    uint32_t _opaque_id;
+    if (opaque_id(_opaque_id)) {
+        return _opaque_id;
+    }
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    return 0;
 }
 
 /**
@@ -378,6 +456,11 @@ void MissionItemProtocol::queued_request_send()
 
 void MissionItemProtocol::update()
 {
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    update_checksum();
+    send_deferred_mission_ack();
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+
     if (!receiving) {
         // we don't need to do anything unless we're sending requests
         return;
@@ -386,18 +469,20 @@ void MissionItemProtocol::update()
         INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
+
+    const mavlink_channel_t chan = link->get_chan();
     // stop waypoint receiving if timeout
     const uint32_t tnow = AP_HAL::millis();
     if (tnow - timelast_receive_ms > upload_timeout_ms) {
         receiving = false;
         timeout();
-        const mavlink_channel_t chan = link->get_chan();
         if (HAVE_PAYLOAD_SPACE(chan, MISSION_ACK)) {
             mavlink_msg_mission_ack_send(chan,
                                          dest_sysid,
                                          dest_compid,
                                          MAV_MISSION_OPERATION_CANCELLED,
-                                         mission_type());
+                                         mission_type(),
+                                         current_opaque_id());
         }
         link = nullptr;
         free_upload_resources();
@@ -410,5 +495,164 @@ void MissionItemProtocol::update()
         link->send_message(next_item_ap_message_id());
     }
 }
+
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+// send the ack for a completed upload once its opaque ID is
+// available.  If superseded is true a new transfer is starting, so
+// the ack is sent as soon as there is space, without an ID.
+void MissionItemProtocol::send_deferred_mission_ack(bool superseded)
+{
+    if (deferred_mission_ack.link == nullptr) {
+        return;
+    }
+    if (superseded) {
+        deferred_mission_ack.superseded = true;
+    }
+    superseded = deferred_mission_ack.superseded;
+    uint32_t _opaque_id = 0;
+    if (!superseded &&
+        !opaque_id(_opaque_id) &&
+        AP_HAL::millis() - deferred_mission_ack.start_ms < upload_timeout_ms) {
+        // still calculating.  If it takes too long we send the ack
+        // without the ID rather than have the GCS think the upload
+        // failed.
+        return;
+    }
+    if (superseded ||
+        items_change_count() != deferred_mission_ack.items_change_count ||
+        item_count() != deferred_mission_ack.count) {
+        // the items have changed since the upload, so no ID
+        // identifies the uploaded plan
+        _opaque_id = 0;
+    }
+    // hold the channel lock so another thread can't take the space
+    // between our check and the send, which would lose the ack:
+    WITH_SEMAPHORE(comm_chan_lock(deferred_mission_ack.link->get_chan()));
+    if (!HAVE_PAYLOAD_SPACE(deferred_mission_ack.link->get_chan(), MISSION_ACK)) {
+        return;
+    }
+    send_mission_ack(*deferred_mission_ack.link,
+                     deferred_mission_ack.sysid,
+                     deferred_mission_ack.compid,
+                     MAV_MISSION_ACCEPTED,
+                     _opaque_id);
+    deferred_mission_ack.link = nullptr;
+}
+
+// returns true if an ack is waiting to be sent to the sender of msg
+bool MissionItemProtocol::deferred_mission_ack_pending_for(const mavlink_message_t &msg) const
+{
+    return deferred_mission_ack.link != nullptr &&
+        deferred_mission_ack.sysid == msg.sysid &&
+        deferred_mission_ack.compid == msg.compid;
+}
+
+// returns a unique ID for this mission
+bool MissionItemProtocol::opaque_id(uint32_t &checksum) const
+{
+    switch (checksum_state.state) {
+    case ChecksumState::READY:
+        if (items_change_count() != checksum_state.items_change_count ||
+            item_count() != checksum_state.count) {
+            // the items have changed since the checksum was calculated
+            return false;
+        }
+        if (checksum_state.count <= opaque_id_first_item()) {
+            // the MAVLink specification identifies an empty plan as 0
+            checksum = 0;
+            return true;
+        }
+        checksum = checksum_state.checksum;
+        // zero means "unsupported or empty", so a plan with items
+        // must not be identified as zero:
+        if (checksum == 0) {
+            checksum = UINT32_MAX;
+        }
+        return true;
+    case ChecksumState::STALE:
+    case ChecksumState::SETTLING:
+    case ChecksumState::CALCULATING:
+        return false;
+    }
+    return false;
+}
+
+void MissionItemProtocol::update_checksum()
+{
+    const uint32_t _items_change_count = items_change_count();
+    const uint16_t items_count = item_count();
+
+    if (checksum_state.state == ChecksumState::STALE ||
+        _items_change_count != checksum_state.items_change_count ||
+        items_count != checksum_state.count) {
+        // record the items we will calculate the checksum for, and
+        // wait for them to stop changing
+        checksum_state.state = ChecksumState::SETTLING;
+        checksum_state.count = items_count;
+        checksum_state.items_change_count = _items_change_count;
+        checksum_state.settle_start_ms = AP_HAL::millis();
+        return;
+    }
+
+    switch (checksum_state.state) {
+    case ChecksumState::READY:
+        // checksum is up to date
+        return;
+    case ChecksumState::SETTLING:
+        if (AP_HAL::millis() - checksum_state.settle_start_ms < 500) {
+            // don't start to calculate unless the items have been
+            // unchanged for a while.
+            return;
+        }
+        checksum_state.state = ChecksumState::CALCULATING;
+        checksum_state.checksum = 0;
+        checksum_state.current_item = opaque_id_first_item();
+        break;
+    case ChecksumState::CALCULATING:
+        break;
+    case ChecksumState::STALE:
+        // handled above
+        return;
+    }
+
+    // AP: Took 2.178000ms to checksum 373 points (5.839142ms/1000 points
+    for (uint16_t count = 0;
+         count<16 && checksum_state.current_item<checksum_state.count;
+         count++, checksum_state.current_item++) {
+        mavlink_mission_item_int_t ret_packet;
+        const MAV_MISSION_RESULT result_code = get_item(checksum_state.current_item, ret_packet);
+        if (result_code != MAV_MISSION_ACCEPTED) {
+            checksum_state.state = ChecksumState::STALE;
+            return;
+        }
+#define ADD_TO_CHECKSUM(field) checksum_state.checksum = crc_crc32(checksum_state.checksum, (uint8_t*)&ret_packet.field, sizeof(ret_packet.field));
+        ADD_TO_CHECKSUM(frame);
+        ADD_TO_CHECKSUM(command);
+        ADD_TO_CHECKSUM(autocontinue);
+        ADD_TO_CHECKSUM(param1);
+        ADD_TO_CHECKSUM(param2);
+        ADD_TO_CHECKSUM(param3);
+        ADD_TO_CHECKSUM(param4);
+        ADD_TO_CHECKSUM(x);
+        ADD_TO_CHECKSUM(y);
+        ADD_TO_CHECKSUM(z);
+#undef ADD_TO_CHECKSUM
+    }
+
+    if (checksum_state.current_item < checksum_state.count) {
+        return;
+    }
+
+    // another thread (e.g. scripting or FTP) may have changed the items
+    // while we were reading the last of them:
+    if (items_change_count() != checksum_state.items_change_count ||
+        item_count() != checksum_state.count) {
+        checksum_state.state = ChecksumState::STALE;
+        return;
+    }
+
+    checksum_state.state = ChecksumState::READY;
+}
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
 
 #endif  // HAL_GCS_ENABLED

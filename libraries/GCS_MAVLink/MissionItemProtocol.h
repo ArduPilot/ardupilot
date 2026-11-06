@@ -64,6 +64,12 @@ public:
     // a method for GCS_MAVLINK to send warnings about received
     // MISSION_ITEM messages (we should be getting MISSION_ITEM_INT)
     void send_mission_item_warning();
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    bool opaque_id(uint32_t &checksum) const;
+    // returns true if an upload's ack is waiting to be sent to the
+    // sender of msg
+    bool deferred_mission_ack_pending_for(const mavlink_message_t &msg) const;
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
 
 protected:
 
@@ -76,6 +82,15 @@ protected:
     virtual bool clear_all_items() = 0;
 
     uint16_t        request_last; // last request index
+
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    // first item to be included in checksum; allows exclusion of home
+    // position in missions
+    virtual uint16_t opaque_id_first_item() const { return 0; }
+    // returns a counter which the backend increments every time its
+    // items change
+    virtual uint32_t items_change_count() const = 0;
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
 
 private:
 
@@ -119,6 +134,16 @@ private:
 
     void send_mission_ack(const mavlink_message_t &msg, MAV_MISSION_RESULT result) const;
     void send_mission_ack(const GCS_MAVLINK &link, const mavlink_message_t &msg, MAV_MISSION_RESULT result) const;
+    void send_mission_ack(const GCS_MAVLINK &_link,
+                          uint32_t sysid,
+                          uint8_t compid,
+                          MAV_MISSION_RESULT result) const;
+    void send_mission_ack(const GCS_MAVLINK &_link,
+                          uint32_t sysid,
+                          uint8_t compid,
+                          MAV_MISSION_RESULT result,
+                          uint32_t _opaque_id) const;
+    uint32_t current_opaque_id() const;
 
     virtual uint16_t item_count() const = 0;
     virtual uint16_t max_items() const = 0;
@@ -135,6 +160,7 @@ private:
     // this method will call complete() so the backends can do their
     // bit.
     void transfer_is_complete(const GCS_MAVLINK &_link, const mavlink_message_t &msg);
+    void send_transfer_ack(const GCS_MAVLINK &_link, const mavlink_message_t &msg, MAV_MISSION_RESULT result);
 
     // timeout - called if the GCS fails to continue to supply items
     // in a transfer.  Backends are expected to tidy themselves up in
@@ -142,4 +168,38 @@ private:
     virtual void timeout() {};
 
     bool mavlink2_requirement_met(const GCS_MAVLINK &_link, const mavlink_message_t &msg) const;
+
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    enum class ChecksumState : uint8_t {
+        STALE,  // must be zero so we calculate a checksum at boot
+        SETTLING,
+        CALCULATING,
+        READY,
+    };
+    struct {
+        ChecksumState state;
+        uint16_t count;
+        uint16_t current_item;
+        uint32_t items_change_count;
+        uint32_t settle_start_ms;
+        uint32_t checksum;
+    } checksum_state;
+
+    void update_checksum();
+
+    // MISSION_ACK for a completed upload, waiting for the opaque ID
+    // to be calculated:
+    struct {
+        const GCS_MAVLINK *link;  // nullptr if no ack is waiting
+        bool superseded;  // a newer transfer has started; send without an ID
+        uint32_t sysid;
+        uint8_t compid;
+        uint32_t start_ms;
+        // the items the ack is for:
+        uint16_t count;
+        uint32_t items_change_count;
+    } deferred_mission_ack;
+
+    void send_deferred_mission_ack(bool superseded=false);
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
 };

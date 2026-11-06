@@ -4,6 +4,8 @@
 
 #include <AC_Fence/AC_Fence.h>
 
+#if AP_FENCE_ENABLED
+
 class AC_PolyFence_loader;
 
 class MissionItemProtocol_Fence : public MissionItemProtocol {
@@ -33,6 +35,12 @@ protected:
     }
     bool clear_all_items() override WARN_IF_UNUSED;
 
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    uint32_t items_change_count() const override {
+        return _fence.polyfence().change_count();
+    }
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+
 private:
     class AC_Fence &_fence;
 
@@ -52,3 +60,5 @@ private:
     uint16_t _new_items_count;
     uint8_t *_updated_mask;
 };
+
+#endif  // AP_FENCE_ENABLED

@@ -70,6 +70,8 @@ public:
     // methods primarily for MissionItemProtocol_Fence to use:
     // return the total number of points stored
     uint16_t num_stored_items() const { return _eeprom_item_count; }
+    // return a counter which is incremented when the stored items change
+    uint32_t change_count() const { return _change_count; }
     // Read from the persistent storage into an item object
     bool get_item(const uint16_t seq, AC_PolyFenceItem &item) WARN_IF_UNUSED;
 
@@ -364,6 +366,10 @@ private:
     // _load_time_ms - from millis(), system time when fence load last
     // succeeded.  Will be zero if fences are not loaded
     uint32_t _load_time_ms;
+
+    // _change_count - incremented each time the stored fence is
+    // written
+    uint32_t _change_count;
 
     // scale_latlon_from_origin - given a latitude/longitude
     // transforms the point to an offset-from-origin and deposits
