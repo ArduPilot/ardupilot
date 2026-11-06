@@ -197,7 +197,11 @@ public:
     void        queued_param_send();
     void        queued_mission_request_send();
 
+#if AP_GCS_MAVLINK1_ENABLED
     bool sending_mavlink1() const;
+#else
+    bool sending_mavlink1() const { return false; }
+#endif  // AP_GCS_MAVLINK1_ENABLED
 
     // returns true if we are requesting any items from the GCS:
     bool requesting_mission_items() const;
