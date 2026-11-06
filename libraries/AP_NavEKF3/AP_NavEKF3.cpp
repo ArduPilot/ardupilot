@@ -998,12 +998,11 @@ void NavEKF3::UpdateFilter(void)
             if (coreIndex != primary) {
                 float altCoreError = coreRelativeErrors[coreIndex];
 
-                // an alternative core is available for selection based on 2 conditions -
+                // an alternative core is available for selection based on 3 conditions -
                 // 1. healthy and states have been updated on this time step
                 // 2. has relative error less than primary core error
-                // 3. not been the primary core for at least 10 seconds
-                altCoreAvailable = coreBetterScore(coreIndex, newPrimaryIndex) &&
-                    imuSampleTime_us - coreLastTimePrimary_us[coreIndex] > 1E7;
+                // 3. not been the primary core for at least 10 seconds, unless the primary has failed and this core has not
+                altCoreAvailable = coreBetterScore(coreIndex, newPrimaryIndex) && (((primaryErrorScore > 1.0f || !core[primary].healthy()) && coreErrorScores[coreIndex] <= 1.0f) || imuSampleTime_us - coreLastTimePrimary_us[coreIndex] > 1E7);
 
                 if (altCoreAvailable) {
                     // if this core has a significantly lower relative error to the active primary, we consider it as a 
@@ -1026,9 +1025,9 @@ void NavEKF3::UpdateFilter(void)
         // 3. is healthy, but a better core is available
         // also update the yaw and position reset data to capture changes due to the lane switch
         if (altCoreAvailable && (primaryErrorScore > 1.0f || !core[primary].healthy() || betterCore)) {
+            coreLastTimePrimary_us[primary] = imuSampleTime_us;
             switchLane(newPrimaryIndex);
             resetCoreErrors();
-            coreLastTimePrimary_us[primary] = imuSampleTime_us;
         }
     }
 
