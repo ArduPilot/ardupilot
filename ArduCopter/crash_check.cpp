@@ -167,7 +167,7 @@ void Copter::thrust_loss_check()
         thrust_loss_counter = 0;
         LOGGER_WRITE_ERROR(LogErrorSubsystem::THRUST_LOSS_CHECK, LogErrorCode::FAILSAFE_OCCURRED);
         // send message to gcs
-        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Potential Thrust Loss (%d)", (int)motors->get_lost_motor() + 1);
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Potential Thrust Loss (Motor %d)", (int)motors->get_lost_motor() + 1);
         // enable thrust loss handling
         motors->set_thrust_boost(true);
         // the motors library disables this when it is no longer needed to achieve the commanded output
