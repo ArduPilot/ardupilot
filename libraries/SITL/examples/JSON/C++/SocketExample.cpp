@@ -18,28 +18,80 @@
 /*
   constructor
  */
-SocketExample::SocketExample(bool _datagram) : 
-    SocketExample(_datagram, socket(AF_INET, _datagram?SOCK_DGRAM:SOCK_STREAM, 0)) 
-{}
-
-SocketExample::SocketExample(bool _datagram, int _fd) :
-    datagram(_datagram),
-    fd(_fd)
+SocketExample::SocketExample()// : 
+    //SocketExample(_datagram, socket(AF_INET, _datagram?SOCK_DGRAM:SOCK_STREAM, 0)) 
+    //SocketExample(_datagram, fd(socket_init(_datagram, _fd))
 {
+    /*if (!socket_init(&_fd)) {
+        throw 20;
+    }*/
+#ifdef _WIN32
+    if (!init_WSA()) {
+        std::cout << "[SocketExample] " << "WSAStartUp error code: " << WSAGetLastError() << std::endl;
+        throw 20;
+}
+#endif // _WIN32
+    fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#ifdef _WIN32
+    if (fd == INVALID_SOCKET) {
+        std::cout << "[SocketExample] " << "socket creation error code: " << WSAGetLastError() << std::endl;
+        throw 20;
+    }
+#endif // _WIN32
+#ifndef _WIN32
     fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif // !_WIND32
     if (!datagram) {
         int one = 1;
-        setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+        setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+#ifdef _WIN32
+        (char*)
+#endif // _WIN32
+            & one, sizeof(one));
     }
 }
+
+//SocketExample::SocketExample(bool _datagram, int _fd) :
+//    datagram(_datagram),
+//    fd(_fd)
+//{
+//    
+//}
 
 SocketExample::~SocketExample()
 {
     if (fd != -1) {
+#ifdef _WIN32
+        closesocket(fd);
+        fd = -1;
+#else
         ::close(fd);
         fd = -1;
+#endif // _WIN32
     }
 }
+
+//int SocketExample::socket_init(bool &_datagram, int &_fd) {
+//#ifdef _WIN32
+//    if (!init_WSA()) {
+//        std::cout << "[SocketExample] " << "WSAStartUp error code: " << WSAGetLastError() << std::endl;
+//        throw 20;
+//    }
+//#endif // _WIN32
+//    socket(AP_INET, _datagram ? SOCK_DGRAM : SOCK_STREAM, 0);
+//}
+
+#ifdef _WIN32
+bool SocketExample::init_WSA() {
+/* initialize the socket API */
+    WSADATA info;
+    if (WSAStartup(MAKEWORD(2, 2), &info) != 0) {
+        fprintf(stderr, "Cannot initialize Winsock.\n");
+        return false;
+    }
+    return true;
+}
+#endif // _WIND32
 
 void SocketExample::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
 {
@@ -50,7 +102,21 @@ void SocketExample::make_sockaddr(const char *address, uint16_t port, struct soc
 #endif
     sockaddr.sin_port = htons(port);
     sockaddr.sin_family = AF_INET;
+#ifdef _WIN32
+    int ret = inet_pton(AF_INET, address, &sockaddr.sin_addr.s_addr);
+    if (ret == 0) {
+        // pAddrBuf invalid
+        std::cout << "[SocketExample] " << "make_sockaddr error code: (invalid address) " << WSAGetLastError() << std::endl;
+        throw 20;
+    }
+    else if (ret == -1) {
+        // some other error
+        std::cout << "[SocketExample] " << "make_sockaddr error code: " << WSAGetLastError() << std::endl;
+        throw 20;
+    }
+#else
     sockaddr.sin_addr.s_addr = inet_addr(address);
+#endif // _WIN32   
 }
 
 /*
@@ -75,7 +141,10 @@ bool SocketExample::bind(const char *address, uint16_t port)
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
 
-    if (::bind(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
+    if (::bind(fd, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) != 0) {
+#ifdef _WIN32
+        std::cout << "[SocketExample] " << "bind error code: " << WSAGetLastError() << std::endl;
+#endif // _WIN32
         return false;
     }
     return true;
@@ -88,7 +157,11 @@ bool SocketExample::bind(const char *address, uint16_t port)
 bool SocketExample::reuseaddress(void) const
 {
     int one = 1;
-    return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) != -1);
+    return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+#ifdef _WIN32
+    (char*)
+#endif // _WIN32
+        &one, sizeof(one)) != -1);
 }
 
 /*
@@ -98,19 +171,21 @@ bool SocketExample::set_blocking(bool blocking) const
 {
     int fcntl_ret;
     if (blocking) {
+#ifdef _WIN32
+        unsigned long mode = 0;
+        fcntl_ret = (ioctlsocket(fd, FIONBIO, &mode) == 0) ? true : false;
+#else
         fcntl_ret = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+#endif // _WIN32
     } else {
+#ifdef _WIN32
+        unsigned long mode = 1;
+        fcntl_ret = (ioctlsocket(fd, FIONBIO, &mode) == 0) ? true : false;
+#else
         fcntl_ret = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+#endif // _WIND32
     }
     return fcntl_ret != -1;
-}
-
-/*
-  set cloexec state
- */
-bool SocketExample::set_cloexec() const
-{
-    return (fcntl(fd, F_SETFD, FD_CLOEXEC) != -1);
 }
 
 /*
@@ -118,7 +193,11 @@ bool SocketExample::set_cloexec() const
  */
 ssize_t SocketExample::send(const void *buf, size_t size) const
 {
+#ifdef _WIN32
+    return ::send(fd, static_cast<const char*>(buf), size, 0);
+#else
     return ::send(fd, buf, size, 0);
+#endif // _WIN32
 }
 
 /*
@@ -128,7 +207,11 @@ ssize_t SocketExample::sendto(const void *buf, size_t size, const char *address,
 {
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
+#ifdef _WIN32
+    return ::sendto(fd, static_cast<const char *>(buf), size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+#else
     return ::sendto(fd, buf, size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+#endif // _WIND32
 }
 
 /*
@@ -139,8 +222,13 @@ ssize_t SocketExample::recv(void *buf, size_t size, uint32_t timeout_ms)
     if (!pollin(timeout_ms)) {
         return -1;
     }
+#ifdef _WIN32
+    int fromlen = sizeof(in_addr);
+    return recvfrom(fd, static_cast<char *>(buf), size, 0, (sockaddr*)&in_addr, &fromlen);
+#else
     socklen_t len = sizeof(in_addr);
     return ::recvfrom(fd, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr, &len);
+#endif // _WIND32
 }
 
 /*
@@ -148,14 +236,9 @@ ssize_t SocketExample::recv(void *buf, size_t size, uint32_t timeout_ms)
  */
 void SocketExample::last_recv_address(const char *&ip_addr, uint16_t &port) const
 {
+    // TODO: update this call for winsock2 and add _WIN32 macro
     ip_addr = inet_ntoa(in_addr.sin_addr);
     port = ntohs(in_addr.sin_port);
-}
-
-void SocketExample::set_broadcast(void) const
-{
-    int one = 1;
-    setsockopt(fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
 }
 
 /*
@@ -179,26 +262,6 @@ bool SocketExample::pollin(uint32_t timeout_ms)
 }
 
 
-/*
-  return true if there is room for output data
- */
-bool SocketExample::pollout(uint32_t timeout_ms)
-{
-    fd_set fds;
-    struct timeval tv;
-
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-
-    tv.tv_sec = timeout_ms / 1000;
-    tv.tv_usec = (timeout_ms % 1000) * 1000UL;
-
-    if (select(fd+1, nullptr, &fds, nullptr, &tv) != 1) {
-        return false;
-    }
-    return true;
-}
-
 /* 
    start listening for new tcp connections
  */
@@ -211,18 +274,22 @@ bool SocketExample::listen(uint16_t backlog) const
   accept a new connection. Only valid for TCP connections after
   listen has been used. A new socket is returned
 */
-SocketExample *SocketExample::accept(uint32_t timeout_ms)
-{
-    if (!pollin(timeout_ms)) {
-        return nullptr;
-    }
-
-    int newfd = ::accept(fd, nullptr, nullptr);
-    if (newfd == -1) {
-        return nullptr;
-    }
-    // turn off nagle for lower latency
-    int one = 1;
-    setsockopt(newfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-    return new SocketExample(false, newfd);
-}
+//SocketExample *SocketExample::accept(uint32_t timeout_ms)
+//{
+//    if (!pollin(timeout_ms)) {
+//        return nullptr;
+//    }
+//
+//    int newfd = ::accept(fd, nullptr, nullptr);
+//    if (newfd == -1) {
+//        return nullptr;
+//    }
+//    // turn off nagle for lower latency
+//    int one = 1;
+//    setsockopt(newfd, IPPROTO_TCP, TCP_NODELAY,
+//#ifdef _WIN32
+//    (char*)
+//#endif // _WIN32
+//        &one, sizeof(one));
+//    return new SocketExample(false, newfd);
+//}
