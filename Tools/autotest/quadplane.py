@@ -2688,11 +2688,15 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
     def WindEstimateConsistency(self):
-        '''test that DCM and EKF3 roughly agree on wind speed and direction'''
+        '''test that DCM, CINS and EKF3 roughly agree on wind speed and direction'''
         self.set_parameters({
             'SIM_WIND_SPD': 10,   # metres/second
             'SIM_WIND_DIR': 315,  # from the North-West
         })
+        # CINS's wind is only checked if it is built in:
+        estimates = ['DCM']
+        if self.cins_built_in():
+            estimates.append('CINW')
         self.change_mode('TAKEOFF')
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -2701,31 +2705,32 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
         self.progress("Inspecting dataflash log")
+        # DCM and CINS both estimate wind from the (shared) wind triangle;
+        # require each to agree with the EKF3 estimate (XKF2).  CINS logs its
+        # wind in the CINW message.
         match_start_time = None
-        dcm = None
-        xkf2 = None
+        latest = {}
         while True:
             m = mlog.recv_match(
-                type=['DCM', 'XKF2'],
+                type=estimates + ['XKF2'],
                 blocking=True,
             )
             if m is None:
                 raise NotAchievedException("Did not see wind estimates match")
 
-            m_type = m.get_type()
-            if m_type == 'DCM':
-                dcm = m
-            else:
-                xkf2 = m
-            if dcm is None or xkf2 is None:
+            latest[m.get_type()] = m
+            if not all(k in latest for k in estimates + ['XKF2']):
                 continue
 
             now = m.TimeUS * 1e-6
+            xkf2 = latest['XKF2']
 
-            matches_east = abs(dcm.VWE-xkf2.VWE) < 1.5
-            matches_north = abs(dcm.VWN-xkf2.VWN) < 1.5
-
-            matches = matches_east and matches_north
+            matches = True
+            for name in estimates:
+                est = latest[name]
+                if abs(est.VWE - xkf2.VWE) >= 1.5 or abs(est.VWN - xkf2.VWN) >= 1.5:
+                    matches = False
+                    break
 
             if not matches:
                 match_start_time = None

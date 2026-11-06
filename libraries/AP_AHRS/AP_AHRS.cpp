@@ -170,7 +170,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: EKF_TYPE
     // @DisplayName: Use NavEKF Kalman filter for attitude and position estimation
     // @Description: This controls which NavEKF Kalman filter version is used for attitude and position estimation
-    // @Values: 0:Disabled,2:Enable EKF2,3:Enable EKF3, 10:Sim, 11:ExternalAHRS
+    // @Values: 0:Disabled,2:Enable EKF2,3:Enable EKF3, 10:Sim, 11:ExternalAHRS, 12:CINS
     // @User: Advanced
     AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, HAL_AHRS_EKF_TYPE_DEFAULT),
 
@@ -208,6 +208,12 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Range: -200 5000
     // @User: Advanced
     AP_GROUPINFO("ORIGIN_ALT", 21, AP_AHRS, _origin_alt, 0),
+
+#if AP_AHRS_CINS_ENABLED
+    // @Group: CINS_
+    // @Path: AP_AHRS_CINS.cpp
+    AP_SUBGROUPINFO(cins, "CINS_", 22, AP_AHRS, AP_AHRS_CINS),
+#endif
 
     AP_GROUPEND
 };
@@ -264,6 +270,10 @@ AP_AHRS_Backend *AP_AHRS::backend_for_type(EKFType type)
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         return &sim;
+#endif
+#if AP_AHRS_CINS_ENABLED
+    case EKFType::CINS:
+        return &cins;
 #endif
     }
     return nullptr;
@@ -614,6 +624,9 @@ void AP_AHRS::update(bool skip_ins_update)
 #if AP_AHRS_NAVEKF3_ENABLED
     fallback_synthetic_airspeed_EAS(ekf3_estimates);
 #endif
+#if AP_AHRS_CINS_ENABLED
+    fallback_synthetic_airspeed_EAS(cins_estimates);
+#endif
 
     update_configured_ekf_type();
     update_active_EKF_type();
@@ -803,6 +816,10 @@ bool AP_AHRS::_airspeed_TAS(Vector3f &vec) const
     case EKFType::EXTERNAL:
         break;
 #endif
+#if AP_AHRS_CINS_ENABLED
+    case EKFType::CINS:
+        break;
+#endif
     }
     return false;
 }
@@ -833,6 +850,10 @@ bool AP_AHRS::airspeed_health_data(uint8_t instance, float &innovation, float &i
 
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
+        break;
+#endif
+#if AP_AHRS_CINS_ENABLED
+    case EKFType::CINS:
         break;
 #endif
     }
@@ -882,6 +903,10 @@ AP_AHRS_Backend::Estimates *AP_AHRS::estimates_for_type(EKFType type)
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
         return &external_estimates;
+#endif
+#if AP_AHRS_CINS_ENABLED
+    case EKFType::CINS:
+        return &cins_estimates;
 #endif
     }
     return nullptr;
@@ -1099,6 +1124,10 @@ AP_AHRS::EKFType AP_AHRS::_configured_ekf_type(void) const
     case EKFType::EXTERNAL:
         return type;
 #endif
+#if AP_AHRS_CINS_ENABLED
+    case EKFType::CINS:
+        return type;
+#endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         return type;
@@ -1187,6 +1216,11 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         ret = EKFType::EXTERNAL;
         break;
 #endif
+#if AP_AHRS_CINS_ENABLED
+    case EKFType::CINS:
+        ret = EKFType::CINS;
+        break;
+#endif
     }
 
 #if AP_AHRS_DCM_ENABLED
@@ -1220,6 +1254,11 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         case EKFType::EXTERNAL:
             filt_state = external_estimates.filter_status;
             should_use_gps = true;
+            break;
+#endif
+#if AP_AHRS_CINS_ENABLED
+        case EKFType::CINS:
+            filt_state = cins_estimates.filter_status;
             break;
 #endif
         }
@@ -1370,6 +1409,9 @@ bool AP_AHRS::_get_secondary_EKF_type(EKFType &secondary_ekf_type) const
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
+#endif
+#if AP_AHRS_CINS_ENABLED
+    case EKFType::CINS:
 #endif
         // DCM is secondary
         secondary_ekf_type = fallback_active_EKF_type();
@@ -1880,6 +1922,10 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
     case EKFType::EXTERNAL:
         return false;
 #endif
+#if AP_AHRS_CINS_ENABLED
+    case EKFType::CINS:
+        return false;
+#endif
     }
 
     return false;
@@ -2018,6 +2064,9 @@ const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
+#endif
+#if AP_AHRS_CINS_ENABLED
+    case EKFType::CINS:
 #endif
         return nullptr;
     }

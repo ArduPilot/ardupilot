@@ -21,6 +21,15 @@
 #define AP_AHRS_DCM_ENABLED AP_AHRS_BACKEND_DEFAULT_ENABLED && AP_INERTIALSENSOR_ENABLED
 #endif
 
+#ifndef AP_AHRS_CINS_ENABLED
+// CINS is developmental; build it in by default only where there is
+// plenty of flash, otherwise with --enable-CINS
+#include <AP_Compass/AP_Compass_config.h>
+#include <AP_GPS/AP_GPS_config.h>
+#define AP_AHRS_CINS_ENABLED (AP_AHRS_BACKEND_DEFAULT_ENABLED && AP_INERTIALSENSOR_ENABLED && AP_COMPASS_ENABLED && AP_GPS_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 2048)
+#endif
+
+
 #ifndef AP_AHRS_EXTERNAL_ENABLED
 #define AP_AHRS_EXTERNAL_ENABLED AP_AHRS_BACKEND_DEFAULT_ENABLED && AP_EXTERNAL_AHRS_ENABLED
 #endif
