@@ -12,6 +12,8 @@ bool ModeFollow::enabled() const
 // initialize follow mode
 bool ModeFollow::_enter()
 {
+    _reached_destination = false;
+
     if (!enabled()) {
         return false;
     }
@@ -30,6 +32,8 @@ void ModeFollow::_exit()
 
 void ModeFollow::update()
 {
+    _reached_destination = false;
+
     // stop vehicle if no speed estimate
     float speed;
     if (!attitude_control.get_forward_speed(speed)) {
@@ -69,9 +73,6 @@ void ModeFollow::update()
         stop_vehicle();
         return;
     }
-
-    // we have not reached the target
-    _reached_destination = false;
 
     // scale desired velocity to stay within horizontal speed limit
     float desired_speed = safe_sqrt(sq(desired_velocity_ne.x) + sq(desired_velocity_ne.y));
