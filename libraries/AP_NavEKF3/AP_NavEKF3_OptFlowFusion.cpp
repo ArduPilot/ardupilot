@@ -42,6 +42,49 @@ void NavEKF3_core::SelectFlowFusion()
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
     // check is the terrain offset estimate is still valid - if we are using range finder as the main height reference, the ground is assumed to be at 0
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER);
+    // ground measured in flight, which the carry and the fallback above the range need, not merely
+    // valid because the range finder is the height source; cleared while disarmed
+    const bool gndMeasuredNow = (gndHgtValidTime_ms != 0) && ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
+    if (onGround) {
+        gndOffsetMeasured = false;
+        terrainAnchorValid = false;
+    } else if (gndMeasuredNow) {
+        gndOffsetMeasured = true;
+    }
+    // the ground measured this moment, rather than within the 5 s the offset stays valid for
+    const bool gndMeasuredFresh = (gndHgtValidTime_ms != 0) && ((imuSampleTime_ms - gndHgtValidTime_ms) < 500);
+    if (gndMeasuredFresh) {
+        gndKnownNE = stateStruct.position.xy();
+    }
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // The terrain database is anchored to the ground the range finder measured, so only its
+    // shape is used: its absolute height carries SRTM and origin altitude errors. Above the
+    // range FuseOptFlow() scales flow by the database's height from the anchor, and while the
+    // data keeps arriving the ground is known where the vehicle is
+    const bool terrainFresh = (terrain_srtm_alt_ms != 0) &&
+                              ((imuSampleTime_ms - terrain_srtm_alt_ms) < TERRAIN_SRTM_ALT_TIMEOUT_MS);
+    if (gndMeasuredFresh && !terrainFresh) {
+        // an anchor measured somewhere else would carry that place's database error
+        terrainAnchorValid = false;
+    } else if (terrainFresh && !onGround && frontend->sources.optflow_enabled() &&
+               !frontend->option_is_enabled(NavEKF3::Option::OptflowMayUseTerrainAlt)) {
+        if (gndMeasuredFresh && (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+            terrainAnchorOffset = terrainState + terrain_srtm_alt;
+            terrainAnchorValid = true;
+        } else if (terrainAnchored()) {
+            gndKnownNE = stateStruct.position.xy();
+        }
+    }
+    // an anchor that ends without the ground being measured leaves its ground as the terrain
+    // state, so the ground the limits, the flat-ground checks and XKF5 read, and flow where no
+    // other height scales it, falls back to the last anchored ground, not the one held before it
+    const bool anchored = terrainAnchored();
+    if (terrainAnchorInUse && !anchored && !gndMeasuredFresh) {
+        terrainState = anchoredTerrainState();
+    }
+    terrainAnchorInUse = anchored;
+#endif
+    updateFlatGroundAssumed();
     // Perform tilt check
     bool tiltOK = (prevTnb.c.z > frontend->DCM33FlowMin);
     // Constrain measurements to zero if takeoff is not detected and the height above ground
@@ -100,6 +143,11 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         inhibitGndState = true;
     } else {
         inhibitGndState = false;
+
+        if (rangeDataToFuse && flatGndEngaged && !flatGndSaved.valid) {
+            flatGndSaved = {flowTerrainState(), Popt, prevPosN, prevPosE, timeAtLastAuxEKF_ms, gndHgtValidTime_ms,
+                            gndKnownNE, terrainAnchorOffset, terrainAnchorValid, lastGoodRngMeas, true};
+        }
 
         // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
         // limit distance to prevent intialisation after bad gps causing bad numerical conditioning
@@ -164,6 +212,8 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 
                 // record the time we last updated the terrain offset state
                 gndHgtValidTime_ms = imuSampleTime_ms;
+                lastGoodRngMeas = rangeDataDelayed.rng;
+                terrainRngFuseTime_ms = imuSampleTime_ms;
             }
         }
 
@@ -312,8 +362,11 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // is positive up from the origin where pd and terrainState above are positive down
     terrain_srtm_alt_valid = (terrain_srtm_alt_ms != 0) &&
                              ((imuSampleTime_ms - terrain_srtm_alt_ms) < TERRAIN_SRTM_ALT_TIMEOUT_MS);
-    if (!gndOffsetValid && terrain_srtm_alt_valid) {
+    if (!gndOffsetValid && terrainAltUsable()) {
         heightAboveGndEst = MAX((-pd) - terrain_srtm_alt, rngOnGnd);
+    } else if (terrainAnchored()) {
+        // the database's shape from the ground the range finder last measured
+        heightAboveGndEst = MAX(flowTerrainState() - pd, rngOnGnd);
     }
 #endif
 

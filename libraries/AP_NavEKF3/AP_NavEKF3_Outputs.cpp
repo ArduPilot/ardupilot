@@ -95,28 +95,21 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow navigation
     if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
 
-        // If we are using optical flow nav with terrain alt from SRTM then there is no limit
+        // If we are using optical flow nav with terrain alt from SRTM then there is no limit.
+        // Terrain data reaches the cores whatever EK3_OPTIONS says; only bit 2 uses it directly
 #if EK3_FEATURE_OPTFLOW_SRTM
-        if (terrain_srtm_alt_valid) {
+        if (terrain_srtm_alt_valid && frontend->option_is_enabled(NavEKF3::Option::OptflowMayUseTerrainAlt)) {
             return false;
         }
 #endif
 
         // if using rangefinder, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-#if AP_RANGEFINDER_ENABLED
-        const auto *_rng = dal.rangefinder();
-        if (_rng == nullptr) {
-            // we really, really shouldn't be here.
+        if (!flowHgtLimit(height)) {
             return false;
         }
-        height = MAX(float(_rng->max_distance_orient(ROTATION_PITCH_270)) * 0.7f - 1.0f, 1.0f);
-#else
-        return false;
-#endif
-        // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
-        if (frontend->sources.getPosZSource(core_index) != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
-            height -= terrainState;
-        }
+        // compensate for the difference between terrain and EKF origin, with the range finder as the
+        // height reference too, as a fall back to another source and back moves the terrain state
+        height -= flowTerrainState();
         return true;
     } else {
         return false;
@@ -382,10 +375,10 @@ void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
     // nav gains to prevent body rate feedback into flow rates destabilising the control loop
     if (PV_AidingMode == AID_RELATIVE && relyingOnFlowData) {
         // allow 1.0 rad/sec margin for angular motion
-        ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * MAX((terrainState - stateStruct.position[2]), rngOnGnd);
+        ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * MAX((flowTerrainState() - stateStruct.position[2]), rngOnGnd);
         // reduce the nav gain above _flowNavGainHgt to allow for flow velocity noise that grows with height
         const ftype gainHgt = MAX(frontend->_flowNavGainHgt.get(), 1.0f);
-        ekfNavVelGainScaler = gainHgt / MAX((terrainState - stateStruct.position[2]), gainHgt);
+        ekfNavVelGainScaler = gainHgt / MAX((flowTerrainState() - stateStruct.position[2]), gainHgt);
     } else {
         ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
         ekfNavVelGainScaler = 1.0f;
