@@ -18090,6 +18090,53 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if len(in_frame):
             raise NotAchievedException("Origin logged before the end of the current frame: %s" % str(in_frame))
 
+    def ReplayOriginLateLog(self):
+        '''check Replay gives the EKFs their origin when logging starts after it was set'''
+        # with LOG_DISARMED=0 logging starts at arming, after the EKFs
+        # have their origin, so the log must still record the origin
+        # for the replayed EKFs to navigate on GPS
+        self.build_replay()
+        self.set_parameters({
+            "EK2_ENABLE": 1,
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 0,
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+            "LOG_FILE_BUFSIZE": 32767,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+        log_filepath = self.current_onboard_log_filepath()
+        self.set_parameter("DISARM_DELAY", 0)
+        self.delay_sim_time(150, reason="replayed EKFs to align")
+        self.disarm_vehicle()
+        self.delay_sim_time(2, reason="log to be closed")
+
+        self.run_replay(log_filepath)
+        replay_log_filepath = self.current_onboard_log_filepath()
+
+        # replayed cores are logged with 100 added to their index
+        horiz_pos_abs = 16  # NavFilterStatusBit.HORIZ_POS_ABS
+        dfreader = self.dfreader_for_path(replay_log_filepath)
+        seen = {}
+        while True:
+            m = dfreader.recv_match(type=['NKF4', 'XKF4'])
+            if m is None:
+                break
+            if m.C < 100:
+                continue
+            key = "%s[%u]" % (m.get_type(), m.C)
+            seen[key] = seen.get(key, False) or bool(m.SS & horiz_pos_abs)
+        self.progress("Replayed cores with an absolute position: %s" % str(seen))
+        for mtype in 'NKF4', 'XKF4':
+            if not any(k.startswith(mtype) for k in seen.keys()):
+                raise NotAchievedException("No replayed %s in %s" % (mtype, replay_log_filepath))
+        for (key, ok) in seen.items():
+            if not ok:
+                raise NotAchievedException("Replayed %s never had an absolute position" % key)
+
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
@@ -24763,6 +24810,7 @@ return update, 1000
             self.Replay,
             self.ReplayShortMessage,
             self.ReplayOriginFrame,
+            self.ReplayOriginLateLog,
             self.GroundEffectCompensation_touchDownExpected,
             self.GroundEffectCompensation_takeOffExpected,
             self.RTLStoppingDistanceSpeed,
