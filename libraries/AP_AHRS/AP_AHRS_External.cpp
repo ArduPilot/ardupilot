@@ -109,6 +109,7 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = true;  // massive assumption here
+    results.primary_core_index = -1;
     // true if GPS is configured as the horizontal position source
     // for this estimator.  Used to decide whether GPS will set
     // the navigation origin.
