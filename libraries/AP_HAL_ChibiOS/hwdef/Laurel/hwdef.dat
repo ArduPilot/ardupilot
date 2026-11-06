@@ -253,6 +253,9 @@ undef AP_BATTERY_SMBUS_SOLO_ENABLED
 define AP_BATTERY_SMBUS_SOLO_ENABLED 0
 define AP_CRASHDUMP_ENABLED 0
 define HAL_GYROFFT_ENABLED 0
+# AP_AHRS runs every backend it is built with on every loop, configured or
+# not: an external AHRS no one has fitted cost core0 about 1% of its time.
+define AP_EXTERNAL_AHRS_ENABLED 0
 define HAL_WITH_DSP FALSE
 
 define HAL_USE_PAL                         TRUE
