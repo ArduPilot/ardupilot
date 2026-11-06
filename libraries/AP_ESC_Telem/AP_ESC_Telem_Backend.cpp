@@ -36,8 +36,9 @@ AP_ESC_Telem_Backend::AP_ESC_Telem_Backend() {
 }
 
 // callback to update the rpm in the frontend, should be called by the driver when new data is available
-void AP_ESC_Telem_Backend::update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate) {
-    _frontend->update_rpm(esc_index, new_rpm, error_rate);
+// error_rate_is_pct is true only for drivers that report error_rate as a percentage
+void AP_ESC_Telem_Backend::update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate, const bool error_rate_is_pct) {
+    _frontend->update_rpm(esc_index, new_rpm, error_rate, error_rate_is_pct);
 }
 
 // callback to update the data in the frontend, should be called by the driver when new data is available

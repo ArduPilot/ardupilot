@@ -61,6 +61,7 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
 #ifdef HAL_WITH_BIDIR_DSHOT
     bdshot_prepare_for_next_pulse(group);
     bdshot_telem = group.bdshot.enabled;
+    group.bdshot.command_sent = (chan == RCOutput::ALL_CHANNELS || group.chan[group.bdshot.curr_telem_chan] == chan);
 #endif    
 
     memset((uint8_t *)group.dma_buffer, 0, DSHOT_BUFFER_LENGTH);
