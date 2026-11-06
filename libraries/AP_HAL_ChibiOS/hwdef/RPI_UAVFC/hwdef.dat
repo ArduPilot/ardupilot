@@ -375,31 +375,43 @@ define CH_CFG_SMP_MODE TRUE
 
 # SMP: start core1 as the second ChibiOS instance.
 define RP_CORE1_START TRUE
-# CPU clock: 225 MHz (900 MHz VCO / POSTDIV1=4 / POSTDIV2=1), a 1.5x overclock
-# of the RP2350 datasheet's 150 MHz clk_sys/clk_peri limit. A 1500 MHz VCO
-# cannot divide to 225, so the VCO drops to 900 MHz (FBDIV 75) and POSTDIV 4x1
-# gives 225 MHz. The on-chip VREG is set to 1.15 V (VSEL=0x0c) before the PLL
-# switch in rp2350_vreg_init(). Hardware flight tests cover this sample, but
-# the datasheet does not qualify 225 MHz across process, voltage and temperature.
-define RP_PLL_SYS_VCO_FREQ 900000000
-define RP_PLL_SYS_POSTDIV1 4
+# CPU clock: 200 MHz (1200 MHz VCO, FBDIV 100, POSTDIV 6x1), a 1.33x
+# overclock of the RP2350 datasheet's 150 MHz clk_sys/clk_peri limit, chosen
+# for the 100 MHz flash clock it divides to. The on-chip VREG is set to
+# 1.15 V (VSEL=0x0c) before the PLL switch in rp2350_vreg_init(). The
+# datasheet does not qualify 200 MHz across process, voltage and temperature.
+# The bidirectional DShot and OSD programs want a 75 MHz PIO clock, which
+# 200 MHz reaches with a fractional divider.
+define RP_PLL_SYS_VCO_FREQ 1200000000
+define RP_PLL_SYS_POSTDIV1 6
 define RP_PLL_SYS_POSTDIV2 1
-MCU_CLOCKRATE_MHZ 225
+MCU_CLOCKRATE_MHZ 200
 # On-chip VREG voltage select: 0x0c = 1.15 V (datasheet Table 481, VREG.VSEL).
 define RP_VREG_VSEL 12
 
-# QMI flash timing, derived for 225 MHz sysclk (half_cycle = 2.222 ns).
-# Formula: sample_from_falling = (CLKDIV + RXDELAY) / (2 x sysclk)
-# Constraints:
-#   setup: sample >= tCLQV (6 ns for a 133 MHz Winbond part)
-#   hold:  sample < SCK period, i.e. RXDELAY < CLKDIV
-# CLKDIV=3 RXDELAY=2: SCK = 75 MHz, sample = (3+2)x2.222 = 11.1 ns, setup
-# margin 5.1 ns, hold margin 2.2 ns.  Both healthy, and 75 MHz SCK is well
-# under the part's 133 MHz limit.
-# NOTE: these values were characterised on the Laurel v1 flash.  Re-check them
-# if this revision fits a different part.
-define RP_QMI_CLKDIV 3
+# QMI flash timing. The flash is a Winbond W25Q32JV (JEDEC ID EF4016, read
+# over SWD): 133 MHz, tCLQV 6 ns, tCLQX 1.5 ns. The QMI samples
+# (CLKDIV + RXDELAY) / (2 x sysclk) after the SCK falling edge, but the
+# board's round trip delays the data, so the read window has to be measured.
+# At 200 MHz with CLKDIV 2 (SCK 100 MHz), two reads of the 1.46 MB app per
+# setting with both cores halted: RXDELAY 0 (5 ns) and 5-7 (17.5-22.5 ns)
+# read nothing right, 1-4 (7.5-15 ns) read every byte right. RXDELAY 2
+# (10 ns) has a passing setting either side. It is also applied before the
+# PLL switch, while the core runs from flash on the ring oscillator; there
+# RXDELAY above CLKDIV would sample the next bit, and RXDELAY 2 samples on
+# the edge, inside the flash's hold time.
+define RP_QMI_CLKDIV 2
 define RP_QMI_RXDELAY 2
+# MIN_DESELECT counts system clocks: 3 is 15 ns at 200 MHz, against the
+# W25Q32JV's 10 ns /CS deselect time between reads (tSHSL1). The bootrom
+# leaves 7 (35 ns).
+define RP_QMI_MIN_DESELECT 3
+# Continuous read: mode byte 0xA0 (M5-4 = 10) leaves the flash expecting the
+# next read's address, so an XIP cache miss takes 28 flash clocks instead of
+# 36. Revision G of the W25Q32JV datasheet documents this; revision I no
+# longer does, so the port checks the flash reads back correctly and keeps
+# the ordinary format if not.
+define RP_QMI_CONT_READ_MODE 0xA0
 
 # Board-specific notes:
 # - GPIO27 is the IMU CLKIN net; not driven or configured by this port.
