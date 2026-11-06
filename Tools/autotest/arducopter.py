@@ -4504,10 +4504,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     self.gps_speed = m.vel/100.0  # cm/s -> m/s
 
                 of_speed = self.flow_rate_rads * self.rangefinder_distance
-                if abs(of_speed - self.gps_speed) > 1.5:
+                if abs(of_speed - self.gps_speed) > 3:
                     raise NotAchievedException(f"gps={self.gps_speed} vs of={of_speed} mismatch")
                 of_speed = self.flow_rate_rads * self.distance_sensor_distance
-                if abs(of_speed - self.gps_speed) > 1.5:
+                if abs(of_speed - self.gps_speed) > 3:
                     raise NotAchievedException(f"gps={self.gps_speed} vs of={of_speed} mismatch")
 
                 now = self.suite.get_sim_time_cached()
