@@ -849,10 +849,14 @@ void AP_Arming_Copter::update_pending_arm()
     }
 #if AP_AHRS_EKF_RESET_ENABLED
     // after timeout, reset EKF bootstrap once to force convergence.
-    // only fire once — repeated resets prevent the EKF from converging.
+    // only fire once - repeated resets prevent the EKF from converging.
+    // A reset cannot supply a missing input such as GPS, only restart a filter
+    // that has failed, so wait until the AHRS reports a failure of its own.
     const float timeout_s = _pending_arm_timeout_s;
+    char failure_msg[50];
     if (timeout_s > 0 && _pending_arm_start_ms != 0 &&
-        (now_ms - _pending_arm_start_ms >= uint32_t(timeout_s * 1000))) {
+        (now_ms - _pending_arm_start_ms >= uint32_t(timeout_s * 1000)) &&
+        !AP::ahrs().pre_arm_check(false, failure_msg, sizeof(failure_msg))) {
         if (AP::ahrs().reset_configured_backend()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Arm pending: EKF bootstrap reset");
         }
