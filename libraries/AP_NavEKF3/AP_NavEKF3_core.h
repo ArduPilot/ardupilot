@@ -1410,6 +1410,10 @@ private:
     public:
         void InitialiseVariables();
 
+    // time when fly_forward became true
+    uint32_t fly_forward_start_ms;
+    bool fly_forward_active;
+
 #if EK3_FEATURE_BODY_ODOM
         EKF_obs_buffer_t<vel_odm_elements> stored;    // body velocity data buffer
         vel_odm_elements dataNew;       // Body frame odometry data at the current time horizon
