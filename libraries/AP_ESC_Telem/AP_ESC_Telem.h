@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <SRV_Channel/SRV_Channel_config.h>
+#include <AP_Logger/AP_Logger_config.h>
 #include "AP_ESC_Telem_Backend.h"
 
 #if HAL_WITH_ESC_TELEM
@@ -108,7 +109,7 @@ public:
     // send telemetry data to mavlink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
-    // update at 10Hz to log telemetry
+    // update at 100Hz or faster, or every loop if SCHED_LOOP_RATE is lower, to log at ESC_TLM_LOG_RATE and handle invalidation
     void update();
 
     // is rpm telemetry configured for the provided channel mask
@@ -140,6 +141,9 @@ private:
     static uint16_t merge_edt2_stress(uint16_t old_stress, uint16_t new_stress);
 #endif
 
+    // log ESC data
+    void write_log();
+
     // rpm data
     volatile AP_ESC_Telem_Backend::RpmData _rpm_data[ESC_TELEM_MAX_ESCS];
     // telemetry data
@@ -158,6 +162,11 @@ private:
     bool _have_data;
 
     AP_Int8 mavlink_offset;
+
+#if HAL_LOGGING_ENABLED
+    AP_Int8 log_rate_hz;
+    uint32_t _last_log_us;
+#endif
 
     static AP_ESC_Telem *_singleton;
 };
