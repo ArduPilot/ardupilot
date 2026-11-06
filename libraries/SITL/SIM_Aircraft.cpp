@@ -1375,7 +1375,8 @@ void Aircraft::add_twist_forces(Vector3f &rot_accel)
         rot_accel.z += sitl->twist.z;
     } else {
         sitl->twist.start_ms = 0;
-        sitl->twist.t.set(0);
+        // save it, or the twist is applied again after a reboot
+        sitl->twist.t.set_and_save(0);
     }
 }
 
