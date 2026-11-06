@@ -1,0 +1,11 @@
+# Defaults for running RPI_UAVFC under Renode. Build with an absolute path,
+# which makes this the firmware's ROMFS defaults.parm (a relative path is
+# looked up in the hwdef directory and silently ignored, and RPI_UAVFC has no
+# embedded-defaults area for apj_tool to fall back on):
+#   ./waf configure --board RPI_UAVFC --default-parameters $PWD/Tools/renode/tests/RPI_UAVFC-renode.parm
+@include ../../../libraries/AP_HAL_ChibiOS/hwdef/RPI_UAVFC/defaults.parm
+
+# Renode has no USB device model for RP2350 yet, so MAVLink moves from USB
+# (SERIAL0) to UART0 (SERIAL1), which the harness exposes on TCP 5762.
+SERIAL1_PROTOCOL 2
+SERIAL1_BAUD 115
