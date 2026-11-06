@@ -201,7 +201,12 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
     }
     
     if (arm_status.status != MAV_ODID_ARM_STATUS_GOOD_TO_ARM) {
-        strncpy(failmsg, arm_status.error, failmsg_len);
+        // arm_status.error is a fixed size field that is not guaranteed to be
+        // null terminated, so terminate a local copy before using it
+        char err[sizeof(arm_status.error) + 1];
+        memcpy(err, arm_status.error, sizeof(arm_status.error));
+        err[sizeof(arm_status.error)] = '\0';
+        strncpy(failmsg, err, failmsg_len);
         return false;
     }
     
