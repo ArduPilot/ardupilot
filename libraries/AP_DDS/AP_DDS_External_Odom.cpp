@@ -56,21 +56,26 @@ bool AP_DDS_External_Odom::is_odometry_frame(const geometry_msgs_msg_TransformSt
 
 void AP_DDS_External_Odom::convert_transform(const geometry_msgs_msg_Transform& ros_transform, Vector3f& translation, Quaternion& rotation)
 {
-    // convert from x-forward, y-left, z-up to NED
-    // https://github.com/mavlink/mavros/issues/49#issuecomment-51614130
+    // Convert position from ENU to NED.
     translation = {
+        static_cast<float>(ros_transform.translation.y),
         static_cast<float>(ros_transform.translation.x),
-        static_cast<float>(-ros_transform.translation.y),
         static_cast<float>(-ros_transform.translation.z)
     };
 
+    // Convert orientation from ENU to NED.
+    // Rotate -90 deg around Z-axis to align the X-axis from East to North (ENU -> NWU).
+    Quaternion orientation_enu(ros_transform.rotation.w, ros_transform.rotation.x, ros_transform.rotation.y, ros_transform.rotation.z);
+    Quaternion transformation(sqrtF(2) * 0.5, 0, 0, -sqrtF(2) * 0.5);
+    Quaternion aux = orientation_enu * transformation;
+    // Remap axes from NWU to NED.
     // In AP, q1 is the quaternion's scalar component.
     // In ROS, w is the quaternion's scalar component.
     // https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Quaternion-Fundamentals.html#components-of-a-quaternion
-    rotation.q1 = ros_transform.rotation.w;
-    rotation.q2 = ros_transform.rotation.x;
-    rotation.q3 = -ros_transform.rotation.y;
-    rotation.q4 = -ros_transform.rotation.z;
+    rotation.q1 = aux[0];
+    rotation.q2 = aux[2];
+    rotation.q3 = aux[1];
+    rotation.q4 = -aux[3];
 }
 
 #endif // AP_DDS_VISUALODOM_ENABLED
