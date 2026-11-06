@@ -60,7 +60,10 @@ void Copter::update_land_detector()
         if (!flightmode->is_taking_off() && motors->get_takeoff_collective() && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
 #else
         // if throttle output is high then clear landing flag
-        if (!flightmode->is_taking_off() && motors->get_throttle_out() > get_non_takeoff_throttle() && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        if (!flightmode->is_taking_off() &&                            // flight mode has not detected a takeoff
+            !motors->limit.throttle_lower &&                           // desired throttle output is above the minimum
+            motors->get_throttle_out() > get_non_takeoff_throttle() && // actual throttle output is above the non-takeoff threshold
+            motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {   // motors have spooled up
             // this should never happen because take-off should be detected at the flight mode level
             // this here to highlight there is a bug or missing take-off detection
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
