@@ -365,7 +365,9 @@ def IMUfit(logfile):
                     c.set_aoffset(imu, axis, msg.Value)
                 if stype == 'GYR':
                     c.set_goffset(imu, axis, msg.Value)
-            if msg.Name == 'AHRS_ORIENTATION':
+            # BRD_ORIENTATION was AHRS_ORIENTATION before 4.8; accept
+            # either so that older logs can still be processed
+            if msg.Name in ('BRD_ORIENTATION', 'AHRS_ORIENTATION'):
                 orientation = int(msg.Value)
                 print("Using orientation %d" % orientation)
 
@@ -399,7 +401,7 @@ def IMUfit(logfile):
                 acc = acc.rotate_by_inverse_id(orientation)
                 gyr = gyr.rotate_by_inverse_id(orientation)
             if acc is None or gyr is None:
-                print("Invalid AHRS_ORIENTATION %u" % orientation)
+                print("Invalid board orientation %u" % orientation)
                 sys.exit(1)
 
             if c.enable[imu] == 1:
