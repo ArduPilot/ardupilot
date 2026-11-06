@@ -1377,11 +1377,11 @@ function RC_Channel_ud:set_override(PWM) end
 ---@return integer
 function RC_Channel_ud:get_aux_switch_pos() end
 
--- desc return input on a channel from -1 to 1, centered on the trim. Ignores the deadzone
+-- desc return normalised input on a channel, ignoring the deadzone. ANGLE channels (roll, pitch, yaw) return -1 to 1 centered on the trim. RANGE channels (throttle on Copter, Plane and Sub) return 0 at RCx_MIN to 1 at RCx_MAX and do not use the trim
 ---@return number
 function RC_Channel_ud:norm_input() end
 
--- desc return input on a channel from -1 to 1, centered on the trim. Returns zero when within deadzone of the trim
+-- desc return normalised input on a channel, honouring the deadzone. ANGLE channels (roll, pitch, yaw) return -1 to 1 centered on the trim and zero within the deadzone of the trim. RANGE channels (throttle on Copter, Plane and Sub) return 0 within the deadzone of RCx_MIN, rising to 1 at RCx_MAX, and do not use the trim
 ---@return number
 function RC_Channel_ud:norm_input_dz() end
 

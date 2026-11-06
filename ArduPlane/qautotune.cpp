@@ -28,7 +28,7 @@ float QAutoTune::get_desired_climb_rate_ms(void) const
 
 void QAutoTune::get_pilot_desired_rp_yrate_rad(float &des_roll_rad, float &des_pitch_rad, float &des_yaw_rate_rads)
 {
-    if (plane.channel_roll->get_control_in() == 0 && plane.channel_pitch->get_control_in() == 0) {
+    if (is_zero(plane.channel_roll->norm_input_dz()) && is_zero(plane.channel_pitch->norm_input_dz())) {
         des_roll_rad = 0.0;
         des_pitch_rad = 0.0;
     } else {
