@@ -151,3 +151,19 @@
 #ifndef HAL_LINUX_SERIALLED_ENABLED
 #define HAL_LINUX_SERIALLED_ENABLED 0
 #endif
+
+#ifndef HAL_WITH_MCU_MONITORING
+#define HAL_WITH_MCU_MONITORING 1
+#endif
+
+#ifndef HAL_LINUX_CPUFREQ_PATH
+#define HAL_LINUX_CPUFREQ_PATH "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq"
+#endif
+
+#ifndef HAL_LINUX_CPUFREQ_FALLBACK_PATH
+#define HAL_LINUX_CPUFREQ_FALLBACK_PATH "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"
+#endif
+
+#ifndef HAL_LINUX_THERMAL_PATH
+#define HAL_LINUX_THERMAL_PATH "/sys/class/thermal/thermal_zone0/temp"
+#endif
