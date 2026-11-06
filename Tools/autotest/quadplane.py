@@ -3546,8 +3546,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             'Q_TKOFF_RPM_MIN': 900,
             'Q_TKOFF_RPM_MAX': 1100,
         })
+        # take off far enough that the climb outlasts the check's 2s
+        # warning timer: a 1m takeoff finishes while the timer is still
+        # running, so it only sometimes caught the spurious warning
         self.upload_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 1),
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 5),
             (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, 0, 0),
         ])
         self.change_mode('AUTO')

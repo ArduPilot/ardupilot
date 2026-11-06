@@ -1258,6 +1258,26 @@ bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
         return false;
     }
 
+    // once the motors have actually left ground idle the takeoff has
+    // been allowed; RPM is expected to leave the takeoff window, so
+    // the check is moot - and must not warn.  A blocked takeoff never
+    // advances the spool state, so this cannot mask a genuine block.
+    // SPOOLING_DOWN counts as having left ground idle too: it is only
+    // reached after the motors have been above ground idle in this
+    // arming, and taking off again from there goes through
+    // SPOOLING_UP, so the only state left warning is the one the
+    // warning is for - sitting at ground idle awaiting permission.
+    switch (motors->get_spool_state()) {
+    case AP_Motors::SpoolState::SHUT_DOWN:
+    case AP_Motors::SpoolState::GROUND_IDLE:
+        break;
+    case AP_Motors::SpoolState::SPOOLING_UP:
+    case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
+    case AP_Motors::SpoolState::SPOOLING_DOWN:
+        takeoff_check_state.warning_ms = now_ms;
+        return true;
+    }
+
     // check ESCs are sending RPM at expected level
     uint32_t motor_mask = motors->get_motor_mask();
     const bool telem_active = AP::esc_telem().is_telemetry_active(motor_mask);
