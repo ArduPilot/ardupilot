@@ -19,7 +19,8 @@
 #     selected with MOT_PWM_TYPE 6.
 # Main loop at 200 Hz: the 2 kHz rate loop on core1 handles the fast attitude
 # path, so core0's main loop (nav, EKF inline, GCS, logging) needs only a modest
-# rate. This is the target baseline at the 225 MHz core clock.
+# rate. It was set at the 225 MHz core clock; 200 MHz with the 100 MHz flash
+# clock gives the main loop more headroom on RPI_UAVFC, not less.
 SCHED_LOOP_RATE 200
 INS_FAST_SAMPLE 1
 INS_GYRO_RATE 2

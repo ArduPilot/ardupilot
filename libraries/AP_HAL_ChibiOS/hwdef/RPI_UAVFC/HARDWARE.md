@@ -12,7 +12,8 @@ so do not take pin numbers from it.
 
 ## MCU and flash
 
-- RP2350B (QFN-80), 12 MHz crystal, run at 225 MHz.
+- RP2350B (QFN-80), 12 MHz crystal, run at 200 MHz with a 100 MHz flash
+  clock.
 - 4 MB QSPI flash, one 64 KB erase block per region: bootloader in block
   0, parameter storage in block 1, firmware from block 2.
 - No blackbox flash; logs go to the microSD card.

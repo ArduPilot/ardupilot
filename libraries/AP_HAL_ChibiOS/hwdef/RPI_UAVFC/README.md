@@ -13,7 +13,7 @@ developers working on the port are in
 
 ## Features
 
-- MCU - RP2350B dual-core Cortex-M33 running at 225 MHz (the RP2350
+- MCU - RP2350B dual-core Cortex-M33 running at 200 MHz (the RP2350
   datasheet limit is 150 MHz), 520 KB SRAM
 - 4 MB QSPI flash for firmware and parameters
 - ICM-56686 IMU (early samples carry an ICM-42688-P)
@@ -168,8 +168,9 @@ ArduPilot ground station.
 
 ## Known Limitations
 
-- The 225 MHz clock is above the 150 MHz datasheet limit. It has been
-  flight-tested on the bring-up boards only.
+- The 200 MHz clock is above the 150 MHz datasheet limit, and the flash
+  runs at 100 MHz. Both have been bench-tested only; earlier flights ran at
+  225 MHz with a 75 MHz flash clock.
 - DShot600 is the only DShot rate.
 - BLHeli passthrough is not supported.
 - CAN is not available on the RP2350.
