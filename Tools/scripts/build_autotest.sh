@@ -122,9 +122,11 @@ else
     TIMELIMIT_CMD="timelimit -s 9 -t $TIMELIMIT_TIME_LIMIT"
 fi
 
+# autotest.py kills its whole process group on timeout, so give it
+# its own session to stop it killing this script too.
 AUTOTEST_LOG="buildlogs/autotest-output.txt"
 echo "AutoTest log file is ($AUTOTEST_LOG)"
-$TIMELIMIT_CMD python3 $AUTOTEST --autotest-server --timeout=$AUTOTEST_TIME_LIMIT > "$AUTOTEST_LOG" 2>&1
+setsid --wait $TIMELIMIT_CMD python3 $AUTOTEST --autotest-server --timeout=$AUTOTEST_TIME_LIMIT > "$AUTOTEST_LOG" 2>&1
 
 mkdir -p "buildlogs/history/$hdate"
 
