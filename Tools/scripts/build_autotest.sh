@@ -43,6 +43,7 @@ lock_file() {
 
 
 lock_file build.lck || {
+    echo "$(date) Build locked" >> build.log
     exit 1
 }
 
