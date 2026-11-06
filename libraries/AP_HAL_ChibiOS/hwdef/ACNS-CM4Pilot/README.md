@@ -91,7 +91,7 @@ firmware, using your favorite DFU loading tool.
 
 Subsequently, you can update the firmware with Mission Planner.
 
-## Pinout and Size
+## Pinout
 
 ![CM4Pilot Pinout](CM4Pilot_Pinout.jpg)
 

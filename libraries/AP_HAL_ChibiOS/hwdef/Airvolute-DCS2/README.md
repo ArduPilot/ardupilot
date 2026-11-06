@@ -27,7 +27,7 @@ info@airvolute.com
 
 ![DC2 Pilot peripherals](https://github.com/vrsanskytom/ardupilot/blob/hwdef_for_airvolute_dcs2/libraries/AP_HAL_ChibiOS/hwdef/Airvolute-DCS2/DC2.Pilot%20peripherals.png)
 
-## DCS2.Pilot onboard FMU related connectors pinout
+## Pinout
 
 ### Top side
 

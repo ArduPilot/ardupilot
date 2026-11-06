@@ -82,7 +82,7 @@ The default battery parameters are:
 - BATT_VOLT_MULT = 11.0
 - BATT_AMP_PERVLT = 25.0
 
-## Analog RSSI input
+## Analog RSSI
 
 Analog RSSI uses [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) 12
 
