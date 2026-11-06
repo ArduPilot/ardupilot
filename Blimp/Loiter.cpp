@@ -828,7 +828,7 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @DisplayName: Loiter position lag
     // @Description: Number of seconds' worth of travel that the actual position can be behind the target position.
     // @Units: s
-    // @Range: 0 0.999
+    // @Range: 0 5
     // @User: Standard
     AP_GROUPINFO("POS_LAG", 19, Loiter, pos_lag, 1),
 
