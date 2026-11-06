@@ -135,8 +135,8 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
      * spiSend/spiReceive onto the hooks at the end of this file, so these
      * two configs never reach the PL022: spiStartHook() only compares the
      * pointer to pick the low or high speed of the "sdcard" SPIDEV line.
-     * SPIDevice derives the clock from that line, so at 225 MHz the card
-     * runs at 399 kHz (SSPCPSR=4) and 22.5 MHz (SSPCPSR=2).
+     * SPIDevice derives the clock from that line, so at 200 MHz the card
+     * runs at 400 kHz and 25 MHz (SSPCPSR=2 for both).
      */
     lowspeed.ssport  = PAL_PORT(HAL_GPIO_PIN_SDCARD_CS);
     lowspeed.sspad   = (uint16_t)PAL_PAD(HAL_GPIO_PIN_SDCARD_CS);
