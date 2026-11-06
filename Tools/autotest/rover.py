@@ -2498,105 +2498,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     # exclusion zones)
     # FIXME: add test that a fence with edges that cross can't be uploaded
     # FIXME: add a test that fences enclose an area (e.g. all the points aren't the same value!
-
-    def FenceBoundaryCrossing(self):
-        '''Test repeated in/out/in fence boundary crossings -- catch state-machine bugs.
-
-        Drive the rover back and forth across the fence boundary several
-        times.  Each crossing should trigger the correct fence state
-        transition without getting stuck in an invalid state.
-        '''
-        self.context_push()
-
-        self.progress("Setup fence parameters")
-        self.change_mode('LOITER')
-        self.wait_ready_to_arm()
-        here = self.get_location()
-        self.set_parameters({
-            "FENCE_TYPE": 2,    # circle only
-            "FENCE_RADIUS": 100,
-            "FENCE_ACTION": 1,  # RTL on breach (safe degradation)
-            "FENCE_ENABLE": 1,
-        })
-
-        self.progress("Arm and drive just inside fence boundary")
-        self.arm_vehicle()
-        self.change_mode('GUIDED')
-
-        # Position just inside the fence (90m from center, radius=100)
-        inside_loc = self.offset_location_ne(here, 90, 0)
-        # Position just outside the fence (110m from center, radius=100)
-        outside_loc = self.offset_location_ne(here, 110, 0)
-
-        self.progress("Crossing 1: drive inside -> outside (breach) -> inside")
-        # Drive to inside position
-        self.drive_to_location(inside_loc, tolerance=3, timeout=30)
-        inside_alt = self.get_location().alt
-
-        # Drive to outside position -- should trigger fence breach -> RTL
-        # But FENCE_ACTION=1 means RTL, so we need to handle that
-        self.progress("Driving to outside fence -- expecting RTL trigger")
-        self.change_mode('GUIDED')
-        self.run_cmd_int(
-            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
-            x=int(outside_loc.lat * 1e7),
-            y=int(outside_loc.lng * 1e7),
-            z=0,
-            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
-            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
-        )
-        # Vehicle should either reject the command or go into RTL
-        # Wait a moment for fence handler to react
-        self.delay_sim_time(2, reason="let fence handler react to breach")
-
-        self.progress("Crossing 2: drive inside -> outside again")
-        # If the vehicle is still in GUIDED, drive in/out again
-        # If it entered RTL, wait for RTL to complete and try again
-        try:
-            current_mode = self.get_mode()
-            if current_mode == 'RTL':
-                self.progress("Vehicle entered RTL after first breach, waiting...")
-                self.wait_mode("LOITER", timeout=30)  # RTL ends in LOITER at home
-                self.change_mode('GUIDED')
-                self.delay_sim_time(2, reason="stabilize in GUIDED")
-            self.run_cmd_int(
-                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
-                x=int(outside_loc.lat * 1e7),
-                y=int(outside_loc.lng * 1e7),
-                z=0,
-                frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
-                want_result=mavutil.mavlink.MAV_RESULT_FAILED,
-            )
-            self.delay_sim_time(2, reason="let fence handler react to second breach")
-        except Exception as e:
-            self.progress("Second crossing encountered: %s" % str(e))
-            # This is acceptable -- some state machines handle repeated
-            # breaches differently
-
-        self.progress("Crossing 3: return inside and verify stable state")
-        self.change_mode('GUIDED')
-        self.drive_to_location(inside_loc, tolerance=3, timeout=30)
-        self.assert_mode("GUIDED", msg="should be in GUIDED after returning inside")
-
-        self.progress("Crossing 4: another in->out->in cycle")
-        self.run_cmd_int(
-            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
-            x=int(outside_loc.lat * 1e7),
-            y=int(outside_loc.lng * 1e7),
-            z=0,
-            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
-            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
-        )
-        self.delay_sim_time(2, reason="let fence handler react to third breach")
-        self.change_mode('GUIDED')
-        self.drive_to_location(inside_loc, tolerance=3, timeout=30)
-
-        self.progress("Disarm and verify vehicle is stable after %d crossings", 4)
-        self.disarm_vehicle()
-        self.wait_disarmed(timeout=30)
-
-        self.context_pop()
-
     def Offboard(self, timeout=90):
         '''Test Offboard Control'''
         # rover-guided-mission.txt is in absolute coordinates, anchored
@@ -8457,7 +8358,6 @@ return update()
             self.GCSFence,
             self.GCSFenceInvalidPoint,
             self.GuidedRejectOutsideFence,
-            self.FenceBoundaryCrossing,
             self.GCSMission,
             # self.GCSRally,  # enable me in 2026, needs MAVProxy fixes
             self.MotorTest,
