@@ -13,8 +13,8 @@ profile it, and what is still open.
 | `Laurel` | RP2350B (QFN-80) | First RP2350B flight controller, used for the port bring-up |
 | `RPI_UAVFC` | RP2350B (QFN-80) | Revision of the Laurel board with a different pinout; the board that flies |
 
-All three run the same clock (225 MHz), flash timing and two-core SMP
-configuration. Each board directory holds `hwdef.dat`, `hwdef-bl.dat`,
+All three run at 200 MHz with a 100 MHz flash clock and share the two-core
+SMP configuration. Each board directory holds `hwdef.dat`, `hwdef-bl.dat`,
 `defaults.parm`, a `README.md`, and, for Laurel and RPI_UAVFC, a
 `HARDWARE.md` with the GPIO and connector reference.
 
@@ -604,15 +604,23 @@ stuck core1 shows up only indirectly, when IMU data and motor output stop.
 
 Over a megabyte of code and constants is read from QSPI flash through one
 16 KB XIP cache shared by both cores. A hit costs about what an SRAM fetch
-does; a miss stalls the core for a QSPI transaction at a 75 MHz flash clock,
-tens of cycles at 225 MHz. Moving code to SRAM therefore saves only its miss
-fraction. It pays for code with no loop locality (AP_DAL's per-frame
-snapshot), code larger than the cache (`NavEKF3_core::CovariancePrediction`,
-about 19 KB) and code that runs often enough to evict everything else.
+does; a miss stalls the core for a QSPI transaction: an 8-byte line takes 36
+flash clocks, or 28 in continuous read, of 2 system clocks each at 200 MHz
+with a 100 MHz flash clock: 72 cycles, or 56 (108 or 84 at the earlier
+225 MHz with 75 MHz). Laurel's boot ROM leaves its flash in Dual I/O (0xBB),
+where a line takes 56 flash clocks, or 48 in continuous read. Moving code to SRAM therefore saves
+only its miss fraction. It pays for code with no loop locality (AP_DAL's
+per-frame snapshot), code larger than the cache
+(`NavEKF3_core::CovariancePrediction`, about 19 KB) and code that runs often
+enough to evict everything else.
 
-Because the cache is shared, core1's fetches evict core0's working set. The
-design keeps core1's whole rate path (rate thread, IMU read and filters,
-mixer, rcout, DShot) in SRAM, leaving the cache to core0's main loop and EKF.
+Because the cache is shared, core1's fetches evict core0's working set, and
+they queue at the QMI ahead of core0's own misses. The design keeps core1's
+whole rate path (rate thread, IMU read and filters, mixer, rcout, DShot) in
+SRAM, leaving the cache to core0's main loop and EKF. Taking the last 11% of
+core1's busy time out of flash, armed on RPI_UAVFC, cut core0 from 58% to 55%
+busy with no core0 code moved. `Tools/debug/rp2350_pc_profiler.py
+--target-select rp2350.cm1` should find almost nothing of core1's in flash.
 Code that must run while XIP is off for a flash write also has to be in
 SRAM (see Dual-core architecture); that, not speed, is why the ChibiOS
 scheduler is in the RAMFUNC2 registry.
@@ -623,24 +631,49 @@ hot path is a soft-float library call. Full PGO is not implemented.
 
 ### Clock and flash timing
 
-All three boards set the same clock in `hwdef.dat`: a 900 MHz VCO (1500 MHz
-cannot divide to 225) with post-dividers 4 and 1, `MCU_CLOCKRATE_MHZ 225`,
-`RP_VREG_VSEL 12` (1.15 V), and `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2`. That
-is 1.5x the datasheet's 150 MHz clk_sys/clk_peri limit, validated by testing
-on the bring-up boards only, not across process, voltage and temperature.
+All three boards set a 1200 MHz VCO with post-dividers 6 and 1,
+`MCU_CLOCKRATE_MHZ 200`, `RP_QMI_CLKDIV 2` / `RP_QMI_RXDELAY 2` (a 100 MHz
+flash clock) and `RP_VREG_VSEL 12` (1.15 V). 200 MHz is 1.33x the
+datasheet's 150 MHz clk_sys/clk_peri limit, validated by testing on the
+bring-up boards only, not across process, voltage and temperature, and the
+flash read window was measured on RPI_UAVFC alone. Armed on the RPI_UAVFC bench,
+200 MHz with 100 MHz flash took the scheduler load from 36% to 31% and
+core0 from 55% to 51% busy against 225 MHz with 75 MHz, and core1, whose
+code is all in SRAM, from 46% to 50%.
 The port started at 375 MHz / 1.30 V, an overclock that existed only to hide
 XIP misses. Once core1's hot path was in SRAM the clock came down to 225 MHz
-and the voltage to 1.15 V. That is where the walk-down stopped, not a
-measured minimum; re-measure the budget before going lower.
+and the voltage to 1.15 V, then to 200 MHz for the 100 MHz flash clock it
+divides to. Neither is a measured minimum; re-measure the budget before
+going lower.
 
 - `MCU_CLOCKRATE_MHZ` must match the PLL defines: `system.cpp`
   static-asserts it against `RP_PLL_SYS_CLK`.
 - clk_peri is clk_sys, so every SPI, UART and PIO divider follows it.
 - The QMI samples `(CLKDIV + RXDELAY) / (2 x sysclk)` after the SCK falling
-  edge, which must exceed tCLQV (6 ns on the 133 MHz Winbond part) with
-  RXDELAY < CLKDIV: 3/2 gives a 75 MHz SCK and an 11.1 ns sample point.
-  `rp_clock_init()` (ChibiOS `rp_clocks.c`) applies it and the regulator
-  setting before the PLL switch. Laurel's `hwdef.dat` keeps the derivation.
+  edge, but the board's round trip delays the data, so measure the read
+  window rather than derive it: on RPI_UAVFC at 100 MHz, samples from 7.5 to
+  15 ns read correctly, past the 10 ns SCK period. Halt both cores, write
+  `M0_TIMING` (0x400d000c) over SWD, and read the app through the uncached
+  alias at 0x14000000 so every read goes to the flash; compare with the
+  `.bin`. RPI_UAVFC's `hwdef.dat` records the sweep.
+- `rp_clock_init()` (ChibiOS `rp_clocks.c`) applies the timing and the
+  regulator setting before the PLL switch, while the core runs from flash
+  on the ring oscillator. At that clock the round trip is negligible, so
+  RXDELAY above CLKDIV samples the next bit and the board does not boot.
+- `RP_QMI_MIN_DESELECT` sets how many system clocks chip select stays high
+  between reads; the bootrom leaves 7. All three boards set 3 (15 ns at
+  200 MHz), against the W25Q32JV's 10 ns; the Pico 2's W25Q32RV figure is
+  not checked.
+- `RP_QMI_CONT_READ_MODE` puts the flash in continuous read with that mode
+  byte (0xA0 on Winbond parts): the flash then takes each read without the
+  8-clock command. `hal_lld_init()` switches before core1 starts, checks
+  that two words read back unchanged and keeps the bootrom's format if not;
+  `rp_qmi_cont_read_active` says which. The EFL driver enters it again after
+  every erase, program or ID read, which take the flash out of it. Revision G
+  of the W25Q32JV datasheet documents continuous read and revision I no
+  longer does, hence the check. On RPI_UAVFC, armed on the bench, the two
+  together took the scheduler load from 46% to 40%, core0 from 64% to 59%
+  busy and core1 from 51% to 49%.
 
 ### Where code runs from
 
@@ -676,6 +709,9 @@ Unpicked function sections fall through to `.text_rest` in flash.
 
 - Matching is on the demangled name without arguments. The path is
   documentation only, so every overload moves and a wrong path goes unseen.
+  Template arguments stay (`Bitmask<(unsigned short)256>::get`) and a
+  `decltype` return type goes (`MAX<float, float>`). A template emitted as a
+  local copy in each object, as `MAX` is, moves in every object.
 - When the build includes `arducopter` on hardware the script runs with
   `--strict`: an entry that matches nothing fails the build ("no symbol
   match"). Other vehicles, the bootloader and simulation builds skip the
@@ -684,7 +720,9 @@ Unpicked function sections fall through to `.text_rest` in flash.
   `hwdef.h`, `[unless DEFINE]` when `hwdef.h` sets it to 0 or FALSE, and
   `[inlinable]` a header function the compiler may inline away.
 - `(archive)|lib_a-<name>.o` moves a whole library object; that is how
-  newlib's single-precision trig and `powf`/`logf` cores are placed.
+  newlib's single-precision trig and `powf`/`logf` cores are placed. Newer
+  newlib spells libm's members `libm_a-<name>.o`; the script takes either,
+  and `--strict` fails when the toolchain's libraries have neither.
 - A symbol must be in one registry only: the first matching linker statement
   wins and `.data` comes first, so a scratch entry also listed in RAMFUNC2
   silently stays in main SRAM.
@@ -731,8 +769,13 @@ the heap: about 92 KB of code in the current RPI_UAVFC copter build
 ("RP2350: SRAM over limit after RAMFUNC placement"). What is free in flight
 is far less: thread stacks, the EKF, the log buffer (`LOG_FILE_BUFSIZE`,
 80 KB by default here), filters and the analog OSD come out of the heap, some
-only when enabled at boot. Measure with `@SYS/memory.txt` (FREE, largest
-block LRG) or `PM.Mem` in a log, armed and with the features you fly.
+only when enabled at boot. Measure with MAVLink `MEMINFO.freemem32` or
+`PM.Mem` in a log (`available_memory()`), armed and with the features you
+fly. `@SYS/memory.txt` FREE counts only the heap's free list, not memory the
+heap has yet to take from the core allocator: on RPI_UAVFC at 200 MHz it read
+2 KB while `MEMINFO` gave 153 KB, 150 KB armed, with the full 80 KB log
+buffer, scripting off and the OSD on. Scripting takes `SCR_HEAP_SIZE`
+(100 KB) more when enabled.
 
 `Tools/scripts/rp2350_heap_budget_report.py --map build/<board>/Linker.map`
 breaks SRAM down and suggests a `__rp2350_min_heap__`; with `--threads-file`
@@ -1093,8 +1136,10 @@ use output 5 for PWM there.
   output or none (else a config error); a direction change reloads the
   block. `HAL_WITH_BIDIR_DSHOT` is emitted for every RP2350 board with
   DShot, and the hwdef `BIDIR` tag means nothing here.
-- PIO clock 24 MHz plain (fractional divider fine), 75 MHz bidirectional,
-  whose decode assumes exactly 75 MHz: `clk_sys` must be a multiple.
+- PIO clock 24 MHz plain, 75 MHz bidirectional. A `clk_sys` that is not a
+  multiple gets a fractional divider (75.07 MHz at 200 MHz), and the decode
+  takes its scale from the divider it programs. At 200 MHz on the bench the
+  ESC's replies, at 0 rpm, decoded with no errors; no spinning motor yet.
 - The frame goes in the low half of the FIFO word, as both programs start
   with `out y, 16`; in the high half a valid throttle-zero frame goes out.
 - `send_pulses_DMAR()` returns the group to IDLE itself, as no DMA
@@ -1152,7 +1197,7 @@ under load.
 WS2812 output (`HAL_SERIALLED_ENABLED`, RPI_UAVFC only) uses one PIO1 SM per
 LED output when the broker gives PIO1 to NeoPixel; otherwise the group
 reports "NeoPixel off: PIO1 is the OSD's". 10 PIO cycles a bit at 800 kHz
-(divider 28.125 at 225 MHz), autopull at 24 bits, colour in bits 31..8, GRB
+(divider 25 at 200 MHz), autopull at 24 bits, colour in bits 31..8, GRB
 or RGB (`MODE_NEOPIXELRGB`); ProfiLED is refused. With no DMA,
 `serial_led_send()` streams words into an eight-word FIFO from the LED
 thread, waiting about 30 us per LED beyond eight; a timeout still ends the
@@ -1164,10 +1209,10 @@ switch happens at the first colour write, so the boot banner can say PWM.
 ### SPI
 
 The PL022 runs from `clk_peri`, which follows `clk_sys`. SSPCPSR is 2 and
-SCR rounds so the clock never exceeds the request: at 225 MHz, 16 MHz gives
-14.06 and 25 MHz gives 22.5. SCR tops out at 255, a 439 kHz floor, so a
-slower request takes the smallest even SSPCPSR that reaches it: the microSD
-400 kHz init clock runs at 399 kHz with SSPCPSR 4.
+SCR takes the fastest clock that does not exceed the request: at 200 MHz,
+16 MHz gives 14.3 and 25 MHz gives 25. SCR tops out at 255, a 391 kHz
+floor, so a slower request takes the smallest even SSPCPSR that reaches it;
+the microSD 400 kHz init clock runs at 400 kHz with SSPCPSR 2.
 
 - `spiStart()` frees and reallocates both DMA channels under the kernel
   lock. `SPIBus::apply_config()` cycles the peripheral only when SSPCR0,
@@ -1205,7 +1250,7 @@ which no board wires; on Laurel SPI1 is the SD card or the AT7456E, not both.
 - A 512-byte block is prologue, data, CRC skip and response, then a
   byte-at-a-time busy poll, each a `do_transfer()` round trip in the
   lowest-priority IO thread: round trips and core0 load set the throughput,
-  not the 22.5 MHz wire.
+  not the 25 MHz wire.
 - Only the SDC path calls `set_io_size()`, so here `io_size` stays 4096 and
   the logger syncs every 4 KB: the directory entry plus, when a cluster was
   allocated, FSINFO and each FAT copy, all single-sector writes.
@@ -1315,7 +1360,7 @@ with W 0 black, with W 1 white; both idle low, so the camera passes through.
 | Resource | As built |
 |---|---|
 | PIO | all of PIO1: 31 of 32 instruction slots at offset 0, SM0, GPIOBASE 0, FUNCSEL 7 |
-| PIO clock | 75 MHz, integer divider 3 from the 225 MHz clk_sys |
+| PIO clock | 75 MHz: divider 3 at 225 MHz, fractional (75.07 MHz) at 200 MHz |
 | DMA | one channel, any free, claimed on core1; DREQ PIO1 TX0; about 1.3 MB/s |
 | Interrupts | PIO1_IRQ_0 (field flag) at 7; core1's DMA vector, which runs at 2 |
 | Thread | `OSD_c1`, 1 KB stack, `PRIORITY_IO` (58), core1 |
@@ -1416,7 +1461,9 @@ If the RAM is needed, cache only the glyphs in use (typically 60-90, about
   DMA does not read it from XIP either.
 - Drawing belongs in the thread: the completion shares priority 2 with the
   IMU's SPI DMA.
-- Keep the clock a multiple of 75 MHz so the PIO divider stays an integer.
+- A clock that is not a multiple of 75 MHz gives a fractional PIO divider,
+  which moves pixel edges by up to one system clock. At 200 MHz the overlay
+  looked the same as at 225 MHz on an NTSC camera; PAL is not checked.
 - A late block costs one block, a desync the rest of the field. Treating a
   late block as a desync blanks about 200 lines instead of 9.
 
@@ -1677,21 +1724,31 @@ build on a flight board comes from
 - SmartAudio over a half-duplex PIO UART works on the bench and has not
   flown. The first VTX tried never replied, under Betaflight too.
 - Bench-untested: UART inversion including PIO TX, GPIO (PPM) RC input, the
-  SBUS-out refusal, FETtec over PIO, the 399 kHz microSD init clock.
+  SBUS-out refusal, FETtec over PIO, an SPI clock below 391 kHz, which
+  raises SSPCPSR (nothing asks for one at 200 MHz).
   `rp2350_pioasm.py --check` is not in CI.
 
 ### Bring-up and release
 
 - RPI_UAVFC's README references no image, which
   `Tools/scripts/test_new_boards.py` requires of a new board.
-- 225 MHz at 1.15 V is 1.5 times the datasheet clock, validated only on
-  bring-up samples. QMI timing is characterised for Laurel's flash part only.
+- 200 MHz at 1.15 V is 1.33 times the datasheet clock, validated only on
+  bring-up samples, and has not flown. The 100 MHz flash window was
+  measured on one RPI_UAVFC at room temperature. Laurel and Pico2 run its
+  settings without a sweep of their own. Laurel has run them on the bench
+  (whole-flash readbacks, reboots, parameter writes); Pico2 has not.
 - Until a board has soaked past the 71.6 minute `micros()` wrap while
   arming and disarming (`AP_RCOUT_USE_32BIT_TIME`), reboot before flying.
 - After an SWD flash and OpenOCD detach, core1 sometimes never launches
   (PC 0x19e in the bootrom) and core0 stalls in the XIP lockout wait. A
   MAVLink reboot does not clear it, a power cycle does; the guess is debug
   state left set. Power-cycle after SWD.
+- A MAVLink reboot leaves a HardFault in `fault_info`: core1's idle thread,
+  CFSR 0x8200 (precise bus fault), HFSR FORCED, BFAR 0x55555555, the ChibiOS
+  stack fill. `Scheduler::reboot()` masks core0's interrupts and calls
+  `NVIC_SystemReset()` while core1 runs on. The record replaces any earlier
+  one, so read `fault_info` before rebooting. Seen on RPI_UAVFC with
+  continuous read, and on a Pico 2 W bench with the bootrom's read format.
 - Disarmed, some boots report the rate thread at about 2 kHz and 40% load,
   others at 4 kHz and 0%, whatever the build. Unexplained.
 - Bootloader binaries do not build reproducibly.

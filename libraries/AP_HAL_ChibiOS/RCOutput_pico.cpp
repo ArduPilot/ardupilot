@@ -643,7 +643,7 @@ void RCOutput_pico::neopixel_start_sm(uint8_t idx, uint8_t gpio)
 
     pio->CTRL &= ~(1U << (PIO_CTRL_SM_ENABLE_LSB + sm));
 
-    // CLKDIV is 16.8 fixed point. At 225 MHz this is exactly 28 + 32/256, but
+    // CLKDIV is 16.8 fixed point. At 200 MHz this is exactly 25, but
     // compute it so a board on another clock still lands on the right carrier.
     const uint32_t div256 = (uint32_t)(((uint64_t)RP_CLK_SYS_FREQ * 256U) / WS2812_PIO_HZ);
     pio->SM[sm].CLKDIV = ((div256 >> 8) << PIO_CLKDIV_INT_LSB)
