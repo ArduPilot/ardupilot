@@ -19927,6 +19927,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrottleGainBoost,
             self.ScriptMountPOI,
             self.GuidedYawRate,
+            self.GuidedBodyFRD,
             self.MISSION_OPTION_CLEAR_MISSION_AT_BOOT,
             self.SafetySwitch,
             self.HomeCircleInclusionFence_SetHome,
@@ -20675,6 +20676,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         if rates[10] < rates[1] * 0.95:
             raise NotAchievedException("Guided yaw rate slower for higher rate updates")
+
+        self.do_RTL()
+
+    def GuidedBodyFRD(self):
+        '''test SET_POSITION_TARGET_LOCAL_NED in MAV_FRAME_BODY_FRD'''
+        self.takeoff(10, mode='GUIDED')
+        self.guided_achieve_heading(60)
+
+        def send_target(type_mask, x=0, y=0, z=0, vx=0, vy=0, vz=0):
+            self.mav.mav.set_position_target_local_ned_send(
+                0, # timestamp
+                1, # target system_id
+                1, # target component id
+                mavutil.mavlink.MAV_FRAME_BODY_FRD,
+                type_mask,
+                x, y, z,
+                vx, vy, vz,
+                0, 0, 0, # accel
+                0, # yaw
+                0, # yawrate
+            )
+
+        # a position target is an offset forward and right of the
+        # vehicle, rotated by its full attitude:
+        start = self.get_local_position_NED()
+        fwd = 20
+        right = 10
+        ofs = mavextra.rotation(self.assert_receive_message('ATTITUDE')) * Vector3(fwd, right, 0)
+        expected = (start.x + ofs.x, start.y + ofs.y, start.z + ofs.z)
+        send_target(MAV_POS_TARGET_TYPE_MASK.POS_ONLY, x=fwd, y=right)
+        self.wait_distance_to_local_position(
+            expected,
+            distance_min=0,
+            distance_max=1.5,
+            timeout=60,
+            minimum_duration=3,
+        )
+
+        # a velocity target is in the body frame.  Command a zero yaw
+        # rate, otherwise the vehicle turns to face its direction of
+        # travel and each resend is rotated by the new heading:
+        self.wait_speed_vector_bf(
+            Vector3(0, 2, 0),
+            accuracy=0.3,
+            minimum_duration=3,
+            called_function=lambda last_value, target: send_target(
+                MAV_POS_TARGET_TYPE_MASK.POS_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE,
+                vy=2,
+            ),
+        )
 
         self.do_RTL()
 
