@@ -44,9 +44,6 @@ void Sub::init_ardupilot()
     AP_Param::set_default_by_name("TEMP1_BUS", barometer.external_bus());
 #endif
 
-    // setup telem slots with serial ports
-    gcs().setup_uarts();
-
     // initialise rc channels including setting mode
     rc().init();
 
