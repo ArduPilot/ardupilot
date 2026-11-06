@@ -12,16 +12,24 @@ export LC_ALL=C
 # With --strict, a registry entry that matches no symbol fails the build.
 # Without it misses are ignored: the registries are tuned for one vehicle, and
 # the bootloader and other vehicles legitimately lack most of their entries.
-if [[ $# -eq 2 && "$2" == "--strict" ]]; then
-    strict=1
-elif [[ $# -eq 1 ]]; then
-    strict=0
-else
-    echo "usage: $0 <buildroot> [--strict]" >&2
+# --toolchain names the cross toolchain prefix, so the symbols are read and
+# demangled by the cross binutils the build uses, not whatever the host has.
+usage() {
+    echo "usage: $0 <buildroot> [--strict] [--toolchain <prefix>]" >&2
     exit 2
-fi
-
-buildroot="$1"
+}
+strict=0
+toolchain=arm-none-eabi
+buildroot=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --strict) strict=1 ;;
+        --toolchain) [[ $# -ge 2 ]] || usage; toolchain="$2"; shift ;;
+        *) [[ -z "$buildroot" ]] || usage; buildroot="$1" ;;
+    esac
+    shift
+done
+[[ -n "$buildroot" ]] || usage
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 
 tmpdir="$(mktemp -d)"
@@ -38,7 +46,7 @@ misses_txt="$tmpdir/misses.txt"
 # are skipped without aborting. Symbols from readable objects in the same batch
 # are still emitted.
 find "$buildroot" -type f \( -name '*.a' -o -name '*.o' \) -print0 \
-    | { xargs -0 -r nm --defined-only 2>/dev/null || true; } \
+    | { xargs -0 -r "${toolchain}-nm" --defined-only 2>/dev/null || true; } \
   | awk '
       {
           n=NF
@@ -51,18 +59,79 @@ find "$buildroot" -type f \( -name '*.a' -o -name '*.o' \) -print0 \
   ' | sort -u > "$raw_txt"
 
 # Build normalized demangled->mangled map (done once, shared across all registries).
-paste "$raw_txt" <(c++filt < "$raw_txt") \
+paste "$raw_txt" <("${toolchain}-c++filt" < "$raw_txt") \
   | awk '
       {
           raw=$1
           $1=""
           dem=$0
           sub(/^[[:space:]]+/, "", dem)
-          sub(/\(.*/, "", dem)
+          # A decltype return type (MAX, MIN) holds parentheses of its own:
+          # drop it, so the name is matched as MAX<float, float>.
+          if (substr(dem, 1, 8) == "decltype") {
+              depth = 0
+              for (i = 9; i <= length(dem); i++) {
+                  c = substr(dem, i, 1)
+                  if (c == "(") {
+                      depth++
+                  } else if (c == ")" && --depth == 0) {
+                      dem = substr(dem, i + 1)
+                      sub(/^[[:space:]]+/, "", dem)
+                      break
+                  }
+              }
+          }
+          # Cut the argument list at the first "(" outside template brackets,
+          # so Bitmask<(unsigned short)256>::get keeps its template argument.
+          # A name that never returns to depth 0 (operator<) is cut at its
+          # first "(" as before.
+          depth = 0
+          cut = 0
+          for (i = 1; i <= length(dem); i++) {
+              c = substr(dem, i, 1)
+              if (c == "<") {
+                  depth++
+              } else if (c == ">" && depth > 0) {
+                  depth--
+              } else if (c == "(" && depth == 0) {
+                  cut = i
+                  break
+              }
+          }
+          if (cut > 0) {
+              dem = substr(dem, 1, cut - 1)
+          } else {
+              sub(/\(.*/, "", dem)
+          }
           gsub(/[[:space:]]+/, "", dem)
           if (dem != "") print dem "|" raw
       }
   ' > "$map_txt"
+
+# Members of the toolchain libraries that "(archive)" entries pick from.
+# Member names do not vary between multilibs, so the default ones serve.
+members_txt="$tmpdir/archive_members.txt"
+for lib in libm.a libc_nano.a libc.a; do
+    path="$("${toolchain}-gcc" -print-file-name="$lib")"
+    if [[ -f "$path" ]]; then
+        "${toolchain}-ar" t "$path"
+    fi
+done | sort -u > "$members_txt"
+
+# The member an "(archive)" entry names, as this toolchain spells it: newlib
+# 3.x names libm's objects lib_a-<name>.o, and newer releases, which build
+# libm on its own, libm_a-<name>.o. Prints nothing if neither exists.
+resolve_member() {
+    local base="${1#lib_a-}"
+    base="${base#libm_a-}"
+    local name
+    for name in "lib_a-$base" "libm_a-$base"; do
+        if grep -qxF "$name" "$members_txt"; then
+            echo "$name"
+            return
+        fi
+    done
+}
 
 # Is a hwdef define enabled for this build? Used by the "[needs X]" marker so an
 # entry whose symbol only exists under some define does not raise a spurious
@@ -201,7 +270,15 @@ generate_ld_from_registry() {
         done < "$symbols_txt"
         while IFS= read -r member; do
             [[ -n "$member" ]] || continue
-            printf '        *%s(.text .text.*)\n' "$member"
+            found="$(resolve_member "$member")"
+            if [[ -z "$found" ]]; then
+                if [[ $strict -eq 1 ]]; then
+                    echo "rp2350_ramfunc2_sections: $(basename "$registry"): no archive member '$member'" >&2
+                    echo "$member" >> "$misses_txt"
+                fi
+                continue
+            fi
+            printf '        *%s(.text .text.*)\n' "$found"
         done < "$archives_txt"
     } | awk '!seen[$0]++' > "$out_ld"
 }
