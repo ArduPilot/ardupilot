@@ -2666,6 +2666,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     "A step in the ground drove the EKF height (drift %.2f m)" % r["max_hgt_err"])
 
+        # Under a Z accel offset the range innovation grows with the velocity error, and on a noisy
+        # range its jumps look like steps. Holding the velocity out then would leave the runaway to
+        # the baro, so a jump only counts from an innovation that agreed with the range.
+        self.start_subtest("Fusion on: a velD runaway on a noisy range is not held as a step")
+        self.set_parameter("SIM_SONAR_RND", 0.1)
+        r = fly_leg(agl_kf_veld, bias_z=0.4, alt_noise=1.0)
+        self.set_parameter("SIM_SONAR_RND", 0)
+        self.progress("runaway on a noisy range: max velD error %.2f m/s, XKFA.VHold samples span %.1f s"
+                      % (r["max_velD_err"], r["hold_s"]))
+        # one hold, from a jump just after the offset while the innovation was settled, and velD
+        # 1.3-1.6 m/s: its samples span 2.5 s here. Counting a jump from any innovation started a
+        # second hold 12 s into the runaway, spanning 9.6 s, and velD reached 3.6 m/s in another
+        # run. The span is the measure because the failure is a second hold, not a longer one.
+        if r["hold_s"] > 5.0:
+            raise NotAchievedException(
+                "The step hold held the velocity out again during a velD runaway (%.1f s)" % r["hold_s"])
+        if r["max_velD_err"] > 2.5:
+            raise NotAchievedException(
+                "AGL KF velocity fusion failed to bound the velD runaway on a noisy range (%.2f m/s)"
+                % r["max_velD_err"])
+
         # Terrain relative velocity stops approximating the inertial vertical velocity
         # once the vehicle moves over the ground, so EK3_AGL_VD_SPD closes the gate.
         # Without this leg no guard on the fusion is exercised at all.
