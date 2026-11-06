@@ -124,6 +124,10 @@
 // maximum GPs ground course uncertainty allowed for yaw alignment (deg)
 #define GPS_VEL_YAW_ALIGN_MAX_ANG_ERR 15.0F
 
+// time relative aiding still counts as a measured velocity for the range finder height switch
+// after every optical flow or body odometry axis last passed its innovation check together (msec)
+#define ALL_AXES_FUSED_HOLD_MS 500
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
@@ -1027,6 +1031,9 @@ private:
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
 
+    // ground speed below which the range finder height switch takes hold; it lets go above EK3_RNG_USE_SPD
+    ftype rngSwitchInSpeed() const;
+
     // record all requested yaw resets completed
     void recordYawResetsCompleted();
 
@@ -1348,6 +1355,9 @@ private:
         bool  valid;                    // true when RF has been fused within the last 5 s
         uint32_t lastRngFuseTime_ms;    // timestamp of last successful RF fusion into AGL KF
     } aglKf;
+    // gap since the last range finder fusion beyond which the AGL KF velocity is
+    // decaying toward zero and must not be fused as a velD observation
+    static constexpr uint32_t aglKfRngGapMax_ms = 500;
 #endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
@@ -1391,6 +1401,8 @@ private:
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active
+    uint8_t flowFusedAxes;          // bit per flow axis whose latest sample since relative aiding started passed its innovation check with a speed error inside the range height switch's hysteresis
+    uint32_t allAxesFusedTime_ms;   // last time every flow axis, or every body velocity axis, had its bit set
 
     Vector3F accelPosOffset;        // position of IMU accelerometer unit in body frame (m)
 
@@ -1430,6 +1442,7 @@ private:
         wheel_odm_elements wheelDataDelayed;   // Body  frame odometry data at the fusion time horizon
 #endif
     } bodyOdm;
+    uint8_t bodyVelFusedAxes;           // bit per body velocity axis whose latest sample since relative aiding started passed its innovation check with an error inside 1/sqrt(3) of the range height switch's hysteresis
 
     // GPS yaw sensor fusion
     class GpsYawFusion {
