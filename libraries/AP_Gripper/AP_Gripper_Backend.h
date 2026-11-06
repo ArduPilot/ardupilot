@@ -36,6 +36,9 @@ public:
     // release - move the servo output to the release position
     virtual void release() = 0;
 
+    // hold - hold the current grip state; does not move the output
+    virtual void hold();
+
     // valid - returns true if the backend should be working
     virtual bool valid() const { return true; };
 
@@ -54,6 +57,7 @@ public:
 protected:
 
     uint32_t _last_grab_or_release; // ms; time last grab or release happened
+    bool _hold_requested;           // true if hold received since last grab or release; suppresses autoclose
 
     struct AP_Gripper::Backend_Config &config;
 };

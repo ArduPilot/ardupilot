@@ -53,6 +53,7 @@ void AP_Gripper_EPM::grab()
 
     // capture time
     _last_grab_or_release = AP_HAL::millis();
+    _hold_requested = false;
 
 #ifdef UAVCAN_IOCS_HARDPOINT_SET
     if (should_use_uavcan()) {
@@ -77,6 +78,7 @@ void AP_Gripper_EPM::release()
 
     // capture time
     _last_grab_or_release = AP_HAL::millis();
+    _hold_requested = false;
 
 #ifdef UAVCAN_IOCS_HARDPOINT_SET
     if (should_use_uavcan()) {
