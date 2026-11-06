@@ -216,6 +216,14 @@ class Decoder:
         if major_version >= 2:
             self.fwversion.firmware_hash = self.unpack("I")
 
+        if major_version >= 3:
+            # Version 3 uses natural pointer alignment and includes these fields
+            # before the fields decoded below.
+            padding = (-self.bytesio.tell()) % self.pointer_size
+            self.bytesio.seek(padding, io.SEEK_CUR)
+            self.unpack_string_from_pointer()  # fw_string_original
+            self.unpack_string_from_pointer()  # fw_short_string
+
         self.fwversion.middleware_name = self.unpack_string_from_pointer()
         self.fwversion.middleware_hash_string = self.unpack_string_from_pointer()
         self.fwversion.os_name = self.unpack_string_from_pointer()
