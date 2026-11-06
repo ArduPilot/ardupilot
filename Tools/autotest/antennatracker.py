@@ -164,6 +164,34 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
         self.set_parameters({"YAW2SRV_I": 0.02, "PITCH2SRV_I": 0.02})
         enter_guided_from_auto_and_check_hold(-90)
 
+    def LogPIDs(self):
+        '''check PIDP and PIDY are logged with sensible target and actual values'''
+        # the simulated tracker can only yaw +/-170 degrees from its
+        # startup heading of 270, and GUIDED takes the shortest path to
+        # the target yaw even if that runs into the yaw limit.  Reboot
+        # so we start from a heading which can reach desyaw:
+        self.reboot_sitl()
+        self.change_mode(4) # "GUIDED"
+        desyaw = 45
+        despitch = 10
+        self.achieve_attitude(desyaw=desyaw, despitch=despitch)
+        self.delay_sim_time(5, reason="PIDs to be logged at target attitude")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        for msgtype, desired in ("PIDY", desyaw), ("PIDP", despitch):
+            found = False
+            while True:
+                m = dfreader.recv_match(type=msgtype)
+                if m is None:
+                    break
+                if abs(m.Tar - desired) < 1 and abs(m.Act - desired) < 2:
+                    found = True
+                    break
+            if not found:
+                raise NotAchievedException(f"No {msgtype} with Tar and Act near {desired}")
+            self.progress(f"Got {msgtype} with {m.Tar=} {m.Act=}")
+            dfreader.rewind()
+
     def MANUAL(self):
         '''Test MANUAL mode'''
         self.change_mode(0) # "MANUAL"
@@ -435,6 +463,7 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
         ret.extend([
             self.GUIDED,
             self.GUIDEDHoldsAttitudeOnEntry,
+            self.LogPIDs,
             self.MANUAL,
             self.MAV_CMD_DO_SET_SERVO,
             self.MAV_CMD_MISSION_START,
