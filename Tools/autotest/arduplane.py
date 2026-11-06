@@ -1392,11 +1392,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
         self.wait_mode('RTL') # long failsafe
-        # Verify the plane actually flew to RTL (not just mode-changed)
-        pos = self.mav.location()
-        dist = self.get_distance_from_home_latlon(pos.lat, pos.lng)
-        if dist < 100:
-            raise NotAchievedException("Plane did not fly to RTL during throttle failsafe (only %.0fm from home)" % dist)
+        # Verify plane actually flies toward home after RTL triggers
+        self.wait_distance_to_home(100, timeout=200)
         if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
@@ -1435,11 +1432,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 1) # no-pulses
         self.wait_mode('RTL') # long failsafe
-        # Verify the plane actually flew to RTL (not just mode-changed)
-        pos = self.mav.location()
-        dist = self.get_distance_from_home_latlon(pos.lat, pos.lng)
-        if dist < 100:
-            raise NotAchievedException("Plane did not fly to RTL during no-pulses failsafe (only %.0fm from home)" % dist)
+        # Verify plane actually flies toward home after RTL triggers
+        self.wait_distance_to_home(100, timeout=200)
         if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
