@@ -16,7 +16,8 @@ Laurel uses the 48-GPIO RP2350B, so GPIOs above 29 are valid and used.
 
 ## MCU, flash and buttons
 
-- RP2350B (QFN-80), 12 MHz crystal, run at 225 MHz.
+- RP2350B (QFN-80), 12 MHz crystal, run at 200 MHz with a 100 MHz flash
+  clock.
 - Winbond QSPI flash holding the bootloader, parameters and firmware. The
   hwdef uses 4 MB of it (`FLASH_SIZE_KB 4096`); its flash timing comments
   name a W25Q64JV, which is 8 MB.

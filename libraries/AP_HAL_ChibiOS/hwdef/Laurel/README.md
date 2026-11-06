@@ -13,7 +13,8 @@ developers working on the port are in
 
 ## Features
 
-- MCU - RP2350B dual-core Cortex-M33 running at 225 MHz, 520 KB SRAM
+- MCU - RP2350B dual-core Cortex-M33 running at 200 MHz (the RP2350
+  datasheet limit is 150 MHz), 520 KB SRAM
 - QSPI flash for firmware and parameters
 - ICM-42688-P IMU
 - DPS310 barometer

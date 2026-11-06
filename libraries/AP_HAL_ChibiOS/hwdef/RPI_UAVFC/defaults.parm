@@ -33,7 +33,8 @@
 #
 # Main loop at 200 Hz: the 2 kHz rate loop on core1 handles the fast attitude
 # path, so core0's main loop (nav, EKF inline, GCS, logging) needs only a
-# modest rate. This is the baseline at the 225 MHz core clock.
+# modest rate. It was set at the 225 MHz core clock; at 200 MHz with the
+# 100 MHz flash clock the main loop has more headroom, not less.
 SCHED_LOOP_RATE 200
 INS_FAST_SAMPLE 1
 INS_GYRO_RATE 2
