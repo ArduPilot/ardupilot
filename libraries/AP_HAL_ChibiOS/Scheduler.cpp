@@ -276,9 +276,12 @@ bool Scheduler::check_called_boost(void)
 
 void Scheduler::delay(uint16_t ms)
 {
-    uint64_t start = AP_HAL::micros64();
+    // 32-bit microseconds: a uint16_t delay cannot reach the 71 minute wrap,
+    // and the 64-bit division this replaces ran on every pass
+    const uint32_t start_us = AP_HAL::micros();
+    const uint32_t delay_us = ms * 1000U;
 
-    while ((AP_HAL::micros64() - start)/1000 < ms) {
+    while (AP_HAL::micros() - start_us < delay_us) {
         delay_microseconds(1000);
         if (_min_delay_cb_ms <= ms) {
             if (in_main_thread()) {
