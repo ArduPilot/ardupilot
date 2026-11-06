@@ -196,7 +196,7 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
     Mission_Command cmd = {};
     // check a maximum of 16 items, remembering that missions can have
     // loops in them
-    for (uint8_t i=0; i<16; i++, cmd_index++) {
+    for (uint8_t i=0; i<16; i++) {
         if (!get_next_nav_cmd(cmd_index, cmd)) {
             return false;
         }
@@ -210,6 +210,8 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
         // we "start with a takeoff command"
         case MAV_CMD_DO_AUX_FUNCTION:
         case MAV_CMD_NAV_DELAY:
+            // continue after the skipped command, which a DO_JUMP may have moved away from cmd_index
+            cmd_index = cmd.index + 1;
             continue;
         default:
             return false;
@@ -562,8 +564,10 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
-    // search until the end of the mission command list
-    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+    // a lookahead never changes a jump's count, so the search is deterministic per row:
+    // visiting more rows than the mission holds means it is looping over DO commands only
+    uint16_t cmd_index = start_index;
+    for (uint16_t i = 0; i < (unsigned)_cmd_total && cmd_index < (unsigned)_cmd_total; i++) {
         // get next command
         if (!get_next_cmd(cmd_index, cmd, false)) {
             // no more commands so return failure
@@ -573,6 +577,8 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
         if (is_nav_cmd(cmd)) {
             return true;
         }
+        // continue after the command returned, which a DO_JUMP may have moved away from cmd_index
+        cmd_index = cmd.index + 1;
     }
 
     // if we got this far we did not find a navigation command

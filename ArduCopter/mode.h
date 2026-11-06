@@ -664,7 +664,7 @@ private:
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
-    bool wp_start(const Location& dest_loc);
+    bool wp_start(const Location& dest_loc, float arc_rad = 0.0);
     void land_start();
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
@@ -692,6 +692,8 @@ private:
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool set_next_wp(const AP_Mission::Mission_Command& current_cmd, const Location &default_loc);
+    static bool can_start_arc(uint16_t cmd_id);
+    bool arc_start_is_specified(const AP_Mission::Mission_Command& arc_cmd, uint16_t start_index) const;
     void do_land(const AP_Mission::Mission_Command& cmd);
     bool do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_circle(const AP_Mission::Mission_Command& cmd);
@@ -745,6 +747,9 @@ private:
     bool verify_nav_script_time();
 #endif
     bool verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
+
+    // index of the last completed command an arc waypoint can start from, AP_MISSION_CMD_INDEX_NONE if none
+    uint16_t arc_start_index = AP_MISSION_CMD_INDEX_NONE;
 
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
