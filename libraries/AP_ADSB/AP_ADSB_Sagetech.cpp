@@ -285,6 +285,12 @@ bool AP_ADSB_Sagetech::parse_byte_XP(const uint8_t data)
             break;
         case ParseState::WaitingFor_PayloadLen:
             message_in.packet.payload_length = data;
+            if (message_in.packet.payload_length > ARRAY_SIZE(message_in.packet.payload)) {
+                // longer than any XP message we know of, and longer than
+                // the buffer: discard rather than overrun payload[]
+                message_in.state = ParseState::WaitingFor_Start;
+                break;
+            }
             message_in.index = 0;
             message_in.state = (data == 0) ? ParseState::WaitingFor_ChecksumFletcher : ParseState::WaitingFor_PayloadContents;
             break;
