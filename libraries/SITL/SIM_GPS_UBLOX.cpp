@@ -4,12 +4,12 @@
 
 #include "SIM_GPS_UBLOX.h"
 
+#include <AP_Filesystem/AP_Filesystem.h>
 #include <SITL/SITL.h>
 
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <unistd.h>
 
 using namespace SITL;
 
@@ -640,15 +640,15 @@ void GPS_UBlox::load_saved_config()
     if (has_flash() || !no_backup) {
         char filename[32];
         config_filename(filename, sizeof(filename));
-        const int fd = ::open(filename, O_RDONLY);
+        const int fd = AP::FS().open(filename, O_RDONLY);
         if (fd != -1) {
             SavedConfig file;
-            if (::read(fd, &file, sizeof(file)) == sizeof(file) &&
+            if (AP::FS().read(fd, &file, sizeof(file)) == sizeof(file) &&
                 file.magic == SAVED_CONFIG_MAGIC &&
                 file.model == uint8_t(model())) {
                 saved = file.config;
             }
-            ::close(fd);
+            AP::FS().close(fd);
         }
     }
 
@@ -661,7 +661,7 @@ void GPS_UBlox::store_saved_config() const
 {
     char filename[32];
     config_filename(filename, sizeof(filename));
-    const int fd = ::open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    const int fd = AP::FS().open(filename, O_WRONLY|O_CREAT|O_TRUNC);
     if (fd == -1) {
         AP_HAL::panic("open(%s): %s", filename, strerror(errno));
     }
@@ -670,10 +670,10 @@ void GPS_UBlox::store_saved_config() const
         uint8_t(model()),
         saved
     };
-    if (::write(fd, &file, sizeof(file)) != sizeof(file)) {
+    if (AP::FS().write(fd, &file, sizeof(file)) != sizeof(file)) {
         AP_HAL::panic("write(%s): %s", filename, strerror(errno));
     }
-    ::close(fd);
+    AP::FS().close(fd);
 }
 
 // return true if a message is due to be output this navigation solution

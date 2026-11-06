@@ -12,9 +12,11 @@ ByteBuffer::ByteBuffer(uint32_t _size)
 
 ByteBuffer::~ByteBuffer(void)
 {
+#if HAL_HEAP_ENABLED
     if (!external_buf) {
         free(buf);
     }
+#endif
 }
 
 /*
