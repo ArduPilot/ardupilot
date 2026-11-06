@@ -3,6 +3,19 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
 
+// whether the board can be mounted in an orientation other than the
+// default one for its type.  The orientation comes from
+// AHRS_ORIENTATION, which is looked up by name; a build without that
+// parameter simply finds nothing and stays at ROTATION_NONE.
+#ifndef AP_BOARDCONFIG_ORIENTATION_ENABLED
+#if defined(HAL_BUILD_AP_PERIPH)
+// AP_Periph has no AP_BoardConfig to ask, so this would be dead code
+#define AP_BOARDCONFIG_ORIENTATION_ENABLED 0
+#else
+#define AP_BOARDCONFIG_ORIENTATION_ENABLED 1
+#endif  // HAL_BUILD_AP_PERIPH
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
+
 #ifndef AP_FEATURE_BOARD_DETECT
 #if defined(HAL_CHIBIOS_ARCH_FMUV3)
 #define AP_FEATURE_BOARD_DETECT 1
