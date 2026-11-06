@@ -41,6 +41,9 @@ AP_RangeFinder_HC_SR04::AP_RangeFinder_HC_SR04(RangeFinder::RangeFinder_State &_
     AP_RangeFinder_Backend(_state, _params)
 {
     set_status(RangeFinder::Status::NoData);
+
+    // HC-SR04 datasheet: 2cm to 400cm; no echo reads as ~6.5m
+    params.max_distance.set_default(4.0f);
 }
 
 bool AP_RangeFinder_HC_SR04::check_pins()

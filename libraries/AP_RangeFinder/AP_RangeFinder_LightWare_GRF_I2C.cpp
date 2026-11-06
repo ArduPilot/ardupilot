@@ -33,6 +33,9 @@ AP_RangeFinder_LightWare_GRF_I2C::AP_RangeFinder_LightWare_GRF_I2C(
     : AP_RangeFinder_Backend_I2C(_state, _params, _dev)
 {
     state.var_info = var_info;
+
+    // GRF250 reaches 250m; the GRF500 is not distinguished
+    params.max_distance.set_default(250.0f);
 }
 
 // Write a command

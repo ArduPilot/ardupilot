@@ -75,7 +75,13 @@ public:
 
 protected:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_JRE_Serial(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // JRE-30: 0.1m minimum, ~50m on a 0dBsm target
+        params.min_distance.set_default(0.1f);
+        params.max_distance.set_default(50.0f);
+    }
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override
     {

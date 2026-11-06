@@ -75,6 +75,9 @@ AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
     AP_Param::setup_object_defaults(this, var_info);
 
     state.var_info = var_info;
+
+    // WASP-200 manual: 200m at 80% reflectivity
+    params.max_distance.set_default(200.0f);
 }
 
 // read - return last value measured by sensor
