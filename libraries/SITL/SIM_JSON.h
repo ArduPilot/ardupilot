@@ -71,6 +71,8 @@ private:
 
     uint32_t frame_counter;
     double last_timestamp_s;
+    double base_timestamp_s {};
+    uint64_t base_time_us {};
 
     void output_servos(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
