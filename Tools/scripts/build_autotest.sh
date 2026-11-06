@@ -84,7 +84,7 @@ python3 -m pip install --user .
 popd
 
 githash=$(cd APM && git rev-parse HEAD)
-hdate=$(date +"%Y-%m-%d-%H:%m")
+hdate=$(date +"%Y-%m-%d-%H:%M")
 
 pushd $ARDUPILOT_ROOT
 Tools/scripts/build_parameters.sh
