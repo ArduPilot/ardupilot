@@ -859,13 +859,13 @@ void AP_Arming_Copter::update_pending_arm()
 // arming.disarm - disarm motors
 bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
+    // cancel any pending arm request, including when already disarmed
+    clear_pending_arm();
+
     // return immediately if we are already disarmed
     if (!copter.motors->armed()) {
         return true;
     }
-
-    // cancel any pending arm request when actually disarming
-    clear_pending_arm();
 
     // do not allow disarm via mavlink if we think we are flying:
     if (do_disarm_checks &&
