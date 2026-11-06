@@ -175,12 +175,12 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
                               const mavlink_message_t &msg)
 {
     // extract the targets for this packet
-    int64_t target_system = -1;
-    int16_t target_component = -1;
+    int64_t target_system = 0;
+    int16_t target_component = 0;
     get_targets(msg, target_system, target_component);
 
-    bool broadcast_system = (target_system == 0 || target_system == -1);
-    bool broadcast_component = (target_component == 0 || target_component == -1);
+    bool broadcast_system = (target_system == 0);
+    bool broadcast_component = (target_component == 0);
     bool match_system = broadcast_system || (target_system == mavlink_system.sysid);
     bool match_component = match_system && (broadcast_component || 
                                             (target_component == mavlink_system.compid));
