@@ -144,10 +144,10 @@ protected:
     /**
      * @brief Return the sensor type
      *
-     * @return MAV_DISTANCE_SENSOR
+     * @return AP_RangeFinder_DistanceSensorType
      */
-    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
-        return MAV_DISTANCE_SENSOR_ULTRASOUND;
+    AP_RangeFinder_DistanceSensorType _get_distance_sensor_type() const override {
+        return AP_RangeFinder_DistanceSensorType::ULTRASOUND;
     }
 
     /**
