@@ -56,7 +56,7 @@ def load_symbols(elf: Path):
     # demangle all at once
     try:
         demangled_out = subprocess.check_output(
-            ["c++filt"] + list(mangled.keys()),
+            ["arm-none-eabi-c++filt"] + list(mangled.keys()),
             stderr=subprocess.DEVNULL
         ).decode().splitlines()
     except (subprocess.CalledProcessError, FileNotFoundError):
