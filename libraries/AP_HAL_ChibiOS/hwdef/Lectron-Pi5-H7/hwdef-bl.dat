@@ -1,9 +1,3 @@
-# ==============================================================
-# Lectron Pi5_H7 - ArduPilot Bootloader hwdef
-# Board  : FMU BOARD ver1.0 / Pi5_H7_REV1.3
-# MCU    : STM32H753
-# ==============================================================
-
 # MCU class and specific type
 MCU STM32H7xx STM32H753xx
 
@@ -13,16 +7,13 @@ OSCILLATOR_HZ 16000000
 # board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_LECTRON_Pi5_H7
 
-# bootloader is installed at zero offset
-FLASH_RESERVE_START_KB 0
-
-# the location where the bootloader will put the firmware
+FLASH_RESERVE_START_KB   0
 FLASH_BOOTLOADER_LOAD_KB 128
+FLASH_SIZE_KB            2048
 
-# flash size
-FLASH_SIZE_KB 2048
+# ChibiOS system timer
+STM32_ST_USE_TIMER 2
 
-# order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART3
 
 # USB
@@ -38,17 +29,23 @@ PA14 JTCK-SWCLK SWD
 PD8 USART3_TX USART3
 PD9 USART3_RX USART3
 
+# CS pins
+PI9 ICM42670P_CS   CS
+PH5 ICM42670P_2_CS CS
+PI4 BMI270_CS      CS
+PG7 FM25V02A_CS    CS
+PI10 SP6_CS1       CS
+PA15 SP6_CS2       CS
+
 # start peripheral power on
-PG10 nVDD_5V_HIPOWER_EN OUTPUT LOW
 PG4  nVDD_5V_PERIPH_EN  OUTPUT LOW
 
 # LEDs
-PE3 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # red
-PE5 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # blue
+PE3 LED_ACTIVITY   OUTPUT OPENDRAIN HIGH  # Red
+PE5 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH  # Blue
 define HAL_LED_ON 0
+
+DMA_PRIORITY UART* USART*
 
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
-
-# Use TIM2 for ChibiOS system tick (matches FMU hwdef; H7 default is TIM5)
-STM32_ST_USE_TIMER 2
