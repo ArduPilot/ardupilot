@@ -3,7 +3,7 @@
 -- CAUTION: This script only works for Copter
 -- this script waits for the vehicle to be armed and RC6 input > 1800 and then:
 --    a) switches to Guided mode
---    b) takeoff to 5m
+--    b) takeoff to 5m (actually, takeoff-altitude above home will be greater than 4m and smaller than 6m.)
 --    c) flies a vertical circle using the velocity controller
 --    d) switches to RTL mode
 
