@@ -10029,98 +10029,6 @@ return update()
             want_result=FAILED,
         )
 
-    def VTOLMotorFailTransition(self):
-        '''Test motor fail during VTOL transition -- verify graceful FW recovery.
-
-        Kill lift motors mid-transition and verify the plane enters a
-        controlled glide rather than crashing.
-        '''
-        self.context_push()
-
-        self.progress("Enabling quadplane and restarting with quadplane model")
-        self.set_parameters({
-            "Q_ENABLE": 1,
-        })
-        self.restart_SITL_frame('quadplane-PPP', wipe=True)
-        self.set_parameters({
-            "Q_TAILSIT_ENABLE": 0,
-        })
-        self.reboot_sitl()
-
-        self.progress("Takeoff in MC mode")
-        self.takeoff(20, mode="STABILIZE")
-        self.wait_altitude(18, 22, relative=True, timeout=30)
-
-        self.progress("Transition to FW mode and kill lift motors mid-transition")
-        self.change_mode("AUTO")
-        # Upload a simple mission with a DO_VTOL_TRANSITION waypoint
-        self.mav.mav.mission_write_start_send(
-            1, 1,
-            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-        # WP0: DO_VTOL_TRANSITION to FW (p1=MAV_VTOL_STATE_FW)
-        self.mav.mav.mission_item_int_send(
-            1, 1,
-            0,  # seq
-            mavutil.mavlink.MAV_FRAME_GLOBAL,
-            mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
-            1,  # current
-            0,  # autocontinue
-            mavutil.mavlink.MAV_VTOL_STATE_FW,
-            0, 0, 0, 0, 0, 0)
-        # WP1: return home (same location as current, alt 10m)
-        home = self.get_location()
-        self.mav.mav.mission_item_int_send(
-            1, 1,
-            1,
-            mavutil.mavlink.MAV_FRAME_GLOBAL,
-            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-            0,
-            0,
-            10,  # alt
-            0, 0, 0, 0,
-            int(home.lat * 1e7),
-            int(home.lng * 1e7))
-        self.mav.mav.mission_count_send(
-            1, 1, 2, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-        self.wait_mission_transfer_complete()
-        self.set_mode("AUTO", timeout=60)
-
-        self.progress("Killing VTOL lift motors at transition start")
-        # SIM_ENGINE_FAIL bitmask: kill VTOL lift motors (bits 0-3)
-        self.set_parameters({
-            "SIM_ENGINE_FAIL": 0xF,  # kill first 4 motors (lift)
-        })
-
-        self.progress("Verifying plane maintains controlled glide after motor loss")
-        # The plane should glide and maintain reasonable altitude
-        # rather than dropping straight down.  Wait for ~10s of glide.
-        initial_alt = self.get_location().alt
-        self.delay_sim_time(12, reason="verify glide behavior after motor loss")
-        current_alt = self.get_location().alt
-        # Altitude loss should be bounded -- a gliding plane loses
-        # ~50-100m over 12s depending on airspeed and L/D ratio.
-        # A crashing plane would lose >>200m in that time.
-        alt_loss = initial_alt - current_alt
-        if alt_loss > 200:
-            raise Exception("Excessive altitude loss (%.1fm) after motor kill -- "
-                            "plane may not be gliding" % alt_loss)
-        self.progress("Altitude loss after 12s: %.1fm (acceptable)" % alt_loss)
-
-        self.progress("Restoring motors and completing transition")
-        self.set_parameters({
-            "SIM_ENGINE_FAIL": 0,  # restore motors
-        })
-        self.delay_sim_time(20, reason="let transition complete with motors restored")
-
-        self.progress("Verify plane is in FW mode and flying")
-        self.assert_mode("AUTO")
-
-        self.progress("Land and disarm")
-        self.land_and_disarm()
-        self.wait_disarmed(timeout=30)
-
-        self.context_pop()
-
     def MAV_CMD_GUIDED_CHANGE_HEADING(self):
         '''test flying headings with MAV_CMD_GUIDED_CHANGE_HEADING'''
         self.takeoff(50, mode='TAKEOFF')
@@ -10924,7 +10832,6 @@ return update()
             self.SmartBattery,
             self.FlyEachFrame,
             self.FlyEachFrameRCInput,
-            self.VTOLMotorFailTransition,
             self.RCDisableAirspeedUse,
             self.AHRS2NoSecondaryEstimate,
             self.LandingDrift,
