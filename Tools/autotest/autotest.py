@@ -1300,7 +1300,7 @@ if __name__ == "__main__":
 
     util.mkdir_p(buildlogs_dirpath())
 
-    lckfile = buildlogs_path('autotest.lck')
+    lckfile = os.getenv("AUTOTEST_LOCKFILE", buildlogs_path('autotest.lck'))
     print("lckfile=%s" % repr(lckfile))
     lck = util.lock_file(lckfile)
 
