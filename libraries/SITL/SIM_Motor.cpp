@@ -33,9 +33,23 @@ void Motor::calculate_forces(const struct sitl_input &input,
                              bool use_drag)
 {
 
-    const float pwm = input.servos[motor_offset+servo];
+    float pwm = input.servos[motor_offset+servo];
     float command;
-    float thrust_sign = 1;
+
+    int8_t collective_thrust_sign = 1;
+    int8_t mot_3d_thrust_sign = 1;
+    int8_t thrust_sign = 1;
+
+    if (pwm <= 1500 && mot_3d_enable){
+        mot_3d_thrust_sign = mot_3d_thrust_sign * -1;
+    }
+
+    // this is to remap it back to normal
+    // 3D is 1000 = full reverse thrust; 1500 = no thrust; 2000 = full thrust
+    if (mot_3d_enable && !is_zero(pwm)) { // stop max pwm = 0 from commanding max thrust
+        pwm = fabsf((pwm - 1500)*2) + mot_pwm_min;
+    }
+
     if (rsc_servo >= 0) {
         // variable-pitch rotor; the motor's servo channel commands
         // blade pitch about mid-PWM and rotor speed comes from the
@@ -46,12 +60,14 @@ void Motor::calculate_forces(const struct sitl_input &input,
         const float rotor_speed = constrain_float((input.servos[motor_offset+rsc_servo]-1000)*0.002, 0, 1);
         const float collective = constrain_float((pwm-1500)*0.002, -1, 1);
         if (is_negative(collective)) {
-            thrust_sign = -1;
+            collective_thrust_sign = -1;
         }
         command = fabsf(collective) * sq(rotor_speed);
     } else {
         command = pwm_to_command(pwm);
     }
+    thrust_sign = collective_thrust_sign * mot_3d_thrust_sign;
+
     float voltage_scale = voltage / voltage_max;
 
     if (voltage_scale < 0.1) {
@@ -93,6 +109,8 @@ void Motor::calculate_forces(const struct sitl_input &input,
 
     // thrust in bodyframe NED
     thrust = thrust_vector * motor_thrust;
+    
+    rotor_torque = rotor_torque * mot_3d_thrust_sign;
 
     // work out roll and pitch of motor relative to it pointing straight up
     float roll = 0, pitch = 0;
@@ -184,7 +202,7 @@ float Motor::get_current(void) const
 void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
                          float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
                          float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor, 
-                         float _true_prop_area, float _momentum_drag_coefficient)
+                         float _true_prop_area, float _momentum_drag_coefficient, int32_t _rev_msk, uint8_t motor_offset)
 {
     mot_pwm_min = _pwm_min;
     mot_pwm_max = _pwm_max;
@@ -199,6 +217,10 @@ void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, 
     true_prop_area = _true_prop_area;
     momentum_drag_coefficient = _momentum_drag_coefficient;
     diagonal_size = _diagonal_size;
+
+    // on a variable-pitch rotor this motor's channel carries blade pitch,
+    // which is already signed
+    mot_3d_enable = ((rsc_servo < 0) && (_rev_msk & (1U << (motor_offset + servo)))) != 0;
 
     if (!_position.is_zero()) {
         position = _position;
