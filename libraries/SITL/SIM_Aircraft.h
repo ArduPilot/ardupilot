@@ -397,7 +397,7 @@ private:
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)
     const uint32_t min_sleep_time{20000};
 #else
-    const uint32_t min_sleep_time{5000};
+    const uint32_t min_sleep_time{500};
 #endif
 
     struct {
