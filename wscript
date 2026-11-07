@@ -998,6 +998,7 @@ for name in (vehicles + ['bootloader','iofirmware','AP_Periph','replay']):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,
+        firmware=True,
     )
 
 ardupilotwaf.build_command('renode-physics',
