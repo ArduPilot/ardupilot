@@ -386,14 +386,17 @@ uint32_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
     if (_frequency == 0) {
         _frequency = 1;
     }
+    // the smallest divisor (1 + SCR) whose clock does not exceed the request
+    const auto divisor = [_frequency](uint32_t cpsr) {
+        return (RP2350_SPI_SYSCLK + cpsr * _frequency - 1U) / (cpsr * _frequency);
+    };
     // SCR alone cannot get below 439 kHz at 225 MHz, which the microSD init
     // clock needs, so raise the even prescaler only for such slow requests
     uint32_t cpsr = RP2350_SPI_CPSR;
-    while (cpsr < 254U && RP2350_SPI_SYSCLK / (cpsr * _frequency) > 255U) {
+    while (cpsr < 254U && divisor(cpsr) > 256U) {
         cpsr += 2U;
     }
-    // round SCR up so the clock never exceeds the requested frequency
-    uint32_t scr = (RP2350_SPI_SYSCLK / (cpsr * _frequency));
+    uint32_t scr = divisor(cpsr) - 1U;
     if (scr > 255) {
         scr = 255;
     }
