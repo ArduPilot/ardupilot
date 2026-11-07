@@ -671,8 +671,10 @@ void Plane::set_takeoff_expected(void)
         // Check if rate of change of velocity along X axis exceeds 1-g which normally indicates a throw.
         // Tests with hand carriage of micro UAS indicates that a 1-g threshold does not false trigger prior
         // to the throw, but there is margin to increase this threshold if false triggering becomes problematic.
+        // sin_pitch() includes AHRS_TRIM, so put the accel in the same frame
+        const Vector3f accel = ahrs.get_rotation_autopilot_body_to_vehicle_body() * ahrs.get_accel();
         const float accel_x_due_to_gravity = GRAVITY_MSS * ahrs.sin_pitch();
-        const float accel_x_due_to_throw = ahrs.get_accel().x - accel_x_due_to_gravity;
+        const float accel_x_due_to_throw = accel.x - accel_x_due_to_gravity;
         if (accel_x_due_to_throw > GRAVITY_MSS) {
             plane.ahrs.set_takeoff_expected(true);
             launched_since_arming = true;
