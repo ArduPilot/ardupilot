@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_ESC_Telem::var_info[] = {
 #if HAL_LOGGING_ENABLED
     // @Param: _LOG_RATE
     // @DisplayName: ESC Telemetry logging rate
-    // @Description: Rate at which ESC telemetry is written to the onboard log as ESC, ESCX and EDT2 messages. An ESC is only logged when it has new data. The telemetry is checked at 100Hz, so higher values log at 100Hz. Lower values reduce the log size. 0 disables ESC telemetry logging.
+    // @Description: Rate at which ESC telemetry is written to the onboard log as ESC, ESCX and EDT2 messages. An ESC is only logged when it has new data. The telemetry is checked at least 100 times a second, or every main loop when SCHED_LOOP_RATE is lower than 100, in which case the most it can log is SCHED_LOOP_RATE. Lower values reduce the log size. 0 disables ESC telemetry logging.
     // @Units: Hz
     // @Range: 0 100
     // @Increment: 1

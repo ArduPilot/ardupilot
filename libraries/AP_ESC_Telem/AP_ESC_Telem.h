@@ -112,7 +112,7 @@ public:
     // send telemetry data to mavlink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
-    // update at 100Hz to log at ESC_TLM_LOG_RATE and handle invalidation
+    // update at 100Hz or faster, or every loop if SCHED_LOOP_RATE is lower, to log at ESC_TLM_LOG_RATE and handle invalidation
     void update();
 
     // is rpm telemetry configured for the provided channel mask
