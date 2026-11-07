@@ -4800,6 +4800,116 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle(force=True)
 
+    def LoiterHighBankTrack(self):
+        '''freestyle at 70 degrees of lean: roll or pitch stick stays on track, yaw stick stays within limits'''
+        self.customise_SITL_commandline([], model="freestyle", wipe=True)
+        lean_limit_deg = 70
+        self.set_parameters({
+            "LOIT_ANG_MAX": lean_limit_deg,
+            "LOIT_OPTIONS": 2,  # hold level yaw against tilt
+            "LOG_BITMASK": 1,  # ATTITUDE_FAST: ANG and RATE at loop rate for the yaw stick limits
+            # the freestyle model is a 6S pack; an earlier test can leave a lower voltage set
+            "SIM_BATT_VOLTAGE": 25.2,
+        })
+        pilot_yaw_rate_limit_degs = self.get_parameter("PILOT_Y_RATE")
+
+        peaks = {}
+        track_azimuth_deg = None
+
+        def record_peaks(mav, m):
+            mtype = m.get_type()
+            if mtype == 'ATTITUDE':
+                lean_deg = math.degrees(math.acos(math.cos(m.roll) * math.cos(m.pitch)))
+                peaks["lean"] = max(peaks.get("lean", 0), lean_deg)
+            elif mtype == 'LOCAL_POSITION_NED':
+                speed = math.sqrt(m.vx * m.vx + m.vy * m.vy)
+                peaks["speed"] = max(peaks.get("speed", 0), speed)
+                if track_azimuth_deg is not None and speed > 3:
+                    error_deg = abs(mavextra.angle_diff(math.degrees(math.atan2(m.vy, m.vx)), track_azimuth_deg))
+                    peaks["track_error"] = max(peaks.get("track_error", 0), error_deg)
+
+        def assert_at_speed_and_lean():
+            # the limits below mean nothing unless the vehicle really was going fast at a high lean
+            if peaks["speed"] < 30 or peaks["lean"] < 60:
+                raise NotAchievedException(f"Did not reach high speed and lean: {peaks}")
+
+        self.install_message_hook_context(record_peaks)
+
+        self.wait_ready_to_arm()
+        self.takeoff(50, mode='LOITER')
+        log_path = self.current_onboard_log_filepath()
+        yaw_windows_s = {}
+
+        for ff_enable in 1, 0:
+            self.set_parameter("ATC_RATE_FF_ENAB", ff_enable)
+            for name, channel, stick_direction_deg in ("roll", 1, -90), ("pitch", 2, 0):
+                self.start_subtest(f"{name} stick alone holds the track, ATC_RATE_FF_ENAB={ff_enable}")
+                nose_deg = math.degrees(self.assert_receive_message('ATTITUDE').yaw)
+                self.set_rc(channel, 1000)
+                self.delay_sim_time(3, "accelerate")
+                peaks.clear()
+                track_azimuth_deg = nose_deg + stick_direction_deg
+                self.delay_sim_time(12, "hold the stick")
+                track_azimuth_deg = None
+                self.set_rc(channel, 1500)
+                self.progress(f"{name} stick: {peaks}")
+                assert_at_speed_and_lean()
+                if peaks["track_error"] > 2:
+                    raise NotAchievedException(f"{name} stick went off track: {peaks}")
+                self.wait_groundspeed(0, 1, timeout=40)
+                self.delay_sim_time(2, "settle")
+
+            self.start_subtest(f"yaw stick at speed stays within its limits, ATC_RATE_FF_ENAB={ff_enable}")
+            self.set_rc(1, 1000)
+            self.delay_sim_time(8, "accelerate")
+            peaks.clear()
+            yaw_start_s = self.get_sim_time()
+            self.set_rc(4, 2000)
+            self.delay_sim_time(3, "full yaw")
+            self.set_rc(4, 1500)
+            self.delay_sim_time(3, "yaw centred")
+            yaw_windows_s[ff_enable] = (yaw_start_s, self.get_sim_time())
+            self.set_rc(1, 1500)
+            assert_at_speed_and_lean()
+            self.wait_groundspeed(0, 1, timeout=40)
+            self.delay_sim_time(2, "settle")
+
+        self.do_RTL(timeout=600)
+
+        self.start_subtest("yaw stick limits from the loop-rate log")
+        log_peaks = {ff_enable: {"lean_demand": 0, "lean": 0, "yaw_rate_demand": 0, "yaw_rate": 0}
+                     for ff_enable in yaw_windows_s}
+        dfreader = self.dfreader_for_path(log_path)
+        while True:
+            m = dfreader.recv_match(type=['ANG', 'RATE'])
+            if m is None:
+                break
+            time_s = m.TimeUS * 1e-6
+            for ff_enable, (start_s, end_s) in yaw_windows_s.items():
+                if not start_s <= time_s <= end_s:
+                    continue
+                window_peaks = log_peaks[ff_enable]
+                if m.get_type() == 'ANG':
+                    for peak_name, roll_deg, pitch_deg in ("lean_demand", m.DesRoll, m.DesPitch), ("lean", m.Roll, m.Pitch):
+                        cos_lean = math.cos(math.radians(roll_deg)) * math.cos(math.radians(pitch_deg))
+                        window_peaks[peak_name] = max(window_peaks[peak_name], math.degrees(math.acos(cos_lean)))
+                else:
+                    window_peaks["yaw_rate_demand"] = max(window_peaks["yaw_rate_demand"], abs(m.YDes))
+                    window_peaks["yaw_rate"] = max(window_peaks["yaw_rate"], abs(m.Y))
+
+        for ff_enable, window_peaks in log_peaks.items():
+            self.progress(f"yaw stick log peaks, ATC_RATE_FF_ENAB={ff_enable}: {window_peaks}")
+            if window_peaks["yaw_rate_demand"] < 50:
+                raise NotAchievedException(f"Yaw stick produced no real demand: {window_peaks}")
+            if window_peaks["lean_demand"] > lean_limit_deg + 1.5:
+                raise NotAchievedException(f"Lean demand beyond the limit: {window_peaks}")
+            if window_peaks["lean"] > lean_limit_deg + 3:
+                raise NotAchievedException(f"Lean beyond the limit: {window_peaks}")
+            if window_peaks["yaw_rate_demand"] > pilot_yaw_rate_limit_degs + 1:
+                raise NotAchievedException(f"Yaw rate demand beyond the limit: {window_peaks}")
+            if window_peaks["yaw_rate"] > pilot_yaw_rate_limit_degs:
+                raise NotAchievedException(f"Yaw rate beyond the limit: {window_peaks}")
+
     def ModeFlowHold(self):
         '''test FlowHold mode - position hold and flow-based height estimation'''
         self.set_parameters({
@@ -24399,6 +24509,7 @@ return update, 1000
             self.AirModeStabZeroThrottle,
             self.SimpleMode,
             self.LoiterFlowBrakeOvershoot,
+            self.LoiterHighBankTrack,
             self.Gripper,
             self.BaseLoggingRates,
             self.GPSViconSwitching,
