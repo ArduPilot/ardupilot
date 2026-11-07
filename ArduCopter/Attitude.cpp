@@ -174,6 +174,21 @@ static const uint32_t HOVER_BIAS_REST_MS = 10000;
 // that comes into view sooner after its zeroing stalled for at most a tenth of the rest wait
 static const uint32_t HOVER_BIAS_ZERO_SEEN_MS = 1000;
 
+// how far a zero time the seed reads can be stamped after the seed read the clock: an arm from Lua or DDS can be
+// held off behind a main thread EKF update, which stamps a zeroing with its frame start, one loop of at most 20 ms
+// as SCHED_LOOP_RATE is 50 Hz or more, with the same margin for overruns as HOVER_BIAS_ZERO_SEEN_MS. It costs only
+// a misread of a time within it of the 49.7-day millis() wrap
+static const uint32_t HOVER_BIAS_STAMP_LEAD_MS = 1000;
+
+// age of a time on the millis() clock, across its wrap; 0 for a time up to HOVER_BIAS_STAMP_LEAD_MS after now_ms
+static uint32_t hover_bias_age_ms(uint32_t now_ms, uint32_t time_ms)
+{
+    if (time_ms - now_ms < HOVER_BIAS_STAMP_LEAD_MS) {
+        return 0;
+    }
+    return now_ms - time_ms;
+}
+
 enum class AccZBiasLearn : uint8_t {
     SAVE             = (1U << 0),
     USE              = (1U << 1),
@@ -213,7 +228,7 @@ void Copter::seed_hover_bias_learning(void)
         _hover_bias_zero_ms[imu] = ahrs.get_accel_bias_zero_time_ms_for_imu(imu);
         _hover_bias_at_arm_ok[imu] = ahrs.get_accel_bias_z_for_imu(imu, _hover_bias_at_arm[imu]);
         // ages rather than times, so that the comparisons hold across the millis() wrap
-        const uint32_t zero_age_ms = now_ms - _hover_bias_zero_ms[imu];
+        const uint32_t zero_age_ms = hover_bias_age_ms(now_ms, _hover_bias_zero_ms[imu]);
         uint32_t rest_ms = zero_age_ms;
         if (_hover_bias_rest_start_ms[imu] != 0) {
             rest_ms = MIN(rest_ms, now_ms - _hover_bias_rest_start_ms[imu]);
