@@ -121,11 +121,13 @@ Two critical bugs found in AP_SmartRTL that caused disabled tests (SMART_RTL_Ent
 
 SITL validation exposed **4 pre-existing bugs** (none caused by test improvements):
 
-| Bug | Symptom | Severity | Status | Fix |
-|-----|---------|----------|--------|-----|
-| **ModeFlip Altitude Runaway** | Vehicle climbs to 1157m after flip (from 693m origin) | E1 C++ Bug | ✅ **FIXED** (649273e6c0) | I term init: hover throttle instead of current throttle |
-| **EKF "RTL Not Armable"** | Plane groundspeed = 0.03 m/s after RTL triggers (never flies) | E2 MAVLink Protocol | 🔲 Unresolved | RTL armable state reset / recovery from degraded EKF |
-| **Timesync Flake** | `MAV_MISSION_OPERATION_CANCELLED` at random intervals | E2 MAVLink Protocol | 🔲 Unresolved | MAVLink protocol timing fix |
+| Bug | Symptom | Severity | Blocks | Fix Direction |
+|-----|---------|----------|--------|---------------|
+| **ModeFlip Altitude Runaway** | Vehicle climbs to 1157m after flip (from 693m origin) | E1 Simulation Artifact | ModeFlip tests | Setpoint ramp when entering AH mode after flip |
+| **EKF "RTL Not Armable"** | Plane groundspeed = 0.03 m/s after RTL triggers (never flies) | E2 MAVLink Protocol | RTL/failsafe tests | RTL armable state reset / recovery from degraded EKF |
+| **Timesync Flake** | `MAV_MISSION_OPERATION_CANCELLED` at random intervals | E2 MAVLink Protocol | ~30% of Copter tests | MAVLink protocol timing fix |
+
+**ModeFlip Altitude Runaway — full evidence in `pre_existing_bug_evidence.md`.** Root cause: (1) physics-induced altitude gain during 180° flip, (2) position target captures new altitude instantly (setpoint jump), (3) velocity I zeroed + accel I = flip throttle (sustained high thrust), (4) EKF trusts baro altitude. No setpoint ramp exists during mode transition after flip.
 
 ---
 
@@ -214,11 +216,11 @@ SITL validation exposed **4 pre-existing bugs** (none caused by test improvement
 
 ### 8.1 Fix Blocking SITL Bugs
 
-| Bug | Description | Effort | Status |
-|-----|-------------|--------|--------|
-| Altitude drift | ModeFlip/MainFlight climb to 1000m+ in LOITER/ALT_HOLD | Medium-High | ✅ **FIXED** (649273e6c0) — I term uses hover throttle |
-| EKF RTL not armable | Plane groundspeed stays at 0.03 m/s after RTL — EKF state check | Medium | 🔲 Unresolved |
-| Timesync flake | `MAV_MISSION_OPERATION_CANCELLED` — MAVLink protocol issue | Medium | 🔲 Unresolved |
+| Bug | Description | Effort |
+|-----|-------------|--------|
+| Altitude drift | ModeFlip/MainFlight climb to 1000m+ in LOITER/ALT_HOLD — needs root cause investigation | Medium-High |
+| EKF RTL not armable | Plane groundspeed stays at 0.03 m/s after RTL — EKF state check | Medium |
+| Timesync flake | `MAV_MISSION_OPERATION_CANCELLED` — MAVLink protocol issue | Medium |
 
 ### 8.2 EKF Status Monitor Hook
 
@@ -260,9 +262,6 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 ## 11. Git History (test-improvements branch)
 
 ```
-649273e6c0  AC_PosControl: fix altitude runaway after mode transitions using hover throttle for I term init
-fb9d3b5913  infrastructure(autotest): add pytest fixtures, disabled test runner, and planning docs
-16e3da83c6  docs(autotest): add ModeFlip altitude runaway bug to synthesis and update git history
 03fa58d895  docs(autotest): add ModeFlip altitude runaway bug evidence — E1 severity
 9e5142f573  test(autotest): re-enable ScriptingOSD test — context_collect ordering bug fixed
 adc60ae11b  test(autotest): fix LandingDrift with relaxed LAND_ABORT_DEG 1→5°
