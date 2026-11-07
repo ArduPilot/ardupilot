@@ -236,12 +236,12 @@ SITL validation exposed **4 pre-existing bugs** (none caused by test improvement
 
 ### 8.2 EKF Status Monitor Hook
 
-Continuous EKF health monitoring during flight (not just binary pass/fail). Provides:
-- Detect EKF degradation during GPS glitches (absolute_position_lost flag)
-- Verify compass cross-check during compass freeze tests (heading_reliant_compass flag)
-- Alert on EKF error bits before they cause vehicle instability (dead_reckoning flag)
+Continuous EKF health monitoring during flight (not just binary pass/fail). Would enable:
+- Detect EKF degradation during GPS glitches
+- Verify compass cross-check during compass freeze tests
+- Alert on EKF error bits before they cause vehicle instability
 
-**✅ COMMITTED (b24434ae1c):** `AP_AHRS::EKF_Health` struct with transition-based warnings, integrated into all 4 vehicles (Copter, Plane, Rover, Sub).
+**Not yet implemented.**
 
 ---
 
