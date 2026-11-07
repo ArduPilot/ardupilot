@@ -40,7 +40,6 @@ New tests added to catch specific real-world bug classes:
 | `BaroDriftSensitivity` | Copter | cfc4e647e0 | Baro drift, EKF no physics validation |
 | FailsafeEdgeCases R1-R3 | Copter | cfc4e647e0 | Failsafe timing, GCS recovery, parachute safety |
 | `FenceTerrainFallback` | Copter | fea452c420 | Fence terrain-dependent degradation (safe RTL trigger) |
-| `BatteryArmVoltageGuard` | Copter | 6b0e4ee151 | BATT_ARM_VOLT mid-flight arming guard enforcement |
 
 ---
 
@@ -109,9 +108,7 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 
 **Bug class:** Changes to `BATT_ARM_VOLT` mid-flight affecting arm guard on next boot.
 
-**✅ COMMITTED (6b0e4ee151):** Added `BatteryArmVoltageGuard` test:
-- Subtest 1: Raise BATT_ARM_VOLT above battery voltage mid-flight, land, verify arming refused with "below minimum arming voltage"
-- Subtest 2: Lower threshold, verify arming restored
+**Not yet implemented.**
 
 ### 6.3 RTK/RTCM Loss During Rover Mission (Rover, Impact 8.0)
 
@@ -185,23 +182,16 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 ## 10. Next Actions
 
 1. **Commit current changes** (parameter snapshot, aggressive timeout, failsafe fix) — DONE
-2. **Implement fence terrain dependency test** (Copter, Impact 9.0) — DONE
-3. **Implement battery monitor cross-sensitivity test** (Copter, Impact 7.0) — DONE
-4. **Remaining Tier 1 tests:**
-   - Quadplane VTOL motor fail during transition (Plane, Impact 10.0) — HIGHEST PRIORITY
-   - RTK/RTCM loss during rover mission (Rover, Impact 8.0)
-   - Repeated fence boundary crossing (Rover, Impact 5.3)
-5. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
-6. **Create PR** to ArduPilot/master with all accumulated improvements
+2. **Implement fence terrain dependency test** (Copter, Impact 9.0) — NEXT
+3. **Implement battery monitor cross-sensitivity test** (Copter, Impact 7.0)
+4. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
+5. **Create PR** to ArduPilot/master with all accumulated improvements
 
 ---
 
 ## 11. Git History (test-improvements branch)
 
 ```
-6b0e4ee151  test(autotest): add BatteryArmVoltageGuard test for arming voltage mid-flight change
-6ad8c51038  docs(autotest): update synthesis with FenceTerrainFallback completion
-fea452c420  test(autotest): add FenceTerrainFallback test for terrain-dependent fence degradation
 0c19ec9e4d  infrastructure(autotest): add aggressive_timeout mode to reduce CI timeouts
 2476cc5b99  infrastructure(autotest): add full parameter snapshot to context_push/pop
 5dfc284eec  autotest: fix FailsafeEdgeCases Rounds 4-5 recovery sequences
@@ -211,4 +201,5 @@ fea452c420  test(autotest): add FenceTerrainFallback test for terrain-dependent 
 cfc4e647e0  test(autotest): make GPS glitch tests tougher with heading recovery and EKF monitoring
 376ee8e9    test(autotest): tighten OpticalFlow tolerance and add movement checks to throttle failsafe
 20e451d2    test(autotest): tighten OpticalFlow tolerance and add movement checks to throttle failsafe
+fea452c420  test(autotest): add FenceTerrainFallback test for terrain-dependent fence degradation
 ```
