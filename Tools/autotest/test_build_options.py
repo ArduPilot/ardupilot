@@ -1159,6 +1159,9 @@ class TestBuildOptions(object):
         finally:
             stop_event.set()
             if not completed:
+                # tasks nobody will now read may still be waiting to go
+                # into the pipe; don't wait for them at exit:
+                task_queue.cancel_join_thread()
                 # e.g. KeyboardInterrupt; the workers are in their own
                 # process groups so did not get the SIGINT:
                 for p in workers:
