@@ -100,12 +100,57 @@ void Sub::failsafe_sensors_check()
 void Sub::failsafe_ekf_check()
 {
     static uint32_t last_ekf_good_ms = 0;
+    static uint32_t last_degradation_warn_ms = 0;
+    static uint32_t last_drift_warn_ms = 0;
+    static bool was_degradation_active = false;
+    static bool was_drift_active = false;
 
     if (g.fs_ekf_action == FS_EKF_ACTION_DISABLED) {
         last_ekf_good_ms = AP_HAL::millis();
         failsafe.ekf = false;
         AP_Notify::flags.ekf_bad = false;
+        // Reset degradation tracking when disabled
+        was_degradation_active = false;
+        was_drift_active = false;
         return;
+    }
+
+    // === EKF degradation monitoring (continuous health monitoring) ===
+    if (arming.is_armed()) {
+        AP_AHRS::EKF_Health health;
+        if (ahrs.get_ekf_health(health)) {
+            const uint32_t now_ms = AP_HAL::millis();
+            
+            // Detect transition: loss of absolute position started
+            if (health.absolute_position_lost && !was_drift_active) {
+                if ((now_ms - last_drift_warn_ms) > 30000) {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF: absolute position lost");
+                    last_drift_warn_ms = now_ms;
+                }
+            }
+            was_drift_active = health.absolute_position_lost;
+            
+            // Detect transition: loss of absolute position cleared
+            if (!health.absolute_position_lost && was_drift_active) {
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF: position restored");
+                last_drift_warn_ms = now_ms;
+            }
+            
+            // Detect transition: compass-only heading started
+            if (health.heading_reliant_compass && !was_degradation_active) {
+                if ((now_ms - last_degradation_warn_ms) > 30000) {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF: heading compass-only");
+                    last_degradation_warn_ms = now_ms;
+                }
+            }
+            was_degradation_active = health.heading_reliant_compass;
+            
+            // Detect transition: heading fusion restored
+            if (!health.heading_reliant_compass && was_degradation_active) {
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF: heading fusion restored");
+                last_degradation_warn_ms = now_ms;
+            }
+        }
     }
 
     float posVar, hgtVar, tasVar;
