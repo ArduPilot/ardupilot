@@ -1250,7 +1250,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         '''test for the MCP9808 temperature driver'''
 
         self.set_parameters({
-            'TEMP1_TYPE': 11,      # Replace with your MCP9808 enum
+            'TEMP1_TYPE': 11,
             'TEMP1_ADDR': 0x18,   # MCP9808 default I2C address
             'TEMP1_BUS': 0,       # Bus used by your SITL simulator
             'TEMP_LOG': 1,
