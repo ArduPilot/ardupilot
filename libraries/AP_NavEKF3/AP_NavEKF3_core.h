@@ -944,6 +944,8 @@ private:
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
     void UpdateAglKf();
+    // fuse one height observation into the AGL Kalman filter
+    void FuseAglKfHeight(ftype hgtInnov, ftype measNoiseVar);
 #endif
 
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -1324,6 +1326,13 @@ private:
     Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
+    // a range sample older than this is stale, for the median of three and for range finder height
+    static constexpr uint32_t rngFreshTime_ms = 500;
+    // with no range sample for this long on the ground, the on-ground range is used in its place
+    static constexpr uint32_t rngOnGndNoDataTime_ms = 200;
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    uint32_t rngOutOfRangeLowTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES]; // time stamps of the latest out of range low report from each downward range finder (msec)
+#endif
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
     Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
@@ -1348,6 +1357,24 @@ private:
         bool  valid;                    // true when RF has been fused within the last 5 s
         uint32_t lastRngFuseTime_ms;    // timestamp of last successful RF fusion into AGL KF
     } aglKf;
+    // gap since the last range finder fusion beyond which the AGL KF velocity decays toward zero
+    static constexpr uint32_t aglKfRngGapMax_ms = 500;
+    // main filter vertical speed below which a vehicle whose range finder reads too low is resting,
+    // and the AGL KF stops coasting. Landed, the main filter read under 0.19 m/s 99% of the time
+    // over 34 flights; without this test the stop also fired in a liftoff and lost the climb
+    static constexpr ftype aglKfStillVelZMax_m_s = 0.25f;
+    // with no range sample for this long and the range finder reading too low, the vehicle is on
+    // the ground whatever the main filter says. The slowest of 41 liftoffs from below the sensor
+    // minimum took 1.03 s to its first reading, by when it was 0.04 m above its last
+    static constexpr uint32_t aglKfFloorHoldNoRngTime_ms = 1000;
+    // the last fused reading is this close to the floor when the range finder went too low on the
+    // ground rather than in flight; landed it was within 0.12 m on all 16 landings measured
+    static constexpr ftype aglKfFloorHoldNearFloor_m = 0.5f;
+    // an AGL height this far above that last reading is a coast to hold on the floor. Normal
+    // landings rose at most 0.25 m above the range finder, and holding one is harmless
+    static constexpr ftype aglKfFloorHoldCoast_m = 0.3f;
+    ftype aglKfLastRngHgt;          // tilt-corrected range of the last range sample fused (m)
+    bool aglKfHeldOnFloor;          // AGL KF held on its floor until the range finder reads again
 #endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement

@@ -805,19 +805,52 @@ void NavEKF3_core::UpdateAglKf()
     // Negate: downward acceleration reduces AGL rate.
     aglKf.vel -= velDotNED.z * imuDt;
 
-    // First-order decay of v_agl toward zero when RF is absent (tau = 2 s).
-    // Without range measurements v_agl is unobservable; accumulated IMU bias
-    // error will cause it to drift, pulling h_agl to the floor during
-    // subsequent climbs.  The decay limits that drift.
-    // At the aglKfRngTimeout_ms validity timeout (5 s), |v| is at most
-    // exp(-5/2) ~ 8% of its value at last RF fusion, so the hard reset finds v near zero.
-    if (!rangeDataToFuse) {
+    // First-order decay of v_agl toward zero once range finder fusion has lapsed
+    // (tau = 2 s): v_agl is then unobservable and IMU bias error makes it drift.
+    // Keyed on time since the last fusion, as rangeDataToFuse is false on most steps.
+    if (imuSampleTime_ms - aglKf.lastRngFuseTime_ms > aglKfRngGapMax_ms) {
         const ftype tauV = 2.0f;
         aglKf.vel *= expf(-imuDt / tauV);
     }
 
-    // AGL cannot go below the on-ground sensor reading
-    aglKf.hgt = MAX(aglKf.hgt, rngOnGnd);
+    // the floor below is fused as a measurement rather than clamped, so a NaN restarts from it here
+    if (isnan(aglKf.hgt) || isnan(aglKf.vel)) {
+        aglKf.hgt = rngOnGnd;
+        aglKf.vel = 0.0f;
+    }
+
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    // A range finder below its minimum delivers no reading, so after a touchdown nothing corrects
+    // the velocity the landing left and the height coasts up off the ground. With the sensor
+    // reporting out of range low and no sample arriving, stop the coast. A main filter moving
+    // vertically faster than a resting vehicle, up or down, is a liftoff or touchdown still below
+    // the sensor minimum, which is left to the IMU
+    const uint32_t rngLowTime_ms = rngOutOfRangeLowTime_ms[rangeDataDelayed.sensor_idx];
+    if ((rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < rngFreshTime_ms) &&
+        (imuSampleTime_ms - rngValidMeaTime_ms > rngOnGndNoDataTime_ms) &&
+        (fabsF(stateStruct.velocity.z) < aglKfStillVelZMax_m_s)) {
+        aglKf.vel = 0.0f;
+    }
+    // That test trusts the main filter, which can believe it is climbing on the ground after a
+    // hard flight. A range last fused near the floor that has had no reading for a while is on
+    // the ground whatever the filter says, so a height well above that last reading is a coast:
+    // hold it on the floor until the range finder reads again or stops reporting too low.
+    // Known limit: a range finder that reads Good on the ground and then reports too low from
+    // liftoff while in range (one returning zero on a lost return) pins the height to the floor
+    // until the 5 s timeout
+    const bool rngLowNearFloor = (rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < rngFreshTime_ms) &&
+                                 (imuSampleTime_ms - rngValidMeaTime_ms > aglKfFloorHoldNoRngTime_ms) &&
+                                 (aglKfLastRngHgt < rngOnGnd + aglKfFloorHoldNearFloor_m);
+    if (!rngLowNearFloor) {
+        aglKfHeldOnFloor = false;
+    } else if (aglKf.hgt > aglKfLastRngHgt + aglKfFloorHoldCoast_m) {
+        aglKfHeldOnFloor = true;
+    }
+    if (aglKfHeldOnFloor) {
+        aglKf.hgt = rngOnGnd;
+        aglKf.vel = 0.0f;
+    }
+#endif
 
     // ----- Covariance prediction: P = F*P*F' + Q -----
     //
@@ -859,6 +892,15 @@ void NavEKF3_core::UpdateAglKf()
     aglKf.cov[0][0] = MIN(aglKf.cov[0][0], 100.0f);  // 10 m std-dev cap
     aglKf.cov[1][1] = MIN(aglKf.cov[1][1], 100.0f);  // 10 m/s std-dev cap
 
+    // AGL cannot go below the on-ground sensor reading. Fuse that floor as a reading with the range
+    // finder's noise, so a downward velocity resting on it is corrected through the covariance.
+    // Overwriting the height and clearing the velocity instead counted a touchdown twice: once at the
+    // clear, and again as the impact decelerated the vehicle, which lifted the height off the ground.
+    // Not on a step with a range sample, which is floored already
+    if ((aglKf.hgt < rngOnGnd) && !rangeDataToFuse) {
+        FuseAglKfHeight(rngOnGnd - aglKf.hgt, sq(frontend->_rngNoise));
+    }
+
     // mark invalid if RF has been absent too long
     if (!rangeDataToFuse) {
         if (imuSampleTime_ms - aglKf.lastRngFuseTime_ms > aglKfRngTimeout_ms) {
@@ -882,6 +924,7 @@ void NavEKF3_core::UpdateAglKf()
         aglKf.cov[0][1] = aglKf.cov[1][0] = 0.0f;
         aglKf.cov[1][1] = 1.0f;                    // 1 m/s velocity uncertainty after reset
         aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
+        aglKfLastRngHgt = aglKf.hgt;
         aglKf.valid = true;
         return;  // skip measurement update this cycle (just used the reading for reset)
     }
@@ -913,6 +956,19 @@ void NavEKF3_core::UpdateAglKf()
         return;
     }
 
+    FuseAglKfHeight(hgtInnov, measNoiseVar);
+
+    aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
+    aglKfLastRngHgt = hgtMeas;
+    aglKf.valid = true;
+}
+
+// FuseAglKfHeight - fuse one height observation into the AGL KF, given its innovation (observed
+// height less the estimate, m) and its noise variance (m^2)
+void NavEKF3_core::FuseAglKfHeight(ftype hgtInnov, ftype measNoiseVar)
+{
+    const ftype innovVar = aglKf.cov[0][0] + measNoiseVar;
+
     // Kalman gain:  K = P*H' / innovVar = [P[0][0]/innovVar, P[1][0]/innovVar]'
     // (H = [1, 0], so P*H' = first column of P)
     const ftype Kh = aglKf.cov[0][0] / innovVar;
@@ -921,13 +977,12 @@ void NavEKF3_core::UpdateAglKf()
     // State update:  x += K * hgtInnov
     aglKf.hgt += Kh * hgtInnov;
     aglKf.vel += Kv * hgtInnov;
-    aglKf.hgt  = MAX(aglKf.hgt, rngOnGnd);  // enforce physical constraint after update
 
     // Covariance update P = (I-KH)*P*(I-KH)' + K*R*K'
     // With H = [1, 0], (I-KH) = [[1-Kh, 0], [-Kv, 1]]:
-    //   P[0][0] = (1-Kh)²*Phh + Kh²*R
+    //   P[0][0] = (1-Kh)^2*Phh + Kh^2*R
     //   P[0][1] = (1-Kh)*(Phv - Kv*Phh) + Kh*Kv*R
-    //   P[1][1] = Pvv - 2*Kv*Phv + Kv²*innovVar
+    //   P[1][1] = Pvv - 2*Kv*Phv + Kv^2*innovVar
     const ftype oneMinusKh = 1.0f - Kh;
     const ftype Phh = aglKf.cov[0][0];
     const ftype Phv = aglKf.cov[0][1];
@@ -936,9 +991,6 @@ void NavEKF3_core::UpdateAglKf()
     aglKf.cov[0][0] = MAX(sq(oneMinusKh) * Phh + sq(Kh) * measNoiseVar, 0.0f);
     aglKf.cov[0][1] = aglKf.cov[1][0] = oneMinusKh * (Phv - Kv * Phh) + Kh * Kv * measNoiseVar;
     aglKf.cov[1][1] = MAX(Pvv - 2.0f * Kv * Phv + sq(Kv) * innovVar, 0.0f);
-
-    aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
-    aglKf.valid = true;
 }
 
 #endif  // EK3_FEATURE_OPTFLOW_AGL_KF
