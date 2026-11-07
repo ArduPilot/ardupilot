@@ -590,19 +590,39 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 super(MonitorQRTLTerrainEntryError, self).__init__(suite)
                 self.max_entry_error = max_entry_error  # metres
                 self.seen_sample = False
+                # consecutive samples over the limit; see need_consecutive
+                self.over = 0
+                # one sample is not enough to fail on: the ramp is set up
+                # on the first controller iteration after the mode
+                # change, so a NAV_CONTROLLER_OUTPUT emitted in the entry
+                # tick itself still carries the pre-ramp target - the
+                # whole Q_RTL_ALT gap - and arrives here if it was still
+                # queued when the hook went in.  A ramp which really
+                # mixed frames biases every sample in the window, not
+                # one, so requiring two in a row costs no sensitivity.
+                self.need_consecutive = 2
 
             def process(self, mav, m):
                 if m.get_type() != 'NAV_CONTROLLER_OUTPUT':
                     return
                 self.seen_sample = True
                 self.progress("QRTL terrain entry: alt_error=%.1f" % m.alt_error)
-                if abs(m.alt_error) > self.max_entry_error:
-                    raise NotAchievedException(
-                        "QRTL target altitude jumped by %.1fm on entry over "
-                        "sloping terrain (max %.1fm); the approach ramp is "
-                        "mixing altitude frames" % (m.alt_error, self.max_entry_error))
+                if abs(m.alt_error) <= self.max_entry_error:
+                    self.over = 0
+                    return
+                self.over += 1
+                if self.over < self.need_consecutive:
+                    return
+                raise NotAchievedException(
+                    "QRTL target altitude jumped by %.1fm on entry over "
+                    "sloping terrain (max %.1fm, %u samples in a row); the "
+                    "approach ramp is mixing altitude frames" %
+                    (m.alt_error, self.max_entry_error, self.over))
 
         self.context_push()
+        # drop whatever is already buffered, so the monitor starts from
+        # messages the vehicle sent after it entered the mode
+        self.drain_mav()
         monitor = MonitorQRTLTerrainEntryError(self)
         self.install_message_hook_context(monitor)
         self.delay_sim_time(5, reason="sample QRTL entry altitude error")
