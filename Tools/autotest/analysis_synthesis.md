@@ -85,26 +85,6 @@ All 6 rounds passing:
 
 ---
 
-## 4b. SMART_RTL C++ Bug Fixes
-
-Two critical bugs found in AP_SmartRTL that caused disabled tests (SMART_RTL_EnterLeave, SMART_RTL_Repeat):
-
-| Bug | Root Cause | Fix | Commit |
-|-----|-----------|-----|--------|
-| Premature deactivation | `_last_position_save_ms` not updated on `add_point()` failure → 15s timeout fires during semaphore contention with cleanup thread | Always update timestamp on `update()` call; timeout now tracks genuine inactivity, not brief contention | 241a87d19d |
-| False INTERNAL_ERROR panic | `peek_point()` fails during background cleanup thread semaphore hold → `INTERNAL_ERROR(flow_of_control)` panic | Replace panic with warning log; continue with current destination | 241a87d19d |
-
----
-
-## 4c. Disabled Test Recoveries
-
-| Test | Fix Type | Description | Commit |
-|------|----------|-------------|--------|
-| `FlyMissionTwice` | Test code | Add mission state machine reset via `DO_SET_MISSION_CURRENT` between runs (same approach as passing `FlyMissionTwiceWithReset`) | 8af8eb0716 |
-| `Parachute` | Verification | NOT actually disabled — not in `disabled_tests()` dictionary. Entry in synthesis doc was stale. | — |
-
----
-
 ## 5. Pre-Existing Bugs Found by Improvements
 
 SITL validation exposed **3 pre-existing bugs** (none caused by test improvements):
@@ -163,30 +143,17 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 
 ---
 
-## 7. Disabled Test Recovery — Status
-
-### Fixed (awaiting CI validation)
-
-| Test | Vehicle | Fix | Status |
-|------|---------|-----|--------|
-| `SMART_RTL_EnterLeave` | Copter | C++ bug fixed: premature deactivation timeout + false panic | C++ fix committed, tests still disabled pending CI validation |
-| `SMART_RTL_Repeat` | Copter | C++ bug fixed: same premature deactivation timeout | C++ fix committed, tests still disabled pending CI validation |
-| `FlyMissionTwice` | Copter | Test fix: mission state reset between runs | Fix committed, test still disabled pending CI validation |
-
-### Not actually disabled
-
-| Test | Vehicle | Notes |
-|------|---------|-------|
-| `Parachute` | Copter | NOT in `disabled_tests()` — synthesis doc entry was stale. Test runs normally. |
-
-### Still disabled (unresolved)
+## 7. Remaining — Disabled Test Recovery
 
 | Test | Vehicle | Reason | Priority |
 |------|---------|--------|----------|
-| `RTLStoppingDistanceSpeed` | Copter | Vehicle can't reach hover speed target | Medium |
-| `ScriptingOSD` | Copter | context_collect ordering bug | Medium |
+| `Parachute` | Copter | Issue #4702 | High — safety-critical |
+| `SMART_RTL_EnterLeave` | Copter | Causes panic (#18404) | High — crash bug |
+| `SMART_RTL_Repeat` | Copter | Loop detection failure | High — crash bug |
 | `LandingDrift` | Plane | Flapping test (#20054) | High |
-| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Unreliable — finish-line bug | High |
+| `RTLStoppingDistanceSpeed` | Copter | Vehicle goes off-course | Medium |
+| `FlyMissionTwice` | Copter | Unknown | Medium |
+| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Unreliable | High |
 | `DriveBrake` | Rover | Frequent failures | Medium |
 | `SlewRate` | Rover | CI timing report failure | Medium |
 
@@ -242,8 +209,6 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 ## 11. Git History (test-improvements branch)
 
 ```
-8af8eb0716  test(autotest): fix FlyMissionTwice with mission state reset between runs
-241a87d19d  AP_SmartRTL: fix premature deactivation and false panic on peek contention
 59797b7602  test(autotest): refactor VTOLMotorFailTransition to use motor_failure_test.lua
 6a1b40b47c  test(autotest): add VTOL motor fail and repeated fence crossing tests
 b25bd8b693  docs(autotest): update synthesis with BatteryArmVoltageGuard completion
