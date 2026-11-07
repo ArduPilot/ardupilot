@@ -109,7 +109,10 @@ class TestBuildOptions(object):
         self.progress_stream = None
 
     def must_have_defines_for_board(self, board):
-        '''return a set of defines which must always be enabled'''
+        '''return a sorted list of defines which must always be enabled.
+        Sorted as the order of a set's members varies from run to run,
+        and the order of the defines changes the size of the hwdef.dat
+        in ROMFS'''
         must_have_defines = {
             "CubeOrange": frozenset([
                 'AP_BARO_MS5611_ENABLED',
@@ -132,7 +135,7 @@ class TestBuildOptions(object):
                 "AP_BARO_ICP201XX_ENABLED",
             ]),
         }
-        return must_have_defines.get(board, frozenset([]))
+        return sorted(must_have_defines.get(board, frozenset([])))
 
     def must_have_defines(self):
         return self.must_have_defines_for_board(self._board)
