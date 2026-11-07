@@ -18812,6 +18812,19 @@ switch value'''
             upload('prefix longer than previous name', previous + bad_prefix, 2, valid=False)
             self.assert_parameter_value('RC7_MIN', 1200)
 
+            # A rejected upload must not apply any of the records before the bad one.
+            good = record(2, b'RC7_MIN', struct.pack('<h', 1300))
+            bad_records = [
+                ('missing', b''),
+                ('truncated', record(2, b'RC7_MAX', struct.pack('<h', 1900))[:-1]),
+                ('flagged', bytes([0x12]) + record(2, b'RC7_MAX', struct.pack('<h', 1900))[1:]),
+                ('unsupported type', record(5, b'RC7_MAX', bytes(12))),
+                ('bad prefix', record(2, b'X', struct.pack('<h', 1900), common_len=8)),
+            ]
+            for label, bad in bad_records:
+                upload(f'valid record before a {label} record is not applied', good + bad, 2, valid=False)
+                self.assert_parameter_value('RC7_MIN', 1200)
+
             longest_name = record(2, b'NO_SUCH_PARAM_AB', struct.pack('<h', 123))
             complete = record(2, b'RC7_MIN', struct.pack('<h', 1250))
             upload('maximum length name', longest_name + complete, 2, valid=True)
