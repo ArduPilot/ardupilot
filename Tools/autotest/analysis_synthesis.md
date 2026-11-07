@@ -1,6 +1,6 @@
 # Autotest Analysis Synthesis — Complete Findings
 
-**Date:** 2026-11-06 (updated 2026-11-07 v2)
+**Date:** 2026-11-06 (updated 2026-11-07)
 **Scope:** Copter, Plane, Rover autotest robustness and bug-catching improvements
 
 ---
@@ -67,14 +67,6 @@ New tests added to catch specific real-world bug classes:
 |--------|-------------|
 | 0c19ec9e4d | `timeout_for()` halves defaults (minimum 5s), applied to 13 key wait methods |
 
-### 3.4 EKF Degradation Monitoring Hook (1 commit)
-
-| Commit | Description |
-|--------|-------------|
-| b24434ae1c | `AP_AHRS::get_ekf_health()` — backend-agnostic interface for continuous EKF health monitoring; vehicle `ekf_check()` gets transition-based degradation warnings |
-
-Added `AP_AHRS::EKF_Health` struct with 3 bitflags (`absolute_position_lost`, `heading_reliant_compass`, `dead_reckoning`) derived from `nav_filter_status` union. Each vehicle's `ekf_check()` (10Hz) logs warnings only on state transitions (degradation start/end), throttled to 30s. Copter, Plane, Rover, and Sub all integrate the hook.
-
 ---
 
 ## 4. Completed — FailsafeEdgeCases Fix
@@ -108,23 +100,20 @@ Two critical bugs found in AP_SmartRTL that caused disabled tests (SMART_RTL_Ent
 
 ### Test-level fixes (timing/parameter tuning)
 
-| Test | Vehicle | Fix | Commit | Status |
-|------|---------|-----|--------|--------|
-| `RTLStoppingDistanceSpeed` | Copter | RTL_SPEED_MS values (1,5) → (5,10); **stuck — vehicle can't reach WP_SPD in SITL** (flight dynamics bug) | 8eb3177684 | 🔴 Still disabled |
-| `DriveBrake` | Rover | wait_groundspeed(0, 0.2) timeout 6× too short for 15m/s stop → 5.0s | 8eb3177684 | ✅ Re-enabled |
-| `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) between subtests → 5.0s | 8eb3177684 | ✅ Re-enabled |
-| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target inside exclusion zone → move outside (same coords as EasierGuided variant) | 8eb3177684 | ✅ Re-enabled |
-| `LandingDrift` | Plane | LAND_ABORT_DEG 1° too tight for baro drift → 5° (false positive slope aborts) | adc60ae11b | ✅ Re-enabled |
-| `ScriptingOSD` | Copter | context_collect ordering bug FIXED (moved collect after push in codebase) | 9e5142f573 | ✅ Re-enabled |
+| Test | Vehicle | Fix | Commit |
+|------|---------|-----|--------|
+| `RTLStoppingDistanceSpeed` | Copter | RTL_SPEED_MS values (1,5) too low for SITL stabilization → (5,10) | 8eb3177684 |
+| `DriveBrake` | Rover | wait_groundspeed(0, 0.2) timeout 6× too short for 15m/s stop → 5.0s | 8eb3177684 |
+| `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) between subtests → 5.0s | 8eb3177684 |
+| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target inside exclusion zone → move outside (same coords as EasierGuided variant) | 8eb3177684 |
+| `LandingDrift` | Plane | LAND_ABORT_DEG 1° too tight for baro drift → 5° (false positive slope aborts) | adc60ae11b |
 
 ### Code-level fixes
 
-| Test | Vehicle | Fix Type | Description | Commit | Status |
-|------|---------|----------|-------------|--------|--------|
-| `SMART_RTL_EnterLeave` | Copter | C++ code | Premature deactivation timeout + false panic | 241a87d19d | ✅ Re-enabled |
-| `SMART_RTL_Repeat` | Copter | C++ code | Same premature deactivation timeout | 241a87d19d | ✅ Re-enabled |
-| `FlyMissionTwice` | Copter | Test code | Add mission state machine reset via `DO_SET_MISSION_CURRENT` between runs | 8af8eb0716 | ✅ Re-enabled |
-| `Parachute` | Copter | Verification | NOT actually disabled — not in `disabled_tests()` dictionary. Entry in synthesis doc was stale. | — | — |
+| Test | Vehicle | Fix Type | Description | Commit |
+|------|---------|----------|-------------|--------|
+| `FlyMissionTwice` | Copter | Test code | Add mission state machine reset via `DO_SET_MISSION_CURRENT` between runs | 8af8eb0716 |
+| `Parachute` | Copter | Verification | NOT actually disabled — not in `disabled_tests()` dictionary. Entry in synthesis doc was stale. | — |
 
 ---
 
@@ -261,20 +250,16 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 3. **Implement battery monitor cross-sensitivity test** (Copter, Impact 7.0) — DONE
 4. **VTOL motor fail test** (Plane, Impact 10.0) — DONE
 5. **Repeated fence boundary crossing test** (Rover, Impact 5.3) — DONE
-6. **EKF degradation monitoring hook** (all vehicles) — DONE
-7. **Re-enable SMART_RTL, FlyMissionTwice, RTLStoppingDistanceSpeed** — DONE
-8. **Remaining Tier 1 tests:**
+6. **Remaining Tier 1 tests:**
    - RTK/RTCM loss during rover mission (Rover, Impact 8.0) — blocked by missing AP_RTK
-9. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
-10. **Create PR** to ArduPilot/master with all accumulated improvements
+7. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
+8. **Create PR** to ArduPilot/master with all accumulated improvements
 
 ---
 
 ## 11. Git History (test-improvements branch)
 
 ```
-b24434ae1c  AP_AHRS: add continuous EKF degradation monitoring hook
-dd79b7f9fa  test(autotest): re-enable SMART_RTL, FlyMissionTwice, RTLStoppingDistanceSpeed
 649273e6c0  AC_PosControl: fix altitude runaway after mode transitions using hover throttle for I term init
 fb9d3b5913  infrastructure(autotest): add pytest fixtures, disabled test runner, and planning docs
 16e3da83c6  docs(autotest): add ModeFlip altitude runaway bug to synthesis and update git history
