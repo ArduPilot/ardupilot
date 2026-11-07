@@ -80,7 +80,10 @@ public:
     // Used for tilt-based navigation with independent yaw control.
     // The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
     // while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
-    void input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw = true) override;
+    void input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw = true, bool hold_level_yaw = false) override;
+
+    // inverted flight converts the thrust vector to Euler angles and does not hold level yaw
+    bool holds_level_yaw() const override { return !_inverted_flight; }
     
     // Sets desired thrust vector and heading (in radians) with heading rate (in radians/s).
     // Used for advanced attitude control where thrust direction is separated from yaw orientation.
