@@ -3692,7 +3692,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     })
 
             # track position during glitch to catch off-course excursions
-            m = self.assert_receive_message(type='GLOBAL_POSITION_INT')
+            _ = self.assert_receive_message(type='GLOBAL_POSITION_INT')
             curr_pos = self.sim_location()
             moved_distance = self.get_distance(curr_pos, start_pos)
             self.progress("Glitch %u: Moved %.1fm" % (glitch_current, moved_distance))
