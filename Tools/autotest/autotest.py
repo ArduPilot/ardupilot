@@ -808,18 +808,38 @@ UNIFIED_POOL_STEP = "__unified_pool__"
 def run_unified_pool(unified_steps, results, failed, failed_testinstances):
     '''run the pooled suites in the position their steps stood in;
     returns True if every one of them passed'''
+    passed = True
+    runnable = []
+    for step in unified_steps:
+        # a suite whose build failed is skipped, as the sequential path
+        # skips it - taken into the pool instead it brings every other
+        # suite down with it, because the pool is set up suite by suite
+        # and the missing binary stops that before any test runs
+        broken = [b for b in implied_build_steps_for_test_step(step)
+                  if b in failed]
+        if broken:
+            print(">>>> SKIPPED STEP: %s at %s (%s failed)" %
+                  (step, time.asctime(), " ".join(broken)))
+            passed = False
+            failed.append(step)
+            results.add(step, '<span class="failed-text">SKIPPED (build failed)</span>',
+                        0.0)
+            continue
+        runnable.append(step)
+    if not runnable:
+        return passed
+
     t1 = time.monotonic()
     print(">>>> RUNNING UNIFIED STEPS: %s at %s" %
-          (" ".join(unified_steps), time.asctime()))
+          (" ".join(runnable), time.asctime()))
     try:
-        outcomes = run_unified_test_steps(unified_steps)
+        outcomes = run_unified_test_steps(runnable)
     except Exception as msg:  # noqa: BLE001
         print(">>>> FAILED UNIFIED STEPS at %s (%s)" %
               (time.asctime(), msg))
         traceback.print_exc(file=sys.stdout)
-        outcomes = [(step, False, None) for step in unified_steps]
+        outcomes = [(step, False, None) for step in runnable]
     elapsed = time.monotonic() - t1
-    passed = True
     for (step, success, testinstance) in outcomes:
         if success:
             results.add(step, '<span class="passed-text">PASSED</span>', elapsed)
