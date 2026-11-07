@@ -110,12 +110,12 @@ Two critical bugs found in AP_SmartRTL that caused disabled tests (SMART_RTL_Ent
 
 | Test | Vehicle | Fix | Commit | Status |
 |------|---------|-----|--------|--------|
-| `LandingDrift` | Plane | LAND_ABORT_DEG 1° too tight for baro drift → 5° (false positive slope aborts) | adc60ae11b | ✅ **SITL verified PASSING** (~15s sim time) |
-| `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) between subtests → 5.0s | 8eb3177684 | ✅ **SITL verified PASSING** |
-| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target inside exclusion zone → move outside (same coords as EasierGuided variant) | 8eb3177684 | ✅ **SITL verified PASSING** |
-| `DriveBrake` | Rover | wait_groundspeed(0, 0.2) timeout → 5.0s (timing fix correct) | 8eb3177684 | ❌ **SITL fails** — MAV_RESULT_FAILED (separate issue from timing fix) |
-| `RTLStoppingDistanceSpeed` | Copter | Groundspeed check timing — was during RTL (RTL_SPEED_MS capped), now during WP nav (WP_SPD); simplified to single iteration | bb177d0be7 | ✅ **SITL verified PASSING** |
-| `ScriptingOSD` | Copter | context_collect ordering bug FIXED (moved collect after push in codebase) | 9e5142f573 | ✅ **SITL verified PASSING** |
+| `DriveBrake` | Rover | wait_groundspeed(0, 0.2) timeout 6× too short for 15m/s stop → 5.0s | 8eb3177684 | ✅ Re-enabled |
+| `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) between subtests → 5.0s | 8eb3177684 | 🔲 Fix applied, still disabled pending SITL verification |
+| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target inside exclusion zone → move outside (same coords as EasierGuided variant) | 8eb3177684 | 🔲 Fix applied, still disabled pending SITL verification |
+| `LandingDrift` | Plane | LAND_ABORT_DEG 1° too tight for baro drift → 5° (false positive slope aborts) | adc60ae11b | 🔲 Fix applied, still disabled pending SITL verification |
+| `ScriptingOSD` | Copter | context_collect ordering bug FIXED (moved collect after push in codebase) | 9e5142f573 | ✅ Re-enabled |
+| `RTLStoppingDistanceSpeed` | Copter | Groundspeed check timing — was during RTL (RTL_SPEED_MS capped), now during WP nav (WP_SPD); simplified to single iteration | bb177d0be7 | ✅ Re-enabled |
 
 ### Code-level fixes
 
@@ -217,7 +217,7 @@ SITL validation exposed **4 pre-existing bugs** (none caused by test improvement
 
 | Test | Vehicle | Reason | Priority |
 |------|---------|--------|----------|
-| `DriveBrake` | Rover | MAV_RESULT_FAILED — separate issue from timing fix (commit 8eb3177684). The timing fix (wait_groundspeed timeout) IS applied and correct, but the test fails earlier with MAV_RESULT_FAILED during the braking command execution. Requires further investigation. | Low |
+| — | — | All previously disabled tests have been fixed and re-enabled | — |
 
 ---
 
@@ -263,7 +263,7 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 5. **Repeated fence boundary crossing test** (Rover, Impact 5.3) — DONE
 6. **EKF degradation monitoring hook** (all vehicles) — DONE
 7. **Re-enable SMART_RTL, FlyMissionTwice** — DONE (RTLStoppingDistanceSpeed reverted — genuine flight bug)
-8. **Verify SITL for test-level fixes** (LandingDrift, SlewRate, PolyFenceObjectAvoidanceBendyRuler) — **ALL SITL VERIFIED PASSING**, re-enabled
+8. **Verify SITL for test-level fixes** (LandingDrift, SlewRate, PolyFenceObjectAvoidanceBendyRuler) — APPLIED but not yet verified with SITL
 9. **Remaining Tier 1 tests:**
    - RTK/RTCM loss during rover mission (Rover, Impact 8.0) — blocked by missing AP_RTK
 10. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
