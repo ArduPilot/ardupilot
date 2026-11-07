@@ -24523,11 +24523,11 @@ return update()
         '''test stopping distance unaffected by RTL speed'''
 
         # Adversarial: verify stopping distance consistency across different
-        # RTL speeds. Original bug: groundspeed check ran during RTL (when
-        # speed is capped by RTL_SPEED_MS) instead of during AUTO waypoint
-        # navigation (where speed is governed by WP_SPD).
+        # RTL speeds. Bug caught: vehicle can't reach hover speed for RTL test.
+        # This version adds explicit groundspeed assertion and deceleration tracking.
 
         # Use new parameter tracking system
+        # Note: parameter is WP_SPD, not WPNAV_SPEED
         self.context_push(snapshot_params=True, param_names=[
             'RTL_SPEED_MS',
             'AUTO_OPTIONS',
@@ -24535,14 +24535,9 @@ return update()
         ])
 
         try:
-            # Mission structure:
-            #   WP 0: TAKEOFF to 20m
-            #   WP 1: LOITER (checkpoint for speed verification)
-            #   WP 2: WP at (200, 0, 20) — where RTL will be triggered
-            #   WP 3: RTL to home
             self.upload_simple_relhome_mission([
+                #                                              N  E   U
                 (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,          0, 0, 20),
-                (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM,     0, 0,  0),
                 (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,       200, 0, 20),
                 (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0,  0),
             ])
@@ -24558,36 +24553,39 @@ return update()
                 self.change_mode('AUTO')
                 self.wait_ready_to_arm()
                 self.arm_vehicle()
+                self.wait_current_waypoint(2)
 
                 wp_speed = self.get_parameter('WP_SPD')
                 self.progress("Target WP speed: %.1fm/s, RTL speed: %um/s" % (wp_speed, rtl_speed))
 
-                # Wait for vehicle to reach LOITER (WP 1). This is where
-                # speed is governed by WP_SPD, not RTL_SPEED_MS.
-                self.progress("Waiting for vehicle to reach LOITER checkpoint")
-                self.wait_current_waypoint(1)
-
-                # Verify groundspeed at WP speed during AUTO waypoint navigation.
-                # The vehicle must reach at least 80% of WP speed before we
-                # test RTL stopping.
-                self.progress("Verifying groundspeed reaches %.1fm/s minimum")
+                # Explicit groundspeed check: the vehicle must reach at least
+                # 80% of WP speed before we test RTL stopping. If it can't,
+                # fail immediately rather than testing with wrong conditions.
+                self.progress("Verifying groundspeed reaches %.1fm/s minimum" % (wp_speed * 0.8))
                 gs_threshold = wp_speed * 0.8
-                self.wait_groundspeed(gs_threshold, wp_speed + 1, timeout=60)
-                self.progress("Groundspeed OK: %.1fm/s" % self.groundspeed())
+                try:
+                    self.wait_groundspeed(gs_threshold, wp_speed + 1, timeout=60)
+                except AutoTestTimeoutException:
+                    # Vehicle couldn't reach target speed - this IS the bug
+                    actual_gs = self.groundspeed()
+                    raise NotAchievedException(
+                        "Vehicle could not reach %.1fm/s before RTL (current: %.1fm/s). "
+                        "RTL stopping distance test is invalid at this speed." % (gs_threshold, actual_gs)
+                    )
 
                 rtl_start_pos = self.get_local_position_NED()
                 rtl_start_gs = self.groundspeed()
                 self.progress("RTL start: position=(%.1f, %.1f), groundspeed=%.1fm/s" %
                             (rtl_start_pos.x, rtl_start_pos.y, rtl_start_gs))
 
-                # Trigger RTL via mission command. The vehicle is in AUTO
-                # mode; sending NAV_RETURN_TO_LAUNCH starts the RTL sequence
-                # using the current RTL_SPEED_MS value.
-                self.progress("Starting RTL via mission command")
-                self.mav.mav.command_long_send(
-                    self.mav.target_system, self.mav.target_component,
-                    mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0,
-                    0, 0, 0, 0, 0, 0, 0)
+                # we accelerate so hard we can miss the zero value!
+                self.context_set_message_rate_hz('VFR_HUD', 50)
+
+                # note that there's going to be a significant latency involved
+                # between taking rtl_start_pos and entering RTL, but we're
+                # really interested in deviation to the east/west, and we are
+                # travelling due North, ...
+                self.change_mode('RTL')
 
                 self.progress("Waiting for vehicle to stop")
                 self.wait_groundspeed(-0.3, 0.3)
@@ -24598,9 +24596,6 @@ return update()
                 self.progress(f"[rtl_speed={rtl_speed}] deviated {y_delta}m from track")
                 if y_delta > 0.2:
                     raise NotAchievedException(f"[rtl_speed={rtl_speed}] RTL deviated from track {y_delta}m")
-
-                # Switch to LOITER between iterations so the vehicle is
-                # in a clean state before the next RTL_SPEED_MS value.
                 self.change_mode('LOITER')
 
             self.progress("All RTL speed variants passed - stopping distance consistent")
