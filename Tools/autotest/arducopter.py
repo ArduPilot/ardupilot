@@ -4656,6 +4656,66 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle(force=True)
 
+    def loiter_jab(self, jab_s):
+        '''fly a forward jab at full stick in Loiter and release it; returns the start, release
+        and end times in microseconds'''
+        self.delay_sim_time(5, "settle in Loiter")
+        start_us = self.get_sim_time() * 1e6
+        self.set_rc(2, 1100)
+        self.delay_sim_time(jab_s, "forward stick")
+        release_us = self.get_sim_time() * 1e6
+        self.set_rc(2, 1500)
+        self.delay_sim_time(8, "settle after release")
+        return start_us, release_us, self.get_sim_time() * 1e6
+
+    def loiter_jab_backward(self, start_us, release_us, end_us):
+        '''returns the most backward speed along a Loiter jab after its release, from PSCN/PSCE'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        north = None
+        rows = []
+        while True:
+            m = dfreader.recv_match(type=['PSCN', 'PSCE'])
+            if m is None:
+                break
+            if not (start_us <= m.TimeUS <= end_us):
+                continue
+            if m.get_type() == 'PSCN':
+                north = m
+            elif north is not None and m.TimeUS - north.TimeUS < 10000:
+                # PSCE is written a few microseconds after its PSCN in the same loop
+                rows.append((m.TimeUS, north.DVN, m.DVE, north.VN, m.VE))
+        jab = [r for r in rows if r[0] <= release_us]
+        after = [r for r in rows if r[0] > release_us]
+        if len(jab) < 10 or len(after) < 10:
+            raise NotAchievedException("too few PSCN/PSCE samples in the jab")
+        peak = max(jab, key=lambda r: math.hypot(r[1], r[2]))
+        speed = math.hypot(peak[1], peak[2])
+        return min((r[3] * peak[1] + r[4] * peak[2]) / speed for r in after)
+
+    def LoiterAirframeDragFeedForward(self):
+        '''Loiter stop on GPS: LOIT_DRAG_COEF stops the roll-back a mismatched drag model gives'''
+        # Loiter's drag model reaches LOIT_SPEED_MS at LOIT_ANG_MAX. At 15 m/s and 45 degrees it is
+        # twice this frame's linear drag of 0.30 m/s/s per m/s, the velocity integrator carries the
+        # difference through a stop, and the vehicle stops short and rolls back. LOIT_DRAG_COEF at
+        # the frame's drag feeds that drag forward instead. 45 degrees needs ATC_ANGLE_MAX above it.
+        self.customise_SITL_commandline([], model="+:@ROMFS/models/quad-linear-drag.json")
+        self.set_parameters({
+            "ATC_ANGLE_MAX": 80,
+            "LOIT_ANG_MAX": 45,
+            "LOIT_SPEED_MS": 15,
+        })
+        self.takeoff(20, mode='LOITER')
+        backward = {}
+        for coef in (0, 0.3):
+            self.set_parameter("LOIT_DRAG_COEF", coef)
+            backward[coef] = self.loiter_jab_backward(*self.loiter_jab(2))
+            self.progress("LOIT_DRAG_COEF %.2f: most backward speed %.2f m/s after release" % (coef, backward[coef]))
+        self.land_and_disarm()
+        if backward[0] > -0.2:
+            raise NotAchievedException("no roll-back with LOIT_DRAG_COEF 0 (%.2f m/s)" % backward[0])
+        if backward[0.3] < -0.05:
+            raise NotAchievedException("rolled back %.2f m/s with LOIT_DRAG_COEF at the frame's drag" % backward[0.3])
+
     def ModeFlowHold(self):
         '''test FlowHold mode - position hold and flow-based height estimation'''
         self.set_parameters({
@@ -24110,6 +24170,7 @@ return update, 1000
             self.AirModeStabZeroThrottle,
             self.SimpleMode,
             self.LoiterFlowBrakeOvershoot,
+            self.LoiterAirframeDragFeedForward,
             self.Gripper,
             self.BaseLoggingRates,
             self.GPSViconSwitching,
