@@ -179,22 +179,21 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 
 ### Fixed — Test-level fixes (timing/parameter tuning)
 
-| Test | Vehicle | Fix | Commit |
+| Test | Vehicle | Fix | Status |
 |------|---------|-----|--------|
-| `RTLStoppingDistanceSpeed` | Copter | RTL_SPEED_MS values (1,5) too low for SITL stabilization → (5,10) | 8eb3177684 |
-| `DriveBrake` | Rover | wait_groundspeed(0, 0.2) timeout 6× too short for 15m/s stop → 5.0s | 8eb3177684 |
-| `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) between subtests → 5.0s | 8eb3177684 |
-| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target inside exclusion zone → move outside (same coords as EasierGuided variant) | 8eb3177684 |
-| `LandingDrift` | Plane | LAND_ABORT_DEG 1° too tight for baro drift → 5° (false positive slope aborts) | adc60ae11b |
-| `ScriptingOSD` | Copter | context_collect ordering bug FIXED (moved collect after push in codebase) | 9e5142f573 |
+| `RTLStoppingDistanceSpeed` | Copter | RTL_SPEED_MS (1,5) → (5,10) | Test fix committed, awaiting CI validation |
+| `DriveBrake` | Rover | wait_groundspeed(0, 0.2) → 5.0s | Test fix committed, awaiting CI validation |
+| `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) → 5.0s | Test fix committed, awaiting CI validation |
+| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target moved outside exclusion zone | Test fix committed, awaiting CI validation |
+| `LandingDrift` | Plane | LAND_ABORT_DEG 1° → 5° (fixes false positive slope aborts) | Test fix committed, awaiting CI validation |
 
 ### Fixed — C++ code-level fixes
 
-| Test | Vehicle | Fix | Commit |
+| Test | Vehicle | Fix | Status |
 |------|---------|-----|--------|
-| `SMART_RTL_EnterLeave` | Copter | Premature deactivation timeout + false panic | 241a87d19d |
-| `SMART_RTL_Repeat` | Copter | Same premature deactivation timeout | 241a87d19d |
-| `FlyMissionTwice` | Copter | Mission state reset between runs | 8af8eb0716 |
+| `SMART_RTL_EnterLeave` | Copter | Premature deactivation timeout + false panic | C++ fix committed (241a87d19d), awaiting CI validation |
+| `SMART_RTL_Repeat` | Copter | Same premature deactivation timeout | C++ fix committed (241a87d19d), awaiting CI validation |
+| `FlyMissionTwice` | Copter | Mission state reset between runs | Test fix committed (8af8eb0716), awaiting CI validation |
 
 ### Not actually disabled
 
@@ -206,7 +205,7 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 
 | Test | Vehicle | Reason | Priority |
 |------|---------|--------|----------|
-| — | — | All previously disabled tests have been fixed and re-enabled | — |
+| `ScriptingOSD` | Copter | context_collect ordering bug | Medium |
 
 ---
 
@@ -260,7 +259,6 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 ## 11. Git History (test-improvements branch)
 
 ```
-9e5142f573  test(autotest): re-enable ScriptingOSD test — context_collect ordering bug fixed
 adc60ae11b  test(autotest): fix LandingDrift with relaxed LAND_ABORT_DEG 1→5°
 8eb3177684  test(autotest): fix RTLStoppingDistanceSpeed, DriveBrake, SlewRate, PolyFence timing issues
 8af8eb0716  test(autotest): fix FlyMissionTwice with mission state reset between runs
