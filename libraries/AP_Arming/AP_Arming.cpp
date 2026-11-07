@@ -1956,7 +1956,9 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 
     } else {
 #if HAL_LOGGING_ENABLED
-        AP::logger().arming_failure();
+        if (!_pending_arm_quiet) {
+            AP::logger().arming_failure();
+        }
 #endif
         armed = false;
     }
