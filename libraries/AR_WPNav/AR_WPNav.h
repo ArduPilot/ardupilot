@@ -163,6 +163,8 @@ protected:
     SCurve _scurve_prev_leg;        // previous scurve trajectory used to blend with current scurve trajectory
     SCurve _scurve_this_leg;        // current scurve trajectory
     SCurve _scurve_next_leg;        // next scurve trajectory used to blend with current scurve trajectory
+    Vector2f _destination_NE;       // cached destination in NE meters for mid-track limit updates
+    Vector2f _next_destination_NE;  // cached next destination in NE meters, valid when _fast_waypoint is true
     bool _fast_waypoint;            // true if vehicle will stop at the next waypoint
     bool _pivot_at_next_wp;         // true if vehicle should pivot at next waypoint
     bool _overspeed_enabled;        // if true scurve's position target will speedup to catch vehicles travelling faster than WP_SPEED

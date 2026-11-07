@@ -112,6 +112,9 @@ public:
     // this is an internal function, static for test suite
     static void calculate_path(float Sm, float Jm, float V0, float Am, float Vm, float L, float &Jm_out, float &tj_out, float &t2_out, float &t4_out, float &t6_out);
 
+    // return the current time elapsed
+    float get_time_elapsed() const WARN_IF_UNUSED { return time; }
+
 private:
 
     // increment time and return the position, velocity and acceleration vectors relative to the origin
@@ -136,9 +139,6 @@ private:
 
     // get desired maximum acceleration along track
     float get_accel_z_max() const WARN_IF_UNUSED { return accel_z_max; }
-
-    // return the current time elapsed
-    float get_time_elapsed() const WARN_IF_UNUSED { return time; }
 
     // time at the end of the sequence
     float time_end() const WARN_IF_UNUSED;
