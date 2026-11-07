@@ -308,16 +308,12 @@ The velocity I term is zeroed during `D_init_controller()`. The acceleration I t
 
 **High (E1)** — This bug affects ModeFlip testing specifically, but the same root cause (setpoint jump during mode transitions without a soft-start) could affect other rapid attitude changes. The climb to 1157m could be dangerous in real flight if the vehicle's GPS is lost and it climbs to an unknown altitude.
 
-### Fix Applied (649273e6c0)
+### Fix Direction
 
-The acceleration PID I term was changed from using `get_throttle_in()` (current throttle, which captures transient flip recovery boost) to using `get_throttle_hover()` (stable baseline). This prevents the integrator from capturing high throttle values during disruptive mode transitions.
-
-**Fix diff (AC_PosControl.cpp):**
-```diff
--    _pid_accel_d_m.set_integrator(-(_attitude_control.get_throttle_in() - _motors.get_throttle_hover())
-+    _pid_accel_d_m.set_integrator(-(_motors.get_throttle_hover() - _motors.get_throttle_hover())
-```
-
-The I term now starts at 0 (hover - hover), with the P term capturing actual acceleration. This means the controller will use P+D to decelerate any ongoing climb, rather than sustaining the high throttle captured during the flip.
+Implement a **setpoint ramp** when entering an altitude-holding mode after a flip:
+1. Keep the position target at the pre-flip altitude initially
+2. Ramp it toward the new altitude (or blended altitude) over a configurable time constant
+3. Allow the velocity and acceleration controllers to decelerate the climb smoothly
+4. Smoothly settle at the new altitude without sustained high thrust
 
 ---
