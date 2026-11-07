@@ -12112,6 +12112,9 @@ Also, ignores heartbeats not from our target system'''
             try:
                 shutil.copy(test_output_filename, kept)
                 self.progress("Kept failing test's output as %s" % kept)
+                # send the reader to the copy: the summary outlives the
+                # file it was pointing at
+                result.debug_filename = kept
             except OSError as e:  # noqa: BLE001
                 self.progress("Could not keep failing test's output: %s" % e)
 
