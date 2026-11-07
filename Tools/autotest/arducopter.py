@@ -27339,11 +27339,9 @@ return update, 1000
         # - GroundEffectCompensation_touchDownExpected: PASSED
         # SMART_RTL_EnterLeave: re-enabled — C++ premature deactivation timeout fixed (241a87d19d)
         # SMART_RTL_Repeat: re-enabled — C++ false panic on peek contention fixed (241a87d19d)
+        # RTLStoppingDistanceSpeed: re-enabled — RTL_SPEED_MS values fixed (8eb3177684)
         # FlyMissionTwice: re-enabled — mission state reset between runs (8af8eb0716)
-        # RTLStoppingDistanceSpeed: still disabled — vehicle can't reach WP_SPD in SITL (flight bug)
-        return {
-            'test.Copter.RTLStoppingDistanceSpeed': 'Vehicle cant reach WP_SPD in SITL (flight dynamics bug)',
-        }
+        return {}
 
 
 class AutoTestCopterTests1a(AutoTestCopter):
