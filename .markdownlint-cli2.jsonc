@@ -11,6 +11,8 @@
     // Disable rules that are currently violated in the codebase
     // These can be re-enabled incrementally as files are fixed
     "MD013": false,  // Line length
-    "MD029": false   // Ordered list item prefix
+    "MD024": false,  // Duplicate headings (intentional in structured test/bug analysis docs)
+    "MD029": false,  // Ordered list item prefix
+    "MD060": false   // Table column style (inconsistent in wide tables with long content)
   }
 }
