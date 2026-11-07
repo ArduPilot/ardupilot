@@ -14,6 +14,8 @@
  */
 #pragma once
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Logger/LogStructure.h>
+#include "defines.h"
 
 class QuadPlane;
 class AP_MotorsMulticopter;
@@ -63,7 +65,26 @@ public:
 
     virtual bool use_multirotor_control_in_fwd_transition() const { return false; }
 
+#if HAL_LOGGING_ENABLED
+    // log transition state on change and at 25Hz, QTUN's rate
+    void write_log();
+
+    struct PACKED log_Transition {
+        LOG_PACKET_HEADER;
+        uint64_t time_us;
+        uint8_t transition_state;
+    };
+#endif  // HAL_LOGGING_ENABLED
+
 protected:
+
+#if HAL_LOGGING_ENABLED
+    // log message used for this transition type's state
+    virtual uint8_t log_msg_id() const = 0;
+
+    uint32_t last_log_ms;
+    uint8_t last_log_state;
+#endif  // HAL_LOGGING_ENABLED
 
     // references for convenience
     QuadPlane& quadplane;
@@ -107,6 +128,10 @@ public:
     void set_last_fw_pitch(void) override;
 
 protected:
+
+#if HAL_LOGGING_ENABLED
+    uint8_t log_msg_id() const override { return LOG_SLT_MSG; }
+#endif  // HAL_LOGGING_ENABLED
 
     enum class State {
         AIRSPEED_WAIT = 0,

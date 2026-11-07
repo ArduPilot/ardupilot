@@ -836,7 +836,7 @@ void Tailsitter::write_log()
         return;
     }
 
-    struct log_tailsitter pkt = {
+    const struct log_TSIT pkt {
         LOG_PACKET_HEADER_INIT(LOG_TSIT_MSG),
         time_us             : AP_HAL::micros64(),
         throttle_scaler     : log_data.throttle_scaler,
