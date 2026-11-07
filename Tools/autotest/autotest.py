@@ -876,9 +876,18 @@ def run_unified_test_steps(test_steps):
         conductor.unified_tester_factory = factory
         results = conductor.run_tests_in_processes(
             combined, opts.parallel, base_instance=base + 1)
+        testers_by_step = dict((suite["step"], suite["tester"]) for suite in suites)
         for result in results:
             step = getattr(result.test, "suite_step", suites[0]["step"])
             results_by_step[step].append(result)
+            # each suite prints its own timings table, from its own
+            # tester, so a test's time has to be recorded there: the
+            # dispatcher is only the first suite's tester, and left to
+            # it that table holds every suite's tests - with the
+            # framework tests the suites share overwriting each other -
+            # while the other eleven print nothing at all
+            if result.time_elapsed:
+                testers_by_step[step].test_timings[result.test.description] = result.time_elapsed
             # only a pass measures the test; a failure's duration
             # measures where it died, and a fast failure recorded
             # here would schedule the test as short next run:
