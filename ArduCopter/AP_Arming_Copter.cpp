@@ -797,9 +797,7 @@ void AP_Arming_Copter::set_pending_arm(bool with_airmode)
     _pending_arm_last_check_ms = 0;
     _pending_arm_last_display_ms = now_ms;
 
-    // run checks with display to show actual failure reason immediately
     gcs().send_text(MAV_SEVERITY_INFO, "Arm pending");
-    pre_arm_checks(true);
 }
 
 // clear_pending_arm - cancel pending arm state
