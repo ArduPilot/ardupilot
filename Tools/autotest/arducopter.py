@@ -19935,6 +19935,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.CommonOriginExternalAHRS,
             self.CommonOriginExternalAHRSReceives,
             self.CommonOriginLateEKF,
+            self.CommonOriginAffinityLane,
             self.AHRSExternalNoAttitudeAirspeedIndex,
             self.TestTetherStuck,
             self.EK3_EXT_NAV_vel_without_vert,
@@ -22350,6 +22351,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 ek2_origin.longitude != ek3_origin.longitude or
                 ek2_origin.altitude != ek3_origin.altitude):
             raise NotAchievedException("EKF3 did not take the common origin once it started")
+
+    def CommonOriginAffinityLane(self):
+        '''check an EKF3 lane on a second GPS can establish the origin when the primary lane's GPS can not'''
+        # with GPS affinity the second lane uses the second GPS.  The
+        # first GPS has too few satellites for the primary lane to
+        # pass its GPS checks, so only the second lane can provide
+        # the origin; it must do so while the vehicle is disarmed,
+        # when the primary lane does not change
+        self.set_parameters({
+            "EK3_AFFINITY": 1,
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS1_NUMSATS": 4,
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("EKF3 IMU1 origin set", timeout=120, check_context=True)
+        origin = self.poll_message('GPS_GLOBAL_ORIGIN')
+        self.progress("Origin: %s" % str(origin))
+        if self.armed():
+            raise NotAchievedException("Expected to be disarmed")
 
     def AHRSExternalNoAttitudeAirspeedIndex(self):
         '''the External AHRS backend reports which airspeed sensor is in
