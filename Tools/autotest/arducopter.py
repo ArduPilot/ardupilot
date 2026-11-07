@@ -20105,6 +20105,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MountSiyiZT30,
             self.CircleSpeed,
             self.ArmSwitchAfterReboot,
+            self.PendingArmOnSwitch,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_SET_EKF_SOURCE_SET,
             self.MAV_CMD_NAV_TAKEOFF,
@@ -20645,6 +20646,127 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if armmsg is not None:
                 raise NotAchievedException("statustext(%s) means we tried to arm" % armmsg.text)
         self.progress("Did not arm via arming switfch after a reboot")
+
+    def PendingArmOnSwitch(self):
+        '''test a pending arm from the arming switch completes, cancels and resets the EKF only when it should'''
+        self.set_parameters({
+            "RC8_OPTION": 153,  # ARMDISARM
+            "ARMING_OPTIONS": 8,  # pending arm on switch
+            "ARMING_PEND_TIM": 1,
+        })
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("arm-time failure: reported every 3s, no EKF reset, arms once it clears")
+        self.set_rc(3, 1800)
+        self.set_rc(8, 2000)
+        self.wait_statustext("Arm pending", check_context=True)
+        # the reports are counted over a fixed window, so there is no event to wait for
+        self.delay_sim_time(10, "pending arm to retry")
+        # the switch's own attempt, then one report per 3s display
+        count = self.statustext_count_in_collections("Throttle too high")
+        if count < 3 or count > 6:
+            raise NotAchievedException(f"Throttle failure reported {count} times in 10s, want 3 to 6")
+        if self.statustext_in_collections("EKF bootstrap reset") is not None:
+            raise NotAchievedException("EKF reset for a throttle failure")
+        self.set_rc(3, 1000)
+        self.wait_armed()
+        self.wait_statustext("Arm pending complete", check_context=True)
+        self.set_rc(8, 1000)
+        self.wait_disarmed()
+
+        acro_bal_roll = self.get_parameter("ACRO_BAL_ROLL")
+        for (name, cancel) in (
+                ("moving the switch low", lambda: self.set_rc(8, 1000)),
+                ("a disarm command while disarmed", lambda: self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, p1=0)),
+        ):
+            self.start_subtest(f"{name} cancels a pending arm")
+            self.context_clear_collection('STATUSTEXT')
+            self.set_parameter("ACRO_BAL_ROLL", -1)
+            self.set_rc(8, 2000)
+            self.wait_statustext("Arm pending", check_context=True)
+            cancel()
+            self.wait_statustext("Arm pending cancelled", check_context=True)
+            self.set_parameter("ACRO_BAL_ROLL", acro_bal_roll)
+            self.wait_ready_to_arm()
+            # a live pending arm completes within 250ms of its checks passing
+            self.delay_sim_time(2, "a cancelled pending arm to stay cancelled")
+            if self.armed():
+                raise NotAchievedException(f"Armed after {name} cancelled the pending arm")
+            self.set_rc(8, 1000)
+
+        self.start_subtest("AHRS failure: the EKF is reset once")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_ACC1_BIAS_X", 5)
+        self.assert_prearm_failure("AHRS: EKF3 Roll/Pitch inconsistent",
+                                   timeout=60,
+                                   other_prearm_failures_fatal=False)
+        self.set_rc(8, 2000)
+        self.wait_statustext("Arm pending: EKF bootstrap reset", check_context=True, timeout=10)
+        # the reset is one-shot; a repeat would come on the next 10Hz call
+        self.delay_sim_time(3, "a second EKF reset")
+        count = self.statustext_count_in_collections("EKF bootstrap reset")
+        if count != 1:
+            raise NotAchievedException(f"Expected one EKF reset, got {count}")
+        self.set_rc(8, 1000)
+        self.wait_statustext("Arm pending cancelled", check_context=True)
+        self.set_parameter("SIM_ACC1_BIAS_X", 0)
+        self.wait_ready_to_arm()
+
+        self.start_subtest("armed by another route just before the deadline: no EKF reset")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_message_rate_hz('SYSTEM_TIME', 50)
+        ek3_mag_cal = self.get_parameter("EK3_MAG_CAL")
+        # a no-op set records EK3_MAG_CAL in the test context, as the raw set below does not
+        self.set_parameter("EK3_MAG_CAL", ek3_mag_cal)
+        self.set_parameters({
+            "ACRO_BAL_ROLL": -1,
+            "ARMING_PEND_TIM": 2,
+        })
+        self.set_rc(8, 2000)
+        self.wait_statustext("Arm pending", check_context=True)
+        t0 = self.get_sim_time()
+        # a 250ms retry that sees the vehicle armed also ends the request, so arm
+        # after the last retry before the 2s deadline: measured at 1.70-1.93s
+        while self.get_sim_time(drain_mav=False) < t0 + 1.8:
+            pass
+        # a forced arm still needs the AHRS, so fail it only once armed:
+        # EK3_MAG_CAL 5 fails the AHRS pre-arm check at once
+        self.send_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, p1=1, p2=2989)
+        self.send_set_parameter_direct("EK3_MAG_CAL", 5)
+        self.wait_armed()
+        self.delay_sim_time(2, "past the EKF reset deadline")
+        if self.statustext_in_collections("EKF bootstrap reset") is not None:
+            raise NotAchievedException("EKF reset on an armed vehicle")
+        self.disarm_vehicle(force=True)
+        self.assert_prearm_failure("AHRS: EK3_MAG_CAL and EK3_SRC1_YAW",
+                                   other_prearm_failures_fatal=False)
+        self.set_parameters({
+            "EK3_MAG_CAL": ek3_mag_cal,
+            "ACRO_BAL_ROLL": acro_bal_roll,
+            "ARMING_PEND_TIM": 1,
+        })
+        self.set_rc(8, 1000)
+        self.wait_ready_to_arm()
+
+        self.start_subtest("waiting for a late first GPS fix: no EKF reset")
+        self.set_parameter("SIM_GPS1_LCKTIME", 40)
+        self.reboot_sitl()
+        self.change_mode('LOITER')
+        # the reset waits for an AHRS failure, so raise the switch once the AHRS is up
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_AHRS, True, True, True, timeout=60)
+        self.wait_ekf_flags(mavutil.mavlink.EKF_ATTITUDE, 0, timeout=60)
+        self.set_rc(8, 2000)
+        self.wait_statustext("Arm pending", check_context=True)
+        if self.assert_receive_message('GPS_RAW_INT').fix_type >= 3:
+            raise NotAchievedException("GPS fix arrived before the arm went pending")
+        # covers the 40s to the first fix and the EKF's wait to use it
+        self.wait_armed(timeout=120)
+        if self.statustext_in_collections("EKF bootstrap reset") is not None:
+            raise NotAchievedException("EKF reset while waiting for GPS")
+        self.set_rc(8, 1000)
+        self.wait_disarmed()
 
     def GuidedYawRate(self):
         '''ensuer guided yaw rate is not affected by rate of sewt-attitude messages'''

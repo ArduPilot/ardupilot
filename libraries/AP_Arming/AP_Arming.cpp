@@ -166,7 +166,9 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Arming options
     // @Description: Options that can be applied to change arming behaviour
+    // @Description{Copter}: Options that can be applied to change arming behaviour. With Pending arm on switch, an arming switch moved high while a check is failing leaves the arm pending, and the vehicle arms as soon as every check passes, with no time limit and including when the safety switch is pressed. The request stands until the switch is moved low or a disarm is requested.
     // @Bitmask: 0:Disable prearm display,1:Do not send status text on state change,2:Skip IMU consistency checks when ICE motor running
+    // @Bitmask{Copter}: 0:Disable prearm display,1:Do not send status text on state change,2:Skip IMU consistency checks when ICE motor running,3:Pending arm on switch
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,   AP_Arming, _arming_options, 0),
 
@@ -203,6 +205,16 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Bitmask{Plane}: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
     // @User: Standard
     AP_GROUPINFO("SKIPCHK", 13, AP_Arming, checks_to_skip, 0),
+
+#if AP_AHRS_EKF_RESET_ENABLED
+    // @Param{Copter}: PEND_TIM
+    // @DisplayName: Pending Arm EKF Reset Time
+    // @Description: When pending arm on switch is active (ARMING_OPTIONS bit 3), the EKF bootstrap will be reset once after this many seconds if arming has not yet succeeded and the AHRS reports a failure of its own, such as an unhealthy or inconsistent EKF. It is not reset while waiting for GPS. Set to 0 to disable the EKF reset.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("PEND_TIM", 15, AP_Arming, _pending_arm_timeout_s, 5, AP_PARAM_FRAME_COPTER),
+#endif  // AP_AHRS_EKF_RESET_ENABLED
 
     AP_GROUPEND
 };
@@ -340,7 +352,7 @@ bool AP_Arming::all_checks_enabled() const
 
 void AP_Arming::check_failed(const AP_Arming::Check check, bool report, const char *fmt, ...) const
 {
-    if (!report) {
+    if (!report || _pending_arm_quiet) {
         return;
     }
     char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
@@ -370,7 +382,7 @@ void AP_Arming::check_failed(const AP_Arming::Check check, bool report, const ch
 void AP_Arming::check_failed(bool report, const char *fmt, ...) const
 {
 #if HAL_GCS_ENABLED
-    if (!report) {
+    if (!report || _pending_arm_quiet) {
         return;
     }
     char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
@@ -1944,7 +1956,9 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 
     } else {
 #if HAL_LOGGING_ENABLED
-        AP::logger().arming_failure();
+        if (!_pending_arm_quiet) {
+            AP::logger().arming_failure();
+        }
 #endif
         armed = false;
     }

@@ -10,6 +10,9 @@ static uint32_t auto_disarm_begin;
 // unless takeoff/spool-up is being requested or auto-disarm is disabled.
 void Copter::auto_disarm_check()
 {
+    // service pending arm requests (retry arming until EKF ready)
+    arming.update_pending_arm();
+
     uint32_t tnow_ms = millis();
     uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, INT8_MAX);
 

@@ -5205,6 +5205,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
     }
     if (is_zero(packet.param1))  {
         if (!AP::arming().is_armed()) {
+            // an accepted disarm must not leave an arm pending
+            AP::arming().clear_pending_arm();
             return MAV_RESULT_ACCEPTED;
         }
         const bool forced = is_equal(packet.param2, magic_force_arm_disarm_value);
