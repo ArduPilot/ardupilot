@@ -33,9 +33,6 @@ public:
 
 private:
 
-    // should be a call on aircraft:
-    float some_temperature = 25;
-
     uint32_t last_temperature_update_ms;
 };
 
