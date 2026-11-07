@@ -4581,7 +4581,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         max_lift_m = 0.5
         for landed_s in landed:
             # the provocation: a descent fast enough for the double count to show
-            descent = max([v for (t, v) in vd if landed_s - 3 < t < landed_s] or [0])
+            vd_before = [v for (t, v) in vd if landed_s - 3 < t < landed_s]
+            # max() returns a NaN that comes first, and NaN < 1.0 is false
+            if not all(math.isfinite(v) for v in vd_before):
+                raise NotAchievedException("EKF vertical velocity non-finite before the touchdown at %.1f s" % landed_s)
+            descent = max(vd_before or [0])
             if descent < 1.0:
                 raise NotAchievedException("touchdown at %.2f m/s, too slow to test this" % descent)
             # every sample has to be valid and finite, or the landing passes on the few that are;
