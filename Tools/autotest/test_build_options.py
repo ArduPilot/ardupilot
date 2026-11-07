@@ -1271,6 +1271,9 @@ if __name__ == '__main__':
 
     opts, args = parser.parse_args()
 
+    if opts.parallel is not None and opts.parallel < 1:
+        parser.error("--parallel must be 1 or more")
+
     tbo = TestBuildOptions(
         match_glob=opts.define_match_glob,
         do_step_disable_all=not opts.no_disable_all,
