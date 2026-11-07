@@ -800,6 +800,40 @@ def save_test_durations(durations):
         print("Could not save test durations: %s" % e)
 
 
+# stands in the step list for the suites which run in one pool; never
+# a step name a user can give, so it cannot collide with one
+UNIFIED_POOL_STEP = "__unified_pool__"
+
+
+def run_unified_pool(unified_steps, results, failed, failed_testinstances):
+    '''run the pooled suites in the position their steps stood in;
+    returns True if every one of them passed'''
+    t1 = time.monotonic()
+    print(">>>> RUNNING UNIFIED STEPS: %s at %s" %
+          (" ".join(unified_steps), time.asctime()))
+    try:
+        outcomes = run_unified_test_steps(unified_steps)
+    except Exception as msg:  # noqa: BLE001
+        print(">>>> FAILED UNIFIED STEPS at %s (%s)" %
+              (time.asctime(), msg))
+        traceback.print_exc(file=sys.stdout)
+        outcomes = [(step, False, None) for step in unified_steps]
+    elapsed = time.monotonic() - t1
+    passed = True
+    for (step, success, testinstance) in outcomes:
+        if success:
+            results.add(step, '<span class="passed-text">PASSED</span>', elapsed)
+            print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+        else:
+            print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
+            passed = False
+            failed.append(step)
+            if testinstance is not None:
+                failed_testinstances[step] = [testinstance]
+            results.add(step, '<span class="failed-text">FAILED</span>', elapsed)
+    return passed
+
+
 def run_unified_test_steps(test_steps):
     '''run several suites' tests in one parallel pool.
 
@@ -1166,13 +1200,25 @@ def run_tests(steps):
     steps = expand_build_steps(steps)
 
     # with a parallel pool and more than one whole-suite test step, all
-    # the suites' tests share one pool: pull those steps out of the
-    # sequential loop (their builds have already been derived)
+    # the suites' tests share one pool (their builds have already been
+    # derived): replace those steps with a marker standing where the
+    # first of them stood.  The pool runs from there rather than after
+    # the loop, which would put it after a later step which cleans the
+    # sitl build directory - build.examples and build.unit_tests do -
+    # leaving the pool with no binaries to run:
+    #     Binary "/.../build/sitl/bin/arduplane" does not exist
     unified_steps = []
     if opts.parallel > 1:
         unified_steps = [s for s in steps if s in tester_class_map]
     if len(unified_steps) > 1:
-        steps = [s for s in steps if s not in unified_steps]
+        kept = []
+        for s in steps:
+            if s in unified_steps:
+                if UNIFIED_POOL_STEP not in kept:
+                    kept.append(UNIFIED_POOL_STEP)
+                continue
+            kept.append(s)
+        steps = kept
     else:
         unified_steps = []
 
@@ -1181,6 +1227,12 @@ def run_tests(steps):
     failed_testinstances = dict()
     for step in steps:
         util.pexpect_close_all()
+
+        if step == UNIFIED_POOL_STEP:
+            if not run_unified_pool(unified_steps, results, failed,
+                                    failed_testinstances):
+                passed = False
+            continue
 
         t1 = time.monotonic()
         if step.startswith("test."):
@@ -1230,30 +1282,6 @@ def run_tests(steps):
             tester.rc_thread_should_quit = True
             tester.rc_thread.join()
             tester.rc_thread = None
-
-    if len(unified_steps):
-        t1 = time.monotonic()
-        print(">>>> RUNNING UNIFIED STEPS: %s at %s" %
-              (" ".join(unified_steps), time.asctime()))
-        try:
-            outcomes = run_unified_test_steps(unified_steps)
-        except Exception as msg:  # noqa: BLE001
-            print(">>>> FAILED UNIFIED STEPS at %s (%s)" %
-                  (time.asctime(), msg))
-            traceback.print_exc(file=sys.stdout)
-            outcomes = [(step, False, None) for step in unified_steps]
-        elapsed = time.monotonic() - t1
-        for (step, success, testinstance) in outcomes:
-            if success:
-                results.add(step, '<span class="passed-text">PASSED</span>', elapsed)
-                print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
-            else:
-                print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
-                passed = False
-                failed.append(step)
-                if testinstance is not None:
-                    failed_testinstances[step] = [testinstance]
-                results.add(step, '<span class="failed-text">FAILED</span>', elapsed)
 
     if not passed:
         keys = failed_testinstances.keys()
