@@ -1113,11 +1113,14 @@ def run_tests(steps):
                           MAX_AUTOTEST_INSTANCE, MAX_AUTOTEST_INSTANCE + 1))
         sys.exit(1)
 
-    if opts.enable_fgview and opts.instance != 0:
+    if opts.enable_fgview and (opts.instance != 0 or opts.parallel > 1):
         # SITL's FlightGear output is 5503+10*instance and cannot be set
         # on its own, and away from instance 0 that lands on another
-        # instance's RC input (-I 1 sends to 5513, instance 4's RC-in)
-        print("ERROR: --enable-fgview is only supported at -I 0")
+        # instance's RC input (-I 1 sends to 5513, instance 4's RC-in).
+        # --parallel runs its workers at instances 1 and up, so it walks
+        # into the same collision from -I 0.
+        print("ERROR: --enable-fgview is only supported on a serial run "
+              "at -I 0 (--parallel runs its workers at instances 1 and up)")
         sys.exit(1)
 
     # ... and that the instance-derived port families themselves stay
