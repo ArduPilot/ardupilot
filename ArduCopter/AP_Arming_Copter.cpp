@@ -688,7 +688,9 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     }
 
     if (!AP_Arming::arm(method, do_arming_checks)) {
-        AP_Notify::events.arming_failed = true;
+        if (!_pending_arm_quiet) {
+            AP_Notify::events.arming_failed = true;
+        }
         in_arm_motors = false;
         return false;
     }
