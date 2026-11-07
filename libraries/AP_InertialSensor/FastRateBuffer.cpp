@@ -120,7 +120,20 @@ bool FastRateBuffer::get_next_gyro_sample(Vector3f& gyro)
 
 void FastRateBuffer::reset()
 {
+    // the window and the counts are shared with the pushing thread: without
+    // the mutex a push landing between the clear and the count copy leaves
+    // the output count one behind, and every later rendezvous waits out its
+    // whole bound for an output which has already been discarded
+    WITH_SEMAPHORE(_mutex);
+
     _rate_loop_gyro_window.clear();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // the samples just discarded will never be popped, so the rate
+    // loop will never write their outputs: bring the output count up to
+    // the push count, or every later wait_for_rate_loop_gyro_consumption()
+    // waits out its whole bound for outputs which are not coming
+    _rate_loop_output_count.store(_rate_loop_push_count.load());
+#endif
 }
 
 bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro)
@@ -137,7 +150,13 @@ bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro)
     */
     WITH_SEMAPHORE(fast_rate_buffer->_mutex);
 
-    if (!fast_rate_buffer->_rate_loop_gyro_window.push(gyro)) {
+    if (fast_rate_buffer->_rate_loop_gyro_window.push(gyro)) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        // SITL's lockstep waits for the rate loop's outputs for this
+        // sample; see wait_for_rate_loop_gyro_consumption()
+        fast_rate_buffer->count_rate_loop_push();
+#endif
+    } else {
         debug("dropped rate loop sample");
     }
     fast_rate_buffer->rate_decimation_count = 0;
@@ -163,11 +182,40 @@ void AP_InertialSensor::wait_for_rate_loop_gyro_consumption(void)
     if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
         return;
     }
+    // the rendezvous has to be the motor outputs, not the pop: the rate
+    // thread takes a sample off the window before it runs the rate
+    // controller and calls motors_output(), so an empty window does not
+    // mean the outputs for the last sample are written.  Wait for the
+    // rate loop to have written outputs for every sample pushed so far:
+    // the window holds at most a handful, and anything it dropped was
+    // accounted for by reset().  A target taken from the push count also
+    // cannot be missed - unlike a snapshot of the output count, which
+    // the rate thread could move between the push and the snapshot,
+    // leaving us to wait out the whole bound for an event already past.
+    const uint32_t target = fast_rate_buffer->rate_loop_push_count();
     // 100 * 100us: a generous real-time bound so a stopped or dying
     // rate thread cannot hang the simulation
-    for (uint8_t i = 0; i < 100 && fast_rate_buffer->_rate_loop_gyro_window.available() > 0; i++) {
+    for (uint8_t i = 0; i < 100; i++) {
+        // unsigned difference, so this still holds across a wrap of
+        // either count
+        if ((int32_t)(fast_rate_buffer->rate_loop_output_count() - target) >= 0) {
+            break;
+        }
         usleep(100);
     }
+}
+
+/*
+  called by the rate thread once it has written the motor outputs for
+  the sample it took, which is what wait_for_rate_loop_gyro_consumption
+  waits for
+ */
+void AP_InertialSensor::rate_loop_outputs_written(void)
+{
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
+        return;
+    }
+    fast_rate_buffer->count_rate_loop_output();
 }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
