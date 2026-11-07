@@ -62,6 +62,7 @@
 #include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <Filter/LowPassFilter.h>
 #include <Filter/HarmonicNotchFilter.h>
@@ -267,11 +268,6 @@ public:
 #if INS_AUX_INSTANCES
     AP_InertialSensor_Params params[INS_AUX_INSTANCES];
 #endif
-
-    // set overall board orientation
-    void set_board_orientation(enum Rotation orientation) {
-        _board_orientation = orientation;
-    }
 
     // return the selected loop rate at which samples are made avilable
     uint16_t get_loop_rate_hz(void) const { return _loop_rate; }
@@ -708,7 +704,10 @@ private:
     // control enable of detected sensors
     AP_UInt8    _enable_mask;
     
-    // board orientation from AHRS
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+    // take the board orientation from AP_BoardConfig
+    void update_board_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
     enum Rotation _board_orientation;
 
     // per-sensor orientation to allow for board type defaults at runtime

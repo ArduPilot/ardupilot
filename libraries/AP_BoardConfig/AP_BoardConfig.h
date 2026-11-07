@@ -10,6 +10,7 @@
 
 #include "AP_BoardConfig_config.h"
 #include <AP_Common/AP_Common.h>
+#include <AP_Math/rotations.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AC_PID/AC_PI.h>
@@ -32,6 +33,13 @@ public:
     static AP_BoardConfig *get_singleton(void) {
         return _singleton;
     }
+
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+    // return the orientation the board is mounted in.  Sensor drivers
+    // call this for themselves, so that they do not depend on anything
+    // else having been initialised first.
+    enum Rotation get_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
     
     void init(void);
     void init_safety(void);
@@ -252,6 +260,16 @@ public:
 
 private:
     static AP_BoardConfig *_singleton;
+
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+    // AHRS_ORIENTATION, resolved by name so that this does not depend
+    // on AP_AHRS having been constructed, let alone initialised; the
+    // value read from it, and whether it has been read yet:
+    AP_Int8 *orientation_param;
+    bool orientation_lookup_done;
+    enum Rotation orientation;
+    bool orientation_known;
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
     
     AP_Int32 vehicleSerialNumber;
 

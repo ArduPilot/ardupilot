@@ -22,6 +22,7 @@
  */
 
 #include "AP_AHRS_config.h"
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 
 #include <AP_HAL/Semaphores.h>
 
@@ -76,12 +77,6 @@ public:
 #if AP_AHRS_NAVEKF3_ENABLED
     AP_AHRS_NavEKF3 ekf3;
 #endif
-
-    // periodically checks to see if we should update the AHRS
-    // orientation (e.g. based on the AHRS_ORIENTATION parameter)
-    // allow for runtime change of orientation
-    // this makes initial config easier
-    void update_orientation();
 
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore(void) {
@@ -786,7 +781,10 @@ private:
      * Parameters
      */
     AP_Int8 _wind_max;
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+    // read by AP_BoardConfig, by name; AHRS makes no use of it itself:
     AP_Int8 _board_orientation;
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
     AP_Enum<EKFType> _ekf_type;
 
     /*
@@ -880,9 +878,6 @@ private:
 
     Matrix3f _rotation_autopilot_body_to_vehicle_body;
     Matrix3f _rotation_vehicle_body_to_autopilot_body;
-
-    // last time orientation was updated from AHRS_ORIENTATION:
-    uint32_t last_orientation_update_ms;
 
     // updates matrices responsible for rotating vectors from vehicle body
     // frame to autopilot body frame from _trim variables

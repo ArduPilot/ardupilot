@@ -795,10 +795,9 @@ void Compass::init()
         }
     }
 
-#ifndef HAL_BUILD_AP_PERIPH
-    // updating the AHRS orientation updates our own orientation:
-    AP::ahrs().update_orientation();
-#endif
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+    update_board_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
 
     init_done = true;
     suppress_devid_save = false;
@@ -1753,12 +1752,34 @@ Compass::_detect_runtime(void)
 #endif  // AP_COMPASS_DRONECAN_ENABLED
 }
 
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+/*
+  take the orientation the board is mounted in from AP_BoardConfig.
+  AP_Periph has none, so it stays at ROTATION_NONE.  It did not apply
+  this orientation before either: it does not drive AP_AHRS, which is
+  what used to push the orientation into the sensors.
+ */
+void Compass::update_board_orientation()
+{
+    AP_BoardConfig *boardconfig = AP::boardConfig();
+    if (boardconfig == nullptr) {
+        return;
+    }
+    _board_orientation = boardconfig->get_orientation();
+}
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
+
 bool
 Compass::read(void)
 {
     if (!available()) {
         return false;
     }
+
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+    // allow the board orientation to be changed at runtime
+    update_board_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
 
 #if HAL_LOGGING_ENABLED
     const bool old_healthy = healthy();
