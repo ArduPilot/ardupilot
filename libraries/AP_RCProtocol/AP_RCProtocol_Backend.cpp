@@ -34,8 +34,9 @@
 
 
 
-AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
-    frontend(_frontend)
+AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend, AP_RCProtocol::rcprotocol_t protocol) :
+    frontend(_frontend),
+    _protocol{protocol}
 {}
 
 bool AP_RCProtocol_Backend::new_input()
