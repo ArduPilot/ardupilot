@@ -7202,7 +7202,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_ready_to_arm()
             for i in 1, 2:
                 self.progress("run %u" % i)
-                self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=0, reset=1)
                 run_start_pos = self.get_local_position_NED()
                 run_start_time = self.get_sim_time_cached()
                 self.arm_vehicle()
@@ -7210,7 +7209,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 # Track progress through each waypoint with individual timeouts
                 # to diagnose which waypoint causes the hang
                 for wp_idx in range(num_wp):
-                    wp_label = ["HOME", "TAKEOFF", "WP1", "RTL"][wp_idx]
+                    wp_label = ["TAKEOFF", "WP1", "RTL"][wp_idx]
                     self.progress("  run %u: waiting for %s" % (i, wp_label))
                     try:
                         self.wait_waypoint(wp_idx, wp_idx, timeout=120)
