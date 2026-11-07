@@ -205,6 +205,7 @@ void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_rati
     float target_rate_rads;
     float angle_abort_rad;
 
+    float test_rate_rads;       // filtered rate change since the start of the twitch, positive in the test direction
     float test_rate_min_rads;
     float test_rate_max_rads;
     float test_angle_min_rad;
