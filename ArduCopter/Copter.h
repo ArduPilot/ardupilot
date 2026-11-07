@@ -609,7 +609,7 @@ private:
     enum class FailsafeOption {
         RC_CONTINUE_IF_AUTO             = (1<<0),   // 1
         GCS_CONTINUE_IF_AUTO            = (1<<1),   // 2
-        RC_CONTINUE_IF_GUIDED           = (1<<2),   // 4
+        RC_CONTINUE_IF_GUIDED_OR_FOLLOW = (1<<2),   // 4
         CONTINUE_IF_LANDING             = (1<<3),   // 8
         GCS_CONTINUE_IF_PILOT_CONTROL   = (1<<4),   // 16
         RELEASE_GRIPPER                 = (1<<5),   // 32
