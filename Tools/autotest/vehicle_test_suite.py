@@ -17130,12 +17130,6 @@ switch value'''
         # old one-session-per-worker behaviour.
         active = None
         active_key = None
-        # every tester this worker runs a session on: the sanitiser scan
-        # at the end has to cover all of them.  A worker in a unified
-        # pool swaps testers as the suite changes, and each has its own
-        # binary - and so its own Valgrind/ASAN log names - so scanning
-        # only whichever was active last misses every earlier suite.
-        used_testers = []
         first_for_session = True
         self_binary_privatised = False
         test = None
@@ -17163,6 +17157,14 @@ switch value'''
                         self.progress("TestRunner-%u: switching session %s -> %s" %
                                       (instance, active_key, key))
                         active.stop_worker_session()
+                        # scan for sanitiser output now, rather than
+                        # when this worker exits: a log's name holds
+                        # only the binary and the frame, so the suites
+                        # which share those write the same one - the
+                        # ten Copter suites all produce
+                        # arducopter-+-valgrind.log - and the next
+                        # session's SITL starts by truncating it
+                        self.put_sanitiser_results(active)
                     if key == '__own__':
                         active = self
                         if not self_binary_privatised:
@@ -17176,8 +17178,6 @@ switch value'''
                         self.refresh_test_binary()
                     else:
                         active = self.worker_tester_for_step(key)
-                    if active not in used_testers:
-                        used_testers.append(active)
                     if active_key is not None:
                         # a fresh suite must not see the previous
                         # suite's logs in this worker's directory (the
@@ -17238,10 +17238,10 @@ switch value'''
 
         # the serial run scans for these in its tail; a worker has to do
         # it for itself, or --valgrind and --asan under --parallel pass
-        # with errors sitting in the logs
-        for tester in (used_testers or [self]):
-            for result in tester.sanitiser_results():
-                self.sanitiser_queue.put(result)
+        # with errors sitting in the logs.  Only the session which is
+        # still open is left to do: each of the earlier ones was scanned
+        # as this worker switched away from it.
+        self.put_sanitiser_results(active if active is not None else self)
 
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
@@ -17303,13 +17303,36 @@ switch value'''
 
         return result_list
 
-    def sanitiser_results(self):
+    def put_sanitiser_results(self, tester):
+        '''scan a finished session for Valgrind/ASAN output and hand the
+        dispatcher a Result for each tool which reported something'''
+        self.sessions_run = getattr(self, 'sessions_run', 0) + 1
+        for result in tester.sanitiser_results(
+                tag="I%u-s%u" % (self.instance, self.sessions_run)):
+            self.sanitiser_queue.put(result)
+
+    def sanitiser_log_target(self, filename, tag):
+        '''where in the buildlogs directory to move a sanitiser log to.
+        A worker's logs are named for its instance and which of its
+        sessions produced them: the name the log was written under says
+        only the binary and the frame, so it is not unique within a
+        parallel run - every Copter suite writes
+        arducopter-+-valgrind.log, the workers share the buildlogs
+        directory, and a worker in a unified pool runs more than one
+        suite.  A serial run has one session and keeps the plain
+        name.'''
+        if tag is None:
+            return self.buildlogs_path("%s-%s" % (self.log_name(), filename))
+        return self.buildlogs_path("%s-%s-%s" % (self.log_name(), tag, filename))
+
+    def sanitiser_results(self, tag=None):
         '''move any non-empty Valgrind/ASAN logs this session produced into
         the buildlogs directory and return a Result for each tool which
         reported something.  Called at the end of a serial run and at the
         end of each parallel worker's session - the logs are written in
         the working directory, which under --parallel is the worker's own,
-        so whoever ran the SITL has to look for them.'''
+        so whoever ran the SITL has to look for them.  "tag" distinguishes
+        a worker's sessions from each other (see sanitiser_log_target).'''
         results = []
 
         valgrind_log = util.valgrind_log_filepath(binary=self.binary,
@@ -17319,9 +17342,8 @@ switch value'''
         for valgrind_log in files:
             os.chmod(valgrind_log, 0o644)
             if os.path.getsize(valgrind_log) > 0:
-                target = self.buildlogs_path("%s-%s" % (
-                    self.log_name(),
-                    os.path.basename(valgrind_log)))
+                target = self.sanitiser_log_target(
+                    os.path.basename(valgrind_log), tag)
                 self.progress("Valgrind log: moving %s to %s" % (valgrind_log, target))
                 shutil.move(valgrind_log, target)
                 valgrind_failed = True
@@ -17335,7 +17357,7 @@ switch value'''
             for f in files:
                 os.chmod(f, 0o644)
                 if os.path.getsize(f) > 0:
-                    target = self.buildlogs_path("%s-%s" % (self.log_name(), os.path.basename(f)))
+                    target = self.sanitiser_log_target(os.path.basename(f), tag)
                     self.progress("ASAN log: moving %s to %s" % (f, target))
                     shutil.move(f, target)
                     asan_failed = True
