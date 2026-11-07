@@ -98,21 +98,10 @@ Two critical bugs found in AP_SmartRTL that caused disabled tests (SMART_RTL_Ent
 
 ## 4c. Disabled Test Recoveries
 
-### Test-level fixes (timing/parameter tuning)
-
-| Test | Vehicle | Fix | Commit |
-|------|---------|-----|--------|
-| `RTLStoppingDistanceSpeed` | Copter | RTL_SPEED_MS values (1,5) too low for SITL stabilization → (5,10) | 8eb3177684 |
-| `DriveBrake` | Rover | wait_groundspeed(0, 0.2) timeout 6× too short for 15m/s stop → 5.0s | 8eb3177684 |
-| `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) between subtests → 5.0s | 8eb3177684 |
-| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target inside exclusion zone → move outside (same coords as EasierGuided variant) | 8eb3177684 |
-
-### Code-level fixes
-
-| Test | Vehicle | Fix Type | Description | Commit |
-|------|---------|----------|-------------|--------|
-| `FlyMissionTwice` | Copter | Test code | Add mission state machine reset via `DO_SET_MISSION_CURRENT` between runs | 8af8eb0716 |
-| `Parachute` | Copter | Verification | NOT actually disabled — not in `disabled_tests()` dictionary. Entry in synthesis doc was stale. | — |
+| Test | Fix Type | Description | Commit |
+|------|----------|-------------|--------|
+| `FlyMissionTwice` | Test code | Add mission state machine reset via `DO_SET_MISSION_CURRENT` between runs (same approach as passing `FlyMissionTwiceWithReset`) | 8af8eb0716 |
+| `Parachute` | Verification | NOT actually disabled — not in `disabled_tests()` dictionary. Entry in synthesis doc was stale. | — |
 
 ---
 
@@ -176,22 +165,13 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 
 ## 7. Disabled Test Recovery — Status
 
-### Fixed — Test-level fixes (timing/parameter tuning)
+### Fixed (awaiting CI validation)
 
 | Test | Vehicle | Fix | Status |
 |------|---------|-----|--------|
-| `RTLStoppingDistanceSpeed` | Copter | RTL_SPEED_MS (1,5) → (5,10) | Test fix committed, awaiting CI validation |
-| `DriveBrake` | Rover | wait_groundspeed(0, 0.2) → 5.0s | Test fix committed, awaiting CI validation |
-| `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) → 5.0s | Test fix committed, awaiting CI validation |
-| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target moved outside exclusion zone | Test fix committed, awaiting CI validation |
-
-### Fixed — C++ code-level fixes
-
-| Test | Vehicle | Fix | Status |
-|------|---------|-----|--------|
-| `SMART_RTL_EnterLeave` | Copter | Premature deactivation timeout + false panic | C++ fix committed (241a87d19d), awaiting CI validation |
-| `SMART_RTL_Repeat` | Copter | Same premature deactivation timeout | C++ fix committed (241a87d19d), awaiting CI validation |
-| `FlyMissionTwice` | Copter | Mission state reset between runs | Test fix committed (8af8eb0716), awaiting CI validation |
+| `SMART_RTL_EnterLeave` | Copter | C++ bug fixed: premature deactivation timeout + false panic | C++ fix committed, tests still disabled pending CI validation |
+| `SMART_RTL_Repeat` | Copter | C++ bug fixed: same premature deactivation timeout | C++ fix committed, tests still disabled pending CI validation |
+| `FlyMissionTwice` | Copter | Test fix: mission state reset between runs | Fix committed, test still disabled pending CI validation |
 
 ### Not actually disabled
 
@@ -203,8 +183,12 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 
 | Test | Vehicle | Reason | Priority |
 |------|---------|--------|----------|
+| `RTLStoppingDistanceSpeed` | Copter | Vehicle can't reach hover speed target | Medium |
 | `ScriptingOSD` | Copter | context_collect ordering bug | Medium |
-| `LandingDrift` | Plane | Baro drift + tight LAND_ABORT_DEG=1 → autoland oscillation | High |
+| `LandingDrift` | Plane | Flapping test (#20054) | High |
+| `PolyFenceObjectAvoidanceBendyRuler` | Rover | Unreliable — finish-line bug | High |
+| `DriveBrake` | Rover | Frequent failures | Medium |
+| `SlewRate` | Rover | CI timing report failure | Medium |
 
 ---
 
@@ -258,7 +242,6 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 ## 11. Git History (test-improvements branch)
 
 ```
-8eb3177684  test(autotest): fix RTLStoppingDistanceSpeed, DriveBrake, SlewRate, PolyFence timing issues
 8af8eb0716  test(autotest): fix FlyMissionTwice with mission state reset between runs
 241a87d19d  AP_SmartRTL: fix premature deactivation and false panic on peek contention
 59797b7602  test(autotest): refactor VTOLMotorFailTransition to use motor_failure_test.lua
