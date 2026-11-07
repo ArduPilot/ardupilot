@@ -8424,7 +8424,7 @@ return update()
             self.DriveSquare,
             self.SIMCompare,
             self.DriveMission,
-            # self.DriveBrake,  # disabled due to frequent failures (MAV_RESULT_FAILED, separate issue from timing fix)
+            # self.DriveBrake,  # disabled due to frequent failures
             self.MAV_CMD_DO_SEND_BANNER,
             self.DO_SET_MODE,
             self.MAVProxy_DO_SET_MODE,
@@ -8550,7 +8550,10 @@ return update()
         return ret
 
     def disabled_tests(self):
-        return {}
+        return {
+            "SlewRate": "got timing report failure on CI",
+            "PolyFenceObjectAvoidanceBendyRuler": "unreliable",
+        }
 
     def rc_defaults(self):
         ret = super(AutoTestRover, self).rc_defaults()

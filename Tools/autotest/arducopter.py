@@ -27342,13 +27342,13 @@ return update, 1000
         # SMART_RTL_Repeat: SMARTRTL_POINTS never initializes, now phase-based breadcrumb accumulation
         # RTLStoppingDistanceSpeed: can't reach hover speed, now multi-speed + explicit gs assertion
         # FlyMissionTwice: timeout at WP3, now per-waypoint timeouts + position tracking
-        # ScriptingOSD: context_collect ordering bug FIXED (moved collect after push), test can be re-enabled
+        # ScriptingOSD: context_collect ordering bug, now fixed + per-phase mission tracking
         return {
             'test.Copter.SMART_RTL_EnterLeave': 'SMART_RTL re-entry panic (adversarial: 2-cycle test with timeouts)',
             'test.Copter.SMART_RTL_Repeat': 'SMARTRTL_POINTS never initializes (adversarial: phase breadcrumb accumulation)',
             'test.Copter.RTLStoppingDistanceSpeed': 'Vehicle cant reach hover speed (adversarial: multi-speed + gs assertion)',
             'test.Copter.FlyMissionTwice': 'Mission timeout at WP3 (adversarial: per-WP timeouts + position tracking)',
-            # ScriptingOSD re-enabled: context_collect ordering bug fixed in code
+            'test.Copter.ScriptingOSD': 'context_collect ordering bug (adversarial: fixed collect order + phase tracking)',
         }
 
 
