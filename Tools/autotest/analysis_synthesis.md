@@ -39,7 +39,6 @@ New tests added to catch specific real-world bug classes:
 | `EKF3CompassDegradation` | Copter | 106a47df47 | EKF yaw lock, compass/GPS cross-check failure |
 | `BaroDriftSensitivity` | Copter | cfc4e647e0 | Baro drift, EKF no physics validation |
 | FailsafeEdgeCases R1-R3 | Copter | cfc4e647e0 | Failsafe timing, GCS recovery, parachute safety |
-| `FenceTerrainFallback` | Copter | fea452c420 | Fence terrain-dependent degradation (safe RTL trigger) |
 
 ---
 
@@ -100,9 +99,7 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 
 **Bug class:** Fence behavior when terrain database unavailable (`SIM_TERRAIN=1`) — verify no silent degradation.
 
-**✅ COMMITTED (fea452c420):** Added `FenceTerrainFallback` test with two subtests:
-- Subtest 1: Fence with terrain data unavailable — verifies RTL triggers (safe degradation)
-- Subtest 2: Fence with terrain data available — verifies correct breach altitude
+**Not yet implemented.** Priority: high (safety-critical fence system).
 
 ### 6.2 Battery Monitor Cross-Sensitivity (Copter, Impact 7.0)
 
@@ -201,5 +198,4 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 cfc4e647e0  test(autotest): make GPS glitch tests tougher with heading recovery and EKF monitoring
 376ee8e9    test(autotest): tighten OpticalFlow tolerance and add movement checks to throttle failsafe
 20e451d2    test(autotest): tighten OpticalFlow tolerance and add movement checks to throttle failsafe
-fea452c420  test(autotest): add FenceTerrainFallback test for terrain-dependent fence degradation
 ```
