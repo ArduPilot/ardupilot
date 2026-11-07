@@ -1679,7 +1679,8 @@ build on a flight board comes from
   `AHRS_GPS_GAIN` 0 if it drifts. Decimating again would need delta angle
   and time accumulated across skipped calls. DCM cannot be built out:
   `COMPASS_CAL_ENABLED` depends on it.
-- Not flown on any RP2350 board: RTL, Auto and the GPS failsafe paths.
+- Not flown on any RP2350 board: RTL's landing and the GPS failsafe path.
+  RTL by switch and an Auto mission flew on 2026-11-07.
 
 ### Logging and storage
 
@@ -1733,10 +1734,11 @@ build on a flight board comes from
 - RPI_UAVFC's README references no image, which
   `Tools/scripts/test_new_boards.py` requires of a new board.
 - 200 MHz at 1.15 V is 1.33 times the datasheet clock, validated only on
-  bring-up samples, and has not flown. The 100 MHz flash window was
-  measured on one RPI_UAVFC at room temperature. Laurel and Pico2 run its
-  settings without a sweep of their own. Laurel has run them on the bench
-  (whole-flash readbacks, reboots, parameter writes); Pico2 has not.
+  bring-up samples, and has flown on one RPI_UAVFC, three flights on
+  2026-11-07. The 100 MHz flash window was measured on another RPI_UAVFC,
+  at room temperature. Laurel and Pico2 run its settings without a sweep
+  of their own. Both have run them on the bench
+  (whole-flash readbacks, reboots, parameter writes).
 - Until a board has soaked past the 71.6 minute `micros()` wrap while
   arming and disarming (`AP_RCOUT_USE_32BIT_TIME`), reboot before flying.
 - After an SWD flash and OpenOCD detach, core1 sometimes never launches
