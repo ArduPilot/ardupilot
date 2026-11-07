@@ -2678,10 +2678,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # one hold, from a jump just after the offset while the innovation was settled, and velD
         # 1.3-1.6 m/s: its samples span 2.5 s here. Counting a jump from any innovation started a
         # second hold 12 s into the runaway, spanning 9.6 s, and velD reached 3.6 m/s in another
-        # run. The span is the measure because the failure is a second hold, not a longer one.
-        if r["hold_s"] > 5.0:
+        # run. The span is the measure because the failure is a second hold, not a longer one. A
+        # whole hold spans the EKF's 5 s give or take one 10 Hz XKFA sample, so two log periods are
+        # allowed over it; this one spans less only because it starts before the window opens.
+        step_hold_s = 5.0     # aglKfStepHold_ms
+        xkfa_period_s = 0.1   # XKFA is logged at 10 Hz
+        if r["hold_s"] > step_hold_s + 2 * xkfa_period_s:
             raise NotAchievedException(
-                "The step hold held the velocity out again during a velD runaway (%.1f s)" % r["hold_s"])
+                "The step hold held the velocity out again during a velD runaway (%.2f s)" % r["hold_s"])
         if r["max_velD_err"] > 2.5:
             raise NotAchievedException(
                 "AGL KF velocity fusion failed to bound the velD runaway on a noisy range (%.2f m/s)"
