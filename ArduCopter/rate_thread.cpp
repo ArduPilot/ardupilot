@@ -333,6 +333,11 @@ void Copter::rate_controller_thread()
             main_loop_count = 0;
         }
         motors_output(main_loop_count == 0);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        // release SITL's lockstep: the outputs for this sample are
+        // written, which is what it is waiting for
+        ins.rate_loop_outputs_written();
+#endif
 
         // process filter updates
         if (run_decimated_callback(rates.filter_rate, filter_loop_count)) {
