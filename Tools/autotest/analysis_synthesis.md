@@ -110,12 +110,12 @@ Two critical bugs found in AP_SmartRTL that caused disabled tests (SMART_RTL_Ent
 
 | Test | Vehicle | Fix | Commit | Status |
 |------|---------|-----|--------|--------|
+| `RTLStoppingDistanceSpeed` | Copter | RTL_SPEED_MS values (1,5) → (5,10); **stuck — vehicle can't reach WP_SPD in SITL** (flight dynamics bug) | 8eb3177684 | 🔴 Still disabled |
 | `DriveBrake` | Rover | wait_groundspeed(0, 0.2) timeout 6× too short for 15m/s stop → 5.0s | 8eb3177684 | ✅ Re-enabled |
 | `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) between subtests → 5.0s | 8eb3177684 | 🔲 Fix applied, still disabled pending SITL verification |
 | `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target inside exclusion zone → move outside (same coords as EasierGuided variant) | 8eb3177684 | 🔲 Fix applied, still disabled pending SITL verification |
 | `LandingDrift` | Plane | LAND_ABORT_DEG 1° too tight for baro drift → 5° (false positive slope aborts) | adc60ae11b | 🔲 Fix applied, still disabled pending SITL verification |
 | `ScriptingOSD` | Copter | context_collect ordering bug FIXED (moved collect after push in codebase) | 9e5142f573 | ✅ Re-enabled |
-| `RTLStoppingDistanceSpeed` | Copter | Groundspeed check timing — was during RTL (RTL_SPEED_MS capped), now during WP nav (WP_SPD); simplified to single iteration | bb177d0be7 | ✅ Re-enabled |
 
 ### Code-level fixes
 
@@ -192,7 +192,7 @@ SITL validation exposed **4 pre-existing bugs** (none caused by test improvement
 
 | Test | Vehicle | Fix | Commit |
 |------|---------|-----|--------|
-| `RTLStoppingDistanceSpeed` | Copter | Groundspeed check timing — was during RTL (RTL_SPEED_MS capped), now during WP nav (WP_SPD); simplified to single iteration | bb177d0be7 |
+| `RTLStoppingDistanceSpeed` | Copter | RTL_SPEED_MS values (1,5) too low for SITL stabilization → (5,10) | 8eb3177684 |
 | `DriveBrake` | Rover | wait_groundspeed(0, 0.2) timeout 6× too short for 15m/s stop → 5.0s | 8eb3177684 |
 | `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) between subtests → 5.0s | 8eb3177684 |
 | `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target inside exclusion zone → move outside (same coords as EasierGuided variant) | 8eb3177684 |
