@@ -1081,20 +1081,6 @@ class TestBuildOptions(object):
         sys.stdout.flush()
         sys.stderr.flush()
         workers = []
-        for worker_number in range(n_workers):
-            p = ctx.Process(
-                target=self.parallel_worker_main,
-                args=(worker_number, task_queue, result_queue, stop_event),
-                name="test_build_options-worker-%u" % worker_number,
-            )
-            p.start()
-            try:
-                # also done in the worker; whichever of us is first:
-                os.setpgid(p.pid, p.pid)
-            except (PermissionError, ProcessLookupError):
-                pass
-            workers.append(p)
-
         failures = []
         tstart = time.time()
         # when each build finished, for the ETA:
@@ -1110,6 +1096,22 @@ class TestBuildOptions(object):
         skipped = 0
         completed = False
         try:
+            # started inside the try so that if starting one fails
+            # those already running are stopped:
+            for worker_number in range(n_workers):
+                p = ctx.Process(
+                    target=self.parallel_worker_main,
+                    args=(worker_number, task_queue, result_queue, stop_event),
+                    name="test_build_options-worker-%u" % worker_number,
+                )
+                p.start()
+                try:
+                    # also done in the worker; whichever of us is first:
+                    os.setpgid(p.pid, p.pid)
+                except (PermissionError, ProcessLookupError):
+                    pass
+                workers.append(p)
+
             for task in tasks:
                 task_queue.put(task)
             for _ in workers:
