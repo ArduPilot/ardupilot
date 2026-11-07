@@ -233,7 +233,9 @@ define RP_QMI_MIN_DESELECT 3
 # Continuous read: mode byte 0xA0 (M5-4 = 10) leaves the flash expecting the
 # next read's address, so an XIP cache miss takes 28 flash clocks instead of
 # 36. The port checks the flash reads back correctly and keeps the ordinary
-# format if not.
+# format if not. On a bench Pico 2 the boot ROM sets Quad I/O (EBh) and it
+# engages: the whole 4 MB read back correctly twice, and three parameter
+# writes each survived a reboot.
 define RP_QMI_CONT_READ_MODE 0xA0
 
 # The main loop shares core0 with the estimators; the GCS tasks are polled at a
