@@ -24546,7 +24546,7 @@ return update()
             })
 
             # Test at two different RTL speeds to catch speed-dependent bugs
-            for rtl_speed in (5, 10):
+            for rtl_speed in (1, 5):
                 self.progress("=== RTL test at speed=%um/s ===" % rtl_speed)
                 self.set_parameter('RTL_SPEED_MS', rtl_speed)
 
