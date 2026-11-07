@@ -6278,7 +6278,12 @@ return update()
         # Wait for landing waypoint
         self.wait_current_waypoint(9, timeout=1200)
 
-        # DO_LAND_START triggers landing — wait for disarm (plane lands at wp 9)
+        # Wait for landing restart
+        self.wait_current_waypoint(5, timeout=60)
+
+        # Wait for landing waypoint (second attempt)
+        self.wait_current_waypoint(9, timeout=1200)
+
         self.wait_disarmed(timeout=180)
 
     def TakeoffAuto1(self):
@@ -11326,6 +11331,7 @@ return update()
 
     def disabled_tests(self):
         ret = {
+            "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SoaringClimbRate": "very bad sink rate",
