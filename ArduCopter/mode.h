@@ -2026,9 +2026,6 @@ public:
     AP_AdvancedFailsafe_Copter::control_mode afs_mode() const override { return AP_AdvancedFailsafe_Copter::control_mode::AFS_AUTO; }
 #endif
 
-    // the following method's return value is dubious and should be evaluated:
-    bool in_guided_mode() const override { return true; }
-
     bool set_speed_NE_ms(float speed_ne_ms) override;
     bool set_speed_up_ms(float speed_up_ms) override;
     bool set_speed_down_ms(float speed_down_ms) override;
