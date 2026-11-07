@@ -24538,9 +24538,8 @@ return update()
             # Mission structure:
             #   WP 0: TAKEOFF to 20m
             #   WP 1: WP at (200, 0, 20) — navigate to here
-            # When vehicle starts executing WP 1, groundspeed is governed
-            # by WP_SPD, not RTL_SPEED_MS. We check groundspeed during
-            # this navigation leg, then trigger RTL.
+            # When vehicle starts executing WP 1, it's at WP_SPEED.
+            # We check groundspeed during this navigation leg, BEFORE RTL.
             self.upload_simple_relhome_mission([
                 (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,          0, 0, 20),
                 (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,       200, 0, 20),
@@ -24548,52 +24547,61 @@ return update()
             self.set_parameters({
                 "AUTO_OPTIONS": 3,
             })
-            self.set_parameter('RTL_SPEED_MS', 5)
 
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
+            # Test at two different RTL speeds to catch speed-dependent bugs
+            for rtl_speed in (5, 10):
+                self.progress("=== RTL test at speed=%um/s ===" % rtl_speed)
+                self.set_parameter('RTL_SPEED_MS', rtl_speed)
 
-            wp_speed = self.get_parameter('WP_SPD')
-            self.progress("Target WP speed: %.1fm/s, RTL speed: 5m/s")
+                self.change_mode('AUTO')
+                self.wait_ready_to_arm()
+                self.arm_vehicle()
 
-            # Wait for vehicle to start navigating WP 1. At this point
-            # groundspeed is governed by WP_SPD, not RTL_SPEED_MS.
-            self.progress("Waiting for vehicle to start navigating WP 1")
-            self.wait_current_waypoint(1)
+                wp_speed = self.get_parameter('WP_SPD')
+                self.progress("Target WP speed: %.1fm/s, RTL speed: %um/s" % (wp_speed, rtl_speed))
 
-            # Verify groundspeed at WP speed during AUTO waypoint navigation.
-            # The vehicle must reach at least 80% of WP speed before we
-            # test RTL stopping.
-            self.progress("Verifying groundspeed reaches %.1fm/s minimum" % (wp_speed * 0.8))
-            gs_threshold = wp_speed * 0.8
-            self.wait_groundspeed(gs_threshold, wp_speed + 1, timeout=60)
-            self.progress("Groundspeed OK: %.1fm/s" % self.groundspeed())
+                # Wait for vehicle to start navigating WP 1. At this point
+                # groundspeed is governed by WP_SPD, not RTL_SPEED_MS.
+                self.progress("Waiting for vehicle to start navigating WP 1")
+                self.wait_current_waypoint(1)
 
-            rtl_start_pos = self.get_local_position_NED()
-            rtl_start_gs = self.groundspeed()
-            self.progress("RTL start: position=(%.1f, %.1f), groundspeed=%.1fm/s" %
-                        (rtl_start_pos.x, rtl_start_pos.y, rtl_start_gs))
+                # Verify groundspeed at WP speed during AUTO waypoint navigation.
+                # The vehicle must reach at least 80% of WP speed before we
+                # test RTL stopping.
+                self.progress("Verifying groundspeed reaches %.1fm/s minimum")
+                gs_threshold = wp_speed * 0.8
+                self.wait_groundspeed(gs_threshold, wp_speed + 1, timeout=60)
+                self.progress("Groundspeed OK: %.1fm/s" % self.groundspeed())
 
-            # Trigger RTL via mission command. The vehicle is in AUTO
-            # mode; sending NAV_RETURN_TO_LAUNCH starts the RTL sequence.
-            self.progress("Starting RTL via mission command")
-            self.mav.mav.command_long_send(
-                self.mav.target_system, self.mav.target_component,
-                mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0,
-                0, 0, 0, 0, 0, 0, 0)
+                rtl_start_pos = self.get_local_position_NED()
+                rtl_start_gs = self.groundspeed()
+                self.progress("RTL start: position=(%.1f, %.1f), groundspeed=%.1fm/s" %
+                            (rtl_start_pos.x, rtl_start_pos.y, rtl_start_gs))
 
-            self.progress("Waiting for vehicle to stop")
-            self.wait_groundspeed(-0.3, 0.3)
-            rtl_stopping_point_pos = self.get_local_position_NED()
+                # Trigger RTL via mission command. The vehicle is in AUTO
+                # mode; sending NAV_RETURN_TO_LAUNCH starts the RTL sequence
+                # using the current RTL_SPEED_MS value.
+                self.progress("Starting RTL via mission command")
+                self.mav.mav.command_long_send(
+                    self.mav.target_system, self.mav.target_component,
+                    mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0,
+                    0, 0, 0, 0, 0, 0, 0)
 
-            self.progress("Checking vehicle deviation from track")
-            y_delta = abs(rtl_start_pos.y - rtl_stopping_point_pos.y)
-            self.progress("deviated %.4fm from track" % y_delta)
-            if y_delta > 0.2:
-                raise NotAchievedException("RTL deviated from track %.4fm" % y_delta)
+                self.progress("Waiting for vehicle to stop")
+                self.wait_groundspeed(-0.3, 0.3)
+                rtl_stopping_point_pos = self.get_local_position_NED()
 
-            self.progress("RTL stopping distance test passed")
+                self.progress("Checking vehicle deviation from track")
+                y_delta = abs(rtl_start_pos.y - rtl_stopping_point_pos.y)
+                self.progress(f"[rtl_speed={rtl_speed}] deviated {y_delta}m from track")
+                if y_delta > 0.2:
+                    raise NotAchievedException(f"[rtl_speed={rtl_speed}] RTL deviated from track {y_delta}m")
+
+                # Switch to LOITER between iterations so the vehicle is
+                # in a clean state before the next RTL_SPEED_MS value.
+                self.change_mode('LOITER')
+
+            self.progress("All RTL speed variants passed - stopping distance consistent")
             self.do_RTL()
         finally:
             self.context_pop()
