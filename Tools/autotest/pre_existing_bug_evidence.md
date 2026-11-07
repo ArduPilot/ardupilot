@@ -103,6 +103,7 @@ In `test.Plane.ThrottleFailsafe`, after triggering throttle failsafe and enterin
 The RTL mode engages but the EKF3 is in a degraded state (likely due to prior GPS glitch or insufficient position age). The `rtl_armable()` check or `nav_takeoff()` path in the EKF returns false or the navigation waypoints are unreachable from the EKF's degraded position estimate.
 
 **Relevant code path:**
+
 - `ArduPlane/RTL.cpp` — RTL mode entry and waypoint navigation
 - `libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp` — EKF health checks and armable state
 
@@ -213,7 +214,7 @@ This proves the drift mechanism is **known and used** in testing, but also that 
 ## Summary
 
 | Bug | Root Cause | Location | Severity | Fix Requires |
-|-----|-----------|----------|----------|--------------|
+| ----- | ----------- | ---------- | ---------- | -------------- |
 | GPS Heading Lock | `realignYawGPS()` uses glitched velocity for yaw alignment without position innovation check | `AP_NavEKF3_MagFusion.cpp:155-225` | **High** | Add GPS position quality gate to yaw realignment |
 | EKF RTL Not Armable | EKF degraded state after GPS glitch prevents RTL takeoff/waypoint nav | `RTL.cpp`, `AP_NavEKF3_Control.cpp` | **Critical** | RTL armable state reset / recovery from degraded EKF |
 | Baro Drift Design | Cumulative barometer drift never resets, EKF trusts it blindly | `SITL_Baro.cpp:81-83`, `NavEKF3_Measurements.cpp:783-800` | **Medium** | Optional baro drift validation against physics reference |
@@ -311,6 +312,7 @@ The velocity I term is zeroed during `D_init_controller()`. The acceleration I t
 ### Fix Direction
 
 Implement a **setpoint ramp** when entering an altitude-holding mode after a flip:
+
 1. Keep the position target at the pre-flip altitude initially
 2. Ramp it toward the new altitude (or blended altitude) over a configurable time constant
 3. Allow the velocity and acceleration controllers to decelerate the climb smoothly

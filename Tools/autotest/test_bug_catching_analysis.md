@@ -25,7 +25,7 @@ Tests that need no dwell can still pass `minimum_duration=0` explicitly.
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **Overshoot oscillation** | Vehicle oscillates through target and back — passes on overshoot peak, not on stable target | PID controller tuned too aggressively, overshooting altitude by 5m then correcting in 0.3s — previously passed, now fails because oscillation doesn't sustain within tolerance for 0.5s |
 | **Slow correction** | Controller reaches target but takes 2+ seconds to settle — passes on first hit, not on sustained achievement | Altitude hold reaching target after a step change but drifting 2m/s — first measurement passes, test ends early before drift manifests |
 | **Sensor spike false positive** | Single noisy sensor reading triggers target achievement | Range finder outputs a momentary spike (bad calibration, interference) — test thinks target reached, doesn't verify sustained tracking |
@@ -55,7 +55,7 @@ New `minimum_duration` parameter with `achieving_duration_start` tracking. The a
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **Transient attitude spike** | Single ATTITUDE message shows target attitude, vehicle was never actually oriented correctly | MAVLink message timestamp out of order, or attitude sensor briefly reporting wrong values (IMU glitch) |
 | **Incomplete flip/roll maneuver** | Vehicle passes through target attitude en route to a different maneuver — test stops on passing angle, not on completed maneuver | FLIP mode: vehicle rolls from 0°→180°, `wait_attitude(desroll=90, tolerance=15)` passes the instant it hits 90° and stops — test never verifies the flip completes to 180° |
 | **Attitude drift during hold** | Vehicle briefly enters level attitude but immediately starts drifting (insufficient PID gain) | Stabilize mode: first attitude message after mode switch shows level, but controller has high integral windup so pitch starts drifting 5°/s — test passes on first tick |
@@ -91,7 +91,7 @@ New `minimum_duration` parameter with `achieving_duration_start` tracking. The a
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **Optical flow calibration drift** | Flow sensor calibration factors are wrong by 20-50% — previously passed with 3 m/s tolerance, now fails | Flow rate scaling factor (`FLOW_SCALE`) calibrated for 100% but actually outputs 130% — test now detects the 30% error within 15 seconds of flight |
 | **Rangefinder bias during flow calc** | Rangefinder reports wrong distance, corrupting optical flow speed calculation | Rangefinder has 0.5m positive bias — calculated flow speed is 30% too low, mismatch exceeds 1.5 m/s during level flight |
 | **EKF flow navigation degradation** | EKF uses flow data when it shouldn't (e.g., GPS still available) — flow/GPS divergence grows | `FLOW_TYPE=10` (optical flow primary) with GPS fallback not properly weighted — EKF trusts flow over GPS during GPS transient, creating speed divergence |
@@ -121,7 +121,7 @@ Hard assertion that vehicle speed never exceeds 10 m/s at any point during the t
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **EKF optical flow speed limit bypass** | EKF navigation limit enforcement code has a condition that allows speeds >10m/s under certain circumstances | EKF2 `NavControl::limitVelocity()` has a branch for `doingFlowNav` that only checks `gndOffsetValid` — if offset validation fails, velocity limit check is skipped |
 | **Flow mode navigation with GPS fallback** | EKF falls back to GPS speed calculation when flow limit should be hard-capped | GPS is available alongside flow — EKF blends GPS and flow position, and the blended speed calculation doesn't enforce the 10 m/s hard cap |
 | **Altitude-based speed limit too permissive** | At high altitudes (even within 35m limit), altitude-based speed limits allow dangerous speeds | Altitude at 30m → max speed = 30×1.5+2 = 47 m/s — EKF navigation limit code has a bug allowing speed up to 47 m/s when flow mode should cap at 10 m/s |
@@ -146,6 +146,7 @@ Hard assertion that vehicle speed never exceeds 10 m/s at any point during the t
 ### How it works
 
 All three GPS glitch tests now track position during the glitch phase and raise `NotAchievedException` if the vehicle moves beyond a defined threshold:
+
 - `GPSGlitchLoiter`: 20m limit
 - `GPSGlitchLoiter2`: 10m limit
 - `GPSGlitchAuto`: 30m limit
@@ -155,7 +156,7 @@ Previously, `GPSGlitchLoiter` used `drain_mav()` (passive wait) with no position
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **EKF position reset causing excursion** | GPS glitch causes EKF position estimate to jump, vehicle reacts with large position excursion | EKF position innovation exceeds threshold → EKF resets position estimate → vehicle thinks it's far from where it actually is → flies hard toward "intended" position, overshooting 50+ meters |
 | **GPS yaw/position glitch causing orbit** | GPS position jump causes EKF attitude to enter a turning loop | Yaw from GPS heading jumps 90° during glitch → EKF thinks vehicle is heading wrong direction → initiates correction turn → orbits instead of continuing straight → vehicle ends up 30-100m from start |
 | **Dual GPS system corruption** | Glitch on GPS1 causes EKF to reject both GPS sources and go into degradation mode | EKF2 GPS1 glitch detection triggers → switches to GPS2 → but GPS2 also has transient noise → both GPS rejected → vehicle enters dead reckoning mode with position error growing unbounded |
@@ -186,7 +187,7 @@ Tolerance tightened from 30° to 15° for all flip-axis attitude assertions. The
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **Partial flip** | FLIP mode only partially completes — vehicle rotates partway then stalls | FLIP mode PID controller has insufficient authority for large angle changes — rolls 60° of required 90° and stalls due to rate limiter, previously passed with 30° tolerance |
 | **Flip mode attitude inversion** | FLIP mode rolls in wrong direction or overshoots target | Roll PID has reversed sign — rolls -30° instead of +45°. With 30° tolerance, -30° is within tolerance of 0° target but not 45° target — this is a real bug that would be caught |
 | **Flip mode oscillation** | Vehicle oscillates around target angle during flip | Integral windup causes oscillation: 45°→90°→75°→90°. First hit of 90° passes the test, vehicle is actually oscillating and hasn't completed a clean flip |
@@ -209,7 +210,7 @@ Roll accuracy tightened from 90° to 15° (6x improvement). The old 90° accurac
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **Servo reversal** | Aileron servo wired backwards — aircraft rolls opposite to commanded direction | Roll command +150°, servo drives ailerons to -30°. With 90° tolerance, -30° is within tolerance. With 15° tolerance, test fails. |
 | **Elevon reversal (elevrev frames)** | Taildragger elevon reversal not applied — roll axis flipped | `ELEVREV=1` not set — during roll command, left aileron drops and right aileron raises (opposite of required). Aircraft rolls -30° instead of +150°. |
 | **Partial servo travel** | Servo only moves 10° of required 30° | Servo PWM range misconfigured — commanded 1500-1900μs but servo only responds 1450-1550μs. Aircraft achieves 20° roll instead of 150°. |
@@ -229,7 +230,7 @@ Altitude tolerance tightened from 20m to 5m (was 40% of flight altitude at ~50m)
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **Altitude hold integral windup** | Aircraft climbs or drifts during circuit but returns to target by the end | Throttle PID integral term accumulates — aircraft climbs 15m above target during circuit, then pilot input or manual reset returns it to target at circuit end. 20m tolerance passed, 5m catches it. |
 | **Throttle trim bias** | Throttle trim off by 50μs — aircraft maintains altitude slowly but drifts | Trim at 1500μs but calibrated neutral is 1550μs. Aircraft slowly climbs 0.5m/s during circuit — by end of 4-leg circuit (200s), 100m drift. Midpoint check catches early drift. |
 | **Lift-drag interaction** | Aircraft maintains altitude in straight flight but loses it in turns | In straight flight, lift equals weight. In 15° bank turn, vertical lift component drops 3% → aircraft descends 1.5m/s during turns, doesn't fully recover before next straight segment. |
@@ -248,7 +249,7 @@ After triggering throttle failsafe and entering RTL, the test now verifies the p
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **EKF RTL not armable** | RTL mode changes but EKF prevents takeoff — plane stays on ground | EKF3 position age > timeout → "RTL mode not armable" → plane changes to RTL mode but groundspeed stays at 0.03 m/s. Mode test passes, movement check fails. |
 | **Throttle failsafe not engaging** | RC failsafe triggers mode change but throttle command doesn't reach motor | `SIM_RC_FAIL=2` (throttle-to-950) doesn't actually modify throttle PWM due to a bug in `RC_Channel::failsafe()` → motor stays at 0 throttle → plane never moves. |
 | **Auto RTL waypoint navigation failure** | RTL mode engages but vehicle fails to navigate waypoints | RTL waypoint parsing bug — RTL waypoints are empty or malformed → vehicle enters RTL mode, checks waypoints loop, finds nothing, enters loiter at home position immediately. |
@@ -267,7 +268,7 @@ Replaced `delay_sim_time(5)` with `wait_distance(10)` to verify the rover actual
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **GCS failsafe timeout misconfigured** | Failsafe triggers but vehicle doesn't respond within timeout | `GCS_FAIL_THROTTLE` set to 2s but GCS heartbeat interval is 5s — failsafe triggers after 10s (3 missed heartbeats), rover should enter MANUAL mode but a bug in `gcs_failsafe_check()` causes it to stay in current mode. 5s delay passed, test didn't verify mode change. |
 | **GCS failsafe disabled path** | Failsafe is disabled — rover should stay in current mode but actually switches | `GCS_FAIL_THROTTLE=0` (disabled) — but `gcs_has_timed_out()` has a logic bug returning true even when failsafe is disabled, causing unexpected mode switch. `delay_sim_time(5)` passed, `wait_mode` now catches it. |
 | **AUTO mission GCS failsafe interaction** | GCS heartbeat lost during AUTO mission — rover should pause/resume correctly | GCS timeout during mission → rover pauses mission at current waypoint. When GCS reconnects, rover should resume — but a state machine bug causes it to restart mission from waypoint 1 instead. Position tracking catches the unexpected waypoint movement. |
@@ -286,7 +287,7 @@ Message count tightened from `count >= 3` to `10 <= count <= 200`. The old check
 ### Bugs this catches
 
 | Bug class | Description | Example scenario |
-|-----------|-------------|------------------|
+| ----------- | ------------- | ------------------ |
 | **Script crash after single iteration** | Script executes first iteration, crashes on second, prints once | `while true` loop: first `console.info("hello, world")` succeeds, second iteration hits null pointer in peripheral code → script halts → test sees count=1, previously passed with `count >= 3` wait, now properly fails. Wait, actually `count >= 3` means we need 3 messages — let me reconsider. The change tightens the *range*: minimum 10 messages (was 3), and adds an upper bound of 200. |
 | **Script runs forever (no exit)** | Script has no termination condition — loops infinitely | `while True:` loop with no break → script prints "hello, world" for the entire test duration (potentially thousands of messages) → test passes with `count >= 3` but now fails with `count > 200` → catches scripts that hang in infinite loops (resource exhaustion bug). |
 | **Script slow due to blocking I/O** | Script runs much slower than expected due to serial port or CAN blocking | `console.info()` blocks on UART for 500ms per call → loop runs at 2 Hz instead of 10 Hz → count=20 instead of expected 100. Range check catches the unexpected performance regression. |
@@ -296,7 +297,7 @@ Message count tightened from `count >= 3` to `10 <= count <= 200`. The old check
 ## Summary Matrix
 
 | Improvement | Commit | Bug classes caught | Latency | Severity |
-|-------------|--------|-------------------|---------|----------|
+| ------------- | -------- | ------------------- | --------- | ---------- |
 | `wait_and_maintain` minimum_duration 0→0.5s | 376ee8e9 | Oscillation, slow correction, sensor spike, actuator lag | Immediate | High |
 | `wait_attitude` minimum_duration | 376ee8e9 | Transient spike, incomplete maneuver, drift | Immediate | High |
 | OpticalFlow tolerance 3→1.5 m/s + warning path | 20e451d2 + 376ee8e9 | Calibration drift, rangefinder bias, flow degradation | Immediate | Medium |

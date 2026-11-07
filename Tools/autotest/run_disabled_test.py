@@ -3,17 +3,16 @@
 
 Usage:
     python run_disabled_test.py <test_name> [vehicle]
-    
+
 Examples:
     python run_disabled_test.py RTLStoppingDistanceSpeed copter
     python run_disabled_test.py FlyMissionTwice copter
     python run_disabled_test.py LandingDrift plane
 """
-import sys
-import os
+import pathlib
 import re
 import subprocess
-import pathlib
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 
@@ -39,20 +38,20 @@ def remove_from_disabled(file_path: str, test_name: str) -> bool:
     """Remove test from disabled_tests() dict. Returns True if found and removed."""
     with open(file_path, "r") as f:
         content = f.read()
-    
+
     # Pattern to match the test name in the disabled dict
     # Matches: "TestName": "reason",
     pattern = rf'^\s+"{re.escape(test_name)}":\s+"[^"]+",$\n'
-    
+
     new_content = re.sub(pattern, "", content, flags=re.MULTILINE)
-    
+
     if new_content == content:
         print(f"  Test '{test_name}' not found in disabled dict in {file_path}")
         return False
-    
+
     with open(file_path, "w") as f:
         f.write(new_content)
-    
+
     print(f"  Removed '{test_name}' from disabled_tests() in {file_path}")
     return True
 
@@ -76,25 +75,25 @@ def run_test(test_name: str, vehicle: str):
     print(f"\n{'='*60}")
     print(f"Running DISABLED test: {test_name} (vehicle: {vehicle})")
     print(f"{'='*60}\n")
-    
+
     # Find the source file
     filename = TEST_MAP.get(test_name)
     if not filename:
         print(f"ERROR: Unknown test '{test_name}'. Choose from: {list(TEST_MAP.keys())}")
         return 1
-    
+
     src_file, vehicle_from_map = filename
     if vehicle != vehicle_from_map:
         print(f"WARNING: Vehicle '{vehicle}' doesn't match expected '{vehicle_from_map}'")
-    
+
     file_path = str(ROOT / "Tools" / "autotest" / src_file)
-    
+
     # Temporarily re-enable the test
     removed = remove_from_disabled(file_path, test_name)
     if not removed:
         # Maybe it's not in disabled_tests but already enabled? Try running anyway.
         print("  Test may not be in disabled dict - running anyway...")
-    
+
     try:
         # Run the test (results go to buildlogs/ automatically)
         cmd = [
@@ -110,7 +109,7 @@ def run_test(test_name: str, vehicle: str):
             cwd=ROOT,
             capture_output=False,  # Let output stream directly
         )
-        
+
         if result.returncode == 0:
             print(f"\n✅ TEST PASSED: {test_name}")
             return 0
@@ -126,10 +125,10 @@ def main():
     if len(sys.argv) < 2:
         print(__doc__)
         return 1
-    
+
     test_name = sys.argv[1]
     vehicle = sys.argv[2] if len(sys.argv) > 2 else None
-    
+
     # Auto-detect vehicle if not specified
     if not vehicle:
         filename = TEST_MAP.get(test_name)
@@ -138,7 +137,7 @@ def main():
         else:
             print(f"ERROR: Unknown test '{test_name}'. Cannot auto-detect vehicle.")
             return 1
-    
+
     return run_test(test_name, vehicle)
 
 

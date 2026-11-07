@@ -16,7 +16,7 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 ### 1.1 Tests That Should Be More Robust
 
 | Test | Issue | Suggested Fix |
-|------|-------|---------------|
+| ------ | ------- | --------------- |
 | **`ModeFlip`** | Uses `wait_attitude(despitch=0, desroll=45, tolerance=30)` — 30° tolerance is extremely wide for a flip test. The tolerance allows the test to pass even when the flip is barely initiated. Also, `wait_attitude` uses `ATTITUDE` message at ~100Hz but has no `minimum_duration`, so a single out-of-range spike can falsely pass. | Tighten `tolerance` to 15°. Add `minimum_duration=0.5` to each `wait_attitude` call to ensure the attitude is *maintained*, not just momentarily hit. |
 | **`OpticalFlow`** | The `CheckOpticalFlow` hook raises `NotAchievedException` when `abs(of_speed - gps_speed) > 3` m/s — a 3 m/s tolerance on optical flow vs GPS speed is very loose. This means the test passes even when optical flow is significantly inaccurate. | Tighten to 1.5 m/s. Add a warning path at 2 m/s that logs data but doesn't fail, so regression visibility improves before failures. |
 | **`OpticalFlowLimits`** | Hardcoded timeout of 60s with no minimum speed assertion after the speed limit engages. The test verifies speed is limited but doesn't assert that the limit is actually enforced. | Add assertion that speed never exceeds the 10 m/s limit at any point during the test, not just at sampled intervals. |
@@ -28,7 +28,7 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 ### 1.2 Tests That Should Catch More Bugs
 
 | Area | Current Coverage Gap | Suggested Test |
-|------|---------------------|----------------|
+| ------ | --------------------- | ---------------- |
 | **EKF compass degradation during flight** | `TestEKF3CompassFailover` tests compass switch on disarm, but not switch *during* active flight. | Add test that degrades compass quality mid-flight (e.g., `SIM_MAG1_FAIL=0.5` for partial failure) and verifies EKF fallback doesn't cause instability. |
 | **Visual odom source switching** | `VisionPosition` exists but doesn't test switching between visual odom and GPS while in flight. | Add test that toggles `SIM_FLOW_ENABLE` mid-flight and verifies the EKF handles the gap without position jumps. |
 | **RC protocol failsafe edge cases** | `RCProtocolFailsafe` exists but doesn't test mixed protocol scenarios (e.g., CRSF fails, SBUS recovers). | Add test simulating intermittent RC signal with rapid fail/clear cycles. |
@@ -43,7 +43,7 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 ### 2.1 Tests That Should Be More Robust
 
 | Test | Issue | Suggested Fix |
-|------|-------|---------------|
+| ------ | ------- | --------------- |
 | **`test_stabilize`** | `wait_roll(±150, accuracy=90)` — 90° accuracy on a ±150° target means the test considers 60°-240° as "achieved". This is so wide the test can't detect a partially-failing roll. | Tighten `accuracy` to 15°. Also add `minimum_duration=1.0` to ensure the roll is sustained. |
 | **`test_acro`** | Same 90° accuracy issue on roll tests. The loop test uses `wait_pitch(-60, accuracy=20)` which allows 40°-80° — a 40° error band. | Tighten roll accuracy to 15° and pitch accuracy to 10°. |
 | **`test_FBWB`** | Altitude maintenance check uses `if abs(final_alt - initial_alt) > 20` — a 20m tolerance on a ~50m altitude is 40% error. | Tighten to 5m. Add intermediate altitude checks during the circuit, not just at the end. |
@@ -53,7 +53,7 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 ### 2.2 Tests That Should Catch More Bugs
 
 | Area | Current Coverage Gap | Suggested Test |
-|------|---------------------|----------------|
+| ------ | --------------------- | ---------------- |
 | **Quadplane transition robustness** | No dedicated test for quadplane motor fail during transition (VTOL→FW or FW→VTOL). | Add test that triggers motor failure during VTOL transition and verifies graceful recovery. |
 | **ELEVREV / elevon reversal during ACRO** | `test_acro` tests roll but not pitch reversals specific to taildragger/elevrev frames. | Add pitch reversal test specific to elevrev frame configuration. |
 | **Fence breach during takeoff** | `test_fence_breach_circle_at` tests fence breach but only from a stationary/cruising state. | Add fence breach test during takeoff climb-out (low altitude, high pitch). |
@@ -67,7 +67,7 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 ### 3.1 Tests That Should Be More Robust
 
 | Test | Issue | Suggested Fix |
-|------|-------|---------------|
+| ------ | ------- | --------------- |
 | **`test_gcs_failsafe`** | Uses `delay_sim_time(5)` after setting GCS failsafe — this is a fixed delay that assumes the failsafe triggers within 5s. If the GCS timeout parameter changes, the test silently passes even if the failsafe hasn't triggered. | Replace fixed delay with `wait_mode("RTL")` or `wait_mode("MANUAL")` assertions. Use `delay_sim_time` only for non-critical waiting. |
 | **`DriveSquare`** | Uses `wait_distance(50, accuracy=7)` — 7m accuracy on a 50m leg is 14% error. For a square drive test, this means the rover could be 14m off and still pass. | Tighten to 3m accuracy. Add heading assertion at each corner to verify the turn was completed. |
 | **`drive_left_circuit`** | Same 14% accuracy issue (`wait_distance(50, accuracy=7)`). No altitude/height check (less critical for rover but relevant for ATVs). | Tighten to 3m accuracy. For ATV frames, add height variation check. |
@@ -78,7 +78,7 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 ### 3.2 Tests That Should Catch More Bugs
 
 | Area | Current Coverage Gap | Suggested Test |
-|------|---------------------|----------------|
+| ------ | --------------------- | ---------------- |
 | **RTCM correction loss during navigation** | No test for rover behavior when RTK/RTCM corrections are lost mid-mission. | Add test that enables RTK, starts a mission, drops RTCM corrections mid-mission, and verifies graceful degradation. |
 | **Compass interference during steering** | `CompassPrearms` exists but no test for compass interference during active steering (e.g., motor magnetic field). | Add test with simulated compass distortion during steering maneuvers. |
 | **Motor test with reverse direction** | `MotorTest` exists but doesn't test motor test in reverse gear (`NAV_SBWR_REVERSE`). | Add motor test with reverse gear enabled. |
@@ -98,6 +98,7 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 ### 4.2 Timeout Defaults
 
 **Current state:** Timeouts vary widely:
+
 - `wait_altitude`: default 30s
 - `wait_mode`: default 60s
 - `wait_heading`: default 30s
@@ -106,6 +107,7 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 **Issue:** For complex maneuvers (RTL, terrain-following, EKF recovery), 30-60s is often insufficient, causing false negatives. For simple maneuvers (takeoff, landing), 30s is excessive, masking slow-start bugs.
 
 **Suggested:**
+
 - Add `aggressive_timeout` parameter to test methods for CI speed runs
 - Default timeouts: simple ops 15s, moderate 30s, complex 120s+
 - Log timeout values in test output for visibility
@@ -119,7 +121,7 @@ The ArduPilot autotest suite has ~17,000 lines of copter tests, ~8,400 lines of 
 ### 4.4 Disabled Tests Inventory
 
 | Test | Vehicle | Reason | Priority |
-|------|---------|--------|----------|
+| ------ | --------- | -------- | ---------- |
 | `Parachute` | Copter | Issue #4702 | High — safety-critical |
 | `GroundEffectCompensation_*` | Copter | Flapping behavior | High — safety-relevant |
 | `SMART_RTL_EnterLeave` | Copter | Causes panic | High — crash bug |

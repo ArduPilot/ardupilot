@@ -25,6 +25,7 @@
 The ArduPilot autotest suite has ~33,000 lines of vehicle tests (Copter ~17,200, Plane ~8,400, Rover ~7,300). Systematic improvements on the test-improvements branch have tightened tolerances, added `minimum_duration` guards against spike-based false passes, added position tracking during GPS glitches, and added movement assertions for failsafe tests.
 
 **Current state:** 11 improvements completed across 3 test files + infrastructure changes. Validation revealed 3 pre-existing SITL bugs that block further testing:
+
 1. **SITL altitude drift** — vehicle climbs uncontrollably in Loiter/AltHold
 2. **EKF "RTL mode not armable"** — prevents ThrottleFailsafe from progressing
 3. **Flaky timesync/connection** — affects mission-based tests
@@ -42,7 +43,7 @@ Bugs are categorized by their impact domain and the type of failure mode they pr
 These bugs could cause vehicle loss, injury, or property damage in the field.
 
 | Subcategory | Description | Example |
-|---|---|---|
+| --- | --- | --- |
 | **A1. Failsafe Non-Trigger** | Failsafe doesn't activate when conditions warrant it, or activates the wrong mode | Battery failsafe not triggering at 3.3V; GCS timeout not triggering RTL |
 | **A2. Failsafe Wrong Behavior** | Failsafe triggers but does the wrong thing (e.g., LAND instead of RTL over obstacles) | Throttle failsafe triggers RTL but RTL fails because EKF can't arm; fence breach triggers BRAKE instead of RTL |
 | **A3. Parachute/Mechanical Release** | Mechanical failsafe (parachute, airbag) doesn't fire or fires prematurely | Parachute fires at low altitude; parachute doesn't fire at >200m |
@@ -53,7 +54,7 @@ These bugs could cause vehicle loss, injury, or property damage in the field.
 These bugs cause oscillation, overshoot, or loss of control that may not be immediately catastrophic but degrades safety margin.
 
 | Subcategory | Description | Example |
-|---|---|---|
+| --- | --- | --- |
 | **B1. Control Loop Oscillation** | PID loop instability, hunting, or sustained oscillation | AltHold oscillates ±3m after a gust; roll axis hunting during flip |
 | **B2. Mode Transition Failure** | Vehicle gets stuck in intermediate mode or enters wrong mode | VTOL transition stuck between QSTABILIZE and FBWA; ACRO roll doesn't stop |
 | **B3. Attitude Hold Degradation** | Vehicle cannot maintain desired attitude under specific conditions | ALT_HOLD loses altitude hold when GPS glitches; STABILIZE overshoots pitch |
@@ -64,7 +65,7 @@ These bugs cause oscillation, overshoot, or loss of control that may not be imme
 These bugs affect the vehicle's perception of its state, leading to degraded navigation that cascades into other failure modes.
 
 | Subcategory | Description | Example |
-|---|---|---|
+| --- | --- | --- |
 | **C1. EKF Source Degradation** | EKF switches between IMU lanes or sensor sources without proper handoff | Compass quality degrades, EKF switches to GPS yaw but with lag |
 | **C2. GPS Glitch Response** | Vehicle reacts to sudden GPS position jumps with oscillation or mode change | GPS glitch causes 50m position jump, EKF takes 10s to settle |
 | **C3. Sensor Fusion Cross-Sensitivity** | Change in one sensor affects estimate from unrelated sensor | Baro glitch causes altitude estimate to drift, affecting ALT_HOLD |
@@ -75,7 +76,7 @@ These bugs affect the vehicle's perception of its state, leading to degraded nav
 These bugs are triggered by specific parameter combinations or mid-flight parameter changes.
 
 | Subcategory | Description | Example |
-|---|---|---|
+| --- | --- | --- |
 | **D1. Parameter Cross-Teraction** | Two valid parameters interact to produce unexpected behavior | FENCE_ALT_MAX + terrain=1 → fence altitude wrong; BATT_ARM_VOLT + BATT_CRT_VOLT → double-failsafe |
 | **D2. Mid-Flight Parameter Change** | Changing parameters during flight causes instability or wrong behavior | Changing compass orientation mid-flight; switching RC protocol mid-flight |
 | **D3. Parameter Index/Storage** | Parameter values persist incorrectly after reboot or storage corruption | FENCE_ENABLED=1 doesn't persist, fence inactive after reboot |
@@ -85,7 +86,7 @@ These bugs are triggered by specific parameter combinations or mid-flight parame
 Bugs specific to SITL that may or may not manifest on real hardware. These are important for regression detection but lower priority than real-hardware bugs.
 
 | Subcategory | Description | Example |
-|---|---|---|
+| --- | --- | --- |
 | **E1. Physics Model Bugs** | SITL flight dynamics model diverges from expected behavior | Altitude drift in Loiter mode (pre-existing SITL bug); wind turbulence precision loss over long runs |
 | **E2. MAVLink Protocol** | SITL MAVLink messaging issues, timing, or state machine | Timesync failure causing `MAV_MISSION_OPERATION_CANCELLED`; heartbeat timeout during busy periods |
 | **E3. Simulation State Leak** | SITL state from one test affects another | Parameter changes not cleaned between tests; EKF state persists across test runs |
@@ -96,7 +97,8 @@ Bugs specific to SITL that may or may not manifest on real hardware. These are i
 
 Ranked by **Impact Score = Severity × (1 / Detection Difficulty) × (1 - Current Coverage)**.
 
-**Legend:** 
+**Legend:**
+
 - **Severity:** 1-10 (10 = catastrophic, 1 = informational)
 - **Detection Difficulty:** E = Easy, M = Medium, H = Hard
 - **Current Coverage:** NONE, PARTIAL, FULL
@@ -105,7 +107,7 @@ Ranked by **Impact Score = Severity × (1 / Detection Difficulty) × (1 - Curren
 ### Tier 1 — Implement Immediately (Impact 7+)
 
 | # | Bug | Category | Severity | Detect | Coverage | Impact | Rationale |
-|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | EKF compass degradation mid-flight | C1 | 9 | E | NONE | **9.0** | Compass degrades silently; EKF fallback can cause yaw drift → course deviation |
 | 2 | Quadplane VTOL motor fail during transition | B2 | 10 | M | NONE | **10.0** | Transition is the most dangerous phase for VTOL; motor fail = crash |
 | 3 | Fence terrain dependency (ALT_MAX_ABOVE_TERRAIN) | A2/A4 | 9 | E | NONE | **9.0** | Fence silently inactive if terrain unavailable → vehicle can fly through fence |
@@ -115,7 +117,7 @@ Ranked by **Impact Score = Severity × (1 / Detection Difficulty) × (1 - Curren
 ### Tier 2 — Implement Next (Impact 4-7)
 
 | # | Bug | Category | Severity | Detect | Coverage | Impact | Rationale |
-|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- |
 | 6 | RTK/RTCM correction loss during mission | C1 | 8 | M | NONE | **8.0** | RTK loss degrades positioning; EKF should degrade gracefully |
 | 7 | SMART_RTL panic/loop detection (#18404) | B2/A4 | 10 | M | NONE | **10.0** | Disabled crash bug; recovery requires understanding the panic path |
 | 8 | Repeated fence boundary crossing | A2/A4 | 8 | M | PARTIAL | **5.3** | State machine may not handle rapid in/out transitions |
@@ -130,7 +132,7 @@ Ranked by **Impact Score = Severity × (1 / Detection Difficulty) × (1 - Curren
 ### Tier 3 — Monitor / Low Priority (Impact < 4)
 
 | # | Bug | Category | Severity | Detect | Coverage | Impact | Rationale |
-|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- |
 | 16 | SITL altitude drift (pre-existing) | E1 | 3 | E | N/A | **3.0** | SITL-only bug; blocks testing but not a real-vehicle bug |
 | 17 | EKF "RTL not armable" (pre-existing) | E2 | 3 | M | N/A | **2.0** | SITL/EKF interaction; blocks failsafe testing |
 | 18 | Timesync flake | E2 | 2 | M | N/A | **1.3** | Infrastructure flake; intermittent, non-deterministic |
@@ -146,6 +148,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 ### C1: EKF Source Degradation (Compass)
 
 **Detection Strategy:**
+
 1. **Inject:** Mid-flight (ARMED, in LOITER), inject compass degradation via `SIM_MAG1_FAIL=0.5` (partial failure) or `SIM_MAG1_FAIL=1` (complete failure)
 2. **Observe:** Monitor `EKF_STATUS_REPORT.flags` via `WaitAndMaintainEKFFlags` hook. Track:
    - `EKF_STATUS_REPORT.vel_horiz_drift` and `EKF_STATUS_REPORT.pos_horiz_drift`
@@ -158,12 +161,14 @@ For each bug category, the detection strategy follows the **inject → observe �
    - Vehicle should remain in the current flight mode (no unexpected mode change)
 
 **Metrics to Track:**
+
 - Time from compass injection to EKF source switch (expected: < 5s)
 - Yaw deviation during switch (expected: < 5°)
 - Position jump at switch point (expected: < 2m)
 - Mode stability (expected: no mode change)
 
 **Thresholds:**
+
 - `vel_horiz_drift` > 0.5 m/s for > 3s → FAIL
 - `pos_horiz_drift` > 5m for > 2s → FAIL
 - Yaw deviation > 5° during transition → WARN; > 10° → FAIL
@@ -172,6 +177,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 ### B2: Quadplane VTOL Motor Fail During Transition
 
 **Detection Strategy:**
+
 1. **Inject:** In quadplane mode, initiate VTOL transition (QSTABILIZE → FW via `DO_SET_MODE` or manual transition), then at 50% transition speed, kill quad motors via parameter `SIM_QMOTORS=0` or motor-specific fault injection
 2. **Observe:** Track vehicle airspeed, pitch, altitude, and flight mode via MAVLink
 3. **Assert:**
@@ -181,12 +187,14 @@ For each bug category, the detection strategy follows the **inject → observe �
    - Vehicle should return to stable FW flight within 10s
 
 **Metrics to Track:**
+
 - Transition time (QSTABILIZE → FW)
 - Minimum airspeed during transition (expected: > `airspeed_min`)
 - Maximum altitude loss (expected: < 20m)
 - Recovery time to stable FW (expected: < 10s)
 
 **Thresholds:**
+
 - Airspeed < `airspeed_min * 0.8` for > 2s → FAIL
 - Altitude loss > 20m → FAIL
 - Mode stuck in intermediate state for > 15s → FAIL
@@ -195,6 +203,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 ### A2/A4: Fence Terrain Dependency
 
 **Detection Strategy:**
+
 1. **Inject:** Set `FENCE_ALT_MAX_TYPE=3` (ABOVE_TERRAIN), set `SIM_TERRAIN=1`, then either:
    - Start without terrain database (remove SD card simulation)
    - Or set `TERRAIN_BLOCK=1` to block terrain loading
@@ -205,12 +214,14 @@ For each bug category, the detection strategy follows the **inject → observe �
    - If terrain becomes available mid-flight, fence should dynamically update
 
 **Metrics to Track:**
+
 - Pre-arm fence status report (expected: WARN if terrain unavailable)
 - Fence enabled/disarmed state during flight
 - Vehicle altitude vs fence limit
 - Terrain database availability flag
 
 **Thresholds:**
+
 - Fence enabled with terrain unavailable → FAIL (security-critical)
 - Vehicle exceeds fence altitude limit when terrain unavailable → FAIL
 - No pre-arm warning when terrain-dependent fence active → WARN
@@ -218,6 +229,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 ### C1: RTK/RTCM Correction Loss
 
 **Detection Strategy:**
+
 1. **Inject:** Start rover in AUTO mission with RTK (SIM_GPS_TYPE=2, SIM_GPS1_TYPE=5), then stop RTCM injection mid-mission via parameter `SIM_GPS_RTK_DISABLE=1` or by stopping the RTCM MAVLink stream
 2. **Observe:** Position accuracy (`GPS_RAW_INT.hdop`, `GPS_RAW_INT.lat/lon`), EKF horizontal position accuracy, and rover navigation
 3. **Assert:**
@@ -227,12 +239,14 @@ For each bug category, the detection strategy follows the **inject → observe �
    - Position drift should not exceed 5m over 30s after RTK loss
 
 **Metrics to Track:**
+
 - HDOP before and after RTK loss
 - Position drift rate (m/s) after RTK loss
 - EKF position accuracy flags
 - Rover groundspeed and heading stability
 
 **Thresholds:**
+
 - Position drift > 5m in 30s after RTK loss → FAIL
 - Groundspeed oscillation > 2 m/s after RTK loss → WARN
 - EKF position accuracy flags error → FAIL
@@ -241,6 +255,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 ### B3: Visual Odom Source Switching
 
 **Detection Strategy:**
+
 1. **Inject:** Enable optical flow (`SIM_FLOW_ENABLE=1`, `FLOW_TYPE=10`), take off to 10m in LOITER, then toggle `SIM_FLOW_ENABLE=0` mid-flight
 2. **Observe:** Position from `GPS_RAW_INT`, optical flow speed from `OPTICAL_FLOW` message, EKF flags, and vehicle lateral movement
 3. **Assert:**
@@ -250,12 +265,14 @@ For each bug category, the detection strategy follows the **inject → observe �
    - No mode change during source switch
 
 **Metrics to Track:**
+
 - Position delta during source switch (m)
 - Position hold radius after recovery (m)
 - Switch completion time (s)
 - Mode stability (expected: no change)
 
 **Thresholds:**
+
 - Position jump > 1m at switch point → WARN; > 2m → FAIL
 - Position hold radius > 2m after 5s recovery → FAIL
 - Mode change during switch → FAIL
@@ -273,6 +290,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 **Dependencies:** GPS glitch injection (`SIM_GPS1_GLTCH_*`), compass fault injection (`SIM_MAGx_FAIL`)
 
 **Test Steps:**
+
 1. Takeoff to 15m in LOITER, wait for EKF to be happy
 2. Verify EKF has both compass and GPS yaw contributing (check `EKF_STATUS_REPORT.flags` for `EKF_GPSYAW` bit)
 3. Inject compass degradation: set `SIM_MAG1_FAIL=0.5` (simulates partial failure)
@@ -282,19 +300,22 @@ For each bug category, the detection strategy follows the **inject → observe �
 7. Verify position hold and yaw accuracy throughout
 
 **Expected Behavior:**
+
 - EKF detects degraded compass within 3-5 seconds
 - EKF switches to GPS yaw (or GPS velocity heading for planes)
 - Yaw drift < 5° during transition
 - Position hold maintained (radius < 3m)
 
 **Failure Criteria:**
+
 - FAIL: EKF does not switch to GPS yaw within 5s
 - FAIL: Yaw drift > 10° during transition
 - FAIL: Position hold radius > 5m during compass degradation
 - FAIL: Vehicle changes mode during transition
 - WARN: Position jump > 1m at switch point
 
-** MAVLink Messages Monitored:**
+**MAVLink Messages Monitored:**
+
 - `EKF_STATUS_REPORT` (for flags, drift rates)
 - `AHRS` or `SIMSTATE` (for yaw angle)
 - `GLOBAL_POSITION_INT` (for position tracking)
@@ -310,6 +331,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 **Dependencies:** QuadPlane build, VTOL transition capability, motor fault injection
 
 **Test Steps:**
+
 1. Configure quadplane frame (use quadplane test frame from vehicleinfo.json)
 2. Takeoff in QHOVER or QLAUNCH, climb to 30m
 3. Initiate transition to fixed-wing mode (set mode to `STABILIZE` or send `DO_SET_MODE` with FW mode)
@@ -319,6 +341,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 7. Return to VTOL mode and land
 
 **Expected Behavior:**
+
 - Vehicle detects loss of VTOL thrust
 - Vehicle pitches down to build airspeed
 - Vehicle recovers to stable FW flight
@@ -326,6 +349,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 - No crash or uncontrolled descent
 
 **Failure Criteria:**
+
 - FAIL: Airspeed drops below `airspeed_min` for > 2s
 - FAIL: Altitude loss > 20m
 - FAIL: Vehicle enters QLAND/QLRTL without pilot input
@@ -334,6 +358,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 - WARN: Airspeed < `airspeed_min * 0.9` at any point
 
 **MAVLink Messages Monitored:**
+
 - `ATTITUDE` (for pitch, roll, yaw rates)
 - `AHRS` (for airspeed)
 - `GLOBAL_POSITION_INT` (for altitude tracking)
@@ -350,6 +375,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 **Dependencies:** Fence tests (`FENCE_ENABLE=1`), terrain simulation (`SIM_TERRAIN=1`), SD card simulation
 
 **Test Steps:**
+
 1. Set `FENCE_ENABLE=1`, `FENCE_ALT_MAX=50`, `FENCE_ALT_MAX_TYPE=3` (ABOVE_TERRAIN)
 2. Set `SIM_TERRAIN=1`, but block terrain database loading (set `TERRAIN_LOAD=0`)
 3. Attempt to arm — check for pre-arm warning about terrain dependency
@@ -359,18 +385,21 @@ For each bug category, the detection strategy follows the **inject → observe �
 7. Repeat with terrain enabled (`TERRAIN_LOAD=1`) to establish baseline
 
 **Expected Behavior:**
+
 - Pre-arm check should reject arming if terrain database is unavailable for terrain-dependent fence
 - OR fence should fall back to ABOVE_HOME mode with a warning
 - If fence is active, altitude limit of 50m ABOVE_TERRAIN should be enforced
 - No silent degradation where fence is "on" but not enforcing constraints
 
 **Failure Criteria:**
+
 - FAIL: Fence enabled with terrain unavailable (silent degradation)
 - FAIL: Vehicle exceeds fence altitude limit when terrain unavailable
 - FAIL: No pre-arm warning when terrain-dependent fence active
 - WARN: Fence fallback to ABOVE_HOME without explicit warning
 
 **MAVLink Messages Monitored:**
+
 - `SYS_STATUS` (pre-arm check bits)
 - `FENCE_STATUS` (for fence breach detection)
 - `STATUSTEXT` (for terrain warning messages)
@@ -386,6 +415,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 **Dependencies:** RTK GPS support, RTK correction injection, rover AUTO mission capability
 
 **Test Steps:**
+
 1. Configure rover with RTK GPS (`SIM_GPS_TYPE=2`, `SIM_GPS1_TYPE=5`, `NAV_RTK_ROUTES=1`)
 2. Start RTCM correction injection (via parameter or MAVLink RTCM message stream)
 3. Upload and execute an AUTO mission (4-6 waypoints, 50m spacing)
@@ -394,6 +424,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 6. Verify rover completes the mission with degraded positioning
 
 **Expected Behavior:**
+
 - EKF detects RTK loss and falls back to single-point GPS
 - HDOP increases from < 1.0 to ~3.0-5.0
 - Position drift rate < 0.17 m/s (5m in 30s)
@@ -401,6 +432,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 - No oscillation or mode change
 
 **Failure Criteria:**
+
 - FAIL: Position drift > 5m in 30s after RTK loss
 - FAIL: Groundspeed oscillation > 2 m/s
 - FAIL: EKF position accuracy flags set error
@@ -408,6 +440,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 - WARN: Position accuracy (HDOP) > 10 after 60s
 
 **MAVLink Messages Monitored:**
+
 - `GPS_RAW_INT` (for HDOP, fix type)
 - `EKF_STATUS_REPORT` (for position accuracy)
 - `NAV_CONTROLLER_OUTPUT` (for waypoint tracking error)
@@ -423,6 +456,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 **Dependencies:** Optical flow sensor simulation (`SIM_FLOW_ENABLE`), visual odom EKF configuration
 
 **Test Steps:**
+
 1. Enable optical flow: `SIM_FLOW_ENABLE=1`, `FLOW_TYPE=10`
 2. Enable visual odom in EKF: `EKF2_AID_MASK` with bit 2 (FLOW)
 3. Takeoff to 10m in LOITER, verify visual odom is active (check `EKF_STATUS_REPORT.flags` for `EKF_EVPOS_HORIZ` or similar)
@@ -433,12 +467,14 @@ For each bug category, the detection strategy follows the **inject → observe �
 8. Verify position hold is maintained
 
 **Expected Behavior:**
+
 - EKF smoothly transitions from visual odom to GPS without position jump
 - Position jump at switch point < 1m
 - Position hold radius < 2m after 5s recovery
 - No mode change during transition
 
 **Failure Criteria:**
+
 - FAIL: Position jump > 2m at switch point
 - FAIL: Position hold radius > 2m after 5s
 - FAIL: Mode change during switch
@@ -446,6 +482,7 @@ For each bug category, the detection strategy follows the **inject → observe �
 - WARN: Position jump > 1m at switch point
 
 **MAVLink Messages Monitored:**
+
 - `EKF_STATUS_REPORT` (for source flags, drift)
 - `OPTICAL_FLOW` (for flow quality check)
 - `GLOBAL_POSITION_INT` (for position tracking)
@@ -460,11 +497,12 @@ Recovering disabled tests is itself a high-value bug hunt. Each disabled test re
 ### 6.1 Parachute (#4702) — HIGH PRIORITY
 
 **Test:** `Parachute`  
-**Reason:** "See https://github.com/ArduPilot/ardupilot/issues/4702"  
+**Reason:** "See <https://github.com/ArduPilot/ardupilot/issues/4702>"  
 **Vehicle:** Copter  
 **Safety Level:** A3 — Mechanical Release (Critical)
 
 **Recovery Approach:**
+
 1. Re-enable the test in `disabled_tests()`
 2. Run in SITL with `--repeat 1` (single run, no loop)
 3. Capture full MAVLink log and STATUSTEXT output
@@ -477,6 +515,7 @@ Recovering disabled tests is itself a high-value bug hunt. Each disabled test re
 6. Submit fix PR
 
 **Bug Hunt Checklist:**
+
 - [ ] Check `Copter.h:816` — `failsafe_parachute()` call path
 - [ ] Check `AP_Parachute.cpp` — release state machine
 - [ ] Check MAVLink command handling for `MAV_CMD_DO_PARACHUTE`
@@ -493,6 +532,7 @@ Recovering disabled tests is itself a high-value bug hunt. Each disabled test re
 **Safety Level:** B2 — Crash Bug
 
 **Recovery Approach:**
+
 1. SMART_RTL is a complex mode with mission handling, obstacle avoidance, and loop detection
 2. Re-enable `SMART_RTL_EnterLeave` first (simpler test)
 3. Run and capture panic traceback
@@ -500,6 +540,7 @@ Recovering disabled tests is itself a high-value bug hunt. Each disabled test re
 5. The "loop detection" failure in `SMART_RTL_Repeat` suggests the mission loop counter is wrong
 
 **Bug Hunt Checklist:**
+
 - [ ] Trace `Copter.in_altHold()` → `smart_rtl` path
 - [ ] Check `AP_SmartRTL::update()` for infinite loop conditions
 - [ ] Check `smart_rtl_enter()` and `smart_rtl_leave()` state consistency
@@ -516,6 +557,7 @@ Recovering disabled tests is itself a high-value bug hunt. Each disabled test re
 **Safety Level:** B4 — Environmental (Moderate)
 
 **Recovery Approach:**
+
 1. Re-enable and run with verbose output
 2. The "flapping" suggests altitude oscillation during landing approach
 3. Check autoland altitude control in `mode_autoland.cpp`
@@ -523,6 +565,7 @@ Recovering disabled tests is itself a high-value bug hunt. Each disabled test re
 5. Check terrain-relative altitude handling during autoland
 
 **Bug Hunt Checklist:**
+
 - [ ] Trace `Plane::update_autoland()` state machine
 - [ ] Check `takeoff_state.initial_direction.heading` capture at arming
 - [ ] Check `relative_ground_altitude()` terrain dependency
@@ -534,7 +577,7 @@ Recovering disabled tests is itself a high-value bug hunt. Each disabled test re
 ### 6.4 Other Disabled Tests — MEDIUM PRIORITY
 
 | Test | Vehicle | Priority | Action |
-|------|---------|----------|--------|
+| ------ | --------- | ---------- | -------- |
 | `FlyMissionTwice` | Copter | Medium | Check PR #18561 for context; likely a mission loop bug |
 | `RTLStoppingDistanceSpeed` | Copter | Medium | Vehicle goes off-course during SRTL; check obstacle avoidance in SRTL |
 | `PolyFenceObjectAvoidanceBendyRuler` | Rover | High | Unreliable — likely a state machine issue in fence avoidance |
@@ -558,9 +601,10 @@ These infrastructure changes would enable more effective bug hunting and prevent
 
 **Solution Implemented:** Enhanced the context system with automatic parameter tracking and validation.
 
-#### Changes Made:
+#### Changes Made
 
 **1. Extended `Context` class** (line ~340):
+
 ```python
 # New fields added to Context.__init__():
 self.param_modifications = []  # List of (name, original_value) tuples
@@ -568,6 +612,7 @@ self.param_snapshot = {}  # Snapshot at context_push time for validation
 ```
 
 **2. Enhanced `context_push()`** (line ~7148):
+
 ```python
 def context_push(self, snapshot_params=False, param_names=None):
     """Extended with optional parameter snapshot for validation.
@@ -583,6 +628,7 @@ def context_push(self, snapshot_params=False, param_names=None):
 ```
 
 **3. Automatic tracking in `set_parameters()`** (line ~6848):
+
 ```python
 # Before modification loop: capture original values
 already_modified = {name for name, _ in context.param_modifications}
@@ -597,6 +643,7 @@ if add_to_context:
 ```
 
 **4. Debug API methods** (line ~7243):
+
 ```python
 def get_parameter_changes():
     """Return [(param_name, original_value, current_value), ...]"""
@@ -606,6 +653,7 @@ def get_uncommitted_changes():
 ```
 
 **5. Validation in `context_pop()`** (line ~7499):
+
 ```python
 # After restoring parameters, validate they match originals
 if process_interaction_allowed and dead.param_modifications:
@@ -613,6 +661,7 @@ if process_interaction_allowed and dead.param_modifications:
 ```
 
 **6. Validation method** (line ~7269):
+
 ```python
 def _validate_parameters_restored(self, modifications):
     """Check each modified param matches original. Log warning if not."""
@@ -622,7 +671,7 @@ def _validate_parameters_restored(self, modifications):
             log_warning(f"{param_name}: {original_value} -> {current_value}")
 ```
 
-#### Benefits:
+#### Benefits
 
 - **Automatic tracking**: No need to manually call `context_preserve_parameters()` - modifications are tracked automatically when `set_parameters()` is called
 - **Post-test validation**: `context_pop()` now verifies parameters were restored correctly and warns if not
@@ -630,7 +679,7 @@ def _validate_parameters_restored(self, modifications):
 - **Backward compatible**: Old `context_preserve_parameters()` still works alongside new system
 - **Non-breaking**: Tracking is opt-in via `snapshot_params=True` parameter
 
-#### Usage Examples:
+#### Usage Examples
 
 ```python
 # Old way (still works):
@@ -658,7 +707,7 @@ changes = self.get_parameter_changes()
 All disabled Copter tests updated with `context_push(snapshot_params=True, param_names=[...])`:
 
 | Test | Parameters Tracked |
-|---|---|
+| --- | --- |
 | `SMART_RTL_EnterLeave` | `AUTO_OPTIONS` |
 | `SMART_RTL_Repeat` | `SMARTRTL_POINTS_MAX`, `SMARTRTL_ACCURACY` |
 | `RTLStoppingDistanceSpeed` | `RTL_SPEED_MS`, `AUTO_OPTIONS` |
@@ -671,6 +720,7 @@ All disabled Copter tests updated with `context_push(snapshot_params=True, param
 All tests follow the `try/finally` pattern ensuring parameter restoration even on test failure.
 
 **Next Steps:**
+
 - Update `disabled_tests()` dictionary to remove tests from the disabled list
 - Add unit tests for the new tracking/validation logic
 - Consider making tracking automatic (not opt-in) for all contexts
@@ -735,6 +785,7 @@ class EKFMonitorHook(MessageHook):
 ```
 
 **Usage in Tests:**
+
 ```python
 def test_with_ekf_monitoring(self):
     ekf_hook = EKFMonitorHook(self)
@@ -813,6 +864,7 @@ class PositionJumpDetector(MessageHook):
 **Problem:** No centralized view of sensor health during test execution. Debugging sensor-related failures requires parsing individual MAVLink messages.
 
 **Required Changes:**
+
 - Create a `SensorHealthReport` class that aggregates `SYS_STATUS`, `EKF_STATUS_REPORT`, `GPS_RAW_INT`, `RANGEFINDER`, and `OPTICAL_FLOW` into a single report
 - Output at test completion: sensor uptime, error counts, degradation events
 - Output on anomaly: immediate log entry with timestamp and sensor details
@@ -845,6 +897,7 @@ def set_timeout_mode(self, mode='normal'):
 ```
 
 **Usage:**
+
 ```python
 # In CI config or test runner:
 if ci_fast_mode:
@@ -860,6 +913,7 @@ if ci_fast_mode:
 **Problem:** Tests run at normal MAVLink message rates. Stress testing (high message rate, high telemetry) is not possible.
 
 **Required Changes:**
+
 - Add ability to override MAVLink message rates per message type
 - Add ability to inject message delays or drops
 - Use for testing heartbeat timeout, GCS failsafe under load, etc.
@@ -877,7 +931,7 @@ This section maps out the sequential implementation order, respecting dependenci
 These are prerequisites for effective bug hunting.
 
 | Step | Component | Depends On | Effort |
-|------|-----------|------------|--------|
+| ------ | ----------- | ------------ | -------- |
 | 1.1 | Parameter context tracking (`_snapshot_parameters`, `_restore_parameters`) | None | 2h |
 | 1.2 | Apply parameter context to 2-3 existing tests that modify parameters | 1.1 | 1h |
 | 1.3 | SITL altitude drift fix (blocking bug #1) | None | TBD (core fix) |
@@ -892,7 +946,7 @@ These are prerequisites for effective bug hunting.
 High-impact tests that catch critical bugs.
 
 | Step | Test | Depends On | Effort |
-|------|------|------------|--------|
+| ------ | ------ | ------------ | -------- |
 | 2.1 | `TestEKFGPSYawRecovery` (Copter C1) | 1.1, 1.3 | 4h |
 | 2.2 | `TestFenceTerrainFallback` (Copter A2) | 1.1, 1.3 | 3h |
 | 2.3 | `TestQuadPlaneMotorFailTransition` (Plane B2) | 1.1, 1.4 | 6h |
@@ -909,7 +963,7 @@ High-impact tests that catch critical bugs.
 Medium-impact tests for broader coverage.
 
 | Step | Test | Depends On | Effort |
-|------|------|------------|--------|
+| ------ | ------ | ------------ | -------- |
 | 3.1 | EKF Monitor Hook (infrastructure) | None | 3h |
 | 3.2 | `TestFenceBoundaryCrossing` (Rover A2) | 3.1 | 3h |
 | 3.3 | `TestCompassSteeringInterference` (Rover C2) | 3.1 | 3h |
@@ -927,7 +981,7 @@ Medium-impact tests for broader coverage.
 Supporting infrastructure for long-term test health.
 
 | Step | Component | Depends On | Effort |
-|------|-----------|------------|--------|
+| ------ | ----------- | ------------ | -------- |
 | 4.1 | Position jump detector | None | 2h |
 | 4.2 | Timeout mode configuration | None | 2h |
 | 4.3 | Sensor health dashboard | 4.1, 3.1 | 3h |
@@ -947,11 +1001,13 @@ The following pre-existing bugs must be fixed before new tests can be validated.
 **Symptom:** Vehicle climbs uncontrollably in LOITER and ALT_HOLD modes. ModeFlip climbed to 1157m; MainFlight climbed to 693m. Both tests timed out at their 22m target altitude.
 
 **Evidence:**
+
 - `ModeFlip`: "want 22.0, reached 1157.139" at test time 41.1s
 - `MainFlight`: "want 165.0, reached 693.751" at test time 17.0s
 - Both tests start normally (takeoff succeeds), then climb diverges
 
 **Hypothesis:** SITL physics model has altitude control bug, possibly in:
+
 - `SITL::update_position()` or FDM integration
 - AHRS altitude estimation in SITL
 - PID loop for altitude in SITL
@@ -967,10 +1023,12 @@ The following pre-existing bugs must be fixed before new tests can be validated.
 **Symptom:** After throttle failsafe triggers RTL, the plane cannot arm/continue. `wait_mode("RTL")` may succeed but the plane doesn't move (groundspeed stays at 0.03 m/s).
 
 **Evidence:**
+
 - `ThrottleFailsafe`: groundspeed = 0.03, altitude = 31.57 after RTL mode entry
 - Error message from EKF: "RTL mode not armable"
 
 **Hypothesis:** EKF state is corrupted after failsafe event, or the EKF source selection logic prevents arming in RTL mode. Likely in:
+
 - `AP_NavEKF_Source::controlMagYawReset()` for plane GPS yaw path
 - EKF pre-arm check that incorrectly blocks RTL
 - Failsafe mode transition not properly setting EKF state
@@ -986,11 +1044,13 @@ The following pre-existing bugs must be fixed before new tests can be validated.
 **Symptom:** Mission-based tests fail with `MAV_MISSION_OPERATION_CANCELLED` or "Did not get timesync response" at random intervals. Affects GPSGlitchAuto, OpticalFlow, GPSGlitchLoiter2.
 
 **Evidence:**
+
 - `GPSGlitchAuto`: `MAV_MISSION_OPERATION_CANCELLED` at test time 43.1s
 - `OpticalFlow`: `MAV_MISSION_OPERATION_CANCELLED` at test time 22.5s
 - `GPSGlitchLoiter2`: "Did not get timesync response" at test time 0.08s
 
 **Hypothesis:** SITL MAVLink stack has race condition under mission upload/download stress:
+
 - `mavutil.mavlink` connection timeout during busy periods
 - SITL mission handling thread not thread-safe
 - Timesync exchange collision with mission operations
@@ -1006,16 +1066,19 @@ The following pre-existing bugs must be fixed before new tests can be validated.
 **Symptom:** During RTL, vehicle decelerates from 10 m/s to ~1 m/s (RTL_SPEED_MS value) and never stops at the RTL destination. The test `RTLStoppingDistanceSpeed` times out waiting for groundspeed < 0.3 m/s.
 
 **Evidence:**
+
 - SITL log shows groundspeed stuck at 1.00-1.02 m/s for extended period
 - Test expects: groundspeed between -0.3 and 0.3 m/s
 - Vehicle never transitions from FLY_TO_RETURN_POINT to FINAL_DESCENT or LAND phase
 
 **Hypothesis:** `RTL_SPEED_MS` parameter (default 1 m/s) sets a minimum horizontal speed floor in the waypoint navigation. The RTL state machine uses `wp_nav->reached_wp_destination()` to determine when to transition to the next phase, but this never returns true because:
+
 1. The waypoint navigation maintains the vehicle at exactly RTL_SPEED_MS cruising speed
 2. `reached_wp_destination()` checks distance to waypoint, but the vehicle is in cruise mode, not deceleration mode
 3. The RTL state machine never triggers deceleration because the vehicle is always at cruising speed
 
 **Code Path:**
+
 - `ArduCopter/mode_rtl.cpp` line 66: `AP_PARAM_INT16, "RTL_SPEED_MS"` (default 1 m/s)
 - `mode_rtl.cpp` line 89: `wp_nav->wp_and_spline_init_m(speed_ms.get())` - sets cruise speed
 - `climb_return_run()` line 293: uses `wp_nav->reached_wp_destination()` to check completion
@@ -1032,6 +1095,7 @@ The following pre-existing bugs must be fixed before new tests can be validated.
 **Symptom:** Entering and exiting SMART_RTL mode causes `AP_InternalError::error_t::flow_of_ctrl` PANIC on the second entry to SMART_RTL. The test `SMART_RTL_EnterLeave` crashes the autopilot.
 
 **Evidence:**
+
 - SITL log: `AT-0004.1: Changing mode to SMART_RTL` (1st time) → `Got mode SMART_RTL`
 - `AT-0004.1: Changing mode to ALT_HOLD` → `Got mode ALT_HOLD`
 - `AT-0004.1: Changing mode to SMART_RTL` (2nd time) → `arducopter: PANIC: AP_InternalError::error_t::flow_of_ctrl`
@@ -1039,16 +1103,19 @@ The following pre-existing bugs must be fixed before new tests can be validated.
 - Buildlog confirms: test crashed at step "SMART_RTL_EnterLeave (check SmartRTL behaviour when entering/leaving)"
 
 **Test Sequence:**
-```
+
+```text
 AUTO (arm, takeoff) → ALT_HOLD → SMART_RTL → ALT_HOLD → SMART_RTL → PANIC
 ```
 
 **Hypothesis:** SMART_RTL state machine has inconsistent state that causes a flow-of-control assertion on re-entry:
+
 - `smart_rtl_enter()` may leave internal state that is invalid when `smart_rtl_leave()` is called
 - On second entry, `smart_rtl_enter()` encounters unexpected state and triggers `INTERNAL_ERROR()`
 - Possible causes: uninitialized state, stale mission reference, or loop detection invariant violation
 
 **File to Investigate:**
+
 - `ArduCopter/mode.cpp` — `in_smart_rtl()` path, `smart_rtl_enter()`, `smart_rtl_leave()`
 - `AP_SmartRTL.cpp` — internal state machine, loop detection logic
 - Look for `INTERNAL_ERROR(AP_InternalError::error_t::flow_of_ctrl)` calls in SMART_RTL code path
@@ -1062,6 +1129,7 @@ AUTO (arm, takeoff) → ALT_HOLD → SMART_RTL → ALT_HOLD → SMART_RTL → PA
 **Symptom:** After completing a 3-item mission (TAKEOFF → WP → RTL) and disarming, the vehicle fails to take off on a second execution of the same mission. It remains at home (WP 0) and auto-disarms after ~3 seconds without moving.
 
 **Evidence:**
+
 - Run 1 succeeds: TAKEOFF (WP 0) → WP 1 → RTL (WP 2) → completes in ~43.6s, disarms after RTL
 - Run 2 fails immediately: vehicle sits at home, groundspeed stays at ~0.01 m/s, disarms without taking off
 - SITL log shows `current_wp: 0, wpnum_end: 3` throughout the entire run 2 — vehicle never transitions from current_wp=0 to WP 1
@@ -1069,18 +1137,21 @@ AUTO (arm, takeoff) → ALT_HOLD → SMART_RTL → ALT_HOLD → SMART_RTL → PA
 - Full test timeout: "Timed out waiting for waypoint 2 of 3" — but vehicle never got past waypoint 0
 
 **Test Sequence:**
-```
+
+```text
 change_mode('AUTO') → arm_vehicle() → fly_mission() → disarms after RTL → delay_sim_time(20)
 → arm_vehicle() → fly_mission() → DISARMED at home after ~3s (never took off)
 ```
 
 **Test Details:**
+
 - `FlyMissionTwice` in `Tools/autotest/arducopter.py` (line ~6696-6726)
 - Mission: TAKEOFF(20m) → WP at distance 1m → RTL
 - `AUTO_OPTIONS=3` (AllowArming | AllowTakeoffWithoutRaisingThrottle)
-- Disabled since PR #18561 with note "See https://github.com/ArduPilot/ardupilot/pull/18561"
+- Disabled since PR #18561 with note "See <https://github.com/ArduPilot/ardupilot/pull/18561>"
 
 **Hypothesis:** The mission state machine does not properly reset after RTL completion and re-arm:
+
 1. After RTL completes, `AP_Mission::complete()` sets state to `MISSION_COMPLETE` and calls `_mission_complete_fn`
 2. `exit_mission()` in mode_auto.cpp plays tone, tries loiter_start(), disarms
 3. On second run, `start_or_resume()` is called — it checks `MIS_RESTART` parameter:
@@ -1089,12 +1160,14 @@ change_mode('AUTO') → arm_vehicle() → fly_mission() → disarms after RTL �
 4. Neither path correctly re-arms the TAKEOFF command for the second run
 
 **Code Path:**
+
 - `ArduCopter/mode_auto.cpp` line 101-105: `mission.start_or_resume()` called when `waiting_to_start` becomes false
 - `AP_Mission::start_or_resume()` in `AP_Mission.cpp`: dispatches to `start()` or `resume()` based on `_restart`
 - `AP_Mission::complete()` in `AP_Mission.cpp` line 2141-2150: sets `MISSION_COMPLETE`, calls `_mission_complete_fn`
 - `AP_Mission::reset()`: clears flags and index — possibly not called before second start
 
 **File to Investigate:**
+
 - `libraries/AP_Mission/AP_Mission.cpp` — `start_or_resume()`, `complete()`, `reset()`, state transition logic
 - `ArduCopter/mode_auto.cpp` — `start_or_resume()` in mode Auto::run(), mission state machine integration
 - `ArduCopter/mode_auto.cpp` line 903-917: `exit_mission()` — disarms after RTL, possibly not cleaning mission state properly
@@ -1108,6 +1181,7 @@ change_mode('AUTO') → arm_vehicle() → fly_mission() → disarms after RTL �
 **Symptom:** During extended circular or meandering flight (CIRCLE mode), the SmartRTL breadcrumb path buffer (300 points max) fills up before the vehicle exits the maneuver, deactivating SmartRTL entirely. Subsequent attempt to enter SMART_RTL mode fails with "init failed."
 
 **Evidence:**
+
 - `SMART_RTL_Repeat` test: vehicle takes off, enters CIRCLE mode
 - At ~16s: "SmartRTL Low on space!" warnings begin (path at 291/300 points)
 - At ~31.4s: "SmartRTL deactivated: buffer full" (`deactivate(Action::DEACTIVATED_PATH_FULL_TIMEOUT, "buffer full")`)
@@ -1116,6 +1190,7 @@ change_mode('AUTO') → arm_vehicle() → fly_mission() → disarms after RTL �
 - Path fills at ~18 points/second (291 points in 16s) — far faster than expected
 
 **Test Details:**
+
 - `SMART_RTL_Repeat` in `Tools/autotest/arducopter.py` (line ~19493)
 - Takes off to 10m, enters CIRCLE for 1300s to fill breadcrumb buffer
 - Disabled: "Currently fails due to issue with loop detection"
@@ -1131,6 +1206,7 @@ The SmartRTL path buffer fills because the simplification algorithm fails to eff
 5. On subsequent simplification cycles, the bitmask references stale indices, causing simplification to either skip valid points or incorrectly flag points
 
 Additionally, in `update()`:
+
 ```cpp
 if (add_point(current_pos)) {
     _last_position_save_ms = now;
@@ -1138,11 +1214,13 @@ if (add_point(current_pos)) {
     deactivate(Action::DEACTIVATED_PATH_FULL_TIMEOUT, "buffer full");
 }
 ```
+
 When `add_point()` fails due to semaphore contention, `_last_position_save_ms` is NOT updated, so the timeout will eventually trigger. This is correct. But the primary failure path is the path array reaching `_path_points_max` (300), which triggers `deactivate(Action::DEACTIVATED_PATH_FULL, ...)` in `add_point()` directly.
 
 The `routine_cleanup()` function returns early after calling `remove_points_by_simplify_bitmask()` on line 424 (`return;`), which means pruning (`detect_loops()`) doesn't run in the same cycle as simplification removal. This is by design but means loop pruning is delayed by at least one cycle.
 
 **Key Code Files:**
+
 - `libraries/AP_SmartRTL/AP_SmartRTL.cpp`:
   - `add_point()` — path buffer management, `deactivate()` on full
   - `remove_points_by_simplify_bitmask()` — **likely bug in bitmask after compaction**
@@ -1160,7 +1238,7 @@ The `routine_cleanup()` function returns early after calling `remove_points_by_s
 ### Existing Wait Methods (for building new tests)
 
 | Method | Description | Default Timeout | Notes |
-|--------|-------------|-----------------|-------|
+| -------- | ------------- | ----------------- | ------- |
 | `wait_mode(mode)` | Wait for flight mode change | 60s | Returns on success, raises `WaitModeTimeout` |
 | `wait_altitude(min, max)` | Wait for altitude within range | 30s | Supports `relative=True` |
 | `wait_attitude(roll, pitch)` | Wait for specific attitude angles | 2s | Now supports `minimum_duration` |
@@ -1176,7 +1254,7 @@ The `routine_cleanup()` function returns early after calling `remove_points_by_s
 ### Parameter Injection API
 
 | Parameter | Description | Test Use |
-|-----------|-------------|----------|
+| ----------- | ------------- | ---------- |
 | `SIM_GPS1_ENABLE` / `SIM_GPS2_ENABLE` | GPS module enable | GPS fault injection |
 | `SIM_GPS1_GLTCH_X/Y` | GPS position glitch (meters) | Position jump injection |
 | `SIM_MAG1_FAIL` / `SIM_MAG2_FAIL` | Compass fault (0=ok, 1=full fail) | Compass degradation |
@@ -1191,7 +1269,7 @@ The `routine_cleanup()` function returns early after calling `remove_points_by_s
 ### Message Types for Monitoring
 
 | Message | Key Fields | Use Case |
-|---------|-----------|----------|
+| --------- | ----------- | ---------- |
 | `EKF_STATUS_REPORT` | `flags`, `vel_horiz_drift`, `pos_horiz_drift`, `yaw` | EKF health, source switching |
 | `GPS_RAW_INT` | `lat`, `lon`, `alt`, `hdop`, `fix_type`, `sacc` | GPS position, quality |
 | `GLOBAL_POSITION_INT` | `lat`, `lon`, `alt`, `vx`, `vy`, `vz` | Position tracking, velocity |
@@ -1209,6 +1287,7 @@ The `routine_cleanup()` function returns early after calling `remove_points_by_s
 ## 10. Fuzz Test Bug Analysis (GPSCorruptionFuzz / SensorFaultFuzz / FailsafeEdgeCases)
 
 Three adversarial fuzz tests were identified and analyzed for root-cause bugs in ArduPilot C++ source code. Results:
+
 - **GPSCorruptionFuzz:** FAILS — catches real EKF GPS fusion bug (asymmetric height/position gating)
 - **SensorFaultFuzz:** PASSES — validates EKF robustness under simultaneous sensor faults
 - **FailsafeEdgeCases:** FAILS — fence safe-alt-max prevents vehicle from reaching fence boundary
@@ -1227,11 +1306,13 @@ Three adversarial fuzz tests were identified and analyzed for root-cause bugs in
 
 **Scenario A — `_gpsGlitchRadiusMax > 0` (default 25m):**
 When GPS position corruption exceeds the innovation gate (`posTestRatio > 1.0`):
+
 - Lines 913–923: The code enters the `else if` branch only when `_gpsGlitchRadiusMax <= 0` (clipping path).
 - Lines 926–946: When `posCheckPassed == false`, the code falls through to line 1014: `fusePosData = false`. **Position fusion is correctly disabled.**
 - However, the height check at lines 1030–1050 still runs independently. When `_gpsGlitchRadiusMax > 0`, the height clipping at line 1035–1040 is **NOT** gated on `_gpsGlitchRadiusMax > 0` — it checks `<= 0`. **Height fusion still uses clipping even when position fusion is disabled.**
 
 **Scenario B — `_gpsGlitchRadiusMax <= 0` (clipping mode):**
+
 - Line 914: Position innovation variance is scaled by `posTestRatio` (clipping), then `fusePosData = true`. The corrupted GPS position is partially fused.
 - Line 1036: Same clipping for height. **Corrupted GPS altitude is partially fused.**
 - This allows the corrupted GPS to slowly pull the EKF position estimate toward the bad reading, causing unbounded drift.
@@ -1251,6 +1332,7 @@ posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
 With a 50m GPS jump: `posTestRatio` is ~2500 (far exceeds 1.0). The position is rejected but height is not.
 
 **The real bug:** GPS position and height innovation checks are **asymmetrically gated** on `_gpsGlitchRadiusMax`:
+
 - Position clipping (line 913): `_gpsGlitchRadiusMax <= 0`
 - Height clipping (line 1035): `_gpsGlitchRadiusMax <= 0`
 - **But height fusion is independent of position fusion.** When position is rejected but height is accepted, the EKF fuses only the GPS altitude while rejecting horizontal GPS. This can cause the EKF to use baro altitude as horizontal reference while fusing GPS altitude — if baro has bias, the vertical position estimate can drift.
@@ -1267,6 +1349,7 @@ With a 50m GPS jump: `posTestRatio` is ~2500 (far exceeds 1.0). The position is 
 #### Fix Strategy
 
 The root fix is in the EKF GPS fusion logic. Options:
+
 1. **Reject entire GPS position+velocity+height together** when any component fails innovation — treat GPS as a unit, not independent components
 2. **Tighten innovation gates** specifically for sudden jumps (detect d(position)/dt)
 3. **Add a maximum innovation clamp** that prevents partial fusion when a large jump is detected
@@ -1305,7 +1388,7 @@ faults are removed.
 #### Rounds Tested
 
 | Round | Fault | Status |
-|---|---|---|
+| --- | --- | --- |
 | 1 | Baro+GPS altitude fusion conflict | PASSED |
 | 2 | Compass+GPS yaw conflict | PASSED |
 | 3 | Optical-flow+GPS velocity conflict | PASSED |
@@ -1360,6 +1443,7 @@ This creates a **"safe alt max"** = `FENCE_ALT_MAX - FENCE_MARGIN` = `5 - 2 = 3m
 5. The vehicle **stalls indefinitely** at 3m.
 
 **SITL log verification** (`logs/00000002.BIN`):
+
 - Altitude: 2.986–3.003m (exactly `FENCE_ALT_MAX - FENCE_MARGIN`)
 - Climb rate: ~0.1 m/s (near-zero, oscillating ±0.15)
 - Throttle integral (ThI): 0.365–0.398 (integrator slowly growing, insufficient to climb)
@@ -1377,6 +1461,7 @@ This creates a **"safe alt max"** = `FENCE_ALT_MAX - FENCE_MARGIN` = `5 - 2 = 3m
 #### Additional Issue: STATUSTEXT Consumption During `wait_altitude`
 
 There is a **secondary issue** where STATUSTEXT messages are silently consumed by `poll_message()` during `wait_altitude`. The test log shows "Drained 28 messages from mav (69615.004149/s)" at the timeout, but zero STATUSTEXT messages were logged during the 2.8-second climb period. This means:
+
 - Even if the vehicle DID breach the fence, the "Fence breached" STATUSTEXT would be consumed by `poll_message()` and never reach `wait_statustext()`
 - The `wait_altitude` function should either log consumed STATUSTEXT or use a non-consuming polling method
 
@@ -1415,6 +1500,7 @@ self.set_rc(3, 1500)  # center throttle
 ```
 
 **For the code (design review):** Consider whether `FENCE_MARGIN` clamping should be:
+
 1. **Optional** — disabled during armed/takeoff phases
 2. **Different at the margin** — trigger RTL at the safe alt max (margin breach) instead of just notification, since the vehicle cannot proceed upward anyway
 3. **RTL-aware** — when RTL is triggered and the fence prevents upward climb, initiate descent instead of stalling at the safe alt max
@@ -1431,6 +1517,7 @@ self.set_rc(3, 1500)  # center throttle
 **Files:** `libraries/AP_SmartRTL/AP_SmartRTL.cpp` (lines 327–352, `add_point()`), `ArduCopter/mode_smart_rtl.cpp` (line 132)
 
 The test:
+
 1. Enters SMART_RTL → breadcrumbs accumulate in ALT_HOLD via `save_position()` (3Hz)
 2. Completes RTL → disarms
 3. Re-enters ALT_HOLD → breadcrumbs accumulate again
@@ -1474,11 +1561,13 @@ AP_GROUPINFO("POINTS", 1, AP_SmartRTL, _points_max, SMARTRTL_POINTS_DEFAULT),
 The parameter is defined in `AP_GROUPINFO` but may not be properly initialized during SITL boot. The test observes that `SMARTRTL_POINTS` has a default value but doesn't respond to changes during the test.
 
 **Possible causes:**
+
 1. `AP_SmartRTL::init()` not called during SITL initialization (check `system.cpp:158`)
 2. Parameter namespace collision with existing SITL parameter stores
 3. `update()` method (line 234) called before `_points_max` is initialized
 
 **From the code:** `system.cpp:158` shows:
+
 ```cpp
 #if MODE_SMARTRTL_ENABLED
     g2.smart_rtl.init();
@@ -1486,6 +1575,7 @@ The parameter is defined in `AP_GROUPINFO` but may not be properly initialized d
 ```
 
 And `init()` (line 116) allocates the path buffer:
+
 ```cpp
 _path = (Vector3f*)calloc(_points_max, sizeof(Vector3f));
 ```
