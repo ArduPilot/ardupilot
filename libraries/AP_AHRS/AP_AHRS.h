@@ -349,6 +349,17 @@ public:
         return configured_estimates->filter_status_valid;
     }
 
+    // EKF health flags for continuous degradation monitoring
+    struct EKF_Health {
+        bool absolute_position_lost : 1;  // true if horiz_pos_rel only (drift accumulating)
+        bool heading_reliant_compass : 1; // true if heading from compass only (no GPS/extNav yaw)
+        bool dead_reckoning : 1;          // true if dead reckoning (no position or velocity source)
+    };
+
+    // get_ekf_health - returns EKF health status for continuous degradation monitoring
+    // returns false if the configured backend does not provide filter status
+    bool get_ekf_health(EKF_Health &health) const;
+
 #if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
     // get compass offset estimates, in body frame, milligauss
     // true if offsets are valid

@@ -358,6 +358,24 @@ bool AP_AHRS::configured_backend_has_status(Status status) const {
     return (filter_status.value & uint32_t(status)) != 0;
 }
 
+// get_ekf_health - returns EKF health status for continuous degradation monitoring
+// Checks for degradation conditions that the vehicle code should be aware of
+bool AP_AHRS::get_ekf_health(EKF_Health &health) const
+{
+    nav_filter_status filter_status;
+    if (!get_filter_status_for_configured_backend(filter_status)) {
+        return false;
+    }
+
+    health.dead_reckoning       = filter_status.flags.dead_reckoning;
+    health.absolute_position_lost = filter_status.flags.horiz_pos_rel &&
+                                     !filter_status.flags.horiz_pos_abs;
+    health.heading_reliant_compass = !using_noncompass_for_yaw() &&
+                                      !using_extnav_for_yaw();
+
+    return true;
+}
+
 // updates matrices responsible for rotating vectors from vehicle body
 // frame to autopilot body frame from _trim variables
 void AP_AHRS::update_trim_rotation_matrices()
