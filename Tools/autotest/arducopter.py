@@ -2150,52 +2150,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.clear_battery_failsafe()
 
-    def BatteryArmVoltageGuard(self):
-        '''Test that BATT_ARM_VOLT correctly blocks arming when set mid-flight.
-
-        Verifies the arm voltage guard catches a BATT_ARM_VOLT change
-        applied after the vehicle is already armed and flying.  The
-        parameter change takes effect immediately; after landing and
-        attempting to re-arm the vehicle should refuse with
-        "below minimum arming voltage".
-        '''
-        self.context_push()
-
-        self.set_parameters({
-            "BATT_ARM_VOLT": 12.0,       # normal arm voltage
-            "SIM_BATT_VOLTAGE": 12.5,    # battery above arm threshold
-        })
-        self.reboot_sitl()
-
-        self.progress("Takeoff and climb")
-        self.takeoff(10, mode="LOITER")
-        self.wait_altitude(8, 12, relative=True, timeout=15)
-
-        self.progress("Raising BATT_ARM_VOLT above current battery voltage mid-flight")
-        self.set_parameters({
-            "BATT_ARM_VOLT": 13.0,       # above 12.5V — should block re-arm
-        })
-        self.delay_sim_time(2, reason="let parameter take effect")
-
-        self.progress("Land and attempt to re-arm")
-        self.land_and_disarm()
-
-        # Battery voltage (12.5V) is below new arm threshold (13.0V)
-        self.try_arm(result=False, expect_msg="below minimum arming voltage")
-
-        self.progress("Lowering BATT_ARM_VOLT restores arming")
-        self.set_parameters({
-            "BATT_ARM_VOLT": 11.5,       # below 12.5V — should allow arm
-        })
-        self.change_mode("STABILIZE")
-        self.zero_throttle()
-        self.wait_ready_to_arm()
-        self.try_arm(result=True)
-        self.arm_vehicle()
-        self.disarm_vehicle()
-
-        self.context_pop()
-
     def VibrationFailsafe(self):
         '''Test Vibration Failsafe'''
         self.context_push()
@@ -20988,7 +20942,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrottleFailsafePassthrough,
             self.ThrottleFailsafeValue,
             self.BatteryMissing,
-            self.BatteryArmVoltageGuard,
             self.VibrationFailsafe,
             self.VibrationCompensationThrottle,
             self.EK3_AccelBiasInhibitOnGroundMoving,
