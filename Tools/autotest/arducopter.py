@@ -13901,6 +13901,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FOLL_OFS_X": -foll_ofs_x,
             "FOLL_OFS_TYPE": 1, # relative to other vehicle heading
         })
+
+        self.start_subtest("Follow mode must refuse a takeoff command")
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode("FOLLOW")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=10,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.disarm_vehicle()
+
         self.takeoff(10, mode="LOITER")
         self.context_push()
         self.context_set_speedup(1)
