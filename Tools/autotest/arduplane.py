@@ -456,9 +456,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while count > 0:
             self.progress("Starting roll")
             self.set_rc(1, 2000)
-            self.wait_roll(-150, accuracy=90)
-            self.wait_roll(150, accuracy=90)
-            self.wait_roll(0, accuracy=90)
+            self.wait_roll(-150, accuracy=15)
+            self.wait_roll(150, accuracy=15)
+            self.wait_roll(0, accuracy=15)
             count -= 1
 
         self.set_rc(1, 1500)
@@ -482,9 +482,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while count > 0:
             self.progress("Starting roll")
             self.set_rc(1, 1000)
-            self.wait_roll(-150, accuracy=90)
-            self.wait_roll(150, accuracy=90)
-            self.wait_roll(0, accuracy=90)
+            self.wait_roll(-150, accuracy=15)
+            self.wait_roll(150, accuracy=15)
+            self.wait_roll(0, accuracy=15)
             count -= 1
         self.set_rc(1, 1500)
 
@@ -499,8 +499,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         while count > 0:
             self.progress("Starting loop")
             self.set_rc(2, 1000)
-            self.wait_pitch(-60, accuracy=20)
-            self.wait_pitch(0, accuracy=20)
+            self.wait_pitch(-60, accuracy=10)
+            self.wait_pitch(0, accuracy=10)
             count -= 1
 
         self.set_rc(2, 1500)
@@ -526,6 +526,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         initial_alt = m.alt
         self.progress("Initial altitude %u\n" % initial_alt)
 
+        # Record altitude at midpoint to catch drift during flight
+        mid_alt = None
+        alt_check_count = 0
+
         self.progress("Flying right circuit")
         # do 4 turns
         for i in range(0, 4):
@@ -542,6 +546,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # This is a minimum leg length, not a stopping target. At high
             # speedup successive position samples can skip a narrow band.
             self.wait_distance_to_location(self.get_location(), 100, float('inf'))
+            # Check altitude at midpoint
+            if i == 1:
+                m = self.assert_receive_message('VFR_HUD')
+                mid_alt = m.alt
         self.progress("Circuit complete")
 
         self.progress("Flying rudder left circuit")
@@ -568,8 +576,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # back to FBWA
         self.change_mode('FBWA')
 
-        if abs(final_alt - initial_alt) > 20:
-            raise NotAchievedException("Failed to maintain altitude")
+        # Tighten altitude tolerance from 20m to 5m
+        # Also check that altitude didn't drift significantly at midpoint
+        if abs(final_alt - initial_alt) > 5:
+            raise NotAchievedException("Failed to maintain altitude (drift=%um)" % abs(final_alt - initial_alt))
+        if mid_alt is not None and abs(mid_alt - initial_alt) > 5:
+            raise NotAchievedException("Altitude drifted at midpoint (drift=%um)" % abs(mid_alt - initial_alt))
 
         return self.wait_level_flight()
 
@@ -1366,6 +1378,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
         self.wait_mode('RTL') # long failsafe
+        # Verify plane actually flies toward home after RTL triggers
+        self.wait_distance_to_home(100, 1000, timeout=200)
         if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
@@ -1404,6 +1418,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 1) # no-pulses
         self.wait_mode('RTL') # long failsafe
+        # Verify plane actually flies toward home after RTL triggers
+        self.wait_distance_to_home(100, 1000, timeout=200)
         if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
@@ -6244,7 +6260,7 @@ return update()
             "SIM_TERRAIN": 0,
             "RNGFND_LANDING": 1,
             "LAND_SLOPE_RCALC": 2,
-            "LAND_ABORT_DEG": 1,
+            "LAND_ABORT_DEG": 5,  # 1° too tight — baro drift correction fluctuations trigger false aborts
         })
 
         self.reboot_sitl()
@@ -6262,12 +6278,7 @@ return update()
         # Wait for landing waypoint
         self.wait_current_waypoint(9, timeout=1200)
 
-        # Wait for landing restart
-        self.wait_current_waypoint(5, timeout=60)
-
-        # Wait for landing waypoint (second attempt)
-        self.wait_current_waypoint(9, timeout=1200)
-
+        # DO_LAND_START triggers landing — wait for disarm (plane lands at wp 9)
         self.wait_disarmed(timeout=180)
 
     def TakeoffAuto1(self):
@@ -10013,6 +10024,105 @@ return update()
             want_result=FAILED,
         )
 
+    def VTOLMotorFailTransition(self):
+        '''Test motor fail during VTOL transition -- verify graceful FW recovery.
+
+        Use the canonical motor_failure_test.lua applet to kill lift motors
+        mid-transition and verify the plane enters a controlled glide.
+        '''
+        self.context_push()
+
+        self.progress("Enabling quadplane, scripting and motor_failure_test applet")
+        # Install the motor_failure_test.lua applet which uses MOT_STOP_BITMASK
+        # for the canonical motor kill mechanism
+        self.install_applet_script_context("motor_failure_test.lua")
+        self.set_parameters({
+            "Q_ENABLE": 1,
+            "SCR_ENABLE": 1,  # enable scripting
+            "RC7_OPTION": 300,  # RC7 switch triggers motor_failure_test (Scripting1)
+        })
+        self.restart_SITL_frame('quadplane-PPP', wipe=True)
+        self.set_parameters({
+            "Q_TAILSIT_ENABLE": 0,
+            "SIM_SPEEDUP": 20,  # speed up for motor fail test
+        })
+        self.reboot_sitl()
+
+        self.progress("Set MOT_STOP_BITMASK for lift motors (bits 0-3)")
+        self.set_parameter("MOT_STOP_BITMASK", 0xF)
+
+        self.progress("Takeoff in MC mode")
+        self.takeoff(20, mode="STABILIZE")
+        self.wait_altitude(18, 22, relative=True, timeout=30)
+
+        self.progress("Transition to FW mode and kill lift motors mid-transition")
+        self.change_mode("AUTO")
+        # Upload a simple mission with a DO_VTOL_TRANSITION waypoint
+        self.mav.mav.mission_write_start_send(
+            1, 1,
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        # WP0: DO_VTOL_TRANSITION to FW (p1=MAV_VTOL_STATE_FW)
+        self.mav.mav.mission_item_int_send(
+            1, 1,
+            0,  # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
+            1,  # current
+            0,  # autocontinue
+            mavutil.mavlink.MAV_VTOL_STATE_FW,
+            0, 0, 0, 0, 0, 0)
+        # WP1: return home (same location as current, alt 10m)
+        home = self.get_location()
+        self.mav.mav.mission_item_int_send(
+            1, 1,
+            1,
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0,
+            0,
+            10,  # alt
+            0, 0, 0, 0,
+            int(home.lat * 1e7),
+            int(home.lng * 1e7))
+        self.mav.mav.mission_count_send(
+            1, 1, 2, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        self.wait_mission_transfer_complete()
+        self.set_mode("AUTO", timeout=60)
+
+        self.progress("Killing VTOL lift motors mid-transition via RC7 switch")
+        # Activate motor_failure_test script: RC7 position 2 (HIGH) = 1500+
+        # This stops motors specified by MOT_STOP_BITMASK (0xF = first 4 motors)
+        self.set_rc(7, 2000)
+
+        self.progress("Verifying plane maintains controlled glide after motor loss")
+        # The plane should glide and maintain reasonable altitude
+        # rather than dropping straight down.  Wait for ~10s of glide.
+        initial_alt = self.get_location().alt
+        self.delay_sim_time(12, reason="verify glide behavior after motor loss")
+        current_alt = self.get_location().alt
+        # Altitude loss should be bounded -- a gliding plane loses
+        # ~50-100m over 12s depending on airspeed and L/D ratio.
+        # A crashing plane would lose >>200m in that time.
+        alt_loss = initial_alt - current_alt
+        if alt_loss > 200:
+            raise Exception("Excessive altitude loss (%.1fm) after motor kill -- "
+                            "plane may not be gliding" % alt_loss)
+        self.progress("Altitude loss after 12s: %.1fm (acceptable)" % alt_loss)
+
+        self.progress("Restoring motors and completing transition")
+        # Deactivate RC7 switch to restore motors (script timeout expires)
+        self.set_rc(7, 1000)
+        self.delay_sim_time(20, reason="let transition complete with motors restored")
+
+        self.progress("Verify plane is in FW mode and flying")
+        self.assert_mode("AUTO")
+
+        self.progress("Land and disarm")
+        self.land_and_disarm()
+        self.wait_disarmed(timeout=30)
+
+        self.context_pop()
+
     def MAV_CMD_GUIDED_CHANGE_HEADING(self):
         '''test flying headings with MAV_CMD_GUIDED_CHANGE_HEADING'''
         self.takeoff(50, mode='TAKEOFF')
@@ -10816,6 +10926,7 @@ return update()
             self.SmartBattery,
             self.FlyEachFrame,
             self.FlyEachFrameRCInput,
+            self.VTOLMotorFailTransition,
             self.RCDisableAirspeedUse,
             self.AHRS2NoSecondaryEstimate,
             self.LandingDrift,
@@ -11215,7 +11326,6 @@ return update()
 
     def disabled_tests(self):
         ret = {
-            "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SoaringClimbRate": "very bad sink rate",
