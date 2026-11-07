@@ -10032,29 +10032,20 @@ return update()
     def VTOLMotorFailTransition(self):
         '''Test motor fail during VTOL transition -- verify graceful FW recovery.
 
-        Use the canonical motor_failure_test.lua applet to kill lift motors
-        mid-transition and verify the plane enters a controlled glide.
+        Kill lift motors mid-transition and verify the plane enters a
+        controlled glide rather than crashing.
         '''
         self.context_push()
 
-        self.progress("Enabling quadplane, scripting and motor_failure_test applet")
-        # Install the motor_failure_test.lua applet which uses MOT_STOP_BITMASK
-        # for the canonical motor kill mechanism
-        self.install_applet_script_context("motor_failure_test.lua")
+        self.progress("Enabling quadplane and restarting with quadplane model")
         self.set_parameters({
             "Q_ENABLE": 1,
-            "SCR_ENABLE": 1,  # enable scripting
-            "RC7_OPTION": 300,  # RC7 switch triggers motor_failure_test (Scripting1)
         })
         self.restart_SITL_frame('quadplane-PPP', wipe=True)
         self.set_parameters({
             "Q_TAILSIT_ENABLE": 0,
-            "SIM_SPEEDUP": 20,  # speed up for motor fail test
         })
         self.reboot_sitl()
-
-        self.progress("Set MOT_STOP_BITMASK for lift motors (bits 0-3)")
-        self.set_parameter("MOT_STOP_BITMASK", 0xF)
 
         self.progress("Takeoff in MC mode")
         self.takeoff(20, mode="STABILIZE")
@@ -10094,10 +10085,11 @@ return update()
         self.wait_mission_transfer_complete()
         self.set_mode("AUTO", timeout=60)
 
-        self.progress("Killing VTOL lift motors mid-transition via RC7 switch")
-        # Activate motor_failure_test script: RC7 position 2 (HIGH) = 1500+
-        # This stops motors specified by MOT_STOP_BITMASK (0xF = first 4 motors)
-        self.set_rc(7, 2000)
+        self.progress("Killing VTOL lift motors at transition start")
+        # SIM_ENGINE_FAIL bitmask: kill VTOL lift motors (bits 0-3)
+        self.set_parameters({
+            "SIM_ENGINE_FAIL": 0xF,  # kill first 4 motors (lift)
+        })
 
         self.progress("Verifying plane maintains controlled glide after motor loss")
         # The plane should glide and maintain reasonable altitude
@@ -10115,8 +10107,9 @@ return update()
         self.progress("Altitude loss after 12s: %.1fm (acceptable)" % alt_loss)
 
         self.progress("Restoring motors and completing transition")
-        # Deactivate RC7 switch to restore motors (script timeout expires)
-        self.set_rc(7, 1000)
+        self.set_parameters({
+            "SIM_ENGINE_FAIL": 0,  # restore motors
+        })
         self.delay_sim_time(20, reason="let transition complete with motors restored")
 
         self.progress("Verify plane is in FW mode and flying")

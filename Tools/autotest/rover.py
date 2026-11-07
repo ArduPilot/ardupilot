@@ -493,7 +493,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
             if start != initial:
                 break
         self.set_rc(3, 1500)
-        self.wait_groundspeed(0, 5.0)  # 5s generous timeout for 15m/s stop at 15m/s²
+        self.wait_groundspeed(0, 0.2)  # why do we not stop?!
         initial = self.get_location()
         initial_time = time.time()
         while time.time() - initial_time < 2:
@@ -5060,12 +5060,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        # Use target outside exclusion zone to avoid OA deactivation oscillation
-        # (BendyRuler OA deactivates when path back to home is clear near destination)
-        target_loc = Location(40.071260, -105.227000, 1584, AltFrame.ABSOLUTE)
+        target_loc = Location(40.071060, -105.227734, 1584, AltFrame.ABSOLUTE)
         self.send_guided_mission_item(target_loc,
                                       target_system=target_system,
                                       target_component=target_component)
+        # FIXME: we don't get within WP_RADIUS of our target?!
         self.wait_location(target_loc, timeout=300, accuracy=15)
         self.do_RTL(timeout=300)
         self.disarm_vehicle()
@@ -5732,7 +5731,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if achieved_time > 0.5:
             raise NotAchievedException("Output response should be instant, got %f" % achieved_time)
         self.zero_throttle()
-        self.wait_groundspeed(0, 5.0)  # generous timeout for rover to stop
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
 
         self.start_subtest("Test 100% slew rate")
         self.set_parameter("MOT_SLEWRATE", 100)
@@ -5745,7 +5744,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if achieved_time < 0.9 or achieved_time > 1.1:
             raise NotAchievedException("Output response should be 1s, got %f" % achieved_time)
         self.zero_throttle()
-        self.wait_groundspeed(0, 5.0)  # generous timeout for rover to stop
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
 
         self.start_subtest("Test 50% slew rate")
         self.set_parameter("MOT_SLEWRATE", 50)
@@ -5758,7 +5757,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if achieved_time < 1.8 or achieved_time > 2.2:
             raise NotAchievedException("Output response should be 2s, got %f" % achieved_time)
         self.zero_throttle()
-        self.wait_groundspeed(0, 5.0)  # generous timeout for rover to stop
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
 
         self.start_subtest("Test 25% slew rate")
         self.set_parameter("MOT_SLEWRATE", 25)
@@ -5771,7 +5770,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if achieved_time < 3.6 or achieved_time > 4.4:
             raise NotAchievedException("Output response should be 4s, got %f" % achieved_time)
         self.zero_throttle()
-        self.wait_groundspeed(0, 5.0)  # generous timeout for rover to stop
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
 
         self.start_subtest("Test 10% slew rate")
         self.set_parameter("MOT_SLEWRATE", 10)
@@ -5784,7 +5783,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if achieved_time < 9 or achieved_time > 11:
             raise NotAchievedException("Output response should be 10s, got %f" % achieved_time)
         self.zero_throttle()
-        self.wait_groundspeed(0, 5.0)  # generous timeout for rover to stop
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
         self.disarm_vehicle()
         self.context_pop()
 
