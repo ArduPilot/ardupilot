@@ -41,7 +41,7 @@ New tests added to catch specific real-world bug classes:
 | FailsafeEdgeCases R1-R3 | Copter | cfc4e647e0 | Failsafe timing, GCS recovery, parachute safety |
 | `FenceTerrainFallback` | Copter | fea452c420 | Fence terrain-dependent degradation (safe RTL trigger) |
 | `BatteryArmVoltageGuard` | Copter | 6b0e4ee151 | BATT_ARM_VOLT mid-flight arming guard enforcement |
-| `VTOLMotorFailTransition` | Plane | 59797b7602 | VTOL motor fail mid-transition, graceful glide recovery (refactored to use motor_failure_test.lua applet) |
+| `VTOLMotorFailTransition` | Plane | 6a1b40b47c | VTOL motor fail mid-transition, graceful glide recovery |
 | `FenceBoundaryCrossing` | Rover | 6a1b40b47c | Repeated fence boundary crossings, state-machine bugs |
 
 ---
@@ -209,7 +209,6 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 ## 11. Git History (test-improvements branch)
 
 ```
-59797b7602  test(autotest): refactor VTOLMotorFailTransition to use motor_failure_test.lua
 6a1b40b47c  test(autotest): add VTOL motor fail and repeated fence crossing tests
 b25bd8b693  docs(autotest): update synthesis with BatteryArmVoltageGuard completion
 6b0e4ee151  test(autotest): add BatteryArmVoltageGuard test for arming voltage mid-flight change
