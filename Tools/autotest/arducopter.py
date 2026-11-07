@@ -24537,12 +24537,14 @@ return update()
         try:
             # Mission structure:
             #   WP 0: TAKEOFF to 20m
-            #   WP 1: WP at (200, 0, 20) — navigate to here
-            # When vehicle starts executing WP 1, it's at WP_SPEED.
-            # We check groundspeed during this navigation leg, BEFORE RTL.
+            #   WP 1: LOITER (checkpoint for speed verification)
+            #   WP 2: WP at (200, 0, 20) — where RTL will be triggered
+            #   WP 3: RTL to home
             self.upload_simple_relhome_mission([
                 (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,          0, 0, 20),
+                (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM,     0, 0,  0),
                 (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,       200, 0, 20),
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0,  0),
             ])
             self.set_parameters({
                 "AUTO_OPTIONS": 3,
@@ -24560,9 +24562,9 @@ return update()
                 wp_speed = self.get_parameter('WP_SPD')
                 self.progress("Target WP speed: %.1fm/s, RTL speed: %um/s" % (wp_speed, rtl_speed))
 
-                # Wait for vehicle to start navigating WP 1. At this point
-                # groundspeed is governed by WP_SPD, not RTL_SPEED_MS.
-                self.progress("Waiting for vehicle to start navigating WP 1")
+                # Wait for vehicle to reach LOITER (WP 1). This is where
+                # speed is governed by WP_SPD, not RTL_SPEED_MS.
+                self.progress("Waiting for vehicle to reach LOITER checkpoint")
                 self.wait_current_waypoint(1)
 
                 # Verify groundspeed at WP speed during AUTO waypoint navigation.
