@@ -88,7 +88,21 @@ void Plane::navigate()
     // do not navigate with corrupt data
     // ---------------------------------
     if (!have_position) {
-        return;
+        // In RTL mode, attempt navigation with degraded EKF state.
+        // Without valid GPS position the EKF degrades to dead-reckoning;
+        // velocity, attitude, and heading remain available.  Dead-stopping
+        // the vehicle mid-RTL is worse for safety-critical failsafe paths.
+        if (control_mode == &mode_rtl) {
+            if (!rtl.navigating_with_degraded_ekf) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RTL: navigating with degraded EKF");
+                rtl.navigating_with_degraded_ekf = true;
+            }
+        } else {
+            return;
+        }
+    } else {
+        // Reset degraded-state flag when EKF recovers
+        rtl.navigating_with_degraded_ekf = false;
     }
 
     if (next_WP_loc.lat == 0 && next_WP_loc.lng == 0) {
