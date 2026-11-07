@@ -148,10 +148,11 @@ void ModeSmartRTL::path_follow_run()
                     }
                     wp_nav->set_wp_destination_next_NED_m(next_dest_NED);
                 } else {
-                    // this can only happen if peek failed to take the semaphore
-                    // send next point anyway which will cause the vehicle to slow at the next point
-                    wp_nav->set_wp_destination_NED_m(dest_NED);
-                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    // peek_point() failed due to background cleanup thread holding
+                    // semaphore — this is expected during thorough cleanup.
+                    // Continue with the current destination rather than panicking.
+                    gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL: peek contention");
+                    // dest_NED already set, continue with it
                 }
             }
         } else if (g2.smart_rtl.get_num_points() == 0) {

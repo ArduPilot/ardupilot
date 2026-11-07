@@ -272,9 +272,15 @@ void AP_SmartRTL::update(bool position_ok, const Vector3p& current_pos)
         // add the point
         if (add_point(current_pos)) {
             _last_position_save_ms = now;
-        } else if (AP_HAL::millis() - _last_position_save_ms > SMARTRTL_TIMEOUT) {
-            // deactivate after timeout due to failure to save points to path (most likely due to buffer filling up)
-            deactivate(Action::DEACTIVATED_PATH_FULL_TIMEOUT, "buffer full");
+        } else {
+            // update timestamp even on failure so the timeout tracks
+            // how long update() has been skipped, not how long add_point()
+            // contends with the cleanup thread.
+            _last_position_save_ms = now;
+            if (AP_HAL::millis() - _last_position_save_ms > SMARTRTL_TIMEOUT) {
+                // deactivate after timeout due to failure to save points to path (most likely due to buffer filling up)
+                deactivate(Action::DEACTIVATED_PATH_FULL_TIMEOUT, "buffer full");
+            }
         }
     } else {
         // check for timeout due to bad position

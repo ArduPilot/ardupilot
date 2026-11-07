@@ -21,6 +21,10 @@ static struct {
     uint8_t bad_variance : 1;   // true if ekf should be considered untrusted (fail_count has exceeded EKF_CHECK_ITERATIONS_MAX)
     bool has_ever_passed;       // true if the ekf checks have ever passed
     uint32_t last_warn_time;    // system time of last warning in milliseconds.  Used to throttle text warnings sent to GCS
+    uint32_t last_degradation_warn_ms;  // system time of last EKF degradation warning
+    uint32_t last_drift_warn_ms;          // system time of last drift warning
+    bool was_degradation_active;          // track previous state for transition detection
+    bool was_drift_active;                // track previous state for transition detection
 } ekf_check_state;
 
 // ekf_check - detects if ekf variance are out of tolerance and triggers failsafe
@@ -31,6 +35,44 @@ void Rover::ekf_check()
     Location temp_loc;
     if (!ahrs.get_origin(temp_loc)) {
         return;
+    }
+
+    // === EKF degradation monitoring (continuous health monitoring) ===
+    if (arming.is_armed()) {
+        AP_AHRS::EKF_Health health;
+        if (ahrs.get_ekf_health(health)) {
+            const uint32_t now_ms = AP_HAL::millis();
+            
+            // Detect transition: loss of absolute position started
+            if (health.absolute_position_lost && !ekf_check_state.was_drift_active) {
+                if ((now_ms - ekf_check_state.last_drift_warn_ms) > EKF_CHECK_WARNING_TIME) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF: absolute position lost");
+                    ekf_check_state.last_drift_warn_ms = now_ms;
+                }
+            }
+            ekf_check_state.was_drift_active = health.absolute_position_lost;
+            
+            // Detect transition: loss of absolute position cleared
+            if (!health.absolute_position_lost && ekf_check_state.was_drift_active) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF: position restored");
+                ekf_check_state.last_drift_warn_ms = now_ms;
+            }
+            
+            // Detect transition: compass-only heading started
+            if (health.heading_reliant_compass && !ekf_check_state.was_degradation_active) {
+                if ((now_ms - ekf_check_state.last_degradation_warn_ms) > EKF_CHECK_WARNING_TIME) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF: heading compass-only");
+                    ekf_check_state.last_degradation_warn_ms = now_ms;
+                }
+            }
+            ekf_check_state.was_degradation_active = health.heading_reliant_compass;
+            
+            // Detect transition: heading fusion restored
+            if (!health.heading_reliant_compass && ekf_check_state.was_degradation_active) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF: heading fusion restored");
+                ekf_check_state.last_degradation_warn_ms = now_ms;
+            }
+        }
     }
 
     // return immediately if motors are not armed, or ekf check is disabled

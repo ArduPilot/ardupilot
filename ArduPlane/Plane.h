@@ -818,6 +818,7 @@ private:
 
     struct {
         bool done_climb;
+        bool navigating_with_degraded_ekf;
     } rtl;
 
     // last time home was updated while disarmed

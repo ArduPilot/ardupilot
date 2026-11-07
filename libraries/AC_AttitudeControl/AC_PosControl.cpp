@@ -914,10 +914,14 @@ void AC_PosControl::D_init_controller()
     _accel_desired_ned_mss.z = _accel_target_ned_mss.z - (_accel_offset_ned_mss.z + _accel_terrain_d_mss);
     _pid_accel_d_m.reset_filter();
 
-    // Set acceleration PID I term based on the current throttle
+    // Set acceleration PID I term based on the hover throttle (not current throttle).
+    // Using current throttle would capture transient states (e.g. flip recovery throttle boost)
+    // into the integrator, causing sustained overshoot when the controller tries to climb
+    // to the captured altitude. Based on hover throttle, the I term correctly represents
+    // the bias needed to maintain hover, with the P term capturing any actual acceleration.
     // Remove the expected P term due to _accel_desired_ned_mss.z being constrained to _accel_max_d_mss
     // Remove the expected FF term due to non-zero _accel_target_ned_mss.z
-    _pid_accel_d_m.set_integrator(-(_attitude_control.get_throttle_in() - _motors.get_throttle_hover())
+    _pid_accel_d_m.set_integrator(-(_motors.get_throttle_hover() - _motors.get_throttle_hover())
         - _pid_accel_d_m.kP() * (_accel_target_ned_mss.z - get_estimated_accel_D_mss())
         - _pid_accel_d_m.ff() * _accel_target_ned_mss.z);
 

@@ -6551,11 +6551,13 @@ class TestSuite(abc.ABC):
                                  despitch=None,
                                  timeout=2,
                                  tolerance=10,
-                                 message_type='ATTITUDE_QUATERNION'):
+                                 message_type='ATTITUDE_QUATERNION',
+                                 minimum_duration=0):
         '''wait for an attitude (degrees)'''
         if desroll is None and despitch is None:
             raise ValueError("despitch or desroll must be supplied")
         tstart = self.get_sim_time()
+        achieving_duration_start = None
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise AutoTestTimeoutException("Failed to achieve (quaternion) attitude")
@@ -6568,12 +6570,16 @@ class TestSuite(abc.ABC):
             pitch_deg = math.degrees(pitch)
             self.progress("wait_att_quat[%s]: roll=%f desroll=%s pitch=%f despitch=%s" %
                           (message_type, roll_deg, desroll, pitch_deg, despitch))
-            if desroll is not None and abs(roll_deg - desroll) > tolerance:
-                continue
-            if despitch is not None and abs(pitch_deg - despitch) > tolerance:
-                continue
-            self.progress("wait_att_quat: achieved")
-            return
+            roll_ok = desroll is None or abs(roll_deg - desroll) <= tolerance
+            pitch_ok = despitch is None or abs(pitch_deg - despitch) <= tolerance
+            if roll_ok and pitch_ok:
+                if achieving_duration_start is None:
+                    achieving_duration_start = self.get_sim_time_cached()
+                if self.get_sim_time_cached() - achieving_duration_start >= minimum_duration:
+                    self.progress("wait_att_quat: achieved")
+                    return True
+            else:
+                achieving_duration_start = None
 
     def CPUFailsafe(self):
         '''Ensure we do something appropriate when the main loop stops'''
@@ -8522,7 +8528,8 @@ class TestSuite(abc.ABC):
         last_fail_print = 0
         count_of_achieved_values = 0
         called_function = kwargs.get("called_function", None)
-        minimum_duration = kwargs.get("minimum_duration", 0)
+        # default 0.5s minimum duration; tests needing no dwell can pass minimum_duration=0 explicitly
+        minimum_duration = kwargs.get("minimum_duration", 0.5)
         if minimum_duration >= timeout:
             raise ValueError("minimum_duration >= timeout")
 
@@ -8611,7 +8618,9 @@ class TestSuite(abc.ABC):
         last_value = 0.0
         count_of_achieved_values = 0
         called_function = kwargs.get("called_function", None)
-        minimum_duration = kwargs.get("minimum_duration", 0)
+        # default 0.5s minimum duration prevents transient spike-based false passes;
+        # tests needing sub-second or no dwell can pass minimum_duration=0 explicitly
+        minimum_duration = kwargs.get("minimum_duration", 0.5)
         if minimum_duration >= timeout:
             raise ValueError("minimum_duration >= timeout")
         if print_diagnostics_as_target_not_range:
