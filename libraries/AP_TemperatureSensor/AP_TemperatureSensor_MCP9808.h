@@ -39,7 +39,7 @@ public:
     void update() override {};
 
 private:
-    // update the temperature, called at 20Hz
+    // update the temperature, called at 10Hz
     void _timer(void);
 
     // read a 16-bit big-endian register
