@@ -14010,6 +14010,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_RC_FAIL", 0)
         self.delay_sim_time(2, reason="RC to restore")
 
+        self.start_subtest("DO_REPOSITION in Follow is denied without the change-mode flag")
+        self.change_mode("FOLLOW")
+        reposition_loc = self.get_location()
+        self.location_offset_ne(reposition_loc, 10, 0)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            x=int(reposition_loc.lat * 1e7),
+            y=int(reposition_loc.lng * 1e7),
+            z=reposition_loc.get_alt_m(AltFrame.ABSOLUTE),
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+        self.assert_mode("FOLLOW")
+
+        self.start_subtest("DO_REPOSITION in Follow with the change-mode flag switches to Guided")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p2=mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+            x=int(reposition_loc.lat * 1e7),
+            y=int(reposition_loc.lng * 1e7),
+            z=reposition_loc.get_alt_m(AltFrame.ABSOLUTE),
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+        )
+        self.wait_mode("GUIDED")
+
         self.start_subtest("Trying relative-follow mode")
         self.change_mode('LOITER')
         self.set_parameter('FOLL_ALT_TYPE', 1)  # use relative-home data
