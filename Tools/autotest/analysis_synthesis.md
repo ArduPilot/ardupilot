@@ -2,13 +2,12 @@
 
 **Date:** 2026-11-06 (updated 2026-11-07 v2)
 **Scope:** Copter, Plane, Rover autotest robustness and bug-catching improvements
-**PR:** [#35050](https://github.com/ArduPilot/ardupilot/pull/35050) (OPEN)
 
 ---
 
 ## 1. Completed — Test Robustness Improvements
 
-All 11 original improvements + 4 parametrizations committed and pushed to PR [#35050](https://github.com/ArduPilot/ardupilot/pull/35050) on `vlordier/test-improvements`.
+All 11 original improvements + 4 parametrizations committed and pushed to `vlordier/test-improvements`.
 
 | # | Improvement | Impact | Commit |
 |---|-------------|--------|--------|
@@ -268,7 +267,7 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 9. **Remaining Tier 1 tests:**
    - RTK/RTCM loss during rover mission (Rover, Impact 8.0) — blocked by missing AP_RTK
 10. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
-11. **Create PR** to ArduPilot/master — **DONE** (#35050)
+11. **Create PR** to ArduPilot/master with all accumulated improvements
 
 ---
 
