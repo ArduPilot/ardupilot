@@ -2146,7 +2146,6 @@ class TestSuite(abc.ABC):
                  asan=False,
                  check_parameter_leaks=True,
                  unix_domain_socket=False,
-                 aggressive_timeout=False,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2259,30 +2258,8 @@ class TestSuite(abc.ABC):
         self.statustext_id = 1
         self.message_hooks = []  # functions or MessageHook instances
         self.check_parameter_leaks_enabled = check_parameter_leaks
-        # Aggressive timeout mode: reduces default timeouts for faster CI.
-        # When True, wait_mode uses 30s (down from 60), and other wait
-        # methods use half their default. For simple test paths where
-        # thoroughness is less critical.
-        self.aggressive_timeout = aggressive_timeout
         # the session's parameters as they were before the first test ran
         self.pristine_parameters = None
-
-    def timeout_for(self, default):
-        """Return effective timeout, applying aggressive mode reduction.
-
-        In aggressive mode, timeouts are halved (minimum 5s) to speed up
-        CI while still allowing reasonable time for operations.
-
-        Args:
-            default: The default timeout value when not in aggressive mode
-
-        Returns:
-            Effective timeout (halved if aggressive_timeout is True,
-            minimum 5s to prevent immediate timeouts)
-        """
-        if self.aggressive_timeout:
-            return max(5, default // 2)
-        return default
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -6546,15 +6523,12 @@ class TestSuite(abc.ABC):
                           (delta, timeout))
             return
 
-    def wait_attitude(self, desroll=None, despitch=None, desyaw=None, timeout=None,
-                      tolerance=10, message_type='ATTITUDE',
-                      use_cached_simtime=False, minimum_duration=None):
+    def wait_attitude(self, desroll=None, despitch=None, desyaw=None, timeout=2, tolerance=10,
+                      message_type='ATTITUDE', use_cached_simtime=False, minimum_duration=None):
         '''wait for an attitude (degrees).  If minimum_duration is
         supplied the attitude must be held for that many seconds'''
         if desroll is None and despitch is None and desyaw is None:
             raise ValueError("desroll, despitch or desyaw must be supplied")
-        if timeout is None:
-            timeout = self.timeout_for(2)
         if minimum_duration is not None and minimum_duration >= timeout:
             raise ValueError("minimum_duration must be less than timeout")
         if use_cached_simtime:
@@ -6587,13 +6561,11 @@ class TestSuite(abc.ABC):
     def wait_attitude_quaternion(self,
                                  desroll=None,
                                  despitch=None,
-                                 timeout=None,
+                                 timeout=2,
                                  tolerance=10,
                                  message_type='ATTITUDE_QUATERNION',
                                  minimum_duration=0):
         '''wait for an attitude (degrees)'''
-        if timeout is None:
-            timeout = self.timeout_for(2)
         if desroll is None and despitch is None:
             raise ValueError("despitch or desroll must be supplied")
         tstart = self.get_sim_time()
@@ -8583,7 +8555,7 @@ class TestSuite(abc.ABC):
         assert altitude_min <= altitude_max, "Minimum altitude should be less than maximum altitude."
 
         if timeout is None:
-            timeout = self.timeout_for(30)
+            timeout = 30
 
         def validator(value2, target2=None):
             if altitude_min <= value2 <= altitude_max:
@@ -8607,10 +8579,8 @@ class TestSuite(abc.ABC):
             **kwargs
         )
 
-    def wait_climbrate(self, speed_min, speed_max, timeout=None, **kwargs):
+    def wait_climbrate(self, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given vertical rate."""
-        if timeout is None:
-            timeout = self.timeout_for(30)
         assert speed_min <= speed_max, "Minimum speed should be less than maximum speed."
 
         def get_climbrate(timeout2):
@@ -8637,20 +8607,14 @@ class TestSuite(abc.ABC):
         m = self.assert_receive_message('VFR_HUD')
         return m.groundspeed
 
-    def wait_groundspeed(self, speed_min, speed_max, timeout=None, **kwargs):
-        if timeout is None:
-            timeout = self.timeout_for(30)
+    def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
         self.wait_vfr_hud_speed("groundspeed", speed_min, speed_max, timeout=timeout, **kwargs)
 
-    def wait_airspeed(self, speed_min, speed_max, timeout=None, **kwargs):
-        if timeout is None:
-            timeout = self.timeout_for(30)
+    def wait_airspeed(self, speed_min, speed_max, timeout=30, **kwargs):
         self.wait_vfr_hud_speed("airspeed", speed_min, speed_max, timeout=timeout, **kwargs)
 
-    def wait_vfr_hud_speed(self, field, speed_min, speed_max, timeout=None, **kwargs):
+    def wait_vfr_hud_speed(self, field, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given ground speed range."""
-        if timeout is None:
-            timeout = self.timeout_for(30)
         assert speed_min <= speed_max, "Minimum speed should be less than maximum speed."
 
         def get_speed(timeout2):
@@ -8713,16 +8677,14 @@ class TestSuite(abc.ABC):
             **kwargs
         )
 
-    def wait_and_maintain(self, value_name, target, current_value_getter, validator=None, accuracy=2.0, timeout=None, **kwargs):
-        if timeout is None:
-            timeout = self.timeout_for(30)
+    def wait_and_maintain(self, value_name, target, current_value_getter, validator=None, accuracy=2.0, timeout=30, **kwargs):
         if isinstance(target, Vector3):
             return self.wait_and_maintain_vector(
                 value_name,
                 target,
                 current_value_getter,
                 validator,
-                timeout=timeout,
+                timeout=30,
                 **kwargs
             )
         return self.wait_and_maintain_range(
@@ -8741,10 +8703,8 @@ class TestSuite(abc.ABC):
                                  target,
                                  current_value_getter,
                                  validator,
-                                 timeout=None,
+                                 timeout=30,
                                  **kwargs):
-        if timeout is None:
-            timeout = self.timeout_for(30)
         tstart = self.get_sim_time()
         achieving_duration_start = None
         sum_of_achieved_values = Vector3()
@@ -8824,11 +8784,9 @@ class TestSuite(abc.ABC):
                                 current_value_getter,
                                 validator=None,
                                 value_averager=None,
-                                timeout=None,
+                                timeout=30,
                                 print_diagnostics_as_target_not_range=False,
                                 **kwargs):
-        if timeout is None:
-            timeout = self.timeout_for(30)
         self.validate_kwargs(kwargs, valid=frozenset([
             "called_function",
             "minimum_duration",
@@ -8951,10 +8909,8 @@ class TestSuite(abc.ABC):
         m = self.assert_receive_message('VFR_HUD', timeout=timeout)
         return m.heading
 
-    def wait_heading(self, heading, accuracy=5, timeout=None, **kwargs):
+    def wait_heading(self, heading, accuracy=5, timeout=30, **kwargs):
         """Wait for a given heading."""
-        if timeout is None:
-            timeout = self.timeout_for(30)
         def get_heading_wrapped(timeout2):
             return self.get_heading(timeout=timeout2)
 
@@ -8971,10 +8927,8 @@ class TestSuite(abc.ABC):
             **kwargs
         )
 
-    def wait_yaw_speed(self, yaw_speed, accuracy=0.1, timeout=None, **kwargs):
+    def wait_yaw_speed(self, yaw_speed, accuracy=0.1, timeout=30, **kwargs):
         """Wait for a given yaw speed in radians per second."""
-        if timeout is None:
-            timeout = self.timeout_for(30)
         def get_yawspeed(timeout2):
             msg = self.assert_receive_message('ATTITUDE', timeout=timeout2)
             return msg.yawspeed
@@ -9706,10 +9660,8 @@ class TestSuite(abc.ABC):
             self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly, poll=poll)
         return self.mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode)
 
-    def wait_mode(self, mode, timeout=None):
+    def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
-        if timeout is None:
-            timeout = self.timeout_for(60)
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
         # poll=False: pace this loop on the scheduled heartbeat lest
