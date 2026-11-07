@@ -119,15 +119,13 @@ Two critical bugs found in AP_SmartRTL that caused disabled tests (SMART_RTL_Ent
 
 ## 5. Pre-Existing Bugs Found by Improvements
 
-SITL validation exposed **4 pre-existing bugs** (none caused by test improvements):
+SITL validation exposed **3 pre-existing bugs** (none caused by test improvements):
 
-| Bug | Symptom | Severity | Blocks | Fix Direction |
-|-----|---------|----------|--------|---------------|
-| **ModeFlip Altitude Runaway** | Vehicle climbs to 1157m after flip (from 693m origin) | E1 Simulation Artifact | ModeFlip tests | Setpoint ramp when entering AH mode after flip |
-| **EKF "RTL Not Armable"** | Plane groundspeed = 0.03 m/s after RTL triggers (never flies) | E2 MAVLink Protocol | RTL/failsafe tests | RTL armable state reset / recovery from degraded EKF |
-| **Timesync Flake** | `MAV_MISSION_OPERATION_CANCELLED` at random intervals | E2 MAVLink Protocol | ~30% of Copter tests | MAVLink protocol timing fix |
-
-**ModeFlip Altitude Runaway — full evidence in `pre_existing_bug_evidence.md`.** Root cause: (1) physics-induced altitude gain during 180° flip, (2) position target captures new altitude instantly (setpoint jump), (3) velocity I zeroed + accel I = flip throttle (sustained high thrust), (4) EKF trusts baro altitude. No setpoint ramp exists during mode transition after flip.
+| Bug | Symptom | Severity | Blocks |
+|-----|---------|----------|--------|
+| **SITL Altitude Drift** | Vehicle climbs uncontrollably (ModeFlip→1157m, MainFlight→693m) | E1 Simulation Artifact | Altitude-hold tests |
+| **EKF "RTL Not Armable"** | Plane groundspeed = 0.03 m/s after RTL triggers (never flies) | E2 MAVLink Protocol | RTL/failsafe tests |
+| **Timesync Flake** | `MAV_MISSION_OPERATION_CANCELLED` at random intervals | E2 MAVLink Protocol | ~30% of Copter tests |
 
 ---
 
@@ -262,7 +260,6 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 ## 11. Git History (test-improvements branch)
 
 ```
-03fa58d895  docs(autotest): add ModeFlip altitude runaway bug evidence — E1 severity
 9e5142f573  test(autotest): re-enable ScriptingOSD test — context_collect ordering bug fixed
 adc60ae11b  test(autotest): fix LandingDrift with relaxed LAND_ABORT_DEG 1→5°
 8eb3177684  test(autotest): fix RTLStoppingDistanceSpeed, DriveBrake, SlewRate, PolyFence timing issues
