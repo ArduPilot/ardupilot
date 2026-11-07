@@ -13990,6 +13990,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Follow exceeded DO_CHANGE_SPEED speed (%f > %f)" %
                                        (max_groundspeed, follow_speed))
 
+        self.start_subtest("RC failsafe continues Follow with FS_OPTIONS bit 2 set")
+        self.set_parameters({
+            "FS_THR_ENABLE": 1,
+            "FS_OPTIONS": 4,
+        })
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_statustext("Radio Failsafe - Continuing Follow Mode", check_context=True)
+        self.delay_sim_time(5, reason="radio failsafe not to change mode")
+        self.assert_mode("FOLLOW")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(2, reason="RC to restore")
+
+        self.start_subtest("RC failsafe in Follow RTLs with FS_OPTIONS bit 2 clear")
+        self.set_parameter("FS_OPTIONS", 0)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_mode("RTL")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(2, reason="RC to restore")
+
         self.start_subtest("Trying relative-follow mode")
         self.change_mode('LOITER')
         self.set_parameter('FOLL_ALT_TYPE', 1)  # use relative-home data
