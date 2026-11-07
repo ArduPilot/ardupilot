@@ -16591,7 +16591,7 @@ switch value'''
         # wait the whole timeout out.
         for q in self.assign_queues.values():
             q.put(None)
-        for t in self.join_workers():
+        for t in self.join_workers(results):
             reaped.add(t)
             worker_failures.append(
                 (t.name, "%s (killed after hanging in its teardown; thread "
@@ -16763,7 +16763,41 @@ switch value'''
         return self.buildlogs_path("hung-worker-%s-stacks.txt" %
                                    worker.name.split('-')[-1])
 
-    def join_workers(self, timeout=300, grace=60):
+    def drain_sanitiser_queue(self, results):
+        '''move whatever the workers have put on the sanitiser queue into
+        results'''
+        while True:
+            try:
+                result = self.sanitiser_queue.get(block=False)
+            except queue.Empty:
+                return
+            self.progress("Received sanitiser result (%s)" % str(result))
+            results.append(result)
+
+    def await_workers(self, results, timeout):
+        '''wait up to timeout for every worker to exit; True if they all
+        did.
+
+        The sanitiser queue is drained while we wait, and that is not
+        just bookkeeping: Queue.put() hands the item to a feeder thread,
+        a process does not exit until that thread has flushed, and the
+        pipe it writes into holds only so much.  A fleet with enough
+        findings to fill it would sit there unable to exit, and
+        join_workers() would then kill it and lose the very reports it
+        was trying to hand over.'''
+        deadline = time.monotonic() + timeout
+        while True:
+            self.drain_sanitiser_queue(results)
+            if not any(t.is_alive() for t in self.workers):
+                # reap them, so exitcode is there to be read
+                for t in self.workers:
+                    t.join(timeout=1)
+                return True
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.1)
+
+    def join_workers(self, results, timeout=300, grace=60):
         '''wait for the workers to exit, but not forever; return those
         which had to be killed.
 
@@ -16776,12 +16810,9 @@ switch value'''
         run with every result in hand until the global timeout kills
         autotest.py, taking the summary, the timings and the exit status
         with it.'''
-        deadline = time.monotonic() + timeout
-        for t in self.workers:
-            t.join(timeout=max(0, deadline - time.monotonic()))
-        stuck = [t for t in self.workers if t.is_alive()]
-        if not len(stuck):
+        if self.await_workers(results, timeout):
             return []
+        stuck = [t for t in self.workers if t.is_alive()]
         self.progress("%u worker(s) still running %us after being told to stop; "
                       "dumping thread stacks to %s" %
                       (len(stuck), timeout,
@@ -16792,9 +16823,7 @@ switch value'''
             except ProcessLookupError:
                 # exited between the check above and here
                 pass
-        deadline = time.monotonic() + grace
-        for t in stuck:
-            t.join(timeout=max(0, deadline - time.monotonic()))
+        self.await_workers(results, grace)
         killed = []
         for t in stuck:
             if not t.is_alive():
@@ -16806,13 +16835,8 @@ switch value'''
         return killed
 
     def finalise_worker_results(self, results, worker_failures):
-        while True:
-            try:
-                result = self.sanitiser_queue.get(block=False)
-            except queue.Empty:
-                break
-            self.progress("Received sanitiser result (%s)" % str(result))
-            results.append(result)
+        # anything which arrived after the last drain in await_workers:
+        self.drain_sanitiser_queue(results)
 
         if worker_failures:
             self.progress("%u worker(s) exited non-zero; the run was short of "
