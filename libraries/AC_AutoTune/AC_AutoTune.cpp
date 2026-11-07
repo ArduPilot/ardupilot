@@ -12,13 +12,13 @@
 
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500         // restart tuning if pilot has left sticks in middle for 2 seconds
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
- # define AUTOTUNE_LEVEL_ANGLE_CD           500         // angle which qualifies as level (Plane uses more relaxed 5deg)
- # define AUTOTUNE_LEVEL_RATE_RP_CD         1000        // rate which qualifies as level for roll and pitch (Plane uses more relaxed 10deg/sec)
+ # define AUTOTUNE_LEVEL_ANGLE_RAD          radians(5.0)    // angle which qualifies as level (Plane uses more relaxed 5deg)
+ # define AUTOTUNE_LEVEL_RATE_RP_RADS       radians(10.0)   // rate which qualifies as level for roll and pitch (Plane uses more relaxed 10deg/sec)
 #else
- # define AUTOTUNE_LEVEL_ANGLE_CD           250         // angle which qualifies as level
- # define AUTOTUNE_LEVEL_RATE_RP_CD         500         // rate which qualifies as level for roll and pitch
+ # define AUTOTUNE_LEVEL_ANGLE_RAD          radians(2.5)    // angle which qualifies as level
+ # define AUTOTUNE_LEVEL_RATE_RP_RADS       radians(5.0)    // rate which qualifies as level for roll and pitch
 #endif
-#define AUTOTUNE_LEVEL_RATE_Y_CD            750         // rate which qualifies as level for yaw
+#define AUTOTUNE_LEVEL_RATE_Y_RADS          radians(7.5)    // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     250         // time we require the aircraft to be level before starting next test
 #define AUTOTUNE_LEVEL_TIMEOUT_MS           2000        // time out for level
 #define AUTOTUNE_LEVEL_WARNING_INTERVAL_MS  5000        // level failure warning messages sent at this interval to users
@@ -342,22 +342,22 @@ bool AC_AutoTune::currently_level()
     // relax threshold if we pass AUTOTUNE_LEVEL_TIMEOUT_MS
     const float threshold_mul = constrain_float((float)(now_ms - level_start_time_ms) / (float)AUTOTUNE_LEVEL_TIMEOUT_MS, 0.0, 2.0);
 
-    if (fabsf(ahrs_view->get_roll_rad() - desired_roll_rad) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (fabsf(ahrs_view->get_roll_rad() - desired_roll_rad) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_RAD) {
         return false;
     }
-    if (fabsf(ahrs_view->get_pitch_rad() - desired_pitch_rad) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (fabsf(ahrs_view->get_pitch_rad() - desired_pitch_rad) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_RAD) {
         return false;
     }
-    if (fabsf(wrap_PI(ahrs_view->get_yaw_rad() - desired_yaw_rad)) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (fabsf(wrap_PI(ahrs_view->get_yaw_rad() - desired_yaw_rad)) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_RAD) {
         return false;
     }
-    if (fabsf(ahrs_view->get_gyro().x) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
+    if (fabsf(ahrs_view->get_gyro().x) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_RADS) {
         return false;
     }
-    if (fabsf(ahrs_view->get_gyro().y) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
+    if (fabsf(ahrs_view->get_gyro().y) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_RADS) {
         return false;
     }
-    if (fabsf(ahrs_view->get_gyro().z) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_Y_CD)) {
+    if (fabsf(ahrs_view->get_gyro().z) > threshold_mul * AUTOTUNE_LEVEL_RATE_Y_RADS) {
         return false;
     }
     return true;
@@ -367,8 +367,8 @@ bool AC_AutoTune::currently_level()
 // Updates attitude controller targets and processes test results to adjust PID gains.
 void AC_AutoTune::control_attitude()
 {
-    rotation_rate = 0.0f;
-    lean_angle = 0.0f;
+    rotation_rate_rads = 0.0f;
+    lean_angle_rad = 0.0f;
     const float direction_sign = positive_direction ? 1.0f : -1.0f;
     const uint32_t now_ms = AP_HAL::millis();
 
@@ -394,17 +394,17 @@ void AC_AutoTune::control_attitude()
             // Record starting angular position and rate
             switch (axis) {
             case AxisType::ROLL:
-                start_rate = degrees(ahrs_view->get_gyro().x) * 100.0f;
-                start_angle = ahrs_view->roll_sensor;
+                start_rate_rads = ahrs_view->get_gyro().x;
+                start_angle_rad = ahrs_view->get_roll_rad();
                 break;
             case AxisType::PITCH:
-                start_rate = degrees(ahrs_view->get_gyro().y) * 100.0f;
-                start_angle = ahrs_view->pitch_sensor;
+                start_rate_rads = ahrs_view->get_gyro().y;
+                start_angle_rad = ahrs_view->get_pitch_rad();
                 break;
             case AxisType::YAW:
             case AxisType::YAW_D:
-                start_rate = degrees(ahrs_view->get_gyro().z) * 100.0f;
-                start_angle = ahrs_view->yaw_sensor;
+                start_rate_rads = ahrs_view->get_gyro().z;
+                start_angle_rad = ahrs_view->get_yaw_rad();
                 break;
             }
 
@@ -421,8 +421,8 @@ void AC_AutoTune::control_attitude()
         test_run(axis, direction_sign);
 
         // Detect failure due to reverse response or excessive lean angle
-        if (lean_angle <= -angle_lim_neg_rpy_cd() ||
-            attitude_control->lean_angle_deg() * 100 > angle_lim_max_rp_cd()) {
+        if (lean_angle_rad <= -angle_lim_neg_rpy_rad() ||
+            attitude_control->lean_angle_rad() > angle_lim_max_rp_rad()) {
             step = Step::ABORT;
         }
 
