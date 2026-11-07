@@ -16746,7 +16746,12 @@ switch value'''
                     # description, as the serial path keys it, so the
                     # two produce the same table.  A result which never
                     # ran its test carries 0.0 and is left out.
-                    if result.time_elapsed:
+                    # ... but not in a unified multi-suite pool: there
+                    # the dispatcher is the first suite's tester, each
+                    # suite prints its own table, and the tests here
+                    # belong to all of them.  autotest.py records those
+                    # against the tester which owns each test.
+                    if result.time_elapsed and not hasattr(self, 'unified_tester_factory'):
                         self.test_timings[result.test.description] = result.time_elapsed
                     last_result_time = time.monotonic()
                     stack_dumps_sent = 0
