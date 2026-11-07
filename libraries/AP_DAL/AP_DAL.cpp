@@ -119,15 +119,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
 #endif
 }
 
-// for EKF usage to enable takeoff expected to true
-void AP_DAL::set_takeoff_expected()
-{
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
-    AP_AHRS &ahrs = AP::ahrs();
-    ahrs.set_takeoff_expected(true);
-#endif
-}
-
 /*
   setup optional sensor backends
  */

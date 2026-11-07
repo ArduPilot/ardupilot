@@ -656,18 +656,34 @@ void Plane::set_throttle(void)
 void Plane::set_takeoff_expected(void)
 {
     // let EKF know to start GSF yaw estimator before takeoff movement starts so that yaw angle is better estimated
-    const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    if (!is_flying() && arming.is_armed()) {
+    if (!arming.is_armed()) {
+        launched_since_arming = false;
+        return;
+    }
+    // is_flying() goes true as soon as GPS shows walking pace, so a
+    // plane carried at a run before a throw is already "flying".
+    // Keep looking for the throw until a launch has been seen.
+    if (relative_altitude > 10) {
+        launched_since_arming = true;
+    }
+    const bool flying = is_flying();
+    if (!flying || !launched_since_arming) {
         // Check if rate of change of velocity along X axis exceeds 1-g which normally indicates a throw.
         // Tests with hand carriage of micro UAS indicates that a 1-g threshold does not false trigger prior
         // to the throw, but there is margin to increase this threshold if false triggering becomes problematic.
+        // sin_pitch() includes AHRS_TRIM, so put the accel in the same frame
+        const Vector3f accel = ahrs.get_rotation_autopilot_body_to_vehicle_body() * ahrs.get_accel();
         const float accel_x_due_to_gravity = GRAVITY_MSS * ahrs.sin_pitch();
-        const float accel_x_due_to_throw = ahrs.get_accel().x - accel_x_due_to_gravity;
-        bool throw_detected = accel_x_due_to_throw > GRAVITY_MSS;
-        bool throttle_up_detected = throttle > aparm.throttle_cruise;
-        if (throw_detected || throttle_up_detected) {
+        const float accel_x_due_to_throw = accel.x - accel_x_due_to_gravity;
+        if (accel_x_due_to_throw > GRAVITY_MSS) {
             plane.ahrs.set_takeoff_expected(true);
+            launched_since_arming = true;
         }
+    }
+    // throttle above cruise is routine in flight, so only use it on the ground
+    const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+    if (!flying && throttle > aparm.throttle_cruise) {
+        plane.ahrs.set_takeoff_expected(true);
     }
 }
 

@@ -198,9 +198,6 @@ public:
         return _RFRN.touchdown_expected;
     }
 
-    // for EKF usage to enable takeoff expected to true
-    void set_takeoff_expected();
-
     // get ahrs trim
     const Vector3f &get_trim() const {
         return _RFRN.ahrs_trim;

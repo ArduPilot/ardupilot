@@ -661,6 +661,9 @@ private:
     // previous value of is_flying()
     bool previous_is_flying;
 
+    // true once a throw or a climb has been seen since arming
+    bool launched_since_arming;
+
     // time since started flying in any mode in milliseconds
     uint32_t started_flying_ms;
 
