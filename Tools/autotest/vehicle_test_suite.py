@@ -2444,7 +2444,7 @@ class TestSuite(abc.ABC):
         except OSError:
             return None
 
-    def sitl_panic_message(self):
+    def sitl_panic_message(self, since=None):
         """The message from SITL's most recent panic, or None.
 
         AP_HAL::panic() prints "PANIC: <message>", dumps its stack and
@@ -2452,18 +2452,33 @@ class TestSuite(abc.ABC):
         answering nothing.  Whatever the test was waiting for times out
         first and reports itself, which says nothing about why; this
         line is the part worth reading.
+
+        "since" is an offset into the capture file, as returned by
+        sitl_stdout_offset(); only output written after it is searched.
+        The file holds every SITL this session has run, so without it a
+        panic would go on being reported against each later test too.
         """
         try:
             handle = self.sitl_stdout_file()
             if handle is not None:
                 handle.flush()
             with open(self.sitl_stdout_filepath()) as f:
+                if since is not None:
+                    f.seek(since)
                 lines = f.read().splitlines()
         except OSError:
             return None
         for line in reversed(lines):
-            if line.startswith("PANIC: "):
-                return line[len("PANIC: "):]
+            # the capture is written through PSpawnStdPrettyPrinter, which
+            # puts the binary's name in front of every line
+            # ("arduplane: PANIC: ..."), so this cannot anchor at the
+            # start of one:
+            offset = line.find("PANIC: ")
+            if offset == -1:
+                continue
+            if offset and not line[:offset].endswith(": "):
+                continue
+            return line[offset + len("PANIC: "):]
         return None
 
     def progress_sitl_output_since(self, offset, max_lines=200):
@@ -11758,7 +11773,7 @@ Also, ignores heartbeats not from our target system'''
             for line in f:
                 self.progress(line.rstrip())
 
-    def dump_process_status(self, result):
+    def dump_process_status(self, result, since=None):
         '''used to show where the SITL process is upto.  Often caused when
         we've lost contact'''
 
@@ -11771,7 +11786,7 @@ Also, ignores heartbeats not from our target system'''
         # a "Failed to log replay block" panic was reported as
         # "sim_time_cached is not updating!", and took a core dump to
         # explain.
-        panic = self.sitl_panic_message()
+        panic = self.sitl_panic_message(since=since)
         if panic is not None:
             reason = "SITL panic: %s" % panic
             self.progress(reason)
@@ -11890,7 +11905,7 @@ Also, ignores heartbeats not from our target system'''
         except Exception:  # noqa: BLE001
             # process is dead
             self.progress("No heartbeat after test", send_statustext=False)
-            self.dump_process_status(result)
+            self.dump_process_status(result, since=sitl_stdout_offset)
 
             passed = False
             reset_needed = True
