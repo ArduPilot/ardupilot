@@ -300,6 +300,31 @@ private:
     // Inertial Navigation EKF - different viewpoint
     AP_AHRS_View *ahrs_view;
 
+    // Hover accel bias learning state (per-IMU)
+    // Tracks the Z-axis bias in hover less the bias at arming, for vibration rectification compensation
+    float _hover_bias_learning[INS_MAX_INSTANCES];
+    bool _hover_bias_learned[INS_MAX_INSTANCES];  // learning has run for this IMU since the learner was seeded
+    float _hover_bias_at_arm[INS_MAX_INSTANCES];  // EKF Z accel bias of each IMU when the vehicle armed, zero with ACC_ZBIAS_LEARN bit 2, m/s/s
+    bool _hover_bias_at_arm_ok[INS_MAX_INSTANCES];  // an EKF core was using the IMU when the vehicle armed
+    uint16_t _hover_bias_reset_count[INS_MAX_INSTANCES];  // EKF accel bias restarts for each IMU when the vehicle armed
+    bool _hover_bias_restarted[INS_MAX_INSTANCES];  // the EKF restarted the IMU's bias while the learner was taking it
+    uint32_t _hover_bias_zero_ms[INS_MAX_INSTANCES];  // when the EKF last zeroed each IMU's bias, read when the vehicle armed
+    uint32_t _hover_bias_rest_start_ms[INS_MAX_INSTANCES];  // when an arm without a flight restarted the wait at rest, 0 for none
+    uint16_t _hover_bias_rest_count[INS_MAX_INSTANCES];  // EKF accel bias restarts for each IMU last seen
+    uint32_t _hover_bias_rest_zero_ms[INS_MAX_INSTANCES];  // when the EKF last zeroed each IMU's bias, last seen
+    bool _hover_bias_switched[INS_MAX_INSTANCES];  // an accel switch has handed the IMU an estimate since it was zeroed
+    uint32_t _hover_bias_flight_end_ms;  // when the last flight was disarmed, 0 for none
+    enum class HoverBiasBaseline : uint8_t {
+        OK,         // the EKF's bias at arming was learnt at rest
+        TOO_SOON,   // armed before the bias settled after a restart at rest
+        SWITCHED,   // an accel switch on the ground handed over an estimate the EKF did not settle
+        NOT_FIRST,  // flown since the bias was last restarted at rest
+    };
+    HoverBiasBaseline _hover_bias_baseline[INS_MAX_INSTANCES];
+    bool _hover_bias_flew;  // airborne since arming
+    bool _hover_bias_inhibit_disarmed;  // ACC_ZBIAS_LEARN bit 2 when the vehicle armed
+    bool _hover_z_bias_reported;
+
     // Arming/Disarming management class
     AP_Arming_Copter arming;
 
@@ -727,6 +752,13 @@ private:
 
     // Attitude.cpp
     void update_throttle_hover();
+    void init_hover_bias_correction(void);
+    void seed_hover_bias_learning(void);
+    void report_hover_z_bias(void);
+    void update_hover_bias_rest(void);
+    void update_hover_bias_learning(float dt);
+    void save_hover_bias_learning(void);
+    void update_accel_bias_inhibit(void);
     float get_pilot_desired_climb_rate_ms();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
