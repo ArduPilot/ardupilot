@@ -351,13 +351,13 @@ bool AC_AutoTune::currently_level()
     if (fabsf(wrap_PI(ahrs_view->get_yaw_rad() - desired_yaw_rad)) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
-    if (ahrs_view->get_gyro().x > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
+    if (fabsf(ahrs_view->get_gyro().x) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
         return false;
     }
-    if (ahrs_view->get_gyro().y > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
+    if (fabsf(ahrs_view->get_gyro().y) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
         return false;
     }
-    if (ahrs_view->get_gyro().z > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_Y_CD)) {
+    if (fabsf(ahrs_view->get_gyro().z) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_Y_CD)) {
         return false;
     }
     return true;
