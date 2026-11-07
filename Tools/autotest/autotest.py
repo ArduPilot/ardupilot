@@ -932,7 +932,12 @@ def run_unified_test_steps(test_steps):
             combined, opts.parallel, base_instance=base + 1)
         testers_by_step = dict((suite["step"], suite["tester"]) for suite in suites)
         for result in results:
-            step = getattr(result.test, "suite_step", suites[0]["step"])
+            # a result with no test of its own says which suite it
+            # belongs to directly; the pool's first suite is only the
+            # last resort
+            step = (getattr(result, "suite_step", None) or
+                    getattr(result.test, "suite_step", None) or
+                    suites[0]["step"])
             results_by_step[step].append(result)
             # each suite prints its own timings table, from its own
             # tester, so a test's time has to be recorded there: the

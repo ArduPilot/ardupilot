@@ -2090,6 +2090,10 @@ class Result(object):
         self.exception = None
         self.debug_filename = None
         self.time_elapsed = 0.0
+        # which suite step this result belongs to, for a result which
+        # carries no test and so cannot be traced through test.suite_step
+        # - a sanitiser finding, for one (see put_sanitiser_results)
+        self.suite_step = None
         # self.passed = False
 
     def __str__(self):
@@ -17164,7 +17168,7 @@ switch value'''
                         # ten Copter suites all produce
                         # arducopter-+-valgrind.log - and the next
                         # session's SITL starts by truncating it
-                        self.put_sanitiser_results(active)
+                        self.put_sanitiser_results(active, active_key)
                     if key == '__own__':
                         active = self
                         if not self_binary_privatised:
@@ -17241,7 +17245,8 @@ switch value'''
         # with errors sitting in the logs.  Only the session which is
         # still open is left to do: each of the earlier ones was scanned
         # as this worker switched away from it.
-        self.put_sanitiser_results(active if active is not None else self)
+        self.put_sanitiser_results(active if active is not None else self,
+                                   active_key)
 
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
@@ -17303,12 +17308,19 @@ switch value'''
 
         return result_list
 
-    def put_sanitiser_results(self, tester):
+    def put_sanitiser_results(self, tester, step=None):
         '''scan a finished session for Valgrind/ASAN output and hand the
-        dispatcher a Result for each tool which reported something'''
+        dispatcher a Result for each tool which reported something.
+
+        "step" is the suite step the session belonged to.  These results
+        carry no test, so without it the dispatcher cannot tell which
+        suite produced the finding and credits every one of them to the
+        pool's first suite (see run_unified_test_steps).'''
         self.sessions_run = getattr(self, 'sessions_run', 0) + 1
         for result in tester.sanitiser_results(
                 tag="I%u-s%u" % (self.instance, self.sessions_run)):
+            if step not in (None, '__own__'):
+                result.suite_step = step
             self.sanitiser_queue.put(result)
 
     def sanitiser_log_target(self, filename, tag):
