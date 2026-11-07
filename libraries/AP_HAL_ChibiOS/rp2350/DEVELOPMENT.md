@@ -1735,8 +1735,8 @@ build on a flight board comes from
 - 200 MHz at 1.15 V is 1.33 times the datasheet clock, validated only on
   bring-up samples, and has not flown. The 100 MHz flash window was
   measured on one RPI_UAVFC at room temperature. Laurel and Pico2 run its
-  settings without a sweep of their own. Laurel has run them on the bench
-  (whole-flash readbacks, reboots, parameter writes); Pico2 has not.
+  settings without a sweep of their own. Both have run them on the bench
+  (whole-flash readbacks, reboots, parameter writes).
 - Until a board has soaked past the 71.6 minute `micros()` wrap while
   arming and disarming (`AP_RCOUT_USE_32BIT_TIME`), reboot before flying.
 - After an SWD flash and OpenOCD detach, core1 sometimes never launches
