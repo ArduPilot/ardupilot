@@ -13905,6 +13905,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_push()
         self.context_set_speedup(1)
         self.change_mode("FOLLOW")
+        # no Guided takeoff has been done, so Follow must not claim to be taking off
+        self.assert_message_field_values(self.poll_message('EXTENDED_SYS_STATE'), {
+            "landed_state": mavutil.mavlink.MAV_LANDED_STATE_IN_AIR,
+        })
         new_loc = self.get_location()
         new_loc_offset_n = 20
         new_loc_offset_e = 30
