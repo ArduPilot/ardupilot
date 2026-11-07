@@ -126,8 +126,6 @@ Two critical bugs found in AP_SmartRTL that caused disabled tests (SMART_RTL_Ent
 | `SMART_RTL_Repeat` | Copter | C++ code | Same premature deactivation timeout | 241a87d19d | ✅ Re-enabled |
 | `FlyMissionTwice` | Copter | Test code | Add mission state machine reset via `DO_SET_MISSION_CURRENT` between runs | 8af8eb0716 | ✅ Re-enabled |
 | `Parachute` | Copter | Verification | NOT actually disabled — not in `disabled_tests()` dictionary. Entry in synthesis doc was stale. | — | — |
-| `ThrottleFailsafe` | Plane | C++ code | EKF RTL navigation dead-stop — RTL proceeds with degraded EKF state instead of dead-stopping | 94effdf631 | ✅ Fixed |
-| `ThrottleFailsafe` | Plane | Test code | Fix `wait_distance_to_home()` missing `distance_max` argument (Python API bug) | 94effdf631 | ✅ Fixed |
 
 ---
 
@@ -138,7 +136,7 @@ SITL validation exposed **4 pre-existing bugs** (none caused by test improvement
 | Bug | Symptom | Severity | Status | Fix |
 |-----|---------|----------|--------|-----|
 | **ModeFlip Altitude Runaway** | Vehicle climbs to 1157m after flip (from 693m origin) | E1 C++ Bug | ✅ **FIXED** (649273e6c0) | I term init: hover throttle instead of current throttle |
-| **EKF Navigation Dead-Stop** | Plane groundspeed = 0.03 m/s after RTL triggers (EKF loses abs position → `have_position`=false → `navigate()` dead-stops) | E1 Critical EKF | ✅ **FIXED** (94effdf631) | RTL-specific navigation: proceed with degraded EKF state |
+| **EKF Navigation Dead-Stop** | Plane groundspeed = 0.03 m/s after RTL triggers (EKF loses abs position → `have_position`=false → `navigate()` dead-stops) | E1 Critical EKF | 🔲 Unresolved | RTL-specific `have_position` relaxation or EKF recovery from GPS glitch |
 | **Timesync Flake** | `MAV_MISSION_OPERATION_CANCELLED` at random intervals | E2 MAVLink Protocol | 🔲 Unresolved | MAVLink protocol timing fix |
 
 ---
@@ -231,7 +229,7 @@ SITL validation exposed **4 pre-existing bugs** (none caused by test improvement
 | Bug | Description | Effort | Status |
 |-----|-------------|--------|--------|
 | Altitude drift | ModeFlip/MainFlight climb to 1000m+ in LOITER/ALT_HOLD | Medium-High | ✅ **FIXED** (649273e6c0) — I term uses hover throttle |
-| EKF RTL dead-stop | Plane groundspeed stays at 0.03 m/s after RTL — EKF state check | Medium | ✅ **FIXED** (94effdf631) — RTL proceeds with degraded EKF |
+| EKF RTL not armable | Plane groundspeed stays at 0.03 m/s after RTL — EKF state check | Medium | 🔲 Unresolved |
 | Timesync flake | `MAV_MISSION_OPERATION_CANCELLED` — MAVLink protocol issue | Medium | 🔲 Unresolved |
 
 ### 8.2 EKF Status Monitor Hook
@@ -269,7 +267,7 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 8. **Verify SITL for test-level fixes** (LandingDrift, SlewRate, PolyFenceObjectAvoidanceBendyRuler) — **ALL SITL VERIFIED PASSING**, re-enabled
 9. **Remaining Tier 1 tests:**
    - RTK/RTCM loss during rover mission (Rover, Impact 8.0) — blocked by missing AP_RTK
-10. **Fix blocking SITL bugs** (altitude drift ✅, EKF RTL dead-stop ✅) — Both FIXED
+10. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
 11. **Create PR** to ArduPilot/master — **DONE** (#35050)
 
 ---
@@ -277,8 +275,6 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 ## 11. Git History (test-improvements branch)
 
 ```
-94effdf631  ArduPlane: fix EKF RTL navigation dead-stop and ThrottleFailsafe test API bug
-3a7cd46e8a  docs(autotest): correct EKF RTL bug analysis — identify have_position gate as root cause
 15f7d733fc  test(autotest): re-enable SMART_RTL, FlyMissionTwice (revert RTLStoppingDistanceSpeed)
 b24434ae1c  AP_AHRS: add continuous EKF degradation monitoring hook
 dd79b7f9fa  test(autotest): re-enable SMART_RTL, FlyMissionTwice, RTLStoppingDistanceSpeed

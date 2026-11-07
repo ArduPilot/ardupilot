@@ -354,10 +354,10 @@ This proves the drift mechanism is **known and used** in testing, but also that 
 | Bug | Root Cause | Location | Severity | Fix Requires |
 |-----|-----------|----------|----------|--------------|
 | GPS Heading Lock | `realignYawGPS()` uses glitched velocity for yaw alignment without position innovation check | `AP_NavEKF3_MagFusion.cpp:155-225` | **High** | Add GPS position quality gate to yaw realignment |
-| EKF RTL Navigation Dead-Stop | EKF degraded state after GPS glitch dead-stops RTL navigation (`have_position`=false → `navigate()` returns early) | `ArduPlane/navigation.cpp:90` | **Critical (E1)** | ✅ **FIXED** (94effdf631) — RTL proceeds with degraded EKF state |
+| EKF RTL Not Armable | EKF degraded state after GPS glitch prevents RTL takeoff/waypoint nav | `RTL.cpp`, `AP_NavEKF3_Control.cpp` | **Critical** | RTL armable state reset / recovery from degraded EKF |
 | Baro Drift Design | Cumulative barometer drift never resets, EKF trusts it blindly | `SITL_Baro.cpp:81-83`, `NavEKF3_Measurements.cpp:783-800` | **Medium** | Optional baro drift validation against physics reference |
 
-All remaining bugs exist in **production ArduPilot source code**, not in the test framework. The test improvements (tightened tolerances, active assertions, position tracking) simply make these latent bugs **detectable** by the test harness.
+All three bugs exist in **production ArduPilot source code**, not in the test framework. The test improvements (tightened tolerances, active assertions, position tracking) simply make these latent bugs **detectable** by the test harness.
 
 ---
 
