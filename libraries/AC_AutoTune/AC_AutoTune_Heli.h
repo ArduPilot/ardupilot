@@ -163,17 +163,17 @@ private:
         TARGET   = 1,
     };
 
-    float target_angle_max_rp_cd() const override;
+    float target_angle_max_rp_rad() const override;
 
-    float target_angle_max_y_cd() const override;
+    float target_angle_max_y_rad() const override;
 
-    float target_angle_min_rp_cd() const override;
+    float target_angle_min_rp_rad() const override;
 
-    float target_angle_min_y_cd() const override;
+    float target_angle_min_y_rad() const override;
 
-    float angle_lim_max_rp_cd() const override;
+    float angle_lim_max_rp_rad() const override;
 
-    float angle_lim_neg_rpy_cd() const override;
+    float angle_lim_neg_rpy_rad() const override;
 
     // initialize dwell test or angle dwell test variables
     void dwell_test_init(float start_frq, float stop_frq, float amplitude, float filt_freq, FreqRespInput freq_resp_input, FreqRespCalcType calc_type, AC_AutoTune_FreqResp::ResponseType resp_type, AC_AutoTune_FreqResp::InputType waveform_input_type);
