@@ -41,8 +41,6 @@ New tests added to catch specific real-world bug classes:
 | FailsafeEdgeCases R1-R3 | Copter | cfc4e647e0 | Failsafe timing, GCS recovery, parachute safety |
 | `FenceTerrainFallback` | Copter | fea452c420 | Fence terrain-dependent degradation (safe RTL trigger) |
 | `BatteryArmVoltageGuard` | Copter | 6b0e4ee151 | BATT_ARM_VOLT mid-flight arming guard enforcement |
-| `VTOLMotorFailTransition` | Plane | 6a1b40b47c | VTOL motor fail mid-transition, graceful glide recovery |
-| `FenceBoundaryCrossing` | Rover | 6a1b40b47c | Repeated fence boundary crossings, state-machine bugs |
 
 ---
 
@@ -119,27 +117,19 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 
 **Bug class:** RTCM correction loss mid-mission, verify EKF degrades gracefully.
 
-**Not yet implemented.** Requires AP_RTK library which is not available in this setup.
+**Not yet implemented.**
 
 ### 6.4 Quadplane VTOL Motor Fail (Plane, Impact 10.0)
 
 **Bug class:** Kill motors at 50% VTOL transition, verify graceful FW recovery.
 
-**✅ COMMITTED (6a1b40b47c):** Added `VTOLMotorFailTransition` test:
-- Enable quadplane, takeoff in MC mode
-- Initiate VTOL transition to FW via AUTO mission
-- Kill lift motors mid-transition via SIM_ENGINE_FAIL
-- Verify plane maintains controlled glide (bounded altitude loss <200m over 12s)
-- Restore motors, complete transition, land safely
+**Not yet implemented.** Highest severity (VTOL transition is critical safety case).
 
 ### 6.5 Repeated Fence Boundary Crossing (Rover, Impact 5.3)
 
 **Bug class:** In/out/in fence crossings — catch state-machine bugs.
 
-**✅ COMMITTED (6a1b40b47c):** Added `FenceBoundaryCrossing` test:
-- Drive rover back and forth across circular fence boundary (in/out/in cycles)
-- Verify fence state machine handles repeated breaches without getting stuck
-- Tests fence breach detection, RTL trigger, and recovery
+**Not yet implemented.**
 
 ---
 
@@ -197,20 +187,18 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 1. **Commit current changes** (parameter snapshot, aggressive timeout, failsafe fix) — DONE
 2. **Implement fence terrain dependency test** (Copter, Impact 9.0) — DONE
 3. **Implement battery monitor cross-sensitivity test** (Copter, Impact 7.0) — DONE
-4. **VTOL motor fail test** (Plane, Impact 10.0) — DONE
-5. **Repeated fence boundary crossing test** (Rover, Impact 5.3) — DONE
-6. **Remaining Tier 1 tests:**
-   - RTK/RTCM loss during rover mission (Rover, Impact 8.0) — blocked by missing AP_RTK
-7. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
-8. **Create PR** to ArduPilot/master with all accumulated improvements
+4. **Remaining Tier 1 tests:**
+   - Quadplane VTOL motor fail during transition (Plane, Impact 10.0) — HIGHEST PRIORITY
+   - RTK/RTCM loss during rover mission (Rover, Impact 8.0)
+   - Repeated fence boundary crossing (Rover, Impact 5.3)
+5. **Fix 2 blocking SITL bugs** (altitude drift, EKF RTL not armable)
+6. **Create PR** to ArduPilot/master with all accumulated improvements
 
 ---
 
 ## 11. Git History (test-improvements branch)
 
 ```
-6a1b40b47c  test(autotest): add VTOL motor fail and repeated fence crossing tests
-b25bd8b693  docs(autotest): update synthesis with BatteryArmVoltageGuard completion
 6b0e4ee151  test(autotest): add BatteryArmVoltageGuard test for arming voltage mid-flight change
 6ad8c51038  docs(autotest): update synthesis with FenceTerrainFallback completion
 fea452c420  test(autotest): add FenceTerrainFallback test for terrain-dependent fence degradation
