@@ -10,6 +10,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 GCS_Dummy _gcs;
 

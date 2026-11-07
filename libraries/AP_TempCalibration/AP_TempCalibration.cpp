@@ -23,6 +23,8 @@
 #include "AP_TempCalibration.h"
 #include <stdio.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 extern const AP_HAL::HAL& hal;
 
