@@ -6260,7 +6260,7 @@ return update()
             "SIM_TERRAIN": 0,
             "RNGFND_LANDING": 1,
             "LAND_SLOPE_RCALC": 2,
-            "LAND_ABORT_DEG": 5,  # 1° too tight — baro drift correction fluctuations trigger false aborts
+            "LAND_ABORT_DEG": 1,
         })
 
         self.reboot_sitl()
