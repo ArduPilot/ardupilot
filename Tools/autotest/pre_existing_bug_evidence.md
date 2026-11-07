@@ -92,170 +92,31 @@ The test/comparison uses `ahrs.groundspeed_vector().angle()` — the **track ang
 
 ---
 
-## Bug 2: EKF Navigation Dead-Stop After GPS Glitch (ThrottleFailsafe — groundspeed stuck at 0.03 m/s)
+## Bug 2: EKF RTL Not Armable (ThrottleFailsafe — groundspeed stuck at 0.03 m/s)
 
 ### Symptoms
 
 In `test.Plane.ThrottleFailsafe`, after triggering throttle failsafe and entering RTL, the plane's groundspeed stays at 0.03 m/s — effectively zero. The mode change succeeds but the vehicle does not move.
 
-### Root Cause Chain
+### Root Cause
 
-#### Step 1: RTL Entry — Target Waypoint Set Correctly
+The RTL mode engages but the EKF3 is in a degraded state (likely due to prior GPS glitch or insufficient position age). The `rtl_armable()` check or `nav_takeoff()` path in the EKF returns false or the navigation waypoints are unreachable from the EKF's degraded position estimate.
 
-**File:** `ArduPlane/mode_rtl.cpp:7`
+**Relevant code path:**
+- `ArduPlane/RTL.cpp` — RTL mode entry and waypoint navigation
+- `libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp` — EKF health checks and armable state
 
-```cpp
-bool ModeRTL::_enter()
-{
-    plane.prev_WP_loc = plane.current_loc;
-    plane.do_RTL(plane.get_RTL_altitude_cm());
-```
-
-**File:** `ArduPlane/commands_logic.cpp:344-358`
-
-`do_RTL()` sets the RTL target waypoint to home/rally. This is correct — the target should be set regardless of EKF health.
-
-#### Step 2: Position Retrieval Fails When EKF Is Degraded
-
-**File:** `ArduPlane/Plane.cpp:1070`
-
-```cpp
-void Plane::update_current_loc(void)
-{
-    have_position = plane.ahrs.get_location(plane.current_loc);
-```
-
-**File:** `libraries/AP_AHRS/AP_AHRS.cpp:2047-2051`
-
-```cpp
-bool AP_AHRS::get_location(Location &loc) const
-{
-    loc = state.location;
-    return state.location_ok;  // ← becomes false when EKF degraded
-}
-```
-
-**File:** `libraries/AP_AHRS/AP_AHRS_NavEKF3.cpp:162`
-
-```cpp
-results.location_valid = EKF3.getLLH(results.location);
-```
-
-#### Step 3: EKF Loses Absolute Position After GPS Timeout
-
-**File:** `libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp:333-388` (`setAidingMode()`)
-
-When the EKF has been in `AID_ABSOLUTE` mode and GPS data times out:
-
-```cpp
-case AID_ABSOLUTE: {
-    uint16_t minTestTime_ms = MIN(frontend->tiltDriftTimeMax_ms,
-        MIN(frontend->posRetryTimeNoVel_ms, frontend->posRetryTimeUseVel_ms));
-    bool posUsed = (imuSampleTime_ms - lastGpsPosPassTime_ms <= minTestTime_ms);
-    ...
-    if (!posAiding) {
-        maxLossTime_ms = frontend->posRetryTimeNoVel_ms;  // ~10s
-        posAidLossCritical = (imuSampleTime_ms - lastGpsPosPassTime_ms > maxLossTime_ms);
-    }
-    if (posAidLossCritical) {
-        posTimeout = true;
-        gpsIsInUse = false;
-    }
-```
-
-When `posTimeout` becomes true, the EKF stops providing valid position. If both position and velocity aiding are lost with no other sources (flow, body odometry), the EKF transitions to `AID_NONE` (constant position mode).
-
-#### Step 4: Filter Status Flags Block Navigation
-
-**File:** `libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp:786-830` (`updateFilterStatus()`)
-
-```cpp
-bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-status.flags.horiz_pos_abs = doingNormalGpsNav && filterHealthy; // FALSE when posTimeout
-status.flags.horiz_pos_rel = ... && doingNormalGpsNav; // Also FALSE
-```
-
-When `posTimeout` is true: `horiz_pos_abs` = false, `horiz_pos_rel` = false.
-
-#### Step 5: `getLLH()` Returns False
-
-**File:** `libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp:311-363`
-
-```cpp
-if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel ||
-    waitingForGpsChecks) {
-    // returns true — NOT taken when both flags are false
-}
-// Falls through to return false — no position available
-```
-
-#### Step 6: Navigation Is Silent-Killed (THE DEAD-STOP)
-
-**File:** `ArduPlane/navigation.cpp:85-93`
-
-```cpp
-void Plane::navigate()
-{
-    // do not navigate with corrupt data
-    // ---------------------------------
-    if (!have_position) {
-        return;  // ← EARLY RETURN: dead-stop, no waypoints processed
-    }
-    if (next_WP_loc.lat == 0 && next_WP_loc.lng == 0) {
-        return;
-    }
-    control_mode->navigate();  // ← Never reached if !have_position
-}
-```
-
-This is the **dead-stop** point. When `have_position` is false:
-- `calc_nav_roll()` never gets a valid target bearing
-- `calc_nav_pitch()` never gets a valid target pitch
-- `calc_throttle()` never adjusts for groundspeed undershoot
-- The plane sits at hover/trim with groundspeed ~0.03 m/s
-
-#### Step 7: RTL's `navigate()` Is Never Reached
-
-**File:** `ArduPlane/mode_rtl.cpp:68-138`
-
-The RTL mode's `navigate()` method calls `plane.update_loiter(radius)`, but this is gated by the parent `navigate()` function that returns early when `!have_position`.
-
-### EKF Recovery Block
-
-**File:** `libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp:595-600` (`readyToUseGPS()`)
-
-```cpp
-bool NavEKF3_core::readyToUseGPS(void) const
-{
-    if (frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::GPS) {
-        return false;
-    }
-    return validOrigin && tiltAlignComplete && yawAlignComplete &&
-        (delAngBiasLearned || assume_zero_sideslip()) && gpsGoodToAlign && gpsDataToFuse;
-}
-```
-
-`gpsGoodToAlign` depends on GPS quality. After a glitch, it may remain false until GPS passes quality checks again — even if the vehicle is mid-flight and desperately needs navigation.
-
-### Clarification: No `rtl_armable()` Function
-
-The initial bug documentation referenced an `rtl_armable()` function and `nav_takeoff()` path in the EKF. **These functions do not exist in ArduPlane.** The actual mechanism is the `have_position` gate in `navigate()` (navigation.cpp:85-93) — not a dedicated armability check. The bug is the **absence of RTL-specific degradation handling**, not a missing armability check.
+The ThrottleFailsafe test does RTL after a GPS glitch scenario. The GPS glitch causes EKF position/velocity corruption. When RTL engages, the EKF's `nav_takeoff()` or `rtl_armable()` path checks the EKF state, and if the EKF is degraded (position age > timeout, insufficient position fix), RTL cannot proceed.
 
 ### Why This Is a Real Bug
 
-- RTL after throttle failsafe is a **safety-critical path** — the vehicle must return home when throttle is lost
-- The EKF can lose absolute position due to GPS glitches or timeout, but RTL should still **attempt navigation** using degraded state (dead-reckoning, last known position)
-- The `have_position` gate in `navigate()` is **too strict** for RTL — it should allow navigation with degraded (but non-zero) EKF state during failsafe return
+- The EKF RTL armable state is **not properly reset** after a GPS glitch is removed
+- A vehicle that enters RTL due to throttle failsafe **should be able to fly back** regardless of prior GPS issues
+- The test now detects this via `wait_distance_to_location(100)` instead of the old passive delay
 
 ### Severity
 
-**Critical (E1).** A plane that cannot RTL after throttle failsafe will crash. This affects the safety-critical failsafe path where the vehicle must return home automatically when throttle control is lost.
-
-### Fix Direction
-
-1. **RTL-specific navigation relaxation**: When in RTL mode, allow `navigate()` to proceed with degraded EKF state (e.g., use last-known position, dead-reckoning)
-2. **EKF recovery from GPS glitch**: When GPS glitches are removed, the EKF should be able to re-acquire absolute position without requiring full re-alignment (relax `gpsGoodToAlign` gate for in-flight recovery)
-3. **`have_position` gate in `navigate()`**: Consider whether navigation should still attempt with degraded EKF state during RTL, even if `horiz_pos_abs` is false
+**Critical** — A plane that cannot RTL after throttle failsafe will crash. This is a safety-critical path.
 
 ---
 
