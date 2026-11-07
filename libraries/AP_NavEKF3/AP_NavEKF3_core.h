@@ -183,6 +183,13 @@ public:
     // return accelerometer bias in m/s/s
     void getAccelBias(Vector3f &accelBias) const;
 
+    // check if accel bias learning should be inhibited
+    // combines internal state inhibition with vehicle-requested inhibition
+    bool accelBiasLearningInhibited() const;
+
+    // hover Z-bias correction currently applied to an IMU's delta velocity
+    ftype hoverZBiasApplied(uint8_t accel_index) const;
+
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
@@ -415,6 +422,12 @@ public:
     // return the number of D position resets performed by this core
     uint16_t getPosDownResetCount(void) const { return posDResetCount; }
 
+    // return the number of times this core has restarted its bias estimate for an accel
+    uint16_t getAccelBiasResetCount(uint8_t accel_index) const { return accelBiasResetCount[accel_index]; }
+
+    // return the time in msec this core last zeroed its bias estimate for an accel, 0 if it never has
+    uint32_t getAccelBiasZeroTime_ms(uint8_t accel_index) const { return accelBiasZeroTime_ms[accel_index]; }
+
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const;
 
@@ -425,6 +438,9 @@ public:
     // get the IMU index. For now we return the gyro index, as that is most
     // critical for use by other subsystems.
     uint8_t getIMUIndex(void) const { return gyro_index_active; }
+
+    // get the accel index whose bias the accel bias states estimate
+    uint8_t getAccelIndex(void) const { return accel_index_active; }
 
     // values for EK3_MAG_CAL
     enum class MagCal {
@@ -1261,6 +1277,8 @@ private:
     ftype posResetD;                // Change in Down position due to last in-flight reset in metres
     uint16_t posNEResetCount;       // number of NE position resets performed by this core
     uint16_t posDResetCount;        // number of D position resets performed by this core
+    uint16_t accelBiasResetCount[INS_MAX_INSTANCES]; // times the bias estimate for each accel was restarted, kept across a restart of the core. Returned by getAccelBiasResetCount
+    uint32_t accelBiasZeroTime_ms[INS_MAX_INSTANCES]; // time the bias estimate for each accel was last zeroed (msec). Returned by getAccelBiasZeroTime_ms
     ftype yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
     QuaternionF prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
     ftype hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
@@ -1564,6 +1582,8 @@ private:
 
 	// variables used to inhibit accel bias learning
     bool inhibitDelVelBiasStates;       // true when all IMU delta velocity bias states are de-activated
+    bool prevVehicleInhibitAccelBias;    // previous state of the vehicle's accel bias learning inhibit
+    bool vehicleInhibitAccelBiasArmedOnly; // true when armed on every frame of the vehicle's accel bias inhibit, including the one it ends on
     bool dvelBiasAxisInhibit[3] {};		// true when IMU delta velocity bias states for a specific axis is de-activated
 	Vector3F dvelBiasAxisVarPrev;		// saved delta velocity XYZ bias variances (m/sec)**2
 

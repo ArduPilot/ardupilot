@@ -17933,10 +17933,43 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ('BodyOdom', self.test_replay_body_odom_bit),
             ('Beacon', self.test_replay_beacon_bit),
             ('OpticalFlow', self.test_replay_optical_flow_bit),
+            ('AccelBiasInhibit', self.test_replay_accel_bias_inhibit_bit),
         ]
         for (name, func) in bits:
             self.start_subtest("%s" % name)
             self.test_replay_bit(func)
+
+    def test_replay_accel_bias_inhibit_bit(self):
+        # the inhibit is set while disarmed, before logging has started, and an
+        # accelerating platform makes any bias learned in replay but not in flight large
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "ACC_ZBIAS_LEARN": 4,
+        })
+        self.reboot_sitl()
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
+
+        # earlier bits leave the sticks where their flights put them
+        self.set_rc_default()
+        self.wait_ready_to_arm()
+        self.set_parameter("SIM_PLAT_ACC_Z", -1.0)   # NED, so the platform is accelerating upwards
+        self.delay_sim_time(30, "sit on the accelerating platform")
+        # with the inhibit nothing absorbs the platform's acceleration, so the EKF's
+        # vertical velocity runs away on it and is not fit to arm until the vehicle is off it
+        self.set_parameter("SIM_PLAT_ACC_Z", 0)
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(10, "hover")
+        self.land_and_disarm()
+
+        self.reboot_sitl()
+
+        return current_log_filepath
 
     def test_replay_bit(self, bit):
 
@@ -18619,6 +18652,854 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("EKF height dropped %.2f m below truth in the takeoff" % -worst_climb)
         if abs(mean_high) > 0.5:
             raise NotAchievedException("EKF height is %+.2f m off truth after climbing out of ground effect" % mean_high)
+
+    def get_accel_bias_z_at_arm_from_current_onboard_log(self, time_us=None):
+        '''returns the primary core's Z accel bias state as it stood at the
+        moment of arming, or at time_us (microseconds since boot) if given'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        armed_TimeUS = None
+        last_az = None
+        az_at_arm = None
+        while True:
+            m = dfreader.recv_match(type=["EV", "XKF2"])
+            if m is None:
+                break
+            if time_us is not None:
+                if m.TimeUS > time_us:
+                    break
+                if m.get_type() == "XKF2" and m.C == 0:
+                    last_az = m.AZ
+                continue
+            if m.get_type() == "EV":
+                if m.Id == 10 and armed_TimeUS is None:  # armed
+                    armed_TimeUS = m.TimeUS
+                    az_at_arm = last_az
+                continue
+            if m.C != 0:
+                continue
+            last_az = m.AZ
+        if time_us is not None:
+            if last_az is None:
+                raise NotAchievedException("No XKF2 data before %u us" % time_us)
+            return last_az
+        if armed_TimeUS is None:
+            raise NotAchievedException("Did not find an arming event in the log")
+        if az_at_arm is None:
+            raise NotAchievedException("No XKF2 data before arming")
+        return az_at_arm
+
+    def assert_accel_bias_z_learnt_before_arming(self, bias):
+        '''the primary core must have learnt a static accel Z bias on the ground before
+        arming, or the hover Z-bias learner's baseline does not hold it'''
+        az = self.get_accel_bias_z_at_arm_from_current_onboard_log()
+        self.progress("primary core Z accel bias at arming %f, static bias %f" % (az, bias))
+        if abs(az - bias) > 0.06:
+            raise NotAchievedException(
+                "Z accel bias at arming was %f, not the static %f: the EKF had not converged on the ground" %
+                (az, bias))
+
+    def accel_bias_at_arm_on_platform(self, zbias_learn, fly=False):
+        '''sit disarmed on an accelerating platform and return the Z accel bias the
+        filter had built up on it: at arming on the platform, or with fly as the
+        vehicle steps off it to take off, so the caller can assert on what that bias
+        does to the height estimate'''
+        self.set_parameters({
+            "SIM_PLAT_ACC_Z": 0,   # off until the EKF is ready, whatever the last call left
+            "ACC_ZBIAS_LEARN": zbias_learn,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameter("SIM_PLAT_ACC_Z", -1.0)   # NED, so the platform is accelerating upwards
+        self.delay_sim_time(60, "sit on the accelerating platform")
+        if fly:
+            # with bit 2 nothing absorbs the platform's acceleration, so the EKF's vertical
+            # velocity runs away on it and is not fit to arm until the vehicle is off it
+            off_us = int(self.get_sim_time() * 1e6)
+            self.set_parameter("SIM_PLAT_ACC_Z", 0)
+            self.wait_ready_to_arm()
+            self.takeoff(10, mode='LOITER')
+            self.delay_sim_time(20, "hover")
+            self.land_and_disarm()
+            az = self.get_accel_bias_z_at_arm_from_current_onboard_log(time_us=off_us)
+            self.progress("Z accel bias leaving the platform: %f m/s/s" % az)
+            return az
+        else:
+            self.arm_vehicle()
+            self.disarm_vehicle()
+            # the arm event can still be in the logger's write buffer
+            tstart = self.get_sim_time()
+            while not self.arm_event_in_current_onboard_log():
+                if self.get_sim_time() - tstart > 10:
+                    raise NotAchievedException("arm event never reached the log")
+                self.delay_sim_time(0.5, "logger to write the arm event")
+        az = self.get_accel_bias_z_at_arm_from_current_onboard_log()
+        self.progress("Z accel bias at arm: %f m/s/s" % az)
+        return az
+
+    def arm_event_in_current_onboard_log(self):
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type="EV")
+            if m is None:
+                return False
+            if m.Id == 10:  # armed
+                return True
+
+    def mean_hover_accel_down_from_current_onboard_log(self):
+        '''returns the mean of the position controller's measured Down
+        acceleration while holding the highest target position of the flight'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        samples = []
+        while True:
+            m = dfreader.recv_match(type="PSCD")
+            if m is None:
+                break
+            samples.append((m.TPD, m.AD))
+        if len(samples) == 0:
+            raise NotAchievedException("no PSCD in the log")
+        top = min(tpd for (tpd, ad) in samples)
+        hover = [ad for (tpd, ad) in samples if abs(tpd - top) < 0.05]
+        # drop the end of the climb and the start of the descent
+        hover = hover[20:-20]
+        if len(hover) < 50:
+            raise NotAchievedException("only %u PSCD samples in the hover" % len(hover))
+        return sum(hover) / len(hover)
+
+    def AccelBiasMovingPlatform(self):
+        '''Test accel bias is not learned while disarmed on an accelerating platform'''
+        # A vehicle sitting on a car or a ship deck feels the platform's
+        # acceleration. The EKF's movement check only compares the length of the
+        # accel vector against gravity, so a steady acceleration well inside
+        # EK3_OGNM_TEST_SF looks identical to standing still, and the on-ground
+        # height and velocity fusion then learns the platform's acceleration as
+        # accel bias. That bias is pure fiction the moment the vehicle leaves the
+        # platform. ACC_ZBIAS_LEARN bit 2 stops it being learned at all.
+        self.start_subtest("Positive control: the bias is learned without bit 2")
+        az = self.accel_bias_at_arm_on_platform(0)
+        if abs(az) < 0.5:
+            raise NotAchievedException(
+                "platform acceleration was not learned as bias (%f m/s/s), so the "
+                "stimulus never reached the filter and the check below proves nothing" % az)
+
+        self.start_subtest("Bit 2 stops it being learned, and the climb stays honest")
+        az = self.accel_bias_at_arm_on_platform(4, fly=True)
+        if abs(az) > 0.2:
+            raise NotAchievedException(
+                "EKF learned the platform acceleration as accel bias (%f m/s/s)" % az)
+        # the invented bias is only harmful once airborne, where it shows as height error
+        self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=2.5)
+        self.reboot_sitl()
+
+    def accel_bias_inhibit_set_in_log(self, path):
+        dfreader = self.dfreader_for_path(path)
+        while True:
+            m = dfreader.recv_match(type="REV3")
+            if m is None:
+                return False
+            if m.Event == 16:  # setInhibitAccelBiasLearning
+                return True
+
+    def wait_accel_bias_inhibit_set_in_current_onboard_log(self, timeout=20):
+        path = self.current_onboard_log_filepath()
+        tstart = self.get_sim_time()
+        while True:
+            # the event can still be in the logger's write buffer, and a log
+            # being written can end part way through a record
+            try:
+                if self.accel_bias_inhibit_set_in_log(path):
+                    return
+            except (OSError, ValueError, struct.error):
+                pass
+            if self.get_sim_time() - tstart > timeout:
+                raise NotAchievedException("accel bias inhibit never reached %s" % path)
+            self.delay_sim_time(1, "logger to write the inhibit event")
+
+    def AccelBiasInhibitLoggedAfterLogRestart(self):
+        '''Test a log restarted while disarmed carries the accel bias inhibit'''
+        # Replay starts every log with accel bias learning allowed, so a log
+        # that starts while ACC_ZBIAS_LEARN bit 2 holds the inhibit must say so,
+        # or Replay of it learns through the hold
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "ACC_ZBIAS_LEARN": 4,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.start_subtest("Positive control: the boot log carries the inhibit")
+        self.wait_accel_bias_inhibit_set_in_current_onboard_log()
+
+        self.start_subtest("A log restarted while disarmed carries it too")
+        erase_time_us = self.get_sim_time() * 1e6
+        # erasing stops logging, which restarts once the erase is done
+        self.mav.mav.log_erase_send(self.sysid_thismav(), 1)
+        tstart = self.get_sim_time()
+        while True:
+            logs = self.log_list()
+            m = None
+            if len(logs) > 0:
+                try:
+                    m = self.dfreader_for_path(logs[-1]).recv_match(type="PARM")
+                except (OSError, ValueError, struct.error):
+                    # deleted since the listing, or the new log ends part way through a record
+                    pass
+            if m is not None and m.TimeUS > erase_time_us:
+                break
+            if self.get_sim_time() - tstart > 120:
+                raise NotAchievedException("logging did not restart after the erase")
+            self.delay_sim_time(1, "logging to restart")
+        self.wait_accel_bias_inhibit_set_in_current_onboard_log()
+        self.reboot_sitl()
+
+    def ekf3_core0_accel_bias_resets_while_armed(self):
+        '''the number of times EKF3 core 0 zeroed its accel biases while armed in the current
+        onboard log, seen as its Z bias variance jumping off the 5e-9 floor'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        armed = False
+        prev = None
+        count = 0
+        while True:
+            m = dfreader.recv_match(type=["EV", "XKV2"])
+            if m is None:
+                break
+            if m.get_type() == "EV":
+                if m.Id == 10:
+                    armed = True
+                elif m.Id == 11:
+                    armed = False
+                continue
+            if m.C != 0:
+                continue
+            if armed and prev is not None and prev < 6e-9 and m.V15 > 10 * prev:
+                count += 1
+            prev = m.V15
+        return count
+
+    def HoverBiasNotSavedAfterEKFReset(self):
+        '''check a flight in which the EKF zeroes its accel biases saves no hover Z-bias'''
+        # With a low EK3_ABIAS_P_NSE the EKF's accel bias variance reaches its floor in a hover, and
+        # the EKF zeroes the biases and relearns them, which the learner would take for the vehicle's
+        # bias. A flight in which that happens keeps the bias saved before it.
+        saved = 0.05
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "SCHED_LOOP_RATE": 200,
+            "SIM_ACC_VRF_Z": 0.10,
+            "INS_ACC_VRFB_Z": saved,
+            "INS_ACC2_VRFB_Z": saved,
+            "INS_ACC3_VRFB_Z": saved,
+            # bit 0 learn and save on disarm, bit 1 apply what was saved
+            "ACC_ZBIAS_LEARN": 3,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("EK3_ABIAS_P_NSE", 0.005)
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False)
+        self.takeoff(altitude_min=2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        self.change_mode('LOITER')
+        self.set_rc(3, 1500)
+        # the first reset comes about 20 s into this hover
+        self.delay_sim_time(45, "hover until the EKF zeroes its accel biases")
+        self.context_collect('STATUSTEXT')
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=60)
+        self.wait_statustext("Hover Z-bias not saved: EKF accel bias reset", check_context=True)
+        resets = self.ekf3_core0_accel_bias_resets_while_armed()
+        if resets == 0:
+            raise NotAchievedException("the EKF did not zero its accel biases in the hover")
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z=%f after a flight with %u EKF accel bias resets" % (learned, resets))
+        if abs(learned - saved) > 0.0001:
+            raise NotAchievedException("INS_ACC_VRFB_Z changed from %f to %f over a flight with an EKF reset" % (
+                saved, learned))
+
+    def HoverBiasSavedFirstFlightAfterRest(self):
+        '''check only the first flight after an EKF accel bias restart at rest, armed 10 s after it, saves the hover Z-bias'''
+        # The learner saves the hover bias less the bias the EKF held at arming, which is the
+        # motors-off bias only once the EKF has had 10 s disarmed to learn it after a restart, and
+        # only until the vehicle flies: after a landing the EKF holds the hover bias at rest.
+        static = 0.20
+        vrf = 0.10
+        # what a correct first flight saves here: the EKF settles a little short of the motors-on offset
+        expected = 0.085
+        # a bit 2 flight saves the static and motors-on bias together, settling short in the same way
+        whole = 0.285
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "SIM_ACC1_BIAS_Z": static,
+            "SIM_ACC_VRF_Z": vrf,
+            "INS_ACC_VRFB_Z": 0,
+            # learn and save without applying, so the EKF's in-flight bias is the same on every flight
+            "ACC_ZBIAS_LEARN": 1,
+            "EK3_IMU_MASK": 1,
+            "RC9_OPTION": 187,  # EKF reset
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("EKF3 IMU0 initialised", check_context=True, timeout=60)
+        self.change_mode('ALT_HOLD')
+
+        def fly(arm_after, hover_throttle=1500, during_hover=None):
+            '''arm arm_after seconds from now, hover in ALT_HOLD and land; returns the saved bias'''
+            self.delay_sim_time(arm_after, "rest before arming")
+            self.context_clear_collection('STATUSTEXT')
+            # forced, as some legs arm before the EKF has settled after a reset
+            self.arm_vehicle(force=True)
+            self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+            self.set_rc(3, hover_throttle)
+            self.delay_sim_time(15, "hover")
+            if during_hover is not None:
+                during_hover()
+            self.delay_sim_time(15, "hover")
+            # LAND first, so centring the stick gives ALT_HOLD no steady hover to sample on the way down
+            self.change_mode('LAND')
+            self.set_rc(3, 1500)
+            self.wait_disarmed(timeout=60)
+            self.change_mode('ALT_HOLD')
+            saved = self.get_parameter("INS_ACC_VRFB_Z")
+            self.progress("INS_ACC_VRFB_Z %f (motors-on %f, static %f)" % (saved, vrf, static))
+            return saved
+
+        def arm_without_flying():
+            '''arm, stay on the ground with the throttle low until the auto-disarm, and check nothing is said'''
+            self.context_clear_collection('STATUSTEXT')
+            self.arm_vehicle(force=True)
+            self.set_rc(3, 1000)
+            self.wait_disarmed(timeout=30)
+            self.set_rc(3, 1500)
+            self.delay_sim_time(1, "any message at disarm")
+            for m in self.context_collection('STATUSTEXT'):
+                if "Hover Z-bias" in m.text:
+                    raise NotAchievedException("a disarm without a flight said '%s'" % m.text)
+
+        def ekf_reset():
+            self.context_clear_collection('STATUSTEXT')
+            self.set_rc(9, 2000)
+            self.wait_statustext("EKF bootstrap reset performed", check_context=True)
+            self.set_rc(9, 1000)
+
+        def assert_saved(saved, value, what):
+            if abs(saved - value) > 0.02:
+                raise NotAchievedException("%s saved %f, not %f" % (what, saved, value))
+
+        def assert_kept(saved, kept, text):
+            self.wait_statustext(text, check_context=True)
+            if abs(saved - kept) > 0.0001:
+                raise NotAchievedException("INS_ACC_VRFB_Z changed from %f to %f" % (kept, saved))
+
+        self.start_subtest("The first flight armed 15 s after the EKF started saves the motors-on bias")
+        first = fly(15)
+        assert_saved(first, expected, "the first flight")
+
+        self.start_subtest("A second flight keeps it: the bias at rest after a landing is the hover bias")
+        # a different motors-on offset, so a save would show in the value as well as the message
+        self.set_parameter("SIM_ACC_VRF_Z", 2 * vrf)
+        assert_kept(fly(2), first, "Hover Z-bias not saved: not first flight")
+
+        self.start_subtest("An accel switch at rest after a flight keeps it: it zeroes no bias")
+        # the core switches back onto the accel taking the bias it held for it, the hover bias
+        self.set_parameter("INS_USE", 0)
+        self.delay_sim_time(2, "the core runs on another accel")
+        self.set_parameter("INS_USE", 1)
+        assert_kept(fly(15), first, "Hover Z-bias not saved: not first flight")
+        self.set_parameter("SIM_ACC_VRF_Z", vrf)
+
+        self.start_subtest("With bit 2 any flight saves, the whole hover bias")
+        self.set_parameter("ACC_ZBIAS_LEARN", 5)
+        assert_saved(fly(2), whole, "a bit 2 flight")
+        self.set_parameter("ACC_ZBIAS_LEARN", 1)
+        self.set_parameter("INS_ACC_VRFB_Z", first)
+
+        self.start_subtest("A flight armed 2 s after a reset at rest keeps it: the bias has not settled")
+        ekf_reset()
+        assert_kept(fly(2), first, "Hover Z-bias not saved: armed <10s after EKF reset")
+
+        self.start_subtest("Time armed on the ground after a reset is not rest")
+        ekf_reset()
+        self.delay_sim_time(3, "rest before arming")
+        arm_without_flying()
+        assert_kept(fly(0), first, "Hover Z-bias not saved: armed <10s after EKF reset")
+
+        self.start_subtest("An accel switch at rest after a reset keeps it: the estimate it hands back never settled")
+        # the accel leaves use while its bias is still settling and its estimate freezes there; the core takes
+        # that back with the switch, and without the rule a flight armed well past the rest wait saved 0.092
+        ekf_reset()
+        self.set_parameter("INS_USE", 0)
+        self.delay_sim_time(7, "the core runs on another accel")
+        self.set_parameter("INS_USE", 1)
+        assert_kept(fly(25), first, "Hover Z-bias not saved: accel switched on ground")
+
+        self.start_subtest("An arm without a flight after a settled rest leaves the first flight open")
+        ekf_reset()
+        self.delay_sim_time(15, "rest before arming")
+        arm_without_flying()
+        self.set_parameter("INS_ACC_VRFB_Z", 0.5)
+        again = fly(0)
+        assert_saved(again, expected, "the first flight after a ground arm")
+
+        self.start_subtest("A first flight with no steady hover says so")
+        # the stick just above the throttle deadband is a small, steady climb demand, which the
+        # learner does not sample
+        ekf_reset()
+        kept = self.get_parameter("INS_ACC_VRFB_Z")
+        assert_kept(fly(15, hover_throttle=1605), kept, "Hover Z-bias not learned: no steady hover")
+
+        self.start_subtest("A core switching off the IMU in flight is a restart, reported though the IMU is not in use")
+        ekf_reset()
+        kept = self.get_parameter("INS_ACC_VRFB_Z")
+        assert_kept(fly(15, during_hover=lambda: self.set_parameter("INS_USE", 0)), kept,
+                    "Hover Z-bias not saved: EKF accel bias reset")
+        self.set_parameter("INS_USE", 1)
+
+        self.start_subtest("Bit 2 changed while armed keeps the value: the baseline was chosen without it")
+        self.set_parameter("INS_ACC_VRFB_Z", 0.5)
+        ekf_reset()
+        assert_kept(fly(15, during_hover=lambda: self.set_parameter("ACC_ZBIAS_LEARN", 5)), 0.5,
+                    "Hover Z-bias not saved: ACC_ZBIAS_LEARN changed")
+        self.set_parameter("ACC_ZBIAS_LEARN", 1)
+
+        self.start_subtest("A reset at rest opens another first flight")
+        self.set_parameter("INS_ACC_VRFB_Z", 0.5)
+        ekf_reset()
+        again = fly(15)
+        assert_saved(again, expected, "the first flight after a reset")
+
+        self.start_subtest("An accel out of use when the EKF starts keeps it on its return: its estimate never settled")
+        # no core reports the accel until it comes back, and the learner then sees the EKF's boot zeroing for
+        # the first time; without the rule it took that for a fresh one and saved about 0.235
+        kept = self.get_parameter("INS_ACC_VRFB_Z")
+        self.set_parameter("INS_USE", 0)
+        self.context_clear_collection('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("EKF3 IMU0 initialised", check_context=True, timeout=60)
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(9, "the core runs on another accel")
+        self.set_parameter("INS_USE", 1)
+        assert_kept(fly(5), kept, "Hover Z-bias not saved: accel switched on ground")
+
+    def AccelBiasLearningInhibitedInAcro(self):
+        '''Test ACC_ZBIAS_LEARN bit 3 holds accel bias learning in acro'''
+        # With ACC_ZBIAS_LEARN bit 3 set, Copter inhibits EKF accel bias
+        # learning while armed and flying in acro. Step a real Z accel bias in once
+        # in acro: the estimate must not follow it, and must follow it once
+        # back in a mode that learns, which also shows the step was learnable.
+        # Then clear the bit and step the bias back out in a second acro
+        # segment, where the estimate must follow it.
+        step = 0.5
+        self.context_push()
+        self.set_parameter("ACC_ZBIAS_LEARN", 8)
+        self.takeoff(40, mode='LOITER')
+        self.delay_sim_time(20, "the accel bias to settle in hover")
+
+        self.change_mode('ACRO')
+        # the inhibit is written from the 1Hz loop
+        self.delay_sim_time(3, "the acro inhibit to engage")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": step,
+            "SIM_ACC2_BIAS_Z": step,
+        })
+        # a flip started from acro returns to it, and must not release the inhibit
+        for i in range(3):
+            self.change_mode('FLIP')
+            self.wait_mode('ACRO', timeout=10)
+            self.delay_sim_time(2, "settle after the flip")
+        # a throttle cut without air mode spools down to ground idle in the air,
+        # which must not release the inhibit
+        for i in range(3):
+            self.set_rc(3, 1000)
+            self.delay_sim_time(1, "a throttle cut in acro")
+            self.set_rc(3, 1900)
+            self.delay_sim_time(2, "arrest the descent after the cut")
+            self.set_rc(3, 1500)
+            self.delay_sim_time(3, "settle after the cut")
+        self.delay_sim_time(2, "acro with bit 3 set")
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(20, "the bias step to be learned")
+
+        self.set_parameter("ACC_ZBIAS_LEARN", 0)
+        self.change_mode('ACRO')
+        self.delay_sim_time(3, "the same point in acro as the first segment")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0,
+            "SIM_ACC2_BIAS_Z": 0,
+        })
+        self.delay_sim_time(20, "acro with bit 3 clear")
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(5, "the second acro exit to be logged")
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        segments = []
+        acro_in = None
+        az = []
+        flip_in = None
+        longest_flip = 0
+        while True:
+            m = dfreader.recv_match(type=['MODE', 'XKF2'])
+            if m is None:
+                break
+            if m.get_type() == 'MODE':
+                if flip_in is not None:
+                    longest_flip = max(longest_flip, (m.TimeUS - flip_in) * 1e-6)
+                    flip_in = None
+                if m.Mode == 14:
+                    flip_in = m.TimeUS
+                # a flip from acro returns to it, so it is part of the acro segment
+                if m.Mode == 1 and acro_in is None:
+                    acro_in = m.TimeUS
+                elif m.Mode not in (1, 14) and acro_in is not None:
+                    segments.append((acro_in, m.TimeUS))
+                    acro_in = None
+                continue
+            if m.C == 0:
+                az.append((m.TimeUS, m.AZ))
+        if len(segments) != 2:
+            raise NotAchievedException("expected two acro segments in the log, found %u" % len(segments))
+        # the inhibit is written from the 1Hz loop, so a flip needs to last about a second
+        # to be sure of being held
+        if longest_flip < 1.0:
+            raise NotAchievedException("longest flip %.2f s, too short to test the hold" % longest_flip)
+
+        def in_acro(segment):
+            # the step lands 3s into acro; compare from there to the exit
+            (t_in, t_out) = segment
+            samples = [a for (t, a) in az if t_in + 3e6 <= t <= t_out]
+            if len(samples) < 10:
+                raise NotAchievedException("too few XKF2 samples in acro")
+            return samples
+
+        held = in_acro(segments[0])
+        held_moved = max(abs(a - held[0]) for a in held)
+        between = [a for (t, a) in az if segments[0][1] < t <= segments[1][0]]
+        if len(between) < 10:
+            raise NotAchievedException("too few XKF2 samples between the acro segments")
+        learned_after = max(a - held[0] for a in between)
+        free = in_acro(segments[1])
+        free_moved = max(abs(a - free[0]) for a in free)
+        self.progress("XKF2.AZ moved %.3f in acro with bit 3 set, %.3f after it, and %.3f in acro with it clear,"
+                      " against a %.2f step" % (held_moved, learned_after, free_moved, step))
+        if learned_after < 0.5 * step:
+            raise NotAchievedException(
+                "bias step was not learned after acro (%.3f), so the check below proves nothing" % learned_after)
+        if held_moved > 0.05:
+            raise NotAchievedException("EKF learned accel bias in acro with bit 3 set (%.3f m/s/s)" % held_moved)
+        if free_moved < 0.15:
+            raise NotAchievedException("EKF did not learn accel bias in acro with bit 3 clear (%.3f m/s/s)" % free_moved)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def AccelBiasAcroExitVelocityError(self):
+        '''Test leaving acro does not learn a velocity error as accel bias'''
+        # With ACC_ZBIAS_LEARN bit 3 the accel bias is held through acro. A short
+        # accel error there, such as a clipped shock, leaves a vertical velocity
+        # error and no lasting bias. With baro as the only vertical reference the
+        # error is still there when acro ends, and the bias must not take it up.
+        self.context_push()
+        self.set_parameters({
+            "ACC_ZBIAS_LEARN": 8,
+            "EK3_SRC1_VELZ": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(40, mode='LOITER')
+        self.delay_sim_time(20, "the accel bias to settle in hover")
+        self.change_mode('ACRO')
+        self.set_rc(3, 1500)
+        # the inhibit is written from the 1Hz loop
+        self.delay_sim_time(3, "the acro inhibit to engage")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 1.5,
+            "SIM_ACC2_BIAS_Z": 1.5,
+        })
+        self.delay_sim_time(0.5, "a short accel error")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0,
+            "SIM_ACC2_BIAS_Z": 0,
+        })
+        self.delay_sim_time(3, "acro after the accel error")
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(15, "alt hold after acro")
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=180)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        t_acro = None
+        t_exit = None
+        az = []
+        vel_d = []
+        true_vel_d = []
+        while True:
+            m = dfreader.recv_match(type=['MODE', 'XKF1', 'XKF2', 'SIM2'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'MODE':
+                if m.Mode == 1 and t_acro is None:
+                    t_acro = m.TimeUS
+                elif m.Mode == 2 and t_acro is not None and t_exit is None:
+                    t_exit = m.TimeUS
+            elif mtype == 'XKF1' and m.C == 0:
+                vel_d.append((m.TimeUS, m.VD))
+            elif mtype == 'XKF2' and m.C == 0:
+                az.append((m.TimeUS, m.AZ))
+            elif mtype == 'SIM2':
+                true_vel_d.append((m.TimeUS, m.VD))
+        if t_acro is None or t_exit is None:
+            raise NotAchievedException("no acro segment ending in ALT_HOLD in the log")
+
+        def at(series, t):
+            return min(series, key=lambda x: abs(x[0] - t))[1]
+
+        vel_err = at(vel_d, t_exit) - at(true_vel_d, t_exit)
+        az_exit = at(az, t_exit)
+        az_moved = max(abs(a - az_exit) for (t, a) in az if t_exit <= t <= t_exit + 10e6)
+        self.progress("velocity down error %.2f m/s when acro ended; XKF2.AZ moved %.3f m/s/s in the 10 s after" %
+                      (vel_err, az_moved))
+        if abs(vel_err) < 0.5:
+            raise NotAchievedException(
+                "accel error left only %.2f m/s of velocity error, so the check below proves nothing" % vel_err)
+        if az_moved > 0.2:
+            raise NotAchievedException("EKF learned %.3f m/s/s of accel bias from a velocity error" % az_moved)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def VibrationRectificationBiasLearning(self):
+        '''Test hover Z-bias learning for vibration rectification'''
+        # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
+        # which is what vibration rectification does on a real airframe. The EKF
+        # cannot observe it on the ground, so without ACC_ZBIAS_LEARN it has to
+        # relearn it during every climb.
+        self.context_push()
+        vrf = 0.15
+        self.set_parameters({
+            "SIM_ACC_VRF_Z": vrf,
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+            "INS_ACC3_VRFB_Z": 0,
+            # bit 0 learn and save on disarm, bit 1 apply what was saved
+            "ACC_ZBIAS_LEARN": 3,
+        })
+        self.reboot_sitl()
+
+        self.start_subtest("Learned bias matches the injected offset")
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover so the Z bias converges")
+        self.land_and_disarm()
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        self.progress("learned INS_ACC_VRFB_Z=%f against SIM_ACC_VRF_Z=%f" % (learned, vrf))
+        # compare signed: an inverted or mis-scaled correction is the failure that
+        # matters, and it would double the error in flight rather than remove it
+        if abs(learned - vrf) > 0.06:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z=%f does not match the injected %f" % (learned, vrf))
+
+        self.start_subtest("Saved bias survives a reboot")
+        saved = learned
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("Hover Z-bias", timeout=30, check_context=True)
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        if abs(learned - saved) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z changed over reboot: was %f now %f" % (saved, learned))
+
+        self.start_subtest("Carrying the bias over keeps the height estimate honest")
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(20, "hover")
+        self.land_and_disarm()
+        # with the offset already applied the filter starts the climb with the right
+        # bias; without it the same flight drifts about 0.6m before the EKF catches up
+        self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=0.35)
+
+        self.start_subtest("AHRS acceleration carries the applied correction")
+        # the position controller's measured Down acceleration comes from AHRS,
+        # which must remove the correction the EKF applies or it reads the
+        # injected offset for the whole hover
+        mean_ad = self.mean_hover_accel_down_from_current_onboard_log()
+        self.progress("mean PSCD.AD in the hover: %+.3f m/s/s" % mean_ad)
+        if abs(mean_ad) > 0.05:
+            raise NotAchievedException(
+                "AHRS Down acceleration is %+.3f m/s/s off in a steady hover" % mean_ad)
+
+        self.start_subtest("A bias cleared since the last flight is not restored on disarm")
+        # an accel calibration clears the stored bias; an arm and disarm with no
+        # hover must not write back what the learner held from the last flight
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        for when in "before arming", "while armed":
+            if when == "before arming":
+                self.set_parameter("INS_ACC_VRFB_Z", 0)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            if when == "while armed":
+                self.set_parameter("INS_ACC_VRFB_Z", 0)
+            self.disarm_vehicle()
+            cleared = self.get_parameter("INS_ACC_VRFB_Z")
+            if abs(cleared) > 0.001:
+                raise NotAchievedException(
+                    "INS_ACC_VRFB_Z cleared %s came back as %f on disarm" % (when, cleared))
+            # put a saved value back for the next case to clear
+            self.set_parameter("INS_ACC_VRFB_Z", 0.1)
+
+        self.start_subtest("Nothing is saved when learning is disabled")
+        self.set_parameters({
+            "INS_ACC_VRFB_Z": 0,
+            "ACC_ZBIAS_LEARN": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover with learning disabled")
+        self.land_and_disarm()
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        if abs(learned) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z should have stayed 0, got %f" % learned)
+
+        self.start_subtest("A disabled accel is not saved with another accel's bias")
+        # with the first accel unusable every core runs on the second, so only the
+        # second accel's bias is learned and the first's parameter must stay 0
+        self.set_parameters({
+            "SIM_ACC2_BIAS_Z": 0.3,
+            "EK3_IMU_MASK": 3,
+            "INS_USE": 0,
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+            "ACC_ZBIAS_LEARN": 3,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover so the Z bias converges")
+        self.land_and_disarm()
+        self.assert_accel_bias_z_learnt_before_arming(0.3)
+        learned1 = self.get_parameter("INS_ACC_VRFB_Z")
+        learned2 = self.get_parameter("INS_ACC2_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z=%f INS_ACC2_VRFB_Z=%f" % (learned1, learned2))
+        if abs(learned1) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z should have stayed 0 with the first accel unused, got %f" % learned1)
+        # only the motors-on offset is learnt: the static 0.3 is the EKF's to learn on the
+        # ground, and saving it as well would apply it twice on the next flight
+        if abs(learned2 - vrf) > 0.06:
+            raise NotAchievedException(
+                "INS_ACC2_VRFB_Z=%f is not the motors-on offset %f" % (learned2, vrf))
+
+        self.start_subtest("An accel that learnt nothing keeps a value set while armed")
+        # the second accel learns while the first is unused; after touchdown, where nothing
+        # is learnt, the first is given a new value and brought back into use, and must keep it
+        self.set_parameters({
+            "INS_USE": 0,
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+            "DISARM_DELAY": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover so the second accel's Z bias converges")
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.set_rc(3, 1000)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=60)
+        self.set_parameters({
+            "INS_ACC_VRFB_Z": 0.07,
+            "INS_USE": 1,
+        })
+        self.delay_sim_time(5, "first accel back in use, still armed on the ground")
+        self.disarm_vehicle()
+        self.set_rc(3, 1500)
+        self.assert_accel_bias_z_learnt_before_arming(0.3)
+        kept1 = self.get_parameter("INS_ACC_VRFB_Z")
+        learned2 = self.get_parameter("INS_ACC2_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z=%f INS_ACC2_VRFB_Z=%f" % (kept1, learned2))
+        if abs(kept1 - 0.07) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z set to 0.07 while armed was saved as %f on disarm" % kept1)
+        if abs(learned2 - vrf) > 0.06:
+            raise NotAchievedException(
+                "INS_ACC2_VRFB_Z=%f is not the motors-on offset %f" % (learned2, vrf))
+
+        self.start_subtest("A static bias on the first accel is learnt once and not saved")
+        # with both accels in use the EKF learns the static 0.3 on the ground, so only the
+        # motors-on offset is saved, and applying it does not count the static part twice
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0.3,
+            "SIM_ACC2_BIAS_Z": 0,
+            "INS_USE": 1,
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+            "ACC_ZBIAS_LEARN": 3,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover so the Z bias converges")
+        self.land_and_disarm()
+        self.assert_accel_bias_z_learnt_before_arming(0.3)
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        learned2 = self.get_parameter("INS_ACC2_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z=%f INS_ACC2_VRFB_Z=%f with a static 0.3 on the first accel" %
+                      (learned, learned2))
+        if abs(learned - vrf) > 0.06:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z=%f is not the motors-on offset %f" % (learned, vrf))
+        # the second accel has no static bias, so each accel is learnt against its own baseline
+        if abs(learned2 - vrf) > 0.06:
+            raise NotAchievedException(
+                "INS_ACC2_VRFB_Z=%f is not the motors-on offset %f" % (learned2, vrf))
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(20, "hover with the saved bias applied")
+        self.land_and_disarm()
+        self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=0.35)
+
+        self.start_subtest("With bit 2 every flight saves the whole bias")
+        # with bit 2 the learner does not trust the bias the EKF holds at arming, so each
+        # flight must save the whole bias, not its change since arming. Bit 2 also stops the
+        # EKF learning the static 0.3 on the ground, and an EKF that has not learnt it reads a
+        # vertical velocity at rest, so each flight boots with bit 2 clear for the EKF to learn
+        # it, and sets bit 2 just before arming, where the learner reads it
+        self.set_parameters({
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+        })
+        for flight in range(3):
+            self.set_parameter("ACC_ZBIAS_LEARN", 3)
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.set_parameter("ACC_ZBIAS_LEARN", 7)
+            self.takeoff(10, mode='LOITER')
+            self.delay_sim_time(30, "hover so the Z bias converges")
+            self.land_and_disarm()
+            # the whole bias differs from the change since arming only if the EKF held one
+            az = self.get_accel_bias_z_at_arm_from_current_onboard_log()
+            if abs(az - 0.3) > 0.06:
+                raise NotAchievedException(
+                    "flight %u armed with the EKF holding %f, not the static 0.3" % (flight, az))
+            learned = self.get_parameter("INS_ACC_VRFB_Z")
+            self.progress("flight %u saved INS_ACC_VRFB_Z=%f" % (flight, learned))
+            if abs(learned - (0.3 + vrf)) > 0.06:
+                raise NotAchievedException(
+                    "flight %u saved INS_ACC_VRFB_Z=%f, not the whole bias %f" % (flight, learned, 0.3 + vrf))
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
@@ -20012,6 +20893,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
+            self.VibrationRectificationBiasLearning,
+            self.HoverBiasNotSavedAfterEKFReset,
+            self.HoverBiasSavedFirstFlightAfterRest,
+            self.AccelBiasMovingPlatform,
+            self.AccelBiasInhibitLoggedAfterLogRestart,
+            self.AccelBiasLearningInhibitedInAcro,
+            self.AccelBiasAcroExitVelocityError,
         ])
         return ret
 
