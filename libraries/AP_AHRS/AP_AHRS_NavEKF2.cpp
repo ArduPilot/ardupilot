@@ -42,7 +42,7 @@ bool AP_AHRS_NavEKF2::start()
     return EKF2.InitialiseFilter();
 }
 
-void AP_AHRS_NavEKF2::update()
+void AP_AHRS_NavEKF2::update(const Inputs &inputs)
 {
     if (!started) {
         started = start();
@@ -50,7 +50,20 @@ void AP_AHRS_NavEKF2::update()
     if (!started) {
         return;
     }
+
+    // EKF2 doesn't choose its own origin.  Give it the common origin
+    // before it runs, and again afterwards so that a core it resets
+    // while running has the origin again before its results are read;
+    // it ignores the origin when it already has it:
+    if (inputs.origin_ok) {
+        EKF2.setOriginLLH(inputs.origin);
+    }
+
     EKF2.UpdateFilter();
+
+    if (inputs.origin_ok) {
+        EKF2.setOriginLLH(inputs.origin);
+    }
 
     // check the current primary core; if it has changed then assume
     // our attitude is reset:
@@ -159,13 +172,23 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     results.location_valid = EKF2.getLLH(results.location);
 
     // origin-relative functions
-    results.provides_common_origin = true;
 
     // origin-relative position:
     results.position_NE_valid = EKF2.getPosNE(results.position_NE);
     results.position_NE_reset_count = position_NE_reset_tracker.count();
 
     results.position_D_valid = EKF2.getPosD(results.position_D);
+
+    // before it has an origin EKF2 offers one.  Publish the location
+    // EKF2 will report once it is given that origin, so that the
+    // location minus the position is the origin, and the published
+    // position stays EKF2's own:
+    Location candidate_origin;
+    if (EKF2.getOriginCandidate(candidate_origin)) {
+        results.location = candidate_origin;
+        results.location.offset(Vector3p{results.position_NE.x, results.position_NE.y, results.position_D});
+        results.location_suitable_as_origin = true;
+    }
     results.position_D_reset_count = position_D_reset_tracker.count();
 
     results.hagl_valid = EKF2.getHAGL(results.hagl);

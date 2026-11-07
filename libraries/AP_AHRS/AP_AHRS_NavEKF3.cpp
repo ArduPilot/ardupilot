@@ -42,7 +42,7 @@ bool AP_AHRS_NavEKF3::start()
     return EKF3.InitialiseFilter();
 }
 
-void AP_AHRS_NavEKF3::update()
+void AP_AHRS_NavEKF3::update(const Inputs &inputs)
 {
     if (!started) {
         started = start();
@@ -50,7 +50,20 @@ void AP_AHRS_NavEKF3::update()
     if (!started) {
         return;
     }
+
+    // EKF3 doesn't choose its own origin.  Give it the common origin
+    // before it runs, and again afterwards so that a core it resets
+    // while running has the origin again before its results are read;
+    // it ignores the origin when it already has it:
+    if (inputs.origin_ok) {
+        EKF3.setOriginLLH(inputs.origin);
+    }
+
     EKF3.UpdateFilter();
+
+    if (inputs.origin_ok) {
+        EKF3.setOriginLLH(inputs.origin);
+    }
 
     // check the current primary core; if it has changed then assume
     // our attitude is reset:
@@ -162,7 +175,6 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     results.location_valid = EKF3.getLLH(results.location);
 
     // origin-relative functions
-    results.provides_common_origin = true;
 
     // origin-relative position:
     results.position_NE_valid = EKF3.getPosNE(results.position_NE);
@@ -170,6 +182,17 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.position_D_valid = EKF3.getPosD(results.position_D);
     results.position_D_reset_count = position_D_reset_tracker.count();
+
+    // before it has an origin EKF3 offers one.  Publish the location
+    // EKF3 will report once it is given that origin, so that the
+    // location minus the position is the origin, and the published
+    // position stays EKF3's own:
+    Location candidate_origin;
+    if (EKF3.getOriginCandidate(candidate_origin)) {
+        results.location = candidate_origin;
+        results.location.offset(Vector3p{results.position_NE.x, results.position_NE.y, results.position_D});
+        results.location_suitable_as_origin = true;
+    }
 
     results.hagl_valid = EKF3.getHAGL(results.hagl);
 

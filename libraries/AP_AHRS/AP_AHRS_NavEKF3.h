@@ -37,7 +37,7 @@ public:
 
     void reset_gyro_drift() override { EKF3.resetGyroBias(); }
 
-    void update() override;
+    void update(const Inputs &inputs) override;
 
     void get_results(Estimates &results) override;
     void reset() override {
@@ -50,13 +50,6 @@ public:
     // EKF3 uses the magnitude of its own air-relative velocity, matching
     // its historical synthetic airspeed:
     bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
-
-    bool get_origin(Location &ret) const override {
-        return EKF3.getOriginLLH(ret);
-    }
-    bool set_origin(const Location &loc) override {
-        return EKF3.setOriginLLH(loc);
-    }
 
     bool            use_compass() override {
         return EKF3.use_compass();

@@ -71,8 +71,13 @@ AP_AHRS_DCM::reset_gyro_drift(void)
 
 // run a full DCM update round
 void
-AP_AHRS_DCM::update()
+AP_AHRS_DCM::update(const Inputs &inputs)
 {
+    if (inputs.origin_ok) {
+        common_origin = inputs.origin;
+        common_origin_ok = true;
+    }
+
     AP_InertialSensor &_ins = AP::ins();
 
     // ask the IMU how much time this sensor reading represents
@@ -111,9 +116,6 @@ AP_AHRS_DCM::update()
     _sin_yaw = sinf(yaw);
 
     backup_attitude();
-
-    // remember the last origin for fallback support
-    IGNORE_RETURN(AP::ahrs().get_origin(last_origin));
 
     // update our wind estimate when a new GPS sample arrives and we
     // have a 3D fix; the GPS velocity is what feeds the wind triangle.
@@ -222,16 +224,15 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = get_location(results.location);
 
-    // origin-relative functions
-    // results.provides_common_origin = false;
-
-    // origin-relative position:
+    // origin-relative position, against the common origin, or against
+    // home until there is one.  We never offer an origin: AP_AHRS takes
+    // home as the origin when DCM is the vehicle's backend:
     {
         // DCM calculates in global co-ordinates and here converts
         // back to relative-to-origin by subtracting the current
         // location from the origin:
-        Location origin;
-        if (get_origin(origin) && results.location_valid) {
+        const Location &origin = common_origin_ok ? common_origin : AP::ahrs().get_home();
+        if (!origin.is_zero() && results.location_valid) {
             const Vector3p posNED = origin.get_distance_NED_postype(results.location);
             results.position_NE = posNED.xy();
             results.position_NE_valid = true;
@@ -1499,19 +1500,6 @@ bool AP_AHRS_DCM::synthetic_airspeed_EAS(const Estimates &results, float &airspe
     airspeed_ret = _last_airspeed_TAS * get_TAS2EAS();
     constrain_airspeed_EAS_by_ground_speed(airspeed_ret);
     return results.have_velocity_source;
-}
-
-/*
-  relative-origin functions for fallback in AP_InertialNav
-*/
-bool AP_AHRS_DCM::get_origin(Location &ret) const
-{
-    ret = last_origin;
-    if (ret.is_zero()) {
-        // use home if we never have had an origin
-        ret = AP::ahrs().get_home();
-    }
-    return !ret.is_zero();
 }
 
 // return true if DCM has a yaw source available

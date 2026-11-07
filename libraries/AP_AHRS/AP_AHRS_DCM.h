@@ -58,7 +58,7 @@ public:
     void reset_gyro_drift() override;
 
     // Methods
-    void            update() override;
+    void            update(const Inputs &inputs) override;
     void            get_results(Estimates &results) override;
     void            reset() override { reset(false); }
 
@@ -82,9 +82,6 @@ public:
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override {
         return true;
     }
-
-    // relative-origin functions for fallback in AP_InertialNav
-    bool get_origin(Location &ret) const override;
 
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
@@ -233,8 +230,9 @@ private:
     // time when DCM was last reset
     uint32_t _last_startup_ms;
 
-    // last origin we returned, for DCM fallback from EKF
-    Location last_origin;
+    // the common origin, once AP_AHRS has one
+    Location common_origin;
+    bool common_origin_ok;
 
     // Declare filter states for HPF and LPF used by complementary
     // filter in AP_AHRS::groundspeed_vector

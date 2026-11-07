@@ -37,7 +37,7 @@ public:
 
     void reset_gyro_drift() override { EKF2.resetGyroBias(); }
 
-    void update() override;
+    void update(const Inputs &inputs) override;
 
     void get_results(Estimates &results) override;
     void reset() override {
@@ -45,13 +45,6 @@ public:
             return;
         }
         started = EKF2.InitialiseFilter();
-    }
-
-    bool get_origin(Location &ret) const override {
-        return EKF2.getOriginLLH(ret);
-    }
-    bool set_origin(const Location &loc) override {
-        return EKF2.setOriginLLH(loc);
     }
 
     bool use_compass() override {

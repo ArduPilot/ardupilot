@@ -5,9 +5,20 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-void AP_AHRS_External::update()
+void AP_AHRS_External::update(const Inputs &inputs)
 {
-    AP::externalAHRS().update();
+    auto &extahrs = AP::externalAHRS();
+    extahrs.update();
+
+    if (inputs.origin_ok) {
+        common_origin = inputs.origin;
+        common_origin_ok = true;
+        // an external AHRS with no origin of its own takes the common one
+        Location ext_origin;
+        if (!extahrs.get_origin(ext_origin)) {
+            IGNORE_RETURN(extahrs.set_origin(inputs.origin));
+        }
+    }
 }
 
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
@@ -78,18 +89,19 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = AP::externalAHRS().get_location(results.location);
 
-    // origin-relative functions
-    results.provides_common_origin = true;
-
-    // origin-relative position:
-    Location orgn;
-    if (extahrs.get_origin(orgn) &&
+    // origin-relative position, against the common origin once there
+    // is one.  Until then, report it against the external AHRS's own
+    // origin and offer that as the common origin; AP_AHRS recovers it
+    // from our location and position to within about a centimetre:
+    Location orgn = common_origin;
+    if ((common_origin_ok || extahrs.get_origin(orgn)) &&
         results.location_valid) {
         const Vector3p posNED = orgn.get_distance_NED_postype(results.location);
         results.position_NE = posNED.xy();
         results.position_NE_valid = true;
         results.position_D = posNED.z;
         results.position_D_valid = true;
+        results.location_suitable_as_origin = !common_origin_ok;
     }
 
     // hagl is not supplied:
@@ -151,16 +163,6 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     return AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len);
-}
-
-bool AP_AHRS_External::get_origin(Location &ret) const
-{
-    return AP::externalAHRS().get_origin(ret);
-}
-
-bool AP_AHRS_External::set_origin(const Location &loc)
-{
-    return AP::externalAHRS().set_origin(loc);
 }
 
 #endif

@@ -738,15 +738,28 @@ bool NavEKF3_core::setOriginLLH(const Location &loc)
         setEarthFieldFromLocation(EKF_origin);
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u origin set",(unsigned)imu_index);
-
-    if (!frontend->common_origin_valid) {
-        frontend->common_origin_valid = true;
-        // put origin in frontend as well to ensure it stays in sync between lanes
-        public_origin = EKF_origin;
+    // if we offered an origin, take its height uncertainty and the
+    // height of our height datum from it
+    if (originCandidate.valid) {
+        ekfOriginHgtVar = originCandidate.hgtVar;
+        if (originCandidate.have_gpsRefHgt) {
+            ekfGpsRefHgt = originCandidate.gpsRefHgt;
+        }
+        originCandidate.valid = false;
     }
 
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u origin set",(unsigned)imu_index);
 
+    return true;
+}
+
+// before this core has an origin, the origin it would set
+bool NavEKF3_core::getOriginCandidate(Location &origin) const
+{
+    if (validOrigin || !originCandidate.valid) {
+        return false;
+    }
+    origin = originCandidate.origin;
     return true;
 }
 
