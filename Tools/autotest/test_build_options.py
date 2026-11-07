@@ -898,6 +898,9 @@ class TestBuildOptions(object):
         # each worker gets its own waf lock file so that the workers'
         # waf invocations each find their own build directory:
         os.environ["WAFLOCK"] = ".lock-waf_%s_test_build_options_%u" % (sys.platform, worker_number)
+        # stop the workers' concurrent configures all rewriting the
+        # source tree's .vscode/c_cpp_properties.json:
+        os.environ["AP_NO_COMPILE_COMMANDS"] = "1"
         self.progress_stream = os.fdopen(os.dup(sys.stderr.fileno()), "w")
         # keep our output in order with that of the programs we run:
         sys.stdout.reconfigure(line_buffering=True)
