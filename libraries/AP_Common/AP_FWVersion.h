@@ -30,6 +30,10 @@ public:
     const char *fw_string;
     const char *fw_hash_str;
     const uint32_t fw_hash;
+    // NOTE: 4 bytes of padding here to 8-byte align the subsequent
+    // pointer fields. Without it, macOS clang linker rejects the
+    // packed struct because pointers land at odd offsets.
+    const uint8_t _padding[4];
     const char *fw_string_original;
     const char *fw_short_string;
     const char *middleware_name;

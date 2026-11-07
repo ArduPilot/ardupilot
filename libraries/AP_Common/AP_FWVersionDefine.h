@@ -70,6 +70,8 @@ const AP_FWVersion AP_FWVersion::fwver{
 #else
     .fw_hash = GIT_VERSION_INT,
 #endif
+    // 4-byte padding to 8-byte align subsequent pointer fields
+    . _padding = {0},
     .fw_string_original = ORIGINAL_FWSTR,
     .fw_short_string = ACTIVE_FWSTR,
     .middleware_name = nullptr,
