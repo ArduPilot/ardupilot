@@ -106,7 +106,6 @@ Two critical bugs found in AP_SmartRTL that caused disabled tests (SMART_RTL_Ent
 | `DriveBrake` | Rover | wait_groundspeed(0, 0.2) timeout 6× too short for 15m/s stop → 5.0s | 8eb3177684 |
 | `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) between subtests → 5.0s | 8eb3177684 |
 | `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target inside exclusion zone → move outside (same coords as EasierGuided variant) | 8eb3177684 |
-| `LandingDrift` | Plane | LAND_ABORT_DEG 1° too tight for baro drift → 5° (false positive slope aborts) | adc60ae11b |
 
 ### Code-level fixes
 
@@ -185,7 +184,6 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 | `DriveBrake` | Rover | wait_groundspeed(0, 0.2) → 5.0s | Test fix committed, awaiting CI validation |
 | `SlewRate` | Rover | All 6 × wait_groundspeed(0, 0.5) → 5.0s | Test fix committed, awaiting CI validation |
 | `PolyFenceObjectAvoidanceBendyRuler` | Rover | Target moved outside exclusion zone | Test fix committed, awaiting CI validation |
-| `LandingDrift` | Plane | LAND_ABORT_DEG 1° → 5° (fixes false positive slope aborts) | Test fix committed, awaiting CI validation |
 
 ### Fixed — C++ code-level fixes
 
@@ -206,6 +204,7 @@ SITL validation exposed **3 pre-existing bugs** (none caused by test improvement
 | Test | Vehicle | Reason | Priority |
 |------|---------|--------|----------|
 | `ScriptingOSD` | Copter | context_collect ordering bug | Medium |
+| `LandingDrift` | Plane | Baro drift + tight LAND_ABORT_DEG=1 → autoland oscillation | High |
 
 ---
 
@@ -259,7 +258,6 @@ Three comprehensive analysis documents in `Tools/autotest/`:
 ## 11. Git History (test-improvements branch)
 
 ```
-adc60ae11b  test(autotest): fix LandingDrift with relaxed LAND_ABORT_DEG 1→5°
 8eb3177684  test(autotest): fix RTLStoppingDistanceSpeed, DriveBrake, SlewRate, PolyFence timing issues
 8af8eb0716  test(autotest): fix FlyMissionTwice with mission state reset between runs
 241a87d19d  AP_SmartRTL: fix premature deactivation and false panic on peek contention
