@@ -267,6 +267,17 @@ float Plane::dragCoeff(float alpha) const
     const float c_lift_0 = coefficient.c_lift_0;
     const float c_lift_a0 = coefficient.c_lift_a;
     const float oswald = coefficient.oswald;
+
+    if (tailsitter && fabsf(alpha) > M_PI_2) {
+        /*
+          the induced drag term grows without bound with alpha, giving
+          a drag coefficient of over 20 in the reverse flow of a
+          tailsitter descending tail-first, which stops it descending
+          without cutting its throttle.  Treat reverse flow as forward
+          flow at the mirrored angle of attack
+         */
+        alpha = copysignf(M_PI - fabsf(alpha), alpha);
+    }
     
 	double AR = pow(b,2)/s;
 	double c_drag_a = c_drag_p + pow(c_lift_0+c_lift_a0*alpha,2)/(M_PI*oswald*AR);
