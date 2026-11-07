@@ -136,7 +136,7 @@ SITL validation exposed **4 pre-existing bugs** (none caused by test improvement
 | Bug | Symptom | Severity | Status | Fix |
 |-----|---------|----------|--------|-----|
 | **ModeFlip Altitude Runaway** | Vehicle climbs to 1157m after flip (from 693m origin) | E1 C++ Bug | ✅ **FIXED** (649273e6c0) | I term init: hover throttle instead of current throttle |
-| **EKF Navigation Dead-Stop** | Plane groundspeed = 0.03 m/s after RTL triggers (EKF loses abs position → `have_position`=false → `navigate()` dead-stops) | E1 Critical EKF | 🔲 Unresolved | RTL-specific `have_position` relaxation or EKF recovery from GPS glitch |
+| **EKF "RTL Not Armable"** | Plane groundspeed = 0.03 m/s after RTL triggers (never flies) | E2 MAVLink Protocol | 🔲 Unresolved | RTL armable state reset / recovery from degraded EKF |
 | **Timesync Flake** | `MAV_MISSION_OPERATION_CANCELLED` at random intervals | E2 MAVLink Protocol | 🔲 Unresolved | MAVLink protocol timing fix |
 
 ---
