@@ -107,14 +107,7 @@ struct NavTarget {
 
     static const uint16_t ALL_IGNORE = 0x0DFF;  // all ignore bits, not FORCE_SET
 
-    // Position is held in whichever form the vehicle has. Converting to a
-    // Location needs a valid EKF origin, so it is done on demand by get_loc().
     Location loc;
-    Vector3p pos_ned_m;
-    bool loc_valid = false;
-    bool pos_ned_valid = false;
-    bool is_terrain_alt = false;
-
     Vector3f vel_ned_ms;
     Vector3f accel_ned_mss;
 
@@ -122,9 +115,13 @@ struct NavTarget {
     // commanded. Starts fully ignored; the vehicle clears what it commands.
     uint16_t type_mask = ALL_IGNORE;
 
-    // Returns false if the position cannot be produced as a Location, which
-    // needs a valid EKF origin.
-    bool get_loc(Location &ret) const;
+    // true if the vehicle has cleared the position ignore bits, meaning loc
+    // holds the commanded position
+    bool has_position() const {
+        return (type_mask & (POSITION_TARGET_TYPEMASK_X_IGNORE |
+                             POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                             POSITION_TARGET_TYPEMASK_Z_IGNORE)) == 0;
+    }
 };
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
@@ -419,10 +416,7 @@ public:
     virtual bool get_target(NavTarget &target) const { return false; }
     // returns a Location to which the vehicle is currently heading,
     // or would head to in an autonomous mode
-    virtual bool get_target_location(Location &loc) const {
-        NavTarget target;
-        return get_target(target) && target.get_loc(loc);
-    }
+    virtual bool get_target_location(Location &loc) const { return false; }
     virtual void send_position_target_local_ned() { };
     void send_servo_output_raw();
     void send_accelcal_vehicle_position(uint32_t position);

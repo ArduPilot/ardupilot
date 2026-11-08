@@ -6363,47 +6363,15 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint32_t target_system, ui
             0,0);   // yaw, yaw_rate
 }
 
-// Returns the target as a Location, deriving it from pos_ned_m if the vehicle
-// supplied only the NED form.
-bool NavTarget::get_loc(Location &ret) const
-{
-    if (loc_valid) {
-        ret = loc;
-        return true;
-    }
-
-#if AP_AHRS_ENABLED
-    if (!pos_ned_valid) {
-        return false;
-    }
-
-    // Location::from_ekf_offset_NED_m() has no failure path: without an EKF
-    // origin it silently yields lat/lng of zero with a non-zero altitude, so
-    // check for the origin first.
-    Location origin;
-    if (!AP::ahrs().get_origin(origin)) {
-        return false;
-    }
-
-    ret = Location::from_ekf_offset_NED_m(pos_ned_m, is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-    return true;
-#else
-    return false;
-#endif  // AP_AHRS_ENABLED
-}
-
 void GCS_MAVLINK::send_position_target_global_int()
 {
     NavTarget target;
     if (!get_target(target)) {
         // vehicles that report only a destination implement get_target_location
         // instead; report that as a position-only setpoint
-        Location loc;
-        if (!get_target_location(loc)) {
+        if (!get_target_location(target.loc)) {
             return;
         }
-        target.loc = loc;
-        target.loc_valid = true;
         target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
                               POSITION_TARGET_TYPEMASK_Y_IGNORE |
                               POSITION_TARGET_TYPEMASK_Z_IGNORE);
@@ -6416,9 +6384,9 @@ void GCS_MAVLINK::send_position_target_global_int()
 
     // this message is only sent when the target has a position; a consumer
     // that does not honour type_mask would otherwise plot a lat/lng of zero
-    Location loc;
+    const Location &loc = target.loc;
     float alt_amsl_m;
-    if (!target.get_loc(loc) ||
+    if (!target.has_position() ||
         !loc.initialised() ||
         !loc.get_alt_m(Location::AltFrame::ABSOLUTE, alt_amsl_m)) {
         return;
