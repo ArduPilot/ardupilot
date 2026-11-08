@@ -455,6 +455,10 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     } else {
         if (battery_is_empty()) {
             thrust = 0.0f;
+        } else {
+            const float voltage_scale = constrain_float(
+                battery_voltage / MAX(battery.get_max_voltage_v(), 0.1f), 0.0f, 1.0f);
+            thrust *= sq(voltage_scale);
         }
     }
 
