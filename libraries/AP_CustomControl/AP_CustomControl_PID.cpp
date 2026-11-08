@@ -293,7 +293,7 @@ void AP_CustomControl_PID::update()
     const RC_Channel *channel_custom = rc().find_channel_for_option(RC_Channel::AUX_FUNC::LANDING_GEAR);
     float custom_input{0};
     if (channel_custom != nullptr) {
-        custom_input = channel_custom->norm_input_dz();
+        custom_input = channel_custom->norm_input_dz_centered_on_trim();
     }
     const RC_Channel *channel_7 = rc().channel(6); // The channels are 0-indexed.
     float ch_7_input = 1500;
