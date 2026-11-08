@@ -439,8 +439,12 @@ singleton SRV_Channels method get_emergency_stop boolean
 singleton SRV_Channels manual get_safety_state SRV_Channels_get_safety_state 0 1
 
 ap_object RC_Channel depends AP_RC_CHANNEL_ENABLED
-ap_object RC_Channel method norm_input float
-ap_object RC_Channel method norm_input_dz float
+ap_object RC_Channel method norm_input_centered_on_trim float
+ap_object RC_Channel method norm_input_centered_on_trim alias norm_input
+ap_object RC_Channel method norm_input deprecate Use norm_input_centered_on_trim
+ap_object RC_Channel method norm_input_dz_centered_on_trim float
+ap_object RC_Channel method norm_input_dz_centered_on_trim alias norm_input_dz
+ap_object RC_Channel method norm_input_dz deprecate Use norm_input_dz_centered_on_trim
 ap_object RC_Channel method get_aux_switch_pos uint8_t
 ap_object RC_Channel method norm_input_ignore_trim float
 -- be wary using this binding as it effectively disables RC failsafes!
