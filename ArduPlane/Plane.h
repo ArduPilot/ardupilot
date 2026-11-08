@@ -1054,7 +1054,7 @@ private:
     void update_current_loc(void);
 
     // set home location and store it persistently:
-    bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
+    bool set_home_persistently(const Location &loc, bool lock=false) WARN_IF_UNUSED;
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
 
