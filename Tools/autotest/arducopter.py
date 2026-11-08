@@ -23851,6 +23851,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         fly_return_path_from(600, 200, 450)
         self.wait_current_waypoint(4)
 
+        # a located command that is not navigated to, such as an ROI,
+        # is not part of the track.  Leave AUTO so the upload does not
+        # restart the running mission
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION, 400, 400, alt), # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 5
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 6
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 7
+        ])
+        fly_return_path_from(400, 300, 350)
+        self.wait_current_waypoint(5)
+
         # a repeated waypoint starts the next leg, so the vehicle does not
         # fly back up the path to it after the rejoin point
         self.change_mode('GUIDED')
@@ -23938,6 +23954,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('GUIDED')
         self.change_mode('AUTO')
         self.wait_current_waypoint(1, timeout=10)
+
+        # a return path with only a located DO_LAND_START still joins at it
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 50, 0, 0),    # 3
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 4
+        ])
+        self.run_cmd(cmd_return_path_start)
+        self.assert_mode_is('AUTO_RTL')
+        self.wait_current_waypoint(4, timeout=10)
 
         # a leg end with a zero latitude and longitude is flown at the current
         # position, so the rejoin point is not interpolated towards 0,0
