@@ -164,6 +164,7 @@ void AP_Mission::resume()
         }
 
         // resume mission to rewound position
+        _flags.nav_cmd_in_order = false;
         if (_resume_cmd.index != AP_MISSION_CMD_INDEX_NONE && start_command(_resume_cmd)) {
             _nav_cmd = _resume_cmd;
             _flags.nav_cmd_loaded = true;
@@ -196,7 +197,7 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
     Mission_Command cmd = {};
     // check a maximum of 16 items, remembering that missions can have
     // loops in them
-    for (uint8_t i=0; i<16; i++, cmd_index++) {
+    for (uint8_t i=0; i<16; i++) {
         if (!get_next_nav_cmd(cmd_index, cmd)) {
             return false;
         }
@@ -210,6 +211,8 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
         // we "start with a takeoff command"
         case MAV_CMD_DO_AUX_FUNCTION:
         case MAV_CMD_NAV_DELAY:
+            // continue after the skipped command, which a DO_JUMP may have moved away from cmd_index
+            cmd_index = cmd.index + 1;
             continue;
         default:
             return false;
@@ -264,6 +267,7 @@ void AP_Mission::reset()
     _flags.do_cmd_all_done = false;
     _flags.in_landing_sequence = false;
     _flags.in_return_path = false;
+    _flags.nav_cmd_in_order = false;
     _nav_cmd.index         = AP_MISSION_CMD_INDEX_NONE;
     _do_cmd.index          = AP_MISSION_CMD_INDEX_NONE;
     _prev_nav_cmd_index    = AP_MISSION_CMD_INDEX_NONE;
@@ -562,17 +566,59 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
-    // search until the end of the mission command list
-    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+    bool followed_jump;
+    return get_next_nav_cmd(start_index, cmd, followed_jump);
+}
+
+/// get_next_nav_cmd - as above, also setting followed_jump true if a do_jump was followed to reach the command
+bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd, bool& followed_jump)
+{
+    followed_jump = false;
+
+    // a lookahead never changes a jump's count, so reaching a jump it has already followed means it is going
+    // round a loop of DO commands only. Flying the mission runs that loop until the jump's count is used up and
+    // then continues after the jump, so the search continues after it too.
+    uint16_t jumps_followed[8];
+    uint8_t num_jumps_followed = 0;
+
+    uint16_t cmd_index = start_index;
+    for (uint16_t i = 0; i < (unsigned)_cmd_total && cmd_index < (unsigned)_cmd_total; i++) {
         // get next command
-        if (!get_next_cmd(cmd_index, cmd, false)) {
+        uint16_t jump_index;
+        if (!get_next_cmd(cmd_index, cmd, false, true, &jump_index)) {
             // no more commands so return failure
             return false;
+        }
+        if (jump_index != AP_MISSION_CMD_INDEX_NONE) {
+            followed_jump = true;
+            bool already_followed = false;
+            for (uint8_t j = 0; j < num_jumps_followed; j++) {
+                if (jumps_followed[j] == jump_index) {
+                    already_followed = true;
+                    break;
+                }
+            }
+            if (already_followed) {
+                // a jump that repeats forever never lets the mission continue past it
+                Mission_Command jump_cmd;
+                if (!read_cmd_from_storage(jump_index, jump_cmd) ||
+                    jump_cmd.content.jump.num_times == AP_MISSION_JUMP_REPEAT_FOREVER) {
+                    return false;
+                }
+                cmd_index = jump_index + 1;
+                continue;
+            }
+            if (num_jumps_followed >= ARRAY_SIZE(jumps_followed)) {
+                return false;
+            }
+            jumps_followed[num_jumps_followed++] = jump_index;
         }
         // if found a "navigation" command then return it
         if (is_nav_cmd(cmd)) {
             return true;
         }
+        // continue after the command returned, which a DO_JUMP may have moved away from cmd_index
+        cmd_index = cmd.index + 1;
     }
 
     // if we got this far we did not find a navigation command
@@ -2171,6 +2217,9 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     _flags.do_cmd_loaded = false;
     _flags.do_cmd_all_done = false;
 
+    // the next nav command is reached in order if the search starts after the previous one and follows no jump
+    bool in_order = (starting_index == 0) && (_nav_cmd.index != AP_MISSION_CMD_INDEX_NONE);
+
     // get starting point for search
     uint16_t cmd_index = starting_index > 0 ? starting_index - 1 : _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
@@ -2188,8 +2237,12 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     while (!_flags.nav_cmd_loaded && max_loops-- > 0) {
         // get next command
         Mission_Command cmd;
-        if (!get_next_cmd(cmd_index, cmd, true)) {
+        uint16_t jump_index;
+        if (!get_next_cmd(cmd_index, cmd, true, true, &jump_index)) {
             return false;
+        }
+        if (jump_index != AP_MISSION_CMD_INDEX_NONE) {
+            in_order = false;
         }
 
         // check if navigation or "do" command
@@ -2203,12 +2256,16 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             }
             // set current navigation command and start it
             _nav_cmd = cmd;
+            _flags.nav_cmd_in_order = in_order;
             if (start_command(_nav_cmd)) {
                 _flags.nav_cmd_loaded = true;
                 if (_jump_tag.age > 0 && _jump_tag.age < UINT16_MAX) {
                     // we're tracking a tag so increase it's age on every new NAV item
                     _jump_tag.age++;
                 }
+            } else {
+                // the vehicle skipped this command, so the next one does not follow on from the previous one
+                in_order = false;
             }
             // save a loaded wp index in history array for when _repeat_dist is set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
             // and prevent history being re-written until vehicle returns to interrupted position
@@ -2289,11 +2346,15 @@ void AP_Mission::advance_current_do_cmd()
 ///     returns true if found, false if not found (i.e. mission complete)
 ///     accounts for do_jump commands
 ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg)
+bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg, uint16_t *followed_jump_index)
 {
     uint16_t cmd_index = start_index;
     Mission_Command temp_cmd;
     uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
+
+    if (followed_jump_index != nullptr) {
+        *followed_jump_index = AP_MISSION_CMD_INDEX_NONE;
+    }
 
     // search until the end of the mission command list
     uint8_t max_loops = 64;
@@ -2342,6 +2403,9 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
                 // update the record of the number of times run
                 if (increment_jump_num_times_if_found && !_flags.resuming_mission) {
                     increment_jump_times_run(temp_cmd, send_gcs_msg);
+                }
+                if (followed_jump_index != nullptr && *followed_jump_index == AP_MISSION_CMD_INDEX_NONE) {
+                    *followed_jump_index = cmd_index;
                 }
                 // continue searching from jump target
                 cmd_index = temp_cmd.content.jump.target;

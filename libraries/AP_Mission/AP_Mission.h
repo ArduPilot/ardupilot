@@ -641,6 +641,12 @@ public:
     ///     returns true if found, false if not found (i.e. reached end of mission command list)
     ///     accounts for do_jump commands
     bool get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd);
+    ///     followed_jump is set true if the search followed a do_jump to reach the command
+    bool get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd, bool& followed_jump);
+
+    /// nav_cmd_reached_in_order - returns true if the current nav command was started by advancing from
+    ///     the previous nav command without following a do_jump, false after a jump, a start, a resume or a set_current_cmd
+    bool nav_cmd_reached_in_order() const { return _flags.nav_cmd_in_order; }
 
     /// get the ground course of the next navigation leg in centidegrees
     /// from 0 36000. Return default_angle if next navigation
@@ -840,6 +846,7 @@ private:
         bool in_landing_sequence;   // true if the mission has jumped to a landing
         bool resuming_mission;      // true if the mission is resuming and set false once the aircraft attains the interrupted WP
         bool in_return_path;        // true if the mission has passed a DO_RETURN_PATH_START waypoint either in the course of the mission or via a `jump_to_closest_mission_leg` call
+        bool nav_cmd_in_order;      // true if the current nav command was reached from the previous one without a jump, start, resume or set_current_cmd
     } _flags;
 
     // mission WP resume history
@@ -876,7 +883,8 @@ private:
     ///     returns true if found, false if not found (i.e. mission complete)
     ///     accounts for do_jump commands
     ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg = true);
+    ///     followed_jump_index, if provided, is set to the index of the first do_jump followed, AP_MISSION_CMD_INDEX_NONE if none
+    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg = true, uint16_t *followed_jump_index = nullptr);
 
     /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
     ///     returns true if found, false if not found
