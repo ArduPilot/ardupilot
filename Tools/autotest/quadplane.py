@@ -4261,10 +4261,31 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({name: value * 0.1 for name, value in yaw_gains.items()})
         self.set_rc(4, 2000)
         tstart = self.get_sim_time()
+        skipped_for_skew = 0
         while True:
             if self.get_sim_time_cached() - tstart > 60:
-                raise NotAchievedException("Did not get a yaw target well ahead of the vehicle's yaw")
+                raise NotAchievedException(
+                    "Did not get a yaw target well ahead of the vehicle's yaw "
+                    "(%u frame(s) skipped as not simultaneous)" % skipped_for_skew)
             frame = self.get_messages_frame(['HIGH_LATENCY2', 'ATTITUDE_TARGET', 'ATTITUDE'], timeout=10)
+            # the yaw target is slewing hard here by design, so the two
+            # samples have to be simultaneous for the comparison below to
+            # mean anything.  get_messages_frame polls in the order given,
+            # so HIGH_LATENCY2 is sampled first and reads low by the gap
+            # times the slew rate - which on a loaded machine is degrees,
+            # on top of the 0-2 degrees this field loses to its deg/2
+            # truncation.  Both fields are AP_HAL::millis().  The budget
+            # comes out of the 5 degree tolerance below: truncation can
+            # take 2 of it, leaving 3 for the skew, and the target has been
+            # measured slewing at up to 76 deg/s - so 20ms, which costs 2
+            # degrees even at 100 deg/s.  Simultaneous frames are the
+            # normal case; on an idle machine the gap measures 0ms.
+            skew_ms = abs(frame['HIGH_LATENCY2'].timestamp -
+                          frame['ATTITUDE_TARGET'].time_boot_ms)
+            if skew_ms > 20:
+                self.progress("frame samples %ums apart; not comparable" % skew_ms)
+                skipped_for_skew += 1
+                continue
             target_yaw = math.degrees(quaternion.Quaternion(frame['ATTITUDE_TARGET'].q).euler[2]) % 360
             yaw = math.degrees(frame['ATTITUDE'].yaw) % 360
             # yaw targets beyond 180 degrees are negative in the
