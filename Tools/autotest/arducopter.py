@@ -881,7 +881,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.disarm_vehicle()
 
-        # this will move but won't arc (it should...):
+        # the arc follows a takeoff so is not preloaded; WPArcStartWaypoint checks it is flown as an arc
         self.start_subtest("Should move if no start waypoint")
         self.context_push()
         self.start_flying_simple_relhome_mission([
@@ -1061,6 +1061,254 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_distance_to_home(10, 20)
         self.wait_disarmed(timeout=600)
         self.context_pop()
+
+    def WPArcStartWaypoint(self):
+        '''arcs are flown only from a defined start point, otherwise they are flown straight'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+
+        def offset_from_chord(pos, start, end):
+            chord = (end[0] - start[0], end[1] - start[1])
+            rel = (pos[0] - start[0], pos[1] - start[1])
+            return abs(chord[0] * rel[1] - chord[1] * rel[0]) / math.hypot(chord[0], chord[1])
+
+        def fly_recording_offsets(items, chords, during_flight=None):
+            '''fly items, returning the max offset from the chord on each visit to a
+            seq in chords; chords maps seq to a list of (start NE, end NE), one per visit.
+            during_flight, if given, is called once the vehicle is flying the mission'''
+            offsets = {seq: [] for seq in chords}
+            current_seq = [None]
+
+            def record_offset(mav, m):
+                m_type = m.get_type()
+                if m_type == 'MISSION_CURRENT':
+                    if m.seq != current_seq[0] and m.seq in chords:
+                        offsets[m.seq].append(0.0)
+                    current_seq[0] = m.seq
+                    return
+                if m_type != 'LOCAL_POSITION_NED' or current_seq[0] not in chords:
+                    return
+                visit = len(offsets[current_seq[0]]) - 1
+                if visit >= len(chords[current_seq[0]]):
+                    return
+                (start, end) = chords[current_seq[0]][visit]
+                offsets[current_seq[0]][visit] = max(offsets[current_seq[0]][visit], offset_from_chord((m.x, m.y), start, end))
+
+            self.change_mode('STABILIZE')  # needed to ensure Copter mission state machine works
+            self.context_push()
+            self.install_message_hook_context(record_offset)
+            self.start_flying_simple_relhome_mission(items)
+            if during_flight is not None:
+                during_flight()
+            self.wait_disarmed(timeout=600)
+            self.context_pop()
+            return offsets
+
+        def loiter_turns(n, e, radius):
+            loc = self.offset_location_ne(self.home_position_as_location(), n, e)
+            return self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=1,
+                p3=radius,
+                x=int(loc.lat * 1e7),
+                y=int(loc.lng * 1e7),
+                z=20,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            )
+
+        failures = []
+
+        # each 180 degree arc below that follows a command ending at a fixed point must bulge
+        # half its chord length away from the chord; LOITER_TURNS ends wherever the orbit
+        # leaves the vehicle, so the arc after it is flown straight
+        self.start_subtest("Arcs after each command an arc can and cannot start from")
+        arcs = {
+            2: ("takeoff", (0, 0), (0, 40), True),
+            4: ("waypoint with a hold time", (0, 60), (40, 60), True),
+            6: ("spline", (60, 60), (60, 20), True),
+            8: ("loiter time", (60, 0), (100, 0), True),
+            10: ("loiter to alt", (120, 0), (120, 40), True),
+            13: ("waypoint then delay", (120, 60), (80, 60), True),
+            15: ("loiter turns", (80, 70), (80, 110), False),
+        }
+        offsets = fly_recording_offsets([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 0, 40, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 60, 20, {"p1": 1}),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 40, 60, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_SPLINE_WAYPOINT, 60, 60, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 60, 20, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME, 60, 0, 20,
+             {"p1": 1, "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT}),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 100, 0, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT, 120, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 120, 40, 30, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 120, 60, 20),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_DELAY, p1=1),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 80, 60, 20, {"p1": 180}),
+            loiter_turns(80, 80, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 80, 110, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {seq: [(start, end)] for (seq, (_, start, end, _)) in arcs.items()})
+        for (seq, (name, start, end, should_curve)) in arcs.items():
+            sagitta = 0.5 * math.hypot(end[0] - start[0], end[1] - start[1])
+            offset = max(offsets[seq], default=0.0)
+            self.progress(f"arc after {name}: max offset from chord {offset:.1f}m, sagitta {sagitta:.1f}m")
+            if should_curve and offset < 0.7 * sagitta:
+                failures.append(f"arc after {name} was flown straight")
+            if not should_curve and offset > 3:
+                failures.append(f"arc after {name} was flown as an arc")
+
+        # jumping to an arc does not start it from the command above it, so the second
+        # visit flies straight from waypoint B to the arc's end
+        self.start_subtest("Jump to an arc flies straight")
+        offsets = fly_recording_offsets([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 10, 40, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 40, 20),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=3, p2=1),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {3: [((10, 0), (10, 40)), ((50, 40), (10, 40))]})
+        visits = offsets[3]
+        self.progress(f"arc visits, max offset from chord: {[round(v, 1) for v in visits]}")
+        if len(visits) < 2:
+            failures.append(f"arc was visited {len(visits)} times, expected 2")
+        else:
+            if visits[0] < 0.7 * 20:
+                failures.append("arc after its waypoint was flown straight")
+            if visits[1] > 3:
+                failures.append("arc reached by a jump was flown as an arc")
+
+        # setting the current command to an arc starts it from wherever the vehicle is, here
+        # holding on the LOITER_TIME, not from the waypoint above it, so it flies straight
+        self.start_subtest("Set current to an arc flies straight")
+
+        def set_current_to_arc():
+            self.wait_current_waypoint(3, timeout=120)
+            self.delay_sim_time(5, reason="hold on the LOITER_TIME")
+            self.set_current_waypoint(5)
+
+        offsets = fly_recording_offsets([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 10, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME, 20, 0, 20,
+             {"p1": 60, "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 40, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 60, 40, 20, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ], {5: [((20, 0), (60, 40))]}, during_flight=set_current_to_arc)
+        offset = max(offsets[5], default=None)
+        if offset is None:
+            failures.append("arc was not flown after setting it current")
+        else:
+            self.progress(f"arc set current: max offset from chord {offset:.1f}m")
+            if offset > 3:
+                failures.append("arc set current was flown as an arc")
+
+        if len(failures) > 0:
+            raise NotAchievedException(f"{failures}")
+
+    def DoJumpToDoCommand(self):
+        '''a jump whose target is a DO command must preload the leg the vehicle will fly next'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+
+        # while flying the loop the vehicle stays within the L-A box; the waypoint
+        # after the jump is 200m east, so heading for it breaks the bound quickly
+        loop_seqs = (3, 4)
+        max_east = 60
+        current_seq = [None]
+        loop_east = [0.0]
+
+        def record_loop_east(mav, m):
+            m_type = m.get_type()
+            if m_type == 'MISSION_CURRENT':
+                current_seq[0] = m.seq
+                return
+            if m_type != 'LOCAL_POSITION_NED':
+                return
+            if current_seq[0] in loop_seqs:
+                loop_east[0] = max(loop_east[0], m.y)
+
+        loop_end = (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 200, 20)
+        missions = {
+            "DO_JUMP": [
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p1=1, p2=8),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 20),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 40, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=2, p2=2),
+                loop_end,
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            ],
+            "DO_JUMP_TAG": [
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_JUMP_TAG, p1=7),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 20),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 40, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP_TAG, p1=7, p2=2),
+                loop_end,
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            ],
+        }
+        left_loop = []
+        for (name, items) in missions.items():
+            self.start_subtest(f"{name} to a DO command")
+            self.change_mode('STABILIZE')  # needed to ensure Copter mission state machine works
+            current_seq[0] = None
+            loop_east[0] = 0.0
+            self.context_push()
+            self.install_message_hook_context(record_loop_east)
+            self.start_flying_simple_relhome_mission(items)
+            self.wait_disarmed(timeout=300)
+            self.context_pop()
+            self.progress(f"{name}: furthest east while in the loop {loop_east[0]:.1f}m (limit {max_east}m)")
+            if loop_east[0] > max_east:
+                left_loop.append(name)
+        failures = []
+        if len(left_loop) > 0:
+            failures.append(f"{left_loop} left the loop toward the waypoint after the jump")
+
+        # a loop of DO commands only between two waypoints runs until its jump count is used up and
+        # then continues, so the second waypoint is preloaded and the vehicle flies through the first
+        self.start_subtest("Loop of DO commands only")
+        wp_a = (40, 0)
+        min_speed_at_a = [None]
+
+        def record_speed_at_a(mav, m):
+            if m.get_type() != 'LOCAL_POSITION_NED':
+                return
+            if math.hypot(m.x - wp_a[0], m.y - wp_a[1]) > 3:
+                return
+            speed = math.hypot(m.vx, m.vy)
+            if min_speed_at_a[0] is None or speed < min_speed_at_a[0]:
+                min_speed_at_a[0] = speed
+
+        self.change_mode('STABILIZE')  # needed to ensure Copter mission state machine works
+        self.context_push()
+        self.install_message_hook_context(record_speed_at_a)
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, wp_a[0], wp_a[1], 20),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p1=1, p2=8),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=3, p2=2),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 80, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_disarmed(timeout=300)
+        self.context_pop()
+        if min_speed_at_a[0] is None:
+            failures.append("vehicle never passed the first waypoint")
+        else:
+            self.progress(f"slowest horizontal speed at the first waypoint {min_speed_at_a[0]:.1f}m/s")
+            if min_speed_at_a[0] < 3:
+                failures.append("vehicle stopped at the waypoint before a loop of DO commands")
+
+        if len(failures) > 0:
+            raise NotAchievedException(f"{failures}")
 
     # test circle speed - should be constant degrees/second:
     def CircleSpeed(self):
@@ -19893,6 +20141,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ret.extend([
             self.SetModesViaModeSwitch,
             self.WPArcs2,
+            self.WPArcStartWaypoint,
+            self.DoJumpToDoCommand,
             self.BatteryFailsafeBrakeLandNoGPS,
             self.AC_Avoidance_Proximity,
             self.AC_Avoidance_Fence,
