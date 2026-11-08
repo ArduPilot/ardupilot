@@ -14336,8 +14336,16 @@ switch value'''
         return m is not None
 
     def assert_current_onboard_log_contains_message(self, messagetype):
-        if not self.current_onboard_log_contains_message(messagetype):
-            raise NotAchievedException("Current onboard log does not contain message %s" % messagetype)
+        '''check the current onboard log contains messagetype.
+
+        This waits rather than looking once: the caller is asserting the
+        message *should* be there, and how much of the vehicle's
+        dataflash buffer has reached disk by now is not something the
+        caller controls (see wait_current_onboard_log_contains_message).
+        A test which wants a one-shot answer - checking a message is
+        absent, say - should call
+        current_onboard_log_contains_message().'''
+        self.wait_current_onboard_log_contains_message(messagetype)
 
     def wait_current_onboard_log_contains_message(self, messagetype, timeout=30):
         '''wait for messagetype to appear in the current onboard log.
