@@ -4,6 +4,9 @@
 
 #include "SIM_GPS_UBLOX.h"
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+#include <AP_Filesystem/AP_Filesystem.h>
+#endif
 #include <SITL/SITL.h>
 
 #include <errno.h>
@@ -640,15 +643,25 @@ void GPS_UBlox::load_saved_config()
     if (has_flash() || !no_backup) {
         char filename[32];
         config_filename(filename, sizeof(filename));
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         const int fd = ::open(filename, O_RDONLY);
+#else
+        const int fd = AP::FS().open(filename, O_RDONLY);
+#endif
         if (fd != -1) {
             SavedConfig file;
-            if (::read(fd, &file, sizeof(file)) == sizeof(file) &&
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            const auto nread = ::read(fd, &file, sizeof(file));
+            ::close(fd);
+#else
+            const auto nread = AP::FS().read(fd, &file, sizeof(file));
+            AP::FS().close(fd);
+#endif
+            if (nread == sizeof(file) &&
                 file.magic == SAVED_CONFIG_MAGIC &&
                 file.model == uint8_t(model())) {
                 saved = file.config;
             }
-            ::close(fd);
         }
     }
 
@@ -661,19 +674,29 @@ void GPS_UBlox::store_saved_config() const
 {
     char filename[32];
     config_filename(filename, sizeof(filename));
-    const int fd = ::open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-    if (fd == -1) {
-        AP_HAL::panic("open(%s): %s", filename, strerror(errno));
-    }
     const SavedConfig file {
         SAVED_CONFIG_MAGIC,
         uint8_t(model()),
         saved
     };
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    const int fd = ::open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (fd == -1) {
+        AP_HAL::panic("open(%s): %s", filename, strerror(errno));
+    }
     if (::write(fd, &file, sizeof(file)) != sizeof(file)) {
         AP_HAL::panic("write(%s): %s", filename, strerror(errno));
     }
     ::close(fd);
+#else
+    // Hardware file access may be refused while armed or storage may be
+    // unavailable. Keep the in-memory saved configuration in either case.
+    const int fd = AP::FS().open(filename, O_WRONLY|O_CREAT|O_TRUNC);
+    if (fd != -1) {
+        AP::FS().write(fd, &file, sizeof(file));
+        AP::FS().close(fd);
+    }
+#endif
 }
 
 // return true if a message is due to be output this navigation solution
