@@ -49,7 +49,7 @@ void AP_Winch_Backend::read_pilot_desired_rate()
 
     // update desired rate
     if (config.control_mode == AP_Winch::ControlMode::RATE_FROM_RC) {
-        config.rate_desired = rc_input->norm_input_dz() * config.rate_max;
+        config.rate_desired = rc_input->norm_input_dz_centered_on_trim() * config.rate_max;
         previous_radio_in = radio_in;
     }
 }
