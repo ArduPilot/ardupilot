@@ -1494,6 +1494,30 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
 
+    def TailsitterInputSwapPassthrough(self):
+        '''Q_TAILSIT_INPUT roll/rudder swap must not reach RCINxMapped passthrough'''
+        self.set_parameters({
+            'Q_FRAME_CLASS': 10,
+            'Q_ENABLE': 1,
+            'Q_TAILSIT_ENABLE': 1,
+        })
+        self.reboot_sitl()
+        self.set_parameters({
+            'Q_TAILSIT_INPUT': 1,  # plane-style body-frame inputs: swaps roll and rudder in VTOL
+            'SERVO9_FUNCTION': 140,  # RCIN1Mapped
+            'SERVO10_FUNCTION': 143,  # RCIN4Mapped
+        })
+        self.change_mode('QSTABILIZE')
+        self.set_rc(1, 1900)
+        # passthrough outputs the physical sticks: roll high, rudder centred
+        self.wait_servo_channel_value(9, 1700, timeout=10, comparator=operator.gt)
+        self.wait_servo_channel_value(10, 1500, epsilon=10, timeout=10)
+        self.set_rc(1, 1500)
+        self.set_rc(4, 1900)
+        self.wait_servo_channel_value(9, 1500, epsilon=10, timeout=10)
+        self.wait_servo_channel_value(10, 1700, timeout=10, comparator=operator.gt)
+        self.set_rc(4, 1500)
+
     def CopterTailsitter(self):
         '''copter tailsitter test'''
         self.customise_SITL_commandline(
@@ -4656,6 +4680,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.Weathervane,
             self.GyroFFT,
             self.Tailsitter,
+            self.TailsitterInputSwapPassthrough,
             self.ICEngineRPMGovernor,
             self.MidAirDisarmDisallowed,
             self.GUIDEDToAUTO,
