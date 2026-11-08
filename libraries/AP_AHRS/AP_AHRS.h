@@ -595,11 +595,8 @@ public:
         return _home;
     }
 
-    // functions to handle locking of home.  Some vehicles use this to
-    // allow GCS to lock in a home location.
-    void lock_home() {
-        _home_locked = true;
-    }
+    // true if home has been locked by passing lock to set_home().
+    // Some vehicles use this to allow GCS to lock in a home location.
     bool home_is_locked() const {
         return _home_locked;
     }
