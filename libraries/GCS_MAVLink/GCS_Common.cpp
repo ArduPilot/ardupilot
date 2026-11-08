@@ -331,6 +331,10 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
         for (uint8_t i = 0; i < MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_EXT_LEN; i++) {
             if (MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN+i < uint8_t(ARRAY_SIZE(batt_cells.cells))) {
                 cell_mvolts_ext[i] = batt_cells.cells[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN+i];
+                // Unlike the first 10 cells, unused extension cells are reported as zero.
+                if (cell_mvolts_ext[i] == invalid_cell_mV) {
+                    cell_mvolts_ext[i] = 0;
+                }
             } else {
                 cell_mvolts_ext[i] = 0;
             }
