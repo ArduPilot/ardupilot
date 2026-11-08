@@ -2968,6 +2968,11 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
     rejoin_index = -1;
     rejoin_leg_start_index = AP_MISSION_CMD_INDEX_NONE;
     bool ret = false;
+    bool search_complete = false;
+
+    // closest located command that is not flown to, used only if the return path has no nav commands
+    uint16_t fallback_index = AP_MISSION_CMD_INDEX_NONE;
+    float fallback_distance = -1;
 
     // look ahead on a private copy of the jump tracking so the running mission's jump counters are untouched
     jump_tracking_array_t jump_state;
@@ -2980,15 +2985,24 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
         const uint16_t scan_start = index;
         if (!get_next_cmd(index, temp_cmd, jump_state)) {
             // got to the end of the mission
-            return ret;
+            search_complete = true;
+            break;
         }
         // get_next_cmd skips over a DO_JUMP, so the command returned is not the one at scan_start
         if (temp_cmd.index != scan_start) {
             jumped_since_prev = true;
         }
 
+        // only locations the vehicle navigates to form the track
         if (stored_in_location(temp_cmd.id) && temp_cmd.content.location.initialised()) {
-            if (prev_loc.lat == 0 && prev_loc.lng == 0) {
+            if (!is_nav_cmd(temp_cmd)) {
+                const float distance = temp_cmd.content.location.get_distance_NED_alt_frame(current_loc).length();
+                if (is_negative(fallback_distance) || (distance < fallback_distance)) {
+                    fallback_distance = distance;
+                    fallback_index = temp_cmd.index;
+                }
+
+            } else if (prev_loc.lat == 0 && prev_loc.lng == 0) {
                 // Need a valid previous location to do distance to leg calculation
                 prev_loc = temp_cmd.content.location;
                 prev_index = temp_cmd.index;
@@ -3037,12 +3051,23 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
 
         if (is_landing_type_cmd(temp_cmd.id) || (temp_cmd.id == MAV_CMD_DO_LAND_START)) {
             // reached a landing!
-            return ret;
+            search_complete = true;
+            break;
         }
     }
 
-    // reached end of loop without getting to a landing or DO_LAND_START
-    return false;
+    if (!search_complete) {
+        // reached end of loop without getting to a landing or DO_LAND_START
+        return false;
+    }
+
+    if (!ret && (fallback_index != AP_MISSION_CMD_INDEX_NONE)) {
+        rejoin_distance = fallback_distance;
+        rejoin_index = fallback_index;
+        return true;
+    }
+
+    return ret;
 }
 
 // check if command is a landing type command.
