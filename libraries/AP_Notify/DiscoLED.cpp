@@ -40,7 +40,7 @@
 #define DISCO_LED_BLUE_NAME  "evinrude:blue"
 
 DiscoLED::DiscoLED():
-    RGBLed(DISCO_LED_OFF, DISCO_LED_HIGH, DISCO_LED_MEDIUM, DISCO_LED_LOW),
+    RGBLed(DISCO_LED_OFF, DISCO_LED_HIGH, DISCO_LED_MEDIUM, DISCO_LED_LOW, true),
     red_pwm(RED_PWM_INDEX),
     green_pwm(GREEN_PWM_INDEX),
     blue_pwm(BLUE_PWM_INDEX),

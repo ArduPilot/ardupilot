@@ -23,7 +23,8 @@
 
 class RGBLed: public NotifyDevice {
 public:
-    RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim);
+    RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim,
+           bool board_output = false);
 
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
     void set_rgb(uint8_t red, uint8_t green, uint8_t blue);
@@ -56,6 +57,7 @@ protected:
     uint8_t _led_bright;
     uint8_t _led_medium;
     uint8_t _led_dim;
+    const bool _board_output;
 
     struct {
         uint8_t r, g, b;
