@@ -175,6 +175,7 @@ I2C_RANGEFINDER_DEVICES = {
     'lightware-i2c-rangefinder',
     'lightware-grf-i2c-rangefinder',
     'maxsonar-i2c-rangefinder',
+    'pono-tsd20-i2c-rangefinder',
     'teraranger-i2c-rangefinder',
     'tfmini-plus-i2c-rangefinder',
     'tfs20l-i2c-rangefinder',
