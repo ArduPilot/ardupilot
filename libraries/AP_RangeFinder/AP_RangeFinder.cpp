@@ -43,6 +43,7 @@
 #include "AP_RangeFinder_Benewake_TFMini.h"
 #include "AP_RangeFinder_Benewake_TFMiniPlus.h"
 #include "AP_RangeFinder_Benewake_TFS20L.h"
+#include "AP_RangeFinder_Pono_TSD20_I2C.h"
 #include "AP_RangeFinder_PWM.h"
 #include "AP_RangeFinder_GYUS42v2.h"
 #include "AP_RangeFinder_HC_SR04.h"
@@ -403,6 +404,16 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
             addr = params[instance].address;
         }
         probe_i2c_buses(instance, addr, AP_RangeFinder_Benewake_TFS20L::detect);
+        break;
+    }
+#endif
+#if AP_RANGEFINDER_PONO_TSD20_I2C_ENABLED
+    case Type::Pono_TSD20_I2C: {
+        uint8_t addr = TSD20_ADDR_DEFAULT;
+        if (params[instance].address != 0) {
+            addr = params[instance].address;
+        }
+        probe_i2c_buses(instance, addr, AP_RangeFinder_Pono_TSD20_I2C::detect);
         break;
     }
 #endif
