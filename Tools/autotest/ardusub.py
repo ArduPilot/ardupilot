@@ -1016,8 +1016,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.mav.mav.set_gps_global_origin_send(1, int(47.607584 * 1e7), int(-122.343911 * 1e7), 0)
         self.delay_sim_time(2, reason="EKF origin to be set")
 
-        if not self.current_onboard_log_contains_message('ORGN'):
-            raise NotAchievedException("Did not find expected ORGN message")
+        self.wait_current_onboard_log_contains_message('ORGN')
 
         num_mavlink_origin_msgs = len(self.collected_msgs('GPS_GLOBAL_ORIGIN'))
         if num_mavlink_origin_msgs != 1:
@@ -1046,8 +1045,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_statustext('AHRS: using recorded origin', check_context=True)
 
         # check that origin has been logged
-        if not self.current_onboard_log_contains_message('ORGN'):
-            raise NotAchievedException("Did not find expected ORGN message")
+        self.wait_current_onboard_log_contains_message('ORGN')
 
     def assert_mag_fusion_selection(self, expect_sel):
         """Get the most recent XKFS message and check the MAG_FUSION value"""
