@@ -19372,13 +19372,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     raise NotAchievedException("%s=%s want %s (+/-%f)" % (name, str(got), str(want), tolerance))
 
         def assert_position(m, lat, lng, alt_amsl_m, tolerance):
-            dist = mavextra.gps_distance(m.lat_int * 1e-7, m.lon_int * 1e-7, lat, lng)
+            dist = mavextra.distance_lat_lon(m.lat_int * 1e-7, m.lon_int * 1e-7, lat, lng)
             if dist > tolerance or abs(m.alt - alt_amsl_m) > tolerance:
                 raise NotAchievedException("target %fm from expected, alt=%f want %f" % (dist, m.alt, alt_amsl_m))
 
         def assert_not_sent():
             self.drain_mav()
-            self.assert_not_receiving_message('POSITION_TARGET_GLOBAL_INT', timeout=2)
+            self.assert_not_receiving_message('POSITION_TARGET_GLOBAL_INT', timeout=1)
 
         def send_local_ned(type_mask, pos=(0, 0, 0), vel=(0, 0, 0), accel=(0, 0, 0)):
             self.mav.mav.set_position_target_local_ned_send(
@@ -19412,7 +19412,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("Guided Pos reports the position only")
         pos = (20, 10, -20)
         send_local_ned(MAV_POS_TARGET_TYPE_MASK.POS_ONLY, pos=pos)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="Pos submode to take the target")
         m = receive_target()
         assert_mask(m, POS_MASK)
         (lat, lng) = local_to_global(pos[0], pos[1])
@@ -19431,10 +19431,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                        MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE, accel=(0, 0, 0))
         assert_not_sent()
 
-        # stream a target moving north at constant speed; the vehicle
-        # advances the position between updates using the velocity
+        # stream a target accelerating north; the vehicle advances the
+        # position and velocity between updates using the acceleration
         pva_type_mask = MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE
-        vel = (2, 0, 0)
+        vel0 = (2, 0, 0)
+        accel = (0.2, 0, 0)
 
         def stream_pva(duration, check):
             start = self.assert_receive_message('LOCAL_POSITION_NED')
@@ -19446,15 +19447,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 t = now - tstart
                 if t > duration:
                     return
-                p = (p0[0] + vel[0] * t, p0[1] + vel[1] * t, p0[2])
-                send_local_ned(pva_type_mask, pos=p, vel=vel)
+                p = (p0[0] + vel0[0] * t + 0.5 * accel[0] * t * t,
+                     p0[1] + vel0[1] * t + 0.5 * accel[1] * t * t,
+                     p0[2])
+                vel = (vel0[0] + accel[0] * t, vel0[1] + accel[1] * t, 0)
+                send_local_ned(pva_type_mask, pos=p, vel=vel, accel=accel)
                 m = self.assert_receive_message('POSITION_TARGET_GLOBAL_INT', timeout=2)
                 if check and now - last_check > 1:
                     last_check = now
                     self.progress("PosVelAccel target: %s" % str(m))
                     assert_mask(m, PVA_MASK)
                     assert_vector("vel", (m.vx, m.vy, m.vz), vel, 0.1)
-                    assert_vector("accel", (m.afx, m.afy, m.afz), (0, 0, 0), 0.1)
+                    assert_vector("accel", (m.afx, m.afy, m.afz), accel, 0.01)
                     (lat, lng) = local_to_global(p[0], p[1])
                     assert_position(m, lat, lng, origin_alt_m - p[2], 1.0)
 
@@ -19487,7 +19491,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         m = receive_target()
         assert_mask(m, POS_MASK)
         dest = self.offset_location_ne(self.home_position_as_location(), 100, 50)
-        dist = mavextra.gps_distance(m.lat_int * 1e-7, m.lon_int * 1e-7, dest.lat, dest.lng)
+        dist = mavextra.distance_lat_lon(m.lat_int * 1e-7, m.lon_int * 1e-7, dest.lat, dest.lng)
         if dist > 1:
             raise NotAchievedException("AUTO target %fm from waypoint" % dist)
 
@@ -19509,7 +19513,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         while True:
             now = self.get_sim_time_cached()
-            if now - tstart > 30:
+            if now - tstart > 5:
                 break
             if now - last_sent > 0.2:
                 pos = copy.copy(lead)
@@ -19529,10 +19533,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.mav.mav.send(gpi)
                 last_sent = now
             m = self.assert_receive_message('POSITION_TARGET_GLOBAL_INT', timeout=2)
-            if now - tstart > 15:
+            if now - tstart > 2:
                 self.progress("FOLLOW target: %s" % str(m))
                 assert_mask(m, PVA_MASK)
                 assert_vector("vel", (m.vx, m.vy, m.vz), (lead_vel_n, 0, 0), 0.3)
+                # the lead heads north, so FOLL_OFS_X puts the target behind it
+                want = copy.copy(pos)
+                self.location_offset_ne(want, -10, 0)
+                assert_position(m, want.lat, want.lng, want.get_alt_m(AltFrame.ABSOLUTE), 1.5)
         self.context_pop()
 
         self.do_RTL()
