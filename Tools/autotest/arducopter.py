@@ -13924,6 +13924,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         origin = self.poll_message('GPS_GLOBAL_ORIGIN')
 
+        # the lead vehicle is stationary, so the catch-up speed is
+        # limited by the speed set with DO_CHANGE_SPEED:
+        follow_speed = 3
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            p1=1,  # groundspeed
+            p2=follow_speed,
+            p3=-1,  # throttle, -1 is no-change
+        )
+        max_groundspeed = 0
+
+        def track_max_groundspeed(mav, m):
+            nonlocal max_groundspeed
+            if m.get_type() == 'VFR_HUD':
+                max_groundspeed = max(max_groundspeed, m.groundspeed)
+        self.install_message_hook_context(track_max_groundspeed)
+
         last_sent = 0
         tstart = self.get_sim_time()
         while True:
@@ -13951,6 +13968,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("position delta=%f (want <%f)" % (delta, max_delta))
             if delta < max_delta:
                 break
+        self.progress("max groundspeed=%f (want <%f)" % (max_groundspeed, follow_speed + 0.5))
+        if max_groundspeed > follow_speed + 0.5:
+            raise NotAchievedException("Follow exceeded DO_CHANGE_SPEED speed (%f > %f)" %
+                                       (max_groundspeed, follow_speed))
 
         self.start_subtest("Trying relative-follow mode")
         self.change_mode('LOITER')
