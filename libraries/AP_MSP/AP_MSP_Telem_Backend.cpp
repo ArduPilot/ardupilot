@@ -1159,9 +1159,9 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RC_CHANNEL_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
-    float roll = rc().get_roll_channel().norm_input_dz();
-    float pitch = -rc().get_pitch_channel().norm_input_dz();
-    float yaw = rc().get_yaw_channel().norm_input_dz();
+    float roll = rc().get_roll_channel().norm_input_dz_centered_on_trim();
+    float pitch = -rc().get_pitch_channel().norm_input_dz_centered_on_trim();
+    float yaw = rc().get_yaw_channel().norm_input_dz_centered_on_trim();
     float throttle = rc().get_throttle_channel().norm_input_dz();
 
     const struct PACKED {
