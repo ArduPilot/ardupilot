@@ -90,7 +90,7 @@ def build_binaries():
         shutil.copy2(orig, copy)
 
     build_start_time = time.time()
-    return_code = util.run_cmd("./build_binaries.py", directory=util.reltopdir('.'))
+    return_code = util.run_cmd("./build_binaries.py", directory=util.reltopdir('.'), checkfail=False)
     add_build_failure_results(results, buildlogs_path("build_binaries_history.sqlite"),
                               build_start_time)
     if return_code != 0:

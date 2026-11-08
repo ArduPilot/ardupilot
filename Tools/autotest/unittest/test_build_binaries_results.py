@@ -32,6 +32,12 @@ helper_module = importlib.util.module_from_spec(helper_spec)
 helper_spec.loader.exec_module(helper_module)
 add_build_failure_results = helper_module.add_build_failure_results
 
+sys.path.insert(0, str(helper_path.parent))
+try:
+    import autotest
+finally:
+    sys.path.pop(0)
+
 
 class TestBuildBinaryFailureResults(unittest.TestCase):
     def setUp(self):
@@ -94,6 +100,27 @@ class TestBuildBinaryFailureResults(unittest.TestCase):
         add_build_failure_results(self, self.database_path, 11)
 
         self.assertEqual(self.results, [])
+
+    def test_failed_build_command_still_reports_board_failures(self):
+        self.add_run("current-hash", "latest", 11)
+        self.add_build("current-hash", "latest", "Copter", "testboard", None, None, 12, 2.5)
+        run_cmd = autotest.util.run_cmd
+
+        def fail_command(command, **kwargs):
+            # Exercise run_cmd's real nonzero-exit handling without building firmware.
+            return run_cmd([sys.executable, "-c", "raise SystemExit(1)"], **kwargs)
+
+        with patch.object(autotest.shutil, "copy2"), \
+                patch.object(autotest.util, "run_cmd", side_effect=fail_command), \
+                patch.object(autotest, "buildlogs_path", return_value=self.database_path), \
+                patch.object(autotest.time, "time", return_value=10), \
+                patch.object(autotest, "results", self, create=True):
+            self.assertFalse(autotest.build_binaries())
+
+        self.assertEqual(
+            self.results,
+            [("Build failure: Copter testboard", '<span class="failed-text">FAILED</span>', 2.5)],
+        )
 
     def test_missing_database_does_not_add_results(self):
         missing_path = os.path.join(self.temp_dir.name, "missing.sqlite")
