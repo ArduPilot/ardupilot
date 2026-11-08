@@ -3509,10 +3509,20 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext('Land complete', timeout=600)
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
 
+        # A CMTC climb can be ended by quading taking over instead of
+        # running to its STOP/Done pair - the waits above accept either
+        # ending - so each climb quading took over is one fewer STOP/Done
+        # to expect.  Which ending each climb gets is the emergent
+        # behaviour this test says above that it does not police.  Count
+        # the climbs started as before, and discount the endings by the
+        # ones which were overridden.
+        overridden = self.statustext_count_in_collections("TerrAvoid: Quading overrides CMTC")
+        self.progress("CMTC climbs taken over by quading: %u" % overridden)
+
         for (text, count) in [
                 ("TerrAvoid: CMTC loiter", 4),
-                ("TerrAvoid: CMTC STOP", 4),
-                ("TerrAvoid: CMTC Done", 4),
+                ("TerrAvoid: CMTC STOP", max(0, 4 - overridden)),
+                ("TerrAvoid: CMTC Done", max(0, 4 - overridden)),
                 ("TerrAvoid: Quading started", 1),
                 ("TerrAvoid: Quading DONE", 1),
                 ("TerrAvoid: terrain Ok", 1),
