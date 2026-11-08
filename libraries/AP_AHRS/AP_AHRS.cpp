@@ -1771,7 +1771,7 @@ bool AP_AHRS::set_home(const Location &loc, bool lock)
 
     // lock home position
     if (lock) {
-        lock_home();
+        _home_locked = true;
     }
 
 #if HAL_LOGGING_ENABLED
