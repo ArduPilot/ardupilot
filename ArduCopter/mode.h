@@ -1250,6 +1250,10 @@ private:
     void posvelaccel_control_run();
     void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
 
+    // returns the Pos and PosVelAccel position target as a Location.
+    // Returns false if there is no EKF origin to convert it with.
+    bool get_target_pos_loc(Location &loc) const;
+
     // controls which controller is run (pos or vel):
     SubMode guided_mode = SubMode::TakeOff;
      // used to send one time notification to ground station:

@@ -27,6 +27,7 @@ protected:
 
     void send_attitude_target() override;
     bool get_target(NavTarget &target) const override;
+    bool get_target_location(Location &loc) const override;
     void send_position_target_local_ned() override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;

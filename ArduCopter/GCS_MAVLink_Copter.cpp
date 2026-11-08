@@ -111,6 +111,11 @@ bool GCS_MAVLINK_Copter::get_target(NavTarget &target) const
     return copter.flightmode->get_target(target);
 }
 
+bool GCS_MAVLINK_Copter::get_target_location(Location &loc) const
+{
+    return copter.flightmode->get_wp(loc);
+}
+
 void GCS_MAVLINK_Copter::send_position_target_local_ned()
 {
 #if MODE_GUIDED_ENABLED

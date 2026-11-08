@@ -453,20 +453,18 @@ bool ModeGuided::get_target(NavTarget& target) const
         return get_wpnav_target(target, true);
 
     case SubMode::Pos:
-        // reported in the NED form the submode natively holds, avoiding a
-        // conversion that silently yields a lat/lng of zero with no EKF origin
-        target.pos_ned_m = get_target_pos_NED_m();
-        target.pos_ned_valid = true;
-        target.is_terrain_alt = guided_is_terrain_alt;
+        if (!get_target_pos_loc(target.loc)) {
+            return false;
+        }
         target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
                               POSITION_TARGET_TYPEMASK_Y_IGNORE |
                               POSITION_TARGET_TYPEMASK_Z_IGNORE);
         break;
 
     case SubMode::PosVelAccel:
-        target.pos_ned_m = get_target_pos_NED_m();
-        target.pos_ned_valid = true;
-        target.is_terrain_alt = guided_is_terrain_alt;
+        if (!get_target_pos_loc(target.loc)) {
+            return false;
+        }
         target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
                               POSITION_TARGET_TYPEMASK_Y_IGNORE |
                               POSITION_TARGET_TYPEMASK_Z_IGNORE);
@@ -492,6 +490,20 @@ bool ModeGuided::get_target(NavTarget& target) const
         return false;
     }
 
+    return true;
+}
+
+// returns the Pos and PosVelAccel position target as a Location.
+// Location::from_ekf_offset_NED_m() has no failure path: without an EKF
+// origin it silently yields a lat/lng of zero with a non-zero altitude, so
+// the origin is checked first.
+bool ModeGuided::get_target_pos_loc(Location &loc) const
+{
+    Location origin;
+    if (!ahrs.get_origin(origin)) {
+        return false;
+    }
+    loc = Location::from_ekf_offset_NED_m(guided_pos_target_ned_m, guided_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
     return true;
 }
 
