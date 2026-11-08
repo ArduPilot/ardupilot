@@ -85,7 +85,7 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
     if (uart_num < 0) {
         return;
     }
-    if (uint8_t(uart_num) > ARRAY_SIZE(uart_monitors)) {
+    if (uint8_t(uart_num) >= ARRAY_SIZE(uart_monitors)) {
         return;
     }
     auto &uart_monitor = uart_monitors[uart_num];
