@@ -323,7 +323,7 @@ void AC_AutoTune::run()
     pos_control->D_update_controller();
 }
 
-// return true if vehicle is close to level
+// return true if attitude is close to level
 bool AC_AutoTune::currently_level()
 {
     // abort AutoTune if we pass 2 * AUTOTUNE_LEVEL_TIMEOUT_MS
@@ -351,16 +351,19 @@ bool AC_AutoTune::currently_level()
     if (fabsf(wrap_PI(ahrs_view->get_yaw_rad() - desired_yaw_rad)) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
-    if (ahrs_view->get_gyro().x > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
-        return false;
-    }
-    if (ahrs_view->get_gyro().y > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD)) {
-        return false;
-    }
-    if (ahrs_view->get_gyro().z > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_Y_CD)) {
-        return false;
-    }
     return true;
+}
+
+// return true if angular rates are within the settling limits
+bool AC_AutoTune::rates_within_limit() const
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    const float threshold_mul = constrain_float((float)(now_ms - level_start_time_ms) / (float)AUTOTUNE_LEVEL_TIMEOUT_MS, 0.0, 2.0);
+
+    const Vector3f &gyro = ahrs_view->get_gyro();
+    return !(fabsf(gyro.x) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD) ||
+             fabsf(gyro.y) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_RP_CD) ||
+             fabsf(gyro.z) > threshold_mul * cd_to_rad(AUTOTUNE_LEVEL_RATE_Y_CD));
 }
 
 // Main tuning state machine. Handles all StepTypes: WAITING_FOR_LEVEL, EXECUTING_TEST, UPDATE_GAINS, ABORT.
@@ -380,12 +383,12 @@ void AC_AutoTune::control_attitude()
         
         attitude_control->input_euler_angle_roll_pitch_yaw_rad(desired_roll_rad, desired_pitch_rad, desired_yaw_rad, true);
 
-        // Require a short stable period before executing the next test
+        // Require continuous attitude settling; check rate magnitude only at test entry.
         if (!currently_level()) {
             step_start_time_ms = now_ms;
         }
 
-        if (now_ms - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
+        if (now_ms - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS && rates_within_limit()) {
             // Begin the test phase
             step = Step::EXECUTING_TEST;
             step_start_time_ms = now_ms;
