@@ -1932,6 +1932,10 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         return;
     }
 
+    if (!_port->is_owned_by_current_thread()) {
+        _port->begin(0);
+    }
+
     // receive new packets
     mavlink_message_t msg;
     mavlink_status_t status;
@@ -7441,8 +7445,12 @@ void GCS::update_passthru(void)
         _passthru.last_port1_data_ms = now;
         _passthru.baud1 = baud1;
         _passthru.baud2 = baud2;
+        _passthru.orig_baud1 = baud1;
+        _passthru.orig_baud2 = baud2;
         _passthru.parity1 = _passthru.port1->get_parity();
         _passthru.parity2 = _passthru.port2->get_parity();
+        _passthru.orig_parity1 = _passthru.parity1;
+        _passthru.orig_parity2 = _passthru.parity2;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru enabled");
         if (!_passthru.timer_installed) {
             _passthru.timer_installed = true;
@@ -7452,22 +7460,18 @@ void GCS::update_passthru(void)
         _passthru.enabled = false;
         _passthru.port1->lock_port(0, 0);
         _passthru.port2->lock_port(0, 0);
-        // Restore original baudrates
-        if (_passthru.baud1 != baud1) {
+        // Restore original baudrates and port ownership
+        if (_passthru.baud1 != _passthru.orig_baud1) {
             _passthru.port1->end();
-            _passthru.port1->begin(baud1);
         }
-        if (_passthru.baud2 != baud2) {
+        _passthru.port1->begin(_passthru.orig_baud1);
+        if (_passthru.baud2 != _passthru.orig_baud2) {
             _passthru.port2->end();
-            _passthru.port2->begin(baud2);
         }
-        // Restore original parity
-        if (_passthru.parity1 != _passthru.port1->get_parity()) {
-            _passthru.port1->configure_parity(_passthru.parity1);
-        }
-        if (_passthru.parity2 != _passthru.port2->get_parity()) {
-            _passthru.port2->configure_parity(_passthru.parity2);
-        }
+        _passthru.port2->begin(_passthru.orig_baud2);
+        // begin() resets hardware parity without updating get_parity().
+        _passthru.port1->configure_parity(_passthru.orig_parity1);
+        _passthru.port2->configure_parity(_passthru.orig_parity2);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru disabled");
     } else if (enabled &&
                _passthru.timeout_s &&
@@ -7477,22 +7481,18 @@ void GCS::update_passthru(void)
         _passthru.port1->lock_port(0, 0);
         _passthru.port2->lock_port(0, 0);
         AP::serialmanager().disable_passthru();
-        // Restore original baudrates
-        if (_passthru.baud1 != baud1) {
+        // Restore original baudrates and port ownership
+        if (_passthru.baud1 != _passthru.orig_baud1) {
             _passthru.port1->end();
-            _passthru.port1->begin(baud1);
         }
-        if (_passthru.baud2 != baud2) {
+        _passthru.port1->begin(_passthru.orig_baud1);
+        if (_passthru.baud2 != _passthru.orig_baud2) {
             _passthru.port2->end();
-            _passthru.port2->begin(baud2);
         }
-        // Restore original parity
-        if (_passthru.parity1 != _passthru.port1->get_parity()) {
-            _passthru.port1->configure_parity(_passthru.parity1);
-        }
-        if (_passthru.parity2 != _passthru.port2->get_parity()) {
-            _passthru.port2->configure_parity(_passthru.parity2);
-        }
+        _passthru.port2->begin(_passthru.orig_baud2);
+        // begin() resets hardware parity without updating get_parity().
+        _passthru.port1->configure_parity(_passthru.orig_parity1);
+        _passthru.port2->configure_parity(_passthru.orig_parity2);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru timed out");
     }
 }
@@ -7514,9 +7514,6 @@ void GCS::passthru_timer(void)
             // delay for 1s so the reply for the SERIAL_PASS2 param set can be seen by GCS
             return;
         }
-        _passthru.start_ms = 0;
-        _passthru.port1->begin(_passthru.baud1);
-        _passthru.port2->begin(_passthru.baud2);
     }
 
     // while pass-thru is enabled lock both ports. They remain
@@ -7525,17 +7522,27 @@ void GCS::passthru_timer(void)
     _passthru.port1->lock_port(lock_key, lock_key);
     _passthru.port2->lock_port(lock_key, lock_key);
 
+    if (_passthru.start_ms != 0) {
+        _passthru.start_ms = 0;
+        // Lock before changing ownership so MAVLink cannot reclaim either port.
+        _passthru.port1->begin_locked(_passthru.baud1, 0, 0, lock_key);
+        _passthru.port2->begin_locked(_passthru.baud2, 0, 0, lock_key);
+        _passthru.port1->configure_parity(_passthru.parity1);
+        _passthru.port2->configure_parity(_passthru.parity2);
+    }
+
     // Check for requested Baud rates and parity over USB
     uint32_t baud = _passthru.port1->get_usb_baud();
     uint8_t parity = _passthru.port1->get_usb_parity();
     if (baud != 0) { // port1 is USB
-        if (_passthru.baud2 != baud) {
+        const bool baud_changed = _passthru.baud2 != baud;
+        if (baud_changed) {
             _passthru.baud2 = baud;
             _passthru.port2->end();
             _passthru.port2->begin_locked(baud, 0, 0, lock_key);
         }
 
-        if (_passthru.parity2 != parity) {
+        if (baud_changed || _passthru.parity2 != parity) {
             _passthru.parity2 = parity;
             _passthru.port2->configure_parity(parity);
         }
@@ -7544,13 +7551,14 @@ void GCS::passthru_timer(void)
     baud = _passthru.port2->get_usb_baud();
     parity = _passthru.port2->get_usb_parity();
     if (baud != 0) { // port2 is USB
-        if (_passthru.baud1 != baud) {
+        const bool baud_changed = _passthru.baud1 != baud;
+        if (baud_changed) {
             _passthru.baud1 = baud;
             _passthru.port1->end();
             _passthru.port1->begin_locked(baud, 0, 0, lock_key);
         }
 
-        if (_passthru.parity1 != parity) {
+        if (baud_changed || _passthru.parity1 != parity) {
             _passthru.parity1 = parity;
             _passthru.port1->configure_parity(parity);
         }
