@@ -2852,29 +2852,29 @@ void QuadPlane::vtol_position_controller(void)
             // FIXME: we have updated current_loc without updating the
             // health flag.  And why are we doing this here?!
             UNUSED_RESULT(plane.ahrs.get_location(plane.current_loc));
-            int32_t target_altitude_cm;
-            if (!plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN,target_altitude_cm)) {
+            float target_altitude_m;
+            if (!plane.next_WP_loc.get_alt_m(Location::AltFrame::ABOVE_ORIGIN,target_altitude_m)) {
                 break;
             }
             if (poscontrol.slow_descent &&
                 plane.prev_WP_loc.get_distance(plane.next_WP_loc) > 50) {
                 // gradually descend as we approach target
                 plane.auto_state.wp_proportion = plane.current_loc.line_path_proportion(plane.prev_WP_loc, plane.next_WP_loc);
-                int32_t prev_alt_cm;
-                if (plane.prev_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN,prev_alt_cm)) {
-                    target_altitude_cm = linear_interpolate(prev_alt_cm,
-                                                         target_altitude_cm,
+                float prev_alt_m;
+                if (plane.prev_WP_loc.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, prev_alt_m)) {
+                    target_altitude_m = linear_interpolate(prev_alt_m,
+                                                           target_altitude_m,
                                                          plane.auto_state.wp_proportion,
                                                          0, 1);
                 }
             }
             float zero = 0;
-            float target_d_m = -target_altitude_cm * 0.01;
+            float target_d_m = -target_altitude_m;
             pos_control->input_pos_vel_accel_D_m(target_d_m, zero, 0);
         } else if (plane.control_mode == &plane.mode_qrtl) {
-            Location loc2 = loc;
-            loc2.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
-            float target_d_m = -(loc2.alt * 0.01);
+            float loc_alt_m = loc.alt * 0.01;  // used if get_alt_m fails
+            UNUSED_RESULT(loc.get_alt_m(Location::AltFrame::ABOVE_ORIGIN, loc_alt_m));
+            float target_d_m = -loc_alt_m;
             float zero = 0;
             pos_control->input_pos_vel_accel_D_m(target_d_m, zero, 0);
         } else {
@@ -4006,11 +4006,10 @@ void QuadPlane::guided_start(void)
 {
     guided_takeoff = false;
     setup_target_position();
-    int32_t from_alt;
-    int32_t to_alt;
     poscontrol_init_approach();
-    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, to_alt)) {
-        poscontrol.slow_descent = from_alt > to_alt;
+    ftype current_loc_height_above_next_loc;
+    if (plane.current_loc.get_height_above(plane.next_WP_loc, current_loc_height_above_next_loc)) {
+        poscontrol.slow_descent = current_loc_height_above_next_loc > 0;
     } else {
         // default back to old method
         poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
