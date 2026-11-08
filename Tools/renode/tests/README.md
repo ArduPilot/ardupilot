@@ -35,6 +35,15 @@ CubeOrangePlus and MatekH743 ArduPlane builds, by default from `build/`:
 Tools/renode/tests/test_rc_input.py --renode build/renode/renode
 ```
 
+`test_serial_passthru.py` checks bidirectional forwarding and MAVLink receive
+recovery with ChibiOS UART ownership checks. Build MatekH743 Copter first:
+
+```sh
+./waf configure --board MatekH743
+./waf copter
+Tools/renode/tests/test_serial_passthru.py --renode build/renode/renode
+```
+
 The fetch helper downloads the latest package for the host architecture from
 `https://firmware.ardupilot.org/Tools/Renode/`. It verifies the package size
 and SHA-256 against `latest.json` before extracting it. Set
