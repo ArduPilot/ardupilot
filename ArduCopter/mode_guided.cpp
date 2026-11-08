@@ -490,6 +490,21 @@ bool ModeGuided::get_target(NavTarget& target) const
         return false;
     }
 
+    if (_paused) {
+        // pause_control_run() commands zero velocity directly and leaves the
+        // guided velocity and acceleration targets frozen at their pre-pause
+        // values, so they are not being commanded. The position target is
+        // kept as the point the vehicle resumes towards.
+        target.vel_ned_ms.zero();
+        target.accel_ned_mss.zero();
+        target.type_mask |= POSITION_TARGET_TYPEMASK_VX_IGNORE |
+                            POSITION_TARGET_TYPEMASK_VY_IGNORE |
+                            POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+                            POSITION_TARGET_TYPEMASK_AX_IGNORE |
+                            POSITION_TARGET_TYPEMASK_AY_IGNORE |
+                            POSITION_TARGET_TYPEMASK_AZ_IGNORE;
+    }
+
     return true;
 }
 
