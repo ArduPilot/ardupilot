@@ -29,6 +29,12 @@ public:
     // constructor, destructor
     AP_SmartRTL(bool example_mode = false);
 
+    /* Do not allow copies */
+    CLASS_NO_COPY(AP_SmartRTL);
+
+    // get singleton instance
+    static AP_SmartRTL *get_singleton() { return _singleton; }
+
     // Return true if SmartRTL is enabled
     bool enabled() const;
 
@@ -59,6 +65,9 @@ public:
     // example sketches use the method that allows providing vehicle position directly
     void set_home(bool position_ok);
     void set_home(bool position_ok, const Vector3p& current_pos);
+
+    // clear the return path and make the current position the new return point, in flight
+    bool reset_home();
 
     // call this at 3hz (or higher) regardless of what mode the vehicle is in
     // example sketches use method that allows providing vehicle position directly
@@ -176,6 +185,9 @@ private:
     // de-activate SmartRTL, send warning to GCS and logger
     void deactivate(Action action, const char *reason);
 
+    // perform the path reset requested by reset_home.  called from the background thread with the path semaphore held
+    void handle_reset_request();
+
 #if HAL_LOGGING_ENABLED
     // logging
     void log_action(Action action, const Vector3f &point = Vector3f()) const;
@@ -189,7 +201,7 @@ private:
     AP_UInt32 _options;
 
     // SmartRTL State Variables
-    bool _active;       // true if SmartRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SmartRTL will be permanently deactivated (for the remainder of the flight)
+    bool _active;       // true if SmartRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SmartRTL will then be deactivated until the path is next reset by set_home or reset_home
     bool _example_mode; // true when being called from the example sketch, logging and background tasks are disabled
     bool _home_saved;   // true once home has been saved successfully by the set_home or update methods
     uint32_t _last_good_position_ms;    // the last system time a last good position was reported. If no position is available for a while, SmartRTL will be disabled.
@@ -205,6 +217,12 @@ private:
     uint16_t _path_points_count;// number of points in the path array
     uint16_t _path_points_completed_limit;  // set by main thread to the path_point_count when a point is popped.  used by simplify and prune algorithms to detect path shrinking
     HAL_Semaphore _path_sem;   // semaphore for updating path
+
+    // in-flight reset request.  set by reset_home (from any thread), consumed by the background thread.  protected by _path_sem
+    struct {
+        bool pending;       // true if a reset has been requested but not yet performed
+        Vector3f pos;       // position (in meters from EKF origin in NED) to use as the new return point
+    } _reset_request;
 
     // Simplify
     // structure and buffer to hold the "to-do list" for the simplify algorithm.
@@ -243,4 +261,6 @@ private:
 
     // returns true if the two loops overlap (used within add_loop to determine which loops to keep or throw away)
     bool loops_overlap(const prune_loop_t& loop1, const prune_loop_t& loop2) const;
+
+    static AP_SmartRTL *_singleton;
 };
