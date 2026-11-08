@@ -2919,7 +2919,8 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
             jumped_since_prev = true;
         }
 
-        if (stored_in_location(temp_cmd.id) && temp_cmd.content.location.initialised()) {
+        // only locations the vehicle navigates to form the track
+        if (is_nav_cmd(temp_cmd) && stored_in_location(temp_cmd.id) && temp_cmd.content.location.initialised()) {
             if (prev_loc.lat == 0 && prev_loc.lng == 0) {
                 // Need a valid previous location to do distance to leg calculation
                 prev_loc = temp_cmd.content.location;
