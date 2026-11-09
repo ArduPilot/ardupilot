@@ -424,7 +424,7 @@
 // Host modules use the SysV AMD64 calling convention.
 #define AP_MODULE_ENABLED 0
 // WebAssembly cannot execute native module machine code.
-#elif defined(__EMSCRIPTEN__) || (defined(AP_SCRIPTING_ENABLED) && !AP_SCRIPTING_ENABLED)
+#elif defined(__EMSCRIPTEN__) || (defined(AP_EXTERNAL_BINDING_ENABLED) && !AP_EXTERNAL_BINDING_ENABLED)
 #define AP_MODULE_ENABLED 0
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && \
     !defined(STM32H743xx) && !defined(STM32H757xx) && !defined(STM32F405xx)
