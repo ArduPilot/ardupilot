@@ -1464,7 +1464,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.scripting.p3 = packet.param4;
         break;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         cmd.content.nav_script_time.command = packet.param1;
         cmd.content.nav_script_time.timeout_s = packet.param2;
@@ -2010,7 +2010,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.scripting.p3;
         break;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         packet.param1 = cmd.content.nav_script_time.command;
         packet.param2 = cmd.content.nav_script_time.timeout_s;
@@ -2435,7 +2435,7 @@ uint16_t AP_Mission::get_index_of_jump_tag(const uint16_t tag) const
     return 0;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 bool AP_Mission::get_last_jump_tag(uint16_t &tag, uint16_t &age) const
 {
     if (_jump_tag.age == 0) {
@@ -3016,7 +3016,7 @@ const char *AP_Mission::Mission_Command::type() const
         return "Tag";
     case MAV_CMD_DO_GO_AROUND:
         return "Go Around";
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         return "NavScriptTime";
 #endif
@@ -3251,7 +3251,7 @@ void AP_Mission::format_conversion(uint8_t tag_byte, const Mission_Command &cmd,
         // Old video items stored only the first byte (legacy camera slot).
         memset(&packed_content.bytes[1], 0, sizeof(packed_content.bytes) - 1);
     }
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (tag_byte == 0 && cmd.id == MAV_CMD_NAV_SCRIPT_TIME) {
         // PARAMETER_CONVERSION - Added: Oct-2022 for ArduPilot-4.4
         struct nav_script_time_Command_tag0 old_fmt;
@@ -3269,7 +3269,7 @@ void AP_Mission::format_conversion(uint8_t tag_byte, const Mission_Command &cmd,
 }
 
 // Helpers to fill in location for scripting
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 bool AP_Mission::jump_to_landing_sequence(void)
 {
     Location loc;
@@ -3289,7 +3289,7 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to start find a landing abort sequence");
     return false;
 }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 
 // singleton instance

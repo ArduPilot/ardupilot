@@ -226,7 +226,7 @@ public:
         float p3;
     };
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // Scripting NAV command old version of storage format
     struct PACKED nav_script_time_Command_tag0 {
         uint8_t command;
@@ -388,7 +388,7 @@ public:
         // do scripting
         scripting_Command scripting;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
         // nav scripting
         nav_script_time_Command nav_script_time;
 #endif
@@ -710,7 +710,7 @@ public:
     bool jump_to_abort_landing_sequence(const Location &current_loc);
 
     // Scripting helpers for the above functions to fill in the location
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     bool jump_to_landing_sequence(void);
     bool jump_to_abort_landing_sequence(void);
 #endif
