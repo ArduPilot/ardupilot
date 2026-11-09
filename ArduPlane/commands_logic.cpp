@@ -828,17 +828,19 @@ bool Plane::verify_continue_and_change_alt()
         nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
     }
 
+    // compare in next_WP_loc's altitude frame, which may be terrain-relative
+    const float height_above_target_m = height_above_target();
+
     //climbing?
-    if (condition_value == 1 && adjusted_altitude_cm() >= next_WP_loc.alt) {
+    if (condition_value == 1 && height_above_target_m >= 0) {
         return true;
     }
     //descending?
-    else if (condition_value == 2 &&
-             adjusted_altitude_cm() <= next_WP_loc.alt) {
+    else if (condition_value == 2 && height_above_target_m <= 0) {
         return true;
-    }    
+    }
     //don't care if we're climbing or descending
-    else if (labs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
+    else if (fabsf(height_above_target_m) <= 5) {
         return true;
     }
 
