@@ -204,7 +204,6 @@ void AP_HAL::UARTDriver::set_stop_bits_locked(int n, uint32_t write_key)
         return;
     }
     _set_stop_bits(n);
-    _stop_bits = n;
 }
 
 /*
