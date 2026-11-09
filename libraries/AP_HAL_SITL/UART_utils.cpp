@@ -117,6 +117,7 @@ void HALSITL::UARTDriver::_configure_parity(uint8_t v)
 
 void HALSITL::UARTDriver::_set_stop_bits(int n)
 {
+    _stop_bits = n;
     if (_fd < 0) {
         return;
     }
