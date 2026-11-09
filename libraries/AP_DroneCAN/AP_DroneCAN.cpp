@@ -1588,7 +1588,7 @@ bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 /*
   handle FlexDebug message, holding a copy locally for a lua script to access
  */
@@ -1642,7 +1642,7 @@ bool AP_DroneCAN::get_FlexDebug(uint8_t node_id, uint16_t msg_id, uint32_t &time
     return false;
 }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 /*
   handle LogMessage debug
