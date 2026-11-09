@@ -248,6 +248,7 @@ void NavEKF3_core::InitialiseVariables()
     memset(&Pmut[0][0], 0, sizeof(Pmut));
     memset(&KHP[0][0], 0, sizeof(KHP));
     flowDataValid = false;
+    flowRngBelowAltMin = false;
     rangeDataToFuse  = false;
 #if EK3_FEATURE_OPTFLOW_FUSION
     Popt = 0.0f;
