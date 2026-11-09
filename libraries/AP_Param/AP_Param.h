@@ -66,7 +66,7 @@
 
 // allow for dynamically added tables when scripting enabled
 #ifndef AP_PARAM_DYNAMIC_ENABLED
-#define AP_PARAM_DYNAMIC_ENABLED AP_SCRIPTING_ENABLED
+#define AP_PARAM_DYNAMIC_ENABLED AP_EXTERNAL_BINDING_ENABLED
 #endif
 
 // maximum number of dynamically created tables (from scripts)
