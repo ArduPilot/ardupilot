@@ -672,6 +672,9 @@ AP_HW_Saolah743                      6130
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
+# IDs 6700-6709 reserved for Avian Automata
+AP_HW_AVIANAUTOMATA_305AP            6700
+
 # IDs 6900-6909 reserved for Easy Aerial
 
 # IDs 6960-6969 reserved for ViaDrone
