@@ -144,7 +144,7 @@ TEST(Polygon, complex)
         {1.5f, 6.5f},
     };
 
-    Vector2f closed_poly[sizeof(poly) + sizeof(Vector2f)];
+    Vector2f closed_poly[ARRAY_SIZE(poly) + 1];
     memcpy(closed_poly, poly, sizeof(poly));
     const uint16_t n = ARRAY_SIZE(closed_poly);
     closed_poly[n-1] = closed_poly[0];
