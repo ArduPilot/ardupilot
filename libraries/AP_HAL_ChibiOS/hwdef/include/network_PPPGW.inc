@@ -11,7 +11,7 @@ define AP_PERIPH_NET_PPP_PORT_DEFAULT 1
 define AP_PERIPH_NET_PPP_BAUD_DEFAULT 12500000
 
 // add scripting for web interface
-define AP_SCRIPTING_ENABLED 1
+define AP_SCRIPTING_LUA_ENABLED 1
 
 // ROMFS filesystem only
 define AP_FILESYSTEM_ROMFS_ENABLED 1
