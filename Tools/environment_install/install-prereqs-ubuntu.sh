@@ -253,47 +253,49 @@ function install_arm_none_eabi_toolchain() {
     # GNU Tools for ARM Embedded Processors
     # (see https://launchpad.net/gcc-arm-embedded/)
     ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
-    case $(uname -m) in
+    ARM_ARCH=$(uname -m)
+    case $ARM_ARCH in
         x86_64)
-            if [ ! -d $OPT/$ARM_ROOT ]; then
-                (
-                    cd $OPT
-                    heading "Installing toolchain for STM32 Boards"
-                    echo "Installing toolchain for STM32 Boards"
-                    echo "Downloading from ArduPilot server"
-                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    echo "Installing..."
-                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    echo "... Cleaning"
-                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                )
-            fi
-            echo "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-            echo "Done!";;
-
+            ARM_SHA256="21134caa478bbf5352e239fbc6e2da3038f8d2207e089efc96c3b55f1edcd618"
+            ;;
         aarch64)
-            if [ ! -d $OPT/$ARM_ROOT ]; then
-                (
-                    cd $OPT
-                    heading "Installing toolchain for STM32 Boards"
-                    echo "Installing toolchain for STM32 Boards"
-                    echo "Downloading from ArduPilot server"
-                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    echo "Installing..."
-                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    echo "... Cleaning"
-                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                )
-            fi
-            echo "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-            echo "Done!";;
+            ARM_SHA256="343d8c812934fe5a904c73583a91edd812b1ac20636eb52de04135bb0f5cf36a"
+            ;;
+        *)
+            echo "No STM32 toolchain available for $ARM_ARCH, skipping"
+            DO_AP_STM_ENV=0
+            return
+            ;;
     esac
+    if [ ! -d $OPT/$ARM_ROOT ]; then
+        heading "Installing toolchain for STM32 Boards"
+        # extract into a staging dir so an interrupted install is retried on the next run
+        ARM_STAGING="$OPT/$ARM_ROOT.partial"
+        ARM_TARBALL="$ARM_ROOT-$ARM_ARCH-linux.tar.bz2"
+        sudo rm -rf "$ARM_STAGING"
+        sudo mkdir "$ARM_STAGING"
+        echo "Downloading from ArduPilot server"
+        # wget retries network errors itself, retry here on checksum mismatch
+        for ARM_ATTEMPT in 1 2 3; do
+            sudo wget --progress=dot:giga -O "$ARM_STAGING/$ARM_TARBALL" "https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL" &&
+                echo "$ARM_SHA256  $ARM_STAGING/$ARM_TARBALL" | sha256sum -c - &&
+                break
+            if [ $ARM_ATTEMPT -eq 3 ]; then
+                sudo rm -rf "$ARM_STAGING"
+                heading "STM32 toolchain download failed or is corrupted (checksum mismatch). Please rerun this script."
+                exit 1
+            fi
+            echo "STM32 toolchain download failed, retrying ($ARM_ATTEMPT/3)"
+        done
+        echo "Installing..."
+        sudo tar xjf "$ARM_STAGING/$ARM_TARBALL" -C "$ARM_STAGING"
+        sudo mv "$ARM_STAGING/$ARM_ROOT" "$OPT/$ARM_ROOT"
+        sudo rm -rf "$ARM_STAGING"
+    fi
+    echo "Registering STM32 Toolchain for ccache"
+    sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+    sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+    echo "Done!"
 }
 
 function maybe_prompt_user() {
