@@ -41,7 +41,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>            // AP_CAN_SLCAN_ENABLED
 #include <AP_RCProtocol/AP_RCProtocol_config.h>   // AP_RCPROTOCOL_ENABLED
 #include <AP_MSP/AP_MSP_config.h>            // HAL_MSP_ENABLED
-#include <AP_Scripting/AP_Scripting_config.h>     // AP_SCRIPTING_ENABLED
+#include <AP_Scripting/AP_Scripting_config.h>     // AP_EXTERNAL_BINDING_ENABLED
 #include <AP_EFI/AP_EFI_config.h>            // HAL_EFI_ENABLED
 #include <AP_Torqeedo/AP_Torqeedo_config.h>  // HAL_TORQEEDO_ENABLED
 #include <AP_Generator/AP_Generator_config.h>     // HAL_GENERATOR_ENABLED
@@ -103,7 +103,7 @@ constexpr bool serial_protocol_compiled_in(AP_SerialManager::SerialProtocol p)
         (p != AP_SerialManager::SerialProtocol_RCIN             || (AP_RCPROTOCOL_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_Robotis          || (AP_ROBOTISSERVO_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_RunCam           || (HAL_RUNCAM_ENABLED)) &&
-        (p != AP_SerialManager::SerialProtocol_Scripting        || (AP_SCRIPTING_ENABLED)) &&
+        (p != AP_SerialManager::SerialProtocol_Scripting        || (AP_EXTERNAL_BINDING_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_SLCAN            || (AP_CAN_SLCAN_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_SmartAudio       || (AP_SMARTAUDIO_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_Torqeedo         || (HAL_TORQEEDO_ENABLED)) &&
