@@ -350,9 +350,7 @@ void ModeGuided::angle_control_start()
     pos_control->D_set_correction_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
 
     // initialise the vertical position controller
-    if (!pos_control->D_is_active()) {
-        pos_control->D_init_controller();
-    }
+    pos_control->D_init_controller_if_inactive();
 
     // initialise targets
     guided_angle_state.update_time_ms = millis();
