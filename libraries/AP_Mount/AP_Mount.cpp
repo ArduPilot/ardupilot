@@ -769,7 +769,7 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // get target rate in deg/sec. returns true on success
 bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
 {
@@ -811,7 +811,7 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
     backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 void AP_Mount::set_natively_supported_mount_target_types(uint8_t instance, uint8_t types_mask)
 {
     auto *backend = get_instance(instance);
@@ -820,7 +820,7 @@ void AP_Mount::set_natively_supported_mount_target_types(uint8_t instance, uint8
     }
     backend->set_natively_supported_mount_target_types(types_mask);
 }
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_EXTERNAL_BINDING_ENABLED
 
 #if HAL_LOGGING_ENABLED
 // write mount log packet for all backends
