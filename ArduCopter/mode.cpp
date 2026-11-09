@@ -158,7 +158,7 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
     }
 
-#if MODE_GUIDED_ENABLED && AP_SCRIPTING_ENABLED
+#if MODE_GUIDED_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     // Check registered custom modes
     for (uint8_t i = 0; i < ARRAY_SIZE(mode_guided_custom); i++) {
         if ((mode_guided_custom[i] != nullptr) && (mode_guided_custom[i]->mode_number() == mode)) {
