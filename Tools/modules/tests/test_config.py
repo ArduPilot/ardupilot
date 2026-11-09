@@ -1,6 +1,6 @@
 # AP_FLAKE8_CLEAN
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Compile-time scripting selections, including legacy board overrides."""
+"""Compile-time Lua, native runtime and external binding selections."""
 
 import subprocess
 
@@ -16,7 +16,7 @@ def compile_config(defines, lua, rust, scripting, rust_first=False, periph=False
     source += ('#include <AP_Module/AP_Module_config.h>\n' if rust_first else '')
     source += '#include <AP_Scripting/AP_Scripting_config.h>\n'
     for name, expected in [('AP_SCRIPTING_LUA_ENABLED', lua), ('AP_MODULE_ENABLED', rust),
-                           ('AP_SCRIPTING_ENABLED', scripting), ('HAL_OWNED_THREADS_ENABLED', rust),
+                           ('AP_EXTERNAL_BINDING_ENABLED', scripting), ('HAL_OWNED_THREADS_ENABLED', rust),
                            ('HAL_EXECUTABLE_MEMORY_ENABLED', rust)]:
         source += f'static_assert(bool({name}) == bool({expected}), "{name}");\n'
     return subprocess.run(['g++', '-x', 'c++', '-std=c++17', '-fsyntax-only', '-I', str(ROOT / 'libraries'),
@@ -52,8 +52,9 @@ def test_webassembly_retains_lua_without_native_execution(rust_first):
     assert result.returncode == 0, result.stderr
 
 
-def test_large_board_legacy_disable():
-    result = compile_config({'HAL_PROGRAM_SIZE_LIMIT_KB': 4096, 'AP_SCRIPTING_ENABLED': 0}, 0, 0, 0)
+def test_large_board_can_disable_both_runtimes():
+    result = compile_config({'HAL_PROGRAM_SIZE_LIMIT_KB': 4096, 'AP_SCRIPTING_LUA_ENABLED': 0,
+                             'AP_MODULE_ENABLED': 0}, 0, 0, 0)
     assert result.returncode == 0, result.stderr
 
 
@@ -69,23 +70,23 @@ def test_hal_only_default_selection():
 
 @pytest.mark.parametrize('enabled', [0, 1])
 @pytest.mark.parametrize('periph', [False, True])
-def test_legacy_umbrella_override(enabled, periph):
-    result = compile_config({'AP_SCRIPTING_ENABLED': enabled, 'HAL_PROGRAM_SIZE_LIMIT_KB': 1024},
+def test_explicit_lua_override(enabled, periph):
+    result = compile_config({'AP_SCRIPTING_LUA_ENABLED': enabled, 'HAL_PROGRAM_SIZE_LIMIT_KB': 1024},
                             enabled, 0, enabled, periph=periph)
     assert result.returncode == 0, result.stderr
 
 
 def test_runtime_cannot_bypass_disabled_umbrella():
-    result = compile_config({'AP_SCRIPTING_ENABLED': 0, 'AP_MODULE_ENABLED': 1}, 0, 1, 0)
+    result = compile_config({'AP_EXTERNAL_BINDING_ENABLED': 0, 'AP_MODULE_ENABLED': 1}, 0, 1, 0)
     assert result.returncode != 0
-    assert 'A scripting runtime requires AP_SCRIPTING_ENABLED' in result.stderr
+    assert 'A scripting runtime requires AP_EXTERNAL_BINDING_ENABLED' in result.stderr
 
 
 def test_umbrella_requires_a_runtime():
-    result = compile_config({'AP_SCRIPTING_ENABLED': 1, 'AP_SCRIPTING_LUA_ENABLED': 0,
+    result = compile_config({'AP_EXTERNAL_BINDING_ENABLED': 1, 'AP_SCRIPTING_LUA_ENABLED': 0,
                              'AP_MODULE_ENABLED': 0}, 0, 0, 1)
     assert result.returncode != 0
-    assert 'AP_SCRIPTING_ENABLED requires a scripting runtime' in result.stderr
+    assert 'AP_EXTERNAL_BINDING_ENABLED requires a scripting runtime' in result.stderr
 
 
 @pytest.mark.parametrize('rust', [0, 1])
@@ -148,4 +149,25 @@ def test_chibios_runtime_defaults_require_supported_mcu(tmp_path, mcu, enabled, 
     result = subprocess.run(['g++', '-x', 'c++', '-std=c++17', '-fsyntax-only', '-nostdinc++',
                              '-I', str(tmp_path), '-I', str(ROOT / 'libraries'), '-DCONFIG_HAL_BOARD=10',
                              '-D' + mcu, *flags, '-'], input=source, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+
+
+def test_bootloader_disables_both_runtimes():
+    source = '#include <AP_HAL_ChibiOS/hwdef/scripts/defaults_bootloader.h>\n'
+    source += '#include <AP_Scripting/AP_Scripting_config.h>\n'
+    for name in ('AP_SCRIPTING_LUA_ENABLED', 'AP_MODULE_ENABLED', 'AP_EXTERNAL_BINDING_ENABLED',
+                 'HAL_OWNED_THREADS_ENABLED', 'HAL_EXECUTABLE_MEMORY_ENABLED'):
+        source += f'static_assert(!{name}, "{name}");\n'
+    result = subprocess.run(['g++', '-x', 'c++', '-std=c++17', '-fsyntax-only',
+                             '-I', str(ROOT / 'libraries'), '-DCONFIG_HAL_BOARD=99',
+                             '-DHAL_PROGRAM_SIZE_LIMIT_KB=16384', '-'],
+                            input=source, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize('native', [0, 1])
+def test_periph_binding_override_does_not_enable_lua(native):
+    result = compile_config({'HAL_BUILD_AP_PERIPH': 1, 'HAL_PROGRAM_SIZE_LIMIT_KB': 8192,
+                             'AP_EXTERNAL_BINDING_ENABLED': native, 'AP_MODULE_ENABLED': native},
+                            0, native, native, periph=True)
     assert result.returncode == 0, result.stderr
