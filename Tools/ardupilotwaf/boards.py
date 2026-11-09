@@ -125,11 +125,11 @@ class Board:
 
         if cfg.options.enable_scripting:
             env.DEFINES.update(
-                AP_SCRIPTING_ENABLED = 1,
+                AP_SCRIPTING_LUA_ENABLED = 1,
             )
         elif cfg.options.disable_scripting:
             env.DEFINES.update(
-                AP_SCRIPTING_ENABLED = 0,
+                AP_SCRIPTING_LUA_ENABLED = 0,
             )
 
         # embed any scripts from ROMFS/scripts
