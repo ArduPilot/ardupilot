@@ -1190,7 +1190,7 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
         const AP_Scripting *scripting = AP_Scripting::get_singleton();
         if ((scripting != nullptr) && !scripting->arming_checks(sizeof(buffer), buffer)) {
             check_failed(Check::SYSTEM, report, "%s", buffer);
