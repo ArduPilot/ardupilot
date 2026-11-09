@@ -462,7 +462,8 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
 }
 
 // wp_start - initialises waypoint controller to implement flying to a particular destination
-bool ModeAuto::wp_start(const Location& dest_loc)
+// arc_rad is the signed arc angle for an ARC_WAYPOINT leg (0 for a straight leg)
+bool ModeAuto::wp_start(const Location& dest_loc, float arc_rad)
 {
     // init wpnav and set origin if transitioning from takeoff
     if (!wp_nav->is_active()) {
@@ -485,7 +486,7 @@ bool ModeAuto::wp_start(const Location& dest_loc)
         }
     }
 
-    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
+    if (!wp_nav->set_wp_destination_loc(dest_loc, arc_rad)) {
         return false;
     }
 
@@ -1592,7 +1593,9 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // get waypoint's location from command and send to wp_nav
     Location target_loc;
-    if (!get_loc_from_cmd(cmd, default_loc, target_loc) || !wp_start(target_loc)) {
+    // an arc is only flown from a defined start point, otherwise it is flown straight
+    const float arc_rad = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) && nav_cmd_has_defined_start() ? cmd.get_arc_angle_rad() : 0.0;
+    if (!get_loc_from_cmd(cmd, default_loc, target_loc) || !wp_start(target_loc, arc_rad)) {
         // failure to get the location or set next destination can only be because of missing terrain data or unhealthy rangefinder
         copter.failsafe_terrain_on_event();
         return;
@@ -1630,7 +1633,8 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
 
     // do not add next wp if there are no more navigation commands
     AP_Mission::Mission_Command next_cmd;
-    if (!mission.get_next_nav_cmd(current_cmd.index+1, next_cmd)) {
+    bool followed_jump;
+    if (!mission.get_next_nav_cmd(current_cmd.index+1, next_cmd, followed_jump)) {
         return true;
     }
 
@@ -1671,7 +1675,8 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
             !get_loc_from_cmd(next_cmd, dest_loc, next_dest_loc)) {
             return false;
         }
-        const float arc_angle_rad = next_cmd.get_arc_angle_rad();
+        // the current command ends at a fixed point, so the arc has a defined start unless it is reached by a jump
+        const float arc_angle_rad = followed_jump ? 0.0 : next_cmd.get_arc_angle_rad();
         return wp_nav->set_wp_destination_next_loc(next_dest_loc, arc_angle_rad);
     }
     case MAV_CMD_NAV_LOITER_TURNS:
@@ -1685,6 +1690,38 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
     }
 
     return true;
+}
+
+// returns true if a navigation command leaves the vehicle at a fixed point that an arc waypoint can start from
+bool ModeAuto::ends_at_fixed_point(uint16_t cmd_id)
+{
+    switch (cmd_id) {
+    case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_SPLINE_WAYPOINT:
+    case MAV_CMD_NAV_ARC_WAYPOINT:
+    case MAV_CMD_NAV_TAKEOFF:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+    case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// returns true if the current navigation command starts from a defined point: the mission reached it in order
+// from a command that ends at a fixed point, with any delays in between leaving the vehicle at that point
+bool ModeAuto::nav_cmd_has_defined_start() const
+{
+    if (!mission.nav_cmd_reached_in_order()) {
+        return false;
+    }
+    const uint16_t prev_cmd_id = mission.get_prev_nav_cmd_id();
+    if (prev_cmd_id == MAV_CMD_NAV_DELAY) {
+        return nav_delay_has_defined_start;
+    }
+    return ends_at_fixed_point(prev_cmd_id);
 }
 
 // do_land - initiate landing procedure
@@ -1936,6 +1973,9 @@ void ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
     nav_delay_time_start_ms = millis();
+
+    // the delay leaves the vehicle where it is, so a following arc starts from where the delay started
+    nav_delay_has_defined_start = nav_cmd_has_defined_start();
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay

@@ -664,7 +664,7 @@ private:
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
-    bool wp_start(const Location& dest_loc);
+    bool wp_start(const Location& dest_loc, float arc_rad = 0.0);
     void land_start();
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
@@ -692,6 +692,8 @@ private:
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool set_next_wp(const AP_Mission::Mission_Command& current_cmd, const Location &default_loc);
+    static bool ends_at_fixed_point(uint16_t cmd_id);
+    bool nav_cmd_has_defined_start() const;
     void do_land(const AP_Mission::Mission_Command& cmd);
     bool do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_circle(const AP_Mission::Mission_Command& cmd);
@@ -761,6 +763,7 @@ private:
     // Delay the next navigation command
     uint32_t nav_delay_time_max_ms;  // used for delaying the navigation commands (eg land,takeoff etc.)
     uint32_t nav_delay_time_start_ms;
+    bool nav_delay_has_defined_start;   // true if the vehicle started the delay at a fixed point it reached in order
 
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
