@@ -7094,10 +7094,14 @@ return update()
                             # seconds while the thing being waited for - a
                             # packet arriving and being acted on - takes wall
                             # clock, so scale it: self.speedup simulated
-                            # seconds is one second of real time.
+                            # seconds is one second of real time.  The release
+                            # needs the same bound - its default of two
+                            # simulated seconds is a tenth of a second of wall
+                            # clock on a loaded host, spent while the releasing
+                            # packet is still in flight.
                             self.wait_rc_channel_value(1, 1600, timeout=self.speedup)
                             peer.mav.rc_channels_override_send(current_sysid, 1, 0, *([65535] * 7))
-                            self.wait_rc_channel_value(1, 1500)
+                            self.wait_rc_channel_value(1, 1500, timeout=self.speedup)
                         else:
                             # here the delay is the evidence: the override must
                             # still not have been taken once it could have been
