@@ -103,7 +103,7 @@ void Volz::update_servos(const class Aircraft &aircraft)
 
     for (auto  &servo : servos) {
         const uint8_t idx = servo.id - 1;
-        if (idx > ARRAY_SIZE(aircraft.servo_filter)) {
+        if (idx >= ARRAY_SIZE(aircraft.servo_filter)) {
             continue;
         }
         servo.position = aircraft.servo_filter[idx].angle();
@@ -161,7 +161,7 @@ bool Volz::shift_command_to_front_of_buffer()
 
 void Volz::process_command(const Command &command)
 {
-    if (command.actuator_id >= ARRAY_SIZE(servos)+1) {
+    if (command.actuator_id == 0 || command.actuator_id > ARRAY_SIZE(servos)) {
         AP_HAL::panic("Invalid actuator ID (%u) received", command.actuator_id);
     }
     Servo &servo = servos[command.actuator_id-1];
@@ -235,7 +235,7 @@ void Volz::update_sitl_input_pwm(struct sitl_input &input)
     // sitl_model->update_model with those we're receiving serially
     for (auto &servo : servos) {
         const uint8_t idx = servo.id - 1;
-        if (idx > ARRAY_SIZE(input.servos)) {
+        if (idx >= ARRAY_SIZE(input.servos)) {
             // silently ignore; input.servos is 12-long, we are
             // usually 16-long
             continue;
