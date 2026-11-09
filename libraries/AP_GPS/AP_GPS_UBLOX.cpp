@@ -313,10 +313,10 @@ AP_GPS_UBLOX::_request_next_config(void)
     case STEP_RTK_MOVBASE:
 #if GPS_MOVING_BASELINE
         if (supports_F9_config()) {
-            static_assert(sizeof(active_config.done_mask)*8 >= ARRAY_SIZE(config_MB_Base_uart1), "done_mask too small, base1");
-            static_assert(sizeof(active_config.done_mask)*8 >= ARRAY_SIZE(config_MB_Base_uart2), "done_mask too small, base2");
-            static_assert(sizeof(active_config.done_mask)*8 >= ARRAY_SIZE(config_MB_Rover_uart1), "done_mask too small, rover1");
-            static_assert(sizeof(active_config.done_mask)*8 >= ARRAY_SIZE(config_MB_Rover_uart2), "done_mask too small, rover2");
+            static_assert(sizeof(active_config.done_mask)*8 > ARRAY_SIZE(config_MB_Base_uart1), "done_mask too small, base1");
+            static_assert(sizeof(active_config.done_mask)*8 > ARRAY_SIZE(config_MB_Base_uart2), "done_mask too small, base2");
+            static_assert(sizeof(active_config.done_mask)*8 > ARRAY_SIZE(config_MB_Rover_uart1), "done_mask too small, rover1");
+            static_assert(sizeof(active_config.done_mask)*8 > ARRAY_SIZE(config_MB_Rover_uart2), "done_mask too small, rover2");
             if (role == AP_GPS::GPS_ROLE_MB_BASE) {
                 const config_list *list = mb_use_uart2()?config_MB_Base_uart2:config_MB_Base_uart1;
                 uint8_t list_length = mb_use_uart2()?ARRAY_SIZE(config_MB_Base_uart2):ARRAY_SIZE(config_MB_Base_uart1);
@@ -388,6 +388,7 @@ AP_GPS_UBLOX::_request_next_config(void)
             // special handling of M10 config
             const config_list *list = config_M10;
             const uint8_t list_length = ARRAY_SIZE(config_M10);
+            static_assert(sizeof(active_config.done_mask)*8 > ARRAY_SIZE(config_M10), "done_mask too small, M10");
             Debug("Sending M10 settings");
             if (!_configure_config_set(list, list_length, CONFIG_M10, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                 _next_message--;
@@ -400,12 +401,14 @@ AP_GPS_UBLOX::_request_next_config(void)
         if (supports_l5 && option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
             const config_list *list = config_L5_ovrd_ena;
             const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_ena);
+            static_assert(sizeof(active_config.done_mask)*8 > ARRAY_SIZE(config_L5_ovrd_ena), "done_mask too small, L5 enable");
             if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                 _next_message--;
             }
         } else if (supports_l5 && !option_set(AP_GPS::DriverOptions::GPSL5HealthOverride)) {
             const config_list *list = config_L5_ovrd_dis;
             const uint8_t list_length = ARRAY_SIZE(config_L5_ovrd_dis);
+            static_assert(sizeof(active_config.done_mask)*8 > ARRAY_SIZE(config_L5_ovrd_dis), "done_mask too small, L5 disable");
             if (!_configure_config_set(list, list_length, CONFIG_L5, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
                 _next_message--;
             }
@@ -2388,6 +2391,7 @@ uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
         // QZSS and SBAS can only be enabled if GPS is enabled
 
         if (config_GNSS == nullptr) {
+            static_assert(sizeof(active_config.done_mask)*8 > UBLOX_MAX_GNSS_CONFIG_BLOCKS*3, "done_mask too small, GNSS");
             config_GNSS = (config_list*)calloc(UBLOX_MAX_GNSS_CONFIG_BLOCKS*3, sizeof(config_list));
         }
 
