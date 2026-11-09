@@ -194,6 +194,7 @@ AC_Fence::AC_Fence()
     AP_Param::setup_object_defaults(this, var_info);
     if (_enabled) {
         _enabled_fences = _configured_fences.get() & ~AC_FENCE_TYPE_ALT_MIN;
+        _commanded_fences = AC_FENCE_ALL_FENCES & ~AC_FENCE_TYPE_ALT_MIN;
     }
 }
 
@@ -252,16 +253,44 @@ void AC_Fence::print_fence_message(const char* message, uint8_t fences) const
 void AC_Fence::update()
 {
     _poly_loader.update();
-    // if someone changes the parameter we want to enable or disable everything
+    // if someone changes the enable parameters we want to enable or disable
+    // everything
     if (_enabled != _last_enabled || _auto_enabled != _last_auto_enabled) {
         // reset the auto mask since we just reconfigured all of fencing
         _last_enabled = _enabled;
         _last_auto_enabled = _auto_enabled;
+        _last_configured_fences = _configured_fences;
         if (_enabled) {
             _enabled_fences = _configured_fences.get() & ~AC_FENCE_TYPE_ALT_MIN;
+            // FENCE_ENABLE asks for every type but the floor, which comes on
+            // when its altitude is reached rather than when it is enabled
+            _commanded_fences = AC_FENCE_ALL_FENCES & ~AC_FENCE_TYPE_ALT_MIN;
         } else {
             _enabled_fences = 0;
+            _commanded_fences = 0;
         }
+    } else if (_configured_fences != _last_configured_fences) {
+        // FENCE_TYPE changed on its own.  What we enforce also carries
+        // MAV_CMD_DO_FENCE_ENABLE, the RC switch and the auto-enabled floor,
+        // so rebuilding it from FENCE_ENABLE here would take the fence off a
+        // vehicle which is relying on it.  Change only the types which
+        // changed: stop enforcing what is no longer configured, and enforce
+        // what has just been configured if it is one we have been asked to
+        // enforce.  FENCE_ENABLE takes precedence: with it set, a type added
+        // after the pilot disabled the fence at runtime is enforced.
+        const uint8_t added = _configured_fences.get() & ~_last_configured_fences;
+        const uint8_t removed = _last_configured_fences & ~_configured_fences.get();
+        _last_configured_fences = _configured_fences;
+        uint8_t enforcing = _enabled ? AC_FENCE_ALL_FENCES : _commanded_fences;
+        if (!(_commanded_fences & AC_FENCE_TYPE_ALT_MIN)) {
+            // configuring the floor does not enable it - that happens on
+            // reaching its altitude - but a floor which was being enforced
+            // before FENCE_TYPE lost it is enforced again once FENCE_TYPE has
+            // it back, because nothing asked for it to stop
+            enforcing &= ~AC_FENCE_TYPE_ALT_MIN;
+        }
+        _enabled_fences &= ~removed;
+        _enabled_fences |= added & enforcing;
     }
 #ifdef AC_FENCE_DEBUG
     static uint32_t last_msg_count = 0;
@@ -288,6 +317,42 @@ uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_enabl
     if (update_auto_enable && (fences & AC_FENCE_TYPE_ALT_MIN) != 0) {
         // remember that min-alt fence was manually enabled/disabled
         _min_alt_state = value ? MinAltState::MANUALLY_ENABLED : MinAltState::MANUALLY_DISABLED;
+    }
+
+    // record what was commanded rather than what it changed.  The command is
+    // about fence types, not about the types which happen to be configured
+    // now: a disable which changes nothing still means the fence is off, and a
+    // type enabled while it is not configured is enforced once it is.
+    const uint8_t old_commanded_fences = _commanded_fences;
+    uint8_t commanded_fences = old_commanded_fences;
+    if (value) {
+        uint8_t commanding = fence_types;
+        if (!(enabled_fences & AC_FENCE_TYPE_ALT_MIN)) {
+            // the floor is an exception: a call commands it only if it ends up
+            // enforcing it, so a blanket enable - which names every type - does
+            // not turn into a floor enforced the moment one is first
+            // configured.  Take it out of what *this* call adds rather than out
+            // of the command as a whole, which may already hold a floor that
+            // was being enforced when FENCE_TYPE stopped carrying it.
+            commanding &= ~AC_FENCE_TYPE_ALT_MIN;
+        }
+        commanded_fences |= commanding;
+    } else {
+        commanded_fences &= ~fence_types;
+    }
+    // compare with the value the local was taken from rather than reading the
+    // member again: a second read can differ because the IO thread stored
+    // something since the snapshot, and this call would then write its own
+    // value - worked out from the older snapshot - back over that store while
+    // changing nothing itself.  The IO thread both sets and clears bits here,
+    // so either can be lost that way
+    if (commanded_fences != old_commanded_fences) {
+        // only store when it changes.  check() calls this from the IO thread
+        // on every check while landing, landed or disarmed - 25Hz on Copter,
+        // less on the others - with a mask which is not empty, and a store
+        // there can lose an enable or disable the main thread is making in
+        // the same moment.
+        _commanded_fences = commanded_fences;
     }
 
     uint8_t fences_to_change = _enabled_fences ^ enabled_fences;
