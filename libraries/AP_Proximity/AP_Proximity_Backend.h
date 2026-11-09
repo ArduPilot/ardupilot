@@ -43,7 +43,7 @@ public:
     // handle mavlink messages
     virtual void handle_msg(const mavlink_message_t &msg) {}
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // handle scripting obstacle messages
     virtual bool set_distance_min_max(float min, float max) { return false; }
     // this is in body frame
