@@ -13,7 +13,7 @@
 #include <SRV_Channel/SRV_Channel_config.h>
 
 #ifndef AP_MOTORS_MAX_NUM_MOTORS
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 #define AP_MOTORS_MAX_NUM_MOTORS 32
 #else
 #define AP_MOTORS_MAX_NUM_MOTORS 12
@@ -271,7 +271,7 @@ public:
         void set_throttle(bool flag); // set limits for throttle upper and lower
     } limit;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // set limit flag for pitch, roll and yaw
     void set_external_limits(bool roll, bool pitch, bool yaw, bool throttle_lower, bool throttle_upper);
 #endif
@@ -336,7 +336,7 @@ public:
     // direct motor write
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     void set_frame_string(const char * str);
 #endif
 
@@ -454,7 +454,7 @@ protected:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) = 0;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // Custom frame string set from scripting
     char* custom_frame_string;
 
