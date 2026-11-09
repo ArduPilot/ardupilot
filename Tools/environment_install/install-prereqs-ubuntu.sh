@@ -474,19 +474,20 @@ fi
 # is causing problems:
 for PACKAGE in $PYTHON_PKGS; do
     if [ "$PACKAGE" == "wxpython" ]; then
-        echo "##### $PACKAGE takes a *VERY* long time to install (~30 minutes).  Be patient."
-        # Use wheel repository for specific supported Ubuntu releases only
+        # PyPI only has the wxPython sources for Linux, try the prebuilt
+        # wheel from the latest GitHub release before building it
         case ${RELEASE_CODENAME} in
-            noble)
-                echo "##### Adding wxpython wheel repository for faster installation"
-                WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04"
-                time $PIP install $PIP_USER_ARGUMENT --upgrade --find-links $WXPYTHON_WHEEL_REPO $PACKAGE
-                ;;
-            *)
-                echo "##### Installing wxpython from PyPI (no specific wheel repository for this release)"
-                time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
-                ;;
+            noble)    WX_UBUNTU="ubuntu2404" ;;
+            resolute) WX_UBUNTU="ubuntu2604" ;;
+            *)        WX_UBUNTU="none" ;;
         esac
+        WX_TAG=$(python3 -c 'import urllib.request; print(urllib.request.urlopen("https://github.com/wxWidgets/Phoenix/releases/latest").geturl().rsplit("/", 1)[1])' || true)
+        PY_TAG=$(python3 -c 'import sys; print("cp%d%d" % sys.version_info[:2])')
+        WX_WHEEL="https://github.com/wxWidgets/Phoenix/releases/download/$WX_TAG/wxpython-${WX_TAG#wxPython-}%2B$WX_UBUNTU-$PY_TAG-$PY_TAG-linux_$(uname -m).whl"
+        time $PIP install $PIP_USER_ARGUMENT --upgrade "$WX_WHEEL" || {
+            echo "##### No prebuilt $PACKAGE wheel, building it takes a *VERY* long time (~30 minutes).  Be patient."
+            time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
+        }
     else
         time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
     fi
