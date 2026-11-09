@@ -56,7 +56,10 @@ void RF_Wasp::check_configuration()
                     uint8_t offs = strlen(string_configs[i].name);
                     offs += 1; // for '>'
                     offs += 1; // for space
-                    strncpy(string_configs[i].value, &_buffer[offs], MIN(ARRAY_SIZE(config.format), unsigned(cr - _buffer - offs - 1))); // -1 for the lf, -1 for the cr
+                    // the value runs up to the newline; bound it by its own field
+                    const unsigned len = MIN(unsigned(string_configs[i].value_size - 1), unsigned(cr - _buffer - offs));
+                    memcpy(string_configs[i].value, &_buffer[offs], len);
+                    string_configs[i].value[len] = '\0';
 //                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Wasp: config (%s) (%s)", string_configs[i].name, string_configs[i].value);
                     char response[128];
                     const size_t x = snprintf(response,
@@ -78,7 +81,7 @@ void RF_Wasp::check_configuration()
                     offs += 1; // for '>'
                     offs += 1; // for space
                     char tmp[32]{};
-                    strncpy(tmp, &_buffer[offs], MIN(ARRAY_SIZE(config.format), unsigned(cr - _buffer - offs - 1))); // -1 for the lf, -1 for the cr
+                    memcpy(tmp, &_buffer[offs], MIN(ARRAY_SIZE(tmp) - 1, unsigned(cr - _buffer - offs)));
                     *(integer_configs[i].value) = atoi(tmp);
 //                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Wasp: config (%s) (%d)", integer_configs[i].name, *(integer_configs[i].value));
                     char response[128];
