@@ -466,7 +466,12 @@ def process_library(vehicle, library, pathprefix=None):
                 debug("Group name: %s" % lib.name)
                 process_library(vehicle, lib, os.path.dirname(libraryfname))
                 if do_append:
-                    alllibs.append(lib)
+                    if group == "":
+                        # an unnamed group shares this library's prefix,
+                        # so its parameters belong in this library
+                        library.params.extend(lib.params)
+                    else:
+                        alllibs.append(lib)
 
     current_file = None
 
