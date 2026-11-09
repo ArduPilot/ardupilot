@@ -632,7 +632,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         // Not implemented
         break;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case JSButton::button_function_t::k_script_1:
         sub.script_buttons[0].press();
         break;
@@ -645,7 +645,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     case JSButton::button_function_t::k_script_4:
         sub.script_buttons[3].press();
         break;
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
     }
 }
 
@@ -706,7 +706,7 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
         break;
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case JSButton::button_function_t::k_script_1:
         sub.script_buttons[0].release();
         break;
@@ -719,7 +719,7 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
     case JSButton::button_function_t::k_script_4:
         sub.script_buttons[3].release();
         break;
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
     }
 }
 
@@ -876,7 +876,7 @@ bool Sub::jsbutton_function_is_assigned(JSButton::button_function_t function)
     return shift_is_assigned && function_is_assigned_to_shift;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 bool Sub::is_button_pressed(uint8_t index)
 {
     return script_buttons[index - 1].is_pressed();
@@ -886,4 +886,4 @@ uint8_t Sub::get_and_clear_button_count(uint8_t index)
 {
     return script_buttons[index - 1].get_and_clear_count();
 }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED

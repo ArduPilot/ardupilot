@@ -95,7 +95,7 @@
 
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -616,9 +616,9 @@ private:
     AutoSubMode auto_mode;   // controls which auto controller is run
     GuidedSubMode guided_mode;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     ScriptButton script_buttons[4];
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 public:
     void mainloop_failsafe_check();
@@ -630,7 +630,7 @@ public:
         return _singleton;
     }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // For Lua scripting, so index is 1..4, not 0..3
     bool is_button_pressed(uint8_t index);
 
@@ -644,7 +644,7 @@ public:
     float get_rangefinder_target_cm() const WARN_IF_UNUSED { return mode_surftrak.get_rangefinder_target_cm(); }
     bool set_rangefinder_target_cm(float new_target_cm) { return mode_surftrak.set_rangefinder_target_cm(new_target_cm); }
 #endif // AP_RANGEFINDER_ENABLED
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 };
 
 extern const AP_HAL::HAL& hal;
