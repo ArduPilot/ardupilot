@@ -176,18 +176,6 @@ elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITLCFML_VERSION="3.0"
     PYTHON_V="python3"
     PIP="python3 -m pip"
-else
-    # We assume APT based system, so let's try with apt-cache first.
-    SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
-    SITLFML_VERSION=$(apt-cache search -n '^libsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
-    # If we cannot retrieve the number with apt-cache, try a last time with dpkg-query
-    re='^[+-]?[0-9]+([.][0-9]+)?$'
-    if ! [[ $SITLCFML_VERSION =~ $re ]] || ! [[ $SITLFML_VERSION =~ $re ]] ; then
-        # Extract the floating point number that is the version of the libcsfml package.
-        SITLCFML_VERSION=$(dpkg-query --search libcsfml-audio | cut -d":" -f1 | grep libcsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
-        # And same for libsfml-audio.
-        SITLFML_VERSION=$(dpkg-query --search libsfml-audio | cut -d":" -f1 | grep libsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
-    fi
 fi
 
 # Check whether the specific ARM pkg-config package is available or whether we should emulate the effect of installing it.
@@ -336,17 +324,6 @@ elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'forky' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif true &&
-     [ ${RELEASE_CODENAME} != 'noble' ] &&
-     [ ${RELEASE_CODENAME} != 'plucky' ] &&
-     [ ${RELEASE_CODENAME} != 'questing' ] &&
-     [ ${RELEASE_CODENAME} != 'resolute' ] &&
-     true; then
-    if apt-cache search python-argparse | grep argp; then
-        SITL_PKGS+=" python-argparse"
-    elif apt-cache search python3-argparse | grep argp; then
-        SITL_PKGS+=" python3-argparse"
-    fi
 fi
 
 # Check for graphical package for MAVProxy
@@ -366,15 +343,6 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
-  elif apt-cache search python-wxgtk3.0 | grep wx; then
-      SITL_PKGS+=" python-wxgtk3.0"
-  elif apt-cache search python3-wxgtk4.0 | grep wx; then
-      # see below
-      :
-  else
-      # we only support back to trusty:
-      SITL_PKGS+=" python-wxgtk2.8"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng12-0 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
 
   if false; then :
@@ -382,30 +350,22 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
        [ ${RELEASE_CODENAME} == 'trixie' ] ||
        [ ${RELEASE_CODENAME} == 'forky' ] ||
        false; then
-      PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-      PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif false ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
-      PYTHON_PKGS+=" wxpython opencv-python"
+      PYTHON_PKGS+=" wxpython"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
-fi
-
-# Check if we need to manually install realpath
-RP=$(apt-cache search -n '^realpath$')
-if [ -n "$RP" ]; then
-    BASE_PKGS+=" realpath"
 fi
 
 # Check if we need to manually install libtool-bin
@@ -417,7 +377,7 @@ fi
 SITL_PKGS+=" ppp"
 
 # Install all packages
-$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
+$APT_GET install $BASE_PKGS $SITL_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
 
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
     # If xfonts-base was just installed, you need to rebuild the font information cache.
@@ -491,8 +451,7 @@ if false ||
 fi
 
 # try update packaging, setuptools and wheel before installing pip package that may need compilation
-SETUPTOOLS="setuptools"
-$PIP install $PIP_USER_ARGUMENT --upgrade pip packaging $SETUPTOOLS wheel
+$PIP install $PIP_USER_ARGUMENT --upgrade pip packaging setuptools wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
@@ -516,11 +475,6 @@ for PACKAGE in $PYTHON_PKGS; do
         echo "##### $PACKAGE takes a *VERY* long time to install (~30 minutes).  Be patient."
         # Use wheel repository for specific supported Ubuntu releases only
         case ${RELEASE_CODENAME} in
-            jammy)
-                echo "##### Adding wxpython wheel repository for faster installation"
-                WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04"
-                time $PIP install $PIP_USER_ARGUMENT --upgrade --find-links $WXPYTHON_WHEEL_REPO $PACKAGE
-                ;;
             noble)
                 echo "##### Adding wxpython wheel repository for faster installation"
                 WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04"
