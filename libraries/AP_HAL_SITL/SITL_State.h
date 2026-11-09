@@ -27,8 +27,8 @@ public:
         return _base_port;
     }
 
-    // paths for UART devices
-    const char *_serial_path[9] {
+    // paths for UART devices, one per SERIALn including --serial9
+    const char *_serial_path[AP_HAL::HAL::num_serial] {
         "tcp:0:wait",
         "tcp:2",
         "tcp:3",
@@ -38,6 +38,7 @@ public:
         "tcp:6",
         "tcp:7",
         "tcp:8",
+        "tcp:9",
     };
     ObjectArray<struct AP_Param::defaults_table_struct> cmdline_param{100};
 

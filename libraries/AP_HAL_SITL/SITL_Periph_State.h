@@ -59,8 +59,8 @@ public:
         return _base_port;
     }
 
-    // paths for UART devices
-    const char *_serial_path[9] {
+    // paths for UART devices, one per SERIALn including --serial9
+    const char *_serial_path[AP_HAL::HAL::num_serial] {
         "none:0",
         "none:1",
         "sim:adsb",
@@ -70,6 +70,7 @@ public:
         "none:6",
         "none:7",
         "none:8",
+        "none:9",
     };
 
     uint8_t get_instance() const { return _instance; }
