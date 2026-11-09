@@ -446,7 +446,7 @@ BUILD_OPTIONS = [
     Feature('Other', 'BOOTLOADER_FLASHING', 'AP_BOOTLOADER_FLASHING_ENABLED', 'Enable Bootloader flashing', 0, "FILESYSTEM_ROMFS"),  # noqa
     Feature('Other', 'SERIALDEVICE_REGISTER', 'AP_SERIALMANAGER_REGISTER_ENABLED', 'Enable Serial device registration', 0, None), # noqa
 
-    Feature('Scripting', 'SCRIPTING', 'AP_SCRIPTING_ENABLED', 'Enable Lua Scripting', 0, None),
+    Feature('Scripting', 'SCRIPTING', 'AP_SCRIPTING_LUA_ENABLED', 'Enable Lua Scripting', 0, None),
     Feature('Scripting', 'SCRIPTING_SERIALDEVICE', 'AP_SCRIPTING_SERIALDEVICE_ENABLED', 'Enable Lua serial device simulation', 0, "SCRIPTING,SERIALDEVICE_REGISTER"), # noqa
     Feature('Scripting', 'SCRIPTING_BINDING_MOTORS', 'AP_SCRIPTING_BINDING_MOTORS_ENABLED', 'Enable bindings for AP_Motors', 0, "SCRIPTING"), # noqa
     Feature('Scripting', 'SCRIPTING_BINDING_VEHICLE', 'AP_SCRIPTING_BINDING_VEHICLE_ENABLED', 'Enable bindings for AP_Vehicle', 0, "SCRIPTING"), # noqa
