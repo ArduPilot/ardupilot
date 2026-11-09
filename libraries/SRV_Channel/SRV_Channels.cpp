@@ -444,7 +444,7 @@ bool SRV_Channels::get_output_pwm_chan(uint8_t chan, uint16_t &value)
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED && AP_SCHEDULER_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCHEDULER_ENABLED
 // set output value for a specific function channel as a pwm value with loop based timeout
 // timeout_ms of zero will clear override of the channel
 // minimum override is 1 MAIN_LOOP
@@ -470,7 +470,7 @@ void SRV_Channels::set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uin
         }
     }
 }
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_EXTERNAL_BINDING_ENABLED
 
 /*
   wrapper around hal.rcout->cork()
