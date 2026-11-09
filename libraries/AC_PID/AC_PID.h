@@ -148,6 +148,9 @@ public:
 
     const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
 
+    // measurement as the error notch left it, before the error low-pass filter
+    float get_notched_measurement(void) const { return _notched_measurement; }
+
     // Configures optional notch filters for target and error signals using the given sample rate.
     // Filters are dynamically allocated and validated via the AP_Filter API.
     void set_notch_sample_rate(float);
@@ -196,6 +199,7 @@ protected:
     float _derivative;        // derivative value to enable filtering
     int8_t _slew_limit_scale;
     float _target_derivative; // target derivative value to enable dff
+    float _notched_measurement;
 #if AP_FILTER_ENABLED
     NotchFilterFloat* _target_notch;
     NotchFilterFloat* _error_notch;
