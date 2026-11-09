@@ -803,7 +803,7 @@ void Sub::load_parameters()
     // PARAMETER_CONVERSION - Added: Jan-2024
         { &stats, stats.var_info, 1 },
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
         { &scripting, scripting.var_info, 18 },
 #endif
