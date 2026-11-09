@@ -5278,12 +5278,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.context_push()
 
-        for backend in [4, 2]:  # SITL, SITL-IRLOCK
+        for backend, cone_enabled in [(4, 0), (2, 0), (4, 1)]:  # SITL, SITL-IRLOCK, SITL with descent cone
             ex = None
             try:
                 self.set_parameters({
                     "PLND_ENABLED": 1,
                     "PLND_TYPE": backend,
+                    "PLND_CONE_ENABLE": cone_enabled,
+                    "PLND_CONE_ANGLE": 15,
                 })
 
                 self.set_analog_rangefinder_parameters()
@@ -5333,6 +5335,112 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         if ex is not None:
             raise ex
+
+    def PrecisionLandingConeGust(self):
+        """Check descent pause and recovery after a gust exits the precision landing cone."""
+        self.context_push()
+        try:
+            target = self.mav.location()
+            self.set_parameters({
+                "PLND_ENABLED": 1,
+                "PLND_TYPE": 4,
+                "PLND_CONE_ENABLE": 1,
+                "PLND_CONE_ANGLE": 15,
+                "PLND_XY_DIST_MAX": 0,
+                "LAND_SPD_MS": 0.25,
+                "SIM_PLD_ENABLE": 1,
+                "SIM_PLD_LAT": target.lat,
+                "SIM_PLD_LON": target.lng,
+                "SIM_PLD_HEIGHT": 0,
+                "SIM_PLD_OPTIONS": 1,
+                "SIM_PLD_ALT_LMT": 20,
+                "SIM_PLD_DIST_LMT": 30,
+                "SIM_WIND_SPD": 0,
+                "SIM_WIND_DIR": 90,
+            })
+            self.reboot_sitl()
+            self.takeoff(6, 1800, mode="LOITER")
+            self.delay_sim_time(3)
+            self.change_mode("LAND")
+            self.zero_throttle()
+            land_start = self.get_sim_time()
+            self.delay_sim_time(2)
+            gust_start = self.get_sim_time()
+            self.set_parameter("SIM_WIND_SPD", 30)
+            self.delay_sim_time(8)
+            self.set_parameter("SIM_WIND_SPD", 0)
+            gust_end = self.get_sim_time()
+            self.wait_landed_and_disarmed(timeout=180)
+            self.delay_sim_time(2)
+
+            log = self.dfreader_for_current_onboard_log()
+            target_sample = None
+            outside_since = None
+            hold_since = None
+            recovery_since = None
+            descending_before_gust = False
+            paused_outside = False
+            recovered = False
+            max_error_m = 0.0
+            max_excess_m = 0.0
+            while True:
+                message = log.recv_match(type=["PL", "CTUN"])
+                if message is None:
+                    break
+                sample_time = message.TimeUS * 1.0e-6
+                if sample_time < land_start:
+                    continue
+                if message.get_type() == "PL":
+                    target_sample = message
+                    if gust_start <= sample_time <= gust_end and not message.TAcq:
+                        raise NotAchievedException("Landing target lost during gust")
+                    continue
+                if target_sample is None or not target_sample.TAcq:
+                    continue
+                if abs(message.TimeUS - target_sample.TimeUS) > 200000:
+                    continue
+                error_m = math.hypot(target_sample.pX, target_sample.pY)
+                radius_m = max(target_sample.mZ, 0) * math.tan(math.radians(15))
+                if sample_time < gust_start:
+                    if message.DCRt < -0.15 and message.CRt < -0.1:
+                        descending_before_gust = True
+                    continue
+                max_error_m = max(max_error_m, error_m)
+                max_excess_m = max(max_excess_m, error_m - radius_m)
+                if error_m > radius_m + 0.05:
+                    if outside_since is None:
+                        outside_since = sample_time
+                    recovery_since = None
+                    if abs(message.DCRt) < 0.15 and abs(message.CRt) < 0.2:
+                        if hold_since is None:
+                            hold_since = sample_time
+                        if sample_time - hold_since >= 0.5:
+                            paused_outside = True
+                    else:
+                        hold_since = None
+                else:
+                    hold_since = None
+                    if (sample_time > gust_end and paused_outside and error_m < radius_m - 0.05 and
+                            message.DCRt < -0.15 and message.CRt < -0.1):
+                        if recovery_since is None:
+                            recovery_since = sample_time
+                        if sample_time - recovery_since >= 0.5:
+                            recovered = True
+                    else:
+                        recovery_since = None
+            self.progress("Gust: max error %.2fm, max cone excess %.2fm, initial descent %s, hold %s, recovery %s" %
+                          (max_error_m, max_excess_m, descending_before_gust, paused_outside, recovered))
+            if not descending_before_gust:
+                raise NotAchievedException("Vehicle was not descending before gust")
+            if outside_since is None:
+                raise NotAchievedException("Gust did not move vehicle outside landing cone")
+            if not paused_outside:
+                raise NotAchievedException("No sustained descent pause outside landing cone")
+            if not recovered:
+                raise NotAchievedException("No sustained descent recovery inside landing cone")
+        finally:
+            self.context_pop()
+            self.reboot_sitl()
 
     def Landing(self):
         """Test landing the aircraft."""
@@ -13581,6 +13689,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.PrecisionLoiterCompanion,
              self.Landing,
              self.PrecisionLanding,
+             self.PrecisionLandingConeGust,
              self.SetModesViaModeSwitch,
              self.BackupFence,
              self.SetModesViaAuxSwitch,

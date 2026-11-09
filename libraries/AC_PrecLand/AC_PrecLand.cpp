@@ -206,8 +206,33 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("XY_NSE_GRAD", 20, AC_PrecLand, _xy_pos_nse_grad, 0.01f),
 
+    // @Param: CONE_ENABLE
+    // @DisplayName: Precision landing descent cone enable
+    // @Description: Pause precision landing descent outside a cone centred on the desired landing position and aligned with earth vertical. Horizontal correction continues. Active to touchdown while the target is acquired; residual position error may prevent touchdown. Target loss and pilot reposition retain their existing behaviour. The XY_DIST_MAX limit also applies.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("CONE_ENABLE", 21, AC_PrecLand, _cone_enabled, 0),
+
+    // @Param: CONE_ANGLE
+    // @DisplayName: Precision landing descent cone half-angle
+    // @Description: Angle from earth vertical to the descent cone boundary. The allowed horizontal error is height above the landing target multiplied by the tangent of this angle. Used when CONE_ENABLE is enabled.
+    // @Range: 1 85
+    // @Increment: 1
+    // @Units: deg
+    // @User: Advanced
+    AP_GROUPINFO("CONE_ANGLE", 22, AC_PrecLand, _cone_angle_deg, 15.0f),
+
     AP_GROUPEND
 };
+
+bool AC_PrecLand::is_within_landing_cone(float horizontal_error_m, float height_above_target_m) const
+{
+    if (_cone_enabled == 0) {
+        return true;
+    }
+    const float cone_radius_m = MAX(height_above_target_m, 0.0f) * tanf(radians(constrain_float(_cone_angle_deg, 1.0f, 85.0f)));
+    return horizontal_error_m <= cone_radius_m;
+}
 
 // Default constructor.
 AC_PrecLand::AC_PrecLand()

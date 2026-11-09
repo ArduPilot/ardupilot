@@ -58,6 +58,8 @@ public:
     // vehicle has to be closer than this many m's to the target before descending towards target
     float get_max_xy_error_before_descending_m() const { return _xy_max_dist_desc_m; }
 
+    bool is_within_landing_cone(float horizontal_error_m, float height_above_target_m) const;
+
     // returns orientation of sensor
     Rotation get_orient() const { return _orient; }
 
@@ -212,6 +214,8 @@ private:
     AP_Float                    _accel_noise;           // accelerometer process noise
     AP_Vector3f                 _cam_offset_m;          // Position of the camera relative to the CG
     AP_Float                    _xy_max_dist_desc_m;    // Vehicle doing prec land will only descent vertically when horizontal error (in m) is below this limit
+    AP_Int8                     _cone_enabled;
+    AP_Float                    _cone_angle_deg;
     AP_Int8                     _strict;                // PrecLand strictness
     AP_Int8                     _retry_max;             // PrecLand Maximum number of retires to a failed landing
     AP_Float                    _retry_timeout_s;       // Time for which vehicle continues descend even if target is lost. After this time period, vehicle will attempt a landing retry depending on PLND_STRICT param.
