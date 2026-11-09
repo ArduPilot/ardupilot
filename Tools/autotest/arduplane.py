@@ -3478,6 +3478,61 @@ return update()
                            altitude_source="TERRAIN_REPORT.current_height")
         self.fly_home_land_and_disarm()
 
+    def TerrainContinueAndChangeAlt(self):
+        '''NAV_CONTINUE_AND_CHANGE_ALT with a terrain-relative altitude'''
+        self.install_terrain_handlers_context()
+
+        climb_alt = 200
+        descend_alt = 120
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT, 0, 0, climb_alt, {
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+                "p1": 1,  # climb
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT, 0, 0, descend_alt, {
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+                "p1": 2,  # descend
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 100),
+        ])
+
+        def height_above_terrain_when_item_completes(seq, timeout):
+            '''wait for mission item seq to complete, return the
+            height above terrain at that moment'''
+            self.wait_current_waypoint(seq)
+            height = None
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(
+                        f"Mission item {seq} did not complete (height above terrain {height}m)")
+                m = self.assert_receive_message(['MISSION_CURRENT', 'TERRAIN_REPORT'])
+                if m.get_type() == 'TERRAIN_REPORT':
+                    height = m.current_height
+                    continue
+                if m.seq != seq:
+                    break
+            self.progress(f"Item {seq} completed at {height}m above terrain")
+            return height
+
+        # the items complete within 5m of their target altitude, and
+        # the last TERRAIN_REPORT may be a little stale, so allow 10m
+        tolerance = 10
+        height = height_above_terrain_when_item_completes(3, timeout=180)
+        if height < climb_alt - tolerance:
+            raise NotAchievedException(
+                f"Climb completed at {height}m above terrain, want at least {climb_alt}m")
+
+        height = height_above_terrain_when_item_completes(4, timeout=180)
+        if height > descend_alt + tolerance:
+            raise NotAchievedException(
+                f"Descent completed at {height}m above terrain, want at most {descend_alt}m")
+
+        self.wait_current_waypoint(5)
+        self.disarm_vehicle(force=True)
+
     def fly_generic_mission(self, filename, mission_timeout=60.0, strict=True,
                             dist_to_final_wp_threshold_m: float | None = None):
         """Fly a mission from the Generic_Missions directory."""
@@ -10852,6 +10907,7 @@ return update()
             self.LoggedNamedValueInt,
             self.AdvancedFailsafeBadBaro,
             self.TerrainLoiterToCircle,
+            self.TerrainContinueAndChangeAlt,
             self.EK3HeightDatumResetFlushesBuffers,
             self.DeadreckoningNoAirSpeed,
         ])
