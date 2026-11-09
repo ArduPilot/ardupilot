@@ -304,7 +304,7 @@ void XPlane::select_data(void)
     }
     struct PACKED {
         uint8_t  marker[5] { 'D', 'S', 'E', 'L', '0' };
-        uint32_t data[8] {};
+        uint32_t data[ARRAY_SIZE(required_data)];
     } dsel;
     uint8_t count = 0;
     for (uint8_t i=0; i<ARRAY_SIZE(required_data); i++) {
@@ -315,7 +315,8 @@ void XPlane::select_data(void)
         dsel.data[count++] = required_data[i];
     }
     if (count != 0) {
-        socket_out.send(&dsel, sizeof(dsel));
+        // DSEL takes a variable number of codes, only send the ones we filled
+        socket_out.send(&dsel, sizeof(dsel.marker) + count * sizeof(dsel.data[0]));
         printf("Selecting %u data types\n", (unsigned)count);
     }
 }
