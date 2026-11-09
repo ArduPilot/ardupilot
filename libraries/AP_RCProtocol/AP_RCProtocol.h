@@ -293,7 +293,8 @@ private:
     bool detect_async_protocol(rcprotocol_t protocol);
 
     enum rcprotocol_t _detected_protocol = NONE;
-    uint16_t _disabled_for_pulses;
+    uint32_t _disabled_for_pulses;
+    static_assert(NONE <= 32, "_disabled_for_pulses needs more bits");
     bool _detected_with_bytes;
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input;
