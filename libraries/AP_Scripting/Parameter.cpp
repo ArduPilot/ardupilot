@@ -1,6 +1,6 @@
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 #include "Parameter.h"
 
 // init by name
@@ -161,4 +161,4 @@ bool Parameter::set_default(float value)
     return false;
 }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
