@@ -1549,6 +1549,9 @@ void UARTDriver::_set_stop_bits(int n)
         break;
     }
     sercfg.cr2 = _cr2_options;
+    // recorded under the lock, as parity is, so get_stop_bits() matches
+    // the line if another thread changes it at the same time
+    _stop_bits = n;
 
     sdStart((SerialDriver*)sdef.serial, &sercfg);
 #ifndef HAL_UART_NODMA
