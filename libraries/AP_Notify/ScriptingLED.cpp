@@ -16,7 +16,7 @@
 #include "AP_Notify/AP_Notify.h"
 #include "ScriptingLED.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 
 ScriptingLED *ScriptingLED::_singleton;
 
