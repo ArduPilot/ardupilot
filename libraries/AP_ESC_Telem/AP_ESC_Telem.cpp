@@ -202,7 +202,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
         const float slew = MIN(1.0f, (now - rpmdata.last_update_us) * rpmdata.update_rate_hz * (1.0f / 1e6f));
         rpm = (rpmdata.prev_rpm + (rpmdata.rpm - rpmdata.prev_rpm) * slew);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
         if ((1U<<esc_index) & rpm_scale_mask) {
             rpm *= rpm_scale_factor[esc_index];
         }
@@ -845,7 +845,7 @@ bool AP_ESC_Telem::was_rpm_data_ever_reported(const volatile AP_ESC_Telem_Backen
     return instance.last_update_us > 0;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 /*
   set RPM scale factor from script
 */
