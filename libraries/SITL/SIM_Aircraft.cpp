@@ -1083,7 +1083,7 @@ bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input
         return false;
     }
     const uint32_t clamp_idx = clamp_ch - 1;
-    if (clamp_idx > ARRAY_SIZE(input.servos)) {
+    if (clamp_idx >= ARRAY_SIZE(input.servos)) {
         return false;
     }
     const uint16_t servo_pos = input.servos[clamp_idx];
