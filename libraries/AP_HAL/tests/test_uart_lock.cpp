@@ -42,6 +42,7 @@ protected:
     void _set_stop_bits(int n) override {
         stop_bits_calls++;
         last_stop_bits = n;
+        _stop_bits = n;
     }
     bool _set_options(uint16_t options) override {
         options_calls++;

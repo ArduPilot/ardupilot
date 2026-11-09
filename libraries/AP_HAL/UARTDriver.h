@@ -295,7 +295,8 @@ protected:
     virtual bool _set_options(uint16_t options) { _last_options = options; return options==0; }
     virtual void _set_flow_control(enum flow_control flow_control_setting) {}
     virtual void _configure_parity(uint8_t v) {}
-    virtual void _set_stop_bits(int n) {}
+    // a backend records the stop bits it sets in _stop_bits
+    virtual void _set_stop_bits(int n) { _stop_bits = n; }
 
     // Helper to check if flow control is enabled given the passed setting
     bool flow_control_enabled(enum flow_control flow_control_setting) const;
