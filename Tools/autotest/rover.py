@@ -7163,10 +7163,20 @@ return update()
                     source_component=7,
                 )
                 mav2.mav.param_request_read_send(sysid, 1, b"MAV_SYSID", -1)
-                m = mav2.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
+                # PARAM_VALUE is also how the vehicle announces a parameter it
+                # has changed itself, to every active channel: when the GPS
+                # gets its fix AP_Mission writes home into command 0 and saves
+                # MIS_TOTAL, whose broadcast arrives here too.  Match our own
+                # reply, as MAVLinkHeaderTargets above does, rather than taking
+                # the first PARAM_VALUE on the link - a loaded machine puts the
+                # fix inside this window and the test then failed with
+                # "bad PARAM_VALUE ... MIS_TOTAL".
+                m = mav2.recv_match(type='PARAM_VALUE',
+                                    condition='PARAM_VALUE.param_id == "MAV_SYSID"',
+                                    blocking=True, timeout=10)
                 if m is None:
                     raise NotAchievedException("no PARAM_VALUE for 32 bit source system")
-                if m.param_id != "MAV_SYSID" or int(m.param_value) != sysid:
+                if int(m.param_value) != sysid:
                     raise NotAchievedException("bad PARAM_VALUE %s" % str(m))
                 mav2.close()
 
