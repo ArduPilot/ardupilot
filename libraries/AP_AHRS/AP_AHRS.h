@@ -616,13 +616,13 @@ public:
      * Attitude-related public methods and attributes:
      */
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // deprecated functions for accessing rpy.  Do not use, these will
     // be removed.
     float get_roll() const { return roll; }
     float get_pitch() const { return pitch; }
     float get_yaw() const { return yaw; }
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_EXTERNAL_BINDING_ENABLED
 
     // roll/pitch/yaw euler angles, all in radians
     float get_roll_rad() const { return roll; }
