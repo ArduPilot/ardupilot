@@ -1,6 +1,6 @@
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include "AP_Scripting_helpers.h"
 #include <AP_Scripting/lua_generated_bindings.h>
@@ -455,4 +455,4 @@ int DroneCAN_Handle::new_handle(lua_State *L)
 
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
 
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_SCRIPTING_LUA_ENABLED

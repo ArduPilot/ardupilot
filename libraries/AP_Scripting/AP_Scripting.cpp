@@ -15,7 +15,7 @@
 
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
@@ -544,4 +544,4 @@ namespace AP {
     }
 }
 
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_SCRIPTING_LUA_ENABLED

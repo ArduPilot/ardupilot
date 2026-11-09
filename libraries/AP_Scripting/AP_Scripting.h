@@ -16,7 +16,7 @@
 
 #include "AP_Scripting/AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include <GCS_MAVLink/GCS_config.h>
 #include <AP_Common/AP_Common.h>
@@ -217,4 +217,4 @@ namespace AP {
     AP_Scripting * scripting(void);
 };
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_SCRIPTING_LUA_ENABLED
