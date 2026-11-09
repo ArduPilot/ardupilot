@@ -153,7 +153,7 @@ Rover::Rover(void) :
 {
 }
 
-#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 // set target location (for use by external control and scripting)
 bool Rover::set_target_location(const Location& target_loc)
 {
@@ -164,9 +164,9 @@ bool Rover::set_target_location(const Location& target_loc)
 
     return mode_guided.set_desired_location(target_loc);
 }
-#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#endif //AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // set target velocity (for use by scripting)
 bool Rover::set_target_velocity_NED(const Vector3f& vel_ned_ms, bool align_yaw_to_target)
 {
@@ -287,7 +287,7 @@ void Rover::nav_script_time_done(uint16_t id)
 
     return mode_auto.nav_script_time_done(id);
 }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 // update AHRS system
 void Rover::ahrs_update()
