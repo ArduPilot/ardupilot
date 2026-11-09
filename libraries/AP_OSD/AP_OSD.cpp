@@ -408,7 +408,7 @@ void AP_OSD::osd_thread()
             update_stats();
             update_current_screen();
         }
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
         // hold the semaphore so scripting cannot draw to the OSD while the
         // OSD thread is updating it, and vice versa
         WITH_SEMAPHORE(_sem);
@@ -424,7 +424,7 @@ void AP_OSD::osd_thread()
         }
 #else
         update_osd();
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
         // only this thread can read a backend's uart; _sem keeps a reply out of a script's OSD call
         for (uint8_t instance = 0; instance < _backend_count; instance++) {
             _backends[instance]->osd_thread_update();
