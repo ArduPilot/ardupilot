@@ -198,7 +198,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         do_nav_script_time(cmd);
         break;
@@ -304,7 +304,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         return verify_nav_script_time(cmd);
 #endif
@@ -1212,7 +1212,7 @@ float Plane::get_wp_radius() const
     return g.waypoint_radius;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 /*
   support for scripted navigation, with verify operation for completion
  */
@@ -1331,7 +1331,7 @@ bool Plane::nav_scripting_enable(uint8_t mode)
    }
    return nav_scripting.enabled;
 }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 /*
   return true if this is a LAND command

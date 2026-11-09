@@ -566,7 +566,7 @@ public:
 
     AP_Float guided_timeout;
 
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_FOLLOW_ENABLED
     AP_Follow follow;
 #endif
 

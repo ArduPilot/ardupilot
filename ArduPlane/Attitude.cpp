@@ -445,7 +445,7 @@ void Plane::stabilize()
     if (control_mode == &mode_training ||
             control_mode == &mode_manual) {
         plane.control_mode->run();
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     } else if (nav_scripting_active()) {
         // scripting is in control of roll and pitch rates and throttle
         const float speed_scaler = get_speed_scaler();

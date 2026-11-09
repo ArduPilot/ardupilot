@@ -1226,7 +1226,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16, 16: Servo 17, 17: Servo 18, 18: Servo 19, 19: Servo 20, 20: Servo 21, 21: Servo 22, 22: Servo 23, 23: Servo 24, 24: Servo 25, 25: Servo 26, 26: Servo 27, 27: Servo 28, 28: Servo 29, 29: Servo 30, 30: Servo 31, 31: Servo 32
      AP_GROUPINFO("ONESHOT_MASK", 32, ParametersG2, oneshot_mask, 0),
 
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_FOLLOW_ENABLED
     // @Group: FOLL
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 33, ParametersG2, AP_Follow),
@@ -1332,7 +1332,7 @@ void Plane::load_parameters(void)
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_FOLLOW_ENABLED
     // convert Follow parameters
     g2.follow.convert_params();
 #endif
@@ -1368,7 +1368,7 @@ void Plane::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
         { &stats, stats.var_info, 5 },
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
         { &scripting, scripting.var_info, 14 },
 #endif
