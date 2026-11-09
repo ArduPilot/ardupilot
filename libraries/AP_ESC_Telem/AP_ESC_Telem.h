@@ -121,7 +121,7 @@ public:
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, const uint16_t data_mask);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     /*
       set RPM scale factor from script
      */
@@ -149,7 +149,7 @@ private:
     uint32_t _last_rpm_log_us[ESC_TELEM_MAX_ESCS];
     uint8_t next_idx;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // allow for scaling of RPMs via lua scripts
     float rpm_scale_factor[ESC_TELEM_MAX_ESCS];
     uint32_t rpm_scale_mask;
