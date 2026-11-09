@@ -435,7 +435,7 @@ echo "Done!"
 
 SHELL_LOGIN=".profile"
 if $IS_DOCKER; then
-    echo "Inside docker, we add the tools path into .bashrc directly"
+    echo "Inside docker, we add the tools path into ~/.ardupilot_env, sourced from .bashrc"
     SHELL_LOGIN=".ardupilot_env"
     echo "# ArduPilot env file. Need to be loaded by your Shell." > ~/$SHELL_LOGIN
 fi
@@ -478,15 +478,17 @@ if false ||
     $SOURCE_LINE
     PIP_USER_ARGUMENT=""
 
-    if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?\nThis means that any terminal will open and load ArduPilot venv" ; then
-        DO_PYTHON_VENV_ENV=1
-    fi
+    grep -Fxq "$SOURCE_LINE" ~/$SHELL_LOGIN 2>/dev/null || {
+        if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?\nThis means that any terminal will open and load ArduPilot venv" ; then
+            DO_PYTHON_VENV_ENV=1
+        fi
 
-    if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
-        echo $SOURCE_LINE >> ~/$SHELL_LOGIN
-    else
-        echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
-    fi
+        if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
+            echo "$SOURCE_LINE" >> ~/$SHELL_LOGIN
+        else
+            echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
+        fi
+    }
 fi
 
 # try update packaging, setuptools and wheel before installing pip package that may need compilation
@@ -579,7 +581,7 @@ grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
 
 if [[ $SKIP_AP_COMPLETION_ENV -ne 1 ]]; then
 exportline3="source \"$ARDUPILOT_ROOT/Tools/completion/completion.bash\"";
-grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
+grep -Fxq "$exportline3" ~/.bashrc 2>/dev/null || {
     if maybe_prompt_user "Add ArduPilot Bash Completion to your bash shell [N/y]?" ; then
         echo "$exportline3" >> ~/.bashrc
         eval "$exportline3"
@@ -601,7 +603,7 @@ grep -Fxq "$exportline4" ~/$SHELL_LOGIN 2>/dev/null || {
 echo "Done!"
 
 if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
-  if [ -d ".git" ]; then
+  if [ -e "$ARDUPILOT_ROOT/.git" ] && git -C "$ARDUPILOT_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
     heading "Update git submodules"
     cd "$ARDUPILOT_ROOT"
     git submodule update --init --recursive
@@ -611,7 +613,7 @@ fi
 
 if $IS_DOCKER; then
     echo "Finalizing ArduPilot env for Docker"
-    echo "source ~/.ardupilot_env">> ~/.bashrc
+    grep -Fxq "source ~/.ardupilot_env" ~/.bashrc 2>/dev/null || echo "source ~/.ardupilot_env" >> ~/.bashrc
 fi
 
 echo "---------- $0 end ----------"
