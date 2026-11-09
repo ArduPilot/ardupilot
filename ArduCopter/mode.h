@@ -719,7 +719,7 @@ private:
 #endif
     void do_payload_place(const AP_Mission::Mission_Command& cmd);
     void do_RTL(void);
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
 #endif
     void do_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
@@ -741,7 +741,7 @@ private:
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     bool verify_nav_script_time();
 #endif
     bool verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
@@ -778,7 +778,7 @@ private:
     // True if we have entered AUTO to perform a DO_LAND_START landing sequence and we should report as AUTO RTL mode
     bool auto_RTL;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // nav_script_time command variables
     struct {
         bool done;          // true once lua script indicates it has completed
@@ -1254,7 +1254,7 @@ private:
     bool _paused;
 };
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // Mode which behaves as guided with custom mode number and name
 class ModeGuidedCustom : public ModeGuided {
 public:

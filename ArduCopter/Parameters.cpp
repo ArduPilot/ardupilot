@@ -1282,7 +1282,7 @@ void Copter::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Jan-2024 for Copter-4.6
         { &stats, stats.var_info, 12 },
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Copter-4.6
         { &scripting, scripting.var_info, 30 },
 #endif
