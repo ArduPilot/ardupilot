@@ -18,9 +18,9 @@ static const uint8_t FIRST_BYTE { 0xAA };
 
 using namespace SITL;
 
-void ADSB_Sagetech_MXS::move_preamble_in_buffer(uint8_t search_start_pos)
+void ADSB_Sagetech_MXS::move_preamble_in_buffer(uint16_t search_start_pos)
 {
-    uint8_t i;
+    uint16_t i;
     for (i=search_start_pos; i<buflen; i++) {
         if ((uint8_t)msg.buffer[i] == FIRST_BYTE) {
             break;
@@ -64,7 +64,7 @@ void ADSB_Sagetech_MXS::update_serial_input()
         FALLTHROUGH;
     case InputState::WANT_PAYLOAD: {
         // 1 preamble, 2 flags, 1 msg + payload
-        const uint8_t want_len = 4 + msg.preamble.payload_length;
+        const uint16_t want_len = 4 + msg.preamble.payload_length;
         if (buflen < want_len) {
             return;
         }
@@ -73,14 +73,14 @@ void ADSB_Sagetech_MXS::update_serial_input()
     }
     case InputState::WANT_CHECKSUM: {
         // 1 start byte, 1 msg type, 1 msgid, 1 payload len
-        const uint8_t want_len = sizeof(msg.preamble) + msg.preamble.payload_length + 1;
+        const uint16_t want_len = sizeof(msg.preamble) + msg.preamble.payload_length + 1;
         if (buflen < want_len) {
             return;
         }
         const uint8_t received_checksum = msg.buffer[want_len-1];
 
         uint8_t calculated_checksum = 0;
-        for (uint8_t i=0; i<sizeof(msg.preamble)+msg.preamble.payload_length; i++) {
+        for (uint16_t i=0; i<sizeof(msg.preamble)+msg.preamble.payload_length; i++) {
             calculated_checksum += msg.buffer[i];
         }
 
