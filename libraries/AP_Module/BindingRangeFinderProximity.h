@@ -118,7 +118,7 @@ static inline int32_t binding_rangefinder_get_state(const uint8_t *input, uint32
     for (uint32_t i = 0; i < output_size; i++) {
         output[i] = 0;
     }
-#if AP_RANGEFINDER_ENABLED && AP_SCRIPTING_ENABLED
+#if AP_RANGEFINDER_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     auto *backend = binding_rangefinder_resolve(input[0]);
     if (backend == nullptr) {
         return AP_MODULE_STATUS_UNAVAILABLE;
@@ -149,7 +149,7 @@ static inline int32_t binding_rangefinder_handle_script_distance(const uint8_t *
     if (!binding_sensor_valid(input, input_size, 5, output, output_size)) {
         return AP_MODULE_STATUS_INVALID;
     }
-#if AP_RANGEFINDER_ENABLED && AP_SCRIPTING_ENABLED
+#if AP_RANGEFINDER_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     auto *backend = binding_rangefinder_resolve(input[0]);
     if (backend == nullptr) {
         return AP_MODULE_STATUS_UNAVAILABLE;
@@ -170,7 +170,7 @@ static inline int32_t binding_rangefinder_handle_script_state(const uint8_t *inp
                               output, output_size)) {
         return AP_MODULE_STATUS_INVALID;
     }
-#if AP_RANGEFINDER_ENABLED && AP_SCRIPTING_ENABLED
+#if AP_RANGEFINDER_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     const uint8_t *wire = input + 1;
     if (wire[7] > uint8_t(RangeFinder::Status::PoweredDown)) {
         return AP_MODULE_STATUS_INVALID;
@@ -241,7 +241,7 @@ static inline int32_t binding_proximity_handle_script_distance(const uint8_t *in
     if (!binding_sensor_valid(input, input_size, 14, output, output_size)) {
         return AP_MODULE_STATUS_INVALID;
     }
-#if HAL_PROXIMITY_ENABLED && AP_SCRIPTING_ENABLED
+#if HAL_PROXIMITY_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     if (input[13] > 1) {
         return AP_MODULE_STATUS_INVALID;
     }
@@ -267,7 +267,7 @@ static inline int32_t binding_proximity_handle_script_3d(const uint8_t *input,
     if (!binding_sensor_valid(input, input_size, 14, output, output_size)) {
         return AP_MODULE_STATUS_INVALID;
     }
-#if HAL_PROXIMITY_ENABLED && AP_SCRIPTING_ENABLED
+#if HAL_PROXIMITY_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     if (input[13] > 1) {
         return AP_MODULE_STATUS_INVALID;
     }
@@ -293,7 +293,7 @@ static inline int32_t binding_proximity_set_distance_min_max(const uint8_t *inpu
     if (!binding_sensor_valid(input, input_size, 9, output, output_size)) {
         return AP_MODULE_STATUS_INVALID;
     }
-#if HAL_PROXIMITY_ENABLED && AP_SCRIPTING_ENABLED
+#if HAL_PROXIMITY_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     auto *backend = binding_proximity_resolve(input[0]);
     if (backend == nullptr) {
         return AP_MODULE_STATUS_UNAVAILABLE;
@@ -314,7 +314,7 @@ static inline int32_t binding_proximity_update_virtual_boundary(const uint8_t *i
     if (!binding_sensor_valid(input, input_size, 1, output, output_size)) {
         return AP_MODULE_STATUS_INVALID;
     }
-#if HAL_PROXIMITY_ENABLED && AP_SCRIPTING_ENABLED
+#if HAL_PROXIMITY_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     auto *backend = binding_proximity_resolve(input[0]);
     if (backend == nullptr) {
         return AP_MODULE_STATUS_UNAVAILABLE;

@@ -7,7 +7,7 @@
 #include <AP_Module/HostApi.h>
 #include <AP_Scripting/AP_Scripting_config.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
 #include <AP_Scripting/AP_Scripting_SerialDevice.h>
 #endif
 
@@ -20,7 +20,7 @@ static HAL_Semaphore serial_sem;
 
 struct ResolvedSerial {
     AP_HAL::UARTDriver *stream;
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     AP_Scripting_SerialDevice::Port *device;
 #endif
 };
@@ -28,7 +28,7 @@ struct ResolvedSerial {
 static int32_t resolve(uint32_t token, ResolvedSerial &resolved)
 {
     resolved.stream = nullptr;
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     resolved.device = nullptr;
 #endif
     if (token == 0) {
@@ -46,7 +46,7 @@ static int32_t resolve(uint32_t token, ResolvedSerial &resolved)
         return AP_MODULE_STATUS_UNAVAILABLE;
 #endif
     }
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     if ((token & SIMULATED_MARKER) == 0) {
         return AP_MODULE_STATUS_INVALID;
     }
@@ -100,7 +100,7 @@ int32_t binding_serial_find_simulated(const uint8_t *input, uint32_t input_size,
     }
     memset(output, 0, output_size);
     BindingLock lock(serial_sem);
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     auto *broker = AP_Scripting_SerialDevice::get_singleton();
     if (broker == nullptr || broker->generation() == 0) {
         return AP_MODULE_STATUS_UNAVAILABLE;
@@ -135,7 +135,7 @@ int32_t binding_serial_begin(const uint8_t *input, uint32_t input_size,
     if (status != AP_MODULE_STATUS_OK) {
         return status;
     }
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     if (port.device != nullptr) {
         return AP_MODULE_STATUS_OK;
     }
@@ -158,7 +158,7 @@ static int32_t one_byte_setting(const uint8_t *input, uint32_t input_size,
     if (status != AP_MODULE_STATUS_OK) {
         return status;
     }
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     if (port.device != nullptr) {
         return AP_MODULE_STATUS_OK;
     }
@@ -191,7 +191,7 @@ int32_t binding_serial_set_stop_bits(const uint8_t *input, uint32_t input_size,
     if (status != AP_MODULE_STATUS_OK) {
         return status;
     }
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     if (port.device != nullptr) {
         return AP_MODULE_STATUS_OK;
     }
@@ -213,7 +213,7 @@ int32_t binding_serial_set_unbuffered_writes(const uint8_t *input, uint32_t inpu
     if (status != AP_MODULE_STATUS_OK) {
         return status;
     }
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     if (port.device != nullptr) {
         return AP_MODULE_STATUS_OK;
     }
@@ -235,7 +235,7 @@ int32_t binding_serial_set_flow_control(const uint8_t *input, uint32_t input_siz
     if (status != AP_MODULE_STATUS_OK) {
         return status;
     }
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     if (port.device != nullptr) {
         return AP_MODULE_STATUS_OK;
     }
@@ -258,7 +258,7 @@ int32_t binding_serial_available(const uint8_t *input, uint32_t input_size,
         return status;
     }
     uint32_t available;
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     if (port.device != nullptr) {
         available = port.device->device_available();
     } else
@@ -289,7 +289,7 @@ int32_t binding_serial_read(const uint8_t *input, uint32_t input_size,
         return status;
     }
     ssize_t read;
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     if (port.device != nullptr) {
         read = port.device->device_read(output + 2, count);
     } else
@@ -329,7 +329,7 @@ int32_t binding_serial_write(const uint8_t *input, uint32_t input_size,
         return status;
     }
     size_t written;
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
     if (port.device != nullptr) {
         written = port.device->device_write(input + 6, count);
     } else
