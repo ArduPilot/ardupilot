@@ -1,6 +1,6 @@
 #include <AP_Scripting/AP_Scripting_config.h>
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 
 #include "AC_AttitudeControl_Multi_6DoF.h"
 #include <AP_HAL/AP_HAL.h>
@@ -186,4 +186,4 @@ void AC_AttitudeControl_Multi_6DoF::input_quaternion(Quaternion& attitude_desire
 
 AC_AttitudeControl_Multi_6DoF *AC_AttitudeControl_Multi_6DoF::_singleton = nullptr;
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED

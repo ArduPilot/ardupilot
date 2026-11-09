@@ -1292,7 +1292,7 @@ void AC_PosControl::D_init_offsets()
     _accel_offset_ned_mss.z = _accel_offset_target_ned_mss.z;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // Sets additional position, velocity, and acceleration offsets in meters (NED frame) for scripting.
 // Offsets are added to the controller’s internal target.
 // Used in LUA
