@@ -209,7 +209,7 @@ extern "C" uint32_t boundary_count() { return boundary_updates; }
     enabled = int(request.param)
     subprocess.run([
         os.environ.get('CXX', 'c++'), '-std=c++11', '-Wall', '-Wextra', '-Werror', '-fPIC', '-shared',
-        '-DAP_MODULE_ENABLED=1', '-DAP_SCRIPTING_ENABLED=1',
+        '-DAP_MODULE_ENABLED=1', '-DAP_EXTERNAL_BINDING_ENABLED=1',
         f'-DAP_RANGEFINDER_ENABLED={enabled}', f'-DHAL_PROXIMITY_ENABLED={enabled}',
         '-I' + str(tmp_path), '-I' + str(bindings.ROOT), str(source), '-o', str(library),
     ], check=True)

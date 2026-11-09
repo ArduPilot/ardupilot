@@ -52,7 +52,7 @@ def cpp(method):
         '{',
         '    (void)input;',
         '    memset(output, 0, 4);',
-        '#if AP_SCRIPTING_ENABLED && HAL_GCS_ENABLED && !defined(HAL_BUILD_AP_PERIPH) && AP_SCHEDULER_ENABLED',
+        '#if AP_EXTERNAL_BINDING_ENABLED && HAL_GCS_ENABLED && !defined(HAL_BUILD_AP_PERIPH) && AP_SCHEDULER_ENABLED',
         '    auto *gcs = GCS::get_singleton();',
         '    auto *scheduler = AP_Scheduler::get_singleton();',
         '    if (gcs == nullptr || scheduler == nullptr) {',

@@ -37,7 +37,7 @@ The independent options are `--enable-modules` /
 `--disable-lua-scripting`. The older `--enable-scripting` /
 `--disable-scripting` options select Lua. Disable both runtimes explicitly to
 build without scripting. Extra hwdefs should use `AP_MODULE_ENABLED`
-and `AP_SCRIPTING_LUA_ENABLED`; `AP_SCRIPTING_ENABLED` denotes shared support.
+and `AP_SCRIPTING_LUA_ENABLED`; `AP_EXTERNAL_BINDING_ENABLED` denotes shared support.
 
 Supported module profiles are Cortex-M4/FPv4-SP and Cortex-M7/FPv5-D16 Thumb-2
 hard float on STM32, and x86-64 on SITL/Linux. Other Linux architectures need a separate target
