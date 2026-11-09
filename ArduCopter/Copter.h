@@ -640,8 +640,10 @@ private:
                                                       (int8_t)FailsafeAction::TERMINATE,
                                                       (int8_t)FailsafeAction::LAND,
                                                       (int8_t)FailsafeAction::RTL,
+                                                      (int8_t)FailsafeAction::AUTO_DO_LAND_START,
                                                       (int8_t)FailsafeAction::SMARTRTL_LAND,
                                                       (int8_t)FailsafeAction::SMARTRTL,
+                                                      (int8_t)FailsafeAction::BRAKE_LAND,
                                                       (int8_t)FailsafeAction::NONE,
                                                       -1 // the priority list must end with a sentinel of -1
                                                      };
