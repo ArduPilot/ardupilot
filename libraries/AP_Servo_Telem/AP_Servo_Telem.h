@@ -13,6 +13,7 @@
     #define SERVO_TELEM_MAX_SERVOS NUM_SERVO_CHANNELS
 #endif
 static_assert(SERVO_TELEM_MAX_SERVOS > 0, "Cannot have 0 Servo telem instances");
+static_assert(SERVO_TELEM_MAX_SERVOS <= 32, "active_mask has one bit per servo");
 
 class AP_Servo_Telem {
 public:
