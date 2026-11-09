@@ -57,7 +57,7 @@ public:
 namespace AP { AP_SerialManager &serialmanager(); }
 ''',
         'AP_Scripting/AP_Scripting_config.h': '''#pragma once
-#define AP_SCRIPTING_ENABLED 1
+#define AP_EXTERNAL_BINDING_ENABLED 1
 #define AP_SCRIPTING_SERIALDEVICE_ENABLED 1
 ''',
         'AP_Scripting/AP_Scripting_SerialDevice.h': '''#pragma once

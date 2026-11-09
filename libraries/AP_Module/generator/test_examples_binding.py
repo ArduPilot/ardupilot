@@ -24,7 +24,7 @@ def test_examples_selection_and_emission():
     assert '#if AP_MISSION_ENABLED && AP_MODULE_ENABLED' in cpp
     assert 'runtime->pop_mission_command(command)' in cpp
     assert 'AP::scripting()' not in cpp
-    assert '#if HAL_ENABLE_DRONECAN_DRIVERS && AP_SCRIPTING_ENABLED' in cpp
+    assert '#if HAL_ENABLE_DRONECAN_DRIVERS && AP_EXTERNAL_BINDING_ENABLED' in cpp
     assert 'dronecan->get_FlexDebug(node_id, message_id, timestamp_us, message)' in cpp
     assert 'memcpy(output + 6, message.u8.data, message.u8.len)' in cpp
     rust = examples_binding.rust(spec, '')

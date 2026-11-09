@@ -29,7 +29,7 @@ namespace AP_HAL { struct Semaphore { bool take(uint32_t) { return true; } void 
 using HAL_Semaphore = AP_HAL::Semaphore;
 ''',
         'AP_Scripting/AP_Scripting_config.h': '''#pragma once
-#define AP_SCRIPTING_ENABLED 1
+#define AP_EXTERNAL_BINDING_ENABLED 1
 #define AP_SCRIPTING_BINDING_MOTORS_ENABLED 1
 ''',
         'AP_Vehicle/AP_Vehicle_Type.h': '''#pragma once

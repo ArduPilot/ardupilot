@@ -100,7 +100,7 @@ extern "C" void read_packet(uint8_t *out) {
     source.write_text('\n'.join(lines))
     subprocess.run([
         os.environ.get('CXX', 'c++'), '-std=c++17', '-Wall', '-Wextra', '-Werror', '-fPIC', '-shared',
-        f'-DAP_SCRIPTING_ENABLED={int(request.param)}', f'-DHAL_GCS_ENABLED={int(request.param)}',
+        f'-DAP_EXTERNAL_BINDING_ENABLED={int(request.param)}', f'-DHAL_GCS_ENABLED={int(request.param)}',
         '-DAP_SCHEDULER_ENABLED=1', '-I' + str(tmp_path), '-I' + str(bindings.ROOT),
         str(source), '-o', str(library),
     ], check=True)

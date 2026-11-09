@@ -90,7 +90,7 @@ def cpp_headers():
         '#if AP_MISSION_ENABLED && AP_MODULE_ENABLED',
         '#include <AP_Module/Runtime.h>',
         '#endif',
-        '#if HAL_ENABLE_DRONECAN_DRIVERS && AP_SCRIPTING_ENABLED',
+        '#if HAL_ENABLE_DRONECAN_DRIVERS && AP_EXTERNAL_BINDING_ENABLED',
         '#include <AP_DroneCAN/AP_DroneCAN.h>',
         '#endif',
     ]
@@ -171,7 +171,7 @@ def cpp(spec):
         '{',
         '    (void)input;',
         f'    memset(output, 0, {FLEXDEBUG_WIRE_SIZE});',
-        '#if HAL_ENABLE_DRONECAN_DRIVERS && AP_SCRIPTING_ENABLED',
+        '#if HAL_ENABLE_DRONECAN_DRIVERS && AP_EXTERNAL_BINDING_ENABLED',
         '    const uint8_t driver = input[0];',
         '    const uint8_t node_id = input[1];',
         '    const uint16_t message_id = uint16_t(BindingWire::read(input + 2, 2));',
