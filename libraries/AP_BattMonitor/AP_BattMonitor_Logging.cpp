@@ -66,6 +66,7 @@ void AP_BattMonitor_Backend::Log_Write_BCL(const uint8_t instance, const uint64_
     AP::logger().WriteBlock(&cell_pkt, sizeof(cell_pkt));
 
 #if AP_BATT_MONITOR_CELLS_MAX > 12
+    static_assert(AP_BATT_MONITOR_CELLS_MAX >= ARRAY_SIZE(cell_pkt.cell_voltages) + 2, "BCL2 logs two cells after BCL");
     if (_state.cell_voltages.cells[12] != UINT16_MAX || _state.cell_voltages.cells[13] != UINT16_MAX)
     {
 // @LoggerMessage: BCL2
