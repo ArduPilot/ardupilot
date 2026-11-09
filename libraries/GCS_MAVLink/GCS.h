@@ -1329,7 +1329,7 @@ public:
     uint32_t sysid_this_mav() const { return sysid; }
     uint32_t telem_delay() const { return mav_telem_delay; }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // lua access to command_int
     MAV_RESULT lua_command_int_packet(const mavlink_command_int_t &packet);
 #endif
