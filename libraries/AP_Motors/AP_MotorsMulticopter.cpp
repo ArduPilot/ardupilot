@@ -306,7 +306,7 @@ void AP_MotorsMulticopter::output()
 // update external limits from scripting
 void AP_MotorsMulticopter::update_external_limits()
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // merge external (scripting) limit flags into the internal limit state
     limit.roll |= external_limits.roll;
     limit.pitch |= external_limits.pitch;
