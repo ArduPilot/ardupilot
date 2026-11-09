@@ -247,7 +247,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_AHRS_POSITION_RESET_ENABLED', r'AP_AHRS::handle_external_position_estimate'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
-            ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
+            ('AP_SCRIPTING_LUA_ENABLED', r'AP_Scripting::init',),
             ('AP_SCRIPTING_SERIALDEVICE_ENABLED', r'AP_Scripting_SerialDevice::init',),
 
             ('AP_NOTIFY_TONEALARM_ENABLED', r'AP_ToneAlarm::init'),
