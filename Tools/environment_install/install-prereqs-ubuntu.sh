@@ -122,6 +122,8 @@ case "${RELEASE_CODENAME}" in
     mantic)   ;&
     bullseye) ;&
     oracular) ;&
+    plucky)   ;&
+    questing) ;&
     _LISTENDA)
         echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
         exit 1
@@ -132,8 +134,6 @@ case "${RELEASE_CODENAME}" in
     forky)    ;&
     jammy)    ;&
     noble)    ;&
-    plucky)   ;&
-    questing) ;&
     resolute) ;&
     _LISTENDB)
         echo "${RELEASE_CODENAME} is supported"
@@ -171,16 +171,6 @@ elif [ ${RELEASE_CODENAME} == 'noble' ]; then
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
-    PYTHON_V="python3"
-    PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'questing' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
-    PYTHON_V="python3"
-    PIP="python3 -m pip"
 elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITLFML_VERSION="3.0"
     SITLCFML_VERSION="3.0"
@@ -241,8 +231,6 @@ if false ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
    [ ${RELEASE_CODENAME} == 'forky' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'plucky' ] ||
-   [ ${RELEASE_CODENAME} == 'questing' ] ||
    [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # on Ubuntu 23.04 Lunar (and presumably later releases), we install in venv, below
@@ -259,8 +247,6 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
        [ ${RELEASE_CODENAME} == 'bookworm' ] ||
        [ ${RELEASE_CODENAME} == 'forky' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'plucky' ] ||
-       [ ${RELEASE_CODENAME} == 'questing' ] ||
        [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
@@ -377,12 +363,6 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   elif [ ${RELEASE_CODENAME} == 'noble' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
-  elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'questing' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
   elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
@@ -411,8 +391,6 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif false ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'plucky' ] ||
-       [ ${RELEASE_CODENAME} == 'questing' ] ||
        [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
       PYTHON_PKGS+=" wxpython opencv-python"
@@ -472,8 +450,6 @@ if false ||
      [ ${RELEASE_CODENAME} == 'trixie' ] ||
      [ ${RELEASE_CODENAME} == 'forky' ] ||
      [ ${RELEASE_CODENAME} == 'noble' ] ||
-     [ ${RELEASE_CODENAME} == 'plucky' ] ||
-     [ ${RELEASE_CODENAME} == 'questing' ] ||
      [ ${RELEASE_CODENAME} == 'resolute' ] ||
      false; then
     $APT_GET install python3-venv
@@ -525,8 +501,6 @@ if false ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
    [ ${RELEASE_CODENAME} == 'forky' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'plucky' ] ||
-   [ ${RELEASE_CODENAME} == 'questing' ] ||
    [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # must do this ahead of wxPython pip3 run :-/
@@ -559,15 +533,6 @@ for PACKAGE in $PYTHON_PKGS; do
         time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
     fi
 done
-
-# somehow Plucky really wants Pillow reinstalled or MAVProxy's map
-# won't load (version mismatch between "Core" and "Pillow")
-if false || \
-        [ ${RELEASE_CODENAME} == 'plucky' ] || \
-        [ ${RELEASE_CODENAME} == 'questing' ] || \
-        false; then
-    $PIP install --force-reinstall pillow
-fi
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1
