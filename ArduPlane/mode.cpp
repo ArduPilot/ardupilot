@@ -26,7 +26,7 @@ void Mode::exit()
 
 bool Mode::enter()
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // reset nav_scripting.enabled
     plane.nav_scripting.enabled = false;
 #endif
@@ -321,7 +321,7 @@ void Mode::output_pilot_throttle()
 // true if throttle min/max limits should be applied
 bool Mode::use_throttle_limits() const
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (plane.nav_scripting_active()) {
         return false;
     }
@@ -353,7 +353,7 @@ bool Mode::use_throttle_limits() const
 // true if voltage correction should be applied to throttle
 bool Mode::use_battery_compensation() const
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (plane.nav_scripting_active()) {
         return false;
     }

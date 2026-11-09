@@ -208,7 +208,7 @@ void Plane::ahrs_update()
         quadplane.pos_control->update_estimates();  
     }
 #endif
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_FOLLOW_ENABLED
         g2.follow.update_estimates();
 #endif
 
@@ -631,7 +631,7 @@ void Plane::update_alt()
 
     update_flight_stage();
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (nav_scripting_active()) {
         // don't call TECS while we are in a trick
         return;
@@ -901,7 +901,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 // set target location (for use by external control and scripting)
 bool Plane::set_target_location(const Location &target_loc)
 {
@@ -919,9 +919,9 @@ bool Plane::set_target_location(const Location &target_loc)
     plane.set_guided_WP(loc);
     return true;
 }
-#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#endif //AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // get target location (for use by scripting)
 bool Plane::get_target_location(Location& target_loc)
 {
@@ -1009,7 +1009,7 @@ bool Plane::set_crosstrack_start(const Location &new_start_location)
     return true;
 }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 // returns true if vehicle is landing.
 bool Plane::is_landing() const
