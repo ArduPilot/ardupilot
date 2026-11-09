@@ -337,7 +337,7 @@ uint32_t RC_Channels::enabled_protocols() const
     return _protocols;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 /*
   implement aux function cache for scripting
  */
@@ -374,7 +374,7 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
         aux_cached.setonoff(aux_idx*2+1, v>>1);
     }
 }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 #if AP_RCMAPPER_ENABLED
 // these methods return an RC_Channel pointers based on values from
