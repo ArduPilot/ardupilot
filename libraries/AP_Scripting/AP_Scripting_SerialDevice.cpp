@@ -4,7 +4,7 @@
 
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
 
 #include "AP_Scripting.h"
 
@@ -158,4 +158,4 @@ bool AP_Scripting_SerialDevice::Port::init_buffers(const uint32_t size_rx, const
     return readbuffer != nullptr && writebuffer != nullptr;
 }
 
-#endif // AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
