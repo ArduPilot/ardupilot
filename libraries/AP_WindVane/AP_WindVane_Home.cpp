@@ -28,7 +28,7 @@ void AP_WindVane_Home::update_direction()
     if (_frontend._direction_type == _frontend.WINDVANE_PWM_PIN) {
         RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::WIND_VANE_DIR_OFSSET);
         if (chan != nullptr) {
-            direction_apparent_ef += chan->norm_input() * radians(45);
+            direction_apparent_ef += chan->norm_input_centered_on_trim() * radians(45);
         }
     }
 
