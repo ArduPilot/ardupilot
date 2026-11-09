@@ -38,10 +38,10 @@ bool AC_WPNav_OA::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, 
 // - destination_ned_m: NED offset from EKF origin in meters.
 // - is_terrain_alt: true if the destination_ned_m is relative to the terrain surface.
 // - Resets OA state on success.
-bool AC_WPNav_OA::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt, float arc_ang_rad)
+bool AC_WPNav_OA::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt, float arc_ang_rad, float arc_axis_rot_rad)
 {
     // Call base implementation to set destination and terrain-altitude flag
-    const bool ret = AC_WPNav::set_wp_destination_NED_m(destination_ned_m, is_terrain_alt, arc_ang_rad);
+    const bool ret = AC_WPNav::set_wp_destination_NED_m(destination_ned_m, is_terrain_alt, arc_ang_rad, arc_axis_rot_rad);
 
     // If destination set successfully, reset OA state to inactive
     if (ret) {

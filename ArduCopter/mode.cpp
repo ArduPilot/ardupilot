@@ -506,6 +506,26 @@ void Copter::update_flight_mode()
 #endif
     attitude_control->landed_gain_reduction(copter.ap.land_complete); // Adjust gains when landed to attenuate ground oscillation
 
+#if AC_POSCONTROL_INVERTED_THRUST_ENABLED && FRAME_CONFIG != HELI_FRAME
+    // inverted thrust is only permitted on a planned path, clear of the ground; any other mode,
+    // and a mode change out of one, releases it at once
+    const bool inverted_thrust_allowed = flightmode->allows_inverted_thrust() && !ap.land_complete && !ap.land_complete_maybe;
+    float inverted_thrust_height_m = 0.0f;
+    if (inverted_thrust_allowed) {
+        // the lowest height estimate there is: a rangefinder reads long at the steep tilts the
+        // regime flies, and height above home says nothing about rising ground
+        inverted_thrust_height_m = current_loc.alt * 0.01f;
+        float height_m;
+        if (current_loc.get_alt_m(Location::AltFrame::ABOVE_TERRAIN, height_m)) {
+            inverted_thrust_height_m = MIN(inverted_thrust_height_m, height_m);
+        }
+        if (get_rangefinder_height_interpolated_m(height_m)) {
+            inverted_thrust_height_m = MIN(inverted_thrust_height_m, height_m);
+        }
+    }
+    pos_control->set_inverted_thrust_allowed(inverted_thrust_allowed, inverted_thrust_height_m);
+#endif
+
     // set ekf reset handling method
     pos_control->set_reset_handling_method(flightmode->move_vehicle_on_ekf_reset() ? AC_PosControl::EKFResetMethod::MoveVehicle : AC_PosControl::EKFResetMethod::MoveTarget);
 
