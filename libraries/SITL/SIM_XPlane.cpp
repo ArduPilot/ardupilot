@@ -127,6 +127,16 @@ XPlane::XPlane(const char *frame_str) :
  */
 void XPlane::add_dref(const char *name, DRefType type, const AP_JSON::value &dref)
 {
+    double channel = 0;
+    if (type != DRefType::FIXED) {
+        // the channel indexes input.servos[] when DRefs are sent
+        channel = dref.get("channel").get<double>();
+        if (channel < 1 || channel > ARRAY_SIZE(sitl_input::servos)) {
+            printf("XPlane: ignoring DRef %s with channel %d, must be 1 to %u\n",
+                   name, int(channel), unsigned(ARRAY_SIZE(sitl_input::servos)));
+            return;
+        }
+    }
     struct DRef *d = NEW_NOTHROW struct DRef;
     if (d == nullptr) {
         AP_HAL::panic("out of memory for DRef %s", name);
@@ -140,7 +150,7 @@ void XPlane::add_dref(const char *name, DRefType type, const AP_JSON::value &dre
         d->fixed_value = dref.get("value").get<double>();
     } else {
         d->range = dref.get("range").get<double>();
-        d->channel = dref.get("channel").get<double>();
+        d->channel = channel;
     }
     // add to linked list
     d->next = drefs;
@@ -152,6 +162,13 @@ void XPlane::add_dref(const char *name, DRefType type, const AP_JSON::value &dre
  */
 void XPlane::add_joyinput(const char *label, JoyType type, const AP_JSON::value &d)
 {
+    // the channel indexes rcin[] when joystick data arrives
+    const double channel = d.get("channel").get<double>();
+    if (channel < 1 || channel > ARRAY_SIZE(rcin)) {
+        printf("XPlane: ignoring %s with channel %d, must be 1 to %u\n",
+               label, int(channel), unsigned(ARRAY_SIZE(rcin)));
+        return;
+    }
     if (strncmp(label, "axis", 4) == 0) {
         struct JoyInput *j = NEW_NOTHROW struct JoyInput;
         if (j == nullptr) {
@@ -159,7 +176,7 @@ void XPlane::add_joyinput(const char *label, JoyType type, const AP_JSON::value 
         }
         j->axis = atoi(label+4);
         j->type = JoyType::AXIS;
-        j->channel = d.get("channel").get<double>();
+        j->channel = channel;
         j->input_min = d.get("input_min").get<double>();
         j->input_max = d.get("input_max").get<double>();
         j->next = joyinputs;
@@ -171,7 +188,7 @@ void XPlane::add_joyinput(const char *label, JoyType type, const AP_JSON::value 
             AP_HAL::panic("out of memory for JoyInput %s", label);
         }
         j->type = JoyType::BUTTON;
-        j->channel = d.get("channel").get<double>();
+        j->channel = channel;
         j->mask = d.get("mask").get<double>();
         j->next = joyinputs;
         joyinputs = j;
