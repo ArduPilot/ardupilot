@@ -1,31 +1,35 @@
-<HTML>
- <HEAD>
-  <TITLE>AP_Bootloader</TITLE>
- </HEAD>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AP_Bootloader</title>
+  <script>
+    function dynamic_load(div_id, uri, period_ms) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', uri);
 
- <script>
-   function dynamic_load(div_id, uri, period_ms) {
-       var xhr = new XMLHttpRequest();
-       xhr.open('GET', uri);
-       
-       xhr.setRequestHeader("Cache-Control", "no-cache, no-store, max-age=0");
-       xhr.setRequestHeader("Expires", "Tue, 01 Jan 1980 1:00:00 GMT");
-       xhr.setRequestHeader("Pragma", "no-cache");
-       
-       xhr.onload = function () {
-           if (xhr.status === 200) {
-               var output = document.getElementById(div_id);
-               if (uri.endsWith('.shtml') || uri.endsWith('.html')) {
-                   output.innerHTML = xhr.responseText;
-               } else {
-                   output.textContent = xhr.responseText;
-               }
-           }
-           setTimeout(function() { dynamic_load(div_id,uri, period_ms); }, period_ms);
-       }
-       xhr.send();
-   }
- </script>
+        xhr.setRequestHeader("Cache-Control", "no-cache, no-store, max-age=0");
+        xhr.setRequestHeader("Expires", "Tue, 01 Jan 1980 1:00:00 GMT");
+        xhr.setRequestHeader("Pragma", "no-cache");
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var output = document.getElementById(div_id);
+                if (uri.endsWith('.shtml') || uri.endsWith('.html')) {
+                    output.innerHTML = xhr.responseText;
+                } else {
+                    output.textContent = xhr.responseText;
+                }
+            }
+            setTimeout(function() { dynamic_load(div_id, uri, period_ms); }, period_ms);
+        };
+        xhr.send();
+    }
+  </script>
+</head>
+
+<body onload="dynamic_load('bootloader_status', '/bootloader_status.html', 100)">
 
 <h1>Bootloader</h1>
 
@@ -44,8 +48,7 @@
 </form>
 
 <hr>
-<body onload="javascript: dynamic_load('bootloader_status','/bootloader_status.html',100)">
 <div id="bootloader_status"></div>
 
- </BODY>
-</HTML>
+</body>
+</html>
