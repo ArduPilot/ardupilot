@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
     // @Param: _SYSID
     // @DisplayName: Follow target's mavlink system id
-    // @Description: Follow target's mavlink system id. Zero means no target has been selected and following is inactive.
+    // @Description: Follow target's mavlink system id. Zero means no target has been selected and following is inactive. Set to this vehicle's own system id to follow the object tracked by an onboard camera (CAMERA_TRACKING_GEO_STATUS).
     // @Range: 0 4294967295
     // @User: Standard
     AP_GROUPINFO("_SYSID", 3, AP_Follow, _sysid, 0),
@@ -553,6 +553,9 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         updated = handle_follow_target_message(msg);
         break;
     }
+    case MAVLINK_MSG_ID_CAMERA_TRACKING_GEO_STATUS:
+        updated = handle_camera_tracking_geo_status_message(msg);
+        break;
     }
 
     if (updated) {
@@ -585,6 +588,11 @@ bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
     // a sender broadcasting as sysid 0 would compare equal to an unset _sysid
     if (msg.sysid == 0) {
         return false;
+    }
+
+    // camera tracking reports are only accepted from this vehicle's own camera
+    if (msg.msgid == MAVLINK_MSG_ID_CAMERA_TRACKING_GEO_STATUS) {
+        return msg.sysid == mavlink_system.sysid && msg.sysid == _sysid;
     }
 
     // skip our own messages
@@ -822,6 +830,45 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     return true;
 }
 
+
+// Decodes a CAMERA_TRACKING_GEO_STATUS MAVLink message (location of the object a camera is tracking).
+bool AP_Follow::handle_camera_tracking_geo_status_message(const mavlink_message_t &msg)
+{
+    mavlink_camera_tracking_geo_status_t packet;
+    mavlink_msg_camera_tracking_geo_status_decode(&msg, &packet);
+
+    const uint8_t status = packet.tracking_status & (CAMERA_TRACKING_STATUS_FLAGS_ACTIVE | CAMERA_TRACKING_STATUS_FLAGS_ERROR);
+    if (status != CAMERA_TRACKING_STATUS_FLAGS_ACTIVE || (packet.lat == 0 && packet.lon == 0) || isnan(packet.alt)) {
+        return false;
+    }
+
+    const Location target_location {packet.lat, packet.lon, int32_t(packet.alt * 100), Location::AltFrame::ABSOLUTE};
+    Vector3p target_pos_neu_m;
+    if (!target_location.get_vector_from_origin_NEU_m(target_pos_neu_m)) {
+        return false;
+    }
+
+    if (!isnan(packet.hdg)) {
+        _target_heading_deg = wrap_360(degrees(packet.hdg));
+    } else if (_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) {
+        return false;
+    }
+    _target_heading_rate_degs = 0.0f;
+
+    _target_pos_ned_m = Vector3p{target_pos_neu_m.x, target_pos_neu_m.y, -target_pos_neu_m.z};
+    _target_vel_ned_ms = Vector3f{packet.vel_n, packet.vel_e, packet.vel_d};
+    for (uint8_t i = 0; i < 3; i++) {
+        if (isnan(_target_vel_ned_ms[i])) {
+            _target_vel_ned_ms[i] = 0.0f;
+        }
+    }
+    _target_accel_ned_mss.zero();
+
+    // message has no timestamp
+    _last_location_update_ms = AP_HAL::millis();
+
+    return true;
+}
 
 //==============================================================================
 // Offset Initialization and Adjustment Functions
