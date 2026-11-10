@@ -169,7 +169,13 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             prefix = subject.split(':', 1)[0].strip()
 
             created = self.created_library_dirs(sha)
-            allowed = subsystems.allowed_subsystems(created)
+            # A removal commit may delete the last file in a library.
+            parent_libraries = self.run_git(
+                ['ls-tree', '-d', '--name-only', f'{sha}^', 'libraries/'],
+                show_output=False,
+            ).splitlines()
+            allowed = subsystems.allowed_subsystems(
+                created | {path.split('/')[1] for path in parent_libraries})
 
             if prefix not in allowed:
                 suggestion = subsystems.suggest_subsystem(prefix, allowed)
