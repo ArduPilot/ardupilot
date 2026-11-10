@@ -145,9 +145,9 @@ TA_GSP_MAX = bind_add_param("GSP_MAX", 10, -1)
 
 --[[
     // @Param: TA_GSP_AIRBRAKE
-    // @DisplayName: Groudspeed Airbrake limt
-    // @Description: This is the limit for triggering airbrake to slow groundspeed as a difference between the airspeed and groundspeed. -1 for disabled.
-    // @Range: -1 -10
+    // @DisplayName: Groundspeed Airbrake limit
+    // @Description: This is the limit for triggering airbrake to slow groundspeed, as a difference between TA_GSP_MAX and the groundspeed. Airbraking is triggered when the groundspeed exceeds TA_GSP_MAX by more than the magnitude of this negative value. 0 for disabled.
+    // @Range: -10 0
     // @Units: m/s
 --]]
 TA_GSP_AIRBRAKE = bind_add_param("GSP_AIRBRAKE", 11, 0)
