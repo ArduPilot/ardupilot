@@ -116,7 +116,7 @@ function update()
 
   -- aux potentiometer for manual adjusting of idle
 
-   local pot_pos = pot_input:norm_input()
+   local pot_pos = pot_input:norm_input_centered_on_trim()
    local thr_man = map(pot_pos,-1,1,0,1)
 
    if armed == false then
