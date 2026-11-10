@@ -378,6 +378,20 @@ void Copter::failsafe_deadreckon_check()
                 return;
             }
 
+            if (flightmode->is_landing() && ((battery.has_failsafed() && battery.get_highest_failsafe_priority() <= FAILSAFE_LAND_PRIORITY))) {
+                // Allow landing to continue when battery failsafe requires it (not a user option)
+                announce_failsafe("Dead Reckoning + Battery", "Continuing Landing");
+                do_failsafe_action(FailsafeAction::LAND, ModeReason::DEADRECKON_FAILSAFE);
+                return;
+            }
+
+            if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING)) {
+                // Allow landing to continue when FS_OPTIONS is set to continue when landing
+                announce_failsafe("Dead Reckoning", "Continuing Landing");
+                do_failsafe_action(FailsafeAction::LAND, ModeReason::DEADRECKON_FAILSAFE);
+                return;
+            }
+
             // take user specified action
             do_failsafe_action((FailsafeAction)g2.failsafe_dr_enable.get(), ModeReason::DEADRECKON_FAILSAFE);
         }
