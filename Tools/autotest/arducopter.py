@@ -14227,6 +14227,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.do_RTL()
 
+    def ModeFollow_with_CAMERA_TRACKING_GEO_STATUS(self):
+        '''test ModeFollow following the object tracked by an onboard camera'''
+        foll_ofs_x = 30 # metres
+        self.set_parameters({
+            "FOLL_ENABLE": 1,
+            "FOLL_SYSID": self.sysid_thismav(),
+            "FOLL_OFS_X": -foll_ofs_x,
+            "FOLL_OFS_TYPE": 1, # relative to target heading
+        })
+        self.takeoff(10, mode="LOITER")
+        self.change_mode("FOLLOW")
+        start_loc = self.get_location()
+        target_loc = self.get_location()
+        self.location_offset_ne(target_loc, 40, 60)
+        expected_loc = copy.copy(target_loc)
+        self.location_offset_ne(expected_loc, -foll_ofs_x, 0)
+
+        m = mavutil.mavlink
+
+        def send_target(sysid=self.sysid_thismav(), compid=m.MAV_COMP_ID_CAMERA, status=m.CAMERA_TRACKING_STATUS_FLAGS_ACTIVE):
+            old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+            try:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = sysid, compid
+                self.mav.mav.camera_tracking_geo_status_send(
+                    status,
+                    int(target_loc.lat * 1e7),
+                    int(target_loc.lng * 1e7),
+                    target_loc.get_alt_m(AltFrame.ABSOLUTE),
+                    1, 1,  # h_acc, v_acc
+                    math.nan, math.nan, math.nan,  # velocity unknown
+                    math.nan,  # vel_acc
+                    math.nan,  # dist
+                    0,  # hdg, radians
+                    math.nan)  # hdg_acc
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+
+        for (foll_sysid, compid, status, why) in (
+                (self.mav.source_system, m.MAV_COMP_ID_CAMERA, m.CAMERA_TRACKING_STATUS_FLAGS_ACTIVE, "from another system"),
+                (self.sysid_thismav(), m.MAV_COMP_ID_CAMERA, m.CAMERA_TRACKING_STATUS_FLAGS_IDLE, "not tracking"),
+        ):
+            self.start_subtest("Target ignored when %s" % why)
+            self.set_parameter("FOLL_SYSID", foll_sysid)
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 10:
+                send_target(foll_sysid, compid, status)
+                self.delay_sim_time(0.5, reason="target to be ignored")
+            self.assert_distance(start_loc, self.get_location(), 0, 3)
+
+        self.start_subtest("Following camera target")
+        self.wait_location(expected_loc, fn=send_target, fn_interval=0.5, accuracy=3, timeout=60)
+        self.do_RTL()
+
     def ModeFollow_with_FOLLOW_TARGET(self):
         '''test ModeFollow passing in FOLLOW_TARGET messages'''
         foll_ofs_x = 30 # metres
@@ -20242,6 +20295,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AutoYawDO_MOUNT_CONTROL,
             self.ParameterChecks,
             self.ModeFollow_with_FOLLOW_TARGET,
+            self.ModeFollow_with_CAMERA_TRACKING_GEO_STATUS,
             self.MAVLinkRangeFinderIDs,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.FenceRelativePreArms,
