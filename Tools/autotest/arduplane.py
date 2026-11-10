@@ -11206,6 +11206,7 @@ return update()
             self.TakeoffLevelOffWind,
             self.MAVFTPBurstMissionDat,
             self.MAVFTPParamPck,
+            self.MAVFTPParamPckZeroSizeRead,
             self.MAVFTPListDirectoryEdgeCases,
             self.MAVFTPListDirectoryLongNames,
             self.MAVFTPCalcFileCRC32,
