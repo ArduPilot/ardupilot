@@ -20,6 +20,7 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
+#include <AP_HAL/Semaphores.h>
 
 #include "stdint.h"
 
@@ -56,6 +57,10 @@ private:
     // run first), so the simulated bus needs no external init() call.
     void init();
     bool initialised;
+
+    // update() runs on the physics thread, but a transfer runs on the
+    // thread making it, which may be a free-running one (e.g. scripting)
+    HAL_Semaphore sem;
 
     int ioctl_rdwr(i2c_rdwr_ioctl_data *data);
 
