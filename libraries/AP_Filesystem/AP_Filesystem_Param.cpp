@@ -335,6 +335,12 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
     }
     size_t header_total = 0;
 
+    if (count == 0) {
+        // nothing to read. This also stops pack_param() being called
+        // before read_size has been set, as it divides by read_size
+        return 0;
+    }
+
     /*
       we only allow for a single read size. This ensures that pad
       bytes placed to avoid a data value crossing a block boundary in
