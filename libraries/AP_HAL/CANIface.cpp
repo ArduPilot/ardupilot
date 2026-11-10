@@ -18,6 +18,8 @@
 #include "CANIface.h"
 #include "system.h"
 
+#include <AP_Common/AP_Common.h>
+
 bool AP_HAL::CANFrame::priorityHigherThan(const CANFrame& rhs) const
 {
     const uint32_t clean_id     = id     & MaskExtID;
