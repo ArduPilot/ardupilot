@@ -6,7 +6,7 @@
 
 #if AP_EXTERNAL_BINDING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
 
-#include "AP_Scripting.h"
+#include "AP_Scripting_SerialDevice.h"
 
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
