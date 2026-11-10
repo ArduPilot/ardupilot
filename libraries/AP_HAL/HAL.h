@@ -17,6 +17,7 @@ class AP_Param;
 #include "DSP.h"
 #include "CANIface.h"
 
+#include <AP_Common/AP_Common.h>
 
 class AP_HAL::HAL {
 public:
