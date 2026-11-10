@@ -305,7 +305,9 @@ bool ModeGuided::get_desired_location(Location& destination) const
 }
 
 // set desired location
-bool ModeGuided::set_desired_location(const Location &destination, Location next_destination)
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+// next_arc_rad specifies the same for the following segment (0 if straight or unknown)
+bool ModeGuided::set_desired_location(const Location &destination, Location next_destination, float arc_rad, float next_arc_rad)
 {
 #if AP_FENCE_ENABLED
     // reject destination outside the fence
@@ -317,7 +319,7 @@ bool ModeGuided::set_desired_location(const Location &destination, Location next
 
     if (use_scurves_for_navigation()) {
         // use scurves for navigation
-        if (!g2.wp_nav.set_desired_location(destination, next_destination)) {
+        if (!g2.wp_nav.set_desired_location(destination, next_destination, arc_rad, next_arc_rad)) {
             return false;
         }
     } else {
