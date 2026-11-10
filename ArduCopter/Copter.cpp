@@ -969,3 +969,26 @@ Copter copter;
 AP_Vehicle& vehicle = copter;
 
 AP_HAL_MAIN_CALLBACKS(&copter);
+void Copter::save_trim()
+{
+    float roll_trim_rad = 0.0;
+    float pitch_trim_rad = 0.0;
+
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    if (ahrs_trimming.running) {
+        ahrs_trimming.running = false;
+    } else {
+#endif
+
+    // get roll and pitch trim adjustment
+    copter.flightmode->get_pilot_desired_lean_angles_rad(roll_trim_rad, pitch_trim_rad, copter.attitude_control->lean_angle_max_rad(), copter.attitude_control->get_althold_lean_angle_max_rad());
+
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    }
+#endif
+
+    // save roll and pitch trim
+    AP::ahrs().add_trim(roll_trim_rad, pitch_trim_rad);
+    LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
+    copter.gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
+}

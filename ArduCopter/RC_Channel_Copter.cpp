@@ -226,7 +226,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             if ((ch_flag == AuxSwitchPos::HIGH) &&
                 (copter.flightmode->allows_save_trim()) &&
                 (copter.channel_throttle->get_control_in() == 0)) {
-                copter.ahrs_trimming.save_trim();
+                copter.save_trim();
             }
             break;
 
@@ -731,30 +731,6 @@ void RC_Channel_Copter::do_aux_function_change_force_flying(const AuxSwitchPos c
 }
 
 // save_trim - adds roll and pitch trims from the radio to ahrs
-void Copter::AHRSTrimming::save_trim()
-{
-    float roll_trim_rad = 0.0;
-    float pitch_trim_rad = 0.0;
-
-#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
-    if (running) {
-        running = false;
-    } else {
-#endif
-
-    // get roll and pitch trim adjustment
-    copter.flightmode->get_pilot_desired_lean_angles_rad(roll_trim_rad, pitch_trim_rad, copter.attitude_control->lean_angle_max_rad(), copter.attitude_control->get_althold_lean_angle_max_rad());
-
-#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
-    }
-#endif
-
-    // save roll and pitch trim
-    AP::ahrs().add_trim(roll_trim_rad, pitch_trim_rad);
-    LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
-    copter.gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
-}
-
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
 
 void Copter::AHRSTrimming::auto_start()
@@ -773,7 +749,7 @@ void Copter::AHRSTrimming::auto_stop()
 {
     if (running) {
         AP_Notify::flags.save_trim = false;
-        save_trim();
+        copter.save_trim();
     }
 }
 

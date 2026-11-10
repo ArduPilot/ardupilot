@@ -768,7 +768,7 @@ private:
         void auto_cancel();
         bool running;
 #endif  // AP_COPTER_AHRS_AUTO_TRIM_ENABLED
-        void save_trim();
+       
     } ahrs_trimming;
 
     // avoidance.cpp
@@ -780,6 +780,7 @@ private:
 #endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 
     // baro_ground_effect.cpp
+     void save_trim();
 #if AP_GROUNDEFFECT_ENABLED
     void update_ground_effect_detector(void);
 #endif
