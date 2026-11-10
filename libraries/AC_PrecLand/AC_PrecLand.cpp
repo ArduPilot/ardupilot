@@ -123,7 +123,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Precision Landing sensor lag
     // @Description: Precision Landing sensor lag, to cope with variable landing_target latency
     // @Range: 0.02 0.250
-    // @Increment: 1
+    // @Increment: 0.001
     // @Units: s
     // @User: Advanced
     // @RebootRequired: True
