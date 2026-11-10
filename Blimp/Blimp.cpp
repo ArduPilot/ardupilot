@@ -211,6 +211,9 @@ void Blimp::one_hz_loop()
 
     AP_Notify::flags.flying = !ap.land_complete;
 
+    // tell AHRS flying state
+    set_likely_flying(arming.is_armed_and_safety_off());
+
     loiter->pid_vel_x.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
     loiter->pid_vel_y.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
     loiter->pid_vel_z.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
