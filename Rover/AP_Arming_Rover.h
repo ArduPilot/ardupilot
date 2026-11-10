@@ -31,5 +31,6 @@ protected:
     bool parameter_checks(bool report);
     bool mode_checks(bool report);
     bool motor_checks(bool report);
+    bool mission_arc_checks(bool report);
 
 };
