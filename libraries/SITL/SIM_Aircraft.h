@@ -254,8 +254,10 @@ protected:
 
     uint32_t motor_mask;
     float rpm[32];
+
+    static constexpr uint8_t MAX_SIM_RCIN_CHANNELS = 12;
     uint8_t rcin_chan_count;
-    float rcin[12];
+    float rcin[MAX_SIM_RCIN_CHANNELS];
 
     virtual float rangefinder_beam_width() const { return 0; }
     virtual float perpendicular_distance_to_rangefinder_surface() const;
