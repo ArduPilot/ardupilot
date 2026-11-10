@@ -7190,20 +7190,25 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         finally:
             self.mav.mav.srcSystem = original_source
             self.mav.mav.srcComponent = original_component
-        self.delay_sim_time(3, reason="flush STATUSTEXT log records")
-        log = self.dfreader_for_current_onboard_log()
-        messages = {}
-        while True:
-            record = log.recv_match(type='MSG')
-            if record is None:
-                break
-            if record.Seq == 0:
-                messages[record.ID] = record.Message
-            elif record.ID in messages:
-                messages[record.ID] += record.Message
-        for message in expected:
-            if message not in messages.values():
-                raise NotAchievedException("Missing logged message (%u bytes): %.80s..." % (len(message), message))
+
+        def every_message_logged(log):
+            messages = {}
+            while True:
+                record = log.recv_match(type='MSG')
+                if record is None:
+                    break
+                if record.Seq == 0:
+                    messages[record.ID] = record.Message
+                elif record.ID in messages:
+                    messages[record.ID] += record.Message
+            missing = [m for m in expected if m not in messages.values()]
+            if missing:
+                self.progress("%u of %u MSG records not in the log yet, first missing "
+                              "(%u bytes): %.60s" %
+                              (len(missing), len(expected), len(missing[0]), missing[0]))
+            return not missing
+
+        self.wait_current_onboard_log(every_message_logged, "every logged STATUSTEXT")
 
     def MAVLinkTimesyncRTT(self):
         """Request cookies must not contribute to RTT, even across ID changes."""
