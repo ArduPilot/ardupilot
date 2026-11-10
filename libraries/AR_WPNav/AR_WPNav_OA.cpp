@@ -151,9 +151,11 @@ void AR_WPNav_OA::update(float dt)
 
 // set desired location and (optionally) next_destination
 // next_destination should be provided if known to allow smooth cornering
-bool AR_WPNav_OA::set_desired_location(const Location& destination, Location next_destination)
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+// next_arc_rad specifies the same for the following segment (0 if straight or unknown)
+bool AR_WPNav_OA::set_desired_location(const Location& destination, Location next_destination, float arc_rad, float next_arc_rad)
 {
-    const bool ret = AR_WPNav::set_desired_location(destination, next_destination);
+    const bool ret = AR_WPNav::set_desired_location(destination, next_destination, arc_rad, next_arc_rad);
 
     if (ret) {
         // disable object avoidance, it will be re-enabled (if necessary) on next update
