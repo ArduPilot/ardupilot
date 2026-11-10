@@ -147,6 +147,7 @@ class Alias:
     num_args: int = 0
     num_returns: int = 0
     dependency: Optional[str] = None
+    deprecate: Optional[str] = None
 
 
 @dataclass
