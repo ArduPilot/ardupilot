@@ -2399,8 +2399,22 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         if disable_airspeed_sensor:
             max_allowed_divergence = 300
+            # the dead-reckoning excursion, and the tail of it while the EKF
+            # withholds the GPS it has got back, is the one quantity here which
+            # is legitimately large, and it depends on where in its orbit the
+            # vehicle was when GPS went away: measured between 95m and 300.1m
+            # over 171 runs, so 300 rejects a good flight about once in a
+            # hundred.  Its own limit, with room above what has been seen:
+            max_allowed_divergence_dead_reckoning = 400
         else:
             max_allowed_divergence = 150
+            max_allowed_divergence_dead_reckoning = 150
+        # while the GPS is being jammed the EKF is refusing to use it and
+        # navigating on its own, so the position the vehicle publishes
+        # should stay close to the truth.  Bounding that phase by the
+        # dead-reckoning figure above would hide a position glitch of
+        # hundreds of metres, which is what this test exists to catch:
+        max_allowed_divergence_jamming = 50
         # sample the published position as fast as the link allows; a
         # position glitch can last a single AHRS cycle, which the default
         # 10Hz GLOBAL_POSITION_INT rate usually steps over.  0.8*loop rate
@@ -2408,7 +2422,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         fast_rate_hz = int(0.8 * self.get_parameter("SCHED_LOOP_RATE"))
         self.set_message_rate_hz('GLOBAL_POSITION_INT', fast_rate_hz)
         self.set_message_rate_hz('SIMSTATE', fast_rate_hz)
-        self.install_message_hook_context(vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(self, max_allowed_divergence=max_allowed_divergence))  # noqa
+        validator = vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(self, max_allowed_divergence=max_allowed_divergence, phase="flying with GPS")  # noqa
+        self.install_message_hook_context(validator)
 
         try:
             # wind is from the West:
@@ -2438,6 +2453,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.delay_sim_time(180, reason="wind learning without airspeed sensor")
             else:
                 self.delay_sim_time(20, reason="wind learning in orbit")
+            validator.set_phase("dead reckoning without GPS", max_allowed_divergence_dead_reckoning)
             self.set_parameter("SIM_GPS1_ENABLE", 0)
             self.progress("Continue orbit without GPS")
             self.delay_sim_time(20, reason="dead reckoning data collection")
@@ -2445,6 +2461,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.wait_distance_to_home(100, 200, timeout=200)
             # go into LOITER to create additional time for a GPS re-enable test
             self.change_mode("LOITER")
+            validator.set_phase("recovering from GPS loss", max_allowed_divergence_dead_reckoning)
             self.set_parameter("SIM_GPS1_ENABLE", 1)
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
@@ -2455,12 +2472,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # wait for EKF and vehicle position to stabilise, then test response to jamming
             self.delay_sim_time(20, reason="EKF and position to stabilise")
 
+            validator.set_phase("the GPS is jammed", max_allowed_divergence_jamming)
             self.set_parameters({
                 "AHRS_OPTIONS": 1,
                 "SIM_GPS1_JAM": 1,
             })
             self.delay_sim_time(13, reason="GPS jamming simulation")
             self.set_parameter("SIM_GPS1_JAM", 0)
+            validator.set_phase("recovering from GPS jamming", max_allowed_divergence)
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
             # to prevent bad GPS being used when coming back after loss of lock due to interence.

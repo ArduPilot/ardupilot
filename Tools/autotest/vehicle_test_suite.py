@@ -4252,7 +4252,7 @@ class TestSuite(abc.ABC):
     class ValidateIntPositionAgainstSimState(MessageHook):
         '''monitors a message containing a position containing lat/lng in 1e7,
         makes sure it stays close to SIMSTATE'''
-        def __init__(self, suite, other_int_message_name, max_allowed_divergence=150):
+        def __init__(self, suite, other_int_message_name, max_allowed_divergence=150, phase=None):
             super(TestSuite.ValidateIntPositionAgainstSimState, self).__init__(suite)
             self.other_int_message_name = other_int_message_name
             self.max_allowed_divergence = max_allowed_divergence
@@ -4261,6 +4261,26 @@ class TestSuite(abc.ABC):
             self.simstate = None
             self.last_print = 0
             self.min_print_interval = 1  # seconds
+            self.phase = phase
+            self.phase_max_divergence = 0
+
+        def set_phase(self, phase, max_allowed_divergence):
+            '''name the phase of flight now being measured, and bound its
+            divergence.  How far the published position may legitimately be
+            from the truth is not one number for a whole flight: dead
+            reckoning accumulates hundreds of metres where flight on a
+            healthy GPS stays within a few, so a single limit covering both
+            either passes a bad position or fails a good one.'''
+            self.report_phase()
+            self.phase = phase
+            self.phase_max_divergence = 0
+            self.max_allowed_divergence = max_allowed_divergence
+
+        def report_phase(self):
+            if self.phase is None:
+                return
+            self.progress(f"Maximum divergence while {self.phase} was "
+                          f"{self.phase_max_divergence}m (max={self.max_allowed_divergence}m)")
 
         def progress_prefix(self) -> str:
             return "VIPASS: "
@@ -4282,13 +4302,19 @@ class TestSuite(abc.ABC):
                 self.last_print = time.monotonic()
             if divergence > self.max_divergence:
                 self.max_divergence = divergence
+            if divergence > self.phase_max_divergence:
+                self.phase_max_divergence = divergence
             if divergence > self.max_allowed_divergence:
                 raise NotAchievedException(
-                    "%s diverged from simstate by %fm (max=%fm" %
-                    (self.other_int_message_name, divergence, self.max_allowed_divergence,))
+                    "%s diverged from simstate by %fm while %s (max=%fm)" %
+                    (self.other_int_message_name,
+                     divergence,
+                     self.phase if self.phase is not None else "flying",
+                     self.max_allowed_divergence))
 
         def hook_removed(self):
-            self.progress(f"Maximum divergence was {self.max_divergence}m (max={self.max_allowed_divergence}m)")
+            self.report_phase()
+            self.progress(f"Maximum divergence was {self.max_divergence}m")
 
     def wait_simstate_divergence_below(self, maximum, minimum_duration=0, timeout=60):
         """wait for the EKF's reported position to agree with the simulator's
