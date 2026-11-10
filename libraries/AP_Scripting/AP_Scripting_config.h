@@ -4,6 +4,10 @@
 #include <AP_SerialManager/AP_SerialManager_config.h>
 #include <AP_Vehicle/AP_Vehicle_config.h>
 
+#ifdef AP_SCRIPTING_ENABLED
+#error AP_SCRIPTING_ENABLED has been renamed to AP_SCRIPTING_LUA_ENABLED
+#endif
+
 #ifndef AP_SCRIPTING_LUA_ENABLED
 #define AP_SCRIPTING_LUA_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
@@ -12,11 +16,15 @@
 #define AP_EXTERNAL_BINDING_ENABLED AP_SCRIPTING_LUA_ENABLED
 #endif
 
+#if AP_SCRIPTING_LUA_ENABLED && !AP_EXTERNAL_BINDING_ENABLED
+#error Lua scripting requires AP_EXTERNAL_BINDING_ENABLED
+#endif
+
 #ifndef AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED
 #define AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED 0
 #endif
 
-#if AP_EXTERNAL_BINDING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     #include <AP_Filesystem/AP_Filesystem_config.h>
     // enumerate all of the possible places we can read a script from.
     #if !AP_FILESYSTEM_POSIX_ENABLED && !AP_FILESYSTEM_FATFS_ENABLED && !AP_FILESYSTEM_ESP32_ENABLED && !AP_FILESYSTEM_ROMFS_ENABLED && !AP_FILESYSTEM_LITTLEFS_ENABLED
