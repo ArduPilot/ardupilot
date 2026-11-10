@@ -6,6 +6,7 @@ from model import OPERATORS
 from model import OUTPUT_ARGUMENT_BASE
 from model import BindingError
 from model import ErrorCode
+from model import sanitize
 from templates import guarded
 
 # Lua extraction functions and the limits imposed by the destination C++ type.
@@ -280,10 +281,24 @@ class CppGenerator:
             functions.append(self.render('function.cpp', name=f'{obj.identifier}_{name}', body=body) + '\n')
         return guarded(''.join(functions), obj.dependency)
 
+    def deprecated_alias(self, obj, alias):
+        # the alias shares the method's binding, so wrap it to warn under the alias name
+        method = next(method for method in obj.methods if method.name == alias.name)
+        body = self.render('deprecation.cpp', object_name=obj.lua_name,
+                           method_name=alias.lua_name, message=alias.deprecate) + '\n'
+        body += f'    return {obj.identifier}_{method.identifier}(L);\n'
+        text = self.render('function.cpp', name=self.deprecated_alias_function(obj, alias), body=body)
+        return guarded(guarded(text, method.dependency), obj.dependency) + '\n'
+
+    def deprecated_alias_function(self, obj, alias):
+        return f'{obj.identifier}_{sanitize(alias.lua_name)}_deprecated'
+
     def methods(self, objects):
         text = ''
         for obj in objects:
             text += ''.join(self.method(obj, method) for method in obj.methods)
+            text += ''.join(self.deprecated_alias(obj, alias) for alias in obj.aliases
+                            if alias.kind == 'alias' and alias.deprecate is not None)
             if obj.has_operators:
                 text += self.operators(obj)
         return text
@@ -303,7 +318,12 @@ class CppGenerator:
             if alias.kind == 'manual_operator':
                 entries.append(guarded('', alias.dependency))
                 continue
-            function = alias.name if alias.kind == 'manual' else f'{obj.identifier}_{alias.name}'
+            if alias.kind == 'manual':
+                function = alias.name
+            elif alias.deprecate is not None:
+                function = self.deprecated_alias_function(obj, alias)
+            else:
+                function = f'{obj.identifier}_{alias.name}'
             entries.append(self.entry(alias.lua_name, function, alias.dependency))
         text = self.table('luaL_Reg', f'{obj.identifier}_meta', entries)
         if obj.has_operators:
