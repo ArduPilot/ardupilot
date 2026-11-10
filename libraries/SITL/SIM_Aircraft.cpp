@@ -425,9 +425,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.battery_current = battery_current;
     fdm.motor_mask = motor_mask | sitl->vibe_motor_mask;
     memcpy(fdm.rpm, rpm, sizeof(fdm.rpm));
-    fdm.rcin_chan_count = rcin_chan_count;
+    fdm.rcin_chan_count = MIN(rcin_chan_count, ARRAY_SIZE(fdm.rcin));
     fdm.range = rangefinder_range();
-    memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
+    memcpy(fdm.rcin, rcin, fdm.rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
     fdm.bodyMagField.rotate(sitl->imu_orientation);
