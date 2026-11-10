@@ -18,6 +18,9 @@ protected:
 
     void update(const class Aircraft &aircraft) override;
 
+    // the device must leave its COLD state before it accepts commands
+    bool update_from_power_on() const override { return true; }
+
 private:
 
     // float pressure;
