@@ -257,6 +257,7 @@ public:
     };
 
     // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW support
+    // angles and rates of INT8_MIN or INT16_MIN mean NaN (not used)
     struct PACKED gimbal_manager_pitchyaw_Command {
         int8_t pitch_angle_deg;
         int16_t yaw_angle_deg;
