@@ -1370,6 +1370,7 @@ enum LogMessages : uint8_t {
     LOG_RCOUT3_MSG,
     LOG_IDS_FROM_FENCE,
     LOG_IDS_FROM_HAL,
+    LOG_IDS_FROM_ESC_TELEM_EXTENDED,
 
     _LOG_LAST_MSG_
 };
