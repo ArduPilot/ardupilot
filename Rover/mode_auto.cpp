@@ -307,10 +307,12 @@ bool ModeAuto::get_desired_location(Location& destination) const
 }
 
 // set desired location to drive to
-bool ModeAuto::set_desired_location(const Location &destination, Location next_destination)
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+// next_arc_rad specifies the same for the following segment (0 if straight or unknown)
+bool ModeAuto::set_desired_location(const Location &destination, Location next_destination, float arc_rad, float next_arc_rad)
 {
     // call parent
-    if (!Mode::set_desired_location(destination, next_destination)) {
+    if (!Mode::set_desired_location(destination, next_destination, arc_rad, next_arc_rad)) {
         return false;
     }
 
@@ -514,6 +516,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
+    case MAV_CMD_NAV_ARC_WAYPOINT:  // Navigate to Waypoint along an arc
         return do_nav_wp(cmd, false);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
@@ -659,6 +662,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_ARC_WAYPOINT:
         return verify_nav_wp(cmd);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
@@ -729,8 +733,10 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     Location cmdloc = cmd.content.location;
     cmdloc.sanitize(rover.current_loc);
 
-    // delayed stored in p1 in seconds
-    loiter_duration = ((int16_t) cmd.p1 < 0) ? 0 : cmd.p1;
+    const float arc_rad = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) ? cmd.get_arc_angle_rad() : 0.0f;
+
+    // delay stored in p1 in seconds; an arc waypoint's p1 holds the arc angle instead, so it never loiters
+    loiter_duration = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT || (int16_t)cmd.p1 < 0) ? 0 : (uint16_t)cmd.p1;
     loiter_start_time = 0;
     if (loiter_duration > 0) {
         always_stop_at_destination = true;
@@ -740,14 +746,15 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     AP_Mission::Mission_Command next_cmd;
     if (always_stop_at_destination || !mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
         // single destination
-        if (!set_desired_location(cmdloc)) {
+        if (!set_desired_location(cmdloc, Location(), arc_rad)) {
             return false;
         }
     } else {
         // retrieve and sanitize next destination location
         Location next_cmdloc = next_cmd.content.location;
         next_cmdloc.sanitize(cmdloc);
-        if (!set_desired_location(cmdloc, next_cmdloc)) {
+        const float next_arc_rad = (next_cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) ? next_cmd.get_arc_angle_rad() : 0.0f;
+        if (!set_desired_location(cmdloc, next_cmdloc, arc_rad, next_arc_rad)) {
             return false;
         }
     }
