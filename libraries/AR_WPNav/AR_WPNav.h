@@ -124,7 +124,7 @@ protected:
     void update_steering_and_speed(const Location &current_loc, float dt);
 
     // calculate the crosstrack error
-    // value is negative when the vehicle is on the path's left side
+    // value is positive when the vehicle is on the path's left side
     float calc_crosstrack_error(const Location& current_loc) const;
 
     // calculate yaw change at next waypoint in degrees
@@ -196,7 +196,7 @@ protected:
     float _desired_lat_accel;       // desired lateral acceleration (for reporting only)
     float _desired_heading_cd;      // desired heading (back towards line between origin and destination)
     float _wp_bearing_cd;           // heading to waypoint in centi-degrees
-    float _cross_track_error;       // meters, negative when vehicle is on path's left side
+    float _cross_track_error;       // meters, positive when vehicle is on path's left side
 
     // variables for reporting
     float _distance_to_destination; // straight-line distance from vehicle to final destination in meters
