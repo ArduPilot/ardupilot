@@ -7597,6 +7597,22 @@ void GCS::passthru_timer(void)
         _passthru.port2->configure_parity_locked(0, lock_key);
     }
 
+    // a change from another user, such as RC input's protocol search, that
+    // was already under way when the ports were locked can still land after
+    // the setup above, so put back the options and stop bits if it has
+    if (_passthru.port1->get_options() != _passthru.options1) {
+        _passthru.port1->set_options_locked(_passthru.options1, lock_key);
+    }
+    if (_passthru.port2->get_options() != _passthru.options2) {
+        _passthru.port2->set_options_locked(_passthru.options2, lock_key);
+    }
+    if (_passthru.port1->get_stop_bits() != 1) {
+        _passthru.port1->set_stop_bits_locked(1, lock_key);
+    }
+    if (_passthru.port2->get_stop_bits() != 1) {
+        _passthru.port2->set_stop_bits_locked(1, lock_key);
+    }
+
     // Check for requested Baud rates and parity over USB
     uint32_t baud = _passthru.port1->get_usb_baud();
     uint8_t parity = _passthru.port1->get_usb_parity();
