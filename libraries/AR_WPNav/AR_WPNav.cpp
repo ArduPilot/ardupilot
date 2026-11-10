@@ -254,7 +254,7 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
                                          _pos_control.get_speed_max(),  // speed down (not used)
                                          _pos_control.get_accel_max(),  // forward back acceleration
                                          _pos_control.get_accel_max(),  // vertical accel (not used)
-                                         _pos_control.get_accel_max(),  // corner acceleration
+                                         _pos_control.get_lat_accel_max(),  // corner acceleration
                                          AR_WPNAV_SNAP_MAX,             // snap
                                          _pos_control.get_jerk_max());
     }
@@ -283,7 +283,7 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
                                              _pos_control.get_speed_max(),  // speed down (not used)
                                              _pos_control.get_accel_max(),  // forward back acceleration
                                              _pos_control.get_accel_max(),  // vertical accel (not used)
-                                             _pos_control.get_accel_max(),  // corner accel
+                                             _pos_control.get_lat_accel_max(),  // corner accel
                                              AR_WPNAV_SNAP_MAX,             // snap
                                              _pos_control.get_jerk_max());
 
