@@ -393,6 +393,7 @@ class HWDef:
     def get_stale_defines(self):
         '''returns a map with a stale define and a comment as to what to do about it'''
         return {
+            'AP_SCRIPTING_ENABLED': 'AP_SCRIPTING_ENABLED was renamed to AP_SCRIPTING_LUA_ENABLED; fix your hwdef file',
             'ALLOW_ARM_NO_COMPASS': 'ALLOW_ARM_NO_COMPASS is no longer used; remove it from your hwdef (use ARMING_SKIPCHK to skip compass checks)',  # noqa:E501
             'HAL_COMPASS_DEFAULT': 'HAL_COMPASS_DEFAULT is no longer used; remove it from your hwdef',
             'HAL_NO_GCS': 'HAL_NO_GCS is no longer used; try "define HAL_GCS_ENABLED 0"',
