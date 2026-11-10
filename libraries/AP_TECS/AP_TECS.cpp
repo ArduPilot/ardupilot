@@ -1553,7 +1553,8 @@ void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
     if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF
         || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)
     {
-        _PITCHminf = cd_to_rad(ptchMinCO_cd);
+        // centidegrees to degrees (converted to radians below)
+        _PITCHminf = 0.01f * ptchMinCO_cd;
     }
 
     // Apply external limits.
