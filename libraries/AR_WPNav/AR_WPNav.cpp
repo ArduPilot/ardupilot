@@ -535,7 +535,7 @@ void AR_WPNav::set_turn_params(float turn_radius, bool pivot_possible)
 }
 
 // calculate the crosstrack error
-// value is negative when the vehicle is on the path's left side
+// value is positive when the vehicle is on the path's left side
 float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
 {
     if (!_orig_and_dest_valid) {
