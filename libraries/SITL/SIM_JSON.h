@@ -93,6 +93,7 @@ private:
         BOOLEAN,
     };
 
+    static constexpr uint8_t MAX_SIM_JSON_RCIN_CHANNELS = 12;
     struct {
         double timestamp_s;
         double latitude;
@@ -108,7 +109,7 @@ private:
         Vector3f velocity;
         Vector3f velocity_wind;
         float rng[6];
-        float rc[12];
+        float rc[MAX_SIM_JSON_RCIN_CHANNELS];
         float bat_volt;
         float bat_amp;
         struct {
