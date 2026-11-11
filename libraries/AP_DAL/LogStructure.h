@@ -92,6 +92,8 @@ struct log_RFRF {
 // @FieldValueEnum: EKT: AP_DAL::EKFType
 // @Field: Flags: bitmask of boolean state
 // @FieldBitmaskEnum: Flags: AP_DAL::RFRNFlags
+// @Field: Flags2: more bitmask boolean state
+// @FieldBitmaskEnum: Flags2: AP_DAL::RFRNFlags2
 struct log_RFRN {
     int32_t lat;
     int32_t lng;
@@ -109,6 +111,7 @@ struct log_RFRN {
     uint8_t wheelencoder_enabled:1;
     uint8_t takeoff_expected:1;
     uint8_t touchdown_expected:1;
+    uint8_t vehicle_landed:1;
     uint8_t _end;
 };
 
@@ -646,7 +649,7 @@ struct log_RTER {
     { LOG_RFRF_MSG, RLOG_SIZE(RFRF),                          \
       "RFRF", "BB", "FTypes,Slow", "--", "--" }, \
     { LOG_RFRN_MSG, RLOG_SIZE(RFRN),                            \
-      "RFRN", "IIIfIfffBBB", "HLat,HLon,HAlt,E2T,AM,TX,TY,TZ,VC,EKT,Flags", "DUm-bddd---", "GGB--------" }, \
+      "RFRN", "IIIfIfffBBBB", "HLat,HLon,HAlt,E2T,AM,TX,TY,TZ,VC,EKT,Flags,Flags2", "DUm-bddd----", "GGB---------" }, \
     { LOG_REV2_MSG, RLOG_SIZE(REV2),                                   \
       "REV2", "B", "Event", "-", "-" }, \
     { LOG_RSO2_MSG, RLOG_SIZE(RSO2),                         \
