@@ -4982,7 +4982,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                       target_system=target_system,
                                       target_component=target_component)
         # FIXME: we don't get within WP_RADIUS of our target?!
-        self.wait_location(target_loc, timeout=300, accuracy=15)
+        self.wait_location(target_loc, height_accuracy=None, timeout=300, accuracy=15)
         self.do_RTL(timeout=300)
         self.disarm_vehicle()
 
@@ -5010,7 +5010,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                       target_system=target_system,
                                       target_component=target_component)
         # FIXME: we don't get within WP_RADIUS of our target?!
-        self.wait_location(target_loc, timeout=300, accuracy=15)
+        self.wait_location(target_loc, height_accuracy=None, timeout=300, accuracy=15)
         self.do_RTL(timeout=300)
         self.disarm_vehicle()
 
@@ -5037,7 +5037,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         target_loc = Location(40.071260, -105.227000, 1584, AltFrame.ABSOLUTE)
         # target_loc is copied from the mission file
-        self.wait_location(target_loc, timeout=300)
+        self.wait_location(target_loc, height_accuracy=None, timeout=300)
         # mission has RTL as last item
         self.wait_distance_to_home(3, 7, timeout=300)
         self.disarm_vehicle()
