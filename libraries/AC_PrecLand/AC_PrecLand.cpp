@@ -258,6 +258,10 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
     // init as target TARGET_NEVER_SEEN, we will update this later
     _current_target_state = TargetState::TARGET_NEVER_SEEN;
 
+    // init cone state to inside (assumes vehicle starts positioned correctly before landing)
+    _current_cone_state = ConeState::CONE_INSIDE;
+    _last_cone_status_change_ms = 0;
+
     // default health to false
     _backend = nullptr;
     _backend_state.healthy = false;
@@ -409,6 +413,39 @@ void AC_PrecLand::check_target_status(float rangefinder_alt_m, bool rangefinder_
             }
         }
     }
+}
+
+// Check the status of the landing cone (cone breach detection)
+void AC_PrecLand::check_cone_status(float horizontal_error_m, float height_above_target_m)
+{
+    if (!cone_enabled()) {
+        // cone checking is disabled
+        return;
+    }
+
+    // Determine if vehicle is within the landing cone
+    const bool currently_inside_cone = is_within_landing_cone(horizontal_error_m, height_above_target_m);
+
+    // Check if there's a state transition
+    if (currently_inside_cone && _current_cone_state == ConeState::CONE_OUTSIDE) {
+        // Transitioned from outside to inside
+        _current_cone_state = ConeState::CONE_INSIDE;
+        _last_cone_status_change_ms = AP_HAL::millis();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PrecLand: Recommencing descent");
+    } else if (!currently_inside_cone && _current_cone_state == ConeState::CONE_INSIDE) {
+        // Transitioned from inside to outside
+        _current_cone_state = ConeState::CONE_OUTSIDE;
+        _last_cone_status_change_ms = AP_HAL::millis();
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PrecLand: Cone radius breached");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PrecLand: Descent paused");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PrecLand: Re-centering");
+    }
+}
+
+// Public wrapper for updating cone status (should be called from landing mode)
+void AC_PrecLand::update_cone_status(float horizontal_error_m, float height_above_target_m)
+{
+    check_cone_status(horizontal_error_m, height_above_target_m);
 }
 
 // Check if the landing target is supposed to be in sight based on the height of the vehicle from the ground

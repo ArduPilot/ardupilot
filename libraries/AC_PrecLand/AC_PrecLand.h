@@ -58,6 +58,8 @@ public:
     // vehicle has to be closer than this many m's to the target before descending towards target
     float get_max_xy_error_before_descending_m() const { return _xy_max_dist_desc_m; }
 
+    bool cone_enabled() const { return _cone_enabled.get() != 0; }
+
     bool is_within_landing_cone(float horizontal_error_m, float height_above_target_m) const;
 
     // returns orientation of sensor
@@ -98,11 +100,24 @@ public:
         TARGET_FOUND
     };
 
+    // State of the Landing Cone
+    enum class ConeState: uint8_t {
+        CONE_INSIDE = 0,         // Vehicle is inside landing cone
+        CONE_OUTSIDE             // Vehicle is outside landing cone
+    };
+
     // return the last time PrecLand library had a output of the landing target position
     uint32_t get_last_valid_target_ms() const { return _last_valid_target_ms; }
 
     // return the current state of the location of the target
     TargetState get_target_state() const { return _current_target_state; }
+
+    // return the current state of the landing cone
+    ConeState get_cone_state() const { return _current_cone_state; }
+
+    // update cone status based on current position relative to target
+    // should be called from landing mode to track cone breaches
+    void update_cone_status(float horizontal_error_m, float height_above_target_m);
 
     // return the last known landing position in Earth Frame NED meters.
     void get_last_detected_landing_pos_NED_m(Vector3p &pos) const { pos = _last_target_pos_rel_origin_ned_m; }
@@ -180,6 +195,9 @@ private:
     // check the status of the target
     void check_target_status(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
+    // check the status of the landing cone (cone breach detection)
+    void check_cone_status(float horizontal_error_m, float height_above_target_m);
+
     // Check if the landing target is supposed to be in sight based on the height of the vehicle from the ground
     // This needs a valid rangefinder to work, if the min/max parameters are non zero
     bool check_if_sensor_in_range(float rangefinder_alt_m, bool rangefinder_alt_valid) const;
@@ -253,6 +271,10 @@ private:
     bool                        _target_yaw_valid;          // true if target yaw has been set from a valid quaternion
 
     TargetState                 _current_target_state;      // Current status of the landing target
+
+    // Cone state tracking
+    ConeState                   _current_cone_state;        // Current status of the landing cone (inside/outside)
+    uint32_t                    _last_cone_status_change_ms; // Timestamp of last cone state change
 
     // structure and buffer to hold a history of vehicle velocity
     struct inertial_data_frame_s {

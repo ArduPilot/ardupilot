@@ -741,34 +741,45 @@ void Mode::land_run_vertical_control(bool pause_descent)
 
 #if AC_PRECLAND_ENABLED
         const bool navigating = pos_control->NE_is_active();
-        bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired() && navigating;
+        const bool target_acquired = copter.precland.target_acquired();
+        const bool doing_precision_landing = !copter.ap.land_repo_active && target_acquired && navigating;
 
-        if (doing_precision_landing) {
-            // prec landing is active
+        if (target_acquired && navigating) {
             Vector2p target_pos_ne_m;
             float target_error_m = 0.0f;
-            if (copter.precland.get_target_position_m(target_pos_ne_m)) {
+            const bool target_position_valid = copter.precland.get_target_position_m(target_pos_ne_m);
+            if (target_position_valid) {
                 const Vector2p current_pos_ne_m = pos_control->get_pos_estimate_NED_m().xy();
                 // target is this many m away from the vehicle
                 target_error_m = (target_pos_ne_m - current_pos_ne_m).tofloat().length();
             }
-            // check if we should descend or not
-            const float max_horiz_pos_error_m = copter.precland.get_max_xy_error_before_descending_m();
             Vector3f target_pos_meas_ned_m;
             copter.precland.get_target_position_measurement_NED_m(target_pos_meas_ned_m);
-            if ((target_error_m > max_horiz_pos_error_m && !is_zero(max_horiz_pos_error_m)) ||
-                !copter.precland.is_within_landing_cone(target_error_m, target_pos_meas_ned_m.z)) {
-                // doing precland but too far away from the obstacle
-                // do not descend
+
+            // update cone status tracking for diagnostics
+            copter.precland.update_cone_status(target_error_m, target_pos_meas_ned_m.z);
+
+            const bool cone_descent_allowed = !copter.precland.cone_enabled() ||
+                (target_position_valid && copter.precland.is_within_landing_cone(target_error_m, target_pos_meas_ned_m.z));
+            if (!cone_descent_allowed) {
                 climb_rate_ms = 0.0f;
-            } else if (target_pos_meas_ned_m.z > 0.35 && target_pos_meas_ned_m.z < 2.0 && !copter.precland.do_fast_descend()) {
-                // very close to the ground and doing prec land, lets slow down to make sure we land on target
-                // compute desired descent velocity
-                const float precland_acceptable_error_m = 0.15;
-                const float precland_min_descent_speed_ms = 0.1;
-                const float max_descent_speed_ms = fabsf(land_speed_ms) * 0.5;
-                const float land_slowdown_ms = MAX(0.0f, target_error_m * (max_descent_speed_ms / precland_acceptable_error_m));
-                climb_rate_ms = MIN(-precland_min_descent_speed_ms, -max_descent_speed_ms + land_slowdown_ms);
+            }
+
+            if (doing_precision_landing) {
+                // check if we should descend or not
+                const float max_horiz_pos_error_m = copter.precland.get_max_xy_error_before_descending_m();
+                if (target_error_m > max_horiz_pos_error_m && !is_zero(max_horiz_pos_error_m)) {
+                    // do not descend
+                    climb_rate_ms = 0.0f;
+                } else if (cone_descent_allowed && target_pos_meas_ned_m.z > 0.35 && target_pos_meas_ned_m.z < 2.0 && !copter.precland.do_fast_descend()) {
+                    // very close to the ground and doing prec land, lets slow down to make sure we land on target
+                    // compute desired descent velocity
+                    const float precland_acceptable_error_m = 0.15;
+                    const float precland_min_descent_speed_ms = 0.1;
+                    const float max_descent_speed_ms = fabsf(land_speed_ms) * 0.5;
+                    const float land_slowdown_ms = MAX(0.0f, target_error_m * (max_descent_speed_ms / precland_acceptable_error_m));
+                    climb_rate_ms = MIN(-precland_min_descent_speed_ms, -max_descent_speed_ms + land_slowdown_ms);
+                }
             }
         }
 #endif
