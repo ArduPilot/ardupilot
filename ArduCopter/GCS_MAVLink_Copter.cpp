@@ -194,6 +194,24 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
         flightmode->crosstrack_error_m());
 }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+bool GCS_MAVLINK_Copter::get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target) const
+{
+    if (!copter.ap.initialised) {
+        return false;
+    }
+    return copter.flightmode->get_nav_progress(progress, target);
+}
+
+bool GCS_MAVLINK_Copter::get_mission_nav_target(Location &target) const
+{
+    if (!copter.ap.initialised) {
+        return false;
+    }
+    return copter.flightmode->get_nav_target(target);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED && AP_MISSION_ENABLED
+
 float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
 {
 #if AP_AIRSPEED_ENABLED

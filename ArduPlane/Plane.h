@@ -1001,6 +1001,24 @@ private:
     void exit_mission_callback();
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // progress for NAV_CONTROLLER_PROGRESS
+    void update_mission_item_progress(const AP_Mission::Mission_Command& cmd);
+    void get_wp_progress(AP_Mission::ItemProgress &progress) const;
+    bool loiter_started(int32_t angle_cd=9000);
+    bool loiter_approached();
+    struct {
+        bool started;               // reset when a loiter mission item starts
+        Location approach_target;   // loiter target the approached flag applies to
+        uint32_t approach_mode_change_ms; // last_mode_change_ms when the approach target was set
+        bool approached;
+    } loiter_progress;
+    void get_alt_change_progress(AP_Mission::ItemProgress &progress) const;
+    void get_takeoff_progress(AP_Mission::ItemProgress &progress);
+public:
+    bool get_mode_nav_progress(AP_Mission::ItemProgress &progress, Location &target);
+private:
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_land(const AP_Mission::Mission_Command& cmd);

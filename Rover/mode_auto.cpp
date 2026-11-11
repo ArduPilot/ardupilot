@@ -657,6 +657,14 @@ Return true if we do not recognize the command so that we move on to the next co
 
 bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // report progress as it stood before this check; do and condition
+    // commands are also verified here, but progress is of the nav command
+    if (AP_Mission::is_nav_cmd(cmd)) {
+        update_mission_item_progress(cmd);
+    }
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
@@ -1053,3 +1061,80 @@ bool ModeAuto::verify_nav_script_time()
     return false;
 }
 #endif
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// work out the progress of the current mission item from the navigation state
+void ModeAuto::update_mission_item_progress(const AP_Mission::Mission_Command& cmd)
+{
+    AP_Mission::ItemProgress progress;
+
+    switch (cmd.id) {
+    case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_LOITER_TIME:
+        if (!previously_reached_wp) {
+            get_wp_progress(progress);
+        } else if (loiter_duration > 0) {
+            progress.set_time_elapsed((millis() - loiter_start_time) * 0.001f, loiter_duration);
+        }
+        break;
+
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        // only the approach has an end to report
+        if (!previously_reached_wp) {
+            get_wp_progress(progress);
+        }
+        break;
+
+    case MAV_CMD_NAV_LOITER_TURNS:
+        progress.set_count_completed(g2.mode_circle.get_angle_total_rad() / M_2PI, cmd.get_loiter_turns());
+        break;
+
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        get_wp_progress(progress);
+        break;
+
+    case MAV_CMD_NAV_DELAY:
+        if (nav_delay_time_max_ms > 0) {
+            progress.set_time_elapsed((millis() - nav_delay_time_start_ms) * 0.001f, nav_delay_time_max_ms * 0.001f);
+        }
+        break;
+
+#if AP_SCRIPTING_ENABLED
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        // the timeout is the longest the command can take
+        if (nav_scripting.timeout_s > 0) {
+            progress.set_time_elapsed((AP_HAL::millis() - nav_scripting.start_ms) * 0.001f, nav_scripting.timeout_s);
+        }
+        break;
+#endif // AP_SCRIPTING_ENABLED
+
+    default:
+        break;
+    }
+
+    mission.set_item_progress(cmd.index, progress);
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// the target of the current navigation task of the mission item being driven
+bool ModeAuto::get_nav_target(Location &target) const
+{
+    switch (_submode) {
+    case SubMode::WP:
+    case SubMode::RTL:
+    case SubMode::Guided:
+    case SubMode::NavScriptTime:
+        return get_wp_target(target);
+    case SubMode::Loiter:
+        return rover.mode_loiter.get_desired_location(target);
+    case SubMode::Circle:
+        target = g2.mode_circle.get_center();
+        return true;
+    case SubMode::HeadingAndSpeed:
+    case SubMode::Stop:
+        break;
+    }
+    return false;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
