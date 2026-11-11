@@ -173,12 +173,16 @@ Mode *ModeThrow::nextmode() const
     }
 }
 
-// True unless THROW_NEXTMODE flies without a position; staying in throw means
-// holding one in throw.  Decided by mode number, because a mode that has not
-// started yet can answer requires_position() from its last run: AUTO left in
-// NAV_ATTITUDE_TIME says it needs none.
+// True unless THROW_NEXTMODE flies without a position; staying in throw, as
+// when that mode is not compiled in, means holding one in throw.  Decided by
+// mode number, because a mode that has not started yet can answer
+// requires_position() from its last run: AUTO left in NAV_ATTITUDE_TIME says
+// it needs none.
 bool ModeThrow::nextmode_requires_position() const
 {
+    if (nextmode() == nullptr) {
+        return true;
+    }
     switch ((Mode::Number)g2.throw_nextmode.get()) {
     case Mode::Number::STABILIZE:
     case Mode::Number::ALT_HOLD:
