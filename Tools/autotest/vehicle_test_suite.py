@@ -7641,6 +7641,42 @@ class TestSuite(abc.ABC):
                                  z)
         self.run_cmd_get_ack(command, want_result, timeout, mav=mav)
 
+    def check_do_reposition_unsupported_frames(self):
+        '''check COMMAND_INT DO_REPOSITION in a frame the vehicle can't
+        use is refused with MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME,
+        before the coordinates are looked at and without a mode change,
+        while a bad location in a global frame is still denied'''
+        UNSUPPORTED_FRAME = mavutil.mavlink.MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME
+        DENIED = mavutil.mavlink.MAV_RESULT_DENIED
+
+        self.wait_ready_to_arm()
+        mode = self.get_mode()
+
+        for (frame, x, y, want_result) in [
+                # 5m north/east
+                (mavutil.mavlink.MAV_FRAME_LOCAL_NED, 50000, 50000, UNSUPPORTED_FRAME),
+                (mavutil.mavlink.MAV_FRAME_BODY_FRD, 50000, 50000, UNSUPPORTED_FRAME),
+                (mavutil.mavlink.MAV_FRAME_MISSION, 50000, 50000, UNSUPPORTED_FRAME),
+                # frame is checked before the coordinates:
+                (mavutil.mavlink.MAV_FRAME_LOCAL_NED, 0, 0, UNSUPPORTED_FRAME),
+                (mavutil.mavlink.MAV_FRAME_LOCAL_NED, int(91e7), 0, UNSUPPORTED_FRAME),
+                # bad locations in a supported frame are still denied:
+                (mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 0, 0, DENIED),
+                (mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, int(91e7), 0, DENIED),
+        ]:
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                p2=mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                x=x,
+                y=y,
+                z=10,
+                frame=frame,
+                want_result=want_result,
+            )
+
+        if self.get_mode() != mode:
+            raise NotAchievedException("Rejected DO_REPOSITION changed mode")
+
     def send_cmd(self,
                  command,
                  p1=0,
