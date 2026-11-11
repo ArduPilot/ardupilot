@@ -15216,6 +15216,7 @@ return update, 200
         lng = int(here.lng * 1e7)
         DENIED = mavutil.mavlink.MAV_RESULT_DENIED
         FAILED = mavutil.mavlink.MAV_RESULT_FAILED
+        UNSUPPORTED_FRAME = mavutil.mavlink.MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME
 
         self.change_mode('FBWA')
 
@@ -15226,7 +15227,7 @@ return update, 200
             p6=lng,
             p7=100,
             frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            want_result=DENIED,
+            want_result=UNSUPPORTED_FRAME,
         )
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
@@ -15260,7 +15261,7 @@ return update, 200
             mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
             p1=100,
             p2=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            want_result=DENIED,
+            want_result=UNSUPPORTED_FRAME,
         )
 
         self.start_subtest("DO_CHANGE_SPEED outside AUTO and GUIDED")
@@ -15332,7 +15333,7 @@ return update, 200
             mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
             p7=100,
             frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            want_result=DENIED,
+            want_result=UNSUPPORTED_FRAME,
         )
 
         self.start_subtest("GUIDED_CHANGE_HEADING bad parameters")
@@ -15379,7 +15380,7 @@ return update, 200
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
             p7=10,
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-            want_result=DENIED,
+            want_result=UNSUPPORTED_FRAME,
         )
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
