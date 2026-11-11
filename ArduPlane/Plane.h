@@ -430,6 +430,14 @@ private:
     // Similar to airspeed_nudge, but used when no airspeed sensor.
     // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
     int16_t throttle_nudge;
+    // the throttle nudge as a fraction of its range, 0 when the nudge does
+    // not apply.  read_radio() gates the nudge - on THROTTLE_NUDGE, on the
+    // stick being above half, and on fence_stickmixing() - and this records
+    // the result so that a second user cannot apply a different gate.
+    // control_failsafe() clears it along with the nudge itself: read_radio()
+    // returns through there when the RC frames stop, without reaching the
+    // code below which would otherwise recompute it.
+    float throttle_nudge_fraction;
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  Centimeters per second
