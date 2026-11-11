@@ -2537,9 +2537,10 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 f.write('#define STM32_SPI_USE_%s                  TRUE\n' % type)
             if type.startswith('I2C'):
                 f.write('#define STM32_I2C_USE_%s                  TRUE\n' % type)
-            if type.startswith('QUADSPI'):
-                f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
-            if type.startswith('OCTOSPI'):
+            if type.startswith('QUADSPI') or type.startswith('OCTOSPI'):
+                # give AP_HAL/board/chibios.h the flag directly rather
+                # than have it derive the flag from the ChibiOS driver setting
+                f.write('#define HAL_USE_%s TRUE\n' % type)
                 f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
 
     def get_dma_exclude(self, periph_list):
