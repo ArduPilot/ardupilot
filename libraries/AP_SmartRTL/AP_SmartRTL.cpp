@@ -929,6 +929,7 @@ void AP_SmartRTL::handle_reset_request()
     reset_path(_reset_request.position_ok, _reset_request.pos);
 
     if (_reset_request.from_reset_home) {
+        log_action(Action::RETURN_POINT_RESET, _reset_request.pos);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: return point reset");
     }
 }

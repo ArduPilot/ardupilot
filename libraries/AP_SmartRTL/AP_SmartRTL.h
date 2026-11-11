@@ -116,6 +116,7 @@ private:
         DEACTIVATED_BAD_POSITION_TIMEOUT = 9,
         DEACTIVATED_PATH_FULL_TIMEOUT = 10,
         DEACTIVATED_PROGRAM_ERROR = 11,
+        RETURN_POINT_RESET = 12,
     };
 
     // enum for SRTL_OPTIONS parameter
