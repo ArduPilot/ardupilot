@@ -621,6 +621,67 @@ bool AR_WPNav::calc_arc_geometry(const Location& origin, const Location& dest, f
     return true;
 }
 
+// returns the angle of the arc from origin to dest that remains to be
+// driven from the vehicle's stopping point, measured about the arc's
+// centre.  Returns the full arc angle if it cannot be determined or
+// the vehicle is no longer on the arc, and zero if the stopping point
+// is past the destination along the arc.  Used when an interrupted
+// arc command is started again, so the arc is not re-planned with
+// its full angle from the stopping point
+float AR_WPNav::get_remaining_arc_angle_rad(const Location& origin, const Location& dest, float arc_rad)
+{
+    const float arc_abs_rad = fabsf(arc_rad);
+    // whole turns cannot be recovered from the stopping position alone
+    if (arc_abs_rad > 2.0f * M_PI) {
+        return arc_rad;
+    }
+
+    Vector2f center_NE;
+    float radius_m;
+    if (!calc_arc_geometry(origin, dest, arc_rad, center_NE, radius_m)) {
+        return arc_rad;
+    }
+
+    Location stopping_loc;
+    if (!get_stopping_location(stopping_loc)) {
+        return arc_rad;
+    }
+
+    const Vector2f origin_from_center = -center_NE;
+    const Vector2f veh_from_center = origin.get_distance_NE(stopping_loc) - center_NE;
+    if (!is_positive(origin_from_center.length()) || !is_positive(veh_from_center.length())) {
+        return arc_rad;
+    }
+
+    // a stopping point well off the arc's circle means the vehicle is
+    // no longer on the interrupted arc (e.g. it was moved while the
+    // command was interrupted); treat the command as a fresh start
+    if (fabsf(veh_from_center.length() - radius_m) > 2.0f) {
+        return arc_rad;
+    }
+
+    // angle swept from the origin to the stopping point about the
+    // centre, in the direction of the turn, in [0, 2pi)
+    const float turn_dir = is_negative(arc_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW
+    float swept_rad = turn_dir * atan2f(origin_from_center % veh_from_center, origin_from_center * veh_from_center);
+    if (is_negative(swept_rad)) {
+        swept_rad += 2.0f * M_PI;
+    }
+
+    if (swept_rad > arc_abs_rad) {
+        // the stopping point is in the part of the circle the arc
+        // does not cover, between the destination and the origin;
+        // the closer of the two ends decides whether the arc has
+        // not been entered yet or has already been completed
+        if (origin.get_distance(stopping_loc) <= dest.get_distance(stopping_loc)) {
+            swept_rad = 0.0f;
+        } else {
+            return 0.0f;
+        }
+    }
+    return turn_dir * (arc_abs_rad - swept_rad);
+}
+
 // bearing in centidegrees of the arc's tangent at its start
 // (at_start true) or at its end.  Falls back to the straight line
 // bearing from origin to dest if the segment is not an arc

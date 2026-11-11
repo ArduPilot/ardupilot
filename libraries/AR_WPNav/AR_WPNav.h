@@ -69,6 +69,16 @@ public:
     // get current destination. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     const Location &get_destination() const { return _destination; }
 
+    // get current origin. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
+    const Location &get_origin() const { return _origin; }
+
+    // returns the angle of the arc from origin to dest that remains to
+    // be driven from the vehicle's stopping point, measured about the
+    // arc's centre.  Returns the full arc angle if it cannot be
+    // determined or the vehicle is no longer on the arc, and zero if
+    // the stopping point is past the destination along the arc
+    float get_remaining_arc_angle_rad(const Location& origin, const Location& dest, float arc_rad);
+
     // for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing_cd() const { return _wp_bearing_cd; }
     float nav_bearing_cd() const { return _desired_heading_cd; }
