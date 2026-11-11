@@ -4040,7 +4040,7 @@ function precland:healthy() end
 smart_rtl = {}
 
 -- Clear the return path and save the vehicle's current position as the new return point, in flight.
--- Returns false if SmartRTL is disabled, the vehicle's position is unavailable or the vehicle is preparing to return along the path.
+-- Returns false if SmartRTL is disabled, or the vehicle is not saving its path from a good position: while returning along it, without a good position, and on Copter while disarmed.
 -- The reset is performed by a background thread shortly after this call; the vehicle reports "SmartRTL: return point reset" when done.
 ---@return boolean
 function smart_rtl:reset_home() end
