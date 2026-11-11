@@ -1390,6 +1390,15 @@ private:
     uint32_t flowVelResetPause_ms;  // length of that pause, doubled on each burst unless it follows a quiet spell
     bool flowVelResetUnhealthy;     // true when the flow sensor reports a lockout sample too poor to recover from
     uint32_t flowQualRecoverStart_ms; // start of the current run of flow samples clear of the quality that releases flowVelResetUnhealthy, 0 if none
+    // after a restart from one range sample, the further samples in a row that must agree with the
+    // AGL KF before a flow lockout recovery may scale by its height; 0 once confirmed. Three medians
+    // in a row span five raw readings of the range finder, so no single reading can confirm one
+    static const uint8_t AGLKF_RESTART_CONFIRM_SAMPLES = 3;
+    // a sample agrees within this many standard deviations of the AGL KF's innovation: inside its own
+    // gate (EK3_RNG_I_GATE, 5 by default), so a sample it fuses but is pulled by does not confirm it,
+    // and wide enough that a right one misses only 0.3% of the time, costing one more sample
+    static constexpr ftype aglKfRestartConfirmSigma = 3.0f;
+    uint8_t aglKfRestartConfirm;
 #endif
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
