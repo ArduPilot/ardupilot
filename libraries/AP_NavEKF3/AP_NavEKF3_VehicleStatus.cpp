@@ -375,8 +375,9 @@ void NavEKF3_core::detectFlight()
     } else {
         // Non fly forward vehicle, so can only use height and motor arm status
 
-        // If the motors are armed then we could be flying and if they are not armed then we are definitely not flying
-        if (motorsArmed) {
+        // If the motors are armed then we could be flying and if they are not armed then we are definitely not flying.
+        // Copter also reports when it has landed so it can be treated as on the ground while armed
+        if (motorsArmed && !dal.get_vehicle_landed()) {
             onGround = false;
         } else {
             inFlight = false;
