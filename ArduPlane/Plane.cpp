@@ -672,11 +672,17 @@ void Plane::update_alt()
             tecs_target_alt_cm = MAX(tecs_target_alt_cm, prev_WP_loc.alt - home.alt) + (g2.rtl_climb_min+10)*100;
         }
 
+        if ((flight_stage == AP_FixedWing::FlightStage::TAKEOFF ||
+             flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) &&
+            !TECS_controller.pitch_min_is_set()) {
+            // No code gave TECS a pitch minimum for this run. Give the takeoff value.
+            TECS_controller.set_pitch_min(0.01f * get_takeoff_pitch_min_cd());
+        }
+
         TECS_controller.update_pitch_throttle(tecs_target_alt_cm,
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  distance_beyond_land_wp,
-                                                 get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
                                                  aerodynamic_load_factor,
