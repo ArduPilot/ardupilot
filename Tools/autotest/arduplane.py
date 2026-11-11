@@ -11069,6 +11069,10 @@ return update()
         # has no log and the scan below silently reads the previous
         # boot's log
         self.set_parameter("LOG_DISARMED", 1)
+        # the recalibration before the reset takes a single baro
+        # sample, whose SIM_BARO_RND noise (0.2 m by default) would
+        # otherwise decide whether we pass the 0.1 m limit below
+        self.set_parameter("SIM_BARO_RND", 0)
         self.wait_ready_to_arm()
 
         # suspend periodic resets so baro drift can accumulate
@@ -11083,6 +11087,9 @@ return update()
         self.set_parameter("SIM_BARO_DRIFT", 0.5)
         self.delay_sim_time(4, reason="baro buffer to fill with drift")
         self.set_parameter("SIM_BARO_DRIFT", 0)
+        # the accumulated drift remains; let the EKF settle on it, or
+        # its catching up with the end of the ramp adds to the transient
+        self.delay_sim_time(5, reason="EKF to settle after drift")
 
         # re-enable periodic resets; the next 5 s tick fires
         # update_home -> resetHeightDatum
