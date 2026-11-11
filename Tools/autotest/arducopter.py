@@ -5855,6 +5855,105 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.CopterMission()
 
+    def AutoTakeoffWhileMoving(self):
+        """Check horizontal motion during an airborne AUTO takeoff."""
+        self.context_push()
+        try:
+            self.context_set_message_rate_hz('LOCAL_POSITION_NED', 20)
+            self.set_parameter('MIS_RESTART', 1)
+            self.upload_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 0, 50),
+            ])
+
+            self.takeoff(altitude_min=10, altitude_max=20, mode='LOITER')
+            self.set_rc(2, 1300)
+            self.wait_groundspeed(4, 6, timeout=30, minimum_duration=1)
+
+            motion = self.assert_receive_message('LOCAL_POSITION_NED')
+            speed = (motion.vx ** 2 + motion.vy ** 2) ** 0.5
+            if speed < 3:
+                raise NotAchievedException(
+                    f'Initial horizontal speed was only {speed:.2f} m/s'
+                )
+            north, east = motion.vx / speed, motion.vy / speed
+            samples = []
+            in_auto = False
+            takeoff_started = False
+            takeoff_finished = False
+
+            def collect_position(mav, message):
+                nonlocal in_auto, takeoff_finished
+                if message.get_srcSystem() != 1:
+                    return
+                if message.get_type() == 'HEARTBEAT':
+                    in_auto = mavutil.mode_string_v10(message) == 'AUTO'
+                elif message.get_type() == 'MISSION_CURRENT':
+                    if takeoff_started and message.seq >= 2:
+                        takeoff_finished = True
+                elif (in_auto and not takeoff_finished and
+                      message.get_type() == 'LOCAL_POSITION_NED'):
+                    samples.append((
+                        message.x, message.y, message.vx, message.vy,
+                        message.time_boot_ms,
+                    ))
+
+            self.install_message_hook_context(collect_position)
+            self.change_mode('AUTO')
+            self.set_rc(2, 1500)
+            self.wait_current_waypoint(1)
+            takeoff_started = True
+            self.delay_sim_time(8, reason='observe airborne AUTO takeoff')
+            self.assert_current_waypoint(1)
+            self.wait_groundspeed(0, 0.6, timeout=10, minimum_duration=1)
+            self.assert_current_waypoint(1)
+            self.wait_current_waypoint(2, timeout=90)
+            if not takeoff_finished:
+                raise NotAchievedException('Takeoff completion was not observed')
+
+            recorded = list(samples)
+            if len(recorded) < 10:
+                raise NotAchievedException('Too few AUTO position samples')
+            if not in_auto:
+                raise NotAchievedException('Left AUTO during observation')
+
+            elapsed_ms = (recorded[-1][4] - recorded[0][4]) % (1 << 32)
+            max_gap_ms = max(
+                (later[4] - earlier[4]) % (1 << 32)
+                for earlier, later in zip(recorded, recorded[1:])
+            )
+            self.progress(
+                f'AUTO samples span {elapsed_ms} ms; max gap {max_gap_ms} ms'
+            )
+            if elapsed_ms < 7000 or max_gap_ms > 2000:
+                raise NotAchievedException(
+                    f'Incomplete AUTO position data: {elapsed_ms} ms total, '
+                    f'{max_gap_ms} ms maximum gap'
+                )
+
+            first_speed = recorded[0][2] * north + recorded[0][3] * east
+            if first_speed < 1:
+                raise NotAchievedException(
+                    f'AUTO recording started too late: {first_speed:.2f} m/s'
+                )
+
+            furthest = recorded[0][0] * north + recorded[0][1] * east
+            max_return = 0.0
+            for x, y, *_ in recorded:
+                along = x * north + y * east
+                furthest = max(furthest, along)
+                max_return = max(max_return, furthest - along)
+
+            self.progress(f'Maximum return during takeoff: {max_return:.2f} m')
+            if max_return > 1.5:
+                raise NotAchievedException(
+                    f'Copter moved back {max_return:.2f} m during AUTO takeoff'
+                )
+            self.change_mode('LOITER')
+            self.do_RTL()
+        finally:
+            self.context_pop()
+
     def TakeoffAlt(self):
         '''Test Takeoff command altitude'''
         # Test case #1 (set target altitude to relative -10m from the ground, -10m is invalid, so it is set to 1m)
@@ -20239,6 +20338,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.LoiterNoCompassYaw,
             self.CopterMission,
             self.TakeoffAlt,
+            self.AutoTakeoffWhileMoving,
             self.AutoYawDO_MOUNT_CONTROL,
             self.ParameterChecks,
             self.ModeFollow_with_FOLLOW_TARGET,
