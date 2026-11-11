@@ -93,6 +93,7 @@ static void apply_event(NavEKF2 &ekf2, AP_DAL::Event event)
         ekf2.checkLaneSwitch();
         break;
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
+    case AP_DAL::Event::bootstrapReset:
         break;
     }
 }
@@ -122,6 +123,9 @@ static void apply_event(NavEKF3 &ekf3, AP_DAL::Event event)
         break;
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
         ekf3.setPosVelYawSourceSet(uint8_t(event)-uint8_t(AP_DAL::Event::setSourceSet0));
+        break;
+    case AP_DAL::Event::bootstrapReset:
+        ekf3.InitialiseFilterBootstrap();
         break;
     }
 }
