@@ -551,8 +551,9 @@ bool Plane::set_home(const Location& loc, bool _lock)
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
 {
     Location requested_position;
-    if (!location_from_command_t(packet, requested_position)) {
-        return MAV_RESULT_DENIED;
+    const MAV_RESULT loc_result = location_from_command_int(packet, requested_position);
+    if (loc_result != MAV_RESULT_ACCEPTED) {
+        return loc_result;
     }
     plane.fix_terrain_WP(requested_position, __AP_LINE__);
 
@@ -610,7 +611,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_DO_CHANGE_ALTITUDE(const mavlin
     MAV_FRAME mav_frame = (MAV_FRAME)packet.param2;
     Location::AltFrame alt_frame;
     if (!mavlink_coordinate_frame_to_location_alt_frame(mav_frame, alt_frame)) {
-        return MAV_RESULT_DENIED;
+        return MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME;
     }
     Location loc {
         0,
@@ -657,7 +658,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
 
         Location::AltFrame new_target_alt_frame;
         if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, new_target_alt_frame)) {
-            return MAV_RESULT_DENIED;
+            return MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME;
         }
         // keep a copy of what came in via MAVLink - this is needed for logging, but not for anything else
         plane.guided_state.target_mav_frame = packet.frame;
@@ -889,7 +890,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_MAV_CMD_NAV_TAKEOFF(const mavlink_c
         takeoff_alt = -takeoff_alt;  // down -> up
         break;
     default:
-        return MAV_RESULT_DENIED; // "is supported but has invalid parameters"
+        return MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME;
     }
     if (!plane.quadplane.available()) {
         return MAV_RESULT_FAILED;
