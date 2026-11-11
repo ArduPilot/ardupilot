@@ -185,6 +185,9 @@ private:
     // de-activate SmartRTL, send warning to GCS and logger
     void deactivate(Action action, const char *reason);
 
+    // true while a reset of the return point is allowed
+    bool reset_allowed() const;
+
     // perform the path reset requested by reset_home.  called from the background thread with the path semaphore held
     void handle_reset_request();
 
@@ -204,6 +207,7 @@ private:
     bool _active;       // true if SmartRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SmartRTL will then be deactivated until the path is next reset by set_home or reset_home
     bool _example_mode; // true when being called from the example sketch, logging and background tasks are disabled
     bool _home_saved;   // true once home has been saved successfully by the set_home or update methods
+    bool _recording;    // true while the vehicle reports a good position and asks for it to be saved, from the last update
     uint32_t _last_good_position_ms;    // the last system time a last good position was reported. If no position is available for a while, SmartRTL will be disabled.
     uint32_t _last_position_save_ms;    // the system time a position was saved to the path (used for timeout)
     uint32_t _thorough_clean_request_ms;// the last system time the thorough cleanup was requested (set by thorough_cleanup method, used by background cleanup)

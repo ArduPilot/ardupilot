@@ -249,17 +249,11 @@ void AP_SmartRTL::set_home(bool position_ok, const Vector3p& current_pos)
 // clear the return path and save the vehicle's current position as the new return point
 // the reset is performed by the background thread, which runs the simplify and prune algorithms,
 // so the path and their state are never changed underneath them
-// returns true if the request was accepted, false if SmartRTL is disabled, the vehicle's position
-// is unavailable or the vehicle is preparing to return along the path
+// returns true if the request was accepted, false if SmartRTL is disabled or busy, the vehicle's
+// position is unavailable, or the vehicle is not recording the path, as while it returns along it
 bool AP_SmartRTL::reset_home()
 {
-    // check memory has been allocated
-    if (_path == nullptr) {
-        return false;
-    }
-
-    // do not reset the path while the vehicle is preparing to return along it
-    if (_thorough_clean_request_ms != 0) {
+    if (_path == nullptr || !enabled() || !reset_allowed()) {
         return false;
     }
 
@@ -273,16 +267,28 @@ bool AP_SmartRTL::reset_home()
         }
     }
 
-    // record the request, the background thread will perform the reset
-    WITH_SEMAPHORE(_path_sem);
+    // record the request without waiting on the background thread, which performs the reset
+    if (!_path_sem.take_nonblocking()) {
+        return false;
+    }
     _reset_request.pos = current_pos.tofloat();
     _reset_request.pending = true;
+    _path_sem.give();
     return true;
+}
+
+// a reset is allowed only while the vehicle records the path from a good position, which it
+// stops doing when it returns along the path, and not once a return has asked for the path
+bool AP_SmartRTL::reset_allowed() const
+{
+    return _recording && (_thorough_clean_request_ms == 0);
 }
 
 // call this at 3hz (or higher) regardless of what mode the vehicle is in
 void AP_SmartRTL::update(bool position_ok, bool save_position)
 {
+    _recording = position_ok && save_position;
+
     // try to save home if not already saved
     if (position_ok && !_home_saved) {
         set_home(true);
@@ -924,6 +930,11 @@ void AP_SmartRTL::deactivate(Action action, const char *reason)
 void AP_SmartRTL::handle_reset_request()
 {
     _reset_request.pending = false;
+
+    // the vehicle may have started a return since the request was made
+    if (!reset_allowed()) {
+        return;
+    }
 
     // clear path and restart the cleanup algorithms from scratch
     _path_points_count = 0;
