@@ -4,6 +4,7 @@
 #include <AP_Common/Bitmask.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger_config.h>
+#include "AP_SmartRTL_config.h"
 
 // definitions and macros
 #define SMARTRTL_ACCURACY_DEFAULT        2.0f   // default _ACCURACY parameter value.  Points will be no closer than this distance (in meters) together.
@@ -66,8 +67,10 @@ public:
     void set_home(bool position_ok);
     void set_home(bool position_ok, const Vector3p& current_pos);
 
+#if AP_SMARTRTL_RESET_ENABLED
     // clear the return path and make the current position the new return point, in flight
     bool reset_home();
+#endif
 
     // call this at 3hz (or higher) regardless of what mode the vehicle is in
     // example sketches use method that allows providing vehicle position directly
@@ -186,8 +189,10 @@ private:
     // de-activate SmartRTL, send warning to GCS and logger
     void deactivate(Action action, const char *reason);
 
+#if AP_SMARTRTL_RESET_ENABLED
     // true while a reset of the return point is allowed
     bool reset_allowed() const;
+#endif
 
     // perform the path reset requested by set_home or reset_home.  called from the background thread with the path semaphore held
     void handle_reset_request();
@@ -211,7 +216,9 @@ private:
     bool _active;       // true if SmartRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SmartRTL will then be deactivated until the path is next reset by set_home or reset_home
     bool _example_mode; // true when being called from the example sketch, logging and background tasks are disabled
     bool _home_saved;   // true once home has been saved successfully by the set_home or update methods
+#if AP_SMARTRTL_RESET_ENABLED
     bool _recording;    // true while the vehicle reports a good position and asks for it to be saved, from the last update
+#endif
     uint32_t _last_good_position_ms;    // the last system time a last good position was reported. If no position is available for a while, SmartRTL will be disabled.
     uint32_t _last_position_save_ms;    // the system time a position was saved to the path (used for timeout)
     uint32_t _thorough_clean_request_ms;// the last system time the thorough cleanup was requested (set by thorough_cleanup method, used by background cleanup)

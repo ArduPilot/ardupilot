@@ -234,6 +234,7 @@ void AP_SmartRTL::set_home(bool position_ok, const Vector3p& current_pos)
     _reset_request.pending = true;
 }
 
+#if AP_SMARTRTL_RESET_ENABLED
 // clear the return path and save the vehicle's current position as the new return point
 // the reset is performed by the background thread, which runs the simplify and prune algorithms,
 // so the path and their state are never changed underneath them
@@ -273,11 +274,14 @@ bool AP_SmartRTL::reset_allowed() const
 {
     return _recording && (_thorough_clean_request_ms == 0);
 }
+#endif  // AP_SMARTRTL_RESET_ENABLED
 
 // call this at 3hz (or higher) regardless of what mode the vehicle is in
 void AP_SmartRTL::update(bool position_ok, bool save_position)
 {
+#if AP_SMARTRTL_RESET_ENABLED
     _recording = position_ok && save_position;
+#endif
 
     // try to save home if not already saved
     if (position_ok && !_home_saved) {
@@ -921,17 +925,19 @@ void AP_SmartRTL::handle_reset_request()
 {
     _reset_request.pending = false;
 
-    // the vehicle may have started a return since a reset_home request was made
-    if (_reset_request.from_reset_home && !reset_allowed()) {
+#if AP_SMARTRTL_RESET_ENABLED
+    if (_reset_request.from_reset_home) {
+        // the vehicle may have started a return since the request was made
+        if (reset_allowed()) {
+            reset_path(true, _reset_request.pos);
+            log_action(Action::RETURN_POINT_RESET, _reset_request.pos);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: return point reset");
+        }
         return;
     }
+#endif
 
     reset_path(_reset_request.position_ok, _reset_request.pos);
-
-    if (_reset_request.from_reset_home) {
-        log_action(Action::RETURN_POINT_RESET, _reset_request.pos);
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: return point reset");
-    }
 }
 
 // clear the path and restart the cleanup algorithms from scratch, then if position_ok make pos the
