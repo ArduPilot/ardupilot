@@ -281,7 +281,15 @@ void ModeThrow::run()
             // Target altitude is THROW_ALT_DCSND below the release point.  The
             // position controller climbs back to it if uprighting overshot,
             // which is trajectory-limited and cannot exceed the release point.
-            pos_control->set_pos_desired_U_m(drop_release_alt_m - g.throw_altitude_descend);
+            float target_u_m = drop_release_alt_m - g.throw_altitude_descend;
+            // With THROW_ALT_DCSND 0 control goes back as soon as it can: a vehicle
+            // tossed up and still above the release point is stopped where it is rather
+            // than flown back down to it. The release point is an EKF height taken while
+            // the vehicle was held, which can be metres out, so here it is only a floor
+            if (!is_positive(g.throw_altitude_descend)) {
+                target_u_m = MAX(target_u_m, pos_control->get_pos_estimate_U_m());
+            }
+            pos_control->set_pos_desired_U_m(target_u_m);
         } else {
             pos_control->set_pos_desired_U_m(pos_control->get_pos_estimate_U_m() + g.throw_altitude_ascend);
         }
@@ -305,6 +313,11 @@ void ModeThrow::run()
             gcs().send_text(MAV_SEVERITY_WARNING,"Throw height achieved, lost position");
         } else {
             gcs().send_text(MAV_SEVERITY_INFO,"Throw height achieved");
+        }
+        // with THROW_ALT_DCSND 0 the height the toss was stopped at is held, here and by a next
+        // mode that keeps the vertical target, rather than climbed back up to where the arrest began
+        if (g2.throw_type == ThrowType::Drop && !is_positive(g.throw_altitude_descend)) {
+            pos_control->set_pos_desired_U_m(MAX(drop_release_alt_m, pos_control->get_pos_estimate_U_m()));
         }
         stage = Throw_PosHold;
 
