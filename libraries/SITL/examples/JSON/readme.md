@@ -58,13 +58,14 @@ It is possible to send the attitude in a euler format using ```attitude``` or as
     quaternion(q1, q2, q3, q4)
 ```
 
-This is a example input frame, it should be preceded by and terminated with a carriage return ("\n") :
+This is a example input frame, it should be terminated with a newline ("\n"). Over UDP the end of a datagram also ends a packet, so the newline may be left out there:
 
 ```json
 {"timestamp":2500,"imu":{"gyro":[0,0,0],"accel_body":[0,0,0]},"position":[0,0,0],"attitude":[0,0,0],"velocity":[0,0,0]}
 ```
 
-The order of fields is not important.
+The order of fields is not important, but a field must not be given twice. A packet must be on a single
+line: a newline inside a packet ends it, and the packet is rejected.
 Note that the timestamp is the absolute physics time, not the timestep.
 
 It is possible to send optional fields to provide data for additional sensors, in most cases this will require setting the relevant sensor type param to the SITL driver.
@@ -79,6 +80,12 @@ rangefinder distances corresponding to driver instances:
     rng_5 (m)
     rng_6 (m)
 ```
+
+A rangefinder with no reading, out of range for example, can send infinity or NaN; SITL then reports
+no data for it. JSON has no way to write these, so the common ones are accepted for any number:
+`null` (NaN, as written by most JSON encoders including rosbridge), `NaN`, `Infinity`, `-Infinity`
+(Python's `json` module) and `nan`, `-nan`, `inf`, `-inf` (C's `printf`). Only the rangefinders
+may send them: a packet with infinity or NaN in any other field is rejected.
 
 ## Apparent wind
 
@@ -114,7 +121,7 @@ The controller can optionally provide R/C input data, up to 12
 channels.
 
 ```json
-"rc":{"rc_1":1500,"rc_2":1500,"rc_3":1000,"rc_4":1500,"rc_5":1000,"rc_6":1000,"rc_7":1000,"rc_8":1500,rc_9":1500,"rc_10":1500}
+"rc":{"rc_1":1500,"rc_2":1500,"rc_3":1000,"rc_4":1500,"rc_5":1000,"rc_6":1000,"rc_7":1000,"rc_8":1500,"rc_9":1500,"rc_10":1500}
 ```
 
 ## Battery

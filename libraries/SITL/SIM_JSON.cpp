@@ -137,47 +137,21 @@ void JSON::output_servos(const struct sitl_input &input)
 }
 
 
-/*
-    very simple JSON parser for sensor data
-    called with pointer to one row of sensor data, nul terminated
-
-    This parser does not do any syntax checking, and is not at all
-    general purpose
-*/
-
-template <typename T>
-bool parse_array(const char *str, T &arr, int count) {
-    const char *p = str;
-
-    for (int i = 0; i < count; i++) {
-        // Skip to start of number
-        while (*p && *p != '-' && (*p < '0' || *p > '9'))
-            p++;
-
-        if (!*p) {
-            // End of string before we got all numbers
-            return false;
-        }
-
-        arr[i] = strtod(p, nullptr);
-
-        // Move past the number
-        while (*p && *p != ',' && *p != ']')
-            p++;
-
-        if (i < count - 1) { // expect comma between numbers
-            if (*p != ',') return false;
-            p++; // skip comma
-        }
+// rate limit reports of bad sensor packets to 1Hz
+bool JSON::report_parse_error()
+{
+    // wall clock time, as simulated time stands still while every
+    // packet is rejected
+    const uint64_t now_us = get_wall_time_us();
+    if (now_us - last_parse_error_us < 1000000) {
+        return false;
     }
-
+    last_parse_error_us = now_us;
     return true;
 }
 
-uint64_t JSON::parse_sensors(const char *json)
+uint64_t JSON::parse_sensors(const uint8_t *data, size_t len)
 {
-    uint64_t received_bitmask = 0;
-
 #if SITL_JSON_DEBUG && AP_FILESYSTEM_FILE_WRITING_ENABLED
     // it is useful in some environments to be able to get a copy of the raw
     // JSON data
@@ -188,112 +162,106 @@ uint64_t JSON::parse_sensors(const char *json)
         auto &fs = AP::FS();
         int fd = fs.open("json_debug.txt", O_WRONLY|O_CREAT|O_TRUNC);
         if (fd != -1) {
-            fs.write(fd, json, strlen(json));
+            fs.write(fd, data, len);
             fs.close(fd);
         }
     }
 #endif
 
-    //printf("%s\n", json);
-    for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
-        struct keytable &key = keytable[i];
-
-        /* look for section header */
-        const char *p = strstr(json, key.section);
-        if (!p) {
-            // we don't have this sensor
-            if (key.required) {
-                printf("Failed to find %s\n", key.section);
-                return 0;
-            }
-            continue;
+    uint64_t received_bitmask = 0;
+    size_t offset = 0;
+    while (offset < len) {
+        size_t used;
+        const uint64_t found = handle_parse_result(parser.feed(&data[offset], len - offset, used));
+        if (found != 0) {
+            received_bitmask = found;
         }
-        p += strlen(key.section)+1;
+        offset += used;
+    }
+    // a datagram ends the packet in it, so senders need not end packets
+    // with a newline, and a datagram that is damaged or cut short can not
+    // cost a packet in the next
+    const uint64_t found = handle_parse_result(parser.end_of_message());
+    if (found != 0) {
+        received_bitmask = found;
+    }
+    return received_bitmask;
+}
 
-        // find key inside section
-        p = strstr(p, key.key);
-        if (!p) {
-            if (key.required) {
-                printf("Failed to find key %s/%s\n", key.section, key.key);
-                return 0;
-            }
-            continue;
-        }
+/*
+  act on a result from the parser, returning the fields of the packet
+  that became the current state, or 0
+ */
+uint64_t JSON::handle_parse_result(AP_JSON_FieldParser::Result result)
+{
+    switch (result) {
+    case AP_JSON_FieldParser::Result::NONE:
+        return 0;
 
-        // record the keys that are found
-        received_bitmask |= 1ULL << i;
-
-        p += strlen(key.key)+2;
-        switch (key.type) {
-            case DATA_UINT64:
-                *((uint64_t *)key.ptr) = strtoull(p, nullptr, 10);
-                //printf("%s/%s = %lu\n", key.section, key.key, *((uint64_t *)key.ptr));
-                break;
-
-            case DATA_FLOAT:
-                *((float *)key.ptr) = strtof(p, nullptr);
-                //printf("%s/%s = %f\n", key.section, key.key, *((float *)key.ptr));
-                break;
-
-            case DATA_DOUBLE:
-                *((double *)key.ptr) = atof(p);
-                //printf("%s/%s = %f\n", key.section, key.key, *((double *)key.ptr));
-                break;
-
-            case DATA_VECTOR3F: {
-                Vector3<float> v;
-                if (!parse_array(p, v, ARRAY_SIZE(v))) {
-                    printf("Failed to parse Vector3f for %s/%s\n", key.section, key.key);
-                    return received_bitmask;
-                }
-                Vector3f *tv = (Vector3<float> *)key.ptr;
-                *tv = v;
-                //printf("%s/%s = %f, %f, %f\n", key.section, key.key, v->x, v->y, v->z);
-                break;
-            }
-
-            case DATA_VECTOR3D: {
-                Vector3<double> v;
-                if (!parse_array(p, v, ARRAY_SIZE(v))) {
-                    printf("Failed to parse Vector3d for %s/%s\n", key.section, key.key);
-                    return received_bitmask;
-                }
-                Vector3d *tv = (Vector3d *)key.ptr;
-                *tv = v;
-                //printf("%s/%s = %f, %f, %f\n", key.section, key.key, v->x, v->y, v->z);
-                break;
-            }
-
-            case QUATERNION: {
-                VectorN<float, 4> v;
-                if (!parse_array(p, v, ARRAY_SIZE(v))) {
-                    printf("Failed to parse Vector4f for %s/%s\n", key.section, key.key);
-                    return received_bitmask;
-                }
-                Quaternion *tv = static_cast<Quaternion*>(key.ptr);
-                tv->q1 = v[0];
-                tv->q2 = v[1];
-                tv->q3 = v[2];
-                tv->q4 = v[3];
-                break;
-            }
-
-            case BOOLEAN: {
-                bool *b = (bool *)key.ptr;
-                if (strncasecmp(p, "true", 4) == 0) {
-                    *b = true;
-                } else if (strncasecmp(p, "false", 5) == 0) {
-                    *b = false;
+    case AP_JSON_FieldParser::Result::PACKET: {
+        const uint64_t missing = REQUIRED_FIELDS & ~parser.found();
+        const uint64_t non_finite = non_finite_fields(parser.found() & ~NON_FINITE_ALLOWED);
+        if (missing != 0 || non_finite != 0) {
+            rejected_packets++;
+            if (report_parse_error()) {
+                if (missing != 0) {
+                    print_fields("JSON: sensor packet missing:", missing);
                 } else {
-                    *b = strtoull(p, nullptr, 10) != 0;
+                    print_fields("JSON: sensor packet with infinity or NaN in:", non_finite);
                 }
-                //printf("%s/%s = %i\n", key.section, key.key, *((unit8_t *)key.ptr));
-                break;
+            }
+            state_rx = state;
+            return 0;
+        }
+        // a complete, valid packet: it becomes the current state
+        state = state_rx;
+        return parser.found();
+    }
+
+    case AP_JSON_FieldParser::Result::ERROR:
+        rejected_packets++;
+        if (report_parse_error()) {
+            printf("JSON: rejected sensor packet: %s, %u rejected\n",
+                   parser.error(), unsigned(rejected_packets));
+        }
+        // undo whatever the bad packet had written
+        state_rx = state;
+        return 0;
+    }
+    return 0;
+}
+
+// the fields of mask holding infinity or NaN in state_rx
+uint64_t JSON::non_finite_fields(uint64_t mask) const
+{
+    uint64_t bad = 0;
+    for (uint8_t f=0; f<ARRAY_SIZE(fields); f++) {
+        const uint64_t bit = 1ULL << f;
+        const AP_JSON_FieldParser::Field &field = fields[f];
+        if ((mask & bit) == 0 || field.type == FT::BOOL) {
+            continue;
+        }
+        const bool is_double = field.type == FT::DOUBLE || field.type == FT::DOUBLE_ARRAY;
+        for (uint8_t i=0; i<field.count; i++) {
+            const double v = is_double ? static_cast<const double *>(field.ptr)[i] :
+                             double(static_cast<const float *>(field.ptr)[i]);
+            if (!isfinite(v)) {
+                bad |= bit;
             }
         }
     }
+    return bad;
+}
 
-    return received_bitmask;
+void JSON::print_fields(const char *msg, uint64_t mask) const
+{
+    printf("%s", msg);
+    for (uint8_t f=0; f<ARRAY_SIZE(fields); f++) {
+        if (mask & (1ULL << f)) {
+            printf(" %s", fields[f].path);
+        }
+    }
+    printf(", %u rejected\n", unsigned(rejected_packets));
 }
 
 /*
@@ -303,7 +271,7 @@ uint64_t JSON::parse_sensors(const char *json)
 void JSON::recv_fdm(const struct sitl_input &input)
 {
     // Receive sensor packet
-    ssize_t ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+    ssize_t ret = sock.recv(recv_buffer, sizeof(recv_buffer), UDP_TIMEOUT_MS);
     uint32_t wait_ms = UDP_TIMEOUT_MS;
 
     if (state.no_lockstep && ret <= 0) {
@@ -320,7 +288,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     while (ret <= 0) {
         //printf("No JSON sensor message received - %s\n", strerror(errno));
-        ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+        ret = sock.recv(recv_buffer, sizeof(recv_buffer), UDP_TIMEOUT_MS);
         wait_ms += UDP_TIMEOUT_MS;
         // if no sensor message is received after 10 second resend servos, this help cope with SITL and the physics getting out of sync
         if (wait_ms > 1000) {
@@ -330,26 +298,19 @@ void JSON::recv_fdm(const struct sitl_input &input)
         }
     }
 
-    // convert '\n' into nul
-    while (uint8_t *p = (uint8_t *)memchr(&sensor_buffer[sensor_buffer_len], '\n', ret)) {
-        *p = 0;
-    }
-    sensor_buffer_len += ret;
-
-    const uint8_t *p2 = (const uint8_t *)memrchr(sensor_buffer, 0, sensor_buffer_len);
-    if (p2 == nullptr || p2 == sensor_buffer) {
+    // a datagram filling the buffer may have been truncated, and is
+    // larger than any valid packet
+    if (size_t(ret) >= sizeof(recv_buffer)) {
+        rejected_packets++;
+        if (report_parse_error()) {
+            printf("JSON: sensor datagram too large, %u rejected\n", unsigned(rejected_packets));
+        }
         return;
     }
 
-    const uint8_t *p1 = (const uint8_t *)memrchr(sensor_buffer, 0, p2 - sensor_buffer);
-    if (p1 == nullptr) {
-        return;
-    }
-
-    const uint64_t received_bitmask = parse_sensors((const char *)(p1+1));
+    const uint64_t received_bitmask = parse_sensors(recv_buffer, ret);
     if (received_bitmask == 0) {
-        // did not receive one of the mandatory fields
-        printf("Did not contain all mandatory fields\n");
+        // no complete valid packet yet; parse_sensors() reports bad ones
         return;
     }
 
@@ -362,23 +323,14 @@ void JSON::recv_fdm(const struct sitl_input &input)
     if (received_bitmask != last_received_bitmask) {
         // some change in the message we have received, print what we got
         printf("\nJSON received:\n");
-        for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
-            struct keytable &key = keytable[i];
-            if ((received_bitmask &  1ULL << i) == 0) {
-                continue;
-            }
-            if (strcmp(key.section, "") == 0) {
-                printf("\t%s\n",key.key);
-            } else {
-                printf("\t%s: %s\n",key.section,key.key);
+        for (uint8_t i=0; i<ARRAY_SIZE(fields); i++) {
+            if ((received_bitmask & (1ULL << i)) != 0) {
+                printf("\t%s\n", fields[i].path);
             }
         }
         printf("\n");
     }
     last_received_bitmask = received_bitmask;
-
-    memmove(sensor_buffer, p2, sensor_buffer_len - (p2 - sensor_buffer));
-    sensor_buffer_len = sensor_buffer_len - (p2 - sensor_buffer);
 
     accel_body = state.imu.accel_body;
     gyro = state.imu.gyro;
