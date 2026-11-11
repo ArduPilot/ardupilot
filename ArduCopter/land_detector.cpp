@@ -230,6 +230,7 @@ void Copter::set_land_complete(bool b)
 
     // tell AHRS flying state
     set_likely_flying(!b);
+    ahrs.set_vehicle_landed(b);
 
     if (!b) {
         // not landed, no further action
