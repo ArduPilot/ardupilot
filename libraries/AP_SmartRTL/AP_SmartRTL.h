@@ -188,8 +188,11 @@ private:
     // true while a reset of the return point is allowed
     bool reset_allowed() const;
 
-    // perform the path reset requested by reset_home.  called from the background thread with the path semaphore held
+    // perform the path reset requested by set_home or reset_home.  called from the background thread with the path semaphore held
     void handle_reset_request();
+
+    // clear the path and, if position_ok, make pos the return point and activate SmartRTL
+    void reset_path(bool position_ok, const Vector3f &pos);
 
 #if HAL_LOGGING_ENABLED
     // logging
@@ -222,9 +225,11 @@ private:
     uint16_t _path_points_completed_limit;  // set by main thread to the path_point_count when a point is popped.  used by simplify and prune algorithms to detect path shrinking
     HAL_Semaphore _path_sem;   // semaphore for updating path
 
-    // in-flight reset request.  set by reset_home (from any thread), consumed by the background thread.  protected by _path_sem
+    // path reset request.  set by set_home or reset_home (from any thread), consumed by the background thread.  protected by _path_sem
     struct {
         bool pending;       // true if a reset has been requested but not yet performed
+        bool position_ok;   // false to clear the path without a return point, as set_home does without a position
+        bool from_reset_home;   // true if requested by reset_home, which is refused if a return has started since
         Vector3f pos;       // position (in meters from EKF origin in NED) to use as the new return point
     } _reset_request;
 

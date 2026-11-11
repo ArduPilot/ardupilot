@@ -214,36 +214,24 @@ void AP_SmartRTL::set_home(bool position_ok)
     set_home(position_ok, current_pos);
 }
 
+// the reset is performed by the background thread, which runs the simplify and prune algorithms: this
+// is also called in flight, as when home is moved, while they may be running on the old path
 void AP_SmartRTL::set_home(bool position_ok, const Vector3p& current_pos)
 {
     if (_path == nullptr) {
         return;
     }
 
-    // clear path
-    _path_points_count = 0;
-
-    // reset simplification and pruning.  These functions access members that should normally only
-    // be touched by the background thread but it will not be running because active should be false
-    reset_simplification();
-    reset_pruning();
-
-    // don't continue if no position at take-off
-    if (!position_ok) {
+    if (_example_mode) {
+        reset_path(position_ok, current_pos.tofloat());
         return;
     }
 
-    // save current position as first point in path
-    if (!add_point(current_pos)) {
-        return;
-    }
-
-    // successfully added point and reset path
-    const uint32_t now = AP_HAL::millis();
-    _last_good_position_ms = now;
-    _last_position_save_ms = now;
-    _active = true;
-    _home_saved = true;
+    WITH_SEMAPHORE(_path_sem);
+    _reset_request.pos = current_pos.tofloat();
+    _reset_request.position_ok = position_ok;
+    _reset_request.from_reset_home = false;
+    _reset_request.pending = true;
 }
 
 // clear the return path and save the vehicle's current position as the new return point
@@ -272,6 +260,8 @@ bool AP_SmartRTL::reset_home()
         return false;
     }
     _reset_request.pos = current_pos.tofloat();
+    _reset_request.position_ok = true;
+    _reset_request.from_reset_home = true;
     _reset_request.pending = true;
     _path_sem.give();
     return true;
@@ -926,35 +916,47 @@ void AP_SmartRTL::deactivate(Action action, const char *reason)
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "SmartRTL deactivated: %s", reason);
 }
 
-// perform the path reset requested by reset_home.  called from the background thread with the path semaphore held
+// perform the path reset requested by set_home or reset_home.  called from the background thread with the path semaphore held
 void AP_SmartRTL::handle_reset_request()
 {
     _reset_request.pending = false;
 
-    // the vehicle may have started a return since the request was made
-    if (!reset_allowed()) {
+    // the vehicle may have started a return since a reset_home request was made
+    if (_reset_request.from_reset_home && !reset_allowed()) {
         return;
     }
 
-    // clear path and restart the cleanup algorithms from scratch
+    reset_path(_reset_request.position_ok, _reset_request.pos);
+
+    if (_reset_request.from_reset_home) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: return point reset");
+    }
+}
+
+// clear the path and restart the cleanup algorithms from scratch, then if position_ok make pos the
+// first point of the path and (re-)activate SmartRTL, which recovers from an earlier "bad position" or
+// "buffer full" deactivation.  called with the path semaphore held, or from the example sketch, which
+// has no background thread, so the path is written directly
+void AP_SmartRTL::reset_path(bool position_ok, const Vector3f &pos)
+{
     _path_points_count = 0;
     _path_points_completed_limit = SMARTRTL_POINTS_MAX;
     reset_simplification();
     reset_pruning();
 
-    // save the requested position as the first point in the path
-    // the path is written directly because the semaphore is already held
-    _path[_path_points_count++] = _reset_request.pos;
-    log_action(Action::POINT_ADD, _reset_request.pos);
+    // don't continue if no position at take-off
+    if (!position_ok) {
+        return;
+    }
 
-    // re-activate, this allows recovery from an earlier "bad position" or "buffer full" deactivation
+    _path[_path_points_count++] = pos;
+    log_action(Action::POINT_ADD, pos);
+
     const uint32_t now = AP_HAL::millis();
     _last_good_position_ms = now;
     _last_position_save_ms = now;
     _active = true;
     _home_saved = true;
-
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: return point reset");
 }
 
 #if HAL_LOGGING_ENABLED
