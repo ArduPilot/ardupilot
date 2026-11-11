@@ -268,11 +268,11 @@ bool AP_SmartRTL::reset_home()
     return true;
 }
 
-// a reset is allowed only while the vehicle records the path from a good position, which it
-// stops doing when it returns along the path, and not once a return has asked for the path
+// a reset is allowed only while the vehicle records the path from a good position: not from the
+// moment a return asks for the path's cleanup until update() is next asked to save a position
 bool AP_SmartRTL::reset_allowed() const
 {
-    return _recording && (_thorough_clean_request_ms == 0);
+    return _recording;
 }
 #endif  // AP_SMARTRTL_RESET_ENABLED
 
@@ -327,6 +327,11 @@ void AP_SmartRTL::update(bool position_ok, const Vector3p& current_pos)
 // this method should be called repeatedly until it returns true before initiating the return journey
 bool AP_SmartRTL::request_thorough_cleanup(ThoroughCleanupType clean_type)
 {
+#if AP_SMARTRTL_RESET_ENABLED
+    // a return is starting, which update() would only report at its next call
+    _recording = false;
+#endif
+
     // this should never happen but just in case
     if (!_active) {
         return false;
