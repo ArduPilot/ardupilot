@@ -5150,6 +5150,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not deferred or deferred[0] > reset[0]:
             raise NotAchievedException("reset taken on the AGL KF's restart sample, before any confirmed it")
 
+        # A range finder backend holds its last reading as Good for 500 ms, or 3 s for NMEA, and the
+        # EKF polls it every 50 ms, so one reading after an outage restarts the AGL KF by itself.
+        # Copies of that reading must not then confirm the restart.  A second range finder, on
+        # MAVLink, gives the one reading while the first is still out of range.  It sits off the IMU,
+        # so the EKF's correction for its position moves the copies with the vehicle's attitude
+        self.start_subtest("One held range reading after an outage does not confirm the restart")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameters({
+            "RNGFND2_TYPE": 10,  # MAVLink
+            "RNGFND2_ORIENT": 25,
+            "RNGFND2_MAX": 40,
+            "RNGFND2_POS_X": 0.1,
+            "ARMING_SKIPCHK": 1 << 15,  # range finder: the MAVLink one has no data until it is sent some
+        })
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.delay_sim_time(6, "out of range past the AGL KF's 5 s timeout")
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.delay_sim_time(1, "the flow axis locks out")
+        hagl_cm = int(-100 * self.assert_receive_message('LOCAL_POSITION_NED').z)
+        self.mav.mav.distance_sensor_send(
+            0,  # time_boot_ms
+            10,  # min_distance cm
+            4000,  # max_distance cm
+            hagl_cm,  # current_distance cm
+            mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER,  # type
+            1,  # id
+            mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270,  # orientation
+            255)  # covariance
+        self.wait_statustext("recovery deferred, range restarted", check_context=True, timeout=5)
+        self.delay_sim_time(2, "past the 500 ms the reading is held for")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("AGL KF restart confirmed by one held range reading")
+        # the first range finder's readings then confirm it, and a fresh lockout is recovered at once
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        self.delay_sim_time(6, "the range finder's readings confirm the restart and the old lockout ends")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_OFS_X", -1.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=10)
+        self.disarm_vehicle(force=True)
+        self.set_parameters({"RNGFND2_TYPE": 0, "ARMING_SKIPCHK": 0})
+
         # A steady offset is reset once and then agreed with, so flip its sign every 4 s: each
         # flip is a fresh lockout and a fresh reset, as repeated hard manoeuvres would give.  Five
         # resets within 20 s pause the resets, for 5 s and then 10 s, while flow aiding carries on.
