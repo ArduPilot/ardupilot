@@ -5225,11 +5225,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
 }
 #endif // AP_ARMING_ENABLED
 
-bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Location &out)
-{
-    return location_from_command_int(in, out) == MAV_RESULT_ACCEPTED;
-}
-
 MAV_RESULT GCS_MAVLINK::location_from_command_int(const mavlink_command_int_t &in, Location &out)
 {
     if (!command_long_stores_location((MAV_CMD)in.command)) {
