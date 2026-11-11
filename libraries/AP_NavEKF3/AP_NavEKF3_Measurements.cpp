@@ -126,6 +126,9 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
         return;
     }
 
+    // record the arrival time before applying the delay
+    bodyOdm.measTime_ms = timeStamp_ms;
+
     // subtract delay from timestamp
     timeStamp_ms -= delay_ms;
 
@@ -133,7 +136,6 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
     bodyOdm.dataNew.vel = delPos.toftype() * (1.0/delTime);
     bodyOdm.dataNew.time_ms = timeStamp_ms;
     bodyOdm.dataNew.angRate = (delAng * (1.0/delTime)).toftype();
-    bodyOdm.measTime_ms = timeStamp_ms;
 
     // simple model of accuracy
     // TODO move this calculation outside of EKF into the sensor driver
