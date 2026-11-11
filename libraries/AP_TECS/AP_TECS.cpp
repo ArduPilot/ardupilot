@@ -1272,7 +1272,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t EAS_dem_cm,
                                     enum AP_FixedWing::FlightStage flight_stage,
                                     float distance_beyond_land_wp,
-                                    int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
                                     float load_factor,
@@ -1321,7 +1320,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Update the throttle limits.
     _update_throttle_limits();
 
-    _update_pitch_limits(ptchMinCO_cd);
+    _update_pitch_limits();
 
     if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF || flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         if (!_flags.reached_speed_takeoff && _TAS_state >= _TASmin && _TASmin > 0) {
@@ -1473,6 +1472,7 @@ void AP_TECS::_update_throttle_limits() {
 }
 
 void AP_TECS::set_pitch_min(const float pitch_min) {
+    _PITCHminf_ext_set = true;
     // Don't change the limit if it is already covered.
     if (pitch_min > _PITCHminf_ext) {
         _PITCHminf_ext = pitch_min;
@@ -1486,7 +1486,7 @@ void AP_TECS::set_pitch_max(const float pitch_max) {
     }
 }
 
-void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
+void AP_TECS::_update_pitch_limits() {
     // If TECS_PITCH_{MAX,MIN} isn't set then use LIM_PITCH_{MAX,MIN}.
     // Don't allow TECS_PITCH_{MAX,MIN} to be larger than LIM_PITCH_{MAX,MIN}.
     if (_pitch_max == 0) {
@@ -1550,13 +1550,6 @@ void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
         _PITCHminf = MAX(_land_pitch_min, _PITCHminf);
     }
 
-    // Apply TAKEOFF minimum pitch
-    if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF
-        || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)
-    {
-        _PITCHminf = cd_to_rad(ptchMinCO_cd);
-    }
-
     // Apply external limits.
     _PITCHmaxf = MIN(_PITCHmaxf, _PITCHmaxf_ext);
     _PITCHminf = MAX(_PITCHminf, _PITCHminf_ext);
@@ -1564,6 +1557,7 @@ void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
     // Reset the external pitch limits.
     _PITCHminf_ext = -90.0f;
     _PITCHmaxf_ext = 90.0f;
+    _PITCHminf_ext_set = false;
 
     // convert to radians
     _PITCHmaxf = radians(_PITCHmaxf);
