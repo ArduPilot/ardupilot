@@ -227,7 +227,7 @@ void AP_SmartRTL::set_home(bool position_ok, const Vector3p& current_pos)
         return;
     }
 
-    WITH_SEMAPHORE(_path_sem);
+    WITH_SEMAPHORE(_reset_sem);
     _reset_request.pos = current_pos.tofloat();
     _reset_request.position_ok = position_ok;
     _reset_request.from_reset_home = false;
@@ -238,8 +238,8 @@ void AP_SmartRTL::set_home(bool position_ok, const Vector3p& current_pos)
 // clear the return path and save the vehicle's current position as the new return point
 // the reset is performed by the background thread, which runs the simplify and prune algorithms,
 // so the path and their state are never changed underneath them
-// returns true if the request was accepted, false if SmartRTL is disabled or busy, the vehicle's
-// position is unavailable, or the vehicle is not recording the path, as while it returns along it
+// returns true if the request was accepted, false if SmartRTL is disabled, a set_home reset is pending,
+// the vehicle's position is unavailable, or the vehicle is not recording the path, as while it returns along it
 bool AP_SmartRTL::reset_home()
 {
     if (_path == nullptr || !enabled() || !reset_allowed()) {
@@ -256,15 +256,15 @@ bool AP_SmartRTL::reset_home()
         }
     }
 
-    // record the request without waiting on the background thread, which performs the reset
-    if (!_path_sem.take_nonblocking()) {
+    WITH_SEMAPHORE(_reset_sem);
+    // a pending set_home resets the path anyway, and is not replaced by a request that may be refused
+    if (_reset_request.pending && !_reset_request.from_reset_home) {
         return false;
     }
     _reset_request.pos = current_pos.tofloat();
     _reset_request.position_ok = true;
     _reset_request.from_reset_home = true;
     _reset_request.pending = true;
-    _path_sem.give();
     return true;
 }
 
@@ -288,7 +288,8 @@ void AP_SmartRTL::update(bool position_ok, bool save_position)
         set_home(true);
     }
 
-    if (!_active || !save_position) {
+    // a pending reset is about to replace the path, so do not add to it or time it out
+    if (!_active || !save_position || reset_pending()) {
         return;
     }
 
@@ -406,11 +407,9 @@ void AP_SmartRTL::run_background_cleanup()
         return;
     }
 
-    // perform in-flight reset of the path if one has been requested
+    // perform a reset of the path if one has been requested
     // this is done even if inactive because a reset re-activates SmartRTL
-    if (_reset_request.pending) {
-        handle_reset_request();
-    }
+    handle_reset_request();
 
     if (!_active) {
         _path_sem.give();
@@ -925,24 +924,39 @@ void AP_SmartRTL::deactivate(Action action, const char *reason)
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "SmartRTL deactivated: %s", reason);
 }
 
-// perform the path reset requested by set_home or reset_home.  called from the background thread with the path semaphore held
+// true if a path reset has been requested and not yet performed
+bool AP_SmartRTL::reset_pending()
+{
+    WITH_SEMAPHORE(_reset_sem);
+    return _reset_request.pending;
+}
+
+// perform the path reset requested by set_home or reset_home, if any.  called from the background thread with the path semaphore held
 void AP_SmartRTL::handle_reset_request()
 {
-    _reset_request.pending = false;
+    ResetRequest request;
+    {
+        WITH_SEMAPHORE(_reset_sem);
+        if (!_reset_request.pending) {
+            return;
+        }
+        request = _reset_request;
+        _reset_request.pending = false;
+    }
 
 #if AP_SMARTRTL_RESET_ENABLED
-    if (_reset_request.from_reset_home) {
+    if (request.from_reset_home) {
         // the vehicle may have started a return since the request was made
         if (reset_allowed()) {
-            reset_path(true, _reset_request.pos);
-            log_action(Action::RETURN_POINT_RESET, _reset_request.pos);
+            reset_path(true, request.pos);
+            log_action(Action::RETURN_POINT_RESET, request.pos);
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: return point reset");
         }
         return;
     }
 #endif
 
-    reset_path(_reset_request.position_ok, _reset_request.pos);
+    reset_path(request.position_ok, request.pos);
 }
 
 // clear the path and restart the cleanup algorithms from scratch, then if position_ok make pos the

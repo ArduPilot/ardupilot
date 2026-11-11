@@ -62,7 +62,7 @@ public:
     bool peek_point(Vector3p& point);
 
     // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
-    // if position_ok is false, SmartRTL will not be available.
+    // if position_ok is false, SmartRTL will not be available.  The background thread resets the path shortly after the call
     // example sketches use the method that allows providing vehicle position directly
     void set_home(bool position_ok);
     void set_home(bool position_ok, const Vector3p& current_pos);
@@ -194,7 +194,10 @@ private:
     bool reset_allowed() const;
 #endif
 
-    // perform the path reset requested by set_home or reset_home.  called from the background thread with the path semaphore held
+    // true if a path reset has been requested and not yet performed
+    bool reset_pending();
+
+    // perform the path reset requested by set_home or reset_home, if any.  called from the background thread with the path semaphore held
     void handle_reset_request();
 
     // clear the path and, if position_ok, make pos the return point and activate SmartRTL
@@ -233,13 +236,14 @@ private:
     uint16_t _path_points_completed_limit;  // set by main thread to the path_point_count when a point is popped.  used by simplify and prune algorithms to detect path shrinking
     HAL_Semaphore _path_sem;   // semaphore for updating path
 
-    // path reset request.  set by set_home or reset_home (from any thread), consumed by the background thread.  protected by _path_sem
-    struct {
+    // path reset request.  set by set_home or reset_home (from any thread), consumed by the background thread
+    struct ResetRequest {
         bool pending;       // true if a reset has been requested but not yet performed
         bool position_ok;   // false to clear the path without a return point, as set_home does without a position
         bool from_reset_home;   // true if requested by reset_home, which is refused if a return has started since
         Vector3f pos;       // position (in meters from EKF origin in NED) to use as the new return point
     } _reset_request;
+    HAL_Semaphore _reset_sem;   // protects _reset_request, held only to copy it so no thread waits on the path
 
     // Simplify
     // structure and buffer to hold the "to-do list" for the simplify algorithm.
