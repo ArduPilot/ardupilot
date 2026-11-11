@@ -377,8 +377,16 @@ void Plane::one_second_loop()
 #endif
 
     if (flight_option_enabled(FlightOptions::ENABLE_DEFAULT_AIRSPEED)) {
-        // use average of min and max airspeed as default airspeed fusion with high variance
-        ahrs.writeDefaultAirSpeed((float)((aparm.airspeed_min + aparm.airspeed_max)/2),
+        // assume the speed being flown, with the envelope's half-width as the
+        // uncertainty: cruise, raised towards AIRSPEED_MAX by a nudged throttle
+        // as the airspeed target is when a sensor is fitted
+        // throttle_nudge_fraction is what read_radio() allowed, so this
+        // follows the nudge's own gates - including fence_stickmixing(),
+        // which stops the stick counting during a fence recovery the pilot
+        // is not flying
+        const float assumed_airspeed = aparm.airspeed_cruise +
+            (aparm.airspeed_max - aparm.airspeed_cruise) * throttle_nudge_fraction;
+        ahrs.writeDefaultAirSpeed(assumed_airspeed,
                                   (float)((aparm.airspeed_max - aparm.airspeed_min)/2));
     }
 
