@@ -26,8 +26,8 @@ extern const AP_HAL::HAL &hal;
 bool MultiHeap::create(uint32_t total_size, uint8_t max_heaps, bool _allow_expansion, uint32_t _reserve_size)
 {
     max_heaps = MIN(MAX_HEAPS, max_heaps);
-    if (heaps != nullptr) {
-        // don't allow double allocation
+    if (heaps != nullptr || max_heaps == 0) {
+        // do not allow double allocation or an empty descriptor array
         return false;
     }
     heaps = NEW_NOTHROW Heap[max_heaps];
@@ -64,7 +64,7 @@ bool MultiHeap::create(uint32_t total_size, uint8_t max_heaps, bool _allow_expan
 // destroy heap
 void MultiHeap::destroy(void)
 {
-    if (!available()) {
+    if (heaps == nullptr) {
         return;
     }
     for (uint8_t i=0; i<num_heaps; i++) {
@@ -130,15 +130,19 @@ void *MultiHeap::allocate(uint32_t size)
      */
     const uint32_t available = hal.util->available_memory();
     const uint32_t heap_overhead = 128; // conservative value, varies with HAL
+    if (size > UINT32_MAX - heap_overhead || available < reserve_size) {
+        last_failed = true;
+        return nullptr;
+    }
     const uint32_t min_size = size + heap_overhead;
-    if (available < reserve_size+min_size) {
+    if (available - reserve_size < min_size) {
         last_failed = true;
         return nullptr;
     }
 
     // round up to a minimum of 30k to allocate, and allow for heap overhead
     const uint32_t round_to = 30*1024U;
-    const uint32_t alloc_size = MIN(available - reserve_size, MAX(size+heap_overhead, round_to));
+    const uint32_t alloc_size = MIN(available - reserve_size, MAX(min_size, round_to));
     if (alloc_size < min_size) {
         last_failed = true;
         return nullptr;
