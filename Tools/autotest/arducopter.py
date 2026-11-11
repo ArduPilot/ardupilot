@@ -18340,6 +18340,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             )
         self.wait_disarmed()
 
+    def SmartRTLResetHome(self):
+        '''SmartRTL returns to a return point reset in flight, and refuses a reset during the return'''
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RC9_OPTION": 300,   # Scripting1, the applet's switch
+            "RC10_OPTION": 301,  # Scripting2, the probe's switch
+        })
+        self.install_applet_script_context("smartrtl-reset.lua")
+        # calls reset_home() directly, so the library refuses the reset rather than the applet
+        self.install_script_content_context("smartrtl-reset-probe.lua", '''
+local last_pos
+local function update()
+   local pos = rc:get_aux_cached(301)
+   if pos == 2 and last_pos ~= 2 then
+      -- false can also mean the path was busy, so any one acceptance fails the test
+      local accepted = false
+      for _ = 1, 5 do
+         accepted = smart_rtl:reset_home() or accepted
+      end
+      gcs:send_text(6, string.format("probe reset_home=%s", tostring(accepted)))
+   end
+   last_pos = pos
+   return update, 100
+end
+return update, 1000
+''')
+        self.set_rc(9, 1000)
+        self.set_rc(10, 1000)
+        self.reboot_sitl()
+        self.wait_statustext("SmartRTL reset: loaded", check_context=True)
+
+        self.takeoff(20, mode='GUIDED')
+        self.fly_guided_move_local(40, 0, 20)
+        reset_point = self.get_location()
+        self.set_rc(9, 2000)
+        self.wait_statustext("SmartRTL: return point reset", check_context=True)
+        self.set_rc(9, 1000)
+        self.fly_guided_move_local(40, 40, 20)
+        self.fly_guided_move_local(0, 40, 20)
+
+        self.change_mode('SMART_RTL')
+        self.wait_distance_to_local_position((40, 40, -20), 0, 10, timeout=60)
+        self.set_rc(10, 2000)
+        m = self.wait_statustext("probe reset_home=", check_context=True)
+        if m.text != "probe reset_home=false":
+            raise NotAchievedException("reset accepted during the return: %s" % m.text)
+
+        self.wait_disarmed(timeout=120)
+        self.assert_distance(reset_point, self.get_location(), 0, 3)
+
     def get_ground_effect_duration_from_current_onboard_log(self, bit, ignore_multi=False):
         '''returns a duration in seconds we were expecting to interact with
         the ground.  Will die if there's more than one such block of
@@ -20250,6 +20301,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EK3_NoGPSLeakWhenNotSource,
             self.AHRSSwitchBackendYawReset,
             self.SMART_RTL,
+            self.SmartRTLResetHome,
             self.ScriptParamRegistration,
             self.PerfInfo,
             self.FETtecESC,
