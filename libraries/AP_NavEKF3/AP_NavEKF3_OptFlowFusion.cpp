@@ -1071,10 +1071,14 @@ void NavEKF3_core::UpdateAglKf()
         }
         return;
     }
-    // a restart is confirmed by a run of samples that agree with it; one that does not starts the run again
+    // a restart is confirmed by a run of samples that agree with it, and any that does not starts the run
+    // again. A repeated sample is a reading already tested, so one that agrees does not count again
     if (aglKfRestartConfirm != 0) {
-        aglKfRestartConfirm = (sq(hgtInnov) <= sq(aglKfRestartConfirmSigma) * innovVar) ?
-                              aglKfRestartConfirm - 1 : AGLKF_RESTART_CONFIRM_SAMPLES;
+        if (sq(hgtInnov) > sq(aglKfRestartConfirmSigma) * innovVar) {
+            aglKfRestartConfirm = AGLKF_RESTART_CONFIRM_SAMPLES;
+        } else if (!rangeDataDelayed.repeated) {
+            aglKfRestartConfirm--;
+        }
     }
 
     // Kalman gain:  K = P*H' / innovVar = [P[0][0]/innovVar, P[1][0]/innovVar]'

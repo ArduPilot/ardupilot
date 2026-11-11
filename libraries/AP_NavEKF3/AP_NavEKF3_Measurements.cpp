@@ -51,6 +51,7 @@ void NavEKF3_core::readRangeFinder(void)
                 }
                 storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
                 storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance();
+                storedRngReadTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->last_reading_ms();
             } else {
                 continue;
             }
@@ -85,6 +86,15 @@ void NavEKF3_core::readRangeFinder(void)
 
                 // limit the measured range to be no less than the on-ground range
                 rangeDataNew.rng = MAX(storedRngMeas[sensorIndex][midIndex],rngOnGnd);
+                // a backend reports its last reading until the next arrives, and a reading stays in the median's
+                // window for three samples, so the median can be the reading either of the last two samples was.
+                // A log from before reading times were kept counts every sample
+                const uint32_t readTime_ms = storedRngReadTime_ms[sensorIndex][midIndex];
+                uint32_t *lastReadTime_ms = rngLastReadTime_ms[sensorIndex];
+                rangeDataNew.repeated = _rng->have_reading_time(sensorIndex) &&
+                                        (readTime_ms == lastReadTime_ms[0] || readTime_ms == lastReadTime_ms[1]);
+                lastReadTime_ms[1] = lastReadTime_ms[0];
+                lastReadTime_ms[0] = readTime_ms;
 
                 // get position in body frame for the current sensor
                 rangeDataNew.sensor_idx = sensorIndex;
@@ -99,6 +109,7 @@ void NavEKF3_core::readRangeFinder(void)
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
+                rangeDataNew.repeated = true;   // assumed, not read
 
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
