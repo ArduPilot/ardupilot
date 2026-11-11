@@ -305,6 +305,14 @@ public:
         _rangefinder->handle_message(msg);
 #endif
     }
+    void handle_message(const log_RRNJ &msg) {
+#if AP_RANGEFINDER_ENABLED
+        if (_rangefinder == nullptr) {
+            _rangefinder = NEW_NOTHROW AP_DAL_RangeFinder;
+        }
+        _rangefinder->handle_message(msg);
+#endif
+    }
 
     void handle_message(const log_RGPH &msg) {
         _gps.handle_message(msg);
