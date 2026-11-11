@@ -500,8 +500,11 @@ public:
     // data is good
     bool active_backend_configured_to_use_gps() const { return active_estimates->configured_to_use_gps; }
 
-    // set and save the ALT_M_NSE parameter value
-    void set_alt_measurement_noise(float noise);
+    // set the ALT_M_NSE default without overriding configured values
+    void set_default_alt_measurement_noise(float noise);
+
+    // override the effective noise without changing the ALT_M_NSE parameters
+    void set_alt_measurement_noise_override(float noise);
 
     enum class EKFType : uint8_t {
 #if AP_AHRS_DCM_ENABLED

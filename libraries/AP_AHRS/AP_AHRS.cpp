@@ -1981,14 +1981,24 @@ bool AP_AHRS::using_extnav_for_yaw(void) const
     return active_estimates->using_extnav_for_yaw;
 }
 
-// set and save the alt noise parameter value
-void AP_AHRS::set_alt_measurement_noise(float noise)
+// set the alt noise default without overriding configured values
+void AP_AHRS::set_default_alt_measurement_noise(float noise)
 {
 #if HAL_NAVEKF2_AVAILABLE
-    ekf2.EKF2.set_baro_alt_noise(noise);
+    ekf2.EKF2.set_default_baro_alt_noise(noise);
 #endif
 #if HAL_NAVEKF3_AVAILABLE
-    ekf3.EKF3.set_baro_alt_noise(noise);
+    ekf3.EKF3.set_default_baro_alt_noise(noise);
+#endif
+}
+
+void AP_AHRS::set_alt_measurement_noise_override(float noise)
+{
+#if HAL_NAVEKF2_AVAILABLE
+    ekf2.EKF2.set_baro_alt_noise_override(noise);
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    ekf3.EKF3.set_baro_alt_noise_override(noise);
 #endif
 }
 
