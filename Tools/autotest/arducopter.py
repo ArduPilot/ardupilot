@@ -5127,6 +5127,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("flow vel reset", check_context=True, timeout=30)
         self.disarm_vehicle(force=True)
 
+        # Out of range for over 5 s the AGL KF times out, and when the range comes back it restarts
+        # from that one sample, which the reset's range tests then compare with itself. The
+        # recovery must wait for the samples after the restart to confirm it. A lockout held
+        # through the outage ends of itself once the flow scales by the main filter's height, so
+        # the fault starts after the timeout, when the recovery leaves the lockout alone, and the
+        # range comes back while it is still locked out
+        self.start_subtest("Range back after an outage: the recovery waits for the restart to be confirmed")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.delay_sim_time(6, "out of range past the AGL KF's 5 s timeout")
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        # no message or event marks a lockout, which takes 500 ms to declare
+        self.delay_sim_time(1, "the flow axis locks out")
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+        texts = [m.text for m in self.context_collection('STATUSTEXT')]
+        deferred = [i for i, t in enumerate(texts) if "recovery deferred, range restarted" in t]
+        reset = [i for i, t in enumerate(texts) if "flow vel reset" in t]
+        if not deferred or deferred[0] > reset[0]:
+            raise NotAchievedException("reset taken on the AGL KF's restart sample, before any confirmed it")
+
         # A steady offset is reset once and then agreed with, so flip its sign every 4 s: each
         # flip is a fresh lockout and a fresh reset, as repeated hard manoeuvres would give.  Five
         # resets within 20 s pause the resets, for 5 s and then 10 s, while flow aiding carries on.
