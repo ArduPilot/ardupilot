@@ -462,6 +462,50 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
                   (p1[1] + p2[1]) * 0.5 + chord[0] * factor)
         return (center, radius_m)
 
+    def arc_swept_deg(self, samples, seq, center, gross=False):
+        '''angle swept about a circle centre by the samples on one item, in degrees;
+        gross sums the absolute increments (a loop counts in full), otherwise the net'''
+        total_deg = 0.0
+        prev_rad = None
+        for s in samples:
+            if s[1] != seq:
+                continue
+            ang_rad = math.atan2(s[3] - center[1], s[2] - center[0])
+            if prev_rad is not None:
+                delta_rad = ang_rad - prev_rad
+                while delta_rad > math.pi:
+                    delta_rad -= 2.0 * math.pi
+                while delta_rad < -math.pi:
+                    delta_rad += 2.0 * math.pi
+                total_deg += math.degrees(abs(delta_rad) if gross else delta_rad)
+            prev_rad = ang_rad
+        return total_deg
+
+    def arc_remaining_deg(self, p1, p2, theta_deg, stop_ne):
+        '''(remaining angle in degrees, radial offset in metres of the stop
+        point from the arc circle) for an arc interrupted at stop_ne,
+        mirroring the firmware's remaining-angle calculation'''
+        (center, radius_m) = self.arc_geometry(p1, p2, theta_deg)
+        a0 = math.atan2(p1[1] - center[1], p1[0] - center[0])
+        a1 = math.atan2(stop_ne[1] - center[1], stop_ne[0] - center[0])
+        if theta_deg >= 0:
+            swept_deg = math.degrees((a1 - a0) % (2.0 * math.pi))
+        else:
+            swept_deg = math.degrees((a0 - a1) % (2.0 * math.pi))
+        if swept_deg > (abs(theta_deg) + 360.0) * 0.5:
+            swept_deg = 0.0
+        remaining_deg = max(abs(theta_deg) - swept_deg, 0.0)
+        offset_m = abs(math.hypot(stop_ne[0] - center[0], stop_ne[1] - center[1]) - radius_m)
+        return (remaining_deg, offset_m)
+
+    def arc_resume_deviation_limit_m(self, stop_offset_m, remaining_deg):
+        '''deviation allowance in metres for a resumed arc: the
+        re-planned circle passes through the stopping point, so a
+        stopping point offset from the original circle also moves the
+        fitted centre, by about offset / (2 tan(remaining/2)); allow
+        for both plus tracking error'''
+        return stop_offset_m * (1.0 + 0.5 / math.tan(math.radians(remaining_deg) * 0.5)) + 0.75
+
     def arc_ne_from_latlon(self, lat, lng):
         '''(north, east) offset in metres of a lat/lng from the arc origin'''
         origin = self._arc_origin_loc
@@ -517,7 +561,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         return self._arc_samples
 
     def check_arc_deviation(self, samples, seq, p1, p2, theta_deg, max_dev_m=0.5, exclude_m=3.0,
-                            converged_within_m=None):
+                            converged_within_m=None, converged_limit_m=0.5):
         '''assert the path flown on an arc item stays within max_dev_m of the theoretical circle'''
         (center, radius_m) = self.arc_geometry(p1, p2, theta_deg)
         deviations_m = []
@@ -544,11 +588,11 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
             if len(converged_deviations_m) < 3:
                 raise NotAchievedException("Too few converged samples on arc (seq %u): %u" %
                                            (seq, len(converged_deviations_m)))
-            self.progress("Arc seq %u: max deviation within %.1fm of the end %.3fm (limit 0.500m)" %
-                          (seq, converged_within_m, max(converged_deviations_m)))
-            if max(converged_deviations_m) > 0.5:
-                raise NotAchievedException("Arc deviation near end %.3fm exceeds 0.500m" %
-                                           max(converged_deviations_m))
+            self.progress("Arc seq %u: max deviation within %.1fm of the end %.3fm (limit %.3fm)" %
+                          (seq, converged_within_m, max(converged_deviations_m), converged_limit_m))
+            if max(converged_deviations_m) > converged_limit_m:
+                raise NotAchievedException("Arc deviation near end %.3fm exceeds %.3fm" %
+                                           (max(converged_deviations_m), converged_limit_m))
         return max(deviations_m)
 
     def check_arc_item_duration(self, samples, seq, max_duration_s):
@@ -787,18 +831,16 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
 
         self.start_subtest("Arc after a waypoint delay still arcs")
         self.set_parameter("WP_SPEED", 3)
-        # position the vehicle east of the delay waypoint, as it was when
-        # this subtest ran after the 270 degree arc in the combined test;
-        # the standing-start entry transient is measurably larger when
-        # the arc is the first thing driven after boot
+        # approach the delay waypoint along the arc's entry tangent (45
+        # degrees) so the vehicle stops already aligned with the arc
         self.run_arc_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 14.142, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, -10, 0),
         ])
         samples = self.run_arc_mission([
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 0, {"p1": 5}),
             (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 30, 20, 0, {"p1": 90}),
         ])
-        self.check_arc_deviation(samples, 2, (30, 0), (30, 20), 90, max_dev_m=1.5, converged_within_m=6.0)
+        self.check_arc_deviation(samples, 2, (30, 0), (30, 20), 90, max_dev_m=0.75)
         # a 90 degree arc read as a 90 second loiter would hold this item current for ~90s longer
         self.check_arc_item_duration(samples, 2, 30.0)
 
@@ -810,7 +852,19 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
             nav_delay_item,
             (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 30, 20, 0, {"p1": 90}),
         ])
-        self.check_arc_deviation(samples, 3, (30, 0), (30, 20), 90, max_dev_m=1.5, converged_within_m=6.0)
+        # the delay stops the vehicle facing away from the arc's entry
+        # tangent and the arc is re-planned from the stopping point
+        # (as in the resume subtest): measure against the circle
+        # through the arc's start position, with room for the transient
+        arc_start = None
+        for s in samples:
+            if s[1] == 3:
+                arc_start = (s[2], s[3])
+                break
+        if arc_start is None:
+            raise NotAchievedException("No samples on arc (seq 3)")
+        self.check_arc_deviation(samples, 3, arc_start, (30, 20), 90, max_dev_m=2.0,
+                                 converged_within_m=6.0, converged_limit_m=0.75)
         # a 90 degree arc read as a 90 second loiter would hold this item current for ~90s longer
         self.check_arc_item_duration(samples, 3, 30.0)
 
@@ -851,7 +905,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
                 "Reverse arc was not driven backwards through its interior "
                 "(%u backwards samples, %u forwards samples)" % (backwards, forwards))
 
-        self.start_subtest("Resumed arc is re-planned from the stopping point and completes")
+        self.start_subtest("Resumed arc rejoins the original circle and completes")
         self.set_parameter("WP_SPEED", 2)
         self.start_driving_arc_mission([
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 0),
@@ -873,6 +927,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_groundspeed(0, 0.5, timeout=30)
         stop_loc = self.get_location()
         stop_ne = self.arc_ne_from_latlon(stop_loc.lat, stop_loc.lng)
+        (remaining_deg, stop_offset_m) = self.arc_remaining_deg((30, 0), (30, 8), 180, stop_ne)
         resume_time = self.get_sim_time()
         self.context_clear_collection('STATUSTEXT')
         self.change_mode("AUTO")
@@ -880,23 +935,393 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_statustext("Mission Complete", timeout=60, check_context=True)
         self.disarm_vehicle()
         post = [s for s in self._arc_samples if s[0] > resume_time + 2]
-        self.check_arc_deviation(post, 2, stop_ne, (30, 8), 180, max_dev_m=1.0, exclude_m=2.0)
+        # the resumed leg is re-planned through the stopping point with
+        # only the remaining angle: it may sit off the original circle
+        # by the stopping point's own offset, but must not wander
+        # further from it, and must sweep about the remaining angle
+        # rather than the full angle
+        devs_m = [abs(math.hypot(s[2] - 30, s[3] - 4) - 4.0) for s in post if s[1] == 2]
+        if len(devs_m) < 3:
+            raise NotAchievedException("Too few post-resume samples on the arc: %u" % len(devs_m))
+        max_dev_m = max(devs_m)
+        self.progress("Resumed arc: max deviation from the original circle %.3fm "
+                      "(stopping point offset %.3fm)" % (max_dev_m, stop_offset_m))
+        if max_dev_m > self.arc_resume_deviation_limit_m(stop_offset_m, remaining_deg):
+            raise NotAchievedException(
+                "Resumed arc deviated %.3fm from the original circle, "
+                "stopping point offset was %.3fm" % (max_dev_m, stop_offset_m))
+        swept_deg = self.arc_swept_deg(post, 2, (30, 4), gross=True)
+        self.progress("Resumed arc swept %.1f degrees about the original centre, "
+                      "%.1f degrees remained at the stop" % (swept_deg, remaining_deg))
+        if abs(swept_deg - remaining_deg) > 40:
+            raise NotAchievedException(
+                "Resumed arc swept %.1f degrees about the original centre, "
+                "expected about the %.1f degrees remaining" % (swept_deg, remaining_deg))
+
+        self.start_subtest("Arc resumed near its exit does not loop")
+        self.set_parameter("WP_SPEED", 2)
+        self.start_driving_arc_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 30, 8, 0, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 8, 0),
+        ])
+        self.reset_arc_samples()
+        self.wait_current_waypoint(2, timeout=120)
+        # run the arc itself slowly: the stop is staged by polling
+        # the position, and at this speed even a several-second
+        # polling gap cannot carry the vehicle past the exit
+        self.set_parameter("WP_SPEED", 0.3)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 240:
+            loc = self.get_location()
+            (n, e) = self.arc_ne_from_latlon(loc.lat, loc.lng)
+            if math.hypot(n - 30, e - 8) < 3.0:
+                break
+            self.delay_sim_time(0.2, reason="waiting to get near the arc exit")
+        else:
+            raise NotAchievedException("Vehicle did not get near the arc exit")
+        self.change_mode("HOLD")
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        stop_loc = self.get_location()
+        stop_ne = self.arc_ne_from_latlon(stop_loc.lat, stop_loc.lng)
+        (remaining_deg, stop_offset_m) = self.arc_remaining_deg((30, 0), (30, 8), 180, stop_ne)
+        if remaining_deg < 5 or remaining_deg > 60:
+            raise NotAchievedException(
+                "Stop staged with %.1f degrees of the arc remaining, "
+                "expected a stop near the exit" % remaining_deg)
+        resume_time = self.get_sim_time()
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode("AUTO")
+        self.wait_waypoint(2, 3, max_dist_to_final_wp_m=5, timeout=400)
+        self.wait_statustext("Mission Complete", timeout=60, check_context=True)
+        self.disarm_vehicle()
+        post = [s for s in self._arc_samples if s[0] > resume_time + 2]
+        devs_m = [abs(math.hypot(s[2] - 30, s[3] - 4) - 4.0) for s in post if s[1] == 2]
+        if len(devs_m) < 3:
+            raise NotAchievedException("Too few post-resume samples on the arc: %u" % len(devs_m))
+        max_dev_m = max(devs_m)
+        self.progress("Late-resumed arc: max deviation from the original circle %.3fm "
+                      "(stopping point offset %.3fm)" % (max_dev_m, stop_offset_m))
+        if max_dev_m > self.arc_resume_deviation_limit_m(stop_offset_m, remaining_deg):
+            raise NotAchievedException(
+                "Late-resumed arc deviated %.3fm from the original circle, "
+                "stopping point offset was %.3fm" % (max_dev_m, stop_offset_m))
+        swept_deg = self.arc_swept_deg(post, 2, (30, 4), gross=True)
+        self.progress("Late-resumed arc swept %.1f degrees about the original centre, "
+                      "%.1f degrees remained at the stop" % (swept_deg, remaining_deg))
+        if abs(swept_deg - remaining_deg) > 40:
+            raise NotAchievedException(
+                "Late-resumed arc swept %.1f degrees about the original centre, "
+                "expected about the %.1f degrees remaining" % (swept_deg, remaining_deg))
+
+        self.start_subtest("Arc stopped as it starts still flies the full arc")
+        self.set_parameter("WP_SPEED", 2)
+        # the feeder waypoint roughly aligns the approach with the
+        # arc's entry tangent, so the entry transient does not
+        # dominate the result
+        self.start_driving_arc_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, -8, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 30, 8, 0, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 8, 0),
+        ])
+        self.reset_arc_samples()
+        self.wait_current_waypoint(3, timeout=120)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 120:
+            loc = self.get_location()
+            (n, e) = self.arc_ne_from_latlon(loc.lat, loc.lng)
+            if math.hypot(n - 30, e - 0) > 1.0:
+                break
+            self.delay_sim_time(0.2, reason="waiting to enter the arc")
+        else:
+            raise NotAchievedException("Vehicle did not enter the arc")
+        self.change_mode("HOLD")
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        stop_loc = self.get_location()
+        stop_ne = self.arc_ne_from_latlon(stop_loc.lat, stop_loc.lng)
+        (remaining_deg, stop_offset_m) = self.arc_remaining_deg((30, 0), (30, 8), 180, stop_ne)
+        resume_time = self.get_sim_time()
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode("AUTO")
+        self.wait_waypoint(3, 4, max_dist_to_final_wp_m=5, timeout=400)
+        self.wait_statustext("Mission Complete", timeout=60, check_context=True)
+        self.disarm_vehicle()
+        # post-resume samples only: the pre-stop samples include the
+        # entry transient, which is not what this subtest checks
+        post = [s for s in self._arc_samples if s[0] > resume_time + 2]
+        devs_m = [abs(math.hypot(s[2] - 30, s[3] - 4) - 4.0)
+                  for s in post if s[1] == 3]
+        if len(devs_m) < 3:
+            raise NotAchievedException("Too few post-resume samples on the arc: %u" % len(devs_m))
+        max_dev_m = max(devs_m)
+        self.progress("Early-stopped arc: max deviation from the original circle %.3fm "
+                      "(stopping point offset %.3fm)" % (max_dev_m, stop_offset_m))
+        if max_dev_m > self.arc_resume_deviation_limit_m(stop_offset_m, remaining_deg):
+            raise NotAchievedException(
+                "Early-stopped arc deviated %.3fm from the original circle, "
+                "stopping point offset was %.3fm" % (max_dev_m, stop_offset_m))
+        swept_deg = self.arc_swept_deg(self._arc_samples, 3, (30, 4), gross=True)
+        self.progress("Early-stopped arc swept %.1f degrees in total" % swept_deg)
+        if swept_deg < 150:
+            raise NotAchievedException(
+                "Early-stopped arc swept only %.1f degrees, expected the full arc" % swept_deg)
+
+        self.start_subtest("Resumed arc with a do command before it keeps the remaining angle")
+        self.set_parameter("WP_SPEED", 2)
+        # the DO_CHANGE_SPEED item starts and immediately completes
+        # just before the arc item; this pins that a do item
+        # interleaved with the arc does not disturb the resume.  A
+        # command that is still active at the interruption (a
+        # condition command) is covered by the next subtest
+        speed_item = self.create_MISSION_ITEM_INT(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p1=0, p2=1, p3=-1, p4=0)
+        self.start_driving_arc_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 0),
+            speed_item,
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 30, 8, 0, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 8, 0),
+        ])
+        self.reset_arc_samples()
+        self.wait_current_waypoint(3, timeout=120)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 120:
+            loc = self.get_location()
+            (n, e) = self.arc_ne_from_latlon(loc.lat, loc.lng)
+            if math.hypot(n - 30, e - 0) > 3.5:
+                break
+            self.delay_sim_time(0.5, reason="waiting to get partway around the arc")
+        else:
+            raise NotAchievedException("Vehicle did not get partway around the arc")
+        self.change_mode("HOLD")
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        stop_loc = self.get_location()
+        stop_ne = self.arc_ne_from_latlon(stop_loc.lat, stop_loc.lng)
+        (remaining_deg, stop_offset_m) = self.arc_remaining_deg((30, 0), (30, 8), 180, stop_ne)
+        resume_time = self.get_sim_time()
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode("AUTO")
+        self.wait_waypoint(3, 4, max_dist_to_final_wp_m=5, timeout=400)
+        self.wait_statustext("Mission Complete", timeout=60, check_context=True)
+        self.disarm_vehicle()
+        post = [s for s in self._arc_samples if s[0] > resume_time + 2]
+        devs_m = [abs(math.hypot(s[2] - 30, s[3] - 4) - 4.0) for s in post if s[1] == 3]
+        if len(devs_m) < 3:
+            raise NotAchievedException("Too few post-resume samples on the arc: %u" % len(devs_m))
+        max_dev_m = max(devs_m)
+        self.progress("Resumed arc (do command before it): max deviation %.3fm "
+                      "(stopping point offset %.3fm)" % (max_dev_m, stop_offset_m))
+        if max_dev_m > self.arc_resume_deviation_limit_m(stop_offset_m, remaining_deg):
+            raise NotAchievedException(
+                "Resumed arc (do command before it) deviated %.3fm from the original "
+                "circle, stopping point offset was %.3fm" % (max_dev_m, stop_offset_m))
+        swept_deg = self.arc_swept_deg(post, 3, (30, 4), gross=True)
+        self.progress("Resumed arc (do command before it) swept %.1f degrees, "
+                      "%.1f degrees remained at the stop" % (swept_deg, remaining_deg))
+        if abs(swept_deg - remaining_deg) > 40:
+            raise NotAchievedException(
+                "Resumed arc (do command before it) swept %.1f degrees, "
+                "expected about the %.1f degrees remaining" % (swept_deg, remaining_deg))
+
+        self.start_subtest("Resumed arc with an active condition command keeps the remaining angle")
+        # a low speed keeps the stop staging (polled) well clear of
+        # the end of the short arc
+        self.set_parameter("WP_SPEED", 1)
+        # a CONDITION_DELAY sits in AP_Mission's do-command slot and
+        # stays loaded while the arc runs, so on resume AP_Mission
+        # restarts the condition command before the arc; starting it
+        # must not end the arc's execution record.  (That the
+        # condition is indeed still loaded at the stop is shown by
+        # the mutation check on the firmware's nav-command guard:
+        # without the guard this subtest fails, with it it passes)
+        condition_item = self.create_MISSION_ITEM_INT(
+            mavutil.mavlink.MAV_CMD_CONDITION_DELAY, p1=300)
+        self.start_driving_arc_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 0),
+            condition_item,
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 30, 8, 0, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 8, 0),
+        ])
+        self.reset_arc_samples()
+        self.wait_current_waypoint(3, timeout=120)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 120:
+            loc = self.get_location()
+            (n, e) = self.arc_ne_from_latlon(loc.lat, loc.lng)
+            if math.hypot(n - 30, e - 0) > 3.5:
+                break
+            self.delay_sim_time(0.5, reason="waiting to get partway around the arc")
+        else:
+            raise NotAchievedException("Vehicle did not get partway around the arc")
+        self.change_mode("HOLD")
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        stop_loc = self.get_location()
+        stop_ne = self.arc_ne_from_latlon(stop_loc.lat, stop_loc.lng)
+        (remaining_deg, stop_offset_m) = self.arc_remaining_deg((30, 0), (30, 8), 180, stop_ne)
+        resume_time = self.get_sim_time()
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode("AUTO")
+        self.wait_waypoint(3, 4, max_dist_to_final_wp_m=5, timeout=400)
+        self.wait_statustext("Mission Complete", timeout=60, check_context=True)
+        self.disarm_vehicle()
+        post = [s for s in self._arc_samples if s[0] > resume_time + 2]
+        devs_m = [abs(math.hypot(s[2] - 30, s[3] - 4) - 4.0) for s in post if s[1] == 3]
+        if len(devs_m) < 3:
+            raise NotAchievedException("Too few post-resume samples on the arc: %u" % len(devs_m))
+        max_dev_m = max(devs_m)
+        self.progress("Resumed arc (condition active): max deviation %.3fm "
+                      "(stopping point offset %.3fm)" % (max_dev_m, stop_offset_m))
+        if max_dev_m > self.arc_resume_deviation_limit_m(stop_offset_m, remaining_deg):
+            raise NotAchievedException(
+                "Resumed arc (condition active) deviated %.3fm from the original "
+                "circle, stopping point offset was %.3fm" % (max_dev_m, stop_offset_m))
+        swept_deg = self.arc_swept_deg(post, 3, (30, 4), gross=True)
+        self.progress("Resumed arc (condition active) swept %.1f degrees, "
+                      "%.1f degrees remained at the stop" % (swept_deg, remaining_deg))
+        if abs(swept_deg - remaining_deg) > 40:
+            raise NotAchievedException(
+                "Resumed arc (condition active) swept %.1f degrees, "
+                "expected about the %.1f degrees remaining" % (swept_deg, remaining_deg))
+
+        self.start_subtest("Restarted mission (MIS_RESTART) flies the arc with its full angle")
+        self.set_parameter("MIS_RESTART", 1)
+        self.set_parameter("WP_SPEED", 2)
+        self.start_driving_arc_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 30, 8, 0, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 8, 0),
+        ])
+        self.reset_arc_samples()
+        self.wait_current_waypoint(1, timeout=120)
+        # the arc's origin is the vehicle's position as the item starts;
+        # stage the stop well into the arc (over 60 degrees swept), so
+        # that a resume with the remaining angle would be clearly
+        # distinguishable from a restart with the full angle
+        start_loc = self.get_location()
+        start_ne = self.arc_ne_from_latlon(start_loc.lat, start_loc.lng)
+        entry_chord_m = math.hypot(30 - start_ne[0], 8 - start_ne[1])
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 120:
+            loc = self.get_location()
+            (n, e) = self.arc_ne_from_latlon(loc.lat, loc.lng)
+            if math.hypot(n - start_ne[0], e - start_ne[1]) > 0.5 * entry_chord_m:
+                break
+            self.delay_sim_time(0.2, reason="waiting to get partway around the arc")
+        else:
+            raise NotAchievedException("Vehicle did not get partway around the arc")
+        self.change_mode("HOLD")
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        stop_loc = self.get_location()
+        stop_ne = self.arc_ne_from_latlon(stop_loc.lat, stop_loc.lng)
+        (remaining_deg, stop_offset_m) = self.arc_remaining_deg(start_ne, (30, 8), 180, stop_ne)
+        if remaining_deg < 60 or remaining_deg > 130:
+            raise NotAchievedException(
+                "Stop staged with %.1f degrees of the arc remaining, "
+                "expected a stop well into the arc" % remaining_deg)
+        resume_time = self.get_sim_time()
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode("AUTO")
+        self.wait_waypoint(1, 2, max_dist_to_final_wp_m=5, timeout=400)
+        self.wait_statustext("Mission Complete", timeout=60, check_context=True)
+        self.disarm_vehicle()
+        self.set_parameter("MIS_RESTART", 0)
+        post = [s for s in self._arc_samples if s[0] > resume_time + 2]
+        # a restarted mission plans the arc afresh from the stopping
+        # point with the full angle, on the circle through that point
+        (stop_center, stop_radius_m) = self.arc_geometry(stop_ne, (30, 8), 180)
+        devs_m = [abs(math.hypot(s[2] - stop_center[0], s[3] - stop_center[1]) - stop_radius_m)
+                  for s in post if s[1] == 1]
+        if len(devs_m) < 3:
+            raise NotAchievedException("Too few post-restart samples on the arc: %u" % len(devs_m))
+        max_dev_m = max(devs_m)
+        self.progress("Restarted arc: max deviation from the stopping point circle %.3fm" % max_dev_m)
+        if max_dev_m > 2.5:
+            raise NotAchievedException(
+                "Restarted arc deviated %.3fm from the circle planned from "
+                "the stopping point" % max_dev_m)
+        swept_deg = self.arc_swept_deg(post, 1, stop_center, gross=True)
+        self.progress("Restarted arc swept %.1f degrees about its own centre" % swept_deg)
+        if swept_deg < 140:
+            raise NotAchievedException(
+                "Restarted arc swept only %.1f degrees, expected the full angle" % swept_deg)
+
+        self.start_subtest("Completed final arc is not resumed when re-selected")
+        self.set_parameter("WP_SPEED", 2)
+        self.run_arc_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 20, 16, 0, {"p1": 180}),
+        ])
+        # drive in GUIDED to (28, 8), a point on the completed arc's
+        # circle (centre (20, 8), radius 8) with 90 degrees of the arc
+        # swept, then re-select the arc item.  From an on-circle point
+        # a stale resume record would apply the remaining 90 degrees
+        # and stay on the original circle; only the completion clear
+        # makes the re-run fly the full 180 degrees from there, on the
+        # circle through (28, 8) and (20, 16) - the off-circle case is
+        # already covered by the firmware's fresh-start fallback
+        self.arm_vehicle()
+        self.change_mode("GUIDED")
+        target_loc = self.offset_location_ne(self._arc_origin_loc, 28, 8)
+        self.mav.mav.set_position_target_global_int_send(
+            0, 1, 1, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            0b0000111111111000, int(target_loc.lat * 1e7), int(target_loc.lng * 1e7),
+            0, 0, 0, 0, 0, 0, 0, 0, 0)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 120:
+            loc = self.get_location()
+            (n, e) = self.arc_ne_from_latlon(loc.lat, loc.lng)
+            if math.hypot(n - 28, e - 8) < 1.5:
+                break
+            self.delay_sim_time(0.5, reason="driving in GUIDED")
+        else:
+            raise NotAchievedException("Vehicle did not reach the re-entry point in GUIDED")
+        self.change_mode("HOLD")
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        stop_loc = self.get_location()
+        stop_ne = self.arc_ne_from_latlon(stop_loc.lat, stop_loc.lng)
+        stop_offset_m = abs(math.hypot(stop_ne[0] - 20, stop_ne[1] - 8) - 8.0)
+        if stop_offset_m > 1.75:
+            raise NotAchievedException(
+                "Re-entry point staged %.3fm off the original circle" % stop_offset_m)
+        self.reset_arc_samples()
+        self.set_current_waypoint(2, check_afterwards=False)
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode("AUTO")
+        self.wait_waypoint(2, 2, max_dist_to_final_wp_m=5, timeout=400)
+        self.wait_statustext("Mission Complete", timeout=60, check_context=True)
+        self.disarm_vehicle()
+        self.check_arc_deviation(self._arc_samples, 2, stop_ne, (20, 16), 180,
+                                 max_dev_m=1.5, exclude_m=3.0)
+        # and the re-run must leave the original circle (a resumed
+        # remainder would have stayed on it)
+        departures_m = [abs(math.hypot(s[2] - 20, s[3] - 8) - 8.0)
+                        for s in self._arc_samples
+                        if s[1] == 2 and math.hypot(s[2] - stop_ne[0], s[3] - stop_ne[1]) > 3.0
+                        and math.hypot(s[2] - 20, s[3] - 16) > 3.0]
+        if len(departures_m) < 3:
+            raise NotAchievedException("Too few samples on the re-run arc: %u" % len(departures_m))
+        max_departure_m = max(departures_m)
+        self.progress("Re-run arc: max departure from the original circle %.3fm" % max_departure_m)
+        if max_departure_m < 2.0:
+            raise NotAchievedException(
+                "Re-run arc stayed on the original circle (max departure %.3fm), "
+                "expected a fresh full arc" % max_departure_m)
 
         self.start_subtest("DO_JUMP back into a pre-loaded arc")
         self.set_parameter("WP_SPEED", 3)
         jump_item = self.create_MISSION_ITEM_INT(
-            mavutil.mavlink.MAV_CMD_DO_JUMP, p1=1, p2=1)
+            mavutil.mavlink.MAV_CMD_DO_JUMP, p1=2, p2=1)
         samples = self.run_arc_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, -8, 0),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 0),
             (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 30, 20, 0, {"p1": 90}),
             jump_item,
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 20, 0),
         ])
-        self.check_arc_deviation(samples, 2, (30, 0), (30, 20), 90, max_dev_m=1.0, converged_within_m=6.0)
+        self.check_arc_deviation(samples, 3, (30, 0), (30, 20), 90, max_dev_m=1.0, converged_within_m=6.0)
         passes = 0
         last_seq = -1
         for s in samples:
-            if s[1] == 2 and last_seq != 2:
+            if s[1] == 3 and last_seq != 3:
                 passes += 1
             last_seq = s[1]
         if passes < 2:
