@@ -262,7 +262,8 @@ void ModeAutoLand::update_target_altitude()
     // preserves its terrain frame.
     if ((stage == AutoLandStage::LANDING) &&
         (plane.landing.get_type() == AP_Landing::TYPE_STANDARD_GLIDE_SLOPE) &&
-        !plane.landing.is_on_approach()) {
+        !plane.landing.is_on_approach() &&
+        !plane.landing.is_flaring()) {
         return;
     }
 
