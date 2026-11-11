@@ -126,12 +126,9 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
         return;
     }
 
-    // subtract delay from timestamp
-    timeStamp_ms -= delay_ms;
-
     bodyOdm.dataNew.body_offset = posOffset.toftype();
     bodyOdm.dataNew.vel = delPos.toftype() * (1.0/delTime);
-    bodyOdm.dataNew.time_ms = timeStamp_ms;
+    bodyOdm.dataNew.time_ms = timeStamp_ms - delay_ms;
     bodyOdm.dataNew.angRate = (delAng * (1.0/delTime)).toftype();
     bodyOdm.measTime_ms = timeStamp_ms;
 
