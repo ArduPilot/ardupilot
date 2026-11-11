@@ -18841,8 +18841,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if len(in_frame):
             raise NotAchievedException("Origin logged before the end of the current frame: %s" % str(in_frame))
 
-    def Replay(self):
-        '''test replay correctness'''
+    def replay_setup(self):
+        '''build the Replay tool and set the logging every replay test needs'''
         self.progress("Building Replay")
         self.build_replay()
         self.set_parameters({
@@ -18851,17 +18851,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "LOG_FILE_BUFSIZE": 32767,
         })
 
-        bits = [
-            ('GPS', self.test_replay_gps_bit),
-            ('GPSForYaw', self.test_replay_gps_yaw_bit),
-            ('WindAndAirspeed', self.test_replay_wind_and_airspeed_bit),
-            ('BodyOdom', self.test_replay_body_odom_bit),
-            ('Beacon', self.test_replay_beacon_bit),
-            ('OpticalFlow', self.test_replay_optical_flow_bit),
-        ]
-        for (name, func) in bits:
-            self.start_subtest("%s" % name)
-            self.test_replay_bit(func)
+    def ReplayGPS(self):
+        '''test replay correctness of a GPS flight'''
+        self.replay_setup()
+        self.test_replay_bit(self.test_replay_gps_bit)
+
+    def ReplayGPSForYaw(self):
+        '''test replay correctness with GPS yaw'''
+        self.replay_setup()
+        self.test_replay_bit(self.test_replay_gps_yaw_bit)
+
+    def ReplayWindAndAirspeed(self):
+        '''test replay correctness with wind and airspeed'''
+        self.replay_setup()
+        self.test_replay_bit(self.test_replay_wind_and_airspeed_bit)
+
+    def ReplayBodyOdom(self):
+        '''test replay correctness with body-frame odometry'''
+        self.replay_setup()
+        self.test_replay_bit(self.test_replay_body_odom_bit)
+
+    def ReplayBeacon(self):
+        '''test replay correctness with beacons'''
+        self.replay_setup()
+        self.test_replay_bit(self.test_replay_beacon_bit)
+
+    def ReplayOpticalFlow(self):
+        '''test replay correctness with optical flow'''
+        self.replay_setup()
+        self.test_replay_bit(self.test_replay_optical_flow_bit)
 
     def test_replay_bit(self, bit):
 
@@ -25699,7 +25717,12 @@ return update, 1000
             self.SMART_RTL_EnterLeave,
             self.SMART_RTL_Repeat,
             self.RTL_TO_RALLY,
-            self.Replay,
+            self.ReplayGPS,
+            self.ReplayGPSForYaw,
+            self.ReplayWindAndAirspeed,
+            self.ReplayBodyOdom,
+            self.ReplayBeacon,
+            self.ReplayOpticalFlow,
             self.ReplayShortMessage,
             self.ReplayOriginFrame,
             self.GroundEffectCompensation_touchDownExpected,
