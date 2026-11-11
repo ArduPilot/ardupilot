@@ -135,6 +135,7 @@ void AP_Periph_FW::init()
 
 #if HAL_LOGGING_ENABLED
     logger.init(g.log_bitmask, log_structure, ARRAY_SIZE(log_structure));
+    logger.check_backend_config();
 #endif
 
     check_firmware_print();

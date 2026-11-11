@@ -285,10 +285,9 @@ void AP_Logger::init(const AP_UInt32 &log_bitmask, const struct LogStructure *st
         _next_backend++;
     }
 
-    if (remaining_types) { // there was a type we didn't process
-        AP_BoardConfig::config_error("Unknown logger backend");
-        return;
-    }
+    // remember any enabled type we have no backend for; the config
+    // error for this is raised from check_backend_config()
+    _unavailable_backend_types = remaining_types;
 
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Init();
@@ -297,6 +296,22 @@ void AP_Logger::init(const AP_UInt32 &log_bitmask, const struct LogStructure *st
     start_io_thread();
 
     EnableWrites(true);
+}
+
+/*
+  raise a config error if LOG_BACKEND_TYPE enables a backend this
+  firmware does not have.
+
+  This is not done in init() as that is called before the vehicle
+  sets up its GCS uarts; a config error raised there can only be seen
+  (and fixed) over the USB console, which leaves boards whose only
+  telemetry link is a serial port stuck with no indication why.
+ */
+void AP_Logger::check_backend_config() const
+{
+    if (_unavailable_backend_types != 0) {
+        AP_BoardConfig::config_error("Unknown logger backend");
+    }
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
