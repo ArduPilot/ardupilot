@@ -723,6 +723,17 @@ public:
         return touchdown_expected;
     }
 
+    // vehicle code sets this when it knows the vehicle has landed,
+    // even if it is still armed.  Vehicles that do not set it leave
+    // the estimators to use the armed state alone
+    void set_vehicle_landed(bool b) {
+        vehicle_landed = b;
+    }
+
+    bool get_vehicle_landed(void) const {
+        return vehicle_landed;
+    }
+
     /*
      * fly_forward is set by the vehicles to indicate the vehicle
      * should generally be moving in the direction of its heading.
@@ -897,6 +908,7 @@ private:
     uint32_t takeoff_expected_start_ms;
     bool touchdown_expected;    // true if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
     uint32_t touchdown_expected_start_ms;
+    bool vehicle_landed;    // true if the vehicle code reports it has landed
 
     /*
      * wind estimation support
