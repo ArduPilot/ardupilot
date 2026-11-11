@@ -301,7 +301,7 @@ private:
     event_listener_t ev_listener;
     bool parity_enabled;
 #endif
-#if HAL_USE_SERIAL == TRUE
+#if HAL_USE_SERIAL == TRUE || HAL_USE_SIO == TRUE
     // held while the port's line settings (parity, stop bits and options)
     // are changed, as these can be called from more than one thread
     HAL_Semaphore _line_config_sem;
