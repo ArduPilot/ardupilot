@@ -17381,6 +17381,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         return current_log_filepath
 
+    def test_replay_bootstrap_reset_bit(self):
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "RC8_OPTION": 187,  # EKF_RESET
+        })
+        # the bit before may leave a stick off centre
+        self.set_rc_default()
+        self.reboot_sitl()
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
+
+        # the reset re-initialises every core, so Replay must do the same at the same point
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF bootstrap reset performed", check_context=True, timeout=10)
+        self.set_rc(8, 1000)
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.takeoffAndMoveAway()
+        self.do_RTL()
+
+        self.reboot_sitl()
+
+        return current_log_filepath
+
     def GPSBlendingLog(self):
         '''Test GPS Blending'''
         '''ensure we get dataflash log messages for blended instance'''
@@ -17933,6 +17965,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ('BodyOdom', self.test_replay_body_odom_bit),
             ('Beacon', self.test_replay_beacon_bit),
             ('OpticalFlow', self.test_replay_optical_flow_bit),
+            ('BootstrapReset', self.test_replay_bootstrap_reset_bit),
         ]
         for (name, func) in bits:
             self.start_subtest("%s" % name)
