@@ -2497,6 +2497,51 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def DefaultAirspeedWindEstimate(self):
+        """check the airspeed ENABLE_DEFAULT_AIRSPEED assumes"""
+        # with no airspeed sensor the wind states are the only thing which can
+        # reconcile the assumed airspeed with the observed ground velocity, so
+        # the error in a wrong assumption lands in the wind estimate.
+        # takeoff() leaves the throttle at full, so the aircraft flies well
+        # above the midpoint of AIRSPEED_MIN and AIRSPEED_MAX.
+        self.set_parameters({
+            "ARSPD_USE": 0,
+            "FLIGHT_OPTIONS": 128,  # ENABLE_DEFAULT_AIRSPEED
+            "SIM_WIND_SPD": 10,
+            "SIM_WIND_DIR": 270,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(50)
+        # zero-sideslip constrains only the crosswind component for a given
+        # heading, so the wind is observable only while the heading changes
+        self.change_mode('LOITER')
+        # a wrong assumption leaves the estimate ~5m/s out; 2m/s separates
+        # that from what a sound one gives
+        self.wait_message_field_values("WIND", {
+            "speed": 10,
+        }, epsilon=2, timeout=240, minimum_duration=10)
+
+        # the same again with the RC gone: read_radio() returns through
+        # control_failsafe() when the frames stop, without reaching the code
+        # which works the nudge out, so the nudge the aircraft is no longer
+        # being flown with has to be cleared there too.  The RTL is flown at
+        # cruise, and an assumption left at the nudged speed puts the
+        # difference into the wind estimate.
+        self.set_parameter("SIM_RC_FAIL", 1)  # no pulses at all
+        self.wait_mode('RTL')
+        # the estimate entering the RTL is the good one the loiter left
+        # behind, and a wrong assumption moves it only as fast as the wind
+        # states learn, so asserting straight away passes whatever the
+        # assumption is.  Give the error time to appear, then demand it did
+        # not: a stale nudge takes the estimate to about 14m/s in 2 minutes
+        self.delay_sim_time(60, "the wind estimate to follow the assumption")
+        self.wait_message_field_values("WIND", {
+            "speed": 10,
+        }, epsilon=2, timeout=30, minimum_duration=10)
+        # the landing is not part of this test
+        self.disarm_vehicle(force=True)
+
     def Deadreckoning(self):
         '''Test deadreckoning support'''
         self.deadreckoning_main()
@@ -11357,6 +11402,7 @@ return update()
             self.TerrainLoiterToCircle,
             self.EK3HeightDatumResetFlushesBuffers,
             self.DeadreckoningNoAirSpeed,
+            self.DefaultAirspeedWindEstimate,
         ])
         return ret
 
