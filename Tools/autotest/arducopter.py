@@ -24242,6 +24242,62 @@ return update()
         self.change_mode('LAND')
         self.wait_disarmed()
 
+    def CommandIntUnsupportedFrame(self):
+        '''check location commands in a frame Copter can't use are refused with MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME'''
+        UNSUPPORTED_FRAME = mavutil.mavlink.MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME
+        DENIED = mavutil.mavlink.MAV_RESULT_DENIED
+
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        here = self.get_location()
+        lng = int(here.lng * 1e7)
+
+        for frame in (mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                      mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+                      mavutil.mavlink.MAV_FRAME_BODY_FRD,
+                      mavutil.mavlink.MAV_FRAME_MISSION):
+            for command in (mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                            mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+                            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                            mavutil.mavlink.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
+                            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF):
+                self.run_cmd_int(
+                    command,
+                    p5=50000,  # 5m in a local frame
+                    p6=50000,
+                    p7=-10,
+                    frame=frame,
+                    want_result=UNSUPPORTED_FRAME,
+                )
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+                p5=50000,
+                p6=50000,
+                p7=float("nan"),
+                frame=frame,
+                want_result=UNSUPPORTED_FRAME,
+            )
+
+        self.start_subtest("frame is checked before the coordinates")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p5=int(91e7),  # not a valid latitude
+            p6=0,
+            p7=10,
+            frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            want_result=UNSUPPORTED_FRAME,
+        )
+
+        self.start_subtest("bad location in a supported frame is still denied")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p5=int(91e7),
+            p6=lng,
+            p7=10,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=DENIED,
+        )
+
     def MAV_CMD_DO_SET_HOME_bad_location(self):
         '''test setting of bad home location'''
         self.wait_ready_to_arm()
@@ -24855,6 +24911,7 @@ return update, 1000
             self.CompassReordering,
             self.GSF_reset,
             self.MAV_CMD_DO_SET_HOME_bad_location,
+            self.CommandIntUnsupportedFrame,
             self.SensorErrorFlags,
             self.GPSForYawVerticalBaseline,
             self.AutoContinueOnRCFailsafe,

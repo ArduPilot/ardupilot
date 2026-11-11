@@ -4288,8 +4288,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def VTOLCommandRejections(self):
         '''check QuadPlane refuses VTOL commands it cannot act on'''
-        DENIED = mavutil.mavlink.MAV_RESULT_DENIED
         FAILED = mavutil.mavlink.MAV_RESULT_FAILED
+        UNSUPPORTED_FRAME = mavutil.mavlink.MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME
 
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
@@ -4299,7 +4299,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
             p7=10,
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-            want_result=DENIED,
+            want_result=UNSUPPORTED_FRAME,
         )
 
         self.start_subtest("NAV_TAKEOFF while disarmed")
