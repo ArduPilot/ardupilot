@@ -13,6 +13,13 @@ bool ModeAuto::_enter()
     // initialise waypoint navigation library
     g2.wp_nav.init();
 
+    // an interrupted arc record only survives if the mission resumes
+    // with that arc still the current command; a mission restart
+    // (MIS_RESTART) or reset (e.g. on disarm) makes it meaningless
+    if (!mission.is_resume() || mission.get_current_nav_index() != arc_resume_index) {
+        arc_resume_valid = false;
+    }
+
     // other initialisation
     auto_triggered = false;
 
@@ -514,6 +521,13 @@ void ModeAuto::send_guided_position_target()
 /********************************************************************************/
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
+    // starting a different navigation command ends an interrupted
+    // arc's execution; do and condition commands run alongside the
+    // navigation command and leave it untouched
+    if (AP_Mission::is_nav_cmd(cmd) && cmd.index != arc_resume_index) {
+        arc_resume_valid = false;
+    }
+
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
     case MAV_CMD_NAV_ARC_WAYPOINT:  // Navigate to Waypoint along an arc
@@ -662,8 +676,14 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:
-    case MAV_CMD_NAV_ARC_WAYPOINT:
-        return verify_nav_wp(cmd);
+    case MAV_CMD_NAV_ARC_WAYPOINT: {
+        const bool reached = verify_nav_wp(cmd);
+        if (reached && cmd.index == arc_resume_index) {
+            // a completed arc execution cannot be resumed
+            arc_resume_valid = false;
+        }
+        return reached;
+    }
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
@@ -733,7 +753,26 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     Location cmdloc = cmd.content.location;
     cmdloc.sanitize(rover.current_loc);
 
-    const float arc_rad = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) ? cmd.get_arc_angle_rad() : 0.0f;
+    const float cmd_arc_rad = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) ? cmd.get_arc_angle_rad() : 0.0f;
+    float arc_rad = cmd_arc_rad;
+
+    // an arc command that was interrupted before completion is being
+    // started again: resume with the angle remaining from the
+    // vehicle's stopping point instead of the full angle, which would
+    // re-plan the arc on a much smaller circle.  Explicitly
+    // re-selecting the arc (MISSION_SET_CURRENT, stopped or running,
+    // including re-selecting it after a mission reset) is
+    // indistinguishable from a resume here, so it also applies the
+    // remaining angle
+    bool arc_resumed = false;
+    if (!is_zero(cmd_arc_rad) && arc_resume_valid && arc_resume_index == cmd.index &&
+        arc_resume_dest.same_latlon_as(cmdloc) && is_equal(arc_resume_rad, cmd_arc_rad)) {
+        arc_rad = g2.wp_nav.get_remaining_arc_angle_rad(arc_resume_origin, cmdloc, cmd_arc_rad);
+        // the full angle back means the arc is treated as a fresh
+        // start (see get_remaining_arc_angle_rad), so the execution
+        // is recorded below like any other fresh start
+        arc_resumed = !is_equal(arc_rad, cmd_arc_rad);
+    }
 
     // delay stored in p1 in seconds; an arc waypoint's p1 holds the arc angle instead, so it never loiters
     loiter_duration = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT || (int16_t)cmd.p1 < 0) ? 0 : (uint16_t)cmd.p1;
@@ -757,6 +796,16 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
         if (!set_desired_location(cmdloc, next_cmdloc, arc_rad, next_arc_rad)) {
             return false;
         }
+    }
+
+    // remember a fresh arc execution so that an interruption of it can
+    // be resumed with the remaining angle
+    if (!is_zero(cmd_arc_rad) && !arc_resumed) {
+        arc_resume_valid = true;
+        arc_resume_index = cmd.index;
+        arc_resume_origin = g2.wp_nav.get_origin();
+        arc_resume_dest = cmdloc;
+        arc_resume_rad = cmd_arc_rad;
     }
 
     // just starting so we haven't previously reached the waypoint

@@ -399,6 +399,17 @@ private:
     uint32_t nav_delay_time_max_ms;  // used for delaying the navigation commands
     uint32_t nav_delay_time_start_ms;
 
+    // an arc waypoint command that has started but not completed,
+    // remembered so that starting the same command again (e.g. after
+    // leaving and re-entering AUTO) resumes it with the arc angle
+    // remaining instead of the full angle.  arc_resume_valid is false
+    // when no arc execution is in progress
+    bool arc_resume_valid;
+    uint16_t arc_resume_index;
+    Location arc_resume_origin;
+    Location arc_resume_dest;
+    float arc_resume_rad;
+
 #if AP_EXTERNAL_BINDING_ENABLED
     // nav_script_time command variables
     struct {
