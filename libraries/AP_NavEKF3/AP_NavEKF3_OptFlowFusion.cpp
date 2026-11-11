@@ -776,7 +776,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         const bool rangeSettled = stepSpdErr < MAX(frontend->_flowNoise, 0.05f) * range;
         // a fast rotation can corrupt both axes at once, so reset only on a sample the other axis passed
         const bool otherAxisPassed = MIN(stale0, stale1) == 0;
-        if (axisLockout && !(rangeCurrent && rangeSettled)) {
+        // after a range outage the AGL KF restarts from one sample, which the two tests above then
+        // compare with itself, so wait for the samples that follow to confirm it
+        const bool rangeConfirmed = aglKfRestartConfirm == 0;
+        if (axisLockout && !(rangeCurrent && rangeSettled && rangeConfirmed)) {
             // deferred, not refused: the axis timers are left alone so the first sample after a
             // range fusion returns still recovers, and nothing latches on a lockout this path
             // could not have acted on. Report it, because otherwise the divergence is silent.
@@ -784,7 +787,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 (imuSampleTime_ms - flowVelResetDeferTime_ms) > FLOW_RESET_DEFER_REPORT_MS) {
                 flowVelResetDeferTime_ms = imuSampleTime_ms;
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow recovery deferred, range %s",
-                              (unsigned)imu_index, rangeCurrent ? "step" : "stale");
+                              (unsigned)imu_index, !rangeCurrent ? "stale" : (!rangeConfirmed ? "restarted" : "step"));
             }
         } else if (axisLockout &&
                    (frontend->_flowQualMin > 0) && (ofDataDelayed.quality < frontend->_flowQualMin)) {
@@ -1035,6 +1038,7 @@ void NavEKF3_core::UpdateAglKf()
         aglKf.cov[1][1] = 1.0f;                    // 1 m/s velocity uncertainty after reset
         aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
         aglKf.valid = true;
+        aglKfRestartConfirm = AGLKF_RESTART_CONFIRM_SAMPLES;
         return;  // skip measurement update this cycle (just used the reading for reset)
     }
 
@@ -1062,7 +1066,15 @@ void NavEKF3_core::UpdateAglKf()
         // uncertainty so the next valid reading can correct both states more aggressively.
         aglKf.cov[0][0] = MIN(aglKf.cov[0][0] * 2.0f, 100.0f);
         aglKf.cov[1][1] = MIN(aglKf.cov[1][1] * 2.0f, 100.0f);
+        if (aglKfRestartConfirm != 0) {
+            aglKfRestartConfirm = AGLKF_RESTART_CONFIRM_SAMPLES;
+        }
         return;
+    }
+    // a restart is confirmed by a run of samples that agree with it; one that does not starts the run again
+    if (aglKfRestartConfirm != 0) {
+        aglKfRestartConfirm = (sq(hgtInnov) <= sq(aglKfRestartConfirmSigma) * innovVar) ?
+                              aglKfRestartConfirm - 1 : AGLKF_RESTART_CONFIRM_SAMPLES;
     }
 
     // Kalman gain:  K = P*H' / innovVar = [P[0][0]/innovVar, P[1][0]/innovVar]'
