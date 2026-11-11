@@ -2038,6 +2038,8 @@ void UARTDriver::_configure_parity(uint8_t v)
     }
 #endif
 #elif HAL_USE_SIO == TRUE
+    WITH_SEMAPHORE(_line_config_sem);
+
     sio_apply_framing(v, _stop_bits);
 #endif // HAL_USE_SERIAL
 
@@ -2086,6 +2088,8 @@ void UARTDriver::_set_stop_bits(int n)
     }
 #endif
 #elif HAL_USE_SIO == TRUE
+    WITH_SEMAPHORE(_line_config_sem);
+
     _stop_bits = n;
     sio_apply_framing(parity, n);
 #endif // HAL_USE_SERIAL
@@ -2154,7 +2158,7 @@ bool UARTDriver::_set_options(uint16_t options)
     }
     bool ret = true;
 
-#if HAL_USE_SERIAL == TRUE
+#if HAL_USE_SERIAL == TRUE || HAL_USE_SIO == TRUE
     // held from here so get_options() matches what the port is set to
     WITH_SEMAPHORE(_line_config_sem);
 #endif
