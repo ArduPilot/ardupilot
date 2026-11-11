@@ -22,6 +22,10 @@
 #include "AP_Notify.h"
 #include <AP_AHRS/AP_AHRS.h>
 
+#if AP_NOTIFY_RGBLED_NONGPS_POSITION_ENABLED && !(AP_AHRS_ENABLED && AP_GPS_ENABLED)
+#error "AP_NOTIFY_RGBLED_NONGPS_POSITION_ENABLED requires AP_AHRS_ENABLED and AP_GPS_ENABLED"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 RGBLed::RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim):
@@ -157,6 +161,12 @@ uint32_t RGBLed::get_colour_sequence(void) const
             return sequence_armed;
         }
 #endif
+#if AP_NOTIFY_RGBLED_NONGPS_POSITION_ENABLED
+        // solid green if armed with a position from non-GPS sources
+        if (ahrs_has_non_gps_position()) {
+            return sequence_armed;
+        }
+#endif
         // solid blue if armed with no GPS lock
         return sequence_armed_no_gps_or_no_location;
     }
@@ -173,10 +183,34 @@ uint32_t RGBLed::get_colour_sequence(void) const
             return sequence_disarmed_good_gps_and_location;
         }
     }
+#if AP_NOTIFY_RGBLED_NONGPS_POSITION_ENABLED
+    // green then blue if disarmed with a position from non-GPS sources
+    if (ahrs_has_non_gps_position()) {
+        return sequence_disarmed_non_gps_position;
+    }
+#endif
 #endif
 
     return sequence_disarmed_bad_gps_or_no_location;
 }
+
+#if AP_NOTIFY_RGBLED_NONGPS_POSITION_ENABLED
+// true if the active estimator uses no GPS and has a horizontal position,
+// by the status bits Copter's ekf_has_relative_position() tests. A source
+// set that uses GPS stays blue until its fix arrives, even if it fuses flow
+bool RGBLed::ahrs_has_non_gps_position() const
+{
+    const auto &ahrs = AP::ahrs();
+    if (!ahrs.have_inertial_nav() || ahrs.active_backend_configured_to_use_gps()) {
+        return false;
+    }
+    if (!AP_Notify::flags.armed) {
+        return ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
+    }
+    return ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_REL) &&
+           !ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE);
+}
+#endif
 
 uint32_t RGBLed::get_colour_sequence_traffic_light(void) const
 {
