@@ -1070,6 +1070,9 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
     case MAV_CMD_NAV_LAND:
         nan_mask = ~(1 << 3); // param 4 can be nan
         break;
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        nan_mask = ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3)); // param 1, 2, 3 and 4 can be nan
+        break;
     case MAV_CMD_NAV_TAKEOFF:
         nan_mask = ~(1 << 3); // param 4 can be nan
         break;
