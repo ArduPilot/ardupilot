@@ -577,7 +577,7 @@ void NavEKF3_core::CovarianceInit()
     // positions
     Pmut[7][7]   = sq(frontend->_gpsHorizPosNoise);
     Pmut[8][8]   = P[7][7];
-    Pmut[9][9]   = sq(frontend->_baroAltNoise);
+    Pmut[9][9]   = sq(frontend->get_effective_baro_alt_noise());
     // gyro delta angle biases
     Pmut[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
     Pmut[11][11] = P[10][10];
@@ -1869,7 +1869,7 @@ void NavEKF3_core::ConstrainVariances()
     // if vibration affected use sensor observation variances to set a floor on the state variances
     if (badIMUdata) {
         Pmut[6][6] = fmaxF(P[6][6], sq(frontend->_gpsVertVelNoise));
-        Pmut[9][9] = fmaxF(P[9][9], sq(frontend->_baroAltNoise));
+        Pmut[9][9] = fmaxF(P[9][9], sq(frontend->get_effective_baro_alt_noise()));
     } else if (P[6][6] < VEL_STATE_MIN_VARIANCE) {
         // handle collapse of the vertical velocity variance
         Pmut[6][6] = VEL_STATE_MIN_VARIANCE;
