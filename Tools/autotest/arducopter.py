@@ -19007,6 +19007,63 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.reboot_sitl()
 
+    def throw_heights_to_handover(self, mode):
+        '''lowest, highest and hand-over heights (m, up) from now until throw hands over to mode'''
+        low = high = None
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("throw did not hand over to %s" % mode)
+            up_m = -self.assert_receive_message('LOCAL_POSITION_NED').z
+            low = up_m if low is None else min(low, up_m)
+            high = up_m if high is None else max(high, up_m)
+            if self.mode_is(mode, cached=True):
+                return low, high, up_m
+
+    def ThrowZeroDescentStopsAboveRelease(self):
+        '''With THROW_ALT_DCSND 0 a toss still above the release point is handed over where it stops'''
+        self.set_parameters({
+            "THROW_TYPE": 1,           # drop
+            "THROW_ALT_DCSND": 0,
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            # a hand toss tumbles and is uprighted after the top of its climb;
+            # SITL's toss does not tumble, so a slow spool-up stands in for that
+            "MOT_SPOOL_TIME": 1.0,
+            "SIM_SHOVE_Z": -30,
+        })
+        self.set_message_rate_hz('LOCAL_POSITION_NED', 20)
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        # a centred stick, so ALT_HOLD holds the height it is given
+        self.set_rc(3, 1500)
+        low, high, handover = self.throw_heights_to_handover('ALT_HOLD')
+        self.progress("highest %.2f m, handed over at %.2f m" % (high, handover))
+        # the fall through the spool-up and the arrest from it cost about 1.5 m;
+        # flown back down to the release point first it is handed over about 3 m
+        # below the top
+        if handover < high - 2.2:
+            raise NotAchievedException("flown %.2f m down from the top before the hand-over" % (high - handover))
+        # and the next mode holds that height rather than climbing back about 1 m to
+        # where the arrest began
+        tstart = self.get_sim_time()
+        moved = 0
+        while self.get_sim_time_cached() - tstart < 5:
+            moved = max(moved, abs(-self.assert_receive_message('LOCAL_POSITION_NED').z - handover))
+            if moved > 0.5:
+                raise NotAchievedException("moved %.2f m from the hand-over height in ALT_HOLD" % moved)
+        self.progress("held within %.2f m of the hand-over height" % moved)
+        self.disarm_vehicle(force=True)
+        self.zero_throttle()
+        self.reboot_sitl()
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -20684,6 +20741,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowDropEKFFailsafePosHold,
             self.ThrowSrcSetHandoff,
             self.ThrowDropTwiceWithoutReentry,
+            self.ThrowZeroDescentStopsAboveRelease,
             self.ThrowNextModeAutoStaleSubmode,
         ])
         return ret
