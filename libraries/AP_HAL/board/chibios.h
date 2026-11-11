@@ -136,24 +136,18 @@
 #define HAL_BOARD_STORAGE_DIRECTORY "/APM"
 #endif
 
-#if defined(STM32_WSPI_USE_QUADSPI1) && STM32_WSPI_USE_QUADSPI1
-#define HAL_USE_QUADSPI1 TRUE
-#else
+// hwdef.h defines these TRUE when the peripheral is in use, so this
+// header doesn't depend on ChibiOS's STM32_WSPI_USE_* driver settings
+#ifndef HAL_USE_QUADSPI1
 #define HAL_USE_QUADSPI1 FALSE
 #endif
-#if defined(STM32_WSPI_USE_QUADSPI2) && STM32_WSPI_USE_QUADSPI2
-#define HAL_USE_QUADSPI2 TRUE
-#else
+#ifndef HAL_USE_QUADSPI2
 #define HAL_USE_QUADSPI2 FALSE
 #endif
-#if defined(STM32_WSPI_USE_OCTOSPI1) && STM32_WSPI_USE_OCTOSPI1
-#define HAL_USE_OCTOSPI1 TRUE
-#else
+#ifndef HAL_USE_OCTOSPI1
 #define HAL_USE_OCTOSPI1 FALSE
 #endif
-#if defined(STM32_WSPI_USE_OCTOSPI2) && STM32_WSPI_USE_OCTOSPI2
-#define HAL_USE_OCTOSPI2 TRUE
-#else
+#ifndef HAL_USE_OCTOSPI2
 #define HAL_USE_OCTOSPI2 FALSE
 #endif
 #define HAL_USE_QUADSPI (HAL_USE_QUADSPI1 || HAL_USE_QUADSPI2)
