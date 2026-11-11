@@ -112,6 +112,10 @@ public:
         TOUCHDOWN_EXPECTED = (1U<<7),
     };
 
+    enum class RFRNFlags2 {
+        VEHICLE_LANDED = (1U<<0),
+    };
+
     // EKF ID for timing checks
     enum class EKFType : uint8_t {
         EKF2 = 0,
@@ -196,6 +200,11 @@ public:
 
     bool get_touchdown_expected(void) const {
         return _RFRN.touchdown_expected;
+    }
+
+    // true if the vehicle code reports it has landed
+    bool get_vehicle_landed(void) const {
+        return _RFRN.vehicle_landed;
     }
 
     // for EKF usage to enable takeoff expected to true
