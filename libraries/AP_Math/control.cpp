@@ -631,7 +631,8 @@ float inv_sqrt_controller(float output, float p, float D_max)
 {
     // Degenerate case: second-order limit (D_max) is positive, but P gain is zero
     if (is_positive(D_max) && is_zero(p)) {
-        return (output * output) / (2.0 * D_max);
+        // keep the sign of output, as the other branches do
+        return (output * fabsf(output)) / (2.0 * D_max);
     }
 
     // Degenerate case: no D_max, but P gain is non-zero → use linear model

@@ -34,6 +34,8 @@ TEST(control, InvSqrtControllerIsActuallyInverse)
         // { 5, 0.1, 1, 0.4, 1 },  // twice-the-dt
         { 0, 0.1, 1, 0.2, 0 },  // zero-error means zero response
         { 0, 0, 0, 0, 0 },  // slightly corner-case-ish....
+        { 2, 0, 1, 0, 2 },  // zero P: pure sqrt response
+        { -2, 0, 1, 0, -2 },  // zero P: negative error must invert to a negative error
     };
 
     // iterate through all tests, calling sqrt_controller, and
