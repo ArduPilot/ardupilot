@@ -665,6 +665,10 @@ private:
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
+#if MODE_GUIDED_ENABLED
+    // guided controller driven by the current mode, nullptr if not in a guided mode
+    ModeGuided *guided_target_mode();
+#endif
 #if AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if MODE_GUIDED_ENABLED
     bool set_target_location(const Location& target_loc) override;

@@ -1280,4 +1280,21 @@ bool ModeGuided::resume()
     return true;
 }
 
+// guided controller driven by the current mode, nullptr if not in a guided mode
+ModeGuided *Copter::guided_target_mode()
+{
+    if (!flightmode->in_guided_mode()) {
+        return nullptr;
+    }
+#if AP_EXTERNAL_BINDING_ENABLED
+    // custom modes are separate guided instances
+    for (auto *custom : mode_guided_custom) {
+        if (custom != nullptr && flightmode == custom) {
+            return custom;
+        }
+    }
+#endif
+    return &mode_guided;
+}
+
 #endif

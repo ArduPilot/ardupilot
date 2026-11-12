@@ -932,7 +932,8 @@ bool ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
         {
             // set wp_nav's destination
             Location dest(cmd.content.location);
-            return copter.mode_guided.set_destination(dest);
+            ModeGuided *guided = copter.guided_target_mode();
+            return guided != nullptr && guided->set_destination(dest);
         }
 
         case MAV_CMD_CONDITION_YAW:
