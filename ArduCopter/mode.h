@@ -1953,6 +1953,7 @@ private:
     bool throw_yaw_converged() const;
     bool throw_yaw_align_done() const;
     void throw_follow_yaw_reset();
+    void throw_follow_height_reset();
 
     // Throw stages
     enum ThrowModeStage {
@@ -2014,6 +2015,8 @@ private:
     ThrowYawSource throw_yaw_source;   // which source set target_yaw_rad (logged in THRO)
     uint16_t yaw_reset_count;          // AHRS yaw reset count the headings above were last turned for
     float yaw_prev_rad;                // AHRS yaw the last loop, which a reset's size is measured from
+    uint16_t pos_d_reset_count;        // AHRS height reset count drop_release_alt_m was last moved for
+    float pos_d_prev_m;                // AHRS down position from the origin the last loop, which a height reset's size is measured from
 };
 
 #if MODE_TURTLE_ENABLED
