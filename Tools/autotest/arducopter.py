@@ -19073,6 +19073,88 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.zero_throttle()
         self.reboot_sitl()
 
+    def first_message_time_us(self, text, after_us=0):
+        '''TimeUS of the first MSG containing text after after_us in the current onboard log'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='MSG')
+            if m is None:
+                raise NotAchievedException("no '%s' in the log" % text)
+            if m.TimeUS > after_us and text in m.Message:
+                return m.TimeUS
+
+    def ThrowYawFollowsEKFYawReset(self):
+        '''An EKF yaw reset during a throw does not turn the vehicle'''
+        # THROW_SRC_INI's set has no yaw source and THROW_SRC_SET's has the compass, so the switch
+        # resets the yaw. A compass turned 90 deg while the vehicle waits makes that reset 90 deg.
+        self.set_parameters({
+            "EK3_SRC3_POSXY": 0,
+            "EK3_SRC3_VELXY": 0,
+            "EK3_SRC3_POSZ": 1,
+            "EK3_SRC3_VELZ": 0,
+            "EK3_SRC3_YAW": 0,
+            # compass yaw and no horizontal aiding, so nothing but the yaw reset acts on the
+            # heading: with GPS a compass 90 deg out also turns the velocity it is fused against
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 0,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "THROW_TYPE": 1,           # drop
+            "THROW_ALT_DCSND": 0,
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            "THROW_SRC_INI": 3,
+            "THROW_SRC_SET": 2,
+            # a straight-up toss has no direction, so the target is the EKF yaw at entry: a
+            # heading in the EKF's frame, which a reset turns
+            "THROW_YAW_TYPE": 1,
+            "MOT_SPOOL_TIME": 1.0,
+            "SIM_SHOVE_Z": -30,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode('THROW')
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_MAG1_ORIENT", 2)   # yaw 90
+        self.delay_sim_time(2, "the turned compass to reach the EKF")
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.set_rc(3, 1500)
+        self.wait_mode('ALT_HOLD', timeout=20)
+        self.delay_sim_time(2, "settle")
+        self.disarm_vehicle(force=True)
+        self.set_parameter("SIM_MAG1_ORIENT", 0)
+        detect_us = self.first_message_time_us("Throw detected")
+        dfreader = self.dfreader_for_current_onboard_log()
+        reset_after_detection = False
+        while True:
+            m = dfreader.recv_match(type='EV')
+            if m is None:
+                break
+            if m.Id == 62 and m.TimeUS > detect_us:  # EKF_YAW_RESET
+                reset_after_detection = True
+        if not reset_after_detection:
+            raise NotAchievedException("no EKF yaw reset after the detection to follow")
+        dfreader = self.dfreader_for_current_onboard_log()
+        before = after = None
+        while True:
+            m = dfreader.recv_match(type='SIM')
+            if m is None:
+                break
+            if m.TimeUS < detect_us:
+                before = m.Yaw
+            else:
+                after = m.Yaw
+        turned = abs((after - before + 180) % 360 - 180)
+        self.progress("turned %.1f deg between the detection and 2 s into ALT_HOLD" % turned)
+        self.reboot_sitl()
+        if turned > 20:
+            raise NotAchievedException("an EKF yaw reset turned the vehicle %.1f deg" % turned)
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -20751,6 +20833,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowSrcSetHandoff,
             self.ThrowDropTwiceWithoutReentry,
             self.ThrowZeroDescentStopsAboveRelease,
+            self.ThrowYawFollowsEKFYawReset,
             self.ThrowNextModeAutoStaleSubmode,
         ])
         return ret
