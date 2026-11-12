@@ -6028,6 +6028,46 @@ return update()
         # context-pop restore happens to re-enable
         self.disarm_vehicle()
 
+    def AutoLandDeepStall(self):
+        '''Test AUTOLAND mode with a deep stall landing'''
+        # with LAND_TYPE set to deep stall, AUTOLAND hands the deep stall
+        # library a landing at home with AUTOLAND_WP_ALT as its approach
+        # height, and the landing point it reports should be that far above
+        # home
+        approach_alt = 55
+        deepstall_elevator_pwm = 1661
+        self.set_parameters({
+            "LAND_TYPE": 1,
+            "LAND_DS_ELEV_PWM": deepstall_elevator_pwm,
+            "AUTOLAND_WP_ALT": approach_alt,
+        })
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100, {'p1': 15}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, 100),
+        ])
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_altitude(90, 110, relative=True, timeout=120)
+        self.change_mode(26)  # AUTOLAND
+
+        home_alt = self.poll_home_position().altitude * 0.001
+        m = self.assert_receive_message(
+            'DEEPSTALL',
+            condition='DEEPSTALL.stage!=0',
+            timeout=60,
+        )
+        height = m.altitude - home_alt
+        self.progress("Deep stall landing point is %.1fm above home" % height)
+        if abs(height - approach_alt) > 1:
+            raise NotAchievedException(
+                "Deep stall landing point %.1fm above home, want %um" % (height, approach_alt))
+
+        # assume elevator is on channel 2:
+        self.wait_servo_channel_value(2, deepstall_elevator_pwm, timeout=300)
+        self.wait_disarmed(timeout=300)
+
     def RCDisableAirspeedUse(self):
         '''Test RC DisableAirspeedUse option'''
         self.set_parameter("RC9_OPTION", 106)
@@ -11215,6 +11255,7 @@ return update()
             self.AirspeedDrivers,
             self.IMUTempCal,
             self.AutoLandMode,
+            self.AutoLandDeepStall,
             self.AHRSTrim,
             self.TakeoffAuto1,
             self.TakeoffTakeoff4,
