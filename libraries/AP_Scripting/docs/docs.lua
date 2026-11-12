@@ -2416,6 +2416,7 @@ function param:add_param(table_key, param_num, name, default_value) end
 ---@return boolean
 function param:add_param_int32(table_key, param_num, name, default_value) end
 
+
 -- desc
 ---@class (exact) ESCTelemetryData_ud
 local ESCTelemetryData_ud = {}
@@ -2490,6 +2491,12 @@ function esc_telem:get_temperature(instance) end
 ---@param instance integer -- esc instance 0 indexed
 ---@return number|nil
 function esc_telem:get_rpm(instance) end
+
+-- Get the raw RPM and the error rate of an ESC's RPM telemetry
+---@param instance integer -- esc instance 0 indexed
+---@return number|nil -- raw RPM
+---@return number|nil -- error rate in percent
+function esc_telem:get_raw_rpm_and_error_rate(instance) end
 
 -- update RPM for an ESC
 ---@param esc_index integer -- esc instance 0 indexed
@@ -2903,6 +2910,12 @@ function vehicle:get_mode() end
 ---@return boolean -- success
 function vehicle:set_mode(mode_number) end
 
+-- Attempts to change vehicle mode, recording the given reason. Only the reasons SCRIPTING (32), FENCE_BREACHED (10) and EKF_FAILSAFE (6) are accepted.
+---@param mode_number integer -- mode number
+---@param reason integer -- ModeReason value
+---@return boolean -- success
+function vehicle:set_mode_reason(mode_number, reason) end
+
 -- desc
 ---@param param1 Vector2f_ud
 ---@return boolean
@@ -3130,6 +3143,10 @@ function gcs:get_allow_param_set() end
 ---@param new_allow_value boolean
 function gcs:set_allow_param_set(new_allow_value) end
 
+-- Set additional MAV_PROTOCOL_CAPABILITY bits to report in AUTOPILOT_VERSION
+---@param bits uint32_t_ud|integer|number -- capability bits
+function gcs:set_extra_capabilities(bits) end
+
 -- call a MAVLink MAV_CMD_xxx command via command_int interface
 ---@param command integer -- MAV_CMD_xxx
 ---@param params table -- parameters of p1, p2, p3, p4, x, y and z and frame. Any not specified taken as zero
@@ -3160,6 +3177,11 @@ function relay:off(instance) end
 -- Turns the requested relay on.
 ---@param instance integer -- relay instance
 function relay:on(instance) end
+
+-- Turns the requested relay on, and off again after timeout_ms unless renewed. Any other change of the relay cancels the timeout.
+---@param instance integer -- relay instance
+---@param timeout_ms integer -- uint16_t milliseconds
+function relay:on_for_ms(instance, timeout_ms) end
 
 
 -- The terrain library provides access to checking heights against a terrain database.
@@ -3504,6 +3526,11 @@ gps.NO_GPS = enum_integer
 ---@return uint64_t_ud -- unix time microseconds
 function gps:time_epoch_usec(instance) end
 
+-- Get the number of complete RTCM messages received on a MAVLink channel since boot
+---@param chan integer -- MAVLink channel number
+---@return uint32_t_ud -- message count
+function gps:rtcm_message_count(chan) end
+
 -- get yaw from GPS in degrees
 ---@param instance integer -- instance number
 ---@return number|nil -- yaw in degrees
@@ -3801,6 +3828,16 @@ function arming:pre_arm_checks() end
 -- Disarms the vehicle in all cases. Returns false only if already disarmed.
 ---@return boolean -- true if disarmed successfully, false if already disarmed.
 function arming:disarm() end
+
+-- Disarms the vehicle recording the given method. Only the methods SCRIPTING (4), FENCEBREACH (15) and EKFFAILSAFE (24) are accepted.
+---@param method integer -- AP_Arming::Method value
+---@param do_checks boolean -- run disarm checks
+---@return boolean -- true if disarmed successfully
+function arming:disarm_method(method, do_checks) end
+
+-- Returns the method used for the most recent disarm
+---@return integer -- AP_Arming::Method value
+function arming:last_disarm_method() end
 
 
 -- The ahrs library represents the Attitude Heading Reference System computed by the autopilot. 
@@ -4159,6 +4196,10 @@ function fence:get_breach_time() end
 -- Returns the time at which the current margin breach started
 ---@return uint32_t_ud system_time milliseconds
 function fence:get_margin_breach_time() end
+
+-- Returns the number of fence breaches since boot
+---@return integer
+function fence:get_breach_count() end
 
 -- Returns the type bitmask of any breached fences
 ---@return integer fence_type bitmask
