@@ -314,7 +314,8 @@ void NavEKF3_core::setAidingMode()
             // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
             if (readyToUseGPS() || readyToUseRangeBeacon() || readyToUseExtNav()) {
                 PV_AidingMode = AID_ABSOLUTE;
-            } else if (flowFusionTimeout && bodyOdmFusionTimeout) {
+            } else if ((flowFusionTimeout && bodyOdmFusionTimeout) || !frontend->sources.haveHorizPosVelSource(core_index)) {
+                // a set with nothing horizontal is chosen, not a dropout to wait out
                 PV_AidingMode = AID_NONE;
             }
             break;
@@ -392,8 +393,14 @@ void NavEKF3_core::setAidingMode()
                     (imuSampleTime_ms - lastGpsPosPassTime_ms > maxLossTime_ms);
             }
 
-            if (attAidLossCritical) {
-                // if the loss of attitude data is critical, then put the filter into a constant position mode
+            // a set with nothing horizontal is chosen, not a dropout to bridge, so stop dead reckoning on it
+            // unless air data can carry it: the wind states are estimated, or air data was fused just now,
+            // as before a QuadPlane's assist hands fly forward back
+            const bool noHorizSource = !frontend->sources.haveHorizPosVelSource(core_index) && inhibitWindStates &&
+                                       !airSpdUsed && !dragUsed;
+
+            if (attAidLossCritical || noHorizSource) {
+                // if the loss of attitude data is critical or nothing in the set can aid, put the filter into a constant position mode
                 PV_AidingMode = AID_NONE;
                 posTimeout = true;
                 velTimeout = true;
