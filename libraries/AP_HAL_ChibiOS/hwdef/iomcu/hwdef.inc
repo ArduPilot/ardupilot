@@ -13,6 +13,11 @@ define CH_CFG_ST_TIMEDELTA 0
 
 FLASH_SIZE_KB 64
 
+# the main loop patting the watchdog runs at about 1kHz with no gap over
+# about 1.6ms, so recover from a lockup much faster than the 2s default.
+# The LSI is 30-60kHz on F1, so this is 107-213ms
+define STM32_WDG_TIMEOUT_MS 200
+
 # order of UARTs
 SERIAL_ORDER EMPTY EMPTY EMPTY EMPTY
 define HAL_USE_UART TRUE
