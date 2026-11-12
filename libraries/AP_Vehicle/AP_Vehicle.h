@@ -270,9 +270,44 @@ public:
     struct custom_mode_state {
         bool allow_entry;
         const void *owner;
+
+        // controller request from the owner, applied on the main thread
+        enum class Request : uint8_t {
+            GUIDED,
+            TAKEOFF,    // climb takeoff_alt_m above the current altitude
+            LAND,
+            RTL,        // no disarm on landing
+            LOITER,
+        };
+        enum Option : uint8_t {
+            NO_EXTERNAL_GUIDED = (1U << 0), // reject GCS guided targets, NAV_TAKEOFF sets takeoff_event
+            EKF_FS_DISARM      = (1U << 1), // EKF failsafe disarms in any mode while the owner is live
+            ARMING_GATED       = (1U << 2), // only MAVLink arming unless arming_ready
+        };
+        Request request;
+        uint16_t generation;        // incremented per request, 0 if none
+        float takeoff_alt_m;
+        uint8_t options;
+        bool arming_ready;
+        uint16_t supervision_ms;    // owner keepalive timeout, 0 disables supervision
+        uint32_t keepalive_ms;
+        bool owner_loss_event;      // owner cleanup, handled on the main thread
+        bool takeoff_event;         // GCS takeoff, cleared by the owner
+        bool arm_request;           // owner asks to arm, applied on the main thread
+
+        // status, written on the main thread
+        uint16_t applied_generation;
+        bool init_ok;
+        bool complete;              // latched until the next request
+        bool active;
+        bool owner_lost;            // latched until re-registered while disarmed
     };
     virtual custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name,
                                                   const void *owner = nullptr) { return nullptr; }
+
+    // as set_target_posvelaccel_NED() but only while the custom mode of state
+    // is the current mode and accepts targets; caller holds the scheduler lock
+    virtual bool custom_mode_set_target_posvelaccel_NED(const custom_mode_state *state, const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
 
 #endif // AP_EXTERNAL_BINDING_ENABLED
 
