@@ -446,6 +446,11 @@ void NavEKF3_core::detectFlight()
         yawEstimator->setGyroBias(gyroBias);
     }
 
+    // clear learned mag field on takeoff
+    if (prevOnGround && !onGround) {
+        learnedMagField.clear();
+    }
+
     // store current on-ground  and in-air status for next time
     prevOnGround = onGround;
     prevInFlight = inFlight;
