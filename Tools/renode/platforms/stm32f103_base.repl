@@ -27,6 +27,7 @@ exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40010400
     [0-4] -> nvic@[6-10]
     [5-9] -> nvicInput23@[0-4]
     [10-15] -> nvicInput40@[0-5]
+    16 -> nvic@1
 
 nvicInput23: Miscellaneous.CombinedInput @ none
     numberOfInputs: 5
@@ -120,9 +121,12 @@ timer4: Timers.STM32_Timer @ sysbus 0x40000800
     -> nvic@30
 
 iwdg: Miscellaneous.AP_STM32_IWDG @ sysbus 0x40003000
+    // typical F1 LSI; the datasheet range is 30-60kHz and a CubeOrange
+    // IOMCU measured 38.9kHz
+    frequency: 40000
 
-pwr: Memory.MappedMemory @ sysbus 0x40007000
-    size: 0x400
+pwr: Miscellaneous.AP_STM32F1_PWR @ sysbus 0x40007000
+    IRQ -> exti@16
 
 dma1: DMA.AP_STM32G4_DMA @ sysbus 0x40020000
     numberOfChannels: 7
