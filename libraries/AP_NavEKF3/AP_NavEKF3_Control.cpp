@@ -428,6 +428,10 @@ void NavEKF3_core::setAidingMode()
 
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (PV_AidingMode != PV_AidingModePrev) {
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        flowVelInitPending = false;
+        aglKfRestartRequested = false;
+#endif
         // set various usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         switch (PV_AidingMode) {
         case AID_NONE:
@@ -467,6 +471,11 @@ void NavEKF3_core::setAidingMode()
                 flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
                 memset(flowVelResetTimes_ms, 0, sizeof(flowVelResetTimes_ms));
                 flowVelResetNext = 0;
+                // starting from none, the velocity below is reset to zero; in flight the vehicle may
+                // be moving, so the flow is to set it
+                flowVelInitPending = (PV_AidingModePrev == AID_NONE) && !onGround;
+                flowVelInitStart_ms = imuSampleTime_ms;
+                flowVelInitRestartedAglKf = false;
 #endif
             } else
 #endif
