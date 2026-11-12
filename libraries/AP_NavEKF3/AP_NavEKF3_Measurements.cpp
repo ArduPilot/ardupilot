@@ -293,6 +293,8 @@ void NavEKF3_core::tryChangeCompass(uint8_t mag_index)
         magFieldLearned = false;
         // reset body mag variances on next CovariancePrediction
         needMagBodyVarReset = true;
+        // clear the learned magnetic field
+        learnedMagField.clear();
         return;
     }
 }
@@ -347,6 +349,8 @@ void NavEKF3_core::readMagData()
             stateStruct.body_magfield.zero();
             // clear the measurement buffer
             storedMag.reset();
+            // clear the learned magnetic field
+            learnedMagField.clear();
 
             // reset body mag variances on next
             // CovariancePrediction. This copes with possible errors
