@@ -1947,6 +1947,7 @@ private:
     void throw_apply_yaw_align(const Vector3f& thrust_vector);
     bool throw_yaw_converged() const;
     bool throw_yaw_align_done() const;
+    void throw_follow_yaw_reset();
 
     // Throw stages
     enum ThrowModeStage {
@@ -2001,6 +2002,8 @@ private:
     bool throw_target_yaw_valid;       // true if target_yaw_rad is set
     float throw_target_yaw_rad;        // captured at freefall transition for Uprighting
     ThrowYawSource throw_yaw_source;   // which source set target_yaw_rad (logged in THRO)
+    uint16_t yaw_reset_count;          // AHRS yaw reset count the headings above were last turned for
+    float yaw_prev_rad;                // AHRS yaw the last loop, which a reset's size is measured from
 };
 
 #if MODE_TURTLE_ENABLED
