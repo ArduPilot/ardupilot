@@ -70,5 +70,5 @@ uint8_t parity(uint8_t byte);
 // (i.e. shoved into a uint8_t)
 uint8_t crc_sum_of_bytes(const uint8_t *data, uint16_t count);
 
-// sums the bytes in the supplied buffer, returns that sum mod 0xFFFF
+// sums the bytes in the supplied buffer, returns that sum mod 0x10000
 uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count);
