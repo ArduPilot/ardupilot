@@ -280,7 +280,6 @@ void ModeThrow::run()
         hgt_stabilise_start_ms = AP_HAL::millis();
         // the settle is measured under the arrest, not through the tumble before it
         vel_good_start_ms = 0;
-        throw_set_completion_sources();
         yaw_align_start_ms = hgt_stabilise_start_ms;
         yaw_align_locked = false;
 
@@ -366,6 +365,12 @@ void ModeThrow::run()
             // controllers that are running, so they are updated this loop
             throw_do_nextmode_handoff();
         }
+    }
+
+    // the set the vehicle flies on after the throw comes in once it is upright, not on uprighting's
+    // timeout alone, which can end with it still tumbling
+    if ((stage == Throw_HgtStabilise || stage == Throw_PosHold) && throw_attitude_good()) {
+        throw_set_completion_sources();
     }
 
     // Throw State Processing
