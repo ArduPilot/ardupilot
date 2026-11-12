@@ -577,31 +577,25 @@ void Mode::get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_o
 // transform pilot's roll or pitch input into a desired velocity
 Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 {
-    Vector2f vel_ne_ms;
-
     if (!rc().has_valid_input()) {
-        return vel_ne_ms;
+        return Vector2f();
     }
     // fetch roll and pitch inputs
-    float roll_out_norm = channel_roll->norm_input_dz();
-    float pitch_out_norm = channel_pitch->norm_input_dz();
+    float roll_norm = channel_roll->norm_input_dz();
+    float pitch_norm = channel_pitch->norm_input_dz();
+    if (is_zero(roll_norm) && is_zero(pitch_norm)) {
+        return Vector2f();
+    }
+
+    // map the stick square onto a circle of radius vel_max
+    const float scale = vel_max * MAX(fabsf(roll_norm), fabsf(pitch_norm)) / norm(roll_norm, pitch_norm);
+    roll_norm *= scale;
+    pitch_norm *= scale;
 
     // apply SIMPLE mode transform to pilot inputs
-    apply_simple_mode(roll_out_norm, pitch_out_norm);
+    apply_simple_mode(roll_norm, pitch_norm);
 
-    // convert roll and pitch inputs into velocity in NE frame
-    vel_ne_ms = Vector2f(-pitch_out_norm, roll_out_norm);
-    if (vel_ne_ms.is_zero()) {
-        return vel_ne_ms;
-    }
-    vel_ne_ms = copter.ahrs.body_to_earth2D(vel_ne_ms);
-
-    // Transform square input range to circular output
-    // vel_scalar is the vector to the edge of the +- 1.0 square in the direction of the current input
-    Vector2f vel_scalar = vel_ne_ms / MAX(fabsf(vel_ne_ms.x), fabsf(vel_ne_ms.y));
-    // We scale the output by the ratio of the distance to the square to the unit circle and multiply by vel_max
-    vel_ne_ms *= vel_max / vel_scalar.length();
-    return vel_ne_ms;
+    return copter.ahrs.body_to_earth2D(Vector2f(-pitch_norm, roll_norm));
 }
 
 bool Mode::_TakeOff::triggered_ms(const float target_climb_rate_ms) const
