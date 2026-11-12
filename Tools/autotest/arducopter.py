@@ -19073,6 +19073,158 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.zero_throttle()
         self.reboot_sitl()
 
+    def flow_switch_parameters(self):
+        '''source set 2 on optical flow, source set 3 with no horizontal aiding'''
+        params = {
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_OPTIONS": 8,          # AglKfForOptflow
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,       # optical flow
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "EK3_SRC3_POSXY": 0,
+            "EK3_SRC3_VELXY": 0,
+            "EK3_SRC3_POSZ": 1,
+            "EK3_SRC3_VELZ": 0,
+            "EK3_SRC3_YAW": 1,
+        }
+        params.update(self.analog_rangefinder_parameters())
+        return params
+
+    def flow_lane_errors_after(self, t_start_us, offsets_s):
+        '''core 0's horizontal velocity error against SITL truth (m/s) at each offset after t_start_us'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        ekf, sim = [], []
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'SIM2'])
+            if m is None:
+                break
+            if m.TimeUS < t_start_us - 1000000:
+                continue
+            if m.get_type() == 'XKF1':
+                if m.C == 0:
+                    ekf.append((m.TimeUS, m.VN, m.VE))
+            else:
+                sim.append((m.TimeUS, m.VN, m.VE))
+        errors = []
+        for offset in offsets_s:
+            t = t_start_us + offset * 1e6
+            e = min(ekf, key=lambda r: abs(r[0] - t))
+            v = min(sim, key=lambda r: abs(r[0] - t))
+            errors.append((math.hypot(e[1] - v[1], e[2] - v[2]), math.hypot(v[1], v[2])))
+        return errors
+
+    def ThrowTossIntoFlowLoiter(self):
+        '''A toss carried sideways onto a flow source set hands over to LOITER once the flow agrees'''
+        # THROW_SRC_INI's set has no aiding, so flow aiding starts in flight with the toss's speed.
+        # The flow set used to come in at the hand-over, and LOITER took over within 0.2 s of it on
+        # a velocity still several m/s out.
+        params = self.flow_switch_parameters()
+        params.update({
+            "THROW_TYPE": 1,           # drop
+            "THROW_ALT_DCSND": 0,
+            "THROW_NEXTMODE": 5,       # LOITER
+            "THROW_SRC_INI": 3,
+            "THROW_SRC_SET": 2,
+            "MOT_SPOOL_TIME": 1.0,
+            # low and fast, so the flow rate at the switch is well outside its gate, as the hand
+            # tosses' 1.7-2.5 rad/s were
+            "SIM_SHOVE_Z": -25,
+            "SIM_SHOVE_X": 20,
+        })
+        self.set_parameters(params)
+        self.reboot_sitl()
+        # ready on the GPS set; THROW_SRC_INI's set has no position to wait for
+        self.wait_ready_to_arm()
+        self.change_mode('THROW')
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        # the flow set comes in once upright, and its flow has yet to agree when the height is reached
+        self.wait_statustext("Throw height achieved, flow settling", check_context=True, timeout=20)
+        self.wait_mode('LOITER', timeout=20)
+        self.delay_sim_time(8, "hold in LOITER")
+        self.disarm_vehicle(force=True)
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='MODE')
+            if m is None:
+                raise NotAchievedException("no hand-over to LOITER in the log")
+            if m.ModeNum == 5:
+                handover_us = m.TimeUS
+                break
+        errors = self.flow_lane_errors_after(handover_us, [0.0, 0.5, 3.0, 8.0])
+        self.progress("at the hand-over and 0.5, 3, 8 s on: velocity error %s m/s, speed %s m/s" %
+                      (", ".join("%.2f" % e[0] for e in errors), ", ".join("%.2f" % e[1] for e in errors)))
+        if max(e[0] for e in errors[:2]) > 0.75:
+            raise NotAchievedException("LOITER took over on a velocity %.2f m/s out" % max(e[0] for e in errors[:2]))
+        if errors[3][1] > 0.5:
+            raise NotAchievedException("still moving at %.2f m/s 8 s into LOITER" % errors[3][1])
+        self.reboot_sitl()
+
+    def ThrowTossWithoutFlowHoldsNoPosition(self):
+        '''A toss on to a flow set before the flow is fused holds no position until it agrees'''
+        # Within seconds of leaving the GPS set the EKF still reports an absolute position, dead
+        # reckoning, and with no flow innovations to read the flow check passed, so the throw held
+        # that position and handed over to LOITER on it.
+        params = self.flow_switch_parameters()
+        params.update({
+            "THROW_TYPE": 1,           # drop
+            "THROW_ALT_DCSND": 0,
+            "THROW_NEXTMODE": 5,       # LOITER
+            "THROW_SRC_INI": 3,
+            "THROW_SRC_SET": 2,
+            "MOT_SPOOL_TIME": 1.0,
+            "SIM_SHOVE_Z": -25,
+            "SIM_SHOVE_X": 20,
+        })
+        self.set_parameters(params)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode('THROW')
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("^EKF Source Set 2$", check_context=True, regex=True, timeout=10)
+        self.wait_statustext("Throw height achieved, flow settling", check_context=True, timeout=10)
+        # the hand-over waits 5 s for a position, once; bring the flow in as that wait starts, so
+        # the flow has the whole of it to agree
+        self.wait_statustext("Throw: Loiter waiting for position", check_context=True, timeout=15)
+        self.assert_mode('THROW')
+        for text in "Throw height achieved, good position", "Throw position regained":
+            if self.statustext_in_collections(text):
+                raise NotAchievedException("'%s' with no flow measuring the velocity" % text)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_mode('LOITER', timeout=20)
+        self.delay_sim_time(5, "hold in LOITER")
+        self.disarm_vehicle(force=True)
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='MODE')
+            if m is None:
+                raise NotAchievedException("no hand-over to LOITER in the log")
+            if m.ModeNum == 5:
+                handover_us = m.TimeUS
+                break
+        errors = self.flow_lane_errors_after(handover_us, [0.0, 0.5])
+        self.progress("velocity error at the hand-over and 0.5 s on: %s m/s" % ", ".join("%.2f" % e[0] for e in errors))
+        if max(e[0] for e in errors) > 0.75:
+            raise NotAchievedException("LOITER took over on a velocity %.2f m/s out" % max(e[0] for e in errors))
+        self.reboot_sitl()
+
     def first_message_time_us(self, text, after_us=0):
         '''TimeUS of the first MSG containing text after after_us in the current onboard log'''
         dfreader = self.dfreader_for_current_onboard_log()
@@ -20869,6 +21021,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowSrcSetHandoff,
             self.ThrowDropTwiceWithoutReentry,
             self.ThrowZeroDescentStopsAboveRelease,
+            self.ThrowTossIntoFlowLoiter,
+            self.ThrowTossWithoutFlowHoldsNoPosition,
             self.ThrowZeroDescentSettlesBeforeHandover,
             self.ThrowYawFollowsEKFYawReset,
             self.ThrowNextModeAutoStaleSubmode,
