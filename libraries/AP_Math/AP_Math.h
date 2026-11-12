@@ -309,6 +309,11 @@ static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one :
     return one > two ? one : two;
 }
 
+/*
+  time and frequency conversions on uint32_t
+  - the *_to_hz and hz_to_* helpers divide by their argument: it must not be 0
+  - usec_to_nsec() wraps for usec >= 4294968 (about 4.29 seconds)
+ */
 inline constexpr uint32_t hz_to_nsec(uint32_t freq)
 {
     return AP_NSEC_PER_SEC / freq;
