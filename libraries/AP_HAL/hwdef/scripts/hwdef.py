@@ -95,6 +95,11 @@ class HWDef:
         # integer defines
         self.intdefines = {}
 
+        # the value given for every define in the hwdef, as it was written.
+        # get_intdefine uses this to tell a define the hwdef does not set
+        # from one it sets to something which is not an integer
+        self.define_values = {}
+
         # boolean indicating whether we have read and processed self.hwdef
         self.processed_hwdefs = False
         # a set of files which have been processed to populate this object:
@@ -385,6 +390,7 @@ class HWDef:
             self.progress("Removing %s" % u)
             self.config.pop(u, '')
             self.intdefines.pop(u, '')
+            self.define_values.pop(u, None)
             # also remove all occurrences of defines in previous lines if any
             for line in self.alllines[:]:
                 if line.startswith('define') and u == line.split()[1]:
@@ -444,9 +450,30 @@ class HWDef:
         if self.is_periph_fw():
             return
 
-        for name in self.intdefines:
-            if name.startswith('AP_PERIPH_') and self.intdefines[name]:
-                self.error(f"define {name} is only valid on AP_Periph boards")
+        for name in sorted(set(self.intdefines) | set(self.define_values)):
+            if not name.startswith('AP_PERIPH_'):
+                continue
+            # a value which is not an integer still counts as asking for the
+            # feature; only an explicit zero does not
+            if self.intdefines.get(name, 1) == 0:
+                continue
+            self.error(f"define {name} is only valid on AP_Periph boards")
+
+    def get_intdefine(self, name, default=None):
+        '''the integer value of a define from the hwdef, or default if the
+        hwdef does not define it at all.  If the hwdef does define it but as
+        something which is not an integer then that is an error: silently
+        handing back the default would give the board a value nobody asked
+        for, and the hwdef author no hint that their value was ignored'''
+        if name in self.intdefines:
+            return self.intdefines[name]
+        if name in self.define_values:
+            value = self.define_values[name]
+            if value == '':
+                self.error("define %s is used as an integer, so it needs a value" % name)
+            self.error("define %s is used as an integer, so its value must be "
+                       "an integer, not \"%s\"" % (name, value))
+        return default
 
     def process_line_define(self, line, depth, a):
         # defines are currently written out a little haphazardly, but
@@ -468,10 +495,24 @@ class HWDef:
             self.error("%s must use a SerialProtocol_* name, not the numeric value %s" %
                        (result.group(1), result.group(2)))
 
-        # extract numerical defines for processing by other parts of the script
-        result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
+        # remember what the hwdef asked for, whatever it is
+        result = re.match(r'define\s*([A-Z_0-9]+)\s*(.*)', line)
+        if result is not None:
+            (name, value) = (result.group(1), result.group(2).strip())
+            self.define_values[name] = value
+            if not re.match(r'^-?(?:0x[0-9a-fA-F]+|[1-9][0-9]*|0)$', value):
+                # this line replaces any earlier value for the define, so an
+                # integer parsed from an earlier line is no longer the value
+                # the board is being built with
+                self.intdefines.pop(name, None)
+
+        # extract numerical defines for processing by other parts of the
+        # script.  the whole value has to be an integer: "(1)" and "1+1" are
+        # not integers, and are left to get_intdefine to complain about if
+        # anything asks for them as one
+        result = re.match(r'define\s*([A-Z_0-9]+)\s+(-?(?:0x[0-9a-fA-F]+|[1-9][0-9]*|0))\s*$', line)
         if result:
-            (name, intvalue) = (result.group(1), int(result.group(2)))
+            (name, intvalue) = (result.group(1), int(result.group(2), 0))
             if name in self.intdefines and self.intdefines[name] == intvalue:
                 msg = f"{name} already in defines with same value"
                 if depth == 0:
