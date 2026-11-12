@@ -36,6 +36,8 @@ bool ModeThrow::init(bool ignore_checks)
     stage = Throw_Disarmed;
     source_set_switched = false;
     last_msg_stage = Throw_Disarmed;
+    yaw_reset_count = ahrs.get_yaw_reset_count();
+    yaw_prev_rad = ahrs.get_yaw_rad();
     throw_setup();
 
     // initialise pos controller speed and acceleration
@@ -206,6 +208,8 @@ void ModeThrow::run()
     Throw_HgtStabilise - the copter is kept level and  height is stabilised about the target height
     Throw_PosHold - the copter is kept at a constant position and height
     */
+
+    throw_follow_yaw_reset();
 
     // Track throw direction whenever the state machine is in Detecting
     // (motors off, body accel uncontaminated by thrust).  No-op
@@ -740,6 +744,33 @@ bool ModeThrow::throw_still_falling() const
     }
     const float vel_change_ms = pos_control->get_vel_estimate_U_ms() - spoolup_start_vel_u_ms;
     return vel_change_ms <= -THROW_SPOOLUP_ABORT_ACCEL_FRAC * GRAVITY_MSS * elapsed_s;
+}
+
+// The headings taken from the EKF are held in its frame: the EKF yaw and velocity the throw's
+// direction is taken from, and the yaw target that direction gives. An EKF yaw reset turns
+// that frame, whether it corrects the yaw or, as a GPS velocity alignment while the vehicle is
+// swung by hand can, makes it wrong, so turn them with it. Otherwise yaw alignment turns the
+// vehicle by the size of the reset, which on a source set switch to compass yaw can be half a
+// turn. THROW_YAW_DEG is a true heading, not the EKF's, so it is left where it is.
+// The size is the jump in yaw across the loop the reset is counted in, less what the vehicle
+// turned in that loop: AHRS counts a reset but does not report its size
+void ModeThrow::throw_follow_yaw_reset()
+{
+    const uint16_t reset_count = ahrs.get_yaw_reset_count();
+    const float yaw_rad = ahrs.get_yaw_rad();
+    const float prev_yaw_rad = yaw_prev_rad;
+    yaw_prev_rad = yaw_rad;
+    if (reset_count == yaw_reset_count) {
+        return;
+    }
+    yaw_reset_count = reset_count;
+    const float yaw_change_rad = wrap_PI(yaw_rad - prev_yaw_rad - ahrs.get_yaw_rate_earth() * G_Dt);
+    if (throw_target_yaw_valid && throw_yaw_source != ThrowYawSource::Absolute) {
+        throw_target_yaw_rad = wrap_PI(throw_target_yaw_rad + yaw_change_rad);
+    }
+    throw_dir_anchor_yaw_rad = wrap_PI(throw_dir_anchor_yaw_rad + yaw_change_rad);
+    throw_entry_yaw_rad = wrap_PI(throw_entry_yaw_rad + yaw_change_rad);
+    throw_entry_vel_ne_ms.rotate(yaw_change_rad);
 }
 
 void ModeThrow::throw_dir_reset()
