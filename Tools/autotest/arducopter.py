@@ -23689,6 +23689,54 @@ return function() end, 1000
         self.context_pop()
         self.reboot_sitl()
 
+    def NativeModuleControlBindings(self):
+        '''test native bindings for int32 parameters, fence, notify, mkdir, disarm methods and mode reasons'''
+        self.context_push()
+        self.install_rust_test_module_context('module_control.rs', install_name='module-control.apmod')
+        # defaults for parameters the module registers after boot
+        defaults = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        # limits also admit a module built into ROMFS with --module
+        defaults.write("MOD_ENABLE 1\nMOD_HEAP_MAX 262144\nMOD_CODE_MAXSIZE 262144\nMOD_STACK_MAX 65536\n"
+                       "SCR_ENABLE 0\nMCD_I32 16777216\nMCD_BIG 2147483648\nMCD_RO 3 @READONLY\n"
+                       "MCD_MAX 2147483647\n")
+        defaults.close()
+        self.context_collect('STATUSTEXT')
+        self.install_message_hook_context(self.FailFastStatusText(self, ['MCT fail', 'Module fatal:']))
+        self.customise_SITL_commandline([], defaults_filepath=[defaults.name], wipe=True)
+        try:
+            self.wait_text('MCT setup ok', check_context=True, timeout=60)
+            self.assert_parameter_value('MCT_I32', -7)
+            self.assert_parameter_value('MCD_RO', 3)
+            self.mav.mav.param_set_send(self.sysid_thismav(), 1, b'MCD_RO', 4, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+            self.delay_sim_time(2, reason='read-only parameter set ignored')
+            self.assert_parameter_value('MCD_RO', 3)
+            # four vertices plus the legacy return point and closing point
+            self.assert_parameter_value('FENCE_TOTAL', 6)
+            items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+            if len(items) != 4 or any(
+                    item.command != mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION or item.param1 != 4
+                    for item in items):
+                raise NotAchievedException("Unexpected fence items %s" % str(items))
+
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.wait_text('MCT disarmed', check_context=True)
+            self.wait_disarmed()
+            self.wait_text('MCT mode ok', check_context=True)
+            self.wait_mode('LAND')
+
+            # an int32 saved next to its inexact default must survive a reboot
+            os.rmdir(os.path.join('modules', 'mct_dir'))
+            self.reboot_sitl()
+            self.wait_text('MCT saved int32 kept', check_context=True, timeout=60)
+        finally:
+            directory = os.path.join('modules', 'mct_dir')
+            if os.path.isdir(directory):
+                os.rmdir(directory)
+            self.clear_fence()
+        self.context_pop()
+        self.reboot_sitl()
+
     def SerialPassthru(self):
         '''smoke test serial passthrough timeout and manual disable'''
         # SITL does not enforce UART thread ownership, so this cannot
@@ -25882,6 +25930,7 @@ return update, 1000
             self.PAUSE_CONTINUE,
             self.MAV_CMD_AIRFRAME_CONFIGURATION,
             self.DefaultsCommaList,
+            self.NativeModuleControlBindings,
             self.FenceRelativeToHomeMinAlt,
             self.FenceRelativeToAMSLMinAlt,
             self.MotorVibration,
