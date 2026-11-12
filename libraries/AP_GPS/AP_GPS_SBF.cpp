@@ -534,6 +534,9 @@ AP_GPS_SBF::process_message(void)
             case 8: // moving rtk float
                 state.status = AP_GPS_FixType::RTK_FLOAT;
                 break;
+            case 10: // PPP
+                state.status = AP_GPS_FixType::PPP;
+                break;
         }
         
         if ((temp.Mode & 64) > 0) { // gps is in base mode
