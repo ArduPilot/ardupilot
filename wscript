@@ -275,6 +275,10 @@ submodules at specific revisions.
     g.add_option('--disable-modules', action='store_true', default=False,
                  help="Disable native modules")
 
+    g.add_option('--module', action='append', default=[],
+                 help="Build a native module and embed it in ROMFS. Path is relative to libraries/AP_Module, "
+                      "e.g. --module=applets/SkyBrush. May be repeated or comma separated")
+
     g.add_option('--no-gcs', action='store_true',
                  default=False,
                  help="Disable GCS code")
@@ -611,6 +615,7 @@ def configure(cfg):
         cfg.end_msg('maybe')
     cfg.recurse('libraries/AP_Scripting')
     cfg.recurse('libraries/AP_Module')
+    cfg.load('ap_module')
 
     cfg.recurse('libraries/AP_GPS')
     cfg.recurse('libraries/AP_HAL_SITL')
