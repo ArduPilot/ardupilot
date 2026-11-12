@@ -781,12 +781,12 @@ bool ModeThrow::throw_still_falling() const
     return vel_change_ms <= -THROW_SPOOLUP_ABORT_ACCEL_FRAC * GRAVITY_MSS * elapsed_s;
 }
 
-// The headings taken from the EKF are held in its frame: the EKF yaw and velocity the throw's
-// direction is taken from, and the yaw target that direction gives. An EKF yaw reset turns
-// that frame, whether it corrects the yaw or, as a GPS velocity alignment while the vehicle is
-// swung by hand can, makes it wrong, so turn them with it. Otherwise yaw alignment turns the
-// vehicle by the size of the reset, which on a source set switch to compass yaw can be half a
-// turn. THROW_YAW_DEG is a true heading, not the EKF's, so it is left where it is.
+// The headings taken from the EKF's yaw are held in its frame: the yaw the throw's direction is
+// anchored to and the yaw target they give. An EKF yaw reset turns that frame, whether it corrects
+// the yaw or, as a GPS velocity alignment while the vehicle is swung by hand can, makes it wrong, so
+// turn them with it. Otherwise yaw alignment turns the vehicle by the size of the reset, which on a
+// source set switch to compass yaw can be half a turn. THROW_YAW_DEG, and a target taken from the
+// entry velocity, a course over the ground that a yaw reset does not move, are left where they are.
 // The size is the jump in yaw across the loop the reset is counted in, less what the vehicle
 // turned in that loop: AHRS counts a reset but does not report its size
 void ModeThrow::throw_follow_yaw_reset()
@@ -800,12 +800,12 @@ void ModeThrow::throw_follow_yaw_reset()
     }
     yaw_reset_count = reset_count;
     const float yaw_change_rad = wrap_PI(yaw_rad - prev_yaw_rad - ahrs.get_yaw_rate_earth() * G_Dt);
-    if (throw_target_yaw_valid && throw_yaw_source != ThrowYawSource::Absolute) {
+    if (throw_target_yaw_valid && throw_yaw_source != ThrowYawSource::Absolute &&
+        throw_yaw_source != ThrowYawSource::EntryVelocity) {
         throw_target_yaw_rad = wrap_PI(throw_target_yaw_rad + yaw_change_rad);
     }
     throw_dir_anchor_yaw_rad = wrap_PI(throw_dir_anchor_yaw_rad + yaw_change_rad);
     throw_entry_yaw_rad = wrap_PI(throw_entry_yaw_rad + yaw_change_rad);
-    throw_entry_vel_ne_ms.rotate(yaw_change_rad);
 }
 
 // The drop's release height is an EKF height, and an EKF height reset, as a switch of height source
