@@ -91,7 +91,10 @@ pub use crsf::{
     CrsfMenu, CrsfMenuEvent, CrsfParameter, CrsfParameterData, CRSF_EVENT_PAYLOAD_MAX,
     CRSF_MENU_NAME_MAX, CRSF_PARAMETER_DATA_MAX,
 };
-pub use custom_mode::{CustomMode, CUSTOM_MODE_FULL_NAME_MAX, CUSTOM_MODE_SHORT_NAME_MAX};
+pub use custom_mode::{
+    CustomMode, CustomModeRequest, CustomModeStatus, CUSTOM_MODE_ARMING_GATED, CUSTOM_MODE_EKF_FS_DISARM,
+    CUSTOM_MODE_FULL_NAME_MAX, CUSTOM_MODE_NO_EXTERNAL_GUIDED, CUSTOM_MODE_SHORT_NAME_MAX,
+};
 pub use dronecan::{DroneCanHandle, DroneCanMessage, DroneCanSubscription, DRONECAN_PAYLOAD_MAX};
 pub use efi::{
     CrankshaftSensorStatus, DebrisStatus, DetonationStatus, EfiBackend, EfiCylinderState, EfiState,

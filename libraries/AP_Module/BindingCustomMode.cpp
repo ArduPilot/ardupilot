@@ -7,6 +7,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Scripting/AP_Scripting_config.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <math.h>
 #include <string.h>
 
 namespace AP_Module
@@ -168,6 +169,213 @@ int32_t binding_custom_mode_set_allow_entry(void *context, const uint8_t *input,
     return AP_MODULE_STATUS_OK;
 }
 
+// resolve a handle whose state is still owned by context; caller holds the scheduler lock
+static AP_Vehicle::custom_mode_state *owned(void *context, const uint8_t *input, uint32_t input_size)
+{
+    AP_Vehicle::custom_mode_state *state;
+    if (resolve(context, input, input_size, state) != AP_MODULE_STATUS_OK || state->owner != context) {
+        return nullptr;
+    }
+    return state;
+}
+
+int32_t binding_custom_mode_set_request(void *context, const uint8_t *input, uint32_t input_size,
+                                        uint8_t *output, uint32_t output_size)
+{
+    using Request = AP_Vehicle::custom_mode_state::Request;
+    if (input == nullptr || input_size != 9 || output == nullptr || output_size != 2 ||
+        input[4] > uint8_t(Request::LOITER)) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    const float takeoff_alt_m = BindingWire::read_float(input + 5);
+    if (!isfinite(takeoff_alt_m)) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    memset(output, 0, output_size);
+    BindingLock lock(AP::scheduler().get_semaphore());
+    auto *state = owned(context, input, input_size);
+    if (state == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    // requests only apply to the running mode with a live owner
+    if (!state->active || state->owner_lost) {
+        return AP_MODULE_STATUS_OK;
+    }
+    state->generation = state->generation == UINT16_MAX ? 1 : state->generation + 1;
+    state->request = Request(input[4]);
+    state->takeoff_alt_m = takeoff_alt_m;
+    BindingWire::write(output, state->generation, 2);
+    return AP_MODULE_STATUS_OK;
+}
+
+int32_t binding_custom_mode_status(void *context, const uint8_t *input, uint32_t input_size,
+                                   uint8_t *output, uint32_t output_size)
+{
+    if (output == nullptr || output_size != 10 || input_size != 4) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    memset(output, 0, output_size);
+    BindingLock lock(AP::scheduler().get_semaphore());
+    const auto *state = owned(context, input, input_size);
+    if (state == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    output[0] = uint8_t(state->request);
+    BindingWire::write(output + 1, state->generation, 2);
+    BindingWire::write(output + 3, state->applied_generation, 2);
+    output[5] = state->init_ok;
+    output[6] = state->complete;
+    output[7] = state->active;
+    output[8] = state->takeoff_event;
+    output[9] = state->owner_lost;
+    return AP_MODULE_STATUS_OK;
+}
+
+int32_t binding_custom_mode_set_options(void *context, const uint8_t *input, uint32_t input_size,
+                                        uint8_t *output, uint32_t output_size)
+{
+    using State = AP_Vehicle::custom_mode_state;
+    if (output != nullptr || output_size != 0 || input == nullptr || input_size != 5 ||
+        (input[4] & ~(State::NO_EXTERNAL_GUIDED | State::EKF_FS_DISARM | State::ARMING_GATED)) != 0) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    BindingLock lock(AP::scheduler().get_semaphore());
+    auto *state = owned(context, input, input_size);
+    if (state == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    state->options = input[4];
+    return AP_MODULE_STATUS_OK;
+}
+
+int32_t binding_custom_mode_set_arming_ready(void *context, const uint8_t *input, uint32_t input_size,
+                                             uint8_t *output, uint32_t output_size)
+{
+    if (output != nullptr || output_size != 0 || input == nullptr || input_size != 5 || input[4] > 1) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    BindingLock lock(AP::scheduler().get_semaphore());
+    auto *state = owned(context, input, input_size);
+    if (state == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    state->arming_ready = input[4] != 0;
+    return AP_MODULE_STATUS_OK;
+}
+
+int32_t binding_custom_mode_set_supervision(void *context, const uint8_t *input, uint32_t input_size,
+                                            uint8_t *output, uint32_t output_size)
+{
+    if (output != nullptr || output_size != 0 || input == nullptr || input_size != 6) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    BindingLock lock(AP::scheduler().get_semaphore());
+    auto *state = owned(context, input, input_size);
+    if (state == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    state->keepalive_ms = AP_HAL::millis();
+    state->supervision_ms = BindingWire::read(input + 4, 2);
+    return AP_MODULE_STATUS_OK;
+}
+
+int32_t binding_custom_mode_keepalive(void *context, const uint8_t *input, uint32_t input_size,
+                                      uint8_t *output, uint32_t output_size)
+{
+    if (output != nullptr || output_size != 0 || input_size != 4) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    BindingLock lock(AP::scheduler().get_semaphore());
+    auto *state = owned(context, input, input_size);
+    if (state == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    state->keepalive_ms = AP_HAL::millis();
+    return AP_MODULE_STATUS_OK;
+}
+
+int32_t binding_custom_mode_ack_takeoff_event(void *context, const uint8_t *input, uint32_t input_size,
+                                              uint8_t *output, uint32_t output_size)
+{
+    if (output == nullptr || output_size != 1 || input_size != 4) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    output[0] = 0;
+    BindingLock lock(AP::scheduler().get_semaphore());
+    auto *state = owned(context, input, input_size);
+    if (state == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    output[0] = state->takeoff_event;
+    state->takeoff_event = false;
+    return AP_MODULE_STATUS_OK;
+}
+
+// arming can delay while the log opens, so it is done on the main thread;
+// arm false cancels a pending request
+int32_t binding_custom_mode_request_arm(void *context, const uint8_t *input, uint32_t input_size,
+                                        uint8_t *output, uint32_t output_size)
+{
+    if (input == nullptr || output == nullptr || output_size != 1 || input_size != 5 || input[4] > 1) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    output[0] = 0;
+    BindingLock lock(AP::scheduler().get_semaphore());
+    auto *state = owned(context, input, input_size);
+    if (state == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    if (input[4] == 0) {
+        state->arm_request = false;
+        output[0] = 1;
+        return AP_MODULE_STATUS_OK;
+    }
+    const bool ok = state->active && !state->owner_lost;
+    state->arm_request |= ok;
+    output[0] = ok;
+    return AP_MODULE_STATUS_OK;
+}
+
+// handle, NED pos/vel/accel, use_yaw, yaw_deg, use_yaw_rate, yaw_rate_degs, yaw_relative
+int32_t binding_custom_mode_set_target_posvelaccel(void *context, const uint8_t *input, uint32_t input_size,
+                                                   uint8_t *output, uint32_t output_size)
+{
+    if (input == nullptr || input_size != 51 || output == nullptr || output_size != 1 ||
+        input[40] > 1 || input[45] > 1 || input[50] > 1) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    float v[11];
+    for (uint8_t i = 0; i < 9; i++) {
+        v[i] = BindingWire::read_float(input + 4 + 4*i);
+    }
+    v[9] = BindingWire::read_float(input + 41);
+    v[10] = BindingWire::read_float(input + 46);
+    for (const float f : v) {
+        if (!isfinite(f)) {
+            return AP_MODULE_STATUS_INVALID;
+        }
+    }
+    output[0] = 0;
+#if AP_SCRIPTING_BINDING_VEHICLE_ENABLED
+    auto *vehicle = AP_Vehicle::get_singleton();
+    if (vehicle == nullptr) {
+        return AP_MODULE_STATUS_UNAVAILABLE;
+    }
+    BindingLock lock(AP::scheduler().get_semaphore());
+    const auto *state = owned(context, input, input_size);
+    if (state == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    output[0] = !state->owner_lost &&
+                vehicle->custom_mode_set_target_posvelaccel_NED(state, Vector3f(v[0], v[1], v[2]), Vector3f(v[3], v[4], v[5]),
+                                                                Vector3f(v[6], v[7], v[8]), input[40] != 0, v[9],
+                                                                input[45] != 0, v[10], input[50] != 0);
+    return AP_MODULE_STATUS_OK;
+#else
+    return AP_MODULE_STATUS_UNAVAILABLE;
+#endif
+}
+
 void binding_custom_mode_cleanup(void *context)
 {
     if (context == nullptr) {
@@ -180,6 +388,9 @@ void binding_custom_mode_cleanup(void *context)
             if (entry.state->owner == context) {
                 entry.state->allow_entry = false;
                 entry.state->owner = nullptr;
+                entry.state->arm_request = false;
+                // supervised modes handle the loss on the main thread
+                entry.state->owner_loss_event = entry.state->supervision_ms != 0;
             }
             entry = {};
         }

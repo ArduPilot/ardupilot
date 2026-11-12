@@ -1,10 +1,63 @@
-use core::num::NonZeroU32;
-use crate::{result, Context, Error, Result};
+use core::num::{NonZeroU16, NonZeroU32};
+use crate::{result, Context, Error, Result, Vector3f};
 
 pub const CUSTOM_MODE_FULL_NAME_MAX: usize = ${full_name_max};
 pub const CUSTOM_MODE_SHORT_NAME_MAX: usize = ${short_name_max};
 
 pub struct CustomMode { token: NonZeroU32 }
+
+/// Controller run by a custom mode, applied by the vehicle main thread.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum CustomModeRequest {
+    Guided = 0,
+    /// Climb `takeoff_alt_m` above the current altitude, holding the armed heading.
+    Takeoff = 1,
+    Land = 2,
+    /// Return to launch without disarming on landing.
+    Rtl = 3,
+    Loiter = 4,
+}
+
+impl CustomModeRequest {
+    fn from_u8(value: u8) -> Result<Self> {
+        match value {
+            0 => Ok(Self::Guided), 1 => Ok(Self::Takeoff), 2 => Ok(Self::Land),
+            3 => Ok(Self::Rtl), 4 => Ok(Self::Loiter), _ => Err(Error::Host),
+        }
+    }
+}
+
+/// Reject GCS guided targets; GCS NAV_TAKEOFF sets the takeoff event instead.
+pub const CUSTOM_MODE_NO_EXTERNAL_GUIDED: u8 = 1 << 0;
+/// EKF failsafe disarms while the mode is active.
+pub const CUSTOM_MODE_EKF_FS_DISARM: u8 = 1 << 1;
+/// Only MAVLink arming is allowed until `set_arming_ready(true)`.
+pub const CUSTOM_MODE_ARMING_GATED: u8 = 1 << 2;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CustomModeStatus {
+    pub request: CustomModeRequest,
+    pub generation: u16,
+    pub applied_generation: u16,
+    pub init_ok: bool,
+    /// Latched until the next request.
+    pub complete: bool,
+    pub active: bool,
+    pub takeoff_event: bool,
+    pub owner_lost: bool,
+}
+
+impl CustomModeStatus {
+    /// True once `generation` is the current request and was initialised.
+    pub fn applied(&self, generation: NonZeroU16) -> bool {
+        self.generation == generation.get() && self.applied_generation == generation.get() && self.init_ok
+    }
+    /// True once `generation` was applied and has completed.
+    pub fn completed(&self, generation: NonZeroU16) -> bool {
+        self.applied(generation) && self.complete
+    }
+}
 
 impl crate::bindings::Vehicle<'_, '_> {
     pub fn register_custom_mode(&self, number: u8, full_name: &str,
@@ -44,5 +97,107 @@ impl CustomMode {
         result(unsafe { context.api.binding_call.unwrap()(context.raw,
             crate::imports::BINDING_${set_value_id}.slot(), input.as_ptr(), input.len() as u32,
             core::ptr::null_mut(), 0) })
+    }
+
+    fn control(&self, context: &Context<'_>, slot: u32, args: &[u8], output: &mut [u8]) -> Result {
+        let mut input = [0u8; 9];
+        input[..4].copy_from_slice(&self.token.get().to_le_bytes());
+        input[4..4 + args.len()].copy_from_slice(args);
+        let output_ptr = if output.is_empty() { core::ptr::null_mut() } else { output.as_mut_ptr() };
+        result(unsafe { context.api.binding_call.unwrap()(context.raw, slot, input.as_ptr(),
+            (4 + args.len()) as u32, output_ptr, output.len() as u32) })
+    }
+
+    /// Request a controller. Returns the request generation, or None if the mode is
+    /// not active or the owner was lost. Wait for `CustomModeStatus::applied` before
+    /// sending guided targets after a GUIDED request.
+    pub fn set_request(&self, context: &Context<'_>, request: CustomModeRequest,
+                       takeoff_alt_m: f32) -> Result<Option<NonZeroU16>> {
+        if !takeoff_alt_m.is_finite() { return Err(Error::Invalid); }
+        let mut args = [0u8; 5];
+        args[0] = request as u8; args[1..].copy_from_slice(&takeoff_alt_m.to_le_bytes());
+        let mut output = [0u8; 2];
+        self.control(context, crate::imports::BINDING_${set_request_id}.slot(), &args, &mut output)?;
+        Ok(NonZeroU16::new(u16::from_le_bytes(output)))
+    }
+
+    pub fn status(&self, context: &Context<'_>) -> Result<CustomModeStatus> {
+        let mut o = [0u8; 10];
+        self.control(context, crate::imports::BINDING_${status_id}.slot(), &[], &mut o)?;
+        let flag = |b: u8| match b { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) };
+        Ok(CustomModeStatus {
+            request: CustomModeRequest::from_u8(o[0])?,
+            generation: u16::from_le_bytes([o[1], o[2]]),
+            applied_generation: u16::from_le_bytes([o[3], o[4]]),
+            init_ok: flag(o[5])?, complete: flag(o[6])?, active: flag(o[7])?,
+            takeoff_event: flag(o[8])?, owner_lost: flag(o[9])?,
+        })
+    }
+
+    /// Set `CUSTOM_MODE_*` option bits.
+    pub fn set_options(&self, context: &Context<'_>, options: u8) -> Result {
+        if options > (CUSTOM_MODE_NO_EXTERNAL_GUIDED | CUSTOM_MODE_EKF_FS_DISARM | CUSTOM_MODE_ARMING_GATED) {
+            return Err(Error::Invalid);
+        }
+        self.control(context, crate::imports::BINDING_${set_options_id}.slot(), &[options], &mut [])
+    }
+
+    pub fn set_arming_ready(&self, context: &Context<'_>, ready: bool) -> Result {
+        self.control(context, crate::imports::BINDING_${set_arming_ready_id}.slot(), &[ready as u8], &mut [])
+    }
+
+    /// Enable owner supervision with a keepalive timeout, 0 disables it. On expiry or
+    /// module cleanup the active mode lands once and owner loss is latched.
+    pub fn set_supervision(&self, context: &Context<'_>, timeout_ms: u16) -> Result {
+        self.control(context, crate::imports::BINDING_${set_supervision_id}.slot(),
+                     &timeout_ms.to_le_bytes(), &mut [])
+    }
+
+    pub fn keepalive(&self, context: &Context<'_>) -> Result {
+        self.control(context, crate::imports::BINDING_${keepalive_id}.slot(), &[], &mut [])
+    }
+
+    /// Clear the GCS takeoff event, returning true if one was pending.
+    pub fn ack_takeoff_event(&self, context: &Context<'_>) -> Result<bool> {
+        let mut output = [0u8; 1];
+        self.control(context, crate::imports::BINDING_${ack_takeoff_event_id}.slot(), &[], &mut output)?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    /// Ask the vehicle main thread to arm with scripting authority; arming checks
+    /// apply. False if the mode is not active or the owner was lost. Poll
+    /// `arming().is_armed()` for the outcome. `arm` false cancels a pending request.
+    pub fn request_arm(&self, context: &Context<'_>, arm: bool) -> Result<bool> {
+        let mut output = [0u8; 1];
+        self.control(context, crate::imports::BINDING_${request_arm_id}.slot(), &[arm as u8], &mut output)?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+
+    /// Guided NED position, velocity and acceleration target, as
+    /// `vehicle().set_target_posvelaccel_ned()` but only accepted while this mode
+    /// is the current mode and accepts targets.
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_target_posvelaccel(&self, context: &Context<'_>, pos_m: &Vector3f, vel_ms: &Vector3f,
+                                  acc_mss: &Vector3f, use_yaw: bool, yaw_deg: f32, use_yaw_rate: bool,
+                                  yaw_rate_degs: f32, yaw_relative: bool) -> Result<bool> {
+        let values = [pos_m.x, pos_m.y, pos_m.z, vel_ms.x, vel_ms.y, vel_ms.z, acc_mss.x, acc_mss.y, acc_mss.z];
+        if values.iter().any(|v| !v.is_finite()) || !yaw_deg.is_finite() || !yaw_rate_degs.is_finite() {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; 51];
+        input[..4].copy_from_slice(&self.token.get().to_le_bytes());
+        for (i, v) in values.iter().enumerate() {
+            input[4 + 4 * i..8 + 4 * i].copy_from_slice(&v.to_le_bytes());
+        }
+        input[40] = use_yaw as u8;
+        input[41..45].copy_from_slice(&yaw_deg.to_le_bytes());
+        input[45] = use_yaw_rate as u8;
+        input[46..50].copy_from_slice(&yaw_rate_degs.to_le_bytes());
+        input[50] = yaw_relative as u8;
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${set_target_posvelaccel_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
     }
 }

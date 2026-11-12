@@ -11,6 +11,18 @@ SHORT_NAME_MAX = 4
 POLICY = ('v1:persistent-mode-registration,module-context-owned-state-handle,'
           'cleanup-forces-allow-entry-false,full-name-max31,short-name-max4,'
           'blocking-scheduler-lock,no-retained-module-pointers')
+CONTROL_POLICY = ('v1:module-context-owned-state-handle,owner-checked,setters-store-under-scheduler-lock,'
+                  'requests-applied-on-main-thread,request-rejected-unless-active-and-owner-live,'
+                  'generation-u16-nonzero-wrapping,nonfinite-takeoff-alt-invalid,'
+                  'supervision-opt-in-latched-owner-loss,cleanup-publishes-owner-loss-event,'
+                  'blocking-scheduler-lock,no-retained-module-pointers')
+# EKF_FS_DISARM applies in every flight mode while the owner is live
+OPTIONS_POLICY = CONTROL_POLICY + ',ekf-fs-disarm-all-modes-while-owner-live'
+REQUESTS = ('GUIDED', 'TAKEOFF', 'LAND', 'RTL', 'LOITER')
+OPTIONS = ('NO_EXTERNAL_GUIDED', 'EKF_FS_DISARM', 'ARMING_GATED')
+STATUS = dict(name='CustomModeStatus', fields=[
+    ['request', 'u8'], ['generation', 'u16-le'], ['applied_generation', 'u16-le'], ['init_ok', 'bool-u8'],
+    ['complete', 'bool-u8'], ['active', 'bool-u8'], ['takeoff_event', 'bool-u8'], ['owner_lost', 'bool-u8']])
 
 
 def select(ir, first_id):
@@ -48,11 +60,36 @@ def specification(first_id):
         dict(id=first_id + 2, name='CustomMode.set_allow_entry',
              arguments=[dict(type='nonzero-u32-le', name='handle'), dict(type='bool-u8', name='value')],
              result='void', policy=POLICY),
-    ], full_name_max=FULL_NAME_MAX, short_name_max=SHORT_NAME_MAX)
+    ] + [dict(id=first_id + 3 + i, name='CustomMode.' + name,
+              arguments=[dict(type='nonzero-u32-le', name='handle')] + arguments, result=result,
+              policy=OPTIONS_POLICY if name == 'set_options' else CONTROL_POLICY)
+         for i, (name, arguments, result) in enumerate(controls())],
+        full_name_max=FULL_NAME_MAX, short_name_max=SHORT_NAME_MAX)
+
+
+def controls():
+    return [
+        ('set_request', [dict(type='u8', name='request', range=[0, len(REQUESTS) - 1]),
+                         dict(type='f32-le', name='takeoff_alt_m')], 'u16-le'),
+        ('status', [], STATUS),
+        ('set_options', [dict(type='u8', name='options', range=[0, (1 << len(OPTIONS)) - 1])], 'void'),
+        ('set_arming_ready', [dict(type='bool-u8', name='ready')], 'void'),
+        ('set_supervision', [dict(type='u16-le', name='timeout_ms')], 'void'),
+        ('keepalive', [], 'void'),
+        ('ack_takeoff_event', [], 'bool-u8'),
+        ('request_arm', [dict(type='bool-u8', name='arm')], 'bool-u8'),
+        ('set_target_posvelaccel',
+         [dict(type='f32-le', name=name) for name in ('pos_n_m', 'pos_e_m', 'pos_d_m', 'vel_n_ms', 'vel_e_ms',
+                                                       'vel_d_ms', 'acc_n_mss', 'acc_e_mss', 'acc_d_mss')] +
+         [dict(type='bool-u8', name='use_yaw'), dict(type='f32-le', name='yaw_deg'),
+          dict(type='bool-u8', name='use_yaw_rate'), dict(type='f32-le', name='yaw_rate_degs'),
+          dict(type='bool-u8', name='yaw_relative')], 'bool-u8'),
+    ]
 
 
 def rust(spec, notice):
-    register, get, set_value = spec['methods']
+    register, get, set_value = spec['methods'][:3]
+    controls = {method['name'].split('.')[1] + '_id': method['id'] for method in spec['methods'][3:]}
     return notice + render(
         'rust/custom_mode.rs',
         full_name_max=FULL_NAME_MAX,
@@ -60,4 +97,5 @@ def rust(spec, notice):
         register_id=register['id'],
         get_id=get['id'],
         set_value_id=set_value['id'],
+        **controls,
     )

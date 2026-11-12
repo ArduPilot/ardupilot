@@ -415,6 +415,12 @@ def select(ir, selection, only=None):
         tail_last = old_parameter['methods'][-1]['id']
     printf = printf_binding.specification(tail_last + 1)
     shared_state = shared_state_binding.specification(printf['id'] + 1)
+    tail_last = shared_state['methods'][-1]['id']
+    # Custom mode controller requests are assigned at the ABI tail.
+    if custom_mode is not None:
+        for method in custom_mode['methods'][3:]:
+            method['id'] = tail_last + 1
+            tail_last = method['id']
     example_constants = example_constants_binding.select(ir)
     for owner in sorted(ir['userdata'], key=lambda o: o['name']):
         if only is None and owner['name'] in value_binding.TYPES:
@@ -1057,7 +1063,9 @@ def emit(contract):
                     f'        return binding_camera_{call}(input, input_size, output, output_size);']
     if contract['custom_mode'] is not None:
         custom_mode = contract['custom_mode']['methods']
-        custom_calls = ['register', 'get_allow_entry', 'set_allow_entry']
+        custom_calls = ['register', 'get_allow_entry', 'set_allow_entry', 'set_request', 'status',
+                        'set_options', 'set_arming_ready', 'set_supervision', 'keepalive', 'ack_takeoff_event',
+                        'request_arm', 'set_target_posvelaccel']
         for method, call in zip(custom_mode, custom_calls):
             cpp += [f'    case {method["id"]}:',
                     f'        return binding_custom_mode_{call}(context, input, input_size, output, output_size);']
