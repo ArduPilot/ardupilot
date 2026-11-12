@@ -44,6 +44,10 @@ public:
     // failures can still be diagnosed
     virtual uint16_t accumulated_power_status_flags(void) const { return 0; }
 
+    // number of times the MCU supply has been seen below the
+    // brownout warning threshold since boot
+    virtual uint32_t mcu_supply_dips(void) const { return 0; }
+
     // this enum class is 1:1 with MAVLink's MAV_POWER_STATUS enumeration!
     enum class PowerStatusFlag : uint16_t {
         BRICK_VALID = 1,                  // main brick power supply valid
