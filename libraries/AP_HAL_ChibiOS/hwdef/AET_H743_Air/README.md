@@ -52,7 +52,7 @@ Several connectors share the same MCU UART nets. Connect **one device per UART**
 | 1      | USART1 | MAVLink2         | Telemetry/FM30 (UART1 TX/RX) |
 | 2      | USART2 | GPS              | GPS/compass (UART2 TX/RX) |
 | 3      | USART3 | RC input         | **Shared UART3:** telemetry RX, ELRS (RX+TX), X4, SBUS pad |
-| 4      | UART4  | GPS              | External tuning board (UART4 TX/RX) |
+| 4      | UART4  | MAVLink2         | External tuning board (UART4 TX/RX) |
 | 5      | UART5  | None             | Analog VTX connector (UART5 TX), X4 (TX/RX) |
 
 ## RC Input
@@ -154,7 +154,6 @@ The motor/servo outputs and other pads are available as ArduPilot GPIOs (for rel
 | MOTOR11 / LED   | 60   |
 | Beeper          | 32   |
 | Camera switch   | 81   |
-| CAN silent      | 70   |
 
 ## I2C Buses
 
@@ -177,15 +176,6 @@ Firmware for the AET-H743-Air can be found [here](https://firmware.ardupilot.org
 
 ## Loading Firmware
 
-Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware using your favorite DFU loading tool (e.g., Mission Planner).
+The board ships with a bootloader. For the first install, hold the BOOT button while plugging in USB, then load the `with_bl.hex` file with a DFU tool.
 
-Once the initial firmware is loaded, you can update the firmware using any ArduPilot ground station software. Updates should be done with the `*.apj` firmware files.
-
-## License
-
-This hardware definition is released under the terms of the GNU General Public License v3.
-
-## Credits
-
-- AeroEggTech (AET)
-- ArduPilot community
+After that, update firmware from an ArduPilot ground station (for example Mission Planner) using the `*.apj` file. Mission Planner is not a DFU tool.
