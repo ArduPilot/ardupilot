@@ -1940,6 +1940,7 @@ private:
     bool throw_velocity_good() const;
     bool throw_attitude_good() const;
     void throw_do_nextmode_handoff();
+    void throw_set_completion_sources();
     bool restore_source_set();
     Mode *nextmode() const;
     bool nextmode_requires_position() const;
@@ -1961,9 +1962,10 @@ private:
     ThrowModeStage prev_stage = Throw_Disarmed;
     uint32_t last_log_ms;
     bool nextmode_attempted;
-    bool completion_started;        // true once the handoff has given its warnings and set the source set
+    bool completion_started;        // true once the handoff has given its warnings
+    bool completion_sources_set;    // true once the source set the vehicle flies on after the throw is set
     uint32_t nextmode_wait_start_ms; // system time the handoff started waiting for a position, 0 if not waiting
-    uint32_t srcset_change_ms;      // system time completion changed the EKF source set, 0 if it did not
+    uint32_t srcset_change_ms;      // system time the throw changed to the source set it completes on, 0 if it did not
     bool xy_controller_active;      // true when XY position controller was initialised
     bool source_set_switched;       // true if init() switched the EKF source set and exit() may restore it
     uint8_t saved_source_set;       // EKF source set active before init() switched it for the throw phase
