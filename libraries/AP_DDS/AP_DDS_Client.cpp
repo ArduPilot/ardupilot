@@ -252,6 +252,7 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         return true;
     case AP_GPS::GPS_OK_FIX_2D:
     case AP_GPS::GPS_OK_FIX_3D:
+    case AP_GPS::GPS_OK_FIX_TYPE_PPP:
         msg.status.status = 0; // STATUS_FIX
         break;
     case AP_GPS::GPS_OK_FIX_3D_DGPS:
