@@ -18,10 +18,11 @@ OBSERVABLE = {
     'AP_AHRS': dict(include='AP_AHRS/AP_AHRS.h', methods=[
         'get_roll_rad', 'get_pitch_rad', 'get_yaw_rad', 'get_EAS2TAS', 'airspeed_EAS', 'get_hagl',
         'get_gyro', 'get_velocity_NED', 'get_relative_position_NED_origin_float', 'get_quaternion']),
-    'AP_Arming': dict(include='AP_Arming/AP_Arming.h', methods=['is_armed']),
+    'AP_Arming': dict(include='AP_Arming/AP_Arming.h',
+                      methods=['is_armed', 'disarm_with_method', 'last_disarm_method']),
     'AP_GPS': dict(include='AP_GPS/AP_GPS.h', methods=['num_sensors', 'primary_sensor']),
     'AP_Param': dict(include='AP_Param/AP_Param.h', methods=list(bindings.PARAM_ARGUMENTS)),
-    'AP_Vehicle': dict(include='AP_Vehicle/AP_Vehicle.h', methods=['get_mode']),
+    'AP_Vehicle': dict(include='AP_Vehicle/AP_Vehicle.h', methods=['get_mode', 'set_mode_with_reason']),
     'AP::fwversion()': dict(include='AP_Common/AP_FWVersion.h', methods=[],
                             fields=['vehicle_type', 'major', 'minor', 'fw_short_string', 'fw_hash_str']),
     'RC_Channels': dict(include='RC_Channel/RC_Channel.h', methods=['get_pwm']),
@@ -45,7 +46,11 @@ def selection():
 def test_contract_preserves_semantics(ir, selection):
     contract = select(ir, selection)
     methods = {method['rust_name']: method for method in contract['methods']}
-    assert len(methods) == 28
+    assert len(methods) == 31
+    # arming delays and updates the AHRS while the log opens, so it is not
+    # offered off the main thread; modules arm through their custom mode
+    assert 'arming_arm' not in methods
+    assert methods['arming_is_armed']['lock'] is None
     assert methods['ahrs_airspeed_eas']['aliases'] == ['ahrs_airspeed_estimate']
     assert methods['ahrs_get_hagl']['lock'] == 'semaphore'
     assert methods['vehicle_get_mode']['lock'] == 'scheduler-semaphore'
@@ -341,8 +346,16 @@ public:
 };
 class AP_Arming {
 public:
+    enum class Method : uint8_t { SCRIPTING = 4, FENCEBREACH = 15, EKFFAILSAFE = 24 };
     static AP_Arming *get_singleton() { static AP_Arming a; return &a; }
     bool is_armed() { return true; }
+    bool arm(Method m) { if (scheduler_sem.depth != 0) { __builtin_trap(); } return m == Method::SCRIPTING; }
+    bool disarm_with_method(Method m, bool checks) {
+        if (scheduler_sem.depth != 1) { __builtin_trap(); }
+        last = m; return checks;
+    }
+    Method last_disarm_method() { if (scheduler_sem.depth != 0) { __builtin_trap(); } return last; }
+    Method last = Method::SCRIPTING;
 };
 class AP_GPS {
 public:
@@ -360,10 +373,15 @@ public:
     static AP_BattMonitor *get_singleton() { static AP_BattMonitor battery; return &battery; }
     bool handle_scripting(uint8_t, const BattMonitorScript_State &) { return false; }
 };
+enum class ModeReason : uint8_t { EKF_FAILSAFE = 6, FENCE_BREACHED = 10, SCRIPTING = 32 };
 class AP_Vehicle {
 public:
     static AP_Vehicle *get_singleton() { static AP_Vehicle v; return &v; }
     uint8_t get_mode() { if (scheduler_sem.depth != 1) { __builtin_trap(); } method_calls++; return 10; }
+    bool set_mode_with_reason(uint8_t mode, ModeReason reason) {
+        if (scheduler_sem.depth != 1) { __builtin_trap(); }
+        return mode == 5 && reason == ModeReason::FENCE_BREACHED;
+    }
 };
 class AP_FWVersion {
 public:
@@ -635,6 +653,18 @@ def test_dispatch_values_and_locks(dispatcher):
         assert output.raw[:3] == b'\x01\x34\x12'
     assert lib.call(ids['vehicle_get_mode'], None, 0, output, 1) == 0
     assert output.raw[0] == 10
+    # Disarming and reasoned mode changes are serialized with the main loop.
+    assert lib.call(ids['arming_disarm_method'], struct.pack('<iB', 15, 1), 5, output, 1) == 0
+    assert output.raw[0] == 1
+    for method in (3, 25):
+        assert lib.call(ids['arming_disarm_method'], struct.pack('<iB', method, 1), 5, output, 1) == -1
+    assert lib.call(ids['arming_last_disarm_method'], None, 0, output, 4) == 0
+    assert output.raw[:4] == struct.pack('<i', 15)
+    assert lib.call(ids['vehicle_set_mode_reason'], struct.pack('<Bi', 5, 10), 5, output, 1) == 0
+    assert output.raw[0] == 1
+    for reason in (5, 33):
+        assert lib.call(ids['vehicle_set_mode_reason'], struct.pack('<Bi', 5, reason), 5, output, 1) == -1
+    assert lib.held() == 0
     lib.configure(False, True)
     assert lib.call(ids['ahrs_get_roll_rad'], None, 0, pointer, 4) == -3
     lib.configure(True, False)
@@ -730,8 +760,9 @@ def test_parameter_wire_and_ranges(dispatcher):
         assert call('add_param', bytes([200, 1]) + name_field('VALUE') + struct.pack('<f', float('inf'))) == -1
         assert lib.param_calls() == before
 
-    # Exact integer defaults cross as i32 without float conversion.
+    # Exact integer defaults cross as i32; exact access is through Parameter handles.
     lib.param_int.restype = ctypes.c_int32
+    assert 'param_get_int32' not in ids and 'param_set_int32' not in ids
     assert call('add_param_int32', bytes([200, 63]) + name_field('VALUE') + struct.pack('<i', -5)) == \
         (0 if dynamic else -3)
     if dynamic:

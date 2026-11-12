@@ -64,12 +64,14 @@ def specification(first_id):
         dict(id=first_id + 5, name='filesystem.unlink', arguments=[path], result='bool-u8', policy=POLICY),
         dict(id=first_id + 6, name='filesystem.format', arguments=[], result='bool-u8',
              policy=POLICY + ',requires-disarmed,asynchronous-backend-status-not-retained'),
+        dict(id=first_id + 7, name='filesystem.mkdir', arguments=[path], result='bool-u8',
+             policy=POLICY + ',single-level-create,existing-directory-is-false'),
     ]
     return dict(methods=methods, read_max=READ_MAX, write_max=WRITE_MAX, name_max=NAME_MAX)
 
 
 def rust(spec, notice):
-    stat, read, entry, truncate, append, unlink, format_ = spec['methods']
+    stat, read, entry, truncate, append, unlink, format_, mkdir = spec['methods']
     return notice + render(
         'rust/filesystem.rs',
         read_max=READ_MAX,
@@ -89,4 +91,5 @@ def rust(spec, notice):
         append_id=append['id'],
         unlink_id=unlink['id'],
         format_id=format_['id'],
+        mkdir_id=mkdir['id'],
     )

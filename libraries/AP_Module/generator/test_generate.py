@@ -36,7 +36,7 @@ def test_generated_binding_names_are_readable():
     assert re.search(r'\bbinding_(?:\d+|[A-Za-z_]+_\d+)\b', cpp) is None
     assert re.search(r'\bBINDING_\d+\b', rust) is None
     assert re.search(r'(?m)^\s*case \d+:', cpp) is None
-    assert 'AHRS_GET_GYRO = 44U' in ids
+    assert 'AHRS_GET_GYRO = 45U' in ids
     assert 'pub fn ahrs(&self)' in rust
     assert 'pub fn get_gyro(&self)' in rust
     assert 'pub fn ahrs_get_gyro(' not in rust

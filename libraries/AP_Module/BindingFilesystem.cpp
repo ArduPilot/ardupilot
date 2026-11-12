@@ -243,6 +243,25 @@ int32_t binding_filesystem_unlink(const uint8_t *input, uint32_t input_size,
 #endif
 }
 
+int32_t binding_filesystem_mkdir(const uint8_t *input, uint32_t input_size,
+                                 uint8_t *output, uint32_t output_size)
+{
+    if (input == nullptr || input_size != PATH_SIZE || output == nullptr || output_size != 1) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+    output[0] = 0;
+    const char *path = path_from(input);
+    if (path == nullptr) {
+        return AP_MODULE_STATUS_INVALID;
+    }
+#if AP_FILESYSTEM_FILE_WRITING_ENABLED
+    output[0] = AP::FS().mkdir(path) == 0;
+    return AP_MODULE_STATUS_OK;
+#else
+    return AP_MODULE_STATUS_UNAVAILABLE;
+#endif
+}
+
 int32_t binding_filesystem_format(const uint8_t *input, uint32_t input_size,
                                   uint8_t *output, uint32_t output_size)
 {

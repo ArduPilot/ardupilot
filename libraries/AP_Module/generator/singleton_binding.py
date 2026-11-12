@@ -15,6 +15,12 @@ import value_binding
 from native_templates import render_lines
 
 MAVLINK_COMMON = Path(__file__).resolve().parents[3] / 'modules/mavlink/message_definitions/v1.0/common.xml'
+# Named values for firmware enums whose bindings accept only these members.
+# Firmware adapters static_assert them against the C++ definitions.
+ENUM_CONSTANTS = {
+    'ModeReason': dict(EKF_FAILSAFE=6, FENCE_BREACHED=10, SCRIPTING=32),
+    'AP_Arming::Method': dict(SCRIPTING=4, FENCEBREACH=15, EKFFAILSAFE=24),
+}
 
 SCALARS = {'boolean': ('bool', 1), 'uint8_t': ('u8', 1), 'uint16_t': ('u16', 2),
            'uint32_t': ('u32', 4), 'int8_t': ('i8', 1), 'int16_t': ('i16', 2),
@@ -204,7 +210,7 @@ def cpp(method):
     lines += dynamic_ranges
     target = method['method']
     if method.get('adapter'):
-        if target.startswith('set_'):
+        if target.startswith('set_') and method['arguments'][1]['type'] == 'float':
             lines += ['    if (!BindingParam::valid_value(arg0, arg1)) {',
                       '        return AP_MODULE_STATUS_INVALID;', '    }']
         elif target == 'add_table':
@@ -264,6 +270,24 @@ def cpp(method):
     return lines + ['}', '']
 
 
+def enum_checks(methods):
+    """Firmware checks that ENUM_CONSTANTS match the C++ enum values."""
+    lines = []
+    for name in sorted(ENUM_CONSTANTS):
+        users = [m for m in methods if any(a['type'] == 'enum' and a['enum'] == name
+                                           for a in [m['result']] + m['arguments'])]
+        if not users:
+            continue
+        guards = sorted({g for m in users for g in (m.get('owner_depends'), m.get('include_depends')) if g})
+        if guards:
+            lines.append('#if ' + ' && '.join(f'({g})' for g in guards))
+        lines += [f'static_assert(int32_t({name}::{member}) == {value}, "audit {name}::{member}");'
+                  for member, value in ENUM_CONSTANTS[name].items()]
+        if guards:
+            lines.append('#endif')
+    return lines
+
+
 def enum_name(name):
     return ''.join(part.capitalize() if part.isupper() else part[0].upper() + part[1:]
                    for part in re.split(r'::|_', name) if part)
@@ -307,6 +331,10 @@ def rust_enums(methods, notice, mavlink_xml=MAVLINK_COMMON):
             lines += ['// Values from MAVLink common.xml.', f'impl {enum_name(name)} {{']
             lines += [f'    pub const {member}: Self = Self({value});'
                       for member, value in mavlink_constants(mavlink_xml, name).items()]
+            lines += ['}', '']
+        if name in ENUM_CONSTANTS:
+            lines += ['// Values accepted by the firmware adapters.', f'impl {enum_name(name)} {{']
+            lines += [f'    pub const {member}: Self = Self({value});' for member, value in ENUM_CONSTANTS[name].items()]
             lines += ['}', '']
     return '\n'.join(lines)
 

@@ -190,7 +190,7 @@ class Types:
             return 'Optional<float>'
         if value.startswith('optional-f32-le'):
             return 'float'
-        array = re.fullmatch(r'(u16-le|f32-le)\[(\d+)\]', value)
+        array = re.fullmatch(r'(u16-le|i32-le|f32-le)\[(\d+)\]', value)
         if array:
             return f'Array<{self.type(array[1])}, {array[2]}>'
         if value.endswith(('-u8', '-i32-le')):

@@ -27,10 +27,11 @@ def test_select_is_fail_closed():
 
 def test_contract_is_bounded_and_handle_free():
     spec = filesystem.specification(700)
-    assert [method['id'] for method in spec['methods']] == list(range(700, 707))
+    assert [method['id'] for method in spec['methods']] == list(range(700, 708))
     assert [method['name'] for method in spec['methods']] == [
         'filesystem.stat', 'filesystem.read_at', 'filesystem.dir_entry',
         'filesystem.truncate', 'filesystem.append', 'filesystem.unlink', 'filesystem.format',
+        'filesystem.mkdir',
     ]
     assert 'no-retained-descriptors' in spec['methods'][0]['policy']
     assert spec['read_max'] == 1024
@@ -59,7 +60,7 @@ public:
                     bool is_directory() const { return (mode&S_IFMT)==S_IFDIR; } };
     bool stat(const char *, stat_t &); int open(const char *, int); int close(int);
     int32_t lseek(int, int32_t, int); int32_t read(int, void *, uint32_t);
-    int32_t write(int, const void *, uint32_t); int unlink(const char *);
+    int32_t write(int, const void *, uint32_t); int unlink(const char *); int mkdir(const char *);
     bool format();
     struct Handle { unsigned index; };
     Handle *opendir(const char *); struct dirent *readdir(Handle *); int closedir(Handle *);
@@ -76,7 +77,7 @@ namespace AP { AP_Filesystem &FS(); }
     harness.write_text(f'''#include <string.h>
 #include "{service}"
 static unsigned opens, closes, dirs, closedirs, unlinks;
-static unsigned formats;
+static unsigned formats, mkdirs;
 static uint32_t position;
 static uint8_t written_data[2048]; static uint16_t written_length; static bool append_open;
 AP_Filesystem &AP::FS() {{ static AP_Filesystem fs; return fs; }}
@@ -114,6 +115,10 @@ int AP_Filesystem::unlink(const char *path) {{
     unlinks++; return 0;
 }}
 bool AP_Filesystem::format() {{ formats++; return true; }}
+int AP_Filesystem::mkdir(const char *path) {{
+    if(strcmp(path,"newdir")) return -1;
+    mkdirs++; return 0;
+}}
 AP_Filesystem::Handle *AP_Filesystem::opendir(const char *path) {{
     if(strcmp(path,"dir")) return nullptr;
     dirs++; return new Handle{{0}};
@@ -136,6 +141,9 @@ extern "C" int append_call(const void *in,void *out) {{
  return AP_Module::binding_filesystem_append((const uint8_t*)in,1282,(uint8_t*)out,1); }}
 extern "C" int unlink_call(const void *in,void *out) {{
  return AP_Module::binding_filesystem_unlink((const uint8_t*)in,256,(uint8_t*)out,1); }}
+extern "C" int mkdir_call(const void *in,void *out) {{
+ return AP_Module::binding_filesystem_mkdir((const uint8_t*)in,256,(uint8_t*)out,1); }}
+extern "C" unsigned mkdir_count() {{ return mkdirs; }}
 extern "C" int format_call(void *out) {{
  return AP_Module::binding_filesystem_format(nullptr,0,(uint8_t*)out,1); }}
 extern "C" unsigned live_files() {{ return opens-closes; }}
@@ -153,7 +161,7 @@ extern "C" unsigned format_count() {{ return formats; }}
                     '-I' + str(tmp_path),
                     '-I' + str(bindings.ROOT), str(harness), '-o', str(library)], check=True)
     lib = ctypes.CDLL(str(library))
-    for name in ('stat_call', 'read_call', 'dir_call', 'truncate_call', 'append_call', 'unlink_call'):
+    for name in ('stat_call', 'read_call', 'dir_call', 'truncate_call', 'append_call', 'unlink_call', 'mkdir_call'):
         getattr(lib, name).argtypes = [ctypes.c_void_p, ctypes.c_void_p]
     lib.format_call.argtypes = [ctypes.c_void_p]
     lib.write_data.restype = ctypes.POINTER(ctypes.c_uint8)
@@ -199,6 +207,10 @@ def test_host_truncate_append_unlink_are_bounded_and_stateless(host_service):
     assert lib.unlink_call(path_wire('missing'), one) == 0 and one.raw == b'\0'
     assert lib.format_call(one) == 0 and one.raw == b'\1'
     assert lib.format_count() == 1
+    assert lib.mkdir_call(path_wire('newdir'), one) == 0 and one.raw == b'\1'
+    assert lib.mkdir_call(path_wire('missing/dir'), one) == 0 and one.raw == b'\0'
+    assert lib.mkdir_call(bytes(256), one) == -1
+    assert lib.mkdir_count() == 1
 
 
 def test_emitted_sdk_compiles(tmp_path):
@@ -206,7 +218,7 @@ def test_emitted_sdk_compiles(tmp_path):
     assert "impl crate::bindings::Fs<'_, '_>" in generated
     source = tmp_path / 'sdk.rs'
     imports = '\n'.join(f'pub(crate) static BINDING_{index}: Import = Import({index});'
-                        for index in range(700, 707))
+                        for index in range(700, 708))
     source.write_text('''
 use core::ffi::c_void;
 #[derive(Clone,Copy,Debug,Eq,PartialEq)] pub enum Error { Invalid, Host }

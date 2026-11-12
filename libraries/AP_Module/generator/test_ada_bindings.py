@@ -27,7 +27,7 @@ def leaves(item, path):
 
 def test_every_ada_bridge_matches_cpp_packets(tmp_path, description):
     types, entries, plans = ada_bindings.describe(description)
-    assert len(entries) == len(plans) == 606
+    assert len(entries) == len(plans) == 608
     generated = tmp_path / 'generated'
     generate.write_outputs(generate.generate(json.loads((generate.ROOT / 'generator/host_api.json').read_text())), generated)
     lines = ['#include "sdk/ada/bridge.cpp"', '#include <stdio.h>', '#include <string.h>', '#include <assert.h>',

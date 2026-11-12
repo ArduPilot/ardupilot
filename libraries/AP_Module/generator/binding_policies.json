@@ -58,8 +58,6 @@
     "AP_OSD_Backend.write": "Draws synchronously through the shared OSD backend; normal display resumes on its timeout.",
     "AP_Filesystem.crc32": "Reads the entire file synchronously. Stop cannot interrupt IO; large files may exceed the stop timeout.",
     "AP_Logger.log_file_content": "Queues a firmware-owned filename copy outside the module heap, as in Lua. The queue outlives exit and is unbounded if producers outrun logging; do not call in an unbounded loop.",
-    "AP_Arming.arm": "Requests vehicle arming with scripting authority; ordinary pre-arm checks apply.",
-    "AP_Arming.arm_force": "Force-arms the vehicle, bypassing pre-arm checks as the Lua binding does.",
     "AP_Arming.disarm": "Requests vehicle disarming with scripting authority.",
     "AP_Arming.pre_arm_checks": "Runs vehicle pre-arm checks; may update checks and diagnostics.",
     "AP_Vehicle.set_mode": "Changes the vehicle flight mode with scripting authority; exit does not restore it.",
@@ -79,9 +77,17 @@
       "lock": "scheduler-semaphore",
       "reason": "Disarming and pre-arm checks change state owned by the main loop; unlike arming they do not delay."
     },
+    "AP_Arming.disarm_with_method": {
+      "lock": "scheduler-semaphore",
+      "reason": "Disarming and pre-arm checks change state owned by the main loop; unlike arming they do not delay."
+    },
     "AP_Arming.pre_arm_checks": {
       "lock": "scheduler-semaphore",
       "reason": "Disarming and pre-arm checks change state owned by the main loop; unlike arming they do not delay."
+    },
+    "AP_Relay.on_for_ms": {
+      "lock": "scheduler-semaphore",
+      "reason": "The relay timeout is expired by a main-loop task."
     },
     "GCS.set_message_interval": {
       "lock": "scheduler-semaphore",
@@ -89,6 +95,8 @@
     }
   },
   "excluded": {
+    "AP_Arming.arm": "arming-delays-and-updates-ahrs-off-main-thread-use-custom-mode-request-arm",
+    "AP_Arming.arm_force": "arming-delays-and-updates-ahrs-off-main-thread-use-custom-mode-request-arm",
     "AP_CRSF_Telem.pop_menu_event": "module-lifecycle-owned-crsf-menu-adapter",
     "AP_CRSF_Telem.send_response": "module-lifecycle-owned-crsf-menu-adapter",
     "AP_ONVIF.start": "persistent-client-initialization-and-concurrent-ownership",

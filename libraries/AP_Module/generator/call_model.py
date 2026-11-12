@@ -390,6 +390,7 @@ def calls(spec):
     import analog_pwm_binding
     import efi_binding
     import i2c_binding
+    import notify_binding
     import old_parameter_binding
     import onvif_binding
     import periph_binding
@@ -402,6 +403,7 @@ def calls(spec):
             ('airspeed', airspeed_binding), ('analog_pwm', analog_pwm_binding), ('efi', efi_binding),
             ('old_parameter', old_parameter_binding), ('onvif', onvif_binding), ('periph', periph_binding),
             ('rangefinder_proximity', rangefinder_proximity_binding), ('serialled', serialled_binding),
+            ('notify', notify_binding),
             ('serial', serial_binding), ('i2c', i2c_binding)):
         if spec.get(name) is not None:
             for call in adapter.client_model(spec[name]).calls:

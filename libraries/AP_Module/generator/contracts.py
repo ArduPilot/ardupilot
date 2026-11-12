@@ -181,6 +181,10 @@ def describe(spec):
     if spec['periph'] is not None:
         for method in spec['periph']['methods']:
             add(method, method['name'], method['arguments'], method['result'], method['policy'])
+    for name in ('fence', 'notify'):
+        if spec.get(name) is not None:
+            for method in spec[name]['methods']:
+                add(method, method['name'], method['arguments'], method['result'], method['policy'])
     if spec['old_parameter'] is not None:
         for method in spec['old_parameter']['methods']:
             add(method, method['name'], method['arguments'], method['result'], method['policy'])

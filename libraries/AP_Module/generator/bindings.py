@@ -28,6 +28,7 @@ import efi_binding
 import example_constants_binding
 import examples_binding
 import file_binding
+import fence_binding
 import filesystem_binding
 import fwversion_binding
 import i2c_binding
@@ -38,6 +39,7 @@ import mavlink_binding
 import motor_config_binding
 import naming
 import network_binding
+import notify_binding
 import old_parameter_binding
 import onvif_binding
 import parameter_binding
@@ -413,6 +415,12 @@ def select(ir, selection, only=None):
                      if only is None or old_parameter_binding.OWNER in only else None)
     if old_parameter is not None:
         tail_last = old_parameter['methods'][-1]['id']
+    fence = fence_binding.select(ir, tail_last + 1) if only is None else None
+    if fence is not None:
+        tail_last = fence['methods'][-1]['id']
+    notify = notify_binding.select(ir, tail_last + 1) if only is None else None
+    if notify is not None:
+        tail_last = notify['methods'][-1]['id']
     printf = printf_binding.specification(tail_last + 1)
     shared_state = shared_state_binding.specification(printf['id'] + 1)
     tail_last = shared_state['methods'][-1]['id']
@@ -752,6 +760,7 @@ def select(ir, selection, only=None):
                 airspeed=airspeed,
                 periph=periph,
                 old_parameter=old_parameter,
+                fence=fence, notify=notify,
                 motor_config=motor_config, serialled=serialled, onvif=onvif, applet=applet, crsf=crsf,
                 examples=examples, shared_state=shared_state,
                 example_constants=example_constants, printf=printf,
@@ -851,6 +860,7 @@ def emit(contract):
     handles = {m['result']['type'] for m in contract['methods'] if m['result']['type'] in borrowed_binding.TYPES}
     cpp += borrowed_binding.cpp_helpers(handles)
     cpp += value_binding.cpp_helpers(value_types)
+    cpp += singleton_binding.enum_checks(contract['methods'])
     for method in contract['methods']:
         cpp += singleton_binding.cpp(method)
     namespaces = {}
@@ -885,6 +895,10 @@ def emit(contract):
         cpp += examples_binding.cpp(contract['examples'])
     if contract['camera'] is not None:
         cpp += camera_binding.cpp(contract['camera'])
+    if contract['fence'] is not None:
+        cpp += fence_binding.cpp(contract['fence'])
+    if contract['notify'] is not None:
+        cpp += notify_binding.cpp(contract['notify'])
     cpp += ['int32_t binding_dispatch(void *context, BindingId id, const uint8_t *input, uint32_t input_size,',
             '                         uint8_t *output, uint32_t output_size)', '{', '    switch (id) {']
     cpp += [f'    case {contract["printf"]["id"]}:',
@@ -963,7 +977,7 @@ def emit(contract):
                     f'        return binding_{call}(input, input_size, output, output_size);']
     if contract['filesystem'] is not None:
         filesystem = contract['filesystem']['methods']
-        filesystem_calls = ['stat', 'read_at', 'dir_entry', 'truncate', 'append', 'unlink', 'format']
+        filesystem_calls = ['stat', 'read_at', 'dir_entry', 'truncate', 'append', 'unlink', 'format', 'mkdir']
         for method, call in zip(filesystem, filesystem_calls):
             cpp += [f'    case {method["id"]}:',
                     f'        return binding_filesystem_{call}(input, input_size, output, output_size);']
@@ -1003,6 +1017,16 @@ def emit(contract):
         method = contract['periph']['methods'][0]
         cpp += [f'    case {method["id"]}:',
                 '        return binding_periph_get_vehicle_state(input, input_size, output, output_size);']
+    if contract['fence'] is not None:
+        method = contract['fence']['methods'][0]
+        cpp += [f'    case {method["id"]}:',
+                '        return binding_fence_write_inclusion_polygon(input, input_size, output, output_size);']
+    if contract['notify'] is not None:
+        flags, events = contract['notify']['methods']
+        cpp += [f'    case {flags["id"]}:',
+                '        return binding_notify_get_flags(input, input_size, output, output_size);',
+                f'    case {events["id"]}:',
+                '        return binding_notify_get_event_counts(input, input_size, output, output_size);']
     if contract['old_parameter'] is not None:
         method = contract['old_parameter']['methods'][0]
         cpp += [f'    case {method["id"]}:',
@@ -1160,6 +1184,10 @@ def emit(contract):
         outputs['sdk/rust/src/airspeed.rs'] = airspeed_binding.rust(contract['airspeed'], notice)
     if contract['periph'] is not None:
         outputs['sdk/rust/src/periph.rs'] = periph_binding.rust(contract['periph'], notice)
+    if contract['fence'] is not None:
+        outputs['sdk/rust/src/fence.rs'] = fence_binding.rust(contract['fence'], notice)
+    if contract['notify'] is not None:
+        outputs['sdk/rust/src/notify.rs'] = notify_binding.rust(contract['notify'], notice)
     if contract['old_parameter'] is not None:
         outputs['sdk/rust/src/old_parameter.rs'] = old_parameter_binding.rust(contract['old_parameter'], notice)
     if contract['motor_config'] is not None:

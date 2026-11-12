@@ -22,15 +22,18 @@ def test_languages_count_helpers_and_replacements_separately(generated):
     _, outputs = generated
     report = json.loads(outputs['generator/coverage.json'])
     assert report['schema'] == 2 and len(report['entries']) == 572
-    assert report['native_host_calls'] == dict(rust=606, cpp=606, ada=606, fortran=606)
+    assert report['native_host_calls'] == dict(rust=608, cpp=608, ada=608, fortran=608)
     assert report['summary']['rust'] == {
-        'host-call': 545, 'local-helper': 10, 'native-operation': 8, 'replacement-only': 8, 'value-field': 1}
+        'host-call': 543, 'local-helper': 10, 'native-operation': 8, 'replacement-only': 8, 'unsupported': 2,
+        'value-field': 1}
     assert report['summary']['cpp'] == {
-        'host-call': 545, 'native-operation': 8, 'replacement-only': 18, 'value-field': 1}
+        'host-call': 543, 'native-operation': 8, 'replacement-only': 18, 'unsupported': 2, 'value-field': 1}
     assert report['summary']['ada'] == {
-        'host-call': 545, 'native-operation': 6, 'replacement-only': 20, 'value-field': 1}
+        'host-call': 543, 'native-operation': 6, 'replacement-only': 20, 'unsupported': 2, 'value-field': 1}
     assert report['summary']['fortran'] == report['summary']['ada']
     rows = {(r['owner'], r['name']): r['languages'] for r in report['entries']}
+    # arming is only offered on the main thread, through a custom mode
+    assert rows['AP_Arming', 'arm']['rust']['status'] == 'unsupported'
     assert rows['AP_AHRS', 'get_roll']['rust']['status'] == 'replacement-only'
     assert rows['AP_AHRS', 'get_roll']['cpp']['status'] == 'replacement-only'
     assert rows['AP_HAL::CANFrame', 'isExtended']['rust']['status'] == 'local-helper'

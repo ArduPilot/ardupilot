@@ -101,7 +101,8 @@ not every field, constructor, enum, operator or global in `bindings.desc`.
 
 Singleton methods are selected by signature/type category. Audited policies
 describe ownership, lifetime, nonstandard accessors and exclusions missing from
-the Lua description. Values use explicit component wire layouts, not C++ object
+the Lua description. They also add native-only scheduler locks where Lua takes
+none, for example for arming and stream intervals. Values use explicit component wire layouts, not C++ object
 bytes. Complete Location and mission-item copies preserve hidden semantic fields.
 New value methods conservatively copy back mutable inputs on host success,
 including false results; host errors leave client values unchanged.

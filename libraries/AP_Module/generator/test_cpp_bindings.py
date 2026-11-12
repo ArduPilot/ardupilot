@@ -75,6 +75,8 @@ filesystem.truncate 256 1
 filesystem.append 1282 1
 filesystem.unlink 256 1
 filesystem.format 0 1
+filesystem.mkdir 256 1
+fence.write_inclusion_polygon 169 1
 network.socket_open 1 4
 network.socket_close 4 0
 network.socket_bind 262 1

@@ -130,6 +130,12 @@ impl crate::bindings::Fs<'_, '_> {
         self.path_bool(path, crate::imports::BINDING_${unlink_id}.slot())
     }
 
+    /// Create one directory level. Returns false if it could not be created,
+    /// including when it already exists.
+    pub fn mkdir(&self, path: &str) -> Result<bool> {
+        self.path_bool(path, crate::imports::BINDING_${mkdir_id}.slot())
+    }
+
     /// Start formatting the local filesystem. Firmware rejects this while armed.
     pub fn format(&self) -> Result<bool> {
         let mut output = [0u8; 1];

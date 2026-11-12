@@ -53,7 +53,7 @@ def test_invalid_model_is_rejected():
 def test_adapter_models_cover_shared_calls_and_not_source_templates():
     spec = bindings.specification()
     calls = model.calls(spec)
-    assert len(calls) == 51
+    assert len(calls) == 53
     assert calls['airspeed.get_backend'].output_size == 1
     assert calls['RangeFinderBackend.get_state'].output_size == 13
     assert calls['ProximityBackend.handle_script_3d_msg'].input_size == 14

@@ -462,11 +462,13 @@ def test_lock_policies_are_audited(monkeypatch, change):
     policy = bindings.policies()
     if change is None:
         methods = {m['api_name']: m for m in bindings.select(ir, selection)['methods']}
-        for name in ('gcs.set_message_interval', 'arming.disarm', 'arming.pre_arm_checks'):
+        assert methods['gcs.set_message_interval']['lock'] == 'scheduler-semaphore'
+        for name in ('arming.disarm', 'arming.disarm_method', 'arming.pre_arm_checks'):
             assert methods[name]['lock'] == 'scheduler-semaphore'
-        # arming can delay (log start) so it must not hold the scheduler semaphore
-        for name in ('arming.arm', 'arming.arm_force', 'arming.is_armed'):
-            assert methods[name]['lock'] is None
+        # arming is only offered through a custom mode, on the main thread
+        assert 'arming.arm' not in methods and 'arming.arm_force' not in methods
+        assert methods['arming.is_armed']['lock'] is None
+        assert methods['arming.last_disarm_method']['lock'] is None
         return
     entry = dict(lock='scheduler-semaphore', reason='test')
     if change == 'stale':

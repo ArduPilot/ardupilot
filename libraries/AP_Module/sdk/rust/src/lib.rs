@@ -44,6 +44,7 @@ generated_module!(efi);
 generated_module!(example_constants);
 generated_module!(examples);
 generated_module!(file);
+generated_module!(fence);
 generated_module!(filesystem);
 generated_module!(format);
 mod gcs;
@@ -53,6 +54,7 @@ generated_module!(imports);
 generated_module!(i2c);
 generated_module!(libm);
 generated_module!(network);
+generated_module!(notify);
 generated_module!(strtof);
 generated_module!(math);
 mod memory;
@@ -107,12 +109,14 @@ pub use example_constants::{
 };
 pub use examples::{DroneCanFlexDebug, MissionCommand};
 pub use i2c::{I2cDevice, I2C_TRANSFER_MAX};
+pub use fence::FENCE_POLYGON_POINTS_MAX;
 pub use filesystem::{DirEntry, FileStat, FILESYSTEM_READ_MAX, FILESYSTEM_WRITE_MAX};
 pub use mavlink::{MavlinkMessage, MAVLINK_MESSAGE_SIZE, MAVLINK_PAYLOAD_MAX};
 pub use motor_config::{MotorFactorTable, MOTOR_FACTOR_COUNT, MOTOR_FRAME_STRING_MAX};
 pub use network::{
     Ipv4Address, Ipv4Endpoint, Socket, SocketReceive, SOCKET_POLL_TIMEOUT_MAX_MS, SOCKET_TRANSFER_MAX,
 };
+pub use notify::{NotifyEvents, NotifyFlags};
 pub use onvif::ONVIF_STRING_MAX;
 pub use old_parameter::OldParameterType;
 pub use parameter::Parameter;
@@ -223,6 +227,8 @@ mod strtof_tests;
 mod parameter_tests;
 #[cfg(test)]
 mod singleton_tests;
+#[cfg(test)]
+mod module_control_tests;
 #[cfg(test)]
 mod serial_tests;
 

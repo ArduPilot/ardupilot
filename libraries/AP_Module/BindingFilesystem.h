@@ -21,5 +21,7 @@ int32_t binding_filesystem_unlink(const uint8_t *input, uint32_t input_size,
                                   uint8_t *output, uint32_t output_size);
 int32_t binding_filesystem_format(const uint8_t *input, uint32_t input_size,
                                   uint8_t *output, uint32_t output_size);
+int32_t binding_filesystem_mkdir(const uint8_t *input, uint32_t input_size,
+                                 uint8_t *output, uint32_t output_size);
 }
 #endif
