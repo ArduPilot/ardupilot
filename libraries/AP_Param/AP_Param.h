@@ -854,6 +854,14 @@ private:
     static bool add_table_internal(uint8_t key, const char *prefix, uint8_t num_params, bool persistent);
     static bool add_table_locked(uint8_t key, const char *prefix, uint8_t num_params, bool persistent,
                                  AP_Param *&crc_param);
+    // find a defaults-file value for a parameter registered after boot
+    static bool find_dynamic_default(const char *name, float &value);
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+    static bool find_default_in_file(const char *filename, const char *name, float &value);
+#endif
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
+    static bool find_default_in_string(const volatile char *ptr, int32_t length, const char *name, float &value);
+#endif
 #else
     // simple static var table in flash
     static const struct Info &var_info(uint16_t i) {
