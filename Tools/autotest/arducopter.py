@@ -23162,6 +23162,15 @@ return update()
         self.assert_prearm_failure("Check mag field", other_prearm_failures_fatal=False)
         self.context_pop()
         self.wait_ready_to_arm()
+        new_compass_ofs_x = self.learn_compass_offsets_in_flight()
+
+        self.do_RTL()
+        self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
+        self.reboot_sitl()
+        self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
+
+    def learn_compass_offsets_in_flight(self):
+        '''take off and fly so the EKF learns a new compass X offset, returns the offset it should learn'''
         self.takeoff(30, mode='ALT_HOLD')
         # prevent EKF switching to good compass:
         self.set_parameters({
@@ -23202,11 +23211,21 @@ return update()
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
         self.set_rc(4, 1500)
+        return new_compass_ofs_x
 
-        self.do_RTL()
-        self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
+    def CompassLearnDisabledDoesNotSave(self):
+        '''check EKF-learned compass offsets are not saved if COMPASS_LEARN is turned off before landing'''
+        self.context_preserve_parameters([
+            "COMPASS_OFS_X", "COMPASS_OFS_Y", "COMPASS_OFS_Z",
+            "COMPASS_OFS2_X", "COMPASS_OFS2_Y", "COMPASS_OFS2_Z",
+            "COMPASS_OFS3_X", "COMPASS_OFS3_Y", "COMPASS_OFS3_Z",
+        ])
         self.reboot_sitl()
-        self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
+        self.wait_ready_to_arm()
+        self.learn_compass_offsets_in_flight()
+        self.set_parameter("COMPASS_LEARN", 0)
+        self.do_RTL()
+        self.assert_parameter_value("COMPASS_OFS_X", 20, epsilon=30)
 
     def CompassLearnCopyFromEKFAffinity(self):
         '''check EKF-learned offsets are saved for several compasses at once'''
@@ -24869,6 +24888,7 @@ return update, 1000
             self.CommonOrigin,
             self.RC_OPTIONS_1_FS_THR_ENABLE_0,
             self.CompassLearnCopyFromEKFAffinity,
+            self.CompassLearnDisabledDoesNotSave,
             self.AHRSAutoTrim,
             self.AHRSTrim,
             self.PeriphMultiUARTTunnel,
