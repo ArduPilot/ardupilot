@@ -232,6 +232,10 @@ void NavEKF3_core::InitialiseVariables()
     flowVelResetUnhealthy = false;
     aglKfRestartConfirm = 0;
     rngNewReadingTime_ms = 0;
+    flowVelInitPending = false;
+    flowVelInitStart_ms = 0;
+    flowVelInitRestartedAglKf = false;
+    aglKfRestartRequested = false;
 #endif
     flowPassTimeAxis_ms[0] = flowPassTimeAxis_ms[1] = 0;
     gndHgtValidTime_ms = 0;

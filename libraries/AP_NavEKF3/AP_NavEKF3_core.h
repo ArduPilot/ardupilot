@@ -955,7 +955,8 @@ private:
     void UpdateAglKf();
 
     // Reset horizontal velocity to the optical-flow-derived ground velocity. Used to recover from a
-    // single-axis flow innovation lockout. Returns false if the tilt makes the solve ill conditioned.
+    // single-axis flow innovation lockout, and to set the velocity when relative aiding starts in
+    // flight. Returns false if the tilt makes the solve ill conditioned.
     bool ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody);
     // restart the AGL Kalman filter from one range height (m), to be confirmed by the samples that follow
     void RestartAglKf(ftype hgt);
@@ -967,6 +968,8 @@ private:
         Step,       // the AGL KF lags a step in the ground the range has already seen
     };
     FlowResetRange flowResetRangeState(const of_elements &ofDataDelayed, ftype range) const;
+    // set the horizontal velocity from a flow sample once relative aiding has started in flight; true if it did
+    bool InitVelocityFromFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody);
 #endif
 
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -1428,7 +1431,7 @@ private:
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     uint32_t flowFuseTimeAxis_ms[2];// per-axis time the flow innovation test last passed, used to detect a single-axis lockout
     uint32_t flowTestTime_ms;       // time of the last flow sample either axis could pass
-    uint8_t flowVelResetCount;      // count of horizontal velocity resets triggered by optical flow recovery
+    uint8_t flowVelResetCount;      // count of horizontal velocity resets to optical flow, by lockout recovery or at the start of aiding
     uint32_t flowVelResetAxis_ms[2]; // time of the latest velocity reset recovering each flow axis locked out alone, 0 if none
     static const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
     uint32_t flowVelResetTimes_ms[FLOW_RESET_MAX_IN_WINDOW]; // times of the latest optical-flow velocity resets, 0 if none
@@ -1449,6 +1452,10 @@ private:
     static constexpr ftype aglKfRestartConfirmSigma = 3.0f;
     uint8_t aglKfRestartConfirm;
     uint32_t rngNewReadingTime_ms;  // time a range sample that was not a copy of an earlier reading last reached the fusion time horizon
+    bool flowVelInitPending;        // relative aiding started in flight, so its zero velocity is to be set from the flow
+    uint32_t flowVelInitStart_ms;   // time that relative aiding started
+    bool flowVelInitRestartedAglKf; // that setting has asked for the AGL KF to restart from the range once
+    bool aglKfRestartRequested;     // restart the AGL KF from the next new range reading
 #endif
     uint32_t flowPassTimeAxis_ms[2]; // time each flow axis last passed its innovation consistency check, written nowhere else
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
