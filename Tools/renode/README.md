@@ -843,6 +843,41 @@ logging is active. Set `LOG_DISARMED=1` when collecting it without arming the
 vehicle. Real-IOMCU mode currently requires an STM32H7 FMU; the synthetic
 IOMCU remains the default for faster general board testing.
 
+#### IOMCU faults
+
+`--iomcu-watchdog` lets the IOMCU's independent watchdog reset it, as the
+hardware does; without it the watchdog never fires. The watchdog runs from a
+40 kHz LSI, the F1's typical value, so ArduPilot's setting times out after
+about 1.6 s. Halting the IOMCU core stops its main loop and interrupts while
+the watchdog keeps counting, like a lockup in flight:
+
+```text
+mach set "iomcu"
+cpu IsHalted true
+mach set "ardupilot"
+```
+
+The F1 RCC records why the IOMCU last reset, so the firmware reads the real
+reset flags: power-on and NRST at startup, IWDG after a watchdog timeout and
+software after `SYSRESETREQ`. `rcc PowerCycle` on the IOMCU machine is a
+power-on reset.
+
+The F1 and H7 PWR models include the programmable voltage detector (PVD) with
+the datasheet thresholds and 100 mV hysteresis, driving EXTI line 16. On either
+machine, `pwr Vdd 2.5` holds the supply at 2.5 V and `pwr Dip 2.5 0.2` drops it
+to 2.5 V for 0.2 ms of virtual time; `pwr PvdTrips` counts comparator trips.
+`Tools/renode/tests/test_iomcu_faults.py` uses these to check the reset-cause
+and supply-dip messages end to end.
+
+These behaviours were checked against a CubeOrange's STM32F100 IOMCU over SWD:
+the power-on, software and watchdog reset flags; a watchdog reset releasing a
+debugger halt; the watchdog timeout (1.68 s, an LSI of 38.9 kHz); and EXTI
+line 16 latching with the PVD's NVIC vector disabled, set through `EXTI_SWIER`.
+The PVD comparator itself is not checked, because the IOMCU and FMU share the
+3.3 V rail. openocd's `stm32f1x.cfg` sets `DBG_IWDG_STOP`, which freezes the
+watchdog while the core is halted; clear bit 8 of `DBGMCU_CR` (0xE0042004) to
+reproduce a halted IOMCU being reset on hardware.
+
 ### USB/IP
 
 On Linux, `--usb` exports the firmware-driven STM32F4 or H7 USB controller
