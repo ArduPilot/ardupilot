@@ -273,6 +273,8 @@ void ModeThrow::run()
     } else if (stage == Throw_Uprighting && throw_uprighting_complete() && throw_drop_distance_reached()) {
         stage = Throw_HgtStabilise;
         hgt_stabilise_start_ms = AP_HAL::millis();
+        // the settle is measured under the arrest, not through the tumble before it
+        vel_good_start_ms = 0;
         throw_set_completion_sources();
         yaw_align_start_ms = hgt_stabilise_start_ms;
         yaw_align_locked = false;
@@ -320,7 +322,7 @@ void ModeThrow::run()
 
     } else if (stage == Throw_HgtStabilise &&
                ((g2.throw_type == ThrowType::Drop)
-                   ? (throw_velocity_good() || (AP_HAL::millis() - hgt_stabilise_start_ms > 3000))
+                   ? (throw_velocity_good() || (AP_HAL::millis() - hgt_stabilise_start_ms > THROW_DROP_ARREST_MAX_MS))
                    : (throw_height_good() && (throw_velocity_good() || (AP_HAL::millis() - hgt_stabilise_start_ms > 2000))))) {
         // check if we have horizontal position for PosHold.  position_ok()
         // accepts a flow-relative estimate and honours the EKF failsafe, so it
@@ -343,7 +345,6 @@ void ModeThrow::run()
             pos_control->set_pos_desired_U_m(MAX(drop_release_alt_m, pos_control->get_pos_estimate_U_m()));
         }
         stage = Throw_PosHold;
-        poshold_start_ms = AP_HAL::millis();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
@@ -1034,11 +1035,11 @@ bool ModeThrow::throw_velocity_good() const
 
 // With THROW_ALT_DCSND 0 a drop is stopped where uprighting leaves it, so a toss still climbing
 // reaches throw_velocity_good() at the top of its arc, with the throttle still low from stopping
-// the climb, and handed over there the vehicle sank 0.6-1.3 m under the next mode. Hand over once
-// the vertical speed has stayed small for THROW_VERT_SETTLE_MS, so the arrest has finished, or
-// after THROW_VERT_SETTLE_MAX_MS, so a speed that never settles is no reason
-// to keep the vehicle from its next mode. Other drops end on a descent to a target and upward
-// throws on the target height, and are unchanged
+// the climb, and a next mode taking over there sinks. Hand over once the vertical speed has stayed
+// small for THROW_VERT_SETTLE_MS under the arrest, or once the arrest has had
+// THROW_DROP_ARREST_MAX_MS, so a speed that never settles is no reason to keep the vehicle from its
+// next mode. Other drops end on a descent to a target and upward throws on the target height, and
+// are unchanged
 bool ModeThrow::throw_vertical_settled() const
 {
     if (g2.throw_type != ThrowType::Drop || is_positive(g.throw_altitude_descend)) {
@@ -1046,7 +1047,7 @@ bool ModeThrow::throw_vertical_settled() const
     }
     const uint32_t now_ms = AP_HAL::millis();
     return ((vel_good_start_ms != 0) && (now_ms - vel_good_start_ms >= THROW_VERT_SETTLE_MS)) ||
-           (now_ms - poshold_start_ms > THROW_VERT_SETTLE_MAX_MS);
+           (now_ms - hgt_stabilise_start_ms > THROW_DROP_ARREST_MAX_MS);
 }
 
 // A source set that takes its horizontal velocity from the flow and its position from no GPS flies on
