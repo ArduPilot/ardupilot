@@ -2303,6 +2303,31 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Test deadreckoning support with no airspeed sensor'''
         self.deadreckoning_main(disable_airspeed_sensor=True)
 
+    def EK3NoHorizontalSourceDeadReckons(self):
+        '''A plane switched to a source set with no horizontal source dead reckons on air data'''
+        # with no airspeed sensor that is the airspeed estimated while GPS was fused, which the EKF
+        # starts fusing only once the wind is no longer observable
+        self.set_parameters({
+            "ARSPD_USE": 0,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 0,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+        })
+        self.wait_ready_to_arm()
+        self.takeoff(50)
+        self.change_mode('LOITER')
+        self.delay_sim_time(10, reason="fly forward on GPS")
+        self.context_collect('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=2)
+        # past the 15 s an IMU-only dead reckoning would last
+        self.delay_sim_time(20, reason="dead reckoning on the set with nothing horizontal")
+        if self.statustext_in_collections("EKF3 IMU0 stopped aiding"):
+            raise NotAchievedException("stopped aiding on a set air data can dead reckon on")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=1)
+        self.fly_home_land_and_disarm()
+
     def ClimbBeforeTurn(self):
         '''Test climb-before-turn'''
         self.wait_ready_to_arm()
@@ -10854,6 +10879,7 @@ return update()
             self.TerrainLoiterToCircle,
             self.EK3HeightDatumResetFlushesBuffers,
             self.DeadreckoningNoAirSpeed,
+            self.EK3NoHorizontalSourceDeadReckons,
         ])
         return ret
 

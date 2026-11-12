@@ -17288,6 +17288,66 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "(delta %.6f deg)" %
                 (baseline_lat, m.lat, lat_change_deg))
 
+    def EK3_NoHorizontalSourceStopsAiding(self):
+        '''A switch to a source set with no horizontal source stops aiding at once'''
+        # set 2 measures the velocity with optical flow, set 3 has nothing horizontal
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "EK3_SRC3_POSXY": 0,
+            "EK3_SRC3_VELXY": 0,
+            "EK3_SRC3_POSZ": 1,
+            "EK3_SRC3_VELZ": 0,
+            "EK3_SRC3_YAW": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.takeoff(4, mode='LOITER')
+        self.change_mode('ALT_HOLD')
+
+        self.start_subtest("from absolute aiding")
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=3)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+
+        self.start_subtest("from relative aiding")
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=2)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=10)
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=3)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=1)
+        self.wait_statustext("EKF3 IMU0 is using GPS", check_context=True, timeout=10)
+        self.change_mode('LOITER')
+        self.do_RTL()
+
+        # time each switch to set 3 to the stop from the log, both logged on the autopilot's clock
+        dfreader = self.dfreader_for_current_onboard_log()
+        switch_us = None
+        delays = []
+        while True:
+            m = dfreader.recv_match(type=['EV', 'MSG'])
+            if m is None:
+                break
+            if m.get_type() == 'EV' and m.Id == 87:    # EK3_SOURCES_SET_TO_TERTIARY
+                switch_us = m.TimeUS
+            elif switch_us is not None and m.get_type() == 'MSG' and m.Message == "EKF3 IMU0 stopped aiding":
+                delays.append((m.TimeUS - switch_us) * 1e-6)
+                switch_us = None
+        self.progress("stopped aiding %s s after each switch" % ", ".join("%.2f" % d for d in delays))
+        if len(delays) != 2 or max(delays) > 0.5:
+            raise NotAchievedException("expected aiding to stop at both switches, got %s" % delays)
+        self.reboot_sitl()
+
     def EKFSource(self):
         '''Check EKF Source Prearms work'''
         self.wait_ready_to_arm()
@@ -20361,6 +20421,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FenceRelativeToAMSLMaxAlt,
             self.MotorTest,
             self.EKFSource,
+            self.EK3_NoHorizontalSourceStopsAiding,
             self.AHRSSwitchBackendPositionReset,
             self.EKFYawResetLogged,
             self.RTLYaw,
