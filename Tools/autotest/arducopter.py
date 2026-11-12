@@ -5330,6 +5330,110 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if abs(jump) > 1.0:
                 raise NotAchievedException("core %u reset at %.1f s jumped the forward speed %.2f m/s" % (core, t, jump))
 
+    def flow_switch_parameters(self):
+        '''source set 2 on optical flow, source set 3 with no horizontal aiding'''
+        params = {
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_OPTIONS": 8,          # AglKfForOptflow
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,       # optical flow
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "EK3_SRC3_POSXY": 0,
+            "EK3_SRC3_VELXY": 0,
+            "EK3_SRC3_POSZ": 1,
+            "EK3_SRC3_VELZ": 0,
+            "EK3_SRC3_YAW": 1,
+        }
+        params.update(self.analog_rangefinder_parameters())
+        return params
+
+    def flow_lane_errors_after(self, t_start_us, offsets_s):
+        '''core 0's horizontal velocity error against SITL truth (m/s) at each offset after t_start_us'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        ekf, sim = [], []
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'SIM2'])
+            if m is None:
+                break
+            if m.TimeUS < t_start_us - 1000000:
+                continue
+            if m.get_type() == 'XKF1':
+                if m.C == 0:
+                    ekf.append((m.TimeUS, m.VN, m.VE))
+            else:
+                sim.append((m.TimeUS, m.VN, m.VE))
+        errors = []
+        for offset in offsets_s:
+            t = t_start_us + offset * 1e6
+            e = min(ekf, key=lambda r: abs(r[0] - t))
+            v = min(sim, key=lambda r: abs(r[0] - t))
+            errors.append((math.hypot(e[1] - v[1], e[2] - v[2]), math.hypot(v[1], v[2])))
+        return errors
+
+    def first_message_time_us(self, text, after_us=0):
+        '''TimeUS of the first MSG containing text after after_us in the current onboard log'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='MSG')
+            if m is None:
+                raise NotAchievedException("no '%s' in the log" % text)
+            if m.TimeUS > after_us and text in m.Message:
+                return m.TimeUS
+
+    def flow_aiding_start_errors(self):
+        '''fly on GPS, gather speed on set 3 with no horizontal aiding and switch to the flow set:
+        the speed and core 0's velocity error (m/s) as relative aiding starts and 0.3 and 1 s on'''
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_clear_collection('STATUSTEXT')
+        self.takeoff(4, mode='LOITER')
+        self.change_mode('ALT_HOLD')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=3)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+        # gather speed with nothing measuring it
+        self.set_rc(2, 1350)
+        self.delay_sim_time(4, "gather speed on the set with no aiding")
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=2)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True)
+        self.delay_sim_time(3, "fly on with the flow")
+        self.set_rc(2, 1500)
+        self.disarm_vehicle(force=True)
+        start_us = self.first_message_time_us("EKF3 IMU0 started relative aiding", after_us=10e6)
+        errors = self.flow_lane_errors_after(start_us, [0.0, 0.3, 1.0])
+        self.progress("speed %.2f m/s at the start; velocity error %s m/s at 0, 0.3 and 1 s" %
+                      (errors[0][1], ", ".join("%.2f" % e[0] for e in errors)))
+        return errors
+
+    def EK3_FlowVelocityAtAidingStart(self):
+        '''Relative aiding started in flight takes its velocity from the flow, not zero'''
+        self.set_parameters(self.flow_switch_parameters())
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("without the AGL KF the velocity starts at zero")
+        self.set_parameter("EK3_OPTIONS", 0)
+        errors = self.flow_aiding_start_errors()
+        if errors[0][1] < 2.5:
+            raise NotAchievedException("only %.2f m/s at the start of aiding, too slow to show it" % errors[0][1])
+        if errors[1][0] < 2.0:
+            raise NotAchievedException("velocity only %.2f m/s out 0.3 s after aiding started" % errors[1][0])
+        if self.statustext_in_collections("flow velocity set at aiding start"):
+            raise NotAchievedException("velocity set from the flow without the AGL KF")
+
+        self.start_subtest("with the AGL KF it is set from the flow")
+        self.set_parameter("EK3_OPTIONS", 8)
+        errors = self.flow_aiding_start_errors()
+        if errors[0][1] < 2.5:
+            raise NotAchievedException("only %.2f m/s at the start of aiding, too slow to show it" % errors[0][1])
+        if errors[1][0] > 1.0:
+            raise NotAchievedException("velocity %.2f m/s out 0.3 s after aiding started" % errors[1][0])
+        if not self.statustext_in_collections("EKF3 IMU0 flow velocity set at aiding start"):
+            raise NotAchievedException("no message for the velocity set at the start of aiding")
+        self.reboot_sitl()
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -20656,6 +20760,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
             self.EK3_FlowAxisLockoutRecovery,
+            self.EK3_FlowVelocityAtAidingStart,
         ])
         return ret
 
