@@ -530,7 +530,7 @@ void Display::update_prearm(uint8_t r)
 #if AP_GPS_ENABLED
 void Display::update_gps(uint8_t r)
 {
-    static const char * gpsfixname[] = {"Other", "NoGPS","NoFix","2D","3D","DGPS", "RTK f", "RTK F"};
+    static const char * gpsfixname[] = {"Other", "NoGPS","NoFix","2D","3D","DGPS", "RTK f", "RTK F", "PPP"};
     char msg [DISPLAY_MESSAGE_SIZE];
     const char * fixname;
     switch  (AP_Notify::flags.gps_status) {
@@ -554,6 +554,9 @@ void Display::update_gps(uint8_t r)
             break;
         case AP_GPS_FixType::RTK_FIXED:
             fixname = gpsfixname[7];
+            break;
+        case AP_GPS_FixType::PPP:
+            fixname = gpsfixname[8];
             break;
         default:
             fixname = gpsfixname[0];
