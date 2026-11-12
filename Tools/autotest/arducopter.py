@@ -19267,7 +19267,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("top %.2f m, handed over at %.2f m, lowest %.2f m after" % (high, handover, lowest))
         self.disarm_vehicle(force=True)
         self.zero_throttle()
+        # from the log: the hand-over waited for the vertical speed to stay small for the 0.5 s
+        # THROW_VERT_SETTLE_MS under the arrest, which starts at HgtStabilise (stage 4)
+        dfreader = self.dfreader_for_current_onboard_log()
+        arrest_us = None
+        handover_us = None
+        thro = []
+        while True:
+            m = dfreader.recv_match(type=['THRO', 'MODE'])
+            if m is None:
+                break
+            if m.get_type() == 'THRO':
+                if arrest_us is None and m.Stage == 4:
+                    arrest_us = m.TimeUS
+                thro.append((m.TimeUS, m.VelZ))
+            elif arrest_us is not None and m.Mode == 2:
+                handover_us = m.TimeUS
+                break
+        if arrest_us is None or handover_us is None:
+            raise NotAchievedException("no arrest and hand-over in the log")
+        settle = [abs(vz) for (t, vz) in thro if handover_us - 500000 <= t <= handover_us]
+        if len(settle) == 0:
+            raise NotAchievedException("no THRO samples in the 0.5 s before the hand-over")
+        self.progress("handed over %.2f s into the arrest, |VelZ| up to %.2f m/s over the last 0.5 s" %
+                      ((handover_us - arrest_us) * 1e-6, max(settle)))
         self.reboot_sitl()
+        if (handover_us - arrest_us) < 500000 or max(settle) >= 0.5:
+            raise NotAchievedException("handed over before the vertical speed settled")
         if handover - lowest > 0.3:
             raise NotAchievedException("sank %.2f m after the hand-over" % (handover - lowest))
 
