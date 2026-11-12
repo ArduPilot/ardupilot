@@ -522,6 +522,12 @@
 #ifndef THROW_NEXTMODE_POS_WAIT_MS
  # define THROW_NEXTMODE_POS_WAIT_MS 5000 // ms the handoff waits for a position before giving up on a next mode that needs one
 #endif
+#ifndef THROW_VERT_SETTLE_MS
+ # define THROW_VERT_SETTLE_MS 500 // ms the vertical speed stays inside throw_velocity_good()'s 0.5 m/s before a THROW_ALT_DCSND 0 drop hands over: 1 m/s of change over 0.5 s bounds the mean vertical acceleration to 2 m/s/s, a fifth of g
+#endif
+#ifndef THROW_VERT_SETTLE_MAX_MS
+ # define THROW_VERT_SETTLE_MAX_MS 3000 // ms of PosHold after which a THROW_ALT_DCSND 0 drop hands over however its vertical speed reads: the 3 s HgtStabilise already allows a drop's arrest
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PosHold parameter defaults
