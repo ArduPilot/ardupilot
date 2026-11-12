@@ -122,7 +122,31 @@ SITL/Linux working directory. Set `MOD_ENABLE=1` and reboot. Check GCS messages
 for loading, errors and memory reports before enabling application behavior.
 The directory is not searched recursively.
 
-For built-in modules, build the `.apmod` first and add an extra-hwdef entry:
+To build a module as part of the firmware and embed it in ROMFS, pass its
+directory relative to `libraries/AP_Module` to configure:
+
+```sh
+./waf configure --board MatekH743 --module=applets/SkyBrush
+./waf copter
+```
+
+The directory needs a `wscript` that checks for the Rust tools and declares the
+module's limits:
+
+```python
+def configure(cfg):
+    cfg.ap_module_check_rust()
+
+def build(bld):
+    bld.ap_module(name='skybrush', source='main.rs', stack_size=32768, heap_size=131072)
+```
+
+`--module` may be repeated or comma separated. It enables native modules, and
+the firmware defaults `MOD_ENABLE` to 1 and raises the `MOD_HEAP_MAX` and
+`MOD_STACK_MAX` defaults to admit the declared limits. The module is rebuilt
+when its sources or the SDK change.
+
+Alternatively build the `.apmod` first and add an extra-hwdef entry:
 
 ```text
 ROMFS modules/airshow.apmod build/modules/airshow.apmod

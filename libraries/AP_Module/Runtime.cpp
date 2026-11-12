@@ -44,7 +44,7 @@ const AP_Param::GroupInfo Runtime::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, Runtime, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, Runtime, _enable, AP_MODULE_ENABLE_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
     // @Param: HEAP_MAX
     // @DisplayName: Native module heap capacity limit
@@ -53,7 +53,7 @@ const AP_Param::GroupInfo Runtime::var_info[] = {
     // @Range: 256 16777216
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("HEAP_MAX", 2, Runtime, _heap_size, 32768),
+    AP_GROUPINFO("HEAP_MAX", 2, Runtime, _heap_size, AP_MODULE_HEAP_MAX_DEFAULT),
 
     // @Param: CODE_MAXSIZE
     // @DisplayName: Native module image limit
@@ -62,7 +62,7 @@ const AP_Param::GroupInfo Runtime::var_info[] = {
     // @Range: 4096 16777216
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("CODE_MAXSIZE", 3, Runtime, _code_size, 131072),
+    AP_GROUPINFO("CODE_MAXSIZE", 3, Runtime, _code_size, AP_MODULE_CODE_MAXSIZE_DEFAULT),
 
     // @Param: STACK_MAX
     // @DisplayName: Native module stack limit
@@ -71,7 +71,7 @@ const AP_Param::GroupInfo Runtime::var_info[] = {
     // @Range: 256 16777216
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("STACK_MAX", 4, Runtime, _stack_size, 32768),
+    AP_GROUPINFO("STACK_MAX", 4, Runtime, _stack_size, AP_MODULE_STACK_MAX_DEFAULT),
 
     // Index 5 was MAX_MOD; do not reuse its saved parameter identity.
 
