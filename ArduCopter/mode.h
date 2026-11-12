@@ -1942,6 +1942,7 @@ private:
     void throw_update_flow_check();
     bool throw_flow_agrees() const;
     void throw_reset_flow_check();
+    void throw_flow_check_follow_source_set();
     bool throw_attitude_good() const;
     void throw_do_nextmode_handoff();
     void throw_set_completion_sources();
@@ -1983,7 +1984,8 @@ private:
     uint32_t vel_good_start_ms;       // start of the current run of throw_velocity_good(), 0 if none
     uint32_t poshold_start_ms;        // system time position hold stage was entered
     bool flow_check_active;           // the source set takes its horizontal velocity from the flow and its position from no GPS
-    float flow_nis_avg;               // average normalised innovation squared of both flow axes since the completion source set
+    float flow_nis_avg;               // average normalised innovation squared of both flow axes, from the last source set change
+    uint8_t flow_check_source_set;    // the source set flow_nis_avg was started again for
     ThrowModeStage last_msg_stage;    // stage the last stage message was sent for
     uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
     float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met

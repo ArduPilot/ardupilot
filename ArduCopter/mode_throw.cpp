@@ -69,6 +69,8 @@ void ModeThrow::throw_setup()
     xy_hold_had_position = false;
     drop_confirm_start_ms = 0;
     drop_release_alt_m = 0;
+    flow_check_source_set = ahrs.get_posvelyaw_source_set();
+    throw_reset_flow_check();
     yaw_align_start_ms = 0;
     yaw_align_timeout_ms = THROW_YAW_ALIGN_TIMEOUT_MS;
     yaw_align_locked = false;
@@ -1047,15 +1049,16 @@ bool ModeThrow::throw_vertical_settled() const
            (now_ms - poshold_start_ms > THROW_VERT_SETTLE_MAX_MS);
 }
 
-// A source set that takes its horizontal velocity from the flow and its position from no GPS flies on a
-// velocity the flow measures, but relative aiding that starts in flight can start it far from the flow, and
-// the flow's innovations show that. Average their normalised squares over both axes from the switch to the
-// completion source set, to say whether the flow agrees with the velocity yet. Flow innovations too old
-// for the EKF to report mean nothing measures the velocity: after GPS is dropped the EKF dead reckons
-// it while reporting a position, an absolute one for up to 7 s. Then the flow has to show it agrees
-// again from the start
+// A source set that takes its horizontal velocity from the flow and its position from no GPS flies on
+// a velocity the flow measures, but relative aiding that starts in flight can start it far from the
+// flow, and the flow's innovations show that. Average their normalised squares over both axes through
+// the throw, started again when the source set changes, to say whether the flow agrees with the
+// velocity. Flow innovations too old for the EKF to report mean nothing measures the velocity: after
+// GPS is dropped the EKF dead reckons it while reporting a position, an absolute one for up to 7 s.
+// Then the flow has to show it agrees again from the start
 void ModeThrow::throw_update_flow_check()
 {
+    throw_flow_check_follow_source_set();
     Vector3f innov, var;
 #if AP_OPTICALFLOW_ENABLED
     flow_check_active = copter.optflow.enabled() && ahrs.active_backend_configured_to_use_optflow_for_velXY() &&
@@ -1063,7 +1066,7 @@ void ModeThrow::throw_update_flow_check()
 #else
     flow_check_active = false;
 #endif
-    if (!flow_check_active || !completion_sources_set) {
+    if (!flow_check_active) {
         return;
     }
     if (!ahrs.get_vel_innovations_and_variances_for_source(uint8_t(AP_NavEKF_Source::SourceXY::OPTFLOW), innov, var) ||
@@ -1073,6 +1076,17 @@ void ModeThrow::throw_update_flow_check()
     }
     const float nis = sq(innov.x) / var.x + sq(innov.y) / var.y;
     flow_nis_avg += (nis - flow_nis_avg) * G_Dt / (THROW_FLOW_NIS_TC_S + G_Dt);
+}
+
+// A change of source set, by the completion switch or the pilot, starts the average again, as the
+// velocity the new set gives has yet to show it agrees with the flow
+void ModeThrow::throw_flow_check_follow_source_set()
+{
+    const uint8_t source_set = ahrs.get_posvelyaw_source_set();
+    if (source_set != flow_check_source_set) {
+        flow_check_source_set = source_set;
+        throw_reset_flow_check();
+    }
 }
 
 // True unless the velocity rests on flow that has not shown it agrees with it
@@ -1188,8 +1202,6 @@ void ModeThrow::throw_set_completion_sources()
         return;
     }
     completion_sources_set = true;
-    // the flow has to show it agrees with the velocity from here
-    throw_reset_flow_check();
     const int8_t srcset = g2.throw_srcset.get();
     bool srcset_changed = false;
     if (srcset >= 1 && srcset <= 3) {
@@ -1201,6 +1213,8 @@ void ModeThrow::throw_set_completion_sources()
     // with THROW_SRC_SET 0 the pre-throw set goes back now
     srcset_changed |= restore_source_set();
     srcset_change_ms = srcset_changed ? AP_HAL::millis() : 0;
+    // in this loop, before the next update of the check reads the new set
+    throw_flow_check_follow_source_set();
 }
 
 void ModeThrow::throw_do_nextmode_handoff()
