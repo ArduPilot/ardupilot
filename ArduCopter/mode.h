@@ -1938,6 +1938,7 @@ private:
     bool throw_position_good() const;
     bool throw_height_good() const;
     bool throw_velocity_good() const;
+    bool throw_vertical_settled() const;
     bool throw_attitude_good() const;
     void throw_do_nextmode_handoff();
     void throw_set_completion_sources();
@@ -1975,6 +1976,8 @@ private:
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
     uint32_t uprighting_start_ms;     // system time uprighting stage was entered
     uint32_t hgt_stabilise_start_ms;  // system time height stabilise stage was entered
+    uint32_t vel_good_start_ms;       // start of the current run of throw_velocity_good(), 0 if none
+    uint32_t poshold_start_ms;        // system time position hold stage was entered
     ThrowModeStage last_msg_stage;    // stage the last stage message was sent for
     uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
     float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met

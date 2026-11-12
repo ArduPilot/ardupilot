@@ -211,6 +211,12 @@ void ModeThrow::run()
 
     throw_follow_yaw_reset();
 
+    if (!throw_velocity_good()) {
+        vel_good_start_ms = 0;
+    } else if (vel_good_start_ms == 0) {
+        vel_good_start_ms = AP_HAL::millis();
+    }
+
     // Track throw direction whenever the state machine is in Detecting
     // (motors off, body accel uncontaminated by thrust).  No-op
     // otherwise.  Cheap; just integration.
@@ -330,12 +336,13 @@ void ModeThrow::run()
             pos_control->set_pos_desired_U_m(MAX(drop_release_alt_m, pos_control->get_pos_estimate_U_m()));
         }
         stage = Throw_PosHold;
+        poshold_start_ms = AP_HAL::millis();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
     } else if (stage == Throw_PosHold &&
                (!xy_controller_active || throw_position_good()) &&
-               throw_yaw_align_done()) {
+               throw_yaw_align_done() && throw_vertical_settled()) {
         // PosHold has settled and yaw alignment is either complete or
         // has timed out.  Hand off to THROW_NEXTMODE.  Yaw alignment
         // runs concurrently with HgtStabilise and PosHold (driven by
@@ -1006,6 +1013,23 @@ bool ModeThrow::throw_velocity_good() const
 {
     // Check that vertical velocity is below 0.5 m/s
     return (fabsf(pos_control->get_vel_estimate_U_ms()) < 0.5f);
+}
+
+// With THROW_ALT_DCSND 0 a drop is stopped where uprighting leaves it, so a toss still climbing
+// reaches throw_velocity_good() at the top of its arc, with the throttle still low from stopping
+// the climb, and handed over there the vehicle sank 0.6-1.3 m under the next mode. Hand over once
+// the vertical speed has stayed small for THROW_VERT_SETTLE_MS, so the arrest has finished, or
+// after THROW_VERT_SETTLE_MAX_MS, so a speed that never settles is no reason
+// to keep the vehicle from its next mode. Other drops end on a descent to a target and upward
+// throws on the target height, and are unchanged
+bool ModeThrow::throw_vertical_settled() const
+{
+    if (g2.throw_type != ThrowType::Drop || is_positive(g.throw_altitude_descend)) {
+        return true;
+    }
+    const uint32_t now_ms = AP_HAL::millis();
+    return ((vel_good_start_ms != 0) && (now_ms - vel_good_start_ms >= THROW_VERT_SETTLE_MS)) ||
+           (now_ms - poshold_start_ms > THROW_VERT_SETTLE_MAX_MS);
 }
 
 bool ModeThrow::throw_position_good() const
