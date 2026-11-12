@@ -1214,7 +1214,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
     // @Param: THROW_SRC_SET
     // @DisplayName: Throw mode EKF source set on completion
-    // @Description: EKF source set to activate once the vehicle is upright after the throw, as the height arrest begins, and to fly the rest of the throw and THROW_NEXTMODE on. It overrides a set selected in throw mode before then; one selected after it is kept. 0 to leave unchanged.
+    // @Description: EKF source set to activate once the vehicle is upright after the throw, as the height arrest begins, or at the hand-over if it never is, and to fly the rest of the throw and THROW_NEXTMODE on. It overrides a set selected in throw mode before then; one selected after it is kept, and a mode change after it leaves the vehicle on it. 0 to leave unchanged.
     // @Values: 0:No change,1:Source1,2:Source2,3:Source3
     // @User: Advanced
     AP_GROUPINFO("THROW_SRC_SET", 60, ParametersG2, throw_srcset, 0),
