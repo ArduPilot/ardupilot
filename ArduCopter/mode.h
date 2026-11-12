@@ -1939,6 +1939,9 @@ private:
     bool throw_height_good() const;
     bool throw_velocity_good() const;
     bool throw_vertical_settled() const;
+    void throw_update_flow_check();
+    bool throw_flow_agrees() const;
+    void throw_reset_flow_check();
     bool throw_attitude_good() const;
     void throw_do_nextmode_handoff();
     void throw_set_completion_sources();
@@ -1969,6 +1972,7 @@ private:
     uint32_t nextmode_wait_start_ms; // system time the handoff started waiting for a position, 0 if not waiting
     uint32_t srcset_change_ms;      // system time the throw changed to the source set it completes on, 0 if it did not
     bool xy_controller_active;      // true when XY position controller was initialised
+    bool xy_hold_had_position;      // true once PosHold has held a horizontal position
     bool source_set_switched;       // true if init() switched the EKF source set and exit() may restore it
     uint8_t saved_source_set;       // EKF source set active before init() switched it for the throw phase
     uint8_t throw_source_set;       // EKF source set init() switched to for the throw phase
@@ -1978,6 +1982,8 @@ private:
     uint32_t hgt_stabilise_start_ms;  // system time height stabilise stage was entered
     uint32_t vel_good_start_ms;       // start of the current run of throw_velocity_good(), 0 if none
     uint32_t poshold_start_ms;        // system time position hold stage was entered
+    bool flow_check_active;           // the source set takes its horizontal velocity from the flow and its position from no GPS
+    float flow_nis_avg;               // average normalised innovation squared of both flow axes since the completion source set
     ThrowModeStage last_msg_stage;    // stage the last stage message was sent for
     uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
     float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met

@@ -522,6 +522,15 @@
 #ifndef THROW_NEXTMODE_POS_WAIT_MS
  # define THROW_NEXTMODE_POS_WAIT_MS 5000 // ms the handoff waits for a position before giving up on a next mode that needs one
 #endif
+#ifndef THROW_FLOW_NIS_TC_S
+ # define THROW_FLOW_NIS_TC_S 0.5f // s time constant of the average of the flow innovations: it spans about ten samples of 10 Hz flow, enough for the threshold below to be a tight percentile, and follows a velocity that comes into agreement within a second
+#endif
+#ifndef THROW_FLOW_NIS_AGREES
+ # define THROW_FLOW_NIS_AGREES 3.7f // average normalised innovation squared of both flow axes under which the flow agrees with the velocity: the average of a filter that agrees is distributed about as chi-square(20)/10 with 10 Hz flow, so stays under it 98.8% of the time, and 99.9% with 20 Hz flow
+#endif
+#ifndef THROW_FLOW_NIS_GATE
+ # define THROW_FLOW_NIS_GATE 18.0f // average normalised innovation squared both flow axes reach at the EKF's default 3 sigma flow innovation gate, which the average starts from
+#endif
 #ifndef THROW_VERT_SETTLE_MS
  # define THROW_VERT_SETTLE_MS 500 // ms the vertical speed stays inside throw_velocity_good()'s 0.5 m/s before a THROW_ALT_DCSND 0 drop hands over: 1 m/s of change over 0.5 s bounds the mean vertical acceleration to 2 m/s/s, a fifth of g
 #endif

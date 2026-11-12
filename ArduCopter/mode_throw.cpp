@@ -66,6 +66,7 @@ void ModeThrow::throw_setup()
     completion_sources_set = false;
     nextmode_wait_start_ms = 0;
     xy_controller_active = false;
+    xy_hold_had_position = false;
     drop_confirm_start_ms = 0;
     drop_release_alt_m = 0;
     yaw_align_start_ms = 0;
@@ -147,12 +148,13 @@ bool ModeThrow::restore_source_set()
 // Drops are designed to operate without horizontal aiding -- detection is
 // body-frame / baro based -- so a drop can arm GPS-free.  Upward throws keep
 // the upstream requirement of a position estimate (GPS or flow-relative)
-// unless the next mode flies without one.  Once PosHold is holding a
+// unless the next mode flies without one.  Once PosHold has held a
 // horizontal position on the way to a mode that needs one, or to stay in throw,
-// either type needs one, so the EKF failsafe acts there.
+// either type needs one, so the EKF failsafe acts there, also while the hold
+// holds level because the flow stopped agreeing.
 bool ModeThrow::requires_position() const
 {
-    return ((stage == Throw_PosHold && xy_controller_active) || g2.throw_type != ThrowType::Drop) &&
+    return ((stage == Throw_PosHold && xy_hold_had_position) || g2.throw_type != ThrowType::Drop) &&
            nextmode_requires_position();
 }
 
@@ -216,6 +218,7 @@ void ModeThrow::run()
     } else if (vel_good_start_ms == 0) {
         vel_good_start_ms = AP_HAL::millis();
     }
+    throw_update_flow_check();
 
     // Track throw direction whenever the state machine is in Detecting
     // (motors off, body accel uncontaminated by thrust).  No-op
@@ -320,13 +323,15 @@ void ModeThrow::run()
         // check if we have horizontal position for PosHold.  position_ok()
         // accepts a flow-relative estimate and honours the EKF failsafe, so it
         // matches what the next mode will be held to.
-        const bool have_horiz_pos = copter.position_ok();
+        const bool pos_ok = copter.position_ok();
+        const bool have_horiz_pos = pos_ok && throw_flow_agrees();
         if (have_horiz_pos) {
             gcs().send_text(MAV_SEVERITY_INFO,"Throw height achieved, good position");
             pos_control->NE_init_controller();
             xy_controller_active = true;
+            xy_hold_had_position = true;
         } else if (nextmode_requires_position()) {
-            gcs().send_text(MAV_SEVERITY_WARNING,"Throw height achieved, lost position");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Throw height achieved, %s", pos_ok ? "flow settling" : "lost position");
         } else {
             gcs().send_text(MAV_SEVERITY_INFO,"Throw height achieved");
         }
@@ -455,15 +460,25 @@ void ModeThrow::run()
         // restored source set's, is held: staying in throw, or after a refused
         // handoff, nothing else would stop the vehicle drifting
         if (copter.flightmode == this &&
-            !xy_controller_active && copter.position_ok() && nextmode_requires_position()) {
+            !xy_controller_active && copter.position_ok() && throw_flow_agrees() && nextmode_requires_position()) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Throw position regained");
             pos_control->NE_init_controller();
             xy_controller_active = true;
+            xy_hold_had_position = true;
         }
 
         // a position lost on the way to a mode that flies without one is no
         // reason to stop: hold level instead, and hand over as planned
         if (xy_controller_active && !copter.position_ok() && !nextmode_requires_position()) {
+            xy_controller_active = false;
+        }
+
+        // the flow that agreed when the hold started can lapse, the range finder dropping out say, and
+        // relative aiding then carries on for 5 s on a velocity nothing measures: hold level until it
+        // agrees again. A lapse starts the average again at the gate, and only an average back up
+        // there releases the hold, so it does not toggle on the agreement threshold
+        if (xy_controller_active && flow_check_active && (flow_nis_avg >= THROW_FLOW_NIS_GATE)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Throw flow lost, holding level");
             xy_controller_active = false;
         }
 
@@ -1032,6 +1047,46 @@ bool ModeThrow::throw_vertical_settled() const
            (now_ms - poshold_start_ms > THROW_VERT_SETTLE_MAX_MS);
 }
 
+// A source set that takes its horizontal velocity from the flow and its position from no GPS flies on a
+// velocity the flow measures, but relative aiding that starts in flight can start it far from the flow, and
+// the flow's innovations show that. Average their normalised squares over both axes from the switch to the
+// completion source set, to say whether the flow agrees with the velocity yet. Flow innovations too old
+// for the EKF to report mean nothing measures the velocity: after GPS is dropped the EKF dead reckons
+// it while reporting a position, an absolute one for up to 7 s. Then the flow has to show it agrees
+// again from the start
+void ModeThrow::throw_update_flow_check()
+{
+    Vector3f innov, var;
+#if AP_OPTICALFLOW_ENABLED
+    flow_check_active = copter.optflow.enabled() && ahrs.active_backend_configured_to_use_optflow_for_velXY() &&
+                        !ahrs.active_backend_configured_to_use_gps_for_posXY();
+#else
+    flow_check_active = false;
+#endif
+    if (!flow_check_active || !completion_sources_set) {
+        return;
+    }
+    if (!ahrs.get_vel_innovations_and_variances_for_source(uint8_t(AP_NavEKF_Source::SourceXY::OPTFLOW), innov, var) ||
+        !is_positive(var.x) || !is_positive(var.y)) {
+        throw_reset_flow_check();
+        return;
+    }
+    const float nis = sq(innov.x) / var.x + sq(innov.y) / var.y;
+    flow_nis_avg += (nis - flow_nis_avg) * G_Dt / (THROW_FLOW_NIS_TC_S + G_Dt);
+}
+
+// True unless the velocity rests on flow that has not shown it agrees with it
+bool ModeThrow::throw_flow_agrees() const
+{
+    return !flow_check_active || (flow_nis_avg < THROW_FLOW_NIS_AGREES);
+}
+
+// Start both flow axes on the EKF's default flow innovation gate
+void ModeThrow::throw_reset_flow_check()
+{
+    flow_nis_avg = THROW_FLOW_NIS_GATE;
+}
+
 bool ModeThrow::throw_position_good() const
 {
     // check that our horizontal position error is within 0.5 m
@@ -1133,6 +1188,8 @@ void ModeThrow::throw_set_completion_sources()
         return;
     }
     completion_sources_set = true;
+    // the flow has to show it agrees with the velocity from here
+    throw_reset_flow_check();
     const int8_t srcset = g2.throw_srcset.get();
     bool srcset_changed = false;
     if (srcset >= 1 && srcset <= 3) {
@@ -1176,7 +1233,7 @@ void ModeThrow::throw_do_nextmode_handoff()
         // always has; set_mode() is not asked, as its own check reads the
         // same answer from the mode's last run that nextmode_requires_position()
         // avoids.
-        if (nextmode_requires_position() && !copter.position_ok()) {
+        if (nextmode_requires_position() && !(copter.position_ok() && throw_flow_agrees())) {
             const uint32_t now_ms = AP_HAL::millis();
             if (nextmode_wait_start_ms == 0) {
                 nextmode_wait_start_ms = now_ms;
