@@ -21,6 +21,7 @@ import time
 
 from collections import deque
 from typing import Any
+from typing import Callable
 
 # magic -> struct format for SIM_JSON's servo_packet_16 / servo_packet_32
 SERVO_PACKETS: dict[int, str] = {
@@ -51,6 +52,18 @@ class JSONPhysics(object):
             'attitude': [0.0, 0.0, 0.0],
             'velocity': [0.0, 0.0, 0.0],
         }
+        # fields written as given, for values json.dumps can not write,
+        # such as null for a sensor with no reading
+        self.raw_fields: dict[str, str] = {}
+        # sent once each instead of the reply to a new frame, as from a
+        # backend sending bad data. SITL sends that frame again, which
+        # gets a normal reply, so bad and good packets alternate
+        self.injected: deque[bytes] = deque()
+        self.injected_frame: int | None = None
+        # makes the bytes sent from the JSON text of a reply
+        self.framing: Callable[[bytes], bytes] = lambda text: b'\n' + text + b'\n'
+        # frames SITL sent again because it had no usable reply
+        self.resends = 0
         self.lock = threading.Lock()
         self.frame_rate: int | None = None
         # recent frame rates, for a median rather than the last value
@@ -86,10 +99,26 @@ class JSONPhysics(object):
         '''replace top-level fields of the state sent to SITL, None removes one'''
         with self.lock:
             for name, value in fields.items():
+                self.raw_fields.pop(name, None)
                 if value is None:
                     self.state.pop(name, None)
                 else:
                     self.state[name] = value
+
+    def set_raw(self, **fields: str | None) -> None:
+        '''top-level fields sent as the given text, e.g. rng_1='null'; None removes one'''
+        with self.lock:
+            for name, text in fields.items():
+                self.state.pop(name, None)
+                if text is None:
+                    self.raw_fields.pop(name, None)
+                else:
+                    self.raw_fields[name] = text
+
+    def inject(self, *packets: bytes) -> None:
+        '''send these bytes once each in place of the replies to the next frames'''
+        with self.lock:
+            self.injected.extend(packets)
 
     def step(self) -> bytes:
         '''advance the physics by dt, return the message for SITL; call with lock held'''
@@ -100,9 +129,12 @@ class JSONPhysics(object):
         vel = self.state['velocity']
         self.state['position'] = [p + v * self.dt for p, v in zip(pos, vel)]
         msg = dict(self.state, timestamp=self.timestamp)
-        # compact separators: SIM_JSON expects the value right after
-        # '":', a space makes it reject booleans such as no_lockstep
-        self.last_reply = ('\n' + json.dumps(msg, separators=(',', ':')) + '\n').encode('ascii')
+        # compact separators keep packets small; json.dumps writes
+        # infinity and NaN as Infinity and NaN, which SIM_JSON accepts
+        text = json.dumps(msg, separators=(',', ':'))
+        if self.raw_fields:
+            text = text[:-1] + ''.join(',"%s":%s' % f for f in self.raw_fields.items()) + '}'
+        self.last_reply = self.framing(text.encode('ascii'))
         self.replies += 1
         return self.last_reply
 
@@ -123,9 +155,16 @@ class JSONPhysics(object):
             self.pwm = fields[3:]
             if self.paused or self.free_run:
                 return None
+            if self.injected and frame_count != self.injected_frame:
+                # the frame is not taken as answered, so SITL sending it
+                # again gets a normal reply
+                self.injected_frame = frame_count
+                return self.injected.popleft()
             if frame_count == self.frame_count and self.last_reply is not None:
-                # SITL resends servos when it has waited ~1s for us;
-                # answer with the same state so time does not jump
+                # SITL resends servos when it has waited ~1s for us, or
+                # could not use our reply; answer with the same state so
+                # time does not jump
+                self.resends += 1
                 return self.last_reply
             self.frame_count = frame_count
             return self.step()
@@ -153,5 +192,5 @@ class JSONPhysics(object):
             with self.lock:
                 if self.paused:
                     continue
-                msg = self.step()
+                msg = self.injected.popleft() if self.injected else self.step()
             sock.sendto(msg, addr)

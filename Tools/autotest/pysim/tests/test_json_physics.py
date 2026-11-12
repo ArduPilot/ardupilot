@@ -29,7 +29,7 @@ def test_lockstep_replies() -> None:
     assert first['timestamp'] == 5.0
     assert first['position'][0] == pytest.approx(0.01)
     # a resent frame gets the same answer, time does not advance
-    assert p.handle(pkt(0)) == p.last_reply and p.replies == 1
+    assert p.handle(pkt(0)) == p.last_reply and p.replies == 1 and p.resends == 1
     second = json.loads(reply(p, pkt(1)))
     assert second['timestamp'] == pytest.approx(5.01)
     assert p.frame_rate == 400 and p.pwm == tuple([1500] * 16)
@@ -63,11 +63,47 @@ def test_frame_rates() -> None:
 
 def test_fields() -> None:
     p = JSONPhysics()
-    # SIM_JSON rejects booleans after '": ', so no spaces
     p.set(no_lockstep=True)
     assert b'"no_lockstep":true' in reply(p, pkt(0))
     p.set(attitude=None)
     assert b'attitude' not in reply(p, pkt(1))
+    # json.dumps writes infinity as Infinity, which SIM_JSON accepts
+    p.set(rng_1=float('inf'))
+    assert b'"rng_1":Infinity' in reply(p, pkt(2))
+
+
+def test_raw_fields() -> None:
+    p = JSONPhysics()
+    p.set(rng_1=5.0)
+    p.set_raw(rng_1='null', rng_2='-inf')
+    msg = reply(p, pkt(0))
+    assert msg.endswith(b',"rng_1":null,"rng_2":-inf}\n') and msg.count(b'rng_1') == 1
+    # set() and set_raw() replace each other's value for a field
+    p.set(rng_1=4.0)
+    p.set_raw(rng_2=None)
+    msg = reply(p, pkt(1))
+    assert json.loads(msg)['rng_1'] == 4.0 and b'rng_2' not in msg
+
+
+def test_injected() -> None:
+    p = JSONPhysics(dt=0.01)
+    reply(p, pkt(0))
+    p.inject(b'bad 1', b'bad 2')
+    # one per frame, without advancing time; SITL sending the frame
+    # again gets a normal reply, not taken as a resend
+    assert p.handle(pkt(1)) == b'bad 1'
+    assert json.loads(reply(p, pkt(1)))['timestamp'] == pytest.approx(0.01)
+    assert p.handle(pkt(2)) == b'bad 2'
+    assert json.loads(reply(p, pkt(2)))['timestamp'] == pytest.approx(0.02)
+    assert json.loads(reply(p, pkt(3)))['timestamp'] == pytest.approx(0.03)
+    assert p.resends == 0 and p.replies == 4
+
+
+def test_framing() -> None:
+    p = JSONPhysics()
+    p.framing = lambda text: text + b'\0'
+    msg = reply(p, pkt(0))
+    assert msg.startswith(b'{') and msg.endswith(b'}\0')
 
 
 def test_paused() -> None:
