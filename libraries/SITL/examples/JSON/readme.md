@@ -135,7 +135,7 @@ Volts, current in Amps:
 
 ## Debugging
 
-When first connecting you will see a message reporting what fields were successfully received. If any of the mandatory fields are missing SITL will stop, however it will run without the optional fields. This message can be used to double check SITL is receiving everything being sent by the physics backend.
+When first connecting you will see a message reporting what fields were successfully received. If any of the mandatory fields are missing SITL rejects the packet and waits for a complete one, however it will run without the optional fields. This message can be used to double check SITL is receiving everything being sent by the physics backend.
 
 For example:
 
@@ -149,3 +149,23 @@ JSON received:
         velocity
         rng_1
 ```
+
+### Rejected packets
+
+SITL uses a packet only if all of it is valid; nothing from a rejected packet is used. It then sends the
+same servo frame again and waits for the next packet, so simulated time stands still until a valid one
+arrives. Rejections are reported at most once a second, with a count of all rejected packets so far:
+
+```text
+JSON: rejected sensor packet: duplicate key, 3 rejected
+```
+
+| Message | Cause |
+| ------- | ----- |
+| `rejected sensor packet: <reason>` | The packet is not valid JSON or does not match the fields above |
+| `sensor packet missing: <fields>` | A mandatory field is missing |
+| `sensor packet with infinity or NaN in: <fields>` | Infinity or NaN outside the rangefinders |
+| `sensor datagram too large` | The datagram is over 4kB |
+
+The `<reason>` comes from the parser, `libraries/AP_JSON/AP_JSON_FieldParser.h`, which lists the
+rules a packet must follow.
