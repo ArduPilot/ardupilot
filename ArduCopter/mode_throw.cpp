@@ -38,6 +38,10 @@ bool ModeThrow::init(bool ignore_checks)
     last_msg_stage = Throw_Disarmed;
     yaw_reset_count = ahrs.get_yaw_reset_count();
     yaw_prev_rad = ahrs.get_yaw_rad();
+    pos_d_reset_count = ahrs.get_position_D_reset_count();
+    if (!ahrs.get_relative_position_D_origin_float(pos_d_prev_m)) {
+        pos_d_prev_m = 0;
+    }
     throw_setup();
 
     // initialise pos controller speed and acceleration
@@ -214,6 +218,7 @@ void ModeThrow::run()
     */
 
     throw_follow_yaw_reset();
+    throw_follow_height_reset();
 
     if (!throw_velocity_good()) {
         vel_good_start_ms = 0;
@@ -796,6 +801,32 @@ void ModeThrow::throw_follow_yaw_reset()
     throw_dir_anchor_yaw_rad = wrap_PI(throw_dir_anchor_yaw_rad + yaw_change_rad);
     throw_entry_yaw_rad = wrap_PI(throw_entry_yaw_rad + yaw_change_rad);
     throw_entry_vel_ne_ms.rotate(yaw_change_rad);
+}
+
+// The drop's release height is an EKF height, and an EKF height reset, as a switch of height source
+// makes, moves the frame it was taken in. AC_PosControl moves its own targets with a reset, so move
+// the release height with it too. AHRS counts a reset but does not report its size, so the size is
+// the jump in the height estimate across the loop the reset is counted in, less what the vehicle
+// climbed in that loop
+void ModeThrow::throw_follow_height_reset()
+{
+    const uint16_t reset_count = ahrs.get_position_D_reset_count();
+    float pos_d_m;
+    if (!ahrs.get_relative_position_D_origin_float(pos_d_m)) {
+        pos_d_reset_count = reset_count;
+        return;
+    }
+    const float prev_pos_d_m = pos_d_prev_m;
+    pos_d_prev_m = pos_d_m;
+    if (reset_count == pos_d_reset_count) {
+        return;
+    }
+    pos_d_reset_count = reset_count;
+    float vel_d_ms;
+    if (!ahrs.get_velocity_D(vel_d_ms)) {
+        vel_d_ms = 0;
+    }
+    drop_release_alt_m -= pos_d_m - prev_pos_d_m - vel_d_ms * G_Dt;
 }
 
 void ModeThrow::throw_dir_reset()
