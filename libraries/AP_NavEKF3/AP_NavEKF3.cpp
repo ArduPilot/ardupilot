@@ -1642,6 +1642,13 @@ bool NavEKF3::configuredToUseGPSForPos(void) const
     return false;
 }
 
+// check if the primary core's source set takes its horizontal velocity from optical flow,
+// counting the other sets' under FUSE_ALL_VELOCITIES
+bool NavEKF3::configuredToUseOptFlowForVelXY(void) const
+{
+    return sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, primary);
+}
+
 // write the raw optical flow measurements
 // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
 // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.

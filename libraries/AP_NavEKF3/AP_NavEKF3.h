@@ -359,6 +359,9 @@ public:
 
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
+
+    // check if configured to use optical flow for horizontal velocity estimation
+    bool configuredToUseOptFlowForVelXY(void) const;
     
     // check if configured to use GPS for position estimation
     bool configuredToUseGPSForPos(void) const;
