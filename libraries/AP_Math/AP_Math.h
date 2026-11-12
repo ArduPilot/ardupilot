@@ -440,6 +440,7 @@ double uint64_to_double_le(const uint64_t& value) WARN_IF_UNUSED;
 
 /*
   get a twos-complement value from the first 'length' bits of a uint32_t
+  bits above 'length' are ignored; length 0 returns 0, length >= 32 uses all bits
   With thanks to betaflight
  */
 int32_t get_twos_complement(uint32_t raw, uint8_t length) WARN_IF_UNUSED;
