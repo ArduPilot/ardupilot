@@ -358,6 +358,8 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
                 } else if (msg.sub_mode == UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED) {
                     interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED;
                 }
+            } else if (msg.mode == UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_PPP) {
+                interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_TYPE_PPP;
             }
         }
     }
