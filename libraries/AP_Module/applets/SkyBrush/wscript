@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+# AP_FLAKE8_CLEAN
+# SkyBrush drone show native module, built with --module=applets/SkyBrush
+
+
+def configure(cfg):
+    cfg.ap_module_check_rust()
+
+
+def build(bld):
+    bld.ap_module(
+        name='skybrush',
+        source='main.rs',
+        stack_size=32768,
+        heap_size=131072,
+    )
