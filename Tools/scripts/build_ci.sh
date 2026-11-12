@@ -531,6 +531,14 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board sitl --debug --disable-scripting
 
         $waf replay
+
+        # boards without double-precision hardware run a
+        # single-precision EKF; Replay must be built the same way to
+        # reproduce their logs
+        echo "Building single-precision-EKF replay"
+        $waf configure --board sitl --debug --disable-scripting --ekf-single
+
+        $waf replay
         echo "Building AP_DAL standalone test"
         $waf configure --board sitl --debug --disable-scripting --no-gcs
 
