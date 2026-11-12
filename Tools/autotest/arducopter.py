@@ -18798,6 +18798,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 # as the position arrives, with no regain before it, tests that
                 handoff = False
                 regained_before = False
+                waited = False
                 dfreader = self.dfreader_for_current_onboard_log()
                 while True:
                     m = dfreader.recv_match(type=['MODE', 'MSG'])
@@ -18807,16 +18808,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         if m.Mode == 18:
                             handoff = False
                             regained_before = False
+                            waited = False
                         elif m.Mode == 5 and m.Rsn == 16:  # ModeReason::THROW_COMPLETE
                             handoff = True
                     elif m.Message == "Throw position regained":
                         if handoff:
                             raise NotAchievedException("throw regained a position after handing over to LOITER")
                         regained_before = True
+                    elif m.Message == "Throw: Loiter waiting for position":
+                        waited = True
                 if not handoff:
                     raise NotAchievedException("no handoff to LOITER in the log")
-                if regained_before:
-                    self.progress("position regained before the handoff: the handoff loop is not tested")
+                if regained_before or not waited:
+                    # a position at PosHold entry, or one regained before the handoff,
+                    # means the handoff never waited for one
+                    self.progress("no wait for a position before the handoff: the handoff loop is not tested")
                 else:
                     handoffs_tested += 1
             self.reboot_sitl()
@@ -18976,6 +18982,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "EK3_SRC2_POSXY": 0,
             "EK3_SRC2_VELXY": 0,
+            # completes on the set with no position: with 0 the pre-throw set, and its GPS
+            # position, comes back once the vehicle is upright
+            "THROW_SRC_SET": 2,
             "THROW_NEXTMODE": 2,       # ALT_HOLD
             "SIM_SHOVE_Z": -10.5,
         })
@@ -18994,7 +19003,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
         if self.statustext_in_collections("good position"):
             raise NotAchievedException("second throw held a position it should not have had")
-        self.wait_statustext("^Throw: restored EKF Source Set 1$", check_context=True, regex=True, timeout=10)
         self.wait_mode('ALT_HOLD', timeout=30)
         # running the position controller uninitialised is an internal error
         if self.statustext_in_collections("Internal Errors"):
@@ -19003,7 +19011,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed(timeout=120)
         self.zero_throttle()
         # an internal error would survive until reboot, so arming must be
-        # possible again now the position is back
+        # possible again once the position is back
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=1)
         self.wait_ready_to_arm()
         self.reboot_sitl()
 
