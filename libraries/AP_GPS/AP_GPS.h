@@ -66,6 +66,7 @@ class AP_GPS
     friend class AP_GPS_Backend;
     friend class AP_GPS_DroneCAN;
     friend class AP_GPS_UBLOX_CFGv2;
+    friend class AP_GPS_Test;
 
 public:
     AP_GPS();
@@ -787,6 +788,9 @@ private:
     bool needs_uart(GPS_Type type) const;
 
 #if GPS_MAX_RECEIVERS > 1
+    // Selection priority is independent of the protocol fix-type numbering.
+    static uint8_t fix_type_priority(AP_GPS_FixType status);
+
     /// Update primary instance
     void update_primary(void);
 #endif

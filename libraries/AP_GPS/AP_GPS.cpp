@@ -1094,10 +1094,26 @@ void AP_GPS::update(void)
 #endif
 }
 
+#if GPS_MAX_RECEIVERS > 1
+uint8_t AP_GPS::fix_type_priority(AP_GPS_FixType status)
+{
+    switch (status) {
+    case AP_GPS_FixType::PPP:
+        return 5;
+    case AP_GPS_FixType::RTK_FLOAT:
+        return 6;
+    case AP_GPS_FixType::RTK_FIXED:
+        return 7;
+    case AP_GPS_FixType::STATIC:
+        return 8;
+    default:
+        return uint8_t(status);
+    }
+}
+
 /*
   update primary GPS instance
  */
-#if GPS_MAX_RECEIVERS > 1
 void AP_GPS::update_primary(void)
 {
 #if AP_GPS_BLENDED_ENABLED
@@ -1173,7 +1189,7 @@ void AP_GPS::update_primary(void)
             // may be the old timestamp that triggered the loss of
             // blending
             const uint32_t delay_threshold = 400;
-            const bool higher_status = state[i].status > state[primary_instance].status;
+            const bool higher_status = fix_type_priority(state[i].status) > fix_type_priority(state[primary_instance].status);
             const bool old_data_primary = (now - state[primary_instance].last_gps_time_ms) > delay_threshold;
             const bool old_data = (now - state[i].last_gps_time_ms) > delay_threshold;
             const bool equal_status = state[i].status == state[primary_instance].status;
@@ -1215,7 +1231,7 @@ void AP_GPS::update_primary(void)
         if (i == primary_instance) {
             continue;
         }
-        if (state[i].status > state[primary_instance].status) {
+        if (fix_type_priority(state[i].status) > fix_type_priority(state[primary_instance].status)) {
             // we have a higher status lock, or primary is set to the blended GPS, change GPS
             primary_instance = i;
             _last_instance_swap_ms = now;
