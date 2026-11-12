@@ -19225,6 +19225,54 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("LOITER took over on a velocity %.2f m/s out" % max(e[0] for e in errors))
         self.reboot_sitl()
 
+    def ThrowHeightSourceSwitchNoClimb(self):
+        '''A THROW_ALT_DCSND 0 toss whose completion set changes height source does not climb'''
+        # THROW_SRC_SET's set takes its height from a GPS reading 15 m below the baro, so the switch
+        # once upright resets the EKF height 15 m down, and the release height has to move with it
+        self.set_parameters({
+            "EK3_SRC2_POSXY": 3,
+            "EK3_SRC2_VELXY": 3,
+            "EK3_SRC2_POSZ": 3,
+            "EK3_SRC2_VELZ": 3,
+            "EK3_SRC2_YAW": 1,
+            "THROW_TYPE": 1,           # drop
+            "THROW_ALT_DCSND": 0,
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            "THROW_SRC_SET": 2,
+            "MOT_SPOOL_TIME": 1.0,
+            "SIM_SHOVE_Z": -30,
+        })
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.set_parameter("SIM_GPS1_ALT_OFS", -15)
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.set_rc(3, 1500)
+        self.wait_mode('ALT_HOLD', timeout=30)
+        self.delay_sim_time(5, "hold after the hand-over")
+        self.disarm_vehicle(force=True)
+        self.zero_throttle()
+        # true height from the switch to 5 s after the hand-over
+        switch_us = self.first_message_time_us("EKF Source Set 2")
+        dfreader = self.dfreader_for_current_onboard_log()
+        alts = []
+        while True:
+            m = dfreader.recv_match(type='SIM')
+            if m is None:
+                break
+            if m.TimeUS >= switch_us:
+                alts.append(m.Alt)
+        self.reboot_sitl()
+        climb = max(alts) - alts[0]
+        self.progress("climbed %.2f m after the switch" % climb)
+        if climb > 2.0:
+            raise NotAchievedException("climbed %.2f m to a release height left in the old frame" % climb)
+
     def first_message_time_us(self, text, after_us=0):
         '''TimeUS of the first MSG containing text after after_us in the current onboard log'''
         dfreader = self.dfreader_for_current_onboard_log()
@@ -21051,6 +21099,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowTossWithoutFlowHoldsNoPosition,
             self.ThrowZeroDescentSettlesBeforeHandover,
             self.ThrowYawFollowsEKFYawReset,
+            self.ThrowHeightSourceSwitchNoClimb,
             self.ThrowNextModeAutoStaleSubmode,
         ])
         return ret
