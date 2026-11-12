@@ -4,6 +4,7 @@
 #include <AP_Math/crc.h>
 #include <AP_HAL/AP_HAL.h>
 
+#include <algorithm>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -370,6 +371,84 @@ TEST(AP_JSON_FieldParser, Crc)
     EXPECT_EQ("E", feed(p, std::string(body) + "*123\n"));
     EXPECT_EQ("P", feed(p, std::string(body) + "\n"));
     EXPECT_FALSE(p.had_crc());
+}
+
+// feed a stream in chunks of 1 to max_chunk bytes, as a UART or USB
+// driver hands over whatever has arrived, recording each result with
+// the fields and values it left. max_chunk 0 feeds it in one call
+static std::string feed_in_chunks(const std::string &stream, uint32_t seed, size_t max_chunk)
+{
+    AP_JSON_FieldParser p(fields, 6);
+    memset(&st, 0, sizeof(st));
+    std::string results;
+    size_t off = 0;
+    while (off < stream.size()) {
+        size_t n = stream.size() - off;
+        if (max_chunk != 0) {
+            seed = seed * 1103515245U + 12345U;
+            n = std::min(n, size_t(1 + (seed >> 16) % max_chunk));
+        }
+        const size_t end = off + n;
+        while (off < end) {
+            size_t used;
+            const R r = p.feed((const uint8_t *)stream.data() + off, end - off, used);
+            off += used;
+            char buf[160];
+            if (r == R::PACKET) {
+                snprintf(buf, sizeof(buf), "P %llx %d %.17g %a %a %a %d %a\n", (unsigned long long)p.found(),
+                         int(p.had_crc()), st.timestamp, double(st.gyro[0]), st.position[2], double(st.rc1),
+                         int(st.flag), double(st.deep));
+                results += buf;
+            } else if (r == R::ERROR) {
+                results += std::string("E ") + p.error() + "\n";
+            }
+        }
+    }
+    return results;
+}
+
+TEST(AP_JSON_FieldParser, ChunkBoundaries)
+{
+    // packets of every kind, including some broken ones, back to back
+    const char *bodies[] = {
+        "{\"timestamp\":1.5,\"imu\":{\"gyro\":[0.25,-1e-3,7]},\"position\":[1,2,3.0625]}",
+        "{\"t\":2,\"g\":[1,2,3],\"c1\":1500,\"flag\":true,\"note\":\"esc\\\"ap\\u00e9d \\ud83d\\ude81\"}",
+        "{\"timestamp\":3,\"rc\":{\"rc_1\":-Infinity},\"position\":[null,NaN,-inf],\"a\":{\"b\":{\"c\":-0.5e-2}}}",
+        "{\"timestamp\":4,\"x\":[[[]],{},\"\",true,false,null,123456789012345678901234567890]}",
+        "{\"timestamp\":5,\"imu\":{\"gyro\":[1,2]}}",               // wrong length
+        "{\"timestamp\":6,\"timestamp\":7}",                         // duplicate key
+        "{\"timestamp\":0.1e1, \"flag\" : 0 }",
+    };
+    std::string stream;
+    for (int k = 0; k < 40; k++) {
+        const char *b = bodies[k % ARRAY_SIZE(bodies)];
+        stream += b;
+        const uint16_t crc = crc16_ccitt((const uint8_t *)b, strlen(b), 0xFFFF);
+        char suffix[8];
+        switch (k % 5) {
+        case 1:
+            snprintf(suffix, sizeof(suffix), "*%04X", unsigned(crc));
+            stream += suffix;
+            break;
+        case 3:
+            snprintf(suffix, sizeof(suffix), "*%04X", unsigned(crc ^ 0x0100));
+            stream += suffix;
+            break;
+        }
+        stream += (k % 4 == 2) ? std::string(1, '\0') : (k % 6 == 5) ? std::string("\r\n\n  ") : std::string("\n");
+    }
+    stream += "{\"timestamp\":9";   // cut short: no result
+
+    const std::string whole = feed_in_chunks(stream, 0, 0);
+    EXPECT_NE(std::string::npos, whole.find("E CRC mismatch"));
+    EXPECT_NE(std::string::npos, whole.find("E duplicate key"));
+    // one result per complete packet, none for the last one
+    EXPECT_EQ(40, std::count(whole.begin(), whole.end(), '\n'));
+    for (const size_t max_chunk : { 1, 2, 3, 7, 16, 64 }) {
+        for (uint32_t seed = 1; seed <= 25; seed++) {
+            EXPECT_EQ(whole, feed_in_chunks(stream, seed, max_chunk)) << "max chunk " << max_chunk << " seed " << seed;
+        }
+    }
 }
 
 TEST(AP_JSON_FieldParser, Limits)
