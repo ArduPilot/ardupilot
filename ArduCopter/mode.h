@@ -1982,7 +1982,6 @@ private:
     uint32_t uprighting_start_ms;     // system time uprighting stage was entered
     uint32_t hgt_stabilise_start_ms;  // system time height stabilise stage was entered
     uint32_t vel_good_start_ms;       // start of the current run of throw_velocity_good(), 0 if none
-    uint32_t poshold_start_ms;        // system time position hold stage was entered
     bool flow_check_active;           // the source set takes its horizontal velocity from the flow and its position from no GPS
     float flow_nis_avg;               // average normalised innovation squared of both flow axes, from the last source set change
     uint8_t flow_check_source_set;    // the source set flow_nis_avg was started again for
