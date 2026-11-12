@@ -354,7 +354,8 @@ define AP_BOOTLOADER_FLASHING_ENABLED 0
 define AC_PAYLOAD_PLACE_ENABLED 0
 define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
 
-# don't need so many servo outputs (~850 bytes!)
-define NUM_SERVO_CHANNELS 15
+# don't need so many servo outputs.  The SkyViper has 6 (5 and 6
+# drive the LEDs); this also stops RCO2 (outputs 15-18) logging zeroes
+define NUM_SERVO_CHANNELS 8
 
 AUTOBUILD_TARGETS Copter
