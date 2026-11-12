@@ -126,6 +126,11 @@ void NavEKF3_core::setWindMagStateLearningMode()
     bool magCalDenied = !use_compass() || (effectiveMagCal == MagCal::NEVER) ||
         (onGround && effectiveMagCal != MagCal::ALWAYS && effectiveMagCal != MagCal::GROUND_AND_INFLIGHT);
 
+    // if the compass is no longer being used clear the learned mag field
+    if (!use_compass()) {
+        learnedMagField.clear();
+    }
+
     // Inhibit the magnetic field calibration if not requested or denied
     bool setMagInhibit = !magCalRequested || magCalDenied;
     if (!inhibitMagStates && setMagInhibit) {
@@ -189,6 +194,16 @@ void NavEKF3_core::setWindMagStateLearningMode()
         finalInflightYawInit = false;
         finalInflightMagInit = false;
         magFieldLearned = false;
+    }
+
+    // if the body magnetic field is valid, update the learnedMagField
+    const ftype maxMagVar = 5E-6f;
+    if (finalInflightMagInit &&
+        !inhibitMagStates &&
+        use_compass() &&
+        dal.compass().healthy(magSelectIndex) &&
+        (P[19][19] < maxMagVar) && (P[20][20] < maxMagVar) && (P[21][21] < maxMagVar)) {
+        learnedMagField.set(magSelectIndex, stateStruct.body_magfield);
     }
 
     updateStateIndexLim();
