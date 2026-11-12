@@ -181,23 +181,36 @@ template float wrap_180_cd<float>(const float angle);
 template double wrap_180_cd<double>(const double angle);
 #endif
 
-float wrap_360(const float angle)
+/*
+  wrap angle to [0, period). Shared by the float and double wraps to keep
+  a single copy of the code in flash
+ */
+template <typename T>
+static NOINLINE T wrap_period(const T angle, const T period)
 {
-    float res = fmodf(angle, 360.0f);
+    // fmodf for float, fmod for double: no promotion to double
+    static_assert(std::is_same<decltype(std::fmod(angle, period)), T>::value,
+                  "std::fmod must use the T overload");
+    T res = std::fmod(angle, period);
     if (res < 0) {
-        res += 360.0f;
+        res += period;
+        // rounding can turn a tiny negative res into exactly the period
+        if (res >= period) {
+            res = 0;
+        }
     }
     return res;
+}
+
+float wrap_360(const float angle)
+{
+    return wrap_period<float>(angle, 360.0f);
 }
 
 #if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360(const double angle)
 {
-    double res = fmod(angle, 360.0);
-    if (res < 0) {
-        res += 360.0;
-    }
-    return res;
+    return wrap_period<double>(angle, 360.0);
 }
 #endif
 
@@ -212,21 +225,13 @@ int wrap_360(const int angle)
 
 float wrap_360_cd(const float angle)
 {
-    float res = fmodf(angle, 36000.0f);
-    if (res < 0) {
-        res += 36000.0f;
-    }
-    return res;
+    return wrap_period<float>(angle, 36000.0f);
 }
 
 #if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360_cd(const double angle)
 {
-    double res = fmod(angle, 36000.0);
-    if (res < 0) {
-        res += 36000.0;
-    }
-    return res;
+    return wrap_period<double>(angle, 36000.0);
 }
 #endif
 
@@ -250,20 +255,12 @@ long wrap_360_cd(const long angle)
 
 float wrap_2PI(const float radian)
 {
-    float res = fmodf(radian, float(M_2PI));
-    if (res < 0) {
-        res += float(M_2PI);
-    }
-    return res;
+    return wrap_period<float>(radian, float(M_2PI));
 }
 
 double wrap_2PI(const double radian)
 {
-    double res = fmod(radian, M_2PI);
-    if (res < 0) {
-        res += M_2PI;
-    }
-    return res;
+    return wrap_period<double>(radian, M_2PI);
 }
 
 template <typename T>
