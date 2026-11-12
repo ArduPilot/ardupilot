@@ -498,6 +498,10 @@ public:
     // data is good
     bool active_backend_configured_to_use_gps() const { return active_estimates->configured_to_use_gps; }
 
+    // true if the active estimator is configured to use GPS as its
+    // horizontal position source, whether or not the data is good
+    bool active_backend_configured_to_use_gps_for_posXY() const { return active_estimates->configured_to_use_gps_for_pos_XY; }
+
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
 
