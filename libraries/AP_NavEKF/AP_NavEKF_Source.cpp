@@ -224,6 +224,28 @@ bool AP_NavEKF_Source::haveVelZSource(uint8_t core_index) const
     return false;
 }
 
+// true if the core's source set names a horizontal position or velocity source, counting the other
+// sets' velocities under FUSE_ALL_VELOCITIES. Describes the configuration, not whether anything is
+// being fused: a velocity source that is configured but not fused on this set still counts
+bool AP_NavEKF_Source::haveHorizPosVelSource(uint8_t core_index) const
+{
+    if (getPosXYSource(core_index) != SourceXY::NONE) {
+        return true;
+    }
+    static const SourceXY velxy_sources[] {
+        SourceXY::GPS,
+        SourceXY::OPTFLOW,
+        SourceXY::EXTNAV,
+        SourceXY::WHEEL_ENCODER,
+    };
+    for (const auto velxy : velxy_sources) {
+        if (useVelXYSource(velxy, core_index)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // get yaw source
 AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource(uint8_t core_index) const
 {

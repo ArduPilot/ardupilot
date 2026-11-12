@@ -94,6 +94,9 @@ public:
     // true if a velocity source is configured
     bool haveVelZSource(uint8_t core_index) const;
 
+    // true if a horizontal position or velocity source is configured, whether or not it is delivering
+    bool haveHorizPosVelSource(uint8_t core_index) const;
+
     // get yaw source
     SourceYaw getYawSource(uint8_t core_index) const;
 
