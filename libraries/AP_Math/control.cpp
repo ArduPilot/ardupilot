@@ -656,7 +656,9 @@ float inv_sqrt_controller(float output, float p, float D_max)
     // Square-root region: above transition threshold
     const float linear_dist = D_max / sq(p);
     const float stopping_dist = (linear_dist * 0.5f) + sq(output) / (2.0 * D_max);
-    return is_positive(output) ? stopping_dist : -stopping_dist;
+    // use the sign of output, not is_positive(): an output in (0, FLT_EPSILON)
+    // can reach here when D_max / p < FLT_EPSILON
+    return (output < 0) ? -stopping_dist : stopping_dist;
 }
 
 // Computes the rate-of-change implied by sqrt_controller() for the commanded correction rate.

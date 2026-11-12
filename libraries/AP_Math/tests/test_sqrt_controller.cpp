@@ -61,6 +61,17 @@ TEST(control, InvSqrtControllerIsActuallyInverse)
     }
 }
 
+TEST(control, InvSqrtControllerTinyOutputKeepsSign)
+{
+    // with D_max / p below FLT_EPSILON, a positive output smaller than
+    // FLT_EPSILON is in the sqrt region and must give a positive error
+    const float p = 1e7;
+    const float D_max = 1;
+    const float output = 1.1e-7;
+    EXPECT_GT(inv_sqrt_controller(output, p, D_max), 0);
+    EXPECT_LT(inv_sqrt_controller(-output, p, D_max), 0);
+}
+
 int hal;
 
 AP_GTEST_MAIN()
