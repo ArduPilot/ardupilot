@@ -423,15 +423,18 @@ bool Storage::_flash_erase_sector(uint8_t sector)
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         // a sector erase stops the whole MCU so set up a long expected delay
         EXPECT_DELAY_MS(1000);
+        // no DShot frames go out during the erase, so keep the
+        // bidirectional DShot lines low rather than at their high idle level
+        hal.rcout->hold_bidir_dshot_lines_low(true);
 #if AP_FLASH_STORAGE_DOUBLE_PAGE
-        if (hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1)) {
-            return true;
-        }
+        const bool erased = hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1);
 #else
-        if (hal.flash->erasepage(_flash_page+sector)) {
+        const bool erased = hal.flash->erasepage(_flash_page+sector);
+#endif
+        hal.rcout->hold_bidir_dshot_lines_low(false);
+        if (erased) {
             return true;
         }
-#endif
         hal.scheduler->delay(1);
     }
     return false;

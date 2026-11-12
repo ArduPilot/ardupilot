@@ -105,6 +105,11 @@ public:
      */
     void force_safety_off(void) override;
 
+#if defined(HAL_WITH_BIDIR_DSHOT) && !defined(STM32F1)
+    // F1 has no palReadLineMode(); it is only used as an IOMCU, which has no flash storage
+    void hold_bidir_dshot_lines_low(bool hold) override;
+#endif
+
     bool enable_px4io_sbus_out(uint16_t rate_hz) override;
 
     /*
@@ -419,6 +424,9 @@ private:
             volatile bool enabled;
             const stm32_dma_stream_t *ic_dma[4];
             uint16_t dma_tx_size; // save tx value from last read
+            // line modes saved while hold_bidir_dshot_lines_low() holds the lines
+            iomode_t held_line_modes[4];
+            bool lines_held_low;
             Shared_DMA *ic_dma_handle[4];
             uint8_t telem_tim_ch[4];
             uint8_t curr_telem_chan;
