@@ -504,6 +504,7 @@ void AP_IOMCU::read_status()
     read_status_ok++;
 
     check_iomcu_reset();
+    check_supply_dips();
 
     if (reg_status.flag_safety_off == 0) {
         // if the IOMCU is indicating that safety is on, then force a
@@ -545,7 +546,8 @@ void AP_IOMCU::write_log()
 // @Field: NDel: Number of delayed packets received by MCU
 // @Field: RstC: IOMCU reset cause flags
 // @FieldBitmaskEnum: RstC: iomcu_reset_cause
-            AP::logger().WriteStreaming("IOMC", "TimeUS,RSErr,Mem,TS,NPkt,Nerr,Nerr2,NDel,RstC", "QHHIIIIIB",
+// @Field: VDip: Number of times the IOMCU supply was seen below the brownout warning threshold (about 2.8V) since the IOMCU booted
+            AP::logger().WriteStreaming("IOMC", "TimeUS,RSErr,Mem,TS,NPkt,Nerr,Nerr2,NDel,RstC,VDip", "QHHIIIIIBH",
                                AP_HAL::micros64(),
                                read_status_errors,
                                reg_status.freemem,
@@ -554,7 +556,8 @@ void AP_IOMCU::write_log()
                                total_errors,
                                reg_status.num_errors,
                                num_delayed,
-                               reg_status.reset_cause);
+                               reg_status.reset_cause,
+                               uint16_t(reg_status.supply_dips & P_STATUS_SUPPLY_DIPS_MASK));
         }
 #endif  // HAL_LOGGING_ENABLED
 #if IOMCU_DEBUG_ENABLE
@@ -1320,6 +1323,28 @@ void AP_IOMCU::handle_repeated_failures(void)
 }
 
 /*
+  report dips in the IOMCU's supply voltage, at most once a second
+ */
+void AP_IOMCU::check_supply_dips(void)
+{
+    const uint16_t dips = reg_status.supply_dips & P_STATUS_SUPPLY_DIPS_MASK;
+    if (dips < reported_supply_dips) {
+        // the IOMCU has rebooted without check_iomcu_reset() seeing it
+        reported_supply_dips = 0;
+    }
+    if (dips == reported_supply_dips) {
+        return;
+    }
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_supply_dip_report_ms < 1000) {
+        return;
+    }
+    last_supply_dip_report_ms = now_ms;
+    reported_supply_dips = dips;
+    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IOMCU supply voltage dip detected (%u)", unsigned(dips));
+}
+
+/*
   return the most specific cause in a P_STATUS_RESET_CAUSE_* bitmask
  */
 const char *AP_IOMCU::reset_cause_string(uint8_t cause)
@@ -1396,6 +1421,8 @@ void AP_IOMCU::check_iomcu_reset(void)
     INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
     if (rebooted) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IOMCU reset: %s", reset_cause_string(reg_status.reset_cause));
+        // the IOMCU restarts its supply dip count when it reboots
+        reported_supply_dips = 0;
     }
     debug("IOMCU reset t=%u %u %u dt=%u\n",
           unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));

@@ -365,6 +365,9 @@ private:
     void handle_repeated_failures();
     void check_iomcu_reset();
     static const char *reset_cause_string(uint8_t cause);
+    void check_supply_dips();
+    uint16_t reported_supply_dips;
+    uint32_t last_supply_dip_report_ms;
 
     void write_log();  // handle onboard logging
 
