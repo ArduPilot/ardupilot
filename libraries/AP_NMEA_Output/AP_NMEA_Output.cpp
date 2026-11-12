@@ -195,6 +195,7 @@ void AP_NMEA_Output::update()
                 fix_quality = 2;
                 break;
             case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
+            case AP_GPS::GPS_OK_FIX_TYPE_PPP: // Same GGA quality as Septentrio PPP output.
                 fix_quality = 5;
                 break;
             case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
@@ -263,7 +264,8 @@ void AP_NMEA_Output::update()
         // 0 = no position
         // 1 = All non-RTK fixed integer positions
         // 2 = RTK fixed integer positions
-        const uint8_t gps_status_flag = (gps_status >= AP_GPS::GPS_OK_FIX_3D_RTK_FIXED) ? 2 :
+        const uint8_t gps_status_flag = (gps_status == AP_GPS::GPS_OK_FIX_3D_RTK_FIXED ||
+                                        gps_status == AP_GPS::GPS_OK_FIX_TYPE_STATIC) ? 2 :
                                                     (gps_status >= AP_GPS::GPS_OK_FIX_2D ? 1 : 0);
 
         // INS Status Flag:
