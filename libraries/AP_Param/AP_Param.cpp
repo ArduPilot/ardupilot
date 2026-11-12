@@ -3366,6 +3366,99 @@ bool AP_Param::load_int32(uint16_t key, uint32_t group_element, int32_t &value)
 }
 
 /*
+  find the value for name in the defaults sources, in the order
+  reload_defaults_file() applies them so the last one wins
+ */
+bool AP_Param::find_dynamic_default(const char *name, float &value)
+{
+    bool found = false;
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+    const char *default_file = hal.util->get_custom_defaults_file();
+    if (default_file != nullptr) {
+#if AP_FILESYSTEM_FILE_READING_ENABLED
+        char *filenames = strdup(default_file);
+        if (filenames != nullptr) {
+            char *saveptr = nullptr;
+            for (char *fname = strtok_r(filenames, ",", &saveptr);
+                 fname != nullptr;
+                 fname = strtok_r(nullptr, ",", &saveptr)) {
+                found |= find_default_in_file(fname, name, value);
+            }
+            free(filenames);
+        }
+#elif AP_ROMFS_ENABLED
+        const char *prefix = "@ROMFS/";
+        if (strncmp(default_file, prefix, strlen(prefix)) == 0) {
+            uint32_t length;
+            const uint8_t *text = AP_ROMFS::find_decompress(&default_file[strlen(prefix)], length);
+            if (text != nullptr) {
+                found |= find_default_in_string((const char *)text, length, name, value);
+                AP_ROMFS::free(text);
+            }
+        }
+#endif
+    }
+#endif  // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
+    if (param_defaults_data.length != 0) {
+        found |= find_default_in_string(param_defaults_data.data, param_defaults_data.length, name, value);
+    }
+#endif
+    return found;
+}
+
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+bool AP_Param::find_default_in_file(const char *filename, const char *name, float &value)
+{
+    const int fd = AP::FS().open(filename, O_RDONLY, true);
+    if (fd == -1) {
+        return false;
+    }
+    bool found = false;
+    char line[100];
+    while (AP::FS().fgets(line, sizeof(line), fd)) {
+        char *pname;
+        float v;
+        bool read_only;
+        if (parse_param_line(line, &pname, v, read_only) && strcmp(pname, name) == 0) {
+            value = v;
+            found = true;
+        }
+    }
+    AP::FS().close(fd);
+    return found;
+}
+#endif
+
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
+bool AP_Param::find_default_in_string(const volatile char *ptr, int32_t length, const char *name, float &value)
+{
+    bool found = false;
+    while (length > 0) {
+        char line[100];
+        int32_t i;
+        for (i=0; i<length && ptr[i] != '\n'; i++) {
+        }
+        const uint16_t linelen = MIN(i, int32_t(sizeof(line)-1));
+        memcpy(line, (const void *)ptr, linelen);
+        line[linelen] = 0;
+        length -= i+1;
+        ptr += i+1;
+
+        char *pname;
+        float v;
+        bool read_only;
+        if (parse_param_line(line, &pname, v, read_only) && strcmp(pname, name) == 0) {
+            value = v;
+            found = true;
+        }
+    }
+    return found;
+}
+#endif
+
+/*
   add a parameter to a dynamic table
  */
 bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, float default_value)
@@ -3452,6 +3545,9 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
             g.type = AP_PARAM_FLOAT;
         }
     }
+
+    // the defaults files were applied before this parameter existed
+    find_dynamic_default(fullName, default_value);
 
     auto &ginfo = const_cast<GroupInfo*>(info.group_info)[param_num];
 
