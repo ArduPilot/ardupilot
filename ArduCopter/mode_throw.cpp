@@ -61,6 +61,7 @@ void ModeThrow::throw_setup()
 {
     nextmode_attempted = false;
     completion_started = false;
+    completion_sources_set = false;
     nextmode_wait_start_ms = 0;
     xy_controller_active = false;
     drop_confirm_start_ms = 0;
@@ -257,6 +258,7 @@ void ModeThrow::run()
     } else if (stage == Throw_Uprighting && throw_uprighting_complete() && throw_drop_distance_reached()) {
         stage = Throw_HgtStabilise;
         hgt_stabilise_start_ms = AP_HAL::millis();
+        throw_set_completion_sources();
         yaw_align_start_ms = hgt_stabilise_start_ms;
         yaw_align_locked = false;
 
@@ -1066,6 +1068,29 @@ bool ModeThrow::throw_yaw_align_done() const
     return false;
 }
 
+// Move the EKF to the source set the vehicle flies on after the throw: THROW_SRC_SET, or with 0
+// the set THROW_SRC_INI replaced. Once only per throw. This is done as soon as the vehicle is
+// upright, not at the hand-over, so a set that has to converge, flow starting relative aiding
+// while the vehicle still carries the toss's speed say, does so while the throw holds height
+void ModeThrow::throw_set_completion_sources()
+{
+    if (completion_sources_set) {
+        return;
+    }
+    completion_sources_set = true;
+    const int8_t srcset = g2.throw_srcset.get();
+    bool srcset_changed = false;
+    if (srcset >= 1 && srcset <= 3) {
+        ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(srcset - 1));
+        gcs().send_text(MAV_SEVERITY_INFO, "EKF Source Set %d", srcset);
+        source_set_switched = false;
+        srcset_changed = true;
+    }
+    // with THROW_SRC_SET 0 the pre-throw set goes back now
+    srcset_changed |= restore_source_set();
+    srcset_change_ms = srcset_changed ? AP_HAL::millis() : 0;
+}
+
 void ModeThrow::throw_do_nextmode_handoff()
 {
     // Final transition to THROW_NEXTMODE.  The warnings and the source set
@@ -1081,17 +1106,7 @@ void ModeThrow::throw_do_nextmode_handoff()
         if (channel_throttle->get_control_in() < copter.get_throttle_mid() - copter.g.throttle_deadzone) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Throttle low - losing altitude");
         }
-        const int8_t srcset = g2.throw_srcset.get();
-        bool srcset_changed = false;
-        if (srcset >= 1 && srcset <= 3) {
-            ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(srcset - 1));
-            gcs().send_text(MAV_SEVERITY_INFO, "EKF Source Set %d", srcset);
-            source_set_switched = false;
-            srcset_changed = true;
-        }
-        // with THROW_SRC_SET 0 the pre-throw set goes back now
-        srcset_changed |= restore_source_set();
-        srcset_change_ms = srcset_changed ? AP_HAL::millis() : 0;
+        throw_set_completion_sources();
     }
     // A new source set reaches the EKF's status, and so position_ok(), only
     // at its next updates, so nothing below reads that status until then.
