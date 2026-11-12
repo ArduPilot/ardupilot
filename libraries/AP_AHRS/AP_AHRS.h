@@ -502,6 +502,10 @@ public:
     // horizontal position source, whether or not the data is good
     bool active_backend_configured_to_use_gps_for_posXY() const { return active_estimates->configured_to_use_gps_for_pos_XY; }
 
+    // true if the active estimator is configured to use optical flow
+    // for horizontal velocity, whether or not the data is good
+    bool active_backend_configured_to_use_optflow_for_velXY() const { return active_estimates->configured_to_use_optflow_for_vel_XY; }
+
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
 
