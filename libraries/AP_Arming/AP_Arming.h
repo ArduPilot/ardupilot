@@ -105,6 +105,10 @@ public:
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
     virtual bool arm_force(AP_Arming::Method method) { return arm(method, false); }
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks=true);
+#if AP_EXTERNAL_BINDING_ENABLED
+    // disarm() for scripts and modules, limited to the methods they may report
+    bool disarm_with_method(AP_Arming::Method method, bool do_disarm_checks);
+#endif
     bool is_armed() const;
     bool is_armed_and_safety_off() const;
 

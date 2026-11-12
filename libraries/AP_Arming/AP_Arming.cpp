@@ -2136,6 +2136,20 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
     return true;
 }
 
+#if AP_EXTERNAL_BINDING_ENABLED
+bool AP_Arming::disarm_with_method(AP_Arming::Method method, bool do_disarm_checks)
+{
+    switch (method) {
+    case Method::SCRIPTING:
+    case Method::FENCEBREACH:
+    case Method::EKFFAILSAFE:
+        return disarm(method, do_disarm_checks);
+    default:
+        return false;
+    }
+}
+#endif
+
 #if defined(HAL_ARM_GPIO_PIN)
 void AP_Arming::update_arm_gpio()
 {
