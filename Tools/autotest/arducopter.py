@@ -19083,6 +19083,42 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.TimeUS > after_us and text in m.Message:
                 return m.TimeUS
 
+    def ThrowZeroDescentSettlesBeforeHandover(self):
+        '''With THROW_ALT_DCSND 0 a toss is handed over only once its climb is arrested'''
+        self.set_parameters({
+            # a baro height with no GPS vertical velocity and baro noise, so the vertical
+            # velocity lags the arc as a flow set's does on a hand toss
+            "EK3_SRC1_VELZ": 0,
+            "SIM_BARO_RND": 0.3,
+            "THROW_TYPE": 1,           # drop
+            "THROW_ALT_DCSND": 0,
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            "MOT_SPOOL_TIME": 1.0,
+            "SIM_SHOVE_Z": -30,
+        })
+        self.set_message_rate_hz('LOCAL_POSITION_NED', 20)
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.set_rc(3, 1500)
+        low, high, handover = self.throw_heights_to_handover('ALT_HOLD')
+        tstart = self.get_sim_time()
+        lowest = handover
+        while self.get_sim_time_cached() - tstart < 5:
+            lowest = min(lowest, -self.assert_receive_message('LOCAL_POSITION_NED').z)
+        self.progress("top %.2f m, handed over at %.2f m, lowest %.2f m after" % (high, handover, lowest))
+        self.disarm_vehicle(force=True)
+        self.zero_throttle()
+        self.reboot_sitl()
+        if handover - lowest > 0.3:
+            raise NotAchievedException("sank %.2f m after the hand-over" % (handover - lowest))
+
     def ThrowYawFollowsEKFYawReset(self):
         '''An EKF yaw reset during a throw does not turn the vehicle'''
         # THROW_SRC_INI's set has no yaw source and THROW_SRC_SET's has the compass, so the switch
@@ -20833,6 +20869,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowSrcSetHandoff,
             self.ThrowDropTwiceWithoutReentry,
             self.ThrowZeroDescentStopsAboveRelease,
+            self.ThrowZeroDescentSettlesBeforeHandover,
             self.ThrowYawFollowsEKFYawReset,
             self.ThrowNextModeAutoStaleSubmode,
         ])
