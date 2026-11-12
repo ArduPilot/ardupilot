@@ -1219,12 +1219,9 @@ void NavEKF3_core::update_mag_selection(void)
     const auto &compass = dal.compass();
 
     if (frontend->_affinity & EKF_AFFINITY_MAG) {
-        if (core_index < compass.get_count() &&
-            compass.healthy(core_index) &&
-            compass.use_for_yaw(core_index)) {
-            // use core_index compass if it is healthy
-            magSelectIndex = core_index;
-        }
+        // try to use the core_index compass
+        // tryChangeCompass performs required health and sanity checks
+        tryChangeCompass(core_index);
     } else {
         // if we are not armed, use the primary compass (if it is healthy)
         const uint8_t primary_compass = compass.get_first_usable();
