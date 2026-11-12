@@ -133,6 +133,10 @@ public:
 
     // set_mode *must* set control_mode_reason
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) WARN_IF_UNUSED = 0;
+#if AP_EXTERNAL_BINDING_ENABLED
+    // set_mode() for scripts and modules, limited to the reasons they may report
+    bool set_mode_with_reason(uint8_t new_mode, ModeReason reason) WARN_IF_UNUSED;
+#endif
     virtual uint8_t get_mode() const = 0;
 
     ModeReason get_control_mode_reason() const {

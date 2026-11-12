@@ -846,6 +846,20 @@ bool AP_Vehicle::is_crashed() const
 #endif
 }
 
+#if AP_EXTERNAL_BINDING_ENABLED
+bool AP_Vehicle::set_mode_with_reason(uint8_t new_mode, ModeReason reason)
+{
+    switch (reason) {
+    case ModeReason::SCRIPTING:
+    case ModeReason::FENCE_BREACHED:
+    case ModeReason::EKF_FAILSAFE:
+        return set_mode(new_mode, reason);
+    default:
+        return false;
+    }
+}
+#endif
+
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 // update the harmonic notch filter for throttle based notch
 void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
