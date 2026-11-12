@@ -460,7 +460,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
 {
 #if MODE_GUIDED_ENABLED
     const bool change_modes = ((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) == MAV_DO_REPOSITION_FLAGS_CHANGE_MODE;
-    ModeGuided *guided = copter.guided_target_mode();
+    ModeGuided *guided = copter.guided_target_mode(true);
     if (guided == nullptr && !change_modes) {
         return MAV_RESULT_DENIED;
     }
@@ -616,6 +616,15 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
     if (packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT) {
         return MAV_RESULT_DENIED;  // meaning some parameters are bad
     }
+
+#if MODE_GUIDED_ENABLED && AP_EXTERNAL_BINDING_ENABLED
+    // a custom mode may hand the takeoff to its owner
+    ModeGuidedCustom *custom = copter.active_custom_mode();
+    MAV_RESULT result;
+    if (custom != nullptr && custom->gcs_takeoff(result)) {
+        return result;
+    }
+#endif
 
         // param3 : horizontal navigation by pilot acceptable
         // param4 : yaw angle   (not supported)
@@ -942,7 +951,7 @@ void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_messag
     mavlink_msg_set_attitude_target_decode(&msg, &packet);
 
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    ModeGuided *guided = copter.guided_target_mode();
+    ModeGuided *guided = copter.guided_target_mode(true);
     if (guided == nullptr) {
         return;
     }
@@ -1020,7 +1029,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
 
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    ModeGuided *guided = copter.guided_target_mode();
+    ModeGuided *guided = copter.guided_target_mode(true);
     if (guided == nullptr) {
         return;
     }
@@ -1133,7 +1142,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
     mavlink_msg_set_position_target_global_int_decode(&msg, &packet);
 
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    ModeGuided *guided = copter.guided_target_mode();
+    ModeGuided *guided = copter.guided_target_mode(true);
     if (guided == nullptr) {
         return;
     }

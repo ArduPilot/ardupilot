@@ -932,7 +932,7 @@ bool ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
         {
             // set wp_nav's destination
             Location dest(cmd.content.location);
-            ModeGuided *guided = copter.guided_target_mode();
+            ModeGuided *guided = copter.guided_target_mode(true);
             return guided != nullptr && guided->set_destination(dest);
         }
 

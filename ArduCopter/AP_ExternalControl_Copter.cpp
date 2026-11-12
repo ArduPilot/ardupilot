@@ -14,7 +14,7 @@
 */
 bool AP_ExternalControl_Copter::set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity_ned_ms, float yaw_rate_rads)
 {
-    ModeGuided *guided = copter.guided_target_mode();
+    ModeGuided *guided = copter.guided_target_mode(true);
     if (!ready_for_external_control() || guided == nullptr) {
         return false;
     }
@@ -36,7 +36,7 @@ bool AP_ExternalControl_Copter::set_global_position(const Location& loc)
 
 bool AP_ExternalControl_Copter::ready_for_external_control()
 {
-    return copter.flightmode->in_guided_mode() && copter.motors->armed();
+    return copter.guided_target_mode(true) != nullptr && copter.motors->armed();
 }
 
 #endif // AP_EXTERNAL_CONTROL_ENABLED

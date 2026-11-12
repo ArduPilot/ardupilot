@@ -212,6 +212,7 @@ public:
     friend class ModeFlowHold;
     friend class ModeFollow;
     friend class ModeGuided;
+    friend class ModeGuidedCustom;
     friend class ModeLand;
     friend class ModeLoiter;
     friend class ModePosHold;
@@ -666,8 +667,13 @@ private:
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
 #if MODE_GUIDED_ENABLED
-    // guided controller driven by the current mode, nullptr if not in a guided mode
-    ModeGuided *guided_target_mode();
+    // guided controller driven by the current mode, nullptr if not in a guided
+    // mode or it does not accept targets, external for GCS and external control
+    ModeGuided *guided_target_mode(bool external = false);
+#if AP_EXTERNAL_BINDING_ENABLED
+    ModeGuidedCustom *active_custom_mode();
+    bool custom_mode_ekf_failsafe_disarm() const;
+#endif
 #endif
 #if AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if MODE_GUIDED_ENABLED
@@ -692,6 +698,7 @@ private:
     // Register a custom mode with given number and names
     AP_Vehicle::custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name,
                                                      const void *owner = nullptr) override;
+    bool custom_mode_set_target_posvelaccel_NED(const custom_mode_state *state, const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) override;
 #endif
 #if MODE_CIRCLE_ENABLED
     bool get_circle_radius(float &radius_m) override;

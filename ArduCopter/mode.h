@@ -1272,19 +1272,64 @@ public:
     ModeGuidedCustom(const Number _number, const char* _full_name, const char* _short_name);
 
     bool init(bool ignore_checks) override;
+    void run() override;
+    void exit() override;
 
     Number mode_number() const override { return number; }
 
     const char *name() const override { return full_name; }
     const char *name4() const override { return short_name; }
 
+    bool allows_arming(AP_Arming::Method method) const override;
+    bool move_vehicle_on_ekf_reset() const override;
+    bool is_landing() const override;
+    bool is_taking_off() const override;
+    bool get_nav_target(NavTarget &target) const override;
+    bool do_user_takeoff_start_m(float takeoff_alt_m) override;
+    bool pause() override;
+    bool resume() override;
+
+    // true if guided targets may be set, external for GCS and external control
+    bool accepts_targets(bool external) const;
+
+    // handle a GCS takeoff command, false if not handled as a takeoff event
+    bool gcs_takeoff(MAV_RESULT &result);
+
+    // true if an EKF failsafe should disarm, in any mode while the owner is
+    // live; supervision only latches owner loss while this mode runs
+    bool ekf_failsafe_disarm() const {
+        return state.owner != nullptr && !owner_expired() && option_set(Option::EKF_FS_DISARM);
+    }
+
+    // reset owner settings on registration
+    void registered();
+
     // State object which can be edited by scripting
     AP_Vehicle::custom_mode_state state;
 
+protected:
+    float wp_distance_m() const override;
+    float wp_bearing_deg() const override;
+    float crosstrack_error_m() const override;
+
 private:
+    using Request = AP_Vehicle::custom_mode_state::Request;
+    using Option = AP_Vehicle::custom_mode_state::Option;
+
+    bool option_set(Option option) const { return (state.options & option) != 0; }
+    bool owner_expired() const;
+    void supervise();
+    void apply_request();
+    bool start_controller(Request request);
+    bool takeoff_start();
+    bool controller_complete() const;
+
     const Number number;
     const char* full_name;
     const char* short_name;
+
+    // controller currently run, independent of later owner requests
+    Request controller;
 };
 #endif
 

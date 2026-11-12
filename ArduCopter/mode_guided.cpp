@@ -1280,18 +1280,18 @@ bool ModeGuided::resume()
     return true;
 }
 
-// guided controller driven by the current mode, nullptr if not in a guided mode
-ModeGuided *Copter::guided_target_mode()
+// guided controller driven by the current mode, nullptr if not in a guided
+// mode or it does not accept targets, external for GCS and external control
+ModeGuided *Copter::guided_target_mode(bool external)
 {
     if (!flightmode->in_guided_mode()) {
         return nullptr;
     }
 #if AP_EXTERNAL_BINDING_ENABLED
     // custom modes are separate guided instances
-    for (auto *custom : mode_guided_custom) {
-        if (custom != nullptr && flightmode == custom) {
-            return custom;
-        }
+    ModeGuidedCustom *custom = active_custom_mode();
+    if (custom != nullptr) {
+        return custom->accepts_targets(external) ? custom : nullptr;
     }
 #endif
     return &mode_guided;

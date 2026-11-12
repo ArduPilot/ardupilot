@@ -456,6 +456,9 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
             if (state.owner != nullptr && state.owner != owner_key) {
                 return nullptr;
             }
+            if (state.owner != owner_key) {
+                mode_guided_custom[i]->registered();
+            }
             state.owner = owner_key;
             return &mode_guided_custom[i]->state;
         }
