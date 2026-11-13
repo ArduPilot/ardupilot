@@ -157,11 +157,13 @@ bool ModeThrow::restore_source_set()
 // unless the next mode flies without one.  Once PosHold has held a
 // horizontal position on the way to a mode that needs one, or to stay in throw,
 // either type needs one, so the EKF failsafe acts there, also while the hold
-// holds level because the flow stopped agreeing.
+// holds level because the flow stopped agreeing.  set_mode() asks before
+// init(), when the hold is still the last throw's, so only a throw that is
+// running counts its hold.
 bool ModeThrow::requires_position() const
 {
-    return ((stage == Throw_PosHold && xy_hold_had_position) || g2.throw_type != ThrowType::Drop) &&
-           nextmode_requires_position();
+    const bool holding = (copter.flightmode == this) && (stage == Throw_PosHold) && xy_hold_had_position;
+    return (holding || g2.throw_type != ThrowType::Drop) && nextmode_requires_position();
 }
 
 // The mode THROW_NEXTMODE hands over to, or nullptr if the vehicle stays in throw
