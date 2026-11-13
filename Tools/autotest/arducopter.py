@@ -2558,8 +2558,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("EK3_OPTIONS", 0)
         self.context_collect('STATUSTEXT')
         self.reboot_sitl()
-        self.wait_statustext("rangefinder max 8m, flow above may drift", check_context=True, timeout=30)
+        # the drift warning goes out at arming, so a GCS that connected after boot still sees it
+        self.wait_ready_to_arm(require_absolute=False)
+        if self.statustext_in_collections("flow above may drift") is not None:
+            raise NotAchievedException("the drift warning went out before arming")
         climb_out_of_range()
+        self.wait_statustext("rangefinder max 8m, flow above may drift", check_context=True, timeout=30)
         flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
@@ -2851,6 +2855,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("RNGFND1_MAX", 2)
         self.reboot_sitl()
         self.takeoff(1.5, mode="ALT_HOLD", require_absolute=False, altitude_max=1.8)
+        # with no fallback above it there is nothing to drift
+        if self.statustext_in_collections("flow above may drift") is not None:
+            raise NotAchievedException("drift warning above a range finder too short for the fallback")
         assert_offset_measured()
         self.set_rc(3, 1800)
         self.wait_altitude(8, 200, relative=True, timeout=90)
@@ -2860,6 +2867,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.set_parameter("RNGFND1_MAX", 8)
         assert_refused(flags, "relative position held above a range finder at the height limit floor")
+
+        def warned_at_arming():
+            self.context_clear_collection('STATUSTEXT')
+            self.zero_throttle()
+            self.arm_vehicle()
+            self.delay_sim_time(2, "a warning sent at arming to arrive")
+            warned = self.statustext_in_collections("flow above may drift") is not None
+            self.disarm_vehicle()
+            return warned
+
+        self.start_subtest("The drift warning goes out at each arming")
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False)
+        self.change_mode("ALT_HOLD")
+        for arming in (1, 2):
+            if not warned_at_arming():
+                raise NotAchievedException("no drift warning at arming %u" % arming)
+
+        self.start_subtest("A range finder reaching 11 m gives no drift warning")
+        # 3.4 m of database error, the 90th percentile over 50-100 m in flight logs, is 30% of 11 m
+        self.set_parameter("RNGFND1_MAX", 11)
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False)
+        self.change_mode("ALT_HOLD")
+        warned = warned_at_arming()
+        self.set_parameter("RNGFND1_MAX", 8)
+        if warned:
+            raise NotAchievedException("drift warning above an 11 m range finder")
 
         def horiz_pos_rel_no_height_source(terrain_enable, options_value=0):
             # EK3_SRC1_POSZ=0 fuses a constant zero height, so position.z carries no height
