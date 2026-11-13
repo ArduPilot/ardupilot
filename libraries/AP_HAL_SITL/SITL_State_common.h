@@ -17,6 +17,7 @@
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_InertialLabs.h>
+#include <SITL/SIM_Xsens.h>
 #include <SITL/SIM_SensAItion.h>
 #include <SITL/SIM_Aeron.h>
 #include <SITL/SIM_AIS.h>
@@ -198,6 +199,8 @@ public:
     // simulated InertialLabs INS
     SITL::InertialLabs *inertiallabs;
 
+    // simulated Xsens INS
+    SITL::Xsens *xsens;
     // simulated SensAItion system:
     SITL::SensAItion *sensaition;
 
