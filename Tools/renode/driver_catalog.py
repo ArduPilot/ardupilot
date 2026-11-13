@@ -2138,6 +2138,22 @@ ATTACHABLE_DEVICES = {
             ('TEMP{instance}_ADDR', 0x40),
         ),
     },
+    'mcp9808-temperature': {
+        'name': 'MCP9808 temperature sensor',
+        'category': 'Temperature',
+        'bus': 'i2c',
+        'model': 'Sensors.AP_MCP9808',
+        'address': 0x18,
+        'driver': 'AP_TemperatureSensor/AP_TemperatureSensor_MCP9808.cpp',
+        'feature': 'AP_TEMPERATURE_SENSOR_MCP9808_ENABLED',
+        'coverage': COVERAGE_DYNAMIC,
+        'hotplug': 'boot-probe',
+        'parameters': (
+            ('TEMP{instance}_TYPE', 11),
+            ('TEMP{instance}_BUS', '{i2c_index}'),
+            ('TEMP{instance}_ADDR', 0x18),
+        ),
+    },
     'dronecan-airspeed': {
         'name': 'DroneCAN airspeed',
         'category': 'Airspeed',
@@ -4140,6 +4156,12 @@ DRIVER_PROBE_PROFILES = {
                 'instance': 3,
                 'assertions': ('stable-values', 'stepped-values'),
             },
+            {
+                'device': 'mcp9808-temperature',
+                'port': 'I2C1',
+                'instance': 4,
+                'assertions': ('stable-values', 'stepped-values'),
+            },
         ),
     },
     'matekh743-temperature-command': {
@@ -4326,6 +4348,7 @@ I2C_SOURCE_CLASSIFICATIONS = {
     'AP_TemperatureSensor/AP_TemperatureSensor_TMP119.cpp': 'device',
     'AP_TemperatureSensor/AP_TemperatureSensor_TSYS01.cpp': 'device',
     'AP_TemperatureSensor/AP_TemperatureSensor_TSYS03.cpp': 'device',
+    'AP_TemperatureSensor/AP_TemperatureSensor_MCP9808.cpp': 'device',
     'GCS_MAVLink/GCS_DeviceOp.cpp': 'service',
 }
 

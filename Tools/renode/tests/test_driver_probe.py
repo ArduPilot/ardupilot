@@ -108,6 +108,7 @@ BAROMETER_DEVICE_IDS = {
 }
 TEMPERATURE_DEVICES = {
     'mcp9600-temperature',
+    'mcp9808-temperature',
     'mlx90614-temperature',
     'sht3x-temperature',
     'tmp119-temperature',

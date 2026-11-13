@@ -1,8 +1,9 @@
-# Exercise three independent production temperature backends through battery telemetry.
+# Exercise four independent production temperature backends through battery telemetry.
 ARMING_CHECK 0
 BATT_MONITOR 4
 BATT2_MONITOR 4
 BATT3_MONITOR 4
+BATT4_MONITOR 4
 BRD_SAFETY_DEFLT 0
 GPS1_TYPE 0
 RC_PROTOCOLS 0
@@ -21,3 +22,8 @@ TEMP3_BUS 1
 TEMP3_ADDR 72
 TEMP3_SRC 3
 TEMP3_SRC_ID 3
+TEMP4_TYPE 11
+TEMP4_BUS 1
+TEMP4_ADDR 24
+TEMP4_SRC 3
+TEMP4_SRC_ID 4

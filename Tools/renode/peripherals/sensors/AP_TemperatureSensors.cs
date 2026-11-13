@@ -205,6 +205,36 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const ushort StartMeasurement = 0x2C06;
     }
 
+    public class AP_MCP9808 : AP_TemperatureSensorBase
+    {
+        public AP_MCP9808(IMachine machine) : base(machine)
+        {
+            Reset();
+        }
+
+        public override void Reset()
+        {
+            base.Reset();
+            Registers[Resolution] = ResolutionValue;
+            UpdateSample();
+        }
+
+        protected override void UpdateSample()
+        {
+            var temperature = SuppressData ? (short)0 :
+                ScaleS16(TemperatureC, DegreesPerLsb);
+
+            var raw = (ushort)(temperature & TemperatureMask);
+            WriteU16(Temperature, raw);
+        }
+
+        private const int Temperature = 0x05;
+        private const int Resolution = 0x08;
+        private const byte ResolutionValue = 0x01;
+        private const ushort TemperatureMask = 0x1FFF;
+        private const double DegreesPerLsb = 0.0625;
+    }
+
     public class AP_TSYS01 : AP_TemperatureSensorBase
     {
         public AP_TSYS01(IMachine machine) : base(machine)
