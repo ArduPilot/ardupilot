@@ -116,9 +116,15 @@ static const uint32_t accept_list[] = {
 static bool accept_unsigned_callback(const mavlink_status_t *status, uint32_t msgId)
 {
     if (status == mavlink_get_channel_status(MAVLINK_COMM_0)) {
-        // always accept channel 0, assumed to be secure channel. This
-        // is USB on ChibiOS boards
-        return true;
+        // accept unsigned packets on channel 0 only when it really is
+        // the USB port (physically local link). Channel 0 is simply the
+        // lowest-numbered MAVLink serial port, which on Linux boards is
+        // often the network link to the GCS and on a few ChibiOS boards
+        // is a UART, so it must not be trusted unconditionally.
+        const GCS_MAVLINK *chan0 = gcs().chan(0);
+        if (chan0 != nullptr && chan0->port_is_usb()) {
+            return true;
+        }
     }
     for (uint8_t i=0; i<ARRAY_SIZE(accept_list); i++) {
         if (accept_list[i] == msgId) {
