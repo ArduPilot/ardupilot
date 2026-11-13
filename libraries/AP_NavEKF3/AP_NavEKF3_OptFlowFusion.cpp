@@ -42,9 +42,18 @@ void NavEKF3_core::SelectFlowFusion()
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
     // check is the terrain offset estimate is still valid - if we are using range finder as the main height reference, the ground is assumed to be at 0
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER);
+    // with the range finder configured as the height source the terrain estimator is skipped, so
+    // the ground is measured through the height instead, in each step that takes the range height
+    const bool rngHgtTaken = rangeDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) &&
+                             (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::RANGEFINDER) &&
+                             (lastHgtPassTime_ms == imuSampleTime_ms);
+    if (rngHgtTaken) {
+        lastGoodRngMeas = rangeDataDelayed.rng;
+    }
     // ground measured in flight, which the carry and the fallback above the range need, not merely
     // valid because the range finder is the height source; cleared while disarmed
-    const bool gndMeasuredNow = (gndHgtValidTime_ms != 0) && ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
+    const bool gndMeasuredNow = rngHgtTaken ||
+                                ((gndHgtValidTime_ms != 0) && ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000));
     if (onGround) {
         gndOffsetMeasured = false;
         terrainAnchorValid = false;
@@ -52,7 +61,8 @@ void NavEKF3_core::SelectFlowFusion()
         gndOffsetMeasured = true;
     }
     // the ground measured this moment, rather than within the 5 s the offset stays valid for
-    const bool gndMeasuredFresh = (gndHgtValidTime_ms != 0) && ((imuSampleTime_ms - gndHgtValidTime_ms) < 500);
+    const bool gndMeasuredFresh = rngHgtTaken ||
+                                  ((gndHgtValidTime_ms != 0) && ((imuSampleTime_ms - gndHgtValidTime_ms) < 500));
     if (gndMeasuredFresh) {
         gndKnownNE = stateStruct.position.xy();
     }
