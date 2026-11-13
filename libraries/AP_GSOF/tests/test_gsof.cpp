@@ -11,6 +11,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
@@ -175,6 +176,111 @@ TEST(AP_GSOF, vel_flags_not_valid)
     // parse_vel() must not overwrite velocity fields when the valid flag is absent.
     EXPECT_FLOAT_EQ(gsof.vel.horizontal_velocity, 42.0f);
     EXPECT_FLOAT_EQ(gsof.vel.vertical_velocity,   42.0f);
+}
+
+// Build a DCOL/GSOF packet around the given DATA bytes, computing the checksum.
+static size_t build_packet(uint8_t *out, const uint8_t *data, uint8_t data_len)
+{
+    size_t n = 0;
+    out[n++] = 0x02;             // STX
+    out[n++] = 0x00;             // STATUS
+    out[n++] = 0x40;             // PACKETTYPE (GSOF)
+    out[n++] = data_len;         // LENGTH
+    uint8_t ck = 0x00 + 0x40 + data_len;
+    for (uint8_t i = 0; i < data_len; i++) {
+        out[n++] = data[i];
+        ck += data[i];
+    }
+    out[n++] = ck;               // CHECKSUM
+    out[n++] = 0x03;             // ENDTX
+    return n;
+}
+
+// A record whose declared output_length runs past the end of DATA must be
+// rejected rather than parsed. The record is placed at the tail of a
+// maximum-size (255 byte) DATA area so that, without the bounds check,
+// parse_pos() decodes 24 bytes starting at data[250]: it runs past the
+// received bytes into the parser's own bookkeeping fields and, because the
+// be64todouble_ptr(p, offset) helper takes a uint8_t offset, the altitude
+// field is silently read from data[(250+16) & 0xFF] = data[10] instead.
+TEST(AP_GSOF, record_longer_than_packet_rejected)
+{
+    uint8_t data[255];
+    memset(data, 0x5A, sizeof(data));
+    data[0] = data[1] = data[2] = 0x01;
+    data[3] = 60;                // skipped record type
+    data[4] = 243;               // filler occupies data[5..247]
+    data[248] = 2;               // output_type = POS
+    data[249] = 24;              // output_length claims 24 bytes...
+    // ...but only data[250..254] (5 bytes) remain
+    uint8_t packet[300];
+    const size_t len = build_packet(packet, data, sizeof(data));
+
+    AP_GSOF gsof;
+    gsof.position.altitude = 1234.0;
+    AP_GSOF::MsgTypes parsed;
+    EXPECT_FALSE(feed_packet(gsof, parsed, packet, len));
+    EXPECT_FALSE(parsed.get(AP_GSOF::POS));
+    EXPECT_DOUBLE_EQ(gsof.position.altitude, 1234.0);
+}
+
+// A record that fits in DATA but is shorter than the fixed layout the parser
+// reads must also be rejected (parse_pos reads 24 bytes).
+TEST(AP_GSOF, record_shorter_than_layout_rejected)
+{
+    const uint8_t data[] = {
+        0x01, 0x01, 0x01,
+        2,                       // output_type = POS
+        4,                       // output_length = 4 (layout needs 24)
+        0x11, 0x22, 0x33, 0x44,
+    };
+    uint8_t packet[64];
+    const size_t len = build_packet(packet, data, sizeof(data));
+
+    AP_GSOF gsof;
+    AP_GSOF::MsgTypes parsed;
+    EXPECT_FALSE(feed_packet(gsof, parsed, packet, len));
+    EXPECT_FALSE(parsed.get(AP_GSOF::POS));
+}
+
+// output_type as the very last DATA byte (no output_length byte at all).
+TEST(AP_GSOF, trailing_output_type_without_length_rejected)
+{
+    const uint8_t data[] = {
+        0x01, 0x01, 0x01,
+        8,                       // output_type = VEL, then DATA ends
+    };
+    uint8_t packet[64];
+    const size_t len = build_packet(packet, data, sizeof(data));
+
+    AP_GSOF gsof;
+    AP_GSOF::MsgTypes parsed;
+    EXPECT_FALSE(feed_packet(gsof, parsed, packet, len));
+    EXPECT_FALSE(parsed.get(AP_GSOF::VEL));
+}
+
+// Maximum-size DATA (255 bytes) with a well-formed VEL record still parses:
+// the bounds check must not reject legitimate full-length packets.
+TEST(AP_GSOF, full_length_packet_still_parses)
+{
+    uint8_t data[255];
+    memset(data, 0, sizeof(data));
+    data[0] = data[1] = data[2] = 0x01;
+    data[3] = 8;                 // VEL
+    data[4] = 13;
+    data[5] = 0x05;              // velocity_flags: velocity + heading valid
+    // remaining 12 bytes are zero floats; then pad the rest with a skipped
+    // record type 60 whose output_length consumes the remainder exactly.
+    data[18] = 60;
+    data[19] = 255 - 20;         // 235 bytes of filler
+    uint8_t packet[300];
+    const size_t len = build_packet(packet, data, 255);
+
+    AP_GSOF gsof;
+    AP_GSOF::MsgTypes parsed;
+    EXPECT_TRUE(feed_packet(gsof, parsed, packet, len));
+    EXPECT_TRUE(parsed.get(AP_GSOF::VEL));
+    EXPECT_EQ(gsof.vel.velocity_flags, 0x05U);
 }
 
 AP_GTEST_MAIN()
