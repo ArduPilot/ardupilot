@@ -652,6 +652,8 @@ class WaitAndMaintain(object):
         self.fn = fn
         self.fn_interval = fn_interval
         self.last_fn_run_time = 0
+        # what the loop last polled, so a timeout can say where it got to
+        self.last_current_value = None
 
     def run(self):
         self.announce_test_start()
@@ -660,6 +662,7 @@ class WaitAndMaintain(object):
         while True:
             now = self.test_suite.get_sim_time_cached()
             current_value = self.get_current_value()
+            self.last_current_value = current_value
             if now - self.last_progress_print > self.progress_print_interval:
                 self.print_progress(now, current_value)
                 self.last_progress_print = now
@@ -741,6 +744,7 @@ class WaitAndMaintainLocation(WaitAndMaintain):
         self.height_accuracy = height_accuracy
         self.accuracy = accuracy
         self.location_source = location_source
+        self.closest_horizontal_error = None
 
     def target_alt_amsl_m(self):
         '''target altitude in metres AMSL'''
@@ -761,7 +765,12 @@ class WaitAndMaintainLocation(WaitAndMaintain):
         return self.test_suite.get_location(self.location_source)
 
     def horizontal_error(self, value):
-        return self.test_suite.get_distance(value, self.target)
+        error = self.test_suite.get_distance(value, self.target)
+        # the closest approach says whether the vehicle was nearly there or
+        # never going to make it, which the final distance alone does not
+        if self.closest_horizontal_error is None or error < self.closest_horizontal_error:
+            self.closest_horizontal_error = error
+        return error
 
     def vertical_error(self, value):
         return math.fabs(value.get_alt_m(AltFrame.ABSOLUTE) - self.target_alt_amsl_m())
@@ -782,7 +791,16 @@ class WaitAndMaintainLocation(WaitAndMaintain):
         return "Reached location"
 
     def timeoutexception(self):
-        return AutoTestTimeoutException("Failed to attain location")
+        where = ""
+        value = self.last_current_value
+        if value is not None:
+            where = (" (want %.7f,%.7f  got %.7f,%.7f  %.1fm away, closest %.1fm, "
+                     "accuracy %.1fm)" % (self.target.lat, self.target.lng,
+                                          value.lat, value.lng,
+                                          self.horizontal_error(value),
+                                          self.closest_horizontal_error,
+                                          self.accuracy))
+        return AutoTestTimeoutException("Failed to attain location" + where)
 
     def progress_text(self, current_value):
         if self.height_accuracy is not None:
