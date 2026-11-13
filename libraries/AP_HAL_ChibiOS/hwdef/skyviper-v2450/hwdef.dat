@@ -47,8 +47,7 @@ PA12 OTG_FS_DP OTG1
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-# PWM output for buzzer
-PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
+# no buzzer is fitted on PA15 (TIM2_CH1), so no tone alarm
 
 PB0 EXTERN_GPIO1 OUTPUT GPIO(1)
 PB1 EXTERN_GPIO2 OUTPUT GPIO(2)
@@ -265,10 +264,8 @@ define AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED 0
 define BARO_MAX_INSTANCES 1
 define INS_MAX_INSTANCES 1
 
-# SkyViper doesn't have any rangefinder, but might get mavlink?
-define AP_RANGEFINDER_ENABLED 1
-define AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED 0
-define AP_RANGEFINDER_MAVLINK_ENABLED AP_RANGEFINDER_ENABLED
+# SkyViper doesn't have any rangefinder
+define AP_RANGEFINDER_ENABLED 0
 
 # SkyViper doesn't have RPM sensors:
 define AP_RPM_ENABLED 0
@@ -309,17 +306,15 @@ define AP_RCPROTOCOL_ENABLED 1
 define AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED 0
 define AP_RCPROTOCOL_RADIO_ENABLED 1
 
-// few prelcnad backends are applicable
-define AC_PRECLAND_BACKEND_DEFAULT_ENABLED 0
-define AC_PRECLAND_COMPANION_ENABLED 1
+// no precision landing: nothing would supply a target
+define AC_PRECLAND_ENABLED 0
 
 // no proximity sensors are applicable:
-define AP_PROXIMITY_BACKEND_DEFAULT_ENABLED 0
-define AP_PROXIMITY_MAV_ENABLED 1
+define HAL_PROXIMITY_ENABLED 0
 
-# can't fit visual odometry cameras on!
-define AP_VISUALODOM_BACKEND_DEFAULT_ENABLED 0
-define AP_VISUALODOM_MAV_ENABLED 1
+# can't fit visual odometry cameras on, and nothing supplies it over
+# MAVLink
+define HAL_VISUALODOM_ENABLED 0
 
 // no OSD on SkyViper
 define OSD_ENABLED 0
@@ -346,6 +341,38 @@ define AP_BATT_MONITOR_MAX_INSTANCES 1
 
 # SkyViper doesn't use the Plane landing library:
 define HAL_LANDING_DEEPSTALL_ENABLED 0
+
+# its notch follows throttle; no FFT needed
+define HAL_GYROFFT_ENABLED 0
+
+# its u-blox (protocol 18) is too old for CFG-VALSET/VALGET
+define AP_GPS_UBLOX_CFGV2_ENABLED 0
+
+# agricultural and developer modes
+define MODE_ZIGZAG_ENABLED 0
+define MODE_SYSTEMID_ENABLED 0
+define AUTOTUNE_ENABLED 0
+
+# drag fusion needs EK3_DRAG_* measured, which they aren't
+define EK3_FEATURE_DRAG_FUSION 0
+
+# its motors are brushed: no DShot, and no ESC to talk to
+define HAL_DSHOT_ENABLED 0
+define HAL_SERIAL_ESC_COMM_ENABLED 0
+# and no DShot ESCs to beep with (no buzzer either: see PA15)
+define HAL_DSHOT_ALARM_ENABLED 0
+
+# no buzzer and no I2C LEDs are fitted; toy mode drives its LEDs
+define AP_NOTIFY_BUZZER_ENABLED 0
+define AP_NOTIFY_LP5562_ENABLED 0
+define AP_NOTIFY_IS31FL3195_ENABLED 0
+
+# its transmitter has no tuning knob, and it is too small to weathervane
+define AP_RC_TRANSMITTER_TUNING_ENABLED 0
+define WEATHERVANE_ENABLED 0
+
+# 3DR Solo controller buttons
+define AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED 0
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
