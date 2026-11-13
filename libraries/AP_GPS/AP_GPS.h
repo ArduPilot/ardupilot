@@ -135,6 +135,7 @@ public:
         AP_Vector3f antenna_offset;
         AP_Int16 delay_ms;
         AP_Int8  com_port;
+        AP_Int16 probe_bauds;
 #if HAL_ENABLE_DRONECAN_DRIVERS
         AP_Int32 node_id;
         AP_Int32 override_node_id;
