@@ -113,6 +113,13 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     AP_GROUPINFO("CAN_OVRIDE", 9, AP_GPS::Params, override_node_id, 0),
 #endif
 
+    // @Param: PROBE_BAUDS
+    // @DisplayName: GPS baud rates to probe
+    // @Description: Baud rates tried, in turn, when detecting this GPS. If 0, all of them are. The serial port's configured baud rate is always tried first. With GPS_AUTO_CONFIG enabled a u-blox is only detected at 230400 (or 115200 with GPS_DRV_OPTIONS bit 2 set), and the other rates are what let a receiver that has lost its configuration be switched to that rate, so include the rate it starts at, e.g. 9600, as well. Fewer rates make detection quicker.
+    // @Bitmask: 0:4800,1:9600,2:19200,3:38400,4:57600,5:115200,6:230400,7:460800
+    // @User: Advanced
+    AP_GROUPINFO("PROBE_BAUDS", 10, AP_GPS::Params, probe_bauds, 0),
+
     AP_GROUPEND
 };
 
