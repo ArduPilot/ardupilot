@@ -36,6 +36,8 @@ public:
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    bool ibus_decode_std(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe);
+    bool ibus_decode_ia6(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe);
     bool ibus_decode(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe);
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
