@@ -1,4 +1,4 @@
-# Exercise five independent I2C rangefinder production backends.
+# Exercise six independent I2C rangefinder production backends.
 ARMING_CHECK 0
 BATT_MONITOR 0
 BRD_SAFETY_DEFLT 0
@@ -19,3 +19,6 @@ RNGFND4_MAX 20
 RNGFND5_TYPE 48
 RNGFND5_ADDR 102
 RNGFND5_MAX 20
+RNGFND6_TYPE 49
+RNGFND6_ADDR 82
+RNGFND6_MAX 20

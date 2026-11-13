@@ -950,6 +950,26 @@ ATTACHABLE_DEVICES = {
             ('RNGFND{instance}_ADDR', 0x10),
         ),
     },
+    'pono-tsd20-i2c-rangefinder': {
+        'name': 'Pono TSD20 I2C rangefinder',
+        'category': 'Rangefinder',
+        'bus': 'i2c',
+        'model': 'Sensors.AP_PonoTSD20',
+        'address': 0x52,
+        'driver': 'AP_RangeFinder/AP_RangeFinder_Pono_TSD20_I2C.cpp',
+        'feature': 'AP_RANGEFINDER_PONO_TSD20_I2C_ENABLED',
+        'coverage': COVERAGE_DYNAMIC,
+        'hotplug': 'boot-probe',
+        'physics': {
+            'source': 'rangefinder',
+            'property': 'RangefinderIndex',
+            'count': 10,
+        },
+        'parameters': (
+            ('RNGFND{instance}_TYPE', 49),
+            ('RNGFND{instance}_ADDR', 0x52),
+        ),
+    },
     'teraranger-i2c-rangefinder': {
         'name': 'TeraRanger Evo I2C rangefinder',
         'category': 'Rangefinder',
@@ -3008,6 +3028,12 @@ DRIVER_PROBE_PROFILES = {
                     'data-ready-recovery',
                 ),
             },
+            {
+                'device': 'pono-tsd20-i2c-rangefinder',
+                'port': 'I2C1',
+                'instance': 6,
+                'assertions': ('stable-values', 'stepped-values'),
+            },
         ),
     },
     'matekh743-tfmini-plus-i2c': {
@@ -4315,6 +4341,7 @@ I2C_SOURCE_CLASSIFICATIONS = {
     'AP_RangeFinder/AP_RangeFinder.cpp': 'frontend',
     'AP_RangeFinder/AP_RangeFinder_Benewake_TFS20L.cpp': 'device',
     'AP_RangeFinder/AP_RangeFinder_LightWare_GRF_I2C.cpp': 'device',
+    'AP_RangeFinder/AP_RangeFinder_Pono_TSD20_I2C.cpp': 'device',
     'AP_RangeFinder/AP_RangeFinder_PulsedLightLRF.cpp': 'device',
     'AP_RangeFinder/AP_RangeFinder_TeraRangerI2C.cpp': 'device',
     'AP_RangeFinder/AP_RangeFinder_VL53L0X.cpp': 'device',
