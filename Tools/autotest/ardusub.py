@@ -525,8 +525,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         # zero buoyancy and no baro noise
-        self.set_parameter("SIM_BUOYANCY", 0)
-        self.set_parameter("SIM_BARO_RND", 0)
+        self.set_parameters({
+            "SIM_BUOYANCY": 0,
+            "SIM_BARO_RND": 0,
+        })
         # dive a bit to make sure we are not surfaced
         self.change_mode('STABILIZE')
         self.set_rc(Joystick.Throttle, 1350)
@@ -586,8 +588,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # Hold in 1 m/s current
         self.progress("Testing position hold in current")
-        self.set_parameter("SIM_WIND_SPD", 1)
-        self.set_parameter("SIM_WIND_T", 1)
+        self.set_parameters({
+            "SIM_WIND_SPD": 1,
+            "SIM_WIND_T": 1,
+        })
         self.delay_sim_time(10, reason="drift measurement in 1m/s current")
         distance_m = self.get_distance(start_pos, self.get_location())
         if distance_m > 1:
@@ -1001,6 +1005,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_parameters({
             'GPS1_TYPE': 0,             # Disable the GPS
             'EK3_SRC1_POSXY': 0,        # Make sure EK3_SRC parameters do not refer to a GPS
+            # this test never arms, so its boot only produces an
+            # onboard log if disarmed logging is on; a predecessor
+            # which restarts SITL with its own defaults can leave
+            # LOG_DISARMED at 0, and the log scan below then silently
+            # reads a previous boot's log:
+            'LOG_DISARMED': 1,
         })
         self.reboot_sitl()
 
@@ -1016,8 +1026,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.mav.mav.set_gps_global_origin_send(1, int(47.607584 * 1e7), int(-122.343911 * 1e7), 0)
         self.delay_sim_time(2, reason="EKF origin to be set")
 
-        if not self.current_onboard_log_contains_message('ORGN'):
-            raise NotAchievedException("Did not find expected ORGN message")
+        self.wait_current_onboard_log_contains_message('ORGN')
 
         num_mavlink_origin_msgs = len(self.collected_msgs('GPS_GLOBAL_ORIGIN'))
         if num_mavlink_origin_msgs != 1:
@@ -1032,6 +1041,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             'EK3_SRC1_VELXY': 0,        # Make sure EK3_SRC parameters do not refer to GPS
             'AHRS_ORIGIN_LAT': 47.607584,
             'AHRS_ORIGIN_LON': -122.343911,
+            # this test never arms, so its boot only produces an
+            # onboard log if disarmed logging is on; a predecessor
+            # which restarts SITL with its own defaults can leave
+            # LOG_DISARMED at 0, and the log scan below then silently
+            # reads a previous boot's log:
+            'LOG_DISARMED': 1,
         })
         # the origin statustext is emitted early in the boot - with no
         # GPS configured the EKF does not wait for anything before
@@ -1046,8 +1061,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_statustext('AHRS: using recorded origin', check_context=True)
 
         # check that origin has been logged
-        if not self.current_onboard_log_contains_message('ORGN'):
-            raise NotAchievedException("Did not find expected ORGN message")
+        self.wait_current_onboard_log_contains_message('ORGN')
 
     def assert_mag_fusion_selection(self, expect_sel):
         """Get the most recent XKFS message and check the MAG_FUSION value"""
@@ -1248,6 +1262,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def MAV_mgs(self):
         '''test individual GCS backends timestamps'''
+        # this test never arms, so its boot only produces an onboard
+        # log if disarmed logging is on; a predecessor which restarts
+        # SITL with its own defaults can leave LOG_DISARMED at 0, and
+        # the log scan below then silently reads a previous boot's log:
+        self.set_parameter('LOG_DISARMED', 1)
         self.reboot_sitl()
         self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
         self.delay_sim_time(10, reason='add delay on connecting "telemetry')
@@ -1730,10 +1749,20 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
 
         self.progress("Re-enabling GPS, expecting position correction")
+        # Take the reference before the GPS comes back.  The vehicle is
+        # stationary on the surface here and is not being asked to travel
+        # anywhere: what this is watching for is the position estimate
+        # jumping as the GPS corrects the drift built up above, and that
+        # happens almost as soon as the GPS returns.  wait_distance()
+        # takes its reference when it is called, so measuring after
+        # re-enabling races the correction and usually sees nothing - a
+        # failing run reported 0.10m while its log shows the estimate
+        # moving 11.8m back onto the simulated position.
+        loc_before_gps = self.get_location()
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
         })
-        self.wait_distance(10, accuracy=5, timeout=60)
+        self.wait_distance_to_location(loc_before_gps, 5, 15, timeout=60)
         self.disarm_vehicle()
 
     def AutoTerrainRecover(self):

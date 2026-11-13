@@ -585,6 +585,23 @@ void AC_PosControl::NE_init_controller()
     _last_update_ne_ticks = AP::scheduler().ticks32();
 }
 
+// Initialises the NE-axis controller unless it is already running.
+//
+// A flight mode's init() runs after update_flight_mode() within a scheduler
+// tick, so the mode's first NE_update_controller() call comes on the *next*
+// tick.  A controller last run in the previous tick still reports active
+// here, but would have timed out by then and would trip the flow-of-control
+// internal error.  Adopt it instead by refreshing the activity tick.
+void AC_PosControl::NE_init_controller_if_inactive()
+{
+    if (!NE_is_active()) {
+        NE_init_controller();
+        return;
+    }
+    _last_update_ne_ticks = AP::scheduler().ticks32();
+}
+
+
 // Sets the desired NE-plane acceleration in m/s² using jerk-limited shaping.
 // Smoothly transitions to the specified acceleration from current kinematic state.
 // Constraints: max acceleration and jerk set via NE_set_max_speed_accel_m().
@@ -927,6 +944,19 @@ void AC_PosControl::D_init_controller()
     // initialise z_controller time out
     _last_update_d_ticks = AP::scheduler().ticks32();
 }
+
+// Initialises the U-axis controller unless it is already running.
+// See NE_init_controller_if_inactive() for why NE_is_active()/D_is_active()
+// alone is not a sufficient test in a flight mode's init().
+void AC_PosControl::D_init_controller_if_inactive()
+{
+    if (!D_is_active()) {
+        D_init_controller();
+        return;
+    }
+    _last_update_d_ticks = AP::scheduler().ticks32();
+}
+
 
 // Sets the desired vertical acceleration in m/s² using jerk-limited shaping.
 // Smoothly transitions to the target acceleration from current kinematic state.

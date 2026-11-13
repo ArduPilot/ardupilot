@@ -1,5 +1,8 @@
 /.lock-waf*
+/.lock-autotest-isolated-build
 /.waf*
+/param-doc-work/
+/Replay-tool
 /Tools/autotest/aircraft/Rascal/reset.xml
 /Tools/autotest/ch7_mission.txt
 /Tools/autotest/param_metadata/Parameters.html
@@ -83,6 +86,7 @@ autotest.lck
 build
 launch-settings.json
 /renode/
+build-*/
 cmake_install.cmake
 cscope.in.out
 cscope.out
@@ -91,6 +95,8 @@ dataflash.bin
 eeprom.bin
 index.html
 logs/
+pristine-logs/
+parallel-autotest/
 mav.log
 mav.log.raw
 mav.parm
