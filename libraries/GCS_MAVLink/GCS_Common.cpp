@@ -1914,7 +1914,10 @@ void GCS_MAVLINK::raw_packetReceived(uint8_t framing_status,
 #endif // AP_SCRIPTING_LUA_ENABLED
 
 #if AP_MODULE_ENABLED
-    AP_Module::binding_mavlink_handle_message(msg, chan);
+    // modules only see packets the vehicle would accept
+    if (accept_packet(status, msg)) {
+        AP_Module::binding_mavlink_handle_message(msg, chan);
+    }
 #endif
 
 #if AP_MAVLINK_FOLLOW_HANDLING_ENABLED
@@ -2004,7 +2007,10 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             }
 #endif // AP_SCRIPTING_LUA_ENABLED
 #if AP_MODULE_ENABLED
-            AP_Module::binding_mavlink_handle_message(msg, chan);
+            // a known message with a bad CRC is corrupt
+            if (mavlink_get_msg_entry(msg.msgid) == nullptr && accept_packet(status, msg)) {
+                AP_Module::binding_mavlink_handle_message(msg, chan);
+            }
 #endif
         }
 
