@@ -60,6 +60,9 @@ void Sub::init_rc_out()
         enable_motor_output();
     }
 
+    // initialize AUV control surface outputs if active
+    g2.auv.init();
+
     // refresh auxiliary channel to function map
     SRV_Channels::update_aux_servo_function();
 }
