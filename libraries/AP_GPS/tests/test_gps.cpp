@@ -51,6 +51,13 @@ TEST(AP_GPS_NMEA, parse_decimal_100)
     ASSERT_EQ(0, test.parse_decimal_100("0.001"));
     ASSERT_EQ(1, test.parse_decimal_100("0.006"));
 
+    /* Negative numbers in (-1, 0) range, with possible round/truncate */
+    ASSERT_EQ(0, test.parse_decimal_100("-0.0"));
+    ASSERT_EQ(0, test.parse_decimal_100("-0.00"));
+    ASSERT_EQ(0, test.parse_decimal_100("-0.001"));
+    ASSERT_EQ(-1, test.parse_decimal_100("-0.006"));
+    ASSERT_EQ(-50, test.parse_decimal_100("-0.50"));
+
     /* Negative numbers with possible round/truncate */
     ASSERT_EQ(-100, test.parse_decimal_100("-1.0"));
     ASSERT_EQ(-100, test.parse_decimal_100("-1.00"));
