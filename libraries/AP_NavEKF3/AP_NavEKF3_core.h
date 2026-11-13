@@ -491,6 +491,10 @@ public:
     // return true if states have been initialised by a bootstrap alignment
     bool isStatesInitialised(void) const { return statesInitialised; }
 
+    // true when a downward range finder of this maximum leaves its flow height limit above the
+    // 1 m floor, which the flat-ground fallback needs to tell a climb out of range from a failure
+    static bool rngMaxAllowsFlatGround(float rngMax) { return rngMax * 0.7f - 1.0f >= 1.0f; }
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;

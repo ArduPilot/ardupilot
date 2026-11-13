@@ -932,24 +932,33 @@ bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core) const
 }
 
 #if EK3_FEATURE_OPTFLOW_FUSION && AP_RANGEFINDER_ENABLED
-// Above the range finder's reach flow navigation runs on the terrain database or on assumed
-// flat ground, and flow velocity is out by their height error over the height: SRTM's
-// relative error of about 6 m is 30% of 20 m. Nothing can be done about it in flight, so
-// warn while disarmed, checking until a late range finder such as DroneCAN has appeared
+// Above the range finder's reach flow is scaled by the terrain database's height from where the
+// range finder last measured the ground, or by flat ground, so flow velocity is out by how far
+// that height has gone wrong since, over the height. In flight logs the database's error changed
+// by 3.4 m (90th percentile) between points 50-100 m apart, 30% of 11 m; 30% is a judgement of
+// where the drift matters. Nothing can be done about it in flight, so warn once each time the
+// motors arm (motor tests included), when someone is looking, or once a range finder that
+// appears late is there. A range finder too short for the flat-ground fallback drops relative
+// position instead, unless bit 2 uses the database
 void NavEKF3::checkFlowRangeWarning(void)
 {
-    const uint32_t now_ms = dal.millis();
-    if (flowRangeWarned || dal.get_armed() || (now_ms - flowRangeCheck_ms < 5000)) {
+    if (!dal.get_armed()) {
+        flowRangeWarned = false;
         return;
     }
-    flowRangeCheck_ms = now_ms;
+    if (flowRangeWarned) {
+        return;
+    }
     const auto *rng = dal.rangefinder();
     if (!sources.optflow_enabled_on_any_source() || rng == nullptr || !rng->has_orientation(ROTATION_PITCH_270)) {
         return;
     }
+    flowRangeWarned = true;
+    const float FLOW_DRIFT_WARN_RNG_MAX_M = 11.0f;
     const float rngMax = rng->max_distance_orient(ROTATION_PITCH_270);
-    if (rngMax < 20.0f) {
-        flowRangeWarned = true;
+    if ((rngMax < FLOW_DRIFT_WARN_RNG_MAX_M) &&
+        (NavEKF3_core::rngMaxAllowsFlatGround(rngMax) ||
+         (EK3_FEATURE_OPTFLOW_SRTM && option_is_enabled(Option::OptflowMayUseTerrainAlt)))) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3: rangefinder max %.0fm, flow above may drift", rngMax);
     }
 }

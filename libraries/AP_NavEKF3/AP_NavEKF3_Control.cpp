@@ -926,7 +926,7 @@ void NavEKF3_core::updateFlatGroundAssumed(void)
             return;
         }
         const float rngMax = _rng->max_distance_orient(ROTATION_PITCH_270);
-        if ((rngMax * 0.7f - 1.0f < 1.0f) || (lastGoodRngMeas < 0.7f * rngMax)) {
+        if (!rngMaxAllowsFlatGround(rngMax) || (lastGoodRngMeas < 0.7f * rngMax)) {
             return;
         }
 #else
