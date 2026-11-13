@@ -6159,7 +6159,8 @@ void GCS_MAVLINK::send_attitude_quaternion() const
         return;
     }
     const Vector3f omega = ahrs.get_gyro();
-    const float repr_offseq_q[] {0,0,0,0};  // unused, but probably should correspond to the AHRS view?
+    float repr_offset_q[4] {};  // [0, 0, 0, 0] is no offset
+    attitude_quaternion_repr_offset(repr_offset_q);
     mavlink_msg_attitude_quaternion_send(
         chan,
         AP_HAL::millis(),
@@ -6170,7 +6171,7 @@ void GCS_MAVLINK::send_attitude_quaternion() const
         omega.x, // rollspeed
         omega.y, // pitchspeed
         omega.z, // yawspeed
-        repr_offseq_q
+        repr_offset_q
         );
 #endif
 }
