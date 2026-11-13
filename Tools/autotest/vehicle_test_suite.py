@@ -4043,9 +4043,22 @@ class TestSuite(abc.ABC):
         physics = json_physics.JSONPhysics(**kwargs)
         physics.set(**(fields or {}))
         physics.start()
+        self.progress("JSON physics: listening on 127.0.0.1:%u" % physics.port)
         try:
             self.customise_SITL_commandline([], model="JSON", wipe=True)
             yield physics
+        except Exception:
+            # a test which fails on values it never received reads exactly
+            # like one which failed on the values themselves - "Field never
+            # reached values" either way - so say whether SITL and the
+            # backend ever found each other before the failure propagates
+            if physics.packets == 0:
+                self.progress("JSON physics: SITL sent nothing to 127.0.0.1:%u; "
+                              "they never connected" % physics.port)
+            else:
+                self.progress("JSON physics: %u packet(s) arrived from SITL on "
+                              "127.0.0.1:%u" % (physics.packets, physics.port))
+            raise
         finally:
             # SITL blocks without its physics backend, so restore the
             # default model before stopping it
