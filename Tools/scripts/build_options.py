@@ -249,6 +249,7 @@ BUILD_OPTIONS = [
     Feature('Gimbal', 'ALEXMOS', 'HAL_MOUNT_ALEXMOS_ENABLED', 'Enable Alexmos gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'CADDX', 'HAL_MOUNT_CADDX_ENABLED', 'Enable CADDX gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'MAVLINK', 'HAL_MOUNT_MAVLINK_ENABLED', 'Enable MAVLink gimbal', 0, "MOUNT"),
+    Feature('Gimbal', 'GIMBAL_MANAGER_CLIENT', 'HAL_MOUNT_GIMBAL_MANAGER_ENABLED', 'Enable MAVLink gimbal manager client', 0, "MOUNT,MAVLINK"),  # noqa
     Feature('Gimbal', 'SERVO', 'HAL_MOUNT_SERVO_ENABLED', 'Enable Servo gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'SIYI', 'HAL_MOUNT_SIYI_ENABLED', 'Enable Siyi gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'SOLOGIMBAL', 'HAL_SOLO_GIMBAL_ENABLED', 'Enable Solo gimbal', 0, "MOUNT"),
