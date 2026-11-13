@@ -2445,6 +2445,45 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def ekf_status_flags(self):
+        '''the flags of the next EKF_STATUS_REPORT'''
+        # drain first, or the next report can predate the event just waited on
+        self.drain_mav()
+        return self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+
+    def rangefinder_between(self, dist_min, dist_max):
+        '''true when the range finder reads dist_min to dist_max metres'''
+        # RANGEFINDER is not streamed by default
+        distance = self.poll_message('RANGEFINDER').distance
+        if dist_min <= distance <= dist_max:
+            return True
+        self.progress("range finder read %.2f m, not %.2f to %.2f m" % (distance, dist_min, dist_max))
+        return False
+
+    def wait_terrain_tiles_loaded(self, timeout=60):
+        '''wait for the terrain tiles around the vehicle to load'''
+        # terrain/ is gitignored, so tiles arrive over MAVLink at one request per 2 s
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < timeout:
+            m = self.assert_receive_message('TERRAIN_REPORT', timeout=timeout)
+            if m.pending == 0 and m.loaded > 0:
+                return
+        raise NotAchievedException("terrain tiles did not load")
+
+    def fly_guided_velocity(self, bearing_deg, speed, duration):
+        '''fly level in GUIDED at speed m/s on bearing_deg for duration seconds'''
+        self.change_mode("GUIDED")
+        typemask = (MAV_POS_TARGET_TYPE_MASK.POS_IGNORE | MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+        vn = speed * math.cos(math.radians(bearing_deg))
+        ve = speed * math.sin(math.radians(bearing_deg))
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < duration:
+            self.mav.mav.set_position_target_local_ned_send(
+                0, 1, 1, mavutil.mavlink.MAV_FRAME_LOCAL_NED, typemask,
+                0, 0, 0, vn, ve, 0, 0, 0, 0, 0, 0)
+            self.delay_sim_time(0.2, reason="velocity target rate")
+
     def EK3_OptflowAboveRangefinder(self):
         """Optical flow navigation stays valid above the rangefinder range"""
         # Above the range finder's range the terrain offset goes stale, and dropping optical
@@ -2470,16 +2509,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("RNGFND1_MAX", 8)
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
 
-        def ekf_flags():
-            # drain first, or the next report can predate the event just waited on
-            self.drain_mav()
-            return self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
-
         def horiz_pos_rel():
-            return (ekf_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL) != 0
+            return (self.ekf_status_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL) != 0
 
         def assert_offset_measured():
-            flags = ekf_flags()
+            flags = self.ekf_status_flags()
             if not flags & mavutil.mavlink.EKF_POS_VERT_AGL:
                 raise NotAchievedException("no terrain offset was measured, so the leg proves nothing")
             if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
@@ -2499,16 +2533,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=timeout,
                                 minimum_duration=2)
 
-        def rangefinder_between(dist_min, dist_max):
-            # RANGEFINDER is not streamed by default
-            distance = self.poll_message('RANGEFINDER').distance
-            if dist_min <= distance <= dist_max:
-                return True
-            self.progress("range finder read %.2f m, not %.2f to %.2f m" % (distance, dist_min, dist_max))
-            return False
-
         def assert_rangefinder_between(dist_min, dist_max):
-            if not rangefinder_between(dist_min, dist_max):
+            if not self.rangefinder_between(dist_min, dist_max):
                 raise NotAchievedException("range finder outside %.2f to %.2f m" % (dist_min, dist_max))
 
         def kill_rangefinder():
@@ -2534,7 +2560,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.wait_statustext("rangefinder max 8m, flow above may drift", check_context=True, timeout=30)
         climb_out_of_range()
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
             raise NotAchievedException("relative position lost above the rangefinder range")
@@ -2576,11 +2602,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # the return is undone once it has been gone 500 ms; one taken as the ground would hold
             # the terrain offset valid for 5 s after it
             self.delay_sim_time(2, "the return to be undone")
-            offset_fused = ekf_flags() & mavutil.mavlink.EKF_POS_VERT_AGL
+            offset_fused = self.ekf_status_flags() & mavutil.mavlink.EKF_POS_VERT_AGL
             tundone_us = self.get_sim_time() * 1e6
             # past the 5 s the terrain offset stays valid for after a fusion
             self.delay_sim_time(6, "outlast the terrain offset timeout")
-            flags = ekf_flags()
+            flags = self.ekf_status_flags()
             alt = self.get_altitude(relative=True)
             tend_us = self.get_sim_time() * 1e6
             self.disarm_vehicle(force=True)
@@ -2690,7 +2716,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             tgone_us = self.get_sim_time() * 1e6
             # past the 5 s the terrain offset stays valid for after a fusion
             self.delay_sim_time(8, "outlast the terrain offset timeout")
-            flags = ekf_flags()
+            flags = self.ekf_status_flags()
             tend_us = self.get_sim_time() * 1e6
             self.disarm_vehicle(force=True)
             # the sets above are not acknowledged, so a lost one would carry its scale into the next flight
@@ -2767,14 +2793,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_rc(3, 1500)
             self.wait_climbrate(-0.1, 0.1, minimum_duration=2)
             assert_offset_measured()
-            if rangefinder_between(4.8, 5.5):
+            if self.rangefinder_between(4.8, 5.5):
                 break
             self.disarm_vehicle(force=True)
         else:
             raise NotAchievedException("the descent missed 4.8 to 5.5 m on 3 attempts, so the leg proves nothing")
         kill_rangefinder()
         wait_terrain_offset_stale()
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         revive_rangefinder()
         assert_refused(flags, "relative position held on a range finder lost in range after a climb out")
@@ -2792,7 +2818,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_altitude(2.4, 3.0, relative=True, timeout=90)
         self.set_rc(3, 1500)
         self.wait_climbrate(-0.1, 0.1, minimum_duration=2)
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         alt = self.get_altitude(relative=True)
         self.disarm_vehicle(force=True)
         revive_rangefinder()
@@ -2814,7 +2840,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         assert_rangefinder_between(2.0, 2.75)
         kill_rangefinder()
         wait_terrain_offset_stale()
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         revive_rangefinder()
         assert_refused(flags, "relative position held on a short range finder that failed in range")
@@ -2830,19 +2856,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_altitude(8, 200, relative=True, timeout=90)
         self.set_rc(3, 1500)
         wait_terrain_offset_stale()
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         self.set_parameter("RNGFND1_MAX", 8)
         assert_refused(flags, "relative position held above a range finder at the height limit floor")
-
-        def wait_terrain_loaded(timeout=60):
-            # terrain/ is gitignored, so tiles arrive over MAVLink at one request per 2 s
-            tstart = self.get_sim_time()
-            while self.get_sim_time_cached() - tstart < timeout:
-                m = self.assert_receive_message('TERRAIN_REPORT', timeout=timeout)
-                if m.pending == 0 and m.loaded > 0:
-                    return
-            raise NotAchievedException("terrain tiles did not load")
 
         def horiz_pos_rel_no_height_source(terrain_enable, options_value=0):
             # EK3_SRC1_POSZ=0 fuses a constant zero height, so position.z carries no height
@@ -2857,7 +2874,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.reboot_sitl()
                 self.wait_ready_to_arm(require_absolute=False)
                 if terrain_enable:
-                    wait_terrain_loaded()
+                    self.wait_terrain_tiles_loaded()
                 # the takeoff helper would wait on the synthetic height, so climb open loop in
                 # STABILIZE against SIM truth, slowly, inside the range and above the limit
                 ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
@@ -2869,7 +2886,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                    altitude_source="SIM_STATE.alt")
                 # over 5.6 m and in range, so only the missing height source can refuse it; open
                 # loop the climb carries on, so the reading is taken and the sensor killed at once
-                if rangefinder_between(5.8, 7.9):
+                if self.rangefinder_between(5.8, 7.9):
                     break
                 self.set_rc(3, 1000)
                 self.disarm_vehicle(force=True)
@@ -2879,7 +2896,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_rc(3, 1500)
             assert_offset_measured()
             wait_terrain_offset_stale()
-            flags = ekf_flags()
+            flags = self.ekf_status_flags()
             self.disarm_vehicle(force=True)
             revive_rangefinder()
             return flags
@@ -2904,7 +2921,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             })
             self.reboot_sitl()
             self.takeoff(3, mode="ALT_HOLD", require_absolute=False, altitude_max=4)
-            wait_terrain_loaded()
+            self.wait_terrain_tiles_loaded()
             self.set_rc(3, 1900)
             tstart = self.get_sim_time()
             max_alt = 0
@@ -2963,7 +2980,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1700)
         self.wait_altitude(10, 20, relative=True, timeout=30)
         self.set_rc(3, 1500)
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         revive_rangefinder()
         assert_refused(flags, "the fallback carried over from a previous flight")
@@ -2987,7 +3004,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0)
             m = self.assert_receive_message('LOCAL_POSITION_NED', timeout=10)
             distance = math.hypot(m.x - start.x, m.y - start.y)
-            flags = ekf_flags()
+            flags = self.ekf_status_flags()
             if flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
                 held_at = distance
             else:
@@ -3036,7 +3053,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
         # GPS position counts as relative position until it times out
         self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_HORIZ_ABS, timeout=30)
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
         assert_refused(flags, "flat ground trusted 300 m from where it was measured on GPS")
@@ -3080,22 +3097,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
         self.set_parameter("EK3_SRC1_POSZ", 2)
 
-        def ekf_flags():
-            # drain first, or the next report can predate the event just waited on
-            self.drain_mav()
-            return self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
-
-        def rangefinder_between(dist_min, dist_max):
-            # RANGEFINDER is not streamed by default
-            distance = self.poll_message('RANGEFINDER').distance
-            if dist_min <= distance <= dist_max:
-                return True
-            self.progress("range finder read %.2f m, not %.2f to %.2f m" % (distance, dist_min, dist_max))
-            return False
-
         def climb_out_of_range():
             self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
-            flags = ekf_flags()
+            flags = self.ekf_status_flags()
             if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
                 raise NotAchievedException("relative position was not valid in range")
             self.set_rc(3, 1800)
@@ -3107,7 +3111,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("Relative position stays valid above the range")
         self.reboot_sitl()
         climb_out_of_range()
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
             raise NotAchievedException("relative position lost above the range with range finder height")
@@ -3115,7 +3119,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("A brief return from something passed over leaves the height alone")
         self.reboot_sitl()
         climb_out_of_range()
-        if not ekf_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL:
+        if not self.ekf_status_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL:
             raise NotAchievedException("the climb out did not engage the fallback, so the leg proves nothing")
         sonar_scale = self.get_parameter("SIM_SONAR_SCALE")
         tset_us = self.get_sim_time() * 1e6
@@ -3125,7 +3129,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_SONAR_SCALE", sonar_scale)
         tundone_us = self.get_sim_time() * 1e6
         self.delay_sim_time(3, "the return to be undone")
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         tend_us = self.get_sim_time() * 1e6
         self.disarm_vehicle(force=True)
         # the EKF height less the true height, from the log rather than relative_alt, which can
@@ -3170,13 +3174,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         for attempt in range(1, 4):
             self.reboot_sitl()
             climb_out_of_range()
-            if not ekf_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            if not self.ekf_status_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL:
                 raise NotAchievedException("the climb out did not engage the fallback, so the leg proves nothing")
             self.set_rc(3, 1350)
             self.wait_altitude(5.0, 5.4, relative=True, timeout=90)
             self.set_rc(3, 1500)
             self.wait_climbrate(-0.1, 0.1, minimum_duration=3)
-            if rangefinder_between(4.8, 5.5):
+            if self.rangefinder_between(4.8, 5.5):
                 break
             self.disarm_vehicle(force=True)
         else:
@@ -3201,7 +3205,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # its return does
         self.set_parameter("SIM_SONAR_GLITCH", 1)
         self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
-        flags = ekf_flags()
+        flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         self.set_parameter("SIM_SONAR_GLITCH", 0)
         if not flags & mavutil.mavlink.EKF_VELOCITY_HORIZ:
@@ -3250,13 +3254,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # terrain data needs a location, which needs an origin with no GPS
             start = self.sitl_start_location()
             self.set_origin(Location(start.lat, start.lng, start.get_alt_m(AltFrame.ABSOLUTE), AltFrame.ABSOLUTE))
-            tstart = self.get_sim_time()
-            while True:
-                if self.get_sim_time_cached() - tstart > 60:
-                    raise NotAchievedException("terrain tiles did not load")
-                m = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
-                if m.pending == 0 and m.loaded > 0:
-                    break
+            self.wait_terrain_tiles_loaded()
 
             self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
             self.change_mode("LOITER")
@@ -3265,17 +3263,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_rc(3, 1500)
             self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
             # bearing 240 from the SITL home rises about 10 m over the 500 m flown
-            self.change_mode("GUIDED")
-            typemask = (MAV_POS_TARGET_TYPE_MASK.POS_IGNORE | MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
-                        MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
-            vn = 5 * math.cos(math.radians(240))
-            ve = 5 * math.sin(math.radians(240))
             traverse = self.get_sim_time()
-            while self.get_sim_time_cached() - traverse < 100:
-                self.mav.mav.set_position_target_local_ned_send(
-                    0, 1, 1, mavutil.mavlink.MAV_FRAME_LOCAL_NED, typemask,
-                    0, 0, 0, vn, ve, 0, 0, 0, 0, 0, 0)
-                self.delay_sim_time(0.2, reason="velocity target rate")
+            self.fly_guided_velocity(240, 5, 100)
             self.change_mode(mode)
             self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=source_set)
             mark = self.get_sim_time()
@@ -3387,13 +3376,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_origin(Location(start.lat, start.lng,
                                      start.get_alt_m(AltFrame.ABSOLUTE) - 30, AltFrame.ABSOLUTE))
             # the anchor is taken during the climb, so the tiles have to be there first
-            tstart = self.get_sim_time()
-            while True:
-                if self.get_sim_time_cached() - tstart > 60:
-                    raise NotAchievedException("terrain tiles did not load")
-                m = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
-                if m.pending == 0 and m.loaded > 0:
-                    break
+            self.wait_terrain_tiles_loaded()
 
         self.start_subtest("A range finder failing just above the height limit is not hidden")
         # between the 4.6 m limit and 5.6 m the anchored height clears the limit with no
@@ -3411,8 +3394,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("range finder read %.2f m, not 4.8 to 5.45 m" % distance)
         self.set_parameter("SIM_SONAR_GLITCH", 1)
         self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
-        self.drain_mav()
-        flags = self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+        flags = self.ekf_status_flags()
         self.disarm_vehicle(force=True)
         self.set_parameter("SIM_SONAR_GLITCH", 0)
         if not flags & mavutil.mavlink.EKF_VELOCITY_HORIZ:
@@ -3430,19 +3412,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
         mark = self.get_sim_time()
         # bearing 240 from the SITL home rises about 10 m over the 500 m flown
-        self.change_mode("GUIDED")
-        typemask = (MAV_POS_TARGET_TYPE_MASK.POS_IGNORE | MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
-                    MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
-        vn = 5 * math.cos(math.radians(240))
-        ve = 5 * math.sin(math.radians(240))
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() - tstart < 100:
-            self.mav.mav.set_position_target_local_ned_send(
-                0, 1, 1, mavutil.mavlink.MAV_FRAME_LOCAL_NED, typemask,
-                0, 0, 0, vn, ve, 0, 0, 0, 0, 0, 0)
-            self.delay_sim_time(0.2, reason="velocity target rate")
-        self.drain_mav()
-        flags = self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+        self.fly_guided_velocity(240, 5, 100)
+        flags = self.ekf_status_flags()
         mark_end = self.get_sim_time()
         self.change_mode("LOITER")
         # setting bit 2 in flight ends the anchor with no range return, so the ground held from
