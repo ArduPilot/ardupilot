@@ -314,9 +314,14 @@ void UARTDriver::_flush(void)
         if (now_pending >= pending) {
             break;
         }
+        pending = now_pending;
+    }
+}
 
 size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 {
+    // so the write buffer can not be cleared on reconnection mid-write
+    WITH_SEMAPHORE(write_mtx);
     const auto _txspace = txspace();
     if (_txspace < size) {
         size = _txspace;
@@ -867,6 +872,14 @@ void UARTDriver::_check_connection(void)
                 close(_fd);
                 _fd = -1;
                 return;
+            }
+            {
+                // a new client must not receive the backlog queued for the
+                // previous one. While we are disconnected txspace() returns
+                // 0, so new writes are refused, and the code that writes
+                // to or sends from the buffer holds write_mtx
+                WITH_SEMAPHORE(write_mtx);
+                _writebuffer.clear();
             }
             _connected = true;
             fprintf(stdout, "New connection on SERIAL%u\n", _portNumber);
