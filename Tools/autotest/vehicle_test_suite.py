@@ -11757,6 +11757,21 @@ Also, ignores heartbeats not from our target system'''
                                                   tb=e.__traceback__))
         return ret
 
+    def bin_log_mtimes(self):
+        """mtime of every bin log, skipping any which cannot be stat'd.
+
+        TestLogOpenErrors leaves a symlink loop in logs/ when it fails, and
+        a stat of that raises ELOOP: unguarded, the exception replaces
+        whatever the test was actually failing on, and in a pooled worker it
+        escapes run_one_test() entirely."""
+        mtimes = {}
+        for filepath in self.bin_logs():
+            try:
+                mtimes[filepath] = os.path.getmtime(filepath)
+            except OSError as e:
+                self.progress("Ignoring %s for log preservation: %s" % (filepath, e))
+        return mtimes
+
     def bin_logs(self):
         return glob.glob(os.path.join(self.sitl_log_dir(), "*.BIN"))
 
@@ -11921,7 +11936,7 @@ Also, ignores heartbeats not from our target system'''
 
         # so failure-preservation can tell this test's logs from ones
         # accumulated by earlier tests on this worker:
-        bin_logs_at_test_start = {x: os.path.getmtime(x) for x in self.bin_logs()}
+        bin_logs_at_test_start = self.bin_log_mtimes()
 
         sitl_stdout_offset = self.sitl_stdout_offset()
 
@@ -12015,8 +12030,8 @@ Also, ignores heartbeats not from our target system'''
         # test it ran (downloads included), and sweeping those up labels
         # another test's data with this test's name
         pre_reboot_bin_logs = [
-            x for x in self.bin_logs()
-            if bin_logs_at_test_start.get(x) != os.path.getmtime(x)
+            x for x, mtime in self.bin_log_mtimes().items()
+            if bin_logs_at_test_start.get(x) != mtime
         ]
 
         # if we haven't already reset ArduPilot because it's dead,
