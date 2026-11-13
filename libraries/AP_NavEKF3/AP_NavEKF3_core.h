@@ -1356,6 +1356,7 @@ private:
     uint32_t flowInnovTime_ms;      // system time that optical flow innovations and variances were recorded (to detect timeouts)
 #if EK3_FEATURE_OPTFLOW_FUSION
     ftype Popt;                     // Optical flow terrain height state covariance (m^2)
+    bool flowSampleZeroed;          // true when the flow sample being fused was replaced by zero before takeoff
 #endif
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF

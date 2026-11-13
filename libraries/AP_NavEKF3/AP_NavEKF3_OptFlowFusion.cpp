@@ -47,7 +47,8 @@ void NavEKF3_core::SelectFlowFusion()
     // Constrain measurements to zero if takeoff is not detected and the height above ground
     // is insufficient to achieve acceptable focus. This allows the vehicle to be picked up
     // and carried to test optical flow operation
-    if (!takeOffDetected && ((terrainState - stateStruct.position.z) < 0.5f)) {
+    flowSampleZeroed = !takeOffDetected && ((terrainState - stateStruct.position.z) < 0.5f);
+    if (flowSampleZeroed) {
         ofDataDelayed.flowRadXYcomp.zero();
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
@@ -918,7 +919,8 @@ bool NavEKF3_core::InitVelocityFromFlow(const of_elements &ofDataDelayed, ftype 
         aglKfRestartRequested = false;
         return false;
     }
-    if (!frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) || !aglKf.valid ||
+    // a zero standing in for the flow before takeoff is no measure of a velocity to set
+    if (flowSampleZeroed || !frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) || !aglKf.valid ||
         (PV_AidingMode != AID_RELATIVE) || flowVelResetUnhealthy ||
         (fabsF(ofDataDelayed.flowRadXY.x) >= frontend->_maxFlowRate) ||
         (fabsF(ofDataDelayed.flowRadXY.y) >= frontend->_maxFlowRate) ||
