@@ -129,6 +129,9 @@ public:
 #if HAL_MOUNT_XFROBOT_ENABLED
         XFRobot = 14,        /// XFRobot gimbal using a custom serial protocol
 #endif
+#if HAL_MOUNT_GIMBAL_MANAGER_ENABLED
+        GimbalManager = 15,  /// external MAVLink gimbal manager
+#endif
     };
 
     // init - detect and initialise all mounts
