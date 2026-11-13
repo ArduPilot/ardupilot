@@ -627,6 +627,9 @@ def validate(param, is_library=False):
         if not is_number(max_value):
             error("Max value not number: %s %s" % (param.name, max_value))
             return
+        if float(min_value) > float(max_value):
+            error("Range min greater than max: %s %s" % (param.name, param.__dict__["Range"]))
+            return
     # Check for duplicate in @value field
     if (hasattr(param, "Values")):
         valueList = param.__dict__["Values"].split(",")
@@ -680,6 +683,10 @@ def validate(param, is_library=False):
     if (hasattr(param, "Increment")):
         if not is_number(param.Increment):
             error("Increment not number: \"%s\"" % param.Increment)
+        elif hasattr(param, "Range"):
+            (min_range, max_range) = [float(x) for x in param.Range.split(" ")]
+            if float(param.Increment) > max_range - min_range:
+                error("Increment %s larger than Range %s" % (param.Increment, param.Range))
 
     required_fields = required_param_fields
     if is_library:
