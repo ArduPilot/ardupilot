@@ -97,7 +97,7 @@ bool ModeAutoLand::_enter()
 
     const Location &home = ahrs.get_home();
 
-#ifndef HAL_LANDING_DEEPSTALL_ENABLED
+#if HAL_LANDING_DEEPSTALL_ENABLED
     if (plane.landing.get_type() == AP_Landing::TYPE_DEEPSTALL) {
         // Deep stall landings require only a landing location, they do there own loiter to alt and approach
         cmd_land.id = MAV_CMD_NAV_LAND;
