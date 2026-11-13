@@ -14,7 +14,7 @@ VIDEO_STREAM_NAME_SIZE = 32
 VIDEO_STREAM_URI_SIZE = 160
 VIDEO_STREAM_WIRE_SIZE = 215
 
-GPS_POLICY = ('v1:gps-instance-checked,u64-little-endian,inject-nonempty-max1024,'
+GPS_POLICY = ('v1:gps-instance-checked,u64-little-endian,epoch-under-scheduler-lock,inject-nonempty-max1024,'
               'fixed-zero-padded-copy,no-retained-module-pointers')
 CAMERA_POLICY = ('v1:owned-video-stream-value,all-lua-visible-fields-exact-width,'
                  'name-max32-uri-max160,nul-free-canonical-zero-padding,finite-nonnegative-framerate,'
@@ -176,6 +176,14 @@ def cpp(spec):
         '    if (gps == nullptr) {',
         '        return AP_MODULE_STATUS_UNAVAILABLE;',
         '    }',
+        '#if AP_SCHEDULER_ENABLED',
+        '    // time_epoch_usec() dereferences the driver, which the main loop may replace',
+        '    auto *scheduler = AP_Scheduler::get_singleton();',
+        '    if (scheduler == nullptr) {',
+        '        return AP_MODULE_STATUS_UNAVAILABLE;',
+        '    }',
+        '    BindingLock lock(scheduler->get_semaphore());',
+        '#endif',
         '    if (input[0] >= gps->num_sensors()) {',
         '        return AP_MODULE_STATUS_INVALID;',
         '    }',

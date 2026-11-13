@@ -99,11 +99,20 @@ typedef struct __mavlink_video_stream_information_t {
 static bool gps_present=true, camera_present=true, networking_present=true, scripting_present=true;
 static uint8_t gps_count=2; static uint64_t epoch=UINT64_C(0xfedcba9876543210);
 static uint8_t injected[1024]; static uint16_t injected_length; static unsigned inject_calls;
+static AP_HAL::Semaphore scheduler_sem;
+class AP_Scheduler {
+public:
+    static AP_Scheduler *get_singleton() { static AP_Scheduler value; return &value; }
+    AP_HAL::Semaphore &get_semaphore() { return scheduler_sem; }
+};
 class AP_GPS {
 public:
     static AP_GPS *get_singleton() { static AP_GPS value; return gps_present ? &value : nullptr; }
     uint8_t num_sensors() const { return gps_count; }
-    uint64_t time_epoch_usec(uint8_t instance) const { return epoch + instance; }
+    uint64_t time_epoch_usec(uint8_t instance) const {
+        if (scheduler_sem.depth != 1) { __builtin_trap(); }
+        return epoch + instance;
+    }
     void inject_data(const uint8_t *data, uint16_t length) {
         memcpy(injected,data,length); injected_length=length; inject_calls++;
     }
@@ -190,7 +199,7 @@ extern "C" void read_route(uint8_t *out) {
         os.environ.get('CXX', 'c++'), '-std=c++17', '-Wall', '-Wextra', '-Werror', '-fPIC', '-shared',
         f'-DAP_GPS_ENABLED={enabled}', f'-DAP_CAMERA_INFO_FROM_SCRIPT_ENABLED={enabled}',
         f'-DAP_CAMERA_ENABLED={enabled}', f'-DAP_CAMERA_SCRIPTING_ENABLED={enabled}',
-        f'-DAP_NETWORKING_ENABLED={enabled}', f'-DAP_SCRIPTING_LUA_ENABLED={enabled}',
+        f'-DAP_NETWORKING_ENABLED={enabled}', f'-DAP_SCRIPTING_LUA_ENABLED={enabled}', '-DAP_SCHEDULER_ENABLED=1',
         '-I' + str(tmp_path), '-I' + str(bindings.ROOT), str(source), '-o', str(library),
     ], check=True)
     lib = ctypes.CDLL(str(library))
