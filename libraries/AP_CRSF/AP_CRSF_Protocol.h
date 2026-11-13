@@ -126,6 +126,8 @@ public:
         CRSF_AP_CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH = 0xF0,
         CRSF_AP_CUSTOM_TELEM_STATUS_TEXT = 0xF1,
         CRSF_AP_CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH = 0xF2,
+        // MAVlite messages (parameter read/write, command subset) in both directions, see AP_CRSF_Telem
+        CRSF_AP_CUSTOM_TELEM_MAVLITE = 0xF4,
     };
 
     enum class ProtocolType {
