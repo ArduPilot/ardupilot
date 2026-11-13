@@ -96,6 +96,7 @@ public:
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
     AC_PID& get_steering_rate_pid() { return _steer_rate_pid; }
+    const AP_PIDInfo& get_steering_rate_pid_info() const { return _steer_rate_pid_info; }
     AC_PID& get_pitch_to_throttle_pid() { return _pitch_to_throttle_pid; }
     AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
     const AP_PIDInfo& get_throttle_speed_pid_info() const { return _throttle_speed_pid_info; }
@@ -157,6 +158,8 @@ private:
     AP_Float _steer_decel_max;      // steering angle deceleration max in deg/s/s
     AP_Float _steer_rate_max;       // steering rate control maximum rate in deg/s
     AP_Float _turn_lateral_G_max;   // sterring maximum lateral acceleration limit in 'G'
+    AP_Float _steer_roll_ff;        // steering output feed forward from sine of roll angle (slope compensation)
+    AP_Float _throttle_pitch_ff;    // throttle output feed forward from sine of pitch angle (slope compensation)
 
     // steering control
     uint32_t _steer_lat_accel_last_ms;  // system time of last call to lateral acceleration controller (i.e. get_steering_out_lat_accel)
@@ -165,6 +168,7 @@ private:
     float    _desired_turn_rate;    // desired turn rate (in radians/sec) either from external caller or from lateral acceleration controller
     bool     _steering_limit_left;  // true when the steering control has reached its left limit (e.g. motor has reached limits or accel or turn rate limits applied)
     bool     _steering_limit_right; // true when the steering control has reached its right limit (e.g. motor has reached limits or accel or turn rate limits applied)
+    AP_PIDInfo _steer_rate_pid_info;    // local copy of steering rate controller's PID info to allow reporting of slope compensation in FF
 
     // throttle control
     uint32_t _speed_last_ms;        // system time of last call to get_throttle_out_speed
