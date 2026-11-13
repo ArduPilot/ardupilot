@@ -16823,6 +16823,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         )
         self.wait_text("Rangefinder: MCU Temperature alert", check_context=True)
 
+    def RangeFinderDriversMaxAlt_A02YYUW(self) -> None:
+        '''test max-height behaviour - A02YYUW'''
+        self.RangeFinderDriversMaxAlt_FlyDriver(
+            name="A02YYUW",
+            rngfnd_type=49,
+            simname='a02yyuw_serial',
+            maxalt=3,
+            sq_at_sqalt=0,  # unknown quality while in range, 1 (invalid) once out of range
+        )
+
     def RangeFinderDriversLongRange(self):
         '''test rangefinder above 327m'''
         # FIXME: when we get a driver+simulator for a rangefinder with
@@ -20117,6 +20127,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FlyRangeFinderSITL,
             self.RangeFinderDriversMaxAlt_AinsteinLRD1,
             self.RangeFinderDriversMaxAlt_AinsteinLRD1_v19,
+            self.RangeFinderDriversMaxAlt_A02YYUW,
             self.AltTypes,
             self.MAVLandedStateTakeoff,
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
