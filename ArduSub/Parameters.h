@@ -405,6 +405,9 @@ public:
 
     // Used to track parameter conversions
     AP_Int8 param_conversion_increment;
+
+    // which failsafes drive the per-servo failsafe positions (SERVOn_FSPWM)
+    AP_Int16 fs_servo_mask;
 };
 
 extern const AP_Param::Info        var_info[];

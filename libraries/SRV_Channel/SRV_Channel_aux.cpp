@@ -97,7 +97,7 @@ void SRV_Channel::output_ch(void)
 #endif // HAL_BUILD_AP_PERIPH
 
     if (!(SRV_Channels::disabled_mask & (1U<<ch_num))) {
-        hal.rcout->write(ch_num, output_pwm);
+        hal.rcout->write(ch_num, get_output_pwm());
     }
 }
 
