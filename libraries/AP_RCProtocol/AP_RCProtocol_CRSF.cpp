@@ -332,7 +332,13 @@ void AP_RCProtocol_CRSF::update(void)
 
 #if AP_RC_CHANNEL_ENABLED
     //Check if LQ is to be reported in place of RSSI
-    _use_lq_for_rssi = rc().option_is_enabled(RC_Channels::Option::USE_CRSF_LQ_AS_RSSI);
+// RC protocol update can run before RC_Channels singleton is created on fast boot paths.
+// Guard the option access to avoid transient early-startup dereferences while RC_Channels and vehicle state are still coming up.
+    if (hal.scheduler != nullptr &&
+        hal.scheduler->is_system_initialized() &&
+        RC_Channels::get_singleton() != nullptr) {
+        _use_lq_for_rssi = rc().option_is_enabled(RC_Channels::Option::USE_CRSF_LQ_AS_RSSI);
+    }
 #endif
 }
 
@@ -726,6 +732,12 @@ void AP_RCProtocol_CRSF::start_bind(void)
 bool AP_RCProtocol_CRSF::bind_in_progress(void)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+// On fast bring-up paths the RCIN thread can start polling protocols before vehicle setup has finished.
+// Avoid constructing the CRSF telemetry singleton from that early thread context
+    if (hal.scheduler == nullptr || !hal.scheduler->is_system_initialized()) {
+        return false;
+    }
+
     AP_CRSF_Telem* telem = AP::crsf_telem();
     if (telem != nullptr) {
         return telem->bind_in_progress();
