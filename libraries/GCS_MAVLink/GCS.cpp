@@ -59,7 +59,15 @@ const AP_Param::GroupInfo GCS::var_info[] {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_GCS_SYSID_HI",    5,   GCS, mav_gcs_sysid_high, 0),
-    
+
+    // @Param: _GCS_POS_SRC
+    // @DisplayName: GCS position source
+    // @Description: MAVLink system ID of the GCS whose GLOBAL_POSITION_INT messages are stored as the GCS position for Lua scripts. A value of zero uses MAV_GCS_SYSID. A non-zero value must be within MAV_GCS_SYSID to MAV_GCS_SYSID_HI. This does not change which system IDs are trusted for GCS failsafe, RC overrides or manual control.
+    // @Range: 0 4294967295
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_GCS_POS_SRC",    6,   GCS, mav_gcs_pos_src, 0),
+
     // @Param: _OPTIONS
     // @DisplayName: MAVLink Options
     // @Description: Alters various behaviour of the MAVLink interface
@@ -752,6 +760,75 @@ bool GCS::sysid_is_gcs(uint32_t _sysid) const
     }
     return _sysid >= low && _sysid <= high;
 }
+
+#if AP_MAVLINK_GCS_POSITION_ENABLED
+uint32_t GCS::gcs_pos_source_sysid() const
+{
+    return mav_gcs_pos_src != 0 ? uint32_t(mav_gcs_pos_src) : uint32_t(mav_gcs_sysid);
+}
+
+void GCS::handle_gcs_location(const mavlink_message_t &msg)
+{
+    if (msg.msgid != MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
+        return;
+    }
+
+    const uint32_t src = gcs_pos_source_sysid();
+    if (src == 0 || !sysid_is_gcs(src)) {
+        // invalid configuration, feature is inert
+        return;
+    }
+    if (msg.sysid == 0 || msg.sysid == mavlink_system.sysid || msg.sysid != src) {
+        return;
+    }
+
+    mavlink_global_position_int_t packet;
+    mavlink_msg_global_position_int_decode(&msg, &packet);
+
+    if (packet.lat == 0 && packet.lon == 0) {
+        return;
+    }
+    if (packet.lat < -900000000 || packet.lat > 900000000 ||
+        packet.lon < -1800000000 || packet.lon > 1800000000) {
+        return;
+    }
+
+    const int32_t alt_cm = packet.alt / 10;  // mm -> cm
+    if (alt_cm < -LOCATION_ALT_MAX_M * 100 || alt_cm > LOCATION_ALT_MAX_M * 100) {
+        return;
+    }
+
+    Location loc;
+    loc.lat = packet.lat;
+    loc.lng = packet.lon;
+    loc.set_alt_cm(alt_cm, Location::AltFrame::ABSOLUTE);
+
+    WITH_SEMAPHORE(_gcs_pos_sem);
+    _gcs_pos_location = loc;
+    _gcs_pos_last_update_ms = AP_HAL::millis();
+    _gcs_pos_valid = true;
+}
+
+bool GCS::get_gcs_location(Location &loc) const
+{
+    WITH_SEMAPHORE(_gcs_pos_sem);
+    if (!_gcs_pos_valid) {
+        return false;
+    }
+    loc = _gcs_pos_location;
+    return true;
+}
+
+bool GCS::get_gcs_location_age_ms(uint32_t &age_ms) const
+{
+    WITH_SEMAPHORE(_gcs_pos_sem);
+    if (!_gcs_pos_valid) {
+        return false;
+    }
+    age_ms = AP_HAL::millis() - _gcs_pos_last_update_ms;
+    return true;
+}
+#endif // AP_MAVLINK_GCS_POSITION_ENABLED
 
 // Increment the available modes sequence number for each channel
 void GCS::available_modes_changed() {

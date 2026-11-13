@@ -6,9 +6,15 @@
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include <AP_Arming/AP_Arming_config.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
+#include <AP_Scripting/AP_Scripting_config.h>
 
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 1
+#endif
+
+// store the position received from a trusted GCS and expose it to Lua
+#ifndef AP_MAVLINK_GCS_POSITION_ENABLED
+#define AP_MAVLINK_GCS_POSITION_ENABLED (HAL_GCS_ENABLED && AP_EXTERNAL_BINDING_ENABLED)
 #endif
 
 #ifndef HAL_MAVLINK_BINDINGS_ENABLED
