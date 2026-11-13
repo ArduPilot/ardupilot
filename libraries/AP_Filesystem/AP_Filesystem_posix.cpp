@@ -37,6 +37,25 @@
 #include <utime.h>
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+// Return true if access is allowed for the given PATH with SIM SD disabled semantics.
+// - Returns false if SIM_SD_DISABLE==1 and the path targets SD-backed trees.
+static bool check_sim_sdcard_allowed(const char* path)
+{
+    auto *s = SITL::SIM::get_singleton();
+    if (!s || s->sdcard_disable == 0 || path == nullptr) {
+        return true;
+    }
+    // SITL-mapped SD trees to deny
+    if (strstr(path, "terrain/") != nullptr) return false;
+    if (strstr(path, "logs/")    != nullptr) return false;
+    if (strstr(path, "crash.d/") != nullptr) return false;
+    if (strstr(path, "scripts/") != nullptr) return false;
+    return true;
+}
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 extern const AP_HAL::HAL& hal;
 
 /*
@@ -80,6 +99,10 @@ int AP_Filesystem_Posix::open(const char *fname, int flags, bool allow_absolute_
     if (! allow_absolute_paths) {
         fname = map_filename(fname);
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!check_sim_sdcard_allowed(fname)) { return -1; }
+#endif
+
     struct stat st;
     if (::stat(fname, &st) == 0 &&
         ((st.st_mode & S_IFMT) != S_IFREG && (st.st_mode & S_IFMT) != S_IFLNK)) {
@@ -138,6 +161,9 @@ int AP_Filesystem_Posix::stat(const char *pathname, struct stat *stbuf)
 {
     FS_CHECK_ALLOWED(-1);
     pathname = map_filename(pathname);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!check_sim_sdcard_allowed(pathname)) { return -1; }
+#endif
     auto ret = ::stat(pathname, stbuf);
     map_filename_free(pathname);
     return ret;
@@ -147,6 +173,9 @@ int AP_Filesystem_Posix::unlink(const char *pathname)
 {
     FS_CHECK_ALLOWED(-1);
     pathname = map_filename(pathname);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!check_sim_sdcard_allowed(pathname)) { return -1; }
+#endif
     // we match the FATFS interface and use unlink
     // for both files and directories
     int ret = ::rmdir(const_cast<char*>(pathname));
@@ -161,6 +190,9 @@ int AP_Filesystem_Posix::mkdir(const char *pathname)
 {
     FS_CHECK_ALLOWED(-1);
     pathname = map_filename(pathname);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!check_sim_sdcard_allowed(pathname)) { return -1; }
+#endif
     auto ret = ::mkdir(const_cast<char*>(pathname), 0775);
     map_filename_free(pathname);
     return ret;
@@ -170,6 +202,9 @@ void *AP_Filesystem_Posix::opendir(const char *pathname)
 {
     FS_CHECK_ALLOWED(nullptr);
     pathname = map_filename(pathname);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!check_sim_sdcard_allowed(pathname)) { return nullptr; }
+#endif
     auto *ret = (void*)::opendir(pathname);
     map_filename_free(pathname);
     return ret;
@@ -192,6 +227,9 @@ int AP_Filesystem_Posix::rename(const char *oldpath, const char *newpath)
     FS_CHECK_ALLOWED(-1);
     oldpath = map_filename(oldpath);
     newpath = map_filename(newpath);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!check_sim_sdcard_allowed(oldpath)) { return -1; }
+#endif
     auto ret = ::rename(oldpath, newpath);
     map_filename_free(oldpath);
     map_filename_free(newpath);
@@ -204,6 +242,10 @@ int64_t AP_Filesystem_Posix::disk_free(const char *path)
 #if AP_FILESYSTEM_POSIX_HAVE_STATFS
     FS_CHECK_ALLOWED(-1);
     path = map_filename(path);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!check_sim_sdcard_allowed(path)) { return -1; }
+#endif
+
     struct statfs stats;
     if (::statfs(path, &stats) < 0) {
         map_filename_free(path);
@@ -222,6 +264,10 @@ int64_t AP_Filesystem_Posix::disk_space(const char *path)
 #if AP_FILESYSTEM_POSIX_HAVE_STATFS
     FS_CHECK_ALLOWED(-1);
     path = map_filename(path);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!check_sim_sdcard_allowed(path)) { return -1; }
+#endif
+
     struct statfs stats;
     if (::statfs(path, &stats) < 0) {
         map_filename_free(path);
@@ -243,6 +289,10 @@ bool AP_Filesystem_Posix::set_mtime(const char *filename, const uint32_t mtime_s
 #if AP_FILESYSTEM_POSIX_HAVE_UTIME
     FS_CHECK_ALLOWED(false);
     filename = map_filename(filename);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!check_sim_sdcard_allowed(filename)) { return -1; }
+#endif
+
     struct utimbuf times {};
     times.actime = mtime_sec;
     times.modtime = mtime_sec;
