@@ -1,0 +1,70 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/CameraFeedback.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module ardupilot_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "Image capture feedback")
+    struct CameraFeedback {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "Image timestamp (microseconds since epoch)")
+      uint64 timestamp_us;
+
+      @verbatim (language="comment", text=
+        "Camera ID")
+      uint8 camera_id;
+
+      @verbatim (language="comment", text=
+        "Image index")
+      uint16 image_index;
+
+      @verbatim (language="comment", text=
+        "Vehicle position" "\n"
+        "Latitude in degrees")
+      double latitude;
+
+      @verbatim (language="comment", text=
+        "Longitude in degrees")
+      double longitude;
+
+      @verbatim (language="comment", text=
+        "Altitude MSL in meters")
+      float altitude_msl;
+
+      @verbatim (language="comment", text=
+        "Altitude relative to home in meters")
+      float altitude_rel;
+
+      @verbatim (language="comment", text=
+        "Vehicle attitude" "\n"
+        "Roll angle in degrees")
+      float roll_deg;
+
+      @verbatim (language="comment", text=
+        "Pitch angle in degrees")
+      float pitch_deg;
+
+      @verbatim (language="comment", text=
+        "Yaw angle in degrees")
+      float yaw_deg;
+
+      @verbatim (language="comment", text=
+        "Camera parameters" "\n"
+        "Focal length in mm")
+      float focal_length_mm;
+
+      @verbatim (language="comment", text=
+        "Feedback flags")
+      uint8 flags;
+
+      @verbatim (language="comment", text=
+        "Completed image captures")
+      uint16 completed_captures;
+    };
+  };
+};
