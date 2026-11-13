@@ -19323,6 +19323,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_FLOW_ENABLE", 1)
         self.reboot_sitl()
 
+    def ThrowTossIntoLandWithoutFlow(self):
+        '''A toss handed to LAND before the flow agrees lands level, not on that velocity'''
+        # LAND needs no position, so the hand-over does not wait for the flow, but LAND's init
+        # takes one whenever position_ok() is: on the dead reckoned velocity the throw had
+        # rejected. The velocity PIDs are logged in LAND only when it controls position.
+        params = self.flow_switch_parameters()
+        params.update({
+            "THROW_TYPE": 1,           # drop
+            "THROW_ALT_DCSND": 0,
+            "THROW_NEXTMODE": 9,       # LAND
+            "THROW_SRC_INI": 3,
+            "THROW_SRC_SET": 2,
+            "MOT_SPOOL_TIME": 1.0,
+            "SIM_SHOVE_Z": -25,
+            "SIM_SHOVE_X": 20,
+        })
+        self.set_parameters(params)
+        self.set_parameter("LOG_BITMASK", int(self.get_parameter("LOG_BITMASK")) | (1 << 12) | (1 << 5))  # PID, NTUN
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode('THROW')
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_mode('LAND', timeout=30)
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        land_us = None
+        position_controlled = 0
+        while True:
+            m = dfreader.recv_match(type=['MODE', 'PIDN', 'PIDE'])
+            if m is None:
+                break
+            if m.get_type() == 'MODE':
+                if m.ModeNum == 9 and land_us is None:
+                    land_us = m.TimeUS
+            elif land_us is not None:
+                position_controlled += 1
+        if land_us is None:
+            raise NotAchievedException("no hand-over to LAND in the log")
+        if position_controlled:
+            raise NotAchievedException("LAND controlled position on the flow set with no flow (%u PID records)" %
+                                       position_controlled)
+        self.reboot_sitl()
+
     def ThrowZeroDescentSettlesBeforeHandover(self):
         '''With THROW_ALT_DCSND 0 a toss is handed over only once its climb is arrested'''
         self.set_parameters({
@@ -21138,6 +21191,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowTossIntoFlowLoiter,
             self.ThrowDropFlowLostFailsafe,
             self.ThrowTossWithoutFlowHoldsNoPosition,
+            self.ThrowTossIntoLandWithoutFlow,
             self.ThrowZeroDescentSettlesBeforeHandover,
             self.ThrowYawFollowsEKFYawReset,
             self.ThrowHeightSourceSwitchNoClimb,
