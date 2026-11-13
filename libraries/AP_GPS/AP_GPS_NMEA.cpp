@@ -143,15 +143,20 @@ bool AP_GPS_NMEA::_decode(char c)
 int32_t AP_GPS_NMEA::_parse_decimal_100(const char *p)
 {
     char *endptr = nullptr;
-    long ret = 100 * strtol(p, &endptr, 10);
-    int sign = ret < 0 ? -1 : 1;
+    const long whole = strtol(p, &endptr, 10);
 
-    if (ret >= (long)INT32_MAX) {
+    // strtol() saturates at LONG_MAX/LONG_MIN on an overlong field, so clamp
+    // before the *100 (long is 32 bits on most autopilot boards) and leave
+    // room for the two fractional digits added below
+    if (whole >= (long)(INT32_MAX / 100)) {
         return INT32_MAX;
     }
-    if (ret <= (long)INT32_MIN) {
+    if (whole <= (long)(INT32_MIN / 100)) {
         return INT32_MIN;
     }
+    int32_t ret = (int32_t)whole * 100;
+    const int32_t sign = ret < 0 ? -1 : 1;
+
     if (endptr == nullptr || *endptr != '.') {
         return ret;
     }
@@ -169,12 +174,18 @@ int32_t AP_GPS_NMEA::_parse_decimal_100(const char *p)
 }
 
 /*
-  parse a NMEA latitude/longitude degree value. The result is in degrees*1e7
+  parse a NMEA latitude/longitude degree value (dddmm.mmmm). The result is
+  in degrees*1e7. Returns false when the field cannot be an angle: more than
+  three degree digits, minutes of 60 or more, or more than 180 degrees. The
+  old uint8_t accumulators wrapped on such fields and the degrees*1e7 product
+  then overflowed int32, so an impossible field produced a plausible-looking
+  position.
  */
-uint32_t AP_GPS_NMEA::_parse_degrees()
+bool AP_GPS_NMEA::_parse_degrees(int32_t &value)
 {
     char *p, *q;
-    uint8_t deg = 0, min = 0;
+    uint16_t deg = 0;
+    uint8_t min = 0;
     float frac_min = 0;
     int32_t ret = 0;
 
@@ -182,6 +193,11 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     for (p = _term; *p && isdigit(*p); p++)
         ;
     q = _term;
+
+    // everything but the last two integer digits is degrees
+    if ((p - q) > 5) {
+        return false;
+    }
 
     // convert degrees
     while ((p - q) > 2 && *q) {
@@ -197,6 +213,10 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
         min += DIGIT_TO_VAL(*q++);
     }
 
+    if (deg > 180 || min >= 60) {
+        return false;
+    }
+
     // convert fractional minutes
     if (*p == '.') {
         q = p + 1;
@@ -210,7 +230,8 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     ret = (deg * (int32_t)10000000UL);
     ret += (min * (int32_t)10000000UL / 60);
     ret += (int32_t) (frac_min * (1.0e7f / 60.0f));
-    return ret;
+    value = ret;
+    return true;
 }
 
 /*
@@ -435,11 +456,20 @@ bool AP_GPS_NMEA::_term_complete()
                     // prefer AGRICA
                     break;
                 }
+                // atof() accepts nan, inf and any magnitude; the conversions
+                // to int32 below are undefined outside the int32 range, so
+                // ignore a position that cannot be one
+                if (!isfinite(_ksxt.fields[2]) || _ksxt.fields[2] > 90 || _ksxt.fields[2] < -90 ||
+                    !isfinite(_ksxt.fields[1]) || _ksxt.fields[1] > 180 || _ksxt.fields[1] < -180 ||
+                    !isfinite(_ksxt.fields[3]) || _ksxt.fields[3] > 1.0e7 || _ksxt.fields[3] < -1.0e7) {
+                    break;
+                }
                 state.location.lat     = _ksxt.fields[2]*1.0e7;
                 state.location.lng     = _ksxt.fields[1]*1.0e7;
                 set_alt_amsl_cm(state, _ksxt.fields[3]*1.0e2);
                 _last_KSXT_pos_ms = now;
-                if (_ksxt.fields[9] >= 1) {
+                if (_ksxt.fields[9] >= 1 &&
+                    isfinite(_ksxt.fields[16]) && isfinite(_ksxt.fields[17]) && isfinite(_ksxt.fields[18])) {
                     // we have 3D fix
                     constexpr float kmh_to_mps = 1.0 / 3.6;
                     state.velocity.y = _ksxt.fields[16] * kmh_to_mps;
@@ -451,7 +481,7 @@ bool AP_GPS_NMEA::_term_complete()
                     velocity_to_speed_course(state);
                     _last_3D_velocity_ms = now;
                 }
-                if (is_equal(3.0f, float(_ksxt.fields[10]))) {
+                if (is_equal(3.0f, float(_ksxt.fields[10])) && isfinite(_ksxt.fields[4])) {
                     // have good yaw (from RTK fixed moving baseline solution)
                     _last_yaw_ms = now;
                     state.gps_yaw = _ksxt.fields[4];
@@ -469,6 +499,17 @@ bool AP_GPS_NMEA::_term_complete()
 #if AP_GPS_NMEA_UNICORE_ENABLED
             case _GPS_SENTENCE_AGRICA: {
                 const auto &ag = _agrica;
+                // strtof()/atof() accept nan and inf; a message carrying them
+                // (or a position outside the int32 range) is ignored whole
+                if (!isfinite(ag.lat) || ag.lat > 90 || ag.lat < -90 ||
+                    !isfinite(ag.lng) || ag.lng > 180 || ag.lng < -180 ||
+                    !isfinite(ag.alt) || fabsf(ag.alt) > 1.0e7f ||
+                    !isfinite(ag.undulation) ||
+                    ag.vel_NED.is_nan() || ag.vel_NED.is_inf() ||
+                    ag.vel_stddev.is_nan() || ag.vel_stddev.is_inf() ||
+                    ag.pos_stddev.is_nan() || ag.pos_stddev.is_inf()) {
+                    break;
+                }
                 _last_AGRICA_ms = now;
                 _last_vvelocity_ms = now;
                 _last_vaccuracy_ms = now;
@@ -506,6 +547,12 @@ bool AP_GPS_NMEA::_term_complete()
                 if (now - _last_AGRICA_ms > 500 || ag.heading_status != 4) {
                     // we need heading_status from AGRICA
                     state.have_gps_yaw = false;
+                    break;
+                }
+                if (!isfinite(uh.baseline_length) || !isfinite(uh.heading) ||
+                    !isfinite(uh.pitch) || !isfinite(uh.heading_sd)) {
+                    // strtof() accepts nan/inf; calculate_moving_base_yaw()
+                    // rejects them too, but relPos* must not see them either
                     break;
                 }
                 const float dist = uh.baseline_length;
@@ -611,18 +658,41 @@ bool AP_GPS_NMEA::_term_complete()
         // time and date
         //
         case _GPS_SENTENCE_RMC + 1: // Time (RMC)
-        case _GPS_SENTENCE_GGA + 1: // Time (GGA)
-            _new_time = _parse_decimal_100(_term);
+        case _GPS_SENTENCE_GGA + 1: { // Time (GGA)
+            // hhmmss.ss: anything beyond 23:59:59.99 is not a UTC time, and
+            // the *10 in make_gps_time() would overflow on it. Only a valid
+            // value is kept, so a later sentence with an empty time field
+            // cannot pick a bad one up
+            const int32_t new_time = _parse_decimal_100(_term);
+            if (new_time < 0 || new_time > 23595999) {
+                _discard_sentence();
+                break;
+            }
+            _new_time = new_time;
             break;
-        case _GPS_SENTENCE_RMC + 9: // Date (GPRMC)
-            _new_date = atol(_term);
+        }
+        case _GPS_SENTENCE_RMC + 9: { // Date (GPRMC)
+            // ddmmyy; a receiver without a date fix may send zeros, which
+            // make_gps_time() is not called for anyway (no 3D fix yet)
+            const long new_date = atol(_term);
+            if (new_date != 0 &&
+                (new_date < 0 ||
+                 new_date / 10000 < 1 || new_date / 10000 > 31 ||
+                 (new_date / 100) % 100 < 1 || (new_date / 100) % 100 > 12)) {
+                _discard_sentence();
+                break;
+            }
+            _new_date = new_date;
             break;
+        }
 
         // location
         //
         case _GPS_SENTENCE_RMC + 3: // Latitude
         case _GPS_SENTENCE_GGA + 2:
-            _new_latitude = _parse_degrees();
+            if (!_parse_degrees(_new_latitude)) {
+                _discard_sentence();
+            }
             break;
         case _GPS_SENTENCE_RMC + 4: // N/S
         case _GPS_SENTENCE_GGA + 3:
@@ -631,7 +701,9 @@ bool AP_GPS_NMEA::_term_complete()
             break;
         case _GPS_SENTENCE_RMC + 5: // Longitude
         case _GPS_SENTENCE_GGA + 4:
-            _new_longitude = _parse_degrees();
+            if (!_parse_degrees(_new_longitude)) {
+                _discard_sentence();
+            }
             break;
         case _GPS_SENTENCE_RMC + 6: // E/W
         case _GPS_SENTENCE_GGA + 5:
@@ -646,7 +718,9 @@ bool AP_GPS_NMEA::_term_complete()
         //
         case _GPS_SENTENCE_RMC + 7: // Speed (GPRMC)
         case _GPS_SENTENCE_VTG + 5: // Speed (VTG)
-            _new_speed = (_parse_decimal_100(_term) * 514) / 1000;       // knots-> m/sec, approximates * 0.514
+            // knots-> m/sec, approximates * 0.514; 64-bit so the clamped
+            // INT32_MAX an overlong field produces cannot overflow the *514
+            _new_speed = (int32_t)(((int64_t)_parse_decimal_100(_term) * 514) / 1000);
             break;
         case _GPS_SENTENCE_HDT + 1: // Course (HDT)
             _new_gps_yaw = _parse_decimal_100(_term);
