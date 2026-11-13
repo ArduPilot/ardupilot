@@ -61,6 +61,10 @@ SERIAL1_PROTOCOL 2
 SERIAL2_BAUD     115
 SERIAL2_PROTOCOL 2
 
+# its u-blox starts at 9600 after power-off and is detected at 230400:
+# only try those (bit 1: 9600, bit 6: 230400)
+GPS1_PROBE_BAUDS 66
+
 # radio setup
 BRD_RADIO_TYPE 1
 BRD_RADIO_PROT 1

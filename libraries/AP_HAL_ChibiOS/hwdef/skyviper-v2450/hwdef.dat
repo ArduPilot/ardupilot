@@ -357,4 +357,8 @@ define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
 # don't need so many servo outputs (~850 bytes!)
 define NUM_SERVO_CHANNELS 15
 
+# its u-blox starts at 9600 after power-off: probe there first
+# (GPS1_PROBE_BAUDS in defaults.parm limits the rest)
+define DEFAULT_SERIAL3_BAUD 9600
+
 AUTOBUILD_TARGETS Copter
