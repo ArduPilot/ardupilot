@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE",  1, AP_Networking, param.enabled, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE",  1, AP_Networking, param.enabled, AP_NETWORKING_DEFAULT_NET_ENABLE, AP_PARAM_FLAG_ENABLE),
 
 #if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
     // @Group: IPADDR
@@ -125,6 +125,10 @@ AP_Networking::AP_Networking(void)
 /*
   initialise networking subsystem
  */
+#if AP_NETWORKING_BACKEND_USB_ECM
+#include "AP_Networking_USB_ECM.h"
+#endif
+
 void AP_Networking::init()
 {
     if (!param.enabled || backend != nullptr) {
@@ -170,6 +174,12 @@ void AP_Networking::init()
 #endif
 
 
+#if AP_NETWORKING_BACKEND_USB_ECM
+    if (backend == nullptr) {
+        backend = NEW_NOTHROW ::AP_Networking_USB_ECM(*this);
+    }
+#endif
+
 #if AP_NETWORKING_BACKEND_PPP
     if (backend == nullptr && AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_PPP, 0)) {
         backend = NEW_NOTHROW AP_Networking_PPP(*this);
@@ -188,7 +198,7 @@ void AP_Networking::init()
 #endif
 
     if (backend == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: backend failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: no backend (check compile options)");
         return;
     }
 
