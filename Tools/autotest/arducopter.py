@@ -3061,6 +3061,156 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def EK3_OptflowAboveRangefinderRangeHeight(self):
+        """Optical flow navigation stays valid above the range with the range finder as height source"""
+        # With EK3_SRCn_POSZ 2 the terrain estimator is skipped while the range finder is the
+        # height source, so the ground it measures has to reach the fallback some other way. And
+        # the range finder takes the height back on its first fresh reading, resetting the height
+        # to it, so a return from something passed over must not be taken while the fallback holds.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,
+            "AVOID_ENABLE": 0,   # the optical flow height limit would otherwise stop the climbs
+            "TERRAIN_ENABLE": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        # an 8 m range finder: height limit 4.6 m, last good reading needed 5.6 m
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_parameter("EK3_SRC1_POSZ", 2)
+
+        def ekf_flags():
+            # drain first, or the next report can predate the event just waited on
+            self.drain_mav()
+            return self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+
+        def rangefinder_between(dist_min, dist_max):
+            # RANGEFINDER is not streamed by default
+            distance = self.poll_message('RANGEFINDER').distance
+            if dist_min <= distance <= dist_max:
+                return True
+            self.progress("range finder read %.2f m, not %.2f to %.2f m" % (distance, dist_min, dist_max))
+            return False
+
+        def climb_out_of_range():
+            self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+            flags = ekf_flags()
+            if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+                raise NotAchievedException("relative position was not valid in range")
+            self.set_rc(3, 1800)
+            self.wait_altitude(20, 200, relative=True, timeout=90)
+            self.set_rc(3, 1500)
+            # EKF_POS_VERT_AGL is gndOffsetValid; held clear for 2 s so a health blip cannot satisfy it
+            self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
+
+        self.start_subtest("Relative position stays valid above the range")
+        self.reboot_sitl()
+        climb_out_of_range()
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("relative position lost above the range with range finder height")
+
+        self.start_subtest("A brief return from something passed over leaves the height alone")
+        self.reboot_sitl()
+        climb_out_of_range()
+        if not ekf_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("the climb out did not engage the fallback, so the leg proves nothing")
+        sonar_scale = self.get_parameter("SIM_SONAR_SCALE")
+        tset_us = self.get_sim_time() * 1e6
+        # eight times the metres per volt, so at 20-28 m it reads 2.5-3.5 m
+        self.set_parameter("SIM_SONAR_SCALE", sonar_scale * 8)
+        self.delay_sim_time(1, "the return")
+        self.set_parameter("SIM_SONAR_SCALE", sonar_scale)
+        tundone_us = self.get_sim_time() * 1e6
+        self.delay_sim_time(3, "the return to be undone")
+        flags = ekf_flags()
+        tend_us = self.get_sim_time() * 1e6
+        self.disarm_vehicle(force=True)
+        # the EKF height less the true height, from the log rather than relative_alt, which can
+        # come from the baro, and through the return rather than either side of it
+        good = 0
+        before = []
+        through = []
+        sim_alt = None
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'SIM', 'RFND'])
+            if m is None:
+                break
+            if m.get_type() == 'SIM':
+                sim_alt = m.Alt
+            elif m.get_type() == 'RFND':
+                if m.Instance == 0 and m.Stat == 4 and tset_us < m.TimeUS < tundone_us and 2.5 <= m.Dist <= 3.5:
+                    good += 1
+            elif m.C == 0 and sim_alt is not None:
+                if tset_us - 2e6 < m.TimeUS < tset_us:
+                    before.append(-m.PD - sim_alt)
+                elif tset_us < m.TimeUS < tend_us:
+                    through.append(-m.PD - sim_alt)
+        if good < 5:
+            raise NotAchievedException("the range finder read 2.5 to 3.5 m only %u times, so the leg proves nothing" %
+                                       good)
+        if not before or not through:
+            raise NotAchievedException("no XKF1 around the return")
+        baseline = sum(before) / len(before)
+        worst = max(through, key=lambda e: abs(e - baseline)) - baseline
+        self.progress("%u readings of the return; EKF height less true height moved at most %.2f m" % (good, worst))
+        if abs(worst) > 1:
+            raise NotAchievedException("a brief return moved the height %.1f m" % worst)
+        if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("relative position lost after a brief return")
+
+        self.start_subtest("The range finder takes the height back, and a later loss in range is refused")
+        # back in range the fallback ends after 2 s of fused readings and the range finder takes
+        # the height. At 5 m the vehicle is over the 4.6 m height limit and short of the 5.6 m
+        # reading a climb out passes through, so only the last range height taken refuses a
+        # fallback when the range finder is then lost
+        for attempt in range(1, 4):
+            self.reboot_sitl()
+            climb_out_of_range()
+            if not ekf_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL:
+                raise NotAchievedException("the climb out did not engage the fallback, so the leg proves nothing")
+            self.set_rc(3, 1350)
+            self.wait_altitude(5.0, 5.4, relative=True, timeout=90)
+            self.set_rc(3, 1500)
+            self.wait_climbrate(-0.1, 0.1, minimum_duration=3)
+            if rangefinder_between(4.8, 5.5):
+                break
+            self.disarm_vehicle(force=True)
+        else:
+            raise NotAchievedException("the descent missed 4.8 to 5.5 m on 3 attempts, so the leg proves nothing")
+        # on range finder height a baro drifting 5 m low moves neither the height nor the vehicle;
+        # on baro height ALT_HOLD climbs 5 m
+        press_before = self.poll_message('SCALED_PRESSURE').press_abs
+        self.set_parameters({"SIM_BARO_DRIFT": -1, "SIM_BAR2_DRIFT": -1})
+        self.delay_sim_time(5, "the baro drifts")
+        self.set_parameters({"SIM_BARO_DRIFT": 0, "SIM_BAR2_DRIFT": 0})
+        press_after = self.poll_message('SCALED_PRESSURE').press_abs
+        distance = self.poll_message('RANGEFINDER').distance
+        self.progress("baro moved %.2f hPa; range finder %.2f m after" % (press_after - press_before, distance))
+        # 5 m is about 0.6 hPa
+        if press_after - press_before < 0.4:
+            raise NotAchievedException("the baro moved %.2f hPa, so the leg proves nothing" %
+                                       (press_after - press_before))
+        if not 4.5 <= distance <= 6.0:
+            self.disarm_vehicle(force=True)
+            raise NotAchievedException("the vehicle followed the baro, so the range finder did not take the height")
+        # full scale on every sample, so it reports out of range high, as a lidar that has lost
+        # its return does
+        self.set_parameter("SIM_SONAR_GLITCH", 1)
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=30, minimum_duration=2)
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        self.set_parameter("SIM_SONAR_GLITCH", 0)
+        if not flags & mavutil.mavlink.EKF_VELOCITY_HORIZ:
+            raise NotAchievedException("Filter was unhealthy, so a cleared flag proves nothing")
+        if flags & mavutil.mavlink.EKF_CONST_POS_MODE:
+            raise NotAchievedException("Aiding was lost, so a cleared flag proves nothing")
+        if flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("relative position held on a range finder lost at 5 m with range finder height")
+
     def EK3_OptflowAnchorToRangeHeight(self):
         """Taking the range finder as the height source ends the anchor without a height step"""
         # The anchor follows the terrain database above the range under baro height. A source
@@ -21076,6 +21226,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.VibrationCompensationThrottle,
             self.EK3_AccelBiasInhibitOnGroundMoving,
             self.EK3_OptflowAboveRangefinder,
+            self.EK3_OptflowAboveRangefinderRangeHeight,
             self.EK3_OptflowAnchoredTerrain,
             self.EK3_OptflowAnchorToRangeHeight,
             self.EK3_TerrainStateFollowsHeightReset,
