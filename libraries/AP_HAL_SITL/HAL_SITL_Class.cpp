@@ -332,6 +332,11 @@ void HAL_SITL::actually_reboot()
     // Emscripten cannot exec; terminate so the host can recreate the Worker.
     abort();
 #else
+    // exec() closes every serial port's socket: hand what is queued to
+    // the peers first, so a reboot's COMMAND_ACK reaches the GCS
+    for (uint8_t i=0; i<hal_sitl.num_serial; i++) {
+        ((HALSITL::UARTDriver *)hal_sitl.serial(i))->drain_before_exec(500);
+    }
     SocketAPM_native::cleanup_unix_paths();
     execv(new_argv[0], new_argv);
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));

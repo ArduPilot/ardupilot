@@ -33,6 +33,9 @@ public:
     ssize_t get_system_outqueue_length() const;
     ssize_t get_system_outqueue_limit() const;
 
+    // on reboot, just before exec(): get queued output to the peer
+    void drain_before_exec(uint32_t timeout_ms);
+
     bool tx_pending() override {
         return false;
     }
@@ -171,7 +174,7 @@ protected:
 #endif
 
 private:
-    void handle_writing_from_writebuffer_to_device();
+    void handle_writing_from_writebuffer_to_device(bool ignore_baudlimit=false);
     void handle_reading_from_device_to_readbuffer();
 
     // statistics

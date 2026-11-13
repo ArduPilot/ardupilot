@@ -1019,7 +1019,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
     return i;
 }
 
-void UARTDriver::handle_writing_from_writebuffer_to_device()
+void UARTDriver::handle_writing_from_writebuffer_to_device(bool ignore_baudlimit)
 {
 #if HAL_SITL_WASM_ENABLED
     if (_wasm) {
@@ -1036,7 +1036,7 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
     uint32_t max_bytes = 10000;
 #if !defined(HAL_BUILD_AP_PERIPH)
     SITL::SIM *_sitl = AP::sitl();
-    if (_sitl && _sitl->telem_baudlimit_enable) {
+    if (_sitl && _sitl->telem_baudlimit_enable && !ignore_baudlimit) {
         // limit byte rate to configured baudrate
         // Byte rate is bit rate divided by 10. 8 bits of data + start/stop bits
         max_bytes = baud_limits.write.max_bytes(float(_uart_baudrate) * 0.1);
@@ -1271,6 +1271,72 @@ ssize_t UARTDriver::get_system_outqueue_length() const
     }
     return size;
 #endif
+}
+
+/*
+  monotonic wall-clock milliseconds, for the one wait which must not use
+  simulated time: draining the ports while the process is about to be
+  replaced
+ */
+static uint64_t monotonic_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return uint64_t(ts.tv_sec) * 1000ULL + ts.tv_nsec / 1000000ULL;
+}
+
+/*
+  called by HAL_SITL::actually_reboot() just before exec(). exec()
+  closes every socket, so anything still in our write buffer is lost,
+  and if unread input is waiting when a TCP socket closes the kernel
+  sends a reset and discards what it had queued for the peer, such as
+  the COMMAND_ACK for the reboot.
+
+  Push the write buffer out ignoring the baud-rate limit, read and drop
+  any input, and wait for the socket queue to empty. Simulated time is
+  irrelevant now, so wait in wall-clock time, and give up once nothing
+  has moved for timeout_ms (a peer that has stopped reading).
+ */
+void UARTDriver::drain_before_exec(uint32_t timeout_ms)
+{
+#if HAL_SITL_WASM_ENABLED
+    if (_wasm) {
+        return;
+    }
+#endif
+    uint64_t last_progress_ms = monotonic_ms();
+    uint32_t last_buffered = UINT32_MAX;
+    ssize_t last_queued = SSIZE_MAX;
+    while (_connected) {
+        handle_writing_from_writebuffer_to_device(true);
+        if (_use_send_recv && !_is_udp && _fd != -1) {
+            uint8_t discard[512];
+            ssize_t n;
+            while ((n = recv(_fd, discard, sizeof(discard), MSG_DONTWAIT)) > 0) {
+            }
+            if (n == 0) {
+                // the peer has closed the connection: nothing will drain
+                return;
+            }
+        }
+        const uint32_t buffered = _writebuffer.available();
+        const ssize_t queued = get_system_outqueue_length();
+        if (buffered == 0 && queued == 0) {
+            return;
+        }
+        // a fall in either counts as progress: on a Unix socket TIOCOUTQ
+        // counts the kernel's allocation per write, so it can rise while
+        // data is moving
+        const uint64_t now_ms = monotonic_ms();
+        if (buffered < last_buffered || queued < last_queued) {
+            last_progress_ms = now_ms;
+        } else if (now_ms - last_progress_ms >= timeout_ms) {
+            return;
+        }
+        last_buffered = buffered;
+        last_queued = queued;
+        usleep(1000);
+    }
 }
 
 ssize_t UARTDriver::get_system_outqueue_limit() const
