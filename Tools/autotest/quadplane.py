@@ -1603,6 +1603,82 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("Rangefinder engaged", check_context=True, timeout=60)
         self.wait_disarmed(timeout=100)
 
+    def ATTITUDE_QUATERNION_repr_offset_q(self):
+        '''check ATTITUDE_QUATERNION plus repr_offset_q shows what ATTITUDE shows'''
+        self.customise_SITL_commandline(
+            [],
+            model="quadplane-copter_tailsitter",
+            wipe=True,
+        )
+        self.reboot_sitl()
+        self.set_message_rate_hz('ATTITUDE', 10)
+        self.set_message_rate_hz('ATTITUDE_QUATERNION', 10)
+
+        def angle_error_deg(a, b):
+            return abs((math.degrees(a - b) + 180) % 360 - 180)
+
+        def receive_same_time_pair():
+            '''the vehicle may be turning, so compare messages sent at the same time'''
+            self.drain_mav()
+            last = {}
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 10:
+                m = self.mav.recv_match(type=['ATTITUDE', 'ATTITUDE_QUATERNION'], blocking=True, timeout=1)
+                if m is None:
+                    continue
+                last[m.get_type()] = m
+                if len(last) == 2 and last['ATTITUDE'].time_boot_ms == last['ATTITUDE_QUATERNION'].time_boot_ms:
+                    return (last['ATTITUDE_QUATERNION'], last['ATTITUDE'])
+            raise NotAchievedException("No ATTITUDE and ATTITUDE_QUATERNION sent at the same time")
+
+        def check_attitude_quaternion(expected_offset):
+            for i in range(10):
+                (aq, att) = receive_same_time_pair()
+                if i == 0:
+                    self.progress(f"{aq}\n{att}")
+                q = quaternion.Quaternion([aq.q1, aq.q2, aq.q3, aq.q4])
+                offset = aq.repr_offset_q
+                if expected_offset is None:
+                    if offset != [0, 0, 0, 0]:
+                        raise NotAchievedException(f"Expected no offset, got {offset}")
+                    shown = q
+                else:
+                    # q and -q are the same rotation
+                    sign = 1 if offset[0] * expected_offset[0] >= 0 else -1
+                    for got, want in zip(offset, expected_offset):
+                        if abs(sign * got - want) > 0.01:
+                            raise NotAchievedException(f"Expected offset {expected_offset}, got {offset}")
+                    shown = q * quaternion.Quaternion(list(offset))
+                (roll, pitch, yaw) = shown.euler
+                for (name, got, want) in (("roll", roll, att.roll),
+                                          ("pitch", pitch, att.pitch),
+                                          ("yaw", yaw, att.yaw)):
+                    error = angle_error_deg(got, want)
+                    if error > 3:
+                        raise NotAchievedException(
+                            f"{name}: ATTITUDE_QUATERNION shows {math.degrees(got):.1f}, "
+                            f"ATTITUDE shows {math.degrees(want):.1f}")
+            self.progress(f"ATTITUDE_QUATERNION offset {offset} matches ATTITUDE")
+            return q
+
+        self.wait_ready_to_arm()
+        self.takeoff(30, mode='GUIDED')
+
+        self.progress("Hovering: offset is the VTOL view")
+        expected = quaternion.Quaternion([0, -math.radians(90 + self.get_parameter('Q_TRIM_PITCH')), 0])
+        q = check_attitude_quaternion([float(x) for x in expected.q])
+        raw_pitch = math.degrees(q.euler[1])
+        if raw_pitch < 60:
+            raise NotAchievedException(f"Expected AHRS pitch near 90 in hover, got {raw_pitch:.1f}")
+
+        self.progress("Fixed-wing flight: no offset")
+        self.change_mode("LOITER")
+        self.delay_sim_time(20, reason="transition to complete")
+        check_attitude_quaternion(None)
+
+        self.change_mode("QLAND")
+        self.wait_disarmed(timeout=100)
+
     def setup_ICEngine_vehicle(self):
         '''restarts SITL with an IC Engine setup'''
         model = "quadplane-ice"
@@ -4664,6 +4740,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QRTLGradualAltDescent,
             self.QAssist,
             self.CopterTailsitter,
+            self.ATTITUDE_QUATERNION_repr_offset_q,
             self.ICEngine,
             self.ICEngineMission,
             self.MAV_CMD_DO_ENGINE_CONTROL,
