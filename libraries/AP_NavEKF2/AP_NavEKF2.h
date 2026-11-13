@@ -237,8 +237,10 @@ public:
     // primary core changes and when the primary core resets its D position
     uint16_t getPosDownResetCount(void);
 
-    // set and save the _baroAltNoise parameter
-    void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
+    // set the _baroAltNoise default without overriding configured values
+    void set_default_baro_alt_noise(float noise) { _baroAltNoise.set_default(noise); }
+
+    void set_baro_alt_noise_override(float noise) { _baro_alt_noise_override = noise; }
 
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
@@ -315,6 +317,10 @@ private:
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
     AP_Float _gpsHorizPosNoise;     // GPS horizontal position measurement noise m
     AP_Float _baroAltNoise;         // Baro height measurement noise : m
+    float _baro_alt_noise_override = 0.0f;
+    float get_effective_baro_alt_noise() const {
+        return _baro_alt_noise_override > 0.0f ? _baro_alt_noise_override : _baroAltNoise.get();
+    }
     AP_Float _magNoise;             // magnetometer measurement noise : gauss
     AP_Float _easNoise;             // equivalent airspeed measurement noise : m/s
     AP_Float _windVelProcessNoise;  // wind velocity state process noise : m/s^2

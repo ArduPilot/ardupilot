@@ -118,13 +118,13 @@ void Sub::init_ardupilot()
         }
     }
 
+    ahrs.set_default_alt_measurement_noise(0.1f);
+
     if (!ap.depth_sensor_present) {
         // We only have onboard baro
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0);
-        ahrs.set_alt_measurement_noise(10.0f);  // Readings won't correspond with rest of INS
-    } else {
-        ahrs.set_alt_measurement_noise(0.1f);
+        ahrs.set_alt_measurement_noise_override(10.0f);  // Readings won't correspond with rest of INS
     }
 
     leak_detector.init();
