@@ -104,6 +104,7 @@ public:
     friend class GCS_Sub;
     friend class Parameters;
     friend class ParametersG2;
+    friend class AUV_Control;
     friend class AP_Arming_Sub;
     friend class RC_Channels_Sub;
     friend class RC_Channel_Sub;

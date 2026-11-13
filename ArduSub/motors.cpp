@@ -26,6 +26,10 @@ void Sub::motors_output()
         motors.set_interlock(true);
         auto &srv = AP::srv();
         srv.cork();
+
+        // Dispatch AUV control-surface allocation before PWM calculation
+        g2.auv.output_control_surfaces();
+
         SRV_Channels::calc_pwm();
         SRV_Channels::output_ch_all();
         motors.output();
