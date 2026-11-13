@@ -20,6 +20,7 @@
 
 #include <AP_HAL/utility/Socket.h>
 #include "SIM_Aircraft.h"
+#include <AP_JSON/AP_JSON_FieldParser.h>
 
 #define SITL_JSON_DEBUG 0
 
@@ -77,23 +78,19 @@ private:
     void output_servos(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
 
-    uint64_t parse_sensors(const char *json);
+    // parse received bytes, returning the fields of the last complete
+    // valid packet in them, or 0 if there was none
+    uint64_t parse_sensors(const uint8_t *data, size_t len);
 
-    // buffer for parsing pose data in JSON format
-    uint8_t sensor_buffer[65000];
-    uint32_t sensor_buffer_len;
+    uint64_t handle_parse_result(AP_JSON_FieldParser::Result result);
+    uint64_t non_finite_fields(uint64_t mask) const;
+    void print_fields(const char *msg, uint64_t mask) const;
 
-    enum data_type {
-        DATA_UINT64,
-        DATA_FLOAT,
-        DATA_DOUBLE,
-        DATA_VECTOR3F,
-        DATA_VECTOR3D,
-        QUATERNION,
-        BOOLEAN,
-    };
+    // one datagram of sensor data. The headroom over the largest packet
+    // lets a datagram that is too large be told from one that fits
+    uint8_t recv_buffer[AP_JSON_FieldParser::MAX_PACKET_LEN + 64];
 
-    struct {
+    struct SensorState {
         double timestamp_s;
         double latitude;
         double longitude;
@@ -118,55 +115,57 @@ private:
         float airspeed;
         bool no_time_sync;
         bool no_lockstep;
-    } state;
-
-    // table to aid parsing of JSON sensor data
-    struct keytable {
-        const char *section;
-        const char *key;
-        void *ptr;
-        enum data_type type;
-        bool required;
-    } keytable[36] {
-        { "", "timestamp", &state.timestamp_s, DATA_DOUBLE, true },
-        { "", "latitude", &state.latitude, DATA_DOUBLE, false },
-        { "", "longitude", &state.longitude, DATA_DOUBLE, false },
-        { "", "altitude", &state.altitude, DATA_DOUBLE, false },
-        { "imu", "gyro",    &state.imu.gyro, DATA_VECTOR3F, true },
-        { "imu", "accel_body", &state.imu.accel_body, DATA_VECTOR3F, true },
-        { "", "position", &state.position, DATA_VECTOR3D, false },
-        { "", "attitude", &state.attitude, DATA_VECTOR3F, false },
-        { "", "quaternion", &state.quaternion, QUATERNION, false },
-        { "", "velocity", &state.velocity, DATA_VECTOR3F, true },
-        { "", "rng_1", &state.rng[0], DATA_FLOAT, false },
-        { "", "rng_2", &state.rng[1], DATA_FLOAT, false },
-        { "", "rng_3", &state.rng[2], DATA_FLOAT, false },
-        { "", "rng_4", &state.rng[3], DATA_FLOAT, false },
-        { "", "rng_5", &state.rng[4], DATA_FLOAT, false },
-        { "", "rng_6", &state.rng[5], DATA_FLOAT, false },
-        {"","velocity_wind", &state.velocity_wind, DATA_VECTOR3F, false},
-        {"windvane","direction", &state.wind_vane_apparent.direction, DATA_FLOAT, false},
-        {"windvane","speed", &state.wind_vane_apparent.speed, DATA_FLOAT, false},
-        {"", "airspeed", &state.airspeed, DATA_FLOAT, false},
-        {"", "no_time_sync", &state.no_time_sync, BOOLEAN, false},
-        {"", "no_lockstep", &state.no_lockstep, BOOLEAN, false},
-        { "rc", "rc_1", &state.rc[0], DATA_FLOAT, false },
-        { "rc", "rc_2", &state.rc[1], DATA_FLOAT, false },
-        { "rc", "rc_3", &state.rc[2], DATA_FLOAT, false },
-        { "rc", "rc_4", &state.rc[3], DATA_FLOAT, false },
-        { "rc", "rc_5", &state.rc[4], DATA_FLOAT, false },
-        { "rc", "rc_6", &state.rc[5], DATA_FLOAT, false },
-        { "rc", "rc_7", &state.rc[6], DATA_FLOAT, false },
-        { "rc", "rc_8", &state.rc[7], DATA_FLOAT, false },
-        { "rc", "rc_9", &state.rc[8], DATA_FLOAT, false },
-        { "rc", "rc_10", &state.rc[9], DATA_FLOAT, false },
-        { "rc", "rc_11", &state.rc[10], DATA_FLOAT, false },
-        { "rc", "rc_12", &state.rc[11], DATA_FLOAT, false },
-        { "battery", "voltage", &state.bat_volt, DATA_FLOAT, false },
-        { "battery", "current", &state.bat_amp, DATA_FLOAT, false },
     };
+    // state from the last valid packet
+    SensorState state;
+    // the packet being received, copied to state when it is complete and
+    // valid, so a bad packet never changes state
+    SensorState state_rx;
 
-    // Enum coresponding to the ordering of keys in the keytable.
+    // fields of a JSON sensor packet, written to state_rx while parsing.
+    // Bit i of a received bitmask is fields[i], see DataKey below
+    typedef AP_JSON_FieldParser::Type FT;
+    const AP_JSON_FieldParser::Field fields[36] {
+        { "timestamp", nullptr, FT::DOUBLE, 1, &state_rx.timestamp_s },
+        { "latitude", nullptr, FT::DOUBLE, 1, &state_rx.latitude },
+        { "longitude", nullptr, FT::DOUBLE, 1, &state_rx.longitude },
+        { "altitude", nullptr, FT::DOUBLE, 1, &state_rx.altitude },
+        { "imu.gyro", nullptr, FT::FLOAT_ARRAY, 3, &state_rx.imu.gyro },
+        { "imu.accel_body", nullptr, FT::FLOAT_ARRAY, 3, &state_rx.imu.accel_body },
+        { "position", nullptr, FT::DOUBLE_ARRAY, 3, &state_rx.position },
+        { "attitude", nullptr, FT::FLOAT_ARRAY, 3, &state_rx.attitude },
+        { "quaternion", nullptr, FT::FLOAT_ARRAY, 4, &state_rx.quaternion.q1 },
+        { "velocity", nullptr, FT::FLOAT_ARRAY, 3, &state_rx.velocity },
+        { "rng_1", nullptr, FT::FLOAT, 1, &state_rx.rng[0] },
+        { "rng_2", nullptr, FT::FLOAT, 1, &state_rx.rng[1] },
+        { "rng_3", nullptr, FT::FLOAT, 1, &state_rx.rng[2] },
+        { "rng_4", nullptr, FT::FLOAT, 1, &state_rx.rng[3] },
+        { "rng_5", nullptr, FT::FLOAT, 1, &state_rx.rng[4] },
+        { "rng_6", nullptr, FT::FLOAT, 1, &state_rx.rng[5] },
+        { "velocity_wind", nullptr, FT::FLOAT_ARRAY, 3, &state_rx.velocity_wind },
+        { "windvane.direction", nullptr, FT::FLOAT, 1, &state_rx.wind_vane_apparent.direction },
+        { "windvane.speed", nullptr, FT::FLOAT, 1, &state_rx.wind_vane_apparent.speed },
+        { "airspeed", nullptr, FT::FLOAT, 1, &state_rx.airspeed },
+        { "no_time_sync", nullptr, FT::BOOL, 1, &state_rx.no_time_sync },
+        { "no_lockstep", nullptr, FT::BOOL, 1, &state_rx.no_lockstep },
+        { "rc.rc_1", nullptr, FT::FLOAT, 1, &state_rx.rc[0] },
+        { "rc.rc_2", nullptr, FT::FLOAT, 1, &state_rx.rc[1] },
+        { "rc.rc_3", nullptr, FT::FLOAT, 1, &state_rx.rc[2] },
+        { "rc.rc_4", nullptr, FT::FLOAT, 1, &state_rx.rc[3] },
+        { "rc.rc_5", nullptr, FT::FLOAT, 1, &state_rx.rc[4] },
+        { "rc.rc_6", nullptr, FT::FLOAT, 1, &state_rx.rc[5] },
+        { "rc.rc_7", nullptr, FT::FLOAT, 1, &state_rx.rc[6] },
+        { "rc.rc_8", nullptr, FT::FLOAT, 1, &state_rx.rc[7] },
+        { "rc.rc_9", nullptr, FT::FLOAT, 1, &state_rx.rc[8] },
+        { "rc.rc_10", nullptr, FT::FLOAT, 1, &state_rx.rc[9] },
+        { "rc.rc_11", nullptr, FT::FLOAT, 1, &state_rx.rc[10] },
+        { "rc.rc_12", nullptr, FT::FLOAT, 1, &state_rx.rc[11] },
+        { "battery.voltage", nullptr, FT::FLOAT, 1, &state_rx.bat_volt },
+        { "battery.current", nullptr, FT::FLOAT, 1, &state_rx.bat_amp },
+    };
+    AP_JSON_FieldParser parser{fields, ARRAY_SIZE(fields)};
+
+    // Enum corresponding to the ordering of entries in fields[]
     enum DataKey : uint64_t {
         TIMESTAMP   = 0x0000000000000001ULL, // 1ULL << 0
         LATITUDE    = 0x0000000000000002ULL, // 1ULL << 1
@@ -206,6 +205,20 @@ private:
         BAT_AMP     = 0x0000000800000000ULL, // 1ULL << 35
     };
     uint64_t last_received_bitmask;
+
+    // packets missing any of these are rejected
+    static const uint64_t REQUIRED_FIELDS = TIMESTAMP | GYRO | ACCEL_BODY | VELOCITY;
+
+    // rangefinders may send infinity or NaN for having no reading, which
+    // SITL reports as no data; packets with them in any other field are
+    // rejected, as the rest of SITL uses those values as they are
+    static const uint64_t NON_FINITE_ALLOWED = RNG_1 | RNG_2 | RNG_3 | RNG_4 | RNG_5 | RNG_6;
+
+    uint32_t rejected_packets;
+
+    // rate limits reports of rejected sensor packets
+    uint64_t last_parse_error_us;
+    bool report_parse_error();
 
 #if SITL_JSON_DEBUG
     uint32_t last_debug_ms;

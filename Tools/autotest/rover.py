@@ -5,6 +5,7 @@ AP_FLAKE8_CLEAN
 
 '''
 
+import binascii
 import copy
 import math
 import operator
@@ -8525,6 +8526,112 @@ return update()
                     'yaw': yaw,
                 }, epsilon=0.01)
 
+    def JSONBadPackets(self):
+        '''check SITL's JSON model copes with what physics backends send: framings,
+        bad packets, and infinity or NaN for a sensor with no reading'''
+        with self.JSON_physics() as physics:
+            self.set_parameters({
+                "RNGFND1_TYPE": 100,
+                "RNGFND1_MAX": 20,
+            })
+            self.reboot_sitl()
+            self.set_message_rate_hz('SIMSTATE', 25)
+
+            def assert_in_step(duration, what):
+                '''SITL time follows the physics, with no frame sent again'''
+                resends = physics.resends
+                start = self.JSON_sim_and_physics_time(physics)
+                self.delay_sim_time(duration, reason=what)
+                self.JSON_assert_elapsed_equal(start, self.JSON_sim_and_physics_time(physics))
+                if physics.resends != resends:
+                    raise NotAchievedException("%s: %u frames sent again" % (what, physics.resends - resends))
+
+            # every framing in use: SITL uses each packet as it comes
+            for name, framing in (
+                    ("newline", lambda text: text + b'\n'),
+                    ("no newline", lambda text: text),
+                    ("NUL terminated", lambda text: text + b'\0'),
+                    ("CR LF", lambda text: b'\r\n' + text + b'\r\n'),
+                    ("CRC", lambda text: text + b'*%04X\n' % binascii.crc_hqx(text, 0xFFFF))):
+                physics.framing = framing
+                assert_in_step(3, name)
+            physics.framing = lambda text: text + b'\n'
+
+            # bad packets, each answering a frame in place of a good one.
+            # Each claims a yaw of 90 degrees and a time 100s ahead before
+            # its fault, so one taken even in part would turn the vehicle
+            # or move SITL time. The frame sent again gets a good packet
+            def bad(fields, end='}'):
+                text = '{"attitude":[0,0,%f],"timestamp":%f' % (math.radians(90), physics.timestamp + 100)
+                for name, value in fields:
+                    text += ',"%s":%s' % (name, value)
+                return (text + end + '\n').encode('ascii')
+            imu = ('imu', '{"gyro":[0,0,0],"accel_body":[0,0,-9.80665]}')
+            nan_imu = ('imu', '{"gyro":[0,NaN,0],"accel_body":[0,0,-9.80665]}')
+            position = ('position', '[0,0,0]')
+            velocity = ('velocity', '[0,0,0]')
+            faults = {
+                "wrong type": bad([imu, position, ('velocity', '[0,0,"0"]')]),
+                "wrong length": bad([imu, position, ('velocity', '[0,0]')]),
+                "duplicate key": bad([imu, position, velocity, velocity]),
+                "cut short": bad([imu, position, velocity], end=''),
+                "bad CRC": bad([imu, position, velocity], end='}*0000'),
+                "NaN in the state": bad([nan_imu, position, velocity]),
+                "NaN airspeed": bad([imu, position, velocity, ('airspeed', 'NaN')]),
+                "missing velocity": bad([imu, position]),
+                "too long": bad([imu, position, velocity, ('pad', '"%s"' % ('x' * 5000))]),
+                "not JSON": b'hello\n',
+            }
+            count = 150
+            self.context_push()
+            try:
+                self.context_collect('SIMSTATE')
+                tstart = self.get_sim_time()
+                start = self.JSON_sim_and_physics_time(physics)
+                for i in range(count):
+                    physics.inject(*faults.values())
+                self.progress("Sending %u bad packets: %s" % (count * len(faults), ", ".join(faults.keys())))
+                while physics.injected:
+                    self.delay_sim_time(0.5, reason="bad packets")
+                    if self.get_sim_time_cached() - tstart > 60:
+                        raise NotAchievedException("bad packets not consumed")
+                self.JSON_assert_elapsed_equal(start, self.JSON_sim_and_physics_time(physics))
+                samples = self.context_collection('SIMSTATE')
+            finally:
+                self.context_pop()
+            self.progress("%u SIMSTATE samples over %.1fs" % (len(samples), self.get_sim_time_cached() - tstart))
+            if len(samples) < 20:
+                raise NotAchievedException("too few SIMSTATE samples to tell")
+            for m in samples:
+                if abs(m.yaw) > math.radians(1):
+                    raise NotAchievedException("bad packet reached the vehicle: yaw %f" % math.degrees(m.yaw))
+            assert_in_step(3, "after bad packets")
+
+            # a datagram cut short with no newline: the end of the datagram
+            # must end it, so the good packet answering the frame sent
+            # again is used rather than lost with it
+            resends = physics.resends
+            physics.inject(bad([imu, position, velocity], end='').rstrip(b'\n'))
+            while physics.injected:
+                self.delay_sim_time(0.5, reason="datagram cut short")
+            self.delay_sim_time(1, reason="datagram cut short")
+            if physics.resends != resends:
+                raise NotAchievedException("a datagram cut short cost the next packet: %u frames sent again" %
+                                           (physics.resends - resends))
+
+            # a sensor with no reading, as a rangefinder out of range:
+            # JSON has no infinity or NaN, so each encoder writes them its
+            # own way. SITL reports no data, and keeps running
+            physics.set(rng_1=5.0)
+            self.wait_rangefinder_distance(4.9, 5.1)
+            for word in 'Infinity', 'null', 'NaN', '-inf', 'nan':
+                physics.set_raw(rng_1=word)
+                self.delay_sim_time(1, reason="rangefinder %s" % word)
+                self.assert_not_receive_message('DISTANCE_SENSOR', timeout=2)
+                assert_in_step(2, "rangefinder %s" % word)
+                physics.set(rng_1=5.0)
+                self.wait_rangefinder_distance(4.9, 5.1)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -8666,6 +8773,7 @@ return update()
             self.JSONNoTimeSync,
             self.JSONClock,
             self.JSONSensors,
+            self.JSONBadPackets,
         ])
         return ret
 
