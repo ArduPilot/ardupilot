@@ -6116,15 +6116,24 @@ class TestSuite(abc.ABC):
 
         return got == value
 
+    def message_field_value(self, m, fieldname):
+        '''m's value for fieldname, which may be "arrayname[index]"'''
+        if "[" in fieldname: # fieldname == "arrayname[index]"
+            assert fieldname[-1] == "]", fieldname
+            arrayname, index = fieldname.split("[", 1)
+            return getattr(m, arrayname)[int(index[:-1])]
+        return getattr(m, fieldname)
+
+    def message_field_value_string(self, m, fieldname):
+        '''fieldname's value in m for a diagnostic, or that it is not there'''
+        try:
+            return "%s" % (self.message_field_value(m, fieldname),)
+        except (AttributeError, IndexError):
+            return "(absent)"
+
     def message_has_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
         for (fieldname, value) in fieldvalues.items():
-            if "[" in fieldname: # fieldname == "arrayname[index]"
-                assert fieldname[-1] == "]", fieldname
-                arrayname, index = fieldname.split("[", 1)
-                index = int(index[:-1])
-                got = getattr(m, arrayname)[index]
-            else:
-                got = getattr(m, fieldname)
+            got = self.message_field_value(m, fieldname)
 
             value_string = value
             got_string = got
@@ -6217,16 +6226,33 @@ class TestSuite(abc.ABC):
         tstart = self.get_sim_time_cached()
         pass_start = None
         last_debug = 0
+        last_m = None
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
-                raise NotAchievedException("Field never reached values")
+                # say which fields were wanted and what the last message
+                # actually carried: without it a failure is just "Field
+                # never reached values", which does not distinguish a value
+                # which was close from one which never moved - or from a
+                # message which never arrived at all
+                if last_m is None:
+                    seen = "no %s was received" % message
+                else:
+                    seen = "last %s had %s" % (message, ", ".join(
+                        "%s=%s" % (f, self.message_field_value_string(last_m, f))
+                        for f in sorted(fieldvalues)))
+                raise NotAchievedException(
+                    "Field never reached values: wanted %s%s; %s" % (
+                        ", ".join("%s=%s" % (f, fieldvalues[f]) for f in sorted(fieldvalues)),
+                        "" if epsilon is None else " (epsilon %s)" % epsilon,
+                        seen))
             m = self.assert_receive_message(
                 message,
                 instance=instance,
                 verbose=verbose,
                 very_verbose=very_verbose,
             )
+            last_m = m
             if self.message_has_field_values(m, fieldvalues, epsilon=epsilon, verbose=verbose):
                 if minimum_duration is not None:
                     if pass_start is None:
