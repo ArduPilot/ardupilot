@@ -162,7 +162,24 @@ void GCS_MAVLINK_Plane::send_attitude() const
         omega.z);
 }
 
-void GCS_MAVLINK_Plane::send_attitude_target() 
+// ATTITUDE shows the VTOL view in VTOL modes (pitched by 90 degrees
+// for a tailsitter, plus Q_TRIM_PITCH); tell the GCS how to get the
+// same view from ATTITUDE_QUATERNION, which carries the AHRS attitude
+void GCS_MAVLINK_Plane::attitude_quaternion_repr_offset(float repr_offset_q[4]) const
+{
+#if HAL_QUADPLANE_ENABLED
+    Quaternion offset;
+    if (plane.quadplane.show_vtol_view() &&
+        plane.quadplane.ahrs_view->get_quat_view_offset(offset)) {
+        repr_offset_q[0] = offset.q1;
+        repr_offset_q[1] = offset.q2;
+        repr_offset_q[2] = offset.q3;
+        repr_offset_q[3] = offset.q4;
+    }
+#endif
+}
+
+void GCS_MAVLINK_Plane::send_attitude_target()
 {
 #if HAL_QUADPLANE_ENABLED
     // Check if the attitude target is valid for reporting
