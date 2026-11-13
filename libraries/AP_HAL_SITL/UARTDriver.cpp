@@ -289,35 +289,31 @@ bool UARTDriver::_discard_input(void)
     return true;
 }
 
+/*
+  start sending what is queued and return, without waiting for the
+  peer to take it.
+
+  This is what flush() means on ChibiOS, where it wakes the UART thread
+  and returns. Waiting here could never work on the main thread: nothing
+  advances simulated time until we return, so the baud-rate limit
+  releases no bytes and any timeout measured on that clock never
+  expires.
+
+  A writer pass sends at most the contiguous part of the ring buffer, so
+  repeat it while it moves bytes and stop as soon as one sends nothing
+  (peer not reading, baud limit reached). A caller that changes baud
+  rate straight after flush(), as CRSF does, then loses nothing that the
+  peer could accept.
+ */
 void UARTDriver::_flush(void)
 {
-#if HAL_SITL_WASM_ENABLED
-    if (_wasm) {
-        return;
-    }
-#endif
-
-    // flush the write buffer - but don't fail and don't
-    // infinitely-loop.  This is not a good definition of "flush", but
-    // it was judged that we had to return from this function even if
-    // we hadn't actually done our job.
-    uint32_t start_ms = AP_HAL::millis();
-    while (AP_HAL::millis() - start_ms < 1000) {
-        if (_writebuffer.available() == 0) {
+    uint32_t pending = _writebuffer.available();
+    while (pending > 0) {
+        handle_writing_from_writebuffer_to_device();
+        const uint32_t now_pending = _writebuffer.available();
+        if (now_pending >= pending) {
             break;
         }
-        _timer_tick();
-    }
-
-    // ensure that the outbound TCP queue is also empty...
-    start_ms = AP_HAL::millis();
-    while (AP_HAL::millis() - start_ms < 1000) {
-        if (((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length() == 0) {
-            break;
-        }
-        usleep(1000);
-    }
-}
 
 size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 {
