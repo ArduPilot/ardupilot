@@ -6221,16 +6221,33 @@ class TestSuite(abc.ABC):
         tstart = self.get_sim_time_cached()
         pass_start = None
         last_debug = 0
+        last_m = None
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
-                raise NotAchievedException("Field never reached values")
+                # say which fields were wanted and what the last message
+                # actually carried: without it a failure is just "Field
+                # never reached values", which does not distinguish a value
+                # which was close from one which never moved - or from a
+                # message which never arrived at all
+                if last_m is None:
+                    seen = "no %s was received" % message
+                else:
+                    seen = "last %s had %s" % (message, ", ".join(
+                        "%s=%s" % (f, getattr(last_m, f, "(absent)"))
+                        for f in sorted(fieldvalues)))
+                raise NotAchievedException(
+                    "Field never reached values: wanted %s%s; %s" % (
+                        ", ".join("%s=%s" % (f, fieldvalues[f]) for f in sorted(fieldvalues)),
+                        "" if epsilon is None else " (epsilon %s)" % epsilon,
+                        seen))
             m = self.assert_receive_message(
                 message,
                 instance=instance,
                 verbose=verbose,
                 very_verbose=very_verbose,
             )
+            last_m = m
             if self.message_has_field_values(m, fieldvalues, epsilon=epsilon, verbose=verbose):
                 if minimum_duration is not None:
                     if pass_start is None:
