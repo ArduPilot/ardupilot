@@ -362,8 +362,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     // @Param: ADSB_PORT
     // @DisplayName: ADSB Serial Port
-    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to ADSB.
-    // @Range: 0 10
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to ADSB. Set to -1 to disable.
+    // @Range: -1 10
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
@@ -430,8 +430,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     // @Param: ESC_TELEM_PORT
     // @DisplayName: ESC Telemetry Serial Port
-    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to ESC Telemetry
-    // @Range: 0 10
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to ESC Telemetry. Set to -1 to disable.
+    // @Range: -1 10
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
@@ -515,8 +515,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     // @Param: EFI_PORT
     // @DisplayName: EFI Serial Port
-    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to EFI.
-    // @Range: 0 10
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to EFI. Set to -1 to disable.
+    // @Range: -1 10
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
@@ -537,8 +537,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     // @Param: PRX_PORT
     // @DisplayName: Proximity Sensor Serial Port
-    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to Proximity Sensor.
-    // @Range: 0 10
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to Proximity Sensor. Set to -1 to disable.
+    // @Range: -1 10
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True

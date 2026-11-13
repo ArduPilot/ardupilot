@@ -22,7 +22,6 @@ periph_hwdefs_to_skip = set([  # Most of these fail due to NET_ params
     'BotBloxDroneNet',
     'CubeNode-ETH',
     'CubeRedPrimary-PPPGW',
-    'MatekG474-Periph',  # Fails for RC_PORT
     'Pixhawk6X-PPPGW',
     'kha_eth',
     'sw-boom-f407',  # Fails for ESC_NUM_POLES*
