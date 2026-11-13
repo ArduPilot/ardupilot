@@ -2,6 +2,8 @@
 
 The AET-H743-Basic-V2 is a flight controller designed and produced by AeroEggTech.
 
+Compared with AET-H743-Basic (V1), V2 replaces the dual ICM-42688 IMUs with BMI088 + BMI270, and uses a new power-board design.
+
 ## Features
 
 - STM32H743 (480MHz) microcontroller with 2MB flash
@@ -20,7 +22,7 @@ The AET-H743-Basic-V2 is a flight controller designed and produced by AeroEggTec
 - 9V 2A BEC for VTX / camera (GPIO switched)
 - VX servo-rail BEC (default 5V, adjustable to 7.4V, 10A)
 - Modular solder-free power distribution board options
-- External Bluetooth / BLE and WiFi modules supported
+- Bluetooth module included by default; external BLE and WiFi modules also supported
 - ELRS / CRSF and SBUS RC input supported
 
 ## Where to Buy
@@ -86,7 +88,7 @@ ArduPilot GPS instances follow SERIAL order. Enabling GPS on an earlier port mak
 | 4 | UART4 | GPS | GPS2 by default; also on I2C2 connector (TX4/RX4) |
 | 5 | USB (OTG2) | MAVLink2 | Second USB |
 | 6 | USART6 | RCIN | RC / SBUS; no DMA |
-| 7 | UART7 | MAVLink2 | Telem with CTS/RTS; common port for external BT module |
+| 7 | UART7 | MAVLink2 | Telem with CTS/RTS; default included Bluetooth module |
 | 8 | UART8 | None | User |
 
 ## RC Input
@@ -122,7 +124,7 @@ Outputs are grouped and every output within a group must use the same output pro
 
 13 (LED) is Group 5;
 
-Output 13 is dedicated to WS2812 LED (NeoPixel). `SERVO13_FUNCTION = 120` and board NeoPixel notification are set in `defaults.parm`. Set `NTF_LED_LEN` to the number of LEDs on the strip.
+Output 13 is dedicated to WS2812 LED (NeoPixel). `SERVO13_FUNCTION = 120` is set in `defaults.parm`; `DEFAULT_NTF_LED_TYPES` enables board + NeoPixel notification in `hwdef.dat`. Set `NTF_LED_LEN` to the number of LEDs on the strip (requires reboot after change).
 
 ## Battery Monitoring
 
