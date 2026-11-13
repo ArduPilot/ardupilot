@@ -7743,6 +7743,10 @@ uint64_t GCS_MAVLINK::capabilities() const
     }
 #endif
 
+#if AP_EXTERNAL_BINDING_ENABLED
+    ret |= gcs().get_extra_capabilities();
+#endif
+
     return ret;
 }
 

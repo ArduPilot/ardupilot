@@ -5,6 +5,8 @@
 
 #include "GCS_config.h"
 
+#include <atomic>
+
 #if HAL_GCS_ENABLED
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe_config.h>
@@ -1303,6 +1305,16 @@ public:
         allow_param_set = new_allowed;
     }
 
+#if AP_EXTERNAL_BINDING_ENABLED
+    // additional MAV_PROTOCOL_CAPABILITY bits reported in AUTOPILOT_VERSION
+    void set_extra_capabilities(uint32_t bits) {
+        extra_capabilities.store(bits, std::memory_order_relaxed);
+    }
+    uint32_t get_extra_capabilities() const {
+        return extra_capabilities.load(std::memory_order_relaxed);
+    }
+#endif
+
     bool out_of_time() const;
 
 #if AP_FRSKY_TELEM_ENABLED
@@ -1419,6 +1431,9 @@ private:
     // PARAM_SET and upload of param values via FTP) should be allowed
     // to change parameter values:
     bool allow_param_set = HAL_GCS_ALLOW_PARAM_SET_DEFAULT;
+#if AP_EXTERNAL_BINDING_ENABLED
+    std::atomic<uint32_t> extra_capabilities;
+#endif
 
     // queue of outgoing statustext messages.  Each entry consumes 58
     // bytes of RAM on stm32
