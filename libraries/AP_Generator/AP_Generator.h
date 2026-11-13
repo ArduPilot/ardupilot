@@ -95,6 +95,10 @@ private:
     // Pointer to chosen driver
     AP_Generator_Backend* _driver_ptr;
 
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+    AP_Generator_Loweheiser *_loweheiser_ptr = nullptr;
+#endif
+
     // Parameters
     AP_Int8 _type; // Select which generator to use
     AP_UInt32 _options; // Select which generator to use
