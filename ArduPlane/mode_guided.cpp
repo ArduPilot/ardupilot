@@ -3,6 +3,10 @@
 
 bool ModeGuided::_enter()
 {
+#if HAL_SOARING_ENABLED
+    plane.g2.soaring_controller.init_cruising();
+#endif // HAL_SOARING_ENABLED
+
     plane.guided_throttle_passthru = false;
     /*
       when entering guided mode we set the target as the current
@@ -94,6 +98,17 @@ void ModeGuided::update()
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.guided_state.forced_throttle);
 
     } else {
+#if HAL_SOARING_ENABLED
+        if (plane.set_soaring_altitude()) {
+            // Just stopped soaring in this mode
+
+            // Return to guided target point at current altitude
+            Location loc = plane.next_WP_loc;
+            loc.copy_alt_from(plane.current_loc);
+            plane.set_guided_WP(loc);
+        }
+#endif // HAL_SOARING_ENABLED
+
         // TECS control
         plane.calc_throttle();
 
@@ -197,6 +212,9 @@ void ModeGuided::update_target_altitude()
     } else 
 #endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         {
+#if HAL_SOARING_ENABLED
+        plane.set_soaring_altitude();
+#endif // HAL_SOARING_ENABLED
         Mode::update_target_altitude();
     }
 }
