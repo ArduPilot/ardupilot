@@ -2610,6 +2610,19 @@ class TestSuite(abc.ABC):
                                        0,
                                        0)
 
+    def run_cmd_create_long_loop(self, loop_ms):
+        """Poke ArduPilot to stall the main loop for loop_ms milliseconds.
+        The ACK only comes once the stall is over, so this also checks
+        that there was a stall"""
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+            p1=42,  # crash trigger
+            p2=24,  # no, really, we mean it
+            p3=71,  # seriously, we're not kidding
+            p4=97,  # create a long loop
+            p5=loop_ms,
+        )
+
     def reboot_sitl(self,
                     required_bootcount=None,
                     force=False,

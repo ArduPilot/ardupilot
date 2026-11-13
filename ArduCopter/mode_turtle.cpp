@@ -43,7 +43,9 @@ void ModeTurtle::arm_motors()
 {
     WITH_SEMAPHORE(msem);
 
-    if (hal.util->get_soft_armed()) {
+    // shutdown_motors() may have run since the caller checked shutdown;
+    // don't re-arm after it has disarmed us
+    if (shutdown || hal.util->get_soft_armed()) {
         return;
     }
 
@@ -74,12 +76,21 @@ bool ModeTurtle::allows_arming(AP_Arming::Method method) const
 
 void ModeTurtle::exit()
 {
-    shutdown = true;
-
-    disarm_motors();
+    shutdown_motors();
 
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
+}
+
+// disarm, restoring the motor direction and failsafes, and stay
+// disarmed until the mode is entered again
+void ModeTurtle::shutdown_motors()
+{
+    WITH_SEMAPHORE(msem);
+
+    shutdown = true;
+
+    disarm_motors();
 }
 
 void ModeTurtle::disarm_motors()
