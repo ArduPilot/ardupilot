@@ -13,6 +13,8 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
     progress("Processing log %s" % logfile)
     failure = 0
     errors = 0
+    first_mismatch = None
+    mismatch_types = {}
     count = 0
     base_count = 0
     counts = {}
@@ -78,11 +80,22 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
                 if not ok:
                     mismatch = True
                     errors += 1
+                    if first_mismatch is None:
+                        first_mismatch = (mtype, f, v1, v2,
+                                          getattr(m, 'TimeUS', None), count)
+                    mismatch_types[mtype] = mismatch_types.get(mtype, 0) + 1
                     progress("Mismatch in field %s.%s: %s %s" % (mtype, f, str(v1), str(v2)))
             if mismatch:
                 progress(mb)
                 progress(m)
     progress("Processed %u/%u messages, %u errors" % (count, base_count, errors))
+    if first_mismatch is not None:
+        mtype, f, v1, v2, t, n = first_mismatch
+        progress("First mismatch: %s.%s replay=%s base=%s at TimeUS=%s, "
+                 "after %u matching message(s)" % (mtype, f, v1, v2, t, n - 1))
+        progress("Mismatches by message type: %s" % ", ".join(
+            "%s=%u" % kv for kv in sorted(mismatch_types.items(),
+                                          key=lambda kv: -kv[1])))
     if verbose:
         for mtype in counts.keys():
             progress("%s %u/%u %d" % (mtype, counts[mtype], base_counts[mtype], base_counts[mtype]-counts[mtype]))
