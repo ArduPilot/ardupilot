@@ -86,7 +86,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: OFFSET
     // @DisplayName: rangefinder offset
-    // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM lidars
+    // @Description: Offset in volts for zero distance for analog rangefinders. For analog rangefinders using the inverted function this will be subtracted from the voltage reading. For all other interfaces (I2C, Serial, PWM, etc) this is an offset in centimeters that is added to the distance reported by the sensor, allowing compensation of sensor bias (e.g. the Garmin Lidar-Lite reports a distance about 25cm too long on low ranges)
     // @Units: V
     // @Increment: 0.001
     // @User: Standard
