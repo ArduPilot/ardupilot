@@ -231,6 +231,16 @@ void AP_Periph_FW::sim_update_actuator(uint8_t actuator_id)
         if ((sim_actuator.mask & (1U<<i)) == 0) {
             continue;
         }
+#if AP_SERVO_TELEM_ENABLED
+        // a simulated servo is supplying real position feedback for
+        // this actuator, which servo_telem_update() sends:
+        AP_Servo_Telem::TelemetryData telem_data;
+        if (servo_telem.lib.get_telem(i, telem_data) &&
+            telem_data.present(AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION) &&
+            !AP_HAL::timeout_expired(telem_data.last_update_ms, now_ms, 5000U)) {
+            continue;
+        }
+#endif  // AP_SERVO_TELEM_ENABLED
         const SRV_Channel::Function function = SRV_Channel::Function(SRV_Channel::k_rcin1 + i);
         uavcan_equipment_actuator_Status pkt {};
         pkt.actuator_id = i + 1;
