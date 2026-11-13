@@ -1296,8 +1296,11 @@ void ModeThrow::throw_do_nextmode_handoff()
                 return;
             }
             gcs().send_text(MAV_SEVERITY_WARNING, "Throw: no position for %s, staying in throw", next->name());
-        } else {
-            set_mode(next->mode_number(), ModeReason::THROW_COMPLETE);
+        } else if (set_mode(next->mode_number(), ModeReason::THROW_COMPLETE) &&
+                   (next->mode_number() == Mode::Number::LAND) && !throw_flow_agrees()) {
+            // LAND controls position whenever position_ok() is true, so it would land on the
+            // velocity the flow has yet to agree with: land level instead, as with no position
+            copter.mode_land.do_not_use_GPS();
         }
     }
     nextmode_attempted = true;
