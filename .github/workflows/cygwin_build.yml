@@ -156,7 +156,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
-      - uses: cygwin/cygwin-install-action@v6
+      - uses: cygwin/cygwin-install-action@v7
         with:
           packages: cygwin64 gcc-g++=13.4.0-1 ccache python312 python312-pip git procps gettext
           add-to-path: false
