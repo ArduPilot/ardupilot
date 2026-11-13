@@ -83,6 +83,10 @@ class HALSITL::SITL_State_Common {
 public:
     virtual void init(int argc, char * const argv[]) = 0;
 
+    // monotonic wall-clock milliseconds, for waits that must not use
+    // the simulation clock as it is frozen while we wait
+    static uint64_t wall_millis(void);
+
     enum vehicle_type {
         NONE,
         ArduCopter,
