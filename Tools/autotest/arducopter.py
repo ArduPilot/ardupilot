@@ -8993,6 +8993,72 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.test_mount_configure_invalid_modes()
         self.mount_test_body()
 
+    def MountMissionPitchYawNaN(self):
+        '''check DO_GIMBAL_MANAGER_PITCHYAW mission items accept NaN parameters'''
+        self.setup_servo_mount()
+        self.reboot_sitl()  # to handle MNT_TYPE changing
+
+        nan = float('nan')
+        pitchyaw = mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW
+        loiter = mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM
+        yaw_lock = mavutil.mavlink.GIMBAL_MANAGER_FLAGS_YAW_LOCK
+        lock_flags = mavutil.mavlink.GIMBAL_MANAGER_FLAGS_ROLL_LOCK | mavutil.mavlink.GIMBAL_MANAGER_FLAGS_PITCH_LOCK
+        items = [
+            self.mission_item_home(),
+            self.mission_item_copter_takeoff(10),
+            self.create_MISSION_ITEM_INT(pitchyaw, p1=-200, p2=0, p3=nan, p4=nan),  # angles only, out of range
+            self.create_MISSION_ITEM_INT(loiter),
+            self.create_MISSION_ITEM_INT(pitchyaw, p1=nan, p2=nan, p3=20, p4=0),  # rates only
+            self.create_MISSION_ITEM_INT(loiter),
+            self.create_MISSION_ITEM_INT(pitchyaw, p1=nan, p2=nan, p3=nan, p4=nan, x=yaw_lock),  # yaw lock only
+            self.create_MISSION_ITEM_INT(loiter),
+            self.create_MISSION_ITEM_INT(pitchyaw, p1=0, p2=nan, p3=nan, p4=nan,
+                                         x=mavutil.mavlink.GIMBAL_MANAGER_FLAGS_RETRACT),
+            self.create_MISSION_ITEM_INT(loiter),
+        ]
+        for seq, item in enumerate(items):
+            item.seq = seq
+            item.autocontinue = 1
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION, items)
+
+        # check_mission_upload_download only compares param1, and comparisons with NaN are always false
+        downloaded = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        for seq in 2, 4, 6, 8:
+            for i in range(1, 5):
+                want = getattr(items[seq], "param%u" % i)
+                got = getattr(downloaded[seq], "param%u" % i)
+                if seq == 2 and i == 1:
+                    want = -127  # constrained to the storage type
+                if math.isnan(want) != math.isnan(got) or (not math.isnan(want) and want != got):
+                    raise NotAchievedException("item %u param%u not preserved (want=%f got=%f)" % (seq, i, want, got))
+
+        self.takeoff(10, mode='GUIDED')
+        self.change_mode('AUTO')
+        self.wait_waypoint(3, 3)
+        self.wait_mount_roll_pitch_yaw_deg(p=-45, tolerance=1)  # constrained to MNT1_PITCH_MIN
+        self.set_current_waypoint(4, check_afterwards=False)
+        self.wait_waypoint(5, 5)
+        # +20deg/s from -45deg until the mount's 3 second rate timeout zeroes the rate
+        self.delay_sim_time(5, reason="allow mount rate to time out")
+        self.wait_mount_roll_pitch_yaw_deg(p=15, tolerance=3, timeout=1)
+
+        # all-NaN item sets yaw lock without moving the mount
+        self.context_set_message_rate_hz('GIMBAL_MANAGER_STATUS', 10)
+        if self.assert_receive_message('GIMBAL_MANAGER_STATUS').flags != lock_flags:
+            raise NotAchievedException("Yaw lock already set")
+        self.set_current_waypoint(6, check_afterwards=False)
+        self.wait_waypoint(7, 7)
+        self.wait_mount_roll_pitch_yaw_deg(p=15, tolerance=3, minimum_duration=3)
+        if self.assert_receive_message('GIMBAL_MANAGER_STATUS').flags != lock_flags | yaw_lock:
+            raise NotAchievedException("Yaw lock not set")
+
+        # retract with NaN params retracts the mount
+        self.assert_mount_retracted(False)
+        self.set_current_waypoint(8, check_afterwards=False)
+        self.wait_waypoint(9, 9)
+        self.assert_mount_retracted(True)
+        self.do_RTL()
+
     def MountRCFailAngle(self):
         '''check mount behaviour when RC input becomes bad'''
         yaw_servo = 7
@@ -20355,6 +20421,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FlowAidingRestartsWithoutYawFusion,
             self.VisionPosition,
             self.Mount,
+            self.MountMissionPitchYawNaN,
             self.MountPOIFromAuxFunction,
             self.MaxBotixI2CXL,
             self.FenceRelativeToOriginMinAltHomeAbove,
