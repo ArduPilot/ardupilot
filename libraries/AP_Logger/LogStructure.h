@@ -418,6 +418,10 @@ struct PACKED log_WheelEncoder {
     uint8_t quality_0;
     float distance_1;
     uint8_t quality_1;
+    float distance_2;
+    uint8_t quality_2;
+    float distance_3;
+    uint8_t quality_3;
 };
 
 struct PACKED log_ADSB {
@@ -1076,6 +1080,10 @@ struct PACKED log_VER {
 // @Field: Qual0: Quality measurement of Dist0
 // @Field: Dist1: Second wheel distance travelled
 // @Field: Qual1: Quality measurement of Dist1
+// @Field: Dist2: Third wheel distance travelled
+// @Field: Qual2: Quality measurement of Dist2
+// @Field: Dist3: Fourth wheel distance travelled
+// @Field: Qual3: Quality measurement of Dist3
 
 // @LoggerMessage: WINC
 // @Description: Winch
@@ -1253,7 +1261,7 @@ LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" , true }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
-      "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" , true }, \
+      "WENC",  "Qfbfbfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1,Dist2,Qual2,Dist3,Qual3", "sm-m-m-m-", "F0-0-0-0-" , true }, \
     { LOG_ADSB_MSG, sizeof(log_ADSB), \
       "ADSB",  "QIiiiHHhH", "TimeUS,ICAO_address,Lat,Lng,Alt,Heading,Hor_vel,Ver_vel,Squark", "s-DUmhnn-", "F-GGCBCC-" }, \
     { LOG_EVENT_MSG, sizeof(log_Event), \
