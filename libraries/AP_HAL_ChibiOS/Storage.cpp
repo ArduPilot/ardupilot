@@ -52,6 +52,10 @@ extern const AP_HAL::HAL& hal;
 #define HAL_RAMTRON_ALLOW_FALLBACK 0
 #endif
 
+#ifndef HAL_PAGE_EEPROM_ALLOW_FALLBACK
+#define HAL_PAGE_EEPROM_ALLOW_FALLBACK 0
+#endif
+
 void Storage::_storage_open(void)
 {
     if (_initialisedType != StorageBackend::None) {
@@ -73,6 +77,20 @@ void Storage::_storage_open(void)
 #endif
 
 #endif // HAL_WITH_RAMTRON
+
+#if HAL_WITH_PAGE_EEPROM
+    if (pg_eeprom.init() && pg_eeprom.read(0, _buffer, CH_STORAGE_SIZE)) {
+	_save_backup();
+        _initialisedType = StorageBackend::Page_EEPROM;
+	::printf("Initialised Storage type=%d\n", _initialisedType);
+	return;
+    }
+
+#if !HAL_PAGE_EEPROM_ALLOW_FALLBACK
+    AP_HAL::panic("Unable to init Page EEPROM storage");
+#endif
+
+#endif // HAL_WITH_PAGE_EEPROM
 
 // allow for devices with no FRAM chip to fall through to other storage
 #ifdef STORAGE_FLASH_PAGE
@@ -283,6 +301,14 @@ void Storage::_timer_tick(void)
     }
 #endif
 
+#if HAL_WITH_PAGE_EEPROM
+    if (_initialisedType == StorageBackend::Page_EEPROM) {
+        if (pg_eeprom.write(CH_STORAGE_LINE_SIZE*i, tmpline, CH_STORAGE_LINE_SIZE)) {
+            write_ok = true;
+        }
+    }
+#endif
+
 #ifdef USE_POSIX
     if ((_initialisedType == StorageBackend::SDCard) && log_fd != -1) {
         uint32_t offset = CH_STORAGE_LINE_SIZE*i;
@@ -461,6 +487,11 @@ bool Storage::healthy(void)
         return log_fd != -1 || AP_HAL::millis() - _last_empty_ms < 30000U;
     }
 #endif
+#if HAL_WITH_PAGE_EEPROM
+    if (_initialisedType == StorageBackend::Page_EEPROM) {
+        return AP_HAL::millis() - _last_empty_ms < 60000U;
+    }
+#endif
     return ((_initialisedType != StorageBackend::None) &&
             (AP_HAL::millis() - _last_empty_ms < 2000u));
 }
@@ -472,6 +503,11 @@ bool Storage::erase(void)
 {
 #if HAL_WITH_RAMTRON
     if (_initialisedType == StorageBackend::FRAM) {
+        return AP_HAL::Storage::erase();
+    }
+#endif
+#if HAL_WITH_PAGE_EEPROM
+    if (_initialisedType == StorageBackend::Page_EEPROM) {
         return AP_HAL::Storage::erase();
     }
 #endif

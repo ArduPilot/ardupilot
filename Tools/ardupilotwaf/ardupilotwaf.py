@@ -131,6 +131,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_MultiHeap',
     'AP_Follow',
     'AP_GroundEffect',
+    'AP_PageEEPROM',
 ]
 
 def get_legacy_defines(sketch_name, build_type=None):
