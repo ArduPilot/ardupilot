@@ -17276,6 +17276,33 @@ switch value'''
                 if glob.glob("core*") or glob.glob("ap-*.core"):
                     logsrc.check_logs("FRAMEWORK")
 
+        except Exception as e:  # noqa: BLE001
+            # anything else escaping here used to take the worker with it,
+            # and the test's result with the worker: the dispatcher could
+            # then only report that the runner exited without returning one,
+            # with no reason and no traceback in the suite's own output.
+            # Seen with a vehicle which did not come back from its reboot,
+            # where pymavlink's reconnect left the link with no port and the
+            # next read raised AttributeError out of drain_mav().  Report the
+            # failure, and say what killed it.
+            self.progress("TestRunner-%u: exception in %s" %
+                          (instance, getattr(test, "name", "(no test)")))
+            self.print_exception_caught(e)
+            result = Result(test)
+            result.passed = False
+            result.reason = "Test runner raised %s: %s" % (type(e).__name__, str(e))
+            # as above: a tester does not pickle
+            if result.test is not None:
+                try:
+                    del result.test.function
+                except AttributeError:
+                    pass
+            self.result_queue.put(result)
+            logsrc = active if active is not None else self
+            if logsrc.logs_dir:
+                if glob.glob("core*") or glob.glob("ap-*.core"):
+                    logsrc.check_logs("FRAMEWORK")
+
         if active is not None:
             active.stop_worker_session()
 
