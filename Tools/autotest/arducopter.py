@@ -10262,6 +10262,76 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not messages or not messages[-1].flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_RETRACT:
             raise NotAchievedException("Retract mode was not sent immediately")
 
+    def MountGimbalManager(self):
+        '''send mount targets to an external MAVLink gimbal manager'''
+        self.set_parameter("MNT1_TYPE", 15)
+        self.reboot_sitl()
+        gimbal = mavutil.mavlink.MAV_COMP_ID_GIMBAL
+
+        def send_as_gimbal(discover=False):
+            old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+            try:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = self.sysid_thismav(), gimbal
+                if discover:
+                    self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GIMBAL, 0, 0, 0, 0)
+                    self.mav.mav.gimbal_device_information_send(
+                        0, b"ArduPilot", b"Test", b"", 1, 1, 1, 0, 0,
+                        -math.pi, math.pi, -math.pi / 2, math.pi / 2, -math.pi, math.pi)
+                self.mav.mav.gimbal_device_attitude_status_send(
+                    self.sysid_thismav(), 1, 1234, mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME,
+                    quaternion.Quaternion([0, math.radians(-20), 0]).q, 0, 0, 0, 0)
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+
+        self.context_collect('GIMBAL_MANAGER_SET_PITCHYAW')
+        self.context_collect('GIMBAL_DEVICE_SET_ATTITUDE')
+        tstart = self.get_sim_time()
+        while not self.context_collection('GIMBAL_MANAGER_SET_PITCHYAW'):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("Gimbal manager was not sent targets")
+            send_as_gimbal(discover=True)
+            self.delay_sim_time(1, reason="discover test gimbal")
+        self.install_message_hook_context(
+            lambda mav, m: send_as_gimbal() if m.get_type() == 'SYSTEM_TIME' else None)
+
+        def command(pitch, pitch_rate=float('nan')):
+            self.context_clear_collection('GIMBAL_MANAGER_SET_PITCHYAW')
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                         p1=pitch, p2=float('nan') if math.isnan(pitch) else 0, p3=pitch_rate, p4=0)
+            self.delay_sim_time(1, reason="collect gimbal manager targets")
+            msgs = self.context_collection('GIMBAL_MANAGER_SET_PITCHYAW')
+            if len(msgs) != 1:
+                raise NotAchievedException("Expected one target, got %u" % len(msgs))
+            return msgs[0]
+
+        msg = command(-30)
+        if (abs(msg.pitch - math.radians(-30)) > 0.01 or msg.target_system != self.sysid_thismav() or
+                msg.target_component != 0 or msg.gimbal_device_id != gimbal or
+                msg.flags & mavutil.mavlink.GIMBAL_MANAGER_FLAGS_YAW_LOCK):
+            raise NotAchievedException("Bad angle target %s" % str(msg))
+        msg = command(float('nan'), pitch_rate=5)
+        if abs(msg.pitch_rate - math.radians(5)) > 0.01 or not math.isnan(msg.pitch):
+            raise NotAchievedException("Bad rate target %s" % str(msg))
+        self.context_clear_collection('GIMBAL_MANAGER_SET_PITCHYAW')
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_RETRACT)
+        self.delay_sim_time(0.5, reason="collect retract target")
+        msgs = self.context_collection('GIMBAL_MANAGER_SET_PITCHYAW')
+        if not msgs or not msgs[-1].flags & mavutil.mavlink.GIMBAL_MANAGER_FLAGS_RETRACT:
+            raise NotAchievedException("Retract was not sent")
+        if self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+            raise NotAchievedException("Gimbal device was commanded directly")
+
+        # the gimbal's attitude is reported by ArduPilot and keeps the mount healthy
+        self.wait_mount_roll_pitch_yaw_deg(p=-20, tolerance=1)
+        self.wait_ready_to_arm()
+
+        # ArduPilot must not advertise itself as the gimbal manager
+        self.context_collect('GIMBAL_MANAGER_INFORMATION')
+        self.send_poll_message('GIMBAL_MANAGER_INFORMATION')
+        self.delay_sim_time(1, reason="collect gimbal manager information")
+        if self.context_collection('GIMBAL_MANAGER_INFORMATION'):
+            raise NotAchievedException("ArduPilot advertised itself as gimbal manager")
+
     def MAVLinkUnicast(self):
         '''unicast links forward addressed traffic but isolate broadcasts'''
         self.set_parameters({
@@ -21086,6 +21156,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MountAVTCM62,
             self.MountMAVLinkROI,
             self.MountMAVLinkTargetRefresh,
+            self.MountGimbalManager,
             self.MAVLinkCameraCaptureStatus,
             self.MAVLinkUnicast,
             self.MAVLinkCameraRelay,
