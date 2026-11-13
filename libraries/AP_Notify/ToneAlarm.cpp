@@ -442,6 +442,8 @@ void AP_ToneAlarm::update()
         flags.failsafe_ekf = AP_Notify::flags.failsafe_ekf;
         if (flags.failsafe_ekf) {
             play_tone(AP_NOTIFY_TONE_EKF_ALERT);
+        } else {
+            stop_cont_tone();
         }
     }
 }
