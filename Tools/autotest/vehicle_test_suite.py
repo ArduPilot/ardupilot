@@ -18790,6 +18790,26 @@ switch value'''
 
         self.progress(f"param.pck: {len(pdata.params)} params OK")
 
+    def MAVFTPParamPckZeroSizeRead(self):
+        '''a zero-length first read of param.pck must not crash the vehicle'''
+
+        seq = self.ftp_reset_sessions()
+        reply = self.ftp_op(seq, mavftp_op.OP_OpenFileRO, self.ftp_path_bytes("@PARAM/param.pck"))
+        self.assert_ftp_ack(reply, "OpenFileRO")
+
+        # the first read on a handle fixes the read size used to pad
+        # the packed parameters; a zero-length read past the header
+        # must not fix it at zero
+        reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=0, offset=7)
+        if reply.opcode != mavftp_op.OP_Nack:
+            raise NotAchievedException(f"zero-length read: expected Nack, got opcode={reply.opcode}")
+
+        reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=FTP_MAX_PAYLOAD, offset=0)
+        self.assert_ftp_ack(reply, "read after zero-length read")
+
+        reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession)
+        self.assert_ftp_ack(reply, "TerminateSession")
+
     def MAVFTPVirtualWriteBounds(self):
         '''reject invalid virtual-file writes while preserving upload growth'''
 
