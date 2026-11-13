@@ -22,6 +22,9 @@
 
 #define VTX_MAX_CHANNELS 8
 #define VTX_MAX_POWER_LEVELS 10
+// number of user-definable power table entries (VTX_PWRTBL1 to VTX_PWRTBL6),
+// sized to match the 6 positions of the power aux switch
+#define VTX_USER_POWER_LEVELS 6
 
 class AP_VideoTX {
 public:
@@ -120,18 +123,31 @@ public:
     int32_t get_actual_power_mw() const { return _actual_power_mw; }
     uint16_t get_max_power_mw() const { return _max_power_mw; }
 
+    // user-defined power table (VTX_PWRTBL_EN, VTX_PWRTBL1 to VTX_PWRTBL6).
+    // These parameters are the table: _power_levels describes the SmartAudio
+    // levels and is not extended with user values.
+    // raw table entry i: a value of -1 ignores the entry, 0 is pit mode,
+    // otherwise the power in mW. There is no unsigned parameter type, so this
+    // is the one place the signed parameter is read; everything downstream is
+    // uint16_t
+    int16_t get_table_entry(uint8_t i) const {
+        if (i >= VTX_USER_POWER_LEVELS) {
+            return -1;
+        }
+        return _power_table[i].get();
+    }
+    // true when the user has enabled the user power table
+    bool use_power_table() const;
+    // highest power the user has authorised: the top table entry when the user
+    // table is in use, otherwise VTX_MAX_POWER
+    uint16_t get_power_cap_mw() const;
+
     // get the power in dbm, rounding appropriately
-    uint8_t get_configured_power_dbm() const {
-        return _power_levels[find_current_power()].dbm;
-    }
+    uint8_t get_configured_power_dbm() const;
     // get the power "level"
-    uint8_t get_configured_power_level() const {
-        return _power_levels[find_current_power()].level & 0xF;
-    }
+    uint8_t get_configured_power_level() const;
     // get the power "dac"
-    uint8_t get_configured_power_dac() const {
-        return _power_levels[find_current_power()].dac;
-    }
+    uint8_t get_configured_power_dac() const;
 
     // mark the power level matching the given mW as supported, learning it
     // into the custom slot if it is not a standard value
@@ -147,6 +163,17 @@ public:
     bool update_power() const;
     // change the video power based on switch input
     void change_power(int8_t position);
+    // the power in mW that the power aux switch (RCx_OPTION 94) selects for the
+    // given switch position, 0 meaning pitmode. user_table holds the raw
+    // VTX_PWRTBL values: a value of -1 ignores the entry, a 0 entry selects pit
+    // mode at that position. The used entries in slot order are the switch's
+    // only choices; when fewer than six are used the six positions subdivide
+    // over them. Returns false when there is nothing to select. Static and
+    // side-effect free so the mapping can be unit tested
+    static bool switch_power_mw(int8_t position,
+                                const int16_t *user_table, uint8_t user_table_len,
+                                bool user_table_enabled, uint16_t max_power_mw,
+                                uint16_t &power_mw);
     // get / set the frequency band
     void set_band(uint8_t band) { _current_band = band; }
     void set_configured_band(uint8_t band) { _band.set_and_save_ifchanged(band); }
@@ -204,15 +231,25 @@ public:
 
 private:
     uint8_t find_current_power() const;
+    // index of the configured power's SmartAudio level slot: an exact match
+    // first, otherwise the nearest lower built-in level, floored at the 25mW
+    // slot for any positive power. The custom learned slot is skipped - its
+    // level and dac values are Tramp bookkeeping, not SmartAudio levels - so a
+    // user-table power always yields a wire-valid level byte
+    uint8_t find_nearest_power_level() const;
     // channel frequency
     AP_Int16 _frequency_mhz;
     uint16_t _current_frequency;
 
     // power output in mw
     AP_Int16 _power_mw;
-    uint16_t _current_power;
+    uint16_t _current_power {0};
     int32_t _actual_power_mw {-1};
     AP_Int16 _max_power_mw;
+
+    // user-defined power table
+    AP_Int8 _power_table_enabled;
+    AP_Int16 _power_table[VTX_USER_POWER_LEVELS];
 
     // frequency band
     AP_Int8 _band;
