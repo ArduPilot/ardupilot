@@ -123,6 +123,9 @@ bool AP_GPS_GSOF::configure(void)
 bool
 AP_GPS_GSOF::read(void)
 {
+    if (port == nullptr) {
+        return false;
+    }
     if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
         if (!configure()) return false;
     }
