@@ -4034,6 +4034,12 @@ class TestSuite(abc.ABC):
     def JSON_physics(self, fields=None, **kwargs):
         '''run SITL with --model JSON against pysim's JSON physics backend,
         sending fields from the first frame'''
+        # SITL sends its FDM output to 9002 + 10*instance (see
+        # AP_HAL_SITL/SITL_cmdline.cpp), so the backend has to bind the port
+        # this instance's SITL will talk to.  The backend's own default is the
+        # instance-0 port, which leaves every other instance waiting:
+        #     No JSON sensor message received, resending servos
+        kwargs.setdefault("port", 9002 + 10 * self.instance)
         physics = json_physics.JSONPhysics(**kwargs)
         physics.set(**(fields or {}))
         physics.start()
