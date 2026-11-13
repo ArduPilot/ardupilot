@@ -245,13 +245,9 @@ void ModeQRTL::update_target_altitude()
       giving time to lose speed before we transition
      */
     const float radius = MAX(fabsf(float(plane.aparm.loiter_radius)), fabsf(float(plane.g.rtl_radius)));
-    const float rtl_alt_delta = MAX(0, plane.g.RTL_altitude - plane.quadplane.qrtl_alt_m);
-    const float sink_time = rtl_alt_delta / MAX(0.6*plane.TECS_controller.get_max_sinkrate(), 1);
-    const float sink_dist = plane.aparm.airspeed_cruise * sink_time;
     const float dist = plane.auto_state.wp_distance;
     const float rad_min = 2*radius;
     const float rad_max = 20*radius;
-    const float dist_rtl_alt_reached = MAX(rad_min, MIN(rad_max, rad_min+sink_dist));
 
     if (!approach_start.valid) {
         // latch where the approach began, so the ramp below is driven by our
@@ -265,6 +261,20 @@ void ModeQRTL::update_target_altitude()
             approach_start.valid = true;
         }
     }
+
+    /*
+      height above the QRTL destination to hold while still well short of home.
+      RTL_ALTITUDE < 0 selects the fixed wing "return at current altitude"
+      behaviour: hold the altitude latched at the start of the approach rather
+      than descending straight to Q_RTL_ALT
+     */
+    float rtl_alt_delta = MAX(0, plane.g.RTL_altitude - plane.quadplane.qrtl_alt_m);
+    if (plane.g.RTL_altitude < 0 && approach_start.valid) {
+        rtl_alt_delta = approach_start.alt_delta_m;
+    }
+    const float sink_time = rtl_alt_delta / MAX(0.6*plane.TECS_controller.get_max_sinkrate(), 1);
+    const float sink_dist = plane.aparm.airspeed_cruise * sink_time;
+    const float dist_rtl_alt_reached = MAX(rad_min, MIN(rad_max, rad_min+sink_dist));
 
     // Set the target altitude to the QRTL altitude
     plane.set_target_altitude_location(plane.next_WP_loc);
