@@ -1285,8 +1285,11 @@ void NavEKF3_core::selectHeightForFusion()
         // user has specified no height sensor
         activeHgtSource = AP_NavEKF_Source::SourceZ::NONE;
 #if AP_RANGEFINDER_ENABLED
-    } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
-        // user has specified the range finder as a primary height source
+    } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh &&
+               !flatGroundAssumed()) {
+        // user has specified the range finder as a primary height source. Not while flow navigation
+        // holds the ground above the range: taking the height resets it to the first reading back,
+        // which can be something passed over, and the fallback ends once the ground is measured again
         activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
     } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BARO) || (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
