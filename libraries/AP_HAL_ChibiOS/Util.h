@@ -16,6 +16,8 @@
  */
 #pragma once
 
+#include <AP_CheckFirmware/AP_CheckFirmware_config.h>
+#include <AP_Notify/AP_Notify_config.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"

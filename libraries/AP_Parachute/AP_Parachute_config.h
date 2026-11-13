@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include <hwdef_parachute.h>
 
 #ifndef HAL_PARACHUTE_ENABLED
 // default to parachute enabled to match previous configs
