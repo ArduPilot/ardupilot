@@ -5432,6 +5432,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("velocity %.2f m/s out 0.3 s after aiding started" % errors[1][0])
         if not self.statustext_in_collections("EKF3 IMU0 flow velocity set at aiding start"):
             raise NotAchievedException("no message for the velocity set at the start of aiding")
+
+        self.start_subtest("no set from the zero flow before takeoff")
+        # a flow only set, with the flow coming in once armed on the ground, so relative aiding
+        # starts there, where the flow below 0.5 m is replaced by zero; it starts some 17 s after
+        # the flow comes in, later than auto disarm, so that is off. On a loaded terrain tile the
+        # range reads 0.545 m on the ground, above 0.5 m, so the ground is flat
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 5,
+            "EK3_SRC1_POSZ": 1,
+            "EK3_SRC1_VELZ": 0,
+            "SIM_FLOW_ENABLE": 0,
+            "DISARM_DELAY": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.reboot_sitl()
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        # nothing on the set gives a position until the flow comes in, which arming checks for
+        self.delay_sim_time(20, "EKF to align")
+        self.arm_vehicle(force=True)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        if not self.armed():
+            raise NotAchievedException("disarmed before relative aiding started")
+        self.delay_sim_time(6, "the set's 5 s wait on the ground")
+        self.disarm_vehicle(force=True)
+        if self.statustext_in_collections("EKF3 IMU0 flow velocity set at aiding start"):
+            raise NotAchievedException("velocity set from the zero flow before takeoff")
         self.reboot_sitl()
 
     def OpticalFlowCalibration(self):
