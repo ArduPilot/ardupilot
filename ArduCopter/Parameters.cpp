@@ -872,8 +872,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #if AP_RANGEFINDER_ENABLED
     // @Param: SURFTRAK_MODE
     // @DisplayName: Surface Tracking Mode
-    // @Description: set which surface to track in surface tracking
-    // @Values: 0:Do not track, 1:Ground, 2:Ceiling
+    // @Description: set which surface to track in surface tracking. Terrain uses the same source as Auto terrain following: a downward rangefinder if fitted and WPNAV_RFND_USE is 1, otherwise the terrain database (requires TERRAIN_ENABLE)
+    // @Values: 0:Do not track, 1:Ground, 2:Ceiling, 3:Terrain
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("SURFTRAK_MODE", 51, ParametersG2, surftrak_mode, (uint8_t)Copter::SurfaceTracking::Surface::GROUND),
