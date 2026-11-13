@@ -1889,6 +1889,13 @@ void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool conv
         last_center_freq_hz[instance] = params.center_freq_hz();
         last_bandwidth_hz[instance] = params.bandwidth_hz();
         last_attenuation_dB[instance] = params.attenuation_dB();
+        if (!filter[instance].bandwidth_ratio_exceeded()) {
+            // re-arm the warning so a later bad BW/FREQ change is reported too
+            bandwidth_ratio_warned[instance] = false;
+        } else if (!bandwidth_ratio_warned[instance]) {
+            bandwidth_ratio_warned[instance] = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "HNotch[%u]: BW too wide for FREQ, clamped", instance);
+        }
     }
 
     if (params.tracking_mode() != HarmonicNotchDynamicMode::Fixed) {
