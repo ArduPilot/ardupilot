@@ -30,8 +30,11 @@ public:
         SUB_FRAME_SIMPLEROV_3,
         SUB_FRAME_SIMPLEROV_4,
         SUB_FRAME_SIMPLEROV_5,
-        SUB_FRAME_CUSTOM
+        SUB_FRAME_CUSTOM,
+        SUB_FRAME_AUV_SINGLE_THRUSTER_4_FIN,
     } sub_frame_t;
+
+    bool is_auv_frame() const { return (sub_frame_t)_active_frame_class == SUB_FRAME_AUV_SINGLE_THRUSTER_4_FIN; }
 
     // Override parent
     void setup_motors(motor_frame_class frame_class, motor_frame_type frame_type) override;
