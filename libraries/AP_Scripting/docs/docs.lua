@@ -3099,6 +3099,15 @@ function gcs:send_text(severity, text) end
 ---@return uint32_t_ud -- system time in milliseconds
 function gcs:last_seen() end
 
+-- Return the position last received from the configured GCS position source
+-- The position is kept when the sender stops, so check the age before using it
+---@return Location_ud|nil -- GCS location, or nil if no valid position has been received
+function gcs:get_gcs_location() end
+
+-- Return the age of the position last received from the GCS position source
+---@return uint32_t_ud|nil -- milliseconds since the last valid position, or nil if none has been received
+function gcs:get_gcs_location_age_ms() end
+
 -- Return whether the GCS library is currently allowed to set parameters
 ---@return boolean
 function gcs:get_allow_param_set() end
