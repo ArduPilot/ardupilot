@@ -5412,7 +5412,10 @@ class TestSuite(abc.ABC):
 
         self.context_set_speedup(1)
 
-        endpoints = [('UDPMulticast', 'mcast:16005') ,
+        # join and send on the interface SITL multicasts on (autotest.py
+        # sets 127.0.0.1); older pymavlink ignores the interface field
+        mcast_if = os.environ.get('SITL_MULTICAST_IF_ADDR', '')
+        endpoints = [('UDPMulticast', 'mcast:239.255.145.50:16005:' + mcast_if),
                      ('UDPBroadcast', ':16006')]
         for name, e in endpoints:
             self.progress("Downloading log with %s %s" % (name, e))
