@@ -20385,6 +20385,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AutoRTL,
             self.GripperReleaseOnThrustLoss,
             self.ScriptingAHRSSource,
+            self.ScriptingGCSPosition,
             self.CompassLearnCopyFromSIM,
             self.IgnorePilotYaw,
         ])
@@ -22324,6 +22325,85 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext('Using EKF Source Set 2', check_context=True)
         self.set_rc(10, 2000)
         self.wait_statustext('Using EKF Source Set 3', check_context=True)
+
+    def ScriptingGCSPosition(self):
+        '''test GCS position Lua bindings'''
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "MAV_GCS_POS_SRC": 0,
+        })
+        self.install_script_content_context("gcs-position-test.lua", """
+local function update()
+    local loc = gcs:get_gcs_location()
+    local age = gcs:get_gcs_location_age_ms()
+    if loc then
+        gcs:send_named_float("GCSVALID", 1)
+        gcs:send_named_float("GCSLAT", loc:lat() / 1e7)
+        gcs:send_named_float("GCSAGE", age:toint() / 1000)
+    else
+        gcs:send_named_float("GCSVALID", 0)
+    end
+    return update, 500
+end
+return update()
+""")
+        self.reboot_sitl()
+
+        self.start_subtest("no position before any message")
+        m = self.assert_receive_named_value_float("GCSVALID", timeout=30)
+        if m.value != 0:
+            raise NotAchievedException("GCS position valid before any message")
+
+        self.start_subtest("position from the selected GCS is stored")
+        for _ in range(5):
+            self.mav.mav.global_position_int_send(
+                0, -353632610, 1491652300, 584000, 0, 0, 0, 0, 0)
+            self.delay_sim_time(1, "waiting for GCS position")
+        m = self.assert_receive_named_value_float("GCSLAT")
+        if abs(m.value - -35.363261) > 0.001:
+            raise NotAchievedException("wrong GCS latitude %.7f" % m.value)
+
+        self.start_subtest("0,0 does not overwrite the stored position")
+        self.mav.mav.global_position_int_send(0, 0, 0, 0, 0, 0, 0, 0, 0)
+        self.delay_sim_time(2, "waiting for 0,0 to be ignored")
+        m = self.assert_receive_named_value_float("GCSLAT")
+        if abs(m.value - -35.363261) > 0.001:
+            raise NotAchievedException("0,0 overwrote the stored position")
+
+        self.start_subtest("position from an untrusted system ID is ignored")
+        old_src_system = self.mav.mav.srcSystem
+        try:
+            self.mav.mav.srcSystem = 254
+            self.mav.mav.global_position_int_send(
+                0, -353000000, 1490000000, 584000, 0, 0, 0, 0, 0)
+            self.delay_sim_time(2, "waiting for untrusted position to be ignored")
+        finally:
+            self.mav.mav.srcSystem = old_src_system
+        m = self.assert_receive_named_value_float("GCSLAT")
+        if abs(m.value - -35.363261) > 0.001:
+            raise NotAchievedException("untrusted system ID overwrote the position")
+
+        self.start_subtest("position is kept and age grows when the sender stops")
+        age1 = self.assert_receive_named_value_float("GCSAGE").value
+        self.delay_sim_time(3, "waiting for the GCS position to age")
+        age2 = self.assert_receive_named_value_float("GCSAGE").value
+        if age2 <= age1:
+            raise NotAchievedException("GCS position age did not grow")
+        m = self.assert_receive_named_value_float("GCSLAT")
+        if abs(m.value - -35.363261) > 0.001:
+            raise NotAchievedException("position lost when the sender stopped")
+
+        self.start_subtest("out-of-range source parameter warns and is inert")
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("MAV_GCS_POS_SRC", 254)
+        self.reboot_sitl()
+        self.wait_statustext(
+            "GCS position source 254 is not a GCS system ID",
+            check_context=True, timeout=30)
+        m = self.assert_receive_named_value_float("GCSVALID", timeout=30)
+        if m.value != 0:
+            raise NotAchievedException("out-of-range source still produced a position")
 
     def FTPScriptUpload(self):
         '''upload a Lua script via MAVLink FTP and verify it runs'''
