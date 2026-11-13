@@ -2960,8 +2960,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("bit 2 no longer holds relative position on terrain data")
 
         def max_alt_climbing_on_terrain(options_value):
-            # the range finder as the height source keeps the limit wherever the flat-ground
-            # fallback could take over, so only bit 2 can lift it here
+            # a range finder lost at 3 m read short of where the limit is raised or lifted, and
+            # of the flat-ground fallback, so only bit 2 can lift it here
             self.set_parameters({
                 "EK3_OPTIONS": options_value,
                 "EK3_SRC1_POSZ": 2,
@@ -2971,6 +2971,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.reboot_sitl()
             self.takeoff(3, mode="ALT_HOLD", require_absolute=False, altitude_max=4)
             self.wait_terrain_tiles_loaded()
+            kill_rangefinder()
             self.set_rc(3, 1900)
             tstart = self.get_sim_time()
             max_alt = 0
@@ -2978,6 +2979,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 max_alt = max(max_alt, self.get_altitude(relative=True))
             self.set_rc(3, 1500)
             self.disarm_vehicle(force=True)
+            revive_rangefinder()
             self.set_parameters({
                 "AVOID_ENABLE": 0,
                 "TERRAIN_ENABLE": 0,
@@ -3994,11 +3996,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def EK3_FlowHeightLimitAfterRangeFallback(self):
-        """The optical flow height limit stays at the range finder's reach after a fall back to baro"""
+        """The optical flow height limit lets the climb out of range after a fall back to baro"""
         # With the range finder as the height source, a fall back to a displaced baro and
         # back leaves the vertical position in the baro's datum and the terrain state moved
         # with it, so the limit has to be taken from the terrain state, as for any other
-        # height source, or the ceiling moves by the displacement.
+        # height source, or the ceiling moves by the displacement. The limit is raised and
+        # then lifted as the range finder reads up to it, so a correct climb carries on out of
+        # range, where a ceiling moved down by the 8 m step held it at 7.6 m.
         self.set_parameters({
             "SIM_FLOW_ENABLE": 1,
             "FLOW_TYPE": 10,
@@ -4056,9 +4060,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("terrain state stepped %.2fm at the fall back" % tofs_step)
         if tofs_step < 3:
             raise NotAchievedException("no vertical datum reset happened, so the limit was never moved")
-        if abs(highest - ceiling) > 1.5:
+        if highest < ceiling + 3:
             raise NotAchievedException(
-                "full stick climb stopped at %.1fm, not at the %.0fm flow height limit"
+                "full stick climb stopped at %.1fm, not past the %.0fm flow height limit"
                 % (highest, ceiling))
 
         self.reboot_sitl()
@@ -4416,10 +4420,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def FlowCeilingBacksDownIntoRange(self):
         """Where the optical flow height limit remains, backing down into range restores navigation"""
-        # with the range finder as the height source no ground height is measured, so the
-        # EKF cannot navigate above the range and keeps the limit. Shrinking RNGFND1_MAX in
-        # flight puts the vehicle above both; against a climb demand AC_Avoid has to back it
-        # down into range, where relative position comes back
+        # a range finder under 2.86 m has its limit at the 1 m floor, where a failure cannot be
+        # told from a climb out of range, so there is no flat-ground fallback and the limit
+        # stays. Shrinking RNGFND1_MAX to 2 m in flight puts the vehicle above both; against a
+        # climb demand AC_Avoid has to back it down into range, where relative position comes back
         self.set_parameters({
             "SIM_GPS1_ENABLE": 0,
             "SIM_FLOW_ENABLE": 1,
@@ -4433,19 +4437,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("RNGFND1_MAX", 60)
         self.reboot_sitl()
         self.wait_ready_to_arm(require_absolute=False, timeout=120)
-        self.takeoff(25, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+        self.takeoff(8, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
         self.delay_sim_time(5, reason="settle in range")
-        self.set_parameter("RNGFND1_MAX", 20)
+        self.set_parameter("RNGFND1_MAX", 2)
         self.set_rc(3, 1800)
         self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_HORIZ_REL, timeout=30)
         self.progress("relative position lost above the shrunken range")
         self.wait_ekf_flags(mavutil.mavlink.EKF_POS_HORIZ_REL, 0, timeout=60, minimum_duration=3)
-        alt = self.get_altitude(relative=True)
+        alt = self.get_altitude(altitude_source="SIM_STATE.alt") - ground_alt
         self.set_rc(3, 1500)
         self.progress("relative position back at %.1f m" % alt)
-        if alt > 20:
-            raise NotAchievedException("relative position back at %.1f m, above the 20 m range" % alt)
+        if alt > 2.5:
+            raise NotAchievedException("relative position back at %.1f m, above the 2 m range" % alt)
         self.land_and_disarm()
+        self.reboot_sitl()
+
+    def FlowCeilingClimbsOutOnRangeHeight(self):
+        """With the range finder as the height source flow navigation can climb out of range"""
+        # flow navigation carries on above the range with range finder height too, so the flow
+        # height limit has to let such a vehicle climb out, as it does under baro height, or
+        # AC_Avoid holds it at 0.7 x the range finder maximum less 1 m, 4.6 m here
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,     # single core, so the reported status is unambiguous
+            "TERRAIN_ENABLE": 0,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 5,   # optical flow
+            "EK3_SRC1_POSZ": 2,    # range finder
+            "EK3_SRC1_VELZ": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+        self.takeoff(4, mode='ALT_HOLD', require_absolute=False, altitude_max=6)
+        self.set_rc(3, 1800)
+        highest = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 60 and highest < 15:
+            highest = max(highest, self.get_altitude(altitude_source="SIM_STATE.alt") - ground_alt)
+        self.set_rc(3, 1500)
+        flags = self.ekf_status_flags()
+        self.disarm_vehicle(force=True)
+        self.progress("climbed to %.1f m against a 4.6 m flow height limit" % highest)
+        if highest < 15:
+            raise NotAchievedException("climb held at %.1f m, under the 8 m range" % highest)
+        if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("relative position lost above the range with range finder height")
         self.reboot_sitl()
 
     def FlowCeilingShortRangeFinder(self):
@@ -21574,6 +21616,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.TakeoffCheck,
             self.FlowCeilingBacksDownIntoRange,
             self.FlowCeilingShortRangeFinder,
+            self.FlowCeilingClimbsOutOnRangeHeight,
             self.MaxAltFenceAvoid,
             self.GPSGlitchLoiter2,
             self.SuperSimpleCircle,
