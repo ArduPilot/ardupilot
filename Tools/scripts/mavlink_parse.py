@@ -284,8 +284,9 @@ class MAVLinkDetector:
     # file paths
     BASE_DIR = Path(__file__).parent.parent.parent
     COMMON_FILE = BASE_DIR / 'libraries/GCS_MAVLink/GCS_Common.cpp'
-    # file no longer in new firmware releases, but neither are stream groups
+    # stream groups were defined per vehicle up to 4.6 and are shared from 4.7
     STREAM_GROUP_FILE = 'GCS_MAVLink.cpp'
+    COMMON_STREAM_GROUP_FILE = BASE_DIR / 'libraries/GCS_MAVLink/GCS_MAVLink_Parameters.cpp'
     BUILD_TYPE_FILE = BASE_DIR / 'libraries/AP_Vehicle/AP_Vehicle_Type.h'
 
     # regex for messages handled by the autopilot
@@ -299,7 +300,12 @@ class MAVLinkDetector:
     OUTGOING_MESSAGES = re.compile(r'mavlink_msg_([a-z0-9_]*)_send\(')
     # regex for extracting messages in stream groups
     STREAM_GROUPS = re.compile(r'ap_message STREAM_([A-Z0-9_]*)_msgs\[\] = \{([^\}]*)')
-    AP_MESSAGE = re.compile(r'MSG_([A-Z0-9_]*)')
+    # the word boundary avoids matching options like AP_MAVLINK_MSG_WIND_ENABLED
+    AP_MESSAGE = re.compile(r'\bMSG_([A-Z0-9_]*)')
+    # regex for the parameter that sets the rate of each stream group
+    STREAM_PARAMETER = re.compile(
+        r'AP_GROUPINFO\("(\w+)"[^\n]*streamRates\[GCS_MAVLINK::STREAM_(\w+)\]')
+    GCS_PARAMETERS = re.compile(r'GOBJECT\(_gcs,\s*"(\w+)",\s*GCS\)')
     # regex for vehicle type checks and how they are defined for each build
     BUILD_TYPE = re.compile(r'APM_BUILD_TYPE\(APM_BUILD_(\w+)\)')
     BUILD_MACRO = re.compile(r'#define (APM_BUILD_\w+) (\(APM_BUILD_TYPE.*\))')
@@ -334,9 +340,10 @@ class MAVLinkDetector:
         'named_ints':
             'Breakout of named integer values sent by the autopilot.',
     }
+    STREAM_PARAMETER_PREFIX = 'SRn_'
     EXTRA_DESCRIPTIONS = {
         'stream_groups':
-            'Message groups with stream rates requestable by `SRn_*` parameters.'
+            f'Message groups with stream rates requestable by `{STREAM_PARAMETER_PREFIX}*` parameters.'
             ' Messages in a group are only sent if the corresponding feature'
             ' is active.',
         'missing_messages':
@@ -399,6 +406,7 @@ class MAVLinkDetector:
         # {(message type, name): (guard, file name) of each place the name was found}
         self._guards = {}
         self._build_types, self._build_macros = self.get_build_types(vehicle)
+        self._stream_parameter_prefix = self.STREAM_PARAMETER_PREFIX
 
         for file in files:
             folder = file.parent.stem
@@ -458,6 +466,10 @@ class MAVLinkDetector:
             self.find_guards('outgoing_messages', self.OUTGOING_MESSAGES, text,
                              guards, file.stem)
 
+            match = self.GCS_PARAMETERS.search(text) if folder in vehicles else None
+            if match:
+                self._stream_parameter_prefix = f'{match[1]}n_'
+
             self._supported_names = {'messages': None, 'commands': None}
             self._unsupported = self._supported_names.copy()
 
@@ -468,11 +480,12 @@ class MAVLinkDetector:
 
         self._stream_groups = self.get_stream_groups(vehicle) if len(vehicles) == 1 else []
 
-    @classmethod
-    def get_description(cls, query):
-        return cls.TYPE_DESCRIPTIONS.get(query,
-            cls.EXTRA_DESCRIPTIONS.get(query, '')
-        )
+    def get_description(self, query):
+        description = (self.TYPE_DESCRIPTIONS.get(query)
+                       or self.EXTRA_DESCRIPTIONS.get(query, ''))
+        # the parameter group was renamed when stream groups became shared
+        return description.replace(self.STREAM_PARAMETER_PREFIX,
+                                   self._stream_parameter_prefix)
 
     @classmethod
     def find_incoming_messages(cls, text: str):
@@ -658,17 +671,37 @@ class MAVLinkDetector:
     def get_stream_groups(self, vehicle):
         stream_groups = ['stream_groups']
 
+        # the vehicle file's name has changed case between releases
+        files = [file for file in (self.BASE_DIR / vehicle).glob('*.cpp')
+                 if file.name.lower() == self.STREAM_GROUP_FILE.lower()]
+        file = (files or [self.COMMON_STREAM_GROUP_FILE])[0]
         try:
-            text = (self.BASE_DIR / vehicle / self.STREAM_GROUP_FILE).read_text()
+            text = file.read_text()
         except FileNotFoundError:  # No stream groups
             print('Could not find stream groups for', vehicle, file=sys.stderr)
             return []
 
-        for group_name, message_data in self.STREAM_GROUPS.findall(text):
+        guards = PreprocessorGuards(text)
+        # the shared file declares each rate parameter by its stream name, so
+        # the real parameter names are known. The vehicle files keep the
+        # labels they have always had, so stored output does not change.
+        parameters = {} if files else {
+            stream: self._stream_parameter_prefix + name.lstrip('_')
+            for name, stream in self.STREAM_PARAMETER.findall(text)
+        }
+        for group in self.STREAM_GROUPS.finditer(text):
+            group_name, message_data = group.groups()
+            parameter = parameters.get(group_name, f'SRn_{group_name}')
+            messages = {}
+            for match in self.AP_MESSAGE.finditer(message_data):
+                guard = self.resolve_guard(guards.at(group.start(2) + match.start()))
+                if guard is None:
+                    continue # not in this vehicle's group
+                name = self._ap_to_mavlink.get(match[1], match[1])
+                messages.setdefault(name, set()).add((guard, file.stem))
             stream_groups.extend(sorted(
-                MAVLinkMessage(self._ap_to_mavlink.get(ap_message, ap_message),
-                               f'SRn_{group_name}')
-                for ap_message in self.AP_MESSAGE.findall(message_data)
+                MAVLinkMessage(name, parameter, requires=self.get_requirements(found))
+                for name, found in messages.items()
             ))
 
         return stream_groups
@@ -822,7 +855,7 @@ class MAVLinkDetector:
                         msg_url = self.MAVLINK_URL.format(dialect=dialect,
                                                           message_name=name.split(':')[0])
                         name = f'[{name}]({msg_url})'
-                    if source != 'UNSUPPORTED' and not source.startswith('SRn'):
+                    if source != 'UNSUPPORTED' and type_ != 'stream_groups':
                         folder = source.split('/')[0]
                         base = 'libraries/' if folder not in self.VEHICLES else '' 
                         code_url = self.ARDUPILOT_URL.format(branch=branch,
@@ -897,7 +930,7 @@ class MAVLinkDetector:
                         msg_url = self.MAVLINK_URL.format(dialect=dialect,
                                                           message_name=name.split(':')[0])
                         name = f'`{name} <{msg_url}>`_'
-                    if source != 'UNSUPPORTED' and not source.startswith('SRn'):
+                    if source != 'UNSUPPORTED' and type_ != 'stream_groups':
                         folder = source.split('/')[0]
                         base = 'libraries/' if folder not in self.VEHICLES else '' 
                         code_url = self.ARDUPILOT_URL.format(branch=branch,
