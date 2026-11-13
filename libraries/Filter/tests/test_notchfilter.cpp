@@ -105,16 +105,17 @@ TEST(NotchFilterTest, HarmonicNotchTest)
         }
     } integrals[num_test_freq] {};
 
+    HarmonicNotchFilterParams notch_params {};
+    notch_params.set_options(uint16_t(HarmonicNotchFilterParams::Options::TreatLowAsMin) |
+                             uint16_t(HarmonicNotchFilterParams::Options::DoubleNotch));
+    notch_params.set_attenuation(attenuation_dB);
+    notch_params.set_bandwidth_hz(bandwidth);
+    notch_params.set_center_freq_hz(base_freq);
+    notch_params.set_freq_min_ratio(1.0);
+
     for (uint8_t i=0; i<num_test_freq; i++) {
         for (uint8_t c=0; c<chained_filters; c++) {
             auto &f = filters[i][c];
-            HarmonicNotchFilterParams notch_params {};
-            notch_params.set_options(uint16_t(HarmonicNotchFilterParams::Options::TreatLowAsMin) |
-                                     uint16_t(HarmonicNotchFilterParams::Options::DoubleNotch));
-            notch_params.set_attenuation(attenuation_dB);
-            notch_params.set_bandwidth_hz(bandwidth);
-            notch_params.set_center_freq_hz(base_freq);
-            notch_params.set_freq_min_ratio(1.0);
             f.allocate_filters(1, harmonics, notch_params.num_composite_notches());
             f.init(rate_hz, notch_params);
             f.update(base_freq);
