@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @DisplayName: Mount Type
     // @Description: Mount Type
     // @SortValues: AlphabeticalZeroAtTop
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:MAVLink (Gremsy/AVT), 7:BrushlessPWM, 8:Siyi, 9:Scripting, 10:Xacti, 11:Viewpro, 12:Topotek, 13:CADDX, 14:XFRobot
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:MAVLink (Gremsy/AVT), 7:BrushlessPWM, 8:Siyi, 9:Scripting, 10:Xacti, 11:Viewpro, 12:Topotek, 13:CADDX, 14:XFRobot, 15:MAVLink Gimbal Manager Client
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_Mount_Params, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -186,7 +186,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
 
     // @Param: _TARG_RATE
     // @DisplayName: MAVLink gimbal target refresh rate
-    // @Description: Refresh rate for unchanged MAVLink gimbal targets. Changed targets are sent immediately. Zero disables target transmission
+    // @Description: Refresh rate for unchanged MAVLink gimbal targets. Changed targets are sent immediately. Zero disables target transmission. MAVLink Gimbal Manager Client mounts never refresh unchanged targets
     // @Units: Hz
     // @Range: 0 50
     // @Increment: 1

@@ -71,8 +71,6 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
-private:
-
     // returns true if the camera is reporting that it has the
     // capability indicated by flag
     bool has_capability(GIMBAL_DEVICE_CAP_FLAGS flag) const {
@@ -112,6 +110,7 @@ private:
     union {
         mavlink_command_int_t location;
         mavlink_gimbal_device_set_attitude_t attitude;
+        mavlink_gimbal_manager_set_pitchyaw_t pitchyaw;
     } _last_target;
     class GCS_MAVLINK *_link;       // link we have found gimbal on; nullptr if not seen yet
     uint32_t _sysid;                // sysid of gimbal
