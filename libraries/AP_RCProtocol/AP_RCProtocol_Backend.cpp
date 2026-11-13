@@ -71,8 +71,20 @@ void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
 void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe, int16_t _rssi, int16_t _rx_link_quality)
 {
     num_values = MIN(num_values, MAX_RCIN_CHANNELS);
-    memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
-    _num_channels = num_values;
+#if AP_RC_CHANNEL_ENABLED
+    // channel values sent with a failsafe indication can't be trusted
+    // (SBUS receivers may send zeros, for example), so keep the last
+    // accepted values.  This must be decided before IGNORE_FAILSAFE is
+    // applied below, as that option only stops the failsafe action
+    const bool accept_values = !in_failsafe;
+#else
+    // failsafe is sorted out in AP_IOMCU.cpp
+    const bool accept_values = true;
+#endif
+    if (accept_values) {
+        memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
+        _num_channels = num_values;
+    }
     rc_frame_count++;
     frontend.set_failsafe_active(in_failsafe);
 #if !AP_RC_CHANNEL_ENABLED
