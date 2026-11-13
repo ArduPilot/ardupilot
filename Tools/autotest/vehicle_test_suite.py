@@ -19787,6 +19787,67 @@ switch value'''
                             artefact_dst=self.replay_tool,
                             **build_opts)
 
+    def report_replay_build_configuration(self):
+        """compare the Replay tool's build configuration with the vehicle's.
+
+        The replay must match the live solution bit-for-bit, which requires
+        the tool and the vehicle to have been compiled identically, so when
+        the comparison fails the first question is whether they were.  Any
+        difference here explains a divergence by itself."""
+        def load(path):
+            out = {}
+            try:
+                with open(path) as f:
+                    for line in f:
+                        if "=" not in line or line.startswith("#"):
+                            continue
+                        k, v = line.split("=", 1)
+                        out[k.strip()] = v.strip()
+            except OSError as e:
+                self.progress("Replay build config: cannot read %s: %s" % (path, e))
+                return None
+            return out
+
+        # waf keeps its configuration in <out>/c4che/<board>_cache.py
+        vehicle = util.reltopdir(os.path.join("build", "c4che", "sitl_cache.py"))
+        tool = util.reltopdir(os.path.join("build-replay-tool-%s" % self.log_name(),
+                                           "c4che", "sitl_cache.py"))
+        a = load(vehicle)
+        b = load(tool)
+        if a is None or b is None:
+            return
+        # the isolated build differs in where it writes and how waf was
+        # invoked; everything which reaches the compiler should not.
+        # OPTIONS is waf's own command line (jobs, verbose, out...), which
+        # cannot reach the compiler at all
+        ignore = ("BUILDROOT", "out", "PREFIX", "top", "LOCKFILE",
+                  "BLDDIR", "SRCDIR", "PREFIX_PATH", "VARIANT", "OPTIONS")
+
+        def normalise(value, builddir):
+            # a value which merely names its own build directory - the
+            # generated hwdef.h and ap_config.h paths in cfg_files, include
+            # paths - is the same configuration written somewhere else
+            if value is None:
+                return None
+            return value.replace(builddir, "<builddir>")
+
+        vehicle_dir = util.reltopdir("build")
+        tool_dir = util.reltopdir("build-replay-tool-%s" % self.log_name())
+        diffs = []
+        for k in sorted(set(a) | set(b)):
+            if k in ignore:
+                continue
+            if normalise(a.get(k), vehicle_dir) != normalise(b.get(k), tool_dir):
+                diffs.append((k, a.get(k), b.get(k)))
+        if not diffs:
+            self.progress("Replay build config: tool and vehicle agree on "
+                          "%u keys" % len(a))
+            return
+        self.progress("Replay build config DIFFERS in %u key(s), which can by "
+                      "itself explain a divergence:" % len(diffs))
+        for k, av, bv in diffs[:40]:
+            self.progress("    %s: vehicle=%s tool=%s" % (k, av, bv))
+
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''
         # stop the SITL for the duration of the replay.  Replay writes

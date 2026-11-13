@@ -18905,6 +18905,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         ok = check_replay.check_log(replay_log_filepath, self.progress, verbose=True)
         if not ok:
+            # the tool and the vehicle must be compiled identically for the
+            # replay to match; say whether they were before blaming the EKF
+            self.report_replay_build_configuration()
             # name the log which was checked, not the one Replay read:
             # reporting the input sends whoever reads the failure to a
             # flight log, which has no replayed messages in it at all
