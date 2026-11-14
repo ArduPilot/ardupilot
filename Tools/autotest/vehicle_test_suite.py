@@ -16654,13 +16654,59 @@ switch value'''
         )
         return self.current_onboard_log_filepath()
 
+    def SimpleAccelCalBoardOrientation(self):
+        '''test simple accel calibration on a rotated board'''
+        self.set_parameters({
+            "AHRS_ORIENTATION": 24,  # pitch-90
+            "SIM_IMU_ORIENT": 25,  # pitch-270, the inverse of the board
+        })
+        self.reboot_sitl()
+        # the calibration saves its results for itself, so the context
+        # does not know to put them back:
+        self.context_preserve_parameters([
+            "INS_ACCOFFS_X", "INS_ACCOFFS_Y", "INS_ACCOFFS_Z",
+            "INS_ACC2OFFS_X", "INS_ACC2OFFS_Y", "INS_ACC2OFFS_Z",
+            "INS_ACC3OFFS_X", "INS_ACC3OFFS_Y", "INS_ACC3OFFS_Z",
+            "INS_ACCSCAL_X", "INS_ACCSCAL_Y", "INS_ACCSCAL_Z",
+            "INS_ACC2SCAL_X", "INS_ACC2SCAL_Y", "INS_ACC2SCAL_Z",
+            "INS_ACC3SCAL_X", "INS_ACC3SCAL_Y", "INS_ACC3SCAL_Z",
+            "INS_ACC1_CALTEMP", "INS_ACC2_CALTEMP", "INS_ACC3_CALTEMP",
+            "AHRS_TRIM_X", "AHRS_TRIM_Y", "AHRS_TRIM_Z",
+        ])
+        # the simulated compasses do not agree with one another on a
+        # rotated board, so do not wait to be ready to arm; the
+        # calibration needs only a still vehicle:
+        self.delay_sim_time(5, reason="accelerometers to settle")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,  # PREFLIGHT_CALIBRATION_ACCELEROMETER_SIMPLE
+            timeout=60,
+        )
+        # the calibration pins the orientation to ROTATION_NONE and
+        # subtracts gravity rotated into the sensor frame, so a vehicle
+        # whose sensors really are mounted that way calibrates to zero.
+        # SIM_IMU_ORIENT above is the inverse of the board orientation,
+        # which is what makes the simulated accelerometers present that
+        # frame.  Leaving the board rotation applied while the
+        # calibration runs puts the result a gravity out, which is what
+        # this is here to catch.
+        offsets = self.get_parameters([
+            "INS_ACCOFFS_X",
+            "INS_ACCOFFS_Y",
+            "INS_ACCOFFS_Z",
+        ])
+        for name in sorted(offsets.keys()):
+            if abs(offsets[name]) > 0.1:
+                raise NotAchievedException(
+                    "%s=%f should be near zero" % (name, offsets[name]))
+
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''
         self.context_push()
         self.wait_ready_to_arm()
         original_imu = self.assert_receive_message("RAW_IMU", verbose=True)
         self.set_parameter("AHRS_ORIENTATION", 16)  # roll-90
-        self.delay_sim_time(2, reason="AHRS_ORIENTATION to update")  # we update this on a timer
+        self.delay_sim_time(1, reason="new orientation to reach the sensor data")
         new_imu = self.assert_receive_message("RAW_IMU", verbose=True)
         delta_zacc = original_imu.zacc - new_imu.zacc
         delta_z_g = delta_zacc/1000.0  # milligravities -> gravities
@@ -16672,7 +16718,7 @@ switch value'''
             raise NotAchievedException("Magic AHRS_ORIENTATION update did not work (delta_y_g=%f)" % (delta_y_g,))
         self.context_pop()
         self.reboot_sitl()
-        self.delay_sim_time(2, reason="orientation update timer")  # we update orientation on a timer
+        self.delay_sim_time(2, reason="restored orientation to reach the sensor data")
 
     def GPSTypes(self):
         '''check each simulated GPS works'''

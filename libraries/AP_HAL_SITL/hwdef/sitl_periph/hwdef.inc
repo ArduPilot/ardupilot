@@ -18,6 +18,8 @@ define HAL_MAVLINK_BINDINGS_ENABLED 1
 
 define AP_AIRSPEED_AUTOCAL_ENABLE 0
 define AP_AIRSPEED_ENABLED 0
+# a peripheral has no AP_BoardConfig to ask for the board orientation:
+define AP_BOARDCONFIG_ORIENTATION_ENABLED 0
 define AP_CAN_SLCAN_ENABLED 0
 define AP_ICENGINE_ENABLED 0
 define AP_MISSION_ENABLED 0
