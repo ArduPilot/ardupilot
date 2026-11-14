@@ -79,6 +79,13 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ORIENT_YAW", 4, AP_Beacon, orient_yaw, 0),
 
+    // @Param: _ORG_TYPE
+    // @DisplayName: Beacon positions origin type
+    // @Description: Origin that the beacon positions are relative to. Own: the origin set by BCN_LATITUDE, BCN_LONGITUDE and BCN_ALT, and the EKF estimates the offset between the beacon and EKF frames. EKF: the EKF origin, so the EKF applies no estimated offset between the beacon and EKF frames.
+    // @Values: 0:Own,1:EKF
+    // @User: Advanced
+    AP_GROUPINFO("_ORG_TYPE", 5, AP_Beacon, _origin_type, float(OriginType::Own)),
+
     AP_GROUPEND
 };
 

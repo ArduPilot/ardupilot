@@ -55,6 +55,12 @@ public:
 #endif
     };
 
+    // origin that the beacon positions are relative to (used by _ORG_TYPE parameter)
+    enum class OriginType : uint8_t {
+        Own = 0,    // origin from the BCN_LATITUDE, BCN_LONGITUDE and BCN_ALT parameters
+        EKF = 1,    // EKF origin
+    };
+
     // The AP_BeaconState structure is filled in by the backend driver
     struct BeaconState {
         uint16_t id;            // unique id of beacon
@@ -84,6 +90,9 @@ public:
 
     // return vehicle position in NED from position estimate system's origin in meters
     bool get_vehicle_position_ned(Vector3f& pos, float& accuracy_estimate) const;
+
+    // return the origin that the beacon positions are relative to
+    OriginType origin_type() const { return _origin_type; }
 
     // return the number of beacons
     uint8_t count() const;
@@ -140,6 +149,7 @@ private:
     AP_Float origin_lon;
     AP_Float origin_alt;
     AP_Int16 orient_yaw;
+    AP_Enum<OriginType> _origin_type;
 
     // external references
     AP_Beacon_Backend *_driver;
