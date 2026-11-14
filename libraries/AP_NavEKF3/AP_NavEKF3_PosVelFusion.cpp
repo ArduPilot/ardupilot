@@ -1325,8 +1325,9 @@ void NavEKF3_core::selectHeightForFusion()
             } else if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS) {
                 activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
             }
-        } else if (belowLowerSwHgt && trustTerrain && (prevTnb.c.z >= 0.7f)) {
-            // reliable terrain and range finder so start using range finder height
+        } else if (belowLowerSwHgt && trustTerrain && (prevTnb.c.z >= 0.7f) && !flatGroundAssumed()) {
+            // reliable terrain and range finder so start using range finder height. Not while flow
+            // navigation holds the ground above the range, as for the range finder as the source
             activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
         }
 #endif
