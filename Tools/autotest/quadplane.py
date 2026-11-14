@@ -4061,6 +4061,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             24: "Thermal",
             25: "Loiter to QLand",
             26: "Autoland",
+            27: "Glide FS",
         }
         initialising = self.get_mode_from_mode_mapping("INITIALISING")
         self.assert_available_modes(expected_modes, not_user_selectable=[initialising])

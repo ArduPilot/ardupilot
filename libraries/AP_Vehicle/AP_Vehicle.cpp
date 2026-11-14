@@ -197,6 +197,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Bitmask{Plane}: 19:QAUTOTUNE
     // @Bitmask{Plane}: 20:Loiter to QLand
     // @Bitmask{Plane}: 21:Autoland
+    // @Bitmask{Plane}: 22:Glide FS
     // @Bitmask{Rover}: 0:Manual
     // @Bitmask{Rover}: 1:Acro
     // @Bitmask{Rover}: 2:Steering

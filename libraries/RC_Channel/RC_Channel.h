@@ -324,7 +324,7 @@ public:
 #if HAL_TORQEEDO_ENABLED
         TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
 #endif  // HAL_TORQEEDO_ENABLED
-        EMERGENCY_LANDING_EN = 157, //Force long FS action to FBWA for landing out of range
+        EMERGENCY_LANDING_EN = 157, // Force FS action to Glide FS for landing out of range
 #if AP_OPTICALFLOW_ENABLED
         OPTFLOW_CAL =        158, // optical flow calibration
 #endif  // AP_OPTICALFLOW_ENABLED
