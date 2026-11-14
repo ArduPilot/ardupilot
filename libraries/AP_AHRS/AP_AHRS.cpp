@@ -1144,7 +1144,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
         // do we have an EKF2 yet?
-        if (!ekf2.started) {
+        if (!ekf2_estimates.started) {
             return fallback_active_EKF_type();
         }
         if (always_use_EKF()) {
@@ -1161,7 +1161,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE: {
         // do we have an EKF3 yet?
-        if (!ekf3.started) {
+        if (!ekf3_estimates.started) {
             return fallback_active_EKF_type();
         }
         if (always_use_EKF()) {
@@ -1302,13 +1302,13 @@ AP_AHRS::EKFType AP_AHRS::fallback_active_EKF_type(void) const
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
-    if (ekf3.started) {
+    if (ekf3_estimates.started) {
         return EKFType::THREE;
     }
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
-    if (ekf2.started) {
+    if (ekf2_estimates.started) {
         return EKFType::TWO;
     }
 #endif
