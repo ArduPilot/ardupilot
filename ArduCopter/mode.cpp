@@ -589,19 +589,20 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     // apply SIMPLE mode transform to pilot inputs
     apply_simple_mode(roll_out_norm, pitch_out_norm);
 
-    // convert roll and pitch inputs into velocity in NE frame
+    // convert roll and pitch inputs into a body frame velocity
     vel_ne_ms = Vector2f(-pitch_out_norm, roll_out_norm);
     if (vel_ne_ms.is_zero()) {
         return vel_ne_ms;
     }
-    vel_ne_ms = copter.ahrs.body_to_earth2D(vel_ne_ms);
 
     // Transform square input range to circular output
     // vel_scalar is the vector to the edge of the +- 1.0 square in the direction of the current input
     Vector2f vel_scalar = vel_ne_ms / MAX(fabsf(vel_ne_ms.x), fabsf(vel_ne_ms.y));
     // We scale the output by the ratio of the distance to the square to the unit circle and multiply by vel_max
     vel_ne_ms *= vel_max / vel_scalar.length();
-    return vel_ne_ms;
+
+    // rotate the stick velocity from body frame into the NE frame
+    return copter.ahrs.body_to_earth2D(vel_ne_ms);
 }
 
 bool Mode::_TakeOff::triggered_ms(const float target_climb_rate_ms) const
