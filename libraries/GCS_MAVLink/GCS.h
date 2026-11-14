@@ -571,6 +571,9 @@ protected:
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_int_external_wind_estimate(const mavlink_command_int_t &packet);
+    // defined only when AP_ACTUATORS_ENABLED; that depends on the vehicle
+    // type, which is not available to all files including this header
+    MAV_RESULT handle_command_do_set_actuator(const mavlink_command_int_t &packet);
 
 #if AP_HOME_ENABLED
     MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
@@ -867,6 +870,10 @@ private:
     bool send_relay_status() const;
 
     static bool command_long_stores_location(const MAV_CMD command);
+
+    // returns true if the command's param5/param6 should be scaled by
+    // 1e7 (rather than truncated) when packing into COMMAND_INT.x/y.
+    static bool command_long_requires_scaling(const MAV_CMD command);
 
     bool calibrate_gyros();
 
