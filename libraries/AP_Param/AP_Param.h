@@ -108,13 +108,16 @@
 // Default value is a "pointer" actually its a offest from the base value, but the idea is the same
 #define AP_PARAM_FLAG_DEFAULT_POINTER (1<<7)
 
+// a dynamic parameter whose default came from a @READONLY defaults line
+#define AP_PARAM_FLAG_READ_ONLY (1<<8)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   8
+#define AP_PARAM_FRAME_TYPE_SHIFT   9
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -859,13 +862,19 @@ private:
                                  AP_Param *&crc_param);
     static bool add_param_typed(uint8_t key, uint8_t param_num, const char *pname, ap_var_type type,
                                 float default_value);
-    // find a defaults-file value for a parameter registered after boot
-    static bool find_dynamic_default(const char *name, float &value);
+    // defaults-file entry for a parameter registered after boot, kept as
+    // text so integer values stay exact
+    struct DynamicDefault {
+        char value[24];
+        bool read_only;
+    };
+    static bool find_dynamic_default(const char *name, DynamicDefault &d);
+    static bool match_default_line(char *line, const char *name, DynamicDefault &d);
 #if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
-    static bool find_default_in_file(const char *filename, const char *name, float &value);
+    static bool find_default_in_file(const char *filename, const char *name, DynamicDefault &d);
 #endif
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
-    static bool find_default_in_string(const volatile char *ptr, int32_t length, const char *name, float &value);
+    static bool find_default_in_string(const volatile char *ptr, int32_t length, const char *name, DynamicDefault &d);
 #endif
 #else
     // simple static var table in flash
