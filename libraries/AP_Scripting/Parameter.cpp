@@ -161,4 +161,61 @@ bool Parameter::set_default(float value)
     return false;
 }
 
+// get an integer value without float conversion
+bool Parameter::get_int32(int32_t &value)
+{
+    if (vp == nullptr) {
+        return false;
+    }
+    switch (vtype) {
+    case AP_PARAM_INT8:
+        value = ((AP_Int8 *)vp)->get();
+        return true;
+    case AP_PARAM_INT16:
+        value = ((AP_Int16 *)vp)->get();
+        return true;
+    case AP_PARAM_INT32:
+        value = ((AP_Int32 *)vp)->get();
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool Parameter::set_int32_internal(int32_t value, bool save)
+{
+    if (vp == nullptr) {
+        return false;
+    }
+    switch (vtype) {
+    case AP_PARAM_INT8:
+        if (value < INT8_MIN || value > INT8_MAX) {
+            return false;
+        }
+        save ? ((AP_Int8 *)vp)->set_and_save(value) : ((AP_Int8 *)vp)->set(value);
+        return true;
+    case AP_PARAM_INT16:
+        if (value < INT16_MIN || value > INT16_MAX) {
+            return false;
+        }
+        save ? ((AP_Int16 *)vp)->set_and_save(value) : ((AP_Int16 *)vp)->set(value);
+        return true;
+    case AP_PARAM_INT32:
+        save ? ((AP_Int32 *)vp)->set_and_save(value) : ((AP_Int32 *)vp)->set(value);
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool Parameter::set_int32(int32_t value)
+{
+    return set_int32_internal(value, false);
+}
+
+bool Parameter::set_and_save_int32(int32_t value)
+{
+    return set_int32_internal(value, true);
+}
+
 #endif // AP_EXTERNAL_BINDING_ENABLED

@@ -545,6 +545,9 @@ userdata Parameter method set boolean float'skip_check
 userdata Parameter method set_and_save boolean float'skip_check
 userdata Parameter method configured boolean
 userdata Parameter method set_default boolean float'skip_check
+userdata Parameter method get_int32 boolean int32_t'Null
+userdata Parameter method set_int32 boolean int32_t'skip_check
+userdata Parameter method set_and_save_int32 boolean int32_t'skip_check
 
 include AP_Scripting/AP_Scripting.h
 singleton AP_Scripting rename scripting

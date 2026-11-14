@@ -778,6 +778,20 @@ function Parameter_ud:set(value) end
 ---@return number|nil
 function Parameter_ud:get() end
 
+-- Get the exact value of an integer parameter, nil for float parameters.
+---@return integer|nil
+function Parameter_ud:get_int32() end
+
+-- Set an integer parameter exactly; false for float parameters or values outside its type.
+---@param value integer
+---@return boolean
+function Parameter_ud:set_int32(value) end
+
+-- Set and save an integer parameter exactly; false for float parameters or values outside its type.
+---@param value integer
+---@return boolean
+function Parameter_ud:set_and_save_int32(value) end
+
 -- Init the paramter from a key. This allows the script to load old parameter that have been removed from the main code.
 ---@param key integer
 ---@param group_element uint32_t_ud|integer|number
