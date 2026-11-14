@@ -44,12 +44,11 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
     delete[] fusionReport;
     fusionReport = nullptr;
     numFusionReports = 0;
-    auto *beacon = dal.beacon();
-    if (beacon != nullptr) {
-        const uint8_t count = beacon->count();
-        fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[count];
+    if (dal.beacon() != nullptr) {
+        // beacons may be discovered after initialisation, so allow for the maximum number
+        fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[AP_BEACON_MAX_BEACONS];
         if (fusionReport != nullptr) {
-            numFusionReports = count;
+            numFusionReports = AP_BEACON_MAX_BEACONS;
         }
     }
     posOffsetNED.zero();
