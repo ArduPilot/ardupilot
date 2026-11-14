@@ -33,7 +33,7 @@
 
 class AP_RCProtocol_GHST : public AP_RCProtocol_Backend {
 public:
-    AP_RCProtocol_GHST(AP_RCProtocol &_frontend);
+    AP_RCProtocol_GHST(AP_RCProtocol &_frontend, AP_RCProtocol::rcprotocol_t protocol);
     virtual ~AP_RCProtocol_GHST();
     void process_byte(uint8_t byte, uint32_t baudrate) override;
     void process_handshake(uint32_t baudrate) override;
