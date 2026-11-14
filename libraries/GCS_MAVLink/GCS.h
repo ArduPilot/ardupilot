@@ -413,7 +413,7 @@ public:
     void send_position_target_global_int();
     // returns the navigation setpoint the vehicle is currently commanding,
     // including which of its dimensions are actually being commanded
-    virtual bool get_target(NavTarget &target) const { return false; }
+    virtual bool get_nav_target(NavTarget &target) const { return false; }
     // returns a Location to which the vehicle is currently heading,
     // or would head to in an autonomous mode
     virtual bool get_target_location(Location &loc) const { return false; }

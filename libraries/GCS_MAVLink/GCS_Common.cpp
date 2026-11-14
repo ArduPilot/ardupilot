@@ -6366,7 +6366,7 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint32_t target_system, ui
 void GCS_MAVLINK::send_position_target_global_int()
 {
     NavTarget target;
-    if (!get_target(target)) {
+    if (!get_nav_target(target)) {
         // vehicles that report only a destination implement get_target_location
         // instead; report that as a position-only setpoint
         if (!get_target_location(target.loc)) {
