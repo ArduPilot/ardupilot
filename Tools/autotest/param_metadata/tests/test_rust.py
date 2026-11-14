@@ -7,6 +7,8 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
+import pytest
+
 from pathlib import Path
 
 from Tools.autotest.param_metadata.rust import parameter_matches, parameter_paths
@@ -43,17 +45,57 @@ def test_rust_metadata_supports_tags_lowercase_variants_and_eof():
     assert 'rate = ' not in matches[0][2]
 
 
+def check_table_documentation(text, source):
+    # Match the macro first so an unsupported declaration cannot silently escape
+    # validation. Reserved size is optional and does not affect parameter names.
+    starts = re.findall(r'\bparam_table!\s*\{', text)
+    tables = re.findall(r'\bparam_table!\s*\{(.*?)^}', text, re.MULTILINE | re.DOTALL)
+    assert len(tables) == len(starts), source
+    count = 0
+    for table in tables:
+        prefix = re.search(r'\bprefix\s*=\s*"([^"\n]*)"\s*;', table)
+        assert prefix is not None, source
+        entries = re.findall(r'^\s*\w+\s*=\s*[^,\n]+,\s*"([^"\n]+)"\s*,\s*f32\s*:',
+                             table, re.MULTILINE)
+        assert entries, source
+        names = [m[1] for m in parameter_matches(table)]
+        assert names == [prefix[1] + name for name in entries], source
+        count += len(entries)
+    return count
+
+
+@pytest.mark.parametrize('size', ['', '    size = 63;\n'])
+@pytest.mark.parametrize('annotation', ['TEST_VALUE', 'WRONG_NAME', None])
+def test_documentation_check_covers_optional_size(size, annotation):
+    docs = '' if annotation is None else f'    // @Param: {annotation}\n    // @Description: Test parameter\n'
+    text = ('ap_rust_sdk::param_table! {\n'
+            '    struct Params, enum P;\n'
+            '    key = 100, prefix = "TEST_";\n'
+            f'{size}{docs}'
+            '    Value = 1, "VALUE", f32: 0.0;\n'
+            '}\n')
+    if annotation == 'TEST_VALUE':
+        assert check_table_documentation(text, 'fixture') == 1
+    else:
+        with pytest.raises(AssertionError, match='fixture'):
+            check_table_documentation(text, 'fixture')
+
+
+def test_documentation_check_rejects_unparsed_table():
+    text = ('ap_rust_sdk::param_table! {\n'
+            '    struct Params, enum P;\n'
+            '    key = 100, prefix = PREFIX;\n'
+            '    Value = 1, "VALUE", f32: 0.0;\n'
+            '}\n')
+    with pytest.raises(AssertionError, match='fixture'):
+        check_table_documentation(text, 'fixture')
+
+
 def test_all_rust_declarations_have_matching_documentation():
     count = 0
     for relative in parameter_paths(ROOT):
         text = (ROOT / 'libraries' / relative).read_text()
-        declarations = list(re.finditer(
-            r'key = \d+, prefix = "(\w+)";\s*size = \d+;(?P<body>.*?)\n}', text, re.DOTALL))
-        for table in declarations:
-            entries = re.findall(r'\w+ = \d+, "(\w+)", f32:', table['body'])
-            names = [m[1] for m in parameter_matches(table['body'])]
-            assert names == [table[1] + name for name in entries], relative
-            count += len(entries)
+        count += check_table_documentation(text, relative)
     assert count > 150
 
 
