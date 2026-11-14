@@ -391,6 +391,37 @@ void UARTDriver::_timer_tick(void)
 
     // try to fill the read buffer
     int ret;
+
+    if (_packetise) {
+        /*
+          Datagram sockets (UDP): do not read into the two-part ring-buffer
+          reservation. At the wrap point vec[0] can be only a few bytes long,
+          and recv() silently discards the rest of a datagram that does not
+          fit, which corrupts the MAVLink stream once per buffer size of
+          received data (periodic "heartbeat lost"). Read whole datagrams
+          into a bounce buffer and copy them in with write(), which handles
+          the wrap. Only read while a full datagram is guaranteed to fit, so
+          unread datagrams wait in the socket buffer instead of being cut.
+         */
+        uint8_t tmp[2048];
+        for (uint8_t n = 0; n < 100 && _readbuf.space() >= sizeof(tmp); n++) {
+            ret = _read_fd(tmp, sizeof(tmp));
+            if (ret < 0) {
+                break;
+            }
+            if (ret == 0) {
+                continue;   // empty datagram, already consumed
+            }
+            _readbuf.write(tmp, (uint32_t)ret);
+
+            // update receive timestamp
+            _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
+            _receive_timestamp_idx ^= 1;
+        }
+        _in_timer = false;
+        return;
+    }
+
     ByteBuffer::IoVec vec[2];
 
     const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
