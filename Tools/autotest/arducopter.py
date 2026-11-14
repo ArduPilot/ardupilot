@@ -20166,6 +20166,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_SetHome,
             self.HomeCircleInclusionFence_Avoidance_SetHome,
             self.BatteryInternalUseOnly,
+            self.BatteryCellVoltages,
             self.CommonOriginExternalAHRS,
             self.CommonOriginExternalAHRSReceives,
             self.AHRSExternalNoAttitudeAirspeedIndex,
@@ -22276,6 +22277,69 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         new_heading = self.get_heading()
         if self.heading_delta(new_heading, original_heading) > 5:
             raise NotAchievedException(f"Should return to original heading want={original_heading} got={new_heading}")
+
+    def BatteryCellVoltages(self):
+        """Check base and extension cell voltages, including unused cells."""
+        counts = (6, 10, 12, 14, 6, 0)
+        extra_mv = (0, 0, 0, 0, 600, 24123)
+        parameters = {"SCR_ENABLE": 1}
+        for instance in range(len(counts)):
+            prefix = "BATT" if instance == 0 else "BATT%u" % (instance + 1)
+            parameters[prefix + "_MONITOR"] = 29  # scripting
+            parameters[prefix + "_OPTIONS"] = 0
+        self.set_parameters(parameters)
+        self.install_script_content_context("battery-cell-voltages.lua", """
+local counts = {6, 10, 12, 14, 6, 0}
+local extra_mv = {0, 0, 0, 0, 600, 24123}
+local function update()
+    for instance, count in ipairs(counts) do
+        local state = BattMonitorScript_State()
+        state:healthy(true)
+        state:cell_count(count)
+        state:current_amps(0)
+        local total_mv = 0
+        for cell = 0, count - 1 do
+            local voltage_mv = 4000 + 10 * cell
+            state:cell_voltages(cell, voltage_mv)
+            total_mv = total_mv + voltage_mv
+        end
+        state:voltage((total_mv + extra_mv[instance]) / 1000)
+        assert(battery:handle_scripting(instance - 1, state))
+    end
+    return update, 100
+end
+return update, 100
+""")
+        self.reboot_sitl()
+        self.drain_mav()
+        samples = [0] * len(counts)
+        failures = {}
+        tstart = self.get_sim_time()
+        while min(samples) < 3:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise AutoTestTimeoutException("Missing scripted battery samples: %s" % samples)
+            message = self.assert_receive_message('BATTERY_STATUS')
+            instance = message.id
+            if instance >= len(counts) or samples[instance] >= 3:
+                continue
+            count = counts[instance]
+            # A pack voltage above the cell sum exercises voltage compensation.
+            correction_mv = extra_mv[instance] // count if count else 0
+            values = [4000 + 10 * cell + correction_mv for cell in range(count)]
+            expected_base = values[:10] + [65535] * max(10 - count, 0)
+            if count == 0:
+                # Without cell data, the first entry reports total pack voltage.
+                expected_base[0] = extra_mv[instance]
+            if list(message.voltages) != expected_base:
+                continue  # wait for the scripting backend to publish its values
+            expected_ext = values[10:] + [0] * (4 - max(count - 10, 0))
+            actual_ext = list(message.voltages_ext)
+            samples[instance] += 1
+            self.progress("%u cells: voltages_ext=%s expected=%s" % (count, actual_ext, expected_ext))
+            if actual_ext != expected_ext:
+                failures[instance] = actual_ext
+        if failures:
+            raise NotAchievedException("Incorrect extension cell voltages: %s" % failures)
 
     def BatteryInternalUseOnly(self):
         '''batteries marked as internal use only should not appear over mavlink'''
