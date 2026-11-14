@@ -2,7 +2,157 @@
 
 use ap_rust_sdk::{Context, Error, Parameter, Result};
 
-const TABLE_KEY: u8 = 123;
+ap_rust_sdk::param_table! {
+    pub struct Table, enum P;
+    key = 123, prefix = "FOLLP_";
+    size = 30;
+
+    // @Param: FOLLP_FAIL_MODE
+    // @DisplayName: Plane Follow lost target mode
+    // @Description: Mode to switch to if the target is lost (no signal or > FOLL_DIST_MAX).
+    // @User: Standard
+    FailMode = 1, "FAIL_MODE", f32: 11.0;
+
+    // @Param: FOLLP_EXIT_MODE
+    // @DisplayName: Plane Follow exit mode
+    // @Description: Mode to switch to when follow mode is exited normally
+    // @User: Standard
+    ExitMode = 2, "EXIT_MODE", f32: 12.0;
+
+    // @Param: FOLLP_ACT_FN
+    // @DisplayName: Plane Follow Scripting ActivationFunction
+    // @Description: Setting an RC channel's _OPTION to this value will use it for Plane Follow enable/disable
+    // @Range: 300 307
+    ActFn = 3, "ACT_FN", f32: 301.0;
+
+    // @Param: FOLLP_TIMEOUT
+    // @DisplayName: Plane Follow Telemetry Timeout
+    // @Description: How long to try reaquire a target if telemetry from the lead vehicle is lost.
+    // @Range: 0 30
+    // @Units: s
+    Timeout = 4, "TIMEOUT", f32: 10.0;
+
+    // @Param: FOLLP_OVRSHT_DEG
+    // @DisplayName: Plane Follow Scripting Overshoot Angle
+    // @Description: If the target is greater than this many degrees left or right, assume an overshoot
+    // @Range: 0 180
+    // @Units: deg
+    OvrshtDeg = 5, "OVRSHT_DEG", f32: 75.0;
+
+    // @Param: FOLLP_TURN_DEG
+    // @DisplayName: Plane Follow Scripting Turn Angle
+    // @Description: If the target is greater than this many degrees left or right, assume it's turning
+    // @Range: 0 180
+    // @Units: deg
+    TurnDeg = 6, "TURN_DEG", f32: 15.0;
+
+    // @Param: FOLLP_DIST_CLOSE
+    // @DisplayName: Plane Follow Scripting Close Distance
+    // @Description: When closer than this distance assume we track by heading
+    // @Range: 0 100
+    // @Units: m
+    DistClose = 7, "DIST_CLOSE", f32: 75.0;
+
+    // @Param: FOLLP_WIDE_TURNS
+    // @DisplayName: Plane Follow Scripting Wide Turns
+    // @Description: Use wide turns when following a turning target. Alternative is "cutting the corner"
+    // @Range: 0 1
+    WideTurns = 8, "WIDE_TURNS", f32: 1.0;
+
+    // @Param: FOLLP_ALT_OVR
+    // @DisplayName: Plane Follow Scripting Altitude Override
+    // @Description: When non zero, this altitude value (in FOLL_ALT_TYPE frame) overrides the value sent by the target vehicle
+    // @Range: 0 1000
+    // @Units: m
+    AltOvr = 9, "ALT_OVR", f32: 0.0;
+
+    // @Param: FOLLP_D_P
+    // @DisplayName: Plane Follow Scripting distance P gain
+    // @Description: P gain for the speed PID controller distance component
+    // @Range: 0 1
+    DP = 10, "D_P", f32: 0.00025;
+
+    // @Param: FOLLP_D_I
+    // @DisplayName: Plane Follow Scripting distance I gain
+    // @Description: I gain for the speed PID  distance component
+    // @Range: 0 1
+    DI = 11, "D_I", f32: 0.00025;
+
+    // @Param: FOLLP_D_D
+    // @DisplayName: Plane Follow Scripting distance D gain
+    // @Description: D gain for the speed PID controller distance component
+    // @Range: 0 1
+    DD = 12, "D_D", f32: 0.00013;
+
+    // @Param: FOLLP_V_P
+    // @DisplayName: Plane Follow Scripting speed P gain
+    // @Description: P gain for the speed PID controller velocity component
+    // @Range: 0 1
+    VP = 13, "V_P", f32: 0.00025;
+
+    // @Param: FOLLP_V_I
+    // @DisplayName: Plane Follow Scripting speed I gain
+    // @Description: I gain for the speed PID controller velocity component
+    // @Range: 0 1
+    VI = 14, "V_I", f32: 0.00025;
+
+    // @Param: FOLLP_V_D
+    // @DisplayName: Plane Follow Scripting speed D gain
+    // @Description: D gain for the speed PID controller velocity component
+    // @Range: 0 1
+    VD = 15, "V_D", f32: 0.0005;
+
+    // @Param: FOLLP_LKAHD
+    // @DisplayName: Plane Follow Lookahead seconds
+    // @Description: Time to "lookahead" when calculating distance errors
+    // @Units: s
+    Lkahd = 16, "LKAHD", f32: 3.0;
+
+    // @Param: FOLLP_SIM_TLF_FN
+    // @DisplayName: Plane Follow Simulate Telemetry fail function
+    // @Description: Set this switch to simulate losing telemetry from the other vehicle
+    // @Range: 300 307
+    SimTlfFn = 17, "SIM_TLF_FN", f32: 302.0;
+
+    // @Param: FOLLP_XT_P
+    // @DisplayName: Plane Follow crosstrack PID controller P term
+    // @Description: P term for the crosstrack/heading PID controller
+    // @Range: 0 1
+    XtP = 20, "XT_P", f32: 0.8;
+
+    // @Param: FOLLP_XT_I
+    // @DisplayName: Plane Follow crosstrack PID controller I term
+    // @Description: I term for the crosstrack/heading PID controller
+    // @Range: 0 1
+    XtI = 21, "XT_I", f32: 0.01;
+
+    // @Param: FOLLP_XT_D
+    // @DisplayName: Plane Follow crosstrack PID controller D term
+    // @Description: D term for the crosstrack/heading PID controller
+    // @Range: 0 1
+    XtD = 22, "XT_D", f32: 0.5;
+
+    // @Param: FOLLP_XT_MAX
+    // @DisplayName: Plane Follow crosstrack PID controller maximum correction
+    // @Description: maximum correction retured by the crosstrack/heading PID controller
+    // @Range: 0 1
+    // @Units: deg
+    XtMax = 23, "XT_MAX", f32: 45.0;
+
+    // @Param: FOLLP_XT_I_MAX
+    // @DisplayName: Plane Follow crosstrack PID controller maximum integral
+    // @Description: maximum I applied the crosstrack/heading PID controller
+    // @Range: 0 100
+    // @Units: ms
+    XtIMax = 24, "XT_I_MAX", f32: 100.0;
+
+    // @Param: FOLLP_REFRESH
+    // @DisplayName: Plane Follow refresh rate
+    // @Description: refresh rate for Plane Follow updates
+    // @Range: 0 0.2
+    // @Units: s
+    Refresh = 25, "REFRESH", f32: 0.05;
+}
 
 pub fn retry<T>(context: &Context<'_>, mut call: impl FnMut() -> Result<T>) -> Result<T> {
     let start = context.time_us();
@@ -18,21 +168,6 @@ pub fn retry<T>(context: &Context<'_>, mut call: impl FnMut() -> Result<T>) -> R
 
 fn bind<'a, 'host>(context: &'a Context<'host>, name: &str) -> Result<Parameter<'a, 'host>> {
     retry(context, || context.parameter(name))?.ok_or(Error::Invalid)
-}
-
-fn add<'a, 'host>(
-    context: &'a Context<'host>,
-    index: u8,
-    name: &str,
-    full_name: &str,
-    default: f32,
-) -> Result<Parameter<'a, 'host>> {
-    if !retry(context, || {
-        context.param().add_param(TABLE_KEY, index, name, default)
-    })? {
-        return Err(Error::Host);
-    }
-    bind(context, full_name)
 }
 
 pub fn read(parameter: &Parameter<'_, '_>) -> Result<f32> {
@@ -74,36 +209,34 @@ pub struct Parameters<'ctx, 'host> {
 
 impl<'ctx, 'host> Parameters<'ctx, 'host> {
     pub fn new(context: &'ctx Context<'host>) -> Result<Self> {
-        if !retry(context, || context.param().add_table(TABLE_KEY, "FOLLP_", 30))? {
-            return Err(Error::Host);
-        }
+        Table::register_definitions(context)?;
         Ok(Self {
             foll_alt_type: bind(context, "FOLL_ALT_TYPE")?,
             foll_sysid: bind(context, "FOLL_SYSID")?,
             foll_ofs_y: bind(context, "FOLL_OFS_Y")?,
-            fail_mode: add(context, 1, "FAIL_MODE", "FOLLP_FAIL_MODE", 11.0)?,
-            exit_mode: add(context, 2, "EXIT_MODE", "FOLLP_EXIT_MODE", 12.0)?,
-            activation_function: add(context, 3, "ACT_FN", "FOLLP_ACT_FN", 301.0)?,
-            timeout: add(context, 4, "TIMEOUT", "FOLLP_TIMEOUT", 10.0)?,
-            overshoot_deg: add(context, 5, "OVRSHT_DEG", "FOLLP_OVRSHT_DEG", 75.0)?,
-            turn_deg: add(context, 6, "TURN_DEG", "FOLLP_TURN_DEG", 15.0)?,
-            distance_close: add(context, 7, "DIST_CLOSE", "FOLLP_DIST_CLOSE", 75.0)?,
-            wide_turns: add(context, 8, "WIDE_TURNS", "FOLLP_WIDE_TURNS", 1.0)?,
-            altitude_override: add(context, 9, "ALT_OVR", "FOLLP_ALT_OVR", 0.0)?,
-            distance_p: add(context, 10, "D_P", "FOLLP_D_P", 0.00025)?,
-            distance_i: add(context, 11, "D_I", "FOLLP_D_I", 0.00025)?,
-            distance_d: add(context, 12, "D_D", "FOLLP_D_D", 0.00013)?,
-            velocity_p: add(context, 13, "V_P", "FOLLP_V_P", 0.00025)?,
-            velocity_i: add(context, 14, "V_I", "FOLLP_V_I", 0.00025)?,
-            velocity_d: add(context, 15, "V_D", "FOLLP_V_D", 0.0005)?,
-            lookahead: add(context, 16, "LKAHD", "FOLLP_LKAHD", 3.0)?,
-            simulate_tlf_function: add(context, 17, "SIM_TLF_FN", "FOLLP_SIM_TLF_FN", 302.0)?,
-            cross_track_p: add(context, 20, "XT_P", "FOLLP_XT_P", 0.8)?,
-            cross_track_i: add(context, 21, "XT_I", "FOLLP_XT_I", 0.01)?,
-            cross_track_d: add(context, 22, "XT_D", "FOLLP_XT_D", 0.5)?,
-            cross_track_max: add(context, 23, "XT_MAX", "FOLLP_XT_MAX", 45.0)?,
-            cross_track_i_max: add(context, 24, "XT_I_MAX", "FOLLP_XT_I_MAX", 100.0)?,
-            refresh: add(context, 25, "REFRESH", "FOLLP_REFRESH", 0.05)?,
+            fail_mode: Table::bind(context, P::FailMode)?,
+            exit_mode: Table::bind(context, P::ExitMode)?,
+            activation_function: Table::bind(context, P::ActFn)?,
+            timeout: Table::bind(context, P::Timeout)?,
+            overshoot_deg: Table::bind(context, P::OvrshtDeg)?,
+            turn_deg: Table::bind(context, P::TurnDeg)?,
+            distance_close: Table::bind(context, P::DistClose)?,
+            wide_turns: Table::bind(context, P::WideTurns)?,
+            altitude_override: Table::bind(context, P::AltOvr)?,
+            distance_p: Table::bind(context, P::DP)?,
+            distance_i: Table::bind(context, P::DI)?,
+            distance_d: Table::bind(context, P::DD)?,
+            velocity_p: Table::bind(context, P::VP)?,
+            velocity_i: Table::bind(context, P::VI)?,
+            velocity_d: Table::bind(context, P::VD)?,
+            lookahead: Table::bind(context, P::Lkahd)?,
+            simulate_tlf_function: Table::bind(context, P::SimTlfFn)?,
+            cross_track_p: Table::bind(context, P::XtP)?,
+            cross_track_i: Table::bind(context, P::XtI)?,
+            cross_track_d: Table::bind(context, P::XtD)?,
+            cross_track_max: Table::bind(context, P::XtMax)?,
+            cross_track_i_max: Table::bind(context, P::XtIMax)?,
+            refresh: Table::bind(context, P::Refresh)?,
             airspeed_min: bind(context, "AIRSPEED_MIN")?,
             airspeed_max: bind(context, "AIRSPEED_MAX")?,
             windspeed_max: bind(context, "AHRS_WIND_MAX")?,

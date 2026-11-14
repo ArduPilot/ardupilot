@@ -9,12 +9,25 @@ use ap_rust_sdk::{
     enums::{LocationAltFrame, MavSeverity, RcChannelAuxFunc},
     Context, Error, Parameter, Result,
 };
+
 use core::fmt::{self, Write};
 use mavlink::{camera_feedback, CAMERA_FEEDBACK_ID};
 
 ap_rust_sdk::module!(run);
 
-const PARAM_TABLE_KEY: u8 = 78;
+ap_rust_sdk::param_table! {
+    pub struct Table, enum P;
+    key = 78, prefix = "POI_";
+    size = 1;
+
+    // @Param: POI_DIST_MAX
+    // @DisplayName: Mount POI distance max
+    // @Description: POI's max distance (in meters) from the vehicle
+    // @Range: 0 10000
+    // @User: Standard
+    DistMax = 1, "DIST_MAX", f32: 10_000.0;
+}
+
 const AUX_POI: RcChannelAuxFunc = RcChannelAuxFunc(300);
 const AUX_ROI: RcChannelAuxFunc = RcChannelAuxFunc(301);
 const ALT_ABSOLUTE: LocationAltFrame = LocationAltFrame(0);
@@ -220,15 +233,9 @@ impl Applet<'_, '_> {
 }
 
 fn run(context: &Context<'_>) -> Result {
-    if !retry(context, || context.param().add_table(PARAM_TABLE_KEY, "POI_", 1))?
-        || !retry(context, || {
-            context.param().add_param(PARAM_TABLE_KEY, 1, "DIST_MAX", 10_000.0)
-        })?
-    {
-        return Err(Error::Host);
-    }
+    Table::register_definitions(context)?;
     let mut applet = Applet {
-        distance_max: bind(context, "POI_DIST_MAX")?,
+        distance_max: Table::bind(context, P::DistMax)?,
         terrain_spacing: bind(context, "TERRAIN_SPACING")?,
         last_poi: Some(0),
         last_roi: Some(0),

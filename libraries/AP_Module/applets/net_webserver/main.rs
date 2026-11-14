@@ -7,11 +7,60 @@ extern crate alloc;
 
 use alloc::{string::{String, ToString}, vec::Vec};
 use ap_rust_sdk::{enums::MavSeverity, Context, Error, Parameter, Result, Socket};
+
 use core::fmt::Write;
 
 ap_rust_sdk::module!(run);
 
-const PARAM_TABLE_KEY: u8 = 47;
+ap_rust_sdk::param_table! {
+    pub struct Table, enum P;
+    key = 47, prefix = "WEB_";
+    size = 6;
+
+    // @Param: WEB_ENABLE
+    // @DisplayName: enable web server
+    // @Description: enable web server
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    Enable = 1, "ENABLE", f32: 1.0;
+
+    // @Param: WEB_BIND_PORT
+    // @DisplayName: web server TCP port
+    // @Description: web server TCP port
+    // @Range: 1 65535
+    // @User: Standard
+    BindPort = 2, "BIND_PORT", f32: 8080.0;
+
+    // @Param: WEB_DEBUG
+    // @DisplayName: web server debugging
+    // @Description: web server debugging
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    Debug = 3, "DEBUG", f32: 0.0;
+
+    // @Param: WEB_BLOCK_SIZE
+    // @DisplayName: web server block size
+    // @Description: web server block size for download
+    // @Range: 1 65535
+    // @User: Advanced
+    BlockSize = 4, "BLOCK_SIZE", f32: 10_240.0;
+
+    // @Param: WEB_TIMEOUT
+    // @DisplayName: web server timeout
+    // @Description: timeout for inactive connections
+    // @Units: s
+    // @Range: 0.1 60
+    // @User: Advanced
+    Timeout = 5, "TIMEOUT", f32: 2.0;
+
+    // @Param: WEB_SENDFILE_MIN
+    // @DisplayName: web server minimum file size for sendfile
+    // @Description: sendfile is an offloading mechanism for faster file download. If this is non-zero and the file is larger than this size then sendfile will be used for file download
+    // @Range: 0 10000000
+    // @User: Advanced
+    SendfileMin = 6, "SENDFILE_MIN", f32: 100_000.0;
+}
+
 const REQUEST_MAX: usize = 4096;
 const CLIENT_MAX: usize = 20;
 const DIRECTORY_ENTRY_MAX: u16 = 2048;
@@ -48,24 +97,12 @@ fn text(context: &Context<'_>, severity: i32, message: &str) -> Result {
     retry(context, || context.gcs().send_text(MavSeverity(severity), message))
 }
 
-fn bind<'a, 'host>(context: &'a Context<'host>, name: &str) -> Result<Parameter<'a, 'host>> {
-    retry(context, || context.parameter(name))?.ok_or(Error::Invalid)
-}
-
 fn value(parameter: &Parameter<'_, '_>) -> Result<f32> {
     parameter.get()?.filter(|number| number.is_finite()).ok_or(Error::Invalid)
 }
 
 fn bool_value(parameter: &Parameter<'_, '_>) -> Result<bool> {
     Ok(value(parameter)? != 0.0)
-}
-
-fn push_parameter(context: &Context<'_>, index: u8, name: &str, default: f32) -> Result {
-    if retry(context, || context.param().add_param(PARAM_TABLE_KEY, index, name, default))? {
-        Ok(())
-    } else {
-        Err(Error::Host)
-    }
 }
 
 fn push_bytes(target: &mut Vec<u8>, bytes: &[u8]) -> Result {
@@ -365,19 +402,11 @@ impl Client {
 }
 
 fn run(context: &Context<'_>) -> Result {
-    if !retry(context, || context.param().add_table(PARAM_TABLE_KEY, "WEB_", 6))? {
-        return Err(Error::Host);
-    }
-    push_parameter(context, 1, "ENABLE", 1.0)?;
-    push_parameter(context, 2, "BIND_PORT", 8080.0)?;
-    push_parameter(context, 3, "DEBUG", 0.0)?;
-    push_parameter(context, 4, "BLOCK_SIZE", 10_240.0)?;
-    push_parameter(context, 5, "TIMEOUT", 2.0)?;
-    push_parameter(context, 6, "SENDFILE_MIN", 100_000.0)?;
-    let enabled = bind(context, "WEB_ENABLE")?;
-    let bind_port = bind(context, "WEB_BIND_PORT")?;
-    let timeout = bind(context, "WEB_TIMEOUT")?;
-    let sendfile_min = bind(context, "WEB_SENDFILE_MIN")?;
+    Table::register_definitions(context)?;
+    let enabled = Table::bind(context, P::Enable)?;
+    let bind_port = Table::bind(context, P::BindPort)?;
+    let timeout = Table::bind(context, P::Timeout)?;
+    let sendfile_min = Table::bind(context, P::SendfileMin)?;
     if !bool_value(&enabled)? {
         text(context, 6, "WebServer: disabled")?;
         return Ok(());
