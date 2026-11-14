@@ -1508,7 +1508,7 @@ bool AP_Param::is_read_only(void) const
 // MAVLink interface:
 bool AP_Param::allow_set_via_mavlink(uint16_t flags) const
 {
-    if (is_read_only()) {
+    if (is_read_only() || (flags & AP_PARAM_FLAG_READ_ONLY)) {
         return false;
     }
 
@@ -3369,7 +3369,7 @@ bool AP_Param::load_int32(uint16_t key, uint32_t group_element, int32_t &value)
   find the value for name in the defaults sources, in the order
   reload_defaults_file() applies them so the last one wins
  */
-bool AP_Param::find_dynamic_default(const char *name, float &value)
+bool AP_Param::find_dynamic_default(const char *name, DynamicDefault &d)
 {
     bool found = false;
 #if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
@@ -3382,7 +3382,7 @@ bool AP_Param::find_dynamic_default(const char *name, float &value)
             for (char *fname = strtok_r(filenames, ",", &saveptr);
                  fname != nullptr;
                  fname = strtok_r(nullptr, ",", &saveptr)) {
-                found |= find_default_in_file(fname, name, value);
+                found |= find_default_in_file(fname, name, d);
             }
             free(filenames);
         }
@@ -3392,7 +3392,7 @@ bool AP_Param::find_dynamic_default(const char *name, float &value)
             uint32_t length;
             const uint8_t *text = AP_ROMFS::find_decompress(&default_file[strlen(prefix)], length);
             if (text != nullptr) {
-                found |= find_default_in_string((const char *)text, length, name, value);
+                found |= find_default_in_string((const char *)text, length, name, d);
                 AP_ROMFS::free(text);
             }
         }
@@ -3402,14 +3402,32 @@ bool AP_Param::find_dynamic_default(const char *name, float &value)
 
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0
     if (param_defaults_data.length != 0) {
-        found |= find_default_in_string(param_defaults_data.data, param_defaults_data.length, name, value);
+        found |= find_default_in_string(param_defaults_data.data, param_defaults_data.length, name, d);
     }
 #endif
     return found;
 }
 
+// true if line sets name, keeping its value text and read-only flag
+bool AP_Param::match_default_line(char *line, const char *name, DynamicDefault &d)
+{
+    char *pname;
+    float v;
+    bool read_only;
+    if (!parse_param_line(line, &pname, v, read_only) || strcmp(pname, name) != 0) {
+        return false;
+    }
+    // parse_param_line() NUL terminated the name and the value token
+    const char *value_s = pname + strlen(pname) + 1;
+    value_s += strspn(value_s, ", =\t\r\n");
+    strncpy_noterm(d.value, value_s, sizeof(d.value)-1);
+    d.value[sizeof(d.value)-1] = 0;
+    d.read_only = read_only;
+    return true;
+}
+
 #if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
-bool AP_Param::find_default_in_file(const char *filename, const char *name, float &value)
+bool AP_Param::find_default_in_file(const char *filename, const char *name, DynamicDefault &d)
 {
     const int fd = AP::FS().open(filename, O_RDONLY, true);
     if (fd == -1) {
@@ -3418,13 +3436,7 @@ bool AP_Param::find_default_in_file(const char *filename, const char *name, floa
     bool found = false;
     char line[100];
     while (AP::FS().fgets(line, sizeof(line), fd)) {
-        char *pname;
-        float v;
-        bool read_only;
-        if (parse_param_line(line, &pname, v, read_only) && strcmp(pname, name) == 0) {
-            value = v;
-            found = true;
-        }
+        found |= match_default_line(line, name, d);
     }
     AP::FS().close(fd);
     return found;
@@ -3432,7 +3444,7 @@ bool AP_Param::find_default_in_file(const char *filename, const char *name, floa
 #endif
 
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
-bool AP_Param::find_default_in_string(const volatile char *ptr, int32_t length, const char *name, float &value)
+bool AP_Param::find_default_in_string(const volatile char *ptr, int32_t length, const char *name, DynamicDefault &d)
 {
     bool found = false;
     while (length > 0) {
@@ -3446,13 +3458,7 @@ bool AP_Param::find_default_in_string(const volatile char *ptr, int32_t length, 
         length -= i+1;
         ptr += i+1;
 
-        char *pname;
-        float v;
-        bool read_only;
-        if (parse_param_line(line, &pname, v, read_only) && strcmp(pname, name) == 0) {
-            value = v;
-            found = true;
-        }
+        found |= match_default_line(line, name, d);
     }
     return found;
 }
@@ -3564,8 +3570,28 @@ bool AP_Param::add_param_typed(uint8_t _key, uint8_t param_num, const char *pnam
         }
     }
 
-    // the defaults files were applied before this parameter existed
-    find_dynamic_default(fullName, default_value);
+    // the defaults files were applied before this parameter existed. A
+    // value invalid for the type is ignored, integers are parsed exactly
+    int32_t int_default = type == AP_PARAM_INT32 ? int32_t(default_value) : 0;
+    DynamicDefault dd {};
+    bool read_only = false;
+    if (find_dynamic_default(fullName, dd)) {
+        char *end;
+        if (type == AP_PARAM_INT32) {
+            const long long v = strtoll(dd.value, &end, 10);
+            if (end != dd.value && *end == 0 && v >= INT32_MIN && v <= INT32_MAX) {
+                int_default = int32_t(v);
+                default_value = float(int_default);
+                read_only = dd.read_only;
+            }
+        } else {
+            const float v = strtof(dd.value, &end);
+            if (end != dd.value && isfinite(v)) {
+                default_value = v;
+                read_only = dd.read_only;
+            }
+        }
+    }
 
     auto &ginfo = const_cast<GroupInfo*>(info.group_info)[param_num];
 
@@ -3592,15 +3618,18 @@ bool AP_Param::add_param_typed(uint8_t _key, uint8_t param_num, const char *pnam
     // load so the param is not visible to MAVLink until after it is
     // loaded
     if (type == AP_PARAM_INT32) {
-        ((AP_Int32 *)p)->set_default(int32_t(default_value));
+        ((AP_Int32 *)p)->set_default(int_default);
     } else {
         ((AP_Float *)p)->set_default(default_value);
     }
-    p->load();
+    if (!p->load() && type == AP_PARAM_INT32) {
+        // load() applied the float GroupInfo default
+        ((AP_Int32 *)p)->set(int_default);
+    }
 
     // clear the hidden flag if set and invalidate the count
     // so we recount the parameters
-    ginfo.flags = 0;
+    ginfo.flags = read_only ? AP_PARAM_FLAG_READ_ONLY : 0;
     invalidate_count();
     
     return true;
