@@ -78,7 +78,7 @@ fn last_storage_slot_is_supported() {
 
 crate::param_table! {
     struct Reserved, enum R;
-    key = 201, prefix = "TST_";
+    key = 200, prefix = "TST_";
     size = 63;
     Value = 1, "VALUE", f32: 3.0;
 }
@@ -99,6 +99,9 @@ struct Host {
     value: Cell<f32>,
     entries: Cell<u32>,
     allocations: Cell<u32>,
+    reads: Cell<u32>,
+    fail_read_at: Cell<u32>,
+    read_error: Cell<i32>,
 }
 
 impl Host {
@@ -111,6 +114,9 @@ impl Host {
             value: Cell::new(7.0),
             entries: Cell::new(0),
             allocations: Cell::new(0),
+            reads: Cell::new(0),
+            fail_read_at: Cell::new(0),
+            read_error: Cell::new(api::STATUS_BUSY),
         }
     }
 
@@ -165,15 +171,25 @@ unsafe extern "C" fn call(
     match (ni, no) {
         (19, 1) => {
             let input = core::slice::from_raw_parts(input, ni as usize);
-            assert_eq!(input[0], 201);
+            if input[0] > 200 {
+                return api::STATUS_INVALID;
+            }
+            assert_eq!(input[0], 200);
             assert_eq!(&input[1..5], b"TST_");
             assert_eq!(input[18], 63);
             *output = u8::from(!h.reject.get());
         }
         (23, 1) => {
             let input = core::slice::from_raw_parts(input, ni as usize);
-            assert_eq!(&input[..2], &[201, 1]);
-            assert_eq!(&input[2..7], b"VALUE");
+            if input[0] > 200 {
+                return api::STATUS_INVALID;
+            }
+            assert_eq!(input[0], 200);
+            match input[1] {
+                1 => assert_eq!(&input[2..7], b"VALUE"),
+                2 => assert_eq!(&input[2..7], b"OTHER"),
+                _ => panic!("unexpected parameter index"),
+            }
             assert_eq!(&input[19..23], &3.0f32.to_le_bytes());
             h.entries.set(h.entries.get() + 1);
             *output = u8::from(!h.reject.get());
@@ -183,10 +199,16 @@ unsafe extern "C" fn call(
         }
         (25, 1) => {
             let input = core::slice::from_raw_parts(input, ni as usize);
-            assert_eq!(&input[8..17], b"TST_VALUE");
+            let name = &input[8..17];
+            assert!(name == b"TST_VALUE" || name == b"TST_OTHER");
             *output = 1;
         }
         (8, 5) => {
+            h.reads.set(h.reads.get() + 1);
+            if h.reads.get() == h.fail_read_at.get() {
+                *output = 0;
+                return h.read_error.get();
+            }
             *output = 1;
             core::slice::from_raw_parts_mut(output.add(1), 4)
                 .copy_from_slice(&h.value.get().to_le_bytes());
@@ -269,4 +291,61 @@ fn rejected_registration_and_stop_are_propagated() {
     h.stopped.set(true);
     assert_eq!(Reserved::register_definitions(&c), Err(Error::Stopped));
     assert_eq!(h.entries.get(), 0);
+}
+
+crate::param_table! {
+    struct Pair, enum Entry;
+    key = 200, prefix = "TST_";
+    size = 63;
+    First = 1, "VALUE", f32: 3.0;
+    Second = 2, "OTHER", f32: 3.0;
+}
+
+#[test]
+fn refresh_preserves_cache_and_change_bits_after_read_failure() {
+    for (status, error) in [
+        (api::STATUS_BUSY, Error::Busy),
+        (api::STATUS_STOPPED, Error::Stopped),
+        (api::STATUS_INVALID, Error::Invalid),
+        (api::STATUS_OK, Error::Invalid), // A missing value also fails the refresh.
+    ] {
+        let h = Host::new();
+        let c = h.context();
+        let mut p = Pair::register(&c).unwrap();
+        h.value.set(12.0);
+        h.fail_read_at.set(h.reads.get() + 2);
+        h.read_error.set(status);
+        assert_eq!(p.refresh(), Err(error));
+        assert_eq!(p.get(Entry::First), 7.0);
+        assert_eq!(p.get(Entry::Second), 7.0);
+        let changes = p.refresh().unwrap();
+        assert!(Entry::First.changed(changes));
+        assert!(Entry::Second.changed(changes));
+        assert_eq!(p.get(Entry::First), 12.0);
+        assert_eq!(p.get(Entry::Second), 12.0);
+        assert_eq!(p.refresh(), Ok(0));
+        drop(p);
+        assert_eq!(h.allocations.get(), 0);
+    }
+}
+
+crate::param_table! {
+    struct FirstKey, enum FirstKeyEntry;
+    key = 0, prefix = "FIRST_";
+    Value = 1, "VALUE", f32: 0.0;
+}
+
+#[test]
+fn parameter_table_key_boundaries_match_the_host() {
+    assert_eq!(FirstKey::KEY, 0);
+    assert_eq!(Reserved::KEY, 200);
+    let h = Host::new();
+    let c = h.context();
+    assert_eq!(
+        crate::register_param_table(&c, 201, "TST_", 63),
+        Err(Error::Invalid)
+    );
+    assert_eq!(def(1, "VALUE", 3.0).register(&c, 201), Err(Error::Invalid));
+    assert_eq!(h.entries.get(), 0);
+    assert_eq!(h.allocations.get(), 0);
 }
