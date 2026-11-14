@@ -1334,7 +1334,7 @@ void AP_DDS_Client::main_loop(void)
         }
         // If using UDP, check if the network is active before proceeding
         // not applicable for SITL, which doesn't use AP_Networking
-#if AP_DDS_UDP_ENABLED && !AP_NETWORKING_BACKEND_SITL
+#if AP_DDS_UDP_ENABLED && !AP_NETWORKING_BACKEND_SITL && (CONFIG_HAL_BOARD != HAL_BOARD_LINUX)
         if (!is_using_serial) {
             const auto &network = AP::network();
             if (network.get_ip_active() == 0) {
