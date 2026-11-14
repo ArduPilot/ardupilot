@@ -757,12 +757,18 @@ bool CANIface::init(const uint32_t bitrate)
 
     bitrate_ = bitrate;
 
+#if CH_CFG_USE_HEAP == TRUE
     if (can_ifaces[0] == nullptr) {
         can_ifaces[0] = NEW_NOTHROW CANIface(0);
         if (can_ifaces[0] == nullptr) {
             return false;
         }
     }
+#else
+    if (can_ifaces[0] == nullptr) {
+        return false;
+    }
+#endif
     if (self_index_ == 1 && !can_ifaces[0]->is_initialized()) {
         can_ifaces[0]->initOnce(false);
         if (!can_ifaces[0]->init(bitrate)) {

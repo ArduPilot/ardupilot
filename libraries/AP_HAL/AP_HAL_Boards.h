@@ -162,6 +162,14 @@
 #define HAL_OS_SOCKETS 0
 #endif
 
+#ifndef HAL_HEAP_ENABLED
+#define HAL_HEAP_ENABLED 1
+#endif
+
+#ifndef AP_PICOLIBC_SITL_ENABLED
+#define AP_PICOLIBC_SITL_ENABLED 0
+#endif
+
 #ifndef HAL_PARAM_DEFAULTS_PATH
 #define HAL_PARAM_DEFAULTS_PATH nullptr
 #endif
