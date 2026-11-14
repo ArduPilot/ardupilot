@@ -701,6 +701,20 @@
                 "waf_target": "bin/ardusub",
                 "default_params_filename": "default_params/sub-6dof.parm"
             },
+            "auv": {
+                "waf_target": "bin/ardusub",
+                "default_params_filename": [
+                    "default_params/sub.parm",
+                    "default_params/sub-auv.parm"
+                ]
+            },
+            "auv_single_thruster_4_fin": {
+                "waf_target": "bin/ardusub",
+                "default_params_filename": [
+                    "default_params/sub.parm",
+                    "default_params/sub-auv.parm"
+                ]
+            },
             "gazebo-bluerov2": {
                 "waf_target": "bin/ardusub",
                 "default_params_filename": "default_params/sub.parm"
