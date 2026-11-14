@@ -353,6 +353,7 @@ class ExtractFeatures(BuildScriptBase):
 
             ('AP_SCRIPTING_BINDING_VEHICLE_ENABLED', 'AP_Vehicle_index'),
             ('AP_SCRIPTING_BINDING_MOTORS_ENABLED', 'AP__motors___index'),
+            ('AP_SMARTRTL_RESET_ENABLED', r'AP_SmartRTL::reset_home\b'),
         ]
 
     def progress_prefix(self):

@@ -4036,6 +4036,19 @@ function precland:target_acquired() end
 ---@return boolean
 function precland:healthy() end
 
+-- SmartRTL (return along the recorded path) library.  Only available on Copter, Heli and Rover
+smart_rtl = {}
+
+-- Clear the return path and save the vehicle's current position as the new return point, in flight.
+-- Returns false if SmartRTL is disabled, or the vehicle is not saving its path from a good position: while returning along it, without a good position, and on Copter while disarmed.
+-- The reset is performed by a background thread shortly after this call; the vehicle reports "SmartRTL: return point reset" when done.
+---@return boolean
+function smart_rtl:reset_home() end
+
+-- Returns true if SmartRTL is enabled (SRTL_POINTS > 0 and SRTL_ACCURACY > 0)
+---@return boolean
+function smart_rtl:enabled() end
+
 -- desc
 follow = {}
 

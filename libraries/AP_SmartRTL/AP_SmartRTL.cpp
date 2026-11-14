@@ -19,6 +19,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_SmartRTL *AP_SmartRTL::_singleton;
+
 const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
     // @Param: ACCURACY
     // @DisplayName: SmartRTL accuracy
@@ -86,6 +88,7 @@ const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
 AP_SmartRTL::AP_SmartRTL(bool example_mode) :
     _example_mode(example_mode)
 {
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
     _simplify.bitmask.setall();
 }
@@ -211,47 +214,82 @@ void AP_SmartRTL::set_home(bool position_ok)
     set_home(position_ok, current_pos);
 }
 
+// the reset is performed by the background thread, which runs the simplify and prune algorithms: this
+// is also called in flight, as when home is moved, while they may be running on the old path
 void AP_SmartRTL::set_home(bool position_ok, const Vector3p& current_pos)
 {
     if (_path == nullptr) {
         return;
     }
 
-    // clear path
-    _path_points_count = 0;
-
-    // reset simplification and pruning.  These functions access members that should normally only
-    // be touched by the background thread but it will not be running because active should be false
-    reset_simplification();
-    reset_pruning();
-
-    // don't continue if no position at take-off
-    if (!position_ok) {
+    if (_example_mode) {
+        reset_path(position_ok, current_pos.tofloat());
         return;
     }
 
-    // save current position as first point in path
-    if (!add_point(current_pos)) {
-        return;
-    }
-
-    // successfully added point and reset path
-    const uint32_t now = AP_HAL::millis();
-    _last_good_position_ms = now;
-    _last_position_save_ms = now;
-    _active = true;
-    _home_saved = true;
+    WITH_SEMAPHORE(_reset_sem);
+    _reset_request.pos = current_pos.tofloat();
+    _reset_request.position_ok = position_ok;
+    _reset_request.from_reset_home = false;
+    _reset_request.pending = true;
 }
+
+#if AP_SMARTRTL_RESET_ENABLED
+// clear the return path and save the vehicle's current position as the new return point
+// the reset is performed by the background thread, which runs the simplify and prune algorithms,
+// so the path and their state are never changed underneath them
+// returns true if the request was accepted, false if SmartRTL is disabled, a set_home reset is pending,
+// the vehicle's position is unavailable, or the vehicle is not recording the path, as while it returns along it
+bool AP_SmartRTL::reset_home()
+{
+    if (_path == nullptr || !enabled() || !reset_allowed()) {
+        return false;
+    }
+
+    // get current position
+    Vector3p current_pos;
+    {
+        auto &ahrs = AP::ahrs();
+        WITH_SEMAPHORE(ahrs.get_semaphore());
+        if (!ahrs.get_relative_position_NED_origin(current_pos)) {
+            return false;
+        }
+    }
+
+    WITH_SEMAPHORE(_reset_sem);
+    // a pending set_home resets the path anyway, and is not replaced by a request that may be refused
+    if (_reset_request.pending && !_reset_request.from_reset_home) {
+        return false;
+    }
+    _reset_request.pos = current_pos.tofloat();
+    _reset_request.position_ok = true;
+    _reset_request.from_reset_home = true;
+    _reset_request.pending = true;
+    return true;
+}
+
+// a reset is allowed only while the vehicle records the path from a good position: not from the
+// moment a return asks for the path's cleanup until update() is next asked to save a position
+bool AP_SmartRTL::reset_allowed() const
+{
+    return _recording;
+}
+#endif  // AP_SMARTRTL_RESET_ENABLED
 
 // call this at 3hz (or higher) regardless of what mode the vehicle is in
 void AP_SmartRTL::update(bool position_ok, bool save_position)
 {
+#if AP_SMARTRTL_RESET_ENABLED
+    _recording = position_ok && save_position;
+#endif
+
     // try to save home if not already saved
     if (position_ok && !_home_saved) {
         set_home(true);
     }
 
-    if (!_active || !save_position) {
+    // a pending reset is about to replace the path, so do not add to it or time it out
+    if (!_active || !save_position || reset_pending()) {
         return;
     }
 
@@ -290,6 +328,11 @@ void AP_SmartRTL::update(bool position_ok, const Vector3p& current_pos)
 // this method should be called repeatedly until it returns true before initiating the return journey
 bool AP_SmartRTL::request_thorough_cleanup(ThoroughCleanupType clean_type)
 {
+#if AP_SMARTRTL_RESET_ENABLED
+    // a return is starting, which update() would only report at its next call
+    _recording = false;
+#endif
+
     // this should never happen but just in case
     if (!_active) {
         return false;
@@ -359,14 +402,20 @@ bool AP_SmartRTL::add_point(const Vector3p& point)
 // run background cleanup - should be run regularly from the IO thread
 void AP_SmartRTL::run_background_cleanup()
 {
-    if (!_active) {
-        return;
-    }
-
     // get semaphore
     if (!_path_sem.take_nonblocking()) {
         return;
     }
+
+    // perform a reset of the path if one has been requested
+    // this is done even if inactive because a reset re-activates SmartRTL
+    handle_reset_request();
+
+    if (!_active) {
+        _path_sem.give();
+        return;
+    }
+
     // local copy of _path_points_count and _path_points_completed_limit
     const uint16_t path_points_count = _path_points_count;
     const uint16_t path_points_completed_limit = _path_points_completed_limit;
@@ -873,6 +922,67 @@ void AP_SmartRTL::deactivate(Action action, const char *reason)
     _active = false;
     log_action(action);
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "SmartRTL deactivated: %s", reason);
+}
+
+// true if a path reset has been requested and not yet performed
+bool AP_SmartRTL::reset_pending()
+{
+    WITH_SEMAPHORE(_reset_sem);
+    return _reset_request.pending;
+}
+
+// perform the path reset requested by set_home or reset_home, if any.  called from the background thread with the path semaphore held
+void AP_SmartRTL::handle_reset_request()
+{
+    ResetRequest request;
+    {
+        WITH_SEMAPHORE(_reset_sem);
+        if (!_reset_request.pending) {
+            return;
+        }
+        request = _reset_request;
+        _reset_request.pending = false;
+    }
+
+#if AP_SMARTRTL_RESET_ENABLED
+    if (request.from_reset_home) {
+        // the vehicle may have started a return since the request was made
+        if (reset_allowed()) {
+            reset_path(true, request.pos);
+            log_action(Action::RETURN_POINT_RESET, request.pos);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: return point reset");
+        }
+        return;
+    }
+#endif
+
+    reset_path(request.position_ok, request.pos);
+}
+
+// clear the path and restart the cleanup algorithms from scratch, then if position_ok make pos the
+// first point of the path and (re-)activate SmartRTL, which recovers from an earlier "bad position" or
+// "buffer full" deactivation.  called with the path semaphore held, or from the example sketch, which
+// has no background thread, so the path is written directly
+void AP_SmartRTL::reset_path(bool position_ok, const Vector3f &pos)
+{
+    _path_points_count = 0;
+    _path_points_completed_limit = SMARTRTL_POINTS_MAX;
+    reset_simplification();
+    reset_pruning();
+
+    // don't continue if no position at take-off
+    if (!position_ok) {
+        return;
+    }
+
+    _path[_path_points_count++] = pos;
+    log_action(Action::POINT_ADD, pos);
+
+    const uint32_t now = AP_HAL::millis();
+    _last_good_position_ms = now;
+    _last_position_save_ms = now;
+    _active = true;
+    _home_saved = true;
 }
 
 #if HAL_LOGGING_ENABLED
