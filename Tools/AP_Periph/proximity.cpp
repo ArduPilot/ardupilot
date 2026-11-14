@@ -17,7 +17,7 @@ void AP_Periph_FW::can_proximity_update()
     uint32_t now = AP_HAL::millis();
     static uint32_t last_update_ms;
     if (g.proximity_max_rate > 0 &&
-        now - last_update_ms < 1000/g.proximity_max_rate) {
+        now - last_update_ms < 1000U/g.proximity_max_rate) {
         // limit to max rate
         return;
     }
