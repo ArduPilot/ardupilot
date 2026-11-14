@@ -1,0 +1,34 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
+[application]
+
+config/name="ArduPilot SITL (Godot + Jolt)"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.7")
+run/flush_stdout_on_print=true
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/ardupilot_sitl/plugin.cfg")
+
+[physics]
+
+common/physics_ticks_per_second=1200
+common/max_physics_steps_per_frame=64
+common/physics_jitter_fix=0.0
+3d/physics_engine="Jolt Physics"
+3d/default_gravity=9.80665
+3d/default_linear_damp=0.0
+3d/default_angular_damp=0.0

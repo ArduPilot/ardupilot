@@ -1,0 +1,15 @@
+# Parameters for models/tracker.gltf, applied on top of AntennaTracker's
+# own. Yaw is on SERVO1 and pitch on SERVO2.
+SIM_RATE_HZ     400
+
+# The yaw servo turns continuously, so its output is a rate, and the
+# default P of 0.2 is for a position servo: far too slow for this mount.
+SERVO_YAW_TYPE  2
+YAW2SRV_P       2.0
+YAW2SRV_I       0.2
+YAW2SRV_D       0.0
+
+# Pitch runs from the horizon to straight up over the full travel; at
+# the default 1100-1900 the dish could come no lower than nine degrees.
+SERVO2_MIN      1000
+SERVO2_MAX      2000

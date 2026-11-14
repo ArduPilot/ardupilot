@@ -1,0 +1,76 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {"shapes": [{"type": "capsule", "capsule": {"height": 8.0, "radiusTop": 1.0, "radiusBottom": 1.0}}, {"type": "box", "box": {"size": [0.6, 0.5, 1.2]}}]},
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.6, "dynamicFriction": 0.5, "restitution": 0.2}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "blimp",
+   "translation": [0, 0.3, 0],
+   "children": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 25.65, "inertiaDiagonal": [166.7, 166.7, 17.1], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"drag": {"area": [8.0, 8.0, 0.6]}, "chassis": {"style": "blimp", "size": [2.0, 2.0, 10.0], "podLength": 0.9, "podDiameter": 0.4}}
+   }
+  },
+  {
+   "name": "envelope",
+   "translation": [0, 1.5, 0],
+   "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}},
+   "rotation": [0.70710678, 0.0, 0.0, 0.70710678]
+  },
+  {"name": "gondola", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {"name": "envelope_lift", "translation": [0, 1.5, 0], "extensions": {"ARDUPILOT_sitl": {"floater": {"fluid": "air", "volume": 20.94}}}},
+  {
+   "name": "pod_left",
+   "translation": [2.0, 1.5, -0.45],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {"servo": 1, "bidirectional": true, "maxThrust": 45.0, "thrustExpo": 0.2, "torqueRatio": 0.002, "direction": "ccw", "timeConstant": 0.05, "diameter": 0.4, "pitchSpeed": 8.0}
+    }
+   },
+   "rotation": [0.70710678, 0.0, 0.0, 0.70710678]
+  },
+  {
+   "name": "pod_right",
+   "translation": [-2.0, 1.5, -0.45],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {"servo": 2, "bidirectional": true, "maxThrust": 45.0, "thrustExpo": 0.2, "torqueRatio": 0.002, "direction": "cw", "timeConstant": 0.05, "diameter": 0.4, "pitchSpeed": 8.0}
+    }
+   },
+   "rotation": [0.70710678, 0.0, 0.0, 0.70710678]
+  },
+  {
+   "name": "lift_fan",
+   "translation": [0, 2.85, 0],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {"servo": 3, "bidirectional": true, "maxThrust": 15.0, "thrustExpo": 0.2, "torqueRatio": 0.002, "direction": "ccw", "timeConstant": 0.05, "diameter": 0.4, "pitchSpeed": 6.0}
+    }
+   }
+  },
+  {
+   "name": "side_fan",
+   "translation": [0, 1.5, 0],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {"servo": 4, "bidirectional": true, "maxThrust": 15.0, "thrustExpo": 0.2, "torqueRatio": 0.002, "direction": "cw", "timeConstant": 0.05, "diameter": 0.4, "pitchSpeed": 6.0}
+    }
+   },
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  },
+  {"name": "tail_stabiliser", "translation": [0, 1.5, -4.5], "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 1.8, "chord": 0.9, "cd0": 0.01, "stallAngle": 20}}}},
+  {
+   "name": "tail_fin",
+   "translation": [0, 2.3, -4.5],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 1.6, "chord": 0.9, "cd0": 0.01, "stallAngle": 20}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  }
+ ]
+}

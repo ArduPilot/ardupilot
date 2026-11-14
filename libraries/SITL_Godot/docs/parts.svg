@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="372" viewBox="0 0 760 372"
+     role="img" aria-labelledby="title desc">
+<title id="title">The node tree of plane.gltf, and the parts hung off it</title>
+<desc id="desc">plane.gltf is one rigid body, the root node, with collision shapes
+and parts as its children: lifting surfaces, a rotor, a steered hinge carrying a
+wheel. Every part acts on the nearest rigid body above it in the tree, which here
+is always the root.</desc>
+<style>
+  svg  { color-scheme: light dark; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif }
+  .ink { fill: #1f2328 }
+  .dim { fill: #59636e }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace }
+  .tree{ stroke: #adb5bd; stroke-width: 1.2; fill: none }
+  .lead{ stroke: #59636e; stroke-width: 1.2; fill: none; stroke-dasharray: 3 3 }
+  .leadc { fill: #59636e }
+  .bodyp  { fill: #8250df }
+  .bodybx { fill: #8250df; fill-opacity: .12; stroke: #8250df; stroke-width: 1 }
+  .partp  { fill: #0969da }
+  .partbx { fill: #0969da; fill-opacity: .12; stroke: #0969da; stroke-width: 1 }
+  .colp   { fill: #59636e }
+  .colbx  { fill: #59636e; fill-opacity: .10; stroke: #adb5bd; stroke-width: 1 }
+  @media (prefers-color-scheme: dark) {
+    .ink { fill: #e6edf3 }
+    .dim { fill: #9198a1 }
+    .tree{ stroke: #3d444d }
+    .lead{ stroke: #9198a1 }
+    .leadc { fill: #9198a1 }
+    .bodyp  { fill: #ab7df8 }
+    .bodybx { fill: #ab7df8; fill-opacity: .16; stroke: #ab7df8 }
+    .partp  { fill: #4493f8 }
+    .partbx { fill: #4493f8; fill-opacity: .16; stroke: #4493f8 }
+    .colp   { fill: #9198a1 }
+    .colbx  { fill: #9198a1; fill-opacity: .12; stroke: #3d444d }
+  }
+</style>
+<defs>
+  <marker id="la" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L8,4 L0,8 z" class="leadc"/>
+  </marker>
+</defs>
+
+<text class="ink mono" x="16" y="28" font-size="14" font-weight="600">plane.gltf</text>
+<text class="dim" x="104" y="28" font-size="13">&#8212; one rigid body, with the parts hung off it</text>
+
+<!-- tree rails -->
+<path class="tree" d="M48,100 V316 M48,124 H80 M48,156 H80 M48,188 H80 M48,220 H80 M48,252 H80 M48,316 H80"/>
+<path class="tree" d="M96,260 V284 M96,284 H112"/>
+
+<!-- root -->
+<text class="ink mono" x="40" y="96" font-size="13" font-weight="600">plane</text>
+<rect class="bodybx" x="230" y="84" width="78" height="17" rx="8.5"/>
+<text class="bodyp" x="269" y="96" font-size="11" text-anchor="middle">rigid body</text>
+<rect class="partbx" x="314" y="84" width="59" height="17" rx="8.5"/>
+<text class="partp mono" x="343" y="96" font-size="11" text-anchor="middle">chassis</text>
+<rect class="partbx" x="379" y="84" width="41" height="17" rx="8.5"/>
+<text class="partp mono" x="399" y="96" font-size="11" text-anchor="middle">drag</text>
+
+<!-- children -->
+<text class="ink mono" x="88" y="128" font-size="13">fuselage</text>
+<rect class="colbx" x="230" y="116" width="66" height="17" rx="8.5"/>
+<text class="colp" x="263" y="128" font-size="11" text-anchor="middle">collider</text>
+
+<text class="ink mono" x="88" y="160" font-size="13">wing_left_inner</text>
+<rect class="partbx" x="230" y="148" width="59" height="17" rx="8.5"/>
+<text class="partp mono" x="259" y="160" font-size="11" text-anchor="middle">surface</text>
+
+<text class="ink mono" x="88" y="192" font-size="13">tailplane</text>
+<rect class="partbx" x="230" y="180" width="59" height="17" rx="8.5"/>
+<text class="partp mono" x="259" y="192" font-size="11" text-anchor="middle">surface</text>
+
+<text class="ink mono" x="88" y="224" font-size="13">propeller</text>
+<rect class="partbx" x="230" y="212" width="47" height="17" rx="8.5"/>
+<text class="partp mono" x="253" y="224" font-size="11" text-anchor="middle">rotor</text>
+
+<text class="ink mono" x="88" y="256" font-size="13">steering_nose</text>
+<rect class="partbx" x="230" y="244" width="47" height="17" rx="8.5"/>
+<text class="partp mono" x="253" y="256" font-size="11" text-anchor="middle">hinge</text>
+
+<text class="ink mono" x="120" y="288" font-size="13">wheel_nose</text>
+<rect class="partbx" x="230" y="276" width="47" height="17" rx="8.5"/>
+<text class="partp mono" x="253" y="288" font-size="11" text-anchor="middle">wheel</text>
+
+<text class="dim" x="88" y="320" font-size="12">&#8230; 12 more: colliders, surfaces and two wheels</text>
+
+<!-- the rule -->
+<path class="lead" d="M492,92 H432" marker-end="url(#la)"/>
+<text class="ink" x="500" y="80" font-size="12.5" font-weight="600">Every part acts on the</text>
+<text class="ink" x="500" y="97" font-size="12.5" font-weight="600">nearest rigid body above it.</text>
+<text class="dim" x="500" y="119" font-size="12">Only the root has motion here, so</text>
+<text class="dim" x="500" y="136" font-size="12">every force lands on that one body.</text>
+
+<path class="lead" d="M492,270 H292" marker-end="url(#la)"/>
+<text class="dim" x="500" y="252" font-size="12">A wheel under a hinge is steered</text>
+<text class="dim" x="500" y="269" font-size="12">by it; a motor under a tilting</text>
+<text class="dim" x="500" y="286" font-size="12">nacelle is aimed by it.</text>
+
+<text class="dim" x="500" y="320" font-size="12">A force acts at its own node&#8217;s</text>
+<text class="dim" x="500" y="337" font-size="12">position, along its own axes.</text>
+
+<!-- legend -->
+<text class="dim" x="16" y="358" font-size="11.5">
+  Children with a collider are collision shape only; a child with an
+</text>
+<text class="dim mono" x="454" y="358" font-size="11.5">ARDUPILOT_sitl</text>
+<text class="dim" x="560" y="358" font-size="11.5">member is a part.</text>
+</svg>

@@ -1,0 +1,6 @@
+# ArduPlane parameters for models/plane.gltf, applied on top of
+# Tools/autotest/models/plane.parm, whose airspeeds it flies
+TKOFF_ROTATE_SPD 11
+
+# a 50Hz loop needs only 90Hz of gyro
+SIM_RATE_HZ 100

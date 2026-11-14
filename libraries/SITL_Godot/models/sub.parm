@@ -1,0 +1,24 @@
+# Parameters for models/sub.gltf, applied on top of
+# Tools/autotest/default_params/sub.parm. The model is the vectored
+# frame: four flat thrusters at forty-five degrees and two upright.
+FRAME_CONFIG    1
+
+# The thrusters reverse about mid stick and the model is built for the
+# full range; ArduSub's default 1100-1900 would give 80% of the thrust.
+SERVO1_MIN      1000
+SERVO1_MAX      2000
+SERVO2_MIN      1000
+SERVO2_MAX      2000
+SERVO3_MIN      1000
+SERVO3_MAX      2000
+SERVO4_MIN      1000
+SERVO4_MAX      2000
+SERVO5_MIN      1000
+SERVO5_MAX      2000
+SERVO6_MIN      1000
+SERVO6_MAX      2000
+
+
+# ArduSub's loop needs far less than the stock 1200Hz of physics, which
+# holds the backend to about twice real time.
+SIM_RATE_HZ     400

@@ -1,0 +1,138 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {
+   "shapes": [
+    {"type": "box", "box": {"size": [0.16, 0.16, 1.4]}},
+    {"type": "box", "box": {"size": [0.55, 0.012, 0.28]}},
+    {"type": "box", "box": {"size": [0.012, 0.35, 0.28]}},
+    {"type": "box", "box": {"size": [0.4569, 0.025, 0.5076]}},
+    {"type": "box", "box": {"size": [0.4569, 0.025, 0.5076]}},
+    {"type": "box", "box": {"size": [0.4569, 0.025, 0.5076]}},
+    {"type": "box", "box": {"size": [0.4569, 0.025, 0.5076]}}
+   ]
+  },
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.6, "dynamicFriction": 0.5, "restitution": 0.1}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "glider",
+   "translation": [0, 0.18, 0],
+   "children": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 9.07441, "inertiaDiagonal": [1.85, 2.04, 0.234], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"chassis": {"style": "plane", "size": [0.16, 0.16, 1.4]}, "drag": {"area": [0.09, 0.09, 0.014]}}
+   }
+  },
+  {"name": "fuselage", "translation": [0, 0, -0.15], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {"name": "tail_box", "translation": [0, 0.06, -0.95], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {"name": "fin_box", "translation": [0, 0.22, -0.95], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {
+   "name": "wing_left_inner",
+   "translation": [0.2284, 0.052, 0.0],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.4569, "chord": 0.5076, "aspectRatio": 3.6, "cl0": 0.1, "cm0": -0.03, "cd0": 0.015, "stallAngle": 14}}},
+   "rotation": [0.0, 0.0, 0.02617695, 0.99965732]
+  },
+  {
+   "name": "wing_box_left_inner",
+   "translation": [0.2284, 0.052, -0.1269],
+   "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}},
+   "rotation": [0.0, 0.0, 0.02617695, 0.99965732]
+  },
+  {
+   "name": "wing_left_outer",
+   "translation": [0.6853, 0.0759, 0.0],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {
+      "span": 0.4569,
+      "chord": 0.5076,
+      "aspectRatio": 3.6,
+      "cl0": 0.1,
+      "cm0": -0.03,
+      "cd0": 0.015,
+      "stallAngle": 14,
+      "flapServo": 1,
+      "flapAngleMin": -18,
+      "flapAngleMax": 18,
+      "flapChordFraction": 0.22
+     }
+    }
+   },
+   "rotation": [0.0, 0.0, 0.02617695, 0.99965732]
+  },
+  {
+   "name": "wing_box_left_outer",
+   "translation": [0.6853, 0.0759, -0.1269],
+   "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 4}, "physicsMaterial": 0}}},
+   "rotation": [0.0, 0.0, 0.02617695, 0.99965732]
+  },
+  {
+   "name": "wing_right_inner",
+   "translation": [-0.2284, 0.052, 0.0],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.4569, "chord": 0.5076, "aspectRatio": 3.6, "cl0": 0.1, "cm0": -0.03, "cd0": 0.015, "stallAngle": 14}}},
+   "rotation": [0.0, 0.0, -0.02617695, 0.99965732]
+  },
+  {
+   "name": "wing_box_right_inner",
+   "translation": [-0.2284, 0.052, -0.1269],
+   "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 5}, "physicsMaterial": 0}}},
+   "rotation": [0.0, 0.0, -0.02617695, 0.99965732]
+  },
+  {
+   "name": "wing_right_outer",
+   "translation": [-0.6853, 0.0759, 0.0],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {
+      "span": 0.4569,
+      "chord": 0.5076,
+      "aspectRatio": 3.6,
+      "cl0": 0.1,
+      "cm0": -0.03,
+      "cd0": 0.015,
+      "stallAngle": 14,
+      "flapServo": 1,
+      "flapAngleMin": 18,
+      "flapAngleMax": -18,
+      "flapChordFraction": 0.22
+     }
+    }
+   },
+   "rotation": [0.0, 0.0, -0.02617695, 0.99965732]
+  },
+  {
+   "name": "wing_box_right_outer",
+   "translation": [-0.6853, 0.0759, -0.1269],
+   "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 6}, "physicsMaterial": 0}}},
+   "rotation": [0.0, 0.0, -0.02617695, 0.99965732]
+  },
+  {
+   "name": "tailplane",
+   "translation": [0, 0.06, -0.95],
+   "extensions": {
+    "ARDUPILOT_sitl": {"surface": {"span": 0.55, "chord": 0.28, "cd0": 0.016, "stallAngle": 15, "downwash": 0.4, "flapServo": 2, "flapAngleMin": 18, "flapAngleMax": -18, "flapChordFraction": 0.35}}
+   },
+   "rotation": [0.0130896, 0.0, 0.0, 0.99991433]
+  },
+  {
+   "name": "fin",
+   "translation": [0, 0.22, -0.95],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {"span": 0.35, "chord": 0.28, "aspectRatio": 2.0, "cd0": 0.016, "stallAngle": 18, "flapServo": 4, "flapAngleMin": 22, "flapAngleMax": -22, "flapChordFraction": 0.35}
+    }
+   },
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  },
+  {
+   "name": "skid",
+   "translation": [0, -0.1, -0.05],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.03, "travel": 0.02, "spring": 2600, "damping": 120, "grip": 0.6, "rollingResistance": 0.5}}}
+  }
+ ]
+}

@@ -6280,6 +6280,84 @@ return update()
 
         self.wait_disarmed(timeout=180)
 
+    def TakeoffBungee(self):
+        '''Test a bungee launch'''
+        self.customise_SITL_commandline(
+            [],
+            model='plane-bungee',
+        )
+        self.set_parameters({
+            "ARSPD_USE": 1.0,
+            "THR_MAX": 100.0,
+            "TKOFF_THR_MAX": 80.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+            "RTL_AUTOLAND": 2,  # the mission contains a DO_LAND_START item
+        })
+
+        self.wait_ready_to_arm()
+        # the same mission the catapult flies: a NAV_TAKEOFF to 100m
+        self.load_mission("catapult.txt", strict=True)
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+
+        # let the bungee go.  It pulls more gently than a catapult, over a
+        # longer run, so the aeroplane leaves at much the same speed
+        self.set_servo(7, 2000)
+
+        test_alt = 50
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        self.fly_home_land_and_disarm(timeout=240)
+
+    def GliderDrop(self):
+        """Release an engine-less glider at height and fly it down"""
+        if not self.godot:
+            # disabled_tests() skips this in a full run; say why plainly
+            # if someone asks for it by name instead
+            raise NotAchievedException(
+                "needs a physics backend which can hold a vehicle up and "
+                "let it go; SITL's own glider is lifted by a balloon")
+        # No defaults_filepath: the Godot path already applies the frame's
+        # glider.parm and then the model's on top of it. A second copy here
+        # would go last and undo the model's overrides.
+        self.customise_SITL_commandline(
+            [],
+            model="glider",
+            wipe=True,
+        )
+
+        self.wait_ready_to_arm()
+        self.change_mode("FBWA")
+        # armed and flying the aeroplane before anything lets go of it:
+        # released any earlier it falls through the whole boot and
+        # pre-arm sequence with nobody at the controls
+        self.arm_vehicle()
+
+        # Altitudes here are AMSL: a vehicle which starts in the air takes
+        # the release point as home, so relative altitude reads zero there.
+        before = self.get_altitude(relative=False)
+        self.delay_sim_time(3, reason="check the glider is held, not already falling")
+        released = self.get_altitude(relative=False)
+        if abs(released - before) > 2:
+            raise NotAchievedException(
+                "glider is not being held up: moved %.1fm in 3s before release"
+                % (released - before))
+
+        # servo 7 is what the catapult and the bungee fire on too
+        self.progress("Held at %.0fm AMSL, releasing" % released)
+        self.set_servo(7, 2000)
+
+        # Descending at a sensible airspeed is not enough: an aeroplane
+        # tumbling inverted does that too. It has to be the right way up,
+        # and still be once it has settled.
+        self.wait_airspeed(15, 45, timeout=30)
+        self.wait_roll(0, 25, timeout=30)
+        self.wait_altitude(released - 250, released - 100, relative=False, timeout=180)
+        self.wait_airspeed(15, 45, timeout=5)
+        self.wait_roll(0, 25, timeout=5)
+        self.disarm_vehicle(force=True)
+
     def TakeoffAuto1(self):
         '''Test the behaviour of an AUTO takeoff, pt1.'''
         '''
@@ -7267,12 +7345,14 @@ return update()
                 break
             if m.name != 'PERR':
                 continue
+            if m.value > highest_error + 0.5:
+                self.progress("PERR %.1f" % m.value)
             highest_error = max(highest_error, m.value)
-            if highest_error > 15:
-                raise NotAchievedException("path error %.1f" % highest_error)
 
         if highest_error == 0:
             raise NotAchievedException("path error not reported")
+        if highest_error > 15:
+            raise NotAchievedException("path error %.1f" % highest_error)
         self.progress("Finished trick, max error=%.1fm" % highest_error)
         self.disarm_vehicle(force=True)
 
@@ -11217,6 +11297,8 @@ return update()
             self.AutoLandMode,
             self.AHRSTrim,
             self.TakeoffAuto1,
+            self.TakeoffBungee,
+            self.GliderDrop,
             self.TakeoffTakeoff4,
             self.TakeoffTakeoff5,
             self.TakeoffLevelOffWind,
@@ -11307,6 +11389,11 @@ return update()
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SoaringClimbRate": "very bad sink rate",
         }
+        if not self.godot:
+            # SITL's glider is carried up by a balloon and cut away, so
+            # only a backend which can hold a vehicle in the air and let
+            # it go has any way to fly this one
+            ret["GliderDrop"] = "needs a backend which can drop a vehicle"
         if not self.mavproxy_ftp_module_has_command("crccmp"):
             # added to MAVProxy in 328d7de20 (2026-07-27) and not in any
             # release up to v1.8.74; skipped only where it is missing, so

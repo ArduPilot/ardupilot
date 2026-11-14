@@ -1,0 +1,36 @@
+# Parameters for models/balancebot.gltf, on top of
+# Tools/autotest/default_params/balancebot.parm. SERVO1 drives the left
+# wheel and SERVO3 the right, each reversing about mid PWM.
+FRAME_CLASS     3
+
+# The wheels are driven over the whole range, with mid PWM standing
+# still, so give the outputs all of it.
+SERVO1_MIN      1000
+SERVO1_MAX      2000
+SERVO3_MIN      1000
+SERVO3_MAX      2000
+
+# Steering: the model has real yaw inertia (0.008 kg.m^2), which
+# SIM_BalanceBot does not, and the stock gains spin it onto its side.
+ATC_STR_RAT_P   0.02
+ATC_STR_RAT_I   0.05
+ATC_STR_RAT_D   0.0
+ATC_STR_RAT_FF  0.05
+ATC_STR_RAT_MAX 90
+ATC_STR_ACC_MAX 120
+
+# Balance is left at the stock gains SIM_BalanceBot was tuned against.
+
+# AUTO: it can only accelerate by leaning, and the stock demand asks for
+# a lean it cannot recover from. The pitch limiter stops the speed loop
+# asking for a fall.
+ATC_ACCEL_MAX   1.0
+ATC_DECEL_MAX   1.0
+ATC_BAL_LIM_TC  0.3
+ATC_BAL_LIM_THR 0.85
+CRUISE_SPEED    1.0
+WP_SPEED        1.0
+
+# Rover's loop is 50Hz and needs 100Hz of physics; a balancing machine
+# gets more than the minimum.
+SIM_RATE_HZ     400

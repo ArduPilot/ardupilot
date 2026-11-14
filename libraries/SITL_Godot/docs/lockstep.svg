@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="286" viewBox="0 0 760 286"
+     role="img" aria-labelledby="title desc">
+<title id="title">SITL and the Godot backend run in lockstep</title>
+<desc id="desc">ArduPilot SITL sends a binary servo packet over UDP port 9002. The
+backend advances the physics by exactly one step and replies with a JSON line
+holding the new vehicle state. One exchange is one step, so the physics rate is
+also the autopilot loop rate and the simulated gyro rate.</desc>
+<style>
+  svg { color-scheme: light dark; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif }
+  .ink  { fill: #1f2328 }
+  .dim  { fill: #59636e }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace }
+  .box  { fill: #f6f8fa; stroke: #d1d9e0; stroke-width: 1 }
+  .down { stroke: #0969da }
+  .up   { stroke: #1a7f37 }
+  .cdown{ fill: #0969da }
+  .cup  { fill: #1a7f37 }
+  .tick { stroke: #d1d9e0; stroke-width: 1 }
+  @media (prefers-color-scheme: dark) {
+    .ink  { fill: #e6edf3 }
+    .dim  { fill: #9198a1 }
+    .box  { fill: #151b23; stroke: #3d444d }
+    .down { stroke: #4493f8 }
+    .up   { stroke: #3fb950 }
+    .cdown{ fill: #4493f8 }
+    .cup  { fill: #3fb950 }
+    .tick { stroke: #3d444d }
+  }
+</style>
+<defs>
+  <marker id="ad" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,0 L8,4 L0,8 z" class="cdown"/>
+  </marker>
+  <marker id="au" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,0 L8,4 L0,8 z" class="cup"/>
+  </marker>
+</defs>
+
+<!-- the two processes -->
+<rect class="box" x="16"  y="62" width="196" height="92" rx="8"/>
+<text class="ink"  x="114" y="94"  font-size="15" font-weight="600" text-anchor="middle">ArduPilot SITL</text>
+<text class="dim mono" x="114" y="116" font-size="12" text-anchor="middle">bin/arducopter</text>
+<text class="dim"  x="114" y="136" font-size="12" text-anchor="middle">the real flight code</text>
+
+<rect class="box" x="548" y="62" width="196" height="92" rx="8"/>
+<text class="ink"  x="646" y="94"  font-size="15" font-weight="600" text-anchor="middle">Godot + Jolt</text>
+<text class="dim mono" x="646" y="116" font-size="12" text-anchor="middle">SITL_Godot</text>
+<text class="dim"  x="646" y="136" font-size="12" text-anchor="middle">rigid bodies and contacts</text>
+
+<!-- servos out -->
+<text class="ink" x="380" y="54" font-size="12.5" font-weight="600" text-anchor="middle">servo outputs</text>
+<line class="down" x1="212" y1="74" x2="542" y2="74" stroke-width="1.8" marker-end="url(#ad)"/>
+<text class="dim mono" x="380" y="94" font-size="11.5" text-anchor="middle">pwm[16], frame_count &#8594; UDP 9002</text>
+
+<!-- state back -->
+<line class="up" x1="548" y1="142" x2="218" y2="142" stroke-width="1.8" marker-end="url(#au)"/>
+<text class="ink" x="380" y="134" font-size="12.5" font-weight="600" text-anchor="middle">vehicle state</text>
+<text class="dim mono" x="380" y="162" font-size="10.5" text-anchor="middle">position, quaternion, velocity, gyro, accel_body</text>
+
+<!-- the invariant -->
+<line class="tick" x1="16" y1="196" x2="744" y2="196"/>
+<text class="ink" x="380" y="222" font-size="13.5" text-anchor="middle">
+  One packet in, one physics step, one line out. Nothing moves until SITL asks.
+</text>
+<text class="dim" x="380" y="248" font-size="12.5" text-anchor="middle">
+  So the physics rate is the autopilot's loop rate, and the rate its simulated gyro is sampled at:
+</text>
+<text class="dim mono" x="380" y="270" font-size="12" text-anchor="middle">
+  SIM_RATE_HZ = SCHED_LOOP_RATE = physics steps per second
+</text>
+</svg>

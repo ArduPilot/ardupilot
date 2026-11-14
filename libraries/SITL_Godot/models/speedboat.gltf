@@ -1,0 +1,57 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {"shapes": [{"type": "box", "box": {"size": [0.35, 0.12, 1.2]}}, {"type": "box", "box": {"size": [0.2, 0.15, 0.3]}}]},
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.5, "dynamicFriction": 0.4, "restitution": 0.1}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "speedboat",
+   "translation": [0, 0.11, 0],
+   "children": [1, 2, 3, 4, 5, 6, 8],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 3.0, "inertiaDiagonal": [0.3, 0.35, 0.08], "centerOfMass": [0, -0.03, 0]}},
+    "ARDUPILOT_sitl": {"drag": {"area": [0.05, 0.08, 0.02]}, "water": {"level": 0.0, "density": 1000}, "chassis": {"style": "boat", "size": [0.35, 0.12, 1.2]}}
+   }
+  },
+  {"name": "hull", "translation": [0, -0.02, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {"name": "console", "translation": [0, 0.1, -0.1], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {"name": "floater_bow_left", "translation": [0.14, -0.05, 0.45], "extensions": {"ARDUPILOT_sitl": {"floater": {"volume": 0.004, "height": 0.2, "dragArea": [0.01, 0.004, 0.0003], "damping": 5.0}}}},
+  {
+   "name": "floater_bow_right",
+   "translation": [-0.14, -0.05, 0.45],
+   "extensions": {"ARDUPILOT_sitl": {"floater": {"volume": 0.004, "height": 0.2, "dragArea": [0.01, 0.004, 0.0003], "damping": 5.0}}}
+  },
+  {
+   "name": "floater_stern_left",
+   "translation": [0.14, -0.05, -0.45],
+   "extensions": {"ARDUPILOT_sitl": {"floater": {"volume": 0.004, "height": 0.2, "dragArea": [0.01, 0.004, 0.0003], "damping": 5.0}}}
+  },
+  {
+   "name": "floater_stern_right",
+   "translation": [-0.14, -0.05, -0.45],
+   "extensions": {"ARDUPILOT_sitl": {"floater": {"volume": 0.004, "height": 0.2, "dragArea": [0.01, 0.004, 0.0003], "damping": 5.0}}}
+  },
+  {
+   "name": "outboard_prop",
+   "translation": [-0.15, 0, -0.08],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "rotor": {"servo": 3, "bidirectional": true, "maxThrust": 25.0, "thrustExpo": 0.2, "torqueRatio": 0.01, "direction": "ccw", "timeConstant": 0.1, "diameter": 0.12, "pitchSpeed": 14.0}
+    }
+   },
+   "rotation": [0.70710678, 0.0, 0.0, 0.70710678]
+  },
+  {
+   "name": "outboard_steering",
+   "translation": [0, 0, -0.62],
+   "extensions": {"ARDUPILOT_sitl": {"hinge": {"servo": 1, "angleMin": -35, "angleMax": 35, "maxRate": 200}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "children": [7]
+  }
+ ]
+}

@@ -1,0 +1,60 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {"shapes": [{"type": "box", "box": {"size": [0.26, 0.08, 0.5]}}, {"type": "box", "box": {"size": [0.2, 0.12, 0.22]}}]},
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.9, "dynamicFriction": 0.8, "restitution": 0.05}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "buggy",
+   "translation": [0, 0.13, 0],
+   "children": [1, 2, 4, 6, 7, 8],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 3.0, "inertiaDiagonal": [0.07, 0.09, 0.03], "centerOfMass": [0, -0.02, 0]}},
+    "ARDUPILOT_sitl": {"drag": {"area": [0.04, 0.05, 0.03]}, "chassis": {"style": "rover", "size": [0.26, 0.08, 0.5]}}
+   }
+  },
+  {"name": "chassis", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {"name": "cage", "translation": [0, 0.1, -0.05], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {
+   "name": "wheel_fl",
+   "translation": [-0.06, 0, 0],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.06, "travel": 0.06, "spring": 900, "damping": 35, "grip": 0.9, "rollingResistance": 0.03}}},
+   "rotation": [0.0, 0.0, -0.70710678, 0.70710678]
+  },
+  {
+   "name": "steer_fl",
+   "translation": [0.15, -0.02, 0.22],
+   "extensions": {"ARDUPILOT_sitl": {"hinge": {"servo": 1, "angleMin": 30, "angleMax": -30, "maxRate": 400}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "children": [3]
+  },
+  {
+   "name": "wheel_fr",
+   "translation": [-0.06, 0, 0],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.06, "travel": 0.06, "spring": 900, "damping": 35, "grip": 0.9, "rollingResistance": 0.03}}},
+   "rotation": [0.0, 0.0, -0.70710678, 0.70710678]
+  },
+  {
+   "name": "steer_fr",
+   "translation": [-0.15, -0.02, 0.22],
+   "extensions": {"ARDUPILOT_sitl": {"hinge": {"servo": 1, "angleMin": 30, "angleMax": -30, "maxRate": 400}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "children": [5]
+  },
+  {
+   "name": "wheel_rl",
+   "translation": [0.15, -0.08, -0.22],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.06, "travel": 0.06, "spring": 900, "damping": 35, "grip": 1.0, "rollingResistance": 0.03, "driveServo": 3, "maxDriveForce": 14}}}
+  },
+  {
+   "name": "wheel_rr",
+   "translation": [-0.15, -0.08, -0.22],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.06, "travel": 0.06, "spring": 900, "damping": 35, "grip": 1.0, "rollingResistance": 0.03, "driveServo": 3, "maxDriveForce": 14}}}
+  }
+ ]
+}

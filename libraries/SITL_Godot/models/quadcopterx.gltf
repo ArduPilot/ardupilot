@@ -1,0 +1,51 @@
+{
+ "asset": {"version": "2.0", "generator": "rfx2gltf"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {"shapes": [{"type": "box", "box": {"size": [0.37084, 0.17526, 0.37084]}}]},
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.6, "dynamicFriction": 0.5, "restitution": 0.1}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "quadcopterx",
+   "translation": [0, 0.149, 0],
+   "children": [1, 2, 3, 4, 5],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 1.059, "inertiaDiagonal": [0.025, 0.0327, 0.0143], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"drag": {"area": [0.03, 0.03, 0.02]}, "chassis": {"style": "multirotor", "size": [0.3708, 0.1753, 0.3708]}}
+   }
+  },
+  {"name": "fuselage_box", "translation": [0.00122, -0.05184, 0.0141], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {
+   "name": "motor_3",
+   "translation": [0.15271, 0.07374, 0.15354],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 3, "maxThrust": 5.2, "thrustExpo": 0.5, "torqueRatio": 0.0093, "direction": "cw", "timeConstant": 0.05, "diameter": 0.203, "pitchSpeed": 21.0}}
+   }
+  },
+  {
+   "name": "motor_2",
+   "translation": [0.15514, 0.07374, -0.154],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 2, "maxThrust": 5.2, "thrustExpo": 0.5, "torqueRatio": 0.0093, "direction": "ccw", "timeConstant": 0.05, "diameter": 0.203, "pitchSpeed": 21.0}}
+   }
+  },
+  {
+   "name": "motor_4",
+   "translation": [-0.15453, 0.07374, -0.1543],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 4, "maxThrust": 5.2, "thrustExpo": 0.5, "torqueRatio": 0.0093, "direction": "cw", "timeConstant": 0.05, "diameter": 0.203, "pitchSpeed": 21.0}}
+   }
+  },
+  {
+   "name": "motor_1",
+   "translation": [-0.15331, 0.07495, 0.15476],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 1, "maxThrust": 5.2, "thrustExpo": 0.5, "torqueRatio": 0.0093, "direction": "ccw", "timeConstant": 0.05, "diameter": 0.203, "pitchSpeed": 21.0}}
+   }
+  }
+ ]
+}
