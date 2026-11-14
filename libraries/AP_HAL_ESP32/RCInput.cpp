@@ -50,7 +50,7 @@ void RCInput::init()
 void RCInput::pulse_input_enable(bool enable)
 {
     pulse_input_enabled = enable;
-#if HAL_ESP32_RCIN
+#ifdef HAL_ESP32_RCIN
     if (!enable) {
         sig_reader.disable();
     }
