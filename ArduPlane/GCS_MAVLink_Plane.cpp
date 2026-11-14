@@ -662,8 +662,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
         // keep a copy of what came in via MAVLink - this is needed for logging, but not for anything else
         plane.guided_state.target_mav_frame = packet.frame;
 
-        const int32_t new_target_alt_cm = packet.z * 100;
-        plane.guided_state.target_location.set_alt_cm(new_target_alt_cm, new_target_alt_frame); 
+        plane.guided_state.target_location.set_alt_m(packet.z, new_target_alt_frame);
         plane.guided_state.target_alt_time_ms = AP_HAL::millis();
 
         // param3 contains the desired vertical velocity (not acceleration)

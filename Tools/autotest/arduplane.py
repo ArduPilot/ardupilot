@@ -8254,6 +8254,35 @@ return update()
 
         self.disarm_vehicle()
 
+    def MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT(self):
+        '''test MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT mission item climb, descend and neutral'''
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT, 0, 0, 120, {'p1': 1}),  # climb
+            (mavutil.mavlink.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT, 0, 0, 60, {'p1': 2}),  # descend
+            (mavutil.mavlink.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT, 0, 0, 90, {'p1': 0}),  # neutral
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 90),
+        ])
+
+        # each item completes on altitude alone, so the altitude when
+        # the mission moves on shows which target the vehicle used.
+        # All three directions also complete within 5m of the target
+        for (seq, alt_min, alt_max) in [
+                (3, 114, 130),  # climb to 120m
+                (4, 50, 66),    # descend to 60m
+                (5, 84, 96),    # neutral at 90m
+        ]:
+            self.wait_current_waypoint(seq, timeout=120)
+            self.wait_current_waypoint(seq+1, timeout=120)
+            alt = self.get_altitude(relative=True)
+            self.progress("Item %u complete at %.1fm" % (seq, alt))
+            if alt < alt_min or alt > alt_max:
+                raise NotAchievedException(
+                    "Item %u completed at %.1fm, want %.0f to %.0f" % (seq, alt, alt_min, alt_max))
+
+        self.fly_home_land_and_disarm()
+
     def InteractTest(self):
         '''just takeoff'''
 
@@ -10935,6 +10964,7 @@ return update()
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.MAV_CMD_DO_AUTOTUNE_ENABLE,
             self.MAV_CMD_NAV_ALTITUDE_WAIT,
+            self.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT,
             self.InteractTest,
             self.MAV_CMD_MISSION_START,
             self.TerrainRally,

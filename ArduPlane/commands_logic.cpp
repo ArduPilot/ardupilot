@@ -517,11 +517,10 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     if (cmd.content.location.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
         next_WP_loc.copy_alt_from(cmd.content.location);
     } else {
-        int32_t alt_abs_cm;
+        float alt_abs_m;
         // if this fails we don't change alt
-        if (cmd.content.location.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_abs_cm)) {
-            next_WP_loc.set_alt_cm(alt_abs_cm,
-                                   Location::AltFrame::ABSOLUTE);
+        if (cmd.content.location.get_alt_m(Location::AltFrame::ABSOLUTE, alt_abs_m)) {
+            next_WP_loc.set_alt_m(alt_abs_m, Location::AltFrame::ABSOLUTE);
         }
     }
     condition_value = cmd.p1;
