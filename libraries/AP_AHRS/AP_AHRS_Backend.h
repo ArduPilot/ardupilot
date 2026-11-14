@@ -226,6 +226,10 @@ public:
         // estimator.  Used to decide whether GPS will set the
         // navigation origin.
         bool configured_to_use_gps_for_pos_XY;
+        // configured_to_use_optflow_for_vel_XY will be true if optical
+        // flow is configured as a horizontal velocity source for this
+        // estimator
+        bool configured_to_use_optflow_for_vel_XY;
 
         // if true, "external navigation" (as provided by MAVLink
         // messages) is providing the yaw estimate.  e.g. a T265
