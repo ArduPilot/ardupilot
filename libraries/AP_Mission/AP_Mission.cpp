@@ -1329,7 +1329,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_SET_HOME:
-        cmd.p1 = packet.param1;                         // p1=0 means use current location, p=1 means use provided location
+        cmd.p1 = packet.param1;                         // p1=1 means use current location, p1=0 means use provided location
         break;
 
     case MAV_CMD_DO_SET_RELAY:                          // MAV ID: 181
@@ -1873,7 +1873,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_SET_HOME:                           // MAV ID: 179
-        packet.param1 = cmd.p1;                         // p1=0 means use current location, p=1 means use provided location
+        packet.param1 = cmd.p1;                         // p1=1 means use current location, p1=0 means use provided location
         break;
 
     case MAV_CMD_DO_SET_RELAY:                          // MAV ID: 181
