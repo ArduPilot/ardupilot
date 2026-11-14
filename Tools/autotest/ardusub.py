@@ -1409,6 +1409,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             raise NotAchievedException(f"AUTO: NEXT_WAYPOINT_AVAILABLE not set (flags=0x{m.flags:x})")
         self.disarm_vehicle(force=True)
 
+    def DoRepositionUnsupportedFrame(self):
+        '''check DO_REPOSITION in a frame Sub can't use is refused with MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME'''
+        self.check_do_reposition_unsupported_frames()
+
     def UTMGlobalPosition(self):
         '''test UTM_GLOBAL_POSITION message sending'''
         self.wait_ready_to_arm()
@@ -1924,6 +1928,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.IgnoreGPSDrift,
             self.GuidedPosVelAccel,
             self.GuidedAboveTerrain,
+            self.DoRepositionUnsupportedFrame,
         ])
 
         return ret

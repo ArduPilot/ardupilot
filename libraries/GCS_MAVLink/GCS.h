@@ -821,8 +821,12 @@ protected:
     MAV_RESULT try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
 #endif
 
-    // methods to extract a Location object from a command_int
-    bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
+    // extract a Location object from a command_int.  Returns
+    // MAV_RESULT_ACCEPTED on success,
+    // MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME if in.frame is not a
+    // frame we can convert, or MAV_RESULT_DENIED if the location is
+    // otherwise invalid:
+    MAV_RESULT location_from_command_int(const mavlink_command_int_t &in, Location &out);
 
 private:
 

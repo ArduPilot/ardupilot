@@ -437,8 +437,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
     }
 
     Location request_location;
-    if (!location_from_command_t(packet, request_location)) {
-        return MAV_RESULT_DENIED;
+    const MAV_RESULT loc_result = location_from_command_int(packet, request_location);
+    if (loc_result != MAV_RESULT_ACCEPTED) {
+        return loc_result;
     }
 
     if (request_location.sanitize(copter.current_loc)) {
@@ -580,7 +581,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet)
 {
     if (packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT) {
-        return MAV_RESULT_DENIED;  // meaning some parameters are bad
+        return MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME;
     }
 
         // param3 : horizontal navigation by pilot acceptable

@@ -4802,8 +4802,9 @@ void GCS_MAVLINK::send_sim_state() const
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_global_origin(const mavlink_command_int_t &packet)
 {
     Location global_origin;
-    if (!location_from_command_t(packet, global_origin)) {
-        return MAV_RESULT_DENIED;
+    const MAV_RESULT loc_result = location_from_command_int(packet, global_origin);
+    if (loc_result != MAV_RESULT_ACCEPTED) {
+        return loc_result;
     }
 
     return set_ekf_origin(global_origin);
@@ -5225,26 +5226,30 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
 }
 #endif // AP_ARMING_ENABLED
 
-bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Location &out)
+MAV_RESULT GCS_MAVLINK::location_from_command_int(const mavlink_command_int_t &in, Location &out)
 {
-    // sanity check location
-    if (!check_latlng(in.x, in.y)) {
-        return false;
+    if (!command_long_stores_location((MAV_CMD)in.command)) {
+        return MAV_RESULT_DENIED;
     }
 
-    if (!command_long_stores_location((MAV_CMD)in.command)) {
-        return false;
+    // check the frame before the coordinates so that a location in a
+    // frame we don't support (e.g. a local frame, where x and y are
+    // not latitude and longitude) is rejected as such rather than as
+    // a bad latitude/longitude; this allows the sender to retry in a
+    // different frame:
+    Location::AltFrame frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)in.frame, frame)) {
+        return MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME;
+    }
+
+    // sanity check location
+    if (!check_latlng(in.x, in.y)) {
+        return MAV_RESULT_DENIED;
     }
 
     // integer storage imposes limits on the altitudes we can accept:
     if (isnan(in.z) || fabsf(in.z) > LOCATION_ALT_MAX_M) {
-        return false;
-    }
-
-    Location::AltFrame frame;
-    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)in.frame, frame)) {
-        // unknown coordinate frame
-        return false;
+        return MAV_RESULT_DENIED;
     }
 
     out.lat = in.x;
@@ -5252,7 +5257,7 @@ bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Locat
 
     out.set_alt_m(in.z, frame);
 
-    return true;
+    return MAV_RESULT_ACCEPTED;
 }
 
 bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
@@ -5508,8 +5513,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_int_t &
         return MAV_RESULT_FAILED;
     }
     Location new_home_loc;
-    if (!location_from_command_t(packet, new_home_loc)) {
-        return MAV_RESULT_DENIED;
+    const MAV_RESULT loc_result = location_from_command_int(packet, new_home_loc);
+    if (loc_result != MAV_RESULT_ACCEPTED) {
+        return loc_result;
     }
     if (!set_home(new_home_loc, true)) {
         return MAV_RESULT_FAILED;
@@ -5527,7 +5533,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavl
         break;
     default:
         // we only support the global frame
-        return MAV_RESULT_DENIED;
+        return MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME;
     }
 
     if (!isnan(packet.z)) {
@@ -5540,8 +5546,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavl
     mavlink_command_int_t p2 = packet;
     p2.z = 0;
 
-    if (!location_from_command_t(p2, loc)) {
-        return MAV_RESULT_DENIED;
+    const MAV_RESULT loc_result = location_from_command_int(p2, loc);
+    if (loc_result != MAV_RESULT_ACCEPTED) {
+        return loc_result;
     }
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(uint64_t(p2.param1*1e6), PAYLOAD_SIZE(chan, COMMAND_INT));
     const uint32_t processing_ms = p2.param2*1e3;
@@ -5583,8 +5590,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     // y : lon
     // z : alt
     Location roi_loc;
-    if (!location_from_command_t(packet, roi_loc)) {
-        return MAV_RESULT_DENIED;
+    const MAV_RESULT loc_result = location_from_command_int(packet, roi_loc);
+    if (loc_result != MAV_RESULT_ACCEPTED) {
+        return loc_result;
     }
     return handle_command_do_set_roi(roi_loc);
 }
@@ -5598,9 +5606,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const mavlink_command
         return MAV_RESULT_DENIED;
     }
     Location roi_loc;
-    if (packet.command == MAV_CMD_DO_SET_ROI_LOCATION &&
-        (!location_from_command_t(packet, roi_loc) || !roi_loc.check_latlng())) {
-        return MAV_RESULT_DENIED;
+    if (packet.command == MAV_CMD_DO_SET_ROI_LOCATION) {
+        const MAV_RESULT loc_result = location_from_command_int(packet, roi_loc);
+        if (loc_result != MAV_RESULT_ACCEPTED) {
+            return loc_result;
+        }
+        if (!roi_loc.check_latlng()) {
+            return MAV_RESULT_DENIED;
+        }
     }
     if (isnan(packet.param1) || is_zero(packet.param1)) {
         return handle_command_do_set_roi(roi_loc);

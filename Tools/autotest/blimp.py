@@ -368,6 +368,10 @@ class AutoTestBlimp(TestSuite):
 
         self.assert_ekfs_match_sim_state()
 
+    def DoRepositionUnsupportedFrame(self):
+        '''check DO_REPOSITION in a frame Blimp can't use is refused with MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME'''
+        self.check_do_reposition_unsupported_frames()
+
     def UTMGlobalPosition(self):
         '''test UTM_GLOBAL_POSITION message sending'''
         self.wait_ready_to_arm()
@@ -397,6 +401,7 @@ class AutoTestBlimp(TestSuite):
             self.SIMCompare,
             self.PREFLIGHT_Pressure,
             self.UTMGlobalPosition,
+            self.DoRepositionUnsupportedFrame,
         ])
         return ret
 

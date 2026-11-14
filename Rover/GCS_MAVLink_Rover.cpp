@@ -513,12 +513,13 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_com
         return MAV_RESULT_DENIED;
     }
 
-    if (packet.x == 0 && packet.y == 0) {
-        return MAV_RESULT_DENIED;
+    Location requested_location {};
+    const MAV_RESULT loc_result = location_from_command_int(packet, requested_location);
+    if (loc_result != MAV_RESULT_ACCEPTED) {
+        return loc_result;
     }
 
-    Location requested_location {};
-    if (!location_from_command_t(packet, requested_location)) {
+    if (packet.x == 0 && packet.y == 0) {
         return MAV_RESULT_DENIED;
     }
 
