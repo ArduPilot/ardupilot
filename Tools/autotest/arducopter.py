@@ -17288,6 +17288,151 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "(delta %.6f deg)" %
                 (baseline_lat, m.lat, lat_change_deg))
 
+    def EK3_NoHorizontalSourceStopsAiding(self):
+        '''A switch to a source set with no horizontal source stops aiding at once'''
+        # set 2 measures the velocity with optical flow, set 3 has nothing horizontal
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "EK3_SRC3_POSXY": 0,
+            "EK3_SRC3_VELXY": 0,
+            "EK3_SRC3_POSZ": 1,
+            "EK3_SRC3_VELZ": 0,
+            "EK3_SRC3_YAW": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.takeoff(4, mode='LOITER')
+        self.change_mode('ALT_HOLD')
+
+        self.start_subtest("from absolute aiding")
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=3)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+
+        self.start_subtest("from relative aiding")
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=2)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=10)
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=3)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=1)
+        self.wait_statustext("EKF3 IMU0 is using GPS", check_context=True, timeout=10)
+        self.change_mode('LOITER')
+        self.do_RTL()
+
+        # time each switch to set 3 to the stop from the log, both logged on the autopilot's clock
+        dfreader = self.dfreader_for_current_onboard_log()
+        switch_us = None
+        delays = []
+        while True:
+            m = dfreader.recv_match(type=['EV', 'MSG'])
+            if m is None:
+                break
+            if m.get_type() == 'EV' and m.Id == 87:    # EK3_SOURCES_SET_TO_TERTIARY
+                switch_us = m.TimeUS
+            elif switch_us is not None and m.get_type() == 'MSG' and m.Message == "EKF3 IMU0 stopped aiding":
+                delays.append((m.TimeUS - switch_us) * 1e-6)
+                switch_us = None
+        self.progress("stopped aiding %s s after each switch" % ", ".join("%.2f" % d for d in delays))
+        if len(delays) != 2 or max(delays) > 0.5:
+            raise NotAchievedException("expected aiding to stop at both switches, got %s" % delays)
+        self.reboot_sitl()
+
+    def no_horizontal_source_height_change(self, params, in_flight):
+        '''fly ALT_HOLD, call in_flight, then switch to set 3, which has nothing horizontal, for 3 s:
+        the true height's furthest move (m) in the 8 s from the switch'''
+        params = dict(params)
+        params.update({
+            "EK3_SRC3_POSXY": 0,
+            "EK3_SRC3_VELXY": 0,
+            "EK3_SRC3_VELZ": 0,
+            "EK3_SRC3_YAW": 1,
+        })
+        self.set_parameters(params)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.takeoff(10, mode='LOITER')
+        self.change_mode('ALT_HOLD')
+        in_flight()
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=3)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=10)
+        self.delay_sim_time(3, "no horizontal source")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=1)
+        self.delay_sim_time(5, "back on set 1")
+        self.change_mode('LOITER')
+        self.do_RTL()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        switch_us = None
+        alt_at_switch = None
+        furthest = 0
+        while True:
+            m = dfreader.recv_match(type=['EV', 'SIM'])
+            if m is None:
+                break
+            if m.get_type() == 'EV':
+                if m.Id == 87 and switch_us is None:    # EK3_SOURCES_SET_TO_TERTIARY
+                    switch_us = m.TimeUS
+                continue
+            if switch_us is None or m.TimeUS < switch_us:
+                continue
+            if m.TimeUS > switch_us + 8e6:
+                break
+            if alt_at_switch is None:
+                alt_at_switch = m.Alt
+            if abs(m.Alt - alt_at_switch) > abs(furthest):
+                furthest = m.Alt - alt_at_switch
+        if alt_at_switch is None:
+            raise NotAchievedException("no switch to set 3 in the log")
+        self.progress("furthest %.2f m from the height at the switch" % furthest)
+        return furthest
+
+    def EK3_NoHorizontalSourceKeepsHeight(self):
+        '''Aiding stopped by a set with no horizontal source keeps the height it flies on'''
+        # stopping aiding took the height from the raw baro, where height fusion takes out the baro's
+        # offset from the source in use and can add a GPS datum correction, and ALT_HOLD flew the step
+
+        self.start_subtest("GPS height, with the baro going 5 m off in flight")
+
+        def baro_offset():
+            self.set_parameter("BARO_ALT_OFFSET", 5)
+            self.delay_sim_time(10, "the baro offset tracked on GPS height")
+        moved = self.no_horizontal_source_height_change({
+            "EK3_SRC1_POSZ": 3,        # GPS
+            "EK3_SRC3_POSZ": 3,
+        }, baro_offset)
+        if abs(moved) > 1.0:
+            raise NotAchievedException("moved %.2f m in height when aiding stopped" % moved)
+
+        self.start_subtest("baro height corrected to GPS, with the baro drifting")
+
+        def baro_drift():
+            self.set_parameter("SIM_BARO_DRIFT", -0.1)
+            self.delay_sim_time(30, "the baro drifting 3 m")
+            self.set_parameter("SIM_BARO_DRIFT", 0)
+            self.delay_sim_time(30, "the datum correction settling")
+        moved = self.no_horizontal_source_height_change({
+            "EK3_SRC1_POSZ": 1,        # baro
+            "EK3_SRC3_POSZ": 1,
+            "EK3_OGN_HGT_MASK": 5,     # correct baro height and the local position to GPS
+            "BARO_ALT_OFFSET": 0,
+        }, baro_drift)
+        if abs(moved) > 1.0:
+            raise NotAchievedException("moved %.2f m in height when aiding stopped" % moved)
+        self.reboot_sitl()
+
     def EKFSource(self):
         '''Check EKF Source Prearms work'''
         self.wait_ready_to_arm()
@@ -20388,6 +20533,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FenceRelativeToAMSLMaxAlt,
             self.MotorTest,
             self.EKFSource,
+            self.EK3_NoHorizontalSourceStopsAiding,
+            self.EK3_NoHorizontalSourceKeepsHeight,
             self.AHRSSwitchBackendPositionReset,
             self.EKFYawResetLogged,
             self.RTLYaw,

@@ -240,6 +240,8 @@ void NavEKF3_core::setAidingMode()
 {
     resetDataSource posResetSource = resetDataSource::DEFAULT;
     resetDataSource velResetSource = resetDataSource::DEFAULT;
+    // true when aiding stops because the set has nothing horizontal, not on a timeout
+    bool stopForNoHorizSource = false;
 
     // Save the previous status so we can detect when it has changed
     PV_AidingModePrev = PV_AidingMode;
@@ -314,8 +316,10 @@ void NavEKF3_core::setAidingMode()
             // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
             if (readyToUseGPS() || readyToUseRangeBeacon() || readyToUseExtNav()) {
                 PV_AidingMode = AID_ABSOLUTE;
-            } else if (flowFusionTimeout && bodyOdmFusionTimeout) {
+            } else if ((flowFusionTimeout && bodyOdmFusionTimeout) || !frontend->sources.haveHorizPosVelSource(core_index)) {
+                // a set with nothing horizontal is chosen, not a dropout to wait out
                 PV_AidingMode = AID_NONE;
+                stopForNoHorizSource = !frontend->sources.haveHorizPosVelSource(core_index);
             }
             break;
         }
@@ -392,9 +396,16 @@ void NavEKF3_core::setAidingMode()
                     (imuSampleTime_ms - lastGpsPosPassTime_ms > maxLossTime_ms);
             }
 
-            if (attAidLossCritical) {
-                // if the loss of attitude data is critical, then put the filter into a constant position mode
+            // a set with nothing horizontal is chosen, not a dropout to bridge, so stop dead reckoning on it
+            // unless air data can carry it: the wind states are estimated, or air data was fused just now,
+            // as before a QuadPlane's assist hands fly forward back
+            const bool noHorizSource = !frontend->sources.haveHorizPosVelSource(core_index) && inhibitWindStates &&
+                                       !airSpdUsed && !dragUsed;
+
+            if (attAidLossCritical || noHorizSource) {
+                // if the loss of attitude data is critical or nothing in the set can aid, put the filter into a constant position mode
                 PV_AidingMode = AID_NONE;
+                stopForNoHorizSource = noHorizSource;
                 posTimeout = true;
                 velTimeout = true;
                 tasTimeout = true;
@@ -430,8 +441,11 @@ void NavEKF3_core::setAidingMode()
             // initialise filtered altitude used to provide a takeoff reference to current baro on disarm
             // this reduces the time required for the baro noise filter to settle before the filtered baro data can be used
             meaHgtAtTakeOff = baroDataDelayed.hgt;
-            // reset the vertical position state to faster recover from baro errors experienced during touchdown
-            stateStruct.position.z = -meaHgtAtTakeOff;
+            // reset the vertical position state to faster recover from baro errors experienced during touchdown,
+            // but not at a stop for a set chosen with nothing horizontal, which flies on with the height it has
+            if (!stopForNoHorizSource) {
+                stateStruct.position.z = -meaHgtAtTakeOff;
+            }
             // store the current height to be used to keep reporting
             // the last known position
             lastKnownPositionD = stateStruct.position.z;
