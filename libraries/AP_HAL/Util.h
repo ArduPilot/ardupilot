@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdarg.h>
+#include <math.h>
 #include <AP_Common/AP_Common.h> // for FMT_PRINTF
 #include "AP_HAL_Namespace.h"
 #include <AP_Logger/AP_Logger_config.h>
@@ -154,6 +155,14 @@ public:
        how much free memory do we have in bytes. If unknown return 4096
      */
     virtual uint32_t available_memory(void) { return 4096; }
+
+#if HAL_WITH_MCU_MONITORING
+    // current CPU clock in MHz, 0 if unknown
+    virtual uint16_t get_cpu_frequency_mhz() const { return 0; }
+
+    // SoC/CPU temperature in degrees C, NaN if unknown
+    virtual float get_cpu_temperature_c() const { return NAN; }
+#endif
 
     // attempt to trap the processor, presumably to enter an attached debugger
     virtual bool trap() const { return false; }
