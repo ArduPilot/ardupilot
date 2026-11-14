@@ -24,6 +24,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SBusOut/AP_SBusOut.h>
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -203,12 +204,16 @@ void AP_IOMCU_FW::rcin_serial_update(void)
 }
 
 /*
-  sleep for 1ms using a busy loop
+  sleep for 1ms using a busy loop. The bind pulses take about 20ms in
+  all, which is a large part of the watchdog timeout, so pat after each
+  wait; patting inside the wait would keep the watchdog fed if the
+  system tick stopped
  */
 static void delay_one_ms(uint32_t &now)
 {
     while (now == AP_HAL::millis()) ;
     now = AP_HAL::millis();
+    stm32_watchdog_pat();
 }
 
 /*
