@@ -42,6 +42,17 @@ const AP_Param::GroupInfo AP_ESC_Telem::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_MAV_OFS", 1, AP_ESC_Telem, mavlink_offset, 0),
     
+#if HAL_LOGGING_ENABLED
+    // @Param: _LOG_RATE
+    // @DisplayName: ESC Telemetry logging rate
+    // @Description: Rate at which ESC telemetry is written to the onboard log as ESC, ESCX and EDT2 messages. An ESC is only logged when it has new data. The telemetry is checked at least 100 times a second, or every main loop when SCHED_LOOP_RATE is lower than 100, in which case the most it can log is SCHED_LOOP_RATE. Lower values reduce the log size. 0 disables ESC telemetry logging.
+    // @Units: Hz
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_LOG_RATE", 2, AP_ESC_Telem, log_rate_hz, 100),
+#endif
+
     AP_GROUPEND
 };
 
@@ -672,7 +683,7 @@ uint16_t AP_ESC_Telem::merge_edt2_stress(uint16_t old_stress, uint16_t new_stres
 
 #endif // AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
 
-void AP_ESC_Telem::update()
+void AP_ESC_Telem::write_log()
 {
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
@@ -803,6 +814,21 @@ void AP_ESC_Telem::update()
         }
     }
 #endif  // HAL_LOGGING_ENABLED
+}
+
+void AP_ESC_Telem::update()
+{
+#if HAL_LOGGING_ENABLED
+    if (log_rate_hz > 0) {
+        const uint32_t interval_us = 1000000U / uint32_t(log_rate_hz.get());
+        const uint32_t elapsed_us = AP_HAL::micros() - _last_log_us;
+        if (elapsed_us >= interval_us) {
+            // step by the interval and stay at most one behind, so scheduling jitter does not lower the rate
+            _last_log_us += (elapsed_us < 2 * interval_us) ? interval_us : elapsed_us - interval_us;
+            write_log();
+        }
+    }
+#endif
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         // copy the last_updated_us timestamp to avoid any race issues

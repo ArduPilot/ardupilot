@@ -12877,6 +12877,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if repeats > steps * 0.1:
             raise NotAchievedException("Post-filter gyro log repeats %u of %u samples" % (repeats, steps))
 
+    def ESCTelemLogRate(self):
+        '''check ESC_TLM_LOG_RATE sets the rate ESC telemetry is logged at, and 0 stops it'''
+        # the harness rate-limits streaming log messages such as ESC
+        self.set_parameters({
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+            "SIM_ESC_TELEM": 1,
+        })
+        # SITL's ESC telemetry starts 6 seconds after boot
+        self.assert_receive_message('ESC_TELEMETRY_1_TO_4', timeout=10)
+        rates_hz = [10, 50, 0]
+        for rate_hz in rates_hz:
+            self.set_parameter("ESC_TLM_LOG_RATE", rate_hz)
+            self.delay_sim_time(10, "log ESC telemetry at %uHz" % rate_hz)
+        # a final change ends the last window
+        self.set_parameter("ESC_TLM_LOG_RATE", 100)
+        self.delay_sim_time(3, "the file logger writes out its buffer at least every 2 seconds")
+
+        # count ESC records per instance between changes of ESC_TLM_LOG_RATE, in log time
+        dfreader = self.dfreader_for_current_onboard_log()
+        windows = []
+        while True:
+            m = dfreader.recv_match(type=['PARM', 'ESC'])
+            if m is None:
+                break
+            if m.get_type() == 'ESC':
+                if len(windows):
+                    count = windows[-1]["count"]
+                    count[m.Instance] = count.get(m.Instance, 0) + 1
+                continue
+            if m.Name != 'ESC_TLM_LOG_RATE':
+                continue
+            if len(windows):
+                if windows[-1]["rate_hz"] == m.Value:
+                    continue
+                windows[-1]["end_us"] = m.TimeUS
+            windows.append({"rate_hz": m.Value, "start_us": m.TimeUS, "count": {}})
+
+        windows = windows[-len(rates_hz)-1:-1]
+        if [w["rate_hz"] for w in windows] != rates_hz:
+            raise NotAchievedException("Did not find ESC_TLM_LOG_RATE changes %s in log" % str(rates_hz))
+        for w in windows:
+            duration_s = (w["end_us"] - w["start_us"]) * 1.0e-6
+            # the default frame is a quad
+            for instance in range(4):
+                achieved_hz = w["count"].get(instance, 0) / duration_s
+                self.progress("ESC_TLM_LOG_RATE=%u: ESC[%u] logged at %.1fHz over %.1fs" %
+                              (w["rate_hz"], instance, achieved_hz, duration_s))
+                if abs(achieved_hz - w["rate_hz"]) > 0.1 * w["rate_hz"]:
+                    raise NotAchievedException("ESC[%u] logged at %.1fHz, want %uHz" %
+                                               (instance, achieved_hz, w["rate_hz"]))
+
     def hover_and_check_matched_frequency(self, *, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         '''do a simple up-and-down test flight with current vehicle state.
         Check that the onboard filter comes up with the same peak-frequency that
@@ -20437,6 +20489,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FenceRelativeToHomeCliff,
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.DynamicRpmNotchesRateThread,
+            self.ESCTelemLogRate,
             self.RateThreadPostFilterGyroLog,
             self.DynamicRpmNotchesESCMask,
             self.WPYawBehaviour1RTL,
