@@ -531,7 +531,8 @@ public:
 
     // handle sending of initialisation strings to the GPS - only used by backends
     void send_blob_start(uint8_t instance);
-    void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
+    void send_blob_start(uint8_t instance, const char *_blob, uint16_t size,
+                         const char *_next_blob=nullptr, uint16_t next_size=0);
     void send_blob_update(uint8_t instance);
 
     // return last fix time since the 1/1/1970 in microseconds
@@ -728,6 +729,9 @@ private:
     struct {
         const char *blob;
         uint16_t remaining;
+        // sent once blob is finished
+        const char *next_blob;
+        uint16_t next_remaining;
     } initblob_state[GPS_MAX_RECEIVERS];
 
     static const uint32_t  _baudrates[];
