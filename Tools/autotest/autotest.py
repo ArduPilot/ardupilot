@@ -577,6 +577,9 @@ def run_step(step):
 
     fly_opts["check_parameter_leaks"] = opts.check_parameter_leaks
     fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
+    if opts.autotest_server:
+        # keep all of MAVProxy's logs with this run's buildlogs:
+        fly_opts["mavproxy_state_basedir"] = buildlogs_dirpath()
 
     # handle "test.Copter" etc:
     if step in tester_class_map:
@@ -1300,7 +1303,7 @@ if __name__ == "__main__":
 
     util.mkdir_p(buildlogs_dirpath())
 
-    lckfile = buildlogs_path('autotest.lck')
+    lckfile = os.getenv("AUTOTEST_LOCKFILE", buildlogs_path('autotest.lck'))
     print("lckfile=%s" % repr(lckfile))
     lck = util.lock_file(lckfile)
 
