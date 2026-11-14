@@ -736,6 +736,9 @@ private:
     // used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
     void CovariancePrediction(Vector3F *rotVarVecPtr);
 
+    // return true if the delta velocity bias for body axis index can be learned
+    bool is_dvel_bias_axis_observable(uint8_t index) const;
+
     // constrain variances (diagonal terms) in the state covariance matrix
     void ConstrainVariances();
 
