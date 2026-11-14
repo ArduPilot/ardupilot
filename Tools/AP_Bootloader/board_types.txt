@@ -723,6 +723,9 @@ AP_HW_RPI_UAVFC                      7180
 AP_HW_RASPBERRYPI_PICO2              7181
 AP_HW_RASPBERRYPI_LAUREL             7182
 
+# IDs 7190-7199 reserved for AeroStem Technology
+AP_HW_AeroStemH743V1                 7190
+
 # please fill gaps in the above ranges rather than adding past ID #7199
 
 
