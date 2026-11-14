@@ -212,7 +212,6 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
         // any of these are considered a takeoff command:
         case MAV_CMD_NAV_VTOL_TAKEOFF:
         case MAV_CMD_NAV_TAKEOFF:
-        case MAV_CMD_NAV_TAKEOFF_LOCAL:
             return true;
         // any of these are considered "skippable" when determining if
         // we "start with a takeoff command"
