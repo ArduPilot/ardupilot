@@ -12,7 +12,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 TEST(AP_FWVersion, FWVersion)
 {
     EXPECT_EQ(AP::fwversion().header, 0x61706677766572fbu);
-    EXPECT_EQ(AP::fwversion().header_version, 0x0200U);
+    EXPECT_EQ(AP::fwversion().header_version, 0x0300U);
     EXPECT_EQ(AP::fwversion().pointer_size, static_cast<uint8_t>(sizeof(void*)));
     EXPECT_EQ(AP::fwversion().reserved, 0);
     EXPECT_EQ(AP::fwversion().vehicle_type, static_cast<uint8_t>(APM_BUILD_DIRECTORY));
@@ -31,6 +31,16 @@ TEST(AP_FWVersion, FWVersion)
     EXPECT_EQ(AP::fwversion().middleware_hash_str, nullptr);
     EXPECT_EQ(AP::fwversion().os_name, nullptr);
     EXPECT_EQ(AP::fwversion().os_hash_str, nullptr);
+
+    const AP_FWVersion &fwversion = AP::fwversion();
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(&fwversion.fw_string) % alignof(const char *), 0U);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(&fwversion.fw_hash_str) % alignof(const char *), 0U);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(&fwversion.fw_string_original) % alignof(const char *), 0U);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(&fwversion.fw_short_string) % alignof(const char *), 0U);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(&fwversion.middleware_name) % alignof(const char *), 0U);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(&fwversion.middleware_hash_str) % alignof(const char *), 0U);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(&fwversion.os_name) % alignof(const char *), 0U);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(&fwversion.os_hash_str) % alignof(const char *), 0U);
 }
 
 AP_GTEST_MAIN()
