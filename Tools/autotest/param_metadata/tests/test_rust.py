@@ -55,7 +55,7 @@ def check_table_documentation(text, source):
     for table in tables:
         prefix = re.search(r'\bprefix\s*=\s*"([^"\n]*)"\s*;', table)
         assert prefix is not None, source
-        entries = re.findall(r'^\s*\w+\s*=\s*[^,\n]+,\s*"([^"\n]+)"\s*,\s*f32\s*:',
+        entries = re.findall(r'^\s*\w+\s*=\s*[^,\n]+,\s*"([^"\n]+)"\s*,\s*(?:f32|i32)\s*:',
                              table, re.MULTILINE)
         assert entries, source
         names = [m[1] for m in parameter_matches(table)]
@@ -64,15 +64,16 @@ def check_table_documentation(text, source):
     return count
 
 
+@pytest.mark.parametrize('kind', ['f32', 'i32'])
 @pytest.mark.parametrize('size', ['', '    size = 63;\n'])
 @pytest.mark.parametrize('annotation', ['TEST_VALUE', 'WRONG_NAME', None])
-def test_documentation_check_covers_optional_size(size, annotation):
+def test_documentation_check_covers_optional_size(size, annotation, kind):
     docs = '' if annotation is None else f'    // @Param: {annotation}\n    // @Description: Test parameter\n'
     text = ('ap_rust_sdk::param_table! {\n'
             '    struct Params, enum P;\n'
             '    key = 100, prefix = "TEST_";\n'
             f'{size}{docs}'
-            '    Value = 1, "VALUE", f32: 0.0;\n'
+            f'    Value = 1, "VALUE", {kind}: 0;\n'
             '}\n')
     if annotation == 'TEST_VALUE':
         assert check_table_documentation(text, 'fixture') == 1
