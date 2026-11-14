@@ -2028,6 +2028,66 @@ const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
     return nullptr;
 }
 
+// These reach EKF3 whatever backend is currently active, like the other write
+// paths into EKF3. Gating them on active_EKF_type() would drop a one-shot write
+// during a transient EKF3 fault and leave the state stale until the next one.
+float AP_AHRS::get_hover_z_bias_correction(uint8_t imu_index) const
+{
+#if HAL_NAVEKF3_AVAILABLE
+    if (_hover_z_bias_enabled) {
+        return ekf3.EKF3.hoverZBiasCorrection(imu_index);
+    }
+#endif
+    return 0.0f;
+}
+
+bool AP_AHRS::get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    // arming and disarming from Lua or DDS call this off the main thread
+    WITH_SEMAPHORE(_rsem);
+    Vector3f accel_bias;
+    if (ekf3.EKF3.getAccelBiasForIMU(imu_index, accel_bias)) {
+        bias_z = accel_bias.z;
+        return true;
+    }
+#endif
+    return false;
+}
+
+// get the number of times EKF3 has restarted its accel bias estimate for an IMU; after each,
+// get_accel_bias_z_for_imu() returns a bias that does not continue the one before
+uint16_t AP_AHRS::get_accel_bias_reset_count_for_imu(uint8_t imu_index)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    WITH_SEMAPHORE(_rsem);
+    return ekf3.EKF3.getAccelBiasResetCountForIMU(imu_index);
+#else
+    return 0;
+#endif
+}
+
+// get the time in ms EKF3 last zeroed the accel bias estimate get_accel_bias_z_for_imu() returns for an
+// IMU, on the same clock as AP_HAL::millis(); a switch between estimates zeroes nothing. 0 if no core uses it
+uint32_t AP_AHRS::get_accel_bias_zero_time_ms_for_imu(uint8_t imu_index)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    WITH_SEMAPHORE(_rsem);
+    return ekf3.EKF3.getAccelBiasZeroTimeForIMU(imu_index);
+#else
+    return 0;
+#endif
+}
+
+void AP_AHRS::set_inhibit_accel_bias_learning(bool inhibit)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    // arming from Lua or DDS calls this off the main thread, and each core reads it mid-frame
+    WITH_SEMAPHORE(_rsem);
+    ekf3.EKF3.setInhibitAccelBiasLearning(inhibit);
+#endif
+}
+
 // get current location estimate
 bool AP_AHRS::get_location(Location &loc) const
 {
