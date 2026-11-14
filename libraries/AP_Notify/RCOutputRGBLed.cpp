@@ -41,7 +41,7 @@ RCOutputRGBLed::RCOutputRGBLed(uint8_t red_channel, uint8_t green_channel,
                                uint8_t blue_channel, uint8_t led_off,
                                uint8_t led_full, uint8_t led_medium,
                                uint8_t led_dim)
-    : RGBLed(led_off, led_full, led_medium, led_dim)
+    : RGBLed(led_off, led_full, led_medium, led_dim, true)
     , _red_channel(red_channel)
     , _green_channel(green_channel)
     , _blue_channel(blue_channel)

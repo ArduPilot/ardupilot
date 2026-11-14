@@ -24,11 +24,13 @@
 
 extern const AP_HAL::HAL& hal;
 
-RGBLed::RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim):
+RGBLed::RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim,
+               bool board_output):
     _led_off(led_off),
     _led_bright(led_bright),
     _led_medium(led_medium),
-    _led_dim(led_dim)
+    _led_dim(led_dim),
+    _board_output(board_output)
 {
 
 }
@@ -36,6 +38,12 @@ RGBLed::RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t 
 // set_rgb - set color as a combination of red, green and blue values
 void RGBLed::_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
+    if (_board_output && pNotify->led_option_enabled(AP_Notify::LED_Option::SwapRedGreen)) {
+        // swap red and green output channels for LEDs not following the conventional driver colour order
+        const uint8_t tmp = red;
+        red = green;
+        green = tmp;
+    }
     if (red != _red_curr ||
         green != _green_curr ||
         blue != _blue_curr) {
