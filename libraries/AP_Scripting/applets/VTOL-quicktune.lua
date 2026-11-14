@@ -321,9 +321,9 @@ end
 
 -- check for pilot input to pause tune
 function have_pilot_input()
-   if (math.abs(RCIN_ROLL:norm_input_dz()) > 0 or
-       math.abs(RCIN_PITCH:norm_input_dz()) > 0 or
-       math.abs(RCIN_YAW:norm_input_dz()) > 0) then
+   if (math.abs(RCIN_ROLL:norm_input_dz_centered_on_trim()) > 0 or
+       math.abs(RCIN_PITCH:norm_input_dz_centered_on_trim()) > 0 or
+       math.abs(RCIN_YAW:norm_input_dz_centered_on_trim()) > 0) then
       return true
    end
    return false

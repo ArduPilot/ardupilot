@@ -39,10 +39,11 @@ class DocsGenerator:
             parameters = ', '.join(f'param{i + 1}' for i in range(count))
         return self.render('docs_function.lua', name=name, annotations=annotations, parameters=parameters) + '\n'
 
-    def method(self, obj, method, name=None):
+    def method(self, obj, method, name=None, deprecate=None):
         annotations = '-- desc\n'
-        if method.deprecate is not None:
-            annotations += f'---@deprecated {method.deprecate}\n'
+        deprecate = deprecate if deprecate is not None else method.deprecate
+        if deprecate is not None:
+            annotations += f'---@deprecated {deprecate}\n'
         for number, arg in enumerate(method.inputs, 1):
             annotations += self.annotation(f'---@param param{number}', arg, parameter=True)
         if not method.nullable:
@@ -97,7 +98,7 @@ class DocsGenerator:
                 method = next((method for method in obj.methods if method.name == alias.name), None)
                 if method is None:
                     raise BindingError(f'Could not find Method {alias.name} to alias to {alias.lua_name}', code=ErrorCode.DOCS)
-                text += self.method(obj, method, alias.lua_name)
+                text += self.method(obj, method, alias.lua_name, alias.deprecate)
             elif alias.kind == 'manual':
                 text += self.manual(alias, obj)
         return text + '\n'

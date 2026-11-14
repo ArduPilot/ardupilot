@@ -40,7 +40,7 @@ power_commands[5] = { {0x00,0x00,0xAA,0x55,0x05,0x01,0x03,0xC1,0x00}, "VTX PWR M
 
 -- return a power level from 1 to 5 as set with a switch
 function get_power()
-  input = scripting_rc:norm_input() -- - 1 to 1
+  input = scripting_rc:norm_input_centered_on_trim() -- - 1 to 1
   input = (input + 1) * 2 -- 0 to 4
   return math.floor(input+0.5) + 1 -- integer 1 to 5
 end

@@ -1021,17 +1021,17 @@ void AP_Mount_Backend::get_rc_input(float& roll_in, float& pitch_in, float& yaw_
 
     roll_in = 0;
     if ((roll_ch != nullptr) && (roll_ch->get_radio_in() > 0)) {
-        roll_in = roll_ch->norm_input_dz();
+        roll_in = roll_ch->norm_input_dz_centered_on_trim();
     }
 
     pitch_in = 0;
     if ((pitch_ch != nullptr) && (pitch_ch->get_radio_in() > 0)) {
-        pitch_in = pitch_ch->norm_input_dz();
+        pitch_in = pitch_ch->norm_input_dz_centered_on_trim();
     }
 
     yaw_in = 0;
     if ((yaw_ch != nullptr) && (yaw_ch->get_radio_in() > 0)) {
-        yaw_in = yaw_ch->norm_input_dz();
+        yaw_in = yaw_ch->norm_input_dz_centered_on_trim();
     }
 }
 
