@@ -49,17 +49,6 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
     return true;
 }
 
-bool AP_AHRS_SIM::get_origin(Location &ret) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    ret = _sitl->state.home;
-
-    return true;
-}
-
 #if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 /*
   return the ideal offsets for a compass instance, in body frame,
@@ -176,20 +165,19 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = get_location(results.location);
 
-    // origin-relative functions
-    // results.provides_common_origin = false;
-
-    // origin-relative position:
+    // origin-relative position, against the common origin, or the
+    // simulation's home until there is one.  Either way our location
+    // moved back by our position is that origin, so it can establish
+    // the common origin; AP_AHRS takes it only from a configured SIM:
     {
-        Location orgn;
-        if (get_origin(orgn)) {
-            results.position_D = -(fdm.altitude - orgn.alt*0.01f);
-            results.position_D_valid = true;
+        const Location &orgn = common_origin_ok ? common_origin : _sitl->state.home;
+        results.position_D = -(fdm.altitude - orgn.alt*0.01f);
+        results.position_D_valid = true;
 
-            if (results.location_valid) {
-                results.position_NE = orgn.get_distance_NE_postype(results.location);
-                results.position_NE_valid = true;
-            }
+        if (results.location_valid) {
+            results.position_NE = orgn.get_distance_NE_postype(results.location);
+            results.position_NE_valid = true;
+            results.location_suitable_as_origin = true;
         }
     }
 

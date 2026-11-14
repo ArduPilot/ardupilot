@@ -96,6 +96,12 @@ public:
 
     void log_event3(Event event);
     void log_SetOriginLLH3(const Location &loc);
+
+    // true if logging has started since log_SetOriginLLH2/3 last
+    // wrote an origin, so that an EKF which already has its origin
+    // should write it again for Replay of this log:
+    bool origin_log_needed2() const { return logging_started && !_origin_logged2; }
+    bool origin_log_needed3() const { return logging_started && !_origin_logged3; }
     void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
 
     void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
@@ -366,7 +372,9 @@ public:
 #if HAL_LOGGING_ENABLED
     // write out a DAL log message. If old_msg is non-null, then
     // only write if the content has changed
-    static void WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size);
+    // returns false if the message was not written, either because
+    // we are not logging or because the logger refused it:
+    static bool WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size);
 #endif
 
 private:
@@ -412,6 +420,10 @@ private:
 
     static bool logging_started;
     static bool force_write;
+
+    // true once the origin has been written into the current log:
+    bool _origin_logged2;
+    bool _origin_logged3;
 
     bool ekf2_init_done;
     bool ekf3_init_done;

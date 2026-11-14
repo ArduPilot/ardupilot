@@ -6865,6 +6865,46 @@ return update()
         self.change_mode('AUTOLAND')
         self.wait_disarmed(timeout=180)
 
+    def OriginWithoutEKF(self):
+        '''check DCM, and SIM, give the vehicle an origin with no EKF running'''
+        # with no EKF to offer an origin, DCM's origin is home and SIM's
+        # the simulation's home, which is where the vehicle starts;
+        # either way the vehicle's origin should match home
+        def check_origin_at_home(what):
+            home = self.poll_home_position(timeout=120)
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 60:
+                    raise NotAchievedException("No origin with %s" % what)
+                try:
+                    origin = self.poll_message('GPS_GLOBAL_ORIGIN', timeout=2)
+                    break
+                except NotAchievedException:
+                    pass
+            dist = self.get_distance_int(home, origin)
+            self.progress("%s: origin %.2fm from home" % (what, dist))
+            if dist > 1:
+                raise NotAchievedException("%s: origin %.2fm from home" % (what, dist))
+
+        for ekf_type in 0, 10:
+            self.set_parameters({
+                "EK2_ENABLE": 0,
+                "EK3_ENABLE": 0,
+                "AHRS_EKF_TYPE": ekf_type,
+            })
+            self.reboot_sitl()
+            check_origin_at_home("AHRS_EKF_TYPE=%u" % ekf_type)
+
+        # DCM's origin is home even with no position estimate: with no
+        # GPS, set home by command
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 0,
+            "SIM_GPS1_ENABLE": 0,
+        })
+        self.reboot_sitl()
+        self.set_home(self.sitl_start_location())
+        check_origin_at_home("DCM with no GPS")
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -10826,6 +10866,7 @@ return update()
             self.TakeoffBadLevelOff,
             self.ForcedDCM,
             self.DCMFallback,
+            self.OriginWithoutEKF,
             self.MAVFTPBurstEOFOffset,
             self.MAVFTPListDirectoryRoot,
             self.MAVFTPShortReplyPadding,
