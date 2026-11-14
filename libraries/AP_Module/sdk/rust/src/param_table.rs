@@ -143,15 +143,18 @@ impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
     }
 
     /// Re-read all values; bits refer to declaration positions, not storage indices.
+    /// On error, retain the cache so a retry still reports every changed entry.
     pub fn refresh(&mut self) -> Result<u64> {
+        let mut values = self.cache;
         let mut changed = 0;
         for (i, p) in self.handles.iter().enumerate() {
             let v = p.get()?.ok_or(Error::Invalid)?;
             if v != self.cache[i] {
-                self.cache[i] = v;
+                values[i] = v;
                 changed |= 1 << i;
             }
         }
+        self.cache = values;
         Ok(changed)
     }
 
@@ -198,6 +201,26 @@ impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
 /// }
 /// ```
 ///
+/// Keys must be in the host binding's range, 0 to 200, even if registration
+/// is not called:
+///
+/// ```compile_fail
+/// ap_rust_sdk::param_table! {
+///     struct Invalid, enum P;
+///     key = 201, prefix = "BAD_";
+///     Value = 1, "VALUE", f32: 0.0;
+/// }
+/// ```
+///
+/// ```compile_fail
+/// ap_rust_sdk::param_table! {
+///     struct Invalid, enum P;
+///     key = 201, prefix = "BAD_";
+///     size = 63;
+///     Value = 1, "VALUE", f32: 0.0;
+/// }
+/// ```
+///
 /// This generates `enum P` naming the entries, a `Params` struct with
 /// `register(c)`, `refresh()` and typed get/set methods taking `P`, and
 /// `P::changed(mask)` for testing a `refresh()` result. Names, indices and
@@ -241,8 +264,11 @@ macro_rules! param_table {
             $crate::ParamTable<'a, 'h, { $crate::param_table!(@count $($variant)+) }>,
         );
 
-        // run the table checks even if register() is unused
-        const _: u8 = $table::<'static, 'static>::SIZE;
+        // Run the key and layout checks even if registration is unused.
+        const _: u8 = {
+            assert!($table::<'static, 'static>::KEY <= 200, "parameter table key must be 0 to 200");
+            $table::<'static, 'static>::SIZE
+        };
 
         #[allow(dead_code)]
         impl<'a, 'h> $table<'a, 'h> {
@@ -274,7 +300,7 @@ macro_rules! param_table {
             }
 
             $vis fn register(c: &'a $crate::Context<'h>) -> $crate::Result<Self> {
-                Ok(Self($crate::ParamTable::register(c, $key, $prefix, Self::SIZE, &Self::DEFS)?))
+                Ok(Self($crate::ParamTable::register(c, Self::KEY, Self::PREFIX, Self::SIZE, &Self::DEFS)?))
             }
             /// Re-read all values; test the result with `changed()`.
             $vis fn refresh(&mut self) -> $crate::Result<u64> { self.0.refresh() }
