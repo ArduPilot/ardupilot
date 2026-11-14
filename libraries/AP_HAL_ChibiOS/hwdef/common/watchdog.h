@@ -66,7 +66,25 @@ bool stm32_was_watchdog_reset(void);
   return true if reboot was from a software reset
  */
 bool stm32_was_software_reset(void);
-    
+
+/*
+  causes of the last reset, as returned by stm32_reset_cause(). More
+  than one can be set, e.g. a power-on reset also sets the pin flag on
+  some MCUs. These values are sent by the IOMCU, so don't renumber them
+ */
+#define STM32_RESET_CAUSE_POWER_ON  (1U<<0) // power-on/power-down reset
+#define STM32_RESET_CAUSE_PIN       (1U<<1) // NRST pin
+#define STM32_RESET_CAUSE_SOFTWARE  (1U<<2)
+#define STM32_RESET_CAUSE_IWDG      (1U<<3) // independent watchdog
+#define STM32_RESET_CAUSE_WWDG      (1U<<4) // window watchdog
+#define STM32_RESET_CAUSE_LOW_POWER (1U<<5)
+#define STM32_RESET_CAUSE_BROWNOUT  (1U<<6) // brownout reset above the power-on threshold
+
+/*
+  return the causes of the last reset as STM32_RESET_CAUSE_* flags
+ */
+uint8_t stm32_reset_cause(void);
+
 /*
   save the reset reason code
  */
