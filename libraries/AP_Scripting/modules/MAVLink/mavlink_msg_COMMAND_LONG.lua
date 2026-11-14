@@ -1,6 +1,7 @@
 local COMMAND_LONG = {}
 COMMAND_LONG.id = 76
 COMMAND_LONG.crc_extra = 152
+COMMAND_LONG.extensions_start = 11
 COMMAND_LONG.fields = {
              { "param1", "<f" },
              { "param2", "<f" },
@@ -13,5 +14,6 @@ COMMAND_LONG.fields = {
              { "target_system", "<B" },
              { "target_component", "<B" },
              { "confirmation", "<B" },
+             { "command_opaque_id", "<I4" },
              }
 return COMMAND_LONG

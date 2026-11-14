@@ -149,17 +149,22 @@ public:
     Type task;
     MAV_CMD mav_cmd;
 
-    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan);
+    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint32_t sysid, uint8_t compid, uint32_t command_opaque_id, mavlink_channel_t chan);
 
     static void check_tasks();
+
+    // send further ACKs for a running task to chan
+    static void set_reply_channel(MAV_CMD cmd, uint32_t sysid, uint8_t compid, uint32_t command_opaque_id, mavlink_channel_t chan);
 
 private:
 
     uint32_t requesting_sysid;
+    uint32_t requesting_command_opaque_id;
     uint8_t requesting_compid;
     mavlink_channel_t chan;
 
     bool send_ack(MAV_RESULT result);
+    void update_recent_command(MAV_RESULT result);
 
     static GCS_MAVLINK_InProgress in_progress_tasks[1];
 
@@ -569,6 +574,10 @@ protected:
 
     MAV_RESULT handle_command_do_follow(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    // as handle_command_int_packet, but a command carrying a non-zero
+    // command_opaque_id is only executed once; a repeat of it from the
+    // same sender returns the original result
+    MAV_RESULT handle_command_int_packet_idempotent(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_int_external_wind_estimate(const mavlink_command_int_t &packet);
 
@@ -706,7 +715,7 @@ protected:
     virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-    virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
+    virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
 #if AP_MISSION_ENABLED
     virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_int_t &packet);

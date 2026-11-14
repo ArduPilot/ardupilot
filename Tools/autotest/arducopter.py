@@ -4362,16 +4362,30 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # crashes mid-calibration:
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=2000)
         self.wait_statustext("SITL: Clamp: grabbed vehicle")
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
-            0,  # p1
-            0,  # p2
-            0,  # p3
-            0,  # p4
-            0,  # p5
-            1,  # p6
-            0  # p7
-        )
+        if 'command_opaque_id' in mavutil.mavlink.MAVLink_command_ack_message.fieldnames:
+            # compassmot sends its own initial ACK, which must carry the
+            # command's ID like every other ACK
+            compassmot_id = 0x60000001
+            self.mav.mav.command_long_send(
+                self.sysid_thismav(), 1, mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION, 0,
+                0, 0, 0, 0, 0, 1, 0, compassmot_id)
+            m = self.assert_receive_message(
+                'COMMAND_ACK', timeout=10, verbose=True,
+                condition='COMMAND_ACK.command==%u' % mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION)
+            if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED or m.command_opaque_id != compassmot_id:
+                raise NotAchievedException("compassmot's initial ACK should be ACCEPTED with ID 0x%08x" %
+                                           compassmot_id)
+        else:
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                0,  # p1
+                0,  # p2
+                0,  # p3
+                0,  # p4
+                0,  # p5
+                1,  # p6
+                0  # p7
+            )
         self.context_collect("STATUSTEXT")
         self.wait_statustext("Starting calibration", check_context=True)
         self.wait_statustext("Current", check_context=True)
@@ -9690,6 +9704,45 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             p3=1,  # total images
             want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
+
+    def CommandOpaqueIdSimulators(self):
+        '''check the SITL MAVLink camera and gimbal simulators reflect command_opaque_id'''
+        if 'command_opaque_id' not in mavutil.mavlink.MAVLink_command_ack_message.fieldnames:
+            self.progress("pymavlink lacks COMMAND_ACK.command_opaque_id; skipping test")
+            return
+        self.set_parameters({
+            "MNT1_TYPE": 6,         # MAVLink
+            "CAM1_TYPE": 4,         # Mount
+            "SERIAL5_PROTOCOL": 2,  # MAVLink2
+        })
+        # the AVT CM62 simulator is both a MAVLinkCamV2 camera and a
+        # MAVLinkGimbalv2 gimbal; the autopilot routes our commands to it
+        self.customise_SITL_commandline(["--serial5=sim:avt_cm62_gimbal:"])
+        sysid = self.sysid_thismav()
+        REQ = mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE
+        for what, compid, msgid, opaque in (
+                ("camera", mavutil.mavlink.MAV_COMP_ID_CAMERA,
+                 mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_INFORMATION, 0x50000001),
+                ("gimbal", mavutil.mavlink.MAV_COMP_ID_GIMBAL,
+                 mavutil.mavlink.MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION, 0x50000002)):
+            ack = None
+            tstart = time.time()
+            next_send = 0
+            while ack is None:
+                if time.time() - tstart > 30:
+                    raise NotAchievedException("no REQUEST_MESSAGE ACK from the %s simulator" % what)
+                if time.time() >= next_send:
+                    # resent until the simulator has been seen and
+                    # the autopilot routes the command to it
+                    self.mav.mav.command_long_send(sysid, compid, REQ, 0, msgid, 0, 0, 0, 0, 0, 0, opaque)
+                    next_send = time.time() + 1
+                m = self.mav.recv_match(type='COMMAND_ACK', blocking=True, timeout=0.1)
+                if (m is not None and m.get_srcComponent() == compid and m.command == REQ and
+                        m.target_system == self.mav.mav.srcSystem):
+                    ack = m
+            self.progress("%s simulator ACK: %s" % (what, ack))
+            if ack.result != mavutil.mavlink.MAV_RESULT_ACCEPTED or ack.command_opaque_id != opaque:
+                raise NotAchievedException("%s simulator ACK should be ACCEPTED with ID 0x%08x" % (what, opaque))
 
     def MountMAVLinkROI(self):
         '''route ROI and angle commands independently through two MAVLink mounts'''
@@ -20514,6 +20567,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptMountAllModes,
             self.MountTopotek,
             self.MountAVTCM62,
+            self.CommandOpaqueIdSimulators,
             self.MountMAVLinkROI,
             self.MountMAVLinkTargetRefresh,
             self.MAVLinkCameraCaptureStatus,

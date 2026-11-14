@@ -74,6 +74,7 @@ local function update()
         ack.result_param2 = 0
         ack.target_system = 0 -- send_chan supplies the full target below
         ack.target_component = parsed_msg.compid
+        ack.command_opaque_id = parsed_msg.command_opaque_id
 
         local function send_ack()
             local msgid, payload = mavlink_msgs.encode("COMMAND_ACK", ack)

@@ -400,7 +400,7 @@ MAV_RESULT GCS_MAVLINK_Copter::_handle_command_preflight_calibration(const mavli
 {
     if (packet.y == 1) {
         // compassmot calibration
-        return copter.mavlink_compassmot(*this);
+        return copter.mavlink_compassmot(*this, packet);
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);

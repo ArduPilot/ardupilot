@@ -774,6 +774,331 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("flying home")
         self.fly_home_land_and_disarm()
 
+    def CommandOpaqueId(self):
+        '''test COMMAND_LONG/COMMAND_INT command_opaque_id over two links'''
+        if 'command_opaque_id' not in mavutil.mavlink.MAVLink_command_ack_message.fieldnames:
+            self.progress("pymavlink lacks COMMAND_ACK.command_opaque_id; skipping test")
+            return
+
+        self.context_push()
+        links = []
+        try:
+            self._CommandOpaqueId(links)
+        finally:
+            for link in links:
+                link.close()
+            self.context_pop()
+
+    def _CommandOpaqueId(self, links):
+        # Two links from the same GCS sysid/compid, so a command repeated on
+        # the second link is recognised as a resend of the first.  At
+        # SIM_SPEEDUP 1 wall-clock waits below are also simulated time.
+        self.set_parameter("SIM_SPEEDUP", 1)
+        for serial in 1, 2:
+            links.append(mavutil.mavlink_connection(
+                self.sitl_serial_endpoint(serial),
+                robust_parsing=True,
+                source_system=251,
+                source_component=190,
+                dialect="all",
+            ))
+        a, b = links
+        names = {a: "A", b: "B"}
+        target_system = self.sysid_thismav()
+        target_component = 1
+        last_gcs_heartbeat = [0]
+
+        def service():
+            '''send GCS heartbeats on both links, so they get STATUSTEXTs, and keep self.mav drained'''
+            if time.time() - last_gcs_heartbeat[0] > 0.5:
+                for link in links:
+                    link.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+                last_gcs_heartbeat[0] = time.time()
+            self.drain_mav(quiet=True)
+
+        def receive(got):
+            for link in links:
+                while True:
+                    m = link.recv_msg()
+                    if m is None:
+                        break
+                    if m.get_type() != 'BAD_DATA':
+                        got[link].append(m)
+
+        def collect(duration, until=None):
+            '''messages received on each link for duration seconds, or until until(got) is true'''
+            got = {a: [], b: []}
+            tstart = time.time()
+            while time.time() - tstart < duration:
+                service()
+                receive(got)
+                if until is not None and until(got):
+                    break
+                time.sleep(0.01)
+            return got
+
+        def of_type(msgs, t):
+            return [m for m in msgs if m.get_type() == t]
+
+        def acks(msgs, command):
+            return [m for m in of_type(msgs, 'COMMAND_ACK') if m.command == command]
+
+        def autopilot_heartbeats(msgs):
+            return [m for m in of_type(msgs, 'HEARTBEAT')
+                    if m.get_srcSystem() == target_system and m.get_srcComponent() == target_component]
+
+        def send(link, command, p1=0, p2=0, p3=0, opaque=0, use_int=False):
+            if use_int:
+                link.mav.command_int_send(
+                    target_system, target_component, 0, command, 0, 0, p1, p2, p3, 0, 0, 0, 0, opaque)
+            else:
+                link.mav.command_long_send(
+                    target_system, target_component, command, 0, p1, p2, p3, 0, 0, 0, 0, opaque)
+
+        def check(cond, what):
+            if not cond:
+                raise NotAchievedException(what)
+            self.progress("PASS: %s" % what)
+
+        def wait_sim_time(seconds):
+            self.set_parameter("SIM_SPEEDUP", 10)
+            self.delay_sim_time(seconds, "command_opaque_id retention")
+            self.set_parameter("SIM_SPEEDUP", 1)
+            collect(0.2)
+
+        # wait for the autopilot's heartbeat on both links
+        got = collect(30, until=lambda g: autopilot_heartbeats(g[a]) and autopilot_heartbeats(g[b]))
+        check(autopilot_heartbeats(got[a]) and autopilot_heartbeats(got[b]), "heartbeats on both links")
+
+        SET_MODE = mavutil.mavlink.MAV_CMD_DO_SET_MODE
+        MANUAL = self.get_mode_from_mode_mapping("MANUAL")
+        FBWA = self.get_mode_from_mode_mapping("FBWA")
+        CRUISE = self.get_mode_from_mode_mapping("CRUISE")
+
+        def set_mode(link, mode, opaque, use_int=False):
+            '''returns the DO_SET_MODE ACKs on link and on the other link, and the mode once they arrived'''
+            other = b if link is a else a
+            send(link, SET_MODE, p1=mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, p2=mode,
+                 opaque=opaque, use_int=use_int)
+            heartbeats_after_ack = []
+
+            def done(g):
+                got_acks = [i for i, m in enumerate(g[link]) if m.get_type() == 'COMMAND_ACK' and m.command == SET_MODE]
+                if not got_acks:
+                    return False
+                heartbeats_after_ack[:] = autopilot_heartbeats(g[link][got_acks[0]+1:])
+                return len(heartbeats_after_ack) > 0
+
+            got = collect(5, until=done)
+            got_other = collect(0.2)
+            other_acks = acks(got[other] + got_other[other], SET_MODE)
+            mode_now = heartbeats_after_ack[-1].custom_mode if heartbeats_after_ack else None
+            return acks(got[link] + got_other[link], SET_MODE), other_acks, mode_now
+
+        # A resend is detected by changing mode with another ID in between:
+        # if the resend were executed the mode would change back.
+        for use_int, base in (False, 0x10001000), (True, 0x20002000):
+            kind = "COMMAND_INT" if use_int else "COMMAND_LONG"
+            self.start_subtest("%s resends" % kind)
+            set_mode(a, MANUAL, 0, use_int)
+            ack, _, mode = set_mode(a, FBWA, base, use_int)
+            check(len(ack) == 1 and ack[0].result == mavutil.mavlink.MAV_RESULT_ACCEPTED and
+                  ack[0].command_opaque_id == base and mode == FBWA,
+                  "%s first send executes and its ACK carries the ID (mode=%s)" % (kind, mode))
+            ack, _, mode = set_mode(a, MANUAL, base+1, use_int)
+            check(mode == MANUAL, "%s a new ID executes (mode=%s)" % (kind, mode))
+            ack, _, mode = set_mode(a, FBWA, base, use_int)
+            check(len(ack) == 1 and ack[0].result == mavutil.mavlink.MAV_RESULT_ACCEPTED and
+                  ack[0].command_opaque_id == base and mode == MANUAL,
+                  "%s resend on the same link is acknowledged but not executed (mode=%s)" % (kind, mode))
+            ack, other, mode = set_mode(b, FBWA, base, use_int)
+            check(len(ack) == 1 and ack[0].command_opaque_id == base and len(other) == 0 and mode == MANUAL,
+                  "%s resend on the other link is acknowledged on that link only and not executed (mode=%s)" %
+                  (kind, mode))
+            ack, _, mode = set_mode(a, FBWA, base+0x10000, use_int)
+            check(mode == FBWA, "%s an ID differing only above bit 15 executes (mode=%s)" % (kind, mode))
+            set_mode(a, MANUAL, 0, use_int)
+            set_mode(a, FBWA, base+2, use_int)
+            ack, _, mode = set_mode(a, MANUAL, 0, use_int)
+            check(len(ack) == 1 and ack[0].command_opaque_id == 0 and mode == MANUAL,
+                  "%s ID 0 executes every time and is acknowledged with 0 (mode=%s)" % (kind, mode))
+            ack, _, mode = set_mode(a, CRUISE, base, use_int)
+            check(len(ack) == 1 and ack[0].result == mavutil.mavlink.MAV_RESULT_ACCEPTED and mode == CRUISE,
+                  "%s an ID reused with different parameters executes (mode=%s)" % (kind, mode))
+
+        # REQUEST_MESSAGE acts on and replies over only the link it arrived
+        # on, so it is run every time, with the reply on that link.
+        REQ = mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE
+        AV = mavutil.mavlink.MAVLINK_MSG_ID_AUTOPILOT_VERSION
+        for use_int, rid in (False, 0x10002000), (True, 0x20003000):
+            kind = "COMMAND_INT" if use_int else "COMMAND_LONG"
+            self.start_subtest("%s REQUEST_MESSAGE resends" % kind)
+            for link, what in (a, "first send"), (a, "resend on the same link"), (b, "resend on the other link"):
+                other = b if link is a else a
+                collect(0.2)
+                send(link, REQ, p1=AV, opaque=rid, use_int=use_int)
+                got = collect(2)
+                ack = acks(got[link], REQ)
+                n = len(of_type(got[link], 'AUTOPILOT_VERSION'))
+                n_other = len(of_type(got[other], 'AUTOPILOT_VERSION'))
+                check(len(ack) == 1 and ack[0].command_opaque_id == rid and n == 1 and n_other == 0,
+                      "%s REQUEST_MESSAGE %s is executed and answered on link %s (n=%u other=%u)" %
+                      (kind, what, names[link], n, n_other))
+
+        # mavlink/mavlink#2452: several REQUEST_MESSAGEs in flight at once,
+        # on both links and as both COMMAND_LONG and COMMAND_INT, sent
+        # before any ACK is read.  The ACKs for command 512 differ only in
+        # their result; command_opaque_id says which request each answers.
+        # Message 9999 doesn't exist, so that request is refused.
+        self.start_subtest("parallel REQUEST_MESSAGEs")
+        NO_SUCH_MESSAGE = 9999
+        parallel = [
+            # (link, use_int, message id, opaque id)
+            (a, False, mavutil.mavlink.MAVLINK_MSG_ID_AUTOPILOT_VERSION, 0x40000001),
+            (a, True, mavutil.mavlink.MAVLINK_MSG_ID_HOME_POSITION, 0x40000002),
+            (b, False, mavutil.mavlink.MAVLINK_MSG_ID_AUTOPILOT_VERSION, 0x40000003),
+            (a, False, NO_SUCH_MESSAGE, 0x40000004),
+            (b, True, mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 0x40000005),
+            (a, True, mavutil.mavlink.MAVLINK_MSG_ID_SYSTEM_TIME, 0x40000006),
+        ]
+        collect(0.5)
+        for link, use_int, msgid, opaque in parallel:
+            send(link, REQ, p1=msgid, opaque=opaque, use_int=use_int)
+        got = collect(3)
+        for link in a, b:
+            other = b if link is a else a
+            req_acks = acks(got[link], REQ)
+            sent = [p for p in parallel if p[0] is link]
+            self.progress("%s ACKs in arrival order: %s" %
+                          (names[link], ["0x%08x:%u" % (m.command_opaque_id, m.result) for m in req_acks]))
+            check(sorted(m.command_opaque_id for m in req_acks) == sorted(p[3] for p in sent),
+                  "link %s got exactly one ACK per REQUEST_MESSAGE it sent, each with its ID" % names[link])
+            for _, use_int, msgid, opaque in sent:
+                mine = [m for m in req_acks if m.command_opaque_id == opaque]
+                if msgid == NO_SUCH_MESSAGE:
+                    ok = len(mine) == 1 and mine[0].result != mavutil.mavlink.MAV_RESULT_ACCEPTED
+                else:
+                    ok = len(mine) == 1 and mine[0].result == mavutil.mavlink.MAV_RESULT_ACCEPTED
+                check(ok, "REQUEST_MESSAGE for message %u (ID 0x%08x) has its own result (%s)" %
+                      (msgid, opaque, [m.result for m in mine]))
+                if msgid != NO_SUCH_MESSAGE:
+                    name = mavutil.mavlink.mavlink_map[msgid].msgname
+                    check(len(of_type(got[link], name)) >= 1, "%s arrived on link %s" % (name, names[link]))
+            sent_ids = [p[3] for p in sent]
+            stray = [m for m in acks(got[other], REQ) if m.command_opaque_id in sent_ids]
+            check(len(stray) == 0, "no ACK for link %s's requests on link %s" % (names[link], names[other]))
+
+        # A resend while a long-running command is in progress doesn't
+        # restart it, and the rest of its ACKs go to the link the resend
+        # arrived on.
+        self.start_subtest("resend while in progress")
+        CAL = mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION
+        IN_PROGRESS = mavutil.mavlink.MAV_RESULT_IN_PROGRESS
+        CAL_ID = 0x10003000
+
+        def calibration_texts(msgs):
+            return [m for m in of_type(msgs, 'STATUSTEXT') if 'Updating barometer' in m.text]
+
+        collect(0.5)
+        send(a, CAL, p3=1, opaque=CAL_ID)
+        got = collect(0.3)
+        check(len(calibration_texts(got[a])) == 1, "calibration started")
+        ack = acks(got[a], CAL)
+        check(len(ack) >= 1 and all(m.result == IN_PROGRESS and m.command_opaque_id == CAL_ID for m in ack),
+              "calibration acknowledged IN_PROGRESS on link A")
+        send(b, CAL, p3=1, opaque=CAL_ID)
+        acks_a_before_b = []
+        acks_a = []
+        acks_b = []
+        texts = []
+        final = None
+        tstart = time.time()
+        while time.time() - tstart < 30 and final is None:
+            # the autopilot may send an ACK on A before it processes the
+            # resend on B, so only count A's ACKs after B's first ACK
+            b_acked = len(acks_b) > 0
+            got = collect(0.2)
+            texts.extend(calibration_texts(got[a] + got[b]))
+            if b_acked:
+                acks_a.extend(acks(got[a], CAL))
+            else:
+                acks_a_before_b.extend(acks(got[a], CAL))
+            acks_b.extend(acks(got[b], CAL))
+            for m in acks_b:
+                if m.result != IN_PROGRESS:
+                    final = m
+        check(len(texts) == 0, "the resend on link B did not restart the calibration")
+        check(len(acks_b) >= 1 and acks_b[0].result == IN_PROGRESS and acks_b[0].command_opaque_id == CAL_ID,
+              "the resend on link B was acknowledged IN_PROGRESS")
+        check(final is not None and final.command_opaque_id == CAL_ID, "the final result arrived on link B")
+        check(len(acks_a) == 0 and len(acks_a_before_b) <= 1,
+              "no more ACKs on link A once B resent (%u before B's ACK, %u after)" %
+              (len(acks_a_before_b), len(acks_a)))
+        send(a, CAL, p3=1, opaque=CAL_ID)
+        got = collect(1)
+        ack = acks(got[a], CAL)
+        check(len(ack) == 1 and ack[0].result == final.result and ack[0].command_opaque_id == CAL_ID,
+              "a resend after completion gets the final result")
+        check(len(calibration_texts(got[a] + got[b])) == 0, "a resend after completion did not recalibrate")
+
+        # NAV_TAKEOFF sent as COMMAND_LONG is converted to COMMAND_INT by
+        # Plane's own conversion, which must carry the ID.  This isn't a
+        # QuadPlane, so the takeoff itself fails.
+        self.start_subtest("NAV_TAKEOFF COMMAND_LONG conversion")
+        TAKEOFF_ID = 0x10004000
+        collect(0.5)
+        send(a, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, opaque=TAKEOFF_ID)
+        got = collect(2, until=lambda g: acks(g[a], mavutil.mavlink.MAV_CMD_NAV_TAKEOFF))
+        ack = acks(got[a], mavutil.mavlink.MAV_CMD_NAV_TAKEOFF)
+        check(len(ack) == 1 and ack[0].command_opaque_id == TAKEOFF_ID,
+              "NAV_TAKEOFF COMMAND_LONG is acknowledged with its ID (%s)" %
+              ["0x%08x:%u" % (m.command_opaque_id, m.result) for m in ack])
+
+        # Gyro calibration blocks the main loop, and commands are still
+        # received from the scheduler's delay callback while it runs.  A
+        # resend arriving then is answered IN_PROGRESS without being
+        # executed (executing it would give it a result of its own), and
+        # the result goes to the link the command first arrived on.
+        self.start_subtest("resend while a blocking handler runs")
+        GYRO_ID = 0x10005000
+        collect(0.5)
+        send(a, CAL, p1=1, opaque=GYRO_ID)
+        got = collect(0.1)
+        send(b, CAL, p1=1, opaque=GYRO_ID)
+        more = collect(15, until=lambda g: [m for m in acks(g[a], CAL) if m.result != IN_PROGRESS])
+        for link in a, b:
+            got[link].extend(more[link])
+        acks_a = acks(got[a], CAL)
+        acks_b = acks(got[b], CAL)
+        self.progress("A: %s B: %s" % (["0x%08x:%u" % (m.command_opaque_id, m.result) for m in acks_a],
+                                       ["0x%08x:%u" % (m.command_opaque_id, m.result) for m in acks_b]))
+        check(len(acks_b) == 1 and acks_b[0].result == IN_PROGRESS and acks_b[0].command_opaque_id == GYRO_ID,
+              "the resend on link B during the calibration was acknowledged IN_PROGRESS, not executed")
+        finals_a = [m for m in acks_a if m.result != IN_PROGRESS]
+        check(len(finals_a) == 1 and finals_a[0].result == mavutil.mavlink.MAV_RESULT_ACCEPTED and
+              finals_a[0].command_opaque_id == GYRO_ID,
+              "the calibration's result was sent on link A")
+        send(b, CAL, p1=1, opaque=GYRO_ID)
+        got = collect(1)
+        ack = acks(got[b], CAL)
+        check(len(ack) == 1 and ack[0].result == mavutil.mavlink.MAV_RESULT_ACCEPTED and
+              ack[0].command_opaque_id == GYRO_ID,
+              "a resend after the calibration gets its result")
+
+        # An ID is remembered for 60 seconds after the command's result.
+        self.start_subtest("retention")
+        RETAIN = 0x30005000
+        ack, _, mode = set_mode(a, FBWA, RETAIN)
+        t0 = self.get_sim_time()
+        check(mode == FBWA, "retention: first send executes (mode=%s)" % mode)
+        set_mode(a, MANUAL, RETAIN+1)
+        wait_sim_time(30 - (self.get_sim_time() - t0))
+        ack, _, mode = set_mode(a, FBWA, RETAIN)
+        check(len(ack) == 1 and mode == MANUAL, "retention: a resend after 30s is not executed (mode=%s)" % mode)
+        wait_sim_time(62 - (self.get_sim_time() - t0))
+        ack, _, mode = set_mode(a, FBWA, RETAIN)
+        check(len(ack) == 1 and mode == FBWA, "retention: a resend after 62s executes again (mode=%s)" % mode)
+
     def DeepStall(self):
         '''Test DeepStall Landing'''
         # self.fly_deepstall_absolute()
@@ -11243,6 +11568,7 @@ return update()
             self.NoArmWithoutMissionItems,
             self.MODE_SWITCH_RESET,
             self.ExternalPositionEstimate,
+            self.CommandOpaqueId,
             self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
