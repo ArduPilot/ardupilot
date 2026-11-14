@@ -226,10 +226,13 @@ void PS_LightWare_SF45B::update_output_scan(const Location &location)
             distance = -1.0f;
         }
 
+        // both fields are signed 16-bit values on the wire (the driver reads
+        // them as int16_t): converting a negative float straight to uint16_t
+        // is undefined, and only wraps by accident on x86
         PackedMessage<DistanceDataCM> packed_distance_data {
             DistanceDataCM(
-                uint16_t(distance*100.0),
-                wrap_180(current_degrees_bf) * 100
+                uint16_t(int16_t(distance*100.0)),
+                uint16_t(int16_t(wrap_180(current_degrees_bf) * 100))
                 ), 0x1 };
         packed_distance_data.update_checksum();
         send((char*)&packed_distance_data, sizeof(packed_distance_data));
