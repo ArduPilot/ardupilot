@@ -226,7 +226,7 @@ local function run_chirp()
       gcs:send_named_float('RPM', rpm)
       logger:write('ECRP', 'PWM,Freq,RPM', 'fff', pwm, freq, rpm)
    elseif ACHRP_TYPE:get() == ACTUATOR_TYPE_SERVO then
-      local telem_data = servo_telem:get_telem(chan)
+      local telem_data = servo_telem:get_telem(chan - 1)
       local pos = -1
       if telem_data then
          pos = telem_data:measured_position() or -1
