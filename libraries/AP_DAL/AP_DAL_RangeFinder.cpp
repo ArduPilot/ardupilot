@@ -16,16 +16,19 @@ AP_DAL_RangeFinder::AP_DAL_RangeFinder()
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     _RRNH.num_sensors = AP::rangefinder()->num_sensors();
     _RRNI = NEW_NOTHROW log_RRNI[_RRNH.num_sensors];
+    _RRNJ = NEW_NOTHROW log_RRNJ[_RRNH.num_sensors];
     _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
-    if (!_RRNI || !_backend) {
+    if (!_RRNI || !_RRNJ || !_backend) {
         goto failed;
     }
     for (uint8_t i=0; i<_RRNH.num_sensors; i++) {
         _RRNI[i].instance = i;
+        _RRNJ[i].instance = i;
+        _have_reading_time[i] = true;
     }
     for (uint8_t i=0; i<_RRNH.num_sensors; i++) {
         // this avoids having to discard a const....
-        _backend[i] = NEW_NOTHROW AP_DAL_RangeFinder_Backend(_RRNI[i]);
+        _backend[i] = NEW_NOTHROW AP_DAL_RangeFinder_Backend(_RRNI[i], _RRNJ[i]);
         if (!_backend[i]) {
             goto failed;
         }
@@ -92,8 +95,9 @@ void AP_DAL_RangeFinder::start_frame()
 
 
 
-AP_DAL_RangeFinder_Backend::AP_DAL_RangeFinder_Backend(struct log_RRNI &RRNI) :
-    _RRNI(RRNI)
+AP_DAL_RangeFinder_Backend::AP_DAL_RangeFinder_Backend(struct log_RRNI &RRNI, struct log_RRNJ &RRNJ) :
+    _RRNI(RRNI),
+    _RRNJ(RRNJ)
 {
 }
 
@@ -104,6 +108,10 @@ void AP_DAL_RangeFinder_Backend::start_frame(AP_RangeFinder_Backend *backend) {
     _RRNI.pos_offset = backend->get_pos_offset();
     _RRNI.distance = backend->distance();
     WRITE_REPLAY_BLOCK_IFCHANGED(RRNI, _RRNI, old);
+
+    const log_RRNJ old_RRNJ = _RRNJ;
+    _RRNJ.last_reading_ms = backend->last_reading_ms();
+    WRITE_REPLAY_BLOCK_IFCHANGED(RRNJ, _RRNJ, old_RRNJ);
 }
 
 // return true if we have a range finder with the specified orientation
@@ -136,16 +144,29 @@ void AP_DAL_RangeFinder::handle_message(const log_RRNH &msg)
     _RRNH = msg;
     if (_RRNH.num_sensors > 0 && _RRNI == nullptr) {
         _RRNI = NEW_NOTHROW log_RRNI[_RRNH.num_sensors];
+        _RRNJ = NEW_NOTHROW log_RRNJ[_RRNH.num_sensors];
         _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
     }
 }
 
 void AP_DAL_RangeFinder::handle_message(const log_RRNI &msg)
 {
-    if (_RRNI != nullptr && msg.instance < _RRNH.num_sensors) {
+    if (_RRNI != nullptr && _RRNJ != nullptr && msg.instance < _RRNH.num_sensors) {
         _RRNI[msg.instance] = msg;
         if (_backend != nullptr && _backend[msg.instance] == nullptr) {
-            _backend[msg.instance] = NEW_NOTHROW AP_DAL_RangeFinder_Backend(_RRNI[msg.instance]);
+            _backend[msg.instance] = NEW_NOTHROW AP_DAL_RangeFinder_Backend(_RRNI[msg.instance], _RRNJ[msg.instance]);
+        }
+    }
+}
+
+void AP_DAL_RangeFinder::handle_message(const log_RRNJ &msg)
+{
+    if (_RRNJ != nullptr && msg.instance < _RRNH.num_sensors) {
+        _RRNJ[msg.instance] = msg;
+        // RRNJ is written at the start of a log, so this comes before the EKF first runs; a log from
+        // before RRNJ never gives one
+        if (msg.instance < ARRAY_SIZE(_have_reading_time)) {
+            _have_reading_time[msg.instance] = true;
         }
     }
 }

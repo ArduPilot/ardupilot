@@ -247,6 +247,12 @@ void LR_MsgHandler_RRNI::process_message(uint8_t *msgbytes)
     AP::dal().handle_message(msg);
 }
 
+void LR_MsgHandler_RRNJ::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RRNJ, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
 void LR_MsgHandler_RGPH::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RGPH, msgbytes);
