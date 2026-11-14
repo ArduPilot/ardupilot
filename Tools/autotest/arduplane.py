@@ -11511,13 +11511,36 @@ return update()
             self.set_parameters({
                 "ARSPD_TYPE": 100,
                 "AHRS_EKF_TYPE": 10,
+                # the sensor spends its first second after boot averaging raw
+                # pressure to learn its zero offset, and this test gives it a
+                # non-zero airspeed as soon as the reboot returns.  Under load
+                # the two overlap: the offset absorbs part of the pressure and
+                # is saved, leaving every later reading low by 20-30% for the
+                # rest of the run - 10.02m/s where 12 was asked for.  SITL
+                # reports pressure with no offset in it, so the right offset
+                # here is zero.  This is read at startup, so it has to be set
+                # before the reboot:
+                "ARSPD_SKIP_CAL": 1,
             })
             self.reboot_sitl()
+            # and the offset after it: a calibration which was already running
+            # when the parameters landed completes during the reboot and saves
+            # its result, which skipping the next calibration then preserves
+            self.set_parameter("ARSPD_OFFSET", 0)
 
             # wind from the east at 5m/s, then from the north at 6m/s
             for airspeed, wind, direction, speed in (12, [0, -5, 0], 90, 5), (20, [-6, 0, 0], 0, 6):
                 physics.set(airspeed=airspeed, velocity_wind=wind)
-                self.wait_message_field_values('VFR_HUD', {'airspeed': airspeed}, epsilon=0.5)
+                try:
+                    self.wait_message_field_values('VFR_HUD', {'airspeed': airspeed}, epsilon=0.5)
+                except NotAchievedException:
+                    # the backend sending the right airspeed is not the whole
+                    # story: the sensor subtracts its saved zero offset from
+                    # every reading, and an offset learned while the air was
+                    # moving is wrong for the rest of the run
+                    self.progress("ARSPD_OFFSET is %s, 0 expected" %
+                                  self.get_parameter("ARSPD_OFFSET"))
+                    raise
                 self.wait_message_field_values('WIND', {'direction': direction, 'speed': speed}, epsilon=0.1)
 
     def tests(self):
