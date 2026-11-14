@@ -1388,6 +1388,7 @@ private:
     AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
     AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
+    bool gndOffsetMeasured;         // true when the ground offset state has been measured during this flight
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active
