@@ -27,7 +27,7 @@ def renode(tmp_path):
     if not executable.is_file():
         pytest.skip('build Renode or set RENODE')
 
-    def run(script):
+    def run(script, timeout=60):
         path = tmp_path / 'test.resc'
         path.write_text(script)
         process = subprocess.Popen(
@@ -38,7 +38,7 @@ def renode(tmp_path):
                      XDG_CONFIG_HOME=str(tmp_path / 'xdg')),
             start_new_session=True)
         try:
-            stdout, _ = process.communicate(timeout=60)
+            stdout, _ = process.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
             terminate_process_group(process, graceful_timeout=0.2)
             stdout, _ = process.communicate()

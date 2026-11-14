@@ -116,6 +116,7 @@ public:
         PRIORITY_STORAGE,
         PRIORITY_SCRIPTING,
         PRIORITY_NET,
+        PRIORITY_ABSOLUTE, // Owned threads: native priority, not a base-relative offset.
     };
     
     /*
@@ -125,6 +126,72 @@ public:
                                uint32_t stack_size, priority_base base, int8_t priority) {
         return false;
     }
+
+#if HAL_OWNED_THREADS_ENABLED
+    // Native application-priority range. Zero means unsupported. SITL exposes
+    // nominal Linux priorities but retains the host's SCHED_OTHER policy.
+    virtual uint8_t thread_priority_min() const { return 0; }
+    virtual uint8_t thread_priority_max() const { return 0; }
+    // Retain a failed worker's frames and resources without returning to it.
+    [[noreturn]] virtual void thread_park() {
+        while (true) {
+            delay(1000);
+        }
+    }
+    // Single-owner handle. Only thread_reap may destroy it; never cancel a
+    // running thread or release its callback's context before successful reap.
+    class OwnedThread {
+    public:
+        CLASS_NO_COPY(OwnedThread);
+        // Reserved stack bytes, including platform minimum/alignment rounding.
+        // On POSIX this includes in-stack libc/TLS bookkeeping, not just the
+        // bytes available to the callback. Callers must leave adequate margin.
+        virtual uint32_t stack_size() const = 0;
+        // Known reservation including stack, handle and guard/working-area bytes.
+        // Excludes allocator headers and opaque OS/libc thread bookkeeping.
+        virtual uint32_t allocation_size() const = 0;
+        // Percentage of one CPU; false when the HAL has no measurement.
+        // Must not reset profiler counters shared with other diagnostics.
+        virtual bool cpu_load(float &percent) const { return false; }
+
+    protected:
+        OwnedThread() = default;
+        virtual ~OwnedThread() = default;
+        // Return false while the callback runs. Once it returns, join the OS
+        // thread before allowing destruction (may wait for its exit epilogue).
+        virtual bool join_if_finished() = 0;
+        friend class Scheduler;
+    };
+
+    // name must remain alive until reap. The returned handle has one owner;
+    // creation and reaping must not be called from interrupts.
+    // Stacks need not be DMA-capable. Device bindings must copy stack buffers
+    // to suitable host storage when their driver requires DMA-safe memory.
+    virtual OwnedThread *thread_create_owned(AP_HAL::MemberProc proc, const char *name,
+                                            uint32_t stack_size, priority_base base, int16_t priority) {
+        return nullptr;
+    }
+
+    struct StackFaultHandler {
+        void *context;
+        // Thread-context notification on a fresh stack, immediately before
+        // exit. It must be lock-free and must not block or allocate.
+        void (*fault)(void *context);
+    };
+    // On supported HALs, recover an attributable MPU stack-guard fault. The
+    // backend must notify on a fresh stack, release thread-owned mutexes, then
+    // exit; it cannot repair partially updated state protected by the mutexes.
+    // Other HALs retain ordinary owned-thread behaviour (not fault isolation).
+    virtual OwnedThread *thread_create_owned_guarded(AP_HAL::MemberProc proc, const char *name,
+                                                    uint32_t stack_size, priority_base base, int16_t priority,
+                                                    StackFaultHandler handler) {
+        return thread_create_owned(proc, name, stack_size, base, priority);
+    }
+
+    // Call from a low-priority owner, not from the vehicle main loop. On true,
+    // the thread can no longer access its context, code or stack; clears handle.
+    static bool thread_reap(OwnedThread *&thread);
+#endif
 
 private:
 

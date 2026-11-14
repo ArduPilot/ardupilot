@@ -49,11 +49,14 @@ public:
     // add a new buffer to this sensor
     ScriptingCANBuffer* add_buffer(uint32_t buffer_len);
 
+    // remove and delete a buffer previously returned by add_buffer
+    bool remove_buffer(ScriptingCANBuffer *buffer);
+
 private:
 
     HAL_Semaphore sem;
 
-    ScriptingCANBuffer *buffer_list;
+    ScriptingCANBuffer *buffer_list{};
 
 };
 
@@ -85,7 +88,7 @@ private:
 
     ScriptingCANSensor &sensor;
 
-    ScriptingCANBuffer *next;
+    ScriptingCANBuffer *next{};
 
     HAL_Semaphore sem;
 
@@ -93,8 +96,12 @@ private:
         uint32_t mask;
         uint32_t value;
     } filter[8];
-    uint8_t num_filters;
+    uint8_t num_filters{};
 
 };
+
+// Return the process-wide sensor for Scripting (0) or Scripting2 (1).
+// Lua and Rust share these sensors while retaining independent receive buffers.
+ScriptingCANSensor *get_scripting_can_sensor(uint8_t index);
 
 #endif // AP_SCRIPTING_CAN_SENSOR_ENABLED

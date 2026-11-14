@@ -1,0 +1,3 @@
+    pub fn ${name}(&self, context: &Context<'_>, byte: u8) -> Result<bool> {
+        Ok(self.${target}(context, &[byte])? == 1)
+    }

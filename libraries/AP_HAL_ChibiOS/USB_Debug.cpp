@@ -38,6 +38,7 @@
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
+#include "hwdef/common/stack_guard.h"
 #include <string.h>
 
 #if !defined(STM32H7) || !HAL_HAVE_DUAL_USB_CDC || !STM32_USB_USE_OTG1
@@ -55,6 +56,10 @@
 
 #if !CH_CFG_USE_REGISTRY
 #error USB debug requires the ChibiOS thread registry
+#endif
+
+#if OSAL_ST_MODE != OSAL_ST_MODE_FREERUNNING
+#error USB debug requires the free-running system timer
 #endif
 
 #pragma GCC target ("general-regs-only")
@@ -151,10 +156,11 @@ struct USBDebugState {
 
     // A snapshot is valid only until the stopped CPU resumes.
     uint32_t stopped_thread, selected_thread;
+    uint32_t live_stack_thread, scheduled_thread;
     uint32_t selected_registers[50];
     uint32_t register_address[50];
     uint64_t register_mask;
-    uint32_t thread_ids[64];
+    uint32_t thread_ids[65]; // 64 registered threads and an optional IRQ CPU context.
     uint8_t thread_count, thread_cursor;
 
     // USB reset advances the generation, cancelling any partially parsed packet.
@@ -334,7 +340,23 @@ __attribute__((naked)) void HardFault_Handler()
         "3:\n"
         "str r1,[r0,#24]\n"
         "bx lr\n"
-        "1: ldr r0,=(usb_debug+4292)\n"
+        "1:\n"
+#if HAL_STACK_GUARD_ENABLED
+        // The PSP frame may be incomplete. Recover before reading it or
+        // triggering lazy FP stacking in USB_Debug_Handler. Keep the original
+        // interrupt masks: the classifier rejects faults in critical sections.
+        "push {r4,lr}\n"
+        "mov r0,lr\n"
+        "mrs r1,psp\n"
+        "bl ap_stack_guard_recover\n"
+        "cbz r0,5f\n"
+        "mov lr,r0\n"
+        "ldr r4,[sp]\n"
+        "add sp,sp,#8\n"
+        "bx lr\n"
+        "5: pop {r4,lr}\n"
+#endif
+        "ldr r0,=(usb_debug+4292)\n"
         "ldr r0,[r0]\n"
         "cbz r0,4f\n"
         // Stacking/unstacking faults have no trustworthy exception frame.
@@ -855,32 +877,41 @@ static void snapshot_threads()
 {
     usb_debug.stopped_thread = 1;
     usb_debug.thread_count = 0;
-    // A zero-latency stop can catch a registry update or an interrupt context.
-    // In that case expose the real CPU frame only, not an inconsistent registry.
-    if ((usb_debug.registers[16] & 0x1ffU) == 0 && usb_debug.context[12] == 0) {
-        auto *header = REG_HEADER(currcore);
-        auto *node = header->next;
-        auto *previous = header;
-        while (node != header && usb_debug.thread_count < ARRAY_SIZE(usb_debug.thread_ids)) {
-            thread_t thread;
-            const uint32_t address = uint32_t(node) - offsetof(thread_t, rqueue);
-            if (!probe_copy(&thread, address, sizeof(thread)) || thread.rqueue.prev != previous) {
-                usb_debug.thread_count = 0;
-                break;
-            }
-            usb_debug.thread_ids[usb_debug.thread_count++] = address;
-            if (address == uint32_t(currcore->rlist.current)) {
-                usb_debug.stopped_thread = address;
-            }
-            previous = node;
-            node = thread.rqueue.next;
-        }
-        if (node != header || usb_debug.stopped_thread == 1) {
+    usb_debug.live_stack_thread = 0;
+    usb_debug.scheduled_thread = uint32_t(currcore->rlist.current);
+    const bool thread_mode = (usb_debug.registers[16] & 0x1ffU) == 0;
+    const uint32_t stack = thread_mode ? usb_debug.registers[13] : usb_debug.context[9];
+    // A kernel lock or IRQ does not itself invalidate the registry. Validate
+    // every link, including the header's backlink, before exposing the list.
+    auto *header = REG_HEADER(currcore);
+    auto *node = header->next;
+    auto *previous = header;
+    while (node != header && usb_debug.thread_count < ARRAY_SIZE(usb_debug.thread_ids)-1) {
+        thread_t thread;
+        const uint32_t address = uint32_t(node) - offsetof(thread_t, rqueue);
+        if (!probe_copy(&thread, address, sizeof(thread)) || thread.rqueue.prev != previous) {
             usb_debug.thread_count = 0;
-            usb_debug.stopped_thread = 1;
+            break;
         }
+        usb_debug.thread_ids[usb_debug.thread_count++] = address;
+        const uint32_t end = thread.wabase == &__main_thread_stack_base__ ?
+                             uint32_t(&__main_thread_stack_end__) : address;
+        if (uint32_t(thread.wabase) <= stack && stack <= end) {
+            usb_debug.live_stack_thread = address;
+        }
+        previous = node;
+        node = thread.rqueue.next;
     }
-    if (usb_debug.thread_count == 0) {
+    if (node != header || header->prev != previous) {
+        // The stop really caught a registry insertion/removal (or corruption).
+        usb_debug.thread_count = 0;
+        usb_debug.live_stack_thread = 0;
+    } else if (thread_mode && usb_debug.live_stack_thread != 0) {
+        // During a context switch rlist.current can already name the incoming
+        // thread. The live stack identifies whose registers we actually saved.
+        usb_debug.stopped_thread = usb_debug.live_stack_thread;
+    }
+    if (usb_debug.stopped_thread == 1) {
         usb_debug.thread_ids[usb_debug.thread_count++] = usb_debug.stopped_thread;
     }
     usb_debug.selected_thread = usb_debug.stopped_thread;
@@ -905,6 +936,13 @@ static void select_registers()
         return;
     }
     usb_debug.register_mask = 0;
+    // At an IRQ or a partly completed context switch, neither the live stack
+    // owner's old ctx.sp nor the scheduled thread's context is safe to expose.
+    // Keep their IDs, but do not invent registers or allow stale-frame writes.
+    if (usb_debug.selected_thread == usb_debug.live_stack_thread ||
+        usb_debug.selected_thread == usb_debug.scheduled_thread) {
+        return;
+    }
     thread_t thread;
     port_intctx context;
     if (!probe_copy(&thread, usb_debug.selected_thread, sizeof(thread)) ||
@@ -1842,6 +1880,14 @@ extern "C" void usb_debug_exception()
         fp_control = 3;
         return;
     }
+    // HAL timestamps and ChibiOS deadlines share this counter. Stop it while
+    // all application execution is suspended, rather than letting debugger
+    // dwell time expire sleeps or advance simulation/controller time. DWT
+    // remains running for USB polling, watchdog service and attach timeouts.
+    // PRIMASK is already set by the entry shim; no kernel state is touched.
+    const uint32_t timer_cr1 = STM32_ST_TIM->CR1;
+    STM32_ST_TIM->CR1 = timer_cr1 & ~TIM_CR1_CEN;
+    __DSB();
     usb_debug.stopped = true;
     usb_debug.startup_cycles = 0;
     usb_debug.last_cycle = DWT->CYCCNT;
@@ -1872,7 +1918,11 @@ extern "C" void usb_debug_exception()
     }
     remote_loop();
     usb_debug.watch_type = 0;
-    // No kernel calls or timekeeping updates are safe in this handler.
+    // Restore the original enable state on continue, step and detach. Leave
+    // pending timer alarms intact, including an alarm pending before entry.
+    STM32_ST_TIM->CR1 = timer_cr1;
+    __DSB();
+    // No kernel calls are safe in this handler.
     static_cast<ChibiOS::Scheduler *>(hal.scheduler)->usb_debug_resume();
     usb_debug.stopped = false;
     if (usb_debug.detach_requested) {

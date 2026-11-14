@@ -686,7 +686,8 @@ private:
     bool set_target_angle_and_rate_and_throttle(float roll_deg, float pitch_deg, float yaw_deg, float roll_rate_degs, float pitch_rate_degs, float yaw_rate_degs, float throttle) override;
 
     // Register a custom mode with given number and names
-    AP_Vehicle::custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) override;
+    AP_Vehicle::custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name,
+                                                     const void *owner = nullptr) override;
 #endif
 #if MODE_CIRCLE_ENABLED
     bool get_circle_radius(float &radius_m) override;

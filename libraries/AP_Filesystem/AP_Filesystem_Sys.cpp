@@ -26,6 +26,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Common/ExpandingString.h>
+#include <AP_Module/Runtime.h>
 
 #ifndef AP_CRASHDUMP_FLASH_ENABLED
 #define AP_CRASHDUMP_FLASH_ENABLED 0
@@ -39,6 +40,9 @@ struct SysFileList {
 
 static const SysFileList sysfs_file_list[] = {
     {"threads.txt"},
+#if AP_MODULE_ENABLED
+    {"modules.txt"},
+#endif
     {"tasks.txt"},
     {"dma.txt"},
     {"memory.txt"},
@@ -75,10 +79,16 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         errno = EROFS;
         return -1;
     }
+    // Reserve a slot before generating a snapshot, without holding the file
+    // lock across callbacks that acquire locks in other libraries.
     uint8_t idx;
-    for (idx=0; idx<max_open_file; idx++) {
-        if (!file[idx].open) {
-            break;
+    {
+        WITH_SEMAPHORE(_sem);
+        for (idx=0; idx<max_open_file; idx++) {
+            if (file[idx].state == rfile::State::Closed) {
+                file[idx].state = rfile::State::Opening;
+                break;
+            }
         }
     }
     if (idx == max_open_file) {
@@ -89,21 +99,28 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
     r.str = NEW_NOTHROW ExpandingString;
     if (r.str == nullptr) {
         errno = ENOMEM;
+        WITH_SEMAPHORE(_sem);
+        close_slot(idx);
         return -1;
     }
 
     // This ensure that whenever new sys file is added its also added to list above
     int8_t pos = file_in_sysfs(fname);
     if (pos < 0) {
-        delete r.str;
-        r.str = nullptr;
         errno = ENOENT;
+        WITH_SEMAPHORE(_sem);
+        close_slot(idx);
         return -1;
     }
 
     if (strcmp(fname, "threads.txt") == 0) {
         hal.util->thread_info(*r.str);
     }
+#if AP_MODULE_ENABLED
+    if (strcmp(fname, "modules.txt") == 0) {
+        AP_Module::Runtime::module_info(*r.str);
+    }
+#endif
 #if AP_SCHEDULER_ENABLED
     if (strcmp(fname, "tasks.txt") == 0) {
         AP::scheduler().task_info(*r.str);
@@ -166,31 +183,39 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
     
     if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
-        delete r.str;
-        r.str = nullptr;
+        WITH_SEMAPHORE(_sem);
+        close_slot(idx);
         return -1;
     }
+    WITH_SEMAPHORE(_sem);
     r.file_ofs = 0;
-    r.open = true;
+    r.state = rfile::State::Open;
     return idx;
+}
+
+void AP_Filesystem_Sys::close_slot(uint8_t idx)
+{
+    auto &r = file[idx];
+    delete r.str;
+    r.str = nullptr;
+    r.state = rfile::State::Closed;
 }
 
 int AP_Filesystem_Sys::close(int fd)
 {
-    if (fd < 0 || fd >= max_open_file || !file[fd].open) {
+    WITH_SEMAPHORE(_sem);
+    if (fd < 0 || fd >= max_open_file || file[fd].state != rfile::State::Open) {
         errno = EBADF;
         return -1;
     }
-    struct rfile &r = file[fd];
-    r.open = false;
-    delete r.str;
-    r.str = nullptr;
+    close_slot(fd);
     return 0;
 }
 
 int32_t AP_Filesystem_Sys::read(int fd, void *buf, uint32_t count)
 {
-    if (fd < 0 || fd >= max_open_file || !file[fd].open) {
+    WITH_SEMAPHORE(_sem);
+    if (fd < 0 || fd >= max_open_file || file[fd].state != rfile::State::Open) {
         errno = EBADF;
         return -1;
     }
@@ -204,7 +229,8 @@ int32_t AP_Filesystem_Sys::read(int fd, void *buf, uint32_t count)
 
 int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
 {
-    if (fd < 0 || fd >= max_open_file || !file[fd].open) {
+    WITH_SEMAPHORE(_sem);
+    if (fd < 0 || fd >= max_open_file || file[fd].state != rfile::State::Open) {
         errno = EBADF;
         return -1;
     }
@@ -282,12 +308,13 @@ int AP_Filesystem_Sys::closedir(void *dirp)
 
 int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
 {
-    if (pathname == nullptr || stbuf == nullptr || (strlen(pathname) == 0)) {
+    if (pathname == nullptr || stbuf == nullptr) {
         errno = EINVAL;
         return -1;
     }
     memset(stbuf, 0, sizeof(*stbuf));
-    if (strlen(pathname) == 1 && pathname[0] == '/') {
+    if (pathname[0] == '\0' || strcmp(pathname, "/") == 0) {
+        stbuf->st_mode = S_IFDIR | 0555;
         stbuf->st_size = 0; // just a placeholder value
         return 0;
     }

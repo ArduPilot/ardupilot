@@ -1,0 +1,43 @@
+use crate::{result, Error, Result};
+
+impl crate::bindings::File<'_, '_> {
+    /// Read up to 256 bytes from a local/SD file, opening and closing in this call.
+    /// None means any open failure (missing, inaccessible, no card, out of memory,
+    /// etc.), like Lua io.open's nil, not specifically "file absent".
+    /// Some(0) is EOF, including offsets past EOF. Seek/read/close failures are Host.
+    /// Virtual @ paths, empty paths/buffers and buffers larger than 256 are Invalid.
+    /// Path strings are UTF-8, NUL-free, at most 255 bytes. offset+buffer.len() must
+    /// fit i32. Only returned bytes are changed; errors/None leave the buffer alone.
+    /// Blocking IO cannot be interrupted by stop; no scheduler lock is held.
+    /// Not an atomic snapshot across calls. Cache startup data in your module heap;
+    /// reopening every chunk can be expensive and uses transient firmware FS memory.
+    pub fn read_at(&self, path: &str, offset: u32, buffer: &mut [u8]) -> Result<Option<usize>> {
+        if path.is_empty() || path.len() >= ${path_size} || path.as_bytes().contains(&0)
+            || path.trim_start_matches('/').starts_with('@')
+            || buffer.is_empty() || buffer.len() > ${read_max}
+            || u64::from(offset) + buffer.len() as u64 > i32::MAX as u64
+        {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; ${path_size_plus_6}];
+        input[..path.len()].copy_from_slice(path.as_bytes());
+        input[${path_size}..${path_size_plus_4}].copy_from_slice(&offset.to_le_bytes());
+        input[${path_size_plus_4}..].copy_from_slice(&(buffer.len() as u16).to_le_bytes());
+        let mut output = [0u8; ${read_max_plus_3}];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${method_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] {
+            0 => return Ok(None),
+            1 => {},
+            _ => return Err(Error::Host),
+        }
+        let length = u16::from_le_bytes(output[1..3].try_into().unwrap()) as usize;
+        if length > buffer.len() {
+            return Err(Error::Host);
+        }
+        buffer[..length].copy_from_slice(&output[3..3 + length]);
+        Ok(Some(length))
+    }
+}

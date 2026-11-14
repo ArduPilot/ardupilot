@@ -122,6 +122,7 @@ known_units = {
              'dB'      : 'decibel'               ,
 # compound
 
+             'B'       : 'bytes'                   ,
              'kB'      : 'kilobytes'               ,
              'KiB'     : 'kibibytes',
              'MB'      : 'megabyte'                ,

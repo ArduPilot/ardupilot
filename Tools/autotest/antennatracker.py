@@ -413,14 +413,16 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
                 self.progress("Received short message")
                 phase = "long"
             elif phase == "long":
+                # Other sources may log a standalone MSG between our chunks.
+                # Do not reset the sequence for an unrelated sequence-zero text.
+                if m.Seq == 0 and not long_message_text.startswith(msg):
+                    continue
                 if m.Seq != seq:
-                    received_long_message_text = ""
-                    seq = 0
-                    if m.Seq != 0:
-                        raise NotAchievedException("Weird")
-                else:
-                    seq += 1
+                    raise NotAchievedException(f"Unexpected MSG sequence {m.Seq}, expected {seq}")
+                seq += 1
                 received_long_message_text += msg
+                if not long_message_text.startswith(received_long_message_text):
+                    raise NotAchievedException("Incorrect long MSG contents")
                 self.progress(f"Text: {received_long_message_text}")
                 if received_long_message_text == long_message_text:
                     phase = "done"
