@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: ACTION
     // @DisplayName: Fence Action
     // @Description: What action should be taken when fence is breached
-    // @Values{Copter}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land,5:SmartRTL or Land
+    // @Values{Copter}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land,5:SmartRTL or Land,9:Auto DO_LAND_START/DO_RETURN_PATH_START or RTL or Land
     // @Values{Rover}: 0:Report Only,1:RTL or Hold,2:Hold,3:SmartRTL or RTL or Hold,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
     // @Values{Plane}: 0:Report Only,1:RTL,6:Guided,7:GuidedThrottlePass,8:AUTOLAND if possible else RTL
     // @Values: 0:Report Only,1:RTL or Land
