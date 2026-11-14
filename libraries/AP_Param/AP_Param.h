@@ -635,6 +635,9 @@ public:
     // registrations. This does not lock general parameter reads or writes.
     static bool add_table_persistent(uint8_t key, const char *prefix, uint8_t num_params);
     static bool add_param(uint8_t key, uint8_t param_num, const char *pname, float default_value);
+    // as add_param() but the parameter is an AP_Int32. The default must
+    // be exact as a float. A registered name cannot change type.
+    static bool add_param_int32(uint8_t key, uint8_t param_num, const char *pname, int32_t default_value);
     static bool load_int32(uint16_t key, uint32_t group_element, int32_t &value);
 #endif
 
@@ -854,6 +857,8 @@ private:
     static bool add_table_internal(uint8_t key, const char *prefix, uint8_t num_params, bool persistent);
     static bool add_table_locked(uint8_t key, const char *prefix, uint8_t num_params, bool persistent,
                                  AP_Param *&crc_param);
+    static bool add_param_typed(uint8_t key, uint8_t param_num, const char *pname, ap_var_type type,
+                                float default_value);
     // find a defaults-file value for a parameter registered after boot
     static bool find_dynamic_default(const char *name, float &value);
 #if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
