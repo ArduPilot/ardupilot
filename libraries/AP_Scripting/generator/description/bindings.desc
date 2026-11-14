@@ -533,6 +533,8 @@ singleton AP_Param method add_table boolean uint8_t 0 200 string uint8_t 1 63
 singleton AP_Param method add_table depends AP_PARAM_DYNAMIC_ENABLED
 singleton AP_Param method add_param boolean uint8_t 0 200 uint8_t 1 63 string float'skip_check
 singleton AP_Param method add_param depends AP_PARAM_DYNAMIC_ENABLED
+singleton AP_Param method add_param_int32 boolean uint8_t 0 200 uint8_t 1 63 string int32_t'skip_check
+singleton AP_Param method add_param_int32 depends AP_PARAM_DYNAMIC_ENABLED
 
 include AP_Scripting/AP_Scripting_helpers.h
 userdata Parameter creation lua_new_Parameter 0

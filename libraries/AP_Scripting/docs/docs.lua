@@ -2393,6 +2393,15 @@ function param:add_table(table_key, prefix, num_params) end
 ---@return boolean
 function param:add_param(table_key, param_num, name, default_value) end
 
+-- Add an integer parameter to a dynamic parameter table. The default must be exactly representable as a float.
+-- A name already registered with another type is rejected.
+---@param table_key integer
+---@param param_num integer
+---@param name string
+---@param default_value integer
+---@return boolean
+function param:add_param_int32(table_key, param_num, name, default_value) end
+
 -- desc
 ---@class (exact) ESCTelemetryData_ud
 local ESCTelemetryData_ud = {}
