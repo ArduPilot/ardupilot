@@ -16,6 +16,7 @@
 #include "MAVLink_routing.h"
 #include <AP_RTC/JitterCorrection.h>
 #include <AP_Common/Bitmask.h>
+#include <AP_Common/Location.h>
 #include <AP_LTM_Telem/AP_LTM_Telem.h>
 #include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
@@ -1206,6 +1207,19 @@ public:
         _sysid_gcs_last_seen_time_ms = seen_time_ms;
     }
 
+#if AP_MAVLINK_GCS_POSITION_ENABLED
+    // latest position received from the configured GCS position source.
+    // returns false until the first valid message has been received.
+    bool get_gcs_location(Location &loc) const;
+
+    // age of the stored position.  returns false if no position has
+    // been received.
+    bool get_gcs_location_age_ms(uint32_t &age_ms) const;
+
+    // called from GCS_MAVLINK::handle_message() for every GLOBAL_POSITION_INT
+    void handle_gcs_location(const mavlink_message_t &msg);
+#endif
+
     void send_to_active_channels(uint32_t msgid, const char *pkt);
 
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
@@ -1356,6 +1370,7 @@ protected:
     AP_UInt32               sysid;
     AP_UInt32                mav_gcs_sysid;
     AP_UInt32                mav_gcs_sysid_high;
+    AP_UInt32                mav_gcs_pos_src;
     AP_Enum16<Option>        mav_options;
     AP_Int8                  mav_telem_delay;
 
@@ -1380,6 +1395,18 @@ private:
     // identically named field in GCS_MAVLINK:: which is the most
     // recent time that backend saw traffic from MAV_GCS_SYSID
     uint32_t _sysid_gcs_last_seen_time_ms;
+
+#if AP_MAVLINK_GCS_POSITION_ENABLED
+    uint32_t gcs_pos_source_sysid() const;
+
+    Location _gcs_pos_location;
+    uint32_t _gcs_pos_last_update_ms;
+    bool     _gcs_pos_valid;
+    bool     _gcs_pos_src_checked;
+
+    // MAVLink thread writes the position, scripting thread reads it
+    mutable HAL_Semaphore _gcs_pos_sem;
+#endif
 
     void service_statustext(void);
 #if HAL_MEM_CLASS <= HAL_MEM_CLASS_192

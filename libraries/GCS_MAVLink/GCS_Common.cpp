@@ -2790,6 +2790,20 @@ void GCS::update_send()
         chan(i)->update_send();
     }
 
+#if AP_MAVLINK_GCS_POSITION_ENABLED
+    // warn once about an invalid position source, but only once a GCS
+    // is actually listening so the message isn't pruned before delivery
+    if (!_gcs_pos_src_checked && statustext_send_channel_mask() != 0) {
+        _gcs_pos_src_checked = true;
+        const uint32_t src = gcs_pos_source_sysid();
+        if (mav_gcs_pos_src != 0 && (src == 0 || !sysid_is_gcs(src))) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                          "GCS position source %u is not a GCS system ID",
+                          unsigned(src));
+        }
+    }
+#endif
+
     service_statustext();
 
     first_backend_to_send++;
@@ -4310,6 +4324,12 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #endif // AP_CAMERA_MAVLINKCAMV2_ENABLED
         break;
     }
+
+#if AP_MAVLINK_GCS_POSITION_ENABLED
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+        gcs().handle_gcs_location(msg);
+        break;
+#endif
 
     case MAVLINK_MSG_ID_COMMAND_ACK: {
         handle_command_ack(msg);
