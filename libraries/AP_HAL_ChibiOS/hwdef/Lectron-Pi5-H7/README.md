@@ -19,12 +19,14 @@ Order from [here](https://www.ozdisan.com/p/otopilot-sistemleri-1005816/lectron-
 
 ### Sensors & Onboard Elements
 
-- Bosch BMI270 IMU (accel, gyro)
-- Dual InvenSense ICM-42670-P IMU (accel, gyro)
-- Dual Bosch BMP390 barometers
-- Bosch BMM350 magnetometer
-- FRAM (SPI)
-- EEPROM (I2C)
+- InvenSense ICM-45686 IMU (accel, gyro) - Lectron IMU-01 sensor board, SPI2
+- Bosch BMI088 IMU (accel, gyro) - Lectron IMU-01 sensor board, SPI3
+- InvenSense ICM-42688-P IMU (accel, gyro) - flight controller board, SPI1
+- TE MS5611 barometer - flight controller board, I2C2
+- Bosch BMP581 barometer - Lectron IMU-01 sensor board, I2C4
+- Bosch BMM350 magnetometer - Lectron IMU-01 sensor board, I2C4
+- FM25V02A 256 Kbit FRAM (SPI5) for parameter storage
+- AT24C02D (I2C3) and 24LC64T (I2C4) EEPROMs
 - 1W Heater
 
 ### Companion Computer
@@ -49,7 +51,7 @@ Order from [here](https://www.ozdisan.com/p/otopilot-sistemleri-1005816/lectron-
 - PPM/SBUS RC input
 - microSD card
 - 100-Mbps FMU Ethernet
-- 1x CAN bus port
+- 2x CAN bus ports
 - SPI6 port (2x CS)
 - 16x PWM outputs (8x IO & 8x FMU)
 - 2x GPS ports (Full GPS & Basic GPS)
@@ -88,7 +90,7 @@ Order from [here](https://www.ozdisan.com/p/otopilot-sistemleri-1005816/lectron-
 
 ![pinout](pinouts.png)
 
-Unless noted otherwise, FMU-side and CM5-side connectors are JST-GH 1.25 mm pitch. USB (Type-C), microSD, CSI-1/CSI-2 (22-pin FFC, 0.5 mm pitch, 4-lane MIPI), M.2 Key-M, micro HDMI, and USB 3.0/2.0 ports use standard pinouts and are not detailed here. CM5 CAN is provided by an MCP2515 controller on SPI1-CS0, independent of the FMU CAN bus.
+Unless noted otherwise, FMU-side and CM5-side connectors are JST-GH 1.25 mm pitch. USB (Type-C), microSD, CSI-1/CSI-2 (22-pin FFC, 0.5 mm pitch, 4-lane MIPI), M.2 Key-M, micro HDMI, and USB 3.0/2.0 ports use standard pinouts and are not detailed here. CM5 CAN is provided by an MCP2515 controller on SPI1-CS0, independent of the FMU CAN buses.
 
 See the [Lectron Pi5 Autopilot Pinout Reference](https://lectronuser.github.io/Lectron-Doc-Center/md/raspberry/pinout/) for full connector diagrams and FFC pin assignments.
 
@@ -109,19 +111,19 @@ The CM switches are located on the top face next to the GPS2 connector, labeled 
 
 ## Flight Controller UART Mapping
 
-| Serial # | UART   | Protocol | Port    | Function                                     | Notes                                        |
-| -------- | ------ | -------- | ------- | -------------------------------------------- | -------------------------------------------- |
-| SERIAL0  | OTG1   | MAVLink2 | USB     | OTG                                          | USB Type-C 2.0                               |
-| SERIAL1  | UART7  | MAVLink2 | TELEM1  | Telemetry port                               | Hardware flow control                        |
-| SERIAL2  | UART5  | MAVLink2 | TELEM2  | Telemetry port                               | Hardware flow control                        |
-| SERIAL3  | USART1 | GPS      | GPS1    | GPS, Mag, Buzzer, Safety Switch, LED         | Full GPS port                                |
-| SERIAL4  | UART8  | GPS      | GPS2    | GPS, Mag                                     | GPS2                                         |
-| SERIAL5  | USART2 | MAVLink2 | TELEM3  | Bridged to CM5 UART3 by default              | Hardware flow control; CM5 UART bridge       |
-| SERIAL6  | UART4  | MAVLink2 | UART/I2C | External / I2C3 shared                       | Shared with I2C3                             |
-| SERIAL7  | USART3 | MAVLink2 | FMU DEBUG   | FMU Debug Console                            | FMU(H753) Debug port                         |
+| Serial # | UART   | Protocol | Port      | Function                                 | Notes                                        |
+| -------- | ------ | -------- | --------- | ---------------------------------------- | -------------------------------------------- |
+| SERIAL0  | OTG1   | MAVLink2 | USB       | OTG                                      | USB Type-C 2.0                               |
+| SERIAL1  | UART7  | MAVLink2 | TELEM1    | Telemetry port                           | Hardware flow control                        |
+| SERIAL2  | UART5  | MAVLink2 | TELEM2    | Telemetry port                           | Hardware flow control                        |
+| SERIAL3  | USART1 | GPS      | GPS1      | GPS, Mag, Buzzer, Safety Switch, LED     | Full GPS port                                |
+| SERIAL4  | UART8  | GPS      | GPS2      | GPS, Mag                                 | GPS2                                         |
+| SERIAL5  | USART2 | MAVLink2 | TELEM3    | Bridged to CM5 UART3 by default          | Hardware flow control; CM5 UART bridge       |
+| SERIAL6  | UART4  | MAVLink2 | UART/I2C  | External / I2C3 shared                   | Shared with I2C3                             |
+| SERIAL7  | USART3 | MAVLink2 | FMU DEBUG | FMU Debug Console                        | FMU(H753) Debug port                         |
 
 - USART6 provides the internal link between the FMU and the STM32F103 IO co-processor (IOMCU).
-- All UARTs are DMA capable.
+- All UARTs except SERIAL7 (USART3, FMU DEBUG) are DMA capable. SERIAL7 is configured without DMA.
 
 ## RC Input
 
@@ -162,24 +164,35 @@ IO outputs support PWM only. DShot is not supported on any IO output. All output
 
 FMU_CH 1-6 support DShot. FMU_CH 7-8 do not support DShot (TIM12 has no DMA). All outputs within the same timer group must use the same protocol and update rate.
 
-| FMU Channel | MCU Pin | Timer / Channel | DShot |
-| ----------- | ------- | --------------- | ----- |
-| FMU_CH 1    | PI0     | TIM5_CH4        | Yes   |
-| FMU_CH 2    | PH12    | TIM5_CH3        | Yes   |
-| FMU_CH 3    | PH11    | TIM5_CH2        | Yes   |
-| FMU_CH 4    | PH10    | TIM5_CH1        | Yes   |
-| FMU_CH 5    | PD13    | TIM4_CH2        | Yes   |
-| FMU_CH 6    | PD14    | TIM4_CH3        | Yes   |
-| FMU_CH 7    | PH6     | TIM12_CH1       | No    |
-| FMU_CH 8    | PH9     | TIM12_CH2       | No    |
+| FMU Channel | MCU Pin | Timer / Channel | DShot | Bi-dir DShot |
+| ----------- | ------- | --------------- | ----- | ------------ |
+| FMU_CH 1    | PI0     | TIM5_CH4        | Yes   | Yes          |
+| FMU_CH 2    | PH12    | TIM5_CH3        | Yes   | Yes          |
+| FMU_CH 3    | PH11    | TIM5_CH2        | Yes   | Yes          |
+| FMU_CH 4    | PH10    | TIM5_CH1        | Yes   | Yes          |
+| FMU_CH 5    | PD13    | TIM4_CH2        | Yes   | No           |
+| FMU_CH 6    | PD14    | TIM4_CH3        | Yes   | No           |
+| FMU_CH 7    | PH6     | TIM12_CH1       | No    | No           |
+| FMU_CH 8    | PH9     | TIM12_CH2       | No    | No           |
 
 ## Battery Monitoring
 
-The board defaults to an onboard INA238 I2C voltage sensor on I2C1. This provides voltage sensing only; it has no shunt for current sensing, and no ADC channel is available for battery voltage or current sensing.
+The board defaults to an onboard INA238 I2C voltage sensor on I2C1, which measures the PWR IN (3S-6S) supply. It provides voltage sensing only; it has no shunt for current sensing. There is no analog voltage or current sensing input.
 
-An external I2C-compatible power module providing both voltage and current sensing can be connected via the External Power Monitoring port (I2C2).
+An external I2C-compatible power module providing both voltage and current sensing can be connected via the PWR I2C port (I2C2).
 
 Alternatively, a DroneCAN power monitor or smart battery can be connected via the CAN port for voltage and current sensing over CAN. The correct battery monitor parameters depend on the power module connected; see `BATT_MONITOR` and related `BATT_*` parameters.
+
+## I2C Bus Mapping
+
+| ArduPilot Bus | I2C  | Connected to                                               | Type     |
+| ------------- | ---- | ---------------------------------------------------------- | -------- |
+| 0             | I2C4 | BMP581, BMM350 (IMU-01 sensor board), 24LC64T EEPROM       | Internal |
+| 1             | I2C1 | INA238 (onboard), GPS1 connector                           | External |
+| 2             | I2C2 | MS5611 (onboard), PWR I2C connector, GPS2 connector, I2C connector | External |
+| 3             | I2C3 | AT24C02D EEPROM, UART/I2C connector (shared)               | External |
+
+External compasses are probed on buses 1-3.
 
 ## Compass
 
@@ -187,7 +200,7 @@ There is no compass on the flight controller board itself. A BMM350 I2C magnetom
 
 ## IMU Heater
 
-The Lectron-01 Imu board has inbuild 2x 51Ohm Heater resistors. Those are driven by flight controllers heater signal. Those reistor provides 1W rated heating performance overall on imu board for certain temperature range.
+The Lectron IMU-01 sensor board has two built-in 51 Ohm heater resistors. Those are driven by flight controller's heater signal. Those resistors provide 1W rated heating performance overall on imu board for certain temperature range.
 The IMU heater can be controlled with the `BRD_HEAT_TARG` parameter, in degrees C.
 
 ## GPIOs
@@ -216,7 +229,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 
 ## Analog Inputs
 
-The only externally available analog input is the RSSI input on the SBUS/RC connector, which is read on the IO co-processor (STM32F103), not the FMU. In ArduPilot this maps to analog pin 103
+The only externally available analog input is the RSSI input on the SBUS/RC connector, which is read on the IO co-processor (STM32F103), not the FMU. In ArduPilot this maps to analog pin 103.
 
 To use analog RSSI: set RSSI_TYPE = 1 and RSSI_ANA_PIN = 103.
 
@@ -246,13 +259,13 @@ probe and STM32CubeProgrammer, connected to the FMU debug port's
 SWDIO/SWDCLK/GND/NRST pins:
 
 1. Connect to the STM32H753 over SWD and let STM32CubeProgrammer detect the chip.
-2. Perform a full chip erase, select the bootloader *.hex, and program it
+2. Perform a full chip erase, select the bootloader `*.hex`, and program it
    at address 0x08000000.
-3. Reconnect, select the vehicle firmware *.hex, uncheck full chip erase
+3. Reconnect, select the vehicle firmware `*.hex`, uncheck full chip erase
    to preserve the bootloader, and program it at 0x08020000.
 
 Once the bootloader is in place, subsequent updates can again be loaded as
-*.apj files through a GCS.
+`*.apj` files through a GCS.
 
 For full step-by-step instructions and screenshots, see the [Lectron FMU Firmware Installation guide](https://lectronuser.github.io/Lectron-Doc-Center/md/raspberry/setup/#fmu-firmware-installation).
 
