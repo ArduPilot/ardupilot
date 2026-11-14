@@ -36,6 +36,9 @@ public:
     // release - move the servo output to the release position
     virtual void release() = 0;
 
+    // hold - hold the current position of servo
+    virtual void hold() {};
+
     // valid - returns true if the backend should be working
     virtual bool valid() const { return true; };
 
@@ -44,6 +47,10 @@ public:
 
     // grabbed - returns true if currently in grabbed position
     virtual bool grabbed() const = 0;
+
+    // holding - returns true if currently in holding
+    // returns false by default for unsupported backends
+    virtual bool holding() const { return false; };
 
     // type-specific initialisations:
     virtual void init_gripper() = 0;
