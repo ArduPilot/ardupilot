@@ -156,6 +156,9 @@ private:
 
         // number of motors
         float num_motors = 4;
+
+        // bit mask of 3d motors
+        AP_Int32 reversible_mask;
     };
 
 protected:
