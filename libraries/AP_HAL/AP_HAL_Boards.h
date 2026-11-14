@@ -182,10 +182,6 @@
 #define HAL_REQUIRES_BDSHOT_SUPPORT (defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT)
 #endif
 
-#ifndef AP_NOTIFY_TONEALARM_ENABLED
-#define AP_NOTIFY_TONEALARM_ENABLED 0
-#endif
-
 // support for Extended DShot Telemetry v2 is enabled only if any kind of such telemetry
 // can in principle arrive, either from servo outputs or from IOMCU
 
@@ -295,10 +291,6 @@
 #define AP_SIGNED_FIRMWARE 0
 #endif
 
-#ifndef HAL_DSHOT_ALARM_ENABLED
-#define HAL_DSHOT_ALARM_ENABLED 0
-#endif
-
 #ifndef HAL_DSHOT_ENABLED
 #define HAL_DSHOT_ENABLED 1
 #endif
@@ -389,10 +381,6 @@
 
 #ifndef HAL_WITH_POSTYPE_DOUBLE
 #define HAL_WITH_POSTYPE_DOUBLE HAL_PROGRAM_SIZE_LIMIT_KB > 1024
-#endif
-
-#ifndef HAL_INS_RATE_LOOP
-#define HAL_INS_RATE_LOOP 0
 #endif
 
 #define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)

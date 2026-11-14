@@ -136,47 +136,22 @@
 #define HAL_BOARD_STORAGE_DIRECTORY "/APM"
 #endif
 
-#if defined(STM32_WSPI_USE_QUADSPI1) && STM32_WSPI_USE_QUADSPI1
-#define HAL_USE_QUADSPI1 TRUE
-#else
+// hwdef.h defines these TRUE when the peripheral is in use, so this
+// header doesn't depend on ChibiOS's STM32_WSPI_USE_* driver settings
+#ifndef HAL_USE_QUADSPI1
 #define HAL_USE_QUADSPI1 FALSE
 #endif
-#if defined(STM32_WSPI_USE_QUADSPI2) && STM32_WSPI_USE_QUADSPI2
-#define HAL_USE_QUADSPI2 TRUE
-#else
+#ifndef HAL_USE_QUADSPI2
 #define HAL_USE_QUADSPI2 FALSE
 #endif
-#if defined(STM32_WSPI_USE_OCTOSPI1) && STM32_WSPI_USE_OCTOSPI1
-#define HAL_USE_OCTOSPI1 TRUE
-#else
+#ifndef HAL_USE_OCTOSPI1
 #define HAL_USE_OCTOSPI1 FALSE
 #endif
-#if defined(STM32_WSPI_USE_OCTOSPI2) && STM32_WSPI_USE_OCTOSPI2
-#define HAL_USE_OCTOSPI2 TRUE
-#else
+#ifndef HAL_USE_OCTOSPI2
 #define HAL_USE_OCTOSPI2 FALSE
 #endif
 #define HAL_USE_QUADSPI (HAL_USE_QUADSPI1 || HAL_USE_QUADSPI2)
 #define HAL_USE_OCTOSPI (HAL_USE_OCTOSPI1 || HAL_USE_OCTOSPI2)
-
-#ifndef HAL_INS_RATE_LOOP
-#if defined(STM32H7) || defined(STM32F7) || (defined(STM32F4) \
-    && defined(INS_MAX_INSTANCES) && INS_MAX_INSTANCES == 1)
-/* F405 tested successfully with:
-   INS_GYRO_RATE = 1 (2kHz)
-   SCHED_LOOP_RATE = 200
-   FSTRATE_DIV = 2 (1kHz)
-   FSTRATE_ENABLE = 1
-   SERVO_DSHOT_RATE = 1 (1kHz)*/
-#define HAL_INS_RATE_LOOP 1
-#else
-#define HAL_INS_RATE_LOOP 0
-#endif
-#endif
-
-#ifndef AP_NOTIFY_TONEALARM_ENABLED
-#define AP_NOTIFY_TONEALARM_ENABLED ((defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM_ENABLED))
-#endif
 
 #ifndef AP_NOTIFY_BUZZER_ENABLED
 #define AP_NOTIFY_BUZZER_ENABLED 1
