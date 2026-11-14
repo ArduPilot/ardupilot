@@ -60,10 +60,10 @@ Aircraft::Aircraft(const char *frame_str)
 
     // allow for orientation settings, such as with tailsitters
     enum ap_var_type ptype;
-    ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
+    board_orientation = (AP_Int8 *)AP_Param::find("BRD_ORIENTATION", &ptype);
 
-    // ahrs_orientation->get() returns ROTATION_NONE here, regardless of the actual value
-    enum Rotation imu_rotation = ahrs_orientation?(enum Rotation)ahrs_orientation->get():ROTATION_NONE;
+    // board_orientation->get() returns ROTATION_NONE here, regardless of the actual value
+    enum Rotation imu_rotation = board_orientation?(enum Rotation)board_orientation->get():ROTATION_NONE;
     last_imu_rotation = imu_rotation;
     // sitl is null if running example program
     if (sitl) {
@@ -460,8 +460,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     }
 
 
-    if (ahrs_orientation != nullptr) {
-        enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
+    if (board_orientation != nullptr) {
+        enum Rotation imu_rotation = (enum Rotation)board_orientation->get();
         if (imu_rotation != last_imu_rotation) {
             sitl->ahrs_rotation.from_rotation(imu_rotation);
             sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
