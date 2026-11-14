@@ -1,0 +1,10 @@
+# Defaults applied on top of periph.parm when the sitl_periph_volz build
+# is run.  Actuator commands 1, 2 and 4 from the autopilot drive Volz
+# servos on outputs 1, 2 and 4, simulated on SERIAL5.
+OUT1_FUNCTION 51
+OUT2_FUNCTION 52
+OUT4_FUNCTION 54
+OUT_VOLZ_MASK 0x0B
+SERIAL5_PROTOCOL 14
+SIM_VOLZ_ENA 1
+SIM_VOLZ_MASK 0x0B

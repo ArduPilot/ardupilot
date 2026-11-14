@@ -542,6 +542,19 @@
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "models/plane.parm"
             },
+            "plane-volz-periph": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "default_params/plane-volz-periph.parm"
+                ],
+                "periph_params_filename": [
+                    "default_params/periph.parm",
+                    "default_params/periph-volz.parm"
+                ],
+                "periph_board": "sitl_periph_volz",
+                "periph_extra_args": ["--serial5=sim:volz"]
+            },
             "plane-dspoilers": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [

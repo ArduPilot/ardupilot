@@ -10857,6 +10857,101 @@ return update()
         ])
         return ret
 
+    def VolzPeriph(self):
+        '''test Volz servos attached to an AP_Periph'''
+        # the peripheral drives Volz servos from Plane's aileron,
+        # elevator and rudder outputs and returns their feedback over
+        # DroneCAN; see default_params/periph-volz.parm
+        volz_servo_indexes = {0, 1, 3}
+        aileron_index = 0
+        # restart_SITL_frame() doesn't load the frame's vehicle
+        # defaults, so set default_params/plane-volz-periph.parm's
+        # parameters here.  The DroneCAN driver starts on the restart,
+        # creating its parameters:
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+        })
+        self.restart_SITL_frame(
+            'plane-volz-periph',
+            # lockstep: otherwise Plane can run ahead of the
+            # peripheral, which then times out its actuator commands
+            # and zeroes its outputs
+            customisations=['--sim-periph-lockstep'],
+        )
+        self.set_parameters({
+            "CAN_D1_UC_SRV_BM": 0x0B,
+        })
+        self.change_mode('MANUAL')
+
+        # the simulated servo on a peripheral reports 3 degrees more
+        # than it is told, so its feedback can't be mistaken for the
+        # demand
+        centred = 3
+        # full aileron is 1900us out of Plane, which DroneCAN sends as
+        # 0.8 (1000-2000us scaled to +-1); that is 1820us on the
+        # peripheral's 1100-1900us output, which Volz sends as 64
+        # degrees (1000-2000us scaled to +-100 degrees):
+        deflected = 64 + centred
+
+        # hold each state, and once it has settled mark out a window
+        # in which every feedback message for every servo must show it
+        windows = []
+
+        def hold(name, aileron_pwm, aileron_position):
+            self.set_rc(1, aileron_pwm)
+            self.delay_sim_time(2, f"{name} to settle")
+            start = f"VolzPeriph: {name} start"
+            end = f"VolzPeriph: {name} end"
+            self.send_statustext(start)
+            self.delay_sim_time(3, f"{name} feedback")
+            self.send_statustext(end)
+            want = {index: centred for index in volz_servo_indexes}
+            want[aileron_index] = aileron_position
+            windows.append((start, end, want))
+
+        self.delay_sim_time(10, "feedback from the peripheral to start flowing")
+        hold("centred", 1500, centred)
+        hold("aileron deflected", 2000, deflected)
+        hold("aileron centred again", 1500, centred)
+
+        log_filepath = self.current_onboard_log_filepath()
+        # flush the log:
+        self.reboot_sitl()
+
+        self.progress("Checking the servo feedback in each window")
+        dfreader = self.dfreader_for_path(log_filepath)
+
+        def next_message(waiting_for):
+            m = dfreader.recv_match(type=['MSG', 'CSRV'])
+            if m is None:
+                raise NotAchievedException(f"Did not see '{waiting_for}'")
+            if m.get_type() == 'CSRV' and m.Id not in volz_servo_indexes:
+                raise NotAchievedException(f"Unexpected feedback for servo index {m.Id}")
+            return m
+
+        def is_marker(m, text):
+            return m.get_type() == 'MSG' and m.Message == "SRC=250/250:" + text
+
+        tolerance = 1
+        for (start, end, want) in windows:
+            while not is_marker(next_message(start), start):
+                pass
+            seen = {}
+            while True:
+                m = next_message(end)
+                if is_marker(m, end):
+                    break
+                if m.get_type() != 'CSRV':
+                    continue
+                if abs(m.Pos - want[m.Id]) > tolerance:
+                    raise NotAchievedException(
+                        f"Servo index {m.Id} at {m.Pos} deg between '{start}' and '{end}', want {want[m.Id]}±{tolerance}")
+                seen[m.Id] = seen.get(m.Id, 0) + 1
+            missing = volz_servo_indexes - set(seen.keys())
+            if missing:
+                raise NotAchievedException(f"No feedback for servo indexes {missing} between '{start}' and '{end}'")
+            self.progress(f"{start}: feedback messages per servo index {seen} all as expected")
+
     def tests1b(self):
         '''return list of all tests'''
         ret = ([
@@ -11263,6 +11358,7 @@ return update()
             self.steplessAHRSSwitch,
             self.DO_REPOSITION_mode_change_refused,
             self.JSONAirData,
+            self.VolzPeriph,
         ])
         return ret
 
