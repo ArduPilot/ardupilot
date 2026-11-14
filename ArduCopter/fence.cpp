@@ -104,6 +104,14 @@ void Copter::fence_check()
                             set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                         }
                         break;
+                    case AC_Fence::Action::AUTO_RTL_OR_RTL:
+                        // Try Auto RTL, if that fails, RTL, if that fails Land
+                        if (!set_mode(Mode::Number::AUTO_RTL, ModeReason::FENCE_BREACHED)) {
+                            if (!set_mode(Mode::Number::RTL, ModeReason::FENCE_BREACHED)) {
+                                set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
+                            }
+                        }
+                        break;
                     }
                 }
             }
