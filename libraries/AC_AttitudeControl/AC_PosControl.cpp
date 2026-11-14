@@ -574,9 +574,10 @@ void AC_PosControl::NE_init_controller()
 
     // initialise I terms from lean angles
     _pid_vel_ne_m.reset_filter();
-    // initialise the I term to (_accel_target_ned_mss - _accel_desired_ned_mss)
-    // _accel_desired_ned_mss is zero and can be removed from the equation
-    _pid_vel_ne_m.set_integrator((_accel_target_ned_mss.xy() - _vel_target_ned_ms.xy() * _pid_vel_ne_m.ff()));
+    // initialise the I term to the acceleration not explained by feedforward:
+    // _accel_target_ned_mss less _accel_offset_ned_mss, which NE_update_controller() adds back,
+    // and less the velocity feedforward. _accel_desired_ned_mss is zero here and can be omitted.
+    _pid_vel_ne_m.set_integrator((_accel_target_ned_mss.xy() - _accel_offset_ned_mss.xy() - _vel_target_ned_ms.xy() * _pid_vel_ne_m.ff()));
 
     // initialise ekf xy reset handler
     NE_init_ekf_reset();
