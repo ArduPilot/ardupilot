@@ -113,6 +113,33 @@ impl Parameter<'_, '_> {
         boolean(output[0])
     }
 
+    /// Exact value of an integer parameter; None if unbound or a float parameter.
+    pub fn get_int32(&self) -> Result<Option<i32>> {
+        let mut output = [0u8; 5];
+        self.call(crate::imports::BINDING_${get_int32_id}.slot(), &mut [0u8; 8], &mut output)?;
+        if !boolean(output[0])? { return Ok(None); }
+        Ok(Some(i32::from_le_bytes(output[1..5].try_into().unwrap())))
+    }
+
+    /// Set an integer parameter exactly; false for a float parameter or a
+    /// value outside the parameter's type.
+    pub fn set_int32(&self, value: i32) -> Result<bool> {
+        let mut input = [0u8; 12];
+        input[8..12].copy_from_slice(&value.to_le_bytes());
+        let mut output = [0u8; 1];
+        self.call(crate::imports::BINDING_${set_int32_id}.slot(), &mut input, &mut output)?;
+        boolean(output[0])
+    }
+
+    /// As `set_int32`, then save. May wait for save IO.
+    pub fn set_and_save_int32(&self, value: i32) -> Result<bool> {
+        let mut input = [0u8; 12];
+        input[8..12].copy_from_slice(&value.to_le_bytes());
+        let mut output = [0u8; 1];
+        self.call(crate::imports::BINDING_${set_and_save_int32_id}.slot(), &mut input, &mut output)?;
+        boolean(output[0])
+    }
+
 }
 
 fn boolean(value: u8) -> Result<bool> {

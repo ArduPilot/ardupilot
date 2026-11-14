@@ -402,6 +402,9 @@ public:
     bool set_and_save(float value) { return set(value); }
     bool set_default(float value) { return set(value); }
     bool configured() { return vp != nullptr; }
+    bool get_int32(int32_t &value) { if (!vp) { return false; } value = int32_t(parameter_value); return true; }
+    bool set_int32(int32_t value) { return set(float(value)); }
+    bool set_and_save_int32(int32_t value) { return set(float(value)); }
 private:
     ap_var_type vtype;
     AP_Param *vp;
@@ -541,15 +544,16 @@ def test_cached_parameter_dispatch(dispatcher):
 
     def call(name, extra=b'', pointer=address):
         data = struct.pack('<Q', pointer) + extra
-        size = 5 if name == 'get' else 1
+        size = 5 if name.startswith('get') else 1
         return lib.call(ids['Parameter_' + name], data, len(data), output, size)
 
     def init(name):
         return call('init', name.encode().ljust(17, b'\0'))
 
-    for method in ('init', 'get', 'set', 'set_and_save', 'set_default', 'configured'):
+    for method in ('init', 'get', 'set', 'set_and_save', 'set_default', 'configured', 'get_int32', 'set_int32',
+                   'set_and_save_int32'):
         ni = 25 if method == 'init' else (12 if method.startswith('set') else 8)
-        no = 5 if method == 'get' else 1
+        no = 5 if method.startswith('get') else 1
         data = bytes(ni)
         count = lib.param_calls()
         # The packet is valid, but a null Parameter receiver is not.
@@ -567,6 +571,10 @@ def test_cached_parameter_dispatch(dispatcher):
     assert storage.raw[offset + size:] == b'x' * (len(storage) - offset - size)
     assert call('set', struct.pack('<f', 73.0)) == 0 and output.raw[0] == 1
     assert call('get') == 0 and output.raw == struct.pack('<Bf', 1, 73.0)
+    # int32 values travel as exact little-endian integers
+    assert call('set_int32', struct.pack('<i', -5)) == 0 and output.raw[0] == 1
+    assert call('get_int32') == 0 and output.raw == struct.pack('<Bi', 1, -5)
+    assert call('set_and_save_int32', struct.pack('<i', 73)) == 0 and output.raw[0] == 1
     assert call('init', b'F\0x'.ljust(17, b'\0')) == -1
     assert call('get') == 0 and output.raw == struct.pack('<Bf', 1, 73.0)
     assert call('configured') == 0 and output.raw[0] == 1

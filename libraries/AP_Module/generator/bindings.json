@@ -1,7 +1,7 @@
 {
   "Parameter": {
     "include": "AP_Scripting/AP_Scripting_helpers.h",
-    "methods": ["configured", "get", "init", "set", "set_and_save", "set_default"]
+    "methods": ["configured", "get", "get_int32", "init", "set", "set_and_save", "set_and_save_int32", "set_default", "set_int32"]
   },
   "Quaternion": {
     "include": "AP_Math/AP_Math.h",
