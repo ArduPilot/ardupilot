@@ -369,6 +369,8 @@ AP_HW_DAKEFPVF405WING                1237
 # FlyingRC
 AP_HW_FLYINGRCH7DPRO                 1242
 
+AP_HW_TUSTIN_CORE                    1241
+
 AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
