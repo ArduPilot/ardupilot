@@ -44,6 +44,9 @@ void NavEKF3_core::readRangeFinder(void)
             if (sensor == nullptr) {
                 continue;
             }
+            if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow)) {
+                rngOutOfRangeLowTime_ms[sensorIndex] = imuSampleTime_ms;
+            }
             if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == AP_DAL_RangeFinder::Status::Good)) {
                 rngMeasIndex[sensorIndex] ++;
                 if (rngMeasIndex[sensorIndex] > 2) {
@@ -58,7 +61,7 @@ void NavEKF3_core::readRangeFinder(void)
             // check for three fresh samples
             bool sampleFresh[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3] = {};
             for (uint8_t index = 0; index <= 2; index++) {
-                sampleFresh[sensorIndex][index] = (imuSampleTime_ms - storedRngMeasTime_ms[sensorIndex][index]) < 500;
+                sampleFresh[sensorIndex][index] = (imuSampleTime_ms - storedRngMeasTime_ms[sensorIndex][index]) < rngFreshTime_ms;
             }
 
             // find the median value if we have three fresh samples
@@ -85,6 +88,7 @@ void NavEKF3_core::readRangeFinder(void)
 
                 // limit the measured range to be no less than the on-ground range
                 rangeDataNew.rng = MAX(storedRngMeas[sensorIndex][midIndex],rngOnGnd);
+                rangeDataNew.onFloor = storedRngMeas[sensorIndex][midIndex] <= rngOnGnd;
 
                 // get position in body frame for the current sensor
                 rangeDataNew.sensor_idx = sensorIndex;
@@ -95,10 +99,11 @@ void NavEKF3_core::readRangeFinder(void)
                 // indicate we have updated the measurement
                 rngValidMeaTime_ms = imuSampleTime_ms;
 
-            } else if (onGround && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
+            } else if (onGround && ((imuSampleTime_ms - rngValidMeaTime_ms) > rngOnGndNoDataTime_ms)) {
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
+                rangeDataNew.onFloor = true;
 
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
