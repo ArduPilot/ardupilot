@@ -116,5 +116,6 @@ protected:
     Frame *frame;
     Thruster* thrusters;
     uint8_t n_thrusters;
+    bool is_auv;
 };
 }
