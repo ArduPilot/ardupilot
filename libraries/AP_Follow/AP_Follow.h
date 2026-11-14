@@ -178,7 +178,10 @@ private:
 
     // Checks whether the current estimate should be reset based on position and velocity errors.
     bool estimate_error_too_large() const;
-    
+
+    // Projects the last received target position and velocity forward by dt seconds at constant acceleration.
+    void project_target(float dt, Vector3f &delta_pos_m, Vector3f &delta_vel_ms) const;
+
     // Calculates max velocity change under trapezoidal or triangular acceleration profile (jerk-limited).
     float calc_max_velocity_change(float accel_max, float jerk_max, float timeout_sec) const;
 

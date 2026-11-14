@@ -269,8 +269,9 @@ void AP_Follow::update_estimates()
     const float dt = (now - _last_location_update_ms) * 0.001f;
 
     // project target's position and velocity forward using simple kinematics
-    Vector3f delta_pos_m = _target_vel_ned_ms * dt + _target_accel_ned_mss * 0.5f * sq(dt);
-    Vector3f delta_vel_ms = _target_accel_ned_mss * dt;
+    Vector3f delta_pos_m;
+    Vector3f delta_vel_ms;
+    project_target(dt, delta_pos_m, delta_vel_ms);
     float delta_heading_rad = radians(_target_heading_rate_degs) * dt;
 
     // calculate time since last estimation update
@@ -614,9 +615,19 @@ bool AP_Follow::estimate_error_too_large() const
     const float vel_thresh_horiz_ms = calc_max_velocity_change(_accel_max_ne_mss.get(), _jerk_max_ne_msss.get(), timeout_sec);
     const float vel_thresh_vert_ms  = calc_max_velocity_change(_accel_max_d_mss.get(), _jerk_max_d_msss.get(), timeout_sec);
 
+    // The estimate is valid at _last_estimation_update_ms, but the target sample is valid at its
+    // own (earlier) jitter-corrected time. Project the sample to the estimate's time before
+    // comparing, or the error includes target velocity x link latency and a healthy estimate
+    // is reset whenever latency is high. Signed: the corrected sample time can be slightly
+    // later than the last estimate.
+    const float dt = int32_t(_last_estimation_update_ms - _last_location_update_ms) * 0.001f;
+    Vector3f delta_pos_m;
+    Vector3f delta_vel_ms;
+    project_target(dt, delta_pos_m, delta_vel_ms);
+
     // Calculate current position and velocity errors
-    const Vector3f pos_error = _estimate_pos_ned_m.tofloat() - _target_pos_ned_m.tofloat();
-    const Vector3f vel_error = _estimate_vel_ned_ms - _target_vel_ned_ms;
+    const Vector3f pos_error = _estimate_pos_ned_m.tofloat() - (_target_pos_ned_m.tofloat() + delta_pos_m);
+    const Vector3f vel_error = _estimate_vel_ned_ms - (_target_vel_ned_ms + delta_vel_ms);
 
     const Vector2f pos_error_xy = pos_error.xy();
     const float pos_error_z = pos_error.z;
@@ -630,6 +641,13 @@ bool AP_Follow::estimate_error_too_large() const
     const bool vel_vert_bad = fabsf(vel_error_z) > vel_thresh_vert_ms;
 
     return pos_horiz_bad || vel_horiz_bad || pos_vert_bad || vel_vert_bad;
+}
+
+// Projects the last received target position and velocity forward by dt seconds at constant acceleration.
+void AP_Follow::project_target(float dt, Vector3f &delta_pos_m, Vector3f &delta_vel_ms) const
+{
+    delta_pos_m = _target_vel_ned_ms * dt + _target_accel_ned_mss * 0.5f * sq(dt);
+    delta_vel_ms = _target_accel_ned_mss * dt;
 }
 
 // Calculates max velocity change under trapezoidal or triangular acceleration profile (jerk-limited).
