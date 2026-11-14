@@ -765,6 +765,9 @@ private:
     // use range beacon measurements to calculate a static position
     void FuseRngBcnStatic();
 
+    // return true if the range beacon positions are relative to the EKF origin
+    bool rngBcnUsesEkfOrigin() const;
+
     // calculate the offset from EKF vertical position datum to the range beacon system datum
     void CalcRangeBeaconPosDownOffset(ftype obsVar, Vector3F &vehiclePosNED, bool aligning);
 
