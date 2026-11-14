@@ -11061,6 +11061,11 @@ return update()
         # -- exactly the post-reset transient this test is meant to
         # rule out.  Reboot so the SITL aircraft is reliably on the
         # ground at the start of the test.
+        # update_calibration() sets the ground pressure from a single
+        # sample, which carries up to +/-SIM_BARO_RND of height noise -
+        # twice this test's threshold.  Null it so what is measured is the
+        # buffer flush and not a noise draw.
+        self.set_parameter("SIM_BARO_RND", 0)
         self.reboot_sitl()
         # this test never arms, so its boot only produces an onboard
         # log if disarmed logging is enabled.  LOG_DISARMED=1 is only a

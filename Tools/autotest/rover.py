@@ -7718,8 +7718,14 @@ return update()
         self.set_parameter("AHRS_OPTIONS", 0)
         self.reboot_sitl()
         self.delay_sim_time(60, "allow time for AHRS to select an estimator")
-        if self.statustext_in_collections("AHRS: EKF3 active"):
-            raise NotAchievedException("AHRS used EKF3 without EKF height data")
+        # for the moment after boot in which the barometer has not been
+        # calibrated DCM has no height either, and the AHRS can announce
+        # EKF3 before falling back; what matters is where it settles.
+        # The AHRS announces only changes, from the DCM it starts on
+        announcements = [m.text for m in self.context_collection('STATUSTEXT')
+                         if m.text.startswith("AHRS: ") and m.text.endswith(" active")]
+        if len(announcements) and announcements[-1] != "AHRS: DCM active":
+            raise NotAchievedException("AHRS settled on %s without EKF height data" % announcements[-1])
 
     def SafetySwitch(self):
         '''check safety switch works'''
