@@ -6,8 +6,10 @@ import emitter
 
 class RSTEmitter(emitter.Emitter):
     def preface(self):
-        return """.. Dynamically generated list of Logger Messages
-.. This page was generated using Tools/autotest/logger_metdata/parse.py
+        metadata = self.firmware_metadata()
+        metadata_block = f"\n\n{metadata}" if metadata else ""
+        return f""".. Dynamically generated list of Logger Messages
+.. This page was generated using Tools/autotest/logger_metdata/parse.py{metadata_block}
 
 .. DO NOT EDIT
 
@@ -19,6 +21,16 @@ Onboard Message Log Messages
 This is a list of log messages which may be present in logs produced and stored onboard ArduPilot vehicles.
 
 """
+
+    def firmware_metadata(self):
+        lines = []
+        if self.git_sha is not None or self.git_branch is not None:
+            lines.append(".. Firmware metadata")
+        if self.git_sha is not None:
+            lines.append(f".. git_sha: {self.git_sha}")
+        if self.git_branch is not None:
+            lines.append(f".. git_branch: {self.git_branch}")
+        return "\n".join(lines)
 
     def postface(self):
         return ""
