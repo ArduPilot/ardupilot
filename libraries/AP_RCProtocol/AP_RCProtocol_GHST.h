@@ -161,13 +161,14 @@ private:
     struct Frame _frame;
     struct Frame _telemetry_frame;
     uint8_t _frame_ofs;
-    uint8_t _frame_crc;
 
     const uint8_t MAX_CHANNELS = MIN((uint8_t)GHST_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
 
     static AP_RCProtocol_GHST* _singleton;
 
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    bool check_frame(uint32_t timestamp_us);
+    void skip_to_next_frame(uint32_t timestamp_us);
     bool decode_ghost_packet();
     bool process_telemetry(bool check_constraint = true);
     void process_link_stats_frame(const void* data);
