@@ -14,7 +14,10 @@ pub struct ParamDef {
     pub index: u8,
     /// Name without the table prefix.
     pub name: &'static str,
+    /// For int32 entries this must be an integer exact as a float.
     pub default: f32,
+    /// Stored as an exact AP_Int32 rather than a float.
+    pub int32: bool,
 }
 
 /// Compile-time table checks; returns the table size to register.
@@ -29,6 +32,10 @@ pub const fn check_param_table(prefix: &str, defs: &[ParamDef]) -> u8 {
             "parameter index must be 1 to 63"
         );
         assert!(!d.name.is_empty(), "empty parameter name");
+        assert!(
+            !d.int32 || (d.default >= -2147483648.0 && d.default < 2147483648.0 && d.default as i32 as f32 == d.default),
+            "int32 parameter default must be an integer exact as a float"
+        );
         assert!(
             prefix.len() + d.name.len() <= PARAM_NAME_MAX,
             "parameter name longer than 16 characters"
@@ -76,8 +83,11 @@ fn retry<T>(c: &Context<'_>, mut call: impl FnMut() -> Result<T>) -> Result<T> {
 impl ParamDef {
     pub fn register(&self, c: &Context<'_>, key: u8) -> Result {
         let ok = retry(c, || {
-            c.param()
-                .add_param(key, self.index, self.name, self.default)
+            if self.int32 {
+                c.param().add_param_int32(key, self.index, self.name, self.default as i32)
+            } else {
+                c.param().add_param(key, self.index, self.name, self.default)
+            }
         })?;
         if ok {
             Ok(())
@@ -113,10 +123,23 @@ pub fn register_param_table(c: &Context<'_>, key: u8, prefix: &str, size: u8) ->
     }
 }
 
-/// Registered table with opt-in cached values.
+/// Registered table with opt-in cached values. Int32 entries are also cached
+/// exactly, read and written without float conversion.
 pub struct ParamTable<'a, 'h, const N: usize> {
+    defs: &'static [ParamDef; N],
     handles: [Parameter<'a, 'h>; N],
     cache: [f32; N],
+    cache_i32: [i32; N],
+}
+
+fn read(d: &ParamDef, p: &Parameter<'_, '_>) -> Result<(f32, i32)> {
+    if d.int32 {
+        let v = p.get_int32()?.ok_or(Error::Invalid)?;
+        Ok((v as f32, v))
+    } else {
+        let v = p.get()?.ok_or(Error::Invalid)?;
+        Ok((v, v as i32))
+    }
 }
 
 impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
@@ -130,31 +153,35 @@ impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
         register_param_table(c, key, prefix, size)?;
         let mut handles: [Option<Parameter<'a, 'h>>; N] = core::array::from_fn(|_| None);
         let mut cache = [0.0; N];
+        let mut cache_i32 = [0; N];
         for (i, d) in defs.iter().enumerate() {
             d.register(c, key)?;
             let p = d.bind(c, prefix)?;
-            cache[i] = p.get()?.ok_or(Error::Invalid)?;
+            (cache[i], cache_i32[i]) = read(d, &p)?;
             handles[i] = Some(p);
         }
         Ok(Self {
+            defs,
             handles: handles.map(Option::unwrap),
             cache,
+            cache_i32,
         })
     }
 
     /// Re-read all values; bits refer to declaration positions, not storage indices.
     /// On error, retain the cache so a retry still reports every changed entry.
     pub fn refresh(&mut self) -> Result<u64> {
-        let mut values = self.cache;
+        let (mut values, mut values_i32) = (self.cache, self.cache_i32);
         let mut changed = 0;
         for (i, p) in self.handles.iter().enumerate() {
-            let v = p.get()?.ok_or(Error::Invalid)?;
-            if v != self.cache[i] {
-                values[i] = v;
+            let (v, v_i32) = read(&self.defs[i], p)?;
+            let differs = if self.defs[i].int32 { v_i32 != self.cache_i32[i] } else { v != self.cache[i] };
+            if differs {
+                (values[i], values_i32[i]) = (v, v_i32);
                 changed |= 1 << i;
             }
         }
-        self.cache = values;
+        (self.cache, self.cache_i32) = (values, values_i32);
         Ok(changed)
     }
 
@@ -162,7 +189,15 @@ impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
         self.cache[i]
     }
 
+    /// Exact for int32 entries, truncated for float entries.
+    pub fn get_i32(&self, i: usize) -> i32 {
+        self.cache_i32[i]
+    }
+
     fn write(&mut self, i: usize, v: f32, save: bool) -> Result {
+        if self.defs[i].int32 {
+            return self.write_i32(i, v as i32, save);
+        }
         let ok = if save {
             self.handles[i].set_and_save(v)?
         } else {
@@ -171,8 +206,32 @@ impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
         if !ok {
             return Err(Error::Host);
         }
-        self.cache[i] = v;
+        (self.cache[i], self.cache_i32[i]) = (v, v as i32);
         Ok(())
+    }
+
+    fn write_i32(&mut self, i: usize, v: i32, save: bool) -> Result {
+        if !self.defs[i].int32 {
+            return self.write(i, v as f32, save);
+        }
+        let ok = if save {
+            self.handles[i].set_and_save_int32(v)?
+        } else {
+            self.handles[i].set_int32(v)?
+        };
+        if !ok {
+            return Err(Error::Host);
+        }
+        (self.cache[i], self.cache_i32[i]) = (v as f32, v);
+        Ok(())
+    }
+
+    /// Exact for int32 entries.
+    pub fn set_i32(&mut self, i: usize, v: i32) -> Result {
+        self.write_i32(i, v, false)
+    }
+    pub fn set_and_save_i32(&mut self, i: usize, v: i32) -> Result {
+        self.write_i32(i, v, true)
     }
 
     pub fn set(&mut self, i: usize, v: f32) -> Result {
@@ -184,7 +243,8 @@ impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
 }
 
 /// Declare a dynamic parameter table. Entries are
-/// `Variant = index, "NAME", type: default;` with type `f32`, each preceded by `// @Param: PREFIX_NAME` documentation
+/// `Variant = index, "NAME", type: default;` with type `f32`, or `i32` for an
+/// exact AP_Int32 (default an integer exact as a float), each preceded by `// @Param: PREFIX_NAME` documentation
 /// in the format param_parse.py reads from C++ and Lua:
 ///
 /// ```rust
@@ -221,6 +281,16 @@ impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
 /// }
 /// ```
 ///
+/// An `i32` default must be exact as a float:
+///
+/// ```compile_fail
+/// ap_rust_sdk::param_table! {
+///     struct Invalid, enum P;
+///     key = 1, prefix = "BAD_";
+///     Value = 1, "VALUE", i32: 16777217;
+/// }
+/// ```
+///
 /// This generates `enum P` naming the entries, a `Params` struct with
 /// `register(c)`, `refresh()` and typed get/set methods taking `P`, and
 /// `P::changed(mask)` for testing a `refresh()` result. Names, indices and
@@ -237,16 +307,16 @@ macro_rules! param_table {
     };
     ($vis:vis struct $table:ident, enum $id:ident;
      key = $key:expr, prefix = $prefix:expr;
-     $( $variant:ident = $index:expr, $name:literal, f32: $default:expr; )+) => {
+     $( $variant:ident = $index:expr, $name:literal, $kind:ident: $default:expr; )+) => {
         $crate::param_table!(@table $vis struct $table, enum $id;
                             key = $key, prefix = $prefix; []
-                            $( $variant = $index, $name, f32: $default; )+);
+                            $( $variant = $index, $name, $kind: $default; )+);
     };
     (@table
         $vis:vis struct $table:ident, enum $id:ident;
         key = $key:expr, prefix = $prefix:expr;
         [$($size:expr)?]
-        $( $variant:ident = $index:expr, $name:literal, f32: $default:expr; )+
+        $( $variant:ident = $index:expr, $name:literal, $kind:ident: $default:expr; )+
     ) => {
         #[derive(Clone, Copy, Debug, PartialEq, Eq)]
         #[repr(usize)]
@@ -267,14 +337,15 @@ macro_rules! param_table {
         // Run the key and layout checks even if registration is unused.
         const _: u8 = {
             assert!($table::<'static, 'static>::KEY <= 200, "parameter table key must be 0 to 200");
+            $( $crate::param_table!(@exact $kind $default); )+
             $table::<'static, 'static>::SIZE
         };
 
         #[allow(dead_code)]
         impl<'a, 'h> $table<'a, 'h> {
             const DEFS: [$crate::ParamDef; $crate::param_table!(@count $($variant)+)] = [
-                $( $crate::ParamDef { index: $index, name: $name,
-                                      default: $default as f32 } ),+
+                $( $crate::ParamDef { index: $index, name: $name, default: $default as f32,
+                                      int32: $crate::param_table!(@int32 $kind) } ),+
             ];
             $vis const KEY: u8 = $key;
             $vis const PREFIX: &'static str = $prefix;
@@ -307,9 +378,21 @@ macro_rules! param_table {
             $vis fn get(&self, p: $id) -> f32 { self.0.get(p as usize) }
             $vis fn set(&mut self, p: $id, v: f32) -> $crate::Result { self.0.set(p as usize, v) }
             $vis fn set_and_save(&mut self, p: $id, v: f32) -> $crate::Result { self.0.set_and_save(p as usize, v) }
+            /// Exact for `i32` entries, truncated for `f32` entries.
+            $vis fn get_i32(&self, p: $id) -> i32 { self.0.get_i32(p as usize) }
+            $vis fn set_i32(&mut self, p: $id, v: i32) -> $crate::Result { self.0.set_i32(p as usize, v) }
+            $vis fn set_and_save_i32(&mut self, p: $id, v: i32) -> $crate::Result {
+                self.0.set_and_save_i32(p as usize, v)
+            }
 
         }
     };
+    (@exact f32 $default:expr) => {};
+    (@exact i32 $default:expr) => {
+        assert!(($default as i64) == ($default as f32 as i64), "int32 parameter default must be exact as a float")
+    };
+    (@int32 f32) => { false };
+    (@int32 i32) => { true };
     (@size $minimum:ident) => { $minimum };
     (@size $minimum:ident, $size:expr) => { $size };
     (@count) => { 0usize };

@@ -11,7 +11,11 @@ ap_rust_sdk::param_table! {
     key = 185, prefix = "RTBL_";
     Saved = 1, "SAVED", f32: 3.0;
     Last = 63, "LAST", f32: 63.0;
+    Time = 2, "TIME", i32: -1;
 }
+
+// not representable as a float: 1491234560 or 1491234568 after a float round trip
+const EXACT: i32 = 1491234567;
 
 ap_rust_sdk::param_table! {
     struct Conditional, enum C;
@@ -29,6 +33,11 @@ fn run(context: &Context<'_>) -> Result {
     if cached.get(P::Last) != 63.0 {
         return Err(Error::Invalid);
     }
+    match cached.get_i32(P::Time) {
+        -1 => {}
+        EXACT => context.text(6, "TABLE exact")?,
+        _ => return Err(Error::Invalid),
+    }
     context.text(6, "TABLE ready")?;
     loop {
         let value = live.get()?.ok_or(Error::Invalid)?;
@@ -38,6 +47,11 @@ fn run(context: &Context<'_>) -> Result {
             }
             cached.set_and_save(P::Saved, 43.0)?;
             if live.get()? != Some(43.0) {
+                return Err(Error::Invalid);
+            }
+            cached.set_and_save_i32(P::Time, EXACT)?;
+            let time = Params::bind(context, P::Time)?;
+            if cached.get_i32(P::Time) != EXACT || time.get_int32()? != Some(EXACT) || cached.refresh()? != 0 {
                 return Err(Error::Invalid);
             }
             Conditional::definition(C::Hidden).register(context, Conditional::KEY)?;

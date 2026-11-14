@@ -24,6 +24,12 @@ crate::param_table! {
     // @Description: Uses all 16 characters
     // @User: Advanced
     Longest = 7, "LONGEST_NM", f32: 0;
+
+    // @Param: TST_LAT
+    // @DisplayName: Test latitude
+    // @Description: An exact int32 entry
+    // @User: Standard
+    Lat = 4, "LAT", i32: -900000000;
 }
 
 const fn def(index: u8, name: &'static str, default: f32) -> ParamDef {
@@ -31,6 +37,7 @@ const fn def(index: u8, name: &'static str, default: f32) -> ParamDef {
         index,
         name,
         default,
+        int32: false,
     }
 }
 
@@ -44,6 +51,8 @@ fn macro_keeps_declaration_order_and_checks_at_compile_time() {
     assert_eq!(TestParams::DEFS[0].index, 3);
     assert_eq!(TestParams::DEFS[1].default, -1.0);
     assert_eq!(TestParams::DEFS[2].default, 0.0);
+    assert!(!TestParams::DEFS[0].int32 && TestParams::DEFS[3].int32);
+    assert_eq!(TestParams::DEFS[3].default, -900000000.0);
     assert!(T::Time.changed(0b010) && !T::Alt.changed(0b010) && T::Longest.changed(0b100));
 }
 
@@ -69,6 +78,12 @@ fn index_zero_rejected() {
 #[should_panic(expected = "duplicate parameter name")]
 fn duplicate_name_rejected() {
     check_param_table("X_", &[def(1, "A", 0.0), def(2, "A", 1.0)]);
+}
+
+#[test]
+#[should_panic(expected = "int32 parameter default must be an integer exact as a float")]
+fn fractional_int32_default_rejected() {
+    check_param_table("X_", &[ParamDef { index: 1, name: "A", default: 1.5, int32: true }]);
 }
 
 #[test]
