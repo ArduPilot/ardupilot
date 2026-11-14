@@ -160,7 +160,7 @@ void RCInput_RCProtocol::_timer_tick(void)
 
     if (AP::RC().new_input()) {
         last_frame_ms = AP_HAL::millis();
-        uint8_t n = AP::RC().num_channels();
+        uint8_t n = MIN(AP::RC().num_channels(), LINUX_RC_INPUT_NUM_CHANNELS);
         for (uint8_t i=0; i<n; i++) {
             _pwm_values[i] = AP::RC().read(i);
         }
