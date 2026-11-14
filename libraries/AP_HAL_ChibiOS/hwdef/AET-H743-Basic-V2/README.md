@@ -10,7 +10,7 @@ Compared with AET-H743-Basic (V1), V2 replaces the dual ICM-42688 IMUs with BMI0
 - Dual IMUs: BMI088 + BMI270
 - AT7456E OSD
 - 13 PWM / DShot outputs (one dedicated to WS2812 LED)
-- 8 UARTs + dual USB (OTG1/OTG2), UART7 with CTS/RTS
+- 7 UARTs + dual USB (OTG1/OTG2), UART7 with CTS/RTS
 - 1 CAN bus
 - Dedicated USB board connector
 - SPL06 barometer
@@ -157,7 +157,7 @@ The AET-H743-Basic-V2 has no built-in compass. Use an external I2C compass. Auto
 GPIO 82 controls the analog camera switch (CAM1/CAM2). Example:
 
 - `RELAY2_FUNCTION` = 1
-- `RELAY_PIN2` = 82
+- `RELAY2_PIN` = 82
 - `RCx_OPTION` = 34
 
 ## 9V switch
@@ -165,7 +165,7 @@ GPIO 82 controls the analog camera switch (CAM1/CAM2). Example:
 GPIO 81 controls the switched 9V rail (9Vsw). Example:
 
 - `RELAY1_FUNCTION` = 1
-- `RELAY_PIN` = 81
+- `RELAY1_PIN` = 81
 - `RCx_OPTION` = 28
 
 ## GPIOs
