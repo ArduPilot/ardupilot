@@ -133,6 +133,14 @@ public:
      */
     virtual void     force_safety_off(void) {}
 
+    /*
+      hold the bidirectional DShot signal lines low (true) or return
+      them to the timer (false). Used around operations that stop the
+      MCU, such as a flash sector erase, so that the lines do not sit
+      at their high idle level with no frames
+     */
+    virtual void     hold_bidir_dshot_lines_low(bool hold) {}
+
     // prepare the backend for reboot; there's no way back from this
     virtual void     prepare_for_reboot(void) {
         // zero the outputs; some backends go further than this to

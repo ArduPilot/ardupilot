@@ -38,6 +38,41 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
 #if HAL_USE_PWM
+#if defined(HAL_WITH_BIDIR_DSHOT) && !defined(STM32F1)
+/*
+  hold the bidirectional DShot lines low, or return them to the
+  timer. The lines idle high between frames, so an MCU stall such as
+  a flash sector erase leaves them high with no frames, which some
+  ESCs take as a request to enter their bootloader. A low line is
+  treated as loss of signal instead.
+ */
+void RCOutput::hold_bidir_dshot_lines_low(bool hold)
+{
+    for (uint8_t g = 0; g < NUM_GROUPS; g++) {
+        pwm_group &group = pwm_group_list[g];
+        if (hold == group.bdshot.lines_held_low) {
+            continue;
+        }
+        if (hold && !(is_dshot_protocol(group.current_mode) && is_bidir_dshot_enabled(group))) {
+            continue;
+        }
+        for (uint8_t i = 0; i < 4; i++) {
+            if (group.chan[i] == CHAN_DISABLED) {
+                continue;
+            }
+            if (hold) {
+                group.bdshot.held_line_modes[i] = palReadLineMode(group.pal_lines[i]);
+                palClearLine(group.pal_lines[i]);
+                stm32_set_line_mode(group.pal_lines[i], PAL_MODE_OUTPUT_PUSHPULL);
+            } else {
+                stm32_set_line_mode(group.pal_lines[i], group.bdshot.held_line_modes[i]);
+            }
+        }
+        group.bdshot.lines_held_low = hold;
+    }
+}
+#endif // HAL_WITH_BIDIR_DSHOT && !STM32F1
+
 /*
  * enable bi-directional telemetry request for a mask of channels. This is used
  * with DShot to get telemetry feedback
