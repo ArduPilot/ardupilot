@@ -23,6 +23,9 @@
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 #include "AP_RCTelemetry.h"
 #include <AP_HAL/utility/sparse-endian.h>
+#if AP_CRSF_MAVLITE_ENABLED
+#include <AP_Frsky_Telem/AP_Frsky_MAVliteMsgHandler.h>
+#endif
 
 class AP_OSD_ParamSetting;
 
@@ -292,11 +295,35 @@ public:
         char text[PASSTHROUGH_STATUS_TEXT_FRAME_MAX_SIZE];  // ( Null-terminated string )
     };
 
+#if AP_CRSF_MAVLITE_ENABLED
+    // a MAVlite message from the radio: an extended-header custom frame addressed to the flight
+    // controller (no checksum, the CRSF CRC covers it)
+    struct PACKED MAVliteRequestFrame {
+        uint8_t destination;    // CRSF_ADDRESS_FLIGHT_CONTROLLER
+        uint8_t origin;         // the radio
+        uint8_t sub_type;       // CRSF_AP_CUSTOM_TELEM_MAVLITE
+        uint8_t len;            // payload bytes
+        uint8_t msgid;
+        uint8_t payload[MAVLITE_MAX_PAYLOAD_LEN];
+    };
+
+    // the reply to the radio: one MAVlite message (len, msgid, payload), no checksum as the CRSF CRC covers it
+    struct PACKED MAVliteFrame {
+        uint8_t sub_type;
+        uint8_t len;
+        uint8_t msgid;
+        uint8_t payload[MAVLITE_MAX_PAYLOAD_LEN];
+    };
+#endif
+
     // ardupilot frametype container
     union PACKED APCustomTelemFrame {
         PassthroughSinglePacketFrame single_packet_passthrough;
         PassthroughMultiPacketFrame multi_packet_passthrough;
         StatusTextFrame status_text;
+#if AP_CRSF_MAVLITE_ENABLED
+        MAVliteFrame mavlite;
+#endif
     };
 
 
@@ -408,6 +435,16 @@ private:
     void process_param_write_frame(ParameterSettingsWriteFrame* write, uint8_t length);
     void process_device_info_frame(ParameterDeviceInfoFrame* info);
     void process_command_frame(CommandFrame* command);
+#if AP_CRSF_MAVLITE_ENABLED
+    // MAVlite over CRSF: a radio script sends one message in a custom frame addressed to the
+    // flight controller, the reply goes out in the PARAMETERS slot (one at a time)
+    void process_mavlite_frame(const MAVliteRequestFrame* frame, uint8_t length);
+    bool mavlite_send(const AP_Frsky_MAVlite_Message &msg);
+    void calc_mavlite();
+    AP_Frsky_MAVliteMsgHandler _mavlite_handler{FUNCTOR_BIND_MEMBER(&AP_CRSF_Telem::mavlite_send, bool, const AP_Frsky_MAVlite_Message &)};
+    AP_Frsky_MAVlite_Message _mavlite_reply;
+    bool _mavlite_reply_pending;
+#endif
 
     // setup ready for passthrough operation
     void setup_wfq_scheduler(void) override;

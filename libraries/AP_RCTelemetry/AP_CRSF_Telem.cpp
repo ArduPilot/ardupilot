@@ -496,6 +496,11 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
         if (_pending_request.frame_type > 0) {
             return true;
         }
+#if AP_CRSF_MAVLITE_ENABLED
+        if (_mavlite_reply_pending) {
+            return true;
+        }
+#endif
 #if AP_CRSF_SCRIPTING_ENABLED
         if (!ready_params.is_empty()) {
             return true;
@@ -534,6 +539,13 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
             calc_heartbeat();
             break;
         case PARAMETERS: // update parameter settings
+#if AP_CRSF_MAVLITE_ENABLED
+            // a MAVlite reply goes out in this slot when no CRSF parameter request is waiting
+            if (_mavlite_reply_pending && _pending_request.frame_type == 0) {
+                calc_mavlite();
+                break;
+            }
+#endif
             process_pending_requests();
             break;
         case BARO_VARIO:
@@ -630,6 +642,16 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
     case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
         process_ping_frame((ParameterPingFrame*)data);
         break;
+
+#if AP_CRSF_MAVLITE_ENABLED
+    // MAVlite from a radio script. The passthrough sub types (F0-F2, read by e.g. Yaapu) only go
+    // from the flight controller to the radio; here only frames from the radio that are addressed
+    // to the flight controller with the MAVlite sub type are taken, anything else is ignored
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_AP_CUSTOM_TELEM:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY:
+        process_mavlite_frame((const MAVliteRequestFrame*)data, length);
+        break;
+#endif
 
     case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ:
         process_param_read_frame((ParameterSettingsReadFrame*)data);
@@ -864,6 +886,56 @@ void AP_CRSF_Telem::process_param_read_frame(ParameterSettingsReadFrame* read_fr
 
     _pending_request.frame_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ;
 }
+
+#if AP_CRSF_MAVLITE_ENABLED
+/*
+  MAVlite over CRSF
+  The radio sends a custom frame (0x80, or 0x7F for old TBS firmware) in the extended layout so
+  that ELRS routes it to the flight controller:
+    destination 0xC8, origin, sub type 0xF4, len, msgid, payload (len bytes)
+  It goes to the same handler FrSky passthrough uses (PARAM_REQUEST_READ, PARAM_SET, the
+  COMMAND_LONG subset). The handler's reply (PARAM_VALUE, COMMAND_ACK) is sent back as
+    sub type 0xF4, len, msgid, payload
+  in the PARAMETERS slot. One message at a time: the radio waits for each reply.
+ */
+void AP_CRSF_Telem::process_mavlite_frame(const MAVliteRequestFrame* frame, uint8_t length)
+{
+    const uint8_t header_len = offsetof(MAVliteRequestFrame, payload);
+    if (length < header_len ||
+        frame->destination != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER ||
+        frame->sub_type != AP_CRSF_Protocol::CustomTelemSubTypeID::CRSF_AP_CUSTOM_TELEM_MAVLITE) {
+        return;
+    }
+    if (frame->len > MAVLITE_MAX_PAYLOAD_LEN || header_len + frame->len > length) {
+        return;
+    }
+    AP_Frsky_MAVlite_Message msg;
+    msg.msgid = frame->msgid;
+    msg.len = frame->len;
+    memcpy(msg.payload, frame->payload, frame->len);
+    _mavlite_handler.process_message(msg);
+}
+
+bool AP_CRSF_Telem::mavlite_send(const AP_Frsky_MAVlite_Message &msg)
+{
+    _mavlite_reply = msg;
+    _mavlite_reply_pending = true;
+    return true;
+}
+
+void AP_CRSF_Telem::calc_mavlite()
+{
+    const uint8_t len = MIN(_mavlite_reply.len, (uint8_t)MAVLITE_MAX_PAYLOAD_LEN);
+    _telem.bcast.custom_telem.mavlite.sub_type = AP_CRSF_Protocol::CustomTelemSubTypeID::CRSF_AP_CUSTOM_TELEM_MAVLITE;
+    _telem.bcast.custom_telem.mavlite.len = len;
+    _telem.bcast.custom_telem.mavlite.msgid = _mavlite_reply.msgid;
+    memcpy(_telem.bcast.custom_telem.mavlite.payload, _mavlite_reply.payload, len);
+    _telem_size = offsetof(MAVliteFrame, payload) + len;
+    _telem_type = get_custom_telem_frame_id();
+    _telem_pending = true;
+    _mavlite_reply_pending = false;
+}
+#endif // AP_CRSF_MAVLITE_ENABLED
 
 void AP_CRSF_Telem::process_pending_requests()
 {
