@@ -1133,10 +1133,14 @@ void AP_DroneCAN::gnss_send_fix()
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED;
         break;
     case AP_GPS_FixType::STATIC:
-    case AP_GPS_FixType::PPP:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_PPP; // Static is not representable in DroneCAN.
-        pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED; // There is no submode for static or PPP
+        pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED; // There is no submode for static
+        break;
+    case AP_GPS_FixType::PPP:
+        pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
+        pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_PPP;
+        pkt.sub_mode = 0; // No submodes are defined for PPP.
         break;
     }
 
