@@ -124,6 +124,10 @@
 #define AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED AP_RANGEFINDER_ENABLED
 #endif
 
+#ifndef AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+#define AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED AP_OPTICALFLOW_ENABLED
+#endif
+
 // all commands can be executed by COMMAND_INT, so COMMAND_LONG isn't
 // strictly required.  This option created for 4.5, Nov 2023, and code
 // left in place.

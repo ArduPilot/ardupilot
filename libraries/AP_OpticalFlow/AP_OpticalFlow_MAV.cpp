@@ -96,6 +96,36 @@ void AP_OpticalFlow_MAV::update(void)
     gyro_sum_count = 0;
 }
 
+// handle OPTICAL_FLOW_RAD mavlink messages
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+void AP_OpticalFlow_MAV::handle_msg_optical_flow_rad(const mavlink_message_t &msg)
+{
+    mavlink_optical_flow_rad_t packet;
+    mavlink_msg_optical_flow_rad_decode(&msg, &packet);
+
+    // guard against zero integration interval to avoid division by zero
+    if (packet.time_delta_distance_us == 0) {
+        return;
+    }
+
+    // record time message was received
+    latest_frame_us = AP_HAL::micros64();
+
+    // OPTICAL_FLOW_RAD gives pre-integrated flow in radians over
+    // time_delta_distance_us microseconds; convert to rad/s so the
+    // existing flow_sum_is_rads accumulation path can be reused
+    const float dt_inv = 1.0e6f / packet.time_delta_distance_us;
+    flow_sum_is_rads = true;
+    flow_sum.x += packet.integrated_x * dt_inv;
+    flow_sum.y += packet.integrated_y * dt_inv;
+    quality_sum += packet.quality;
+    count++;
+
+    // take sensor id from message
+    sensor_id = packet.sensor_id;
+}
+#endif  // AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+
 // handle OPTICAL_FLOW mavlink messages
 void AP_OpticalFlow_MAV::handle_msg(const mavlink_message_t &msg)
 {

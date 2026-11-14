@@ -24,6 +24,7 @@
 #include <AP_Mount/AP_Mount_config.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
+#include <AP_OpticalFlow/AP_OpticalFlow_config.h>
 #include <AP_Winch/AP_Winch_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_Arming/AP_Arming_config.h>
@@ -748,6 +749,9 @@ protected:
 #endif  // AP_MAVLINKCAN_ENABLED
 
     void handle_optical_flow(const mavlink_message_t &msg);
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+    void handle_optical_flow_rad(const mavlink_message_t &msg);
+#endif
 
     void handle_manual_control(const mavlink_message_t &msg);
     void handle_radio_rc_channels(const mavlink_message_t &msg);
