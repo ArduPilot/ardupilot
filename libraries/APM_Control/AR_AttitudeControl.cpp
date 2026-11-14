@@ -542,6 +542,22 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_STR_DEC_MAX", 16, AR_AttitudeControl, _steer_decel_max, AR_ATTCONTROL_STEER_DECEL_MAX),
 
+    // @Param: _STR_RLL_FF
+    // @DisplayName: Steering rate control roll feed forward
+    // @Description: Steering output added in proportion to the sine of the vehicle's roll angle to counteract the tendency of some vehicles to turn up or down a side slope. Use a negative value if the vehicle tends to turn downhill on a side slope, or a positive value if it tends to turn uphill. The term is scaled from zero at standstill to full strength at 1 m/s and is not applied when reversing. Tune by driving straight across a side slope and setting this so the steering rate controller's I-term (PIDS.I) no longer changes with roll.  0 to disable
+    // @Range: -1.0 1.0
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("_STR_RLL_FF", 17, AR_AttitudeControl, _steer_roll_ff, 0.0f),
+
+    // @Param: _SPEED_PIT_FF
+    // @DisplayName: Speed control pitch feed forward
+    // @Description: Throttle output added in proportion to the sine of the vehicle's pitch angle to counteract gravity on hills. Positive values add throttle when climbing and reduce it when descending. Tune by driving up and down a slope and setting this so the speed controller's I-term (PIDA.I) no longer changes with pitch. Leave at zero for balance bots.  0 to disable
+    // @Range: -1.0 1.0
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("_SPEED_PIT_FF", 18, AR_AttitudeControl, _throttle_pitch_ff, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -663,7 +679,8 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
 
     // G limit based on speed
     float speed;
-    if (get_forward_speed(speed)) {
+    const bool have_speed = get_forward_speed(speed);
+    if (have_speed) {
         // do not limit to less than 1 deg/s
         const float turn_rate_max = MAX(get_turn_rate_from_lat_accel(get_turn_lat_accel_max(), fabsf(speed)), radians(1.0f));
         if (_desired_turn_rate <= -turn_rate_max) {
@@ -678,6 +695,21 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     // update pid to calculate output to motors
     float output = _steer_rate_pid.update_all(_desired_turn_rate, AP::ahrs().get_yaw_rate_earth(), dt, (motor_limit_left || motor_limit_right));
     output += _steer_rate_pid.get_ff();
+
+    // update PID info for reporting purposes
+    _steer_rate_pid_info = _steer_rate_pid.get_pid_info();
+
+    // add slope compensation feed forward from roll angle
+    if (!is_zero(_steer_roll_ff)) {
+        // fade in with forward speed so the vehicle does not pivot on a slope while stopped
+        // not applied when reversing because the direction of the slope induced yaw when
+        // reversing depends on the vehicle (e.g. caster position, drive type), the I-term handles it
+        const float speed_scaler = have_speed ? constrain_float(speed / AR_ATTCONTROL_STEER_SPEED_MIN, 0.0f, 1.0f) : 0.0f;
+        const float roll_ff = sinf(AP::ahrs().get_roll_rad()) * _steer_roll_ff * speed_scaler;
+        output += roll_ff;
+        _steer_rate_pid_info.FF += roll_ff;
+    }
+
     // constrain and return final output
     return output;
 }
@@ -761,6 +793,11 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
         throttle_base = _desired_speed * (cruise_throttle / cruise_speed);
     }
 
+    // add slope compensation feed forward from pitch angle
+    if (!is_zero(_throttle_pitch_ff)) {
+        throttle_base += sinf(AP::ahrs().get_pitch_rad()) * _throttle_pitch_ff;
+    }
+
     // calculate final output
     float throttle_out = _throttle_speed_pid.update_all(_desired_speed, speed, dt, (motor_limit_low || motor_limit_high || _throttle_limit_low || _throttle_limit_high));
     throttle_out += _throttle_speed_pid.get_ff();
@@ -828,6 +865,12 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
         _throttle_speed_pid.reset_I();
         // ensure desired speed is zero
         _desired_speed = 0.0f;
+        // output is zero so clear reported output terms (FF may include slope compensation)
+        _throttle_speed_pid_info.P = 0.0f;
+        _throttle_speed_pid_info.I = 0.0f;
+        _throttle_speed_pid_info.D = 0.0f;
+        _throttle_speed_pid_info.FF = 0.0f;
+        _throttle_speed_pid_info.DFF = 0.0f;
         return 0.0f;
     }
 
@@ -950,7 +993,7 @@ float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
 // get the slew rate value for speed and steering for oscillation detection in lua scripts
 void AR_AttitudeControl::get_srate(float &steering_srate, float &speed_srate)
 {
-    steering_srate = get_steering_rate_pid().get_pid_info().slew_rate;
+    steering_srate = _steer_rate_pid_info.slew_rate;
     speed_srate = _throttle_speed_pid_info.slew_rate;
 }
 
