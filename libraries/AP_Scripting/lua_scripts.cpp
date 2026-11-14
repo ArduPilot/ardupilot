@@ -24,6 +24,10 @@
 
 #include <AP_Scripting/lua_generated_bindings.h>
 
+#if AP_SCRIPTING_LUA_COVERAGE_ENABLED
+#include "lua/src/lobject.h"
+#endif
+
 #define DISABLE_INTERRUPTS_FOR_SCRIPT_RUN 0
 
 extern const AP_HAL::HAL& hal;
@@ -60,7 +64,69 @@ lua_scripts::~lua_scripts() {
     _heap.destroy();
 }
 
+#if AP_SCRIPTING_LUA_COVERAGE_ENABLED
+// Line coverage, for use by autotest.  Hit counts are kept in a
+// registry table as stats[source][line] = count, which scripts see as
+// the global luacov_stats.  Every line holding code gets an entry when
+// its source first runs, so lines which never ran can be told apart
+// from lines with no code, and running code never adds entries to a
+// source's table while a script may be traversing it.
+// Limitation: lines are only registered for the first chunk run under
+// each source name.  If a different chunk is later run under the same
+// name (e.g. a module changed on disk and loaded again) lines of it
+// which never run are missing from the stats rather than counted as
+// unrun, and lines which do run are added while a save may be
+// traversing the table.
+
+// registry key of the stats table, created by run_engine()
+#define LUA_COVERAGE_STATS_KEY "AP_LUA_COVERAGE"
+
+// add a zero count to the table on the top of the stack for each line
+// of code in p and the functions defined within it
+static void add_coverage_lines(lua_State *L, const Proto *p)
+{
+    for (int i = 0; i < p->sizelineinfo; i++) {
+        lua_pushinteger(L, 0);
+        lua_rawseti(L, -2, p->lineinfo[i]);
+    }
+    for (int i = 0; i < p->sizep; i++) {
+        add_coverage_lines(L, p->p[i]);
+    }
+}
+
+static void coverage_line_hook(lua_State *L, lua_Debug *ar)
+{
+    const int saved_top = lua_gettop(L);
+    if (!lua_getinfo(L, "Sf", ar)) {
+        return;
+    }
+    lua_getfield(L, LUA_REGISTRYINDEX, LUA_COVERAGE_STATS_KEY);
+    if (lua_getfield(L, -1, ar->source) != LUA_TTABLE) {
+        // the first line run from a source is always in its main
+        // chunk, so the function being run holds all of its code
+        lua_pop(L, 1);
+        lua_newtable(L);
+        lua_pushvalue(L, -1);
+        lua_setfield(L, -3, ar->source);
+        add_coverage_lines(L, ((const LClosure *)lua_topointer(L, -3))->p);
+    }
+    lua_rawgeti(L, -1, ar->currentline);
+    const lua_Integer count = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    lua_pushinteger(L, count + 1);
+    lua_rawseti(L, -2, ar->currentline);
+    lua_settop(L, saved_top);
+}
+#endif  // AP_SCRIPTING_LUA_COVERAGE_ENABLED
+
 void lua_scripts::hook(lua_State *L, lua_Debug *ar) {
+#if AP_SCRIPTING_LUA_COVERAGE_ENABLED
+    if (ar->event == LUA_HOOKLINE) {
+        coverage_line_hook(L, ar);
+        return;
+    }
+#endif
+
     lua_scripts::overtime = true;
 
     // we need to aggressively bail out as we are over time
@@ -224,6 +290,11 @@ void lua_scripts::create_sandbox(lua_State *L) {
     luaopen_debug(L);
     lua_settable(L, -3);
 #endif
+#if AP_SCRIPTING_LUA_COVERAGE_ENABLED
+    lua_pushstring(L, "luacov_stats");
+    lua_getfield(L, LUA_REGISTRYINDEX, LUA_COVERAGE_STATS_KEY);
+    lua_settable(L, -3);
+#endif
     lua_pushstring(L, "math");
     luaopen_math(L);
     lua_settable(L, -3);
@@ -317,7 +388,11 @@ void lua_scripts::reset_loop_overtime(lua_State *L) {
     overtime = false;
     // reset the hook to clear the counter
     const int32_t vm_steps = MAX(_vm_steps, 1000);
+#if AP_SCRIPTING_LUA_COVERAGE_ENABLED
+    lua_sethook(L, hook, LUA_MASKCOUNT | LUA_MASKLINE, vm_steps);
+#else
     lua_sethook(L, hook, LUA_MASKCOUNT, vm_steps);
+#endif
 }
 
 void lua_scripts::run_next_script(lua_State *L) {
@@ -531,6 +606,12 @@ int lua_scripts::run_engine(lua_State *L) {
     lua_setfield(L, -2, "__index");  /* metatable.__index = string */
     lua_setmetatable(L, -2);  /* set table as metatable for strings */
     lua_pop(L, 1);  /* pop dummy string */
+
+#if AP_SCRIPTING_LUA_COVERAGE_ENABLED
+    // line coverage stats, filled in by the hook for every script
+    lua_newtable(L);
+    lua_setfield(L, LUA_REGISTRYINDEX, LUA_COVERAGE_STATS_KEY);
+#endif
 
     if (option_is_set(AP_Scripting::DebugOption::RUNTIME_MSG)) {
         const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
