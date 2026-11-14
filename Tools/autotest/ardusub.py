@@ -8,6 +8,7 @@ AP_FLAKE8_CLEAN
 '''
 
 import math
+import operator
 import os
 import re
 
@@ -23,6 +24,7 @@ from pysim import util
 from vehicle_test_suite import AltFrame
 from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
+from vehicle_test_suite import WaitModeTimeout
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -1872,6 +1874,81 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
 
+    def AUVConfiguration(self):
+        """Test AUV single-thruster 4-fin configuration, servo outputs, and propulsion"""
+        self.context_push()
+        # Configure AUV frame and parameters
+        self.set_parameter("FRAME_CONFIG", 8)
+        self.set_parameter("AUV_ENABLE", 1)
+        self.set_parameter("SERVO1_FUNCTION", 33)  # k_motor1 (main thruster)
+        self.set_parameter("SERVO2_FUNCTION", 19)  # k_elevator (left)
+        self.set_parameter("SERVO3_FUNCTION", 19)  # k_elevator (right)
+        self.set_parameter("SERVO4_FUNCTION", 21)  # k_rudder (top)
+        self.set_parameter("SERVO5_FUNCTION", 21)  # k_rudder (bottom)
+        self.reboot_sitl()
+
+        # Verify motor detect mode is rejected for AUV
+        self.change_mode("MANUAL")
+        try:
+            self.change_mode(20, timeout=5)  # Mode 20 is MOTOR_DETECT
+            raise NotAchievedException("Allowed MOTOR_DETECT on AUV frame")
+        except WaitModeTimeout:
+            self.progress("MOTOR_DETECT properly rejected for AUV")
+
+        # Arm in MANUAL mode
+        self.change_mode("MANUAL")
+        self.arm_vehicle()
+
+        # 1. Test Forward and Reverse Propulsion on Motor 1
+        self.set_rc(Joystick.Forward, 1800)
+        self.wait_servo_channel_value(1, 1700, comparator=operator.gt, timeout=5)
+        self.progress("Main thruster forward command verified")
+
+        self.set_rc(Joystick.Forward, 1200)
+        self.wait_servo_channel_value(1, 1300, comparator=operator.lt, timeout=5)
+        self.progress("Main thruster reverse command verified")
+
+        self.set_rc(Joystick.Forward, 1500)
+        self.wait_servo_channel_value(1, 1500, timeout=5)
+
+        # 2. Test Elevator Pitch Response (Channels 2 and 3)
+        self.set_rc(Joystick.Pitch, 1800)
+        self.wait_servo_channel_value(2, 1600, comparator=operator.gt, timeout=5)
+        self.wait_servo_channel_value(3, 1600, comparator=operator.gt, timeout=5)
+        self.progress("Dual elevator deflection (pitch up/down) verified")
+
+        self.set_rc(Joystick.Pitch, 1200)
+        self.wait_servo_channel_value(2, 1400, comparator=operator.lt, timeout=5)
+        self.wait_servo_channel_value(3, 1400, comparator=operator.lt, timeout=5)
+        self.progress("Dual elevator reverse deflection verified")
+
+        self.set_rc(Joystick.Pitch, 1500)
+
+        # 3. Test Rudder Yaw Response (Channels 4 and 5)
+        self.set_rc(Joystick.Yaw, 1800)
+        self.wait_servo_channel_value(4, 1600, comparator=operator.gt, timeout=5)
+        self.wait_servo_channel_value(5, 1600, comparator=operator.gt, timeout=5)
+        self.progress("Dual rudder deflection (yaw right) verified")
+
+        self.set_rc(Joystick.Yaw, 1200)
+        self.wait_servo_channel_value(4, 1400, comparator=operator.lt, timeout=5)
+        self.wait_servo_channel_value(5, 1400, comparator=operator.lt, timeout=5)
+        self.progress("Dual rudder reverse deflection (yaw left) verified")
+
+        self.set_rc(Joystick.Yaw, 1500)
+
+        # 4. Disarm and verify neutral actuator state
+        self.disarm_vehicle()
+        self.wait_servo_channel_value(1, 1500, timeout=5)
+        self.wait_servo_channel_value(2, 1500, timeout=5)
+        self.wait_servo_channel_value(3, 1500, timeout=5)
+        self.wait_servo_channel_value(4, 1500, timeout=5)
+        self.wait_servo_channel_value(5, 1500, timeout=5)
+        self.progress("Disarmed neutral actuator states verified")
+
+        self.context_pop()
+        self.progress("AUVConfiguration test PASSED")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1924,6 +2001,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.IgnoreGPSDrift,
             self.GuidedPosVelAccel,
             self.GuidedAboveTerrain,
+            self.AUVConfiguration,
         ])
 
         return ret
