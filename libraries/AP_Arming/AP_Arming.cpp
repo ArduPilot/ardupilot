@@ -2023,10 +2023,9 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 #endif // HAL_HAVE_SAFETY_SWITCH
 
 #if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
-    // save any compass offsets the EKF has learned.  This must be done
-    // before the vehicle calls hal.util->set_soft_armed(false); once the
-    // EKF sees onGround it clears finalInflightMagInit and will no
-    // longer hand out learned offsets.
+    // save any compass offsets the EKF has learned.  The EKF holds the
+    // learned field until the next takeoff so it is still available
+    // after landing.
     AP::compass().save_ekf_learned_offsets();
 #endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 

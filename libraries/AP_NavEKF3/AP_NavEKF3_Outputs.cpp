@@ -427,16 +427,12 @@ bool NavEKF3_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
         return false;
     }
 
-    // compass offsets are valid if we have finalised magnetic field initialisation, magnetic field learning is not prohibited,
-    // primary compass is valid and state variances have converged
-    const float maxMagVar = 5E-6f;
-    bool variancesConverged = (P[19][19] < maxMagVar) && (P[20][20] < maxMagVar) && (P[21][21] < maxMagVar);
-    if ((mag_idx == magSelectIndex) &&
-            finalInflightMagInit &&
-            !inhibitMagStates &&
-            compass.healthy(magSelectIndex) &&
-            variancesConverged) {
-        magOffsets = compass.get_offsets(magSelectIndex) - stateStruct.body_magfield.tofloat()*1000.0;
+    // compass offsets are valid if a learned field was copied for this compass while the state variances
+    // were converged (see setWindMagStateLearningMode) and the compass is healthy
+    Vector3F learnedField;
+    if (compass.healthy(mag_idx) &&
+            learnedMagField.get(mag_idx, learnedField)) {
+        magOffsets = compass.get_offsets(mag_idx) - learnedField.tofloat()*1000.0;
         return true;
     } else {
         magOffsets = compass.get_offsets(magSelectIndex);

@@ -1275,6 +1275,34 @@ private:
     uint32_t wasLearningCompass_ms; // time when we were last waiting for compass learn to complete
     Vector3F earthMagFieldVar;      // NED earth mag field variances for last learned field (mGauss^2)
     Vector3F bodyMagFieldVar;       // XYZ body mag field variances for last learned field (mGauss^2)
+
+    // LearnedMagField maintains the learned body magnetic field so it can be saved after landing
+    class LearnedMagField {
+    public:
+        // store the learned body magnetic field of the given compass and mark it as valid
+        void set(uint8_t idx, const Vector3F &field) {
+            mag_idx = idx;
+            body_magfield = field;
+            valid = true;
+        }
+
+        // retrieve the learned body magnetic field of the given compass
+        // returns true if the learned field is valid and for this compass, false otherwise
+        bool get(uint8_t idx, Vector3F &field) const {
+            if (!valid || idx != mag_idx) { return false; }
+            field = body_magfield;
+            return true;
+        }
+
+        // clear the learned body magnetic field and mark it as invalid
+        void clear() { valid = false; }
+
+    private:
+        uint8_t mag_idx;            // index of the compass the learned field is for
+        Vector3F body_magfield;     // learned body magnetic field (Gauss)
+        bool valid;                 // true if the learned body magnetic field is valid, false otherwise
+    } learnedMagField;
+
     bool delAngBiasLearned;         // true when the gyro bias has been learned
     nav_filter_status filterStatus; // contains the status of various filter outputs
     ftype ekfOriginHgtVar;          // Variance of the EKF WGS-84 origin height estimate (m^2)

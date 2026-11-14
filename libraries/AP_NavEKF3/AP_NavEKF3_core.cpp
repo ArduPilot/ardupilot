@@ -519,6 +519,9 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     stateStruct.earth_magfield.zero();
     stateStruct.body_magfield.zero();
 
+    // clear the learned body magnetic field
+    learnedMagField.clear();
+
     // set the position, velocity and height
     ResetVelocity(resetDataSource::DEFAULT);
     ResetPosition(resetDataSource::DEFAULT);
