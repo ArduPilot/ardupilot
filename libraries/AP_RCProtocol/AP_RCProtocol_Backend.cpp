@@ -32,8 +32,6 @@
 #include "spm_srxl.h"
 #endif
 
-
-
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend)
 {}
@@ -65,6 +63,33 @@ void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
     memcpy(pwm, _pwm_values, n*sizeof(pwm[0]));
 }
 
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+/*
+  check the configured throttle channel for a bind-time value
+ */
+bool AP_RCProtocol_Backend::update_throttle_failsafe(uint8_t num_values)
+{
+    const auto &config = frontend.throttle_failsafe;
+    if (config.channel_value == UINT16_MAX) {
+        throttle_failsafe.reset();
+        return false;
+    }
+
+    // note that we check against the number of channels in this frame,
+    // not the size of the _pwm_values array.  A frame which does not
+    // reach the throttle channel leaves the vehicle reading zero for
+    // it, which is a bind-time value by any threshold:
+    const uint8_t offset = config.channel - 1;
+    if (offset >= num_values) {
+        return throttle_failsafe.update_bind_value(true);
+    }
+
+    return throttle_failsafe.update(_pwm_values[offset],
+                                    config.channel_value,
+                                    config.channel_value_is_maximum);
+}
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+
 /*
   provide input from a backend
  */
@@ -74,20 +99,47 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
     _num_channels = num_values;
     rc_frame_count++;
-    frontend.set_failsafe_active(in_failsafe);
-#if !AP_RC_CHANNEL_ENABLED
-    // failsafed is sorted out in AP_IOMCU.cpp
-    in_failsafe = false;
-#else
-    if (rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
-        in_failsafe = false;
-    }
-#endif
-    if (!in_failsafe) {
-        rc_input_count++;
-    }
+
+    _failsafe_active = in_failsafe;
     rssi = _rssi;
     rx_link_quality = _rx_link_quality;
+
+    // the receiver's own indication that it is in failsafe:
+    bool receiver_in_failsafe = in_failsafe;
+#if AP_RC_CHANNEL_ENABLED
+    if (rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
+        receiver_in_failsafe = false;
+    }
+#else
+    // failsafe is sorted out in AP_IOMCU.cpp
+    receiver_in_failsafe = false;
+#endif
+
+    if (receiver_in_failsafe) {
+        // a receiver saying it is in failsafe is not a positive
+        // identification of a failsafe; it is indistinguishable from
+        // the receiver having stopped talking to us.  Do not offer the
+        // values as input, and do not examine them; the vehicle's
+        // RC_FS_TIMEOUT applies, as it does to a silent receiver:
+        _input_valid = false;
+        return;
+    }
+
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // a bind-time value on the throttle channel, by contrast, is a
+    // positive identification of a failsafe once debounced:
+    const bool input_suspect = update_throttle_failsafe(num_values);
+    _input_in_failsafe = throttle_failsafe.active();
+    if (_input_in_failsafe) {
+        // report this through failsafe_active() too:
+        _failsafe_active = true;
+    }
+    _input_valid = !_input_in_failsafe && !input_suspect;
+#else
+    _input_valid = true;
+#endif
+
+    rc_input_count++;
 }
 
 
