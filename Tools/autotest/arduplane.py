@@ -6004,6 +6004,35 @@ return update()
         self.wait_waypoint(2, 2, max_dist_to_final_wp_m=100)
         self.change_mode(26) # AUTOLAND need .43 pymavlink to use text name
         self.wait_disarmed(400)
+        self.progress("Check TECS target at start of landing approach")
+        dfreader = self.dfreader_for_current_onboard_log()
+        last_tecs_target = None
+        checking_tecs_target = False
+        saw_tecs_target = False
+        checked_tecs_target = False
+        while True:
+            m = dfreader.recv_match(type=['MSG', 'TECS'])
+            if m is None:
+                break
+            if m.get_type() == 'MSG':
+                if m.Message.startswith("Landing approach start"):
+                    checking_tecs_target = True
+                    saw_tecs_target = False
+                elif m.Message.startswith("Landing glide slope"):
+                    checked_tecs_target = checking_tecs_target and saw_tecs_target
+                    checking_tecs_target = False
+            else:
+                if checking_tecs_target:
+                    saw_tecs_target = True
+                    if last_tecs_target is None:
+                        raise NotAchievedException("No TECS target before landing approach start")
+                    if abs(m.hin - last_tecs_target) > 5:
+                        raise NotAchievedException(
+                            "TECS height target changed at landing approach start: %f to %f" %
+                            (last_tecs_target, m.hin))
+                last_tecs_target = m.hin
+        if not checked_tecs_target:
+            raise NotAchievedException("Did not check TECS target before landing glide slope")
         self.progress("Check the landed heading matches takeoff plus offset")
         self.wait_heading(218, accuracy=5, timeout=1)
         loc = Location.latlon_only(-35.362938, 149.165085)

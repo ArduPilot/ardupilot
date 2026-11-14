@@ -263,6 +263,23 @@ void ModeAutoLand::navigate()
     }
 }
 
+void ModeAutoLand::update_target_altitude()
+{
+    // Retain the loiter altitude target while waiting for the landing backend
+    // to confirm that we are lined up. The NAV_LAND target is at ground level,
+    // so using the normal waypoint target here would command a descent before
+    // the landing glide slope has been set up. Keeping the existing target also
+    // preserves its terrain frame.
+    if ((stage == AutoLandStage::LANDING) &&
+        (plane.landing.get_type() == AP_Landing::TYPE_STANDARD_GLIDE_SLOPE) &&
+        !plane.landing.is_on_approach() &&
+        !plane.landing.is_flaring()) {
+        return;
+    }
+
+    Mode::update_target_altitude();
+}
+
 /*
   Takeoff direction is initialized after arm when sufficient altitude
   and ground speed is obtained, then captured takeoff direction +
@@ -322,4 +339,3 @@ bool ModeAutoLand::is_landing() const
 
 
 #endif // MODE_AUTOLAND_ENABLED
-

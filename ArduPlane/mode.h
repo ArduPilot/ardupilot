@@ -1002,6 +1002,8 @@ public:
 
     void navigate() override;
 
+    void update_target_altitude() override;
+
     bool allows_throttle_nudging() const override { return true; }
 
     bool does_auto_navigation() const override { return true; }
