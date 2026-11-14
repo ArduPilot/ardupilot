@@ -408,6 +408,20 @@ void AP_Vehicle::setup()
     hal.scheduler->register_delay_callback(scheduler_delay_callback, 5);
 #endif
 
+    BoardConfig.init();
+
+#if HAL_CANMANAGER_ENABLED
+    can_mgr.init();
+#endif
+
+#if HAL_GCS_ENABLED
+    // setup telem slots with serial ports.  This must come after
+    // anything which registers serial ports (networking, scripting,
+    // DroneCAN serial) and should come before anything which might
+    // raise a config error
+    gcs().setup_uarts();
+#endif
+
 #if AP_EXTERNAL_AHRS_ENABLED
     // call externalAHRS init before init_ardupilot to allow for external sensors
     externalAHRS.init();
@@ -420,12 +434,6 @@ void AP_Vehicle::setup()
 #if AP_STATS_ENABLED
     // initialise stats module
     stats.init();
-#endif
-
-    BoardConfig.init();
-
-#if HAL_CANMANAGER_ENABLED
-    can_mgr.init();
 #endif
 
 #if HAL_MSP_ENABLED
