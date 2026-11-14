@@ -63,15 +63,15 @@ protected:
     // Resets vehicle-specific gain tracking state (not used in multirotor)
     void reset_update_gain_variables() override {};
 
-    // Maximum/Minimum target angles for the current axis (in centidegrees)
-    float target_angle_max_rp_cd() const override;
-    float target_angle_max_y_cd() const override;
-    float target_angle_min_rp_cd() const override;
-    float target_angle_min_y_cd() const override;
+    // Maximum/Minimum target angles for the current axis (in radians)
+    float target_angle_max_rp_rad() const override;
+    float target_angle_max_y_rad() const override;
+    float target_angle_min_rp_rad() const override;
+    float target_angle_min_y_rad() const override;
 
-    // Absolute and negative angle abort limits for twitch safety (in centidegrees)
-    float angle_lim_max_rp_cd() const override;
-    float angle_lim_neg_rpy_cd() const override;
+    // Absolute and negative angle abort limits for twitch safety (in radians)
+    float angle_lim_max_rp_rad() const override;
+    float angle_lim_neg_rpy_rad() const override;
 
     // Prepares state and targets for a new twitch test
     void test_init() override;
@@ -118,8 +118,8 @@ protected:
 
     void Log_Write_AutoTune(AxisType axis, TuneType tune_step,
                             float meas_target, float meas_min, float meas_max,
-                            float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
-    void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
+                            float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt_radss);
+    void Log_Write_AutoTuneDetails(float angle_rad, float rate_rads);
 #endif
 
     // Defines the sequence of tuning steps (P, D, etc.)
@@ -201,16 +201,16 @@ void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_rati
     bool     ignore_next;       // Skip next result (used for rate overshoot handling)
 
     // Measurement and target values for each test step
-    float target_angle;
-    float target_rate;
-    float angle_abort;
+    float target_angle_rad;
+    float target_rate_rads;
+    float angle_abort_rad;
 
-    float test_rate_min;
-    float test_rate_max;
-    float test_angle_min;
-    float test_angle_max;
+    float test_rate_min_rads;
+    float test_rate_max_rads;
+    float test_angle_min_rad;
+    float test_angle_max_rad;
 
-    float accel_measure_rate_max;
+    float accel_measure_rate_max_rads;
 };
 
 #endif // AC_AUTOTUNE_ENABLED
