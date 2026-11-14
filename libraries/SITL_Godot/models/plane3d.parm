@@ -1,0 +1,14 @@
+# ArduPlane parameters for models/plane3d.gltf, applied on top of
+# Tools/autotest/models/plane.parm and plane-3d.parm
+TRIM_THROTTLE   40
+# a fast, slick airframe covers the default takeoff distance before the
+# takeoff altitude; more room keeps the climb-out straight
+TKOFF_DIST      400
+# this airframe needs most of the rudder throw to hold the sideslip that
+# skidded and rolling figures fly on; plane-3d.parm's feed-forward reaches
+# full rudder only after seconds of integrator wind-up, which is too late
+YAW_RATE_FF     1.3
+
+# A 50Hz control loop needs the gyro 1.8x ahead of it, so 100Hz of
+# physics is the floor.
+SIM_RATE_HZ 100

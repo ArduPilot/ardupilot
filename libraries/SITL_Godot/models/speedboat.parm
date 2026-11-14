@@ -1,0 +1,9 @@
+# Rover parameters for models/speedboat.gltf, applied on top of
+# Tools/autotest/default_params/rover.parm and motorboat.parm
+CRUISE_SPEED    4
+WP_SPEED        4
+ATC_STR_RAT_FF  0.4
+
+# Rover's 50Hz control loop needs the gyro only 1.8x ahead of it, so
+# 100Hz of physics is the floor.
+SIM_RATE_HZ 100

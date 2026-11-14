@@ -1,0 +1,39 @@
+# Blimp parameters for models/blimp.gltf, on top of
+# Tools/autotest/default_params/blimp.parm. Four-motor frame: two forward
+# pods, an up fan and a lateral fan, all reversible about mid PWM.
+FRAME_CLASS     2
+SERVO1_MIN      1000
+SERVO1_MAX      2000
+SERVO1_TRIM     1500
+SERVO2_MIN      1000
+SERVO2_MAX      2000
+SERVO2_TRIM     1500
+SERVO3_MIN      1000
+SERVO3_MAX      2000
+SERVO3_TRIM     1500
+SERVO4_MIN      1000
+SERVO4_MAX      2000
+SERVO4_TRIM     1500
+
+# A 50Hz control loop needs the gyro 1.8x ahead of it, so 100Hz of
+# physics is the floor.
+SIM_RATE_HZ 100
+
+# Velocity limits (m/s) for VELOCITY and LOITER; the 0.3 default is too
+# slow to stop this airship. Per axis because the hull has 0.6 m^2 of
+# drag area forward and 8 m^2 broadside.
+LOIT_MAX_VELX   1.6
+LOIT_MAX_VELY   1.1
+LOIT_MAX_VELZ   1.0
+LOIT_MAX_VELYAW 1.0
+
+# The frame default of 0.4 leaves the side fan 6 N, and 1.1 m/s sideways
+# needs 5.9 N, which is no margin.
+FINS_THR_MAX    0.9
+
+# Waypoint navigation sized to the limits above: a WP_VEL far below the
+# loiter speed is overshot and orbited. WP_RADIUS is a gate to fly
+# through, and 1 m is narrower than the airship is long.
+WP_VEL          1.0
+WP_ACCEL        0.4
+WP_RADIUS       5

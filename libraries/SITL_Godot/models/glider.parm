@@ -1,0 +1,24 @@
+# ArduPlane parameters for models/glider.gltf, on top of
+# Tools/autotest/default_params/glider.parm. Released by --launcher=drop:
+# SERVO1 aileron, SERVO2 elevator, SERVO4 rudder, no throttle.
+SERVO1_FUNCTION 4
+SERVO1_REVERSED 0
+SERVO2_FUNCTION 19
+SERVO2_REVERSED 0
+SERVO3_FUNCTION 0
+SERVO3_REVERSED 0
+SERVO4_FUNCTION 21
+SERVO4_REVERSED 0
+SERVO5_FUNCTION 0
+
+# servo 7 lets the launcher go, so it has to stay free for DO_SET_SERVO
+SERVO7_FUNCTION 0
+
+# there is no balloon to lift it and no parachute to cut away
+SERVO6_FUNCTION 0
+SERVO9_FUNCTION 0
+CHUTE_ENABLED 0
+
+# The glider's tuning is for a 200Hz loop, which needs a gyro (and so
+# physics) rate of at least 360Hz to arm.
+SIM_RATE_HZ 400

@@ -1,0 +1,197 @@
+{
+ "asset": {"version": "2.0", "generator": "rfx2gltf"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {
+   "shapes": [
+    {"type": "box", "box": {"size": [0.13096, 0.20764, 0.92348]}},
+    {"type": "box", "box": {"size": [0.5788, 0.02, 0.27885]}},
+    {"type": "box", "box": {"size": [0.5788, 0.02, 0.27885]}},
+    {"type": "box", "box": {"size": [0.26384, 0.02, 0.17026000000000002]}},
+    {"type": "box", "box": {"size": [0.26384, 0.02, 0.17026000000000002]}},
+    {"type": "box", "box": {"size": [0.020000000000000018, 0.28162000000000004, 0.20836]}}
+   ]
+  },
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.6, "dynamicFriction": 0.5, "restitution": 0.1}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "acromaster",
+   "translation": [0, 0.249, 0],
+   "children": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+   "rotation": [-0.07846319, -0.0, -0.0, 0.99691701],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 0.693, "inertiaDiagonal": [0.0313, 0.0303, 0.0115], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"drag": {"area": [0.03, 0.03, 0.02]}, "chassis": {"style": "plane", "size": [0.131, 0.2076, 0.9235], "centre": [0.0014, 0.0096, -0.2698]}}
+   }
+  },
+  {
+   "name": "steering_wheel_tyre",
+   "translation": [0.00141, 0.03161, -0.15035],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.02, "travel": 0.04, "spring": 113.0, "damping": 8.9, "grip": 0.8, "rollingResistance": 0.03}}}
+  },
+  {"name": "fuselage_box", "translation": [0.00141, 0.00961, -0.2698], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {
+   "name": "engine",
+   "translation": [0.00141, 0.00443, 0.2103],
+   "extensions": {
+    "ARDUPILOT_sitl": {"rotor": {"servo": 3, "maxThrust": 15.0, "thrustExpo": 0.5, "torqueRatio": 0.0067, "direction": "ccw", "timeConstant": 0.05, "diameter": 0.306, "pitchSpeed": 32.8}}
+   },
+   "rotation": [0.69465837, 0.0, 0.0, 0.7193398]
+  },
+  {
+   "name": "main_wheel",
+   "translation": [0.11499, -0.18424, 0.05265],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.036, "travel": 0.04, "spring": 113.0, "damping": 8.9, "grip": 0.8, "rollingResistance": 0.03}}}
+  },
+  {
+   "name": "main_wheel_r",
+   "translation": [-0.11217, -0.18424, 0.05265],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.036, "travel": 0.04, "spring": 113.0, "damping": 8.9, "grip": 0.8, "rollingResistance": 0.03}}}
+  },
+  {
+   "name": "steering_wheel_steer",
+   "translation": [0.00141, -0.07606, -0.73135],
+   "extensions": {"ARDUPILOT_sitl": {"hinge": {"servo": 4, "angleMin": 30, "angleMax": -30, "maxRate": 200}}},
+   "children": [1],
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  },
+  {
+   "name": "main_wing_right_5",
+   "translation": [-0.05549, -0.01039, 0.04165],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.1138, "chord": 0.3318, "aspectRatio": 4.01, "cl0": 0.0, "cm0": -0.0, "cd0": 0.015, "stallAngle": 25.0, "oswald": 0.9}}},
+   "rotation": [0.00174533, 0.0, 0.0, 0.99999848]
+  },
+  {
+   "name": "main_wing_right_33",
+   "translation": [-0.33489, -0.01039, 0.04165],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {
+      "span": 0.445,
+      "chord": 0.2653,
+      "aspectRatio": 4.01,
+      "cl0": 0.0,
+      "cm0": -0.0,
+      "cd0": 0.015,
+      "stallAngle": 25.0,
+      "oswald": 0.9,
+      "flapServo": 1,
+      "flapAngleMin": 30.0,
+      "flapAngleMax": -30.0,
+      "flapChordFraction": 0.325
+     }
+    }
+   },
+   "rotation": [0.00174533, 0.0, 0.0, 0.99999848]
+  },
+  {"name": "main_wing_box_right", "translation": [-0.27799, -0.01039, 0.04165], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {
+   "name": "main_wing_left_5",
+   "translation": [0.05831, -0.01039, 0.04165],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.1138, "chord": 0.3318, "aspectRatio": 4.01, "cl0": 0.0, "cm0": -0.0, "cd0": 0.015, "stallAngle": 25.0, "oswald": 0.9}}},
+   "rotation": [0.00174533, 0.0, 0.0, 0.99999848]
+  },
+  {
+   "name": "main_wing_left_33",
+   "translation": [0.33771, -0.01039, 0.04165],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {
+      "span": 0.445,
+      "chord": 0.2653,
+      "aspectRatio": 4.01,
+      "cl0": 0.0,
+      "cm0": -0.0,
+      "cd0": 0.015,
+      "stallAngle": 25.0,
+      "oswald": 0.9,
+      "flapServo": 1,
+      "flapAngleMin": 30.0,
+      "flapAngleMax": -30.0,
+      "flapChordFraction": 0.325
+     }
+    }
+   },
+   "rotation": [0.00174533, 0.0, 0.0, 0.99999848]
+  },
+  {"name": "main_wing_box_left", "translation": [0.28081, -0.01039, 0.04165], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {
+   "name": "horizontal_tail_right_12",
+   "translation": [-0.12265, 0.01261, -0.60335],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {
+      "span": 0.2396,
+      "chord": 0.1697,
+      "aspectRatio": 2.86,
+      "cl0": 0.0,
+      "cm0": -0.0,
+      "cd0": 0.015,
+      "stallAngle": 35.0,
+      "oswald": 0.9,
+      "flapServo": 2,
+      "flapAngleMin": -45.0,
+      "flapAngleMax": 45.0,
+      "flapChordFraction": 0.61,
+      "downwash": 0.45
+     }
+    }
+   },
+   "rotation": [0.01657987, 0.0, 0.0, 0.99986254]
+  },
+  {"name": "horizontal_tail_box_right", "translation": [-0.12051, 0.01261, -0.60335], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}}},
+  {
+   "name": "horizontal_tail_left_12",
+   "translation": [0.12547, 0.01261, -0.60335],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {
+      "span": 0.2396,
+      "chord": 0.1697,
+      "aspectRatio": 2.86,
+      "cl0": 0.0,
+      "cm0": -0.0,
+      "cd0": 0.015,
+      "stallAngle": 35.0,
+      "oswald": 0.9,
+      "flapServo": 2,
+      "flapAngleMin": -45.0,
+      "flapAngleMax": 45.0,
+      "flapChordFraction": 0.61,
+      "downwash": 0.45
+     }
+    }
+   },
+   "rotation": [0.01657987, 0.0, 0.0, 0.99986254]
+  },
+  {"name": "horizontal_tail_box_left", "translation": [0.12333, 0.01261, -0.60335], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 4}, "physicsMaterial": 0}}}},
+  {
+   "name": "vertical_tail_13",
+   "translation": [0.00141, 0.08542, -0.53235],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {
+      "span": 0.2616,
+      "chord": 0.2084,
+      "aspectRatio": 1.26,
+      "cl0": 0.0,
+      "cm0": -0.0,
+      "cd0": 0.015,
+      "stallAngle": 35.0,
+      "oswald": 0.9,
+      "flapServo": 4,
+      "flapAngleMin": -45.0,
+      "flapAngleMax": 45.0,
+      "flapChordFraction": 0.59
+     }
+    }
+   },
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  },
+  {"name": "vertical_tail_box", "translation": [0.00141, 0.08542, -0.53235], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 5}, "physicsMaterial": 0}}}}
+ ]
+}

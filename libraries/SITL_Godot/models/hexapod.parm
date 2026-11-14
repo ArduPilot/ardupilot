@@ -1,0 +1,39 @@
+# Parameters for models/hexapod.gltf, applied on top of Rover's. Written
+# by tools/make_hexapod.py: change the legs there, not here.
+# models/hexapod.lua turns Rover's steering and throttle into the leg servos.
+SCR_ENABLE      1
+SCR_HEAP_SIZE   200000
+
+SERVO_32_ENABLE 1
+
+# the legs: 18 servos, 6 legs of 3
+SERVO1_FUNCTION 94
+SERVO2_FUNCTION 95
+SERVO3_FUNCTION 96
+SERVO4_FUNCTION 97
+SERVO5_FUNCTION 98
+SERVO6_FUNCTION 99
+SERVO7_FUNCTION 100
+SERVO8_FUNCTION 101
+SERVO9_FUNCTION 102
+SERVO10_FUNCTION 103
+SERVO11_FUNCTION 104
+SERVO12_FUNCTION 105
+SERVO13_FUNCTION 106
+SERVO14_FUNCTION 107
+SERVO15_FUNCTION 108
+SERVO16_FUNCTION 109
+
+# Steering and throttle outputs, which Rover will not arm without.
+# Nothing is plugged into them: the gait reads what ArduPilot would
+# have sent.
+SERVO17_FUNCTION 26
+SERVO18_FUNCTION 70
+
+# it walks at a few tenths of a metre a second, not at a car's pace
+CRUISE_SPEED    0.25
+CRUISE_THROTTLE 60
+WP_SPEED        0.25
+WP_RADIUS       0.5
+
+SIM_RATE_HZ     400
