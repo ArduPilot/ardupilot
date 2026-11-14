@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using Antmicro.Renode.Core;
 using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals;
 using Antmicro.Renode.Peripherals.Bus;
@@ -15,6 +16,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
     public class AP_STM32F1F3_RCC : IDoubleWordPeripheral, IKnownSize
     {
         public AP_STM32F1F3_RCC(
+            IMachine machine,
             IPeripheral nvic = null, IPeripheral dwt = null,
             IPeripheral usart1 = null, IPeripheral usart2 = null,
             IPeripheral usart3 = null, IPeripheral uart4 = null,
@@ -29,6 +31,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             uint lseFrequency = DefaultLseFrequency,
             bool isF3 = false, bool isF105 = false)
         {
+            this.machine = machine;
             this.nvic = nvic;
             this.dwt = dwt;
             uarts = new[] { usart1, usart2, usart3, uart4, uart5 };
@@ -44,6 +47,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             registers = new Dictionary<long, uint>();
             appliedFrequencies = new Dictionary<IPeripheral, ulong>();
             frequencyErrors = new HashSet<Type>();
+            AP_ResetCause.Note(machine, AP_ResetCause.Cause.PowerOn);
             Reset();
         }
 
@@ -69,11 +73,34 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
         public void Reset()
         {
+            // the reset flags survive a system reset until cleared with
+            // RMVF; every reset also pulses NRST, setting PINRSTF
+            var flags = Register(CSR) & RESET_FLAGS;
+            switch(AP_ResetCause.Take(machine))
+            {
+            case AP_ResetCause.Cause.PowerOn:
+                flags = PORRSTF | PINRSTF;
+                break;
+            case AP_ResetCause.Cause.IndependentWatchdog:
+                flags |= IWDGRSTF | PINRSTF;
+                break;
+            default:
+                // SYSRESETREQ, which is how Renode resets reach here
+                flags |= SFTRSTF | PINRSTF;
+                break;
+            }
             registers.Clear();
             registers[CR] = 0x83;
-            registers[CSR] = PORRSTF | PINRSTF | BORRSTF;
+            registers[CSR] = flags;
             appliedFrequencies.Clear();
             UpdateClocks();
+        }
+
+        // remove and restore power, as a power-on reset
+        public void PowerCycle()
+        {
+            AP_ResetCause.Note(machine, AP_ResetCause.Cause.PowerOn);
+            machine.RequestReset();
         }
 
         public uint ReadDoubleWord(long offset)
@@ -357,6 +384,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             return ready;
         }
 
+        private readonly IMachine machine;
         private readonly IPeripheral nvic;
         private readonly IPeripheral dwt;
         private readonly IPeripheral[] uarts;
@@ -397,7 +425,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const uint CR_READ_ONLY_MASK = HSIRDY | HSERDY | PLLRDY | PLL2RDY | PLL3RDY;
         private const uint PORRSTF = 1u << 27;
         private const uint PINRSTF = 1u << 26;
-        private const uint BORRSTF = 1u << 25;
+        private const uint SFTRSTF = 1u << 28;
+        private const uint IWDGRSTF = 1u << 29;
         private const uint RESET_FLAGS = 0xFE000000;
         private const ulong HsiFrequency = 8000000;
         private const ulong LsiFrequency = 40000;

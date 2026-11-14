@@ -10,6 +10,7 @@ $elf?=@none
 $platform?=@Tools/renode/platforms/stm32f405_base.repl
 
 # each .cs is compiled on its own against the ones included before it
+include $repo/Tools/renode/peripherals/common/AP_PowerFaults.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32F4_FlashController.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32F4_RCC.cs

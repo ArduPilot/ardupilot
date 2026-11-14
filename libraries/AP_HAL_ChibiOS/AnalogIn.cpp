@@ -29,6 +29,7 @@ extern AP_IOMCU iomcu;
 #endif
 
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/supply_dip_detect.h"
 
 // MAVLink is included as we send a mavlink message as part of debug,
 // and also use the MAV_POWER flags below in update_power_flags
@@ -467,6 +468,9 @@ void AnalogIn::init()
 #else
     static_assert(sizeof(uint16_t) == sizeof(adcsample_t), "adcsample_t must be uint16_t");
 #endif
+#if AP_MCU_SUPPLY_DIP_DETECT_ENABLED
+    stm32_supply_dip_detect_init();
+#endif // AP_MCU_SUPPLY_DIP_DETECT_ENABLED
 #if defined(HAL_ANALOG_PINS)
     setup_adc(0);
 #endif
@@ -752,6 +756,12 @@ void AnalogIn::_timer_tick(void)
         return;
     }
     _last_run = now;
+
+#if AP_MCU_SUPPLY_DIP_DETECT_ENABLED
+    if (stm32_supply_dip_detect_poll()) {
+        _mcu_supply_dips++;
+    }
+#endif // AP_MCU_SUPPLY_DIP_DETECT_ENABLED
 
     // update power status flags
     update_power_flags();

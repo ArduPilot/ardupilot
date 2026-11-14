@@ -791,6 +791,8 @@ def main():
                         help='IOMCU bootloader (default: Tools/bootloaders/iomcu_bl.bin)')
     parser.add_argument('--iomcu-force-update', action='store_true',
                         help='erase the IOMCU application so the FMU uploads it at startup')
+    parser.add_argument('--iomcu-watchdog', action='store_true',
+                        help='let the IOMCU independent watchdog reset the IOMCU')
     parser.add_argument('--port', type=int,
                         help='telnet monitor on this port instead of the interactive console')
     parser.add_argument('--rc-channels', metavar='PWM,...',
@@ -839,6 +841,8 @@ def main():
         parser.error('--iomcu-bootloader requires --real-iomcu')
     if args.iomcu_force_update and not args.real_iomcu:
         parser.error('--iomcu-force-update requires --real-iomcu')
+    if args.iomcu_watchdog and not args.real_iomcu:
+        parser.error('--iomcu-watchdog requires --real-iomcu')
     if args.cpusel is not None:
         if args.cpusel < 0:
             parser.error('--cpusel must be a non-negative host CPU number')
@@ -1173,6 +1177,8 @@ def main():
             'include @%s' % (root / 'Tools' / 'renode' / 'peripherals' /
                              'stm32' / 'AP_STM32F1F3_RCC.cs'),
             'include @%s' % (root / 'Tools' / 'renode' / 'peripherals' /
+                             'stm32' / 'AP_STM32F1_PWR.cs'),
+            'include @%s' % (root / 'Tools' / 'renode' / 'peripherals' /
                              'stm32' / 'AP_STM32F1_UART.cs'),
             'include @%s' % (root / 'Tools' / 'renode' / 'peripherals' /
                              'stm32' / 'AP_STM32F1_FlashController.cs'),
@@ -1193,8 +1199,10 @@ def main():
             'sysbus LoadBinary @%s 0x%08X' %
             (iomcu_flash, IOMCU_FLASH_BASE),
             # the FMU resets the IOMCU; without this it halts fetching
-            # its vector table from the unmapped address 0
-            'macro reset "cpu VectorTableOffset 0x%08X; '
+            # its vector table from the unmapped address 0. A reset also
+            # releases a debugger halt, as on hardware without vector
+            # catch, so a halted core comes back after a watchdog reset
+            'macro reset "cpu VectorTableOffset 0x%08X; cpu IsHalted false; '
             'gpioPortB OnGPIO 5 false; gpioPortC OnGPIO 14 true; '
             'gpioPortC OnGPIO 15 false"' % IOMCU_FLASH_BASE,
             'runMacro $reset',
@@ -1208,8 +1216,10 @@ def main():
             'connector Connect sysbus.iomcuSbus iomcuRcinHub',
             'emulation SetGlobalSerialExecution true',
             'emulation SetGlobalQuantum "%s"' % IOMCU_GLOBAL_QUANTUM,
-            'mach set "ardupilot"',
         ]
+        if args.iomcu_watchdog:
+            commands.append('iwdg EnforceReset true')
+        commands.append('mach set "ardupilot"')
     if args.rc_channels is not None and not generated['is_periph']:
         commands += [
             'rcInput SetChannels "%s"' % args.rc_channels,
@@ -1349,6 +1359,8 @@ def main():
     print('time:    %s' % ('unthrottled' if args.unthrottled else 'paced at 1x'))
     if args.watchdog:
         print('watchdog: reset enforced')
+    if args.iomcu_watchdog:
+        print('watchdog: IOMCU reset enforced')
     if args.cpusel is not None:
         print('CPU:     emulation thread on host CPU %u' % args.cpusel)
     if args.num_imus is not None:

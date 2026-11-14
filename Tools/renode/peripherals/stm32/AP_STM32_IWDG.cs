@@ -25,6 +25,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             watchdogTimer.LimitReached += () =>
             {
                 this.Log(LogLevel.Info, "Watchdog timed out; resetting the machine");
+                AP_ResetCause.Note(machine, AP_ResetCause.Cause.IndependentWatchdog);
                 machine.RequestReset();
             };
             Reset();

@@ -211,6 +211,77 @@ bool stm32_was_software_reset(void)
 }
 
 /*
+  return the causes of the last reset as STM32_RESET_CAUSE_* flags
+ */
+uint8_t stm32_reset_cause(void)
+{
+    stm32_watchdog_save_reason();
+    const uint32_t r = reset_reason;
+    uint8_t cause = 0;
+#if defined(STM32H7)
+#if !defined(RCC_RSR_SFTRSTF)
+    // dual-core parts have a flag per core; we run on the M7, core 1
+#define RCC_RSR_SFTRSTF RCC_RSR_SFT1RSTF
+#define RCC_RSR_LPWRRSTF RCC_RSR_LPWR1RSTF
+#endif // !defined(RCC_RSR_SFTRSTF)
+    if (r & RCC_RSR_PORRSTF) {
+        cause |= STM32_RESET_CAUSE_POWER_ON;
+    } else if (r & RCC_RSR_BORRSTF) {
+        // a power-on reset sets the BOR flag too
+        cause |= STM32_RESET_CAUSE_BROWNOUT;
+    }
+    if (r & RCC_RSR_PINRSTF) {
+        cause |= STM32_RESET_CAUSE_PIN;
+    }
+    if (r & RCC_RSR_SFTRSTF) {
+        cause |= STM32_RESET_CAUSE_SOFTWARE;
+    }
+    if (r & RCC_RSR_IWDG1RSTF) {
+        cause |= STM32_RESET_CAUSE_IWDG;
+    }
+    if (r & RCC_RSR_WWDG1RSTF) {
+        cause |= STM32_RESET_CAUSE_WWDG;
+    }
+    if (r & RCC_RSR_LPWRRSTF) {
+        cause |= STM32_RESET_CAUSE_LOW_POWER;
+    }
+#else
+#if defined(RCC_CSR_PORRSTF)
+    if (r & RCC_CSR_PORRSTF) {
+        cause |= STM32_RESET_CAUSE_POWER_ON;
+    }
+#if defined(RCC_CSR_BORRSTF)
+    else if (r & RCC_CSR_BORRSTF) {
+        // a power-on reset sets the BOR flag too
+        cause |= STM32_RESET_CAUSE_BROWNOUT;
+    }
+#endif // defined(RCC_CSR_BORRSTF)
+#elif defined(RCC_CSR_BORRSTF)
+    // G4 and L4 have no separate power-on flag
+    if (r & RCC_CSR_BORRSTF) {
+        cause |= STM32_RESET_CAUSE_POWER_ON;
+    }
+#endif // defined(RCC_CSR_PORRSTF)
+    if (r & RCC_CSR_PINRSTF) {
+        cause |= STM32_RESET_CAUSE_PIN;
+    }
+    if (r & RCC_CSR_SFTRSTF) {
+        cause |= STM32_RESET_CAUSE_SOFTWARE;
+    }
+    if (r & RCC_CSR_IWDGRSTF) {
+        cause |= STM32_RESET_CAUSE_IWDG;
+    }
+    if (r & RCC_CSR_WWDGRSTF) {
+        cause |= STM32_RESET_CAUSE_WWDG;
+    }
+    if (r & RCC_CSR_LPWRRSTF) {
+        cause |= STM32_RESET_CAUSE_LOW_POWER;
+    }
+#endif // defined(STM32H7)
+    return cause;
+}
+
+/*
   save persistent watchdog data
  */
 void stm32_watchdog_save(const uint32_t *data, uint32_t nwords)
