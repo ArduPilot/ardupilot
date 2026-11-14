@@ -384,4 +384,11 @@ define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
 # don't need so many servo outputs (~850 bytes!)
 define NUM_SERVO_CHANNELS 15
 
+# its u-blox starts at 9600 after power-off and is detected at 230400,
+# so only try those, starting at 9600: switched in the first slot,
+# found in the second.  115200 comes last, for GPS_DRV_OPTIONS bit 2,
+# which switches it to 115200 instead
+define DEFAULT_SERIAL3_BAUD 9600
+define AP_GPS_AUTOBAUD_RATES 9600U, 230400U, 115200U
+
 AUTOBUILD_TARGETS Copter
