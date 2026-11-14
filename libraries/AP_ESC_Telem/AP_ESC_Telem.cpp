@@ -733,25 +733,16 @@ void AP_ESC_Telem::update()
                          AP_ESC_Telem_Backend::TelemetryType::FLAGS |
                          AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE);
                 if (has_ext_data) {
-                    // @LoggerMessage: ESCX
-                    // @Description: ESC extended telemetry data
-                    // @Field: TimeUS: Time since system startup
-                    // @Field: Instance: starts from 0
-                    // @Field: inpct: input duty cycle in percent
-                    // @Field: outpct: output duty cycle in percent
-                    // @Field: flags: manufacturer-specific status flags
-                    // @Field: Pwr: Power percentage
-                    AP::logger().WriteStreaming("ESCX",
-                                                "TimeUS,Instance,inpct,outpct,flags,Pwr",
-                                                "s"     "#"      "%"   "%"    "-"   "%",
-                                                "F"     "-"      "-"   "-"    "-"   "-",
-                                                "Q"     "B"      "B"   "B"    "I"   "B",
-                                                AP_HAL::micros64(),
-                                                i,
-                                                telemdata.input_duty,
-                                                telemdata.output_duty,
-                                                telemdata.flags,
-                                                telemdata.power_percentage);
+                    const struct log_EscX pkt_escx{
+                        LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESCX_MSG)),
+                        time_us          : now_us64,
+                        instance         : i,
+                        input_duty       : telemdata.input_duty,
+                        output_duty      : telemdata.output_duty,
+                        flags            : telemdata.flags,
+                        power_percentage : telemdata.power_percentage,
+                    };
+                    AP::logger().WriteBlock(&pkt_escx, sizeof(pkt_escx));
                 }
 #endif //AP_EXTENDED_ESC_TELEM_ENABLED
 
