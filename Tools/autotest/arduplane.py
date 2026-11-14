@@ -6740,6 +6740,106 @@ return update()
 
         self.fly_home_land_and_disarm()
 
+    def compassless_gsf_launch(self, mode, params=None, running_start=False):
+        '''Catapult-launch a plane with no compass and no airspeed sensor,
+        using the GSF as its yaw source, while the throttle is closed.
+        The GSF only runs once the EKF believes the vehicle is flying or
+        AHRS says takeoff is expected; without takeoff_expected the EKF
+        waits for a 10m height change before it decides it is flying,
+        and the yaw stays unaligned for seconds after the launch.'''
+        self.set_parameters({
+            "COMPASS_USE": 0,
+            "COMPASS_USE2": 0,
+            "COMPASS_USE3": 0,
+            "ARSPD_USE": 0,
+            "EK3_SRC1_YAW": 8,  # GSF
+        })
+        if params is not None:
+            self.set_parameters(params)
+        start_loc = SITL_START_LOCATION
+        start_heading = 175
+        self.customise_SITL_commandline(
+            ["--home=%.9f,%.9f,%.2f,%.1f" % (
+                start_loc.lat,
+                start_loc.lng,
+                start_loc.get_alt_m(AltFrame.ABSOLUTE),
+                start_heading)],
+            model='plane-catapult',
+        )
+        if mode == "AUTO":
+            # take off, then loiter 1km out along the launch heading
+            self.upload_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+                (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, -996, 87, 50),
+            ])
+        self.change_mode(mode)
+        self.set_rc(3, 1000)
+
+        # waiting for the EKF to be happy won't work
+        self.wait_prearm_sys_status_healthy()
+        self.arm_vehicle()
+
+        # sit armed on the ground for longer than AHRS holds takeoff_expected
+        self.delay_sim_time(5, reason="sit armed on the ground")
+        if running_start:
+            # push the plane along the ground with the throttle closed,
+            # as a launcher running with it carries it before the throw
+            self.set_parameters({
+                "SIM_SHOVE_X": 2,
+                "SIM_SHOVE_TIME": 10000,
+            })
+            self.wait_groundspeed(3, 100, minimum_duration=1)
+        self.assert_servo_channel_range(3, 0, 1000)
+
+        self.context_collect('STATUSTEXT')
+        self.context_clear_collection('STATUSTEXT')
+        tstart = self.get_sim_time()
+        self.set_servo(7, 2000)
+        self.wait_statustext("EKF3 IMU0 yaw aligned", check_context=True, timeout=3)
+        self.progress("EKF3 yaw aligned %.1fs after launch" % (self.get_sim_time_cached() - tstart))
+
+        if mode == "FBWA":
+            self.set_rc(3, 2000)
+        self.wait_altitude(40, 60, relative=True, timeout=60)
+
+        bearing_margin = 35
+        bearing_from_home = self.get_bearing(start_loc, self.get_location())
+        if bearing_from_home < 0:
+            bearing_from_home += 360
+        if abs(bearing_from_home - start_heading) > bearing_margin:
+            raise NotAchievedException(f"Did not fly in the launch direction ({bearing_from_home})")
+
+        self.set_rc(3, 1500)
+        self.fly_home_land_and_disarm()
+
+    def CompasslessLaunchFBWA(self):
+        '''Catapult-launch a compass-less GSF plane in FBWA with the throttle closed'''
+        self.compassless_gsf_launch("FBWA")
+
+    def CompasslessLaunchTakeoff(self):
+        '''Catapult-launch a compass-less GSF plane in TAKEOFF mode'''
+        self.compassless_gsf_launch("TAKEOFF", params={
+            "TKOFF_THR_MINACC": 3.0,
+            "TKOFF_ALT": 50,
+        })
+
+    def CompasslessRunningLaunchFBWA(self):
+        '''Catapult-launch a compass-less GSF plane in FBWA from a running start'''
+        self.compassless_gsf_launch("FBWA", running_start=True)
+
+    def CompasslessRunningLaunchTakeoff(self):
+        '''Catapult-launch a compass-less GSF plane in TAKEOFF mode from a running start'''
+        self.compassless_gsf_launch("TAKEOFF", running_start=True, params={
+            "TKOFF_THR_MINACC": 3.0,
+            "TKOFF_ALT": 50,
+        })
+
+    def CompasslessRunningLaunchAuto(self):
+        '''Catapult-launch a compass-less GSF plane in an AUTO takeoff from a running start'''
+        self.compassless_gsf_launch("AUTO", running_start=True, params={
+            "TKOFF_THR_MINACC": 3.0,
+        })
+
     def TakeoffGround(self):
         '''Test a rolling TAKEOFF.'''
 
@@ -11219,6 +11319,11 @@ return update()
             self.TakeoffAuto1,
             self.TakeoffTakeoff4,
             self.TakeoffTakeoff5,
+            self.CompasslessLaunchFBWA,
+            self.CompasslessLaunchTakeoff,
+            self.CompasslessRunningLaunchFBWA,
+            self.CompasslessRunningLaunchTakeoff,
+            self.CompasslessRunningLaunchAuto,
             self.TakeoffLevelOffWind,
             self.MAVFTPBurstMissionDat,
             self.MAVFTPParamPck,
