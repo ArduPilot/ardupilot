@@ -197,6 +197,7 @@ public:
     thread_t *thread_ctx;
     bool last_safety_off;
     uint32_t last_status_ms;
+    uint32_t supply_dip_count;
     uint32_t last_ms;
     uint32_t loop_counter;
     uint8_t dsm_bind_state;

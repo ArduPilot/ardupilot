@@ -139,6 +139,7 @@ CSRC += $(HWDEF)/common/stubs.c \
         $(HWDEF)/common/stm32_util.c \
         $(HWDEF)/common/bouncebuffer.c \
         $(HWDEF)/common/watchdog.c \
+        $(HWDEF)/common/supply_dip_detect.c \
         $(HWDEF)/common/sysperf.c
 
 ifeq ($(USE_USB_MSD),yes)

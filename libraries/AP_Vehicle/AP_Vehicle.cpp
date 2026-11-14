@@ -1181,6 +1181,12 @@ void AP_Vehicle::one_Hz_update(void)
 #endif
     }
 
+    const uint32_t mcu_supply_dips = hal.analogin->mcu_supply_dips();
+    if (mcu_supply_dips != last_mcu_supply_dips) {
+        last_mcu_supply_dips = mcu_supply_dips;
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MCU supply voltage dip detected (%u)", unsigned(mcu_supply_dips));
+    }
+
 #if AP_SCRIPTING_LUA_ENABLED
     scripting.update();
 #endif

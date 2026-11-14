@@ -604,6 +604,8 @@ private:
     uint8_t one_Hz_counter;
     void one_Hz_update();
 
+    uint32_t last_mcu_supply_dips;
+
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
