@@ -316,6 +316,102 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
 
         self.context_pop()
 
+    def TrackPlane(self):
+        '''follow an aeroplane circling overhead, all the way round and round again'''
+        if not self.godot:
+            # SITL's own tracker has a yaw servo with end stops, which
+            # cannot follow anything through a whole circle
+            self.progress("Needs the continuous yaw servo of the Godot backend's tracker; skipping")
+            return
+        # the aeroplane says how high it is; there is no second
+        # barometer up there to compare with
+        self.set_parameters({"ALT_SOURCE": 1})
+        self.change_mode("AUTO")
+
+        # The aeroplane circles from the start. The tracker takes a minute
+        # and a half to be sure of its own position, and is only held to
+        # account once it is.
+        tracker_loc = self.sitl_start_location()
+
+        radius = 50.0       # m
+        height = 40.0       # m above the tracker
+        period = 45.0       # s a lap, which is a model aeroplane's 7 m/s
+        laps = 2
+        settle = 15.0       # s to swing round and find it
+
+        tstart = self.get_sim_time()
+        last_sent = 0
+
+        def plane_bearing(now):
+            '''degrees clockwise from north of where the aeroplane is'''
+            return (360.0 * (now - tstart) / period) % 360.0
+
+        def send_plane_position(mav, m):
+            nonlocal last_sent
+            now = self.get_sim_time_cached()
+            if now - last_sent < 0.1:
+                return
+            last_sent = now
+            bearing = plane_bearing(now)
+            loc = self.offset_location_ne(tracker_loc,
+                                          radius * math.cos(math.radians(bearing)),
+                                          radius * math.sin(math.radians(bearing)))
+            # flying clockwise, so it heads a quarter turn on from where it is
+            heading = (bearing + 90.0) % 360.0
+            speed = 2 * math.pi * radius / period
+            self.mav.mav.global_position_int_send(
+                int(now * 1000),  # time_boot_ms
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                int((tracker_loc.get_alt_m(AltFrame.ABSOLUTE) + height) * 1000),
+                int(height * 1000),  # relative_alt
+                int(speed * math.cos(math.radians(heading)) * 100),  # vx
+                int(speed * math.sin(math.radians(heading)) * 100),  # vy
+                0,  # vz
+                int(heading * 100)
+            )
+            if self.godot_backend is not None:
+                bank = math.degrees(math.atan2(speed * speed, radius * 9.81))
+                self.godot_backend.set_target(loc.lat, loc.lng, height, heading, bank)
+
+        self.context_push()
+        self.install_message_hook_context(send_plane_position)
+
+        self.wait_ready_to_arm()
+        m = self.assert_receive_message('GLOBAL_POSITION_INT')
+        tracker_loc = Location(m.lat * 1.0e-7, m.lon * 1.0e-7, m.alt * 1.0e-3, AltFrame.ABSOLUTE)
+        tready = self.get_sim_time()
+
+        want_pitch = math.degrees(math.atan2(height, radius))
+        samples = 0
+        on_it = 0
+        worst_yaw = 0.0
+        worst_pitch = 0.0
+        while True:
+            m = self.assert_receive_message('ATTITUDE')
+            now = self.get_sim_time_cached()
+            if now - tready > laps * period + settle:
+                break
+            if now - tready < settle:
+                continue
+            yaw_error = abs(mavextra.angle_diff(math.degrees(m.yaw), plane_bearing(now)))
+            pitch_error = abs(math.degrees(m.pitch) - want_pitch)
+            samples += 1
+            if yaw_error < 10 and pitch_error < 5:
+                on_it += 1
+            worst_yaw = max(worst_yaw, yaw_error)
+            worst_pitch = max(worst_pitch, pitch_error)
+
+        self.context_pop()
+        self.progress("On the aeroplane for %u of %u readings; worst %.1f deg out in yaw, %.1f in pitch" %
+                      (on_it, samples, worst_yaw, worst_pitch))
+        if samples < 100:
+            raise NotAchievedException("Only %u attitude readings in %u laps" % (samples, laps))
+        if on_it < 0.95 * samples:
+            raise NotAchievedException(
+                "Lost the aeroplane: on it for %u of %u readings (worst yaw error %.1f, pitch %.1f)" %
+                (on_it, samples, worst_yaw, worst_pitch))
+
     def MAV_CMD_MISSION_START(self):
         '''test MAV_CMD_MISSION_START mavlink command'''
         for method in self.run_cmd, self.run_cmd_int:
@@ -447,5 +543,6 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
             self.UndrivenServosHoldPosition,
             self.ServoRangeLimits,
             self.Tracking,
+            self.TrackPlane,
         ])
         return ret
