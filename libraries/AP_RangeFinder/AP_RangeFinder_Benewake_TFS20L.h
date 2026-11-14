@@ -58,7 +58,13 @@ protected:
     }
 
 private:
-    using AP_RangeFinder_Backend_I2C::AP_RangeFinder_Backend_I2C;
+    AP_RangeFinder_Benewake_TFS20L(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params,
+                                   AP_HAL::I2CDevice &_dev) :
+        AP_RangeFinder_Backend_I2C(_state, _params, _dev)
+    {
+        // TFS20-L datasheet: 15m at 90% reflectivity in 100klux
+        params.max_distance.set_default(15.0f);
+    }
 
     bool init() override;
     void timer();
