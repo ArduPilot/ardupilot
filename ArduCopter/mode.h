@@ -345,6 +345,7 @@ public:
                                bool relative_angle);
 
         void set_yaw_angle_and_rate_rad(float yaw_angle_rad, float yaw_rate_rads);
+        void set_vehicle_heading_yaw_rad(float relative_angle_rad, float turn_rate_rads);
 
         void set_yaw_angle_offset_deg(const float yaw_angle_offset_deg);
 
@@ -387,6 +388,8 @@ public:
 
         // heading when in yaw_look_ahead_yaw
         float _look_ahead_yaw_rad;
+        float _look_ahead_yaw_offset_rad;  // added to vehicle CoG to produce _look_ahead_yaw_rad
+        float _look_ahead_slewrate_rads;   // limits the LOOK_AHEAD yaw target's rate of change; zero for no limit
 
         // turn heading (rad) and rate (rads) when auto_yaw_mode is set to AUTO_YAW_RATE
         float _yaw_angle_rad;
@@ -1221,7 +1224,8 @@ private:
         DoNotStabilizePositionXY = (1U << 4),
         DoNotStabilizeVelocityXY = (1U << 5),
         WPNavUsedForPosControl = (1U << 6),
-        AllowWeatherVaning = (1U << 7)
+        AllowWeatherVaning = (1U << 7),
+        PreserveYaw = (1U << 8),
     };
 
     // returns true if the Guided-mode-option is set (see GUID_OPTIONS)

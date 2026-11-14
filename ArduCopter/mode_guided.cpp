@@ -379,12 +379,16 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
     // if configured to use wpnav for position control
     if (use_wpnav_for_position_control()) {
         // ensure we are in position control mode
+        bool init_yaw = !option_is_enabled(Option::PreserveYaw);
         if (guided_mode != SubMode::WP) {
             wp_control_start();
+            init_yaw = true;
         }
 
         // set yaw state
-        set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+        if (init_yaw) {
+            set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+        }
 
         // no need to check return status because terrain data is not used
         wp_nav->set_wp_destination_NED_m(pos_ned_m, is_terrain_alt);
@@ -397,10 +401,13 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
         return true;
     }
 
+    bool init_yaw = !option_is_enabled(Option::PreserveYaw);
+
     // if configured to use position controller for position control
     // ensure we are in position control mode
     if (guided_mode != SubMode::Pos) {
         pos_control_start();
+        init_yaw = true;
     }
 
     // initialise terrain following if needed
@@ -421,8 +428,10 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
         pos_control->init_pos_terrain_D_m(0.0);
     }
 
-    // set yaw state
-    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+    if (init_yaw) {
+        // set yaw state
+        set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+    }
 
     // set position target and zero velocity and acceleration
     guided_pos_target_ned_m = pos_ned_m;
@@ -477,8 +486,10 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // if using wpnav for position control
     if (use_wpnav_for_position_control()) {
+        bool init_yaw = !option_is_enabled(Option::PreserveYaw);
         if (guided_mode != SubMode::WP) {
             wp_control_start();
+            init_yaw = true;
         }
 
         if (!wp_nav->set_wp_destination_loc(dest_loc)) {
@@ -488,8 +499,10 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
             return false;
         }
 
-        // set yaw state
-        set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+        if (init_yaw) {
+            // set yaw state
+            set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+        }
 
 #if HAL_LOGGING_ENABLED
         // log target
@@ -507,14 +520,19 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         return false;
     }
 
+    bool init_yaw = !option_is_enabled(Option::PreserveYaw);
+
     // if configured to use position controller for position control
     // ensure we are in position control mode
     if (guided_mode != SubMode::Pos) {
         pos_control_start();
+        init_yaw = true;
     }
 
-    // set yaw state
-    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+    if (init_yaw) {
+        // set yaw state
+        set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+    }
 
     // initialise terrain following if needed
     if (is_terrain_alt) {
@@ -627,13 +645,18 @@ bool ModeGuided::set_pos_vel_accel_NED_m(const Vector3p& pos_ned_m, const Vector
     }
 #endif
 
+    bool init_yaw = !option_is_enabled(Option::PreserveYaw);
+
     // check we are in position, velocity and acceleration control mode
     if (guided_mode != SubMode::PosVelAccel) {
         posvelaccel_control_start();
+        init_yaw = true;
     }
 
-    // set yaw state
-    set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+    if (init_yaw) {
+        // set yaw state
+        set_yaw_state_rad(use_yaw, yaw_rad, use_yaw_rate, yaw_rate_rads, relative_yaw);
+    }
 
     update_time_ms = millis();
     guided_pos_target_ned_m = pos_ned_m;

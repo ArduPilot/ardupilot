@@ -617,17 +617,46 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_CONDITION_YAW(const mavlink_comman
         // param2 : speed during change [deg per second]
         // param3 : direction (-1:ccw, +1:cw)
         // param4 : relative offset (1) or absolute angle (0)
-        if ((packet.param1 >= 0.0f)   &&
-            (packet.param1 <= 360.0f) &&
-            (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
-            copter.flightmode->auto_yaw.set_fixed_yaw_rad(
-                radians(packet.param1),
-                radians(packet.param2),
-                (int8_t)packet.param3,
-                is_positive(packet.param4));
-            return MAV_RESULT_ACCEPTED;
-        }
+    const float target_angle = packet.param1;
+    if (isnan(target_angle) || target_angle < 0.0 || target_angle > 360.0) {
         return MAV_RESULT_FAILED;
+    }
+
+    const float rate_degs = packet.param2;
+    const int8_t direction = packet.param3;
+
+    // param4 is a float; compare it rather than casting it, so
+    // fractional and out-of-range values are rejected.  NaN is
+    // checked first as comparing it raises a floating point exception
+    if (isnan(packet.param4)) {
+        return MAV_RESULT_FAILED;
+    }
+    if (is_zero(packet.param4)) {
+        copter.flightmode->auto_yaw.set_fixed_yaw_rad(
+            radians(target_angle),
+            radians(rate_degs),
+            direction,
+            false);
+        return MAV_RESULT_ACCEPTED;
+    }
+    if (is_equal(packet.param4, 1.0f)) {
+        copter.flightmode->auto_yaw.set_fixed_yaw_rad(
+            radians(target_angle),
+            radians(rate_degs),
+            direction,
+            true);
+        return MAV_RESULT_ACCEPTED;
+    }
+    if (is_equal(packet.param4, 2.0f)) {
+        // relative to vehicle direction of travel.  As for relative
+        // offsets, direction 0 (shortest) is treated as clockwise;
+        // wrapping then makes it the shortest equivalent offset
+        const float relative_angle = wrap_180(direction >= 0 ? target_angle : -target_angle);
+        copter.flightmode->auto_yaw.set_vehicle_heading_yaw_rad(radians(relative_angle), radians(rate_degs));
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    return MAV_RESULT_FAILED;
 }
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command_int_t &packet)
