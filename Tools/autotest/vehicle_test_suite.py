@@ -3764,6 +3764,27 @@ class TestSuite(abc.ABC):
                 if found:
                     raise NotAchievedException(f"Fail-fast text found: {m.text}")
 
+    class FailFastHardGroundStrike(MessageHook):
+        '''watches for the simulator's "SIM Hit ground" STATUSTEXT and
+        throws a NotAchievedException if the vehicle struck the ground
+        faster than max_speed (m/s).  Normal touchdowns also produce the
+        message, at low speed.'''
+        def __init__(self, suite, max_speed: float):
+            super(TestSuite.FailFastHardGroundStrike, self).__init__(suite)
+            self.max_speed = max_speed
+
+        def progress_prefix(self) -> str:
+            return "FFHGS: "
+
+        def process(self, mav, m) -> None:
+            if m.get_type() != 'STATUSTEXT':
+                return
+            match = re.match(r"SIM Hit ground at ([-0-9.]+) m/s", m.text)
+            if match is None:
+                return
+            if abs(float(match.group(1))) > self.max_speed:
+                raise NotAchievedException(f"Hard ground strike (>{self.max_speed}m/s): {m.text}")
+
     class ValidateIntPositionAgainstSimState(MessageHook):
         '''monitors a message containing a position containing lat/lng in 1e7,
         makes sure it stays close to SIMSTATE'''

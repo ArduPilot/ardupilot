@@ -100,6 +100,8 @@ enum log_messages {
     LOG_TILT_MSG,
     LOG_RFNS_MSG,
     LOG_ATIS_MSG,
+    LOG_SLT_MSG,
+    LOG_TSTR_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
