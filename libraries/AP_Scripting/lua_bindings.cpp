@@ -205,11 +205,13 @@ int lua_mavlink_send_chan(lua_State *L) {
     }
 
     WITH_SEMAPHORE(comm_chan_lock(chan));
+#if AP_GCS_MAVLINK1_ENABLED
     if (target_sysid > UINT8_MAX &&
         (mavlink_get_channel_status(chan)->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
         lua_pushboolean(L, false);
         return 1;
     }
+#endif  // AP_GCS_MAVLINK1_ENABLED
     if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
         _mav_finalize_message_chan_send_target(chan,
                                         entry->msgid,
