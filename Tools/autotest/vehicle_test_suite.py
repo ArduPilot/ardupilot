@@ -62,6 +62,7 @@ from pymavlink.mavftp import MAX_Payload as FTP_MAX_PAYLOAD
 from pymavlink.mavftp_op import FTP_OP
 from pymavlink.rotmat import Vector3
 
+from pysim import godot as godot_physics
 from pysim import json_physics
 from pysim import util
 from pysim import vehicleinfo
@@ -2135,6 +2136,11 @@ class TestSuite(abc.ABC):
                  asan=False,
                  check_parameter_leaks=True,
                  unix_domain_socket=False,
+                 godot=False,
+                 godot_headless=False,
+                 godot_vehicles=1,
+                 godot_spacing=None,
+                 godot_model=None,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2149,6 +2155,24 @@ class TestSuite(abc.ABC):
             raise ValueError("Should always have a binary")
 
         self.binary = binary
+        self.godot = godot
+        self.godot_headless = godot_headless
+        self.godot_vehicles = max(1, min(5, godot_vehicles))
+        self.godot_spacing = godot_spacing
+        self.godot_model = godot_model
+        self.godot_backend = None
+        self.godot_mode_watch = False
+        # true while the harness is putting the session back to its
+        # default, which restarts SITL without flying anything
+        self.godot_tidying = False
+        # the autotest being run, shown on the backend's HUD
+        self.godot_test_name = None
+        # the frame last asked for, before it was replaced by the JSON model
+        self.godot_frame = None
+        self.godot_bystanders = []
+        self.godot_bystanders_config = None
+        if godot:
+            godot_physics.check_supported(self.vehicleinfo_key())
         self.valgrind = valgrind
         self.callgrind = callgrind
         self.asan = asan
@@ -3563,6 +3587,16 @@ class TestSuite(abc.ABC):
             ret["LOG_REPLAY"] = 1
         return ret
 
+    def default_parameters_filepath(self):
+        '''a parameter file holding the session's baseline, for a SITL to
+        read as it starts'''
+        path = os.path.join(tempfile.gettempdir(),
+                            "autotest-defaults-%u.parm" % os.getpid())
+        with open(path, "w") as f:
+            for name, value in self.default_parameter_list().items():
+                f.write("%s %s\n" % (name, value))
+        return path
+
     def apply_default_parameters(self):
         # deliberately not added to the context: these are the session's
         # baseline, not something the running test asked for.  A test
@@ -3570,20 +3604,42 @@ class TestSuite(abc.ABC):
         # and if the context recorded the post-wipe values then popping
         # it at the end of that test would revert the whole session to
         # the firmware defaults.
-        self.set_parameters(self.default_parameter_list(),
-                            add_to_context=False)
+        wanted = self.default_parameter_list()
+        # the SITL was started with these in its defaults, so they are
+        # normally already in place; setting a parameter to the value it
+        # already holds cannot need a reboot to take effect
+        before = self.get_parameters(list(wanted.keys()))
+        self.set_parameters(wanted, add_to_context=False)
+        changed = [n for n, v in wanted.items()
+                   if before.get(n) is None or abs(before[n] - float(v)) > 1e-6]
+        if not changed:
+            self.progress("Default parameters already applied; not rebooting",
+                          send_statustext=False)
+            return
+        self.progress("Rebooting to apply %s" % ", ".join(sorted(changed)),
+                      send_statustext=False)
         self.reboot_sitl()
 
     def reset_SITL_commandline(self):
         self.progress("Resetting SITL commandline to default")
+        # This restart flies nothing; tell use_godot_physics, which runs
+        # again below, so that it keeps the vehicle hidden.
+        self.godot_tidying = True
         self.stop_SITL()
+        # Forget the frame the test customised SITL to, or the default
+        # commandline is rebuilt with that frame's model and parameter
+        # file, whose defaults then look like parameters the test leaked.
+        self.godot_frame = None
         try:
             del self.valgrind_restart_customisations
         except AttributeError:
             pass
-        self.start_SITL(wipe=True)
-        self.set_streamrate(self.sitl_streamrate())
-        self.apply_default_parameters()
+        try:
+            self.start_SITL(wipe=True)
+            self.set_streamrate(self.sitl_streamrate())
+            self.apply_default_parameters()
+        finally:
+            self.godot_tidying = False
         self.progress("Reset SITL commandline to default")
 
     @contextmanager
@@ -6234,6 +6290,12 @@ class TestSuite(abc.ABC):
     def rc_thread_main(self):
         """When this function completes, the thread terminates."""
         sitl_output = util.sitl_rcin_connection(self.sitl_rcin_endpoint())
+        rc_mirrors = []
+        if self.godot and self.godot_vehicles > 1 and not self.unix_domain_socket:
+            # the rest of the Godot fleet gets the pilot's RC too
+            for n in range(1, self.godot_vehicles):
+                rc_mirrors.append(util.sitl_rcin_connection(
+                    "127.0.0.1:%u" % (self.sitl_rcin_port() + 10 * n)))
 
         # Pay attention, there are race conditions /
         # wallclock-vs-simtime issues to worry about here.
@@ -6252,7 +6314,13 @@ class TestSuite(abc.ABC):
                     rc_values[chan-1] = val
             except queue.Empty:
                 pass
-            sitl_output.write(struct.pack(format_str, *rc_values))
+            packed = struct.pack(format_str, *rc_values)
+            sitl_output.write(packed)
+            for mirror in rc_mirrors:
+                try:
+                    mirror.write(packed)
+                except OSError:
+                    pass
 
     def set_rc_default(self):
         """Set all channels of simulated RC control to the default value (typically 1500)."""
@@ -7274,6 +7342,13 @@ class TestSuite(abc.ABC):
         # ratio is what AIRSPEED_AUTOCAL learns.
         if re.match(r"^ARSPD\d*_(OFFSET|RATIO)$", name):
             return True
+        # SERVO_AUTO_TRIM has the autopilot learn servo trims in flight,
+        # as AIRSPEED_AUTOCAL learns the ratio above, so they differ
+        # across any test flown with it enabled.
+        if re.match(r"^SERVO\d+_TRIM$", name):
+            pristine = self.pristine_parameters or {}
+            if pristine.get("SERVO_AUTO_TRIM", 0):
+                return True
         # MAVLink stream rates.  REQUEST_DATA_STREAM makes the firmware
         # save these itself (GCS_Param.cpp, set_and_save_ifchanged under
         # persist_streamrates()), and both MAVProxy on connect and the
@@ -10098,6 +10173,7 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Failed to start mavlink connection on %s: %s" %
                           (self.autotest_connection_string_to_ardupilot(), msg,))
             raise
+        self.install_godot_mirror()
         self.mav.message_hooks.append(self.message_hook)
         self.mav.mav.set_send_callback(self.send_message_hook, self)
         self.announce_ourselves_on_every_connection()
@@ -10261,6 +10337,9 @@ Also, ignores heartbeats not from our target system'''
     def run_one_test_attempt(self, test, interact=False, attempt=1, suppress_stdout=False):
         '''called by run_one_test to actually run the test in a retry loop'''
         name = test.name
+        self.godot_test_name = name
+        if self.godot_backend is not None:
+            self.godot_backend.set_test(name)
         desc = test.description
         test_function = test.function
         test_kwargs = test.kwargs
@@ -10593,6 +10672,15 @@ Also, ignores heartbeats not from our target system'''
             "unix_domain_socket": self.unix_domain_socket,
         }
         start_sitl_args.update(**sitl_args)
+        if self.godot:
+            self.use_godot_physics(start_sitl_args)
+        # hand the session's baseline parameters to the starting SITL,
+        # so it comes up with them already set and needs no reboot to
+        # apply them; last in the list, so they win
+        defaults = start_sitl_args.get("defaults_filepath") or []
+        if not isinstance(defaults, list):
+            defaults = [defaults]
+        start_sitl_args["defaults_filepath"] = defaults + [self.default_parameters_filepath()]
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:
             start_sitl_args["model"] = self.frame
         self.progress("Starting SITL", send_statustext=False)
@@ -10634,6 +10722,288 @@ Also, ignores heartbeats not from our target system'''
         # or the first packet we send will be lost:
         if self.mav is not None:
             self.mav.reconnect()
+
+    def use_godot_physics(self, start_sitl_args):
+        '''have SITL take its physics from the Godot backend, through the
+        JSON model, when there is a Godot model for the frame asked for'''
+        vehicle = self.vehicleinfo_key()
+        # Remember the frame asked for: this method replaces the model with
+        # the JSON one, which a restart would otherwise read back as the frame.
+        asked = start_sitl_args.get("model")
+        if asked and asked != godot_physics.SITL_MODEL:
+            self.godot_frame = asked
+        frame = self.godot_frame or self.frame
+        model = self.godot_model or godot_physics.model_for(vehicle, frame)
+        if self.godot_model and not os.path.exists(godot_physics.params_filepath(model)):
+            raise ValueError("no Godot model named %s; models have a .parm in %s" %
+                             (model, os.path.dirname(godot_physics.params_filepath(model))))
+        if model is None:
+            self.progress("No Godot model for frame %s; using SITL's own physics (Godot has %s)" %
+                          (frame, ", ".join(godot_physics.frames_for(vehicle))), send_statustext=False)
+            return
+        if self.godot_backend is None:
+            self.godot_backend = godot_physics.backend_for(
+                self.buildlogs_path("godot-%s.log" % vehicle),
+                headless=self.godot_headless)
+        self.progress("Godot model %s provides the physics for frame %s" % (model, frame), send_statustext=False)
+        home = start_sitl_args.get("home")
+        # the frame's servo reversals belong to its own mapped model; an
+        # overriding model carries its rigging in its geometry, and
+        # reversing again would flip its controls
+        reversed_servos = ()
+        if not self.godot_model:
+            reversed_servos = godot_physics.reversed_servos_for(vehicle, frame)
+        self.godot_backend.start([model] * self.godot_vehicles,
+                                 reversed_servos,
+                                 home=str(home) if home else None,
+                                 spacing=self.godot_spacing,
+                                 speedup=self.speedup,
+                                 launcher=godot_physics.launcher_for(vehicle, frame),
+                                 water=godot_physics.water_for(vehicle, frame),
+                                 wind=godot_physics.wind_for(vehicle, frame))
+        start_sitl_args["model"] = godot_physics.SITL_MODEL
+        # SITL looks up a frame's default parameters by model name, which
+        # for JSON matches no frame, so pass them explicitly
+        defaults = start_sitl_args.get("defaults_filepath") or []
+        if not isinstance(defaults, list):
+            defaults = [defaults]
+        try:
+            frame_defaults = self.model_defaults_filepath(frame)
+        except KeyError:
+            # Not a frame of its own, e.g. plane-bungee is a launch method
+            # for plane. It still needs the airframe's parameters, so fall
+            # back to the longest prefix of the name which is a frame.
+            frame_defaults = []
+            parts = frame.split("-")
+            while len(parts) > 1:
+                parts.pop()
+                try:
+                    frame_defaults = self.model_defaults_filepath("-".join(parts))
+                    break
+                except KeyError:
+                    continue
+        # The model's own parameters go last, so they win over the frame's
+        # defaults and any copy of them a test names.
+        start_sitl_args["defaults_filepath"] = (frame_defaults + defaults +
+                                                [godot_physics.params_filepath(model)])
+        self.install_godot_model_lua(model)
+        self.install_godot_impact_watch()
+        self.install_godot_mode_watch()
+        self.godot_backend.set_hidden(self.godot_tidying)
+        # a backend started part way through a test has missed being
+        # told which one it is flying
+        if self.godot_test_name:
+            self.godot_backend.set_test(self.godot_test_name)
+        if self.godot_vehicles > 1:
+            self.start_godot_bystanders(start_sitl_args["defaults_filepath"], home)
+
+    def install_godot_impact_watch(self):
+        '''fail the current step as soon as the backend reports the vehicle
+        under test hitting the ground, instead of waiting for a timeout.
+        A firm landing can trip this too.'''
+        logfile = self.godot_backend.logfile
+        state = {"offset": os.path.getsize(logfile) if os.path.exists(logfile) else 0,
+                 "last_check": 0.0}
+
+        def check(mav, msg):
+            now = time.time()
+            if now - state["last_check"] < 1.0:
+                return
+            state["last_check"] = now
+            try:
+                with open(logfile, errors="replace") as f:
+                    f.seek(state["offset"])
+                    text = f.read()
+                    state["offset"] = f.tell()
+            except OSError:
+                return
+            for line in text.splitlines():
+                if line.startswith("IMPACT: vehicle 0 "):
+                    raise NotAchievedException("Godot backend: %s" % line)
+
+        if not getattr(self, "_godot_impact_watch", False):
+            self._godot_impact_watch = True
+            self.install_message_hook(check)
+
+    def install_godot_mode_watch(self):
+        """show ArduPilot's flight mode on the backend's HUD, which a servo
+        packet does not carry. Installed once for the session: a hook added
+        part way through a test is a stray listener the suite fails it for."""
+        if self.godot_mode_watch:
+            return
+        self.godot_mode_watch = True
+        state = {"mode": None, "wp": None, "items": {}, "radius": 2.0, "home_alt": None}
+
+        def send_mission():
+            if self.godot_backend is None:
+                return
+            items = [state["items"][seq] for seq in sorted(state["items"])]
+            self.godot_backend.set_waypoints(state["radius"], items)
+
+        def check(mav, msg):
+            mtype = msg.get_type()
+            if mtype == "MISSION_ITEM_INT":
+                # The mission as the autopilot holds it, which is seen
+                # here when a test reads back what it uploaded. Item 0
+                # is home, and starts a fresh reading.
+                if getattr(msg, "mission_type", 0) != 0:
+                    return
+                if msg.seq == 0:
+                    state["items"] = {}
+                    state["home_alt"] = msg.z
+                    return
+                if msg.x == 0 and msg.y == 0:
+                    return          # a command with no place of its own
+                alt = msg.z
+                if msg.frame == mavutil.mavlink.MAV_FRAME_GLOBAL and state["home_alt"] is not None:
+                    alt -= state["home_alt"]
+                state["items"][msg.seq] = (msg.seq, msg.x * 1e-7, msg.y * 1e-7, alt)
+                send_mission()
+                return
+            if mtype == "PARAM_VALUE":
+                # how wide a waypoint is, under whichever name this
+                # vehicle gives it; centimetres for the WPNAV one
+                if msg.param_id in ("WP_RADIUS", "WP_RADIUS_M"):
+                    state["radius"] = msg.param_value
+                elif msg.param_id == "WPNAV_RADIUS":
+                    state["radius"] = msg.param_value * 0.01
+                else:
+                    return
+                if state["items"]:
+                    send_mission()
+                return
+            if mtype == "MISSION_CURRENT":
+                if msg.seq != state["wp"] and self.godot_backend is not None:
+                    state["wp"] = msg.seq
+                    self.godot_backend.set_wp(msg.seq)
+                return
+            if mtype == "STATUSTEXT":
+                if self.godot_backend is not None:
+                    self.godot_backend.set_msg(msg.text)
+                return
+            if mtype != "HEARTBEAT":
+                return
+            if msg.get_srcComponent() != mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1:
+                return
+            try:
+                mode = self.mav.flightmode
+            except Exception:
+                return
+            if mode and mode != state["mode"]:
+                state["mode"] = mode
+                if self.godot_backend is not None:
+                    self.godot_backend.set_mode(mode)
+
+        self.install_message_hook(check)
+
+    def install_godot_model_lua(self, model):
+        '''a Godot model's lua companion sets what a defaults file cannot,
+        such as another script's parameters once they register; it loads
+        with the scripts directory and is inert when scripting is off'''
+        if not os.path.exists("scripts"):
+            os.mkdir("scripts")
+        for stale in glob.glob(os.path.join("scripts", "godot_*.lua")):
+            os.unlink(stale)
+        lua = godot_physics.lua_filepath(model)
+        if lua is not None:
+            shutil.copy(lua, os.path.join("scripts", "godot_%s.lua" % model))
+
+    def start_godot_bystanders(self, defaults, home):
+        '''extra SITLs for the Godot vehicles flying alongside the one under
+        test. The shared world steps only when they all run, and the mirror
+        sends them everything the test sends, so they fly it too.'''
+        import atexit
+        import subprocess
+        config = (self.godot_vehicles, tuple(defaults), home)
+        if (self.godot_bystanders_config == config and
+                all(p.poll() is None for p, _c, _d in self.godot_bystanders)):
+            return
+        self.stop_godot_bystanders()
+        atexit.register(self.stop_godot_bystanders)
+        for n in range(1, self.godot_vehicles):
+            d = tempfile.mkdtemp(prefix="godot-bystander-%u-" % n)
+            # tests install lua scripts into the main instance's scripts
+            # directory; share it so the whole fleet runs them too
+            scripts = os.path.abspath("scripts")
+            if not os.path.exists(scripts):
+                os.mkdir(scripts)
+            os.symlink(scripts, os.path.join(d, "scripts"))
+            # each fleet vehicle flies 5 m above the one before it: they are
+            # given the same commands, so without this they converge
+            tier = os.path.join(d, "godot-fleet.parm")
+            with open(tier, "w") as f:
+                f.write("ALT_OFFSET %u\n" % (5 * n))
+            log = open(os.path.join(d, "sitl.log"), "w")
+            p = subprocess.Popen([self.binary, "-w", "-I%u" % n,
+                                  "--model", godot_physics.SITL_MODEL,
+                                  "--home", str(home or "-35.363261,149.165230,584,353"),
+                                  "--speedup", str(self.speedup),
+                                  "--defaults", ",".join(list(defaults) + [tier])],
+                                 cwd=d, stdout=log, stderr=subprocess.STDOUT)
+            # a SITL waits for a client on its serial port before starting;
+            # this link also carries the mirrored commands, reconnecting
+            # when a mirrored reboot restarts the vehicle
+            conn = None
+            for _ in range(100):
+                try:
+                    conn = mavutil.mavlink_connection("tcp:127.0.0.1:%u" % (5760 + 10 * n),
+                                                      retries=1,
+                                                      source_system=250,
+                                                      source_component=250,
+                                                      autoreconnect=True,
+                                                      robust_parsing=True,
+                                                      dialect="all")
+                    break
+                except Exception:
+                    time.sleep(0.1)
+            if conn is None:
+                raise NotAchievedException("Godot vehicle %u did not open its serial port" % n)
+            drain = threading.Thread(target=self.godot_bystander_drain, args=(conn,), daemon=True)
+            drain.start()
+            self.progress("Godot vehicle %u running in %s" % (n, d), send_statustext=False)
+            self.godot_bystanders.append((p, conn, d))
+        self.godot_bystanders_config = config
+        self.install_godot_mirror()
+
+    def godot_bystander_drain(self, conn):
+        '''keep a fleet vehicle's link read and alive; its replies are not
+        the test's business, but an unread socket would stall its SITL'''
+        while not getattr(conn, "godot_quit", False):
+            try:
+                conn.recv_match(blocking=True, timeout=1)
+            except Exception:
+                time.sleep(0.5)
+
+    def install_godot_mirror(self):
+        '''send the Godot fleet's other vehicles everything the test sends
+        its own, so the whole fleet flies the same commands'''
+        if getattr(self, "mav", None) is None or not self.godot_bystanders:
+            return
+        if getattr(self.mav, "godot_mirror", False):
+            return
+        bystanders = self.godot_bystanders
+        orig_write = self.mav.write
+
+        def mirrored_write(buf):
+            for _p, conn, _d in bystanders:
+                try:
+                    conn.write(buf)
+                except Exception:
+                    pass
+            return orig_write(buf)
+        self.mav.write = mirrored_write
+        self.mav.godot_mirror = True
+
+    def stop_godot_bystanders(self):
+        for p, conn, _d in self.godot_bystanders:
+            if conn is not None:
+                conn.godot_quit = True
+                conn.close()
+            if p.poll() is None:
+                p.kill()
+                p.wait()
+        self.godot_bystanders.clear()
+        self.godot_bystanders_config = None
 
     def get_supplementary_programs(self):
         return self.sup_prog
@@ -14410,6 +14780,9 @@ switch value'''
             self.mav = None
 
         self.stop_SITL()
+        # the backend is left running: autotest builds a new suite for each
+        # test, and stopping it here would cost the next a fresh process and
+        # window. It is stopped at exit, or by the next backend on its port.
 
         valgrind_log = util.valgrind_log_filepath(binary=self.binary,
                                                   model=self.frame)
