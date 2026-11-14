@@ -117,6 +117,7 @@ void Plane::fence_check()
         case AC_Fence::Action::SMART_RTL:
         case AC_Fence::Action::SMART_RTL_OR_LAND:
         case AC_Fence::Action::BRAKE:
+        case AC_Fence::Action::AUTO_RTL_OR_RTL:
             // invalid enumeration value for Plane
             break;
 
