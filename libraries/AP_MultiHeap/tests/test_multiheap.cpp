@@ -54,4 +54,68 @@ TEST(MultiHeap, Tests)
     delete[] allocs;
 }
 
+TEST(MultiHeap, DestroyUnavailableHeap)
+{
+    MultiHeap heap{};
+    // This has the same unavailable state as failing to allocate the first
+    // backing heap: the descriptor array exists, but heaps[0].hp is null.
+    ASSERT_TRUE(heap.create(0, 1, false, 0));
+    EXPECT_FALSE(heap.available());
+    heap.destroy();
+    ASSERT_TRUE(heap.create(1024, 1, false, 0));
+    EXPECT_TRUE(heap.available());
+    heap.destroy();
+}
+
+TEST(MultiHeap, DestroyUnusedDescriptors)
+{
+    MultiHeap heap{};
+    for (uint8_t i = 0; i < 100; i++) {
+        // One backing heap satisfies this request. Remaining descriptors must
+        // be initialized before destroy() inspects every possible heap.
+        ASSERT_TRUE(heap.create(1024, 8, false, 0));
+        void *allocation = heap.allocate(16);
+        ASSERT_NE(allocation, nullptr);
+        heap.deallocate(allocation);
+        heap.destroy();
+    }
+}
+
+TEST(MultiHeap, RejectEmptyHeapArray)
+{
+    MultiHeap heap{};
+    EXPECT_FALSE(heap.create(1024, 0, false, 0));
+    EXPECT_FALSE(heap.available());
+    ASSERT_TRUE(heap.create(1024, 1, false, 0));
+    heap.destroy();
+}
+
+TEST(MultiHeap, RejectOverflowingGrowthRequest)
+{
+    MultiHeap heap{};
+    const bool previous = hal.util->get_soft_armed();
+    hal.util->set_soft_armed(true);
+    EXPECT_TRUE(heap.create(4096, 2, true, 0));
+    EXPECT_EQ(heap.allocate(UINT32_MAX), nullptr);
+    EXPECT_EQ(heap.allocate(UINT32_MAX), nullptr);
+    EXPECT_EQ(heap.get_expansion_size(), 0U);
+    heap.destroy();
+    hal.util->set_soft_armed(previous);
+}
+
+TEST(MultiHeap, ReserveCannotWrapDuringGrowth)
+{
+    MultiHeap heap{};
+    const bool previous = hal.util->get_soft_armed();
+    hal.util->set_soft_armed(true);
+    EXPECT_TRUE(heap.create(4096, 2, true, UINT32_MAX));
+    EXPECT_EQ(heap.allocate(8192), nullptr);
+    void *allocation = heap.allocate(8192);
+    EXPECT_EQ(allocation, nullptr);
+    heap.deallocate(allocation);
+    EXPECT_EQ(heap.get_expansion_size(), 0U);
+    heap.destroy();
+    hal.util->set_soft_armed(previous);
+}
+
 AP_GTEST_MAIN()
