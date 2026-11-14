@@ -96,16 +96,18 @@ bool BinarySemaphore::wait(uint32_t timeout_us)
             Scheduler::from(hal.scheduler)->semaphore_wait_hack_required()) {
             /*
               when in the main thread we need to do a busy wait to ensure
-              the clock advances
+              the clock advances, without holding mtx, which signal()
+              needs
             */
             uint64_t end_us = AP_HAL::micros64() + timeout_us;
-            struct timespec ts {};
             do {
-                if (pthread_cond_timedwait(&cond, &mtx._lock, &ts) == 0) {
+                mtx.give();
+                hal.scheduler->delay_microseconds(10);
+                mtx.take_blocking();
+                if (pending) {
                     pending = false;
                     return true;
                 }
-                hal.scheduler->delay_microseconds(10);
             } while (AP_HAL::micros64() < end_us);
             return false;
         }
