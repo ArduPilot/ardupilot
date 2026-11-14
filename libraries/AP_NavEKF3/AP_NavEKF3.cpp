@@ -1614,6 +1614,11 @@ bool NavEKF3::using_extnav_for_yaw() const
     return core[primary].using_extnav_for_yaw();
 }
 
+bool NavEKF3::has_horiz_pos_vel_source() const
+{
+    return sources.haveHorizPosVelSource(primary);
+}
+
 // are we using a gps?
 bool NavEKF3::using_gps(void) const
 {
