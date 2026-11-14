@@ -2001,12 +2001,12 @@ private:
 #endif  // AP_ADSB_AVOIDANCE_ENABLED
 
 #if MODE_FOLLOW_ENABLED
-class ModeFollow : public ModeGuided {
+class ModeFollow : public Mode {
 
 public:
 
     // inherit constructor
-    using ModeGuided::Mode;
+    using Mode::Mode;
     Number mode_number() const override { return Number::FOLLOW; }
 
     bool init(bool ignore_checks) override;
@@ -2021,6 +2021,15 @@ public:
     // Return true if this mode is enabled, used by MAVLink available modes
     bool enabled() const override;
 
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
+    // Return the type of this mode for use by advanced failsafe
+    AP_AdvancedFailsafe_Copter::control_mode afs_mode() const override { return AP_AdvancedFailsafe_Copter::control_mode::AFS_AUTO; }
+#endif
+
+    bool set_speed_NE_ms(float speed_ne_ms) override;
+    bool set_speed_up_ms(float speed_up_ms) override;
+    bool set_speed_down_ms(float speed_down_ms) override;
+
 protected:
 
     const char *name() const override { return "Follow"; }
@@ -2030,6 +2039,7 @@ protected:
     bool get_wp(Location &loc) const override;
     float  wp_distance_m() const override;
     float wp_bearing_deg() const override;
+    float crosstrack_error_m() const override { return pos_control->crosstrack_error_m(); }
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };

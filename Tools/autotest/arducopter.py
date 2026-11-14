@@ -14361,10 +14361,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FOLL_OFS_X": -foll_ofs_x,
             "FOLL_OFS_TYPE": 1, # relative to other vehicle heading
         })
+
+        self.start_subtest("Follow mode must refuse a takeoff command")
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode("FOLLOW")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=10,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.disarm_vehicle()
+
         self.takeoff(10, mode="LOITER")
         self.context_push()
         self.context_set_speedup(1)
         self.change_mode("FOLLOW")
+        # no Guided takeoff has been done, so Follow must not claim to be taking off
+        self.assert_message_field_values(self.poll_message('EXTENDED_SYS_STATE'), {
+            "landed_state": mavutil.mavlink.MAV_LANDED_STATE_IN_AIR,
+        })
         new_loc = self.get_location()
         new_loc_offset_n = 20
         new_loc_offset_e = 30
@@ -14383,6 +14400,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("expected_loc: %s" % str(expected_loc))
 
         origin = self.poll_message('GPS_GLOBAL_ORIGIN')
+
+        # the lead vehicle is stationary, so the catch-up speed is
+        # limited by the speed set with DO_CHANGE_SPEED:
+        follow_speed = 3
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            p1=1,  # groundspeed
+            p2=follow_speed,
+            p3=-1,  # throttle, -1 is no-change
+        )
+        max_groundspeed = 0
+
+        def track_max_groundspeed(mav, m):
+            nonlocal max_groundspeed
+            if m.get_type() == 'VFR_HUD':
+                max_groundspeed = max(max_groundspeed, m.groundspeed)
+        self.install_message_hook_context(track_max_groundspeed)
 
         last_sent = 0
         tstart = self.get_sim_time()
@@ -14411,6 +14445,55 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("position delta=%f (want <%f)" % (delta, max_delta))
             if delta < max_delta:
                 break
+        self.progress("max groundspeed=%f (want <%f)" % (max_groundspeed, follow_speed + 0.5))
+        if max_groundspeed > follow_speed + 0.5:
+            raise NotAchievedException("Follow exceeded DO_CHANGE_SPEED speed (%f > %f)" %
+                                       (max_groundspeed, follow_speed))
+
+        self.start_subtest("RC failsafe continues Follow with FS_OPTIONS bit 2 set")
+        self.set_parameters({
+            "FS_THR_ENABLE": 1,
+            "FS_OPTIONS": 4,
+        })
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_statustext("Radio Failsafe - Continuing Follow Mode", check_context=True)
+        self.delay_sim_time(5, reason="radio failsafe not to change mode")
+        self.assert_mode("FOLLOW")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(2, reason="RC to restore")
+
+        self.start_subtest("RC failsafe in Follow RTLs with FS_OPTIONS bit 2 clear")
+        self.set_parameter("FS_OPTIONS", 0)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_mode("RTL")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(2, reason="RC to restore")
+
+        self.start_subtest("DO_REPOSITION in Follow is denied without the change-mode flag")
+        self.change_mode("FOLLOW")
+        reposition_loc = self.get_location()
+        self.location_offset_ne(reposition_loc, 10, 0)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            x=int(reposition_loc.lat * 1e7),
+            y=int(reposition_loc.lng * 1e7),
+            z=reposition_loc.get_alt_m(AltFrame.ABSOLUTE),
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+        self.assert_mode("FOLLOW")
+
+        self.start_subtest("DO_REPOSITION in Follow with the change-mode flag switches to Guided")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p2=mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+            x=int(reposition_loc.lat * 1e7),
+            y=int(reposition_loc.lng * 1e7),
+            z=reposition_loc.get_alt_m(AltFrame.ABSOLUTE),
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+        )
+        self.wait_mode("GUIDED")
 
         self.start_subtest("Trying relative-follow mode")
         self.change_mode('LOITER')

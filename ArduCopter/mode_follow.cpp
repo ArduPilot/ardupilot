@@ -147,6 +147,27 @@ void ModeFollow::run()
     attitude_control->input_thrust_vector_heading_rad(pos_control->get_thrust_vector(), yaw_rad, yaw_rate_rads);
 }
 
+bool ModeFollow::set_speed_NE_ms(float speed_ne_ms)
+{
+    pos_control->NE_set_max_speed_accel_m(speed_ne_ms, wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_correction_speed_accel_m(speed_ne_ms, wp_nav->get_wp_acceleration_mss());
+    return true;
+}
+
+bool ModeFollow::set_speed_up_ms(float speed_up_ms)
+{
+    pos_control->D_set_max_speed_accel_m(wp_nav->get_default_speed_down_ms(), speed_up_ms, wp_nav->get_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(wp_nav->get_default_speed_down_ms(), speed_up_ms, wp_nav->get_accel_D_mss());
+    return true;
+}
+
+bool ModeFollow::set_speed_down_ms(float speed_down_ms)
+{
+    pos_control->D_set_max_speed_accel_m(speed_down_ms, wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(speed_down_ms, wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
+    return true;
+}
+
 float ModeFollow::wp_distance_m() const
 {
     return g2.follow.get_distance_to_target_m();
