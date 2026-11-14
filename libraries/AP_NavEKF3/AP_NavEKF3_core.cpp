@@ -210,6 +210,7 @@ void NavEKF3_core::InitialiseVariables()
     lastVelPassTime_ms = 0;
     lastGpsPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
+    lastRngHgtPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
     lastTimeGpsReceived_ms = 0;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
@@ -280,6 +281,14 @@ void NavEKF3_core::InitialiseVariables()
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
     gndOffsetValid =  false;
+    gndOffsetMeasured = false;
+    terrainAnchorValid = false;
+    terrainAnchorInUse = false;
+    lastGoodRngMeas = 0;
+    terrainRngFuseTime_ms = 0;
+    flatGndEngaged = false;
+    flatGndRngResumeTime_ms = 0;
+    flatGndSaved.valid = false;
     validOrigin = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
@@ -2255,6 +2264,8 @@ void NavEKF3_core::moveEKFOrigin(void)
     stateStruct.position.xy() += diffNE;
     outputDataNew.position.xy() += diffNE;
     outputDataDelayed.position.xy() += diffNE;
+    gndKnownNE += diffNE;
+    flatGndSaved.gndKnownNE += diffNE;
 
     for (unsigned index=0; index < imu_buffer_length; index++) {
         storedOutput[index].position.xy() += diffNE;

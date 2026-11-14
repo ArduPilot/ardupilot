@@ -200,8 +200,8 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
         FIX : (int16_t)(1000*flowInnov[0]),  // optical flow LOS rate vector innovations from the main nav filter
         FIY : (int16_t)(1000*flowInnov[1]),  // optical flow LOS rate vector innovations from the main nav filter
         AFI : (int16_t)(1000 * auxFlowObsInnov.length()),  // optical flow LOS rate innovation from terrain offset estimator
-        HAGL : float_to_int16(100*(terrainState - stateStruct.position.z)),    // height above ground level
-        terrOffset : (int16_t)(100*terrainState),       // filter ground offset state error
+        HAGL : float_to_int16(100*(flowTerrainState() - stateStruct.position.z)),    // height above ground level
+        terrOffset : float_to_int16(100*flowTerrainState()), // filter ground offset state error
         RI : (int16_t)(100*innovRng),                   // range finder innovations
         meaRng : (uint16_t)(100*rangeDataDelayed.rng),  // measured range
 #if EK3_FEATURE_OPTFLOW_FUSION
