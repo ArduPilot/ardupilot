@@ -1,0 +1,13 @@
+# a quadcopter whose horizontal drag is linear in airspeed at 0.30 m/s/s per
+# m/s, as measured on a small quad on a GPS flight; used by
+# LoiterAirframeDragFeedForward
+
+{
+    # 17 degrees of lean holds 10 m/s: 9.80665 * tan(17 deg) / 10 = 0.30
+    "refSpd" : 10.0,
+    "refAngle" : 17.0,
+
+    # large enough that the rotors carry all of that drag, so none of it is
+    # quadratic (SITL scales it down to the drag refSpd and refAngle give)
+    "mdrag_coef" : 1.0
+}
