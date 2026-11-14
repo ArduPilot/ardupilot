@@ -23670,8 +23670,8 @@ return function() end, 1000
         # limits also admit a module built into ROMFS with --module
         defaults = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
         defaults.write("MOD_ENABLE 1\nMOD_HEAP_MAX 262144\nMOD_CODE_MAXSIZE 262144\nMOD_STACK_MAX 65536\n"
-                       "SCR_ENABLE 0\nPDD_I32 1491234567\nPDD_BIG 2147483648\nPDD_RO 3 @READONLY\n"
-                       "PDD_MAX 2147483647\n")
+                       "SCR_ENABLE 0\nPDD_I32 16777216.0\nPDD_BIG 2147483648\nPDD_RO 3.0 @READONLY\n"
+                       "PDD_MAX 2147483647\nPDD_MIN -2147483648\nPDD_ROUND 1491234567\nPDD_LARGE 1e9\n")
         defaults.close()
         self.context_collect('STATUSTEXT')
         self.install_message_hook_context(self.FailFastStatusText(self, ['PDT fail', 'Module fatal:']))
@@ -23682,7 +23682,7 @@ return function() end, 1000
         self.delay_sim_time(2, reason='read-only parameter set ignored')
         self.assert_parameter_value('PDD_RO', 3)
 
-        # an int32 saved next to its inexact default must survive a reboot
+        # an int32 value next to an exactly representable default must survive a reboot
         self.reboot_sitl()
         self.wait_text('PDT saved int32 kept', check_context=True, timeout=60)
         self.context_pop()
