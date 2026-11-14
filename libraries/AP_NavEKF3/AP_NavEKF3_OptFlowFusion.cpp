@@ -60,6 +60,16 @@ void NavEKF3_core::SelectFlowFusion()
     }
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
+    // the set at aiding start waits for a sample and a range it can use. 5 s is as long as relative
+    // aiding lasts with no flow fused on either axis, and as long as the AGL KF waits for a range
+    // before it restarts from one; a velocity still out on one axis by then is the lockout recovery's
+    // to put right. Ended ahead of the AGL KF update, so a restart the set asked for ends with it
+    const uint32_t FLOW_VEL_INIT_WAIT_MAX_MS = 5000;
+    if (flowVelInitPending && (imuSampleTime_ms - flowVelInitStart_ms > FLOW_VEL_INIT_WAIT_MAX_MS)) {
+        flowVelInitPending = false;
+        aglKfRestartRequested = false;
+    }
+
     // Update the IMU-aided AGL KF every IMU step when enabled, regardless of flow/RF data presence.
     if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
         UpdateAglKf();
@@ -934,15 +944,6 @@ bool NavEKF3_core::ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype r
 // Returns true if it set the velocity
 bool NavEKF3_core::InitVelocityFromFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody)
 {
-    // the set waits for a sample and a range it can use. 5 s is as long as relative aiding lasts with
-    // no flow fused on either axis, and as long as the AGL KF waits for a range before it restarts
-    // from one; a velocity still out on one axis by then is the lockout recovery's to put right
-    const uint32_t FLOW_VEL_INIT_WAIT_MAX_MS = 5000;
-    if (imuSampleTime_ms - flowVelInitStart_ms > FLOW_VEL_INIT_WAIT_MAX_MS) {
-        flowVelInitPending = false;
-        aglKfRestartRequested = false;
-        return false;
-    }
     if (!frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) || !aglKf.valid ||
         (PV_AidingMode != AID_RELATIVE) || flowVelResetUnhealthy ||
         (fabsF(ofDataDelayed.flowRadXY.x) >= frontend->_maxFlowRate) ||
