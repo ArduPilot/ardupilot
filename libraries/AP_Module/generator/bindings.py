@@ -73,9 +73,11 @@ PARAM_ARGUMENTS = {
     'set_by_name': [('string', False), ('float', False)],
     'set_and_save_by_name': [('string', False), ('float', False)],
     'set_default_by_name': [('string', False), ('float', False)],
+    'add_param_int32': [('uint8_t', False), ('uint8_t', False), ('string', False), ('int32_t', False)],
 }
 PARAM_RANGES = {'add_table': {0: ['0', '200'], 2: ['1', '63']},
-                'add_param': {0: ['0', '200'], 1: ['1', '63']}}
+                'add_param': {0: ['0', '200'], 1: ['1', '63']},
+                'add_param_int32': {0: ['0', '200'], 1: ['1', '63']}}
 PARAM_POLICY = 'v1:nonempty-nul-free-bytes-max16-zero-pad17,finite-inputs,checked-integer-range,persistent-tables'
 
 

@@ -45,7 +45,7 @@ def selection():
 def test_contract_preserves_semantics(ir, selection):
     contract = select(ir, selection)
     methods = {method['rust_name']: method for method in contract['methods']}
-    assert len(methods) == 27
+    assert len(methods) == 28
     assert methods['ahrs_airspeed_eas']['aliases'] == ['ahrs_airspeed_estimate']
     assert methods['ahrs_get_hagl']['lock'] == 'semaphore'
     assert methods['vehicle_get_mode']['lock'] == 'scheduler-semaphore'
@@ -293,6 +293,7 @@ inline unsigned method_calls = 0;
 enum ap_var_type { AP_PARAM_INT8, AP_PARAM_INT16, AP_PARAM_INT32, AP_PARAM_FLOAT };
 inline unsigned parameter_calls = 0;
 inline float parameter_value = 0;
+inline int32_t parameter_int = 0;
 class AP_Param {
 public:
     static AP_Param *get_singleton() { static AP_Param p; return &p; }
@@ -318,6 +319,9 @@ public:
     }
     static bool add_param(uint8_t key, uint8_t index, const char *name, float v) {
         parameter_calls++; parameter_value = v; return key == 200 && index == 63 && !strcmp(name, "VALUE");
+    }
+    static bool add_param_int32(uint8_t key, uint8_t index, const char *name, int32_t v) {
+        parameter_calls++; parameter_int = v; return key == 200 && index == 63 && !strcmp(name, "VALUE");
     }
 };
 class AP_AHRS {
@@ -454,6 +458,7 @@ extern "C" unsigned calls() { return method_calls; }
 extern "C" unsigned held() { return ahrs_sem.depth + scheduler_sem.depth; }
 extern "C" void scheduler_present(bool present) { have_scheduler = present; }
 extern "C" unsigned param_calls() { return parameter_calls; }
+extern "C" int32_t param_int() { return parameter_int; }
 extern "C" void firmware_strings(const char *short_string, const char *hash)
 { AP::firmware_version.fw_short_string = short_string; AP::firmware_version.fw_hash_str = hash; }
 extern "C" void estimate(const void *bytes, bool valid) {
@@ -716,6 +721,14 @@ def test_parameter_wire_and_ranges(dispatcher):
             assert call('add_param', bytes([key, count]) + name_field('VALUE') + struct.pack('<f', 1)) == -1
         assert call('add_param', bytes([200, 1]) + name_field('VALUE') + struct.pack('<f', float('inf'))) == -1
         assert lib.param_calls() == before
+
+    # Exact integer defaults cross as i32 without float conversion.
+    lib.param_int.restype = ctypes.c_int32
+    assert call('add_param_int32', bytes([200, 63]) + name_field('VALUE') + struct.pack('<i', -5)) == \
+        (0 if dynamic else -3)
+    if dynamic:
+        assert output.raw[0] == 1 and lib.param_int() == -5
+        assert call('add_param_int32', bytes([201, 1]) + name_field('VALUE') + struct.pack('<i', 1)) == -1
 
 
 @pytest.mark.parametrize('change', ['kind', 'key_range', 'count_range'])
