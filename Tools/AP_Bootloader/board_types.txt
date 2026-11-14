@@ -500,6 +500,8 @@ AP_HW_AET-405-Mini                   2512
 
 AP_HW_INDIH743                       2513
 
+AP_HW_AET-H743-Basic-V2              2514
+
 AP_HW_SakuraRC-H743                  2714
 
 AP_HW_SkyRukh_Surge_H7               2815
