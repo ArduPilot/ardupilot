@@ -45,8 +45,8 @@ class FilterSizeCompareBranchesCSV(object):
         return new_data
 
     def run(self):
-        csvt = csv.reader(open(self.filename,'r'))
-        data = list(csvt)
+        with open(self.filename, newline='') as csv_file:
+            data = [row for row in csv.reader(csv_file) if row]
 
         if not self.show_binary_identical:
             new_data = []
