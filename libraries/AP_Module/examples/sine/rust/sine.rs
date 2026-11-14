@@ -5,19 +5,30 @@
 
 use ap_rust_sdk::{Context, Error, Result};
 
+ap_rust_sdk::param_table! {
+    pub struct Table, enum P;
+    key = 120, prefix = "SINE_";
+    size = 1;
+
+    // @Param: SINE_FREQ
+    // @DisplayName: Sine wave frequency
+    // @Description: Frequency of the sine wave reported by the example.
+    // @Units: Hz
+    // @User: Advanced
+    Freq = 1, "FREQ", f32: 0.2;
+}
+
 ap_rust_sdk::module!(run);
 
 fn register(context: &Context<'_>) -> Result {
     if context.param().get("SINE_FREQ")?.is_some() {
         return Ok(());
     }
-    if !context.param().add_table(120, "SINE_", 1)? {
+    if !context.param().add_table(Table::KEY, Table::PREFIX, Table::SIZE)? {
         // Lua may have created its table but not yet published the entry.
         return Err(Error::Busy);
     }
-    if !context.param().add_param(120, 1, "FREQ", 0.2)? {
-        return Err(Error::Host);
-    }
+    Table::definition(P::Freq).register(context, Table::KEY)?;
     Ok(())
 }
 

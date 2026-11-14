@@ -4,12 +4,39 @@
 #![no_main]
 
 use ap_rust_sdk::{enums::MavSeverity, Context, Error, MissionItem, Parameter, Result};
+
 use core::fmt::{self, Write};
 
 ap_rust_sdk::module!(run);
 
-const PARAM_TABLE_KEY: u8 = 80;
-const PARAM_TABLE_PREFIX: &str = "ALAND_";
+ap_rust_sdk::param_table! {
+    pub struct Table, enum P;
+    key = 80, prefix = "ALAND_";
+    size = 4;
+
+    // @Param: ALAND_ENABLE
+    // @DisplayName: Auto land enable
+    // @Description: enable Auto land script action
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    Enable = 1, "ENABLE", f32: 1.0;
+
+    // @Param: ALAND_WP_ALT
+    // @DisplayName: Final approach waypoint alt
+    // @Description: Altitude of final approach waypoint created by script
+    // @Range: 1 100
+    // @Units: m
+    // @User: Standard
+    WpAlt = 2, "WP_ALT", f32: 0.0;
+
+    // @Param: ALAND_WP_DIST
+    // @DisplayName: Final approach waypoint distance
+    // @Description: Distance from landing point (HOME) to final approach waypoint created by script in the opposite direction of initial takeoff
+    // @Range: 0 1000
+    // @Units: m
+    // @User: Standard
+    WpDist = 3, "WP_DIST", f32: 0.0;
+}
 
 const FRAME_GLOBAL: u8 = 3;
 const NAV_WAYPOINT: u16 = 16;
@@ -69,10 +96,6 @@ fn message(context: &Context<'_>, severity: i32, args: fmt::Arguments<'_>) -> Re
     })
 }
 
-fn bind_parameter<'a, 'h>(context: &'a Context<'h>, name: &str) -> Result<Parameter<'a, 'h>> {
-    retry(context, || context.parameter(name))?.ok_or(Error::Invalid)
-}
-
 fn read_parameter(parameter: &Parameter<'_, '_>) -> Result<f32> {
     let value = parameter.get()?.ok_or(Error::Invalid)?;
     if value.is_finite() {
@@ -80,21 +103,6 @@ fn read_parameter(parameter: &Parameter<'_, '_>) -> Result<f32> {
     } else {
         Err(Error::Invalid)
     }
-}
-
-fn add_parameter<'a, 'h>(
-    context: &'a Context<'h>,
-    index: u8,
-    name: &str,
-    full_name: &str,
-    default: f32,
-) -> Result<Parameter<'a, 'h>> {
-    if !retry(context, || {
-        context.param().add_param(PARAM_TABLE_KEY, index, name, default)
-    })? {
-        return Err(Error::Host);
-    }
-    bind_parameter(context, full_name)
 }
 
 fn store_item(context: &Context<'_>, index: u16, mut item: MissionItem) -> Result {
@@ -185,17 +193,13 @@ fn capture_landing_direction(
 }
 
 fn run(context: &Context<'_>) -> Result {
-    if !retry(context, || {
-        context.param().add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 4)
-    })? {
-        return Err(Error::Host);
-    }
+    Table::register_definitions(context)?;
 
-    let enable = read_parameter(&add_parameter(context, 1, "ENABLE", "ALAND_ENABLE", 1.0)?)?;
+    let enable = read_parameter(&Table::bind(context, P::Enable)?)?;
     let final_altitude =
-        read_parameter(&add_parameter(context, 2, "WP_ALT", "ALAND_WP_ALT", 0.0)?)?;
+        read_parameter(&Table::bind(context, P::WpAlt)?)?;
     let final_distance =
-        read_parameter(&add_parameter(context, 3, "WP_DIST", "ALAND_WP_DIST", 0.0)?)?;
+        read_parameter(&Table::bind(context, P::WpDist)?)?;
 
     message(context, 6, format_args!("Loaded UniversalAutoLand Rust"))?;
     if enable != 1.0 {

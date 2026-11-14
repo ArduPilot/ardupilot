@@ -4,17 +4,164 @@
 #![no_main]
 
 use ap_rust_sdk::{enums::MavSeverity, Context, Error, Result};
+
 use core::fmt::{self, Write};
 
 ap_rust_sdk::module!(run);
 
+ap_rust_sdk::param_table! {
+    pub struct ValuesTable, enum ValuesParam;
+    key = 179, prefix = "ARM_V_";
+    size = 15;
+
+    // @Param: ARM_V_ALT_LEGAL
+    // @DisplayName: Legal max altitude
+    // @Description: Legal max altitude for UAV/RPAS/drones in your jurisdiction
+    // @Units: m
+    // @User: Standard
+    AltLegal = 1, "ALT_LEGAL", f32: 120.0;
+}
+
+ap_rust_sdk::param_table! {
+    pub struct PlaneTable, enum PlaneParam;
+    key = 173, prefix = "ARM_P_";
+    size = 10;
+
+    // @Param: ARM_P_Q_FS_LAND
+    // @DisplayName: Warn if Q failsafe will land
+    // @Description: Notify the user that on failsafe a QuadPlan will land. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    QFsLand = 1, "Q_FS_LAND", f32: NOTICE;
+
+    // @Param: ARM_P_Q_FS_RTL
+    // @DisplayName: Warn if Q failsafe will QRTL
+    // @Description: Notify the user that on failsafe a QuadPlan will QRTL. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    QFsRtl = 2, "Q_FS_RTL", f32: NOTICE;
+
+    // @Param: ARM_P_AIRSPEED
+    // @DisplayName: Check AIRSPEED_ parameters
+    // @Description: Validate that AIRSPEED_STALL(if set) < MIN < CRUISE < MAX d. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    Airspeed = 3, "AIRSPEED", f32: ERROR;
+
+    // @Param: ARM_P_STALL
+    // @DisplayName: AIRSPEED_MIN should be 25% above STALL
+    // @Description: Validate that AIRSPEED_MIN is at least 25% above AIRSPEED_STALL(if set). 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    Stall = 4, "STALL", f32: INFO;
+
+    // @Param: ARM_P_SCALING
+    // @DisplayName: SCALING_SPEED valid
+    // @Description: Validate that SCALING_SPEED is within 20% of AIRSPEED_CRUISE. If SCALING_SPEED changes the vehicle may need to be retuned. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    Scaling = 5, "SCALING", f32: ERROR;
+
+    // @Param: ARM_P_RTL_ALT
+    // @DisplayName: RTL_ALTITUDE should be a valid value
+    // @Description: RTL_ALTITITUDE should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    RtlAlt = 6, "RTL_ALT", f32: ERROR;
+
+    // @Param: ARM_P_QRTL_ALT
+    // @DisplayName: Q_RTL_ALT should be a valid value
+    // @Description: Q_RTL_ALT should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    QrtlAlt = 7, "QRTL_ALT", f32: ERROR;
+}
+
+ap_rust_sdk::param_table! {
+    pub struct CopterTable, enum CopterParam;
+    key = 172, prefix = "ARM_C_";
+    size = 10;
+
+    // @Param: ARM_C_RTL_ALT
+    // @DisplayName: RTL_ALT_M should be a valid value
+    // @Description: RTL_ALT_M should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    RtlAlt = 1, "RTL_ALT", f32: ERROR;
+}
+
+ap_rust_sdk::param_table! {
+    pub struct GlobalTable, enum GlobalParam;
+    key = 170, prefix = "ARM_";
+    size = 20;
+
+    // @Param: ARM_SYSID
+    // @DisplayName: MAV_SYSID must be set
+    // @Description: Check that MAV_SYSID (or SYDID_THISMAV) has been set. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    Sysid = 1, "SYSID", f32: WARNING;
+
+    // @Param: ARM_FOLL_SYSID
+    // @DisplayName: FOLL_SYSID must be set
+    // @Description: If FOLL_ENABLE = 1, check that FOLL_SYSID has been set. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    FollSysid = 2, "FOLL_SYSID", f32: ERROR;
+
+    // @Param: ARM_FOLL_SYSID_X
+    // @DisplayName: Vehicle should not follow itself
+    // @Description: If FOLL_ENABLE = 1, check that FOLL_SYSID is different to MAV_SYSID. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    FollSysidX = 3, "FOLL_SYSID_X", f32: ERROR;
+
+    // @Param: ARM_FOLL_OFS_DEF
+    // @DisplayName: Follow Offsets defaulted
+    // @Description: Follow offsets should not be left as default (zero) if FOLL_ENABLE = 1. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    FollOfsDef = 4, "FOLL_OFS_DEF", f32: ERROR;
+
+    // @Param: ARM_MNTX_SYSID
+    // @DisplayName: Follow and Mount should follow the same vehicle
+    // @Description: If FOLL_ENABLE = 1 and MNTx_SYSID_DEFLT is set, check that FOLL_SYSID is equal MNTx. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    MntxSysid = 5, "MNTX_SYSID", f32: WARNING;
+
+    // @Param: ARM_RTL_CLIMB
+    // @DisplayName: RTL_CLIMB_MIN should be a valid value
+    // @Description: RTL_CLIMB_MIN should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    RtlClimb = 6, "RTL_CLIMB", f32: WARNING;
+
+    // @Param: ARM_ESTOP
+    // @DisplayName: Motors EStopped
+    // @Description: Emergency Stop disables arming. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    Estop = 7, "ESTOP", f32: ERROR;
+
+    // @Param: ARM_FENCE
+    // @DisplayName: Fence not enabled
+    // @Description: Fences loaded but no fence enabled. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    Fence = 8, "FENCE", f32: WARNING;
+
+    // @Param: ARM_RALLY
+    // @DisplayName: Rally too far
+    // @Description: Rally Point more than RALLY_LIMIT_KM kilometers away. 3 or less to prevent arming. -1 to disable.
+    // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
+    // @User: Standard
+    Rally = 9, "RALLY", f32: WARNING;
+}
+
 const SCRIPT_VERSION: &str = "4.7.0-022";
 const REFRESH_DELAY_MS: u32 = 500;
 const INITIAL_DELAY_MS: u32 = 20_000;
-const GLOBAL_TABLE: u8 = 170;
-const COPTER_TABLE: u8 = 172;
-const PLANE_TABLE: u8 = 173;
-const VALUES_TABLE: u8 = 179;
 const COPTER: u8 = 2;
 const PLANE: u8 = 3;
 
@@ -48,58 +195,45 @@ enum CheckKind {
 struct Check {
     table: u8,
     prefix: &'static str,
-    index: u8,
-    suffix: &'static str,
+    definition: ap_rust_sdk::ParamDef,
     text: &'static str,
-    severity: i32,
     initial: Option<bool>,
     kind: CheckKind,
 }
 
 const GLOBAL_CHECKS: [Check; 9] = [
-    check(GLOBAL_TABLE, "ARM_", 1, "SYSID", "MAV_SYSID not set", WARNING, None, CheckKind::SysId),
-    check(GLOBAL_TABLE, "ARM_", 2, "FOLL_SYSID", "FOLL_SYSID not set", ERROR, Some(true), CheckKind::FollowSysId),
-    check(GLOBAL_TABLE, "ARM_", 3, "FOLL_SYSID_X", "FOLL_SYSID == MAV_SYSID", ERROR, Some(true), CheckKind::FollowNotSelf),
-    check(GLOBAL_TABLE, "ARM_", 4, "FOLL_OFS_DEF", "FOLL_OFS_[XYZ] = 0", ERROR, Some(true), CheckKind::FollowOffsets),
-    check(GLOBAL_TABLE, "ARM_", 5, "MNTX_SYSID", "MNTx_SYSID != FOLL", WARNING, Some(true), CheckKind::MountSysId),
-    check(GLOBAL_TABLE, "ARM_", 6, "RTL_CLIMB", "RTL_CLIMB_MIN too high", WARNING, Some(true), CheckKind::RtlClimb),
-    check(GLOBAL_TABLE, "ARM_", 7, "ESTOP", "Motors EStopped", ERROR, Some(true), CheckKind::EmergencyStop),
-    check(GLOBAL_TABLE, "ARM_", 8, "FENCE", "Fence not enabled", WARNING, Some(true), CheckKind::Fence),
-    check(GLOBAL_TABLE, "ARM_", 9, "RALLY", "Rally too far", WARNING, Some(true), CheckKind::Rally),
+    check(GlobalTable::KEY, GlobalTable::PREFIX, GlobalTable::definition(GlobalParam::Sysid), "MAV_SYSID not set", None, CheckKind::SysId),
+    check(GlobalTable::KEY, GlobalTable::PREFIX, GlobalTable::definition(GlobalParam::FollSysid), "FOLL_SYSID not set", Some(true), CheckKind::FollowSysId),
+    check(GlobalTable::KEY, GlobalTable::PREFIX, GlobalTable::definition(GlobalParam::FollSysidX), "FOLL_SYSID == MAV_SYSID", Some(true), CheckKind::FollowNotSelf),
+    check(GlobalTable::KEY, GlobalTable::PREFIX, GlobalTable::definition(GlobalParam::FollOfsDef), "FOLL_OFS_[XYZ] = 0", Some(true), CheckKind::FollowOffsets),
+    check(GlobalTable::KEY, GlobalTable::PREFIX, GlobalTable::definition(GlobalParam::MntxSysid), "MNTx_SYSID != FOLL", Some(true), CheckKind::MountSysId),
+    check(GlobalTable::KEY, GlobalTable::PREFIX, GlobalTable::definition(GlobalParam::RtlClimb), "RTL_CLIMB_MIN too high", Some(true), CheckKind::RtlClimb),
+    check(GlobalTable::KEY, GlobalTable::PREFIX, GlobalTable::definition(GlobalParam::Estop), "Motors EStopped", Some(true), CheckKind::EmergencyStop),
+    check(GlobalTable::KEY, GlobalTable::PREFIX, GlobalTable::definition(GlobalParam::Fence), "Fence not enabled", Some(true), CheckKind::Fence),
+    check(GlobalTable::KEY, GlobalTable::PREFIX, GlobalTable::definition(GlobalParam::Rally), "Rally too far", Some(true), CheckKind::Rally),
 ];
 
 const PLANE_CHECKS: [Check; 7] = [
-    check(PLANE_TABLE, "ARM_P_", 1, "Q_FS_LAND", "Q will land on failsafe", NOTICE, Some(true), CheckKind::QLand),
-    check(PLANE_TABLE, "ARM_P_", 2, "Q_FS_RTL", "Q will RTL on failsafe", NOTICE, Some(true), CheckKind::QRtl),
-    check(PLANE_TABLE, "ARM_P_", 3, "AIRSPEED", "stall < min < crs < max", ERROR, Some(true), CheckKind::Airspeed),
-    check(PLANE_TABLE, "ARM_P_", 4, "STALL", "Min Speed not 25% above stall", INFO, Some(true), CheckKind::StallSpeed),
-    check(PLANE_TABLE, "ARM_P_", 5, "SCALING", "Scaling spd >< 20% of CRUISE", ERROR, Some(true), CheckKind::ScalingSpeed),
-    check(PLANE_TABLE, "ARM_P_", 6, "RTL_ALT", "RTL_ALTITUDE too high", ERROR, None, CheckKind::PlaneRtlAltitude),
-    check(PLANE_TABLE, "ARM_P_", 7, "QRTL_ALT", "Q_RTL_ALT too high", ERROR, None, CheckKind::QRtlAltitude),
+    check(PlaneTable::KEY, PlaneTable::PREFIX, PlaneTable::definition(PlaneParam::QFsLand), "Q will land on failsafe", Some(true), CheckKind::QLand),
+    check(PlaneTable::KEY, PlaneTable::PREFIX, PlaneTable::definition(PlaneParam::QFsRtl), "Q will RTL on failsafe", Some(true), CheckKind::QRtl),
+    check(PlaneTable::KEY, PlaneTable::PREFIX, PlaneTable::definition(PlaneParam::Airspeed), "stall < min < crs < max", Some(true), CheckKind::Airspeed),
+    check(PlaneTable::KEY, PlaneTable::PREFIX, PlaneTable::definition(PlaneParam::Stall), "Min Speed not 25% above stall", Some(true), CheckKind::StallSpeed),
+    check(PlaneTable::KEY, PlaneTable::PREFIX, PlaneTable::definition(PlaneParam::Scaling), "Scaling spd >< 20% of CRUISE", Some(true), CheckKind::ScalingSpeed),
+    check(PlaneTable::KEY, PlaneTable::PREFIX, PlaneTable::definition(PlaneParam::RtlAlt), "RTL_ALTITUDE too high", None, CheckKind::PlaneRtlAltitude),
+    check(PlaneTable::KEY, PlaneTable::PREFIX, PlaneTable::definition(PlaneParam::QrtlAlt), "Q_RTL_ALT too high", None, CheckKind::QRtlAltitude),
 ];
 
-const COPTER_CHECKS: [Check; 1] = [check(
-    COPTER_TABLE,
-    "ARM_C_",
-    1,
-    "RTL_ALT",
-    "RTL_ALT_M too high",
-    ERROR,
-    None,
-    CheckKind::CopterRtlAltitude,
-)];
+const COPTER_CHECKS: [Check; 1] = [check(CopterTable::KEY, CopterTable::PREFIX, CopterTable::definition(CopterParam::RtlAlt), "RTL_ALT_M too high", None, CheckKind::CopterRtlAltitude)];
 
 const fn check(
     table: u8,
     prefix: &'static str,
-    index: u8,
-    suffix: &'static str,
+    definition: ap_rust_sdk::ParamDef,
     text: &'static str,
-    severity: i32,
     initial: Option<bool>,
     kind: CheckKind,
 ) -> Check {
-    Check { table, prefix, index, suffix, text, severity, initial, kind }
+    Check { table, prefix, definition, text, initial, kind }
 }
 
 struct Text<const N: usize> {
@@ -165,16 +299,12 @@ fn optional_parameter(context: &Context<'_>, name: &str) -> Result<Option<f32>> 
 }
 
 fn full_name(check: Check) -> Result<Text<17>> {
-    Text::new(format_args!("{}{}", check.prefix, check.suffix))
+    Text::new(format_args!("{}{}", check.prefix, check.definition.name))
 }
 
 fn add_checks(context: &Context<'_>, checks: &[Check]) -> Result {
     for item in checks {
-        if !retry(context, || {
-            context.param().add_param(item.table, item.index, item.suffix, item.severity as f32)
-        })? {
-            return Err(Error::Host);
-        }
+        item.definition.register(context, item.table)?;
     }
     Ok(())
 }
@@ -328,16 +458,10 @@ fn run_checks(
 }
 
 fn run(context: &Context<'_>) -> Result {
-    for (key, prefix, count) in [
-        (GLOBAL_TABLE, "ARM_", 20),
-        (COPTER_TABLE, "ARM_C_", 10),
-        (PLANE_TABLE, "ARM_P_", 10),
-        (VALUES_TABLE, "ARM_V_", 15),
-    ] {
-        if !retry(context, || context.param().add_table(key, prefix, count))? {
-            return Err(Error::Host);
-        }
-    }
+    GlobalTable::register_table(context)?;
+    CopterTable::register_table(context)?;
+    PlaneTable::register_table(context)?;
+    ValuesTable::register_table(context)?;
     let firmware = retry(context, || context.fw_version().r#type())?;
     add_checks(context, &GLOBAL_CHECKS)?;
     let vehicle_checks: &[Check] = match firmware {
@@ -346,9 +470,7 @@ fn run(context: &Context<'_>) -> Result {
         _ => &[],
     };
     add_checks(context, vehicle_checks)?;
-    if !retry(context, || context.param().add_param(VALUES_TABLE, 1, "ALT_LEGAL", 120.0))? {
-        return Err(Error::Host);
-    }
+    ValuesTable::definition(ValuesParam::AltLegal).register(context, ValuesTable::KEY)?;
     let sysid_name = if optional_parameter(context, "SYSID_THISMAV")?.is_some() {
         "SYSID_THISMAV"
     } else {

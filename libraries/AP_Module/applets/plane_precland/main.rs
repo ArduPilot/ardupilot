@@ -7,11 +7,33 @@ use ap_rust_sdk::{
     enums::{MavSeverity, RcChannelAuxFunc, Rotation},
     Context, Error, LogValue, Parameter, Result, Vector2f,
 };
+
 use core::fmt::{self, Write};
 
 ap_rust_sdk::module!(run);
 
-const PARAM_TABLE_KEY: u8 = 12;
+ap_rust_sdk::param_table! {
+    pub struct Table, enum P;
+    key = 12, prefix = "PLND_";
+    size = 10;
+
+    // @Param: PLND_ALT_CUTOFF
+    // @DisplayName: Precland altitude cutoff
+    // @Description: The altitude (rangefinder distance) below which we stop using the precision landing sensor and continue landing
+    // @Range: 0 20
+    // @Units: m
+    // @User: Standard
+    AltCutoff = 1, "ALT_CUTOFF", f32: 0.0;
+
+    // @Param: PLND_DIST_CUTOFF
+    // @DisplayName: Precland distance cutoff
+    // @Description: The distance from target beyond which the target is ignored
+    // @Range: 0 100
+    // @Units: m
+    // @User: Standard
+    DistCutoff = 2, "DIST_CUTOFF", f32: 0.0;
+}
+
 const MODE_QLOITER: u8 = 19;
 const MODE_QLAND: u8 = 20;
 const AUX_PRECLOITER: RcChannelAuxFunc = RcChannelAuxFunc(39);
@@ -71,21 +93,6 @@ fn parameter<'a, 'host>(context: &'a Context<'host>, name: &str) -> Result<Param
     retry(context, || context.parameter(name))?.ok_or(Error::Invalid)
 }
 
-fn add_parameter<'a, 'host>(
-    context: &'a Context<'host>,
-    index: u8,
-    name: &str,
-    default: f32,
-) -> Result<Parameter<'a, 'host>> {
-    if !retry(context, || {
-        context.param().add_param(PARAM_TABLE_KEY, index, name, default)
-    })? {
-        return Err(Error::Host);
-    }
-    let full_name = Text::<17>::new(format_args!("PLND_{name}"))?;
-    parameter(context, full_name.as_str())
-}
-
 fn value(parameter: &Parameter<'_, '_>) -> Result<f32> {
     let value = parameter.get()?.ok_or(Error::Invalid)?;
     if value.is_finite() {
@@ -105,14 +112,10 @@ struct Parameters<'a, 'host> {
 
 impl<'a, 'host> Parameters<'a, 'host> {
     fn new(context: &'a Context<'host>) -> Result<Self> {
-        if !retry(context, || {
-            context.param().add_table(PARAM_TABLE_KEY, "PLND_", 10)
-        })? {
-            return Err(Error::Host);
-        }
+        Table::register_definitions(context)?;
         Ok(Self {
-            altitude_cutoff: add_parameter(context, 1, "ALT_CUTOFF", 0.0)?,
-            distance_cutoff: add_parameter(context, 2, "DIST_CUTOFF", 0.0)?,
+            altitude_cutoff: Table::bind(context, P::AltCutoff)?,
+            distance_cutoff: Table::bind(context, P::DistCutoff)?,
             enabled: parameter(context, "PLND_ENABLED")?,
             xy_distance_max: parameter(context, "PLND_XY_DIST_MAX")?,
             options: parameter(context, "PLND_OPTIONS")?,
