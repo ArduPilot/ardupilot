@@ -20410,6 +20410,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_NAV_TAKEOFF_no_location,
             self.DualTuningChannels,
             self.AutoRTL,
+            self.AutoRTLReturnPathTrack,
             self.GripperReleaseOnThrustLoss,
             self.ScriptingAHRSSource,
             self.CompassLearnCopyFromSIM,
@@ -21878,10 +21879,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('GUIDED')
         self.fly_guided_move_to(return_path_test, timeout=100)
 
-        # check the mission is joined further along
+        # check the mission is joined further along, part way along the
+        # leg from waypoint 4 so waypoint 4 may be current briefly
         self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
-        self.drain_mav()
-        self.assert_current_waypoint(5)
+        self.wait_current_waypoint(5, timeout=30)
 
         # fly over home
         home = self.home_position_as_location()
@@ -21896,6 +21897,75 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # Done
         self.land_and_disarm()
+
+    def AutoRTLReturnPathTrack(self):
+        '''Test Auto RTL rejoins a return path at the closest point and then follows the track'''
+        alt = 50
+        self.context_push()
+        self.context_set_message_rate_hz('LOCAL_POSITION_NED', 10)
+
+        # pymavlink does not understand the new return path command yet, at some point it will
+        cmd_return_path_start = 188 # mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START
+
+        def fly_return_path_from(north, east, track_north_max):
+            # the return path runs down the north axis towards home, so any
+            # east offset south of track_north_max is a cross track error
+            start_loc = self.offset_location_ne(self.home_position_as_location(), north, east)
+            start_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+            self.change_mode('GUIDED')
+            self.fly_guided_move_to(start_loc, timeout=240)
+
+            self.change_mode('AUTO_RTL')
+            max_cross_track = 0
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 300:
+                    raise NotAchievedException("Did not fly the return path")
+                m = self.assert_receive_message('LOCAL_POSITION_NED')
+                if m.x < 100:
+                    break
+                if m.x < track_north_max:
+                    max_cross_track = max(max_cross_track, abs(m.y))
+            self.progress(f"maximum cross track error {max_cross_track:.1f}m")
+            if max_cross_track > 10:
+                raise NotAchievedException(f"Did not follow the return path track (cross track {max_cross_track:.1f}m)")
+
+        self.takeoff(alt, mode='GUIDED')
+
+        # the closest point on the mission is part way along the leg
+        # from waypoint 3 to waypoint 4, not either waypoint.  Nothing
+        # is placed exactly at home as a zero offset uploads as a zero
+        # latitude and longitude, which means the current location
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 4
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 6
+        ])
+        fly_return_path_from(600, 200, 450)
+        self.wait_current_waypoint(4)
+
+        # a located command that is not navigated to, such as an ROI,
+        # is not part of the track.  Leave AUTO so the upload does not
+        # restart the running mission
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION, 400, 400, alt), # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 5
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 6
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 7
+        ])
+        fly_return_path_from(400, 300, 350)
+        self.wait_current_waypoint(5)
+
+        # the test must finish at home
+        self.context_pop()
+        self.do_RTL()
 
     def EK3_OGN_HGT_MASK(self):
         '''test baraometer-alt-compensation based on long-term GPS readings'''
