@@ -54,7 +54,8 @@
     LOG_REVH_MSG, \
     LOG_RWOH_MSG, \
     LOG_RBOH_MSG, \
-    LOG_RTER_MSG
+    LOG_RTER_MSG, \
+    LOG_RRNJ_MSG
 
 // @LoggerMessage: RFRH
 // @Description: Replay FRame Header
@@ -283,6 +284,16 @@ struct log_RRNI {
     float distance;
     uint8_t orientation;
     uint8_t status;
+    uint8_t instance;
+    uint8_t _end;
+};
+
+// @LoggerMessage: RRNJ
+// @Description: Replay Data Rangefinder Instance reading time
+// @Field: LU: system time of the backend's last reading, which it reports until the next arrives
+// @Field: I: rangefinder instance number
+struct log_RRNJ {
+    uint32_t last_reading_ms;
     uint8_t instance;
     uint8_t _end;
 };
@@ -709,4 +720,6 @@ struct log_RTER {
     { LOG_RBOH_MSG, RLOG_SIZE(RBOH),                                   \
       "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" }, \
     { LOG_RTER_MSG, RLOG_SIZE(RTER),                                   \
-      "RTER", "f", "Alt", "m", "0" },
+      "RTER", "f", "Alt", "m", "0" }, \
+    { LOG_RRNJ_MSG, RLOG_SIZE(RRNJ),                                   \
+      "RRNJ", "IB", "LU,I", "-#", "--" },
