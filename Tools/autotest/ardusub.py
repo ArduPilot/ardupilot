@@ -782,6 +782,27 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             cmd(mavutil.mavlink.MAV_CMD_NAV_LAND)
             self.assert_mode('SURFACE')
 
+    def MAV_CMD_NAV_RETURN_TO_LAUNCH(self):
+        '''test handling of MAV_CMD_NAV_RETURN_TO_LAUNCH received via mavlink'''
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+                want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode('CIRCLE')
+        # a mission must be uploaded: sub's AUTO mode refuses to start
+        # without one (as with MAV_CMD_MISSION_START)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, -2),
+        ])
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        for cmd in self.run_cmd, self.run_cmd_int:
+            self.change_mode('CIRCLE')
+            cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
+            self.assert_mode('AUTO')
+        self.disarm_vehicle()
+
     def MAV_CMD_MISSION_START(self):
         '''test handling of MAV_CMD_MISSION_START received via mavlink'''
         self.upload_simple_relhome_mission([
@@ -1901,6 +1922,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.TestLogDownloadLogRestart,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_LAND,
+            self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
             self.MAV_CMD_MISSION_START,
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_CONDITION_YAW,
