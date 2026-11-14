@@ -529,11 +529,11 @@ void AC_AttitudeControl_Heli::set_notch_sample_rate(float sample_rate)
 // Used for tilt-based navigation with independent yaw control.
 // The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
 // while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
-void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw)
+void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw, bool hold_level_yaw)
 {
 
     if (!_inverted_flight) {
-        AC_AttitudeControl::input_thrust_vector_rate_heading_rads(thrust_vector, heading_rate_rads, slew_yaw);
+        AC_AttitudeControl::input_thrust_vector_rate_heading_rads(thrust_vector, heading_rate_rads, slew_yaw, hold_level_yaw);
         return;
     }
     // convert thrust vector to a roll and pitch angles
