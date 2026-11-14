@@ -18603,6 +18603,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(4, timeout=60)
         self.wait_disarmed()
 
+    def SMART_RTL_ALT_FINAL_M(self):
+        '''SmartRTL holds at RTL_ALT_FINAL_M above home rather than landing'''
+        target_alt = 10
+        self.set_parameter('RTL_ALT_FINAL_M', target_alt)
+        self.takeoff(5, mode='GUIDED')
+        # move home above the EKF origin, so a hold above the origin is
+        # distinguishable from one above home
+        self.set_home(self.get_location())
+        self.fly_guided_move_local(50, 0, 20)
+        if self.distance_to_home() < 40:
+            raise NotAchievedException("Did not fly away from home")
+
+        self.change_mode('SMART_RTL')
+        self.progress("Waiting for SmartRTL to hold %.0fm above home" % target_alt)
+        self.wait_altitude(
+            target_alt - 1,
+            target_alt + 1,
+            relative=True,
+            minimum_duration=10,
+            timeout=120,
+        )
+        if self.distance_to_home() > 5:
+            raise NotAchievedException("Not holding over home")
+        if not self.armed():
+            raise NotAchievedException("Should still be armed")
+
+        self.change_mode('LAND')
+        self.wait_landed_and_disarmed()
+
     def SMART_RTL(self):
         '''Check SMART_RTL'''
         self.progress("arm the vehicle and takeoff in Guided")
@@ -25035,6 +25064,7 @@ return update, 1000
             self.EKFBootstrapReset,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
+            self.SMART_RTL_ALT_FINAL_M,
             self.SMART_RTL_EnterLeave,
             self.SMART_RTL_Repeat,
             self.RTL_TO_RALLY,

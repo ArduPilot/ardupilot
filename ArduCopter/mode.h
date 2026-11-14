@@ -1595,7 +1595,7 @@ protected:
     void land_start();
     void land_run(bool disarm_on_land);
 
-    void set_descent_target_alt(uint32_t alt) { rtl_path.descent_target.alt = alt; }
+    void set_descent_target_alt(int32_t alt) { rtl_path.descent_target.alt = alt; }
 
 private:
 
