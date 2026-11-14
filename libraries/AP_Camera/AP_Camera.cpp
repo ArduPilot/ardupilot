@@ -650,41 +650,30 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
 bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message msg_id)
 {
     const auto chan = link.get_chan();
+    auto &pending = _send_pending[chan];
 
     switch (msg_id) {
     case MSG_CAMERA_FEEDBACK:
-        CHECK_PAYLOAD_SIZE2(CAMERA_FEEDBACK);
-        send_feedback(chan);
-        break;
+        return send_to_pending_backends(chan, pending.feedback, PAYLOAD_SIZE(chan, CAMERA_FEEDBACK),
+                                        &AP_Camera_Backend::send_camera_feedback);
     case MSG_CAMERA_INFORMATION:
-        CHECK_PAYLOAD_SIZE2(CAMERA_INFORMATION);
-        if (_camera_information_send_instance >= 0) {
-            const int16_t instance = _camera_information_send_instance;
-            _camera_information_send_instance = -1;
-            send_camera_information((uint8_t)instance, chan);
-        } else {
-            send_camera_information(chan);
-        }
-        break;
+        return send_to_pending_backends(chan, pending.information, PAYLOAD_SIZE(chan, CAMERA_INFORMATION),
+                                        &AP_Camera_Backend::send_camera_information);
     case MSG_CAMERA_SETTINGS:
-        CHECK_PAYLOAD_SIZE2(CAMERA_SETTINGS);
-        send_camera_settings(chan);
-        break;
+        return send_to_pending_backends(chan, pending.settings, PAYLOAD_SIZE(chan, CAMERA_SETTINGS),
+                                        &AP_Camera_Backend::send_camera_settings);
 #if AP_CAMERA_SEND_FOV_STATUS_ENABLED
     case MSG_CAMERA_FOV_STATUS:
-        CHECK_PAYLOAD_SIZE2(CAMERA_FOV_STATUS);
-        send_camera_fov_status(chan);
-        break;
+        return send_to_pending_backends(chan, pending.fov_status, PAYLOAD_SIZE(chan, CAMERA_FOV_STATUS),
+                                        &AP_Camera_Backend::send_camera_fov_status);
 #endif
     case MSG_CAMERA_CAPTURE_STATUS:
-        CHECK_PAYLOAD_SIZE2(CAMERA_CAPTURE_STATUS);
-        send_camera_capture_status(chan);
-        break;
+        return send_to_pending_backends(chan, pending.capture_status, PAYLOAD_SIZE(chan, CAMERA_CAPTURE_STATUS),
+                                        &AP_Camera_Backend::send_camera_capture_status);
 #if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
     case MSG_CAMERA_THERMAL_RANGE:
-        CHECK_PAYLOAD_SIZE2(CAMERA_THERMAL_RANGE);
-        send_camera_thermal_range(chan);
-        break;
+        return send_to_pending_backends(chan, pending.thermal_range, PAYLOAD_SIZE(chan, CAMERA_THERMAL_RANGE),
+                                        &AP_Camera_Backend::send_camera_thermal_range);
 #endif
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     case MSG_VIDEO_STREAM_INFORMATION:
@@ -775,44 +764,63 @@ void AP_Camera::control(uint8_t instance, float session, float zoom_pos, float z
     backend->control(session, zoom_pos, zoom_step, focus_lock, shooting_cmd, cmd_id);
 }
 
-/*
-  Send camera feedback to the GCS
- */
-void AP_Camera::send_feedback(mavlink_channel_t chan)
+static_assert(AP_CAMERA_MAX_INSTANCES <= 8, "_send_pending bitmasks are too small");
+static constexpr uint8_t ALL_CAMERAS = (1U << AP_CAMERA_MAX_INSTANCES) - 1;
+
+// queue CAMERA_INFORMATION on chan for the camera with mavlink-style
+// instance_id (0 meaning all cameras); returns false if there is no
+// such camera
+bool AP_Camera::request_camera_information(mavlink_channel_t chan, float instance_id)
 {
     WITH_SEMAPHORE(_rsem);
 
-    // call each instance
-    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_camera_feedback(chan);
-        }
+    uint8_t &pending = _send_pending[chan].information;
+    // 0 (or NaN) means all cameras
+    if (!(instance_id >= 1)) {
+        pending = ALL_CAMERAS;
+        return true;
     }
+    if (instance_id > AP_CAMERA_MAX_INSTANCES) {
+        return false;
+    }
+    const uint8_t instance = uint8_t(instance_id) - 1;
+    if (get_instance(instance) == nullptr) {
+        return false;
+    }
+    pending |= 1U << instance;
+    return true;
 }
 
-// send camera information message to GCS
-void AP_Camera::send_camera_information(mavlink_channel_t chan)
+// send a message of message_size bytes from each camera in pending
+// using send; returns false if there was no space, leaving the
+// cameras not yet sent in pending.  An empty pending means every
+// camera.
+bool AP_Camera::send_to_pending_backends(mavlink_channel_t chan, uint8_t &pending, uint16_t message_size,
+                                         void (AP_Camera_Backend::*send)(mavlink_channel_t chan) const)
 {
     WITH_SEMAPHORE(_rsem);
 
-    // call each instance
+    if (pending == 0) {
+        pending = ALL_CAMERAS;
+    }
+    // Messages are sent one camera at a time, as two CAMERA_INFORMATION
+    // messages do not fit in a 512 byte tx buffer.  A retry resumes
+    // with the cameras still pending.
     for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_camera_information(chan);
+        const uint8_t mask = 1U << instance;
+        if ((pending & mask) == 0) {
+            continue;
         }
+        if (_backends[instance] != nullptr) {
+            if (comm_get_txspace(chan) < message_size) {
+                gcs_out_of_space_to_send(chan);
+                return false;
+            }
+            (_backends[instance]->*send)(chan);
+        }
+        pending &= ~mask;
     }
-}
-
-// send camera information for a specific instance to GCS
-void AP_Camera::send_camera_information(uint8_t instance, mavlink_channel_t chan)
-{
-    WITH_SEMAPHORE(_rsem);
-
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
-        return;
-    }
-    backend->send_camera_information(chan);
+    return true;
 }
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
@@ -836,62 +844,6 @@ bool AP_Camera::send_video_stream_information(mavlink_channel_t chan)
     return true;
 }
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
-
-// send camera settings message to GCS
-void AP_Camera::send_camera_settings(mavlink_channel_t chan)
-{
-    WITH_SEMAPHORE(_rsem);
-
-    // call each instance
-    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_camera_settings(chan);
-        }
-    }
-}
-
-#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
-// send camera field of view status
-void AP_Camera::send_camera_fov_status(mavlink_channel_t chan)
-{
-    WITH_SEMAPHORE(_rsem);
-
-    // call each instance
-    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_camera_fov_status(chan);
-        }
-    }
-}
-#endif
-
-// send camera capture status message to GCS
-void AP_Camera::send_camera_capture_status(mavlink_channel_t chan)
-{
-    WITH_SEMAPHORE(_rsem);
-
-    // call each instance
-    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_camera_capture_status(chan);
-        }
-    }
-}
-
-#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
-// send camera thermal range message to GCS
-void AP_Camera::send_camera_thermal_range(mavlink_channel_t chan)
-{
-    WITH_SEMAPHORE(_rsem);
-
-    // call each instance
-    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_camera_thermal_range(chan);
-        }
-    }
-}
-#endif
 
 /*
   update; triggers by distance moved and camera trigger

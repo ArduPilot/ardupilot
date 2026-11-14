@@ -489,13 +489,14 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
 
 // send any and all distance_sensor messages.  This starts by sending
 // any distance sensors not used by a Proximity sensor, then sends the
-// proximity sensor ones.
-void GCS_MAVLINK::send_distance_sensor()
+// proximity sensor ones.  Returns false if there was no space for a
+// message; the next call resumes from that message.
+bool GCS_MAVLINK::send_distance_sensor()
 {
 #if AP_RANGEFINDER_ENABLED
     RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder == nullptr) {
-        return;
+        return true;
     }
 
     // if we have a proximity backend that utilizes rangefinders cull
@@ -516,10 +517,8 @@ void GCS_MAVLINK::send_distance_sensor()
     }
 #endif
 
-    for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
-            return;
-        }
+    for (; distance_sensor_send_idx < RANGEFINDER_MAX_INSTANCES; distance_sensor_send_idx++) {
+        const uint8_t i = distance_sensor_send_idx;
         AP_RangeFinder_Backend *sensor = rangefinder->get_backend(i);
         if (sensor == nullptr) {
             continue;
@@ -527,14 +526,22 @@ void GCS_MAVLINK::send_distance_sensor()
         enum Rotation orient = sensor->orientation();
         if (!filter_possible_proximity_sensors ||
             (orient > ROTATION_YAW_315 && orient != ROTATION_PITCH_90)) {
+            if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
+                return false;
+            }
             send_distance_sensor(sensor, i);
         }
     }
 #endif  // AP_RANGEFINDER_ENABLED
 
 #if HAL_PROXIMITY_ENABLED
-    send_proximity();
+    if (!send_proximity()) {
+        return false;
+    }
 #endif
+
+    distance_sensor_send_idx = 0;
+    return true;
 }
 
 #if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
@@ -556,11 +563,13 @@ void GCS_MAVLINK::send_rangefinder() const
 #endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
 #if HAL_PROXIMITY_ENABLED
-void GCS_MAVLINK::send_proximity()
+// returns false if there was no space for a message; the next call
+// resumes from that message
+bool GCS_MAVLINK::send_proximity()
 {
     AP_Proximity *proximity = AP_Proximity::get_singleton();
     if (proximity == nullptr) {
-        return; // this is wrong, but pretend we sent data and don't requeue
+        return true;
     }
 
     // get min/max distances
@@ -571,16 +580,17 @@ void GCS_MAVLINK::send_proximity()
     if (proximity->get_status() == AP_Proximity::Status::Good) {
         Proximity_Distance_Array dist_array;
         if (proximity->get_horizontal_distances(dist_array)) {
-            for (uint8_t i = 0; i < PROXIMITY_MAX_DIRECTION; i++) {
-                if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
-                    return;
-                }
+            for (; proximity_send_idx < PROXIMITY_MAX_DIRECTION; proximity_send_idx++) {
+                const uint8_t i = proximity_send_idx;
                 if (dist_array.valid(i)) {
                     proximity_ever_valid_bitmask |= (1U << i);
                 } else if (!(proximity_ever_valid_bitmask & (1U << i))) {
                     // we've never sent this distance out, so we don't
                     // need to send an invalid one.
                     continue;
+                }
+                if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
+                    return false;
                 }
                 mavlink_msg_distance_sensor_send(
                         chan,
@@ -601,7 +611,7 @@ void GCS_MAVLINK::send_proximity()
     float dist_up_m;
     if (proximity->get_upward_distance(dist_up_m)) {
         if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
-            return;
+            return false;
         }
         mavlink_msg_distance_sensor_send(
                 chan,
@@ -615,6 +625,9 @@ void GCS_MAVLINK::send_proximity()
                 0,                                                          // Measurement covariance in centimeters, 0 for unknown / invalid readings
                 0, 0, nullptr, 0);
     }
+
+    proximity_send_idx = 0;
+    return true;
 }
 #endif // HAL_PROXIMITY_ENABLED
 
@@ -3314,15 +3327,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int
         break;
 
 #if AP_CAMERA_ENABLED
-    case MSG_CAMERA_INFORMATION:
+    case MSG_CAMERA_INFORMATION: {
         // param2 selects a specific camera instance (1-based); 0 means all
-        if (packet.param2 >= 1) {
-            AP_Camera *camera = AP::camera();
-            if (camera != nullptr) {
-                camera->set_camera_information_send_instance((int16_t)(packet.param2 - 1));
-            }
+        AP_Camera *camera = AP::camera();
+        if (camera != nullptr && !camera->request_camera_information(chan, packet.param2)) {
+            // no such camera, so there is nothing to send
+            return MAV_RESULT_ACCEPTED;
         }
         break;
+    }
 #endif
 
     default:
@@ -6313,31 +6326,31 @@ void GCS_MAVLINK::send_utm_global_position() const
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
 
 #if HAL_MOUNT_ENABLED
-void GCS_MAVLINK::send_gimbal_device_attitude_status() const
+bool GCS_MAVLINK::send_gimbal_device_attitude_status() const
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
-        return;
+        return true;
     }
-    mount->send_gimbal_device_attitude_status(chan);
+    return mount->send_gimbal_device_attitude_status(chan);
 }
 
-void GCS_MAVLINK::send_gimbal_manager_information() const
+bool GCS_MAVLINK::send_gimbal_manager_information() const
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
-        return;
+        return true;
     }
-    mount->send_gimbal_manager_information(chan);
+    return mount->send_gimbal_manager_information(chan);
 }
 
-void GCS_MAVLINK::send_gimbal_manager_status() const
+bool GCS_MAVLINK::send_gimbal_manager_status() const
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
-        return;
+        return true;
     }
-    mount->send_gimbal_manager_status(chan);
+    return mount->send_gimbal_manager_status(chan);
 }
 #endif
 
@@ -6730,7 +6743,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif  // AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
 
     case MSG_DISTANCE_SENSOR:
-        send_distance_sensor();
+        ret = send_distance_sensor();
         break;
 
 #if AP_CAMERA_ENABLED
@@ -6796,7 +6809,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #if HAL_MOUNT_ENABLED
     case MSG_GIMBAL_DEVICE_ATTITUDE_STATUS:
         CHECK_PAYLOAD_SIZE(GIMBAL_DEVICE_ATTITUDE_STATUS);
-        send_gimbal_device_attitude_status();
+        ret = send_gimbal_device_attitude_status();
         break;
     case MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE:
         CHECK_PAYLOAD_SIZE(AUTOPILOT_STATE_FOR_GIMBAL_DEVICE);
@@ -6804,11 +6817,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
     case MSG_GIMBAL_MANAGER_INFORMATION:
         CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_INFORMATION);
-        send_gimbal_manager_information();
+        ret = send_gimbal_manager_information();
         break;
     case MSG_GIMBAL_MANAGER_STATUS:
         CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_STATUS);
-        send_gimbal_manager_status();
+        ret = send_gimbal_manager_status();
         break;
 #endif  // HAL_MOUNT_ENABLED
 
@@ -7019,7 +7032,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_AIS_VESSEL: {
         AP_AIS *ais = AP_AIS::get_singleton();
         if (ais) {
-            ais->send(chan);
+            ret = ais->send(chan);
         }
         break;
     }

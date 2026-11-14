@@ -89,7 +89,7 @@ public:
     void handle_flight_stage_change(const bool _in_landing_stage);
     int32_t constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool get_target_altitude_location(Location &location);
-    bool send_landing_message(mavlink_channel_t chan);
+    bool send_landing_message(mavlink_channel_t chan) WARN_IF_UNUSED;
 
     // terminate the flight with an immediate landing, returns false if unable to be used for termination
     bool terminate(void);
