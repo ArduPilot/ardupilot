@@ -121,6 +121,8 @@ void AR_WPNav::init(float speed_max)
     // init some flags
     _reached_destination = false;
     _fast_waypoint = false;
+    _arc_rad = 0.0f;
+    _next_arc_rad = 0.0f;
 
     // ensure pivot turns are deactivated
     _pivot.deactivate();
@@ -199,7 +201,9 @@ void AR_WPNav::set_nudge_speed_max(float nudge_speed_max)
 
 // set desired location and (optionally) next_destination
 // next_destination should be provided if known to allow smooth cornering
-bool AR_WPNav::set_desired_location(const Location& destination, Location next_destination)
+// arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
+// next_arc_rad specifies the same for the following segment (0 if straight or unknown)
+bool AR_WPNav::set_desired_location(const Location& destination, Location next_destination, float arc_rad, float next_arc_rad)
 {
     // re-initialise if inactive, previous destination has been interrupted or different controller was used
     if (!is_active() || !_reached_destination || (_nav_control_type != NavControllerType::NAV_SCURVE)) {
@@ -221,13 +225,17 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
     _orig_and_dest_valid = true;
     _reached_destination = false;
 
+    const bool shift_next_leg = _fast_waypoint && !_scurve_next_leg.finished();
+    _arc_rad = shift_next_leg ? _next_arc_rad : arc_rad;
+
     update_distance_and_bearing_to_destination();
 
     // check if vehicle should pivot if vehicle stopped at previous waypoint
     // or journey to previous waypoint was interrupted or navigation has just started
     if (!_fast_waypoint) {
         _pivot.deactivate();
-        _pivot.check_activation((_reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd()) * 0.01, _pivot_at_next_wp);
+        const float desired_heading_cd = is_zero(_arc_rad) ? oa_wp_bearing_cd() : arc_tangent_bearing_cd(_origin, _destination, _arc_rad, true);
+        _pivot.check_activation((_reversed ? wrap_360_cd(desired_heading_cd + 18000) : desired_heading_cd) * 0.01, _pivot_at_next_wp);
     }
 
     // convert origin and destination to offset from EKF origin
@@ -242,19 +250,19 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
     destination_NE *= 0.01f;
 
     // calculate track to destination
-    if (_fast_waypoint && !_scurve_next_leg.finished()) {
+    if (shift_next_leg) {
         // skip recalculating this leg by simply shifting next leg
         _scurve_this_leg = _scurve_next_leg;
     } else {
         _scurve_this_leg.calculate_track(Vector3p{origin_NE.x, origin_NE.y, 0.0f},              // origin
                                          Vector3p{destination_NE.x, destination_NE.y, 0.0f},    // destination
-                                         0.0, // arc length is zero for straight track
+                                         _arc_rad,                                      // arc angle (0 for straight track)
                                          _pos_control.get_speed_max(),
                                          _pos_control.get_speed_max(),  // speed up (not used)
                                          _pos_control.get_speed_max(),  // speed down (not used)
                                          _pos_control.get_accel_max(),  // forward back acceleration
                                          _pos_control.get_accel_max(),  // vertical accel (not used)
-                                         _pos_control.get_accel_max(),  // corner acceleration
+                                         _pos_control.get_lat_accel_max(),  // corner acceleration
                                          AR_WPNAV_SNAP_MAX,             // snap
                                          _pos_control.get_jerk_max());
     }
@@ -263,10 +271,18 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
     _scurve_next_leg.init();
     _fast_waypoint = false;
     _pivot_at_next_wp = false;
+    _next_arc_rad = 0.0f;
     if (next_destination.initialised()) {
         // check if vehicle should pivot at next waypoint
-        const float next_wp_yaw_change = get_corner_angle(_origin, destination, next_destination);
-        _pivot_at_next_wp = _pivot.would_activate(next_wp_yaw_change);
+        float next_wp_yaw_change_deg;
+        if (is_zero(_arc_rad) && is_zero(next_arc_rad)) {
+            next_wp_yaw_change_deg = get_corner_angle(_origin, destination, next_destination);
+        } else {
+            const float bearing_in_cd = is_zero(_arc_rad) ? _origin.get_bearing_to(destination) : arc_tangent_bearing_cd(_origin, destination, _arc_rad, false);
+            const float bearing_out_cd = is_zero(next_arc_rad) ? destination.get_bearing_to(next_destination) : arc_tangent_bearing_cd(destination, next_destination, next_arc_rad, true);
+            next_wp_yaw_change_deg = wrap_180_cd(bearing_out_cd - bearing_in_cd) * 0.01;
+        }
+        _pivot_at_next_wp = _pivot.would_activate(next_wp_yaw_change_deg);
         if (!_pivot_at_next_wp) {
             // convert next_destination to offset from EKF origin
             Vector2f next_destination_NE;
@@ -277,15 +293,16 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
             next_destination_NE *= 0.01f;
             _scurve_next_leg.calculate_track(Vector3p{destination_NE.x, destination_NE.y, 0.0f},
                                              Vector3p{next_destination_NE.x, next_destination_NE.y, 0.0f},
-                                             0.0, // arc length is zero for straight track
+                                             next_arc_rad,                              // arc angle (0 for straight track)
                                              _pos_control.get_speed_max(),
                                              _pos_control.get_speed_max(),  // speed up (not used)
                                              _pos_control.get_speed_max(),  // speed down (not used)
                                              _pos_control.get_accel_max(),  // forward back acceleration
                                              _pos_control.get_accel_max(),  // vertical accel (not used)
-                                             _pos_control.get_accel_max(),  // corner accel
+                                             _pos_control.get_lat_accel_max(),  // corner accel
                                              AR_WPNAV_SNAP_MAX,             // snap
                                              _pos_control.get_jerk_max());
+            _next_arc_rad = next_arc_rad;
 
             // next destination provided so fast waypoint
             _fast_waypoint = true;
@@ -356,6 +373,8 @@ bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destinati
     _destination = destination;
     _orig_and_dest_valid = true;
     _reached_destination = false;
+    _arc_rad = 0.0f;
+    _next_arc_rad = 0.0f;
 
     update_distance_and_bearing_to_destination();
 
@@ -517,7 +536,8 @@ void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
     if (_pivot.active()) {
         // decelerate to zero
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
-        _desired_heading_cd = _reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd();
+        const float desired_heading_cd = is_zero(_arc_rad) ? oa_wp_bearing_cd() : arc_tangent_bearing_cd(_origin, _destination, _arc_rad, true);
+        _desired_heading_cd = _reversed ? wrap_360_cd(desired_heading_cd + 18000) : desired_heading_cd;
         _desired_turn_rate_rads = is_zero(_desired_speed_limited) ? _pivot.get_turn_rate_rads(_desired_heading_cd * 0.01, dt) : 0;
         _desired_lat_accel = 0.0f;
     } else {
@@ -535,7 +555,7 @@ void AR_WPNav::set_turn_params(float turn_radius, bool pivot_possible)
 }
 
 // calculate the crosstrack error
-// value is negative when the vehicle is on the path's left side
+// value is positive when the vehicle is on the path's left side
 float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
 {
     if (!_orig_and_dest_valid) {
@@ -545,6 +565,23 @@ float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
     // get object avoidance adjusted origin and destination
     const Location &orig = get_oa_origin();
     const Location &dest = get_oa_destination();
+
+    Vector2f center_NE;
+    float radius_m;
+    if (!is_zero(_arc_rad) && orig.same_latlon_as(_origin) && dest.same_latlon_as(_destination) &&
+        calc_arc_geometry(_origin, _destination, _arc_rad, center_NE, radius_m)) {
+        const Vector2f veh_from_center = _origin.get_distance_NE(current_loc) - center_NE;
+        const Vector2f origin_from_center = -center_NE;
+        const float turn_dir = is_negative(_arc_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW
+        float swept_rad = turn_dir * atan2f(origin_from_center % veh_from_center, origin_from_center * veh_from_center);
+        if (is_negative(swept_rad)) {
+            swept_rad += 2.0f * M_PI;
+        }
+        if (swept_rad <= fabsf(_arc_rad)) {
+            // signed to match the straight line calculation below (positive on the path's left)
+            return turn_dir * (veh_from_center.length() - radius_m);
+        }
+    }
 
     // calculate the NE position of destination relative to origin
     Vector2f dest_from_origin = orig.get_distance_NE(dest);
@@ -562,6 +599,42 @@ float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
 
     // calculate distance to target track, for reporting
     return veh_from_origin % dest_from_origin;
+}
+
+// calculate the centre (in meters relative to origin) and radius of
+// the circle followed by an arc segment from origin to dest sweeping
+// arc_rad (positive clockwise, negative counter-clockwise).
+// returns false if the segment is effectively straight, either
+// because the chord has no length or the arc angle is under a degree
+bool AR_WPNav::calc_arc_geometry(const Location& origin, const Location& dest, float arc_rad, Vector2f& center_NE, float& radius_m) const
+{
+    const Vector2f chord = origin.get_distance_NE(dest);
+    const float chord_length_m = chord.length();
+    if (!is_positive(chord_length_m) || fabsf(wrap_PI(arc_rad)) < radians(1.0f)) {
+        return false;
+    }
+    radius_m = fabsf(chord_length_m / (2.0f * fabsf(sinf(arc_rad * 0.5f))));
+    const float center_offset_m = safe_sqrt(sq(radius_m) - sq(chord_length_m * 0.5f)); // perpendicular offset from chord to circle center
+    const float turn_dir = is_negative(arc_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW
+    const float center_side = is_positive(wrap_PI(fabsf(arc_rad))) ? 1.0f : -1.0f; // 1 for |angle| < PI, -1 for |angle| > PI
+    center_NE = chord * 0.5f + Vector2f(-chord.y, chord.x) * (center_side * turn_dir * center_offset_m / chord_length_m);
+    return true;
+}
+
+// bearing in centidegrees of the arc's tangent at its start
+// (at_start true) or at its end.  Falls back to the straight line
+// bearing from origin to dest if the segment is not an arc
+float AR_WPNav::arc_tangent_bearing_cd(const Location& origin, const Location& dest, float arc_rad, bool at_start) const
+{
+    Vector2f center_NE;
+    float radius_m;
+    if (!calc_arc_geometry(origin, dest, arc_rad, center_NE, radius_m)) {
+        return origin.get_bearing_to(dest);
+    }
+    const Vector2f radial = at_start ? -center_NE : (origin.get_distance_NE(dest) - center_NE);
+    const float turn_dir = is_negative(arc_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW
+    const Vector2f tangent_NE { -radial.y * turn_dir, radial.x * turn_dir };
+    return wrap_360_cd(degrees(atan2f(tangent_NE.y, tangent_NE.x)) * 100.0f);
 }
 
 // calculate yaw change at next waypoint in degrees

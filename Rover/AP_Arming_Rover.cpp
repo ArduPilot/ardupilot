@@ -103,6 +103,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
             & oa_check(report)
 #endif
             & parameter_checks(report)
+            & mission_arc_checks(report)
             & mode_checks(report));
 #pragma clang diagnostic pop
 }
@@ -252,4 +253,51 @@ bool AP_Arming_Rover::motor_checks(bool report)
 #endif
 
     return ret;
+}
+
+// check mission arc waypoint radii against TURN_RADIUS
+bool AP_Arming_Rover::mission_arc_checks(bool report)
+{
+    if (!check_enabled(Check::MISSION)) {
+        return true;
+    }
+
+    const float turn_radius = rover.g2.turn_radius.get();
+    if (rover.g2.motors.have_skid_steering() || !is_positive(turn_radius)) {
+        return true;
+    }
+
+    AP_Mission &mission = rover.mode_auto.mission;
+    Location prev_loc = rover.current_loc;
+    AP_Mission::Mission_Command cmd;
+    for (uint16_t i = 0; i < mission.num_commands(); i++) {
+        if (!mission.read_cmd_from_storage(i, cmd)) {
+            continue;
+        }
+        switch (cmd.id) {
+        case MAV_CMD_NAV_WAYPOINT:
+        case MAV_CMD_NAV_ARC_WAYPOINT:
+        case MAV_CMD_NAV_LOITER_UNLIM:
+        case MAV_CMD_NAV_LOITER_TIME:
+        case MAV_CMD_NAV_LOITER_TURNS:
+            break;
+        default:
+            continue;
+        }
+        Location cmdloc = cmd.content.location;
+        cmdloc.sanitize(prev_loc);
+        if (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) {
+            const float arc_rad = cmd.get_arc_angle_rad();
+            const float chord_length_m = prev_loc.get_distance(cmdloc);
+            if (is_positive(chord_length_m) && fabsf(wrap_PI(arc_rad)) >= radians(1.0f)) {
+                const float radius_m = fabsf(chord_length_m / (2.0f * fabsf(sinf(arc_rad * 0.5f))));
+                if (radius_m < turn_radius) {
+                    check_failed(Check::MISSION, report, "Item %u arc radius %.1f < TURN_RADIUS %.1f", (unsigned)i, radius_m, turn_radius);
+                    return false;
+                }
+            }
+        }
+        prev_loc = cmdloc;
+    }
+    return true;
 }
