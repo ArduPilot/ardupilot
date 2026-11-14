@@ -144,7 +144,8 @@ def build(bld):
 `--module` may be repeated or comma separated. It enables native modules, and
 the firmware defaults `MOD_ENABLE` to 1 and raises the `MOD_HEAP_MAX` and
 `MOD_STACK_MAX` defaults to admit the declared limits. The module is rebuilt
-when its sources or the SDK change.
+when its sources or the SDK change. The built-in image-size limit defaults to
+512 KiB; larger modules require increasing `MOD_CODE_MAXSIZE`.
 
 Alternatively build the `.apmod` first and add an extra-hwdef entry:
 
@@ -322,6 +323,10 @@ smaller limits; use their generated declarations and documentation.
 Use Rust's `context.parameter("NAME")` or C++'s `Parameter::create(context, "NAME")`
 for repeated parameter access. Dynamic parameter
 metadata/names are firmware-owned until reboot and share Lua's table limit.
+Dynamic `i32` parameters retain exact runtime and saved values. Their declared
+defaults and defaults-file overrides must be exactly representable as floats,
+matching AP_Param's default storage. Invalid or inexact defaults-file overrides
+are ignored; this restriction does not apply to values set or saved at runtime.
 Identical registration reuses metadata and restores saved values; unsaved changes
 need not survive. Logger format registrations also persist until reboot. Keep
 names and definitions stable across reloads.
