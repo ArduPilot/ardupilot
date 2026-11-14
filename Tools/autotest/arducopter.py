@@ -23607,6 +23607,62 @@ return update, 1000
         self.assert_parameter_value('TST_A', 9)
         self.assert_parameter_value('TST_B', 55)
 
+    def ScriptingInt32Params(self):
+        """Test exact integer parameter access and saved values through Lua."""
+        self.context_push()
+        script_content = """
+local KEY = 20
+assert(param:add_table(KEY, "L32_", 8))
+assert(param:add_param_int32(KEY, 1, "VALUE", 0))
+assert(param:add_param_int32(KEY, 2, "SAVED", 16777216))
+assert(param:add_param(KEY, 3, "FLOAT", 1.5))
+assert(not param:add_param_int32(KEY, 4, "BAD", 16777217))
+assert(not param:add_param(KEY, 2, "SAVED", 0))
+assert(param:add_param_int32(KEY, 5, "DEFAULT", 0))
+assert(param:add_param_int32(KEY, 6, "INEXACT", 7))
+assert(param:add_param_int32(KEY, 7, "RO", 0))
+assert(param:add_param_int32(KEY, 8, "EXP", 0))
+assert(Parameter("L32_DEFAULT"):get_int32() == 1000)
+assert(Parameter("L32_INEXACT"):get_int32() == 7)
+assert(Parameter("L32_RO"):get_int32() == 3)
+assert(Parameter("L32_EXP"):get_int32() == 1000000000)
+local value = Parameter("L32_VALUE")
+local saved = Parameter("L32_SAVED")
+local f = Parameter("L32_FLOAT")
+assert(f:get_int32() == nil)
+assert(not f:set_int32(1))
+assert(not Parameter("FENCE_ENABLE"):set_int32(300))
+for _, v in ipairs({1491234567, -2147483648, 2147483647}) do
+  assert(value:set_int32(v))
+  assert(value:get_int32() == v)
+end
+if saved:get_int32() == 16777216 then
+  assert(saved:set_and_save_int32(16777217))
+elseif saved:get_int32() == 16777217 then
+  gcs:send_text(6, "L32 saved integer kept")
+else
+  error("unexpected saved integer")
+end
+gcs:send_text(6, "L32 integer checks passed")
+return function() end, 1000
+"""
+        self.install_script_content_context("int32-params.lua", script_content)
+        defaults = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults.write("SCR_ENABLE 1\nL32_DEFAULT 1e3\nL32_INEXACT 1491234567\n"
+                       "L32_RO 3.0 @READONLY\nL32_EXP 1e9\n")
+        defaults.close()
+        self.context_collect('STATUSTEXT')
+        self.customise_SITL_commandline([], defaults_filepath=[defaults.name], wipe=True)
+        self.wait_text('L32 integer checks passed', check_context=True)
+        self.mav.mav.param_set_send(self.sysid_thismav(), 1, b'L32_RO', 4, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+        self.delay_sim_time(2, reason='read-only Lua parameter set ignored')
+        self.assert_parameter_value('L32_RO', 3)
+        self.delay_sim_time(2, reason='wait for integer save IO')
+        self.reboot_sitl()
+        self.wait_text('L32 saved integer kept', check_context=True)
+        self.context_pop()
+        self.reboot_sitl()
+
     def NativeModuleParamDefaults(self):
         '''test exact int32 parameters and defaults files for native module parameters'''
         self.context_push()
@@ -25697,6 +25753,7 @@ return update, 1000
             self.Weathervane,
             self.ReadOnlyDefaults,
             self.DynamicParamDefaults,
+            self.ScriptingInt32Params,
             self.NativeModuleParamDefaults,
             self.SerialPassthru,
             self.FenceRelativeToOriginMaxAlt,
