@@ -243,6 +243,9 @@ TEST(Location, Tests)
     }
     // NO Origin
     AP::terrain()->set_enabled(true);
+    // terrain must never be asked for lat/lng 0,0
+    test_location3.lat = test_home.lat;
+    test_location3.lng = test_home.lng;
     for (auto current_frame = Location::AltFrame::ABSOLUTE;
          current_frame <= Location::AltFrame::ABOVE_TERRAIN;
          current_frame = static_cast<Location::AltFrame>(
@@ -256,7 +259,11 @@ TEST(Location, Tests)
                 EXPECT_TRUE(test_location3.change_alt_frame(desired_frame));
                 continue;
             }
-            if (current_frame == Location::AltFrame::ABOVE_ORIGIN
+            if (current_frame == Location::AltFrame::ABOVE_TERRAIN
+                    || desired_frame == Location::AltFrame::ABOVE_TERRAIN) {
+                // no terrain data has been loaded
+                EXPECT_FALSE(test_location3.change_alt_frame(desired_frame));
+            } else if (current_frame == Location::AltFrame::ABOVE_ORIGIN
                     || desired_frame == Location::AltFrame::ABOVE_ORIGIN) {
                 EXPECT_FALSE(test_location3.change_alt_frame(desired_frame));
             } else {

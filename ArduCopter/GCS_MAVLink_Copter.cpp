@@ -1119,6 +1119,8 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
             return;
         }
         loc = {packet.lat_int, packet.lon_int, int32_t(packet.alt*100), frame};
+        // 0,0 is a genuine target here, not "no location"
+        loc.nudge_off_zero_latlng();
     }
 
     // prepare velocity
