@@ -7658,6 +7658,54 @@ return update()
         if dist > 1000:
             raise NotAchievedException("Plane landed %.0fm from home" % dist)
 
+    def BatteryLandFailsafeMissionRestart(self):
+        '''Verify a battery Land failsafe goes to the landing sequence with MIS_RESTART set'''
+
+        # the Land action jumps the mission to the DO_LAND_START and then
+        # switches to AUTO.  Entering AUTO with MIS_RESTART=1 restarts the
+        # mission from the beginning unless the landing sequence is forced
+        # to resume, which would send the plane back to the takeoff and the
+        # ordinary waypoints instead of landing
+        alt = 60
+        self.set_parameters({
+            "MIS_RESTART": 1,
+            "RTL_AUTOLAND": 1,      # required when the mission has a DO_LAND_START
+            "BATT_LOW_VOLT": 11,
+            "BATT_LOW_TIMER": 1,
+            "BATT_FS_LOW_ACT": 2,   # land
+        })
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt, {'p1': 15}),    # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 1500, alt),            # 2
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, 0),                # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 400, alt),             # 4
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),                     # 5
+        ])
+
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_altitude(alt-10, alt+20, relative=True, timeout=120)
+
+        # leave AUTO, so the failsafe has to enter it again
+        self.change_mode("LOITER")
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_BATT_VOLTAGE", 9.5)
+        self.wait_text("Landing sequence start", check_context=True)
+        self.wait_mode("AUTO")
+
+        # the mission should be in the landing sequence, not restarted
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 20:
+            seq = self.mav.waypoint_current()
+            if seq < 3:
+                raise NotAchievedException(
+                    "Mission went back to item %u after the failsafe instead of the landing sequence" % seq)
+            self.delay_sim_time(1, "watching the mission item")
+
+        self.wait_disarmed(timeout=300)
+
     def AltResetBadGPS(self):
         '''Tests the handling of poor GPS lock pre-arm alt resets'''
         self.set_parameters({
@@ -10931,6 +10979,7 @@ return update()
             self.AirspeedScripting,
             self.MissionJumpTags,
             self.JumpBestLandSequence,
+            self.BatteryLandFailsafeMissionRestart,
             Test(self.GCSFailsafe, speedup=8),
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.MAV_CMD_DO_AUTOTUNE_ENABLE,
