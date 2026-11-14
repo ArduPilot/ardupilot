@@ -23,6 +23,8 @@ def test_declarative_parameter_tables(tmp_path):
         vehicle.pump(0.2)
         mark = len(vehicle.texts)
         vehicle.restart(1)
+        # the saved int32 survives the restart without float rounding
+        vehicle.text('TABLE exact', after=mark)
         vehicle.text('TABLE ready', after=mark)
         assert vehicle.parameter('RTBL_SAVED') == 43
     finally:
