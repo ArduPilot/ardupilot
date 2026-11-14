@@ -74,6 +74,20 @@
     "SRV_Channels.set_angle": "Changes shared actuator scaling; module exit does not restore it.",
     "SRV_Channels.set_range": "Changes shared actuator scaling; module exit does not restore it."
   },
+  "locks": {
+    "AP_Arming.disarm": {
+      "lock": "scheduler-semaphore",
+      "reason": "Disarming and pre-arm checks change state owned by the main loop; unlike arming they do not delay."
+    },
+    "AP_Arming.pre_arm_checks": {
+      "lock": "scheduler-semaphore",
+      "reason": "Disarming and pre-arm checks change state owned by the main loop; unlike arming they do not delay."
+    },
+    "GCS.set_message_interval": {
+      "lock": "scheduler-semaphore",
+      "reason": "Stream intervals live in per-link deferred-message state used by the main-loop GCS sender."
+    }
+  },
   "excluded": {
     "AP_CRSF_Telem.pop_menu_event": "module-lifecycle-owned-crsf-menu-adapter",
     "AP_CRSF_Telem.send_response": "module-lifecycle-owned-crsf-menu-adapter",
