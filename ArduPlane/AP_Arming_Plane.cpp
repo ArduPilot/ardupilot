@@ -287,6 +287,9 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
         return false;
     }
 
+    // a new flight may enter the landing sequence from RTL once
+    plane.auto_state.checked_for_autoland = false;
+
     if (plane.update_home()) {
         // after update_home the home position could still be
         // different from the current_loc if the EKF refused the

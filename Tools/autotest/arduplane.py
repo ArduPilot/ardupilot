@@ -10775,6 +10775,33 @@ return update()
                 self.wait_message_field_values('VFR_HUD', {'airspeed': airspeed}, epsilon=0.5)
                 self.wait_message_field_values('WIND', {'direction': direction, 'speed': speed}, epsilon=0.1)
 
+    def RTLAutolandOnce(self):
+        '''A landing sequence starts from RTL once, then RTL stays in RTL'''
+        self.wait_ready_to_arm()
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("RTL_AUTOLAND", 2)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 200, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 200, 0),
+        ])
+        # one command, not change_mode(): that resends until the mode
+        # sticks, which would race the switch into AUTO
+        self.send_cmd_do_set_mode("RTL")
+        self.wait_mode("AUTO")
+        self.wait_statustext("Landing sequence start", check_context=True)
+        self.context_clear_collection("STATUSTEXT")
+        self.send_cmd_do_set_mode("RTL")
+        self.wait_mode("RTL")
+        self.delay_sim_time(3, "confirm RTL does not restart autoland")
+        if not self.mode_is("RTL"):
+            raise NotAchievedException("Second RTL left RTL (mode=%s)" %
+                                       self.mav.flightmode)
+        if self.statustext_count_in_collections("Landing sequence start") != 0:
+            raise NotAchievedException("Second RTL restarted the landing sequence")
+        self.context_pop()
+        self.progress("RTL autoland ran once")
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -10795,6 +10822,7 @@ return update()
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,
             self.FenceRTLRally,
+            self.RTLAutolandOnce,
             self.FenceMinAltEnableAutoland,
             self.FenceAutoEnableDisableSwitch,
             Test(self.FenceCircleExclusionAutoEnable, speedup=20),
