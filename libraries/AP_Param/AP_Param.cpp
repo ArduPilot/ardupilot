@@ -1261,7 +1261,11 @@ void AP_Param::save_sync(bool force_save, bool send_to_gcs)
         } else {
             v2 = get_default_value(this, *info);
         }
-        if (is_equal(v1,v2) && !force_save) {
+        // int32 values that round to the same float as the default may differ
+        const bool equal = phdr.type == AP_PARAM_INT32 ?
+            (v2 >= -2147483648.0f && v2 < 2147483648.0f && int64_t(v2) == ((AP_Int32 *)this)->get() && is_equal(float(int64_t(v2)), v2)) :
+            is_equal(v1, v2);
+        if (equal && !force_save) {
             if (send_to_gcs) {
                 GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2);
             }
@@ -3581,7 +3585,8 @@ bool AP_Param::add_param_typed(uint8_t _key, uint8_t param_num, const char *pnam
             const long long v = strtoll(dd.value, &end, 10);
             if (end != dd.value && *end == 0 && v >= INT32_MIN && v <= INT32_MAX) {
                 int_default = int32_t(v);
-                default_value = float(int_default);
+                // GroupInfo holds an in-range float; the exact value is applied below
+                default_value = MIN(float(int_default), 2147483520.0f);
                 read_only = dd.read_only;
             }
         } else {
