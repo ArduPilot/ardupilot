@@ -3461,8 +3461,26 @@ bool AP_Param::find_default_in_string(const volatile char *ptr, int32_t length, 
 /*
   add a parameter to a dynamic table
  */
-bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, float default_value)
+bool AP_Param::add_param(uint8_t key, uint8_t param_num, const char *pname, float default_value)
 {
+    return add_param_typed(key, param_num, pname, AP_PARAM_FLOAT, default_value);
+}
+
+bool AP_Param::add_param_int32(uint8_t key, uint8_t param_num, const char *pname, int32_t default_value)
+{
+    // GroupInfo holds the default as a float
+    const float fdefault = float(default_value);
+    if (fdefault >= 2147483648.0f || int32_t(fdefault) != default_value) {
+        return false;
+    }
+    return add_param_typed(key, param_num, pname, AP_PARAM_INT32, fdefault);
+}
+
+bool AP_Param::add_param_typed(uint8_t _key, uint8_t param_num, const char *pname, ap_var_type type,
+                               float default_value)
+{
+    static_assert(sizeof(AP_Float) == sizeof(float) && sizeof(AP_Int32) == sizeof(float),
+                  "dynamic parameter slots are float sized");
     WITH_SEMAPHORE(_dynamic_registration_sem);
     if (_var_info_dynamic == nullptr) {
         // No dynamic tables available
@@ -3523,14 +3541,14 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     }
 
     // Get param object
-    AP_Float *pvalues = const_cast<AP_Float *>((const AP_Float *)info.ptr);
-    AP_Float &p = pvalues[param_num];
+    AP_Param *p = (AP_Param *)((uint8_t *)const_cast<void *>(info.ptr) + param_num*sizeof(float));
 
     // Check for conflicting name
     enum ap_var_type existingType;
     AP_Param* existingParam = find(fullName, &existingType);
-    if ((existingParam != nullptr) && ((existingType != AP_PARAM_FLOAT) || ((AP_Float*)existingParam != &p))) {
-        // There is a existing parameter with this name (which is not this parameter from a previous script run)
+    if ((existingParam != nullptr) && ((existingType != type) || (existingParam != p))) {
+        // There is a existing parameter with this name (which is not this
+        // parameter of the same type from a previous script run)
         return false;
     }
 
@@ -3551,6 +3569,11 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
 
     auto &ginfo = const_cast<GroupInfo*>(info.group_info)[param_num];
 
+    if (ginfo.name != _empty_string && ginfo.type != type) {
+        // a retained registration cannot change type
+        return false;
+    }
+
     if (ginfo.name == _empty_string) {
         // we don't allow name change while running
         ginfo.name = strdup(pname);
@@ -3563,13 +3586,17 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     ginfo.idx = param_num;
     float *def_value = const_cast<float *>(&ginfo.def_value);
     *def_value = default_value;
-    ginfo.type = AP_PARAM_FLOAT;
+    ginfo.type = type;
 
     // load from storage if available, the param is hidden during this
     // load so the param is not visible to MAVLink until after it is
     // loaded
-    p.set_default(default_value);
-    p.load();
+    if (type == AP_PARAM_INT32) {
+        ((AP_Int32 *)p)->set_default(int32_t(default_value));
+    } else {
+        ((AP_Float *)p)->set_default(default_value);
+    }
+    p->load();
 
     // clear the hidden flag if set and invalidate the count
     // so we recount the parameters
