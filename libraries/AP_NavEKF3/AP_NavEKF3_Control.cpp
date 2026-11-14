@@ -560,6 +560,12 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
         return false;
     }
 
+    // flow that is not fused because the sensor is below its focus altitude cannot aid. Without this a vehicle
+    // held below that altitude leaves relative aiding on the flow timeout and re-enters it on the next sample
+    if (flowRngBelowAltMin) {
+        return false;
+    }
+
     // We need stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use optical flow
     return (imuSampleTime_ms - flowMeaTime_ms < 200) && tiltAlignComplete && delAngBiasLearned;
 }

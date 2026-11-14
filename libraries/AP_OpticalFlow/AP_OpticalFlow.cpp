@@ -105,6 +105,15 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 7,  AP_OpticalFlow, _options,   0),
 
+    // @Param: _ALT_MIN
+    // @DisplayName: Optical flow minimum focus altitude
+    // @Description: Altitude above terrain below which this sensor cannot focus so its output is not motion. When the altitude above terrain estimate is below this the EKF3 does not fuse the flow measurements. Set this to the sensor's focus limit and no higher because a vehicle held below this altitude in flight will lose optical flow aiding. 0 disables the check. Ignored on the ground before takeoff, by EKF2 and by Rover when FLOW_HGT_OVR is set. Not used when flow is used for terrain estimation (EK3_FLOW_USE=2).
+    // @Range: 0 5
+    // @Increment: 0.01
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("_ALT_MIN", 8, AP_OpticalFlow, _alt_min, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -277,7 +286,8 @@ void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
                                 _state.bodyRate,
                                 _last_update_ms,
                                 get_pos_offset(),
-                                get_height_override());
+                                get_height_override(),
+                                get_alt_min());
 #endif
 #if HAL_LOGGING_ENABLED
     Log_Write_Optflow();

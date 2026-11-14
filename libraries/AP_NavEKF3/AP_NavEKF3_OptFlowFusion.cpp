@@ -338,12 +338,23 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         range -= posOffsetEarth.z / prevTnb.c.z;
     }
     
+    bool rangeIsEstimated = true;
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
     // override with user specified height (if given, for rover)
     if (ofDataDelayed.heightOverride > 0) {
         range = ofDataDelayed.heightOverride;
+        rangeIsEstimated = false;
     }
 #endif
+
+    // a flow sensor cannot focus on the ground below its minimum altitude and returns values that are
+    // not motion. Don't fuse them but still calculate the innovations so they can be reported.
+    // On the ground before takeoff the flow is fused as zero instead, see SelectFlowFusion(),
+    // so that relative aiding is not lost. Skipped if the altitude is a user specified override
+    flowRngBelowAltMin = takeOffDetected && rangeIsEstimated && (range < ofDataDelayed.altMin);
+    if (flowRngBelowAltMin) {
+        really_fuse = false;
+    }
 
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
