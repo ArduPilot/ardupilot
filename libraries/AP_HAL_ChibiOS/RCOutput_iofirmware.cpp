@@ -386,19 +386,20 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32
     dmar_uint_t oldValue = buffer[1];
 
     for (int32_t i = 0; i <= count+1; ) {
+        // checked first, so the fill below never runs with no bits left
+        if (bits >= 21U) {
+            break;
+        }
         if (i < count) {
             dmar_int_t diff = buffer[i] - oldValue;
-            if (bits >= 21U) {
-                break;
-            }
             len = (diff + TELEM_IC_SAMPLE/2U) / TELEM_IC_SAMPLE;
+            oldValue = buffer[i];
         } else {
             len = 21U - bits;
         }
 
         value <<= len;
         value |= 1U << (len - 1U);
-        oldValue = buffer[i];
         bits += len;
 
         i += (i%2 ? -1 : 3);
