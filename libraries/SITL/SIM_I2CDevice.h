@@ -124,6 +124,11 @@ public:
 
     virtual void update(const class Aircraft &aircraft) { }
 
+    // devices are only updated once the autopilot has addressed
+    // them.  Devices whose state advances from power-on regardless
+    // must return true so they are updated from the start
+    virtual bool update_from_power_on() const { return false; }
+
     virtual int rdwr(I2C::i2c_rdwr_ioctl_data *&data) = 0;
 };
 

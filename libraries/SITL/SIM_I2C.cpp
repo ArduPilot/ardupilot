@@ -149,6 +149,9 @@ struct i2c_device_at_address {
     uint8_t bus;
     uint8_t addr;
     I2CDevice &device;
+    // true once the autopilot has addressed this device; only active
+    // devices are updated, which saves simulating the many unused ones
+    bool active;
 } i2c_devices[] {
 #if AP_SIM_TERARANGERI2C_ENABLED
     { 0, 0x31, terarangeri2c },   // RNGFNDx_TYPE = 14, RNGFNDx_ADDR = 49
@@ -240,6 +243,7 @@ void I2C::init()
 
     for (auto &i : i2c_devices) {
         i.device.init();
+        i.active = i.device.update_from_power_on();
     }
 
 #if AP_SIM_IS31FL3195_ENABLED
@@ -263,9 +267,14 @@ void I2C::init()
 
 void I2C::update(const class Aircraft &aircraft)
 {
+    WITH_SEMAPHORE(sem);
+
     init();  // lazily set up the device table on first use
 
-    for (auto daa : i2c_devices) {
+    for (auto &daa : i2c_devices) {
+        if (!daa.active) {
+            continue;
+        }
         daa.device.update(aircraft);
     }
 }
@@ -281,6 +290,8 @@ int I2C::ioctl_rdwr(i2c_rdwr_ioctl_data *data)
         if (dev_at_address.bus != bus) {
             continue;
         }
+        // the physics thread updates the device from its next step
+        dev_at_address.active = true;
         return dev_at_address.device.rdwr(data);
     }
 //            ::fprintf(stderr, "Unhandled i2c message: bus=%u addr=0x%02x flags=%u len=%u\n", msg.bus, msg.addr, msg.flags, msg.len);
@@ -289,6 +300,8 @@ int I2C::ioctl_rdwr(i2c_rdwr_ioctl_data *data)
 
 int I2C::ioctl(uint8_t ioctl_type, void *data)
 {
+    WITH_SEMAPHORE(sem);
+
     init();  // lazily set up the device table on first use
 
     switch ((IOCtlType) ioctl_type) {
