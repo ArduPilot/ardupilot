@@ -260,7 +260,7 @@ void NavEKF3_core::ResetPositionD(ftype posD)
 
     // the terrain state is a D coordinate in the same datum, so it moves with it, unless the range finder
     // is becoming the height source (hgtMea is referenced through terrainState) or the ground was never
-    // measured. Leaving the range finder counts as measured, as gndOffsetValid goes false once it is not the source
+    // measured. Leaving the range finder counts as measured, as gndOffsetValid can be false once it is not the source
     if ((gndOffsetValid || gndOffsetMeasured ||
          (prevHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) &&
         (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {

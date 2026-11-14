@@ -862,7 +862,8 @@ void NavEKF3_core::updateFlatGroundAssumed(void)
                 terrainAnchorValid = flatGndSaved.terrainAnchorValid;
                 lastGoodRngMeas = flatGndSaved.lastGoodRngMeas;
                 gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) ||
-                                 (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER);
+                                 (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) ||
+                                 ((imuSampleTime_ms - lastRngHgtPassTime_ms) < 5000);
 #if EK3_FEATURE_OPTFLOW_AGL_KF
                 // past UpdateAglKf()'s 5 s timeout, so the next range sample re-initialises it
                 // rather than blending from the obstacle
@@ -909,8 +910,11 @@ void NavEKF3_core::updateFlatGroundAssumed(void)
     // engage only once the range data has gone, so the checks below see why it went, and end
     // once the ground has been measured again without a break for 2 s, so a later loss has to
     // pass those checks afresh. A shorter return, from something passed over, leaves it engaged.
-    // Timed to the latest sample, as a break is only seen 500 ms after it
-    if (gndOffsetValid) {
+    // Timed to the latest sample, as a break is only seen 500 ms after it. The 5 s the ground offset
+    // stays valid after range finder height ends does not delay it, as only the fallback keeps that
+    // height source from taking a return from something passed over
+    if (((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) ||
+        (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
         if ((flatGndRngResumeTime_ms != 0) && (rngTime_ms - flatGndRngResumeTime_ms >= 2000)) {
             flatGndEngaged = false;
             flatGndSaved.valid = false;
