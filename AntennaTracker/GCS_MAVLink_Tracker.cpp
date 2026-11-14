@@ -519,7 +519,9 @@ mission_failed:
             msg.sysid,
             msg.compid,
             result,
-            MAV_MISSION_TYPE_MISSION);
+            MAV_MISSION_TYPE_MISSION,
+            0
+            );
 }
 #endif
 
