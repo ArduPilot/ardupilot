@@ -612,6 +612,7 @@ private:
         CONTINUE_IF_LANDING             = (1<<3),   // 8
         GCS_CONTINUE_IF_PILOT_CONTROL   = (1<<4),   // 16
         RELEASE_GRIPPER                 = (1<<5),   // 32
+        EKF_RESTORE_MODE                = (1<<6),   // 64
     };
 
 
@@ -810,6 +811,8 @@ private:
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
     void failsafe_ekf_recheck();
+    void failsafe_ekf_restore_mode();
+    void failsafe_ekf_restore_cancel(Mode::Number mode);
     void check_ekf_reset();
     void check_vibration();
 
