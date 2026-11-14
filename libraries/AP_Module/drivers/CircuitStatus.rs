@@ -4,15 +4,154 @@
 #![no_main]
 
 use ap_rust_sdk::{BattMonitorScriptState, Context, DroneCanSubscription, Error, Result};
+
 use core::fmt::{self, Write};
 
 ap_rust_sdk::module!(run);
 
+ap_rust_sdk::param_table! {
+    pub struct Table, enum P;
+    key = 50, prefix = "DCS";
+    size = 19;
+
+    // @Param: DCS_NUM_CIRCUITS
+    // @DisplayName: Number of CircuitStatus monitors
+    // @Description: Number of DroneCAN CircuitStatus battery monitor instances. The per-instance DCSx_ parameters are created based on this value.
+    // @Range: 0 9
+    // @RebootRequired: True
+    // @User: Standard
+    NumCircuits = 1, "_NUM_CIRCUITS", f32: 0.0;
+
+    // @Param: DCS1_CIRCUIT_ID
+    // @DisplayName: CircuitStatus circuit ID
+    // @Description: circuit_id of the CircuitStatus message to use for this instance. Set to -1 to disable.
+    // @Range: -1 65535
+    // @User: Standard
+    Circuit1CircuitId = 2, "1_CIRCUIT_ID", f32: -1.0;
+
+    // @Param: DCS1_BATT_IDX
+    // @DisplayName: CircuitStatus battery index
+    // @Description: Battery monitor instance to feed with this circuit. Set to 1 for BATT, 2 for BATT2 etc. The corresponding BATTn_MONITOR must be 29 (scripting). Set to 0 to disable.
+    // @Range: 0 9
+    // @User: Standard
+    Circuit1BattIdx = 3, "1_BATT_IDX", f32: 0.0;
+
+    // @Param: DCS2_CIRCUIT_ID
+    // @DisplayName: CircuitStatus circuit ID
+    // @Description: circuit_id of the CircuitStatus message to use for this instance. Set to -1 to disable.
+    // @Range: -1 65535
+    // @User: Standard
+    Circuit2CircuitId = 4, "2_CIRCUIT_ID", f32: -1.0;
+
+    // @Param: DCS2_BATT_IDX
+    // @DisplayName: CircuitStatus battery index
+    // @Description: Battery monitor instance to feed with this circuit. Set to 1 for BATT, 2 for BATT2 etc. The corresponding BATTn_MONITOR must be 29 (scripting). Set to 0 to disable.
+    // @Range: 0 9
+    // @User: Standard
+    Circuit2BattIdx = 5, "2_BATT_IDX", f32: 0.0;
+
+    // @Param: DCS3_CIRCUIT_ID
+    // @DisplayName: CircuitStatus circuit ID
+    // @Description: circuit_id of the CircuitStatus message to use for this instance. Set to -1 to disable.
+    // @Range: -1 65535
+    // @User: Standard
+    Circuit3CircuitId = 6, "3_CIRCUIT_ID", f32: -1.0;
+
+    // @Param: DCS3_BATT_IDX
+    // @DisplayName: CircuitStatus battery index
+    // @Description: Battery monitor instance to feed with this circuit. Set to 1 for BATT, 2 for BATT2 etc. The corresponding BATTn_MONITOR must be 29 (scripting). Set to 0 to disable.
+    // @Range: 0 9
+    // @User: Standard
+    Circuit3BattIdx = 7, "3_BATT_IDX", f32: 0.0;
+
+    // @Param: DCS4_CIRCUIT_ID
+    // @DisplayName: CircuitStatus circuit ID
+    // @Description: circuit_id of the CircuitStatus message to use for this instance. Set to -1 to disable.
+    // @Range: -1 65535
+    // @User: Standard
+    Circuit4CircuitId = 8, "4_CIRCUIT_ID", f32: -1.0;
+
+    // @Param: DCS4_BATT_IDX
+    // @DisplayName: CircuitStatus battery index
+    // @Description: Battery monitor instance to feed with this circuit. Set to 1 for BATT, 2 for BATT2 etc. The corresponding BATTn_MONITOR must be 29 (scripting). Set to 0 to disable.
+    // @Range: 0 9
+    // @User: Standard
+    Circuit4BattIdx = 9, "4_BATT_IDX", f32: 0.0;
+
+    // @Param: DCS5_CIRCUIT_ID
+    // @DisplayName: CircuitStatus circuit ID
+    // @Description: circuit_id of the CircuitStatus message to use for this instance. Set to -1 to disable.
+    // @Range: -1 65535
+    // @User: Standard
+    Circuit5CircuitId = 10, "5_CIRCUIT_ID", f32: -1.0;
+
+    // @Param: DCS5_BATT_IDX
+    // @DisplayName: CircuitStatus battery index
+    // @Description: Battery monitor instance to feed with this circuit. Set to 1 for BATT, 2 for BATT2 etc. The corresponding BATTn_MONITOR must be 29 (scripting). Set to 0 to disable.
+    // @Range: 0 9
+    // @User: Standard
+    Circuit5BattIdx = 11, "5_BATT_IDX", f32: 0.0;
+
+    // @Param: DCS6_CIRCUIT_ID
+    // @DisplayName: CircuitStatus circuit ID
+    // @Description: circuit_id of the CircuitStatus message to use for this instance. Set to -1 to disable.
+    // @Range: -1 65535
+    // @User: Standard
+    Circuit6CircuitId = 12, "6_CIRCUIT_ID", f32: -1.0;
+
+    // @Param: DCS6_BATT_IDX
+    // @DisplayName: CircuitStatus battery index
+    // @Description: Battery monitor instance to feed with this circuit. Set to 1 for BATT, 2 for BATT2 etc. The corresponding BATTn_MONITOR must be 29 (scripting). Set to 0 to disable.
+    // @Range: 0 9
+    // @User: Standard
+    Circuit6BattIdx = 13, "6_BATT_IDX", f32: 0.0;
+
+    // @Param: DCS7_CIRCUIT_ID
+    // @DisplayName: CircuitStatus circuit ID
+    // @Description: circuit_id of the CircuitStatus message to use for this instance. Set to -1 to disable.
+    // @Range: -1 65535
+    // @User: Standard
+    Circuit7CircuitId = 14, "7_CIRCUIT_ID", f32: -1.0;
+
+    // @Param: DCS7_BATT_IDX
+    // @DisplayName: CircuitStatus battery index
+    // @Description: Battery monitor instance to feed with this circuit. Set to 1 for BATT, 2 for BATT2 etc. The corresponding BATTn_MONITOR must be 29 (scripting). Set to 0 to disable.
+    // @Range: 0 9
+    // @User: Standard
+    Circuit7BattIdx = 15, "7_BATT_IDX", f32: 0.0;
+
+    // @Param: DCS8_CIRCUIT_ID
+    // @DisplayName: CircuitStatus circuit ID
+    // @Description: circuit_id of the CircuitStatus message to use for this instance. Set to -1 to disable.
+    // @Range: -1 65535
+    // @User: Standard
+    Circuit8CircuitId = 16, "8_CIRCUIT_ID", f32: -1.0;
+
+    // @Param: DCS8_BATT_IDX
+    // @DisplayName: CircuitStatus battery index
+    // @Description: Battery monitor instance to feed with this circuit. Set to 1 for BATT, 2 for BATT2 etc. The corresponding BATTn_MONITOR must be 29 (scripting). Set to 0 to disable.
+    // @Range: 0 9
+    // @User: Standard
+    Circuit8BattIdx = 17, "8_BATT_IDX", f32: 0.0;
+
+    // @Param: DCS9_CIRCUIT_ID
+    // @DisplayName: CircuitStatus circuit ID
+    // @Description: circuit_id of the CircuitStatus message to use for this instance. Set to -1 to disable.
+    // @Range: -1 65535
+    // @User: Standard
+    Circuit9CircuitId = 18, "9_CIRCUIT_ID", f32: -1.0;
+
+    // @Param: DCS9_BATT_IDX
+    // @DisplayName: CircuitStatus battery index
+    // @Description: Battery monitor instance to feed with this circuit. Set to 1 for BATT, 2 for BATT2 etc. The corresponding BATTn_MONITOR must be 29 (scripting). Set to 0 to disable.
+    // @Range: 0 9
+    // @User: Standard
+    Circuit9BattIdx = 19, "9_BATT_IDX", f32: 0.0;
+}
+
 const CIRCUIT_STATUS_ID: u16 = 1091;
 const CIRCUIT_STATUS_SIGNATURE: u64 = 0x8313_d33d_0ddd_a115;
 const MAX_CIRCUITS: usize = 9;
-const PARAM_TABLE_KEY: u8 = 50;
-const PARAM_TABLE_PREFIX: &str = "DCS";
 
 struct Text<const N: usize> {
     bytes: [u8; N],
@@ -55,16 +194,6 @@ fn retry<T>(context: &Context<'_>, mut call: impl FnMut() -> Result<T>) -> Resul
             }
             result => return result,
         }
-    }
-}
-
-fn add_parameter(context: &Context<'_>, index: u8, name: &str, default: f32) -> Result {
-    if retry(context, || {
-        context.param().add_param(PARAM_TABLE_KEY, index, name, default)
-    })? {
-        Ok(())
-    } else {
-        Err(Error::Host)
     }
 }
 
@@ -160,23 +289,16 @@ fn handle_message(
 }
 
 fn run(context: &Context<'_>) -> Result {
-    if !retry(context, || {
-        context.param().add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 19)
-    })? {
-        return Err(Error::Host);
-    }
-    add_parameter(context, 1, "_NUM_CIRCUITS", 0.0)?;
+    Table::register_table(context)?;
+    Table::definition(P::NumCircuits).register(context, Table::KEY)?;
     let circuits = retry(context, || context.param().get("DCS_NUM_CIRCUITS"))?
         .unwrap_or(0.0)
         .clamp(0.0, MAX_CIRCUITS as f32) as usize;
     if circuits == 0 {
         return Ok(());
     }
-    for circuit in 1..=circuits {
-        let circuit_name = Text::<16>::new(format_args!("{circuit}_CIRCUIT_ID"))?;
-        let battery_name = Text::<16>::new(format_args!("{circuit}_BATT_IDX"))?;
-        add_parameter(context, (2 * circuit) as u8, circuit_name.as_str()?, -1.0)?;
-        add_parameter(context, (2 * circuit + 1) as u8, battery_name.as_str()?, 0.0)?;
+    for d in &Table::definitions()[1..1 + 2 * circuits] {
+        d.register(context, Table::KEY)?;
     }
 
     let mut handles: [Option<DroneCanSubscription>; 2] = [None, None];

@@ -7,41 +7,134 @@ use super::support::{retry, Text};
 use alloc::vec::Vec;
 use ap_rust_sdk::{Context, Error, Parameter, RcChannel, Result};
 
-const TABLE_KEY: u8 = 8;
-const TABLE_PREFIX: &str = "QUIK_";
-const QUICK_DEFINITIONS: &[(&str, f32)] = &[
-    ("ENABLE", 0.0),
-    ("AXES", 7.0),
-    ("DOUBLE_TIME", 10.0),
-    ("GAIN_MARGIN", 60.0),
-    ("OSC_SMAX", 5.0),
-    ("YAW_P_MAX", 0.5),
-    ("YAW_D_MAX", 0.01),
-    ("RP_PI_RATIO", 1.0),
-    ("Y_PI_RATIO", 10.0),
-    ("AUTO_FILTER", 1.0),
-    ("AUTO_SAVE", 0.0),
-    ("RC_FUNC", 300.0),
-    ("MAX_REDUCE", 20.0),
-    ("OPTIONS", 0.0),
-    ("ANGLE_MAX", 10.0),
-];
+ap_rust_sdk::param_table! {
+    pub struct QuickTable, enum QuickParam;
+    key = 8, prefix = "QUIK_";
+    size = 15;
 
-pub const ENABLE: usize = 0;
-pub const AXES: usize = 1;
-pub const DOUBLE_TIME: usize = 2;
-pub const GAIN_MARGIN: usize = 3;
-pub const OSC_SMAX: usize = 4;
-pub const YAW_P_MAX: usize = 5;
-pub const YAW_D_MAX: usize = 6;
-pub const RP_PI_RATIO: usize = 7;
-pub const Y_PI_RATIO: usize = 8;
-pub const AUTO_FILTER: usize = 9;
-pub const AUTO_SAVE: usize = 10;
-pub const RC_FUNC: usize = 11;
-pub const MAX_REDUCE: usize = 12;
-pub const OPTIONS: usize = 13;
-pub const ANGLE_MAX: usize = 14;
+    // @Param: QUIK_ENABLE
+    // @DisplayName: Quicktune enable
+    // @Description: Enable quicktune system
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    Enable = 1, "ENABLE", f32: 0.0;
+
+    // @Param: QUIK_AXES
+    // @DisplayName: Quicktune axes
+    // @Description: axes to tune
+    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+    // @User: Standard
+    Axes = 2, "AXES", f32: 7.0;
+
+    // @Param: QUIK_DOUBLE_TIME
+    // @DisplayName: Quicktune doubling time
+    // @Description: Time to double a tuning parameter. Raise this for a slower tune.
+    // @Range: 5 20
+    // @Units: s
+    // @User: Standard
+    DoubleTime = 3, "DOUBLE_TIME", f32: 10.0;
+
+    // @Param: QUIK_GAIN_MARGIN
+    // @DisplayName: Quicktune gain margin
+    // @Description: Reduction in gain after oscillation detected. Raise this number to get a more conservative tune
+    // @Range: 20 80
+    // @Units: %
+    // @User: Standard
+    GainMargin = 4, "GAIN_MARGIN", f32: 60.0;
+
+    // @Param: QUIK_OSC_SMAX
+    // @DisplayName: Quicktune oscillation rate threshold
+    // @Description: Threshold for oscillation detection. A lower value will lead to a more conservative tune.
+    // @Range: 1 10
+    // @User: Standard
+    OscSmax = 5, "OSC_SMAX", f32: 5.0;
+
+    // @Param: QUIK_YAW_P_MAX
+    // @DisplayName: Quicktune Yaw P max
+    // @Description: Maximum value for yaw P gain
+    // @Range: 0.1 3
+    // @User: Standard
+    YawPMax = 6, "YAW_P_MAX", f32: 0.5;
+
+    // @Param: QUIK_YAW_D_MAX
+    // @DisplayName: Quicktune Yaw D max
+    // @Description: Maximum value for yaw D gain
+    // @Range: 0.001 1
+    // @User: Standard
+    YawDMax = 7, "YAW_D_MAX", f32: 0.01;
+
+    // @Param: QUIK_RP_PI_RATIO
+    // @DisplayName: Quicktune roll/pitch PI ratio
+    // @Description: Ratio between P and I gains for roll and pitch. Raise this to get a lower I gain
+    // @Range: 0.5 1.0
+    // @User: Standard
+    RpPiRatio = 8, "RP_PI_RATIO", f32: 1.0;
+
+    // @Param: QUIK_Y_PI_RATIO
+    // @DisplayName: Quicktune Yaw PI ratio
+    // @Description: Ratio between P and I gains for yaw. Raise this to get a lower I gain
+    // @Range: 0.5 20
+    // @User: Standard
+    YPiRatio = 9, "Y_PI_RATIO", f32: 10.0;
+
+    // @Param: QUIK_AUTO_FILTER
+    // @DisplayName: Quicktune auto filter enable
+    // @Description: When enabled the PID filter settings are automatically set based on INS_GYRO_FILTER
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AutoFilter = 10, "AUTO_FILTER", f32: 1.0;
+
+    // @Param: QUIK_AUTO_SAVE
+    // @DisplayName: Quicktune auto save
+    // @Description: Number of seconds after completion of tune to auto-save. This is useful when using a 2 position switch for quicktune
+    // @Units: s
+    // @User: Standard
+    AutoSave = 11, "AUTO_SAVE", f32: 0.0;
+
+    // @Param: QUIK_RC_FUNC
+    // @DisplayName: Quicktune RC function
+    // @Description: RCn_OPTION number to use to control tuning stop/start/save
+    // @User: Standard
+    RcFunc = 12, "RC_FUNC", f32: 300.0;
+
+    // @Param: QUIK_MAX_REDUCE
+    // @DisplayName: Quicktune maximum gain reduction
+    // @Description: This controls how much quicktune is allowed to lower gains from the original gains. If the vehicle already has a reasonable tune and is not oscillating then you can set this to zero to prevent gain reductions. The default of 20% is reasonable for most vehicles. Using a maximum gain reduction lowers the chance of an angle P oscillation happening if quicktune gets a false positive oscillation at a low gain, which can result in very low rate gains and a dangerous angle P oscillation.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Standard
+    MaxReduce = 13, "MAX_REDUCE", f32: 20.0;
+
+    // @Param: QUIK_OPTIONS
+    // @DisplayName: Quicktune options
+    // @Description: Additional options. When the Two Position Switch option is enabled then a high switch position will start the tune, low will disable the tune. you should also set a QUIK_AUTO_SAVE time so that you will be able to save the tune.
+    // @Bitmask: 0:UseTwoPositionSwitch
+    // @User: Standard
+    Options = 14, "OPTIONS", f32: 0.0;
+
+    // @Param: QUIK_ANGLE_MAX
+    // @DisplayName: maximum angle error for tune abort
+    // @Description: If while tuning the angle error goes over this limit then the tune will aborts to prevent a bad oscillation in the case of the tuning algorithm failing. If you get an error "Tuning: attitude error ABORTING" and you think it is a false positive then you can either raise this parameter or you can try increasing the QUIK_DOUBLE_TIME to do the tune more slowly. A value of zero disables this check.
+    // @Units: deg
+    // @User: Standard
+    AngleMax = 15, "ANGLE_MAX", f32: 10.0;
+}
+
+pub const ENABLE: usize = QuickParam::Enable as usize;
+pub const AXES: usize = QuickParam::Axes as usize;
+pub const DOUBLE_TIME: usize = QuickParam::DoubleTime as usize;
+pub const GAIN_MARGIN: usize = QuickParam::GainMargin as usize;
+pub const OSC_SMAX: usize = QuickParam::OscSmax as usize;
+pub const YAW_P_MAX: usize = QuickParam::YawPMax as usize;
+pub const YAW_D_MAX: usize = QuickParam::YawDMax as usize;
+pub const RP_PI_RATIO: usize = QuickParam::RpPiRatio as usize;
+pub const Y_PI_RATIO: usize = QuickParam::YPiRatio as usize;
+pub const AUTO_FILTER: usize = QuickParam::AutoFilter as usize;
+pub const AUTO_SAVE: usize = QuickParam::AutoSave as usize;
+pub const RC_FUNC: usize = QuickParam::RcFunc as usize;
+pub const MAX_REDUCE: usize = QuickParam::MaxReduce as usize;
+pub const OPTIONS: usize = QuickParam::Options as usize;
+pub const ANGLE_MAX: usize = QuickParam::AngleMax as usize;
 
 pub const AXIS_NAMES: [&str; 3] = ["RLL", "PIT", "YAW"];
 pub const SUFFIX_NAMES: [&str; 8] = ["FF", "P", "I", "D", "SMAX", "FLTT", "FLTD", "FLTE"];
@@ -90,21 +183,11 @@ fn set(parameter: &Parameter<'_, '_>, value: f32) -> Result {
 
 impl<'ctx, 'host> Parameters<'ctx, 'host> {
     pub fn new(context: &'ctx Context<'host>) -> Result<(Self, bool)> {
-        if !retry(context, || context.param().add_table(TABLE_KEY, TABLE_PREFIX, 15))? {
-            return Err(Error::Host);
-        }
+        QuickTable::register_definitions(context)?;
         let mut quick = Vec::new();
-        quick
-            .try_reserve_exact(QUICK_DEFINITIONS.len())
-            .map_err(|_| Error::NoMemory)?;
-        for (offset, &(name, default)) in QUICK_DEFINITIONS.iter().enumerate() {
-            if !retry(context, || {
-                context.param().add_param(TABLE_KEY, (offset + 1) as u8, name, default)
-            })? {
-                return Err(Error::Host);
-            }
-            let full_name = Text::<17>::new(format_args!("{TABLE_PREFIX}{name}"))?;
-            quick.push(bind(context, full_name.as_str())?);
+        quick.try_reserve_exact(QuickTable::definitions().len()).map_err(|_| Error::NoMemory)?;
+        for d in QuickTable::definitions() {
+            quick.push(d.bind(context, QuickTable::PREFIX)?);
         }
 
         let quadplane = retry(context, || context.param().get("Q_A_RAT_RLL_SMAX"))?.is_some();

@@ -6,12 +6,25 @@
 mod mavlink;
 
 use ap_rust_sdk::{enums::MavSeverity, Context, Error, Parameter, Result};
+
 use core::fmt::{self, Write};
 use mavlink::{decode_param_set, param_error, PARAM_ERROR_ID, PARAM_SET_ID};
 
 ap_rust_sdk::module!(run);
 
-const PARAM_TABLE_KEY: u8 = 92;
+ap_rust_sdk::param_table! {
+    pub struct Table, enum P;
+    key = 92, prefix = "PARAM_LOCK_";
+    size = 7;
+
+    // @Param: PARAM_LOCK_ENAB
+    // @DisplayName: Param Lockdown enable
+    // @Description: Param Lockdown enable
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    Enab = 1, "ENAB", f32: 1.0;
+}
+
 const PERMISSION_DENIED: u8 = 3;
 const VALUE_OUT_OF_RANGE: u8 = 2;
 const DOES_NOT_EXIST: u8 = 1;
@@ -135,14 +148,8 @@ fn handle_messages(context: &Context<'_>, active: bool) -> Result {
 }
 
 fn run(context: &Context<'_>) -> Result {
-    if !retry(context, || context.param().add_table(PARAM_TABLE_KEY, "PARAM_LOCK_", 7))?
-        || !retry(context, || {
-            context.param().add_param(PARAM_TABLE_KEY, 1, "ENAB", 1.0)
-        })?
-    {
-        return Err(Error::Host);
-    }
-    let enable = retry(context, || context.parameter("PARAM_LOCK_ENAB"))?.ok_or(Error::Invalid)?;
+    Table::register_definitions(context)?;
+    let enable = Table::bind(context, P::Enab)?;
     context.mavlink().init(5, 1)?;
     if !context.mavlink().register_rx_msgid(PARAM_SET_ID)? {
         return Err(Error::Host);
