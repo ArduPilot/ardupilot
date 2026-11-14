@@ -6,6 +6,7 @@
 
 #include <AP_Arming/AP_Arming.h>
 #include "actuators.h"
+#include "auv.h"
 // Global parameter class.
 //
 class Parameters {
@@ -402,6 +403,7 @@ public:
 
     AP_Float surface_nobaro_thrust;
     Actuators actuators;
+    AUV_Control auv;
 
     // Used to track parameter conversions
     AP_Int8 param_conversion_increment;

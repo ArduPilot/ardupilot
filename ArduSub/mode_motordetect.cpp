@@ -47,6 +47,10 @@ namespace {
 
 bool ModeMotordetect::init(bool ignore_checks)
 {
+    if (sub.motors.is_auv_frame() || sub.g2.auv.is_enabled()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Motor detect disabled for AUV frame");
+        return false;
+    }
     current_motor = 0;
     md_state = STANDBY;
     current_direction = UP;

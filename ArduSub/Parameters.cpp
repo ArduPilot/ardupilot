@@ -344,7 +344,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Set this parameter according to your vehicle/motor configuration
     // @User: Standard
     // @RebootRequired: True
-    // @Values: 0:BlueROV1, 1:Vectored, 2:Vectored_6DOF, 3:Vectored_6DOF_90, 4:SimpleROV-3, 5:SimpleROV-4, 6:SimpleROV-5, 7:Custom
+    // @Values: 0:BlueROV1, 1:Vectored, 2:Vectored_6DOF, 3:Vectored_6DOF_90, 4:SimpleROV-3, 5:SimpleROV-4, 6:SimpleROV-5, 7:Custom, 8:AUV_SingleThruster_4Fin
     GSCALAR(frame_configuration, "FRAME_CONFIG", AP_Motors6DOF::SUB_FRAME_VECTORED),
 
     // @Group: BTN0_
@@ -771,6 +771,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // Hidden param used as a flag for param conversion
     // This allows one time conversion while allowing user to flash between versions with and without converted params
     AP_GROUPINFO_FLAGS("PARM_FMT_VER", 24, ParametersG2, param_conversion_increment, 0, AP_PARAM_FLAG_HIDDEN),
+
+    // @Group: AUV_
+    // @Path: ../ArduSub/auv.cpp
+    AP_SUBGROUPINFO(auv, "AUV_", 25, ParametersG2, AUV_Control),
 
     AP_GROUPEND
 };

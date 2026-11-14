@@ -72,6 +72,16 @@ void ModeAlthold::run_pre()
 
     sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->get_althold_lean_angle_max_cd());
 
+    // When AUV mode is enabled and pilot pitch stick is neutral, drive pitch demand from depth controller
+    if (sub.g2.auv.is_enabled() && channel_pitch->get_control_in() == 0) {
+        float auv_target_pitch_cd;
+        float target_z_cm = -position_control->get_pos_target_U_cm();
+        float curr_z_cm = -position_control->get_pos_estimate_U_m() * 100.0f;
+        if (sub.g2.auv.calculate_depth_pitch_cd(target_z_cm, curr_z_cm, auv_target_pitch_cd)) {
+            target_pitch = auv_target_pitch_cd;
+        }
+    }
+
     // get pilot's desired yaw rate
     float yaw_input = channel_yaw->pwm_to_angle_dz_trim(channel_yaw->get_dead_zone() * sub.gain, channel_yaw->get_radio_trim());
     float target_yaw_rate = sub.get_pilot_desired_yaw_rate(yaw_input);
@@ -101,7 +111,11 @@ void ModeAlthold::run_pre()
 
 void ModeAlthold::run_post()
 {
-    motors.set_forward(channel_forward->norm_input());
+    float fwd = channel_forward->norm_input();
+    if (sub.g2.auv.is_enabled() && is_zero(fwd) && motors.armed()) {
+        fwd = sub.g2.auv.get_cruise_throttle();
+    }
+    motors.set_forward(fwd);
     motors.set_lateral(channel_lateral->norm_input());
 }
 
