@@ -159,7 +159,7 @@ public:
     // gripper command structure
     struct PACKED Gripper_Command {
         uint8_t num;            // gripper number
-        uint8_t action;         // action (0 = release, 1 = grab)
+        uint8_t action;         // action (0 = release, 1 = grab, 2 = hold)
     };
 
     // AUX_FUNCTION command structure
