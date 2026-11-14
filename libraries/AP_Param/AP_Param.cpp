@@ -3424,8 +3424,13 @@ bool AP_Param::match_default_line(char *line, const char *name, DynamicDefault &
     // parse_param_line() NUL terminated the name and the value token
     const char *value_s = pname + strlen(pname) + 1;
     value_s += strspn(value_s, ", =\t\r\n");
-    strncpy_noterm(d.value, value_s, sizeof(d.value)-1);
-    d.value[sizeof(d.value)-1] = 0;
+    // An oversized token must not become a different valid value when truncated.
+    if (strlen(value_s) >= sizeof(d.value)) {
+        d.value[0] = 0;
+        d.read_only = false;
+        return true;
+    }
+    strcpy(d.value, value_s);
     d.read_only = read_only;
     return true;
 }
@@ -3575,18 +3580,21 @@ bool AP_Param::add_param_typed(uint8_t _key, uint8_t param_num, const char *pnam
     }
 
     // the defaults files were applied before this parameter existed. A
-    // value invalid for the type is ignored, integers are parsed exactly
-    int32_t int_default = type == AP_PARAM_INT32 ? int32_t(default_value) : 0;
+    // Defaults remain float-backed, so integer overrides must also be
+    // exactly representable as a float. Runtime and saved values stay int32.
     DynamicDefault dd {};
     bool read_only = false;
     if (find_dynamic_default(fullName, dd)) {
         char *end;
         if (type == AP_PARAM_INT32) {
-            const long long v = strtoll(dd.value, &end, 10);
-            if (end != dd.value && *end == 0 && v >= INT32_MIN && v <= INT32_MAX) {
-                int_default = int32_t(v);
-                // GroupInfo holds an in-range float; the exact value is applied below
-                default_value = MIN(float(int_default), 2147483520.0f);
+            const double v = strtod(dd.value, &end);
+            // Fuzzy equality could accept an inexact integer default.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+            if (end != dd.value && *end == 0 && v >= double(INT32_MIN) && v <= double(INT32_MAX) &&
+                double(int32_t(v)) == v && double(float(v)) == v) {
+#pragma GCC diagnostic pop
+                default_value = float(v);
                 read_only = dd.read_only;
             }
         } else {
@@ -3623,14 +3631,11 @@ bool AP_Param::add_param_typed(uint8_t _key, uint8_t param_num, const char *pnam
     // load so the param is not visible to MAVLink until after it is
     // loaded
     if (type == AP_PARAM_INT32) {
-        ((AP_Int32 *)p)->set_default(int_default);
+        ((AP_Int32 *)p)->set_default(int32_t(default_value));
     } else {
         ((AP_Float *)p)->set_default(default_value);
     }
-    if (!p->load() && type == AP_PARAM_INT32) {
-        // load() applied the float GroupInfo default
-        ((AP_Int32 *)p)->set(int_default);
-    }
+    p->load();
 
     // clear the hidden flag if set and invalidate the count
     // so we recount the parameters
