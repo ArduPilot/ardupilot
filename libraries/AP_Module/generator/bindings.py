@@ -158,6 +158,11 @@ def select(ir, selection, only=None):
         raise ValueError('stale or unexplained binding exclusion')
     if not set(policy['effects']).issubset(available) or not all(policy['effects'].values()):
         raise ValueError('stale or unexplained binding effect')
+    if (not set(policy['locks']).issubset(available) or
+            any(lock['lock'] != 'scheduler-semaphore' or not lock['reason'] for lock in policy['locks'].values()) or
+            any(owners[key.split('.')[0]][field] for key in policy['locks']
+                for field in ('semaphore', 'scheduler_semaphore', 'semaphore_pointer'))):
+        raise ValueError('stale, unexplained or redundant binding lock')
     includes = {h['name']: h for h in ir['includes']}
     if not set(policy['headers']).issubset(includes):
         raise ValueError('stale header policy')
@@ -182,6 +187,9 @@ def select(ir, selection, only=None):
                     item['getter_effects'] = effects
                 if key in policy['effects']:
                     item['effects'] = policy['effects'][key]
+                if key in policy['locks']:
+                    # Native-only serialization where the Lua owner has no lock.
+                    item['lock'] = policy['locks'][key]['lock']
             except ValueError as error:
                 if only is not None:
                     raise ValueError(f'bindings.desc:{method["line"]}: {key}: {error}') from error
