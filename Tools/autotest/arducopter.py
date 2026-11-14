@@ -23570,6 +23570,68 @@ RTL_ALT_M 111
             "OA_BR_LOOKAHEAD": 42,
         })
 
+    def DynamicParamDefaults(self):
+        '''test that defaults files apply to parameters registered after boot'''
+        files = []
+        for content in ("SCR_ENABLE 1\nTST_A 7\nTST_B 8\n", "TST_A 9\n"):
+            f = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+            f.write(content)
+            f.close()
+            files.append(f.name)
+        script_content = """
+local KEY = 10
+assert(param:add_table(KEY, "TST_", 16), 'could not add param table')
+assert(param:add_param(KEY, 5, "A", 22), 'could not add TST_A')
+assert(param:add_param(KEY, 1, "B", 33), 'could not add TST_B')
+assert(param:add_param(KEY, 2, "C", 44), 'could not add TST_C')
+
+function update()
+  gcs:send_text(3, "test script running")
+  return update, 1000
+end
+
+return update, 1000
+"""
+        self.install_script_content_context("test.lua", script_content)
+        self.customise_SITL_commandline([], defaults_filepath=files, wipe=True)
+        self.wait_statustext('test script running')
+        # the last defaults file wins; unlisted names keep the coded default
+        self.assert_parameter_value('TST_A', 9)
+        self.assert_parameter_value('TST_B', 8)
+        self.assert_parameter_value('TST_C', 44)
+
+        self.start_subtest("Saved values take precedence over defaults files")
+        self.set_parameter('TST_B', 55)
+        self.reboot_sitl()
+        self.wait_statustext('test script running')
+        self.assert_parameter_value('TST_A', 9)
+        self.assert_parameter_value('TST_B', 55)
+
+    def NativeModuleParamDefaults(self):
+        '''test exact int32 parameters and defaults files for native module parameters'''
+        self.context_push()
+        self.install_rust_test_module_context('param_defaults.rs', install_name='param-defaults.apmod')
+        # limits also admit a module built into ROMFS with --module
+        defaults = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults.write("MOD_ENABLE 1\nMOD_HEAP_MAX 262144\nMOD_CODE_MAXSIZE 262144\nMOD_STACK_MAX 65536\n"
+                       "SCR_ENABLE 0\nPDD_I32 1491234567\nPDD_BIG 2147483648\nPDD_RO 3 @READONLY\n"
+                       "PDD_MAX 2147483647\n")
+        defaults.close()
+        self.context_collect('STATUSTEXT')
+        self.install_message_hook_context(self.FailFastStatusText(self, ['PDT fail', 'Module fatal:']))
+        self.customise_SITL_commandline([], defaults_filepath=[defaults.name], wipe=True)
+        self.wait_text('PDT ready', check_context=True, timeout=60)
+        self.assert_parameter_value('PDD_RO', 3)
+        self.mav.mav.param_set_send(self.sysid_thismav(), 1, b'PDD_RO', 4, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+        self.delay_sim_time(2, reason='read-only parameter set ignored')
+        self.assert_parameter_value('PDD_RO', 3)
+
+        # an int32 saved next to its inexact default must survive a reboot
+        self.reboot_sitl()
+        self.wait_text('PDT saved int32 kept', check_context=True, timeout=60)
+        self.context_pop()
+        self.reboot_sitl()
+
     def SerialPassthru(self):
         '''smoke test serial passthrough timeout and manual disable'''
         # SITL does not enforce UART thread ownership, so this cannot
@@ -25634,6 +25696,8 @@ return update, 1000
             self.LoweheiserManual,
             self.Weathervane,
             self.ReadOnlyDefaults,
+            self.DynamicParamDefaults,
+            self.NativeModuleParamDefaults,
             self.SerialPassthru,
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
