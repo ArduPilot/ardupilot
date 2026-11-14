@@ -105,6 +105,9 @@
 // number of milliseconds the bad IMU data response settings will be held after the last bad IMU data is detected
 #define BAD_IMU_DATA_HOLD_MS 10000
 
+// time flow quality must stay clear of the release quality, with no gap over 0.5 s, to lift a latch on a poor lockout sample (msec)
+#define FLOW_QUAL_RECOVER_MS 2000
+
 // wind state variance limits
 #define WIND_VEL_VARIANCE_MAX 400.0f
 #define WIND_VEL_VARIANCE_MIN 0.25f
@@ -398,6 +401,9 @@ public:
     */
     void getFilterStatus(nav_filter_status &status) const;
 
+    // what this lane is navigating on, and the state of its optical flow
+    void getLaneStatus(nav_lane_status &status) const;
+
     // return a terrain altitude variance
     bool getTerrainAltVariance(float &terrain_alt_variance) const;
 
@@ -625,6 +631,7 @@ private:
     struct range_elements : EKF_obs_element_t {
         ftype       rng;            // distance measured by the range sensor (m)
         uint8_t     sensor_idx;     // integer either 0 or 1 uniquely identifying up to two range sensors
+        bool        repeated;       // true when the median is a reading one of the sensor's last two samples was, as while its backend holds one
     };
 
     struct rng_bcn_elements : EKF_obs_element_t {
@@ -646,6 +653,7 @@ private:
         Vector3F    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
         Vector3F    body_offset;    // XYZ position of the optical flow sensor in body frame (m)
         float       heightOverride; // The fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
+        uint8_t     quality;        // surface quality reported by the sensor, 0 to 255 with 255 the best
     };
 
     struct vel_odm_elements : EKF_obs_element_t {
@@ -944,6 +952,10 @@ private:
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
     void UpdateAglKf();
+
+    // Reset horizontal velocity to the optical-flow-derived ground velocity. Used to recover from a
+    // single-axis flow innovation lockout. Returns false if the tilt makes the solve ill conditioned.
+    bool ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody);
 #endif
 
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -1371,6 +1383,30 @@ private:
     ftype hgtMea;                   // height measurement derived from either baro, gps or range finder data (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    uint32_t flowFuseTimeAxis_ms[2];// per-axis time the flow innovation test last passed, used to detect a single-axis lockout
+    uint8_t flowVelResetCount;      // count of horizontal velocity resets triggered by optical flow recovery
+    uint32_t flowVelResetAxis_ms[2]; // time of the latest velocity reset recovering each flow axis locked out alone, 0 if none
+    static const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
+    uint32_t flowVelResetTimes_ms[FLOW_RESET_MAX_IN_WINDOW]; // times of the latest optical-flow velocity resets, 0 if none
+    uint8_t flowVelResetNext;       // slot in flowVelResetTimes_ms the next reset overwrites, holding the oldest
+    uint32_t flowVelResetDeferTime_ms; // last report of a recovery deferred for a stale range
+    uint32_t flowVelResetPauseStart_ms; // start of a pause in flow velocity resets after a burst of them, 0 if none
+    uint32_t flowVelResetPause_ms;  // length of that pause, doubled on each burst unless it follows a quiet spell
+    bool flowVelResetUnhealthy;     // true when the flow sensor reports a lockout sample too poor to recover from
+    uint32_t flowQualRecoverStart_ms; // start of the current run of flow samples clear of the quality that releases flowVelResetUnhealthy, 0 if none
+    // after a restart from one range sample, the further samples in a row that must agree with the
+    // AGL KF before a flow lockout recovery may scale by its height; 0 once confirmed. A sample from
+    // a reading an earlier sample came from is a copy and does not count, so each reading counts at
+    // most once, however long its backend holds it
+    static const uint8_t AGLKF_RESTART_CONFIRM_SAMPLES = 3;
+    // a sample agrees within this many standard deviations of the AGL KF's innovation: inside its own
+    // gate (EK3_RNG_I_GATE, 5 by default), so a sample it fuses but is pulled by does not confirm it,
+    // and wide enough that a right one misses only 0.3% of the time, costing one more sample
+    static constexpr ftype aglKfRestartConfirmSigma = 3.0f;
+    uint8_t aglKfRestartConfirm;
+#endif
+    uint32_t flowPassTimeAxis_ms[2]; // time each flow axis last passed its innovation consistency check, written nowhere else
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
     ftype R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
@@ -1403,6 +1439,8 @@ private:
     ftype storedRngMeas[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3];              // Ringbuffer of stored range measurements for dual range sensors
     uint32_t storedRngMeasTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3];    // Ringbuffers of stored range measurement times for dual range sensors
     uint8_t rngMeasIndex[DOWNWARD_RANGEFINDER_MAX_INSTANCES];                // Current range measurement ringbuffer index for dual range sensors
+    uint32_t storedRngReadTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3];    // the backend's reading time for each stored range measurement
+    uint32_t rngLastReadTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES][2];      // reading times of each sensor's last two samples written to storedRange
 #endif
 
     // body frame odometry fusion
@@ -1732,6 +1770,9 @@ private:
     void Log_Write_XKF3(uint64_t time_us) const;
     void Log_Write_XKF4(uint64_t time_us) const;
     void Log_Write_XKF5(uint64_t time_us) const;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    void Log_Write_XKF7(uint64_t time_us) const;
+#endif
     void Log_Write_XKFS(uint64_t time_us) const;
     void Log_Write_Quaternion(uint64_t time_us) const;
     void Log_Write_Beacon(uint64_t time_us);

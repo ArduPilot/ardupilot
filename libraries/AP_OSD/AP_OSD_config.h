@@ -23,6 +23,11 @@
 #define AP_OSD_CALLSIGN_FROM_SD_ENABLED (AP_FILESYSTEM_POSIX_ENABLED || AP_FILESYSTEM_FATFS_ENABLED)
 #endif
 
+#ifndef AP_OSD_EKF_LANES_ENABLED
+// off on boards to save flash; on in SITL so its tests run
+#define AP_OSD_EKF_LANES_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
 #ifndef AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
 #define AP_OSD_LINK_STATS_EXTENSIONS_ENABLED 0      // Disabled by default to save flash, enable via custom build server
 #endif
