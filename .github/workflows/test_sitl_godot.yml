@@ -1,0 +1,99 @@
+name: test Godot backend
+
+# The Godot and Jolt physics backend is only exercised when something it
+# depends on changes: the backend itself, the harness which starts it, or
+# the JSON interface it speaks.
+on:
+  push:
+    branches: ['**']  # excludes tag pushes
+    paths:
+      - 'libraries/SITL_Godot/**'
+      - 'libraries/SITL/SIM_JSON.cpp'
+      - 'libraries/SITL/SIM_JSON.h'
+      - 'Tools/autotest/pysim/godot.py'
+      - '.github/workflows/test_sitl_godot.yml'
+      - '.github/actions/**'
+  pull_request:
+    paths:
+      - 'libraries/SITL_Godot/**'
+      - 'libraries/SITL/SIM_JSON.cpp'
+      - 'libraries/SITL/SIM_JSON.h'
+      - 'Tools/autotest/pysim/godot.py'
+      - '.github/workflows/test_sitl_godot.yml'
+      - '.github/actions/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # 4.4 is the first release which bundles Jolt; this is the version the
+  # project file is saved by, so the editor does not warn about it
+  GODOT_VERSION: 4.7.2-stable
+
+jobs:
+  build-test:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
+    runs-on: ubuntu-22.04
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.2.0
+      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - name: install Godot
+        shell: bash
+        run: |
+          set -e
+          url="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}"
+          zip="Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          curl -fsSL -o /tmp/godot.zip "$url/$zip"
+          unzip -q -o /tmp/godot.zip -d /tmp/godot
+          install -m755 "/tmp/godot/Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          godot --headless --version
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: godot
+
+      - name: build copter and plane
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board sitl --debug
+          ./waf build --target bin/arducopter --target bin/arduplane
+          ccache -s
+          ccache -z
+
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: godot
+
+      # Headless with plain ground: CI has no display or network. One
+      # copter and one plane flight catch the backend failing to start,
+      # load the glTF vehicles or hold the JSON lockstep.
+      - name: fly the Godot backend
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/autotest/autotest.py --godot --godot-headless \
+              test.Copter.ModeAltHold test.Plane.LOITER
+
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+           name: ${{ github.workflow }}-fail-godot
+           path: |
+             /tmp/buildlogs
+             /__w/ardupilot/ardupilot/logs
+             buildlogs
+           retention-days: 14
