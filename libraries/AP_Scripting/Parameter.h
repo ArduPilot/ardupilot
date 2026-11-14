@@ -20,9 +20,17 @@ public:
     bool configured();
     bool set_default(float value);
 
+    // exact access to integer parameters, false for float parameters and
+    // values outside the parameter's type
+    bool get_int32(int32_t &value);
+    bool set_int32(int32_t value);
+    bool set_and_save_int32(int32_t value);
+
     enum ap_var_type type() const { return vtype; }
 
 private:
+    bool set_int32_internal(int32_t value, bool save);
+
     enum ap_var_type vtype;
     AP_Param *vp;
 };
