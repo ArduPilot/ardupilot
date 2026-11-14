@@ -379,6 +379,37 @@ def test_dfu_requires_usb():
         launcher.build_command()
 
 
+def test_gdb_command(monkeypatch):
+    args = SimpleNamespace(
+        monitor_port=12390,
+        uart_port=5762,
+        usbip_port=3240,
+        gdb_port=3433,
+        renode=None,
+        state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+    launcher.board = 'CubeBlack'
+    launcher.bootloader = 'none'
+    launcher.gdb = True
+    monkeypatch.setattr(launch.sys, 'platform', 'linux')
+
+    command = launcher.build_command()
+    index = command.index('--gdb')
+    assert command[index:index + 4] == [
+        '--gdb', '--gdb-continue', '--gdb-port', '3433']
+
+    launcher.usb = True
+    launcher.dfu = True
+    with pytest.raises(ValueError, match='GDB cannot be combined'):
+        launcher.build_command()
+
+    monkeypatch.setattr(launch.sys, 'platform', 'darwin')
+    launcher.dfu = False
+    with pytest.raises(ValueError, match='only supported on Linux'):
+        launcher.build_command()
+
+
 def test_physics_connect_command_and_status():
     args = SimpleNamespace(
         monitor_port=12390,
