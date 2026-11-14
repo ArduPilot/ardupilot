@@ -33,7 +33,10 @@ pub const fn check_param_table(prefix: &str, defs: &[ParamDef]) -> u8 {
         );
         assert!(!d.name.is_empty(), "empty parameter name");
         assert!(
-            !d.int32 || (d.default >= -2147483648.0 && d.default < 2147483648.0 && d.default as i32 as f32 == d.default),
+            !d.int32
+                || (d.default >= -2147483648.0
+                    && d.default < 2147483648.0
+                    && d.default as i32 as f32 == d.default),
             "int32 parameter default must be an integer exact as a float"
         );
         assert!(
@@ -80,13 +83,25 @@ fn retry<T>(c: &Context<'_>, mut call: impl FnMut() -> Result<T>) -> Result<T> {
     }
 }
 
+fn checked_int32(value: f32) -> Result<i32> {
+    if !value.is_finite() || value < -2147483648.0 || value >= 2147483648.0 {
+        return Err(Error::Invalid);
+    }
+    Ok(value as i32)
+}
+
 impl ParamDef {
     pub fn register(&self, c: &Context<'_>, key: u8) -> Result {
         let ok = retry(c, || {
             if self.int32 {
-                c.param().add_param_int32(key, self.index, self.name, self.default as i32)
+                let value = checked_int32(self.default)?;
+                if value as f32 != self.default {
+                    return Err(Error::Invalid);
+                }
+                c.param().add_param_int32(key, self.index, self.name, value)
             } else {
-                c.param().add_param(key, self.index, self.name, self.default)
+                c.param()
+                    .add_param(key, self.index, self.name, self.default)
             }
         })?;
         if ok {
@@ -175,7 +190,11 @@ impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
         let mut changed = 0;
         for (i, p) in self.handles.iter().enumerate() {
             let (v, v_i32) = read(&self.defs[i], p)?;
-            let differs = if self.defs[i].int32 { v_i32 != self.cache_i32[i] } else { v != self.cache[i] };
+            let differs = if self.defs[i].int32 {
+                v_i32 != self.cache_i32[i]
+            } else {
+                v != self.cache[i]
+            };
             if differs {
                 (values[i], values_i32[i]) = (v, v_i32);
                 changed |= 1 << i;
@@ -196,7 +215,7 @@ impl<'a, 'h, const N: usize> ParamTable<'a, 'h, N> {
 
     fn write(&mut self, i: usize, v: f32, save: bool) -> Result {
         if self.defs[i].int32 {
-            return self.write_i32(i, v as i32, save);
+            return self.write_i32(i, checked_int32(v)?, save);
         }
         let ok = if save {
             self.handles[i].set_and_save(v)?
