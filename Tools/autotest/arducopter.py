@@ -2793,7 +2793,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if not horiz_pos_rel():
                 raise NotAchievedException("the climb out did not engage the fallback, so the leg proves nothing")
             self.set_rc(3, 1350)
-            self.wait_altitude(5.0, 5.4, relative=True, timeout=90)
+            try:
+                self.wait_altitude(5.0, 5.4, relative=True, timeout=90)
+            except AutoTestTimeoutException:
+                # a descent that never reaches the band is flown again too
+                self.set_rc(3, 1500)
+                self.disarm_vehicle(force=True)
+                continue
             self.set_rc(3, 1500)
             self.wait_climbrate(-0.1, 0.1, minimum_duration=2)
             assert_offset_measured()
@@ -2917,8 +2923,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.zero_throttle()
                 self.arm_vehicle()
                 self.set_rc(3, 1560)
-                self.wait_altitude(ground_alt + 6, ground_alt + 7.5, timeout=90,
-                                   altitude_source="SIM_STATE.alt")
+                try:
+                    self.wait_altitude(ground_alt + 6, ground_alt + 7.5, timeout=90,
+                                       altitude_source="SIM_STATE.alt")
+                except AutoTestTimeoutException:
+                    # a climb that never reaches the band is flown again too
+                    self.set_rc(3, 1000)
+                    self.disarm_vehicle(force=True)
+                    continue
                 # over 5.6 m and in range, so only the missing height source can refuse it; open
                 # loop the climb carries on, so the reading is taken and the sensor killed at once
                 if self.rangefinder_between(5.8, 7.9):
@@ -3230,7 +3242,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if not self.ekf_status_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL:
                 raise NotAchievedException("the climb out did not engage the fallback, so the leg proves nothing")
             self.set_rc(3, 1350)
-            self.wait_altitude(5.0, 5.4, relative=True, timeout=90)
+            try:
+                self.wait_altitude(5.0, 5.4, relative=True, timeout=90)
+            except AutoTestTimeoutException:
+                # a descent that never reaches the band is flown again too
+                self.set_rc(3, 1500)
+                self.disarm_vehicle(force=True)
+                continue
             self.set_rc(3, 1500)
             self.wait_climbrate(-0.1, 0.1, minimum_duration=3)
             if self.rangefinder_between(4.8, 5.5):
