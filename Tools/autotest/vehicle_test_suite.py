@@ -14356,8 +14356,50 @@ switch value'''
         return m is not None
 
     def assert_current_onboard_log_contains_message(self, messagetype):
-        if not self.current_onboard_log_contains_message(messagetype):
-            raise NotAchievedException("Current onboard log does not contain message %s" % messagetype)
+        '''check the current onboard log contains messagetype.
+
+        This waits rather than looking once: the caller is asserting the
+        message *should* be there, and how much of the vehicle's
+        dataflash buffer has reached disk by now is not something the
+        caller controls (see wait_current_onboard_log_contains_message).
+        A test which wants a one-shot answer - checking a message is
+        absent, say - should call
+        current_onboard_log_contains_message().'''
+        self.wait_current_onboard_log_contains_message(messagetype)
+
+    def wait_current_onboard_log_contains_message(self, messagetype, timeout=30):
+        '''wait for messagetype to appear in the current onboard log.
+
+        Checking once is at the mercy of whatever the logger has put
+        on disk by then.  The vehicle buffers its dataflash writes and
+        drains them from its log_io thread, which gets to run as the
+        simulated clock advances, so how much of a burst has reached
+        the file when a test arrives at its check is not something the
+        test controls, and "not written yet" reads as "the vehicle
+        never wrote it".  Poll instead, letting simulated time run
+        between attempts so the logger keeps draining.  The deadline is
+        real time so that a vehicle which has stopped advancing its
+        clock cannot hang the test.
+
+        Each attempt closes its own reader: dfreader_for_path() stashes
+        them for close_dfreaders() at the end of the test, and polling
+        would otherwise leave an mmap per attempt open.'''
+        tstart = time.monotonic()
+        while True:
+            dfreader = self.dfreader_for_path(self.current_onboard_log_filepath())
+            try:
+                found = dfreader.recv_match(type=messagetype) is not None
+            finally:
+                dfreader.close()
+                if dfreader in self.dfreaders:
+                    self.dfreaders.remove(dfreader)
+            if found:
+                return
+            if time.monotonic() - tstart > timeout:
+                raise NotAchievedException(
+                    "Current onboard log does not contain message %s "
+                    "(waited %us)" % (messagetype, timeout))
+            self.delay_sim_time(0.5, reason="let the logger flush %s" % messagetype)
 
     def run_tests(self, tests) -> List[Result]:
         """Autotest vehicle in SITL."""

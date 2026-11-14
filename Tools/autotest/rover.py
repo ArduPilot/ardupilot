@@ -7040,16 +7040,41 @@ return update()
                 position = self.assert_receive_message('GLOBAL_POSITION_INT')
                 for source, expected in ((254, 0), (0xFFFFFFFE, 1)):
                     peer.mav.srcSystem = source
+                    # keep feeding the estimate and watch FOLL_HAVE as we go:
+                    # have_target() becomes true some way into the stream, so
+                    # a single sample taken after a fixed delay is a race the
+                    # vehicle loses whenever the machine is loaded.  These
+                    # budgets are simulated seconds, and the deadline which
+                    # actually matters is wall clock - at Rover's speedup of
+                    # 30 the original three seconds were a tenth of a second
+                    # of real time - so scale the acquiring case by the
+                    # speedup to give it two seconds of real time.  The case
+                    # which must *not* acquire keeps a fixed window, because
+                    # there the window is the evidence.
+                    timeout = 2 * self.speedup if expected else 3
                     tstart = self.get_sim_time()
-                    while self.get_sim_time_cached() - tstart < 3:
+                    have = None
+                    while self.get_sim_time_cached() - tstart < timeout:
                         peer.mav.global_position_int_send(
                             0, position.lat, position.lon, position.alt, position.relative_alt, 0, 0, 0, 0)
                         self.delay_sim_time(0.1, reason="update follow estimate")
-                    message = self.mav.recv_match(
-                        type='NAMED_VALUE_FLOAT', condition='NAMED_VALUE_FLOAT.name == "FOLL_HAVE"',
-                        blocking=True, timeout=5)
-                    if message is None or int(message.value) != expected:
-                        raise NotAchievedException("Follow mishandled unsigned source %u" % source)
+                        # blocking, because delay_sim_time() above waits on
+                        # SYSTEM_TIME and recv_match discards everything it
+                        # does not match on the way - a non-blocking poll here
+                        # sees nothing at all
+                        message = self.mav.recv_match(
+                            type='NAMED_VALUE_FLOAT', condition='NAMED_VALUE_FLOAT.name == "FOLL_HAVE"',
+                            blocking=True, timeout=1)
+                        if message is None:
+                            continue
+                        have = int(message.value)
+                        if expected and have == 1:
+                            break
+                        if not expected and have != 0:
+                            break
+                    if have != expected:
+                        raise NotAchievedException("Follow mishandled unsigned source %u (FOLL_HAVE=%s)" %
+                                                   (source, have))
 
                 self.set_rc(1, 1500)
                 # Exercise a range crossing INT32_MAX and the disabled-upper-bound
@@ -7061,11 +7086,27 @@ return update()
                     for source, accepted in cases:
                         peer.mav.srcSystem = source
                         peer.mav.rc_channels_override_send(current_sysid, 1, 1600, *([65535] * 7))
-                        self.delay_sim_time(0.5, reason="process RC override")
-                        self.assert_rc_channel_value(1, 1600 if accepted else 1500)
                         if accepted:
+                            # RC_OVERRIDE_TIME is -1, so an accepted override
+                            # stays applied: wait for it rather than sampling
+                            # once after a fixed delay, which is a race a
+                            # loaded machine loses.  The timeout is simulated
+                            # seconds while the thing being waited for - a
+                            # packet arriving and being acted on - takes wall
+                            # clock, so scale it: self.speedup simulated
+                            # seconds is one second of real time.  The release
+                            # needs the same bound - its default of two
+                            # simulated seconds is a tenth of a second of wall
+                            # clock on a loaded host, spent while the releasing
+                            # packet is still in flight.
+                            self.wait_rc_channel_value(1, 1600, timeout=self.speedup)
                             peer.mav.rc_channels_override_send(current_sysid, 1, 0, *([65535] * 7))
-                            self.wait_rc_channel_value(1, 1500)
+                            self.wait_rc_channel_value(1, 1500, timeout=self.speedup)
+                        else:
+                            # here the delay is the evidence: the override must
+                            # still not have been taken once it could have been
+                            self.delay_sim_time(0.5, reason="prove the override is ignored")
+                            self.assert_rc_channel_value(1, 1500)
             finally:
                 if peer is not None:
                     peer.close()
@@ -7124,10 +7165,20 @@ return update()
                     source_component=7,
                 )
                 mav2.mav.param_request_read_send(sysid, 1, b"MAV_SYSID", -1)
-                m = mav2.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
+                # PARAM_VALUE is also how the vehicle announces a parameter it
+                # has changed itself, to every active channel: when the GPS
+                # gets its fix AP_Mission writes home into command 0 and saves
+                # MIS_TOTAL, whose broadcast arrives here too.  Match our own
+                # reply, as MAVLinkHeaderTargets above does, rather than taking
+                # the first PARAM_VALUE on the link - a loaded machine puts the
+                # fix inside this window and the test then failed with
+                # "bad PARAM_VALUE ... MIS_TOTAL".
+                m = mav2.recv_match(type='PARAM_VALUE',
+                                    condition='PARAM_VALUE.param_id == "MAV_SYSID"',
+                                    blocking=True, timeout=10)
                 if m is None:
                     raise NotAchievedException("no PARAM_VALUE for 32 bit source system")
-                if m.param_id != "MAV_SYSID" or int(m.param_value) != sysid:
+                if int(m.param_value) != sysid:
                     raise NotAchievedException("bad PARAM_VALUE %s" % str(m))
                 mav2.close()
 
