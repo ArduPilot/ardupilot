@@ -50,13 +50,17 @@ jobs:
       - name: install Godot
         shell: bash
         run: |
-          set -e
-          url="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}"
-          zip="Godot_v${GODOT_VERSION}_linux.x86_64.zip"
-          curl -fsSL -o /tmp/godot.zip "$url/$zip"
-          unzip -q -o /tmp/godot.zip -d /tmp/godot
-          install -m755 "/tmp/godot/Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
-          godot --headless --version
+          python3 - <<'EOF' # the image has no curl or unzip
+          import os, urllib.request, zipfile
+          name = "Godot_v%s_linux.x86_64" % os.environ["GODOT_VERSION"]
+          url = "https://github.com/godotengine/godot/releases/download/%s/%s.zip" % (os.environ["GODOT_VERSION"], name)
+          urllib.request.urlretrieve(url, "/tmp/godot.zip")
+          zipfile.ZipFile("/tmp/godot.zip").extract(name, "/tmp/godot")
+          os.rename("/tmp/godot/" + name, "/tmp/godot/godot")
+          os.chmod("/tmp/godot/godot", 0o755)
+          EOF
+          echo /tmp/godot >> "$GITHUB_PATH"
+          /tmp/godot/godot --headless --version
 
       - uses: ./.github/actions/setup-ccache
         with:
