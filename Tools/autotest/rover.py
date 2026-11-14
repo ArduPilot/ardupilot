@@ -8009,22 +8009,28 @@ return update()
         self.disarm_vehicle()
 
     def AutoModeAccelChanges(self):
-        '''verify WP_ACCEL mid-mission change bakes at the next WP crossing and takes effect n+2 legs later'''
-        # Change WP_ACCEL during WP1->WP2; bakes at WP2 crossing;
-        # WP2->WP3 may still propagate old value; WP3->WP4 is the reliable measurement leg.
+        '''verify WP_ACCEL mid-mission change takes effect on the immediately following leg;
+        also verify WP_ACCEL changes during a blended turn do not cause track recalculation
+        (tests AR_WPNav.cpp:649 - the is_zero(get_time_elapsed()) guard on _scurve_next_leg)'''
+        # WP_ACCEL: changed during WP1->WP2; update_limits() recalculates _scurve_next_leg
+        # (WP2->WP3) immediately, so WP2->WP3 is the first reliable measurement leg.
+        # WP_ACCEL raised back mid-blend at WP3: guard must block calculate_track(); if it fires,
+        # _scurve_next_leg.get_time_elapsed() resets to 0, collapsing the blend and stopping the rover.
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  300,    0, 0),  # WP1
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  300,  300, 0),  # WP2
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  300, 0),  # WP3
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  600, 0),  # WP4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  300,  300, 0),  # WP2 (WP_ACCEL trigger)
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  300, 0),  # WP3 (accel measurement + blend corner)
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  500, 0),  # WP4 (exit leg for blend test)
         ])
         wp_accel    = 0.5   # m/s^2: slow enough for a clear ~2.0 s measurement
         accel_start = 4.0   # m/s
         accel_stop  = 5.0   # m/s
         high_speed  = 6.0   # m/s
+        wp_radius   = 20    # m: large enough for reliable WP3 blend-zone detection
         self.set_parameters({
             "WP_SPEED":      high_speed,
             "WP_ACCEL":      3.0,    # initial fast rate; changed mid-mission below
+            "WP_RADIUS":     wp_radius,
             "ATC_ACCEL_MAX": 20.0,
         })
         self.wait_ready_to_arm()
@@ -8032,11 +8038,11 @@ return update()
         self.change_mode('AUTO')
 
         self.wait_current_waypoint(2, timeout=120)     # rover is now on WP1->WP2
-        self.set_parameter("WP_ACCEL", wp_accel)       # bakes at WP2 crossing
+        self.set_parameter("WP_ACCEL", wp_accel)       # immediately recalculates next leg (WP2->WP3)
 
         expected_time = (accel_stop - accel_start) / wp_accel  # 2.0 s
-        self.wait_current_waypoint(4, timeout=120)     # WP3->WP4: first reliable leg
-        self.wait_groundspeed(0, accel_start - 0.5, timeout=30)  # wait for WP3 corner dip
+        self.wait_current_waypoint(3, timeout=120)     # WP2->WP3: first reliable leg
+        self.wait_groundspeed(0, accel_start - 0.5, timeout=30)  # wait for WP2 corner dip
         self.wait_groundspeed(accel_start, 100, timeout=30)
         tstart = self.get_sim_time()
         self.wait_groundspeed(accel_stop, 100, timeout=expected_time * 3)
@@ -8051,6 +8057,33 @@ return update()
                 (wp_accel, expected_time, actual_time))
         self.progress("WP_ACCEL=%.1f ramp time %.1fs (expected ~%.1fs)" %
                       (wp_accel, actual_time, expected_time))
+
+        # Still on WP2->WP3, approaching WP3. Trigger at the blend zone entry (wp_dist <=
+        # WP_RADIUS) to maximise margin before the waypoint switch at the turn apex.
+        # With the guard: set_speed_max() only (same speed = no-op) → blend continues.
+        # Without the guard: calculate_track() fires → resets get_time_elapsed() to 0
+        # → blend collapses → rover decelerates to a stop at WP3 (~0.85 m/s).
+        self.wait_distance_to_nav_target(0, wp_radius, timeout=120)
+        self.set_parameter("WP_ACCEL", 3.0)   # triggers update_limits(); guard must block calculate_track()
+        if self.mav.waypoint_current() != 3:
+            raise NotAchievedException(
+                "WP_ACCEL change landed after WP3 waypoint switch; blend guard was not tested")
+        min_corner_speed = high_speed
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > 30:
+                raise NotAchievedException("timeout tracking corner speed through WP3")
+            m = self.assert_receive_message('VFR_HUD', timeout=2)
+            min_corner_speed = min(min_corner_speed, m.groundspeed)
+            if self.mav.waypoint_current() >= 4:
+                break
+        # guard working: ~4 m/s; guard absent: track reset stops rover at ~0.85 m/s
+        speed_floor = 2.0
+        if min_corner_speed < speed_floor:
+            raise NotAchievedException(
+                "WP_ACCEL change during blend caused track recalculation: "
+                "min=%.2f m/s (floor=%.2f m/s)" % (min_corner_speed, speed_floor))
+        self.progress("Blend preserved after mid-blend WP_ACCEL change: min corner speed=%.2f m/s" % min_corner_speed)
         self.disarm_vehicle(force=True)
 
     def AutoModeAccelLimiting(self):
