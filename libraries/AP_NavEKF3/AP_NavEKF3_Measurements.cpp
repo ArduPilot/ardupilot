@@ -785,6 +785,9 @@ void NavEKF3_core::readBaroData()
     // check to see if baro measurement has changed so we know if a new measurement has arrived
     // limit update rate to avoid overflowing the FIFO buffer
     const auto &baro = dal.baro();
+    if (!baro.use(selected_baro)) {
+        return;
+    }
     if (baro.get_last_update(selected_baro) - lastBaroReceived_ms > frontend->sensorIntervalMin_ms) {
 
         baroDataNew.hgt = baro.get_altitude(selected_baro);
@@ -1246,8 +1249,9 @@ void NavEKF3_core::update_baro_selection(void)
 
     if (frontend->_affinity & EKF_AFFINITY_BARO) {
         if (core_index < baro.num_instances() &&
-            baro.healthy(core_index)) {
-            // use core_index baro if it is healthy
+            baro.healthy(core_index) &&
+            baro.use(core_index)) {
+            // use core_index baro if it is healthy and enabled
             selected_baro = core_index;
         }
     }

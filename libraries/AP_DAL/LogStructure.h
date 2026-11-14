@@ -248,11 +248,13 @@ struct log_RBRH {
 // @Field: Alt: barometer altitude estimate
 // @Field: H: barometer sensor health indication
 // @Field: I: barometer instance number
+// @Field: Use: true if barometer is configured to be used
 struct log_RBRI {
     uint32_t last_update_ms;
     float altitude;  // from get_altitude
     bool healthy;
     uint8_t instance;
+    bool use;
     uint8_t _end;
 };
 
@@ -674,7 +676,7 @@ struct log_RTER {
     { LOG_RBRH_MSG, RLOG_SIZE(RBRH),                                   \
       "RBRH", "BB", "Primary,NumInst", "--", "--" },  \
     { LOG_RBRI_MSG, RLOG_SIZE(RBRI),                                   \
-      "RBRI", "IfBB", "LastUpdate,Alt,H,I", "---#", "----" }, \
+      "RBRI", "IfBBB", "LastUpdate,Alt,H,I,Use", "---#-", "-----" }, \
     { LOG_RRNH_MSG, RLOG_SIZE(RRNH),                                   \
       "RRNH", "ffB", "GCl,MaxD,NumSensors", "mm-", "00-" },  \
     { LOG_RRNI_MSG, RLOG_SIZE(RRNI),                                   \
