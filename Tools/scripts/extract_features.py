@@ -91,6 +91,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED', r'AP_RangeFinder_Benewake_TFS20L::update\b'),
 
             ('AP_GPS_NMEA_UNICORE_ENABLED', r'AP_GPS_NMEA::parse_agrica_field',),
+            ('AP_GPS_NMEA_TESEO_ENABLED', r'AP_GPS_NMEA::teseo_config_update',),
             ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
 
             ('AP_OPTICALFLOW_ENABLED', 'AP_OpticalFlow::AP_OpticalFlow',),
