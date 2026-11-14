@@ -648,11 +648,16 @@ void GCS_MAVLINK_Sub::handle_message_set_position_target_local_ned(const mavlink
         }
 
         // check for supported coordinate frames
-        if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
-                packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
-                packet.coordinate_frame != MAV_FRAME_BODY_NED &&
-                packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED &&
-                packet.coordinate_frame != MAV_FRAME_BODY_FRD) {
+        switch (packet.coordinate_frame) {
+        case MAV_FRAME_LOCAL_NED:
+        case MAV_FRAME_LOCAL_OFFSET_NED:
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_NED:
+        case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_FRD:
+            break;
+        default:
             return;
         }
 
@@ -674,19 +679,33 @@ void GCS_MAVLINK_Sub::handle_message_set_position_target_local_ned(const mavlink
             // convert to cm
             pos_vector_neu_cm = Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f);
             // rotate from body-frame if necessary
-            if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-                    packet.coordinate_frame == MAV_FRAME_BODY_FRD ||
-                    packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+            switch (packet.coordinate_frame) {
+            case MAV_FRAME_BODY_FRD:
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+            case MAV_FRAME_BODY_NED:
+            case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
                 sub.rotate_body_frame_to_NE(pos_vector_neu_cm.x, pos_vector_neu_cm.y);
+                break;
+            default:
+                break;
             }
             // add body offset if necessary
-            if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
-                    packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-                    packet.coordinate_frame == MAV_FRAME_BODY_FRD ||
-                    packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+            switch (packet.coordinate_frame) {
+            case MAV_FRAME_LOCAL_OFFSET_NED:
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+            case MAV_FRAME_BODY_NED:
+            case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+            case MAV_FRAME_BODY_FRD:
+            {
                 Vector3f pos_neu_cm = (sub.pos_control.get_pos_estimate_NED_m() * 100.0f).tofloat();
                 pos_neu_cm.z = -pos_neu_cm.z;
                 pos_vector_neu_cm += pos_neu_cm;
+                break;
+            }
+            default:
+                break;
             }
         }
 
@@ -696,8 +715,16 @@ void GCS_MAVLINK_Sub::handle_message_set_position_target_local_ned(const mavlink
             // convert to cm
             vel_vector_neu_cms = Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f);
             // rotate from body-frame if necessary
-            if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_FRD || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+            switch (packet.coordinate_frame) {
+            case MAV_FRAME_BODY_FRD:
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+            case MAV_FRAME_BODY_NED:
+            case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
                 sub.rotate_body_frame_to_NE(vel_vector_neu_cms.x, vel_vector_neu_cms.y);
+                break;
+            default:
+                break;
             }
         }
 
@@ -707,8 +734,16 @@ void GCS_MAVLINK_Sub::handle_message_set_position_target_local_ned(const mavlink
             // convert to cm/s/s
             acc_vector_neu_cmss = Vector3f(packet.afx * 100.0f, packet.afy * 100.0f, -packet.afz * 100.0f);
             // rotate from body-frame if necessary
-            if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_FRD || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+            switch (packet.coordinate_frame) {
+            case MAV_FRAME_BODY_FRD:
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+            case MAV_FRAME_BODY_NED:
+            case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
                 sub.rotate_body_frame_to_NE(acc_vector_neu_cmss.x, acc_vector_neu_cmss.y);
+                break;
+            default:
+                break;
             }
         }
 
@@ -718,7 +753,15 @@ void GCS_MAVLINK_Sub::handle_message_set_position_target_local_ned(const mavlink
         float yaw_rate_cds = 0.0f;
         if (!yaw_ignore) {
             yaw_cd = degrees(packet.yaw) * 100.0f;
-            yaw_relative = packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED;
+            switch (packet.coordinate_frame) {
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+            case MAV_FRAME_BODY_OFFSET_NED:
+                yaw_relative = true;
+                break;
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+            default:
+                break;
+            }
         }
         if (!yaw_rate_ignore) {
             yaw_rate_cds = degrees(packet.yaw_rate) * 100.0f;
@@ -821,7 +864,10 @@ void GCS_MAVLINK_Sub::handle_message_sys_status(const mavlink_message_t &msg)
 
 uint64_t GCS_MAVLINK_Sub::capabilities() const
 {
-    return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+    return (
+#if AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
+            MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+#endif  // AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
             MAV_PROTOCOL_CAPABILITY_MISSION_INT |
             MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
             MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |

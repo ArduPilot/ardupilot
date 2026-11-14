@@ -12626,10 +12626,10 @@ Also, ignores heartbeats not from our target system'''
         mav.mav.command_long_send(
             1,
             1,
-            mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL,
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
             1,  # confirmation
+            mavutil.mavlink.MAVLINK_MSG_ID_MESSAGE_INTERVAL,
             float(victim_message),
-            0,
             0,
             0,
             0,
@@ -12707,8 +12707,8 @@ Also, ignores heartbeats not from our target system'''
             raise NotAchievedException("Did not read same interval back from autopilot: want=%d got=%d)" %
                                        (want, m.interval_us))
         m = self.assert_receive_message('COMMAND_ACK', mav=mav)
-        if m.command != mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL:
-            raise NotAchievedException("ACK not for GET_MESSAGE_INTERVAL (got=%u)" % m.command)
+        if m.command != mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE:
+            raise NotAchievedException("ACK not for REQUEST_MESSAGE (got=%u)" % m.command)
         if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
             raise NotAchievedException("Expected ACCEPTED for reading message interval")
 
@@ -12825,8 +12825,8 @@ Also, ignores heartbeats not from our target system'''
             if m.interval_us != 0:
                 raise NotAchievedException("Supposed to get 0 back for unsupported stream")
             m = self.assert_receive_message('COMMAND_ACK')
-            if m.command != mavutil.mavlink.MAV_CMD_GET_MESSAGE_INTERVAL:
-                raise NotAchievedException("ACK not for GET_MESSAGE_INTERVAL (got=%u)" % m.command)
+            if m.command != mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE:
+                raise NotAchievedException("ACK not for REQUEST_MESSAGE (got=%u)" % m.command)
             if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
                 raise NotAchievedException("Getting rate of unsupported message is a failure")
 
