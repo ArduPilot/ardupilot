@@ -193,19 +193,8 @@ void shape_vel_accel(float vel_desired, float accel_desired,
     // velocity error to be corrected
     float vel_error = vel_desired - vel;
 
-    // Calculate time constants and limits to ensure stable operation
-    // The direction of acceleration limit is the same as the velocity error.
-    // This is because the velocity error is negative when slowing down while
-    // closing a positive position error.
-    float KPa;
-    if (is_positive(vel_error)) {
-        KPa = jerk_max / accel_max;
-    } else {
-        KPa = jerk_max / (-accel_min);
-    }
-
-    // acceleration to correct velocity
-    float accel_target = sqrt_controller(vel_error, KPa, jerk_max, dt);
+    // acceleration to correct velocity, no linear region (p = 0)
+    float accel_target = sqrt_controller(vel_error, 0.0, jerk_max, dt);
 
     // constrain correction acceleration from accel_min to accel_max
     accel_target = constrain_float(accel_target, accel_min, accel_max);
@@ -237,14 +226,11 @@ void shape_vel_accel_xy(const Vector2f& vel_desired, const Vector2f& accel_desir
         return;
     }
 
-    // Calculate time constants and limits to ensure stable operation
-    const float KPa = jerk_max / accel_max;
-
     // velocity error to be corrected
     const Vector2f vel_error = vel_desired - vel;
 
-    // acceleration to correct velocity
-    Vector2f accel_target = sqrt_controller(vel_error, KPa, jerk_max, dt);
+    // acceleration to correct velocity, no linear region (p = 0)
+    Vector2f accel_target = sqrt_controller(vel_error, 0.0, jerk_max, dt);
 
     limit_accel_corner_xy(vel, accel_target, accel_max);
 
