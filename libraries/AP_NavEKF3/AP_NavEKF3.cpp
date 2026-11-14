@@ -1995,6 +1995,9 @@ bool NavEKF3::InitialiseFilterBootstrap()
         return false;
     }
 
+    // the reset is commanded from outside the filter, so Replay needs the log to say when
+    dal.log_event3(AP_DAL::Event::bootstrapReset);
+
     // initialise the cores. We return success only if all cores
     // initialise successfully.  The per-core InitialiseFilterBootstrap()
     // return value is false when the IMU delay buffer is not yet full,
