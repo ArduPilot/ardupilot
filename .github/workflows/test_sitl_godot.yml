@@ -88,6 +88,10 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
+          git clone https://github.com/ardupilot/MAVProxy --depth 1 /tmp/MAVProxy  # as build_ci.sh does
+          (cd /tmp/MAVProxy && python3 -m pip install --progress-bar off --user --force .)
+          python3 -m pip uninstall -y pymavlink  # MAVProxy's copy, not the submodule's
+          (cd modules/mavlink/pymavlink && python3 -m pip install --progress-bar off --user .)
           Tools/autotest/autotest.py --godot --godot-headless \
               test.Copter.ModeAltHold test.Plane.LOITER
 
