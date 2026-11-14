@@ -41,17 +41,16 @@ unsafe extern "C" fn call(
         }
         (0, 4) => output.copy_from_slice(&(-0.0f32).to_le_bytes()),
         (2, 0) => assert_eq!(input, &[0x34, 0x12]),
-        (1, 4) => {
-            assert_eq!(input, &[7]);
-            output.copy_from_slice(&i32::MIN.to_le_bytes());
-        }
         (4, 2) => {
             assert_eq!(input, &[44, 1, 0, 0]);
             output.copy_from_slice(&[host.presence, 2]);
         }
         (1, 1) => {
-            assert_eq!(input, &[5]);
-            output[0] = host.boolean;
+            output[0] = match input {
+                [5] => host.boolean,
+                [7] => u8::MAX,
+                _ => panic!("unexpected single-byte request"),
+            };
         }
         (260, 0) => {
             assert_eq!(&input[..4], &6i32.to_le_bytes());
@@ -116,7 +115,7 @@ fn singleton_categories_and_invalid_outputs() {
     assert_eq!(context.vehicle().nav_script_time_done(0x1234), Ok(()));
     assert_eq!(
         context.mount().get_mode(7),
-        Ok(crate::enums::MavMountMode(i32::MIN))
+        Ok(u8::MAX)
     );
     assert_eq!(
         context.rc().get_aux_cached(crate::enums::RcChannelAuxFunc(300)),
