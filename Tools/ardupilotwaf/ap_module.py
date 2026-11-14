@@ -14,6 +14,7 @@ PATH is relative to libraries/AP_Module and must contain a wscript using:
 
 import os
 import re
+import shlex
 import subprocess
 
 from waflib import Configure, Task, Utils
@@ -31,8 +32,9 @@ DEFAULT_CODE_MAX = 131072
 def module_target(env):
     '''rust target and CPU profile for the board being configured'''
     if env.BOARD_CLASS == 'ChibiOS':
-        cpu = 'cortex-m7' if env.CORTEX == 'cortex-m7' else 'cortex-m4'
-        return 'thumbv7em-none-eabihf', cpu
+        if env.CORTEX in ('cortex-m4', 'cortex-m7'):
+            return 'thumbv7em-none-eabihf', env.CORTEX
+        return None, None
     if env.BOARD_CLASS in ('SITL', 'LINUX') and env.DEST_CPU in ('x86_64', 'amd64', None, ''):
         return 'x86_64-unknown-linux-gnu', None
     return None, None
@@ -112,12 +114,14 @@ def ap_module(ctx, name, stack_size, heap_size, source='main.rs', thread_priorit
     if thread_priority is not None:
         cmd += ['--thread-priority', str(thread_priority)]
     deps = ctx.path.ant_glob('**/*.rs', excl=['**/target/**'])
+    if src not in deps:
+        deps.insert(0, src)
     root = ctx.srcnode.find_node(MODULE_ROOT)
     deps += root.ant_glob('sdk/rust/src/*.rs generator/*.py generator/*.json generator/templates/**')
     deps += ctx.srcnode.ant_glob('Tools/modules/*.py Tools/modules/rust/*.py Tools/modules/module.ld '
                                  'libraries/AP_Scripting/generator/description/bindings.desc')
     tg = ctx(
-        rule=' '.join(cmd),
+        rule=shlex.join(cmd),
         source=deps,
         target=out,
         name='ap_module_' + name,
@@ -142,6 +146,9 @@ def configure(cfg):
         return
     if cfg.options.disable_modules:
         cfg.fatal('--module cannot be used with --disable-modules')
+    target, _ = module_target(cfg.env)
+    if target is None:
+        cfg.fatal('native modules are not supported on board %s' % cfg.env.BOARD)
     cfg.env.AP_MODULES = paths
     cfg.env.AP_MODULE_SETTINGS = []
     for p in paths:
@@ -154,7 +161,6 @@ def configure(cfg):
         cfg.recurse(d.abspath(), name='build')
         cfg.files.append(d.find_node('wscript').abspath())
         cfg.hash = Utils.h_list((cfg.hash, d.find_node('wscript').read('rb')))
-    target, _ = module_target(cfg.env)
     margin = STACK_MARGIN[target]
     heap = max([DEFAULT_HEAP_MAX] + [s[2] for s in cfg.env.AP_MODULE_SETTINGS])
     stack = max([DEFAULT_STACK_MAX] + [s[1] + margin for s in cfg.env.AP_MODULE_SETTINGS])
