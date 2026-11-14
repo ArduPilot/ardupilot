@@ -51,6 +51,11 @@ private:
     bool setup_sensor(void);
 
     void timer(void);
+
+    // the latest frame read on the I2C thread, published from update() in the main loop
+    struct i2c_integral_frame latest_frame;
+    uint32_t latest_frame_ms;
+    bool new_frame;
 };
 
 #endif  // AP_OPTICALFLOW_PX4FLOW_ENABLED
