@@ -1856,12 +1856,15 @@ void NavEKF3_core::ConstrainVariances()
     // |  4 .. 5      | Velocity (North, East)          | m/s           | [1e-4, 1e3]                 |
     // |  6           | Velocity (Down)                 | m/s           | dynamic                     |
     // |  7 .. 9      | Position (North, East, Down)    | m             | [1e-4, 1e6]                 |
-    // | 10 .. 12     | Gyro Bias (X, Y, Z)             | rad           | [0.0, (0.175 * dtEkfAvg)^2] |
+    // | 10 .. 12     | Gyro Bias (X, Y, Z)             | rad           | [0.0, see note after table] |
     // | 13 .. 15     | Accel Bias (X, Y, Z)            | m/s^2         | dynamic                     |
     // | 16 .. 18     | Earth Magnetic Field (X, Y, Z)  | Gauss         | [0.0, 0.01]                 |
     // | 19 .. 21     | Body Magnetic Field (X, Y, Z)   | Gauss         | [0.0, 0.01]                 |
     // | 22 .. 23     | Wind Velocity (North, East)     | m/s           | [0.0, 400]                  |
     // +----------------------------------------------------------------------------------------------+
+    // The gyro bias ceiling is sq(gyroBiasSigmaLimitRads * dtEkfAvg), set where it is applied below.  Do
+    // not confuse it with the limit checkGyroCalStatus() uses to decide the bias has been learned: that
+    // one is in deg/sec, and once the units are reconciled it is some 70 times tighter.
 
     for (uint8_t i=0; i<=3; i++) Pmut[i][i] = constrain_ftype(P[i][i],0.0,1.0); // attitude error
     for (uint8_t i=4; i<=5; i++) Pmut[i][i] = constrain_ftype(P[i][i], VEL_STATE_MIN_VARIANCE, 1.0e3); // NE velocity
@@ -1897,7 +1900,9 @@ void NavEKF3_core::ConstrainVariances()
     for (uint8_t i=7; i<=9; i++) Pmut[i][i] = constrain_ftype(P[i][i], POS_STATE_MIN_VARIANCE, 1.0e6); // NED position
 
     if (!inhibitDelAngBiasStates) {
-        for (uint8_t i=10; i<=12; i++) Pmut[i][i] = constrain_ftype(P[i][i],0.0f,sq(0.175 * dtEkfAvg));
+        // ceiling on the gyro bias 1-sigma uncertainty in rad/sec, which keeps the covariance well conditioned
+        const ftype gyroBiasSigmaLimitRads = 0.175;
+        for (uint8_t i=10; i<=12; i++) Pmut[i][i] = constrain_ftype(P[i][i],0.0f,sq(gyroBiasSigmaLimitRads * dtEkfAvg));
     } else {
         zeroStatesVarCov(10, 12);
     }
