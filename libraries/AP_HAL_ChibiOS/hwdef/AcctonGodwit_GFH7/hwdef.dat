@@ -217,6 +217,8 @@ define RELAY1_DEFAULT 1
 
 # compass
 define AP_COMPASS_PROBING_ENABLED 1
+# stop the generic probe finding the onboard IST8310 first with PITCH_180
+define AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED 0
 COMPASS IST8310 I2C:0:0x0C false ROTATION_YAW_270
 
 # Barometer setup (DPS368, handled by the DPS310 driver)
