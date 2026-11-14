@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="292" viewBox="0 0 760 292"
+     role="img" aria-labelledby="title desc">
+<title id="title">glTF axes, in the body and in the world</title>
+<desc id="desc">Body axes are +Y up, +Z forward and +X to the left. In the world
++Z is north and -X is east, so a vehicle with no rotation faces north.</desc>
+<style>
+  svg { color-scheme: light dark; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif }
+  .ink { fill: #1f2328 }
+  .dim { fill: #59636e }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace }
+  .box { fill: #f6f8fa; stroke: #d1d9e0; stroke-width: 1 }
+  .ax  { stroke: #0969da; stroke-width: 1.8; fill: none }
+  .axc { fill: #0969da }
+  .axl { fill: #0969da; font-weight: 600 }
+  .org { stroke: #59636e; stroke-width: 1.4; fill: none }
+  .orgc{ fill: #59636e }
+  @media (prefers-color-scheme: dark) {
+    .ink { fill: #e6edf3 }
+    .dim { fill: #9198a1 }
+    .box { fill: #151b23; stroke: #3d444d }
+    .ax  { stroke: #4493f8 }
+    .axc { fill: #4493f8 }
+    .axl { fill: #4493f8 }
+    .org { stroke: #9198a1 }
+    .orgc{ fill: #9198a1 }
+  }
+</style>
+<defs>
+  <marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6.5" markerHeight="6.5" orient="auto">
+    <path d="M0,0 L8,4 L0,8 z" class="axc"/>
+  </marker>
+</defs>
+
+<!-- panel 1: plan view -->
+<rect class="box" x="16" y="40" width="228" height="204" rx="8"/>
+<text class="ink" x="130" y="66" font-size="13" font-weight="600" text-anchor="middle">Body, from above</text>
+<line class="ax" x1="130" y1="166" x2="130" y2="106" marker-end="url(#a)"/>
+<text class="axl mono" x="130" y="98" font-size="12.5" text-anchor="middle">+Z forward</text>
+<line class="ax" x1="130" y1="166" x2="70" y2="166" marker-end="url(#a)"/>
+<text class="axl mono" x="74" y="186" font-size="12.5" text-anchor="middle">+X left</text>
+<circle class="org" cx="130" cy="166" r="7"/>
+<circle class="orgc" cx="130" cy="166" r="2.4"/>
+<text class="dim" x="130" y="226" font-size="11.5" text-anchor="middle">+Y is up, out of the page</text>
+
+<!-- panel 2: rear view -->
+<rect class="box" x="264" y="40" width="228" height="204" rx="8"/>
+<text class="ink" x="378" y="66" font-size="13" font-weight="600" text-anchor="middle">Body, from behind</text>
+<line class="ax" x1="378" y1="176" x2="378" y2="106" marker-end="url(#a)"/>
+<text class="axl mono" x="378" y="98" font-size="12.5" text-anchor="middle">+Y up</text>
+<line class="ax" x1="378" y1="176" x2="318" y2="176" marker-end="url(#a)"/>
+<text class="axl mono" x="322" y="196" font-size="12.5" text-anchor="middle">+X left</text>
+<circle class="org" cx="378" cy="176" r="7"/>
+<line class="org" x1="373" y1="171" x2="383" y2="181"/>
+<line class="org" x1="383" y1="171" x2="373" y2="181"/>
+<text class="dim" x="378" y="226" font-size="11.5" text-anchor="middle">+Z is forward, into the page</text>
+
+<!-- panel 3: the world -->
+<rect class="box" x="512" y="40" width="228" height="204" rx="8"/>
+<text class="ink" x="626" y="66" font-size="13" font-weight="600" text-anchor="middle">World, from above</text>
+<line class="ax" x1="606" y1="176" x2="606" y2="106" marker-end="url(#a)"/>
+<text class="axl mono" x="606" y="98" font-size="12.5" text-anchor="middle">+Z north</text>
+<line class="ax" x1="606" y1="176" x2="662" y2="176" marker-end="url(#a)"/>
+<text class="axl mono" x="672" y="180" font-size="12.5" text-anchor="start">&#8722;X east</text>
+<circle class="org" cx="606" cy="176" r="7"/>
+<circle class="orgc" cx="606" cy="176" r="2.4"/>
+<text class="dim" x="626" y="226" font-size="11.5" text-anchor="middle">east is negative X, not positive</text>
+
+<text class="ink" x="380" y="278" font-size="13" text-anchor="middle">
+  A vehicle with no rotation faces north. Its origin is the IMU, and should be the centre of mass.
+</text>
+</svg>
