@@ -1512,30 +1512,14 @@ bool NavEKF3::getHAGL(float &HAGL) const
     return core[primary].getHAGL(HAGL);
 }
 
-// return the Euler roll, pitch and yaw angle in radians
-void NavEKF3::getEulerAngles(Vector3f &eulers) const
-{
-    if (core) {
-        core[primary].getEulerAngles(eulers);
-    }
-}
-
-// return the transformation matrix from XYZ (body) to NED axes
-void NavEKF3::getRotationBodyToNED(Matrix3f &mat) const
-{
-    if (core) {
-        core[primary].getRotationBodyToNED(mat);
-    }
-}
-
 // return the quaternions defining the rotation from XYZ (body) to NED axes
 void NavEKF3::getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        Matrix3f mat;
-        core[instance].getRotationBodyToNED(mat);
-        quat.from_rotation_matrix(mat);
+        core[instance].getQuaternion(quat);
+        // quaternion composition rotates the attitude into the vehicle body frame
+        quat *= dal.get_quat_vehicle_body_to_autopilot_body();
     }
 }
 
