@@ -28,6 +28,7 @@ void AP_DAL_Beacon::start_frame()
         _RBCH.get_origin_returncode = bcon->get_origin(loc);
         _RBCH.enabled = bcon->enabled();
         _RBCH.count = bcon->count();
+        _RBCH.origin_type_ekf = bcon->origin_type() == AP_Beacon::OriginType::EKF;
         _RBCH.origin_lat = loc.lat;
         _RBCH.origin_lng = loc.lng;
         _RBCH.origin_alt = loc.alt;
