@@ -158,7 +158,7 @@ float ModeFollow::wp_bearing_deg() const
 }
 
 // Returns the setpoint being tracked, with the follow offset applied
-bool ModeFollow::get_target(NavTarget &target) const
+bool ModeFollow::get_nav_target(NavTarget &target) const
 {
     // position, velocity and acceleration of the lead vehicle with the follow
     // offset applied, read together under AP_Follow's semaphore because this

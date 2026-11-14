@@ -106,9 +106,9 @@ void GCS_MAVLINK_Copter::send_attitude_target()
         thrust);                // Collective thrust, normalized to 0 .. 1
 }
 
-bool GCS_MAVLINK_Copter::get_target(NavTarget &target) const
+bool GCS_MAVLINK_Copter::get_nav_target(NavTarget &target) const
 {
-    return copter.flightmode->get_target(target);
+    return copter.flightmode->get_nav_target(target);
 }
 
 bool GCS_MAVLINK_Copter::get_target_location(Location &loc) const

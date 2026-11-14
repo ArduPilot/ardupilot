@@ -972,11 +972,11 @@ float Mode::throttle_hover() const
 }
 
 // get_wp - convenience wrapper returning only the destination Location of the
-// setpoint reported by get_target()
+// setpoint reported by get_nav_target()
 bool Mode::get_wp(Location &loc) const
 {
     NavTarget target;
-    if (!get_target(target) || !target.has_position()) {
+    if (!get_nav_target(target) || !target.has_position()) {
         return false;
     }
     loc = target.loc;

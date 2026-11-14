@@ -168,7 +168,7 @@ public:
     virtual bool requires_terrain_failsafe() const { return false; }
 
     // functions for reporting to GCS
-    virtual bool get_target(NavTarget &target) const { return false; }
+    virtual bool get_nav_target(NavTarget &target) const { return false; }
     bool get_wp(Location &loc) const;
     virtual float wp_bearing_deg() const { return 0; }
     virtual float wp_distance_m() const { return 0.0f; }
@@ -646,7 +646,7 @@ protected:
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
     float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
-    bool get_target(NavTarget &target) const override;
+    bool get_nav_target(NavTarget &target) const override;
 
 private:
 
@@ -1145,7 +1145,7 @@ public:
     void hold_position();
     bool set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool is_terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false);
-    bool get_target(NavTarget &target) const override;
+    bool get_nav_target(NavTarget &target) const override;
     void set_accel_NED_mss(const Vector3f& accel_ned_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_vel_NED_ms(const Vector3f& vel_ned_ms, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_vel_accel_NED_m(const Vector3f& vel_ned_ms, const Vector3f& accel_ned_mss, bool use_yaw = false, float yaw_rad = 0.0, bool use_yaw_rate = false, float yaw_rate_rads = 0.0, bool yaw_relative = false, bool log_request = true);
@@ -1544,7 +1544,7 @@ public:
 #endif
 
     // for reporting to GCS
-    bool get_target(NavTarget &target) const override;
+    bool get_nav_target(NavTarget &target) const override;
 
     bool use_pilot_yaw() const override;
 
@@ -1702,7 +1702,7 @@ protected:
     const char *name4() const override { return "SRTL"; }
 
     // for reporting to GCS
-    bool get_target(NavTarget &target) const override;
+    bool get_nav_target(NavTarget &target) const override;
     float wp_distance_m() const override;
     float wp_bearing_deg() const override;
     float crosstrack_error_m() const override { return wp_nav->crosstrack_error_m();}
@@ -2037,7 +2037,7 @@ protected:
     const char *name4() const override { return "FOLL"; }
 
     // for reporting to GCS
-    bool get_target(NavTarget &target) const override;
+    bool get_nav_target(NavTarget &target) const override;
     float  wp_distance_m() const override;
     float wp_bearing_deg() const override;
 

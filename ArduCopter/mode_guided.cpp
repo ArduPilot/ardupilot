@@ -441,7 +441,7 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
     return true;
 }
 
-bool ModeGuided::get_target(NavTarget& target) const
+bool ModeGuided::get_nav_target(NavTarget& target) const
 {
     // the position, velocity and acceleration targets are only meaningful in
     // the submodes that actually command them; pos_control_run() zeroes the

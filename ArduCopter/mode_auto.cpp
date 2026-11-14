@@ -958,18 +958,18 @@ float ModeAuto::wp_bearing_deg() const
     return degrees(wp_nav->get_wp_bearing_to_destination_rad());
 }
 
-bool ModeAuto::get_target(NavTarget& target) const
+bool ModeAuto::get_nav_target(NavTarget& target) const
 {
     switch (_mode) {
     case SubMode::NAV_GUIDED:
-        return copter.mode_guided.get_target(target);
+        return copter.mode_guided.get_nav_target(target);
     case SubMode::WP:
     case SubMode::CIRCLE_MOVE_TO_EDGE:
     case SubMode::CIRCLE:
         // the orbit and the move-to-edge leg are wp_nav legs like WP
         return get_wpnav_target(target, true);
     case SubMode::RTL:
-        return copter.mode_rtl.get_target(target);
+        return copter.mode_rtl.get_nav_target(target);
     default:
         return false;
     }

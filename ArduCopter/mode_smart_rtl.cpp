@@ -206,7 +206,7 @@ void ModeSmartRTL::save_position()
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
 
-bool ModeSmartRTL::get_target(NavTarget& target) const
+bool ModeSmartRTL::get_nav_target(NavTarget& target) const
 {
     // provide target in states which use wp_nav
     switch (smart_rtl_state) {
