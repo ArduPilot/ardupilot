@@ -83,7 +83,15 @@ fn duplicate_name_rejected() {
 #[test]
 #[should_panic(expected = "int32 parameter default must be an integer exact as a float")]
 fn fractional_int32_default_rejected() {
-    check_param_table("X_", &[ParamDef { index: 1, name: "A", default: 1.5, int32: true }]);
+    check_param_table(
+        "X_",
+        &[ParamDef {
+            index: 1,
+            name: "A",
+            default: 1.5,
+            int32: true,
+        }],
+    );
 }
 
 #[test]
@@ -117,6 +125,8 @@ struct Host {
     reads: Cell<u32>,
     fail_read_at: Cell<u32>,
     read_error: Cell<i32>,
+    integer: Cell<bool>,
+    integer_value: Cell<i32>,
 }
 
 impl Host {
@@ -132,6 +142,8 @@ impl Host {
             reads: Cell::new(0),
             fail_read_at: Cell::new(0),
             read_error: Cell::new(api::STATUS_BUSY),
+            integer: Cell::new(false),
+            integer_value: Cell::new(3),
         }
     }
 
@@ -205,7 +217,12 @@ unsafe extern "C" fn call(
                 2 => assert_eq!(&input[2..7], b"OTHER"),
                 _ => panic!("unexpected parameter index"),
             }
-            assert_eq!(&input[19..23], &3.0f32.to_le_bytes());
+            let default = if h.integer.get() {
+                3i32.to_le_bytes()
+            } else {
+                3.0f32.to_le_bytes()
+            };
+            assert_eq!(&input[19..23], &default);
             h.entries.set(h.entries.get() + 1);
             *output = u8::from(!h.reject.get());
         }
@@ -225,14 +242,22 @@ unsafe extern "C" fn call(
                 return h.read_error.get();
             }
             *output = 1;
-            core::slice::from_raw_parts_mut(output.add(1), 4)
-                .copy_from_slice(&h.value.get().to_le_bytes());
+            let value = if h.integer.get() {
+                h.integer_value.get().to_le_bytes()
+            } else {
+                h.value.get().to_le_bytes()
+            };
+            core::slice::from_raw_parts_mut(output.add(1), 4).copy_from_slice(&value);
         }
         (12, 1) => {
             let input = core::slice::from_raw_parts(input, ni as usize);
             if !h.reject.get() {
-                h.value
-                    .set(f32::from_le_bytes(input[8..12].try_into().unwrap()));
+                let bytes = input[8..12].try_into().unwrap();
+                if h.integer.get() {
+                    h.integer_value.set(i32::from_le_bytes(bytes));
+                } else {
+                    h.value.set(f32::from_le_bytes(bytes));
+                }
             }
             *output = u8::from(!h.reject.get());
         }
@@ -363,4 +388,70 @@ fn parameter_table_key_boundaries_match_the_host() {
     assert_eq!(def(1, "VALUE", 3.0).register(&c, 201), Err(Error::Invalid));
     assert_eq!(h.entries.get(), 0);
     assert_eq!(h.allocations.get(), 0);
+}
+
+crate::param_table! {
+    struct IntegerParams, enum IntegerEntry;
+    key = 200, prefix = "TST_";
+    size = 63;
+    Value = 1, "VALUE", i32: 3;
+}
+
+#[test]
+fn float_writes_to_integer_entries_check_range_before_casting() {
+    let h = Host::new();
+    h.integer.set(true);
+    let c = h.context();
+    let mut p = IntegerParams::register(&c).unwrap();
+    p.set_i32(IntegerEntry::Value, 123).unwrap();
+    for invalid in [
+        f32::NAN,
+        f32::INFINITY,
+        f32::NEG_INFINITY,
+        2147483648.0,
+        -2147483904.0,
+    ] {
+        assert_eq!(p.set(IntegerEntry::Value, invalid), Err(Error::Invalid));
+        assert_eq!(
+            p.set_and_save(IntegerEntry::Value, invalid),
+            Err(Error::Invalid)
+        );
+        assert_eq!(h.integer_value.get(), 123);
+        assert_eq!(p.get_i32(IntegerEntry::Value), 123);
+    }
+    for value in [-2147483648.0, 2147483520.0, 1.75] {
+        p.set(IntegerEntry::Value, value).unwrap();
+        assert_eq!(h.integer_value.get(), value as i32);
+        assert_eq!(p.get_i32(IntegerEntry::Value), value as i32);
+    }
+    for value in [1491234567, i32::MAX, i32::MIN] {
+        p.set_and_save_i32(IntegerEntry::Value, value).unwrap();
+        assert_eq!(h.integer_value.get(), value);
+        assert_eq!(p.get_i32(IntegerEntry::Value), value);
+        assert_eq!(p.refresh(), Ok(0));
+    }
+}
+
+#[test]
+fn direct_integer_definitions_reject_invalid_defaults() {
+    let h = Host::new();
+    h.integer.set(true);
+    let c = h.context();
+    for value in [
+        f32::NAN,
+        f32::INFINITY,
+        f32::NEG_INFINITY,
+        2147483648.0,
+        -2147483904.0,
+        1.5,
+    ] {
+        let d = ParamDef {
+            index: 1,
+            name: "VALUE",
+            default: value,
+            int32: true,
+        };
+        assert_eq!(d.register(&c, 200), Err(Error::Invalid));
+    }
+    assert_eq!(h.entries.get(), 0);
 }
