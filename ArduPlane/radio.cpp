@@ -141,10 +141,12 @@ void Plane::read_radio()
 #endif
     airspeed_nudge_cm = 0;
     throttle_nudge = 0;
+    throttle_nudge_fraction = 0;
     if (g.throttle_nudge
         && channel_throttle->get_control_in() > 50
         && stickmixing) {
         float nudge = (channel_throttle->get_control_in() - 50) * 0.02f;
+        throttle_nudge_fraction = nudge;
         if (TECS_controller.use_airspeed()) {
             airspeed_nudge_cm = (aparm.airspeed_max - aparm.airspeed_cruise) * nudge * 100;
         } else {
@@ -202,6 +204,7 @@ void Plane::control_failsafe()
 
         airspeed_nudge_cm = 0;
         throttle_nudge = 0;
+        throttle_nudge_fraction = 0;
 
         switch (control_mode->mode_number()) {
 #if HAL_QUADPLANE_ENABLED
