@@ -1136,7 +1136,10 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlin
 
     // if you change this you must change handle_mission_set_current
     plane.auto_state.next_wp_crosstrack = false;
-    if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
+    // AUTO starts the mission itself once home is set
+    if (plane.control_mode == &plane.mode_auto &&
+        !plane.mode_auto.waiting_for_home() &&
+        plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
 
@@ -1149,7 +1152,10 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const ma
     // if you change this you must change handle_command_do_set_mission_current
     plane.auto_state.next_wp_crosstrack = false;
     GCS_MAVLINK::handle_mission_set_current(mission, msg);
-    if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
+    // AUTO starts the mission itself once home is set
+    if (plane.control_mode == &plane.mode_auto &&
+        !plane.mode_auto.waiting_for_home() &&
+        plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
 }

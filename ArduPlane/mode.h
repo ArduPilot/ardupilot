@@ -278,6 +278,9 @@ public:
 
     bool is_landing() const override;
 
+    // true until home is set and the mission has been started
+    bool waiting_for_home() const { return init_pending; }
+
     void do_nav_delay(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
@@ -306,6 +309,8 @@ protected:
     bool _pre_arm_checks(size_t buflen, char *buffer) const override;
 
 private:
+
+    bool init_pending;
 
     // Delay the next navigation command
     struct {
