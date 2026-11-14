@@ -258,6 +258,20 @@ void NavEKF3_core::ResetPositionD(ftype posD)
     // Calculate the position jump due to the reset
     posResetD = stateStruct.position.z - posDOrig;
 
+    // the terrain state is a D coordinate in the same datum, so it moves with it, unless the range finder
+    // is becoming the height source (hgtMea is referenced through terrainState) or the ground was never
+    // measured. Leaving the range finder counts as measured, as gndOffsetValid goes false once it is not the source
+    if ((gndOffsetValid || gndOffsetMeasured ||
+         (prevHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) &&
+        (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+        terrainState += posResetD;
+        terrainAnchorOffset += posResetD;
+    }
+    if (flatGndSaved.valid) {
+        flatGndSaved.terrainState += posResetD;
+        flatGndSaved.terrainAnchorOffset += posResetD;
+    }
+
     // Add the offset to the output observer states
     outputDataNew.position.z += posResetD;
     vertCompFiltState.pos = outputDataNew.position.z;
@@ -285,6 +299,20 @@ void NavEKF3_core::ResetHeight(void)
         // assume vehicle is sitting on the ground
         terrainState = stateStruct.position.z + rngOnGnd;
     } else {
+        // a timeout reset moves the datum or corrects drift: a terrain state fused in the last 5 s drifted
+        // with position.z and follows, one frozen above the range did not and stays, and a source change
+        // (an external nav start) moves the datum, so measured ground follows it
+        if ((gndOffsetValid || (prevHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) ||
+             (gndOffsetMeasured && (activeHgtSource != prevHgtSource))) &&
+            (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+            terrainState += stateStruct.position.z - posResetD;
+            terrainAnchorOffset += stateStruct.position.z - posResetD;
+        }
+        // the saved ground is frozen like one above the range, so only a datum move carries it
+        if (flatGndSaved.valid && (activeHgtSource != prevHgtSource)) {
+            flatGndSaved.terrainState += stateStruct.position.z - posResetD;
+            flatGndSaved.terrainAnchorOffset += stateStruct.position.z - posResetD;
+        }
         // can make no assumption other than vehicle is not below ground level
         terrainState = MAX(stateStruct.position.z + rngOnGnd , terrainState);
     }
@@ -1257,8 +1285,11 @@ void NavEKF3_core::selectHeightForFusion()
         // user has specified no height sensor
         activeHgtSource = AP_NavEKF_Source::SourceZ::NONE;
 #if AP_RANGEFINDER_ENABLED
-    } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
-        // user has specified the range finder as a primary height source
+    } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh &&
+               !flatGroundAssumed()) {
+        // user has specified the range finder as a primary height source. Not while flow navigation
+        // holds the ground above the range: taking the height resets it to the first reading back,
+        // which can be something passed over, and the fallback ends once the ground is measured again
         activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
     } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BARO) || (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
@@ -1294,8 +1325,9 @@ void NavEKF3_core::selectHeightForFusion()
             } else if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS) {
                 activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
             }
-        } else if (belowLowerSwHgt && trustTerrain && (prevTnb.c.z >= 0.7f)) {
-            // reliable terrain and range finder so start using range finder height
+        } else if (belowLowerSwHgt && trustTerrain && (prevTnb.c.z >= 0.7f) && !flatGroundAssumed()) {
+            // reliable terrain and range finder so start using range finder height. Not while flow
+            // navigation holds the ground above the range, as for the range finder as the source
             activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
         }
 #endif
@@ -1364,6 +1396,15 @@ void NavEKF3_core::selectHeightForFusion()
             ) {
             correctEkfOriginHeight();
     }
+
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // the range finder taking the height ends the anchor, and its height is formed against the
+    // terrain state below, so the anchored ground has to be there first rather than one step later
+    if (terrainAnchorInUse && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+        terrainState = anchoredTerrainState();
+        terrainAnchorInUse = false;
+    }
+#endif
 
     // Select the height measurement source
 #if EK3_FEATURE_EXTERNAL_NAV
@@ -1444,11 +1485,13 @@ void NavEKF3_core::selectHeightForFusion()
 
     // detect changes in source and reset height
     if ((activeHgtSource != prevHgtSource) && fuseHgtData) {
-        prevHgtSource = activeHgtSource;
         // a baro in ground effect is no height to reset to, so a switch to it keeps the height held
         if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO || !baroInGndEffect) {
+            // reset before recording the new source, so the reset can see which source is
+            // being left as well as which is being taken up
             ResetPositionD(-hgtMea);
         }
+        prevHgtSource = activeHgtSource;
     }
 
     // If we haven't fused height data for a while or have bad IMU data, then declare the height data as being timed out
