@@ -57,6 +57,8 @@ generated_module!(strtof);
 generated_module!(math);
 mod memory;
 mod printf;
+mod param_table;
+pub use param_table::{check_param_table, register_param_table, ParamDef, ParamTable};
 generated_module!(motor_config);
 generated_module!(onvif);
 generated_module!(old_parameter);
@@ -500,3 +502,6 @@ macro_rules! module {
         }
     };
 }
+
+#[cfg(test)]
+mod param_table_tests;

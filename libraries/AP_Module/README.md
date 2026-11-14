@@ -302,6 +302,16 @@ Identical registration reuses metadata and restores saved values; unsaved change
 need not survive. Logger format registrations also persist until reboot. Keep
 names and definitions stable across reloads.
 
+Rust applets can declare dynamic tables with `ap_rust_sdk::param_table!`, keeping
+storage indices, suffixes, float defaults and standard `// @Param:` annotations
+together. `register_definitions()` registers the entries without allocating
+handles; `bind(context, P::Entry)` returns a live `Parameter`. Optional
+`size = N;` preserves reserved slots. For conditional entries, call
+`register_table()` then the selected definitions' `register()` methods.
+`register()` instead creates an explicitly cached table: call `refresh()` before
+reading updated values. Metadata generation includes Rust applets, drivers and
+examples alongside Lua scripts. See `applets/plane_ship_landing/parameters.rs`.
+
 Module exit cleans up owned resources but does not undo ordinary vehicle state
 changes, such as modes, mission edits or RC/output overrides. Host calls can
 block on devices or filesystem/parameter locks and cannot be interrupted by stop.
