@@ -166,6 +166,22 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.progress("TAKEOFF COMPLETE")
 
+    def SITLBatteryVoltageLimitsPropulsion(self) -> None:
+        """Confirm low battery voltage reduces Plane propulsion."""
+        self.context_push()
+        self.set_parameter("SIM_BATT_CAP_AH", 0)
+        self.set_parameter("SIM_BATT_VOLTAGE", 12.6)
+        self.takeoff_in_FBWA(alt=100)
+        self.set_rc(2, 1500)
+        self.set_rc(3, 1600)
+        self.delay_sim_time(10, "settle at fixed throttle")
+        self.wait_airspeed(20, 40)
+        baseline_airspeed = self.assert_receive_message("VFR_HUD").airspeed
+        self.set_parameter("SIM_BATT_VOLTAGE", 3.0)
+        self.wait_airspeed(0, baseline_airspeed * 0.8, timeout=30)
+        self.context_pop()
+        self.fly_home_land_and_disarm()
+
     def fly_left_circuit(self):
         """Fly a left circuit, 200m on a side."""
         self.change_mode('FBWA')
@@ -10791,6 +10807,7 @@ return update()
             self.DO_CHANGE_SPEED,
             self.GuidedRequest,
             self.MainFlight,
+            self.SITLBatteryVoltageLimitsPropulsion,
             self.TestGripperMission,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,
