@@ -48,12 +48,30 @@ private:
         SocketAPM_native sock_out{true};
         uint8_t instance;
         bool connected;
+        uint32_t seq;       // last consumed shared-memory channel seq
         socket_list *next;
     } _list;
+
+    // true when the ride-along exchange runs over the cluster's shared
+    // memory segment (--cluster given) instead of the UDP sockets
+    bool shmem_transport(void) const;
+
+    // shared-memory equivalent of the UDP receive loop: block until the
+    // slave publishes a fresh servo packet in its slot's channel
+    void receive_shmem(struct socket_list &list, void *pkt, uint32_t pkt_len);
 
     char *json_out;
 
     bool initialized;
+
+    uint8_t slave_count;
+
+    // sequence number of our published fdm channel (shmem transport)
+    uint32_t fdm_seq;
+
+    // wall-clock window for the periodic frames/s report
+    uint64_t report_wall_us;
+    uint32_t report_frames;
 
 };
 
