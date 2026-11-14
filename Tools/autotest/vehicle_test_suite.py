@@ -12206,6 +12206,11 @@ Also, ignores heartbeats not from our target system'''
             "LOG_BITMASK": 14,
             "SIM_SPEEDUP": 1,  # there's a wallclock-time thread involved!
         })
+        # CINS, when it is built in, logs whether or not it is the
+        # selected backend, adding about 46kB to the appended log:
+        appended_log_size = (1950*1024, 1980*1024)
+        if self.cins_built_in():
+            appended_log_size = (1995*1024, 2025*1024)
         self.reboot_sitl()
 
         mavproxy = self.start_mavproxy()
@@ -12239,14 +12244,14 @@ Also, ignores heartbeats not from our target system'''
         self.wait_disarmed()
         self.delay_sim_time(15, reason="Allow log persistence to finish")
         self.assert_current_log_filesizes({
-            1: (1950*1024, 1980*1024),
+            1: appended_log_size,
         })
         self.progress("Creating a second log")
         self.arm_vehicle()
         self.wait_disarmed()
         self.delay_sim_time(15, reason="Allow log persistence to finish")
         self.assert_current_log_filesizes({
-            1: (1950*1024, 1980*1024),
+            1: appended_log_size,
             2: (1000*1024, 1100*1024),
         })
 
@@ -14994,12 +14999,28 @@ switch value'''
                            relative=True,
                            timeout=timeout)
 
+    def cins_built_in(self) -> bool:
+        '''returns True if the firmware includes the CINS AHRS backend,
+        which is not built by default'''
+        try:
+            self.get_parameter("AHRS_CINS_GPATT", timeout=5, verbose=False)
+        except NotAchievedException:
+            self.progress("CINS is not built in")
+            return False
+        return True
+
     def ahrstrim_attitude_correctness_test_attitude(self, ahrs_type: int):
         self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
-        self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
+        # CINS (type 12) is a developmental estimator with a larger at-rest
+        # attitude residual, so allow its own estimate a looser tolerance; an
+        # uncorrected board-mount trim shows up as ~degrees of error, far larger,
+        # so this test still catches it.
+        est_euler_tol = 2.5 if ahrs_type == 12 else 1.5
+        est_quat_tol = 2.5 if ahrs_type == 12 else 1
+        self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=est_euler_tol)
         if ahrs_type != 0:
             self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
-        self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
+        self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=est_quat_tol, timeout=120)
         self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
         self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
 
@@ -15086,7 +15107,10 @@ switch value'''
                 # section's reboot) performs anyway
 
             self.start_subtest("Testing non-ExternalAHRS backends")
-            for ahrs_type in [0, 2, 3]:
+            ahrs_types = [0, 2, 3]
+            if self.cins_built_in():
+                ahrs_types.append(12)
+            for ahrs_type in ahrs_types:
                 self.start_subsubtest("Testing AHRS_TYPE=%u" % ahrs_type)
                 self.context_push()
                 self.set_parameter("AHRS_EKF_TYPE", ahrs_type)

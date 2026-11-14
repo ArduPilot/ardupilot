@@ -3596,12 +3596,16 @@ return update()
         self.wait_and_maintain_wind_estimate(
             5, 45, timeout=120, minimum_duration=10)
 
-        for ahrs_type in 0, 2, 3, 10:
+        ahrs_types = [0, 2, 3, 10]
+        if self.cins_built_in():
+            ahrs_types.append(12)
+        for ahrs_type in ahrs_types:
             self.start_subtest("Checking AHRS_EKF_TYPE=%u" % ahrs_type)
             self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
-            if ahrs_type == 0:
-                # DCM's wind triangle assumes the airflow lies along the fuselage, so the
-                # angle of attack and turn-direction-dependent sideslip it ignores cost it degrees.
+            if ahrs_type in (0, 12):
+                # DCM and CINS share the same wind triangle, which assumes the airflow lies
+                # along the fuselage, so the angle of attack and turn-direction-dependent
+                # sideslip it ignores cost it degrees.
                 self.wait_and_maintain_wind_estimate(
                     5, 45,
                     speed_tolerance=1,
@@ -3619,15 +3623,16 @@ return update()
         self.fly_home_land_and_disarm()
 
     def WindEstimatesTrim(self):
-        '''DCM wind estimate must be unchanged by a board mounting offset that
-        is corrected by AHRS_TRIM, i.e. it must use the trimmed (vehicle)
+        '''The DCM and CINS wind estimates (which share the same lifted wind
+        triangle) must be unchanged by a board mounting offset that is
+        corrected by AHRS_TRIM, i.e. they must use the trimmed (vehicle)
         fuselage axis, not the raw IMU/board axis.
 
         In straight-and-level flight the wind triangle's airspeed-fed branch
         projects the measured airspeed along the fuselage axis, so a pitched
         board axis injects a vertical wind of ~airspeed*sin(tilt).  We fly
-        straight and level on DCM and compare the steady vertical wind
-        estimate with no mount offset against the estimate with an 8-degree
+        straight and level on each estimator and compare the steady vertical
+        wind estimate with no mount offset against the estimate with an 8-degree
         offset (SIM_BRD_TRIM, a rigid board mounting tilt of both the accel
         and gyro) corrected by AHRS_TRIM.  The trim must not change it.
 
@@ -3652,49 +3657,72 @@ return update()
             "SIM_WIND_DIR": 45,
             "SIM_WIND_DIR_Z": 0,    # purely horizontal truth wind
         })
+        trim_rad = math.radians(8)
+
+        def check_type(ahrs_type):
+            # measure each estimator against its own no-offset baseline, so
+            # begin with an untrimmed board:
+            self.set_parameters({
+                "SIM_BRD_TRIM_Y": 0,
+                "AHRS_TRIM_Y": 0,
+                "AHRS_EKF_TYPE": ahrs_type,
+            })
+            # straight and level so the airspeed-fed straight-flight branch runs:
+            self.change_mode('CRUISE')
+            self.delay_sim_time(40, reason="settle into straight level flight and let the wind estimate converge")
+            baseline_spd, baseline_z = avg_wind()
+
+            # introduce an 8-degree rigid board pitch mounting offset (accel and
+            # gyro rotated together) and correct it with AHRS_TRIM, exactly as a
+            # tilted real mount would be handled.  Applied together, the AHRS
+            # attitude output is unchanged, so the vehicle keeps flying level:
+            self.set_parameters({
+                "SIM_BRD_TRIM_Y": trim_rad,
+                "AHRS_TRIM_Y": trim_rad,
+            })
+            self.delay_sim_time(40, reason="let the attitude and wind estimate resettle after introducing the mount offset")
+            trimmed_spd, trimmed_z = avg_wind()
+
+            # The board mount offset (corrected by trim) must not move the wind
+            # estimate.  The dominant error is vertical: the straight-flight
+            # branch projects airspeed along the fuselage axis, so the raw
+            # (pitched) board axis shifts speed_z by ~airspeed*sin(8deg).  The
+            # horizontal must also be invariant (it was only corrupted when the
+            # simulated compass was not rotated with the board, leaving a yaw
+            # error; SIM_BRD_TRIM now rotates the compass too).
+            self.progress("AHRS_EKF_TYPE=%u WIND.speed_z:   baseline=%.2f trimmed=%.2f (d=%.2f)" %
+                          (ahrs_type, baseline_z, trimmed_z, trimmed_z - baseline_z))
+            self.progress("AHRS_EKF_TYPE=%u WIND.speed(hz): baseline=%.2f trimmed=%.2f (d=%.2f)" %
+                          (ahrs_type, baseline_spd, trimmed_spd, trimmed_spd - baseline_spd))
+            if abs(trimmed_z - baseline_z) > 1.0:
+                raise NotAchievedException(
+                    "AHRS_EKF_TYPE=%u trim changed the vertical wind estimate: speed_z baseline=%.2f trimmed=%.2f" %
+                    (ahrs_type, baseline_z, trimmed_z))
+            if abs(trimmed_spd - baseline_spd) > 1.0:
+                raise NotAchievedException(
+                    "AHRS_EKF_TYPE=%u trim changed the horizontal wind estimate: speed baseline=%.2f trimmed=%.2f" %
+                    (ahrs_type, baseline_spd, trimmed_spd))
+
         self.reboot_sitl()
         # arm and take off with the default estimator (AHRS_EKF_TYPE=0 has no
-        # EKF, so arming readiness would time out); switch to DCM in flight:
+        # EKF, so arming readiness would time out); switch estimator in flight.
         self.wait_ready_to_arm()
         self.takeoff(70)  # default wind sim wind is a sqrt function up to 60m
-        self.set_parameter("AHRS_EKF_TYPE", 0)  # use DCM
-        # straight and level so the airspeed-fed straight-flight branch runs:
-        self.change_mode('CRUISE')
-        self.delay_sim_time(40, reason="settle into straight level flight and let the DCM wind estimate converge")
-        baseline_spd, baseline_z = avg_wind()
-
-        # introduce an 8-degree rigid board pitch mounting offset (accel and
-        # gyro rotated together) and correct it with AHRS_TRIM, exactly as a
-        # tilted real mount would be handled.  Applied together, the AHRS
-        # attitude output is unchanged, so the vehicle keeps flying level:
-        trim_rad = math.radians(8)
-        self.set_parameters({
-            "SIM_BRD_TRIM_Y": trim_rad,
-            "AHRS_TRIM_Y": trim_rad,
-        })
-        self.delay_sim_time(40, reason="let the attitude and wind estimate resettle after introducing the mount offset")
-        trimmed_spd, trimmed_z = avg_wind()
-
-        # The board mount offset (corrected by trim) must not move the wind
-        # estimate.  The dominant error is vertical: the straight-flight
-        # branch projects airspeed along the fuselage axis, so the raw
-        # (pitched) board axis shifts speed_z by ~airspeed*sin(8deg).  The
-        # horizontal must also be invariant (it was only corrupted when the
-        # simulated compass was not rotated with the board, leaving a yaw
-        # error; SIM_BRD_TRIM now rotates the compass too).
-        self.progress("WIND.speed_z:   baseline=%.2f trimmed=%.2f (d=%.2f)" %
-                      (baseline_z, trimmed_z, trimmed_z - baseline_z))
-        self.progress("WIND.speed(hz): baseline=%.2f trimmed=%.2f (d=%.2f)" %
-                      (baseline_spd, trimmed_spd, trimmed_spd - baseline_spd))
-        if abs(trimmed_z - baseline_z) > 1.0:
-            raise NotAchievedException(
-                "AHRS trim changed the vertical wind estimate: speed_z baseline=%.2f trimmed=%.2f" %
-                (baseline_z, trimmed_z))
-        if abs(trimmed_spd - baseline_spd) > 1.0:
-            raise NotAchievedException(
-                "AHRS trim changed the horizontal wind estimate: speed baseline=%.2f trimmed=%.2f" %
-                (baseline_spd, trimmed_spd))
-        self.fly_home_land_and_disarm()
+        # DCM (0) and CINS (12) share the same lifted wind-triangle code, so
+        # both must use the trimmed (vehicle) fuselage axis, not the raw board
+        # axis:
+        ahrs_types = [0]
+        if self.cins_built_in():
+            ahrs_types.append(12)
+        for ahrs_type in ahrs_types:
+            self.start_subtest("Checking AHRS_EKF_TYPE=%u" % ahrs_type)
+            check_type(ahrs_type)
+        # fly home and land on DCM (as this test originally did): CINS as the
+        # active estimator is still under development and does not fly the
+        # autoland reliably.  Allow extra time as the two straight-cruise
+        # convergence legs leave the vehicle further from home than a single one.
+        self.set_parameter("AHRS_EKF_TYPE", 0)
+        self.fly_home_land_and_disarm(timeout=300)
 
     def WindMessageSpeed(self):
         '''Test that WIND.speed is horizontal (ground-plane) speed only'''
@@ -4054,16 +4082,19 @@ return update()
         self.delay_sim_time(10, reason="settle into loiter")
 
         # 0=DCM (deliberately sends no report), 2=EKF2, 3=EKF3,
-        # 10=SIM, 11=EXTERNAL:
-        for ahrs_type in [0, 2, 3, 10, 11]:
+        # 10=SIM, 11=EXTERNAL, 12=CINS (like DCM, sends no report):
+        ahrs_types = [0, 2, 3, 10, 11]
+        if self.cins_built_in():
+            ahrs_types.append(12)
+        for ahrs_type in ahrs_types:
             self.start_subtest("Checking EKF_STATUS_REPORT for AHRS_EKF_TYPE=%u" % ahrs_type)
             self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
             # allow the configured backend to switch over and produce a
             # fresh report before we look at it:
             self.delay_sim_time(3, reason="AHRS_EKF_TYPE change to take effect")
             self.drain_mav()
-            if ahrs_type == 0:
-                # DCM does not emit an EKF_STATUS_REPORT
+            if ahrs_type in (0, 12):
+                # DCM and CINS do not emit an EKF_STATUS_REPORT
                 self.assert_not_receive_message("EKF_STATUS_REPORT", timeout=5)
                 continue
             self.wait_ekf_status_report_ok(ahrs_type)
@@ -6900,6 +6931,23 @@ return update()
         self.context_collect('STATUSTEXT')
         self.set_parameter("AHRS_EKF_TYPE", 0)
         self.wait_statustext("DCM Active", check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+
+        self.change_mode('AUTOLAND')
+        self.wait_disarmed(timeout=180)
+
+    def ForcedCINS(self):
+        '''Switch to CINS mid-flight'''
+        if not self.cins_built_in():
+            self.progress("Skipping: CINS is not built in")
+            return
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.takeoff(50)
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("AHRS_EKF_TYPE", 12)
+        self.wait_statustext("CINS active", check_context=True)
         self.context_stop_collecting('STATUSTEXT')
 
         self.change_mode('AUTOLAND')
@@ -10825,6 +10873,7 @@ return update()
             self.TakeoffIdleThrottle,
             self.TakeoffBadLevelOff,
             self.ForcedDCM,
+            self.ForcedCINS,
             self.DCMFallback,
             self.MAVFTPBurstEOFOffset,
             self.MAVFTPListDirectoryRoot,
