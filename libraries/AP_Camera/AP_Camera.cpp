@@ -412,6 +412,7 @@ float AP_Camera::command_camera_id(const mavlink_command_int_t &packet)
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_SOURCE:
+    case MAV_CMD_SET_CAMERA_MODE:
         return packet.param1;
     case MAV_CMD_CAMERA_STOP_TRACKING:
         return isnan(packet.param1) ? 0 : packet.param1;
@@ -499,6 +500,12 @@ bool AP_Camera::resolve_camera_id(float camera_id, uint8_t &instance_id) const
     return instance_id != 0;
 }
 
+// tracking points are fractions of the image, 0 is left or top, 1 is right or bottom
+static bool valid_image_fraction(float v)
+{
+    return isfinite(v) && v >= 0 && v <= 1;
+}
+
 // handle command_int mavlink messages
 MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
 {
@@ -519,6 +526,25 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
             is_equal(packet.param3, 1.0f),  // trigger
             packet.param1                   // distance
         );
+    case MAV_CMD_SET_CAMERA_MODE: {
+        if (!isfinite(packet.param2) || packet.param2 < 0 || packet.param2 > float(CAMERA_MODE_IMAGE_SURVEY) ||
+            packet.param2 > floorf(packet.param2)) {
+            return MAV_RESULT_DENIED;
+        }
+        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
+        bool found = false;
+        for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+            if (_backends[i] == nullptr || (instance_id != 0 && instance_id != i+1)) {
+                continue;
+            }
+            const MAV_RESULT r = _backends[i]->set_camera_mode(uint8_t(packet.param2));
+            if (!found || r != MAV_RESULT_ACCEPTED) {
+                result = r;
+            }
+            found = true;
+        }
+        return result;
+    }
     case MAV_CMD_SET_CAMERA_ZOOM:
         return handle_mav_SET_CAMERA_ZOOM(
             instance_id,                     // instance
@@ -592,13 +618,22 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
-    case MAV_CMD_CAMERA_TRACK_POINT:
-        if (instance_id == 0 ? set_tracking(TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, Vector2f{}) :
-            set_tracking(instance_id - 1, TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, Vector2f{})) {
+    case MAV_CMD_CAMERA_TRACK_POINT: {
+        if (!valid_image_fraction(packet.param1) || !valid_image_fraction(packet.param2)) {
+            return MAV_RESULT_DENIED;
+        }
+        const Vector2f radius {isnan(packet.param3) ? 0.0f : constrain_float(packet.param3, 0, 1), 0};
+        if (instance_id == 0 ? set_tracking(TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, radius) :
+            set_tracking(instance_id - 1, TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, radius)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
+    }
     case MAV_CMD_CAMERA_TRACK_RECTANGLE:
+        if (!valid_image_fraction(packet.param1) || !valid_image_fraction(packet.param2) ||
+            !valid_image_fraction(packet.param3) || !valid_image_fraction(packet.param4)) {
+            return MAV_RESULT_DENIED;
+        }
         if (instance_id == 0 ? set_tracking(TrackingType::TRK_RECTANGLE, Vector2f{packet.param1, packet.param2}, Vector2f{packet.param3, packet.param4}) :
             set_tracking(instance_id - 1, TrackingType::TRK_RECTANGLE, Vector2f{packet.param1, packet.param2}, Vector2f{packet.param3, packet.param4})) {
             return MAV_RESULT_ACCEPTED;
@@ -977,7 +1012,7 @@ SetFocusResult AP_Camera::set_focus(uint8_t instance, FocusType focus_type, floa
 }
 
 // set tracking to none, point or rectangle (see TrackingType enum)
-// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+// if POINT p1 is the point and p2.x its radius (fraction of image width), if RECTANGLE then p1 is top-left, p2 is bottom-right
 // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
 bool AP_Camera::set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
 {
@@ -990,7 +1025,7 @@ bool AP_Camera::set_tracking(TrackingType tracking_type, const Vector2f& p1, con
 }
 
 // set tracking to none, point or rectangle (see TrackingType enum)
-// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+// if POINT p1 is the point and p2.x its radius (fraction of image width), if RECTANGLE then p1 is top-left, p2 is bottom-right
 // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
 bool AP_Camera::set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
 {

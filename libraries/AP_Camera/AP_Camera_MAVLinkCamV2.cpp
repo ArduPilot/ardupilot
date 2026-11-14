@@ -100,6 +100,72 @@ bool AP_Camera_MAVLinkCamV2::record_video_stream(bool start_recording, uint8_t s
     return true;
 }
 
+MAV_RESULT AP_Camera_MAVLinkCamV2::set_camera_mode(uint8_t mode)
+{
+    if (_link == nullptr) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    // a survey camera can always be returned to image mode
+    const bool survey = _cam_info.flags & CAMERA_CAP_FLAGS_HAS_IMAGE_SURVEY_MODE;
+    const bool supported = (mode == CAMERA_MODE_IMAGE_SURVEY) ? survey :
+        ((_cam_info.flags & CAMERA_CAP_FLAGS_HAS_MODES) || (survey && mode == CAMERA_MODE_IMAGE));
+    if (!supported) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    mavlink_command_long_t pkt {};
+    pkt.target_system = mavlink_msg_target_field(_sysid);
+    pkt.target_component = _compid;
+    pkt.command = MAV_CMD_SET_CAMERA_MODE;
+    // param1 is reserved (0) for older cameras; AP_Camera used it to select us
+    pkt.param2 = mode;
+    pkt.param3 = NAN;
+    pkt.param4 = NAN;
+    pkt.param7 = NAN;
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt, _sysid);
+    return MAV_RESULT_ACCEPTED;
+}
+
+// set tracking to none, point or rectangle (see TrackingType enum)
+bool AP_Camera_MAVLinkCamV2::set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+{
+    if (_link == nullptr) {
+        return false;
+    }
+    // target camera ID params stay 0, the camera itself
+    mavlink_command_long_t pkt {};
+    pkt.target_system = mavlink_msg_target_field(_sysid);
+    pkt.target_component = _compid;
+    switch (tracking_type) {
+    case TrackingType::TRK_NONE:
+        if (!(_cam_info.flags & (CAMERA_CAP_FLAGS_HAS_TRACKING_POINT | CAMERA_CAP_FLAGS_HAS_TRACKING_RECTANGLE))) {
+            return false;
+        }
+        pkt.command = MAV_CMD_CAMERA_STOP_TRACKING;
+        break;
+    case TrackingType::TRK_POINT:
+        if (!(_cam_info.flags & CAMERA_CAP_FLAGS_HAS_TRACKING_POINT)) {
+            return false;
+        }
+        pkt.command = MAV_CMD_CAMERA_TRACK_POINT;
+        pkt.param1 = p1.x;
+        pkt.param2 = p1.y;
+        pkt.param3 = p2.x;      // radius
+        break;
+    case TrackingType::TRK_RECTANGLE:
+        if (!(_cam_info.flags & CAMERA_CAP_FLAGS_HAS_TRACKING_RECTANGLE)) {
+            return false;
+        }
+        pkt.command = MAV_CMD_CAMERA_TRACK_RECTANGLE;
+        pkt.param1 = p1.x;
+        pkt.param2 = p1.y;
+        pkt.param3 = p2.x;
+        pkt.param4 = p2.y;
+        break;
+    }
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt, _sysid);
+    return true;
+}
+
 // set zoom specified as a rate or percentage
 bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 {

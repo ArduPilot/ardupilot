@@ -48,6 +48,12 @@ public:
     bool record_video(bool start_recording) override;
     bool record_video_stream(bool start_recording, uint8_t stream_id, float status_frequency) override;
 
+    // set camera running mode
+    MAV_RESULT set_camera_mode(uint8_t mode) override;
+
+    // set tracking to none, point or rectangle (see TrackingType enum)
+    bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) override;
+
     // set zoom specified as a rate or percentage
     bool set_zoom(ZoomType zoom_type, float zoom_value) override;
 
