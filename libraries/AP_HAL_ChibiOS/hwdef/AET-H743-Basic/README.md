@@ -27,12 +27,12 @@ The AET-H743-Basic is a flight controller designed and produced by AeroEggTech
 
 ![AET-H743-Basic power board](AET-H743-Basic_power_board.png)
 
-## Mechanical
+## Physical
 
 - Dimensions: 36 x 47 x 17 mm
 - Weight: 45g
 
-## Power supply
+## Power Supply
 
 The AET-H743-Basic supports 2-6s Li battery input. It has 3 ways of BEC, which result in 6 ways of power supplys. Please see the table below.
 

@@ -16,7 +16,7 @@
 - 5V Power Out: 2.0A max
 - 9V Power Out: 2.0A max
 
-## Pinout for BRAHMA F405
+## Pinout
 
 ![BrahmaF405](BRAHMA_F405-diagram.jpg "DM_BrahmaF4")
 

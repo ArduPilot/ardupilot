@@ -40,7 +40,7 @@ Contact the [manufacturer](https://thepeach.kr/) for hardware support or complia
   - Dimensions: 40.2 x 61.1 x 24.8 mm
   - Weight: 65g
 
-## Connectors
+## Pinout
 
 ![pinmap_top](./pinmap_top.png)
 

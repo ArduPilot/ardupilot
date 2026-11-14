@@ -69,7 +69,7 @@ Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot.
 
-## Video Power Control
+## VTX Power Control
 
 The 9V video power can be turned off/on  using GPIO 81 which is already assigned by default to RELAY2.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
 
@@ -77,7 +77,7 @@ The 9V video power can be turned off/on  using GPIO 81 which is already assigned
 
 The camera output can be switched using GPIO 82 which is already assigned by default to RELAY3.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
 
-## Analog Airspeed Input
+## Analog Airspeed
 
 The analog airspeed pin is "4"
 
