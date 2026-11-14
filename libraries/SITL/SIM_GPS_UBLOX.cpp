@@ -479,10 +479,78 @@ const GPS_UBlox::ConfigKeyInfo GPS_UBlox::config_keys[] {
 };
 static const uint32_t CFG_NAVSPG_DYNMODEL = 0x20110021;
 
+// ZED-X20P keys and defaults, from the u-blox X20 HPG 2.11 interface
+// description (UBXDOC-304424225-21617)
+const GPS_UBlox::X20KeyInfo GPS_UBlox::x20_keys[] {
+    { 0x1031001F, 1 },     // CFG-SIGNAL-GPS_ENA
+    { 0x10310001, 1 },     // CFG-SIGNAL-GPS_L1CA_ENA
+    { 0x10310003, 1 },     // CFG-SIGNAL-GPS_L2C_ENA
+    { 0x10310004, 1 },     // CFG-SIGNAL-GPS_L5_ENA
+    { 0x10310020, 1 },     // CFG-SIGNAL-SBAS_ENA
+    { 0x10310005, 1 },     // CFG-SIGNAL-SBAS_L1CA_ENA
+    { 0x10310021, 1 },     // CFG-SIGNAL-GAL_ENA
+    { 0x10310007, 1 },     // CFG-SIGNAL-GAL_E1_ENA
+    { 0x10310009, 1 },     // CFG-SIGNAL-GAL_E5A_ENA
+    { 0x1031000A, 0 },     // CFG-SIGNAL-GAL_E5B_ENA
+    { 0x1031000B, 1 },     // CFG-SIGNAL-GAL_E6_ENA
+    { 0x10310022, 1 },     // CFG-SIGNAL-BDS_ENA
+    { 0x1031000D, 1 },     // CFG-SIGNAL-BDS_B1_ENA
+    { 0x1031000F, 1 },     // CFG-SIGNAL-BDS_B1C_ENA
+    { 0x1031000E, 0 },     // CFG-SIGNAL-BDS_B2_ENA
+    { 0x10310028, 1 },     // CFG-SIGNAL-BDS_B2A_ENA
+    { 0x10310010, 1 },     // CFG-SIGNAL-BDS_B3_ENA
+    { 0x10310024, 0 },     // CFG-SIGNAL-QZSS_ENA
+    { 0x10310012, 1 },     // CFG-SIGNAL-QZSS_L1CA_ENA
+    { 0x10310039, 1 },     // CFG-SIGNAL-QZSS_L1CB_ENA
+    { 0x10310014, 1 },     // CFG-SIGNAL-QZSS_L1S_ENA
+    { 0x10310015, 1 },     // CFG-SIGNAL-QZSS_L2C_ENA
+    { 0x10310017, 1 },     // CFG-SIGNAL-QZSS_L5_ENA
+    { 0x10310025, 1 },     // CFG-SIGNAL-GLO_ENA
+    { 0x10310018, 1 },     // CFG-SIGNAL-GLO_L1_ENA
+    { 0x1031001A, 1 },     // CFG-SIGNAL-GLO_L2_ENA
+    { 0x10310026, 0 },     // CFG-SIGNAL-NAVIC_ENA
+    { 0x1031001D, 1 },     // CFG-SIGNAL-NAVIC_L5_ENA
+    { 0x1031002A, 0 },     // CFG-SIGNAL-LBAND_ENA
+    { 0x1031002F, 1 },     // CFG-SIGNAL-LBAND_PMP_ENA
+    { 0x2031003A, 2 },     // CFG-SIGNAL-PLAN
+    { 0x30210001, 1000 },  // CFG-RATE-MEAS
+    { 0x30210002, 1 },     // CFG-RATE-NAV
+    { 0x20110021, 0 },     // CFG-NAVSPG-DYNMODEL
+    { 0x201100A4, 10 },    // CFG-NAVSPG-INFIL_MINELEV
+    { 0x10530005, 1 },     // CFG-UART2-ENABLED
+    { 0x20910007, 0 },     // CFG-MSGOUT-UBX_NAV_PVT_UART1
+    { 0x20910008, 0 },     // CFG-MSGOUT-UBX_NAV_PVT_UART2
+    { 0x20910048, 0 },     // CFG-MSGOUT-UBX_NAV_TIMEGPS_UART1
+    { 0x20910049, 0 },     // CFG-MSGOUT-UBX_NAV_TIMEGPS_UART2
+    { 0x20910039, 0 },     // CFG-MSGOUT-UBX_NAV_DOP_UART1
+    { 0x2091003A, 0 },     // CFG-MSGOUT-UBX_NAV_DOP_UART2
+    { 0x2091035A, 0 },     // CFG-MSGOUT-UBX_MON_RF_UART1
+    { 0x2091035B, 0 },     // CFG-MSGOUT-UBX_MON_RF_UART2
+    { 0x209102A5, 0 },     // CFG-MSGOUT-UBX_RXM_RAWX_UART1
+    { 0x209102A6, 0 },     // CFG-MSGOUT-UBX_RXM_RAWX_UART2
+};
+
+// the X20's constellation enable keys and the keys of their signals.
+// A constellation is in use when it and at least one of its signals
+// are enabled (ZED-X20P integration manual, GNSS signal configuration)
+static const struct {
+    uint8_t gnss_id;
+    uint32_t enable_key;
+    uint32_t signal_keys[5];
+} x20_gnss[] {
+    { 0, 0x1031001F, { 0x10310001, 0x10310003, 0x10310004 } },  // GPS
+    { 1, 0x10310020, { 0x10310005 } },  // SBAS
+    { 2, 0x10310021, { 0x10310007, 0x10310009, 0x1031000A, 0x1031000B } },  // Galileo
+    { 3, 0x10310022, { 0x1031000D, 0x1031000F, 0x1031000E, 0x10310028, 0x10310010 } },  // BeiDou
+    { 5, 0x10310024, { 0x10310012, 0x10310039, 0x10310014, 0x10310015, 0x10310017 } },  // QZSS
+    { 6, 0x10310025, { 0x10310018, 0x1031001A } },  // GLONASS
+    { 7, 0x10310026, { 0x1031001D } },  // NavIC
+};
+
 GPS_UBlox::Model GPS_UBlox::model() const
 {
     const uint8_t value = _sitl->gps[instance].ubx_model.get();
-    if (value > uint8_t(Model::M10_SPG510)) {
+    if (value > uint8_t(Model::X20P_HPG211)) {
         // unknown model; behave as the simple model
         return Model::SIMPLE;
     }
@@ -497,6 +565,7 @@ bool GPS_UBlox::has_flash() const
     case Model::M8N_FW201:
     case Model::M8N_SPG301:
     case Model::M9N_SPG404:
+    case Model::X20P_HPG211:
         return true;
     case Model::SIMPLE:
     case Model::UBLOX6:
@@ -531,6 +600,7 @@ bool GPS_UBlox::supports(uint8_t msg_class, uint8_t msg_id) const
         return !(msg_class == CLASS_NAV && msg_id == MSG_PVT);
     case Model::M9N_SPG404:
     case Model::M10_SPG510:
+    case Model::X20P_HPG211:
         return !(msg_class == CLASS_NAV && (msg_id == MSG_SOL || msg_id == MSG_SVINFO));
     case Model::SIMPLE:
     case Model::M8N_FW201:
@@ -621,6 +691,9 @@ void GPS_UBlox::factory_config(Config &cfg) const
     for (uint8_t i=0; i<ARRAY_SIZE(config_keys); i++) {
         cfg.key_value[i] = config_keys[i].default_value;
     }
+    for (uint8_t i=0; i<ARRAY_SIZE(x20_keys); i++) {
+        cfg.x20_value[i] = x20_keys[i].default_value;
+    }
 }
 
 void GPS_UBlox::config_filename(char *buf, uint8_t buflen) const
@@ -686,7 +759,19 @@ bool GPS_UBlox::should_send(uint8_t msg_class, uint8_t msg_id)
     if (idx < 0 || !supports(msg_class, msg_id)) {
         return false;
     }
-    const uint8_t rate = ram.rate[idx];
+    uint8_t rate = ram.rate[idx];
+    if (model() == Model::X20P_HPG211) {
+        // the X20 output rates are CFG-MSGOUT keys
+        uint32_t key = 0;
+        if (msg_class == CLASS_NAV && msg_id == MSG_PVT) {
+            key = 0x20910007;  // CFG-MSGOUT-UBX_NAV_PVT_UART1
+        } else if (msg_class == CLASS_NAV && msg_id == MSG_TIMEGPS) {
+            key = 0x20910048;  // CFG-MSGOUT-UBX_NAV_TIMEGPS_UART1
+        } else if (msg_class == CLASS_NAV && msg_id == MSG_DOP) {
+            key = 0x20910039;  // CFG-MSGOUT-UBX_NAV_DOP_UART1
+        }
+        rate = key == 0 ? 0 : x20_value(ram, key);
+    }
     return rate != 0 && nav_count % rate == 0;
 }
 
@@ -751,6 +836,16 @@ void GPS_UBlox::send_mon_ver()
                 "GPS;GLO;GAL;BDS",
                 "SBAS;QZSS" } };
         break;
+    case Model::X20P_HPG211:
+        // the version strings are not taken from a real receiver;
+        // the driver uses the protocol version and module name
+        ver = { "EXT CORE 2.11", "00200000", {
+                "FWVER=HPG 2.11",
+                "PROTVER=50.11",
+                "MOD=ZED-X20P",
+                "GPS;GLO;GAL;BDS",
+                "SBAS;QZSS;NAVIC" } };
+        break;
     case Model::SIMPLE:
         return;
     }
@@ -788,6 +883,29 @@ void GPS_UBlox::send_cfg_prt()
 
 void GPS_UBlox::handle_cfg(uint8_t msg_id, const uint8_t *payload, uint16_t len)
 {
+    if (model() == Model::X20P_HPG211) {
+        // the X20 has none of the older CFG messages
+        switch (msg_id) {
+        case 0x04:  // RST; the RAM configuration is rebuilt from the saved one
+            ram = saved;
+            return;
+        case 0x09:  // CFG
+            break;
+        case 0x8a:  // VALSET
+            x20_handle_valset(payload, len);
+            return;
+        case 0x8b:  // VALGET
+            x20_handle_valget(payload, len);
+            return;
+        case 0x8c:  // VALDEL
+            x20_handle_valdel(payload, len);
+            return;
+        default:
+            send_ack(CLASS_CFG, msg_id, false);
+            return;
+        }
+    }
+
     switch (msg_id) {
     case 0x00:  // PRT
         if (len <= 1) {
@@ -863,6 +981,7 @@ void GPS_UBlox::handle_cfg(uint8_t msg_id, const uint8_t *payload, uint16_t len)
         }
         if (save_mask != 0) {
             saved = ram;
+            saved.x20_set = (1ULL << ARRAY_SIZE(x20_keys)) - 1;
             store_saved_config();
         }
         if (load_mask != 0) {
@@ -1052,6 +1171,247 @@ void GPS_UBlox::handle_valset(const uint8_t *payload, uint16_t len)
     send_ack(CLASS_CFG, 0x8a, true);
 }
 
+int8_t GPS_UBlox::x20_key_index(uint32_t key) const
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(x20_keys); i++) {
+        if (x20_keys[i].key == key) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+uint32_t GPS_UBlox::x20_value(const Config &cfg, uint32_t key) const
+{
+    const int8_t idx = x20_key_index(key);
+    return idx < 0 ? 0 : cfg.x20_value[idx];
+}
+
+// size of a key's value from bits 30..28 of the key
+static uint8_t ubx_key_value_size(uint32_t key)
+{
+    switch ((key >> 28) & 0x07) {
+    case 1:
+    case 2:
+        return 1;
+    case 3:
+        return 2;
+    case 4:
+        return 4;
+    case 5:
+        return 8;
+    }
+    return 0;
+}
+
+/*
+  the X20 rejects a signal configuration unless a major constellation
+  is in use, QZSS is used only with GPS, and SBAS only with GPS,
+  Galileo or BeiDou (ZED-X20P integration manual and X20 HPG 2.11
+  interface description, CFG-SIGNAL)
+ */
+bool GPS_UBlox::x20_signal_config_valid(const Config &cfg) const
+{
+    uint8_t in_use = 0;
+    for (const auto &gnss : x20_gnss) {
+        if (x20_value(cfg, gnss.enable_key) == 0) {
+            continue;
+        }
+        for (const uint32_t signal_key : gnss.signal_keys) {
+            if (signal_key != 0 && x20_value(cfg, signal_key) != 0) {
+                in_use |= 1U << gnss.gnss_id;
+                break;
+            }
+        }
+    }
+    const uint8_t GPS = 1U<<0, SBAS = 1U<<1, GAL = 1U<<2, BDS = 1U<<3, QZSS = 1U<<5, GLO = 1U<<6;
+    if ((in_use & (GPS | GAL | BDS | GLO)) == 0) {
+        return false;
+    }
+    if ((in_use & QZSS) && !(in_use & GPS)) {
+        return false;
+    }
+    if ((in_use & SBAS) && !(in_use & (GPS | GAL | BDS))) {
+        return false;
+    }
+    return true;
+}
+
+/*
+  reply with the requested keys' values from a layer: 0=RAM, 1=BBR,
+  2=flash, 7=default.  Keys may be wildcards for a whole group (item
+  0xffff) or all groups (group 0xfff); the saved layers only hold the
+  keys that have been set in them.  An unknown key NAKs the request
+ */
+void GPS_UBlox::x20_handle_valget(const uint8_t *payload, uint16_t len)
+{
+    if (len < 8 || (len - 4) % 4 != 0 || (len - 4) / 4 > 64) {
+        send_ack(CLASS_CFG, 0x8b, false);
+        return;
+    }
+    const uint8_t layer = payload[1];
+    const uint16_t position = payload[2] | (payload[3] << 8);
+    Config defaults;
+    factory_config(defaults);
+    const Config *cfg;
+    bool saved_layer = false;
+    switch (layer) {
+    case 0:
+        cfg = &ram;
+        break;
+    case 1:
+    case 2:
+        cfg = &saved;
+        saved_layer = true;
+        break;
+    case 7:
+        cfg = &defaults;
+        break;
+    default:
+        send_ack(CLASS_CFG, 0x8b, false);
+        return;
+    }
+
+    uint8_t reply[4 + 64*(4+4)];
+    reply[0] = 1;  // version
+    reply[1] = layer;
+    reply[2] = payload[2];
+    reply[3] = payload[3];
+    uint16_t reply_len = 4;
+    uint16_t skipped = 0;
+    uint8_t count = 0;
+    for (uint16_t ofs=4; ofs<len; ofs+=4) {
+        uint32_t key;
+        memcpy(&key, &payload[ofs], 4);
+        const uint16_t group = (key >> 16) & 0xfff;
+        const bool all_groups = group == 0xfff;
+        const bool whole_group = (key & 0xffff) == 0xffff;
+        if (!all_groups && !whole_group && x20_key_index(key) < 0) {
+            send_ack(CLASS_CFG, 0x8b, false);
+            return;
+        }
+        for (uint8_t i=0; i<ARRAY_SIZE(x20_keys); i++) {
+            const uint32_t k = x20_keys[i].key;
+            if (!all_groups &&
+                !(whole_group && ((k >> 16) & 0xfff) == group) &&
+                k != key) {
+                continue;
+            }
+            if (saved_layer && (cfg->x20_set & (1ULL << i)) == 0) {
+                continue;
+            }
+            if (skipped < position) {
+                skipped++;
+                continue;
+            }
+            if (count == 64) {
+                break;
+            }
+            const uint8_t size = ubx_key_value_size(k);
+            memcpy(&reply[reply_len], &k, 4);
+            memcpy(&reply[reply_len+4], &cfg->x20_value[i], size);
+            reply_len += 4 + size;
+            count++;
+        }
+    }
+    send_ubx(CLASS_CFG, 0x8b, reply, reply_len);
+    send_ack(CLASS_CFG, 0x8b, true);
+}
+
+/*
+  set keys in RAM (layer bit 0) and/or the saved configuration (BBR
+  bit 1, flash bit 2).  As on the receiver, nothing is applied if any
+  key is unknown, and the signal configuration is only checked when
+  RAM is being set
+ */
+void GPS_UBlox::x20_handle_valset(const uint8_t *payload, uint16_t len)
+{
+    const uint8_t layers = len >= 4 ? payload[1] & 0x07 : 0;
+    // transactions are not simulated
+    const bool transaction = len >= 4 && payload[0] == 1 && payload[2] != 0;
+    if (layers == 0 || transaction) {
+        send_ack(CLASS_CFG, 0x8a, false);
+        return;
+    }
+    Config new_ram = ram;
+    Config new_saved = saved;
+    uint16_t ofs = 4;
+    while (ofs < len) {
+        uint32_t key;
+        if (ofs + 4 > len) {
+            send_ack(CLASS_CFG, 0x8a, false);
+            return;
+        }
+        memcpy(&key, &payload[ofs], 4);
+        const int8_t idx = x20_key_index(key);
+        const uint8_t size = ubx_key_value_size(key);
+        if (idx < 0 || ofs + 4 + size > len) {
+            send_ack(CLASS_CFG, 0x8a, false);
+            return;
+        }
+        uint32_t value = 0;
+        memcpy(&value, &payload[ofs+4], size);
+        if (layers & 0x01) {
+            new_ram.x20_value[idx] = value;
+        }
+        if (layers & 0x06) {
+            new_saved.x20_value[idx] = value;
+            new_saved.x20_set |= 1ULL << idx;
+        }
+        ofs += 4 + size;
+    }
+    if ((layers & 0x01) && !x20_signal_config_valid(new_ram)) {
+        send_ack(CLASS_CFG, 0x8a, false);
+        return;
+    }
+    ram = new_ram;
+    if (layers & 0x06) {
+        saved = new_saved;
+        store_saved_config();
+    }
+    send_ack(CLASS_CFG, 0x8a, true);
+}
+
+/*
+  delete keys from the saved configuration; keys may be wildcards as
+  for VALGET
+ */
+void GPS_UBlox::x20_handle_valdel(const uint8_t *payload, uint16_t len)
+{
+    if (len < 8 || (len - 4) % 4 != 0 || (payload[1] & 0x06) == 0) {
+        send_ack(CLASS_CFG, 0x8c, false);
+        return;
+    }
+    Config defaults;
+    factory_config(defaults);
+    for (uint16_t ofs=4; ofs<len; ofs+=4) {
+        uint32_t key;
+        memcpy(&key, &payload[ofs], 4);
+        const uint16_t group = (key >> 16) & 0xfff;
+        for (uint8_t i=0; i<ARRAY_SIZE(x20_keys); i++) {
+            const uint32_t k = x20_keys[i].key;
+            if (group == 0xfff ||
+                ((key & 0xffff) == 0xffff && ((k >> 16) & 0xfff) == group) ||
+                k == key) {
+                saved.x20_set &= ~(1ULL << i);
+                saved.x20_value[i] = defaults.x20_value[i];
+            }
+        }
+    }
+    store_saved_config();
+    send_ack(CLASS_CFG, 0x8c, true);
+}
+
+// MON-COMMS; the X20 reports the port it is talking on in txErrors
+void GPS_UBlox::send_mon_comms()
+{
+    uint8_t comms[8 + 40] {};
+    comms[0] = 0;  // version
+    comms[1] = 1;  // one port block
+    comms[2] = (UBX_PORT + 1) << 2;  // outputPort: 2 = UART1
+    send_ubx(CLASS_MON, 0x36, comms, sizeof(comms));
+}
+
 void GPS_UBlox::handle_ubx(uint8_t msg_class, uint8_t msg_id, const uint8_t *payload, uint16_t len)
 {
     switch (msg_class) {
@@ -1061,6 +1421,9 @@ void GPS_UBlox::handle_ubx(uint8_t msg_class, uint8_t msg_id, const uint8_t *pay
     case CLASS_MON:
         if (msg_id == 0x04 && len == 0) {
             send_mon_ver();
+        }
+        if (msg_id == 0x36 && len == 0 && model() == Model::X20P_HPG211) {
+            send_mon_comms();
         }
         break;
     case CLASS_NAV:
