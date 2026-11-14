@@ -3235,6 +3235,94 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # eight times the metres per volt, so at 20-28 m it reads 2.5-3.5 m
         brief_return(2.5, 3.5, "a brief return")
 
+        self.start_subtest("A brief return just after range finder height ends leaves the height alone")
+        # the ground offset stays valid for 5 s after the last range height, and the fallback that
+        # keeps the range finder off the height must not wait for it. The return is sent from a
+        # message hook 1.5 s after the vehicle passes the range, so a loaded host cannot delay it
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False)
+        ground_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+        sonar_scale = self.get_parameter("SIM_SONAR_SCALE")
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 20)
+        st = {"passed": None, "set": None, "undone": None}
+
+        def early_return_hook(mav, m, st=st, ground_alt=ground_alt, sonar_scale=sonar_scale):
+            if m.get_type() != 'SIM_STATE':
+                return
+            t = self.get_sim_time_cached()
+            if st["passed"] is None:
+                if m.alt - ground_alt > 8.2:
+                    st["passed"] = t
+            elif st["set"] is None:
+                if t - st["passed"] > 1.5:
+                    st["set"] = t
+                    # four times the metres per volt, so at 12-16 m it reads 3-4 m
+                    self.send_set_parameter_direct("SIM_SONAR_SCALE", sonar_scale * 4)
+            elif st["undone"] is None and t - st["set"] > 1:
+                st["undone"] = t
+                self.send_set_parameter_direct("SIM_SONAR_SCALE", sonar_scale)
+
+        self.set_rc(3, 1700)
+        self.install_message_hook(early_return_hook)
+        try:
+            tstart = self.get_sim_time()
+            while st["undone"] is None:
+                if self.get_sim_time() - tstart > 60:
+                    raise NotAchievedException("the climb never passed the 8 m range")
+                self.delay_sim_time(0.2, "climb past the range")
+        finally:
+            self.remove_message_hook(early_return_hook)
+        self.set_rc(3, 1500)
+        self.set_parameter("SIM_SONAR_SCALE", sonar_scale)
+        self.delay_sim_time(3, "the return to be undone")
+        flags = self.ekf_status_flags()
+        tend_us = self.get_sim_time() * 1e6
+        self.disarm_vehicle(force=True)
+        tset_us = st["set"] * 1e6
+        tundone_us = st["undone"] * 1e6
+        # from the log: when the range was last good before the return, and the return itself
+        last_good_us = None
+        return_us = []
+        before = []
+        through = []
+        sim_alt = None
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'SIM', 'RFND'])
+            if m is None:
+                break
+            if m.get_type() == 'SIM':
+                sim_alt = m.Alt
+            elif m.get_type() == 'RFND':
+                if m.Instance != 0 or m.Stat != 4:
+                    continue
+                if m.TimeUS < tset_us:
+                    last_good_us = m.TimeUS
+                elif m.TimeUS < tundone_us + 0.5e6:
+                    return_us.append(m.TimeUS)
+            elif m.C == 0 and sim_alt is not None:
+                if tset_us - 2e6 < m.TimeUS < tset_us:
+                    before.append(-m.PD - sim_alt)
+                elif tset_us < m.TimeUS < tend_us:
+                    through.append(-m.PD - sim_alt)
+        if last_good_us is None or len(return_us) < 5 or not before or not through:
+            raise NotAchievedException("no return in the log, so the leg proves nothing")
+        gap = (return_us[0] - last_good_us) * 1e-6
+        # past the 0.5 s after which the range finder stops being the height source, and inside
+        # the 5 s the ground offset then stays valid for
+        if not 0.6 < gap < 4.5:
+            raise NotAchievedException("the return came %.1f s after the range was lost, so the leg proves nothing" % gap)
+        baseline = sum(before) / len(before)
+        worst = max(through, key=lambda e: abs(e - baseline)) - baseline
+        self.progress("return %.1f s after the range was lost, %u readings; EKF height less true height moved at most %.2f m" %
+                      (gap, len(return_us), worst))
+        if abs(worst) > 1:
+            raise NotAchievedException("a return %.1f s after range finder height ended moved the height %.1f m" %
+                                       (gap, worst))
+        if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("relative position lost after a brief return")
+
         self.start_subtest("The range finder takes the height back, and a later loss in range is refused")
         # back in range the fallback ends after 2 s of fused readings and the range finder takes
         # the height. At 5 m the vehicle is over the 4.6 m height limit and short of the 5.6 m
@@ -4509,11 +4597,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # nothing brings it back into reach, and below the 28 m fallback it loses relative
         # position.  That is accepted for a range finder that falls short of RNGFND1_MAX; the
         # leg pins it, holding height with relative position lost, so a change that brings the
-        # vehicle back into reach has to update the leg
-        for reach, floor, ceiling, keeps_rel, centre in ((25, 0, 29, False, False),
-                                                         (27.5, 27.6, 30.5, True, False),
-                                                         (27.5, 27.6, 29.5, False, True)):
-            self.start_subtest("return lost at %.1f m%s" % (reach, ", stick centred past it" if centre else ""))
+        # vehicle back into reach has to update the leg. With range finder height the full-stick
+        # climb has to keep relative position too, which needs the ground offset to stay valid
+        # once the range finder stops being the height source, as it does under baro height
+        for reach, floor, ceiling, keeps_rel, centre, posz in ((25, 0, 29, False, False, 1),
+                                                               (27.5, 27.6, 30.5, True, False, 1),
+                                                               (27.5, 27.6, 29.5, False, True, 1),
+                                                               (27.5, 27.6, 30.5, True, False, 2)):
+            self.start_subtest("return lost at %.1f m%s%s" % (reach, ", stick centred past it" if centre else "",
+                                                              ", range finder height" if posz == 2 else ""))
+            self.set_parameter("EK3_SRC1_POSZ", posz)
             self.reboot_sitl()
             self.wait_ready_to_arm(require_absolute=False)
             ground_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
@@ -7227,7 +7320,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode='ALT_HOLD', require_absolute=False)
         self.change_mode('LOITER')
         self.wait_groundspeed(0, 0.5, minimum_duration=2)
-        self.set_parameter("RNGFND1_MAX", 5)  # out of range high at 10 m
+        # out of range high at 10 m. Under the 2.86 m below which there is no flat-ground fallback,
+        # as a range shrunk under a vehicle that last read 10 m looks to the EKF like a climb out
+        self.set_parameter("RNGFND1_MAX", 2)
         self.delay_sim_time(8, reason="let the ground offset lapse")
         # by now the EKF failsafe has it in LAND without position
         self.set_parameter("RNGFND1_MAX", 40)
