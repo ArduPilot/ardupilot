@@ -18603,6 +18603,49 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(4, timeout=60)
         self.wait_disarmed()
 
+    def MissionRTLNaNParams(self):
+        '''ensure a NAV_RETURN_TO_LAUNCH mission item with NaN in its
+        unused params is accepted and flown, as MAVSDK clients send it'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+        nan = float('nan')
+        rtl = self.create_MISSION_ITEM_INT(
+            mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            p1=nan,
+            p2=nan,
+            p3=nan,
+            p4=nan,
+            frame=mavutil.mavlink.MAV_FRAME_MISSION,
+            autocontinue=1,
+        )
+        # ArduPilot does not return the NaNs or the frame for RTL, so
+        # upload without the download-and-compare check:
+        mission = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 20),
+            rtl,
+        ])
+        self.upload_using_mission_protocol(
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+            mission,
+        )
+        downloaded = self.download_using_mission_protocol(
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+        )
+        if len(downloaded) != len(mission):
+            raise NotAchievedException(f"Expected {len(mission)} items, got {len(downloaded)}")
+        if downloaded[-1].command != mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH:
+            raise NotAchievedException("Last item is not RTL")
+
+        self.set_current_waypoint(0, check_afterwards=False)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(3, timeout=60)
+        self.wait_disarmed()
+        self.assert_at_home()
+
     def SMART_RTL(self):
         '''Check SMART_RTL'''
         self.progress("arm the vehicle and takeoff in Guided")
@@ -25035,6 +25078,7 @@ return update, 1000
             self.EKFBootstrapReset,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
+            self.MissionRTLNaNParams,
             self.SMART_RTL_EnterLeave,
             self.SMART_RTL_Repeat,
             self.RTL_TO_RALLY,
