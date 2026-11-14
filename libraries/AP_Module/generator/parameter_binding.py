@@ -11,6 +11,9 @@ ARGUMENTS = {
     'set': [('float', False, True)],
     'set_and_save': [('float', False, True)],
     'set_default': [('float', False, True)],
+    'get_int32': [('int32_t', True, False)],
+    'set_int32': [('int32_t', False, True)],
+    'set_and_save_int32': [('int32_t', False, True)],
 }
 POLICY = 'v2:Parameter,placement-init,host-layout,trivial-drop,receiver-le-u64,checked-f32'
 MAX_SIZE = 16 * 1024 * 1024
@@ -63,7 +66,7 @@ def cpp_cases(contract):
     for method in contract['methods']:
         name = method['name']
         setter = name.startswith('set')
-        output = 5 if name == 'get' else 1
+        output = 5 if name.startswith('get') else 1
         lines += [f'    case {method["id"]}: {{ // Parameter::{name}',
                   f'        memset(output, 0, {output});',
                   '        const uint64_t address = uint64_t(BindingWire::read(input, 4)) |',
@@ -76,6 +79,12 @@ def cpp_cases(contract):
                       '        if (name == nullptr) {', '            return AP_MODULE_STATUS_INVALID;', '        }',
                       '        parameter = new (parameter) Parameter();',
                       '        output[0] = parameter->init(name);']
+        elif name == 'get_int32':
+            lines += ['        int32_t value;', '        if (parameter->get_int32(value)) {', '            output[0] = 1;',
+                      '            BindingWire::write(output + 1, uint32_t(value), 4);', '        }']
+        elif name in ('set_int32', 'set_and_save_int32'):
+            lines += ['        const int32_t value = int32_t(BindingWire::read(input + 8, 4));',
+                      f'        output[0] = parameter->{name}(value);']
         elif name == 'get':
             lines += ['        float value;', '        if (parameter->get(value)) {', '            output[0] = 1;',
                       '            BindingWire::write_float(output + 1, value);', '        }']
@@ -96,5 +105,6 @@ def rust(contract, notice):
         'rust/parameter.rs', notice=notice, max_size=MAX_SIZE, max_alignment=MAX_ALIGNMENT,
         layout_id=contract['layout']['id'], init_id=ids['init'], get_id=ids['get'],
         configured_id=ids['configured'], set_id=ids['set'], set_and_save_id=ids['set_and_save'],
-        set_default_id=ids['set_default'],
+        set_default_id=ids['set_default'], get_int32_id=ids['get_int32'], set_int32_id=ids['set_int32'],
+        set_and_save_int32_id=ids['set_and_save_int32'],
     )
