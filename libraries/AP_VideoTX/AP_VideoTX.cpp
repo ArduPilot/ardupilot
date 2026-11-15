@@ -188,6 +188,33 @@ bool AP_VideoTX::get_band_and_channel(uint16_t freq, VideoBand& band, uint8_t& c
     return false;
 }
 
+// not inline: it is used by each of update_band(), update_channel() and
+// update_frequency(), which are themselves inlined in every backend
+bool AP_VideoTX::configured_rejected() const
+{
+    return _rejected && _band == _rejected_band && _channel == _rejected_channel && _frequency_mhz == _rejected_frequency;
+}
+
+void AP_VideoTX::frequency_rejected(uint8_t band, uint8_t channel, uint16_t freq, bool warn)
+{
+    // called from the backend's thread: if the configuration has changed
+    // since this was asked for, it is not the one that was refused
+    if (band != _band || channel != _channel || freq != _frequency_mhz) {
+        return;
+    }
+    if (warn && !configured_rejected()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: rejected frequency %uMHz", unsigned(freq));
+    }
+    // what was asked for, not the parameters, which the main thread may have
+    // changed since the check above. The flag is set last: update() reads
+    // these from another thread
+    _rejected_band = band;
+    _rejected_channel = channel;
+    _rejected_frequency = freq;
+    _rejected_unlocked = (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0;
+    _rejected = true;
+}
+
 // set the current power
 void AP_VideoTX::set_configured_power_mw(uint16_t power)
 {
@@ -422,6 +449,8 @@ void AP_VideoTX::update(void)
         return;
     }
 
+    update_rejected();
+
     // manipulate pitmode if pitmode-on-disarm or power-on-arm is set
     if (has_option(VideoOptions::VTX_PITMODE_ON_DISARM) || has_option(VideoOptions::VTX_PITMODE_UNTIL_ARM)) {
         if (hal.util->get_soft_armed() && has_option(VideoOptions::VTX_PITMODE)) {
@@ -488,13 +517,18 @@ bool AP_VideoTX::update_power() const {
     return false;
 }
 
+// not inline: update_band(), update_channel() and update_frequency() are
+// tested together in several places in the backends
+bool AP_VideoTX::update_tuning() const
+{
+    return update_band() || update_channel() || update_frequency();
+}
+
 bool AP_VideoTX::have_params_changed() const
 {
     return _enabled
         && (update_power()
-        || update_band()
-        || update_channel()
-        || update_frequency()
+        || update_tuning()
         || update_options());
 }
 
@@ -577,9 +611,14 @@ bool AP_VideoTX::set_defaults()
 
 void AP_VideoTX::announce_vtx_settings() const
 {
-    // Output a friendly message so the user knows the VTX has been detected
+    // Output a friendly message so the user knows the VTX has been detected.
+    // While the configuration is one the VTX refused, show what it is on
+    const bool rejected = configured_rejected();
+    const uint8_t band = rejected ? _current_band : uint8_t(_band.get());
+    const uint8_t channel = rejected ? _current_channel : uint8_t(_channel.get());
+    const uint16_t freq = rejected ? _current_frequency : uint16_t(_frequency_mhz.get());
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %s%d %dMHz, PWR: %dmW",
-        band_names[_band.get()], _channel.get() + 1, _frequency_mhz.get(),
+        band_names[band], channel + 1, freq,
         has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get());
 }
 
