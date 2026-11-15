@@ -553,6 +553,10 @@ class Converter(object):
                     # RealFlight rigged this surface against those same
                     # parameters, so the file's own sense is what is needed
                     lo_a, hi_a = (up, down) if reverse else (down, up)
+                    if suffix == "" and abs(roll) > 45:
+                        # a lone fin: standing a surface up turns "up"
+                        # into left, the far side from a right rudder
+                        lo_a, hi_a = hi_a, lo_a
                     chord_frac = (flap.get("PercentOfChordTowardsRoot", 0.25) +
                                   flap.get("PercentOfChordTowardsTip", 0.25)) / 2
                     params.update({"flapServo": servo, "flapAngleMin": round(lo_a, 2),
@@ -711,10 +715,13 @@ class Converter(object):
             pos = [sign * (abs(c.pos[0]) + lat), c.pos[1] + lift_y, c.pos[2]]
             suffix = {1: "", -1: "_r"}[sign] if len(sides) > 1 else ""
             if steer:
+                # turned back upright: the hinge is on its side to steer
                 hinge = self.node({"name": nm + suffix + "_tyre", "translation": [0, 0, 0],
+                                   "rotation": qaxis(Z, -90),
                                    "extensions": {"ARDUPILOT_sitl": {"wheel": params}}})
+                throw = -30 if gear.get("ServoSteerRev", False) else 30
                 self.part(nm + suffix + "_steer", "hinge",
-                          {"servo": steer, "angleMin": 30, "angleMax": -30, "maxRate": 200}, pos)
+                          {"servo": steer, "angleMin": throw, "angleMax": -throw, "maxRate": 200}, pos)
                 self.parts[-1]["children"] = [hinge]
                 self.parts[-1]["rotation"] = qaxis(Z, 90)
             else:
@@ -823,6 +830,12 @@ class Converter(object):
         for n in self.parts:  # not their children, placed from their parent
             if "translation" in n:
                 n["translation"] = [round(n["translation"][i] - com[i], 5) for i in range(3)]
+        # a wheel behind the centre of mass steers the vehicle the other
+        # way from one ahead of it, so a tail wheel turns against the servo
+        for n in self.parts:
+            hinge = n.get("extensions", {}).get("ARDUPILOT_sitl", {}).get("hinge")
+            if hinge and n["name"].endswith("_steer") and n["translation"][2] < 0:
+                hinge["angleMin"], hinge["angleMax"] = hinge["angleMax"], hinge["angleMin"]
         inertia = [0.0, 0.0, 0.0]
         for m, pos, own in self.masses:
             d = [pos[i] - com[i] for i in range(3)]

@@ -260,8 +260,8 @@
       "stallAngle": 35.0,
       "oswald": 0.85,
       "flapServo": 4,
-      "flapAngleMin": -22.0,
-      "flapAngleMax": 22.0,
+      "flapAngleMin": 22.0,
+      "flapAngleMax": -22.0,
       "flapChordFraction": 0.265
      }
     }

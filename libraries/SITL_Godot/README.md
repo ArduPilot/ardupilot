@@ -875,7 +875,8 @@ later, the same licence as the rest of ArduPilot: see `COPYING.txt` at the
 top of the tree.
 
 The five converted aircraft (`acromaster`, `raptor720`, `quadcopterx`,
-`griffin`, `titancobra`) may be licensed differently. They are models of
+`griffin`, `titancobra`) may be licensed differently. All vehicles have
+permission to be published publicly. They are models of
 real aircraft, published with their owners' permission, and the details
 of which are stored in the original repo above,
 [ArduPilot/SITL_Models](https://github.com/ArduPilot/SITL_Models).
