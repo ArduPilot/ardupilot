@@ -7470,6 +7470,50 @@ return update()
         self.assert_prearm_failure("Duplicate Aux Switch Options")
         self.assert_arm_failure("Duplicate Aux Switch Options")
 
+    def RCModeChannelChanged(self):
+        '''ensure moving the mode channel without a reboot is a pre-arm failure'''
+        self.context_push()
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "RC8_OPTION": 0,
+            "RC7_OPTION": 224,  # Mode
+        })
+        self.wait_not_ready_to_arm()
+        self.assert_prearm_failure("Mode channel changed; reboot required")
+
+        self.progress("Change still blocks arming with PARAMETERS check skipped")
+        self.set_parameter("ARMING_SKIPCHK", 1 << 5)
+        self.assert_prearm_failure("Mode channel changed; reboot required")
+        self.assert_arm_failure("Mode channel changed; reboot required")
+        self.set_parameter("ARMING_SKIPCHK", 0)
+
+        self.progress("Change not reported with RC check skipped")
+        self.set_parameter("ARMING_SKIPCHK", 1 << 6)
+        self.wait_ready_to_arm()
+        self.set_parameter("ARMING_SKIPCHK", 0)
+        self.wait_not_ready_to_arm()
+
+        self.progress("Change reported without RC input")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER, healthy=False)
+        self.assert_prearm_failure("Mode channel changed; reboot required",
+                                   other_prearm_failures_fatal=False)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER, healthy=True)
+
+        self.progress("Mode switches from its new channel after a reboot")
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameter("MODE1", 4)  # HOLD
+        self.set_rc(7, 1000)
+        self.wait_mode('HOLD')
+        self.set_parameter("MODE6", 0)  # MANUAL
+        self.set_rc(7, 2000)
+        self.wait_mode('MANUAL')
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def JammingSimulation(self):
         '''Test jamming simulation works'''
         self.wait_ready_to_arm()
@@ -8669,6 +8713,7 @@ return update()
             self.MissionPolyEnabledPreArm,
             self.OpticalFlow,
             self.RCDuplicateOptionsExist,
+            self.RCModeChannelChanged,
             self.ClearMission,
             self.JammingSimulation,
             self.BatteryInvalid,
