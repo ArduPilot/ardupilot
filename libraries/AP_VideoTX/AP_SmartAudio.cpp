@@ -669,9 +669,23 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
         }
         const U16ResponseFrame *resp = (const U16ResponseFrame *)buffer;
         unpack_frequency(&settings, be16toh(resp->payload));
+        // the reply says what the VTX is now on. The configuration is what
+        // the user set and is left alone, so a change made while the command
+        // was in flight is still sent. The band and channel go with the
+        // frequency, or stale ones would have every reply that matched
+        // counted as the VTX not being where it was asked to be
         vtx.set_frequency_mhz(settings.frequency);
-        vtx.set_configured_frequency_mhz(vtx.get_frequency_mhz());
-        vtx.update_configured_channel_and_band();
+        AP_VideoTX::VideoBand band;
+        uint8_t channel;
+        if (AP_VideoTX::get_frequency_mhz(vtx.get_configured_band(), vtx.get_configured_channel()) == settings.frequency) {
+            // two channels can share a frequency, 5880MHz is both F8 and
+            // R7. The VTX is on the configured one if it has its frequency
+            vtx.set_band(vtx.get_configured_band());
+            vtx.set_channel(vtx.get_configured_channel());
+        } else if (AP_VideoTX::get_band_and_channel(settings.frequency, band, channel)) {
+            vtx.set_band(band);
+            vtx.set_channel(channel);
+        }
         debug("Frequency was set to %d", settings.frequency);
     }
         break;
@@ -681,11 +695,14 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U8ResponseFrame *resp = (const U8ResponseFrame *)buffer;
-        vtx.set_band(resp->payload / VTX_MAX_CHANNELS);
-        vtx.set_channel(resp->payload % VTX_MAX_CHANNELS);
-        vtx.set_configured_channel(vtx.get_channel());
-        vtx.set_configured_band(vtx.get_band());
-        vtx.update_configured_frequency();
+        // as for SET_FREQUENCY, only what the VTX is on is updated
+        const uint8_t band = resp->payload / VTX_MAX_CHANNELS;
+        const uint8_t channel = resp->payload % VTX_MAX_CHANNELS;
+        vtx.set_band(band);
+        vtx.set_channel(channel);
+        if (band < AP_VideoTX::MAX_BANDS) {
+            vtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(band, channel));
+        }
         debug("Channel was set to %d", resp->payload);
     }
         break;
@@ -702,21 +719,18 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
                 vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
             vtx.set_power_dbm(power);
-            vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         case SMARTAUDIO_SPEC_PROTOCOL_v2:
             if (vtx.get_configured_power_level() != power) {
                 vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
             vtx.set_power_level(power);
-            vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         default:
             if (vtx.get_configured_power_dac() != power) {
                 vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
             vtx.set_power_dac(power);
-            vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         }
         debug("Power was set to %d", power);
