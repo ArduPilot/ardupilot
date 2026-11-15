@@ -37,6 +37,7 @@
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
+#include <AP_CheckFirmware/AP_AirframeID.h>
 #include "network.h"
 
 extern "C" {
@@ -49,6 +50,15 @@ struct boardinfo board_info = {
     .fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024,
     .extf_size = (EXT_FLASH_SIZE_MB * 1024 * 1024) - (EXT_FLASH_RESERVE_START_KB + EXT_FLASH_RESERVE_END_KB) * 1024
 };
+
+#if AP_AIRFRAME_ID_ENABLED && defined(AP_AIRFRAME_ID)
+// found by the main firmware by searching the bootloader for the signature
+__attribute__((used, section(".ap_airframe_data")))
+const struct ap_airframe_data airframe_data = {
+    AP_AIRFRAME_ID_SIGNATURE,
+    AP_AIRFRAME_ID,
+};
+#endif // AP_AIRFRAME_ID_ENABLED && defined(AP_AIRFRAME_ID)
 
 #ifndef HAL_BOOTLOADER_TIMEOUT
 #define HAL_BOOTLOADER_TIMEOUT 5000
