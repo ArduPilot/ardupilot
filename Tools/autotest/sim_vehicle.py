@@ -14,6 +14,7 @@ import atexit
 import binascii
 import datetime
 import errno
+import glob
 import math
 import optparse
 import os
@@ -1956,11 +1957,25 @@ else:
                 raise
         finally:
             instance_dir.append(i_dir)
-if cmd_opts.godot and godot_physics.lua_filepath(godot_model) is not None:
-    # what the model's parameters cannot set, such as the hexapod's gait
+
+
+def clear_godot_lua():
+    '''a model's lua companion left in scripts/ would run under any SITL
+    started there later, Godot or not: the hexapod's gait drives servos 1-18'''
     for i_dir in instance_dir:
-        os.makedirs(os.path.join(i_dir, "scripts"), exist_ok=True)
-        shutil.copy(godot_physics.lua_filepath(godot_model), os.path.join(i_dir, "scripts", "godot_%s.lua" % godot_model))
+        for stale in glob.glob(os.path.join(i_dir, "scripts", "godot_*.lua")):
+            os.unlink(stale)
+
+
+if cmd_opts.godot:
+    clear_godot_lua()
+    atexit.register(clear_godot_lua)
+    if godot_physics.lua_filepath(godot_model) is not None:
+        # what the model's parameters cannot set, such as the hexapod's gait
+        for i_dir in instance_dir:
+            os.makedirs(os.path.join(i_dir, "scripts"), exist_ok=True)
+            shutil.copy(godot_physics.lua_filepath(godot_model),
+                        os.path.join(i_dir, "scripts", "godot_%s.lua" % godot_model))
 
 if True:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
