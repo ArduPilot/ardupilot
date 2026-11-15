@@ -557,6 +557,18 @@ public:
     /// check mission starts with a takeoff command
     bool starts_with_takeoff_cmd();
 
+    // return false if Auto would fly a mission stored before boot towards a
+    // waypoint further than MIS_WP_DIST_MAX from home, with the reason in failure_msg.
+    // entering_auto is false when arming in Auto, where a running mission continues
+    bool wp_distance_ok(char *failure_msg, uint8_t failure_msg_len, bool entering_auto=false);
+
+    // as wp_distance_ok(), sending the reason to the GCS. On the ground
+    // before home is set the check is left to the arming check
+    bool auto_entry_wp_distance_ok();
+
+    // send a one-time notice, once home is set, that the stored mission will be checked
+    void update_wp_dist_warning();
+
     /// reset - reset mission to the first command
     void reset();
 
@@ -943,7 +955,8 @@ private:
 
     /// get_next_nav_cmd, following jumps on the supplied jump_state instead of a fresh private copy
     ///     jump_state is left advanced, so chained look-aheads can share one copy
-    bool get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd, jump_tracking_array_t &jump_state);
+    bool get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd, jump_tracking_array_t &jump_state,
+                          bool *loop_exhausted = nullptr);
 
     /// check if the next nav command is a takeoff, skipping delays
     bool is_takeoff_next(uint16_t start_index);
@@ -957,9 +970,12 @@ private:
     AP_Int16                _cmd_total;  // total number of commands in the mission
     AP_UInt16               _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
+    AP_Float                _wp_dist_max; // maximum distance to first waypoint on Auto entry
 
     // internal variables
     bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
+    bool                    _used_since_boot;  // mission has been uploaded, changed or flown armed since boot
+    bool                    _wp_dist_warning_sent;  // MIS_WP_DIST_MAX boot notice has been sent
     uint16_t                _repeat_dist; // Distance to repeat on mission resume (m), can be set with MAV_CMD_DO_SET_RESUME_REPEAT_DIST
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index

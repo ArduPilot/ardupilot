@@ -19,6 +19,14 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Logger/AP_Logger.h>
 
+// first waypoint distance check is only enforced by Copter and Plane
+#define AP_MISSION_WP_DIST_PARAM_ENABLED (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane))
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define AP_MISSION_WP_DIST_MAX_DEFAULT 1500
+#else
+#define AP_MISSION_WP_DIST_MAX_DEFAULT 500
+#endif
+
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
     // @Param: TOTAL
@@ -45,6 +53,16 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @Bitmask{Rover, Sub}: 0:Clear Mission on reboot
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
+
+#if AP_MISSION_WP_DIST_PARAM_ENABLED
+    // @Param{Copter,Plane}: WP_DIST_MAX
+    // @DisplayName: Maximum distance to first waypoint
+    // @Description: Maximum horizontal distance from home to the first waypoint Auto would fly to, for a mission stored before boot. Any Auto entry, including failsafes and jumps to a landing sequence or return path, is refused if that waypoint is further away, and arming in Auto is refused. Once the mission has been uploaded or changed since boot, or flown armed, it is not checked again. Takeoff items, items whose location the vehicle does not fly to, and items without a location or with a zero latitude and longitude, are skipped when finding the first waypoint. 0 disables the check.
+    // @Units: m
+    // @Range: 0 300000
+    // @User: Advanced
+    AP_GROUPINFO("WP_DIST_MAX",  3, AP_Mission, _wp_dist_max, AP_MISSION_WP_DIST_MAX_DEFAULT),
+#endif
 
     AP_GROUPEND
 };
@@ -236,6 +254,116 @@ bool AP_Mission::starts_with_takeoff_cmd()
     return is_takeoff_next(cmd_index);
 }
 
+// return false if Auto would fly a mission stored before boot towards a
+// waypoint further than MIS_WP_DIST_MAX from home, with the reason in failure_msg
+bool AP_Mission::wp_distance_ok(char *failure_msg, uint8_t failure_msg_len, bool entering_auto)
+{
+#if AP_MISSION_WP_DIST_PARAM_ENABLED
+    // a mission uploaded, changed or flown since boot is trusted
+    if (!is_positive(_wp_dist_max) || !present() || _used_since_boot) {
+        return true;
+    }
+
+    if (!AP::ahrs().home_is_set()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "WP distance check needs home");
+        return false;
+    }
+    const Location &home = AP::ahrs().get_home();
+
+    // Auto continues from the current command if it resumes (MIS_RESTART=0, or a
+    // jump to a landing sequence or return path), or if armed in Auto with the
+    // mission already running; otherwise start() restarts from the beginning
+    // with fresh jump counters. resume() restarts a completed mission
+    const bool continues = (is_resume() && _flags.state != MISSION_COMPLETE) ||
+                           (!entering_auto && _flags.state == MISSION_RUNNING);
+    uint16_t cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+    jump_tracking_array_t jump_state;
+    if (continues &&
+        _nav_cmd.index != AP_MISSION_CMD_INDEX_NONE &&
+        _nav_cmd.index < (unsigned)_cmd_total) {
+        cmd_index = _nav_cmd.index;
+        // resume() restarts from a pending do command with the current jump counters
+        if (entering_auto && _flags.do_cmd_loaded && _do_cmd.index < (unsigned)_cmd_total) {
+            cmd_index = _do_cmd.index;
+        }
+        memcpy(jump_state, _jump_tracking, sizeof(jump_state));
+    } else {
+        for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+            jump_state[i].index = AP_MISSION_CMD_INDEX_NONE;
+            jump_state[i].num_times_run = 0;
+        }
+    }
+
+    // bound the scan so a jump loop cannot stall the main loop; a mission whose
+    // first waypoint is not found within the bound is refused
+    for (uint8_t i = 0; i < 32; i++) {
+        Mission_Command cmd;
+        bool loop_exhausted;
+        if (!get_next_nav_cmd(cmd_index, cmd, jump_state, &loop_exhausted)) {
+            if (!loop_exhausted) {
+                // end of mission without a waypoint
+                return true;
+            }
+            break;
+        }
+        cmd_index = cmd.index + 1;
+        // vehicles take off where they are, so a takeoff location is not a destination,
+        // nor is the location of an item the vehicle does not navigate to
+        if (is_takeoff_type_cmd(cmd.id) ||
+            cmd.id == MAV_CMD_NAV_GUIDED_ENABLE ||
+            cmd.id == MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT ||
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+            cmd.id == MAV_CMD_NAV_ARC_WAYPOINT ||
+#endif
+            !stored_in_location(cmd.id) ||
+            (cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
+            continue;
+        }
+        const float distance_m = home.get_distance(cmd.content.location);
+        if (distance_m > _wp_dist_max) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "WP %.0fm > MIS_WP_DIST_MAX %.0fm",
+                               (double)distance_m, (double)_wp_dist_max.get());
+            return false;
+        }
+        return true;
+    }
+
+    hal.util->snprintf(failure_msg, failure_msg_len, "first WP not found for distance check");
+    return false;
+#else
+    return true;
+#endif  // AP_MISSION_WP_DIST_PARAM_ENABLED
+}
+
+bool AP_Mission::auto_entry_wp_distance_ok()
+{
+#if AP_MISSION_WP_DIST_PARAM_ENABLED
+    if (!hal.util->get_soft_armed() && !AP::ahrs().home_is_set()) {
+        // on the ground before home is set; arming runs the check
+        return true;
+    }
+    char failure_msg[50];
+    if (!wp_distance_ok(failure_msg, sizeof(failure_msg), true)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Auto: %s", failure_msg);
+        return false;
+    }
+#endif  // AP_MISSION_WP_DIST_PARAM_ENABLED
+    return true;
+}
+
+void AP_Mission::update_wp_dist_warning()
+{
+#if AP_MISSION_WP_DIST_PARAM_ENABLED
+    if (_wp_dist_warning_sent || _used_since_boot || !present() ||
+        !is_positive(_wp_dist_max) || !AP::ahrs().home_is_set()) {
+        return;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Auto WP distance check active: %.0fm",
+                  (double)_wp_dist_max.get());
+    _wp_dist_warning_sent = true;
+#endif  // AP_MISSION_WP_DIST_PARAM_ENABLED
+}
+
 /*
     return true if MIS_OPTIONS is set to allow continue of mission
     logic after a land and the next waypoint is a takeoff. If this
@@ -310,6 +438,7 @@ void AP_Mission::truncate(uint16_t index)
     if ((unsigned)_cmd_total > index) {
         _cmd_total.set_and_save(index);
         _last_change_time_ms = AP_HAL::millis();
+        _used_since_boot = true;
     }
 }
 
@@ -320,6 +449,11 @@ void AP_Mission::update()
     // exit immediately if not running or no mission commands
     if (_flags.state != MISSION_RUNNING || _cmd_total == 0) {
         return;
+    }
+
+    // a mission flown armed is trusted for later Auto entries
+    if (hal.util->get_soft_armed()) {
+        _used_since_boot = true;
     }
 
     update_exit_position();
@@ -582,15 +716,27 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 
 /// get_next_nav_cmd - as above, but follows jumps on the supplied jump_state and leaves it advanced,
 ///     so a caller chaining several look-aheads can keep one copy across the whole scan
-bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd, jump_tracking_array_t &jump_state)
+bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd, jump_tracking_array_t &jump_state,
+                                  bool *loop_exhausted)
 {
+    if (loop_exhausted != nullptr) {
+        *loop_exhausted = false;
+    }
     // avoid endless loops, as advance_current_nav_cmd does: a DO_JUMP loop containing no nav
     // command (e.g. a forever jump back over only do-commands) would otherwise spin here
     uint8_t max_loops = 255;
 
     // search until the end of the mission command list
     uint16_t cmd_index = start_index;
-    while (cmd_index < (unsigned)_cmd_total && max_loops-- > 0) {
+    while (cmd_index < (unsigned)_cmd_total) {
+        if (max_loops == 0) {
+            // loop guard hit before a nav command was found
+            if (loop_exhausted != nullptr) {
+                *loop_exhausted = true;
+            }
+            return false;
+        }
+        max_loops--;
         // get next command, following jumps on the private cursor
         if (!get_next_cmd(cmd_index, cmd, jump_state)) {
             // no more commands so return failure
@@ -602,7 +748,7 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd, ju
         }
     }
 
-    // reached the end of the command list or the loop guard without finding a nav command
+    // reached the end of the command list without finding a nav command
     return false;
 }
 
@@ -1036,6 +1182,7 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
     if (index != 0) {
         // Update of home location is not a true change
         _last_change_time_ms = AP_HAL::millis();
+        _used_since_boot = true;
     }
 
     // return success
