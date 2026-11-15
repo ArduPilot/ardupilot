@@ -1,0 +1,2 @@
+@include ../ZeroOneX6/defaults.parm
+FRAME_CLASS 2 @READONLY

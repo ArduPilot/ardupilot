@@ -1,0 +1,4 @@
+include ../ZeroOneX6/hwdef-bl.dat
+
+# the airframe ID the main firmware must match
+define AP_AIRFRAME_ID 2
