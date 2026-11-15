@@ -1029,6 +1029,10 @@ bool AP_Arming::mission_checks(bool report)
         check_failed(Check::MISSION, report, "Mode requires mission");
         return false;
     }
+
+    if (report && AP::vehicle()->current_mode_requires_mission()) {
+        mission.warn_if_wp_dist_exceeded();
+    }
 #endif
 
     return true;
