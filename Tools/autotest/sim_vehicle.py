@@ -1168,14 +1168,10 @@ def start_mavproxy(opts, stuff):
         extra_cmd += " " + stuff["extra_mavlink_cmds"]
 
     # Split the arguments to pass to mavproxy as a shell would, so
-    # quoted values stay together, and pass "--option=value" as two
-    # arguments
+    # quoted values stay together. mavproxy's parser accepts
+    # "--option=value" itself, so those are passed unchanged.
     if opts.mavproxy_args:
-        for arg in shlex.split(opts.mavproxy_args):
-            if arg.startswith("-") and "=" in arg:
-                cmd.extend(arg.split("=", 1))
-            else:
-                cmd.append(arg)
+        cmd.extend(shlex.split(opts.mavproxy_args))
 
     # compatibility pass-through parameters (for those that don't want
     # to use -C :-)
@@ -1469,7 +1465,9 @@ group_sim.add_option("-w", "--wipe-eeprom",
 group_sim.add_option("-m", "--mavproxy-args",
                      default=None,
                      type='string',
-                     help="additional arguments to pass to mavproxy.py")
+                     help="additional arguments to pass to mavproxy.py, split as "
+                     "a shell would split them. Put a value that contains double "
+                     "quotes, such as a JSON module argument, in single quotes")
 group_sim.add_option("", "--scrimmage-args",
                      default=None,
                      type='string',
@@ -1733,6 +1731,13 @@ if cmd_opts.instance < 0:
 if cmd_opts.count < 1:
     print("May not specify a count less than 1")
     sys.exit(1)
+
+if cmd_opts.mavproxy_args:
+    try:
+        shlex.split(cmd_opts.mavproxy_args)
+    except ValueError as e:
+        print("Cannot parse --mavproxy-args %r: %s" % (cmd_opts.mavproxy_args, e))
+        sys.exit(1)
 
 if cmd_opts.strace and cmd_opts.valgrind:
     print("valgrind and strace almost certainly not a good idea")
