@@ -128,9 +128,12 @@ void AP_EFI_Serial_Hirth::check_response()
         } else {
             uptime = now - last_packet_ms;
             last_packet_ms = now;
-            internal_state.last_updated_ms = now;
-            decode_data();
-            copy_to_frontend();
+            // a set-values ACK carries no telemetry, so must not mark it fresh
+            if (res_data.code != CODE_SET_VALUE) {
+                internal_state.last_updated_ms = now;
+                decode_data();
+                copy_to_frontend();
+            }
             port->discard_input();
         }
 
