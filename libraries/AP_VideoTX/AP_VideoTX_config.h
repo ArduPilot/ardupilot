@@ -9,9 +9,16 @@
 #endif
 
 // user-definable VTX bands (VTX_BNDn_* parameters), added to or replacing
-// the compiled-in factory bands
+// the compiled-in factory bands. Off by default to save flash, and turned
+// on for the FPV boards in minimize_fpv_osd.inc
 #ifndef AP_VIDEOTX_TABLE_ENABLED
-#define AP_VIDEOTX_TABLE_ENABLED AP_VIDEOTX_ENABLED
+#define AP_VIDEOTX_TABLE_ENABLED (AP_VIDEOTX_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+// user-definable VTX power table (VTX_PWRTBL_EN, VTX_PWRTBL1 to VTX_PWRTBL6)
+// for the VTX power channel, off by default like the user bands
+#ifndef AP_VIDEOTX_POWER_TABLE_ENABLED
+#define AP_VIDEOTX_POWER_TABLE_ENABLED (AP_VIDEOTX_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
 #ifndef AP_TRAMP_ENABLED

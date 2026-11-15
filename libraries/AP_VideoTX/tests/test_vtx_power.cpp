@@ -30,6 +30,7 @@ static bool switch_power(int8_t position, const int16_t table[VTX_USER_POWER_LEV
     return AP_VideoTX::switch_power_mw(position, table, VTX_USER_POWER_LEVELS, table_enabled, max_power, power);
 }
 
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
 // six used entries and six switch positions: 1:1 mapping, pit mode is the
 // explicit 0 entry at position 0
 TEST(VTXPowerSwitch, SixEntriesMapOneToOne)
@@ -89,8 +90,6 @@ TEST(VTXPowerSwitch, MidTablePitmode)
     }
 }
 
-// built-in levels: the top position offers VTX_MAX_POWER even when the
-// largest active level is below it
 // with the user table the power channel's whole range is split evenly between
 // the used entries, so a pot reaches each one over an equal share of its travel
 
@@ -144,6 +143,10 @@ TEST(VTXPowerLevel, SixPositionSwitch)
     }
 }
 
+#endif  // AP_VIDEOTX_POWER_TABLE_ENABLED
+
+// built-in levels: the top position offers VTX_MAX_POWER even when the
+// largest active level is below it
 TEST(VTXPowerSwitch, BuiltInTopPositionReachesMaxPower)
 {
     const int16_t table[VTX_USER_POWER_LEVELS] = { -1, -1, -1, -1, -1, -1 };

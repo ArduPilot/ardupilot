@@ -85,6 +85,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TYPES", 8, AP_VideoTX, _types_allowed, uint8_t(CRSF | SmartAudio | Tramp | MSP)),
 
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
     // @Param: PWRTBL_EN
     // @DisplayName: Enable user-defined VTX power table
     // @Description: Enables the user-defined power table in VTX_PWRTBL1 to VTX_PWRTBL6, which replaces the built-in power levels and VTX_MAX_POWER for the VTX power aux switch. A value of -1 ignores a table entry and a 0 entry selects pit mode. The power channel's whole range (RCn_MIN to RCn_MAX) is split evenly between the used entries in slot order, so a pot or a switch can select them; a 6-position switch selects one entry per position when the channel's range is its default or calibrated to the switch. Only transports that accept arbitrary power levels (IRC Tramp) can use levels outside the built-in list.
@@ -139,6 +140,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @Units: mW
     // @User: Advanced
     AP_GROUPINFO("PWRTBL6", 15, AP_VideoTX, _power_table[5], 0),
+#endif  // AP_VIDEOTX_POWER_TABLE_ENABLED
 
 #if AP_VIDEOTX_TABLE_ENABLED
     // @Param: BND1_REPL
@@ -449,6 +451,7 @@ uint8_t AP_VideoTX::find_nearest_power_level() const
 }
 
 // true when the user has enabled the user power table
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
 bool AP_VideoTX::use_power_table() const
 {
     // the parameter is the only thing that decides this. An enabled table with
@@ -456,6 +459,7 @@ bool AP_VideoTX::use_power_table() const
     // asked for; silently falling back to the built-in levels would be worse.
     return _power_table_enabled != 0;
 }
+#endif
 
 // highest power the user has authorised
 uint16_t AP_VideoTX::get_power_cap_mw() const
@@ -1108,6 +1112,7 @@ void AP_VideoTX::change_power(int8_t position)
     set_switch_power(power);
 }
 
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
 uint8_t AP_VideoTX::power_channel_levels() const
 {
     if (!use_power_table()) {
@@ -1163,6 +1168,8 @@ void AP_VideoTX::change_power_level(uint8_t level)
     set_switch_power(power);
 }
 
+#endif  // AP_VIDEOTX_POWER_TABLE_ENABLED
+
 void AP_VideoTX::set_switch_power(uint16_t power)
 {
     if (power == 0) {
@@ -1184,6 +1191,7 @@ bool AP_VideoTX::switch_power_mw(int8_t position, const int16_t *user_table, uin
     uint16_t steps[VTX_MAX_POWER_LEVELS + 1];
     uint8_t num_steps = 0;
 
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
     if (user_table_enabled) {
         // the user table is the definitive list of what this VTX supports, so
         // VTX_MAX_POWER does not apply - the table itself is the ceiling that
@@ -1195,7 +1203,9 @@ bool AP_VideoTX::switch_power_mw(int8_t position, const int16_t *user_table, uin
                 steps[num_steps++] = uint16_t(user_table[i]);
             }
         }
-    } else {
+    } else
+#endif  // AP_VIDEOTX_POWER_TABLE_ENABLED
+    {
         // every level we believe the VTX supports, up to VTX_MAX_POWER. This
         // is the built-in list with anything above the cap trimmed off the
         // top; 0 means no cap

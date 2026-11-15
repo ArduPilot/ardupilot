@@ -181,13 +181,19 @@ public:
     // is the one place the signed parameter is read; everything downstream is
     // uint16_t
     int16_t get_table_entry(uint8_t i) const {
-        if (i >= VTX_USER_POWER_LEVELS) {
-            return -1;
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
+        if (i < VTX_USER_POWER_LEVELS) {
+            return _power_table[i].get();
         }
-        return _power_table[i].get();
+#endif
+        return -1;
     }
     // true when the user has enabled the user power table
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
     bool use_power_table() const;
+#else
+    bool use_power_table() const { return false; }
+#endif
     // highest power the user has authorised: the top table entry when the user
     // table is in use, otherwise VTX_MAX_POWER
     uint16_t get_power_cap_mw() const;
@@ -217,6 +223,7 @@ public:
     // split evenly between the used entries, rather than read as a
     // 6-position switch: the number of levels it selects between, or 0 to
     // read it as a 6-position switch
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
     uint8_t power_channel_levels() const;
     // select the power of one of power_channel_levels() levels
     void change_power_level(uint8_t level);
@@ -227,6 +234,7 @@ public:
     // mode. Static so the mapping can be unit tested
     static bool table_level_power_mw(uint8_t level, const int16_t *user_table, uint8_t user_table_len,
                                      uint16_t &power_mw);
+#endif
     // set the configured power and pit mode for a power selected on the power channel
     void set_switch_power(uint16_t power);
     // the power in mW that the power aux switch (RCx_OPTION 94) selects for the
@@ -324,9 +332,11 @@ private:
     int32_t _actual_power_mw {-1};
     AP_Int16 _max_power_mw;
 
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
     // user-defined power table
     AP_Int8 _power_table_enabled;
     AP_Int16 _power_table[VTX_USER_POWER_LEVELS];
+#endif
 
 #if AP_VIDEOTX_TABLE_ENABLED
     // user-defined bands (VTX_BNDn_REPL, VTX_BNDn_CHm)
