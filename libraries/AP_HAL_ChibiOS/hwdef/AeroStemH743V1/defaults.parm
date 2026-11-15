@@ -1,0 +1,13 @@
+# AeroStem H743 V1 board defaults (upstream: board-level only, no tune)
+BATT_MONITOR 4
+BATT_VOLT_MULT 21.2
+BATT_AMP_PERVLT 40.2
+
+# second OSD = DisplayPort on the DJI O3 connector
+OSD_TYPE2 5
+
+# Serial port defaults
+SERIAL2_PROTOCOL 42
+SERIAL4_PROTOCOL 2
+SERIAL5_PROTOCOL 23
+SERIAL6_PROTOCOL 16
