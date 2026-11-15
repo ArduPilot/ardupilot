@@ -286,8 +286,10 @@ public:
     bool set_defaults();
     // display the current VTX settings in the GCS
     void announce_vtx_settings() const;
+#if AP_VIDEOTX_TABLE_ENABLED
     // announce and log what the VTX reports whenever it changes
     void report_state_changes();
+#endif
     // power the VTX reports it is putting out, or 0 in pit mode
     uint16_t get_reported_power_mw() const;
     // force the current values to reflect the configured values
@@ -371,6 +373,7 @@ private:
     // when defaults have been configured
     bool _defaults_set;
 
+#if AP_VIDEOTX_TABLE_ENABLED
     // the VTX state last announced and logged
     struct {
         uint8_t band;
@@ -379,6 +382,7 @@ private:
         uint16_t power_mw;
         int32_t actual_power_mw;
     } _last_reported;
+#endif
 
     // the configuration the VTX did not take, see frequency_rejected()
     bool _rejected;
