@@ -153,6 +153,17 @@ private:
 
     // retry counter only re-arms when one of these changes
     uint16_t _last_conf_freq;
+    // the band and channel VTX_FREQ went with when it was last asked for
+    uint8_t _last_conf_band;
+    uint8_t _last_conf_channel;
+    // status replies from the VTX. A link that echoes also returns our own
+    // requests, which are not counted
+    uint16_t _status_rcvd;
+    // status replies received when the frequency was last sent, and how
+    // many times the VTX has answered a send of it without taking it
+    uint16_t _freq_sent_rcvd;
+    uint8_t _freq_answered;
+    bool _freq_sent;
     uint16_t _last_conf_power;
     uint16_t _last_conf_options;
     bool _power_warn_pending;
