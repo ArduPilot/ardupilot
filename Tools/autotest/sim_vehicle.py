@@ -1888,7 +1888,10 @@ if cmd_opts.godot:
         try:
             backend.start([godot_model] * len(group),
                           godot_physics.reversed_servos_for(cmd_opts.vehicle, cmd_opts.frame),
-                          home=godot_home)
+                          home=godot_home,
+                          launcher=godot_physics.launcher_for(cmd_opts.vehicle, cmd_opts.frame),
+                          water=godot_physics.water_for(cmd_opts.vehicle, cmd_opts.frame),
+                          wind=godot_physics.wind_for(cmd_opts.vehicle, cmd_opts.frame))
         except (FileNotFoundError, RuntimeError) as e:
             print(e)
             sys.exit(1)

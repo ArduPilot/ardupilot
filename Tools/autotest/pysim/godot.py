@@ -294,11 +294,9 @@ class Backend(object):
         sim_args.append("--home=%s" % (home or ""))
         sim_args.append("--spacing=%s" % (spacing or "5,0"))
         sim_args.append("--launcher=%s" % (launcher or ""))
-        if wind is not None:
-            sim_args.append("--wind=%g,%g,%g" % wind)
-        if water is not None:
-            sim_args.append("--lake-depth=%g" % water[0])
-            sim_args.append("--lake-radius=%g" % water[1])
+        sim_args.append("--wind=%g,%g,%g" % (wind or (0, 0, 0)))
+        sim_args.append("--lake-depth=%s" % ("%g" % water[0] if water else ""))
+        sim_args.append("--lake-radius=%s" % ("%g" % water[1] if water else ""))
         sim_args.append("--sitl-timeout=%u" % SITL_TIMEOUT)
         sim_args.append("--rate=%u" % sim_rate_hz(models[0]))
         sim_args.extend(extra)
@@ -348,12 +346,14 @@ class Backend(object):
                 log.write("=== restarting because %s\n" % why)
             log.write("=== backend start: %s\n" % " ".join(cmd))
             log.flush()
+            started_at = log.tell()  # an earlier start's marker is not this one's
             self.process = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT)
         self.config = config
         running[self.port] = self
         deadline = time.time() + 60
         while time.time() < deadline:
-            with open(self.logfile) as f:
+            with open(self.logfile, errors="replace") as f:
+                f.seek(started_at)
                 if "waiting for SITL" in f.read():
                     return
             if self.process.poll() is not None:

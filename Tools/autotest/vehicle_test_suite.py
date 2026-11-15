@@ -14782,6 +14782,7 @@ switch value'''
             self.mav = None
 
         self.stop_SITL()
+        self.stop_godot_bystanders()  # the next suite starts its own on these ports
         # the backend is left running: autotest builds a new suite for each
         # test, and stopping it here would cost the next a fresh process and
         # window. It is stopped at exit, or by the next backend on its port.

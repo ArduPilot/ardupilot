@@ -318,11 +318,6 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
 
     def TrackPlane(self):
         '''follow an aeroplane circling overhead, all the way round and round again'''
-        if not self.godot:
-            # SITL's own tracker has a yaw servo with end stops, which
-            # cannot follow anything through a whole circle
-            self.progress("Needs the continuous yaw servo of the Godot backend's tracker; skipping")
-            return
         # the aeroplane says how high it is; there is no second
         # barometer up there to compare with
         self.set_parameters({"ALT_SOURCE": 1})
@@ -442,10 +437,15 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
             self.assert_receive_message(msg)
 
     def disabled_tests(self):
-        return {
+        ret = {
             "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
             "CPUFailsafe": " tracker doesn't have a CPU failsafe",
         }
+        if not self.godot:
+            # SITL's own tracker has a yaw servo with end stops, which
+            # cannot follow anything through a whole circle
+            ret["TrackPlane"] = "needs the continuous yaw servo of the Godot backend's tracker"
+        return ret
 
     def GPSForYaw(self):
         '''Moving baseline GPS yaw'''
