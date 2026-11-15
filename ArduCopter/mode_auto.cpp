@@ -23,6 +23,7 @@
 bool ModeAuto::init(bool ignore_checks)
 {
     auto_RTL = false;
+    mission.warn_if_wp_dist_exceeded();
     if (mission.present() || ignore_checks) {
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
         if (motors->armed() && copter.ap.land_complete && !mission.starts_with_takeoff_cmd()) {
