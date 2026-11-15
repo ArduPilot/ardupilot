@@ -384,6 +384,8 @@ void Plane::one_second_loop()
 
     AP::srv().enable_aux_servos();
 
+    mission.update_wp_dist_warning();
+
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;

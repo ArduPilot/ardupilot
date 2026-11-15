@@ -3,6 +3,14 @@
 
 bool ModeAuto::_enter()
 {
+    // a pending watchdog restore resumes the waypoint saved before the reset
+    const bool watchdog_restore = hal.util->was_watchdog_armed() &&
+                                  hal.util->persistent_data.waypoint_num != 0;
+    if (!watchdog_restore &&
+        !plane.mission.auto_entry_wp_distance_ok()) {
+        return false;
+    }
+
 #if HAL_QUADPLANE_ENABLED
     // check if we should refuse auto mode due to a missing takeoff in
     // guided_wait_takeoff state

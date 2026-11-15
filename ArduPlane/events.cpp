@@ -151,7 +151,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             IGNORE_RETURN(set_mode(mode_fbwa, reason));
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
-            IGNORE_RETURN(set_mode(mode_auto, reason));
+            if (!set_mode(mode_auto, reason)) {
+                // e.g. the stored mission is beyond MIS_WP_DIST_MAX
+                IGNORE_RETURN(set_mode(mode_rtl, reason));
+            }
 #if MODE_AUTOLAND_ENABLED
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTOLAND) {
             if (!set_mode(mode_autoland, reason)) {
@@ -206,7 +209,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             IGNORE_RETURN(set_mode(mode_fbwa, reason));
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
-            IGNORE_RETURN(set_mode(mode_auto, reason));
+            if (!set_mode(mode_auto, reason)) {
+                // e.g. the stored mission is beyond MIS_WP_DIST_MAX
+                IGNORE_RETURN(set_mode(mode_rtl, reason));
+            }
 #if MODE_AUTOLAND_ENABLED
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTOLAND) {
             if (!set_mode(mode_autoland, reason)) {
