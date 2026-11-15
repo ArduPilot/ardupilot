@@ -32,3 +32,10 @@ common/physics_jitter_fix=0.0
 3d/default_gravity=9.80665
 3d/default_linear_damp=0.0
 3d/default_angular_damp=0.0
+
+[threading]
+
+; One worker, not one per core. SITL steps one to five rigid bodies in
+; lockstep, thousands of times a second: with 4 or 16 workers each step woke
+; them all for jobs too small to share, which cost more than half of all CPU.
+worker_pool/max_threads=1
