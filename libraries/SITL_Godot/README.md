@@ -420,7 +420,6 @@ Any model can be flown in place of the one its frame maps to, with its
 
 ```sh
 Tools/autotest/autotest.py --godot --godot-model griffin test.QuadPlane.Mission
-Tools/autotest/autotest.py --godot --godot-model acromaster test.Plane.LOITER
 GODOT_SIM_ARGS="--vehicle=res://models/titancobra.gltf" \
     Tools/autotest/sim_vehicle.py -v ArduPlane -f quadplane --godot --map --console
 ```

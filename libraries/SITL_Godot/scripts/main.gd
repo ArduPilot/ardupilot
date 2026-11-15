@@ -295,10 +295,8 @@ func _build_simulation() -> void: # must not need earlier state
         vehicles.append(v)
         v.impact.connect(_on_vehicle_impact.bind(i))
 
-    if options["lake-depth"] != "":
-        lake_depth = float(options["lake-depth"])
-    if options["lake-radius"] != "":
-        lake_radius = float(options["lake-radius"])
+    lake_depth = float(options["lake-depth"]) if options["lake-depth"] != "" else 2.2 # not the last simulation's
+    lake_radius = float(options["lake-radius"]) if options["lake-radius"] != "" else LAKE_RADIUS
     patch_size = maxf(PATCH_SIZE, lake_radius * 2.6) # shore inside patch, land beyond
 
     sitl_timeout_ms = int(float(options["sitl-timeout"]) * 1000.0)
