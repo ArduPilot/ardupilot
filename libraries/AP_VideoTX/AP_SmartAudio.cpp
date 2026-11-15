@@ -517,7 +517,14 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     AP_VideoTX& vtx = AP::vtx();
 
     vtx.set_enabled(true);
-    vtx.set_frequency_mhz(settings.frequency);
+    // in channel mode the settings frequency is the VTX's stored user
+    // frequency, not the one it is on, so take it from the band and channel.
+    // Mode bit 0 is set in frequency mode, as print_settings() reads it
+    if ((settings.mode & 1) || settings.band >= AP_VideoTX::MAX_BANDS) {
+        vtx.set_frequency_mhz(settings.frequency);
+    } else {
+        vtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(settings.band, settings.channel));
+    }
     vtx.set_band(settings.band);
     vtx.set_channel(settings.channel);
     // SA21 sends us a complete packet with the supported power levels
