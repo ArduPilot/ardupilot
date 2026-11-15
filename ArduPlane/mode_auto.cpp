@@ -3,6 +3,8 @@
 
 bool ModeAuto::_enter()
 {
+    plane.mission.warn_if_wp_dist_exceeded();
+
 #if HAL_QUADPLANE_ENABLED
     // check if we should refuse auto mode due to a missing takeoff in
     // guided_wait_takeoff state
