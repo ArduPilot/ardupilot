@@ -24,6 +24,10 @@ bool ModeAuto::init(bool ignore_checks)
 {
     auto_RTL = false;
     if (mission.present() || ignore_checks) {
+        if (!mission.auto_entry_wp_distance_ok()) {
+            return false;
+        }
+
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
         if (motors->armed() && copter.ap.land_complete && !mission.starts_with_takeoff_cmd()) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
@@ -764,6 +768,13 @@ bool ModeAuto::set_speed_down_ms(float speed_down_ms)
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
+    // a jump to a landing sequence or return path resumes the mission before
+    // Auto is entered; a refused entry must not take over the current mode.
+    // Auto restarts the current command once it runs
+    if (copter.flightmode != this) {
+        return true;
+    }
+
     switch(cmd.id) {
 
     ///

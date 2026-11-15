@@ -810,6 +810,10 @@ void Copter::one_hz_loop()
 
     AP_Notify::flags.flying = !ap.land_complete;
 
+#if MODE_AUTO_ENABLED
+    mode_auto.mission.update_wp_dist_warning();
+#endif
+
     // slowly update the PID notches with the average loop rate
     if (!using_rate_thread) {
         attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
