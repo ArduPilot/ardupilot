@@ -5,6 +5,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS_config.h>
 #include <AP_BoardConfig/IMU_heater_config.h>
+#include <AP_CheckFirmware/AP_AirframeID.h>
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
@@ -257,6 +258,10 @@ protected:
 
     bool opendroneid_checks(bool display_failure);
     
+#if AP_AIRFRAME_ID_CHECK_ENABLED
+    bool airframe_id_checks(bool display_failure) const;
+#endif // AP_AIRFRAME_ID_CHECK_ENABLED
+
     bool serial_protocol_checks(bool display_failure);
     
     bool estop_checks(bool display_failure);

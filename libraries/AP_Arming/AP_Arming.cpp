@@ -1666,6 +1666,25 @@ bool AP_Arming::opendroneid_checks(bool display_failure)
 }
 #endif  // AP_OPENDRONEID_ENABLED
 
+#if AP_AIRFRAME_ID_CHECK_ENABLED
+// firmware built for an airframe must run on a board whose bootloader
+// says it is that airframe
+bool AP_Arming::airframe_id_checks(bool display_failure) const
+{
+    uint16_t installed_airframe_id;
+    if (!AP_AirframeID::installed(installed_airframe_id)) {
+        check_failed(display_failure, "No bootloader airframe ID, need %u", unsigned(AP_AIRFRAME_ID));
+        return false;
+    }
+    if (installed_airframe_id != AP_AIRFRAME_ID) {
+        check_failed(display_failure, "Airframe ID %u, firmware needs %u",
+                     unsigned(installed_airframe_id), unsigned(AP_AIRFRAME_ID));
+        return false;
+    }
+    return true;
+}
+#endif  // AP_AIRFRAME_ID_CHECK_ENABLED
+
 //Check for multiple RC in serial protocols
 bool AP_Arming::serial_protocol_checks(bool display_failure)
 {
@@ -1797,6 +1816,9 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if AP_OPENDRONEID_ENABLED
         &  opendroneid_checks(report)
 #endif
+#if AP_AIRFRAME_ID_CHECK_ENABLED
+        &  airframe_id_checks(report)
+#endif  // AP_AIRFRAME_ID_CHECK_ENABLED
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
         & crashdump_checks(report)
 #endif
@@ -1904,6 +1926,9 @@ bool AP_Arming::mandatory_checks(bool report)
 #if AP_OPENDRONEID_ENABLED
     ret &= opendroneid_checks(report);
 #endif
+#if AP_AIRFRAME_ID_CHECK_ENABLED
+    ret &= airframe_id_checks(report);
+#endif  // AP_AIRFRAME_ID_CHECK_ENABLED
     ret &= rc_in_calibration_check(report);
     ret &= serial_protocol_checks(report);
 #if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
