@@ -81,7 +81,7 @@ sensor input on the ESC connector. Default battery parameters:
 - BATT_MONITOR 4
 - BATT_VOLT_PIN 10
 - BATT_CURR_PIN 11
-- BATT_VOLT_MULT 21.2
+- BATT_VOLT_MULT 21.12
 - BATT_AMP_PERVLT 40.2
 
 ## CAN

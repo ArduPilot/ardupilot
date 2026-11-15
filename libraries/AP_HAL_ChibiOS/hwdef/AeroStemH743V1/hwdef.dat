@@ -164,3 +164,8 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 # setup for BF migration
 define HAL_FRAME_TYPE_DEFAULT 12
 
+# default serial port protocols
+define DEFAULT_SERIAL2_PROTOCOL 42
+define DEFAULT_SERIAL4_PROTOCOL 2
+define DEFAULT_SERIAL5_PROTOCOL 23
+define DEFAULT_SERIAL6_PROTOCOL 16
