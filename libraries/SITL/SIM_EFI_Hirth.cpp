@@ -99,7 +99,7 @@ void EFI_Hirth::handle_set_values()
     constexpr uint8_t set_values_ack[] {
         3,  // length
         uint8_t(PacketCode::SetValues),  // code
-        3 + uint8_t(PacketCode::SetValues)
+        uint8_t(256U - (3U + uint8_t(PacketCode::SetValues)))  // checksum
     };
     write_to_autopilot((const char*)set_values_ack, sizeof(set_values_ack));
 }
