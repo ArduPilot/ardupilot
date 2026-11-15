@@ -559,10 +559,10 @@ void JSON::recv_fdm(const struct sitl_input &input)
                 if (achieved < target_speedup * 0.9f) {
                     speedup_short++; // only a sustained shortfall counts
                     if (speedup_short >= 3) {
-                        if (speedup_short == 3) {
-                            printf("JSON: cannot hold %.1fx, backing off to %.1fx\n", speedup_wanted, achieved);
-                        }
                         target_speedup = MAX(achieved, 0.1f); // zero would divide by zero
+                        if (speedup_short == 3) {
+                            printf("JSON: cannot hold %.1fx, backing off to %.1fx\n", speedup_wanted, target_speedup);
+                        }
                     }
                 } else {
                     speedup_short = 0;
