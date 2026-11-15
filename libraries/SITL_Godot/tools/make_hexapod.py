@@ -29,9 +29,9 @@ from gltf_model import write
 # ---------------------------------------------------------------- settings
 # what to write: (name, legs, servos a leg). Legs are 3, 4 or 6; servos are
 # 2 (swing, lift) or 3 (+ knee), numbered clockwise from the front left leg
-ROBOTS = (("hexapod", 6, 3),
-          ("quadruped", 4, 3),
-          ("three-legged-bot", 3, 3))
+ROBOTS = (("hexapod", 6, 3, 100),  # physics Hz; 400 only reached 30x
+          ("quadruped", 4, 3, 400),
+          ("three-legged-bot", 3, 3, 400))
 
 BODY_RADIUS = 0.11      # m, centre to a corner, where a leg is hung
 BODY_HEIGHT = 0.05      # m
@@ -209,7 +209,7 @@ return update()
 """
 
 
-def build(name, legs, joints):
+def build(name, legs, joints, rate):
     """write one robot: its model, its gait and its parameters"""
     global RIDE
     roots[:] = [0]
@@ -321,7 +321,7 @@ def build(name, legs, joints):
               "WP_SPEED        0.25",
               "WP_RADIUS       0.5",
               "",
-              "SIM_RATE_HZ     400",
+              "SIM_RATE_HZ     %d" % rate,
               ""]
     with open(os.path.join(MODELS, name + ".parm"), "w") as f:
         f.write("\n".join(lines))
