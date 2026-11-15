@@ -188,6 +188,17 @@ bool AP_VideoTX::get_band_and_channel(uint16_t freq, VideoBand& band, uint8_t& c
     return false;
 }
 
+void AP_VideoTX::frequency_rejected(bool warn)
+{
+    if (warn && !configured_rejected()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: rejected frequency %uMHz", unsigned(_frequency_mhz.get()));
+    }
+    _rejected = true;
+    _rejected_band = _band;
+    _rejected_channel = _channel;
+    _rejected_frequency = _frequency_mhz;
+}
+
 // set the current power
 void AP_VideoTX::set_configured_power_mw(uint16_t power)
 {
