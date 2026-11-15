@@ -6,20 +6,20 @@ controller designed and produced by
 
 ## Features
 
- - STM32H743 microcontroller (480 MHz, 2 MB flash)
- - BMI088 + BMI270 dual IMUs
- - DPS310 barometer
- - IST8310 magnetometer
- - AT7456E analog OSD
- - 2S-6S LiPo input (6.0-27.0 V)
- - 9V 3A BEC; 5V 3A BEC
- - MicroSD card slot
- - 7 UARTs (6 full + 1 RX-only for ESC telemetry) plus USB-C
- - 10 PWM outputs
- - 1 CAN
- - 1 I2C
- - SWD debug pads
- - Connector variants: JST-GH 1.25 mm or solder pads (same signals)
+- STM32H743 microcontroller (480 MHz, 2 MB flash)
+- BMI088 + BMI270 dual IMUs
+- DPS310 barometer
+- IST8310 magnetometer
+- AT7456E analog OSD
+- 2S-6S LiPo input (6.0-27.0 V)
+- 9V 3A BEC; 5V 3A BEC
+- MicroSD card slot
+- 7 UARTs (6 full + 1 RX-only for ESC telemetry) plus USB-C
+- 10 PWM outputs
+- 1 CAN
+- 1 I2C
+- SWD debug pads
+- Connector variants: JST-GH 1.25 mm or solder pads (same signals)
 
 ## Physical
 
@@ -29,14 +29,14 @@ controller designed and produced by
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
- - SERIAL2 -> UART2 (DisplayPort, DJI O3/O4 connector, DMA-enabled)
- - SERIAL3 -> UART3 (GPS, DMA-enabled)
- - SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
- - SERIAL5 -> UART6 (RCIN, DMA-enabled)
- - SERIAL6 -> UART7 (RX only, ESC Telemetry, DMA-enabled)
- - SERIAL7 -> UART8 (User, DMA-enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
+- SERIAL2 -> UART2 (DisplayPort, DJI O3/O4 connector, DMA-enabled)
+- SERIAL3 -> UART3 (GPS, DMA-enabled)
+- SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
+- SERIAL5 -> UART6 (RCIN, DMA-enabled)
+- SERIAL6 -> UART7 (RX only, ESC Telemetry, DMA-enabled)
+- SERIAL7 -> UART8 (User, DMA-enabled)
 
 UART2 is wired to both the TELEM2 connector (5V) and the DJI O3/O4
 connector (9V). They are the same UART - use only one at a time.
@@ -69,20 +69,20 @@ DShot; channels 1-8 support bi-directional DShot.
 
 PWM outputs are grouped and every group must use the same output protocol:
 
- - 1, 2, 3, 4 are Group 1 (TIM1)
- - 5, 6 are Group 2 (TIM3)
- - 7, 8, 9, 10 are Group 3 (TIM4)
+- 1, 2, 3, 4 are Group 1 (TIM1)
+- 5, 6 are Group 2 (TIM3)
+- 7, 8, 9, 10 are Group 3 (TIM4)
 
 ## Battery Monitoring
 
 The board has an internal voltage sensor (up to 6S LiPo) and a current
 sensor input on the ESC connector. Default battery parameters:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 21.2
- - BATT_AMP_PERVLT 40.2
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 21.2
+- BATT_AMP_PERVLT 40.2
 
 ## CAN
 
@@ -96,9 +96,9 @@ connected to the I2C pads or the SDA/SCL pins of the GPS connector.
 
 ## Mechanical
 
- - Mounting: 30.5 x 30.5 mm, M3 (4 mm holes)
- - Dimensions: 36 x 36 x 8 mm
- - Weight: 9 g
+- Mounting: 30.5 x 30.5 mm, M3 (4 mm holes)
+- Dimensions: 36 x 36 x 8 mm
+- Weight: 9 g
 
 ## Loading Firmware
 
