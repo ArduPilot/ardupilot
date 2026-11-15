@@ -557,6 +557,9 @@ public:
     /// check mission starts with a takeoff command
     bool starts_with_takeoff_cmd();
 
+    /// warn if the first location-bearing waypoint exceeds MIS_WP_DIST_MAX from home
+    void warn_if_wp_dist_exceeded();
+
     /// reset - reset mission to the first command
     void reset();
 
@@ -1019,6 +1022,9 @@ private:
     // if not -1, this bit in LOG_BITMASK specifies whether to log a message each time we start a command:
     uint32_t log_start_mission_item_bit = -1;
 #endif
+
+    AP_Float _wp_dist_max;  // MIS_WP_DIST_MAX warning distance for the first waypoint
+    uint32_t _wp_dist_warn_ms;  // time of the last MIS_WP_DIST_MAX warning
 };
 
 namespace AP

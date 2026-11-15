@@ -19,6 +19,14 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Logger/AP_Logger.h>
 
+#define AP_MISSION_WP_DIST_PARAM_ENABLED (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane))
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define AP_MISSION_WP_DIST_MAX_DEFAULT 1500
+#else
+#define AP_MISSION_WP_DIST_MAX_DEFAULT 500
+#endif
+
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
     // @Param: TOTAL
@@ -45,6 +53,16 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @Bitmask{Rover, Sub}: 0:Clear Mission on reboot
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
+
+#if AP_MISSION_WP_DIST_PARAM_ENABLED
+    // @Param{Copter,Plane}: WP_DIST_MAX
+    // @DisplayName: Maximum first waypoint distance warning
+    // @Description: Warn when entering Auto, or arming in Auto, if the first mission waypoint with a location is further from home than this distance. Takeoff items and items without a location are skipped. No warning is given until home is set. 0 disables the warning.
+    // @Units: m
+    // @Range: 0 300000
+    // @User: Advanced
+    AP_GROUPINFO("WP_DIST_MAX",  3, AP_Mission, _wp_dist_max, AP_MISSION_WP_DIST_MAX_DEFAULT),
+#endif
 
     AP_GROUPEND
 };
@@ -234,6 +252,50 @@ bool AP_Mission::starts_with_takeoff_cmd()
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }
     return is_takeoff_next(cmd_index);
+}
+
+/// warn if the first location-bearing nav command is further than MIS_WP_DIST_MAX from home
+void AP_Mission::warn_if_wp_dist_exceeded()
+{
+#if AP_MISSION_WP_DIST_PARAM_ENABLED
+    if (!is_positive(_wp_dist_max) || !AP::ahrs().home_is_set()) {
+        return;
+    }
+
+    // entering Auto and the pre-arm report that follows can both ask within moments
+    const uint32_t now_ms = AP_HAL::millis();
+    if (_wp_dist_warn_ms != 0 && now_ms - _wp_dist_warn_ms < 5000) {
+        return;
+    }
+
+    // scan from the start of the mission with fresh jump counters
+    jump_tracking_array_t jump_state;
+    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
+        jump_state[i].index = AP_MISSION_CMD_INDEX_NONE;
+        jump_state[i].num_times_run = 0;
+    }
+    uint16_t cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+    Mission_Command cmd;
+    // check a limited number of nav commands, as missions can contain loops
+    for (uint8_t i=0; i<32; i++) {
+        if (!get_next_nav_cmd(cmd_index, cmd, jump_state)) {
+            return;
+        }
+        cmd_index = cmd.index + 1;
+        if (is_takeoff_type_cmd(cmd.id) ||
+            !stored_in_location(cmd.id) ||
+            (cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
+            continue;
+        }
+        const float distance_m = AP::ahrs().get_home().get_distance(cmd.content.location);
+        if (distance_m > _wp_dist_max) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Auto: item %u %.0fm from home (max %.0fm)",
+                          cmd.index, (double)distance_m, (double)_wp_dist_max.get());
+            _wp_dist_warn_ms = now_ms;
+        }
+        return;
+    }
+#endif  // AP_MISSION_WP_DIST_PARAM_ENABLED
 }
 
 /*
