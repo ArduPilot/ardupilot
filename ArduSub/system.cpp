@@ -118,7 +118,7 @@ void Sub::init_ardupilot()
         }
     }
 
-    ahrs.set_default_alt_measurement_noise(0.1f);
+    ahrs.set_alt_measurement_noise_default(0.1f);
 
     if (!ap.depth_sensor_present) {
         // We only have onboard baro
