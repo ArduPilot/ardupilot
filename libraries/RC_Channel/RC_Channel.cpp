@@ -1013,6 +1013,7 @@ bool RC_Channel::read_aux()
 #if AP_VIDEOTX_ENABLED
     } else if (_option == AUX_FUNC::VTX_POWER) {
         AP_VideoTX &vtx = AP::vtx();
+#if AP_VIDEOTX_POWER_TABLE_ENABLED
         const uint8_t levels = vtx.power_channel_levels();
         if (levels > 0) {
             // the whole range split evenly between the power table's levels
@@ -1028,6 +1029,7 @@ bool RC_Channel::read_aux()
             }
             return false;
         }
+#endif  // AP_VIDEOTX_POWER_TABLE_ENABLED
         int8_t position;
         if (read_6pos_switch(position)) {
             vtx.change_power(position);
