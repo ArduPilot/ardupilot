@@ -142,7 +142,7 @@ var launch_sled: AnimatableBody3D = null
 var launch_speed := 0.0
 var launch_fired := false
 var launch_back := 1.0
-var launch_held: ArduPilotVehicle = null # frozen until servo 7 releases
+var launch_held: Array[ArduPilotVehicle] = [] # each frozen until its servo 7
 const DROP_HEIGHT := 400.0 # default (m)
 const TOSS_HEIGHT := 2.0 # default (m)
 const TOSS_UP := 2.0
@@ -195,7 +195,7 @@ func _teardown_simulation() -> void: # camera, lighting, HUD survive
     _steps = 0
     _rate_steps = 0
     launch_sled = null
-    launch_held = null
+    launch_held.clear()
     launch_accel = 0.0
     launch_length = 0.0
     launch_speed = 0.0
@@ -326,7 +326,7 @@ func _build_simulation() -> void: # must not need earlier state
         _sim.add_child(models[i])
         var v := vehicles[i]
         _add_marker(v)
-        if i == 0:
+        if i == 0 or _launch_height() > 0.0: # a rail serves vehicle 0 only
             _build_launcher(v)
         print(Report.report(v))
         var v0 := _launch_velocity(v) # drop, toss apply on release
@@ -405,6 +405,7 @@ func _physics_process(delta: float) -> void:
             connected[i] = true
         if bridges[i].frame_count == 0 and sim_time > 0.0:
             print("SITL %d restarted, resetting its vehicle" % i)
+            _rearm_launcher(vehicles[i])
             vehicles[i].reset()
             if vehicles.size() == 1:
                 sim_time = 0.0
@@ -428,7 +429,7 @@ func _physics_process(delta: float) -> void:
                 if ch >= 1 and ch <= pwm.size() and pwm[ch - 1] >= 500: # disabled output stays at 0
                     pwm[ch - 1] = 3000 - pwm[ch - 1]
         vehicles[i].apply_actuators(pwm, delta)
-        if i == 0:
+        if i == 0 or launch_held.has(vehicles[i]):
             _launch_step(vehicles[i], pwm, delta)
         fresh[i] = false
         awaiting[i] = true
@@ -498,7 +499,7 @@ func _build_launcher(v: ArduPilotVehicle) -> void: # stationary ramp at the spaw
             line += ", %s at %.1f m/s" % [
                     "thrown" if kind == "toss" else "moving", v0.length()]
         print(line + ", held at %.1f m until servo 7" % v.global_position.y) # actual height, not requested
-        launch_held = v # weightless until triggered
+        launch_held.append(v) # weightless until triggered
         v.freeze = true
         return
     if parts.size() < 4:
@@ -538,19 +539,28 @@ func _build_launcher(v: ArduPilotVehicle) -> void: # stationary ramp at the spaw
             kind, launch_accel, launch_length, float(parts[3]),
             sqrt(2.0 * launch_accel * launch_length)])
 
+func _rearm_launcher(v: ArduPilotVehicle) -> void: # SITL restarted: as first built
+    if _launch_height() > 0.0 and not launch_held.has(v):
+        v.set_initial_velocity(Vector3.ZERO) # reset must not throw it
+        v.freeze = true
+        launch_held.append(v)
+    if v == vehicles[0]:
+        launch_speed = 0.0
+        launch_fired = false
+        if launch_sled != null:
+            launch_sled.global_position = launch_from - launch_dir * launch_back
+
 func _launch_step(v: ArduPilotVehicle, pwm: PackedInt32Array, delta: float) -> void: # bungee pulls vehicle, catapult pushes
     var triggered := pwm.size() >= 7 and pwm[6] > 1700
-    if launch_held != null:
+    if launch_held.has(v):
         if not triggered:
             return
-        var v0 := _launch_velocity(launch_held) # keeps held height, adds throw
-        launch_held.freeze = false
-        launch_held.set_initial_velocity(v0)
-        print("launcher: released on servo 7 = %d at %.1f m" % [
-                pwm[6], launch_held.global_position.y])
-        launch_held = null
+        v.freeze = false
+        v.set_initial_velocity(_launch_velocity(v)) # keeps held height, adds throw
+        print("launcher: released on servo 7 = %d at %.1f m" % [pwm[6], v.global_position.y])
+        launch_held.erase(v)
         return
-    if launch_accel <= 0.0:
+    if launch_accel <= 0.0 or v != vehicles[0]:
         return
     if not triggered: # servo 7, as SITL's launcher
         return
