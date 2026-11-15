@@ -317,7 +317,7 @@ public:
     uint16_t getPosDownResetCount(void);
 
     // set the _baroAltNoise default without overriding configured values
-    void set_default_baro_alt_noise(float noise) { _baroAltNoise.set_default(noise); }
+    void set_baro_alt_noise_default(float noise) { _baroAltNoise.set_default(noise); }
 
     void set_baro_alt_noise_override(float noise) { _baro_alt_noise_override = noise; }
 
