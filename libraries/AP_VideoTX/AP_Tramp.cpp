@@ -500,8 +500,9 @@ void AP_Tramp::set_frequency(uint16_t freq)
         retry_count = VTX_TRAMP_MAX_RETRIES;
     } else {
         debug("requested frequency %u is invalid", freq);
-        // not valid reset to default
-        AP::vtx().set_configured_frequency_mhz(AP::vtx().get_frequency_mhz());
+        // out of the VTX's range: don't ask for it again until the
+        // configuration changes, leaving the user's setting alone
+        AP::vtx().frequency_rejected();
     }
 }
 
@@ -542,15 +543,26 @@ void AP_Tramp::update()
         // check changes in the order they will be processed; re-arm retries
         // only on real changes so a VTX rejecting a value can't loop forever
         if (vtx.update_frequency() || vtx.update_band() || vtx.update_channel()) {
-            if (vtx.update_frequency()) {
-                vtx.update_configured_channel_and_band();
+            if (vtx.update_frequency() && vtx.get_configured_frequency_mhz() == _last_conf_freq &&
+                vtx.get_frequency_mhz() != 0) {
+                // the retries ran out without the VTX taking the frequency
+                // last requested (many VTXs only accept their own channel
+                // frequencies): stop asking for it until the configuration
+                // changes, so other changes can go out. VTX_BAND, VTX_CHANNEL
+                // and VTX_FREQ are left as the user set them, so a reboot
+                // tries again
+                vtx.frequency_rejected();
             } else {
-                vtx.update_configured_frequency();
-            }
-            const uint16_t conf_freq = vtx.get_configured_frequency_mhz();
-            if (conf_freq != _last_conf_freq) {
-                _last_conf_freq = conf_freq;
-                set_frequency(conf_freq);
+                if (vtx.update_frequency()) {
+                    vtx.update_configured_channel_and_band();
+                } else {
+                    vtx.update_configured_frequency();
+                }
+                const uint16_t conf_freq = vtx.get_configured_frequency_mhz();
+                if (conf_freq != _last_conf_freq) {
+                    _last_conf_freq = conf_freq;
+                    set_frequency(conf_freq);
+                }
             }
         }
         else if (vtx.update_power()) {
