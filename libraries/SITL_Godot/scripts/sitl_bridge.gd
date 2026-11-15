@@ -15,6 +15,7 @@ var pwm := PackedInt32Array()
 var sitl_ip := ""
 var sitl_port := 0
 var last_reply := PackedByteArray()
+var _replied := false # to the frame held
 
 func listen(port: int) -> Error:
     return udp.bind(port, "*")
@@ -47,8 +48,10 @@ func _decode(pkt: PackedByteArray) -> bool:
         return false
     var count := pkt.decode_u32(4)
     if count == frame_count and not last_reply.is_empty():
-        udp.put_packet(last_reply)
+        if _replied: # else its step is pending
+            udp.put_packet(last_reply)
         return false
+    _replied = false
     frame_rate = pkt.decode_u16(2)
     frame_count = count
     pwm.resize(channels)
@@ -75,4 +78,5 @@ func send_state(timestamp: float, s: Dictionary) -> void:
         line = line.trim_suffix("}\n") + (",\"windvane\":{\"direction\":%.5f,\"speed\":%.4f}}\n"
                 % [float(vane["direction"]), float(vane["speed"])])
     last_reply = line.to_ascii_buffer()
+    _replied = true
     udp.put_packet(last_reply)

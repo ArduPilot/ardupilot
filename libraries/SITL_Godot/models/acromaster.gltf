@@ -30,7 +30,7 @@
   },
   {
    "name": "steering_wheel_tyre",
-   "translation": [0.00141, 0.03161, -0.15035],
+   "translation": [0, 0, 0],
    "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.02, "travel": 0.04, "spring": 113.0, "damping": 8.9, "grip": 0.8, "rollingResistance": 0.03}}}
   },
   {"name": "fuselage_box", "translation": [0.00141, 0.00961, -0.2698], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
@@ -110,8 +110,8 @@
       "stallAngle": 25.0,
       "oswald": 0.9,
       "flapServo": 1,
-      "flapAngleMin": 30.0,
-      "flapAngleMax": -30.0,
+      "flapAngleMin": -30.0,
+      "flapAngleMax": 30.0,
       "flapChordFraction": 0.325
      }
     }

@@ -224,6 +224,10 @@ func _on_control(args: PackedStringArray) -> void: # new simulation; args are --
     if camera != null and not vehicles.is_empty():
         cam_focus = vehicles[focus].global_position
         _view_sim = -1.0 # rebuilt world restarts its clock
+        if attitude != null:
+            attitude.vehicle = vehicles[focus] # the old one is freed
+        if gyros != null:
+            gyros.vehicle = vehicles[focus]
 
 func _poll_control() -> void:
     while _control.get_available_packet_count() > 0:

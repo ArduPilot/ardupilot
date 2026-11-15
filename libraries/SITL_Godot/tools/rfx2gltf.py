@@ -530,6 +530,12 @@ class Converter(object):
                 key = "ServoMaster" if sign < 0 or suffix == "" else "ServoSlave"
                 servo = self.electronics.channel(flap.get(key))
                 reverse = flap.get(key + "Rev", False)
+                master = flap.get("ServoMaster")
+                if (key == "ServoSlave" and flap.get(key) != master and
+                        servo == self.electronics.channel(master)):
+                    # two servos off one channel are mounted as mirror
+                    # images, so this side moves against the master's
+                    reverse = not flap.get("ServoMasterRev", False)
             for lo, hi, flapped in panels:
                 mid = (lo + hi) / 2
                 frac = mid / span
@@ -814,7 +820,7 @@ class Converter(object):
             # centre of mass where the aerodynamics say it belongs
             com[2] = np_z + 0.10 * self.main_chord
         # move every node so the centre of mass is the origin
-        for n in self.parts + [n for n in self.nodes[1:] if n]:
+        for n in self.parts:  # not their children, placed from their parent
             if "translation" in n:
                 n["translation"] = [round(n["translation"][i] - com[i], 5) for i in range(3)]
         inertia = [0.0, 0.0, 0.0]

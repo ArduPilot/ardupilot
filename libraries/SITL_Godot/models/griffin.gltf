@@ -35,7 +35,7 @@
   },
   {
    "name": "engine_disc",
-   "translation": [0.0, 0.03086, -0.05513],
+   "translation": [0, 0, 0],
    "rotation": [0.70710678, 0.0, 0.0, 0.70710678],
    "extensions": {
     "ARDUPILOT_sitl": {"rotor": {"servo": 5, "maxThrust": 53.3, "thrustExpo": 0.5, "torqueRatio": 0.0161, "direction": "ccw", "timeConstant": 0.05, "diameter": 0.356, "pitchSpeed": 31.6}}
@@ -43,7 +43,7 @@
   },
   {
    "name": "engine_r_disc",
-   "translation": [0.0, 0.03086, -0.05513],
+   "translation": [0, 0, 0],
    "rotation": [0.70710678, 0.0, 0.0, 0.70710678],
    "extensions": {
     "ARDUPILOT_sitl": {"rotor": {"servo": 7, "maxThrust": 53.3, "thrustExpo": 0.5, "torqueRatio": 0.0161, "direction": "cw", "timeConstant": 0.05, "diameter": 0.356, "pitchSpeed": 31.6}}
