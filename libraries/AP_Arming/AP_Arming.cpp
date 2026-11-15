@@ -1029,6 +1029,14 @@ bool AP_Arming::mission_checks(bool report)
         check_failed(Check::MISSION, report, "Mode requires mission");
         return false;
     }
+
+    // a mission stored before boot must not fly far away once armed in (e.g.) AUTO
+    char failure_msg[50];
+    if (AP::vehicle()->current_mode_requires_mission() &&
+        !mission.wp_distance_ok(failure_msg, sizeof(failure_msg))) {
+        check_failed(Check::MISSION, report, "Auto: %s", failure_msg);
+        return false;
+    }
 #endif
 
     return true;
