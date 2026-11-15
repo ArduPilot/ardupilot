@@ -16712,6 +16712,54 @@ switch value'''
             if distance > 1:
                 raise NotAchievedException(f"gps type {name} misbehaving")
 
+            # velocity is zero on the ground whether or not the
+            # backend parses it, so fly a constant-velocity leg.  It
+            # heads south-east so a swapped or sign-flipped axis
+            # changes the course:
+            self.takeoff(10, mode='GUIDED')
+            here = self.get_location(frame=AltFrame.ABOVE_HOME)
+            self.send_do_reposition(self.offset_location_ne(here, -300, 450))
+            # wait on the simulator's speed; VFR_HUD comes from the
+            # EKF, which a broken GPS velocity corrupts:
+            self.wait_and_maintain_range(
+                value_name="SIM_STATE groundspeed",
+                minimum=8,
+                maximum=100,
+                current_value_getter=self.get_sim_state_groundspeed,
+                minimum_duration=2,
+            )
+            self.check_gps_velocity_matches_truth(name)
+            self.land_and_disarm()
+
+    def get_sim_state_groundspeed(self):
+        m = self.poll_message('SIM_STATE', quiet=True)
+        return math.sqrt(m.vn**2 + m.ve**2)
+
+    def check_gps_velocity_matches_truth(self, name, samples=10, speed_tolerance=0.5, course_tolerance=5):
+        '''compare GPS_RAW_INT ground speed and course with the
+        simulator's velocity; the vehicle must be moving at a constant
+        velocity so GPS lag does not matter'''
+        for i in range(samples):
+            msgs = self.get_messages_frame(['GPS_RAW_INT', 'SIM_STATE'], timeout=10)
+            gps = msgs['GPS_RAW_INT']
+            sim = msgs['SIM_STATE']
+            sim_speed = math.sqrt(sim.vn**2 + sim.ve**2)
+            sim_course = math.degrees(math.atan2(sim.ve, sim.vn)) % 360
+            gps_speed = gps.vel * 0.01
+            if gps.cog == 65535:
+                raise NotAchievedException(f"{name}: GPS course unknown at {sim_speed:.2f}m/s")
+            gps_course = gps.cog * 0.01
+            self.progress(f"{name}: speed gps={gps_speed:.2f} sim={sim_speed:.2f} "
+                          f"course gps={gps_course:.1f} sim={sim_course:.1f}")
+            if abs(gps_speed - sim_speed) > speed_tolerance:
+                raise NotAchievedException(
+                    f"{name}: GPS speed {gps_speed:.2f}m/s, simulator {sim_speed:.2f}m/s")
+            course_error = self.heading_delta(gps_course, sim_course)
+            if course_error > course_tolerance:
+                raise NotAchievedException(
+                    f"{name}: GPS course {gps_course:.1f}deg, simulator {sim_course:.1f}deg")
+            self.delay_sim_time(0.5, "between GPS velocity samples")
+
     def wait_gps_satellite_count(self, messagename, count, timeout):
         """Wait for a GPS message to report a specific satellite count."""
         self.drain_mav()
