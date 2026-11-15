@@ -1944,6 +1944,50 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.clear_battery_failsafe()
 
+    def BatteryFailsafeTwoStageBrakeLandRTL(self):
+        '''Two stage battery failsafe: low Brake/Land then critical RTL'''
+        self.batt_failsafe_init()
+        self.takeoffAndMoveAway()
+        self.set_parameters({
+            'BATT_FS_LOW_ACT': 7,
+            'BATT_FS_CRT_ACT': 2,
+            'SIM_BATT_VOLTAGE': 11.4,
+        })
+        self.wait_statustext("Battery 1 is low", timeout=60)
+        self.wait_mode("BRAKE")
+        self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
+        self.wait_statustext("Battery 1 is critical", timeout=60)
+        self.wait_mode("RTL")
+        self.wait_landed_and_disarmed()
+        self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
+        self.clear_battery_failsafe()
+
+    def BatteryFailsafeTwoStageSmartRTLDoLandStart(self):
+        '''Two stage battery failsafe: low SmartRTL then critical Auto DO_LAND_START'''
+        self.batt_failsafe_init()
+        self.takeoffAndMoveAway()
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 100, 50),                   # 1
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 20, 30),                    # 3
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 10, 0),                         # 4
+        ])
+        self.set_parameters({
+            'BATT_FS_LOW_ACT': 3,
+            'BATT_FS_CRT_ACT': 6,
+            'SIM_BATT_VOLTAGE': 11.4,
+        })
+        self.wait_statustext("Battery 1 is low", timeout=60)
+        self.wait_mode("SMART_RTL")
+        self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
+        self.wait_statustext("Battery 1 is critical", timeout=60)
+        self.wait_mode("AUTO_RTL")
+        self.wait_current_waypoint(3)
+        self.wait_landed_and_disarmed()
+        self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
+        self.clear_battery_failsafe()
+        self.reboot_sitl()  # landed away from home
+
     def BatteryFailsafeOptionsContinueLanding(self):
         '''Battery failsafe with FS_OPTIONS set to continue landing'''
         # Trigger low battery condition in land mode with FS_OPTIONS
@@ -25561,6 +25605,8 @@ return update, 1000
             self.WPArcs,
             self.BatteryFailsafeTwoStage,
             self.BatteryFailsafeBrakeLand,
+            self.BatteryFailsafeTwoStageBrakeLandRTL,
+            self.BatteryFailsafeTwoStageSmartRTLDoLandStart,
             self.MinAltFenceAvoid,
             self.FenceFloorEnabledLanding,
             self.FenceUpload_MissionItem,
