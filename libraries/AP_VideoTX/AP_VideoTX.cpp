@@ -732,7 +732,9 @@ void AP_VideoTX::update(void)
         }
     }
 
+#if AP_VIDEOTX_TABLE_ENABLED
     report_state_changes();
+#endif
 }
 
 uint16_t AP_VideoTX::get_reported_power_mw() const
@@ -744,6 +746,7 @@ uint16_t AP_VideoTX::get_reported_power_mw() const
     return _actual_power_mw >= 0 ? uint16_t(_actual_power_mw) : get_power_mw();
 }
 
+#if AP_VIDEOTX_TABLE_ENABLED
 void AP_VideoTX::report_state_changes()
 {
     if (!_defaults_set) {
@@ -789,6 +792,7 @@ void AP_VideoTX::report_state_changes()
                        uint16_t(_power_mw.get()));
 #endif
 }
+#endif  // AP_VIDEOTX_TABLE_ENABLED
 
 bool AP_VideoTX::update_options() const
 {
@@ -1072,7 +1076,11 @@ bool AP_VideoTX::set_defaults()
 
     _defaults_set = true;
 
+#if AP_VIDEOTX_TABLE_ENABLED
     // announced and logged by report_state_changes()
+#else
+    announce_vtx_settings();
+#endif
     return true;
 }
 
