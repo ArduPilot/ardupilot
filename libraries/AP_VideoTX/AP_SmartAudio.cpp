@@ -646,9 +646,10 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
         }
         const U16ResponseFrame *resp = (const U16ResponseFrame *)buffer;
         unpack_frequency(&settings, be16toh(resp->payload));
+        // the reply says what the VTX is now on. The configuration is what
+        // the user set and is left alone, so a change made while the command
+        // was in flight is still sent
         vtx.set_frequency_mhz(settings.frequency);
-        vtx.set_configured_frequency_mhz(vtx.get_frequency_mhz());
-        vtx.update_configured_channel_and_band();
         debug("Frequency was set to %d", settings.frequency);
     }
         break;
@@ -658,11 +659,14 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U8ResponseFrame *resp = (const U8ResponseFrame *)buffer;
-        vtx.set_band(resp->payload / VTX_MAX_CHANNELS);
-        vtx.set_channel(resp->payload % VTX_MAX_CHANNELS);
-        vtx.set_configured_channel(vtx.get_channel());
-        vtx.set_configured_band(vtx.get_band());
-        vtx.update_configured_frequency();
+        // as for SET_FREQUENCY, only what the VTX is on is updated
+        const uint8_t band = resp->payload / VTX_MAX_CHANNELS;
+        const uint8_t channel = resp->payload % VTX_MAX_CHANNELS;
+        vtx.set_band(band);
+        vtx.set_channel(channel);
+        if (band < AP_VideoTX::MAX_BANDS) {
+            vtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(band, channel));
+        }
         debug("Channel was set to %d", resp->payload);
     }
         break;
