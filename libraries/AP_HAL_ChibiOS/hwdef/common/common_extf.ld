@@ -248,6 +248,7 @@ SECTIONS
         KEEP(*libch.a:crt1.o);
         KEEP(*libch.a:board.o);
         KEEP(*(.apsec_data));
+        KEEP(*(.ap_airframe_data));
         KEEP(*(.app_descriptor));
         PROVIDE(__usb_debug_text_start = .);
         *USB_Debug.cpp*.o(.text .text.*)
