@@ -10959,6 +10959,7 @@ Also, ignores heartbeats not from our target system'''
                 except Exception:  # noqa: BLE001
                     time.sleep(0.1)
             if conn is None:
+                p.kill()  # nothing tracks it yet
                 raise NotAchievedException("Godot vehicle %u did not open its serial port" % n)
             drain = threading.Thread(target=self.godot_bystander_drain, args=(conn,), daemon=True)
             drain.start()

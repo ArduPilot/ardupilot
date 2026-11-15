@@ -20,6 +20,7 @@ import os
 import os.path
 import re
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
@@ -1858,6 +1859,7 @@ if cmd_opts.godot:
               (cmd_opts.vehicle, cmd_opts.frame, ", ".join(godot_physics.frames_for(cmd_opts.vehicle)) or "none"))
         sys.exit(1)
     frame_infos["model"] = godot_physics.SITL_MODEL
+    frame_infos.pop("frame", None)  # or start_vehicle gives SITL the frame's own physics
     # SITL looks up a frame's default parameters by model name, which for
     # JSON matches no frame, so add them explicitly ahead of any others
     frame_defaults = frame_infos.get("default_params_filename", [])
@@ -1954,6 +1956,11 @@ else:
                 raise
         finally:
             instance_dir.append(i_dir)
+if cmd_opts.godot and godot_physics.lua_filepath(godot_model) is not None:
+    # what the model's parameters cannot set, such as the hexapod's gait
+    for i_dir in instance_dir:
+        os.makedirs(os.path.join(i_dir, "scripts"), exist_ok=True)
+        shutil.copy(godot_physics.lua_filepath(godot_model), os.path.join(i_dir, "scripts", "godot_%s.lua" % godot_model))
 
 if True:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
