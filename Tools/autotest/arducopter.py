@@ -20552,6 +20552,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptMountPOI,
             self.GuidedYawRate,
             self.MISSION_OPTION_CLEAR_MISSION_AT_BOOT,
+            self.MissionAutoWPDistance,
             self.SafetySwitch,
             self.HomeCircleInclusionFence_SetHome,
             self.HomeCircleInclusionFence_Avoidance_SetHome,
@@ -24387,6 +24388,126 @@ return update()
 
         if len(self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)) != 0:
             raise NotAchievedException("Mission did not clear after reboot with option set")
+
+    def MissionAutoWPDistance(self):
+        '''check MIS_WP_DIST_MAX limit on Auto entry for a mission stored before boot'''
+        if self.get_parameter("MIS_WP_DIST_MAX") != 500:
+            raise NotAchievedException("MIS_WP_DIST_MAX default is not 500m")
+        self.context_collect("STATUSTEXT")
+
+        def store_mission_and_reboot(items):
+            # the check only applies to a mission stored before boot
+            self.upload_simple_relhome_mission(items)
+            self.context_clear_collection("STATUSTEXT")
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.change_mode("LOITER")
+            self.wait_statustext("Auto WP distance check active: 500m", check_context=True)
+
+        def assert_auto_refused(text, mode="AUTO"):
+            self.context_clear_collection("STATUSTEXT")
+            self.send_cmd_do_set_mode(mode)
+            self.wait_statustext(text, check_context=True)
+            self.assert_mode("LOITER")
+
+        def assert_auto_allowed(mode="AUTO"):
+            self.change_mode(mode)
+            self.change_mode("LOITER")
+
+        self.start_subtest("old mission beyond limit refuses Auto and Auto RTL")
+        store_mission_and_reboot([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 1, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 750, 0, 20),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 510, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 250, 0, 20),
+        ])
+        # the takeoff location is skipped as the vehicle takes off where it is
+        assert_auto_refused("WP 750m > MIS_WP_DIST_MAX 500m")
+        assert_auto_refused("WP 510m > MIS_WP_DIST_MAX 500m", mode="AUTO_RTL")
+
+        self.start_subtest("zero limit disables the check")
+        self.set_parameter("MIS_WP_DIST_MAX", 0)
+        assert_auto_allowed()
+        self.set_parameter("MIS_WP_DIST_MAX", 500)
+
+        self.start_subtest("mission run while disarmed is still checked")
+        # Auto resumes at the landing sequence the Auto RTL attempt jumped to
+        assert_auto_refused("WP 510m > MIS_WP_DIST_MAX 500m")
+
+        self.start_subtest("refused DO_LAND_START in RTL does not fly to the landing sequence")
+        self.takeoff(10, mode="GUIDED")
+        self.change_mode("RTL")
+        self.context_clear_collection("STATUSTEXT")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.wait_statustext("WP 510m > MIS_WP_DIST_MAX 500m", check_context=True)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 10:
+            self.assert_mode("RTL")
+            if self.distance_to_home(use_cached_home=True) > 10:
+                raise NotAchievedException("RTL flew towards the refused landing sequence")
+        self.wait_disarmed(timeout=120)
+        self.change_mode("LOITER")
+
+        self.start_subtest("mission flown armed is not checked again")
+        self.set_parameter("MIS_WP_DIST_MAX", 0)
+        # resume from the takeoff so Auto can be entered armed on the ground
+        self.set_current_waypoint_using_mav_cmd_do_set_mission_current(1)
+        self.arm_vehicle()
+        self.change_mode("AUTO")
+        self.delay_sim_time(2, reason="let the mission run armed")
+        self.set_parameter("MIS_WP_DIST_MAX", 500)
+        self.change_mode("LOITER")
+        assert_auto_allowed()
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("near old mission allows Auto")
+        store_mission_and_reboot([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 490, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 20),
+        ])
+        assert_auto_allowed()
+
+        self.start_subtest("first waypoint hidden behind a long jump loop refuses Auto")
+        store_mission_and_reboot([
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_DELAY),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=1, p2=-1),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 0, 20),
+        ])
+        assert_auto_refused("first WP not found")
+
+        self.start_subtest("items the vehicle does not fly to are not the first waypoint")
+        store_mission_and_reboot([
+            (mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 100, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT, 100, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 750, 0, 20),
+        ])
+        assert_auto_refused("WP 750m > MIS_WP_DIST_MAX 500m")
+
+        self.start_subtest("mission uploaded since boot is not checked")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 510, 0, 20),
+        ])
+        assert_auto_allowed()
+
+        self.start_subtest("Auto selected before home is set refuses arming")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 750, 0, 20),
+        ])
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "AUTO_OPTIONS": 1,  # allow arming in Auto
+        })
+        self.reboot_sitl()
+        # no position, so Auto entry on the ground is left to the arming check
+        self.change_mode("AUTO")
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.wait_ready_to_arm(check_prearm_bit=False)
+        self.try_arm(result=False, expect_msg="WP 750m > MIS_WP_DIST_MAX 500m")
+        self.assert_mode("AUTO")
 
     def IgnorePilotYaw(self):
         '''test RTL_OPTIONS bit 2, "IgnorePilotYaw"'''

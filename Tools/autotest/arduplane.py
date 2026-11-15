@@ -8168,6 +8168,166 @@ return update()
 
         self.reboot_sitl()
 
+    def MissionAutoWPDistance(self):
+        '''check MIS_WP_DIST_MAX limit on Auto entry for a mission stored before boot'''
+        if self.get_parameter("MIS_WP_DIST_MAX") != 1500:
+            raise NotAchievedException("MIS_WP_DIST_MAX default is not 1500m")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1600, 0, 100),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=20),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=9, p2=1),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2200, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 0, 100),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=20),
+        ])
+        # a mission containing DO_LAND_START needs RTL_AUTOLAND to pass prearm
+        self.set_parameter("RTL_AUTOLAND", 1)
+        # the check only applies to a mission stored before boot
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode("MANUAL")
+        self.context_collect("STATUSTEXT")
+
+        self.start_subtest("old mission beyond limit refuses Auto")
+        self.send_cmd_do_set_mode("AUTO")
+        self.wait_statustext("WP 1600m > MIS_WP_DIST_MAX 1500m", check_context=True)
+        self.assert_mode("MANUAL")
+
+        self.start_subtest("DO_LAND_START jump into old mission is checked")
+        self.context_clear_collection("STATUSTEXT")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.wait_statustext("WP 2000m > MIS_WP_DIST_MAX 1500m", check_context=True)
+        self.assert_mode("MANUAL")
+
+        self.start_subtest("zero limit disables the check")
+        self.set_parameter("MIS_WP_DIST_MAX", 0)
+        self.change_mode("AUTO")
+        self.change_mode("MANUAL")
+        self.set_parameter("MIS_WP_DIST_MAX", 1500)
+
+        self.start_subtest("mission run while disarmed is still checked")
+        self.context_clear_collection("STATUSTEXT")
+        self.send_cmd_do_set_mode("AUTO")
+        self.wait_statustext("WP 1600m > MIS_WP_DIST_MAX 1500m", check_context=True)
+        self.assert_mode("MANUAL")
+
+        self.start_subtest("arming in Auto is refused")
+        self.set_parameter("MIS_WP_DIST_MAX", 0)
+        self.change_mode("AUTO")
+        self.set_parameter("MIS_WP_DIST_MAX", 1500)
+        self.try_arm(result=False, expect_msg="WP 1600m > MIS_WP_DIST_MAX 1500m")
+        self.change_mode("MANUAL")
+
+        self.start_subtest("restarting Auto entry is checked from the start of the mission")
+        # with MIS_RESTART=1 Auto restarts at the 1600m waypoint, not the 2000m
+        # waypoint the GCS made current, so with an 1800m limit Auto is allowed
+        self.set_parameters({
+            "MIS_RESTART": 1,
+            "MIS_WP_DIST_MAX": 1800,
+        })
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT, p1=4, p2=1)
+        self.change_mode("AUTO")
+        self.change_mode("MANUAL")
+        self.set_parameters({
+            "MIS_RESTART": 0,
+            "MIS_WP_DIST_MAX": 1500,
+        })
+
+        self.start_subtest("completed mission is checked from the start")
+        # make the landing at home current and running outside Auto, then complete
+        # the mission by setting the trailing do command current; Auto resumes a
+        # completed mission from the 1600m waypoint, not the landing at home
+        self.set_current_waypoint_using_mav_cmd_do_set_mission_current(5, reset=1)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT, p1=10, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.context_clear_collection("STATUSTEXT")
+        self.send_cmd_do_set_mode("AUTO")
+        self.wait_statustext("WP 1600m > MIS_WP_DIST_MAX 1500m", check_context=True)
+        self.assert_mode("MANUAL")
+
+        self.start_subtest("resume from a pending do command is checked from that command")
+        # setting the speed change current loads it as the pending do command and
+        # uses the jump, so the 100m waypoint becomes the nav command; Auto resumes
+        # at the speed change with the jump used up and flies the 2200m waypoint
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT, p1=6)
+        self.context_clear_collection("STATUSTEXT")
+        self.send_cmd_do_set_mode("AUTO")
+        self.wait_statustext("WP 2200m > MIS_WP_DIST_MAX 1500m", check_context=True)
+        self.assert_mode("MANUAL")
+        # complete the mission again so the following entries start from the 1600m waypoint
+        self.set_current_waypoint_using_mav_cmd_do_set_mission_current(5, reset=1)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT, p1=10, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+
+        self.start_subtest("refused long failsafe Auto falls back to RTL")
+        self.set_parameters({
+            "FS_GCS_ENABL": 1,
+            "FS_LONG_ACTN": 4,  # Auto
+            "MAV_GCS_SYSID": self.mav.source_system,
+        })
+        self.takeoff(alt=50)
+        self.change_mode("LOITER")
+        self.context_clear_collection("STATUSTEXT")
+        self.progress("Disconnecting GCS")
+        self.set_heartbeat_rate(0)
+        self.wait_mode("RTL", timeout=30)
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("WP 1600m > MIS_WP_DIST_MAX 1500m", check_context=True)
+
+        self.start_subtest("battery failsafe Land with MIS_RESTART=1 checks the landing sequence")
+        # the failsafe resumes at the 2000m landing waypoint rather than restarting
+        # at the 1600m waypoint, so with an 1800m limit Auto is refused
+        self.set_parameters({
+            "MIS_RESTART": 1,
+            "MIS_WP_DIST_MAX": 1800,
+            "BATT_LOW_VOLT": 11,
+            "BATT_LOW_TIMER": 1,
+            "BATT_FS_LOW_ACT": 2,  # Land
+        })
+        self.change_mode("LOITER")
+        self.context_clear_collection("STATUSTEXT")
+        self.set_parameter("SIM_BATT_VOLTAGE", 9.5)
+        self.wait_statustext("WP 2000m > MIS_WP_DIST_MAX 1800m", check_context=True)
+        self.wait_mode("RTL")
+        self.set_parameters({
+            "MIS_RESTART": 0,
+            "MIS_WP_DIST_MAX": 1500,
+            "BATT_FS_LOW_ACT": 0,
+        })
+
+        self.start_subtest("mission flown armed is not checked again")
+        self.set_parameter("MIS_WP_DIST_MAX", 0)
+        self.change_mode("AUTO")
+        self.delay_sim_time(2, reason="let the mission run armed")
+        self.change_mode("LOITER")
+        self.set_parameter("MIS_WP_DIST_MAX", 1500)
+        self.change_mode("AUTO")
+        self.fly_home_land_and_disarm()
+
+        self.start_subtest("items the vehicle does not fly to are not the first waypoint")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 100, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT, 100, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 100),
+        ])
+        # clear the battery and GCS failsafes set up above
+        self.set_parameters({
+            "BATT_LOW_VOLT": 0,
+            "SIM_BATT_VOLTAGE": 12.6,
+            "FS_GCS_ENABL": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode("MANUAL")
+        self.context_clear_collection("STATUSTEXT")
+        self.send_cmd_do_set_mode("AUTO")
+        # the mission is relative to where the vehicle landed, not the home set after reboot
+        self.wait_statustext(r"Auto: WP \d+m > MIS_WP_DIST_MAX 1500m", regex=True, check_context=True)
+        self.assert_mode("MANUAL")
+
     def MAV_CMD_DO_LAND_START(self):
         '''test MAV_CMD_DO_LAND_START as mavlink command'''
         self.set_parameters({
@@ -11244,6 +11404,7 @@ return update()
             self.MODE_SWITCH_RESET,
             self.ExternalPositionEstimate,
             self.MAV_CMD_DO_LAND_START,
+            self.MissionAutoWPDistance,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
             self.MinThrottle,

@@ -1063,6 +1063,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''Test behaviour when booting in auto'''
         self.load_mission("mission.txt")
         self.set_parameters({
+            # the mission's waypoint is far from this test's home
+            "MIS_WP_DIST_MAX": 0,
         })
         self.set_rc(5, 1000)
         self.wait_mode('AUTO')
