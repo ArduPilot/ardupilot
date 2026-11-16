@@ -492,31 +492,38 @@ bool AP_ExternalAHRS_Xsens::configure_output_settings()
     uint8_t *payload = get_pointer_to_payload(config_msg);
     int payload_idx = 0;
 
-    uint16_t output_rate = get_rate(); // This gets the user-configured EAHRS_RATE parameter
+    // Per-output rates. The MTi lets every output item run at its own rate, so
+    // request the inertial data that drives the control loop at the high EAHRS_RATE
+    // and the slow GNSS solution near the receiver rate. Requesting GNSS at the IMU
+    // rate (the previous single-rate behaviour) floods the link and destabilises
+    // both the GNSS timing and the vehicle main loop.
+    const uint16_t imu_rate = get_rate();                       // EAHRS_RATE, e.g. 400Hz
+    const uint16_t gnss_rate = 5;                               // GNSS solution update
+    const uint16_t aux_rate = (imu_rate < 50) ? imu_rate : 50;  // baro, mag, status, temp
 
-    // Configure desired data items
-    uint16_t data_items[] = {
-        XDI::PACKET_COUNTER,
-        XDI::SAMPLE_TIME_FINE,
-        XDI::UTC_TIME,
-        XDI::TEMPERATURE,
-        XDI::QUATERNION,
-        XDI::ACCELERATION,
-        XDI::RATE_OF_TURN,
-        XDI::MAGNETIC_FIELD,
-        XDI::STATUS_WORD,
-        XDI::BAROMETRIC_PRESSURE,
-        XDI::LAT_LON,
-        XDI::ALTITUDE_ELLIPSOID,
-        XDI::VELOCITY_XYZ,
-        XDI::GNSSPVTDATA
+    struct OutputItem { uint16_t xdi; uint16_t rate; };
+    const OutputItem data_items[] = {
+        { XDI::PACKET_COUNTER,      imu_rate  },
+        { XDI::SAMPLE_TIME_FINE,    imu_rate  },
+        { XDI::QUATERNION,          imu_rate  },
+        { XDI::ACCELERATION,        imu_rate  },
+        { XDI::RATE_OF_TURN,        imu_rate  },
+        { XDI::STATUS_WORD,         aux_rate  },
+        { XDI::MAGNETIC_FIELD,      aux_rate  },
+        { XDI::TEMPERATURE,         aux_rate  },
+        { XDI::BAROMETRIC_PRESSURE, aux_rate  },
+        { XDI::UTC_TIME,            gnss_rate },
+        { XDI::LAT_LON,             gnss_rate },
+        { XDI::ALTITUDE_ELLIPSOID,  gnss_rate },
+        { XDI::VELOCITY_XYZ,        gnss_rate },
+        { XDI::GNSSPVTDATA,         gnss_rate },
     };
 
-    for (uint16_t item : data_items) {
-        payload[payload_idx++] = (item >> 8) & 0xFF;
-        payload[payload_idx++] = item & 0xFF;
-        payload[payload_idx++] = (output_rate >> 8) & 0xFF;
-        payload[payload_idx++] = output_rate & 0xFF;
+    for (const OutputItem &item : data_items) {
+        payload[payload_idx++] = (item.xdi >> 8) & 0xFF;
+        payload[payload_idx++] = item.xdi & 0xFF;
+        payload[payload_idx++] = (item.rate >> 8) & 0xFF;
+        payload[payload_idx++] = item.rate & 0xFF;
     }
 
     set_payload_length(config_msg, payload_idx);
