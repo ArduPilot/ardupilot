@@ -17,6 +17,7 @@ public:
         CortexM4HardFloat, // Armv7E-M with FPv4-SP-D16.
         X86_64Baseline,
         CortexM7HardFloat, // Armv7E-M with FPv5-D16, including double precision.
+        AArch64Baseline,   // Armv8.0-A, x18 reserved, 4 or 16 KiB pages.
     };
 
     CLASS_NO_COPY(ExecutableMemory);
