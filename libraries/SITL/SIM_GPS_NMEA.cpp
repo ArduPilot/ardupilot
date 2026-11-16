@@ -69,14 +69,15 @@ void GPS_NMEA::publish(const GPS_Data *d)
              (deg - int(deg))*60,
              d->longitude<0?'W':'E');
 
-    nmea_printf("$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,0.0,M,,",
+    nmea_printf("$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,%.1f,M,,",
                      tstring,
                      lat_string,
                      lng_string,
                      d->have_lock?1:0,
                      d->have_lock?d->num_sats:3,
                      1.2,
-                     d->altitude);
+                     d->altitude,
+                     d->geoid_separation);
 
     const float speed_mps = d->speed_2d();
     const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;

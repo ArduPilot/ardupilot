@@ -183,6 +183,13 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("UBXMDL",    22, GPSParms, ubx_model, 0),
 
+    // @Param: GEOID
+    // @DisplayName: GPS geoid separation
+    // @Description: Height of the geoid (mean sea level) above the WGS84 ellipsoid reported by the simulated GPS. The simulated GPS reports an ellipsoid height of the altitude plus this, on protocols that carry both heights
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("GEOID",     23, GPSParms, geoid_separation, 0),
+
     AP_GROUPEND
 };
 }
@@ -519,6 +526,7 @@ void GPS::update()
 
     d.num_sats = params.numsats;
     d.fix_type = params.fix_type;
+    d.geoid_separation = params.geoid_separation;
     d.latitude = latitude;
     d.longitude = longitude;
     d.yaw_deg = wrap_360(_sitl->state.yawDeg + params.heading_offset);

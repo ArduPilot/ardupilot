@@ -38,7 +38,8 @@ struct GPS_Data {
     uint32_t timestamp_ms;
     double latitude;
     double longitude;
-    float altitude;
+    float altitude;          // above mean sea level (m)
+    float geoid_separation;  // height of the geoid above the WGS84 ellipsoid (m)
     double speedN;
     double speedE;
     double speedD;

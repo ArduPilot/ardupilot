@@ -124,8 +124,8 @@ void GPS_SBF::publish_PVTGeodetic(const GPS_Data *d)
     pvtGeod_buf.error= 0; //Error: no error
     pvtGeod_buf.latitude = radians(_sitl->state.latitude);
     pvtGeod_buf.longitude = radians(_sitl->state.longitude);
-    pvtGeod_buf.height = d->altitude;
-    pvtGeod_buf.undulation = DNU_DOUBLE;
+    pvtGeod_buf.height = d->altitude + d->geoid_separation;  // ellipsoidal
+    pvtGeod_buf.undulation = d->geoid_separation;
     pvtGeod_buf.vn = d->speedN;
     pvtGeod_buf.ve = d->speedE;
     pvtGeod_buf.vu = -d->speedD;
