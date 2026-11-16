@@ -61,6 +61,27 @@ struct GPS_Data {
 };
 
 
+/*
+  simple simulation of GPS jamming. Shared by the simulated serial GPS
+  devices and the AP_GPS_SITL backend (GPS_TYPE 100)
+ */
+class GPS_Jamming {
+public:
+    // apply jamming to a GPS sample
+    void simulate(GPS_Data &d);
+
+private:
+    uint32_t last_jam_ms;
+    uint32_t jam_start_ms;
+    uint32_t last_sats_change_ms;
+    uint32_t last_vz_change_ms;
+    uint32_t last_vel_change_ms;
+    uint32_t last_pos_change_ms;
+    uint32_t last_acc_change_ms;
+    double latitude;
+    double longitude;
+};
+
 class GPS_Backend {
 public:
     CLASS_NO_COPY(GPS_Backend);
@@ -154,17 +175,7 @@ private:
     GPS_Data _gps_history[20];
 
     // state of jamming simulation
-    struct {
-        uint32_t last_jam_ms;
-        uint32_t jam_start_ms;
-        uint32_t last_sats_change_ms;
-        uint32_t last_vz_change_ms;
-        uint32_t last_vel_change_ms;
-        uint32_t last_pos_change_ms;
-        uint32_t last_acc_change_ms;
-        double latitude;
-        double longitude;
-    } jamming[2];
+    GPS_Jamming jamming;
 
     // position offset accumulated from the velocity glitch (NED, metres)
     Vector3f vel_glitch_pos_ofs;
@@ -172,8 +183,6 @@ private:
 
     bool _gps_has_basestation_position;
     GPS_Data _gps_basestation_data;
-
-    void simulate_jamming(GPS_Data &d);
 
     // get delayed data
     GPS_Data interpolate_data(const GPS_Data &d, uint32_t delay_ms);
