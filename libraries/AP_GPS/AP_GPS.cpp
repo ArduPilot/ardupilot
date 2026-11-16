@@ -1506,16 +1506,23 @@ void AP_GPS::send_mavlink_gnss(GCS_MAVLINK &link)
         return;
     }
 
-    // wrap next-to-send if required:
-    if (next_backend_to_send_gnss >= num_instances) {
-        next_backend_to_send_gnss = 0;
+    const mavlink_channel_t chan = link.get_chan();
+    if (chan >= ARRAY_SIZE(next_backend_to_send_gnss)) {
+        return;
     }
-
-    if (drivers[next_backend_to_send_gnss] != nullptr) {
-        drivers[next_backend_to_send_gnss]->send_mavlink_gnss(link);
+    // each link takes its own turn through the instances, sending
+    // for the next one which has a backend:
+    uint8_t &next = next_backend_to_send_gnss[chan];
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (next >= num_instances) {
+            next = 0;
+        }
+        const uint8_t instance = next++;
+        if (drivers[instance] != nullptr) {
+            drivers[instance]->send_mavlink_gnss(link);
+            return;
+        }
     }
-
-    next_backend_to_send_gnss++;
 }
 #endif  // AP_GPS_GNSS_SENDING_ENABLED
 
