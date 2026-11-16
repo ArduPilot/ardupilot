@@ -4,6 +4,7 @@ Fly Copter in SITL
 AP_FLAKE8_CLEAN
 '''
 
+import collections
 import copy
 import logging
 import math
@@ -7114,6 +7115,53 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         want = math.degrees(math.atan2(0.01, 0.4)) * 100
         if abs(m.yaw_acc - want) > 10:
             raise NotAchievedException(f"Expected yaw_acc near {want} got {m.yaw_acc}")
+
+    def GNSSMultipleLinks(self):
+        '''check every MAVLink link gets GNSS for every GPS'''
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # a second link, on SITL's SERIAL2:
+        mav2 = mavutil.mavlink_connection(
+            self.sitl_serial_endpoint(2),
+            robust_parsing=True,
+            source_system=250,
+            source_component=191,
+        )
+        try:
+            # the same GNSS rate on both links:
+            interval_us = 100000
+            self.set_message_rate_hz('GNSS', 1e6 / interval_us)
+            mav2.mav.command_long_send(1, 1, mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+                                       mavutil.mavlink.MAVLINK_MSG_ID_GNSS, interval_us, 0, 0, 0, 0, 0)
+            counts = [collections.Counter(), collections.Counter()]
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 10:
+                m = self.mav.recv_match(type='GNSS', blocking=True, timeout=0.1)
+                if m is not None:
+                    counts[0][m.id] += 1
+                while True:
+                    m = mav2.recv_match(type='GNSS', blocking=False)
+                    if m is None:
+                        break
+                    counts[1][m.id] += 1
+            # with the same rate on both links each link should
+            # alternate between the two GPSs:
+            for link, c in enumerate(counts):
+                total = sum(c.values())
+                self.progress(f"link {link}: GNSS ids {dict(c)}")
+                if total < 20:
+                    raise NotAchievedException(f"Link {link} got only {total} GNSS messages")
+                for gps_id in (0, 1):
+                    if c[gps_id] < 0.3 * total:
+                        raise NotAchievedException(f"Link {link} got GNSS id {gps_id} in {c[gps_id]} of {total} messages")
+        finally:
+            mav2.close()
 
     def GNSSNoFix(self):
         '''check GNSS reports speed and course as unknown without a fix'''
@@ -27617,6 +27665,7 @@ return update, 1000
             self.GNSSHeights,
             self.GNSSYaw,
             self.GNSSNoFix,
+            self.GNSSMultipleLinks,
             self.GuidedEKFLaneChange,
             self.TerrainDBPreArm,
             self.MountTopotekNetwork,
