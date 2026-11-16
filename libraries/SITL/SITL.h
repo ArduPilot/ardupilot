@@ -176,6 +176,7 @@ public:
     enum class GPSOptions : uint32_t {
         UBX_IS_F9P = 1U << 0,
         UBX_NO_BACKUP = 1U << 1,
+        UBX_PVT_ONLY = 1U << 2,
     };
 
     struct sitl_fdm state;

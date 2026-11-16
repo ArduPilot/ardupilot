@@ -150,7 +150,7 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: GPS Options
     // @Description: GPS Options bitmask
-    // @Bitmask: 0:UBlox GPS is F9P, 1:UBlox receiver without flash loses its saved configuration on reboot
+    // @Bitmask: 0:UBlox GPS is F9P, 1:UBlox receiver without flash loses its saved configuration on reboot, 2:UBlox GPS only sends NAV-PVT (Simple receiver model only)
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
 
