@@ -105,6 +105,9 @@ void GPS_UBlox::update_relposned(ubx_nav_relposned &relposned, uint32_t tow_ms, 
     relposned.relPosD = rel_antenna_pos.z * 100;
     relposned.relPosLength = rel_antenna_pos.length() * 100;
     relposned.relPosHeading = degrees(Vector2f(rel_antenna_pos.x, rel_antenna_pos.y).angle()) * 1.0e5;
+    // 1cm (1-sigma) relative position accuracy across the baseline:
+    relposned.accLength = 0.01 * 1.0e4;  // 0.1mm units
+    relposned.accHeading = degrees(atan2f(0.01, rel_antenna_pos.length())) * 1.0e5;
     relposned.flags = gnssFixOK | diffSoln | carrSolnFixed | isMoving | relPosValid | relPosHeadingValid;
 }
 
