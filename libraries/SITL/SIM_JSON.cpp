@@ -330,6 +330,22 @@ void JSON::recv_fdm(const struct sitl_input &input)
         }
     }
 
+    if (state.no_lockstep) {
+        // the backend sends on its own clock, so packets queue up when
+        // SITL runs fewer frames than it sends.  Take all that are
+        // waiting: the last one parsed is the newest, and SITL keeps up
+        // with the physics instead of working through old packets
+        size_t len = sensor_buffer_len + size_t(ret);
+        while (len < sizeof(sensor_buffer)) {
+            const ssize_t more = sock.recv(&sensor_buffer[len], sizeof(sensor_buffer) - len, 0);
+            if (more <= 0) {
+                break;
+            }
+            len += size_t(more);
+        }
+        ret = len - sensor_buffer_len;
+    }
+
     // convert '\n' into nul
     while (uint8_t *p = (uint8_t *)memchr(&sensor_buffer[sensor_buffer_len], '\n', ret)) {
         *p = 0;
