@@ -38,7 +38,8 @@ public:
     {
         return (machine == 40 && ((required == 1 && (available == 1 || available == 3)) ||
                                  (required == 3 && available == 3))) ||
-               (machine == 62 && required == 2 && available == 2);
+               (machine == 62 && required == 2 && available == 2) ||
+               (machine == 183 && required == 4 && available == 4);
     }
 
     // Source bytes must stay alive and immutable through load(). No allocation

@@ -11,6 +11,8 @@ namespace AP_Module
 static constexpr uint32_t PROBE_HEADER_SIZE = 56;
 static constexpr uint32_t RUNTIME_HEADER_SIZE = 88;
 static constexpr uint32_t ALIGNMENT = 4096;
+// AArch64 hosts may use 16 KiB pages
+static constexpr uint32_t AARCH64_PAGE = 16384;
 static constexpr uint32_t MAX_IMAGE = 16U * 1024 * 1024;
 static constexpr uint32_t MAX_IMPORTS = 4096;
 static constexpr uint32_t IMPORT_RECORD_SIZE = 16;
@@ -111,11 +113,11 @@ bool Image::parse_internal(const uint8_t *source, size_t length, uint32_t memory
     const uint32_t code_size = word(source + 32);
     const uint32_t entry = word(source + 36);
     const uint32_t count = word(source + 40);
-    const uint32_t boundary = split && machine == 40 ? 4 : ALIGNMENT;
+    const uint32_t boundary = split && machine == 40 ? 4 : machine == 183 ? AARCH64_PAGE : ALIGNMENT;
     if (memory_size > memory_limit) {
         return reject("image exceeds MOD_CODE_MAXSIZE");
     }
-    if (!((machine == 40 && width == 4) || (machine == 62 && width == 8)) ||
+    if (!((machine == 40 && width == 4) || (machine == 62 && width == 8) || (machine == 183 && width == 8 && split)) ||
         width != sizeof(uintptr_t) ||
         (split ? (rw_alignment < width || rw_alignment > ALIGNMENT || (rw_alignment & (rw_alignment - 1)) != 0 ||
                   rx_alignment < width || rx_alignment > ALIGNMENT || (rx_alignment & (rx_alignment - 1)) != 0) :
@@ -382,7 +384,7 @@ bool Image::load_split(void *rx_base, size_t rx_size, void *rw_base, size_t rw_s
     const uint32_t rx_alignment = _machine == 40 ? _rx_alignment : ALIGNMENT;
     if (rx_address % rx_alignment != 0 ||
         (_memory_size > _code_size && rw_address % _rw_alignment != 0) ||
-        (_machine == 62 && rw_address != rx_address + _code_size) ||
+        (_machine != 40 && rw_address != rx_address + _code_size) ||
         rx_address > UINTPTR_MAX - _code_size ||
         (_memory_size > _code_size && rw_address > UINTPTR_MAX - rw_memory_size()) ||
         source_address > UINTPTR_MAX - _length) {

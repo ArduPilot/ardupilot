@@ -82,6 +82,11 @@ Module *Module::load(const uint8_t *source, size_t length, const char *name,
         // Includes libc/TLS use and host callbacks, not a stack-usage proof.
         margin = 16384;
         break;
+    case AP_HAL::ExecutableMemory::Target::AArch64Baseline:
+        expected.machine = 183;
+        expected.cpu_profile = 4;
+        margin = 16384;
+        break;
     default:
         return nullptr;
     }

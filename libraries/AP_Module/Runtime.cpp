@@ -166,6 +166,7 @@ void Runtime::init()
         manager_stack = 4096;
         break;
     case AP_HAL::ExecutableMemory::Target::X86_64Baseline:
+    case AP_HAL::ExecutableMemory::Target::AArch64Baseline:
         manager_stack = 32768;
         break;
     default:

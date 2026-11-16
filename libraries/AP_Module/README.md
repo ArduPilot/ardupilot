@@ -4,7 +4,7 @@
 has its own worker thread, heap and stack and uses generated bindings to call
 ArduPilot APIs. Rust, freestanding C++ and
 [Fortran](../../Tools/modules/fortran/README.md) share one loader and ABI on
-x86-64 Linux/SITL and STM32. Lua can be
+x86-64 and AArch64 Linux/macOS SITL and STM32. Lua can be
 enabled independently or alongside native modules.
 An [experimental Ada backend](../../Tools/modules/ada/README.md) uses GNAT LLVM
 and template-generated bindings with the same loader and ABI, without linking an Ada runtime.
@@ -40,8 +40,9 @@ build without scripting. Extra hwdefs should use `AP_MODULE_ENABLED`
 and `AP_SCRIPTING_LUA_ENABLED`; `AP_EXTERNAL_BINDING_ENABLED` denotes shared support.
 
 Supported module profiles are Cortex-M4/FPv4-SP and Cortex-M7/FPv5-D16 Thumb-2
-hard float on STM32, and x86-64 on SITL/Linux. Other Linux architectures need a separate target
-profile; ARM Linux cannot use the STM32 module. Executable-memory support covers
+hard float on STM32, and x86-64 or AArch64 on SITL/Linux, including macOS SITL on Intel and
+Apple silicon. Other Linux architectures need a separate target profile; 32-bit ARM Linux
+cannot use the STM32 module. Executable-memory support covers
 STM32H743/H757 and F405. Small-board flash/RAM limits may prevent a complete
 vehicle build with the desired features.
 
@@ -84,7 +85,11 @@ Tools/modules/build.py \
 Tools/modules/apmod_info.py build/modules/airshow.apmod
 ```
 
-Use `--target x86_64-unknown-linux-gnu` and omit `--cpu` for x86-64 SITL/Linux.
+Use `--target x86_64-unknown-linux-gnu` and omit `--cpu` for x86-64 SITL/Linux, or
+`--target aarch64-linux-android` for AArch64 SITL/Linux. The Android triple only selects an
+ELF code model that leaves x18 alone, which macOS reserves; the module is not tied to Android.
+AArch64 modules have a 16 KiB RX/RW boundary so they also load on 16 KiB page hosts.
+On hosts other than Linux, x86-64 and AArch64 modules are linked with the toolchain's `rust-lld`.
 Modules are target-specific. For ARM, `--cpu cortex-m4` is the portable default; use
 `--cpu cortex-m7` for H743/H757, including their double-precision FPU. H7 boards
 accept either profile; F405 accepts only M4 modules. The loader rejects unsupported
@@ -92,7 +97,7 @@ CPU requirements before allocating the image. This choice applies to Rust,
 C++, Ada and Fortran. `apmod_info.py` shows each module's CPU/FPU requirement.
 
 The stack declaration excludes the host-call margin, currently
-4 KiB on Cortex-M and 16 KiB on x86-64. The declaration plus margin must fit
+4 KiB on Cortex-M and 16 KiB on x86-64 and AArch64. The declaration plus margin must fit
 `MOD_STACK_MAX`; OS/guard overhead is additional. Measure the complete applet
 and host-call stack usage; the declaration is not a stack proof.
 
@@ -195,7 +200,7 @@ The HAL rounds stack requests to its minimum/alignment. Reports separate owned
 RX, owned RW, stack reservations and heap usage. Borrowed ROMFS RX reports zero
 owned RX bytes. Allocator bookkeeping, loader scratch, manager storage and
 persistent firmware registrations are additional; heap usage is not total RAM.
-The manager requests a separate 4 KiB stack on ARM or 32 KiB on x86-64.
+The manager requests a separate 4 KiB stack on Cortex-M or 32 KiB on x86-64 and AArch64.
 Download `@SYS/modules.txt` over MAVFTP for per-module state, source, priority,
 image/stack reservations, heap free/total bytes and allocation peaks.
 The fields use `STATE=RUN`, `SRC=FILE` or `SRC=ROMFS`, `STK=bytes` and
