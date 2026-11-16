@@ -3590,6 +3590,8 @@ class TestSuite(abc.ABC):
     def JSON_physics(self, fields=None, **kwargs):
         '''run SITL with --model JSON against pysim's JSON physics backend,
         sending fields from the first frame'''
+        # SITL sends to 9002, moved by 10 for each instance like its other ports
+        kwargs.setdefault('port', self.adjust_ardupilot_port(9002))
         physics = json_physics.JSONPhysics(**kwargs)
         physics.set(**(fields or {}))
         physics.start()
