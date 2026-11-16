@@ -532,6 +532,8 @@ assert(0xa.aP4 == 0XAA)
 assert(0x4P-2 == 1)
 assert(0x1.1 == '0x1.' + '+0x.1')
 assert(0Xabcdef.0 == 0x.ABCDEFp+24)
+assert(tonumber('0x1p2147483648') == math.huge)
+assert(tonumber('0x1p-2147483648') == 0)
 
 
 assert(1.1 == 1.+.1)
