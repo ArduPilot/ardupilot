@@ -558,6 +558,9 @@ public:
     // pre-arm check that all GPSs are close to each other.  farthest distance between GPSs (in meters) is returned
     bool all_consistent(float &distance) const;
 
+    // true if instance is a configured receiver checked by all_consistent()
+    bool is_receiver_for_consistency(uint8_t instance) const;
+
     // handle sending of initialisation strings to the GPS - only used by backends
     void send_blob_start(uint8_t instance);
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);

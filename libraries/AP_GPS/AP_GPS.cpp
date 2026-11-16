@@ -1639,18 +1639,38 @@ void AP_GPS::broadcast_first_configuration_failure_reason(void) const
     }
 }
 
+// true if instance is a configured receiver whose position should
+// be checked against the others
+bool AP_GPS::is_receiver_for_consistency(uint8_t instance) const
+{
+    if (drivers[instance] == nullptr || params[instance].type == GPS_TYPE_NONE) {
+        return false;
+    }
+#if AP_GPS_BLENDED_ENABLED
+    if (drivers[instance]->is_blended()) {
+        return false;
+    }
+#endif
+    return true;
+}
+
 // pre-arm check that all GPSs are close to each other.  farthest distance between GPSs (in meters) is returned
 bool AP_GPS::all_consistent(float &distance) const
 {
-    // return true immediately if only one valid receiver
-    if (num_instances <= 1 ||
-        drivers[0] == nullptr || params[0].type == GPS_TYPE_NONE) {
-        distance = 0;
-        return true;
+    // compare every pair of configured receivers.  Blended
+    // backends are derived from the receivers, so are not compared
+    distance = 0;
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (!is_receiver_for_consistency(i)) {
+            continue;
+        }
+        for (uint8_t j=i+1; j<num_instances; j++) {
+            if (!is_receiver_for_consistency(j)) {
+                continue;
+            }
+            distance = MAX(distance, state[i].location.get_distance_NED(state[j].location).length());
+        }
     }
-
-    // calculate distance
-    distance = state[0].location.get_distance_NED(state[1].location).length();
     // success if distance is within 50m
     return (distance < 50);
 }
