@@ -7008,6 +7008,70 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.progress("MOTORS DISARMED OK")
 
+    def GNSSHeights(self):
+        '''check GNSS reports MSL and ellipsoid heights whichever height ArduPilot navigates on'''
+        geoid_separation = 20.0
+        self.set_parameters({
+            "SIM_GPS1_GEOID": geoid_separation,
+            "SERIAL3_PROTOCOL": 5,
+            "LOG_DISARMED": 1,
+        })
+        self.set_message_rate_hz('GNSS', 5)
+
+        def navigation_height():
+            '''return the last logged GPS1 height, which is the height ArduPilot navigates on'''
+            dfreader = self.dfreader_for_current_onboard_log()
+            alt = None
+            while True:
+                m = dfreader.recv_match(type='GPS')
+                if m is None:
+                    return alt
+                if m.I == 0 and m.Status >= 3:
+                    alt = m.Alt
+
+        def sample():
+            # let the driver parse fixes with the current settings:
+            self.delay_sim_time(2, reason="GPS driver to apply settings")
+            self.drain_mav()
+            gnss = self.assert_receive_message('GNSS', condition='GNSS.id==0', timeout=5, verbose=True)
+            raw = self.assert_receive_message('GPS_RAW_INT', timeout=5, verbose=True)
+            return gnss, raw
+
+        def assert_near(name, got, want, tolerance=0.5):
+            if abs(got - want) > tolerance:
+                raise NotAchievedException(f"{name}: got {got} want {want}")
+
+        for (name, sim_gps_type, gps_type) in [
+                ("UBLOX", 1, 1),
+                ("NOVA", 8, 15),
+                ("SBF", 10, 10),
+        ]:
+            self.start_subtest(f"GNSS heights from {name}")
+            self.set_parameters({
+                "SIM_GPS1_TYPE": sim_gps_type,
+                "GPS1_TYPE": gps_type,
+                "GPS_DRV_OPTIONS": 0,
+            })
+            self.reboot_sitl()
+            self.set_message_rate_hz('GNSS', 5)
+            self.wait_ready_to_arm()
+
+            gnss, raw = sample()
+            # with the option clear, ArduPilot navigates on MSL height:
+            msl = raw.alt * 0.001
+            assert_near("height_above_geoid", gnss.height_above_geoid, msl)
+            assert_near("height_above_ellipsoid", gnss.height_above_ellipsoid, msl + geoid_separation)
+
+            self.set_parameter("GPS_DRV_OPTIONS", 1 << 4)  # use ellipsoid height instead of AMSL
+            gnss, raw = sample()
+            # check the option took effect:
+            assert_near("navigation height with ellipsoid option", navigation_height(), msl + geoid_separation)
+            # GNSS reports physical heights regardless of the option:
+            assert_near("height_above_geoid with ellipsoid option", gnss.height_above_geoid, msl)
+            assert_near("height_above_ellipsoid with ellipsoid option",
+                        gnss.height_above_ellipsoid,
+                        msl + geoid_separation)
+
     def GuidedEKFLaneChange(self):
         '''test lane change with GPS diff on startup'''
         self.set_parameters({
@@ -27481,6 +27545,7 @@ return update, 1000
             self.WP_SPEED_DN,
             self.GPSTypes,
             self.MultipleGPS,
+            self.GNSSHeights,
             self.GuidedEKFLaneChange,
             self.TerrainDBPreArm,
             self.MountTopotekNetwork,
