@@ -7115,6 +7115,32 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(m.yaw_acc - want) > 10:
             raise NotAchievedException(f"Expected yaw_acc near {want} got {m.yaw_acc}")
 
+    def GNSSNoFix(self):
+        '''check GNSS reports speed and course as unknown without a fix'''
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS2_LCKTIME": 30000,  # no fix during the test
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('GNSS', 5)
+        self.wait_ready_to_arm()
+
+        m = self.assert_receive_message('GNSS', condition='GNSS.id==0', timeout=5, verbose=True)
+        if math.isnan(m.ground_speed) or math.isnan(m.vertical_speed) or m.cog == 65535:
+            raise NotAchievedException("Expected speed and course from GPS with a fix")
+
+        m = self.assert_receive_message('GNSS', condition='GNSS.id==1', timeout=5, verbose=True)
+        if m.fix_type >= mavutil.mavlink.GPS_FIX_TYPE_2D_FIX:
+            raise NotAchievedException(f"Expected GPS2 to have no fix, got fix_type {m.fix_type}")
+        if not math.isnan(m.ground_speed):
+            raise NotAchievedException(f"Expected unknown ground_speed without a fix, got {m.ground_speed}")
+        if not math.isnan(m.vertical_speed):
+            raise NotAchievedException(f"Expected unknown vertical_speed without a fix, got {m.vertical_speed}")
+        self.assert_message_field_values(m, {
+            'cog': 65535,  # unknown
+        })
+
     def GuidedEKFLaneChange(self):
         '''test lane change with GPS diff on startup'''
         self.set_parameters({
@@ -27590,6 +27616,7 @@ return update, 1000
             self.MultipleGPS,
             self.GNSSHeights,
             self.GNSSYaw,
+            self.GNSSNoFix,
             self.GuidedEKFLaneChange,
             self.TerrainDBPreArm,
             self.MountTopotekNetwork,
