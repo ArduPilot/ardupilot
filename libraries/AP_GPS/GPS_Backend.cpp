@@ -218,9 +218,18 @@ void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
     float alt_amsl = NaNf;
     float alt_ellipsoid = NaNf;
     if (fix_type >= AP_GPS_FixType::FIX_3D) {
-        alt_amsl = state.location.alt * 0.01;  // cm -> m
-        if (state.have_undulation) {
-            alt_ellipsoid = alt_amsl - state.undulation;
+        // set_alt_amsl_cm() stores the ellipsoid height in
+        // location.alt if the user has asked to navigate on it and
+        // the receiver supplies the undulation
+        const float loc_alt = state.location.alt * 0.01;  // cm -> m
+        if (!state.have_undulation) {
+            alt_amsl = loc_alt;
+        } else if (option_set(AP_GPS::HeightEllipsoid)) {
+            alt_ellipsoid = loc_alt;
+            alt_amsl = loc_alt + state.undulation;
+        } else {
+            alt_amsl = loc_alt;
+            alt_ellipsoid = loc_alt - state.undulation;
         }
     }
     // one-sigma standard deviation in mm/s; UINT16_MAX is unknown
