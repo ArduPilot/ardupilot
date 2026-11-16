@@ -43,7 +43,7 @@ def apmod_details(contents, embedded_name):
      entry, count, abi, profile, stack, heap, import_count, fingerprint, priority, crc) = fields
     if magic != APMOD_MAGIC or version != 7:
         raise ValueError("Invalid AP_Module module %s: expected APMOD07" % embedded_name)
-    if (machine, width) not in ((40, 4), (62, 8)):
+    if (machine, width) not in ((40, 4), (62, 8), (183, 8)):
         raise ValueError("Invalid AP_Module module %s: unsupported target" % embedded_name)
     rw_alignment, rx_alignment = alignment & 0xffff, alignment >> 16
     if (any(not width <= value <= APMOD_ALIGNMENT or value & (value - 1) != 0
@@ -51,12 +51,12 @@ def apmod_details(contents, embedded_name):
             file_size == 0 or file_size > memory_size or
             memory_size > APMOD_MAX_IMAGE or rx_size == 0):
         raise ValueError("Invalid AP_Module module %s: invalid image sizes" % embedded_name)
-    boundary = width if machine == APMOD_MACHINE_ARM else APMOD_ALIGNMENT
+    boundary = width if machine == APMOD_MACHINE_ARM else 16384 if machine == 183 else APMOD_ALIGNMENT
     if rx_size > file_size or rx_size % boundary != 0 or entry >= rx_size:
         raise ValueError("Invalid AP_Module module %s: invalid RX image" % embedded_name)
     if machine == APMOD_MACHINE_ARM and (entry & 1) == 0:
         raise ValueError("Invalid AP_Module module %s: ARM entry is not Thumb" % embedded_name)
-    if (abi == 0 or (machine, profile) not in ((40, 1), (62, 2), (40, 3)) or
+    if (abi == 0 or (machine, profile) not in ((40, 1), (62, 2), (40, 3), (183, 4)) or
             stack < 256 or stack > APMOD_MAX_IMAGE or heap < 256 or heap > APMOD_MAX_IMAGE or
             fingerprint == bytes(len(fingerprint)) or not 1 <= priority <= 254):
         raise ValueError("Invalid AP_Module module %s: invalid runtime contract" % embedded_name)
