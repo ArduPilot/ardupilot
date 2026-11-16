@@ -565,20 +565,20 @@ void* get_addr_mem_region_end_addr(void *addr)
 /*
   alloction functions for newlib
  */
-void *__wrap__calloc_r(void *rptr, size_t nmemb, size_t size)
+__attribute__((used)) void *__wrap__calloc_r(void *rptr, size_t nmemb, size_t size)
 {
     (void)rptr;
     return calloc(nmemb, size);
 }
 
-void *__wrap__malloc_r(void *rptr, size_t size)
+__attribute__((used)) void *__wrap__malloc_r(void *rptr, size_t size)
 {
     (void)rptr;
     // we want consistent zero memory
     return calloc(1, size);
 }
 
-void __wrap__free_r(void *rptr, void *ptr)
+__attribute__((used)) void __wrap__free_r(void *rptr, void *ptr)
 {
     (void)rptr;
     return free(ptr);
