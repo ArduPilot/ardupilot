@@ -1431,6 +1431,86 @@ def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings,
     return lines
 
 
+ESC_SIGNAL_PORT_STRIDE = 10
+
+
+def _platform_text(root, repl):
+    '''A platform file with the platforms it uses ahead of it.'''
+    text = repl.read_text()
+    used = [_platform_text(root, root / m.group(1))
+            for m in re.finditer(r'^using "([^"]+)"', text, re.M)]
+    return '\n'.join(used + [text])
+
+
+def _bdshot_devices(root, app, defines, base_repl, iomcu_uart, alloc,
+                    warnings, esc_signal_port):
+    '''Bridge DShot timer groups to per-ESC UDP signal ports.
+
+    Servo output n uses esc_signal_port + 10 * (n - 1), the AM32 SITL and
+    ESCSim multi-ESC port layout.
+    '''
+    text = _platform_text(root, base_repl)
+    controllers = sorted(set(re.findall(
+        r'^dma([12]): DMA\.STM32DMA\b', text, re.MULTILINE)))
+    if not controllers:
+        warnings.append('bidirectional DShot needs the STM32 DMA v2 model')
+        return []
+    timer_addresses = {
+        int(timer): address for timer, address in re.findall(
+            r'^timer(\d+): Timers\.STM32_Timer @ sysbus (0x[0-9A-Fa-f]+)',
+            text, re.MULTILINE)
+    }
+    pins = list(app.bylabel.values())
+    for alternate in app.altmap.values():
+        pins.extend(alternate.values())
+    output_offset = 8 if iomcu_uart is not None else 0
+    channels = {}
+    for pin in pins:
+        pwm = pin.extra_value('PWM', type=int)
+        match = re.fullmatch(r'TIM(\d+)_CH([1-4])', pin.label or '')
+        if pwm is None or match is None:
+            continue
+        channels.setdefault(int(match.group(1)), {})[int(match.group(2))] = \
+            output_offset + pwm - 1
+
+    lines = []
+    for timer in sorted(channels):
+        names = ['STM32_TIM_TIM%u_UP_DMA_STREAM' % timer] + [
+            'STM32_TIM_TIM%u_CH%u_DMA_STREAM' % (timer, ch) for ch in range(1, 5)]
+        streams = []
+        for name in names:
+            stream = _dma_stream(defines.get(name, ''))
+            if stream is None:
+                continue
+            dma, number = stream
+            if str(dma) not in controllers:
+                warnings.append('TIM%u DShot DMA%u is not modeled' % (timer, dma))
+                continue
+            encoded = (dma - 1) * 8 + number
+            if encoded not in streams:
+                streams.append(encoded)
+        if not streams:
+            continue
+        if timer not in timer_addresses:
+            warnings.append('TIM%u is not in the current MCU base' % timer)
+            continue
+        lines += [
+            'timer%dBDShot: Miscellaneous.AP_STM32_Timer_BDShot @ sysbus 0x%08X' %
+            (timer, alloc(0x20)),
+            '    timer: timer%d' % timer,
+            '    timerAddress: %s' % timer_addresses[timer],
+        ]
+        for dma in controllers:
+            lines.append('    dma%s: dma%s' % (dma, dma))
+        for index, stream in enumerate(streams):
+            lines.append('    stream%d: %d' % (index + 1, stream))
+        for channel, output in sorted(channels[timer].items()):
+            lines.append('    esc%dPort: %d' % (
+                channel, esc_signal_port + ESC_SIGNAL_PORT_STRIDE * output))
+        lines.append('')
+    return lines
+
+
 def _iomcu_peripherals(root, outdir, firmware, warnings):
     '''Real IOMCU outputs 1-8 for the physics, SBUS RC input and heater.'''
     # every IOMCU variant shares the iomcu/hwdef.inc output pins
@@ -2044,7 +2124,7 @@ def _mapped_memory(root, repl):
 
 def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
               sigrok=False, num_imus=None, imu_names=None, synthetic_iomcu=True,
-              attachments=None):
+              attachments=None, esc_signal_port=None):
     family = FAMILIES[app.mcu_type]
     base = root / 'Tools' / 'renode' / 'platforms' / family['base']
     lines = [
@@ -2139,6 +2219,9 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
 
     lines += _timer_actuator_devices(
         app, family, iomcu_uart, alloc, warnings)
+    if esc_signal_port is not None:
+        lines += _bdshot_devices(root, app, defines, base, iomcu_uart, alloc,
+                                 warnings, esc_signal_port)
 
     resolved_attachments = _resolve_attachments(app, family, attachments)
 
@@ -2562,7 +2645,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             gpio_pins, sigrok_capture=None, quiet_peripherals=True,
             sigrok_channels=None, spi_sdcard=None, real_iomcu=False,
             attachments=None, system_timer=None, uart_socket_dir=None,
-            mavlink_serials=None):
+            mavlink_serials=None, bdshot=False):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     boot_kb = bootloader.get_config(
@@ -2619,6 +2702,9 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     if spi_sdcard is not None:
         lines.append(
             'include $repo/Tools/renode/peripherals/storage/AP_SPI_SDCard.cs')
+    if bdshot:
+        lines.append(
+            'include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_BDShot.cs')
     lines += ['include @%s' % common, '']
     for name, adc, channel, raw in battery_samples:
         if isinstance(raw, tuple):
@@ -2854,7 +2940,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
 def generate(root, board, outdir, serial_index=None, uart_port=5762,
              state_dir=None, quiet_peripherals=True, sigrok=False,
              sigrok_channels=None, num_imus=None, imu_names=None, real_iomcu=False,
-             attachments=None, uds=False):
+             attachments=None, uds=False, esc_signal_port=None):
     '''Generate the board REPL/RESC and return paths plus run metadata.'''
     root = root.resolve()
     outdir = outdir.resolve()
@@ -2897,7 +2983,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
      spi_sdcard, resolved_attachments) = _platform(
         root, board, app, outdir, state_dir / 'fram.img', is_periph, warnings,
         sigrok, num_imus, imu_names, synthetic_iomcu=not real_iomcu,
-        attachments=attachments)
+        attachments=attachments, esc_signal_port=esc_signal_port)
     repl.write_text(platform)
     script, metadata = _script(
         root, board, app, bootloader, repl, serial_index, uart_port,
@@ -2907,7 +2993,8 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         spi_sdcard, real_iomcu, resolved_attachments,
         app_defines.get('STM32_ST_USE_TIMER'), state_dir if uds else None,
         _mavlink_serials(app_defines, _default_parameters(
-            outdir / 'hwdef' / 'processed_defaults.parm')))
+            outdir / 'hwdef' / 'processed_defaults.parm')),
+        bdshot='AP_STM32_Timer_BDShot' in platform)
     resc.write_text(script)
     iomcu_peripherals = None
     if real_iomcu and iomcu_uart is not None:

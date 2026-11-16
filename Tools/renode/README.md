@@ -800,6 +800,26 @@ For example:
 Tools/renode/run.py HolybroG4_GPS
 ```
 
+### Bidirectional DShot ESCs
+
+`--esc-signal-port PORT` bridges DMA DShot timer groups on STM32 DMA v2
+families (F4, F7, H7) to external ESCs over UDP, using the AM32 SITL and
+ESCSim signal protocol. Servo output N uses `PORT + 10 * (N - 1)`, the
+ESCSim multi-ESC layout, so `--esc-signal-port 57733` talks to an ESCSim
+bench or AM32 SITL ESCs on their default ports. Outbound frames are decoded
+from the firmware's TIMx_DMAR buffer; replies are written back through the
+input-capture DMA stream as edge timestamps, so the unmodified
+`RCOutput_bdshot` receive and decode path runs. The ESC runs in another
+process, so each reply is used once by the next capture on its channel; a
+capture with no reply since the last one is silent, and an ESC that misses
+replies shows up in `ESC.Err`. `dshot_esc.py` provides scripted ESCs that
+report a fixed eRPM or stay silent:
+
+```sh
+Tools/renode/dshot_esc.py --erpm 21000 --silent 3 &
+Tools/renode/run.py MatekH743-bdshot --esc-signal-port 57733
+```
+
 ### Real IOMCU
 
 H7 flight controllers with an `IOMCU_UART` can run the real STM32F100 IOMCU
