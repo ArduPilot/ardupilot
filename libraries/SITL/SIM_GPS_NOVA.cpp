@@ -128,7 +128,8 @@ void GPS_NOVA::publish(const GPS_Data *d)
 
     bestpos.lat = d->latitude;
     bestpos.lng = d->longitude;
-    bestpos.hgt = d->altitude;
+    bestpos.hgt = d->altitude;  // above mean sea level
+    bestpos.undulation = d->geoid_separation;
     bestpos.svsused = d->have_lock ? d->num_sats : 3;
     bestpos.latsdev=0.2;
     bestpos.lngsdev=0.2;
