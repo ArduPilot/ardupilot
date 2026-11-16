@@ -232,7 +232,8 @@ void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
     if (state.have_speed_accuracy) {
         vel_acc_mms = MIN(state.speed_accuracy * 1000, UINT16_MAX - 1);
     }
-    const MAV_GNSS_DATUM datum = fix_type >= AP_GPS_FixType::FIX_2D ? MAV_GNSS_DATUM_WGS84 : MAV_GNSS_DATUM_UNKNOWN;
+    const bool have_2d_fix = fix_type >= AP_GPS_FixType::FIX_2D;
+    const MAV_GNSS_DATUM datum = have_2d_fix ? MAV_GNSS_DATUM_WGS84 : MAV_GNSS_DATUM_UNKNOWN;
     // GNSS yaw is 0..35999 with 0 as north; UINT16_MAX means this
     // receiver does not provide yaw, UINT16_MAX-1 that it is
     // configured to but cannot currently:
@@ -265,9 +266,10 @@ void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
         alt_ellipsoid,
         datum,
         MAV_GNSS_GEOID_MODEL_UNKNOWN,  // no driver reports its geoid model yet
-        state.ground_speed,
-        state.have_vertical_velocity ? -state.velocity.z : NaNf,  // NED down -> up
-        state.ground_course * 100,  // degrees*100
+        // a receiver may report a velocity without a fix; send it as unknown
+        have_2d_fix ? state.ground_speed : NaNf,
+        (fix_type >= AP_GPS_FixType::FIX_3D && state.have_vertical_velocity) ? -state.velocity.z : NaNf,  // NED down -> up
+        have_2d_fix ? uint16_t(state.ground_course * 100) : UINT16_MAX,  // degrees*100
         state.num_sats,
         yaw_cd,
         state.have_horizontal_accuracy ? state.horizontal_accuracy : NaNf, // one-sigma standard deviation in m
