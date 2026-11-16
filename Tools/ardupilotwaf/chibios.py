@@ -747,7 +747,8 @@ def pre_build(bld):
 def build(bld):
 
     # make ccache effective on ChibiOS builds
-    os.environ['CCACHE_IGNOREOPTIONS'] = '--specs=nano.specs --specs=nosys.specs'
+    if not bld.env.PICOLIBC:
+        os.environ['CCACHE_IGNOREOPTIONS'] = '--specs=nano.specs --specs=nosys.specs'
     
     # one set of variables for every call into the ChibiOS makefiles.  lib
     # runs pass again and both write include_dirs, so a variable only one of
@@ -807,6 +808,10 @@ def build(bld):
                         os.path.join(bld.env.BUILDROOT,'modules/ChibiOS/libDSP.a'))
         bld.env.LIB += ['DSP']
     bld.env.LIB += ['ch']
+    if bld.env.PICOLIBC:
+        # Keep the no-exceptions C++ runtime after ChibiOS so its ABI stubs
+        # take precedence. Retain the toolchain math library with Picolibc libc.
+        bld.env.LIB += ['stdc++_nano', 'm', 'c']
     bld.env.LIBPATH += ['modules/ChibiOS/']
     if bld.env.ENABLE_CRASHDUMP:
         # Link the handler directly so it overrides ChibiOS's weak fault handler.
@@ -814,10 +819,15 @@ def build(bld):
     # list of functions that will be wrapped to move them out of libc into our
     # own code
     wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf', 'fiprintf']
+    if bld.env.PICOLIBC:
+        wraplist += ['__errno', 'getenv']
 
-    # list of functions that we will give a link error for if they are
-    # used. This is to prevent accidental use of these functions
-    blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell', 'realloc',
+    # Functions rejected by the post-link symbol scan in production firmware.
+    # Examples, tools and SITL-on-hardware are allowed to use them.
+    blacklist = ['read', 'lseek', 'write', 'close', 'fstat', 'isatty',
+                 'raise', 'exit', '_Exit', '_exit', '_fini',
+                 'kill', '_kill', 'getpid', '_getpid',
+                 '_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell', 'realloc',
                  'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                  'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',
@@ -826,10 +836,30 @@ def build(bld):
 
     # these functions use global state that is not thread safe
     blacklist += ['gmtime']
+    # Flight firmware must not acquire locks inside libc. Reject the hooks
+    # even if an archive supplies them, rather than relying only on link errors.
+    blacklist += [
+        '__retarget_lock_init', '__retarget_lock_init_recursive',
+        '__retarget_lock_close', '__retarget_lock_close_recursive',
+        '__retarget_lock_acquire', '__retarget_lock_acquire_recursive',
+        '__retarget_lock_try_acquire', '__retarget_lock_try_acquire_recursive',
+        '__retarget_lock_release', '__retarget_lock_release_recursive',
+        '__lock___libc_recursive_mutex',
+    ]
+    if not bld.env.SIM_ENABLED:
+        blacklist += ['abort']
 
-    # Also inspect the final binary: --wrap cannot catch references resolved
-    # within the same libc object, including calls into newlib's allocator.
+    # Include wrapped functions in the final scan because --wrap cannot catch
+    # references resolved within the same libc object.
     bld.env.SYMBOLS_BLACKLIST = wraplist + blacklist
+    bld.env.SYMBOLS_BLACKLIST += ['_before_main']
+    if bld.env.PICOLIBC:
+        bld.env.SYMBOLS_BLACKLIST += [
+            '_impure_ptr', '__errno', '_calloc_r', '_free_r', '_malloc_r',
+            '_realloc_r',
+        ]
+    if not bld.env.CH_CFG_USE_HEAP:
+        bld.env.SYMBOLS_BLACKLIST += ['malloc', 'calloc', 'free']
 
-    for w in wraplist + blacklist:
+    for w in wraplist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]
