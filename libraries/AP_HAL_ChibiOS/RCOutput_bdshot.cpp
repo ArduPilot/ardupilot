@@ -268,10 +268,13 @@ void RCOutput::bdshot_prepare_for_next_pulse(pwm_group& group)
     }
 
     // if the last transaction returned telemetry, decode it
-    if (group.dshot_state == DshotState::RECV_COMPLETE) {
-        uint8_t chan = group.chan[group.bdshot.prev_telem_chan];
-        uint32_t now = AP_HAL::millis();
-        if (bdshot_decode_dshot_telemetry(group, group.bdshot.prev_telem_chan)) {
+    if (group.dshot_state == DshotState::RECV_COMPLETE ||
+        group.dshot_state == DshotState::RECV_FAILED) {
+        // prev_telem_chan is the channel just sampled, curr_telem_chan has already moved on
+        const uint8_t chan = group.chan[group.bdshot.prev_telem_chan];
+        const uint32_t now = AP_HAL::millis();
+        if (group.dshot_state == DshotState::RECV_COMPLETE &&
+            bdshot_decode_dshot_telemetry(group, group.bdshot.prev_telem_chan)) {
             _bdshot.erpm_clean_frames[chan]++;
             _active_escs_mask |= (1<<chan); // we know the ESC is functional at this point
         } else {
@@ -283,8 +286,6 @@ void RCOutput::bdshot_prepare_for_next_pulse(pwm_group& group)
             _bdshot.erpm_errors[chan] = 0;
             _bdshot.erpm_last_stats_ms[chan] = now;
         }
-    } else if (group.dshot_state == DshotState::RECV_FAILED) {
-        _bdshot.erpm_errors[group.bdshot.curr_telem_chan]++;
     }
 
     if (group.bdshot.enabled) {
