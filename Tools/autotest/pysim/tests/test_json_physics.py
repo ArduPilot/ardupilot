@@ -104,6 +104,17 @@ def test_udp_lockstep(sitl: socket.socket) -> None:
         p.stop()
 
 
+def test_port_in_use() -> None:
+    # a second backend on the port fails to start rather than sharing it
+    p = JSONPhysics(port=0)
+    _, port = started(p)
+    try:
+        with pytest.raises(OSError):
+            JSONPhysics(port=port).start()
+    finally:
+        p.stop()
+
+
 def test_udp_free_run(sitl: socket.socket) -> None:
     p = JSONPhysics(port=0, dt=0.01, free_run=True)
     addr = started(p)

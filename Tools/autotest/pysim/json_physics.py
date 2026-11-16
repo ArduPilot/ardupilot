@@ -66,7 +66,8 @@ class JSONPhysics(object):
 
     def start(self) -> None:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # no SO_REUSEADDR: with it another process can bind this port too
+        # and silently take SITL's packets, where now its bind fails
         self.sock.bind(('127.0.0.1', self.port))
         self.sock.settimeout(self.dt / 4 if self.free_run else 0.1)
         self.running = True
