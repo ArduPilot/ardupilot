@@ -47,7 +47,7 @@ class ModuleSymbols:
 
     def addresses(self, rx, rw):
         boundary = self.module['rx_size']
-        if self.module['machine'] == 62 and rw != rx + boundary:
+        if self.module['machine'] != 40 and rw != rx + boundary:
             raise ValueError('native RX/RW addresses must be contiguous')
         return {name: (rx + address - self.base if address - self.base < boundary else
                        rw + address - self.base - boundary) for name, address, _ in self.sections}

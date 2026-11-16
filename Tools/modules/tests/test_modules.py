@@ -20,11 +20,15 @@ import pytest
 
 from elftools.elf.elffile import ELFFile
 from rust.build import check_rust_version
+from targets import TARGETS
 
 HERE = Path(__file__).resolve().parents[1]
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / 'Tools/renode/tests'))
 from test_peripherals import renode  # noqa: E402,F401
+
+
+AARCH64 = 'aarch64-linux-android'
 
 
 def build(tmp_path, target, base=0x10000, relocation=None, cpu=None):
@@ -43,6 +47,9 @@ def build(tmp_path, target, base=0x10000, relocation=None, cpu=None):
     if target == 'x86_64-unknown-linux-gnu':
         command += ['-C', 'link-arg=-nostdlib', '-C', 'link-arg=-static', '-C', 'link-arg=-no-pie']
         arguments = ['-Wl,' + arg for arg in arguments]
+    elif target == AARCH64:
+        command += ['-C', 'linker=rust-lld', '-C', 'linker-flavor=ld.lld']
+        arguments += [f'--defsym=MODULE_DATA_ALIGNMENT={pack.AARCH64_PAGE}', '-static', '--no-pie']
     for arg in arguments:
         command += ['-C', 'link-arg=' + arg]
     subprocess.run(command, check=True, capture_output=True)
@@ -71,7 +78,7 @@ def checksum(data, header_size=pack.HEADER.size):
 
 
 def runtime_manifest(target):
-    return dict(abi_version=1, cpu_profile=1 if target == 'thumbv7em-none-eabihf' else 2,
+    return dict(abi_version=1, cpu_profile=TARGETS[target][0],
                 thread_priority=2 if target == 'thumbv7em-none-eabihf' else 1,
                 stack_size=4096, heap_size=32768, fingerprint=bytes(range(1, 17)).hex())
 
@@ -123,7 +130,23 @@ def test_runtime_contract(tmp_path, target):
             pack.pack_elf(elf, {**manifest, key: value})
 
 
-@pytest.mark.parametrize('target', ['thumbv7em-none-eabihf', 'x86_64-unknown-linux-gnu'])
+def test_aarch64_runtime_image(tmp_path):
+    manifest = runtime_manifest(AARCH64)
+    elf = build(tmp_path, AARCH64)
+    data = pack.pack_elf(elf, manifest)
+    # ADRP/LO12 pairs and the GOT are position independent on 4 KiB boundaries
+    assert data == pack.pack_elf(build(tmp_path, AARCH64, base=0x24124000), manifest)
+    info = pack.unpack(data)
+    assert info['machine'] == 183 and info['contract'] == manifest
+    assert info['rx_size'] % pack.AARCH64_PAGE == 0
+    pack.relocate(data, 0x24001000)
+    with pytest.raises(ValueError, match='contiguous'):
+        pack.relocate(data, 0x24000000, 0x30000000)
+    with pytest.raises(ValueError, match='runtime manifest'):
+        pack.pack_elf(elf)
+
+
+@pytest.mark.parametrize('target', ['thumbv7em-none-eabihf', 'x86_64-unknown-linux-gnu', AARCH64])
 def test_compact_runtime_fixups(tmp_path, target):
     data = pack.pack_elf(build(tmp_path, target), runtime_manifest(target))
     info = pack.unpack(data)

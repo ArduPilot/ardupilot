@@ -70,6 +70,7 @@ def build(source, output, target, stack_size, base=0x10000, cfg=(), debug=False,
     library = output.with_name(f'lib{output.stem}_sdk.rlib')
     elf = output.with_suffix('.elf')
     arm = profile.machine == 40
+    aarch64 = profile.machine == 183
     relocation = 'ropi-rwpi' if arm else 'pic'
     common = [compiler, '--edition=2021', '--target', target, '-C', f'target-cpu={profile.cpu}',
               '-C', f'opt-level={opt_level}', '-C', 'panic=abort', '-C', f'relocation-model={relocation}',
@@ -86,9 +87,17 @@ def build(source, output, target, stack_size, base=0x10000, cfg=(), debug=False,
     for option in cfg:
         command += ['--cfg', option]
     link_args = [f'-T{HERE / "module.ld"}', '--emit-relocs', f'--defsym=MODULE_BASE={base}']
+    # the host cc links Linux ELF only on Linux; the bundled lld links anywhere
+    bundled_lld = aarch64 or (not arm and not sys.platform.startswith('linux'))
     if arm:
         link_args += ['--defsym=MODULE_DATA_ALIGNMENT=4']
-    if not arm:
+    elif bundled_lld:
+        if aarch64:
+            # RX/RW boundary on a 16 KiB page
+            link_args += [f'--defsym=MODULE_DATA_ALIGNMENT={pack.AARCH64_PAGE}']
+        link_args += ['-static', '--no-pie']
+        command += ['-C', 'linker=rust-lld', '-C', 'linker-flavor=ld.lld']
+    else:
         command += ['-C', 'link-arg=-nostdlib', '-C', 'link-arg=-static', '-C', 'link-arg=-no-pie']
         link_args = ['-Wl,' + arg for arg in link_args]
     for argument in link_args:
@@ -99,7 +108,7 @@ def build(source, output, target, stack_size, base=0x10000, cfg=(), debug=False,
         # compiler-builtins. objcopy refuses this if a relocation needs it.
         subprocess.run([os.environ.get('ARM_OBJCOPY', 'arm-none-eabi-objcopy'),
                         '--strip-symbol=__aeabi_unwind_cpp_pr0', str(elf)], check=True, env=environment)
-    if not arm:
+    if profile.machine == 62 and not bundled_lld:
         # Some prebuilt compiler-builtins retain this undefined symbol after
         # their unwind sections are discarded. Strip it only if unreferenced;
         # objcopy and the packer still reject actual unresolved dependencies.
@@ -114,7 +123,7 @@ def main():
     parser.add_argument('source', type=Path)
     parser.add_argument('output', type=Path)
     parser.add_argument('--target', choices=TARGETS, required=True)
-    parser.add_argument('--cpu', choices=('cortex-m4', 'cortex-m7', 'x86-64'),
+    parser.add_argument('--cpu', choices=('cortex-m4', 'cortex-m7', 'x86-64', 'generic'),
                         help='module CPU requirement (default depends on target)')
     parser.add_argument('--stack-size', type=int, required=True, help='declared module stack requirement in bytes')
     parser.add_argument('--heap-size', type=int, required=True, help='initial module heap in bytes, capped by MOD_HEAP_MAX')

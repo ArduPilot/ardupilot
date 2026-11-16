@@ -39,6 +39,8 @@ def build(source, output, target, stack_size, base=0x10000, cfg=(), debug=False,
                            stack_size, bytes.fromhex(contract['fingerprint']), heap_size, thread_priority)
     if heap_size > 32768:
         warnings.warn('initial heap exceeds the default MOD_HEAP_MAX=32768; configure firmware limits', stacklevel=2)
+    if profile.machine == 183 and source.suffix != '.rs':
+        raise ValueError('AArch64 modules are currently Rust only')
     if source.suffix == '.rs':
         from rust import build as backend
     elif source.suffix in ('.cpp', '.cc', '.cxx'):
@@ -65,8 +67,8 @@ def main():
     parser.add_argument('source', type=Path)
     parser.add_argument('output', type=Path)
     parser.add_argument('--target', choices=TARGETS, required=True)
-    parser.add_argument('--cpu', choices=('cortex-m4', 'cortex-m7', 'x86-64'),
-                        help='module CPU requirement (default: cortex-m4 for ARM, x86-64 for Linux)')
+    parser.add_argument('--cpu', choices=('cortex-m4', 'cortex-m7', 'x86-64', 'generic'),
+                        help='module CPU requirement (default depends on target)')
     parser.add_argument('--stack-size', type=int, required=True, help='declared module stack requirement in bytes')
     parser.add_argument('--heap-size', type=int, required=True, help='initial module heap, capped by MOD_HEAP_MAX')
     parser.add_argument('--thread-priority', type=int, help='native thread priority (default: 2 on ARM, 1 on Linux)')
