@@ -8,6 +8,8 @@ AP_HAL::ExecutableMemory::Target Linux::Util::executable_memory_target() const
 {
 #if defined(__x86_64__) && !defined(__ILP32__)
     return AP_HAL::ExecutableMemory::Target::X86_64Baseline;
+#elif defined(__aarch64__) && !defined(__ILP32__)
+    return AP_HAL::ExecutableMemory::Target::AArch64Baseline;
 #else
     return AP_HAL::ExecutableMemory::Target::Unsupported;
 #endif
