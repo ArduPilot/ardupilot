@@ -146,6 +146,18 @@ protected:
     // because the chord has no length or the arc angle is under a degree
     bool calc_arc_geometry(const Location& origin, const Location& dest, float arc_rad, Vector2f& center_NE, float& radius_m) const;
 
+    // as get_remaining_arc_angle_rad but measured from an arbitrary
+    // location instead of the vehicle's stopping point.  Returns
+    // false if the remaining angle cannot be determined or the
+    // location is no longer on the arc
+    bool get_remaining_arc_angle_rad_from(const Location& origin, const Location& dest, float arc_rad, const Location& from_loc, float& remaining_rad) const;
+
+    // re-plan the current leg as an arc from the vehicle's current
+    // location to the destination, sweeping the part of the original
+    // arc that remains.  Returns false if the remaining angle cannot
+    // be determined
+    bool replan_arc_this_leg();
+
     // bearing in centidegrees of the arc's tangent at its start
     // (at_start true) or at its end.  Falls back to the straight line
     // bearing from origin to dest if the segment is not an arc

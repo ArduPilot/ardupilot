@@ -630,38 +630,50 @@ bool AR_WPNav::calc_arc_geometry(const Location& origin, const Location& dest, f
 // its full angle from the stopping point
 float AR_WPNav::get_remaining_arc_angle_rad(const Location& origin, const Location& dest, float arc_rad)
 {
-    const float arc_abs_rad = fabsf(arc_rad);
-    // whole turns cannot be recovered from the stopping position alone
-    if (arc_abs_rad > 2.0f * M_PI) {
+    Location stopping_loc;
+    if (!get_stopping_location(stopping_loc)) {
         return arc_rad;
+    }
+    float remaining_rad;
+    if (!get_remaining_arc_angle_rad_from(origin, dest, arc_rad, stopping_loc, remaining_rad)) {
+        return arc_rad;
+    }
+    return remaining_rad;
+}
+
+// as get_remaining_arc_angle_rad but measured from an arbitrary
+// location instead of the vehicle's stopping point.  Returns false
+// if the remaining angle cannot be determined or the location is no
+// longer on the arc
+bool AR_WPNav::get_remaining_arc_angle_rad_from(const Location& origin, const Location& dest, float arc_rad, const Location& from_loc, float& remaining_rad) const
+{
+    const float arc_abs_rad = fabsf(arc_rad);
+    // whole turns cannot be recovered from the position alone
+    if (arc_abs_rad > 2.0f * M_PI) {
+        return false;
     }
 
     Vector2f center_NE;
     float radius_m;
     if (!calc_arc_geometry(origin, dest, arc_rad, center_NE, radius_m)) {
-        return arc_rad;
-    }
-
-    Location stopping_loc;
-    if (!get_stopping_location(stopping_loc)) {
-        return arc_rad;
+        return false;
     }
 
     const Vector2f origin_from_center = -center_NE;
-    const Vector2f veh_from_center = origin.get_distance_NE(stopping_loc) - center_NE;
+    const Vector2f veh_from_center = origin.get_distance_NE(from_loc) - center_NE;
     if (!is_positive(origin_from_center.length()) || !is_positive(veh_from_center.length())) {
-        return arc_rad;
+        return false;
     }
 
-    // a stopping point well off the arc's circle means the vehicle is
-    // no longer on the interrupted arc (e.g. it was moved while the
-    // command was interrupted); treat the command as a fresh start
+    // a point well off the arc's circle means the vehicle is no
+    // longer on the arc (e.g. it was moved while the command was
+    // interrupted)
     if (fabsf(veh_from_center.length() - radius_m) > 2.0f) {
-        return arc_rad;
+        return false;
     }
 
-    // angle swept from the origin to the stopping point about the
-    // centre, in the direction of the turn, in [0, 2pi)
+    // angle swept from the origin to the point about the centre, in
+    // the direction of the turn, in [0, 2pi)
     const float turn_dir = is_negative(arc_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW
     float swept_rad = turn_dir * atan2f(origin_from_center % veh_from_center, origin_from_center * veh_from_center);
     if (is_negative(swept_rad)) {
@@ -669,17 +681,97 @@ float AR_WPNav::get_remaining_arc_angle_rad(const Location& origin, const Locati
     }
 
     if (swept_rad > arc_abs_rad) {
-        // the stopping point is in the part of the circle the arc
-        // does not cover, between the destination and the origin;
-        // the closer of the two ends decides whether the arc has
-        // not been entered yet or has already been completed
-        if (origin.get_distance(stopping_loc) <= dest.get_distance(stopping_loc)) {
+        // the point is in the part of the circle the arc does not
+        // cover, between the destination and the origin; the closer
+        // of the two ends decides whether the arc has not been
+        // entered yet or has already been completed
+        if (origin.get_distance(from_loc) <= dest.get_distance(from_loc)) {
             swept_rad = 0.0f;
         } else {
-            return 0.0f;
+            remaining_rad = 0.0f;
+            return true;
         }
     }
-    return turn_dir * (arc_abs_rad - swept_rad);
+    remaining_rad = turn_dir * (arc_abs_rad - swept_rad);
+    return true;
+}
+
+// re-plan the current leg as an arc from the vehicle's current
+// location to the destination, sweeping the part of the original
+// arc that remains.  Used when the limits change mid-arc: re-timing
+// the existing track leaves the target far behind the vehicle,
+// which then cuts across the inside of the arc
+// returns false if the remaining angle cannot be determined or
+// too little of the arc is left, in which case the caller falls
+// back to re-timing the existing track
+bool AR_WPNav::replan_arc_this_leg()
+{
+    Location current_loc;
+    if (!AP::ahrs().get_location(current_loc)) {
+        return false;
+    }
+
+    float remaining_rad;
+    if (!get_remaining_arc_angle_rad_from(_origin, _destination, _arc_rad, current_loc, remaining_rad) ||
+        is_zero(remaining_rad)) {
+        return false;
+    }
+
+    float forward_speed = 0.0f;
+    const bool have_speed = _atc.get_forward_speed(forward_speed);
+
+    // too little track remains to be worth re-planning once the
+    // vehicle is within braking distance of the destination, which
+    // is also where the next leg starts to blend into this leg
+    Vector2f center_NE;
+    float radius_m;
+    if (have_speed && is_positive(get_accel_max()) &&
+        calc_arc_geometry(_origin, _destination, _arc_rad, center_NE, radius_m)) {
+        const float remaining_track_m = fabsf(remaining_rad) * radius_m;
+        const float brake_dist_m = sq(forward_speed) / (2.0f * get_accel_max());
+        if (remaining_track_m < brake_dist_m) {
+            return false;
+        }
+    }
+
+    // convert current location and destination to offsets from EKF origin
+    Vector2f current_NE;
+    Vector2f destination_NE;
+    if (!current_loc.get_vector_xy_from_origin_NE_cm(current_NE) ||
+        !_destination.get_vector_xy_from_origin_NE_cm(destination_NE)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return false;
+    }
+    current_NE *= 0.01f;
+    destination_NE *= 0.01f;
+
+    _origin = current_loc;
+    _arc_rad = remaining_rad;
+    _scurve_this_leg.calculate_track(Vector3p{current_NE.x, current_NE.y, 0.0f},              // origin
+                                     Vector3p{destination_NE.x, destination_NE.y, 0.0f},    // destination
+                                     _arc_rad,                                      // arc angle (0 for straight track)
+                                     _pos_control.get_speed_max(),
+                                     _pos_control.get_speed_max(),  // speed up (not used)
+                                     _pos_control.get_speed_max(),  // speed down (not used)
+                                     _pos_control.get_accel_max(),  // forward back acceleration
+                                     _pos_control.get_accel_max(),  // vertical accel (not used)
+                                     _pos_control.get_lat_accel_max(),  // corner acceleration
+                                     AR_WPNAV_SNAP_MAX,             // snap
+                                     _pos_control.get_jerk_max());
+
+    // the new leg starts at the vehicle, so the previous leg has no
+    // remaining track to blend into it
+    _scurve_prev_leg.init();
+
+    // seed the new track with the vehicle's current speed so the
+    // target does not restart from a standstill (as AC_WPNav does
+    // when it re-plans in flight)
+    if (have_speed && !is_zero(forward_speed)) {
+        _scurve_this_leg.set_origin_speed_max(forward_speed);
+    }
+    _track_scalar_dt = 1.0f;
+    update_distance_and_bearing_to_destination();
+    return true;
 }
 
 // bearing in centidegrees of the arc's tangent at its start
@@ -750,8 +842,10 @@ void AR_WPNav::update_limits()
     }
 
     // update limits
-    // Note this won't be applied to s-curve legs until the next waypoint, or (in 
-    // the case of fast waypoints, the waypoint-after-next)
+    // Note the new limits won't change the speed of s-curve legs until
+    // the next waypoint, or (in the case of fast waypoints, the
+    // waypoint-after-next), except that an arc leg whose effective
+    // speed is reduced is re-planned immediately (see below)
     const float accel_max = get_accel_max();
     const float jerk_max = get_jerk_max();
     const float speed_max = MAX(_base_speed_max, _nudge_speed_max);
@@ -771,11 +865,31 @@ void AR_WPNav::update_limits()
     }
     _last_speed_update_ms = now_ms;
 
+    const float old_speed_max = _pos_control.get_speed_max();
+    const float old_lat_accel_max = _pos_control.get_lat_accel_max();
+
     // update position controller.
     _pos_control.set_limits(speed_max, accel_max, lat_accel_max, jerk_max);
 
-    // change track speed
-    _scurve_this_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
+    // change track speed.  An arc leg whose effective speed (the
+    // speed limit, capped by the lateral acceleration around the
+    // arc) has been reduced is re-planned with the angle that
+    // remains instead of being re-timed (see replan_arc_this_leg)
+    bool replanned = false;
+    if (!is_zero(_arc_rad) && (_nav_control_type == NavControllerType::NAV_SCURVE)) {
+        Vector2f center_NE;
+        float radius_m;
+        if (calc_arc_geometry(_origin, _destination, _arc_rad, center_NE, radius_m)) {
+            const float eff_old = is_positive(old_lat_accel_max) ?
+                MIN(old_speed_max, safe_sqrt(old_lat_accel_max * radius_m)) : old_speed_max;
+            const float eff_new = is_positive(lat_accel_max) ?
+                MIN(speed_max, safe_sqrt(lat_accel_max * radius_m)) : speed_max;
+            replanned = (eff_new < eff_old) && replan_arc_this_leg();
+        }
+    }
+    if (!replanned) {
+        _scurve_this_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
+    }
     _scurve_next_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
 }
 
