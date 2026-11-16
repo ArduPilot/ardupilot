@@ -210,7 +210,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pos.time = gps_tow.ms;
     pos.longitude = d->longitude * 1.0e7;
     pos.latitude  = d->latitude * 1.0e7;
-    pos.altitude_ellipsoid = d->altitude * 1000.0f;
+    pos.altitude_ellipsoid = (d->altitude + d->geoid_separation) * 1000.0f;
     pos.altitude_msl = d->altitude * 1000.0f;
     pos.horizontal_accuracy = d->horizontal_acc*1000;
     pos.vertical_accuracy = d->vertical_acc*1000;
@@ -302,7 +302,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.num_sv = d->have_lock ? d->num_sats : 3;
     pvt.lon = d->longitude * 1.0e7;
     pvt.lat  = d->latitude * 1.0e7;
-    pvt.height = d->altitude * 1000.0f;
+    pvt.height = (d->altitude + d->geoid_separation) * 1000.0f;
     pvt.h_msl = d->altitude * 1000.0f;
     pvt.h_acc = d->horizontal_acc * 1000;
     pvt.v_acc = d->vertical_acc * 1000;
