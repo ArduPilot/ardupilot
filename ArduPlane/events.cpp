@@ -305,9 +305,14 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
                     plane.mission.set_in_landing_sequence_flag(true);
                     break;
                 }
-                if (plane.mission.jump_to_landing_sequence(plane.current_loc) &&
-                    plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE)) {
-                    break;
+                if (plane.mission.jump_to_landing_sequence(plane.current_loc)) {
+                    // resume at the landing sequence even with MIS_RESTART=1
+                    plane.mission.set_force_resume(true);
+                    const bool entered_auto = plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE);
+                    plane.mission.set_force_resume(false);
+                    if (entered_auto) {
+                        break;
+                    }
                 }
                 // no landing sequence or AUTO refused; fall back to RTL
             }
