@@ -114,15 +114,19 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
     *num_values = chancount;
 
     /*
-      as SBUS is such a weak protocol we additionally check if any of
-      the first 4 channels are at or below the minimum value of
-      875. We consider the frame as a failsafe in that case, which
-      means we log the data but won't use it
+      SBUS has no checksum. A frame of zeros decodes as every channel at
+      or below 875. That whole frame is a failsafe, and add_input() will
+      not apply it.
+
+      One channel at 875 is a valid end-stop. A transmitter can emit it
+      on a single axis while the others are normal, so that must not be
+      treated as a lost frame.
      */
-    bool invalid_data = false;
+    bool invalid_data = true;
     for (uint8_t i=0; i<4; i++) {
-        if (values[i] <= SBUS_SCALE_OFFSET) {
-            invalid_data = true;
+        if (values[i] > SBUS_SCALE_OFFSET) {
+            invalid_data = false;
+            break;
         }
     }
 
