@@ -20552,6 +20552,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
 
+    def GPSPositionsMustAgree(self):
+        '''check pre-arm compares the positions of all configured GPSs'''
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "GPS3_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS3_TYPE": 1,
+            "SIM_GPS3_ENABLE": 1,
+            "SIM_GPS3_GLTCH_X": 0.001,  # degrees of latitude, about 110m
+            "SERIAL5_PROTOCOL": 5,
+        })
+        self.customise_SITL_commandline([
+            "--serial5=sim:gps:3:",
+        ])
+        self.set_message_rate_hz('GNSS', 10)
+        self.assert_receive_message('GNSS', condition='GNSS.id==2 and GNSS.fix_type>=3', timeout=60)
+        # the GPS pre-arm checks only run in a mode needing a position:
+        self.change_mode('LOITER')
+        self.assert_prearm_failure("GPS positions differ", other_prearm_failures_fatal=False, timeout=60)
+        self.set_parameter("SIM_GPS3_GLTCH_X", 0)
+        self.wait_ready_to_arm()
+
     def Callisto(self):
         '''Test Callisto'''
         self.customise_SITL_commandline(
@@ -23186,6 +23209,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.UTMGlobalPositionAMSLOnlyGPS,
             self.GPSBlendedStaleData,
             self.GPSType0BelowConfiguredGPS,
+            self.GPSPositionsMustAgree,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
