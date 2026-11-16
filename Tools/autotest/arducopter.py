@@ -23984,26 +23984,7 @@ return update()
         })
         self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
 
-        # commence silly flying to try to give the EKF as much
-        # information as possible for it to converge its estimation;
-        # there's a 5e-6 check before we consider the offsets good!
-        self.set_rc(4, 1450)
-        self.set_rc(1, 1450)
-        for i in range(0, 5):  # we descend through all of this:
-            self.change_mode('LOITER')
-            self.delay_sim_time(10, reason="compass learn data to accumulate")
-            self.change_mode('ALT_HOLD')
-            self.change_mode('FLIP')
-
-        self.set_parameter('ATC_ANGLE_MAX', 70)
-        self.change_mode('ALT_HOLD')
-        for j in 1000, 2000:
-            for i in 1, 2, 4:
-                self.set_rc(i, j)
-                self.delay_sim_time(10, reason="compass learn data to accumulate")
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
-        self.set_rc(4, 1500)
+        self.fly_compass_learning_manoeuvres()
         return new_compass_ofs_x
 
     def CompassLearnDisabledDoesNotSave(self):
@@ -24054,26 +24035,7 @@ return update()
         })
         self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
 
-        # commence silly flying to try to give the EKF as much
-        # information as possible for it to converge its estimation;
-        # there's a 5e-6 check before we consider the offsets good!
-        self.set_rc(4, 1450)
-        self.set_rc(1, 1450)
-        for i in range(0, 5):  # we descend through all of this:
-            self.change_mode('LOITER')
-            self.delay_sim_time(10, reason="compass learn data to accumulate")
-            self.change_mode('ALT_HOLD')
-            self.change_mode('FLIP')
-
-        self.set_parameter('ATC_ANGLE_MAX', 70)
-        self.change_mode('ALT_HOLD')
-        for j in 1000, 2000:
-            for i in 1, 2, 4:
-                self.set_rc(i, j)
-                self.delay_sim_time(10, reason="compass learn data to accumulate")
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
-        self.set_rc(4, 1500)
+        self.fly_compass_learning_manoeuvres()
 
         self.do_RTL()
         # both compasses should have been learned and saved on that disarm:
