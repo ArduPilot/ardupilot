@@ -12,7 +12,10 @@ namespace AP_Module
 
 const AP_ModuleHostApi Module::_api {
     AP_MODULE_ABI_VERSION, sizeof(AP_ModuleHostApi), AP_MODULE_API_FINGERPRINT,
-    allocate, deallocate, time_us, sleep_ms, stop_requested, text, panic, binding_call
+    allocate, deallocate, time_us, sleep_ms, stop_requested,
+    // u8 in the ABI; read 32 bits as Apple arm64 callees assume caller-widened args
+    reinterpret_cast<decltype(AP_ModuleHostApi::text)>(reinterpret_cast<void (*)()>(text)),
+    panic, binding_call
 };
 
 uint32_t Module::rounded_code_size(uint32_t requested)
@@ -345,8 +348,9 @@ uint8_t Module::stop_requested(void *context)
     return static_cast<Module *>(context)->_stop.load();
 }
 
-int32_t Module::text(void *context, uint8_t severity, const uint8_t *message, uint32_t length)
+int32_t Module::text(void *context, uint32_t severity32, const uint8_t *message, uint32_t length)
 {
+    const uint8_t severity = severity32;
     auto &module = *static_cast<Module *>(context);
     if (module._stop.load()) {
         return AP_MODULE_STATUS_STOPPED;

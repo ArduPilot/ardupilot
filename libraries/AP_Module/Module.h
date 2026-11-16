@@ -128,7 +128,7 @@ private:
     static uint64_t time_us(void *context);
     static int32_t sleep_ms(void *context, uint32_t milliseconds);
     static uint8_t stop_requested(void *context);
-    static int32_t text(void *context, uint8_t severity, const uint8_t *message, uint32_t length);
+    static int32_t text(void *context, uint32_t severity32, const uint8_t *message, uint32_t length);
     [[noreturn]] static void panic(void *context, const uint8_t *message, uint32_t length);
     static int32_t binding_call(void *context, uint32_t id, const uint8_t *input, uint32_t input_size,
                                 uint8_t *output, uint32_t output_size);
