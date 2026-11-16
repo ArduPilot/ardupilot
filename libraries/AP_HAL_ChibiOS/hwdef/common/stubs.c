@@ -71,110 +71,38 @@
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
-#include <sys/unistd.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include "ch.h"
-#if defined(STDOUT_SD) || defined(STDIN_SD)
-#include "hal.h"
-#endif
 
-uint8_t _before_main = 1;
+static int preinit_errno;
 
-/***************************************************************************/
-
-__attribute__((used))
-int _read(struct _reent *r, int file, char * ptr, int len)
+int *ap_picolibc_errno(void)
 {
-    (void)r;
-    (void)file;
-    (void)ptr;
-    (void)len;
-    return -1;
+    if (ch_system.state != ch_sys_running) {
+        return &preinit_errno;
+    }
+    return &chThdGetSelfX()->picolibc_errno;
 }
 
-/***************************************************************************/
-
-__attribute__((used))
-int _lseek(struct _reent *r, int file, int ptr, int dir)
+// Newlib libm must use the same per-thread errno as Picolibc libc.
+int *__wrap___errno(void)
 {
-    (void)r;
-    (void)file;
-    (void)ptr;
-    (void)dir;
+    return ap_picolibc_errno();
+}
 
+// STM32 firmware has no process environment.
+char *__wrap_getenv(const char *name)
+{
+    (void)name;
+    return NULL;
+}
+
+int __aeabi_atexit(void *arg, void (*func)(void *), void *dso_handle)
+{
+    // Firmware never exits, so static destructors do not need registration.
+    (void)arg;
+    (void)func;
+    (void)dso_handle;
     return 0;
-}
-
-/***************************************************************************/
-
-__attribute__((used))
-int _write(struct _reent *r, int file, char * ptr, int len)
-{
-    (void)r;
-    (void)file;
-    (void)ptr;
-    (void)len;
-    return -1;
-}
-
-/***************************************************************************/
-
-__attribute__((used))
-int _close(struct _reent *r, int file)
-{
-    (void)r;
-    (void)file;
-    return 0;
-}
-
-/***************************************************************************/
-
-__attribute__((used))
-int _fstat(struct _reent *r, int file, struct stat * st)
-{
-    (void)r;
-    (void)file;
-    (void)st;
-    return -1;
-}
-
-/***************************************************************************/
-
-__attribute__((used))
-int _isatty(struct _reent *r, int fd)
-{
-    (void)r;
-    (void)fd;
-    return 1;
-}
-
-__attribute__((used))
-pid_t _getpid(void)
-{
-    return 0;
-}
-
-__attribute__((used))
-void _exit( int status )
-{
-    (void)status;
-    while ( 1 );
-}
-
-__attribute__((used))
-void _fini(void)
-{
-}
-
-__attribute__((used))
-int _kill( int pid, int sig )
-{
-    (void)pid;
-    (void)sig;
-    return -1;
 }
 
 /*** EOF ***/
