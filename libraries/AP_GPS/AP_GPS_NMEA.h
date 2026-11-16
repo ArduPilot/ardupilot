@@ -89,6 +89,14 @@ private:
         _GPS_SENTENCE_AGRICA = 193, // extension for Unicore, 65 fields
         _GPS_SENTENCE_VERSIONA = 270, // extension for Unicore, version, 10 fields
         _GPS_SENTENCE_UNIHEADINGA = 290, // extension for Unicore, uniheadinga, 20 fields
+        _GPS_SENTENCE_PSTMKFCOV = 320, // extension for ST Teseo, accuracy, 8 fields
+        _GPS_SENTENCE_PSTMPVRAW = 330, // extension for ST Teseo, raw position and velocity, 15 fields
+        _GPS_SENTENCE_PSTMVER = 350, // ST Teseo version reply, 1 field
+        _GPS_SENTENCE_PSTMSETPAROK = 355, // ST Teseo, 1 field
+        _GPS_SENTENCE_PSTMSETPARERROR = 358, // ST Teseo, 0 or 1 fields
+        _GPS_SENTENCE_PSTMSAVEPAROK = 361, // ST Teseo, no fields
+        _GPS_SENTENCE_PSTMSETPAR = 362, // ST Teseo, reply to $PSTMGETPAR, 2 fields
+        _GPS_SENTENCE_PSTMGETPARERROR = 365, // ST Teseo, no fields
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -144,6 +152,20 @@ private:
     // parse UNIHEADINGA field
     void parse_uniheadinga_field(uint16_t term_number, const char *term);
 #endif
+#endif
+
+#if AP_GPS_NMEA_TESEO_ENABLED
+    // match the term-0 name of a $PSTM sentence, minus the PSTM prefix
+    static uint16_t teseo_sentence_type(const char *name);
+
+    // parse a field of a $PSTM sentence
+    void parse_teseo_field(uint16_t term_number, const char *term);
+
+    // apply a $PSTM sentence which passed its checksum
+    void teseo_sentence_complete(uint32_t now);
+
+    // step the Teseo configuration state machine
+    void teseo_config_update(void);
 #endif
 
 
@@ -258,6 +280,94 @@ private:
 #endif
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
     bool _expect_agrica;
+
+#if AP_GPS_NMEA_TESEO_ENABLED
+    /*
+      ST Teseo (LIV3F, LIV4F) proprietary sentences:
+        $PSTMKFCOV,<PosStd>,<PosNcov>,<PosEcov>,<PosVcov>,<VelStd>,<VelNcov>,<VelEcov>,<VelVcov>
+        $PSTMPVRAW,<Time>,<Lat>,<N/S>,<Lon>,<E/W>,<Qual>,<Sats>,<HDOP>,<Alt>,M,<GeoSep>,M,<Vel_N>,<Vel_E>,<Vel_V>
+      and the replies to configuration commands. Empty fields (no fix)
+      leave their bit in the have mask clear.
+     */
+    struct {
+        float pos_std;
+        Vector3f pos_cov;
+        float vel_std;
+        Vector3f vel_cov;
+        uint8_t have;
+    } _pstmkfcov;
+
+    struct {
+        uint8_t quality;
+        Vector3f vel_NEV;
+        uint8_t have;
+    } _pstmpvraw;
+
+    // the reply to the configuration command in flight
+    struct {
+        uint32_t param;      // <block><id>
+        uint32_t value;      // $PSTMSETPAR, integer value
+        float value_float;   // $PSTMSETPAR, floating point value
+        char version[30];
+    } _teseo_reply;
+
+    // configuration, see teseo_config_update()
+    enum class TeseoConfigState : uint8_t {
+        START,
+        VERIFY,
+        SET,
+        SAVE,
+        RESTART,
+        DONE,
+    };
+
+    // the <mode> of $PSTMSETPAR
+    enum class TeseoSetMode : uint8_t {
+        VALUE = 0,
+        OR = 1,
+        CLEAR = 2,
+    };
+
+    // one $PSTMSETPAR to send
+    struct TeseoCommand {
+        uint16_t id;         // configuration data block
+        TeseoSetMode mode;
+        bool is_float;
+        uint32_t value;      // value, or bits to OR in or clear
+        float value_float;   // is_float: value
+    };
+
+    struct {
+        TeseoConfigState state;
+        bool waiting;              // a command is in flight
+        uint32_t sent_ms;          // when it was sent
+        uint8_t retries;
+        uint8_t index;             // command being sent
+        uint8_t num_cmds;
+        bool have_reply;           // reply to the command in flight arrived
+        bool reply_error;          // and it was an error
+        bool reply_match;          // VERIFY: the module already has the value
+        TeseoCommand cmds[9];
+        char version[30];          // firmware image, from $PSTMVER
+    } _teseo;
+
+    // queue a configuration command, see teseo_config_update()
+    TeseoCommand *teseo_add_command(uint16_t id, TeseoSetMode mode, uint32_t value);
+
+    // true if the stored value of a $PSTMGETPAR reply is what cmd sets
+    bool teseo_reply_matches(const TeseoCommand &cmd) const;
+
+    // give up on configuring until the next detection
+    void teseo_config_failed(void);
+
+    // times each instance's module was written, or failed to be,
+    // this boot. Bounds retries across detections, as a write
+    // restarts the module and so causes one
+    static uint8_t _teseo_config_attempts[GPS_MAX_RECEIVERS];
+
+    bool _have_KFCOV;
+    bool _is_teseo;
+#endif // AP_GPS_NMEA_TESEO_ENABLED
 
     // last time we sent type specific config strings
     uint32_t last_config_ms;

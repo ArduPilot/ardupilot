@@ -186,7 +186,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: _SAVE_CFG
     // @DisplayName: Save GPS configuration
-    // @Description: Determines whether the configuration for this GPS should be written to non-volatile memory on the GPS. Currently working for UBlox 6 series and above.
+    // @Description: Determines whether the configuration for this GPS should be written to non-volatile memory on the GPS. Currently working for UBlox 6 series and above, and ST Teseo. A Teseo is only configured when this is non-zero, as its settings take effect from non-volatile memory after a restart: with 0 it is not configured at all.
     // @Values: 0:Do not save config,1:Save config,2:Save only when needed
     // @User: Advanced
     AP_GROUPINFO("_SAVE_CFG", 11, AP_GPS, _save_config, 2),
@@ -558,6 +558,9 @@ void AP_GPS::send_blob_start(uint8_t instance)
 #if AP_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
 #endif  // AP_SIM_GPS_ENABLED
+#if AP_GPS_NMEA_TESEO_ENABLED
+    case GPS_TYPE_TESEO_NMEA:
+#endif  // AP_GPS_NMEA_TESEO_ENABLED
         // none of these GPSs have initialisation blobs
         break;
     default:
@@ -802,6 +805,9 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
 #if AP_GPS_NMEA_UNICORE_ENABLED
                     type == GPS_TYPE_UNICORE_NMEA ||
                     type == GPS_TYPE_UNICORE_MOVINGBASE_NMEA ||
+#endif
+#if AP_GPS_NMEA_TESEO_ENABLED
+                    type == GPS_TYPE_TESEO_NMEA ||
 #endif
                     type == GPS_TYPE_ALLYSTAR) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
