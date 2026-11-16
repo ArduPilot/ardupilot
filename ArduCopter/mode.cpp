@@ -317,10 +317,6 @@ uint32_t Copter::get_available_mode_enabled_mask() const
 // but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
-    // update last reason
-    const ModeReason last_reason = _last_reason;
-    _last_reason = reason;
-
     // return immediately if we are already in the desired mode
     if (mode == flightmode->mode_number()) {
         control_mode_reason = reason;
