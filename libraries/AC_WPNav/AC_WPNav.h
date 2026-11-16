@@ -180,6 +180,11 @@ public:
     // Returns false if origin is not set or coordinate conversion fails.
     bool get_wp_destination_loc(Location& destination) const;
 
+    // Gets the origin of the current leg as a Location object.
+    // Altitude frame will be ABOVE_TERRAIN or ABOVE_ORIGIN depending on path configuration.
+    // Returns false if the EKF origin is not set.
+    bool get_wp_origin_loc(Location& origin) const;
+
     // Returns the waypoint destination adjusted for object avoidance.
     // In the base class this is identical to get_wp_destination_loc().
     // Used to unify the AC_WPNav and AC_WPNav_OA interfaces.
