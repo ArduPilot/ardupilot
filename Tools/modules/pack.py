@@ -29,14 +29,26 @@ FIXUP = struct.Struct('<I')
 LEGACY_FIXUP = struct.Struct('<II')
 IMPORT = struct.Struct('<QII')
 PAGE = 4096
+# AArch64 hosts may use 16 KiB pages (Apple silicon)
+AARCH64_PAGE = 16384
 MAX_IMAGE = 16 * 1024 * 1024
 MAX_IMPORTS = 4096
 # The linker has already resolved these internal PC-relative references.
 PROFILES = {
     'EM_ARM': (40, 4, 2, {3, 10, 30, 42, 49, 50, 87, 88}),
     'EM_X86_64': (62, 8, 1, {2, 4, 9, 41, 42}),
+    # ADRP/LO12 pairs stay valid when loaded on any 4 KiB boundary
+    'EM_AARCH64': (183, 8, 257, {261, 273, 274, 275, 276, 277, 278, 279, 280, 282, 283, 284, 285, 286, 299,
+                                 311, 312}),
 }
 SECTIONS = {'.text', '.rodata', '.ARM.exidx', '.data', '.got', '.bss'}
+
+
+def permission_boundary(machine, compact):
+    '''RX/RW split granularity'''
+    if machine == 40 and compact:
+        return 4
+    return AARCH64_PAGE if machine == 183 else PAGE
 
 
 def require(condition, message):
@@ -72,7 +84,8 @@ def pack_elf(data, manifest=None):
     memory_size = end - base
     file_size = max(s['sh_addr'] + s['sh_size'] - base for _, s in sections if s['sh_type'] != 'SHT_NOBITS')
     writable = [s['sh_addr'] - base for _, s in sections if s['sh_flags'] & 1]
-    boundary = width if manifest is not None and machine == 40 else PAGE
+    require(machine != 183 or manifest is not None, 'AArch64 requires a runtime manifest')
+    boundary = permission_boundary(machine, manifest is not None)
     rx_size = min(writable) if writable else (memory_size + boundary - 1) // boundary * boundary
     require(rx_size > 0 and rx_size % boundary == 0, 'invalid RX/RW boundary alignment')
     # The RX byte count is also the logical RW offset. Only POSIX and legacy
@@ -93,7 +106,7 @@ def pack_elf(data, manifest=None):
         import_section = re.fullmatch(
             r'\.ap_module_import_([0-9a-f]{16})\.([A-Za-z0-9_.]{1,63})', section.name)
         require(section.name in SECTIONS or import_section is not None, f'unsupported allocated section {section.name}')
-        require(section.name != '.got' or machine == 62, 'ARM GOT is unsupported')
+        require(section.name != '.got' or machine != 40, 'ARM GOT is unsupported')
         require(section['sh_type'] in ('SHT_PROGBITS', 'SHT_NOBITS', 'SHT_ARM_EXIDX'), 'unsupported section type')
         require(not section['sh_flags'] & 0x400, 'TLS is unsupported')
         require(section['sh_addralign'] <= PAGE, 'excessive section alignment')
@@ -179,7 +192,7 @@ def pack_elf(data, manifest=None):
             fixups.append((offset, target_offset))
             image[offset:offset + width] = target_offset.to_bytes(width, 'little')
     require(relocation_sections > 0, 'no retained relocations: link with --emit-relocs')
-    # Static x86-64 linkers can create GOT slots without retained relocations.
+    # Static x86-64 and AArch64 linkers can create GOT slots without retained relocations.
     # Each slot must be the exact address of a defined image symbol. No lazy
     # binding, reserved .got.plt slots, imports or arbitrary constants allowed.
     for _, section in sections:
@@ -263,8 +276,9 @@ def unpack(data):
             HEADER.unpack_from(data)
         require(magic == MAGIC and version == 1, 'invalid module version')
         require(abi == 0 and flags == 0, 'unsupported module profile')
-    require((machine, width) in ((40, 4), (62, 8)), 'unsupported module target')
+    require((machine, width) in ((40, 4), (62, 8), (183, 8)), 'unsupported module target')
     compact = runtime_magic == RUNTIME_MAGIC
+    require(compact or machine != 183, 'unsupported module profile')
     if compact:
         rw_alignment, rx_alignment = alignment & 0xffff, alignment >> 16
         require(all(width <= value <= PAGE and value & (value - 1) == 0
@@ -273,7 +287,7 @@ def unpack(data):
         require(alignment == PAGE, 'unsupported module alignment')
         rw_alignment = rx_alignment = PAGE
     require(0 < file_size <= memory_size <= MAX_IMAGE, 'invalid module sizes')
-    boundary = width if compact and machine == 40 else PAGE
+    boundary = permission_boundary(machine, compact)
     require(0 < rx_size <= (memory_size + boundary - 1) // boundary * boundary and rx_size % boundary == 0,
             'invalid code boundary')
     require(entry < min(rx_size, file_size) and (machine != 40 or entry & 1), 'invalid entry')
@@ -349,8 +363,8 @@ def relocate(data, base, rw_base=None):
     require(base + module['rx_size'] < 1 << (module['width'] * 8), 'load address overflow')
     require(rw_base + module['memory_size'] - module['rx_size'] < 1 << (module['width'] * 8),
             'load address overflow')
-    require(module['machine'] != 62 or rw_base == base + module['rx_size'],
-            'x86-64 requires contiguous RX/RW images')
+    require(module['machine'] == 40 or rw_base == base + module['rx_size'],
+            'x86-64 and AArch64 require contiguous RX/RW images')
     image = bytearray(module['image'])
     image.extend(bytes(module['memory_size'] - len(image)))
     for offset, value in module['fixups']:

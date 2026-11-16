@@ -3,6 +3,7 @@ ENTRY(start)
 SECTIONS
 {
     . = DEFINED(MODULE_BASE) ? MODULE_BASE : 0x10000;
+    __module_base = .;
     /* Panic-abort modules never unwind. Discard compiler-builtins' unwind
        metadata before .data.* can retain its unused personality reference. */
     /DISCARD/ : {
@@ -18,8 +19,10 @@ SECTIONS
     .ARM.exidx : { *(.ARM.exidx .ARM.exidx.*) }
     /* ARM split images need only word separation. Keep the default page
        boundary for POSIX permission changes and legacy relocation probes. */
-    . = ALIGN(MAX(DEFINED(MODULE_DATA_ALIGNMENT) ? MODULE_DATA_ALIGNMENT : 4096,
-                  MAX(ALIGNOF(.data), MAX(ALIGNOF(.got), ALIGNOF(.bss)))));
+    /* Relative to the base, so a 16 KiB AArch64 boundary is base independent */
+    . = __module_base + ALIGN(. - __module_base,
+                              MAX(DEFINED(MODULE_DATA_ALIGNMENT) ? MODULE_DATA_ALIGNMENT : 4096,
+                                  MAX(ALIGNOF(.data), MAX(ALIGNOF(.got), ALIGNOF(.bss)))));
     .data : {
         *(.data .data.*)
         *(.data.rel.ro .data.rel.ro.*)

@@ -22,6 +22,7 @@ from targets import CPU_PROFILES
 MACHINES = {
     40: 'ARM',
     62: 'x86-64',
+    183: 'AArch64',
 }
 
 

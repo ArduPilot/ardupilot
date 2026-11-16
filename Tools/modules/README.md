@@ -27,8 +27,9 @@ rustup target add --toolchain stable thumbv7em-none-eabihf
 python3 -m pip install pyelftools pytest
 ```
 
-Supported targets are `thumbv7em-none-eabihf` for STM32 and
-`x86_64-unknown-linux-gnu` for x86-64 SITL/Linux. ARM defaults to the M4-compatible
+Supported targets are `thumbv7em-none-eabihf` for STM32,
+`x86_64-unknown-linux-gnu` for x86-64 SITL/Linux and `aarch64-linux-android` (Rust only) for
+AArch64 SITL/Linux, including Apple silicon macOS. ARM defaults to the M4-compatible
 profile. Add `--cpu cortex-m7` for H743/H757-optimized code with FPv5 double
 precision, or select `--cpu cortex-m4` explicitly for F405 and H7 portability.
 H7 firmware accepts either; F405 rejects M7 modules before execution.
@@ -96,7 +97,7 @@ Rust also retains `lib<name>_sdk.rlib`; C++ retains its intermediate `.o` files.
 `MOD_HEAP_MAX` on load. Armed growth is permitted only up to that cap.
 `--stack-size` declares module stack use, not a measured bound. The firmware's
 `MOD_STACK_MAX` must additionally cover the host-call margin: 4 KiB on Cortex-M
-or 16 KiB on x86-64; backend overhead is additional.
+or 16 KiB on x86-64 and AArch64; backend overhead is additional.
 `--thread-priority` declares native worker priority, defaulting to 2 on ARM and
 1 on Linux. Firmware rejects priorities above `MOD_THD_PRIO_MAX` or outside its
 HAL's application range. The manager runs at that parameter plus one. SITL and

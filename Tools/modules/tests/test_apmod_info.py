@@ -111,7 +111,7 @@ def test_cli_without_companion_and_with_stale_companion(image, tmp_path):
     assert ignored.returncode == 0
 
 
-@pytest.mark.parametrize('target', list(build.TARGETS))
+@pytest.mark.parametrize('target', ['thumbv7em-none-eabihf', 'x86_64-unknown-linux-gnu'])
 def test_relocation_probe_breakdown(tmp_path, target):
     elf_data = build_probe(tmp_path, target)
     data = pack.pack_elf(elf_data)

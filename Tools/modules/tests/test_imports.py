@@ -4,6 +4,7 @@
 
 import hashlib
 import io
+import shutil
 import struct
 import subprocess
 import zlib
@@ -120,7 +121,10 @@ def test_invalid_import_metadata(one_import):
 
 
 def test_stripped_elf_rejected(one_import, tmp_path):
-    objcopy = 'arm-none-eabi-objcopy' if pack.unpack(one_import)['machine'] == 40 else 'objcopy'
+    objcopy = {40: 'arm-none-eabi-objcopy', 62: 'objcopy', 183: 'aarch64-linux-gnu-objcopy'}[
+        pack.unpack(one_import)['machine']]
+    if shutil.which(objcopy) is None:
+        pytest.skip(f'{objcopy} not found')
     stripped = tmp_path / 'stripped.elf'
     subprocess.run([objcopy, '--strip-all', str(tmp_path / 'one.elf'), str(stripped)], check=True)
     with pytest.raises(ValueError, match='unstripped ELF symbol table required'):

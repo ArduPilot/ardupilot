@@ -23,10 +23,12 @@ CPU_PROFILES = {
     1: CpuProfile(1, 'thumbv7em-none-eabihf', 'cortex-m4', 40, 'fpv4-sp-d16'),
     2: CpuProfile(2, 'x86_64-unknown-linux-gnu', 'x86-64', 62),
     3: CpuProfile(3, 'thumbv7em-none-eabihf', 'cortex-m7', 40, 'fpv5-d16'),
+    4: CpuProfile(4, 'aarch64-linux-android', 'generic', 183),
 }
 TARGETS = {
     'thumbv7em-none-eabihf': (1, 'cortex-m4'),
     'x86_64-unknown-linux-gnu': (2, 'x86-64'),
+    'aarch64-linux-android': (4, 'generic'),
 }
 
 
