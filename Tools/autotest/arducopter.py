@@ -6254,6 +6254,127 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.progress("MOTORS DISARMED OK")
 
+    def GNSSHeights(self):
+        '''check GNSS reports MSL and ellipsoid heights whichever height ArduPilot navigates on'''
+        geoid_separation = 20.0
+        self.set_parameters({
+            "SIM_GPS1_GEOID": geoid_separation,
+            "SERIAL3_PROTOCOL": 5,
+        })
+        self.set_message_rate_hz('GNSS', 5)
+
+        def sample():
+            # let the driver parse fixes with the current settings:
+            self.delay_sim_time(2, reason="GPS driver to apply settings")
+            self.drain_mav()
+            gnss = self.assert_receive_message('GNSS', condition='GNSS.id==0', timeout=5, verbose=True)
+            raw = self.assert_receive_message('GPS_RAW_INT', timeout=5, verbose=True)
+            return gnss, raw
+
+        def assert_near(name, got, want, tolerance=0.5):
+            if abs(got - want) > tolerance:
+                raise NotAchievedException(f"{name}: got {got} want {want}")
+
+        for (name, sim_gps_type, gps_type) in [
+                ("UBLOX", 1, 1),
+                ("NOVA", 8, 15),
+                ("SBF", 10, 10),
+        ]:
+            self.start_subtest(f"GNSS heights from {name}")
+            self.set_parameters({
+                "SIM_GPS1_TYPE": sim_gps_type,
+                "GPS1_TYPE": gps_type,
+                "GPS_DRV_OPTIONS": 0,
+            })
+            self.reboot_sitl()
+            self.set_message_rate_hz('GNSS', 5)
+            self.wait_ready_to_arm()
+
+            gnss, raw = sample()
+            # with the option clear, ArduPilot navigates on MSL height:
+            msl = raw.alt * 0.001
+            assert_near("height_above_geoid", gnss.height_above_geoid, msl)
+            assert_near("height_above_ellipsoid", gnss.height_above_ellipsoid, msl + geoid_separation)
+
+            self.set_parameter("GPS_DRV_OPTIONS", 1 << 4)  # use ellipsoid height instead of AMSL
+            gnss, raw = sample()
+            # check the option took effect:
+            assert_near("GPS_RAW_INT.alt with ellipsoid option", raw.alt * 0.001, msl + geoid_separation)
+            # GNSS reports physical heights regardless of the option:
+            assert_near("height_above_geoid with ellipsoid option", gnss.height_above_geoid, msl)
+            assert_near("height_above_ellipsoid with ellipsoid option",
+                        gnss.height_above_ellipsoid,
+                        msl + geoid_separation)
+
+    def GNSSYaw(self):
+        '''check GNSS reports yaw and heading accuracy'''
+        self.set_message_rate_hz('GNSS', 5)
+
+        def get_gnss(instance):
+            self.drain_mav()
+            return self.assert_receive_message(
+                'GNSS',
+                condition=f'GNSS.id=={instance}',
+                timeout=5,
+                verbose=True,
+            )
+
+        self.start_subtest("GPS without yaw")
+        self.wait_ready_to_arm()
+        m = get_gnss(0)
+        self.assert_message_field_values(m, {
+            'yaw': 65535,  # does not provide yaw
+            'hdg_acc': 65535,  # unknown
+        })
+
+        self.start_subtest("moving baseline")
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        self.reboot_sitl()
+        self.set_message_rate_hz('GNSS', 5)
+        self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+        self.wait_ready_to_arm()
+
+        # the base does not provide yaw itself:
+        m = get_gnss(0)
+        self.assert_message_field_values(m, {
+            'yaw': 65535,
+            'hdg_acc': 65535,
+        })
+
+        m = get_gnss(1)
+        if abs(m.yaw - 27000) > 500:
+            raise NotAchievedException(f"Expected rover yaw near 27000 got {m.yaw}")
+        # SITL reports 1cm accuracy across the 0.4m baseline:
+        want = math.degrees(math.atan2(0.01, 0.4)) * 100
+        if abs(m.hdg_acc - want) > 10:
+            raise NotAchievedException(f"Expected hdg_acc near {want} got {m.hdg_acc}")
+
+    def GNSSNoFix(self):
+        '''check GNSS reports speed and course as unknown without a fix'''
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS2_LCKTIME": 30000,  # no fix during the test
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('GNSS', 5)
+        self.wait_ready_to_arm()
+
+        m = self.assert_receive_message('GNSS', condition='GNSS.id==0', timeout=5, verbose=True)
+        if math.isnan(m.ground_speed) or math.isnan(m.vertical_speed) or m.cog == 65535:
+            raise NotAchievedException("Expected speed and course from GPS with a fix")
+
+        m = self.assert_receive_message('GNSS', condition='GNSS.id==1', timeout=5, verbose=True)
+        if m.fix_type >= mavutil.mavlink.GPS_FIX_TYPE_2D_FIX:
+            raise NotAchievedException(f"Expected GPS2 to have no fix, got fix_type {m.fix_type}")
+        if not math.isnan(m.ground_speed):
+            raise NotAchievedException(f"Expected unknown ground_speed without a fix, got {m.ground_speed}")
+        if not math.isnan(m.vertical_speed):
+            raise NotAchievedException(f"Expected unknown vertical_speed without a fix, got {m.vertical_speed}")
+        self.assert_message_field_values(m, {
+            'cog': 65535,  # unknown
+        })
+
     def GuidedEKFLaneChange(self):
         '''test lane change with GPS diff on startup'''
         self.set_parameters({
@@ -18005,12 +18126,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def GPSBlendingLog(self):
         '''Test GPS Blending'''
         '''ensure we get dataflash log messages for blended instance'''
+
         # configure:
         self.set_parameters({
             "GPS2_TYPE": 1,
             "SIM_GPS2_TYPE": 1,
             "SIM_GPS2_ENABLE": 1,
             "GPS_AUTO_SWITCH": 2,
+            "GPS3_TYPE": 27,
         })
         self.reboot_sitl()
 
@@ -18056,6 +18179,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not seen_primary_change:
             raise NotAchievedException("Did not see primary change")
 
+        # ensure we're seeing the second GPS:
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("Did not get good GPS2_RAW message")
+            m = self.assert_receive_message('GPS2_RAW', verbose=True)
+            if m.lat == 0:
+                continue
+            break
+
+        # create a log we can expect blended data to appear in:
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.delay_sim_time(5, reason="blended GPS data to appear in log")
+        self.disarm_vehicle()
+
+        # inspect generated log for messages:
+        dfreader = self.dfreader_for_current_onboard_log()
+        wanted = set([0, 1, 2])
+        seen_primary_change = False
+        while True:
+            m = dfreader.recv_match(type=["GPS", "EV"]) # disarmed
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'GPS':
+                try:
+                    wanted.remove(m.I)
+                except KeyError:
+                    continue
+            elif mtype == 'EV':
+                if m.Id == 67:  # GPS_PRIMARY_CHANGED
+                    seen_primary_change = True
+            if len(wanted) == 0 and seen_primary_change:
+                break
+
+        if len(wanted):
+            raise NotAchievedException("Did not get all three GPS types")
+        if not seen_primary_change:
+            raise NotAchievedException("Did not see primary change")
+
     def GPSBlending(self):
         '''Test GPS Blending'''
         '''ensure we get dataflash log messages for blended instance'''
@@ -18071,6 +18236,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_GPS2_POS_X": -1.0,
             "SIM_GPS2_POS_Y": 1.0,
             "GPS_AUTO_SWITCH": 2,
+            "GPS3_TYPE": 27,
         })
         self.reboot_sitl()
 
@@ -18133,6 +18299,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_GPS2_POS_X": -1.0,
             "SIM_GPS2_POS_Y": 1.0,
             "GPS_AUTO_SWITCH": 2,
+            "GPS3_TYPE": 27,
         })
         # configure velocity errors such that the 1st GPS should be
         # 4/5, second GPS 1/5 of result (0.5**2)/((0.5**2)+(1.0**2))
@@ -18200,6 +18367,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_GPS2_POS_X": -1.0,
             "SIM_GPS2_POS_Y": 1.0,
             "GPS_AUTO_SWITCH": 2,
+            "GPS3_TYPE": 27,
 
             "EK3_AFFINITY" : 1,
             "EK3_IMU_MASK": 7,
@@ -18255,6 +18423,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         raise NotAchievedException(f"Blended diverged {n=} {measurements[0][n]=} {measurements[1][n]=} {measurements[2][n]=} {error=}")  # noqa:E501
                 current_ts = None
         self.progress(f"{max_errors=}")
+
+    def GPSBlendedStaleData(self):
+        '''check a blended GPS stops claiming a fix when blending stops'''
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "GPS_AUTO_SWITCH": 2,
+            "GPS3_TYPE": 27,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('GNSS', 10)
+
+        def wait_blended(predicate, timeout, failure):
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(f"Blended GNSS: {failure}")
+                m = self.assert_receive_message('GNSS')
+                if m.id != 2:
+                    continue
+                if predicate(m):
+                    return m
+
+        wait_blended(lambda m: m.fix_type >= 3, 60, "blending never started")
+
+        # with one GPS left there is nothing to blend:
+        self.set_parameter("SIM_GPS2_ENABLE", 0)
+        wait_blended(lambda m: m.fix_type < 3, 10, "still claims a fix after losing GPS2")
+
+        self.delay_sim_time(5, reason="blended state to stay unavailable")
+        m = wait_blended(lambda m: True, 5, "no message")
+        self.dump_message_verbose(m)
+        if m.fix_type >= 3:
+            raise NotAchievedException("Blended GNSS regained a fix with one GPS")
 
     def Callisto(self):
         '''Test Callisto'''
@@ -20864,6 +21067,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FlyEachFrame,
             self.GPSBlendingLog,
             self.GPSBlendingAffinity,
+            self.GPSBlendedStaleData,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
@@ -25359,6 +25563,81 @@ return update, 1000
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
 
+    def ManyGPS(self):
+        '''check many gps support'''
+        self.set_parameters({
+            'GPS2_TYPE': 1,
+            'GPS3_TYPE': 1,
+            'GPS4_TYPE': 1,
+
+            'SIM_GPS1_NUMSATS': 21,
+
+            'SIM_GPS2_ENABLE': 1,
+            'SIM_GPS2_NUMSATS': 22,
+
+            'SIM_GPS3_TYPE': 1,
+            'SIM_GPS3_ENABLE': 1,
+            'SIM_GPS3_NUMSATS': 23,
+
+            'SIM_GPS4_TYPE': 1,
+            'SIM_GPS4_ENABLE': 1,
+            'SIM_GPS4_NUMSATS': 24,
+
+            'SERIAL5_PROTOCOL': 5,
+            'SERIAL6_PROTOCOL': 5,
+        })
+        self.customise_SITL_commandline([
+            "--serial5=sim:gps:3:",
+            "--serial6=sim:gps:4:",
+        ])
+
+        tstart = self.get_sim_time()
+        i = 0
+        while i < 4:
+            if self.get_sim_time_cached() - tstart > 200:
+                raise NotAchievedException(f"Did not get GNSS message {i}")
+            m = self.assert_receive_message('GNSS')
+            if m.id != i:
+                continue
+            self.dump_message_verbose(m)
+            self.assert_message_field_values(m, {
+                'satellites_used': 20 + i + 1,
+                'yaw': 65535,  # does not provide yaw
+            })
+            i += 1
+
+        self.start_subtest("GPS-for-yaw")
+        self.set_parameters({
+            "GPS3_TYPE": 17,  # RTK base
+            "GPS3_POS_X": -0.5,
+            "GPS3_POS_Y": -0.5,
+            "SIM_GPS3_HDG": 4,
+            "SIM_GPS3_POS_X": -0.5,
+            "SIM_GPS3_POS_Y": -0.5,
+
+            "GPS4_TYPE": 18,  # RTK rover
+            "SIM_GPS4_HDG": 2,
+            "GPS4_POS_X": 0.5,
+            "GPS4_POS_Y": 0.5,
+            "SIM_GPS4_POS_X": 0.5,
+            "SIM_GPS4_POS_Y": 0.5,
+        })
+        self.reboot_sitl()
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("Did not get GNSS yaw")
+
+            m = self.assert_receive_message('GNSS', verbose=True, timeout=120)
+
+#            if m.id != 4:
+#                continue
+
+            if m.yaw < 36000:
+                self.progress(f"GPS{m.id+1} provided yaw")
+                break
+
     def tests2b(self):
         '''return list of all tests'''
         ret = ([
@@ -25411,6 +25690,9 @@ return update, 1000
             self.WP_SPEED_DN,
             self.GPSTypes,
             self.MultipleGPS,
+            self.GNSSHeights,
+            self.GNSSYaw,
+            self.GNSSNoFix,
             self.GuidedEKFLaneChange,
             self.TerrainDBPreArm,
             self.MountTopotekNetwork,
@@ -25423,6 +25705,7 @@ return update, 1000
             self.JumpNextNavCmd,
             self.BrakeZ,
             self.COMMAND_LONG_positional_command_int_only,
+            self.ManyGPS,
             self.LoiterToGuidedHomeVSOrigin,
             self.GuidedModeThrust,
             self.CompassMot,

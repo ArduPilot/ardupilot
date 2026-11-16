@@ -211,6 +211,80 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 #endif  // AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
 
 
+#if AP_GPS_GNSS_SENDING_ENABLED
+void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
+{
+    const AP_GPS_FixType fix_type = state.status;
+    float alt_amsl = NaNf;
+    float alt_ellipsoid = NaNf;
+    if (fix_type >= AP_GPS_FixType::FIX_3D) {
+        // set_alt_amsl_cm() stores the ellipsoid height in
+        // location.alt if the user has asked to navigate on it and
+        // the receiver supplies the undulation
+        const float loc_alt = state.location.alt * 0.01;  // cm -> m
+        if (!state.have_undulation) {
+            alt_amsl = loc_alt;
+        } else if (option_set(AP_GPS::HeightEllipsoid)) {
+            alt_ellipsoid = loc_alt;
+            alt_amsl = loc_alt + state.undulation;
+        } else {
+            alt_amsl = loc_alt;
+            alt_ellipsoid = loc_alt - state.undulation;
+        }
+    }
+    // one-sigma standard deviation in mm/s; UINT16_MAX is unknown
+    uint16_t vel_acc_mms = UINT16_MAX;
+    if (state.have_speed_accuracy) {
+        vel_acc_mms = MIN(state.speed_accuracy * 1000, UINT16_MAX - 1);
+    }
+    const bool have_2d_fix = fix_type >= AP_GPS_FixType::FIX_2D;
+    const MAV_GNSS_DATUM datum = have_2d_fix ? MAV_GNSS_DATUM_WGS84 : MAV_GNSS_DATUM_UNKNOWN;
+    // GNSS yaw is 0..35999 with 0 as north; UINT16_MAX means this
+    // receiver does not provide yaw, UINT16_MAX-1 that it is
+    // configured to but cannot currently:
+    uint16_t yaw_cd = UINT16_MAX;
+    // one-sigma yaw standard deviation in cdeg; UINT16_MAX is unknown
+    uint16_t hdg_acc_cd = UINT16_MAX;
+    if (AP::gps().have_gps_yaw_configured(state.instance)) {
+        float yaw_deg, yaw_accuracy_deg;
+        uint32_t yaw_time_ms;
+        if (AP::gps().gps_yaw_deg(state.instance, yaw_deg, yaw_accuracy_deg, yaw_time_ms)) {
+            yaw_cd = wrap_360_cd(yaw_deg * 100);
+            // gps_yaw_deg() substitutes a default when the receiver
+            // gives no accuracy; only send the receiver's own
+            const auto &yaw_state = AP::gps().state[AP::gps().yaw_source_instance(state.instance)];
+            if (yaw_state.have_gps_yaw_accuracy) {
+                hdg_acc_cd = MIN(yaw_accuracy_deg * 100, UINT16_MAX - 1);
+            }
+        } else {
+            yaw_cd = UINT16_MAX - 1;
+        }
+    }
+    mavlink_msg_gnss_send(
+        link.get_chan(),
+        AP_HAL::millis(),
+        state.instance,
+        (uint8_t)fix_type,
+        state.location.lat,
+        state.location.lng,
+        alt_amsl,
+        alt_ellipsoid,
+        datum,
+        MAV_GNSS_GEOID_MODEL_UNKNOWN,  // no driver reports its geoid model yet
+        // a receiver may report a velocity without a fix; send it as unknown
+        have_2d_fix ? state.ground_speed : NaNf,
+        (fix_type >= AP_GPS_FixType::FIX_3D && state.have_vertical_velocity) ? -state.velocity.z : NaNf,  // NED down -> up
+        have_2d_fix ? uint16_t(state.ground_course * 100) : UINT16_MAX,  // degrees*100
+        state.num_sats,
+        yaw_cd,
+        state.have_horizontal_accuracy ? state.horizontal_accuracy : NaNf, // one-sigma standard deviation in m
+        state.have_vertical_accuracy ? state.vertical_accuracy : NaNf,     // one-sigma standard deviation in m
+        vel_acc_mms,
+        hdg_acc_cd
+        );
+}
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
+
 
 /*
   set a timestamp based on arrival time on uart at current byte,

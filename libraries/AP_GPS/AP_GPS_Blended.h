@@ -43,8 +43,10 @@ public:
 
     const char *name() const override { return "Blended"; }
 
+    bool is_blended() const override { return true; }
+
     bool get_lag(float &lag_sec) const override;
-    const Vector3f &get_antenna_offset() const {
+    const Vector3f &get_antenna_offset() const override {
         return _blended_antenna_offset;
     }
 
@@ -53,9 +55,17 @@ public:
     bool calc_weights(void);
     // calculate the blended state
     void calc_state(void);
+    // mark the state as having no fix when no blended solution is available
+    void invalidate_state(void);
+    // true if the state holds a blended solution calculated on this update
+    bool blending_active() const { return _blending_active; }
 
     void zero_health_counter() {
         _blend_health_counter = 0;
+    }
+
+    AP_GPS_FixType highest_supported_status(void) override {
+        return _highest_supported_status;
     }
 
 private:
@@ -63,11 +73,20 @@ private:
     // GPS blending and switching
     Vector3f _blended_antenna_offset; // blended antenna offset
     float _blended_lag_sec; // blended receiver lag in seconds
-    float _blend_weights[GPS_MAX_RECEIVERS]; // blend weight for each GPS. The blend weights must sum to 1.0 across all instances.
+    float _blend_weights[GPS_MAX_INSTANCES]; // blend weight for each GPS. The blend weights must sum to 1.0 across all instances.
     uint8_t _blend_health_counter;  // 0 = perfectly health, 100 = very unhealthy
 
     AP_GPS::GPS_timing &timing;
     bool _calc_weights(void);
+
+    AP_GPS_FixType _highest_supported_status;
+
+    uint32_t new_timing_last_message_time_ms;
+
+    bool _blending_active;
+
+    // returns true if instance at offset i should be included in this blend
+    bool should_include_instance_in_blend(uint8_t i) const;
 };
 
 #endif  // AP_GPS_BLENDED_ENABLED

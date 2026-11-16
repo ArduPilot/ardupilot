@@ -19,6 +19,15 @@
 param set SERIAL5_PROTOCOL 5
 
      sim_vehicle.py -D --console --map -A --serial5=sim:gps:2
+
+param set SERIAL5_PROTOCOL 5
+param set SERIAL6_PROTOCOL 5
+param set SIM_GPS2_ENABLE 1
+param set SIM_GPS3_ENABLE 1
+param set SIM_GPS4_ENABLE 1
+param set GPS3_TYPE 1
+param set GPS4_TYPE 1
+     sim_vehicle.py --debug --console --map -A --serial5=sim:gps:3 --serial6=sim:gps:4
 */
 
 #pragma once
@@ -38,7 +47,8 @@ struct GPS_Data {
     uint32_t timestamp_ms;
     double latitude;
     double longitude;
-    float altitude;
+    float altitude;          // above mean sea level (m)
+    float geoid_separation;  // height of the geoid above the WGS84 ellipsoid (m)
     double speedN;
     double speedE;
     double speedD;
