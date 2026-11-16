@@ -172,20 +172,13 @@ uint64_t JSON::parse_sensors(const uint8_t *data, size_t len)
     size_t offset = 0;
     while (offset < len) {
         size_t used;
-        const uint64_t found = handle_parse_result(parser.feed(&data[offset], len - offset, used));
-        if (found != 0) {
-            received_bitmask = found;
-        }
+        received_bitmask |= handle_parse_result(parser.feed(&data[offset], len - offset, used));
         offset += used;
     }
     // a datagram ends the packet in it, so senders need not end packets
     // with a newline, and a datagram that is damaged or cut short can not
     // cost a packet in the next
-    const uint64_t found = handle_parse_result(parser.end_of_message());
-    if (found != 0) {
-        received_bitmask = found;
-    }
-    return received_bitmask;
+    return received_bitmask | handle_parse_result(parser.end_of_message());
 }
 
 /*
@@ -302,17 +295,32 @@ void JSON::recv_fdm(const struct sitl_input &input)
         }
     }
 
-    // a datagram filling the buffer may have been truncated, and is
-    // larger than any valid packet
-    if (size_t(ret) >= sizeof(recv_buffer)) {
-        rejected_packets++;
-        if (report_parse_error()) {
-            printf("JSON: sensor datagram too large, %u rejected\n", unsigned(rejected_packets));
+    uint64_t received_bitmask = 0;
+    while (true) {
+        // a datagram filling the buffer may have been truncated, and is
+        // larger than any valid packet
+        if (size_t(ret) >= sizeof(recv_buffer)) {
+            rejected_packets++;
+            if (report_parse_error()) {
+                printf("JSON: sensor datagram too large, %u rejected\n", unsigned(rejected_packets));
+            }
+        } else {
+            // state keeps each field's newest value, so a field sent in
+            // only some packets is used even if a later one lacks it
+            received_bitmask |= parse_sensors(recv_buffer, ret);
         }
-        return;
+        if (!state.no_lockstep) {
+            break;
+        }
+        // the backend sends on its own clock, so packets queue up when
+        // SITL runs fewer frames than it sends.  Take all that are
+        // waiting: the last valid one is the newest, and SITL keeps up
+        // with the physics instead of working through old packets
+        ret = sock.recv(recv_buffer, sizeof(recv_buffer), 0);
+        if (ret <= 0) {
+            break;
+        }
     }
-
-    const uint64_t received_bitmask = parse_sensors(recv_buffer, ret);
     if (received_bitmask == 0) {
         // no complete valid packet yet; parse_sensors() reports bad ones
         return;
