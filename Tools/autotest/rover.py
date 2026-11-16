@@ -8426,6 +8426,15 @@ return update()
             self.delay_sim_time(4, reason="physics resumed")
             self.JSON_assert_elapsed_equal(resumed, self.JSON_sim_and_physics_time(physics))
 
+            # SITL running fewer frames than the physics sends, as on a
+            # loaded machine: SIM_SPEEDUP 0.1 paces it to 120 frames/s
+            # against 200 packets/s.  It takes the newest packet, so its
+            # time still follows the physics rather than falling behind
+            self.set_parameter("SIM_SPEEDUP", 0.1)
+            slow = self.JSON_sim_and_physics_time(physics)
+            self.delay_sim_time(5, reason="SITL slower than the physics")
+            self.JSON_assert_elapsed_equal(slow, self.JSON_sim_and_physics_time(physics))
+
     def JSONNoTimeSync(self):
         '''check SITL runs as fast as a JSON physics backend using no_time_sync'''
         self.context_set_speedup(1)
