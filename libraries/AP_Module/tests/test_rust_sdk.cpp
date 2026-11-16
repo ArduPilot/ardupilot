@@ -154,11 +154,11 @@ public:
     {
         return static_cast<SDKModule *>(context)->stop.load();
     }
-    static int32_t text(void *context, uint8_t severity, const uint8_t *message, uint32_t length)
+    static int32_t text(void *context, uint32_t severity, const uint8_t *message, uint32_t length)
     {
         auto &module = *static_cast<SDKModule *>(context);
         const char *expected = module.real_math ? "MATH ok" : (module.messages == 0 ? "sdk start" : "sdk done");
-        module.callback_error |= severity != 6 || length != strlen(expected) || memcmp(message, expected, length) != 0;
+        module.callback_error |= uint8_t(severity) != 6 || length != strlen(expected) || memcmp(message, expected, length) != 0;
         module.messages++;
         return AP_MODULE_STATUS_OK;
     }
@@ -218,7 +218,9 @@ public:
 
 const AP_ModuleHostApi SDKModule::api {
     AP_MODULE_ABI_VERSION, sizeof(AP_ModuleHostApi), AP_MODULE_API_FINGERPRINT,
-    allocate, deallocate, time_us, sleep_ms, stop_requested, text, panic, binding_call
+    allocate, deallocate, time_us, sleep_ms, stop_requested,
+    reinterpret_cast<decltype(AP_ModuleHostApi::text)>(reinterpret_cast<void (*)()>(text)),
+    panic, binding_call
 };
 
 class RustSDK : public ::testing::Test
