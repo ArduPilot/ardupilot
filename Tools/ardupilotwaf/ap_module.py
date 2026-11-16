@@ -22,7 +22,7 @@ from waflib.Configure import conf
 
 MODULE_ROOT = 'libraries/AP_Module'
 # host-call stack margin added by the loader, see AP_Module README
-STACK_MARGIN = {'thumbv7em-none-eabihf': 4096, 'x86_64-unknown-linux-gnu': 16384}
+STACK_MARGIN = {'thumbv7em-none-eabihf': 4096, 'x86_64-unknown-linux-gnu': 16384, 'aarch64-linux-android': 16384}
 # AP_Module parameter defaults when no module raises them
 DEFAULT_HEAP_MAX = 32768
 DEFAULT_STACK_MAX = 32768
@@ -37,6 +37,9 @@ def module_target(env):
         return None, None
     if env.BOARD_CLASS in ('SITL', 'LINUX') and env.DEST_CPU in ('x86_64', 'amd64', None, ''):
         return 'x86_64-unknown-linux-gnu', None
+    if env.BOARD_CLASS in ('SITL', 'LINUX') and env.DEST_CPU in ('aarch64', 'arm64'):
+        # AArch64 ELF modules for Linux and macOS hosts; this triple reserves x18
+        return 'aarch64-linux-android', None
     return None, None
 
 
