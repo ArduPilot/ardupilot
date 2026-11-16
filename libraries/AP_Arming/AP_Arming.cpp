@@ -720,6 +720,11 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         for (uint8_t i = 0; i < gps.num_sensors(); i++) {
+            if (gps.get_type(i) == AP_GPS::GPS_Type::GPS_TYPE_NONE) {
+                // unused instance below a configured one; the primary
+                // was checked above
+                continue;
+            }
             //GPS OK?
             if (gps.status(i) < AP_GPS_FixType::FIX_3D) {
                 check_failed(Check::GPS, report, "GPS %i: Bad fix", i+1);
