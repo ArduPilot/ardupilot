@@ -7072,6 +7072,49 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         gnss.height_above_ellipsoid,
                         msl + geoid_separation)
 
+    def GNSSYaw(self):
+        '''check GNSS reports yaw and yaw accuracy'''
+        self.set_message_rate_hz('GNSS', 5)
+
+        def get_gnss(instance):
+            self.drain_mav()
+            return self.assert_receive_message(
+                'GNSS',
+                condition=f'GNSS.id=={instance}',
+                timeout=5,
+                verbose=True,
+            )
+
+        self.start_subtest("GPS without yaw")
+        self.wait_ready_to_arm()
+        m = get_gnss(0)
+        self.assert_message_field_values(m, {
+            'yaw': 65535,  # does not provide yaw
+            'yaw_acc': 65535,  # unknown
+        })
+
+        self.start_subtest("moving baseline")
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        self.reboot_sitl()
+        self.set_message_rate_hz('GNSS', 5)
+        self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+        self.wait_ready_to_arm()
+
+        # the base does not provide yaw itself:
+        m = get_gnss(0)
+        self.assert_message_field_values(m, {
+            'yaw': 65535,
+            'yaw_acc': 65535,
+        })
+
+        m = get_gnss(1)
+        if abs(m.yaw - 27000) > 500:
+            raise NotAchievedException(f"Expected rover yaw near 27000 got {m.yaw}")
+        # SITL reports 1cm accuracy across the 0.4m baseline:
+        want = math.degrees(math.atan2(0.01, 0.4)) * 100
+        if abs(m.yaw_acc - want) > 10:
+            raise NotAchievedException(f"Expected yaw_acc near {want} got {m.yaw_acc}")
+
     def GuidedEKFLaneChange(self):
         '''test lane change with GPS diff on startup'''
         self.set_parameters({
@@ -27546,6 +27589,7 @@ return update, 1000
             self.GPSTypes,
             self.MultipleGPS,
             self.GNSSHeights,
+            self.GNSSYaw,
             self.GuidedEKFLaneChange,
             self.TerrainDBPreArm,
             self.MountTopotekNetwork,
