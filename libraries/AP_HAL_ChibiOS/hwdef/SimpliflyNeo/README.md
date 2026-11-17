@@ -25,7 +25,7 @@ The Simplifly Neo is available from
 - Sensors
 
   - Bosch BMI088 IMU (accelerometer, gyroscope) with heater
-  - Bosch BMP390 barometer
+  - Bosch BMP390 barometer (BMP581 on later boards)
   - Bosch BMM150 magnetometer
   - FRAM for parameter storage
 
@@ -232,6 +232,9 @@ Bus 0 is the internal sensor bus and is not brought out.
 
 The safety switch, its LED and the buzzer are all on the GPS connector rather
 than on a connector of their own.
+
+The safety switch is disabled by default. To require it before the outputs
+are enabled, set BRD_SAFETY_DEFLT = 1.
 
 ## Firmware
 
