@@ -1413,11 +1413,11 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
     float hacc = 0.0f;
     float vacc = 0.0f;
     float sacc = 0.0f;
-    float undulation = 0.0;
-    int32_t height_elipsoid_mm = 0;
-    if (get_undulation(0, undulation)) {
-        height_elipsoid_mm = loc.alt*10 - undulation*1000;
-    }
+    // alt is AMSL, or the height used for navigation if the receiver
+    // gave no AMSL height; 0 is an unknown ellipsoid height
+    float height_m;
+    const int32_t height_amsl_mm = get_height_amsl(0, height_m) ? height_m * 1000 : loc.alt * 10;
+    const int32_t height_elipsoid_mm = get_height_ellipsoid(0, height_m) ? height_m * 1000 : 0;
     horizontal_accuracy(0, hacc);
     vertical_accuracy(0, vacc);
     speed_accuracy(0, sacc);
@@ -1427,7 +1427,7 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         (uint8_t)status(0),
         loc.lat,        // in 1E7 degrees
         loc.lng,        // in 1E7 degrees
-        loc.alt * 10UL, // in mm
+        height_amsl_mm, // in mm
         get_hdop(0),
         get_vdop(0),
         ground_speed(0)*100,  // cm/s
@@ -1454,11 +1454,11 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
     float hacc = 0.0f;
     float vacc = 0.0f;
     float sacc = 0.0f;
-    float undulation = 0.0;
-    float height_elipsoid_mm = 0;
-    if (get_undulation(1, undulation)) {
-        height_elipsoid_mm = loc.alt*10 - undulation*1000;
-    }
+    // alt is AMSL, or the height used for navigation if the receiver
+    // gave no AMSL height; 0 is an unknown ellipsoid height
+    float height_m;
+    const int32_t height_amsl_mm = get_height_amsl(1, height_m) ? height_m * 1000 : loc.alt * 10;
+    const int32_t height_elipsoid_mm = get_height_ellipsoid(1, height_m) ? height_m * 1000 : 0;
     horizontal_accuracy(1, hacc);
     vertical_accuracy(1, vacc);
     speed_accuracy(1, sacc);
@@ -1468,7 +1468,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         (uint8_t)status(1),
         loc.lat,
         loc.lng,
-        loc.alt * 10UL,
+        height_amsl_mm,
         get_hdop(1),
         get_vdop(1),
         ground_speed(1)*100,  // cm/s
@@ -1981,12 +1981,12 @@ void AP_GPS::Write_GPS(uint8_t i)
     /* write auxiliary accuracy information as well */
     float hacc = 0, vacc = 0, sacc = 0;
     int32_t alt_ellipsoid = INT32_MIN;
-    float undulation = 0;
+    float height_ellipsoid_m;
     horizontal_accuracy(i, hacc);
     vertical_accuracy(i, vacc);
     speed_accuracy(i, sacc);
-    if (get_undulation(i, undulation)) {
-        alt_ellipsoid = loc.alt - (undulation*100);
+    if (get_height_ellipsoid(i, height_ellipsoid_m)) {
+        alt_ellipsoid = height_ellipsoid_m * 100;  // m -> cm
     }
     struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
