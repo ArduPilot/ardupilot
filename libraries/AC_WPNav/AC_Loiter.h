@@ -107,6 +107,9 @@ protected:
     // - Resulting velocity and acceleration are sent to the position controller.
     void calc_desired_velocity(bool avoidance_on = true);
 
+    // Returns accel_turn_mss shortened so that |accel_pilot_mss + turn| does not exceed the pilot lean angle limit.
+    Vector2f limit_turn_accel(const Vector2f& accel_pilot_mss, const Vector2f& accel_turn_mss) const;
+
     // references and pointers to external libraries
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
