@@ -240,15 +240,10 @@ void AP_GPS_Blended::calc_state(void)
     timing.last_fix_time_ms = 0;
     timing.last_message_time_ms = 0;
 
-    if (gps.state[0].have_undulation) {
-        state.have_undulation = true;
-        state.undulation = gps.state[0].undulation;
-    } else if (gps.state[1].have_undulation) {
-        state.have_undulation = true;
-        state.undulation = gps.state[1].undulation;
-    } else {
-        state.have_undulation = false;
-    }
+    // the undulation (AMSL minus ellipsoid height) of the blended
+    // solution is taken from GPS1, else GPS2:
+    float undulation;
+    const bool have_undulation = gps.get_undulation(0, undulation) || gps.get_undulation(1, undulation);
 
     // combine the states into a blended solution
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
@@ -337,6 +332,17 @@ void AP_GPS_Blended::calc_state(void)
     // Add the sum of weighted offsets to the reference location to obtain the blended location
     state.location.offset(blended_NE_offset_m.x, blended_NE_offset_m.y);
     state.location.offset_up_cm(blended_alt_offset_cm);
+
+    // the blended location's height is the navigation height: the
+    // ellipsoid height with the HeightEllipsoid option, else AMSL
+    const float alt_m = state.location.alt * 0.01;
+    if (!have_undulation) {
+        set_heights(state, alt_m, NaNf);
+    } else if (option_set(AP_GPS::HeightEllipsoid)) {
+        set_heights(state, alt_m + undulation, alt_m);
+    } else {
+        set_heights(state, alt_m, alt_m - undulation);
+    }
 
     // Calculate ground speed and course from blended velocity vector
     state.ground_speed = state.velocity.xy().length();

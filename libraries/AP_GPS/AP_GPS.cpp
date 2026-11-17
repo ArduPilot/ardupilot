@@ -1911,14 +1911,36 @@ bool AP_GPS::get_error_codes(uint8_t instance, uint32_t &error_codes) const
     return drivers[instance]->get_error_codes(error_codes);
 }
 
-// get the difference between WGS84 and AMSL. A positive value means
-// the AMSL height is higher than WGS84 ellipsoid height
-bool AP_GPS::get_undulation(uint8_t instance, float &undulation) const
+bool AP_GPS::get_height_amsl(uint8_t instance, float &height_m) const
 {
-    if (!state[instance].have_undulation) {
+    if (instance >= GPS_MAX_INSTANCES || !state[instance].have_height_amsl) {
         return false;
     }
-    undulation = state[instance].undulation;
+    height_m = state[instance].height_amsl;
+    return true;
+}
+
+bool AP_GPS::get_height_ellipsoid(uint8_t instance, float &height_m) const
+{
+    if (instance >= GPS_MAX_INSTANCES || !state[instance].have_height_ellipsoid) {
+        return false;
+    }
+    height_m = state[instance].height_ellipsoid;
+    return true;
+}
+
+/*
+  the undulation is the AMSL height minus the ellipsoid height; it is
+  only known if the receiver reported both
+ */
+bool AP_GPS::get_undulation(uint8_t instance, float &undulation) const
+{
+    if (instance >= GPS_MAX_INSTANCES ||
+        !state[instance].have_height_amsl ||
+        !state[instance].have_height_ellipsoid) {
+        return false;
+    }
+    undulation = state[instance].height_amsl - state[instance].height_ellipsoid;
     return true;
 }
 

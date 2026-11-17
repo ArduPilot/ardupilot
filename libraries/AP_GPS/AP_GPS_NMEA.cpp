@@ -309,7 +309,7 @@ bool AP_GPS_NMEA::_have_new_message()
             state.have_speed_accuracy = false;
             state.have_horizontal_accuracy = false;
             state.have_vertical_accuracy = false;
-            state.have_undulation = false;
+            state.have_height_ellipsoid = false;
             _last_AGRICA_ms = 0;
         }
     }
@@ -398,7 +398,7 @@ bool AP_GPS_NMEA::_term_complete()
             case _GPS_SENTENCE_GGA:
                 _last_GGA_ms = now;
                 if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
-                    set_alt_amsl_cm(state, _new_altitude);
+                    set_heights(state, _new_altitude * 0.01, NaNf);
                     state.location.lat  = _new_latitude;
                     state.location.lng  = _new_longitude;
                 }
@@ -501,7 +501,7 @@ bool AP_GPS_NMEA::_term_complete()
                 }
                 state.location.lat     = _ksxt.fields[2]*1.0e7;
                 state.location.lng     = _ksxt.fields[1]*1.0e7;
-                set_alt_amsl_cm(state, _ksxt.fields[3]*1.0e2);
+                set_heights(state, _ksxt.fields[3], NaNf);
                 _last_KSXT_pos_ms = now;
                 if (_ksxt.fields[9] >= 1) {
                     // we have 3D fix
@@ -539,9 +539,9 @@ bool AP_GPS_NMEA::_term_complete()
                 _last_3D_velocity_ms = now;
                 state.location.lat = ag.lat*1.0e7;
                 state.location.lng = ag.lng*1.0e7;
-                state.undulation   = -ag.undulation;
-                state.have_undulation = true;
-                set_alt_amsl_cm(state, ag.alt*1.0e2);
+                // AGRICA's undulation is the height of the geoid above
+                // the ellipsoid:
+                set_heights(state, ag.alt, ag.alt + ag.undulation);
                 state.velocity = ag.vel_NED;
                 velocity_to_speed_course(state);
                 state.speed_accuracy = ag.vel_stddev.length();
