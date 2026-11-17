@@ -185,7 +185,12 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
         return false;
     }
 
-    if (((imuSampleTime_ms - lastGpsPosPassTime_ms) < frontend->deadReckonDeclare_ms && !frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion))  ||
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+    const bool fusionEnabled = frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion);
+#else
+    const bool fusionEnabled = false;
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
+    if (((imuSampleTime_ms - lastGpsPosPassTime_ms) < frontend->deadReckonDeclare_ms && !fusionEnabled) ||
         (PV_AidingMode == AID_NONE)
         || !validOrigin) {
         return false;
