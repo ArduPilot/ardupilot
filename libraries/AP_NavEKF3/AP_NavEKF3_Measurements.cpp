@@ -575,7 +575,11 @@ void NavEKF3_core::readGpsData()
     if (gps.status(selected_gps) < AP_GPS_FixType::FIX_3D) {
         // report GPS fix status
         gpsCheckStatus.bad_fix = true;
-        gpsAccuracyGood = false;
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+        if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion)) {
+            gpsAccuracyGood = false;
+        }
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
         dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
         return;
     }
