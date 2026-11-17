@@ -1936,7 +1936,9 @@ bool AP_GPS::get_height_ellipsoid(uint8_t instance, float &height_m) const
   EKF origin was taken from: the ellipsoid height with HeightEllipsoid,
   else AMSL.  That can differ from the current primary GPS's
   location.alt, eg. after a change of primary to a GPS with only one
-  height, so the frame is decided by the option alone
+  height, so the frame is decided by the option.  With the option, a
+  primary GPS without an ellipsoid height means the origin may have
+  been AMSL, so the frame is unknown
  */
 bool AP_GPS::location_alt_to_amsl(float alt_m, float &amsl_m) const
 {
@@ -1955,6 +1957,9 @@ bool AP_GPS::location_alt_to_amsl(float alt_m, float &amsl_m) const
 bool AP_GPS::location_alt_to_ellipsoid(float alt_m, float &ellipsoid_m) const
 {
     if (option_set(HeightEllipsoid)) {
+        if (primary_instance >= GPS_MAX_INSTANCES || !state[primary_instance].have_height_ellipsoid) {
+            return false;
+        }
         ellipsoid_m = alt_m;
         return true;
     }
