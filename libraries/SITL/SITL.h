@@ -376,6 +376,7 @@ public:
         AP_Vector3f vel_glitch; // glitch offsets in NED velocity (m/s)
         AP_Int8 ubx_model; // see enum SITL::GPS_UBlox::Model
         AP_Float geoid_separation; // height of the geoid (MSL) above the WGS84 ellipsoid (m)
+        AP_Int16 datum;            // SBF datum code the simulated receiver reports
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 

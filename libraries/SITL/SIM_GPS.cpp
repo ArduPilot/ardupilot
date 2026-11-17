@@ -190,6 +190,13 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GEOID",     23, GPSParms, geoid_separation, 0),
 
+    // @Param: DATUM
+    // @DisplayName: GPS datum code
+    // @Description: Datum code a simulated SBF (Septentrio) receiver reports in PVTGeodetic while it has a fix: 0 for WGS84/ITRS, 19 for the datum of the DGNSS/RTK base, 30 to 36 for ETRS89, NAD83(2011), NAD83(PA11), NAD83(MA11), GDA94, GDA2020 and JGD2011, 250 and 251 for user-defined datums
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("DATUM",     24, GPSParms, datum, 0),
+
     AP_GROUPEND
 };
 }

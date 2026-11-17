@@ -146,7 +146,7 @@ void GPS_SBF::publish_PVTGeodetic(const GPS_Data *d)
     pvtGeod_buf.rxclkbias = DNU_DOUBLE;
     pvtGeod_buf.rxclkdrift = DNU_FLOAT;
     pvtGeod_buf.timesystem = DNU_UINT8; 
-    pvtGeod_buf.datum = DNU_UINT8; 
+    pvtGeod_buf.datum = d->have_lock ? uint8_t(_sitl->gps[instance].datum.get()) : DNU_UINT8; 
     pvtGeod_buf.nrsv = d->num_sats;
     pvtGeod_buf.wacorrinfo = 0; //default value
     pvtGeod_buf.referenceid = DNU_UINT16; 
