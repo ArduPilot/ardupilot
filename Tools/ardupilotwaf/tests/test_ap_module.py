@@ -17,7 +17,9 @@ import pytest
     ('ChibiOS', 'cortex-m0', '', None, None),
     ('SITL', '', 'x86_64', 'x86_64-unknown-linux-gnu', None),
     ('LINUX', '', 'amd64', 'x86_64-unknown-linux-gnu', None),
-    ('LINUX', '', 'aarch64', None, None),
+    ('LINUX', '', 'aarch64', 'aarch64-linux-android', None),
+    ('SITL', '', 'arm64', 'aarch64-linux-android', None),
+    ('LINUX', '', 'armv7l', None, None),
 ])
 def test_module_target_matches_board(monkeypatch, board, cortex, dest_cpu, target, cpu):
     root = Path(__file__).resolve().parents[3]
