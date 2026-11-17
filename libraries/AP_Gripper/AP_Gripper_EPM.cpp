@@ -137,8 +137,8 @@ UAVCANCommand AP_Gripper_EPM::make_uavcan_command(uint16_t command) const
 bool AP_Gripper_EPM::released() const
 {
     // we assume instanteous releasing ATM:
-    return (config.state == AP_Gripper::STATE_GRABBED ||
-            config.state == AP_Gripper::STATE_GRABBING);
+    return (config.state == AP_Gripper::STATE_RELEASED ||
+            config.state == AP_Gripper::STATE_RELEASING);
 }
 
 bool AP_Gripper_EPM::grabbed() const
