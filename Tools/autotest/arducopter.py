@@ -19925,6 +19925,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if len(failures):
             raise NotAchievedException("; ".join(failures))
 
+    def UTMGlobalPositionEllipsoidHeight(self):
+        '''check UTM_GLOBAL_POSITION's altitude is the ellipsoid height, with and without HeightEllipsoid'''
+        self.set_parameter("SIM_GPS1_GEOID", 20)  # metres of geoid above the ellipsoid
+
+        def check(name):
+            self.reboot_sitl()
+            self.set_message_rate_hz('UTM_GLOBAL_POSITION', 5)
+            self.wait_ready_to_arm()
+            self.delay_sim_time(5, reason="altitudes to settle")
+            ellipsoid = self.assert_receive_message('GPS_RAW_INT', timeout=10).alt_ellipsoid * 0.001
+            utm = self.assert_receive_message('UTM_GLOBAL_POSITION', timeout=10).alt * 0.001
+            self.progress(f"{name}: UTM alt {utm:.2f} GPS ellipsoid height {ellipsoid:.2f}")
+            if abs(utm - ellipsoid) > 2:
+                raise NotAchievedException(
+                    f"{name}: UTM_GLOBAL_POSITION.alt {utm:.2f} is not the ellipsoid height {ellipsoid:.2f}")
+
+        check("AMSL navigation")
+        self.set_parameter("GPS_DRV_OPTIONS", int(self.get_parameter("GPS_DRV_OPTIONS")) | (1 << 4))
+        check("ellipsoid navigation")
+
     def GPSBlendingAffinity(self):
         '''test blending when affinity in use'''
         # configure:
@@ -22619,6 +22639,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSBlendingAffinity,
             self.GPSHeightsEllipsoidOption,
             self.GPSHeightsPerDriver,
+            self.UTMGlobalPositionEllipsoidHeight,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
