@@ -17,7 +17,7 @@
  */
 #include "Plane.h"
 
-// Check USE_REV_THRUST paramater for the given reverse thrust option
+// Check USE_REV_THRUST parameter for the given reverse thrust option
 bool Plane::reverse_thrust_enabled(UseReverseThrust use_reverse_thrust_option) const
 {
     return (g.use_reverse_thrust.get() & int32_t(use_reverse_thrust_option)) != 0;

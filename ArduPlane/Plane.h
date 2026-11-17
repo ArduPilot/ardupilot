@@ -568,7 +568,7 @@ private:
         // last home altitude for detecting changes
         int32_t last_home_alt_cm;
 
-        // have we finished the takeoff ratation (when it applies)?
+        // have we finished the takeoff rotation (when it applies)?
         bool rotation_complete;
     } auto_state;
 
@@ -1040,7 +1040,7 @@ private:
 
     bool is_land_command(uint16_t cmd) const;
 
-    bool do_change_speed(SPEED_TYPE speedtype, float speed_target_ms, float rhtottle_pct);
+    bool do_change_speed(SPEED_TYPE speedtype, float speed_target_ms, float throttle_pct);
     /*
       return true if in a specific AUTO mission command
     */
