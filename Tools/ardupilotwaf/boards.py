@@ -606,14 +606,13 @@ class Board:
             ]
 
         if cfg.env.DEST_OS == 'darwin':
-            if self.cc_version_gte(cfg, 15, 0):
-                env.LINKFLAGS += [
-                    '-Wl,-dead_strip,-ld_classic',
-                ]
-            else:
-                env.LINKFLAGS += [
-                    '-Wl,-dead_strip',
-                ]
+            env.LINKFLAGS += ['-Wl,-dead_strip']
+            # A newer Clang can still use an older macOS system linker.
+            if self.cc_version_gte(cfg, 15, 0) and cfg.check(
+                    compiler='cxx', fragment='int main() { return 0; }',
+                    linkflags=['-Wl,-ld_classic'], mandatory=False,
+                    msg='Checking for Darwin classic linker support'):
+                env.LINKFLAGS += ['-Wl,-ld_classic']
         else:
             env.LINKFLAGS += [
                 '-fno-exceptions',
