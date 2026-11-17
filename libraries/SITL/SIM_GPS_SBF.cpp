@@ -125,7 +125,11 @@ void GPS_SBF::publish_PVTGeodetic(const GPS_Data *d)
     pvtGeod_buf.latitude = radians(_sitl->state.latitude);
     pvtGeod_buf.longitude = radians(_sitl->state.longitude);
     pvtGeod_buf.height = d->altitude + d->geoid_separation;  // ellipsoidal
-    pvtGeod_buf.undulation = d->geoid_separation;
+    if (_sitl->gps[instance].options & uint32_t(SITL::SIM::GPSOptions::SBF_UNDULATION_DNU)) {
+        pvtGeod_buf.undulation = DNU_FLOAT;
+    } else {
+        pvtGeod_buf.undulation = d->geoid_separation;
+    }
     pvtGeod_buf.vn = d->speedN;
     pvtGeod_buf.ve = d->speedE;
     pvtGeod_buf.vu = -d->speedD;
