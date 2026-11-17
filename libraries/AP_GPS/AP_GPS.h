@@ -360,11 +360,9 @@ public:
     bool get_height_amsl(uint8_t instance, float &height_m) const;
     bool get_height_ellipsoid(uint8_t instance, float &height_m) const;
 
-    // true if location.alt holds the ellipsoid height, not AMSL
-    bool location_alt_is_ellipsoid(uint8_t instance) const;
-    // convert a height in the frame of the primary GPS's location.alt,
-    // which is also the frame of the vehicle's absolute altitude, to
-    // AMSL or to the ellipsoid height.  False if unknown
+    // convert a height in the frame of the vehicle's absolute
+    // altitude (the ellipsoid height with HeightEllipsoid, else AMSL)
+    // to AMSL or to the ellipsoid height.  False if unknown
     bool location_alt_to_amsl(float alt_m, float &amsl_m) const;
     bool location_alt_to_ellipsoid(float alt_m, float &ellipsoid_m) const;
 

@@ -1932,21 +1932,15 @@ bool AP_GPS::get_height_ellipsoid(uint8_t instance, float &height_m) const
 }
 
 /*
-  location.alt holds the ellipsoid height if the user asked for it with
-  HeightEllipsoid, or if the receiver gave no AMSL height (see
-  AP_GPS_Backend::set_heights)
+  the vehicle's absolute altitude is in the frame of the GPS height the
+  EKF origin was taken from: the ellipsoid height with HeightEllipsoid,
+  else AMSL.  That can differ from the current primary GPS's
+  location.alt, eg. after a change of primary to a GPS with only one
+  height, so the frame is decided by the option alone
  */
-bool AP_GPS::location_alt_is_ellipsoid(uint8_t instance) const
-{
-    if (instance >= GPS_MAX_INSTANCES || !state[instance].have_height_ellipsoid) {
-        return false;
-    }
-    return option_set(HeightEllipsoid) || !state[instance].have_height_amsl;
-}
-
 bool AP_GPS::location_alt_to_amsl(float alt_m, float &amsl_m) const
 {
-    if (!location_alt_is_ellipsoid(primary_instance)) {
+    if (!option_set(HeightEllipsoid)) {
         amsl_m = alt_m;
         return true;
     }
@@ -1960,7 +1954,7 @@ bool AP_GPS::location_alt_to_amsl(float alt_m, float &amsl_m) const
 
 bool AP_GPS::location_alt_to_ellipsoid(float alt_m, float &ellipsoid_m) const
 {
-    if (location_alt_is_ellipsoid(primary_instance)) {
+    if (option_set(HeightEllipsoid)) {
         ellipsoid_m = alt_m;
         return true;
     }
