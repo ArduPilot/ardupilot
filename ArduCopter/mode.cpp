@@ -170,6 +170,30 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
     return nullptr;
 }
 
+#if AP_FENCE_ENABLED
+// true if FENCE_OPTIONS bit 0 blocks mode changes during fence breach recovery
+bool Copter::fence_recovery_blocks_mode_change() const
+{
+    return fence.enabled() &&
+        fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE) &&
+        fence.get_breaches() &&
+        motors->armed() &&
+        get_control_mode_reason() == ModeReason::FENCE_BREACHED &&
+        !ap.land_complete;
+}
+#endif
+
+// update the reason for remaining in the current mode without releasing the fence recovery lock
+void Copter::set_current_mode_reason(ModeReason reason)
+{
+    _last_reason = reason;
+#if AP_FENCE_ENABLED
+    if (fence_recovery_blocks_mode_change()) {
+        return;
+    }
+#endif
+    control_mode_reason = reason;
+}
 
 // called when an attempt to change into a mode is unsuccessful:
 void Copter::mode_change_failed(const Mode *mode, const char *reason)
@@ -412,13 +436,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
 #if AP_FENCE_ENABLED
     // may not be allowed to change mode if recovering from fence breach
-    if (!ignore_checks &&
-        fence.enabled() &&
-        fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE) &&
-        fence.get_breaches() &&
-        motors->armed() &&
-        get_control_mode_reason() == ModeReason::FENCE_BREACHED &&
-        !ap.land_complete) {
+    if (!ignore_checks && fence_recovery_blocks_mode_change()) {
         mode_change_failed(new_flightmode, "in fence recovery");
         return false;
     }

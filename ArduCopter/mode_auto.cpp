@@ -319,7 +319,7 @@ bool ModeAuto::enter_auto_rtl(ModeReason reason)
     // if not already in auto switch to auto
     if ((copter.flightmode == this) || set_mode(Mode::Number::AUTO, reason)) {
         auto_RTL = true;
-        copter.control_mode_reason = reason;
+        copter.set_current_mode_reason(reason);
 #if HAL_LOGGING_ENABLED
         // log entry into AUTO RTL
         copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
