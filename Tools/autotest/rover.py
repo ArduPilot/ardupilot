@@ -8519,11 +8519,25 @@ return update()
             for velocity, speed in ([0, 1, 0], 1), ([2, 0, 0], 2):
                 physics.set(velocity=velocity)
                 self.wait_groundspeed(speed - 0.1, speed + 0.1)
-                start = self.get_location()
+                # bracket each position with the clock either side of it, as
+                # JSON_assert_elapsed_equal() does: a position and a time read
+                # one after the other are not the same instant, and both gaps
+                # lengthen the measured travel, so taking them unpaired leaves
+                # an error which is always positive
+                before_start = self.get_sim_time()
+                start = self.get_location(location_source='SIMSTATE')
+                after_start = self.get_sim_time()
                 self.delay_sim_time(10, reason="vehicle moving")
-                dist = self.get_distance(start, self.get_location())
-                if abs(dist - 10 * speed) > 1:
-                    raise NotAchievedException("moved %fm in 10s, expected %fm" % (dist, 10 * speed))
+                before_end = self.get_sim_time()
+                end = self.get_location(location_source='SIMSTATE')
+                after_end = self.get_sim_time()
+                dist = self.get_distance(start, end)
+                least = speed * (before_end - after_start)
+                most = speed * (after_end - before_start)
+                self.progress("moved %fm, travel bounded by %fm-%fm" % (dist, least, most))
+                if not least - 1 <= dist <= most + 1:
+                    raise NotAchievedException(
+                        "moved %fm, expected %fm-%fm" % (dist, least, most))
             physics.set(velocity=[0, 0, 0])
 
             # euler attitude, then quaternion which takes precedence over it
