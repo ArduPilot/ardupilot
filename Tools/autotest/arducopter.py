@@ -19928,7 +19928,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GPS2_TYPE": 1,
             "SIM_GPS2_TYPE": 1,
             "SIM_GPS2_ENABLE": 1,
-            "GPS_AUTO_SWITCH": 2,
             "GPS3_TYPE": 27,
         })
         self.reboot_sitl()
@@ -20031,7 +20030,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_GPS1_POS_Y": -1.0,
             "SIM_GPS2_POS_X": -1.0,
             "SIM_GPS2_POS_Y": 1.0,
-            "GPS_AUTO_SWITCH": 2,
             "GPS3_TYPE": 27,
         })
         self.reboot_sitl()
@@ -20094,7 +20092,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_GPS1_POS_Y": -1.0,
             "SIM_GPS2_POS_X": -1.0,
             "SIM_GPS2_POS_Y": 1.0,
-            "GPS_AUTO_SWITCH": 2,
             "GPS3_TYPE": 27,
         })
         # configure velocity errors such that the 1st GPS should be
@@ -20379,7 +20376,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_GPS2_ENABLE": 1,
             "SIM_GPS2_OPTIONS": 1 << 2,  # undulation is do-not-use, so ellipsoid height only
             "GPS2_TYPE": 10,
-            "GPS_AUTO_SWITCH": 2,  # blend
+            "GPS3_TYPE": 27,  # blend
             "LOG_DISARMED": 1,
         })
         self.reboot_sitl()
@@ -20444,7 +20441,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_GPS1_POS_Y": -1.0,
             "SIM_GPS2_POS_X": -1.0,
             "SIM_GPS2_POS_Y": 1.0,
-            "GPS_AUTO_SWITCH": 2,
             "GPS3_TYPE": 27,
 
             "EK3_AFFINITY" : 1,
@@ -20508,7 +20504,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GPS2_TYPE": 1,
             "SIM_GPS2_TYPE": 1,
             "SIM_GPS2_ENABLE": 1,
-            "GPS_AUTO_SWITCH": 2,
             "GPS3_TYPE": 27,
         })
         self.reboot_sitl()
@@ -20546,7 +20541,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GPS3_TYPE": 1,
             "GPS4_TYPE": 27,
             "GPS4_BLEND_MASK": 0b011,
-            "GPS_AUTO_SWITCH": 2,
             "SIM_GPS2_TYPE": 1,
             "SIM_GPS2_ENABLE": 1,
             "SIM_GPS3_TYPE": 1,
