@@ -20575,6 +20575,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_GPS3_GLTCH_X", 0)
         self.wait_ready_to_arm()
 
+    def GPSBlendedUsesNoSerialPort(self):
+        '''check a blended GPS instance does not take a serial port from a later serial GPS'''
+        # GPS1 and GPS3 are serial GPSs with the blended instance
+        # between them.  GPS3 is the second serial GPS, so must get the
+        # second GPS serial port and the second simulated GPS:
+        self.set_parameters({
+            "GPS2_TYPE": 27,
+            "GPS3_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('GNSS', 10)
+        self.assert_receive_message('GNSS', condition='GNSS.id==2 and GNSS.fix_type>=3', timeout=60)
+
     def Callisto(self):
         '''Test Callisto'''
         self.customise_SITL_commandline(
@@ -23210,6 +23225,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSBlendedStaleData,
             self.GPSType0BelowConfiguredGPS,
             self.GPSPositionsMustAgree,
+            self.GPSBlendedUsesNoSerialPort,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
