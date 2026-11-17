@@ -7090,6 +7090,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.datum != datum:
                 raise NotAchievedException(f"fix type {fix_type}: datum {m.datum}, want {datum}")
 
+    def GNSSGeoidModel(self):
+        '''check GNSS reports u-blox's geoid model for u-blox receivers, and unknown for others'''
+        for (name, sim_gps_type, gps_type, geoid_model) in [
+                ("u-blox", 1, 2, mavutil.mavlink.MAV_GNSS_GEOID_MODEL_UBLOX_EGM96),
+                ("SBF", 10, 10, mavutil.mavlink.MAV_GNSS_GEOID_MODEL_UNKNOWN),
+                ("NOVA", 8, 15, mavutil.mavlink.MAV_GNSS_GEOID_MODEL_UNKNOWN),
+        ]:
+            self.start_subtest(f"geoid model from {name}")
+            self.set_parameters({
+                "SIM_GPS1_TYPE": sim_gps_type,
+                "GPS1_TYPE": gps_type,
+            })
+            self.reboot_sitl()
+            self.set_message_rate_hz('GNSS', 5)
+            m = self.assert_receive_message('GNSS', condition='GNSS.id==0 and GNSS.fix_type>=3', timeout=120)
+            if m.geoid_model != geoid_model:
+                raise NotAchievedException(f"{name}: geoid_model {m.geoid_model}, want {geoid_model}")
+
     def GNSSYaw(self):
         '''check GNSS reports yaw and yaw accuracy'''
         self.set_message_rate_hz('GNSS', 5)
@@ -27681,6 +27699,7 @@ return update, 1000
             self.MultipleGPS,
             self.GNSSHeights,
             self.GNSSDatum,
+            self.GNSSGeoidModel,
             self.GNSSYaw,
             self.GNSSNoFix,
             self.GNSSMultipleLinks,
