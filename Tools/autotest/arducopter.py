@@ -20052,6 +20052,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(5, reason="primary GPS to change")
         check_utm("GPS2 primary")
 
+    def GPSHeightsBlendMixedFrames(self):
+        '''check blending a GPS with both heights and one with only an ellipsoid height gives an AMSL blended height'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameters({
+            "SIM_GPS1_GEOID": geoid,
+            "SIM_GPS2_GEOID": geoid,
+            "SIM_GPS2_TYPE": 10,  # SBF
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS2_OPTIONS": 1 << 2,  # undulation is do-not-use, so ellipsoid height only
+            "GPS2_TYPE": 10,
+            "GPS_AUTO_SWITCH": 2,  # blend
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('SIM_STATE', 5)
+        self.wait_ready_to_arm()
+        self.delay_sim_time(10, reason="blended heights to be logged")
+        # navigating on AMSL, the blended height must be AMSL even
+        # though one of the GPSs has only an ellipsoid height:
+        truth_amsl = self.assert_receive_message('SIM_STATE', timeout=10).alt
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        alts = {}
+        while True:
+            m = dfreader.recv_match(type='GPS')
+            if m is None:
+                break
+            if m.Status >= 3:
+                alts.setdefault(m.I, []).append(m.Alt)
+        for instance in sorted(alts):
+            self.progress(f"GPS instance {instance}: last logged Alt {alts[instance][-1]:.2f}")
+        if 2 not in alts:
+            raise NotAchievedException("no blended GPS altitudes logged")
+        blended = alts[2][-1]
+        if abs(blended - truth_amsl) > 1.5:
+            raise NotAchievedException(
+                f"blended navigation height {blended:.2f} is not the AMSL height {truth_amsl:.2f}")
+
     def GPSBlendingAffinity(self):
         '''test blending when affinity in use'''
         # configure:
@@ -22748,6 +22786,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSHeightsPerDriver,
             self.GPSHeightsSBFNoUndulation,
             self.GPSHeightsNMEABadChecksum,
+            self.GPSHeightsBlendMixedFrames,
             self.UTMGlobalPositionEllipsoidHeight,
             self.UTMGlobalPositionPrimaryChange,
             self.ProximitySensors,
