@@ -1443,11 +1443,12 @@ def _platform_text(root, repl):
 
 
 def _bdshot_devices(root, app, defines, base_repl, iomcu_uart, alloc,
-                    warnings, esc_signal_port):
-    '''Bridge DShot timer groups to per-ESC UDP signal ports.
+                    warnings, esc_signal_port, esc_sim):
+    '''Bridge DShot timer groups to built-in or UDP ESCs.
 
-    Servo output n uses esc_signal_port + 10 * (n - 1), the AM32 SITL and
-    ESCSim multi-ESC port layout.
+    With esc_sim each output gets the built-in AM32-style ESC model.
+    Otherwise servo output n uses esc_signal_port + 10 * (n - 1), the AM32
+    SITL and ESCSim multi-ESC port layout.
     '''
     text = _platform_text(root, base_repl)
     controllers = sorted(set(re.findall(
@@ -1505,8 +1506,13 @@ def _bdshot_devices(root, app, defines, base_repl, iomcu_uart, alloc,
         for index, stream in enumerate(streams):
             lines.append('    stream%d: %d' % (index + 1, stream))
         for channel, output in sorted(channels[timer].items()):
+            lines.append('    esc%dOutput: %d' % (channel, output + 1))
+            if esc_sim:
+                continue
             lines.append('    esc%dPort: %d' % (
                 channel, esc_signal_port + ESC_SIGNAL_PORT_STRIDE * output))
+        if esc_sim:
+            lines.append('    escSim: true')
         lines.append('')
     return lines
 
@@ -2124,7 +2130,7 @@ def _mapped_memory(root, repl):
 
 def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
               sigrok=False, num_imus=None, imu_names=None, synthetic_iomcu=True,
-              attachments=None, esc_signal_port=None):
+              attachments=None, esc_signal_port=None, esc_sim=False):
     family = FAMILIES[app.mcu_type]
     base = root / 'Tools' / 'renode' / 'platforms' / family['base']
     lines = [
@@ -2219,9 +2225,9 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
 
     lines += _timer_actuator_devices(
         app, family, iomcu_uart, alloc, warnings)
-    if esc_signal_port is not None:
+    if esc_signal_port is not None or esc_sim:
         lines += _bdshot_devices(root, app, defines, base, iomcu_uart, alloc,
-                                 warnings, esc_signal_port)
+                                 warnings, esc_signal_port, esc_sim)
 
     resolved_attachments = _resolve_attachments(app, family, attachments)
 
@@ -2703,8 +2709,10 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         lines.append(
             'include $repo/Tools/renode/peripherals/storage/AP_SPI_SDCard.cs')
     if bdshot:
-        lines.append(
-            'include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_BDShot.cs')
+        lines += [
+            'include $repo/Tools/renode/peripherals/common/AP_DShotESC.cs',
+            'include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_BDShot.cs',
+        ]
     lines += ['include @%s' % common, '']
     for name, adc, channel, raw in battery_samples:
         if isinstance(raw, tuple):
@@ -2940,7 +2948,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
 def generate(root, board, outdir, serial_index=None, uart_port=5762,
              state_dir=None, quiet_peripherals=True, sigrok=False,
              sigrok_channels=None, num_imus=None, imu_names=None, real_iomcu=False,
-             attachments=None, uds=False, esc_signal_port=None):
+             attachments=None, uds=False, esc_signal_port=None, esc_sim=False):
     '''Generate the board REPL/RESC and return paths plus run metadata.'''
     root = root.resolve()
     outdir = outdir.resolve()
@@ -2983,7 +2991,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
      spi_sdcard, resolved_attachments) = _platform(
         root, board, app, outdir, state_dir / 'fram.img', is_periph, warnings,
         sigrok, num_imus, imu_names, synthetic_iomcu=not real_iomcu,
-        attachments=attachments, esc_signal_port=esc_signal_port)
+        attachments=attachments, esc_signal_port=esc_signal_port, esc_sim=esc_sim)
     repl.write_text(platform)
     script, metadata = _script(
         root, board, app, bootloader, repl, serial_index, uart_port,

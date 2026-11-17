@@ -2,22 +2,27 @@
 
 # AP_FLAKE8_CLEAN
 
-"""Check bidirectional DShot telemetry error accounting under Renode.
+"""Check bidirectional DShot telemetry under Renode.
 
-Boots Copter on MatekH743-bdshot with its DShot outputs bridged over UDP to
-ESCs: scripted ones from Tools/renode/dshot_esc.py, or AM32 SITL ESCs with
---am32-sitl. Some ESCs stay silent, and in the recover scenario one starts
-answering part way through. The DataFlash log is then checked:
+Boots Copter on MatekH743-bdshot with its DShot outputs answered by ESCs:
+the built-in AM32-style ESC model (default), scripted UDP ESCs from
+Tools/renode/dshot_esc.py (--scripted), or AM32 SITL ESCs (--am32-sitl).
+Some ESCs stay silent, and in the recover scenario one starts answering part
+way through. The DataFlash log is then checked:
 
 - ESCs answering throughout keep ESC.Err near zero
 - silent ESCs never log, and each answering ESC reports its own rpm
 - an ESC that recovers first logs a high ESC.Err, from the failures counted
   against it while it was silent, which then falls to near zero
+
+The edt scenario enables extended DShot telemetry and checks the voltage and
+temperature the ESCs report.
 """
 
 import argparse
 import os
 import random
+import re
 import shutil
 import signal
 import socket
@@ -37,6 +42,8 @@ import test_mission as common  # noqa: E402
 
 from dshot_esc import PORT_STRIDE  # noqa: E402
 from dshot_esc import ESCBench  # noqa: E402
+from launch import MONITOR_COMMAND_ERROR_RE  # noqa: E402
+from launch import MonitorClient  # noqa: E402
 
 BOARD = 'MatekH743-bdshot'
 MOTORS = 4
@@ -53,16 +60,20 @@ PARAMETERS = {
     'BRD_SAFETY_DEFLT': 0,
 }
 SCENARIOS = {
-    # name: (ESCs silent at the start, of those the ones that later answer)
-    'all': ((), ()),
-    'one': ((2, 3, 4), ()),
-    'recover': ((2,), (2,)),
+    # name: (ESCs silent at the start, of those the ones that later answer, EDT)
+    'all': ((), (), False),
+    'one': ((2, 3, 4), (), False),
+    'recover': ((2,), (2,), False),
+    'edt': ((4,), (), True),
 }
+EDT_ESC_TYPE = 3  # BLHeli32/AM32/Kiss+EDT
 MAX_ERROR_RATE = 5.0
 MIN_RECOVERY_ERROR_RATE = 50.0
+MIN_EDT_UPDATES = 20
 SILENT_SECONDS = 20
 RECOVERED_SECONDS = 15
 MOTOR_TEST_PERCENT = 15
+ESC_ARM_SECONDS = 3
 
 
 def reboot(link, process, log_path, timeout):
@@ -120,9 +131,74 @@ def expected_rpm(esc):
     return (ESC_ERPM + (esc - 1) * ESC_ERPM_STEP) * 2 / PARAMETERS['SERVO_BLH_POLES']
 
 
+class SimESCs:
+    '''The bridge's built-in AM32-style ESCs; the motor test spins motor 1.'''
+
+    motor_test = True
+    edt = True
+    edt_current = True
+
+    def __init__(self, silent, output):
+        self.silent = silent
+        self.output = output
+        self.monitor = None
+        self.bridges = []
+
+    def run_args(self):
+        return ['--esc-sim']
+
+    def attach(self, monitor):
+        self.monitor = monitor
+        repl = self.output / 'state' / 'generated' / ('%s.repl' % BOARD)
+        self.bridges = re.findall(r'^(timer\d+BDShot):', repl.read_text(), re.M)
+        for esc in self.silent:
+            self.set_silent(esc, True)
+
+    def set_silent(self, esc, silent):
+        for bridge in self.bridges:
+            response = self.monitor.command('sysbus.%s SetSilent %u %s' % (
+                bridge, esc, 'true' if silent else 'false'))
+            if MONITOR_COMMAND_ERROR_RE.search(response):
+                raise RuntimeError(response)
+
+    def start(self, esc):
+        self.set_silent(esc, False)
+
+    check_rpm = staticmethod(lambda rpm, answering: motor_test_rpm(rpm))
+
+    def summary(self):
+        for esc in range(1, MOTORS + 1):
+            for bridge in self.bridges:
+                state = self.monitor.command('sysbus.%s EscState %u' % (bridge, esc))
+                if 'armed=' in state:
+                    line = [part for part in state.splitlines() if 'armed=' in part][0]
+                    print('ESC%u: %s' % (esc, line.strip()), flush=True)
+
+    def close(self):
+        pass
+
+
+def motor_test_rpm(rpm):
+    for esc in range(2, MOTORS + 1):
+        if rpm[esc - 1] != 0:
+            raise RuntimeError('idle ESC%u reports %u rpm' % (esc, rpm[esc - 1]))
+    return rpm[0] > 500
+
+
 class ScriptedESCs:
+    motor_test = False
+    edt = False
+    edt_current = False
+
     def __init__(self, base_port, silent, output):
+        self.base_port = base_port
         self.bench = ESCBench(base_port, MOTORS, ESC_ERPM, set(silent), ESC_ERPM_STEP)
+
+    def run_args(self):
+        return ['--esc-signal-port', str(self.base_port)]
+
+    def attach(self, monitor):
+        pass
 
     def start(self, esc):
         self.bench.escs[esc - 1].silent = False
@@ -150,6 +226,11 @@ class ScriptedESCs:
 class AM32ESCs:
     '''AM32 SITL ESCs; the motor test spins only motor 1.'''
 
+    motor_test = True
+    edt = True
+    # its simulated motor draws under 1A at the motor test throttle
+    edt_current = False
+
     def __init__(self, base_port, silent, output, elf):
         self.base_port = base_port
         self.output = output
@@ -168,11 +249,13 @@ class AM32ESCs:
             '--verbose', '--log-file', str(self.output / ('esc%u.log' % esc)),
         ], cwd=self.output, start_new_session=True)
 
-    def check_rpm(self, rpm, answering):
-        for esc in range(2, MOTORS + 1):
-            if rpm[esc - 1] != 0:
-                raise RuntimeError('idle ESC%u reports %u rpm' % (esc, rpm[esc - 1]))
-        return rpm[0] > 500
+    def run_args(self):
+        return ['--esc-signal-port', str(self.base_port)]
+
+    def attach(self, monitor):
+        pass
+
+    check_rpm = staticmethod(lambda rpm, answering: motor_test_rpm(rpm))
 
     def summary(self):
         for esc, process in sorted(self.processes.items()):
@@ -257,25 +340,55 @@ def check_log(log_file, silent, recover, recovered_ms):
         raise RuntimeError('; '.join(failures))
 
 
-def run(args, root, output, silent, recover):
+def check_edt(start, end, answering, spinning_current):
+    '''EDT must keep updating through the run; ArduPilot holds old values.'''
+    if start is None or end is None:
+        raise RuntimeError('no ESC telemetry')
+    failures = []
+    for esc in range(1, MOTORS + 1):
+        voltage = end.voltage[esc - 1] * 0.01
+        temperature = end.temperature[esc - 1]
+        current = end.current[esc - 1] * 0.01
+        updates = (end.count[esc - 1] - start.count[esc - 1]) & 0xFFFF
+        print('ESC%u EDT %.2fV %udegC %.2fA, %u updates' % (
+            esc, voltage, temperature, current, updates), flush=True)
+        if esc not in answering:
+            if voltage or temperature or updates:
+                failures.append('silent ESC%u reports EDT data' % esc)
+            continue
+        if voltage < 5 or temperature <= 0:
+            failures.append('ESC%u reports no EDT voltage/temperature' % esc)
+        if updates < MIN_EDT_UPDATES:
+            failures.append('ESC%u EDT updated only %u times' % (esc, updates))
+        if esc == 1 and spinning_current and current <= 0:
+            failures.append('spinning ESC1 reports no EDT current')
+    if failures:
+        raise RuntimeError('; '.join(failures))
+
+
+def make_escs(args, silent, output):
+    if args.am32_sitl:
+        return AM32ESCs(args.esc_port or free_port_base(MOTORS), silent, output, args.am32_sitl)
+    if args.scripted:
+        return ScriptedESCs(args.esc_port or free_port_base(MOTORS), silent, output)
+    return SimESCs(silent, output)
+
+
+def run(args, root, output, silent, recover, edt):
     answering = {esc for esc in range(1, MOTORS + 1) if esc not in silent}
     log_path = output / 'renode.log'
     uart_port = common.unused_tcp_port()
     monitor_port = common.unused_tcp_port()
-    esc_port = args.esc_port or free_port_base(MOTORS)
-    if args.am32_sitl:
-        escs = AM32ESCs(esc_port, silent, output, args.am32_sitl)
-    else:
-        escs = ScriptedESCs(esc_port, silent, output)
+    escs = make_escs(args, silent, output)
     process = None
+    monitor = None
     try:
         command = [
             sys.executable, str(root / 'Tools/renode/run.py'), BOARD,
             '--firmware', str(args.firmware),
             '--state-dir', str(output / 'state'),
             '--uart-port', str(uart_port), '--port', str(monitor_port),
-            '--esc-signal-port', str(esc_port),
-        ]
+        ] + escs.run_args()
         if args.renode:
             command += ['--renode', args.renode]
         with log_path.open('w') as log:
@@ -285,24 +398,41 @@ def run(args, root, output, silent, recover):
         link = common.connect_mavlink(uart_port, process, log_path,
                                       time.monotonic() + args.timeout)
         link.setup_logfile(str(output / 'bdshot.tlog'))
-        for name, value in PARAMETERS.items():
+        monitor = MonitorClient('127.0.0.1', monitor_port)
+        monitor.connect()
+        escs.attach(monitor)
+        latest = {}
+        link.message_hooks.append(
+            lambda connection, message: latest.__setitem__(message.get_type(), message))
+        parameters = dict(PARAMETERS)
+        if edt:
+            parameters['SERVO_DSHOT_ESC'] = EDT_ESC_TYPE
+        for name, value in parameters.items():
             set_parameter(link, process, log_path, name, value, args.timeout)
         reboot(link, process, log_path, args.timeout)
-        if args.am32_sitl:
+        if escs.motor_test:
+            # AM32 only arms after a second of zero throttle
+            wait_sim_seconds(link, process, log_path, ESC_ARM_SECONDS, args.timeout)
             common.send_command(link, process, log_path, mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
                                 (1, 0, MOTOR_TEST_PERCENT,
                                  SILENT_SECONDS + RECOVERED_SECONDS + 30, 1, 0))
         rpm = wait_rpm(link, process, log_path, escs, answering, args.timeout)
         print('ESC telemetry rpm %s' % rpm, flush=True)
+        edt_start = latest.get('ESC_TELEMETRY_1_TO_4')
         # the vehicle is at least this far along when the ESCs start answering
         recovered_ms = wait_sim_seconds(link, process, log_path, SILENT_SECONDS, args.timeout)
         for esc in recover:
             escs.start(esc)
         wait_sim_seconds(link, process, log_path, RECOVERED_SECONDS, args.timeout)
         escs.summary()
+        if edt:
+            check_edt(edt_start, latest.get('ESC_TELEMETRY_1_TO_4'), answering,
+                      escs.edt_current)
         log_file = common.download_log(link, process, log_path, output / 'bdshot.BIN',
                                        list_timeout=180)
     finally:
+        if monitor is not None:
+            monitor.close()
         if process is not None:
             common.stop_process_group(process)
         escs.close()
@@ -318,10 +448,14 @@ def main():
     parser.add_argument('--firmware', type=Path,
                         default=root / 'build' / BOARD / 'bin' / 'arducopter',
                         help='%s ArduCopter ELF' % BOARD)
-    parser.add_argument('--am32-sitl', type=Path, metavar='ELF',
-                        help='use AM32 SITL ESCs (make AM32_SITL_CAN in am32-firmware)')
+    escs = parser.add_mutually_exclusive_group()
+    escs.add_argument('--am32-sitl', type=Path, metavar='ELF',
+                      help='use AM32 SITL ESCs (make AM32_SITL_CAN in am32-firmware)')
+    escs.add_argument('--scripted', action='store_true',
+                      help='use scripted UDP ESCs from dshot_esc.py')
     parser.add_argument('--esc-port', type=int,
-                        help='ESC 1 UDP signal port (default: a free range)')
+                        help='ESC 1 UDP signal port for --scripted and --am32-sitl '
+                             '(default: a free range)')
     parser.add_argument('--timeout', type=float, default=600)
     parser.add_argument('--output', type=Path,
                         default=root / 'build' / 'renode-test' / 'bdshot')
@@ -336,15 +470,19 @@ def main():
         if not args.am32_sitl.exists():
             parser.error('AM32 SITL not found: %s' % args.am32_sitl)
     failed = []
+    backend = 'am32' if args.am32_sitl else 'scripted' if args.scripted else 'sim'
     for name in args.scenario or sorted(SCENARIOS):
-        silent, recover = SCENARIOS[name]
-        output = args.output / ('am32-' + name if args.am32_sitl else name)
+        silent, recover, edt = SCENARIOS[name]
+        if edt and args.scripted:
+            print('scenario %s: skipped, scripted ESCs have no EDT' % name, flush=True)
+            continue
+        output = args.output / backend / name
         shutil.rmtree(output, ignore_errors=True)
         output.mkdir(parents=True)
-        print('scenario %s: silent ESCs %s, recovering %s' % (
-            name, list(silent), list(recover)), flush=True)
+        print('scenario %s (%s ESCs): silent %s, recovering %s, EDT %s' % (
+            name, backend, list(silent), list(recover), edt), flush=True)
         try:
-            run(args, root, output, silent, recover)
+            run(args, root, output, silent, recover, edt)
             print('scenario %s: PASS' % name, flush=True)
         except (OSError, RuntimeError, ValueError) as error:
             print('scenario %s: FAIL: %s' % (name, error), flush=True)

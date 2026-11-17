@@ -22,9 +22,12 @@
 // taken from the one channel ArduPilot leaves enabled in input mode, and its
 // CCxS selection says which pin of the pair it samples.
 //
-// The ESC runs in another process, so a reply is used by the next capture
-// on that channel, once. A capture with no reply since the previous one
-// is silent, as on hardware.
+// An external ESC runs in another process, so a reply is used by the next
+// capture on that channel, once. A capture with no reply since the previous
+// one is silent, as on hardware. With escSim the built-in AM32-style
+// AP_DShotESC answers each frame at once, with no host timing involved.
+//
+// SetSilent(output, true) from the monitor stops servo output N answering.
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -46,20 +49,30 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
     public sealed class AP_STM32_Timer_BDShot : IDoubleWordPeripheral, IKnownSize, IDisposable
     {
         // streamN encodes (controller - 1) * 8 + stream, or -1 when unused.
-        // escNPort is the ESC UDP port for timer channel N, or 0 when unused.
+        // escNOutput is the servo output (from 1) on timer channel N, or 0.
+        // escNPort is its ESC UDP port, or 0 for none or with escSim.
         public AP_STM32_Timer_BDShot(IMachine machine, STM32_Timer timer,
             uint timerAddress, STM32DMA dma1, STM32DMA dma2,
             int stream1 = -1, int stream2 = -1, int stream3 = -1,
             int stream4 = -1, int stream5 = -1,
-            int esc1Port = 0, int esc2Port = 0, int esc3Port = 0, int esc4Port = 0)
+            int esc1Output = 0, int esc2Output = 0, int esc3Output = 0, int esc4Output = 0,
+            int esc1Port = 0, int esc2Port = 0, int esc3Port = 0, int esc4Port = 0,
+            bool escSim = false, int escPoles = 14, double escKv = 1000,
+            double escBatteryVoltage = 16.8, double escMaxCurrent = 30)
         {
             this.machine = machine;
             this.timer = timer;
             dmarAddress = timerAddress + DmaAddressForFullTransfer;
             controllers = new[] { dma1, dma2 };
+            outputs = new[] { esc1Output, esc2Output, esc3Output, esc4Output };
             var ports = new[] { esc1Port, esc2Port, esc3Port, esc4Port };
             for(var channel = 0; channel < Channels; channel++)
             {
+                if(escSim && outputs[channel] > 0)
+                {
+                    models[channel] = new AP_DShotESC(escPoles, escKv, escBatteryVoltage, escMaxCurrent);
+                    continue;
+                }
                 if(ports[channel] <= 0)
                 {
                     continue;
@@ -98,6 +111,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             {
                 Array.Clear(replies, 0, replies.Length);
             }
+            // simulated ESCs are powered separately, so a flight controller
+            // reset reaches them only as loss of signal
             framesSent = 0;
             repliesReceived = 0;
             repliesInjected = 0;
@@ -131,6 +146,31 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         public uint RepliesReceived => (uint)repliesReceived;
         public uint RepliesInjected => (uint)repliesInjected;
         public uint CapturesSilent => (uint)capturesSilent;
+
+        public void SetSilent(int output, bool value)
+        {
+            for(var channel = 0; channel < Channels; channel++)
+            {
+                if(outputs[channel] == output && output > 0)
+                {
+                    silent[channel] = value;
+                }
+            }
+        }
+
+        // simulated ESC state for servo output N, for the monitor
+        public string EscState(int output)
+        {
+            for(var channel = 0; channel < Channels; channel++)
+            {
+                var model = models[channel];
+                if(outputs[channel] == output && model != null)
+                {
+                    return model.State(machine.ElapsedVirtualTime.TimeElapsed.TotalSeconds);
+                }
+            }
+            return "no simulated ESC";
+        }
 
         public void Dispose()
         {
@@ -213,12 +253,28 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             var type = DshotType(autoReload);
             for(var channel = 0; channel < Channels; channel++)
             {
-                if(sockets[channel] == null || !TryDecode(memory, channel, autoReload, out var frame))
+                if((sockets[channel] == null && models[channel] == null) ||
+                   !TryDecode(memory, channel, autoReload, out var frame))
                 {
                     continue;
                 }
                 var bidirectional = HasInvertedChecksum(frame);
                 lastFrames[channel] = frame;
+                if(models[channel] != null)
+                {
+                    Interlocked.Increment(ref framesSent);
+                    var now = machine.ElapsedVirtualTime.TimeElapsed.TotalSeconds;
+                    var reply = models[channel].Frame(frame, bidirectional, now);
+                    if(reply.HasValue && !silent[channel])
+                    {
+                        lock(sync)
+                        {
+                            replies[channel] = reply;
+                        }
+                        Interlocked.Increment(ref repliesReceived);
+                    }
+                    continue;
+                }
                 var packet = new byte[8];
                 Put16(packet, 0, Magic);
                 packet[2] = type;
@@ -260,7 +316,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 return;
             }
             var channel = CaptureInputChannel();
-            if(channel < 0 || sockets[channel] == null)
+            if(channel < 0 || (sockets[channel] == null && models[channel] == null))
             {
                 return;
             }
@@ -333,7 +389,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 {
                     var packet = sockets[channel].Receive(ref endpoint);
                     if(packet.Length < 8 || Get16(packet, 0) != Magic ||
-                       packet[3] != 4 || packet[2] < Dshot150 || packet[2] > Dshot600)
+                       packet[3] != 4 || packet[2] < Dshot150 || packet[2] > Dshot600 ||
+                       silent[channel])
                     {
                         continue;
                     }
@@ -413,6 +470,9 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private readonly STM32DMA[] controllers;
         private readonly UdpClient[] sockets = new UdpClient[Channels];
         private readonly ushort?[] replies = new ushort?[Channels];
+        private readonly int[] outputs;
+        private readonly AP_DShotESC[] models = new AP_DShotESC[Channels];
+        private readonly bool[] silent = new bool[Channels];
         private readonly uint[] lastFrames = new uint[Channels];
         private readonly object sync = new object();
         private volatile bool disposed;

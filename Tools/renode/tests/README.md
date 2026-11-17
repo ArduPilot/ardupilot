@@ -44,9 +44,9 @@ recovery with ChibiOS UART ownership checks. Build MatekH743 Copter first:
 Tools/renode/tests/test_serial_passthru.py --renode build/renode/renode
 ```
 
-`test_bdshot.py` checks bidirectional DShot telemetry error accounting with
-DShot outputs bridged to scripted UDP ESCs: all four answering, only one
-answering, and one that is silent and then starts answering. Build
+`test_bdshot.py` checks bidirectional DShot telemetry with the built-in
+AM32-style ESCs: all four answering, only one answering, one that is silent
+and then starts answering, and extended telemetry (EDT). Build
 MatekH743-bdshot Copter first:
 
 ```sh
@@ -55,7 +55,13 @@ MatekH743-bdshot Copter first:
 Tools/renode/tests/test_bdshot.py --renode build/renode/renode
 ```
 
-`--am32-sitl ELF` runs the same scenarios against AM32 SITL ESCs instead,
+`test_dshot_esc_model.py` checks the built-in ESC model's AM32 behaviours
+directly (arming, commands, EDT, 3D, signal loss); it compiles the model
+with `mcs` and runs it under `mono`, and is skipped without them.
+
+`--scripted` uses the UDP ESCs from `dshot_esc.py` instead, which covers
+the UDP bridge path but has no EDT. `--am32-sitl ELF` runs the scenarios
+against AM32 SITL ESCs over UDP,
 with a motor test spinning motor 1. Build the ESC with `make AM32_SITL_CAN`
 in an am32-firmware checkout and pass its `obj/AM32_AM32_SITL_CAN_*.elf`.
 
