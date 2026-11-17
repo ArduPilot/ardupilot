@@ -150,7 +150,7 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: GPS Options
     // @Description: GPS Options bitmask
-    // @Bitmask: 0:UBlox GPS is F9P, 1:UBlox receiver without flash loses its saved configuration on reboot, 2:SBF receiver marks the geoid undulation do-not-use
+    // @Bitmask: 0:UBlox GPS is F9P, 1:UBlox receiver without flash loses its saved configuration on reboot, 2:SBF receiver marks the geoid undulation do-not-use, 3:NMEA receiver leaves the GGA geoid separation empty
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
 

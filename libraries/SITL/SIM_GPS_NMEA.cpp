@@ -69,7 +69,11 @@ void GPS_NMEA::publish(const GPS_Data *d)
              (deg - int(deg))*60,
              d->longitude<0?'W':'E');
 
-    nmea_printf("$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,%.1f,M,,",
+    char separation_string[16] {};
+    if (!(_sitl->gps[instance].options & uint32_t(SITL::SIM::GPSOptions::NMEA_NO_GEOID_SEPARATION))) {
+        hal.util->snprintf(separation_string, sizeof(separation_string), "%.1f", d->geoid_separation);
+    }
+    nmea_printf("$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,%s,M,,",
                      tstring,
                      lat_string,
                      lng_string,
@@ -77,7 +81,7 @@ void GPS_NMEA::publish(const GPS_Data *d)
                      d->have_lock?d->num_sats:3,
                      1.2,
                      d->altitude,
-                     d->geoid_separation);
+                     separation_string);
 
     const float speed_mps = d->speed_2d();
     const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
