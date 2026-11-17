@@ -62,6 +62,7 @@ private:
 
     uint32_t descent_established_time_ms; // milliseconds
     uint32_t place_start_time_ms; // milliseconds
+    uint32_t release_time_ms; // milliseconds
     float descent_thrust_level;
     float descent_start_altitude_m;
     float descent_speed_ms;
