@@ -44,12 +44,14 @@ def build(tmp_path, target, base=0x10000, relocation=None, cpu=None):
     if cpu is not None:
         command += ['-C', 'target-cpu=' + cpu]
     arguments = [f'-T{HERE / "module.ld"}', '--emit-relocs', f'--defsym=MODULE_BASE={base}']
-    if target == 'x86_64-unknown-linux-gnu':
+    if target == 'x86_64-unknown-linux-gnu' and sys.platform.startswith('linux'):
         command += ['-C', 'link-arg=-nostdlib', '-C', 'link-arg=-static', '-C', 'link-arg=-no-pie']
         arguments = ['-Wl,' + arg for arg in arguments]
-    elif target == AARCH64:
+    elif target == AARCH64 or target == 'x86_64-unknown-linux-gnu':
         command += ['-C', 'linker=rust-lld', '-C', 'linker-flavor=ld.lld']
-        arguments += [f'--defsym=MODULE_DATA_ALIGNMENT={pack.AARCH64_PAGE}', '-static', '--no-pie']
+        if target == AARCH64:
+            arguments += [f'--defsym=MODULE_DATA_ALIGNMENT={pack.AARCH64_PAGE}']
+        arguments += ['-static', '--no-pie']
     for arg in arguments:
         command += ['-C', 'link-arg=' + arg]
     subprocess.run(command, check=True, capture_output=True)
@@ -135,7 +137,7 @@ def test_aarch64_runtime_image(tmp_path):
     elf = build(tmp_path, AARCH64)
     data = pack.pack_elf(elf, manifest)
     # ADRP/LO12 pairs and the GOT are position independent on 4 KiB boundaries
-    assert data == pack.pack_elf(build(tmp_path, AARCH64, base=0x24124000), manifest)
+    assert data == pack.pack_elf(build(tmp_path, AARCH64, base=0x24125000), manifest)
     info = pack.unpack(data)
     assert info['machine'] == 183 and info['contract'] == manifest
     assert info['rx_size'] % pack.AARCH64_PAGE == 0
@@ -226,6 +228,8 @@ def test_static_arm_requires_instruction_relocations(tmp_path):
 
 
 def test_non_relaxed_got_normalized(tmp_path):
+    if sys.platform != 'linux' or platform.machine().lower() not in ('x86_64', 'amd64'):
+        pytest.skip('fixture requires the GNU x86-64 ELF linker')
     source = tmp_path / 'got.S'
     source.write_text('.globl start\n.text\nstart: movq obj@GOTPCREL(%rip), %rax\nret\n'
                       '.data\nobj: .quad 0\n')

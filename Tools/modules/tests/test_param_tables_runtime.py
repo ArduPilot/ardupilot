@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Declarative tables through the real SDK, loader and AP_Param implementation."""
 
+from test_runtime import native_target
 from test_runtime import ROOT, Vehicle
 
 import build
@@ -9,7 +10,7 @@ import build
 
 def test_declarative_parameter_tables(tmp_path):
     image = build.build(ROOT / 'libraries/AP_Module/tests/modules/param_table.rs', tmp_path / 'table.apmod',
-                        'x86_64-unknown-linux-gnu', 16384)
+                        native_target(), 16384)
     vehicle = Vehicle(tmp_path / 'vehicle', {'table.apmod': image.read_bytes()}, {})
     try:
         vehicle.start()
