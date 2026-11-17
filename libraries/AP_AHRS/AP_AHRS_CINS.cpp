@@ -692,12 +692,13 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     // attitude
     //
     // publish the vehicle-body (trimmed) attitude so AHRS_TRIM / a board
-    // mounting offset is honoured, matching DCM's _body_dcm_matrix.  This
-    // also feeds the trimmed fuselage axis into estimate_wind() below, so the
+    // mounting offset is honoured, as the other backends do.  This also
+    // feeds the trimmed fuselage axis into estimate_wind() below, so the
     // wind estimate is invariant to the board mounting offset.
-    results.dcm_matrix = (state.XHat.rot() * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body().toftype()).tofloat();
-    results.quaternion.from_rotation_matrix(results.dcm_matrix);
-    results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
+    results.quaternion.from_rotation_matrix(state.XHat.rot().tofloat());
+    // quaternion composition rotates the autopilot-body-frame attitude into the vehicle-body-frame
+    results.quaternion *= AP::ahrs().get_quat_vehicle_body_to_autopilot_body();
+    results.derive_attitude_from_quaternion();
     results.attitude_valid = healthy();
     // re-initialising the attitude resets the yaw as well:
     results.attitude_reset_count = attitude_reset_count;
