@@ -232,9 +232,12 @@ public:
      */
     // !!! Note ObjectBuffer_TS is a duplicate of this update, in both places !!!
     bool push_force(const T *object, uint32_t n) {
-        uint32_t _space = buffer->space();
-        if (_space < sizeof(T)*n) {
-            buffer->advance(sizeof(T)*(n-_space));
+        const uint32_t _space = buffer->space();  // in bytes
+        const uint32_t needed = sizeof(T)*n;
+        if (_space < needed) {
+            // discard whole objects covering the shortfall
+            const uint32_t drop = (needed - _space + sizeof(T) - 1) / sizeof(T);
+            buffer->advance(sizeof(T)*drop);
         }
         return push(object, n);
     }
@@ -417,9 +420,12 @@ public:
     // !!! Note this is a duplicate of ObjectBuffer with semaphore, update in both places !!!
     bool push_force(const T *object, uint32_t n) {
         WITH_SEMAPHORE(sem);
-        uint32_t _space = buffer->space();
-        if (_space < sizeof(T)*n) {
-            buffer->advance(sizeof(T)*(n-_space));
+        const uint32_t _space = buffer->space();  // in bytes
+        const uint32_t needed = sizeof(T)*n;
+        if (_space < needed) {
+            // discard whole objects covering the shortfall
+            const uint32_t drop = (needed - _space + sizeof(T) - 1) / sizeof(T);
+            buffer->advance(sizeof(T)*drop);
         }
         return push(object, n);
     }

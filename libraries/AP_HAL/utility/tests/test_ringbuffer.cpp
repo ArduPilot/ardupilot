@@ -854,12 +854,11 @@ TYPED_TEST(ObjectBufferTypedTest, PushForceMultipleFitsWithoutDropping)
 }
 
 /*
-  push_force(const T*, n) mixes byte and object units when computing
-  how much to discard, so it fails whenever it needs to drop data
-  (unless sizeof(T)==1). The function currently has no callers.
-  Disabled until the function is fixed or removed.
+  regression test: push_force(const T*, n) used to mix byte and object
+  units when computing how much to discard, so it failed whenever it
+  needed to drop data and sizeof(T) > 1
  */
-TYPED_TEST(ObjectBufferTypedTest, DISABLED_PushForceMultipleDropsOldest)
+TYPED_TEST(ObjectBufferTypedTest, PushForceMultipleDropsOldest)
 {
     using T = typename TestFixture::Elem;
     auto &b = this->buf;
@@ -877,6 +876,57 @@ TYPED_TEST(ObjectBufferTypedTest, DISABLED_PushForceMultipleDropsOldest)
         ASSERT_TRUE(b.pop(out));
         EXPECT_TRUE(same(make<T>(e), out));
     }
+}
+
+TYPED_TEST(ObjectBufferTypedTest, PushForceMultipleAtAllOffsets)
+{
+    using T = typename TestFixture::Elem;
+    auto &b = this->buf;
+    const uint32_t N = TestFixture::SIZE;
+    for (uint32_t ofs = 0; ofs <= N; ofs++) {
+        for (uint32_t fill = 0; fill <= N; fill++) {
+            for (uint32_t n = 1; n <= N; n++) {
+                SCOPED_TRACE(::testing::Message() << "ofs=" << ofs << " fill=" << fill << " n=" << n);
+                this->offset(ofs);
+                for (uint32_t i = 0; i < fill; i++) {
+                    ASSERT_TRUE(b.push(make<T>(i)));
+                }
+                T in[TestFixture::SIZE];
+                for (uint32_t i = 0; i < n; i++) {
+                    in[i] = make<T>(100 + i);
+                }
+                ASSERT_TRUE(b.push_force(in, n));
+                // exactly enough oldest objects dropped to make room
+                const uint32_t kept = std::min<uint32_t>(fill, N - n);
+                ASSERT_EQ(kept + n, b.available());
+                for (uint32_t i = fill - kept; i < fill; i++) {
+                    T out;
+                    ASSERT_TRUE(b.pop(out));
+                    EXPECT_TRUE(same(make<T>(i), out));
+                }
+                for (uint32_t i = 0; i < n; i++) {
+                    T out;
+                    ASSERT_TRUE(b.pop(out));
+                    EXPECT_TRUE(same(make<T>(100 + i), out));
+                }
+            }
+        }
+    }
+}
+
+TYPED_TEST(ObjectBufferTypedTest, PushForceMultipleMoreThanCapacityFails)
+{
+    using T = typename TestFixture::Elem;
+    auto &b = this->buf;
+    const uint32_t N = TestFixture::SIZE;
+    ASSERT_TRUE(b.push(make<T>(7)));
+    T in[TestFixture::SIZE + 1] {};
+    EXPECT_FALSE(b.push_force(in, N + 1));
+    // buffer untouched
+    EXPECT_EQ(1U, b.available());
+    T out;
+    ASSERT_TRUE(b.pop(out));
+    EXPECT_TRUE(same(make<T>(7), out));
 }
 
 TYPED_TEST(ObjectBufferTypedTest, AdvanceDiscardsObjects)
