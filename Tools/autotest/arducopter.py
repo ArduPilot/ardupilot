@@ -20566,6 +20566,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.dump_message_verbose(m)
                 raise NotAchievedException("Blended GPS reports the satellite count of GPS3, which is not in its blend mask")
 
+    def GPSAutoSwitchBlendConverted(self):
+        '''check GPS_AUTO_SWITCH 2 (blend) is converted to a blended GPS backend'''
+        # start with no stored parameters, so GPS3_TYPE is not set:
+        self.customise_SITL_commandline([], wipe=True)
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "GPS_AUTO_SWITCH": 2,
+        })
+        self.reboot_sitl()
+        self.assert_parameter_value("GPS3_TYPE", 27)
+        self.assert_parameter_value("GPS_AUTO_SWITCH", 1)
+        self.set_message_rate_hz('GNSS', 10)
+        self.assert_receive_message('GNSS', condition='GNSS.id==2 and GNSS.fix_type>=3', timeout=60)
+
     def GPSType0BelowConfiguredGPS(self):
         '''check a GPS with TYPE 0 below a configured GPS does not block arming'''
         # GPS1 and GPS3 are serial GPSs, GPS2 is unused.  GPS3 is the
@@ -23256,6 +23272,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSPositionsMustAgree,
             self.GPSBlendedUsesNoSerialPort,
             self.GPSBlendMaskExcludesMetadata,
+            self.GPSAutoSwitchBlendConverted,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
