@@ -840,7 +840,7 @@ private:
     enum class GPSAutoSwitch {
         NONE        = 0,
         USE_BEST    = 1,
-        BLEND       = 2,
+        // BLEND = 2, replaced by a blended backend (GPSn_TYPE 27)
         //USE_SECOND  = 3, deprecated for new primary param
         USE_PRIMARY_IF_3D_FIX = 4,
     };

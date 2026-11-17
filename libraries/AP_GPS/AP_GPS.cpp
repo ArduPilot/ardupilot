@@ -130,7 +130,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
     // @Description: Automatic switchover to GPS reporting best lock, 1:UseBest selects the GPS with highest status, if both are equal the GPS with highest satellite count is used 4:Use primary if 3D fix or better, will revert to 'UseBest' behaviour if 3D fix is lost on primary
-    // @Values: 0:Use primary, 1:UseBest, 2:Blend, 4:Use primary if 3D fix or better
+    // @Values: 0:Use primary, 1:UseBest, 4:Use primary if 3D fix or better
     // @User: Advanced
     AP_GROUPINFO("_AUTO_SWITCH", 3, AP_GPS, _auto_switch, (int8_t)GPSAutoSwitch::USE_BEST),
 #endif
@@ -209,7 +209,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if AP_GPS_BLENDED_ENABLED
     // @Param: _BLEND_MASK
     // @DisplayName: Multi GPS Blending Mask
-    // @Description: Determines which of the accuracy measures Horizontal position, Vertical Position and Speed are used to calculate the weighting on each GPS receiver when soft switching has been selected by setting GPS_AUTO_SWITCH to 2(Blend)
+    // @Description: Determines which of the accuracy measures Horizontal position, Vertical Position and Speed are used to calculate the weighting on each GPS receiver by a blended GPS (GPSn_TYPE 27)
     // @Bitmask: 0:Horiz Pos,1:Vert Pos,2:Speed
     // @User: Advanced
     AP_GROUPINFO("_BLEND_MASK", 20, AP_GPS, _blend_mask, 5),
@@ -424,13 +424,15 @@ void AP_GPS::convert_parameters()
     }
 #endif  // GPS_MOVING_BASELINE
 
-    // convert old Blended configuration into a defined backend type
+    // convert old Blended configuration (GPS_AUTO_SWITCH 2) into a
+    // blended backend, which now selects blending
     // PARAMETER_CONVERSION - Added: Nov-2026
 #if AP_GPS_BLENDED_ENABLED
     if (_auto_switch == 2) {
         if (!params[2].type.configured()) {
             params[2].type.set_and_save(GPS_TYPE_BLENDED);
         }
+        _auto_switch.set_and_save((int8_t)GPSAutoSwitch::USE_BEST);
     }
 #endif  // AP_GPS_BLENDED_ENABLED
 }
@@ -2004,24 +2006,6 @@ bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
                 hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available", unsigned(i+1));
                 return false;
             }
-        }
-    }
-
-    if (_auto_switch == 2) {
-        // ensure there is a blended backend
-        bool found = false;
-#if AP_GPS_BLENDED_ENABLED
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
-            // only care about configured type, not allocated type:
-            if (get_type(i) == GPS_TYPE_BLENDED) {
-                found = true;
-                break;
-            }
-        }
-#endif  // AP_GPS_BLENDED_ENABLED
-        if (!found) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "GPS_AUTO_SWITCH is blended but no blended backend configured");
-            return false;
         }
     }
 
