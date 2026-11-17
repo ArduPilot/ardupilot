@@ -104,6 +104,22 @@ def test_sitl_parser_requires_picolibc_pair(checker, monkeypatch, public, implem
     task.run()
 
 
+@pytest.mark.parametrize("implementation", [
+    "ap_picolibc_atof",
+    "ap_picolibc_strtod",
+    "ap_picolibc_strtof",
+])
+def test_sitl_parser_implementation_without_public_use(checker, monkeypatch, implementation):
+    '''an implementation pulled in on its own does not demand a public alias'''
+    waf, task = checker
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "sitl"
+    task.env.CHECK_MALLOC_WRAPPING = False
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw:
+                        "00001000 T %s\n" % implementation)
+    task.run()
+
+
 def test_emscripten_skips_elf_symbol_check(checker, monkeypatch):
     _, task = checker
     task.env.PICOLIBC = True

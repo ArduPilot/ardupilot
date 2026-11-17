@@ -400,9 +400,12 @@ class check_elf_symbols(Task.Task):
             names = {name.split('@', 1)[0] for name, _ in symbols}
             required = set()
             for public, implementation in parser_pairs.items():
-                pair = {symbol_prefix + public, symbol_prefix + implementation}
-                if pair & names:
-                    required.update(pair)
+                # key this on the public symbol: picolibc's atof calls its
+                # strtod, so that implementation can arrive while the public
+                # alias, which nothing referenced, was dropped by the linker
+                public_name = symbol_prefix + public
+                if public_name in names:
+                    required.update({public_name, symbol_prefix + implementation})
             missing = required - defined_functions
             if missing:
                 raise Errors.WafError("Missing Picolibc SITL symbols in %s: %s" %
