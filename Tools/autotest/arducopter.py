@@ -20090,6 +20090,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 f"blended navigation height {blended:.2f} is not the AMSL height {truth_amsl:.2f}")
 
+    def UTMGlobalPositionAMSLOnlyGPS(self):
+        '''check UTM_GLOBAL_POSITION does not label an AMSL altitude as ellipsoid with HeightEllipsoid'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameters({
+            "SIM_GPS1_GEOID": geoid,
+            "SIM_GPS1_TYPE": 5,  # NMEA
+            "SIM_GPS1_OPTIONS": 1 << 3,  # no GGA geoid separation, so AMSL only
+            "GPS1_TYPE": 5,
+        })
+        # ask to navigate on the ellipsoid height, which the GPS cannot give:
+        self.set_parameter("GPS_DRV_OPTIONS", int(self.get_parameter("GPS_DRV_OPTIONS")) | (1 << 4))
+        self.reboot_sitl()
+        self.set_message_rate_hz('UTM_GLOBAL_POSITION', 5)
+        self.set_message_rate_hz('SIM_STATE', 5)
+        self.wait_ready_to_arm()
+        truth_ellipsoid = self.assert_receive_message('SIM_STATE', timeout=10).alt + geoid
+        for i in range(25):
+            m = self.assert_receive_message('UTM_GLOBAL_POSITION', timeout=10)
+            if not (m.flags & mavutil.mavlink.UTM_DATA_AVAIL_FLAGS_ALTITUDE_AVAILABLE):
+                # not knowing the ellipsoid height is fine
+                continue
+            if abs(m.alt * 0.001 - truth_ellipsoid) > 2:
+                raise NotAchievedException(
+                    f"UTM_GLOBAL_POSITION.alt {m.alt * 0.001:.2f} is not the ellipsoid height {truth_ellipsoid:.2f}")
+
     def GPSBlendingAffinity(self):
         '''test blending when affinity in use'''
         # configure:
@@ -22789,6 +22814,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSHeightsBlendMixedFrames,
             self.UTMGlobalPositionEllipsoidHeight,
             self.UTMGlobalPositionPrimaryChange,
+            self.UTMGlobalPositionAMSLOnlyGPS,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
