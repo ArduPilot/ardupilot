@@ -44,6 +44,21 @@ recovery with ChibiOS UART ownership checks. Build MatekH743 Copter first:
 Tools/renode/tests/test_serial_passthru.py --renode build/renode/renode
 ```
 
+`test_bdshot.py` checks bidirectional DShot telemetry error accounting with
+DShot outputs bridged to scripted UDP ESCs: all four answering, only one
+answering, and one that is silent and then starts answering. Build
+MatekH743-bdshot Copter first:
+
+```sh
+./waf configure --board MatekH743-bdshot
+./waf copter
+Tools/renode/tests/test_bdshot.py --renode build/renode/renode
+```
+
+`--am32-sitl ELF` runs the same scenarios against AM32 SITL ESCs instead,
+with a motor test spinning motor 1. Build the ESC with `make AM32_SITL_CAN`
+in an am32-firmware checkout and pass its `obj/AM32_AM32_SITL_CAN_*.elf`.
+
 The fetch helper downloads the latest package for the host architecture from
 `https://firmware.ardupilot.org/Tools/Renode/`. It verifies the package size
 and SHA-256 against `latest.json` before extracting it. Set
