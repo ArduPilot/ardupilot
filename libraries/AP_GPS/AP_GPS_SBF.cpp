@@ -495,9 +495,8 @@ AP_GPS_SBF::process_message(void)
             if (!is_DNU(temp.Undulation)) {
                 set_heights(state, temp.Height - temp.Undulation, temp.Height);
             } else {
-                // without the undulation the ellipsoid height is used
-                // as the AMSL height
-                set_heights(state, temp.Height, NaNf);
+                // without the undulation there is no AMSL height
+                set_heights(state, NaNf, temp.Height);
             }
         }
 
