@@ -11,6 +11,10 @@ Questions and user problems should be directed at the [ArduPilot forum](http://d
 _**Please be very sure you have found a bug when opening this issue**_
 If there was a previous discussion in the forum, link to it
 
+### Human review
+
+- [ ] A human author has reviewed this report and believes it describes a real problem
+
 ### Issue details
 
 Please describe the problem
