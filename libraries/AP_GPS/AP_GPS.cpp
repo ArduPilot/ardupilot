@@ -1913,14 +1913,16 @@ const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
         // we have to return a reference so use instance 0
         return params[0].antenna_offset;
     }
-    if (drivers[instance] == nullptr) {
-        // no driver allocated, must return a reference so return from
-        // parameters.  Note that when we allocate the backend the
-        // answer might change (eg. blended)
-        return params[instance].antenna_offset;
+#if AP_GPS_BLENDED_ENABLED
+    // only a blended backend calculates its offset.  It is never
+    // freed, unlike the driver of a receiver which times out, so it
+    // is safe to call from other threads (eg. DDS):
+    if (params[instance].type == GPS_TYPE_BLENDED && drivers[instance] != nullptr) {
+        return drivers[instance]->get_antenna_offset();
     }
+#endif  // AP_GPS_BLENDED_ENABLED
 
-    return drivers[instance]->get_antenna_offset();
+    return params[instance].antenna_offset;
 }
 
 /*
