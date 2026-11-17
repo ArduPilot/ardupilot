@@ -54,6 +54,10 @@ public:
 
     bool is_healthy(void) const override;
 
+#if AP_GPS_GNSS_SENDING_ENABLED
+    MAV_GNSS_DATUM gnss_datum() const override;
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
+
     bool logging_healthy(void) const override;
 
     bool prepare_for_arming(void) override;
@@ -103,6 +107,7 @@ private:
     uint32_t crc_error_counter = 0;
     uint32_t RxState;
     uint32_t RxError;
+    uint8_t datum = 255;  // PVTGeodetic Datum code, 255 for do-not-use
 
     void mount_disk(void) const;
     void unmount_disk(void) const;
