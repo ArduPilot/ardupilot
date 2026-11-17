@@ -7073,6 +7073,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         gnss.height_above_ellipsoid,
                         msl + geoid_separation)
 
+    def GNSSDatum(self):
+        '''check GNSS reports WGS84 only for fixes not corrected by DGNSS or RTK'''
+        self.set_message_rate_hz('GNSS', 5)
+        for (fix_type, datum) in [
+                (3, mavutil.mavlink.MAV_GNSS_DATUM_WGS84),
+                # corrected positions are in the datum of the correction
+                # source, which the u-blox driver does not know:
+                (4, mavutil.mavlink.MAV_GNSS_DATUM_UNKNOWN),
+                (5, mavutil.mavlink.MAV_GNSS_DATUM_UNKNOWN),
+                (6, mavutil.mavlink.MAV_GNSS_DATUM_UNKNOWN),
+        ]:
+            self.start_subtest(f"fix type {fix_type}")
+            self.set_parameter("SIM_GPS1_FIXTYPE", fix_type)
+            m = self.assert_receive_message('GNSS', condition=f'GNSS.id==0 and GNSS.fix_type=={fix_type}', timeout=30)
+            if m.datum != datum:
+                raise NotAchievedException(f"fix type {fix_type}: datum {m.datum}, want {datum}")
+
     def GNSSYaw(self):
         '''check GNSS reports yaw and yaw accuracy'''
         self.set_message_rate_hz('GNSS', 5)
@@ -27663,6 +27680,7 @@ return update, 1000
             self.GPSTypes,
             self.MultipleGPS,
             self.GNSSHeights,
+            self.GNSSDatum,
             self.GNSSYaw,
             self.GNSSNoFix,
             self.GNSSMultipleLinks,
