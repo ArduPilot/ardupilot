@@ -7090,6 +7090,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.datum != datum:
                 raise NotAchievedException(f"fix type {fix_type}: datum {m.datum}, want {datum}")
 
+    def GNSSDatumSBF(self):
+        '''check GNSS reports the datum a Septentrio receiver gives'''
+        self.set_parameters({
+            "SIM_GPS1_TYPE": 10,  # SBF
+            "GPS1_TYPE": 10,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('GNSS', 5)
+        for (sbf_datum, datum) in [
+                # the simulated receiver has an RTK fix, so these come
+                # from the receiver, not from the fix type:
+                (0, mavutil.mavlink.MAV_GNSS_DATUM_WGS84),
+                (35, mavutil.mavlink.MAV_GNSS_DATUM_GDA2020),
+                (30, mavutil.mavlink.MAV_GNSS_DATUM_ETRS89),
+                # the base station's datum, and a user-defined one, are not named:
+                (19, mavutil.mavlink.MAV_GNSS_DATUM_UNKNOWN),
+                (250, mavutil.mavlink.MAV_GNSS_DATUM_UNKNOWN),
+        ]:
+            self.start_subtest(f"SBF datum {sbf_datum}")
+            self.set_parameter("SIM_GPS1_DATUM", sbf_datum)
+            self.delay_sim_time(2, reason="new datum to reach the driver")
+            m = self.assert_receive_message('GNSS', condition='GNSS.id==0 and GNSS.fix_type>=3', timeout=30)
+            if m.datum != datum:
+                raise NotAchievedException(f"SBF datum {sbf_datum}: GNSS datum {m.datum}, want {datum}")
+
     def GNSSGeoidModel(self):
         '''check GNSS reports u-blox's geoid model for u-blox receivers, and unknown for others'''
         for (name, sim_gps_type, gps_type, geoid_model) in [
@@ -27699,6 +27724,7 @@ return update, 1000
             self.MultipleGPS,
             self.GNSSHeights,
             self.GNSSDatum,
+            self.GNSSDatumSBF,
             self.GNSSGeoidModel,
             self.GNSSYaw,
             self.GNSSNoFix,
