@@ -20576,6 +20576,99 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_message_rate_hz('GNSS', 10)
         self.assert_receive_message('GNSS', condition='GNSS.id==2 and GNSS.fix_type>=3', timeout=60)
 
+    def GPSMovingBaselinePairs(self):
+        '''check moving baseline bases take yaw only from their own rover'''
+        self.set_parameters({
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS3_TYPE": 1,
+            "SIM_GPS3_ENABLE": 1,
+            "SIM_GPS4_TYPE": 1,
+            # the second pair's rover is missing:
+            "SIM_GPS4_ENABLE": 0,
+            "SERIAL5_PROTOCOL": 5,
+            "SERIAL6_PROTOCOL": 5,
+        })
+        self.customise_SITL_commandline([
+            "--serial5=sim:gps:3:",
+            "--serial6=sim:gps:4:",
+        ])
+        self.set_parameter("LOG_DISARMED", 1)
+        self.set_message_rate_hz('GNSS', 10)
+
+        def assert_pairs(rover, base_with_yaw, base_without_yaw):
+            '''the base with a working rover logs that rover's yaw; the
+            base whose rover is missing must not take another pair's
+            yaw.  A base's yaw only appears in the GPS log message: the
+            GNSS message reports no yaw for a base itself'''
+            self.assert_receive_message('GNSS', condition=f'GNSS.id=={rover} and GNSS.yaw<36000', timeout=120)
+            self.delay_sim_time(5, reason="GPS yaw to be logged")
+            dfreader = self.dfreader_for_current_onboard_log()
+            logged = {base_with_yaw: [], base_without_yaw: []}
+            while True:
+                m = dfreader.recv_match(type='GPS')
+                if m is None:
+                    break
+                if m.I in logged:
+                    logged[m.I].append(m.Yaw)
+            if not any(abs(yaw - 270) < 5 for yaw in logged[base_with_yaw]):
+                raise NotAchievedException(f"GPS{base_with_yaw+1} never logged its rover's yaw")
+            stolen = [yaw for yaw in logged[base_without_yaw] if yaw != 0]
+            if len(stolen):
+                raise NotAchievedException(f"GPS{base_without_yaw+1} logged yaw {stolen[0]} without a rover of its own")
+
+        self.start_subtest("pairs GPS1/GPS2 and GPS3/GPS4, chosen automatically")
+        self.set_parameters({
+            "GPS1_TYPE": 17,  # u-blox moving baseline base
+            "GPS1_POS_X": -0.5,
+            "GPS1_POS_Y": -0.5,
+            "SIM_GPS1_HDG": 4,
+            "SIM_GPS1_POS_X": -0.5,
+            "SIM_GPS1_POS_Y": -0.5,
+            "GPS2_TYPE": 18,  # u-blox moving baseline rover
+            "GPS2_POS_X": 0.5,
+            "GPS2_POS_Y": 0.5,
+            "SIM_GPS2_HDG": 2,
+            "SIM_GPS2_POS_X": 0.5,
+            "SIM_GPS2_POS_Y": 0.5,
+            "GPS3_TYPE": 17,
+            "SIM_GPS3_HDG": 4,
+            "GPS4_TYPE": 18,
+        })
+        self.reboot_sitl()
+        assert_pairs(1, 0, 2)
+
+        self.start_subtest("bases GPS1 and GPS2, rovers nominating them")
+        self.set_parameters({
+            "GPS2_TYPE": 17,
+            "SIM_GPS2_HDG": 4,
+            "GPS3_TYPE": 18,
+            "GPS3_POS_X": 0.5,
+            "GPS3_POS_Y": 0.5,
+            "SIM_GPS3_HDG": 2,
+            "SIM_GPS3_POS_X": 0.5,
+            "SIM_GPS3_POS_Y": 0.5,
+            "GPS3_MB_BASE": 1,
+            "GPS4_TYPE": 18,
+            "GPS4_MB_BASE": 2,
+        })
+        self.reboot_sitl()
+        assert_pairs(2, 0, 1)
+
+        # the GPS pre-arm checks only run in a mode needing a position:
+        self.change_mode('LOITER')
+
+        self.start_subtest("a rover nominating a GPS which is not a base")
+        self.set_parameter("GPS4_MB_BASE", 3)
+        self.assert_prearm_failure("GPS4_MB_BASE: GPS3 is not a base", other_prearm_failures_fatal=False)
+
+        self.start_subtest("a rover with no base it can choose automatically")
+        self.set_parameter("GPS4_MB_BASE", 0)
+        self.assert_prearm_failure("GPS4_MB_BASE: no base found", other_prearm_failures_fatal=False)
+
+        self.start_subtest("two rovers nominating one base")
+        self.set_parameter("GPS4_MB_BASE", 1)
+        self.assert_prearm_failure("GPS3 and GPS4 share base GPS1", other_prearm_failures_fatal=False)
+
     def GPSType0BelowConfiguredGPS(self):
         '''check a GPS with TYPE 0 below a configured GPS does not block arming'''
         # GPS1 and GPS3 are serial GPSs, GPS2 is unused.  GPS3 is the
@@ -23267,6 +23360,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSBlendedUsesNoSerialPort,
             self.GPSBlendMaskExcludesMetadata,
             self.GPSAutoSwitchBlendConverted,
+            self.GPSMovingBaselinePairs,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
