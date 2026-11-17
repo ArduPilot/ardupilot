@@ -65,7 +65,8 @@ extern const AP_HAL::HAL& hal;
 static constexpr uint8_t RMC_TERM_DATE = 9;
 static constexpr uint8_t RMC_LAST_TERM = RMC_TERM_DATE;
 static constexpr uint8_t GGA_TERM_ALTITUDE = 9;
-static constexpr uint8_t GGA_LAST_TERM = GGA_TERM_ALTITUDE;
+static constexpr uint8_t GGA_TERM_GEOID_SEPARATION = 11;
+static constexpr uint8_t GGA_LAST_TERM = GGA_TERM_GEOID_SEPARATION;
 static constexpr uint8_t VTG_TERM_SPEED = 5;
 static constexpr uint8_t VTG_LAST_TERM = VTG_TERM_SPEED;
 static constexpr uint8_t HDT_TERM_HEADING = 1;
@@ -398,7 +399,12 @@ bool AP_GPS_NMEA::_term_complete()
             case _GPS_SENTENCE_GGA:
                 _last_GGA_ms = now;
                 if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
-                    set_heights(state, _new_altitude * 0.01, NaNf);
+                    // the geoid separation is the height of the geoid
+                    // above the ellipsoid, and is often left empty:
+                    const float amsl_m = _new_altitude * 0.01;
+                    set_heights(state, amsl_m,
+                                _new_have_geoid_separation ? amsl_m + _new_geoid_separation * 0.01 : NaNf);
+                    _new_have_geoid_separation = false;
                     state.location.lat  = _new_latitude;
                     state.location.lng  = _new_longitude;
                 }
@@ -717,6 +723,10 @@ bool AP_GPS_NMEA::_term_complete()
             break;
         case _GPS_SENTENCE_GGA + GGA_TERM_ALTITUDE: // Altitude (GPGGA)
             _new_altitude = _parse_decimal_100(_term);
+            break;
+        case _GPS_SENTENCE_GGA + GGA_TERM_GEOID_SEPARATION: // Geoid separation (GPGGA)
+            _new_have_geoid_separation = _term[0] != '\0';
+            _new_geoid_separation = _parse_decimal_100(_term);
             break;
 
         // course and speed
