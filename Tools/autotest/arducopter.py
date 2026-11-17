@@ -20017,6 +20017,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("GPS_DRV_OPTIONS", int(self.get_parameter("GPS_DRV_OPTIONS")) | (1 << 4))
         check("ellipsoid navigation")
 
+    def UTMGlobalPositionPrimaryChange(self):
+        '''check UTM_GLOBAL_POSITION's altitude after the primary GPS changes to one with only an ellipsoid height'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameters({
+            "SIM_GPS1_GEOID": geoid,
+            "SIM_GPS2_GEOID": geoid,
+            "SIM_GPS2_TYPE": 10,  # SBF
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS2_OPTIONS": 1 << 2,  # undulation is do-not-use
+            "GPS2_TYPE": 10,
+            "GPS_AUTO_SWITCH": 0,  # use GPS_PRIMARY
+            "GPS_PRIMARY": 0,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('UTM_GLOBAL_POSITION', 5)
+        # the EKF origin, and so the vehicle's altitude, is AMSL from GPS1:
+        self.wait_ready_to_arm()
+        ellipsoid = self.assert_receive_message('GPS_RAW_INT', timeout=10).alt_ellipsoid * 0.001
+
+        def check_utm(name):
+            for i in range(25):
+                m = self.assert_receive_message('UTM_GLOBAL_POSITION', timeout=10)
+                if not (m.flags & mavutil.mavlink.UTM_DATA_AVAIL_FLAGS_ALTITUDE_AVAILABLE):
+                    continue
+                if abs(m.alt * 0.001 - ellipsoid) > 2:
+                    raise NotAchievedException(
+                        f"{name}: UTM_GLOBAL_POSITION.alt {m.alt * 0.001:.2f} is not the ellipsoid height {ellipsoid:.2f}")
+
+        check_utm("GPS1 primary")
+        # GPS2 has only an ellipsoid height, but the vehicle's altitude
+        # is still AMSL:
+        self.set_parameter("GPS_PRIMARY", 1)
+        self.delay_sim_time(5, reason="primary GPS to change")
+        check_utm("GPS2 primary")
+
     def GPSBlendingAffinity(self):
         '''test blending when affinity in use'''
         # configure:
@@ -22714,6 +22749,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSHeightsSBFNoUndulation,
             self.GPSHeightsNMEABadChecksum,
             self.UTMGlobalPositionEllipsoidHeight,
+            self.UTMGlobalPositionPrimaryChange,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
