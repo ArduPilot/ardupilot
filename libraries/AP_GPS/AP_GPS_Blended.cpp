@@ -351,6 +351,11 @@ void AP_GPS_Blended::calc_state(void)
         if (gps.params[i].type == AP_GPS::GPS_TYPE_BLENDED) {
             continue;
         }
+        // the status, accuracies and timing come only from the GPSs
+        // this backend blends:
+        if ((params.blend_mask & (1U<<i)) == 0) {
+            continue;
+        }
 
         // use the highest status
         if (AP_GPS::fix_type_priority(gps.state[i].status) > AP_GPS::fix_type_priority(state.status)) {
