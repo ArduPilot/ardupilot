@@ -56,6 +56,19 @@ def test_bridge_is_generated_only_when_requested(tmp_path):
     assert 'esc2Port: 57763' in timer2
 
 
+def test_built_in_escs_are_generated(tmp_path):
+    generated = gen_board.generate(ROOT, 'MatekH743-bdshot', tmp_path / 'sim',
+                                   state_dir=tmp_path, esc_sim=True)
+    repl = generated['repl'].read_text()
+    resc = generated['resc'].read_text()
+    assert resc.index('AP_DShotESC.cs') < resc.index('AP_STM32_Timer_BDShot.cs')
+    timer3 = repl.split('timer3BDShot:')[1].split('\n\n')[0]
+    assert 'escSim: true' in timer3
+    assert 'esc3Output: 1' in timer3
+    assert 'esc4Output: 2' in timer3
+    assert 'Port:' not in timer3
+
+
 def test_inherited_platforms_are_bridged(tmp_path):
     # the F767 base takes its DMA and timers from the F746 platform it uses
     generated = gen_board.generate(ROOT, 'MatekF765-Wing-bdshot', tmp_path / 'f7',

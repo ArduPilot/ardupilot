@@ -785,9 +785,13 @@ def main():
                              'Renode after manifestation')
     parser.add_argument('--usbip-port', type=int, default=3240,
                         help='USB/IP server port (default: 3240)')
-    parser.add_argument('--esc-signal-port', type=int, metavar='PORT',
-                        help='bridge DShot outputs to AM32 SITL/ESCSim style UDP '
-                             'ESCs; servo output N uses PORT+10*(N-1) (ESCSim: 57733)')
+    esc_group = parser.add_mutually_exclusive_group()
+    esc_group.add_argument('--esc-sim', action='store_true',
+                           help='answer DShot outputs with built-in AM32-style '
+                                'bidirectional DShot/EDT ESCs')
+    esc_group.add_argument('--esc-signal-port', type=int, metavar='PORT',
+                           help='bridge DShot outputs to AM32 SITL/ESCSim style UDP '
+                                'ESCs; servo output N uses PORT+10*(N-1) (ESCSim: 57733)')
     parser.add_argument('--real-iomcu', action='store_true',
                         help='run the real IOMCU bootloader and firmware in a second machine')
     parser.add_argument('--iomcu-bootloader',
@@ -964,7 +968,7 @@ def main():
             num_imus=args.num_imus, imu_names=args.imu_names,
             real_iomcu=args.real_iomcu,
             attachments=attachments, uds=args.uds,
-            esc_signal_port=args.esc_signal_port)
+            esc_signal_port=args.esc_signal_port, esc_sim=args.esc_sim)
     except (OSError, ValueError) as error:
         sys.exit('failed to generate Renode board: %s' % error)
     if args.hold_bootloader and generated['family'] not in ('h743', 'h757'):

@@ -802,6 +802,22 @@ Tools/renode/run.py HolybroG4_GPS
 
 ### Bidirectional DShot ESCs
 
+`--esc-sim` answers DShot outputs with built-in ESCs that behave like AM32:
+bidirectional DShot is detected while disarmed and kept until reset; the ESC
+arms after a second of zero input (commands included) and more than 30 zero
+frames; DShot commands are accepted while armed and stopped (repeated six
+times), covering direction (7/8 and 20/21), 3D throttle (9/10, with AM32's
+split forward/reverse ranges), save (12) and extended telemetry (13/14);
+losing signal for 0.5 s armed or 2 s disarmed resets the ESC and drops
+unsaved settings; and EDT current, voltage and temperature frames are
+interleaved with eRPM at AM32's rates. A flight controller reset reaches the
+ESCs only as loss of signal. The motor is a first-order 1000 KV model on a 16.8 V
+battery. Replies are produced in the same virtual instant as the frame, so
+no host timing is involved. From the monitor,
+`sysbus.timer3BDShot SetSilent 2 true` stops servo output 2 answering and
+`sysbus.timer3BDShot EscState 1` reports output 1's ESC state; each timer's
+bridge only acts on its own outputs.
+
 `--esc-signal-port PORT` bridges DMA DShot timer groups on STM32 DMA v2
 families (F4, F7, H7) to external ESCs over UDP, using the AM32 SITL and
 ESCSim signal protocol. Servo output N uses `PORT + 10 * (N - 1)`, the
