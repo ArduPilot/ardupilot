@@ -20537,6 +20537,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if m.fix_type >= 3:
             raise NotAchievedException("Blended GNSS regained a fix with one GPS")
 
+    def GPSBlendMaskExcludesMetadata(self):
+        '''check a blended GPS takes its fix metadata only from the GPSs in its blend mask'''
+        # GPS4 blends GPS1 and GPS2 only.  GPS3 is left out of the
+        # blend and has a satellite count none of the others have:
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "GPS3_TYPE": 1,
+            "GPS4_TYPE": 27,
+            "GPS4_BLEND_MASK": 0b011,
+            "GPS_AUTO_SWITCH": 2,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS3_TYPE": 1,
+            "SIM_GPS3_ENABLE": 1,
+            "SIM_GPS3_NUMSATS": 30,
+            "SERIAL5_PROTOCOL": 5,
+        })
+        self.customise_SITL_commandline([
+            "--serial5=sim:gps:3:",
+        ])
+        self.set_message_rate_hz('GNSS', 10)
+        self.assert_receive_message('GNSS', condition='GNSS.id==2 and GNSS.fix_type>=3', timeout=60)
+        self.assert_receive_message('GNSS', condition='GNSS.id==3 and GNSS.fix_type>=3', timeout=60)
+        for i in range(10):
+            m = self.assert_receive_message('GNSS', condition='GNSS.id==3', timeout=5)
+            if m.satellites_used == 30:
+                self.dump_message_verbose(m)
+                raise NotAchievedException("Blended GPS reports the satellite count of GPS3, which is not in its blend mask")
+
     def GPSType0BelowConfiguredGPS(self):
         '''check a GPS with TYPE 0 below a configured GPS does not block arming'''
         # GPS1 and GPS3 are serial GPSs, GPS2 is unused.  GPS3 is the
@@ -23226,6 +23255,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSType0BelowConfiguredGPS,
             self.GPSPositionsMustAgree,
             self.GPSBlendedUsesNoSerialPort,
+            self.GPSBlendMaskExcludesMetadata,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
