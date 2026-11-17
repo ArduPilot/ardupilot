@@ -18273,6 +18273,258 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def GPSHeightsEllipsoidOption(self):
+        '''check GPS_RAW_INT heights do not change with the ellipsoid height option'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameter("SIM_GPS1_GEOID", geoid)
+        self.reboot_sitl()
+
+        def heights():
+            m = self.assert_receive_message('GPS_RAW_INT', condition='GPS_RAW_INT.fix_type>=3', timeout=60)
+            return (m.alt * 0.001, m.alt_ellipsoid * 0.001)
+
+        self.delay_sim_time(5, reason="GPS to settle")
+        (amsl, ellipsoid) = heights()
+        self.progress(f"AMSL {amsl:.2f} ellipsoid {ellipsoid:.2f}")
+        if abs(ellipsoid - amsl - geoid) > 0.5:
+            raise NotAchievedException(f"ellipsoid height {ellipsoid:.2f} is not {geoid}m above AMSL {amsl:.2f}")
+
+        # navigating on the ellipsoid height must not change what the
+        # message reports:
+        self.set_parameter("GPS_DRV_OPTIONS", int(self.get_parameter("GPS_DRV_OPTIONS")) | (1 << 4))
+        self.delay_sim_time(5, reason="option to take effect")
+        (amsl_opt, ellipsoid_opt) = heights()
+        self.progress(f"with HeightEllipsoid: AMSL {amsl_opt:.2f} ellipsoid {ellipsoid_opt:.2f}")
+        if abs(amsl_opt - amsl) > 0.5:
+            raise NotAchievedException(f"GPS_RAW_INT.alt {amsl_opt:.2f} is not the AMSL height {amsl:.2f}")
+        if abs(ellipsoid_opt - ellipsoid) > 0.5:
+            raise NotAchievedException(
+                f"GPS_RAW_INT.alt_ellipsoid {ellipsoid_opt:.2f} is not the ellipsoid height {ellipsoid:.2f}")
+
+    def GPSHeightsPerDriver(self):
+        '''check each GPS driver reports the AMSL and ellipsoid heights the simulator gives it'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameter("SIM_GPS1_GEOID", geoid)
+        sim_gps = [
+            # (name, SIM_GPS1_TYPE, GPS1_TYPE)
+            ("u-blox", 1, 2),
+            ("NMEA", 5, 5),
+            ("NOVA", 8, 15),
+            ("SBF", 10, 10),
+        ]
+        failures = []
+        for (name, sim_gps_type, gps_type) in sim_gps:
+            self.start_subtest(f"heights from {name}")
+            self.set_parameters({
+                "SIM_GPS1_TYPE": sim_gps_type,
+                "GPS1_TYPE": gps_type,
+            })
+            self.reboot_sitl()
+            self.set_message_rate_hz('SIM_STATE', 5)
+            self.assert_receive_message('GPS_RAW_INT', condition='GPS_RAW_INT.fix_type>=3', timeout=120)
+            self.delay_sim_time(5, reason="GPS to settle")
+            truth = self.assert_receive_message('SIM_STATE', timeout=10).alt
+            m = self.assert_receive_message('GPS_RAW_INT', timeout=10)
+            amsl = m.alt * 0.001
+            ellipsoid = m.alt_ellipsoid * 0.001
+            self.progress(f"{name}: simulated AMSL {truth:.2f}, GPS_RAW_INT alt {amsl:.2f} alt_ellipsoid {ellipsoid:.2f}")
+            if abs(amsl - truth) > 1:
+                failures.append(f"{name}: AMSL height {amsl:.2f} should be {truth:.2f}")
+            if abs(ellipsoid - (truth + geoid)) > 1:
+                failures.append(f"{name}: ellipsoid height {ellipsoid:.2f} should be {truth + geoid:.2f}")
+        if len(failures):
+            raise NotAchievedException("; ".join(failures))
+
+    def GPSHeightsSBFNoUndulation(self):
+        '''check an SBF receiver without an undulation reports its height as an ellipsoid height'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameters({
+            "SIM_GPS1_GEOID": geoid,
+            "SIM_GPS1_TYPE": 10,  # SBF
+            "SIM_GPS1_OPTIONS": 1 << 2,  # undulation is do-not-use
+            "GPS1_TYPE": 10,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('SIM_STATE', 5)
+        self.assert_receive_message('GPS_RAW_INT', condition='GPS_RAW_INT.fix_type>=3', timeout=120)
+        self.delay_sim_time(5, reason="GPS to settle")
+        truth = self.assert_receive_message('SIM_STATE', timeout=10).alt
+        m = self.assert_receive_message('GPS_RAW_INT', timeout=10)
+        ellipsoid = m.alt_ellipsoid * 0.001
+        self.progress(f"simulated AMSL {truth:.2f}, GPS_RAW_INT alt {m.alt * 0.001:.2f} alt_ellipsoid {ellipsoid:.2f}")
+        # the receiver's Height is above the ellipsoid; without the
+        # undulation there is no AMSL height, but the ellipsoid height
+        # is still known:
+        if abs(ellipsoid - (truth + geoid)) > 1:
+            raise NotAchievedException(f"ellipsoid height {ellipsoid:.2f} should be {truth + geoid:.2f}")
+
+    def GPSHeightsNMEABadChecksum(self):
+        '''check NMEA does not take a geoid separation from a GGA which failed its checksum'''
+        self.set_parameter("GPS2_TYPE", 5)  # NMEA
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial4=tcp:%u" % port,  # GPS2, fed by this test
+        ])
+        self.set_message_rate_hz('GPS2_RAW', 10)
+        sock = socket.create_connection(("127.0.0.1", port), timeout=10)
+
+        def sentence(body, good_checksum=True):
+            checksum = 0
+            for c in body:
+                checksum ^= ord(c)
+            if not good_checksum:
+                checksum ^= 0xff
+            return "$%s*%02X\r\n" % (body, checksum)
+
+        def send_cycle():
+            t = time.gmtime()
+            hms = time.strftime("%H%M%S.00", t)
+            dmy = time.strftime("%d%m%y", t)
+            pos = "3521.7763,S,14909.9051,E"
+            data = (
+                # a GGA with a 40m geoid separation which fails its checksum:
+                sentence(f"GPGGA,{hms},{pos},1,12,0.9,584.0,M,40.0,M,,", good_checksum=False) +
+                # a valid GGA with no geoid separation:
+                sentence(f"GPGGA,{hms},{pos},1,12,0.9,584.0,M,,M,,") +
+                sentence(f"GPRMC,{hms},A,{pos},0.0,0.0,{dmy},,,A")
+            )
+            sock.sendall(data.encode())
+
+        try:
+            tstart = self.get_sim_time()
+            seen = 0
+            while seen < 20:
+                if self.get_sim_time_cached() - tstart > 60:
+                    raise NotAchievedException("No fix from the NMEA GPS")
+                send_cycle()
+                m = self.mav.recv_match(type='GPS2_RAW', blocking=True, timeout=0.2)
+                if m is None or m.fix_type < 3:
+                    continue
+                seen += 1
+                if m.alt_ellipsoid != 0:
+                    raise NotAchievedException(
+                        f"GPS2 reports ellipsoid height {m.alt_ellipsoid * 0.001:.2f} from a GGA which failed its checksum")
+        finally:
+            sock.close()
+
+    def UTMGlobalPositionEllipsoidHeight(self):
+        '''check UTM_GLOBAL_POSITION's altitude is the ellipsoid height, with and without HeightEllipsoid'''
+        self.set_parameter("SIM_GPS1_GEOID", 20)  # metres of geoid above the ellipsoid
+
+        def check(name):
+            self.reboot_sitl()
+            self.set_message_rate_hz('UTM_GLOBAL_POSITION', 5)
+            self.wait_ready_to_arm()
+            self.delay_sim_time(5, reason="altitudes to settle")
+            ellipsoid = self.assert_receive_message('GPS_RAW_INT', timeout=10).alt_ellipsoid * 0.001
+            utm = self.assert_receive_message('UTM_GLOBAL_POSITION', timeout=10).alt * 0.001
+            self.progress(f"{name}: UTM alt {utm:.2f} GPS ellipsoid height {ellipsoid:.2f}")
+            if abs(utm - ellipsoid) > 2:
+                raise NotAchievedException(
+                    f"{name}: UTM_GLOBAL_POSITION.alt {utm:.2f} is not the ellipsoid height {ellipsoid:.2f}")
+
+        check("AMSL navigation")
+        self.set_parameter("GPS_DRV_OPTIONS", int(self.get_parameter("GPS_DRV_OPTIONS")) | (1 << 4))
+        check("ellipsoid navigation")
+
+    def UTMGlobalPositionPrimaryChange(self):
+        '''check UTM_GLOBAL_POSITION's altitude after the primary GPS changes to one with only an ellipsoid height'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameters({
+            "SIM_GPS1_GEOID": geoid,
+            "SIM_GPS2_GEOID": geoid,
+            "SIM_GPS2_TYPE": 10,  # SBF
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS2_OPTIONS": 1 << 2,  # undulation is do-not-use
+            "GPS2_TYPE": 10,
+            "GPS_AUTO_SWITCH": 0,  # use GPS_PRIMARY
+            "GPS_PRIMARY": 0,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('UTM_GLOBAL_POSITION', 5)
+        # the EKF origin, and so the vehicle's altitude, is AMSL from GPS1:
+        self.wait_ready_to_arm()
+        ellipsoid = self.assert_receive_message('GPS_RAW_INT', timeout=10).alt_ellipsoid * 0.001
+
+        def check_utm(name):
+            for i in range(25):
+                m = self.assert_receive_message('UTM_GLOBAL_POSITION', timeout=10)
+                if not (m.flags & mavutil.mavlink.UTM_DATA_AVAIL_FLAGS_ALTITUDE_AVAILABLE):
+                    continue
+                if abs(m.alt * 0.001 - ellipsoid) > 2:
+                    raise NotAchievedException(
+                        f"{name}: UTM_GLOBAL_POSITION.alt {m.alt * 0.001:.2f} is not the ellipsoid height {ellipsoid:.2f}")
+
+        check_utm("GPS1 primary")
+        # GPS2 has only an ellipsoid height, but the vehicle's altitude
+        # is still AMSL:
+        self.set_parameter("GPS_PRIMARY", 1)
+        self.delay_sim_time(5, reason="primary GPS to change")
+        check_utm("GPS2 primary")
+
+    def GPSHeightsBlendMixedFrames(self):
+        '''check blending a GPS with both heights and one with only an ellipsoid height gives an AMSL blended height'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameters({
+            "SIM_GPS1_GEOID": geoid,
+            "SIM_GPS2_GEOID": geoid,
+            "SIM_GPS2_TYPE": 10,  # SBF
+            "SIM_GPS2_ENABLE": 1,
+            "SIM_GPS2_OPTIONS": 1 << 2,  # undulation is do-not-use, so ellipsoid height only
+            "GPS2_TYPE": 10,
+            "GPS_AUTO_SWITCH": 2,  # blend
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('SIM_STATE', 5)
+        self.wait_ready_to_arm()
+        self.delay_sim_time(10, reason="blended heights to be logged")
+        # navigating on AMSL, the blended height must be AMSL even
+        # though one of the GPSs has only an ellipsoid height:
+        truth_amsl = self.assert_receive_message('SIM_STATE', timeout=10).alt
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        alts = {}
+        while True:
+            m = dfreader.recv_match(type='GPS')
+            if m is None:
+                break
+            if m.Status >= 3:
+                alts.setdefault(m.I, []).append(m.Alt)
+        for instance in sorted(alts):
+            self.progress(f"GPS instance {instance}: last logged Alt {alts[instance][-1]:.2f}")
+        if 2 not in alts:
+            raise NotAchievedException("no blended GPS altitudes logged")
+        blended = alts[2][-1]
+        if abs(blended - truth_amsl) > 1.5:
+            raise NotAchievedException(
+                f"blended navigation height {blended:.2f} is not the AMSL height {truth_amsl:.2f}")
+
+    def UTMGlobalPositionAMSLOnlyGPS(self):
+        '''check UTM_GLOBAL_POSITION does not label an AMSL altitude as ellipsoid with HeightEllipsoid'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameters({
+            "SIM_GPS1_GEOID": geoid,
+            "SIM_GPS1_TYPE": 5,  # NMEA
+            "SIM_GPS1_OPTIONS": 1 << 3,  # no GGA geoid separation, so AMSL only
+            "GPS1_TYPE": 5,
+        })
+        # ask to navigate on the ellipsoid height, which the GPS cannot give:
+        self.set_parameter("GPS_DRV_OPTIONS", int(self.get_parameter("GPS_DRV_OPTIONS")) | (1 << 4))
+        self.reboot_sitl()
+        self.set_message_rate_hz('UTM_GLOBAL_POSITION', 5)
+        self.set_message_rate_hz('SIM_STATE', 5)
+        self.wait_ready_to_arm()
+        truth_ellipsoid = self.assert_receive_message('SIM_STATE', timeout=10).alt + geoid
+        for i in range(25):
+            m = self.assert_receive_message('UTM_GLOBAL_POSITION', timeout=10)
+            if not (m.flags & mavutil.mavlink.UTM_DATA_AVAIL_FLAGS_ALTITUDE_AVAILABLE):
+                # not knowing the ellipsoid height is fine
+                continue
+            if abs(m.alt * 0.001 - truth_ellipsoid) > 2:
+                raise NotAchievedException(
+                    f"UTM_GLOBAL_POSITION.alt {m.alt * 0.001:.2f} is not the ellipsoid height {truth_ellipsoid:.2f}")
+
     def GPSBlendingAffinity(self):
         '''test blending when affinity in use'''
         # configure:
@@ -20950,6 +21202,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FlyEachFrame,
             self.GPSBlendingLog,
             self.GPSBlendingAffinity,
+            self.GPSHeightsEllipsoidOption,
+            self.GPSHeightsPerDriver,
+            self.GPSHeightsSBFNoUndulation,
+            self.GPSHeightsNMEABadChecksum,
+            self.GPSHeightsBlendMixedFrames,
+            self.UTMGlobalPositionEllipsoidHeight,
+            self.UTMGlobalPositionPrimaryChange,
+            self.UTMGlobalPositionAMSLOnlyGPS,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,

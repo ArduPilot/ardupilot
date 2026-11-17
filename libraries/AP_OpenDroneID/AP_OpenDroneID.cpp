@@ -406,14 +406,17 @@ void AP_OpenDroneID::send_location_message()
     const float base_press_mbar = 1013.2;
     const float altitude_barometric = create_altitude(barometer.get_altitude_difference(base_press_mbar*100, barometer.get_pressure()));
 
+    // the geodetic altitude is above the WGS84 ellipsoid.  The
+    // vehicle's altitude is AMSL or the ellipsoid height, and AP_GPS
+    // converts from whichever it is
     float altitude_geodetic = -1000;
-    int32_t alt_amsl_cm;
-    float undulation;
-    if (current_location.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_amsl_cm)) {
-        altitude_geodetic = alt_amsl_cm * 0.01;
-    }
-    if (gps.get_undulation(undulation)) {
-        altitude_geodetic -= undulation;
+    int32_t alt_cm;
+    if (current_location.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
+        altitude_geodetic = alt_cm * 0.01;
+        float ellipsoid_m;
+        if (gps.location_alt_to_ellipsoid(altitude_geodetic, ellipsoid_m)) {
+            altitude_geodetic = ellipsoid_m;
+        }
     }
 
     // Compute the current height above the takeoff location

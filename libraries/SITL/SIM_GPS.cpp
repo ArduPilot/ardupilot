@@ -150,7 +150,7 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: GPS Options
     // @Description: GPS Options bitmask
-    // @Bitmask: 0:UBlox GPS is F9P, 1:UBlox receiver without flash loses its saved configuration on reboot
+    // @Bitmask: 0:UBlox GPS is F9P, 1:UBlox receiver without flash loses its saved configuration on reboot, 2:SBF receiver marks the geoid undulation do-not-use, 3:NMEA receiver leaves the GGA geoid separation empty
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
 
@@ -182,6 +182,13 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Values: 0:Simple, 1:u-blox 6 FW 7.03, 2:NEO-M8N FW 2.01, 3:M8 ROM CORE 3.01, 4:NEO-M8N SPG 3.01, 5:NEO-M9N SPG 4.04, 6:M10 ROM SPG 5.10
     // @User: Advanced
     AP_GROUPINFO("UBXMDL",    22, GPSParms, ubx_model, 0),
+
+    // @Param: GEOID
+    // @DisplayName: GPS geoid separation
+    // @Description: Height of the geoid (mean sea level) above the WGS84 ellipsoid reported by the simulated GPS. The simulated GPS reports an ellipsoid height of the altitude plus this, on protocols that carry both heights
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("GEOID",     23, GPSParms, geoid_separation, 0),
 
     AP_GROUPEND
 };
@@ -519,6 +526,7 @@ void GPS::update()
 
     d.num_sats = params.numsats;
     d.fix_type = params.fix_type;
+    d.geoid_separation = params.geoid_separation;
     d.latitude = latitude;
     d.longitude = longitude;
     d.yaw_deg = wrap_360(_sitl->state.yawDeg + params.heading_offset);
