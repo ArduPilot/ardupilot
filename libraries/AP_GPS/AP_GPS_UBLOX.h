@@ -175,6 +175,11 @@ public:
     };
 
     void broadcast_configuration_failure_reason(void) const override;
+
+#if AP_GPS_GNSS_SENDING_ENABLED
+    // u-blox receivers apply u-blox's own approximation of EGM96
+    MAV_GNSS_GEOID_MODEL gnss_geoid_model() const override { return MAV_GNSS_GEOID_MODEL_UBLOX_EGM96; }
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
 #if HAL_LOGGING_ENABLED
     void Write_AP_Logger_Log_Startup_messages() const override;
 #endif

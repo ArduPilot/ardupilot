@@ -76,6 +76,12 @@ public:
 #endif
 
     void send_mavlink_gnss(class GCS_MAVLINK &link);
+#if AP_GPS_GNSS_SENDING_ENABLED
+    // the datum and geoid model reported in GNSS; a backend which
+    // knows its receiver's overrides them
+    virtual MAV_GNSS_DATUM gnss_datum() const;
+    virtual MAV_GNSS_GEOID_MODEL gnss_geoid_model() const { return MAV_GNSS_GEOID_MODEL_UNKNOWN; }
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
 
     virtual void handle_msg(const mavlink_message_t &msg) { return ; }
 #endif

@@ -212,6 +212,20 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 
 
 #if AP_GPS_GNSS_SENDING_ENABLED
+/*
+  an uncorrected fix is in WGS84.  A fix corrected by DGNSS or RTK is in
+  the datum of the correction source, which a backend must read from
+  its receiver to report
+ */
+MAV_GNSS_DATUM AP_GPS_Backend::gnss_datum() const
+{
+    const AP_GPS_FixType fix_type = state.status;
+    if (fix_type == AP_GPS_FixType::FIX_2D || fix_type == AP_GPS_FixType::FIX_3D) {
+        return MAV_GNSS_DATUM_WGS84;
+    }
+    return MAV_GNSS_DATUM_UNKNOWN;
+}
+
 void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
 {
     const AP_GPS_FixType fix_type = state.status;
@@ -233,11 +247,6 @@ void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
         vel_acc_mms = MIN(state.speed_accuracy * 1000, UINT16_MAX - 1);
     }
     const bool have_2d_fix = fix_type >= AP_GPS_FixType::FIX_2D;
-    // an uncorrected fix is in WGS84.  A fix corrected by DGNSS or RTK
-    // is in the datum of the correction source, which no driver reports
-    // yet
-    const MAV_GNSS_DATUM datum = (fix_type == AP_GPS_FixType::FIX_2D || fix_type == AP_GPS_FixType::FIX_3D) ?
-                                 MAV_GNSS_DATUM_WGS84 : MAV_GNSS_DATUM_UNKNOWN;
     // GNSS yaw is 0..35999 with 0 as north; UINT16_MAX means this
     // receiver does not provide yaw, UINT16_MAX-1 that it is
     // configured to but cannot currently:
@@ -268,8 +277,8 @@ void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
         state.location.lng,
         alt_amsl,
         alt_ellipsoid,
-        datum,
-        MAV_GNSS_GEOID_MODEL_UNKNOWN,  // no driver reports its geoid model yet
+        gnss_datum(),
+        gnss_geoid_model(),
         // a receiver may report a velocity without a fix; send it as unknown
         have_2d_fix ? state.ground_speed : NaNf,
         (fix_type >= AP_GPS_FixType::FIX_3D && state.have_vertical_velocity) ? -state.velocity.z : NaNf,  // NED down -> up
