@@ -19948,6 +19948,55 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(ellipsoid - (truth + geoid)) > 1:
             raise NotAchievedException(f"ellipsoid height {ellipsoid:.2f} should be {truth + geoid:.2f}")
 
+    def GPSHeightsNMEABadChecksum(self):
+        '''check NMEA does not take a geoid separation from a GGA which failed its checksum'''
+        self.set_parameter("GPS2_TYPE", 5)  # NMEA
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial4=tcp:%u" % port,  # GPS2, fed by this test
+        ])
+        self.set_message_rate_hz('GPS2_RAW', 10)
+        sock = socket.create_connection(("127.0.0.1", port), timeout=10)
+
+        def sentence(body, good_checksum=True):
+            checksum = 0
+            for c in body:
+                checksum ^= ord(c)
+            if not good_checksum:
+                checksum ^= 0xff
+            return "$%s*%02X\r\n" % (body, checksum)
+
+        def send_cycle():
+            t = time.gmtime()
+            hms = time.strftime("%H%M%S.00", t)
+            dmy = time.strftime("%d%m%y", t)
+            pos = "3521.7763,S,14909.9051,E"
+            data = (
+                # a GGA with a 40m geoid separation which fails its checksum:
+                sentence(f"GPGGA,{hms},{pos},1,12,0.9,584.0,M,40.0,M,,", good_checksum=False) +
+                # a valid GGA with no geoid separation:
+                sentence(f"GPGGA,{hms},{pos},1,12,0.9,584.0,M,,M,,") +
+                sentence(f"GPRMC,{hms},A,{pos},0.0,0.0,{dmy},,,A")
+            )
+            sock.sendall(data.encode())
+
+        try:
+            tstart = self.get_sim_time()
+            seen = 0
+            while seen < 20:
+                if self.get_sim_time_cached() - tstart > 60:
+                    raise NotAchievedException("No fix from the NMEA GPS")
+                send_cycle()
+                m = self.mav.recv_match(type='GPS2_RAW', blocking=True, timeout=0.2)
+                if m is None or m.fix_type < 3:
+                    continue
+                seen += 1
+                if m.alt_ellipsoid != 0:
+                    raise NotAchievedException(
+                        f"GPS2 reports ellipsoid height {m.alt_ellipsoid * 0.001:.2f} from a GGA which failed its checksum")
+        finally:
+            sock.close()
+
     def UTMGlobalPositionEllipsoidHeight(self):
         '''check UTM_GLOBAL_POSITION's altitude is the ellipsoid height, with and without HeightEllipsoid'''
         self.set_parameter("SIM_GPS1_GEOID", 20)  # metres of geoid above the ellipsoid
@@ -22663,6 +22712,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSHeightsEllipsoidOption,
             self.GPSHeightsPerDriver,
             self.GPSHeightsSBFNoUndulation,
+            self.GPSHeightsNMEABadChecksum,
             self.UTMGlobalPositionEllipsoidHeight,
             self.ProximitySensors,
             self.MISSION_START,
