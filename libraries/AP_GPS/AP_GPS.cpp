@@ -331,6 +331,9 @@ bool AP_GPS::needs_uart(GPS_Type type) const
     case GPS_TYPE_MAV:
     case GPS_TYPE_MSP:
     case GPS_TYPE_EXTERNAL_AHRS:
+#if AP_GPS_BLENDED_ENABLED
+    case GPS_TYPE_BLENDED:
+#endif  // AP_GPS_BLENDED_ENABLED
         return false;
     default:
         break;
