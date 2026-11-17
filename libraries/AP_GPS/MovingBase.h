@@ -19,5 +19,6 @@ public:
 
     AP_Enum<Type> type;      // an option from MovingBaseType
     AP_Vector3f base_offset; // base position offset from the selected GPS receiver
+    AP_Int8 base;            // the GPS number of a rover's base, 0 for automatic
 
 };

@@ -413,10 +413,22 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
     bool selectedOffset = false;
     Vector3f offset;
     switch (MovingBase::Type(gps.params[interim_state.instance].mb_params.type)) {
-        case MovingBase::Type::RelativeToAlternateInstance:
-            offset = gps.params[interim_state.instance^1].antenna_offset.get() - gps.params[interim_state.instance].antenna_offset.get();
+        case MovingBase::Type::RelativeToAlternateInstance: {
+            // relative to this rover's base
+            int8_t base = gps.rtk_base_for_rtk_rover(interim_state.instance);
+            if (base == -1) {
+                // the base is not one of our instances (eg. on
+                // AP_Periph, where it is another node): use the other
+                // instance of the pair as before
+                base = interim_state.instance ^ 1;
+            }
+            if (base >= GPS_MAX_INSTANCES) {
+                goto bad_yaw;
+            }
+            offset = gps.params[base].antenna_offset.get() - gps.params[interim_state.instance].antenna_offset.get();
             selectedOffset = true;
             break;
+        }
         case MovingBase::Type::RelativeToCustomBase:
             offset = gps.params[interim_state.instance].mb_params.base_offset.get();
             selectedOffset = true;

@@ -1033,8 +1033,9 @@ void AP_GPS::update_instance(uint8_t instance)
         uint16_t rtcm_len;
         if (drivers[instance]->get_RTCMV3(rtcm_data, rtcm_len)) {
             for (uint8_t i=0; i< GPS_MAX_INSTANCES; i++) {
-                if (i != instance && params[i].type == GPS_TYPE_UBLOX_RTK_ROVER) {
-                    // pass the data to the rover
+                if (i != instance && params[i].type == GPS_TYPE_UBLOX_RTK_ROVER &&
+                    rtk_base_for_rtk_rover(i) == instance) {
+                    // pass the data to this base's rover
                     inject_data(i, rtcm_data, rtcm_len);
                     drivers[instance]->clear_RTCMV3();
                     break;
@@ -2000,6 +2001,31 @@ bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
     }
 #endif
 
+#if GPS_MOVING_BASELINE
+    // each moving baseline rover needs a base of its own:
+    for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
+        if (!is_rtk_rover(i)) {
+            continue;
+        }
+        const int8_t base = rtk_base_for_rtk_rover(i);
+        if (base == -1) {
+            const int8_t nominated = params[i].mb_params.base;
+            if (nominated != 0) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "GPS%u_MB_BASE: GPS%d is not a base", unsigned(i+1), int(nominated));
+            } else {
+                hal.util->snprintf(failure_msg, failure_msg_len, "GPS%u_MB_BASE: no base found", unsigned(i+1));
+            }
+            return false;
+        }
+        for (uint8_t j = i+1; j < GPS_MAX_INSTANCES; j++) {
+            if (rtk_base_for_rtk_rover(j) == base) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "GPS%u and GPS%u share base GPS%u", unsigned(i+1), unsigned(j+1), unsigned(base+1));
+                return false;
+            }
+        }
+    }
+#endif  // GPS_MOVING_BASELINE
+
     for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
         if (is_rtk_rover(i)) {
             if (AP_HAL::millis() - state[i].gps_yaw_time_ms > 15000) {
@@ -2196,12 +2222,51 @@ bool AP_GPS::get_rtk_rover_for_rtk_base(uint8_t &rover_instance, const uint8_t b
         return false;
     }
     for (uint8_t i=0; i<ARRAY_SIZE(state); i++) {
-        if (is_rtk_rover(i)) {
+        if (rtk_base_for_rtk_rover(i) == base_instance) {
             rover_instance = i;
             return true;
         }
     }
     return false;
+}
+
+/*
+  return the moving baseline base instance of a rover instance, or -1
+  if it has none.  GPSn_MB_BASE nominates the base; 0 picks the other
+  instance of the rover's pair (GPS1/GPS2, GPS3/GPS4, ...) if that is a
+  base, otherwise the only base
+ */
+int8_t AP_GPS::rtk_base_for_rtk_rover(uint8_t rover_instance) const
+{
+    if (rover_instance >= GPS_MAX_INSTANCES || !is_rtk_rover(rover_instance)) {
+        return -1;
+    }
+#if GPS_MOVING_BASELINE
+    const int8_t nominated = params[rover_instance].mb_params.base;
+    if (nominated != 0) {
+        const int8_t base = nominated - 1;
+        if (base < 0 || base >= GPS_MAX_INSTANCES || !is_rtk_base(base)) {
+            return -1;
+        }
+        return base;
+    }
+#endif  // GPS_MOVING_BASELINE
+    const uint8_t alternate = rover_instance ^ 1;
+    if (alternate < GPS_MAX_INSTANCES && is_rtk_base(alternate)) {
+        return alternate;
+    }
+    int8_t only_base = -1;
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        if (!is_rtk_base(i)) {
+            continue;
+        }
+        if (only_base != -1) {
+            // several bases: the rover must nominate one
+            return -1;
+        }
+        only_base = i;
+    }
+    return only_base;
 }
 
 bool AP_GPS::is_rtk_base(uint8_t instance) const

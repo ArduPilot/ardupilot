@@ -128,6 +128,9 @@ public:
      * DOES NOT MODIFY rover_instance unless true is returned
      */
     bool get_rtk_rover_for_rtk_base(uint8_t &rover_instance, const uint8_t base_instance) const;
+    // return the moving baseline base instance of a rover instance, or
+    // -1 if it has none
+    int8_t rtk_base_for_rtk_rover(uint8_t rover_instance) const;
 
     // return the instance whose moving baseline rover solution provides the
     // yaw reported for this instance by gps_yaw_deg
