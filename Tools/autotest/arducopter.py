@@ -7003,6 +7003,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         fly_sending(20)
         self.do_RTL()
 
+    def GPSFixLossNoGlitchMessage(self):
+        """Losing the GPS fix is not reported as a GPS glitch."""
+        self.context_collect('STATUSTEXT')
+        self.takeoff(10, mode='LOITER')
+        # the GPS keeps sending messages, but without a fix
+        self.set_parameter("SIM_GPS1_LCKTIME", 30000)
+        # there is no event to wait for when nothing should be reported
+        self.delay_sim_time(5, reason="time for a glitch to be reported")
+        glitch = self.statustext_in_collections("GPS Glitch or Compass error")
+        self.set_parameter("SIM_GPS1_LCKTIME", 0)
+        self.wait_gps_fix_type_gte(3)
+        self.do_RTL()
+        if glitch:
+            raise NotAchievedException("GPS fix loss reported as a glitch")
+
     def GlobalPositionSensorLatch(self):
         """Only GLOBAL_POSITION_SENSOR data from one sensor at a time is used."""
 
@@ -21824,6 +21839,7 @@ return update, 1000
             self.ExternalPositionEstimateTimestamp,
             self.GlobalPositionSensorLatch,
             self.GlobalPositionSensorJammedGPS,
+            self.GPSFixLossNoGlitchMessage,
             self.FenceRelativeToHomeMinAltOriginAbove,
             self.FenceRelativeToOriginMaxAltHomeAbove,
             self.FenceRelativeToTerrainMaxAlt,
