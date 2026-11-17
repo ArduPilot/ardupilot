@@ -6,6 +6,7 @@ import os
 
 import pytest
 
+from test_runtime import native_target
 from test_runtime import ROOT
 from test_runtime import Vehicle
 
@@ -25,7 +26,7 @@ def test_native_parameters(tmp_path, lua):
     if lua and os.environ.get('AP_MODULE_TEST_NO_LUA'):
         pytest.skip('Explicit Rust-only build')
     image = build.build(ROOT / 'libraries/AP_Module/tests/modules/parameters.rs', tmp_path / 'parameters.apmod',
-                        'x86_64-unknown-linux-gnu', 8192)
+                        native_target(), 8192)
     settings = {'SCR_ENABLE': 1, 'SCR_HEAP_SIZE': 100000} if lua else {}
     vehicle = ParameterVehicle(tmp_path / 'vehicle', {'parameters.apmod': image.read_bytes()}, settings)
     vehicle.saved_observations = []
@@ -106,7 +107,7 @@ return update()
 def test_native_parameter_capacity(tmp_path, monkeypatch):
     monkeypatch.setenv('AP_MODULE_PARAM_MODE', 'capacity')
     image = build.build(ROOT / 'libraries/AP_Module/tests/modules/parameters.rs', tmp_path / 'capacity.apmod',
-                        'x86_64-unknown-linux-gnu', 8192)
+                        native_target(), 8192)
     vehicle = Vehicle(tmp_path / 'vehicle', {'capacity.apmod': image.read_bytes()}, {})
     try:
         vehicle.start()

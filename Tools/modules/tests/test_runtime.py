@@ -3,6 +3,7 @@
 """Vehicle-backed SITL checks for Rust loading, restart and Lua-style arming."""
 
 import os
+import platform
 import socket
 import subprocess
 import time
@@ -23,6 +24,26 @@ SYSTEM_CHECK = 1 << 13
 CHECKSUM_MASK = 0x007FFFFF
 
 
+def native_target():
+    machine = platform.machine().lower()
+    if machine in ('arm64', 'aarch64'):
+        return 'aarch64-linux-android'
+    if machine in ('x86_64', 'amd64'):
+        return 'x86_64-unknown-linux-gnu'
+    pytest.skip('native module runtime is unavailable on ' + machine)
+
+
+@pytest.mark.parametrize('machine,target', [
+    ('x86_64', 'x86_64-unknown-linux-gnu'),
+    ('AMD64', 'x86_64-unknown-linux-gnu'),
+    ('arm64', 'aarch64-linux-android'),
+    ('aarch64', 'aarch64-linux-android'),
+])
+def test_native_target_profile(monkeypatch, machine, target):
+    monkeypatch.setattr(platform, 'machine', lambda: machine)
+    assert native_target() == target
+
+
 @pytest.fixture(scope='module')
 def images(tmp_path_factory):
     directory = tmp_path_factory.mktemp('runtime-modules')
@@ -32,7 +53,7 @@ def images(tmp_path_factory):
         os.environ['AP_MODULE_LIFECYCLE'] = mode
         try:
             path = build.build(ROOT / 'libraries/AP_Module/tests/modules/lifecycle.rs', directory / f'{mode}.apmod',
-                               'x86_64-unknown-linux-gnu', 8192)
+                               native_target(), 8192)
         finally:
             if previous is None:
                 del os.environ['AP_MODULE_LIFECYCLE']
@@ -254,7 +275,7 @@ def checksum(data):
 def test_byte_granular_stack_size(tmp_path, launch, monkeypatch, stack_size):
     monkeypatch.setenv('AP_MODULE_LIFECYCLE', 'cooperative')
     module = build.build(ROOT / 'libraries/AP_Module/tests/modules/lifecycle.rs',
-                         tmp_path / 'odd.apmod', 'x86_64-unknown-linux-gnu', 8193)
+                         tmp_path / 'odd.apmod', native_target(), 8193)
     vehicle = launch({'odd.apmod': module.read_bytes()}, SCR_ENABLE=0, MOD_STACK_MAX=stack_size)
     if stack_size < 8193 + 16384:
         # Keep the callback margin even when the HAL could round the stack up.
@@ -276,7 +297,7 @@ def test_per_module_heap_and_stack_requests(tmp_path, launch, monkeypatch):
     files = {}
     for name, heap, stack in [('small', 2048, 1024), ('large', 8192, 8193)]:
         image = build.build(ROOT / 'libraries/AP_Module/tests/modules/lifecycle.rs',
-                            tmp_path / f'{name}.apmod', 'x86_64-unknown-linux-gnu', stack, heap_size=heap)
+                            tmp_path / f'{name}.apmod', native_target(), stack, heap_size=heap)
         files[image.name] = image.read_bytes()
     vehicle = launch(files, SCR_ENABLE=0, MOD_HEAP_MAX=32768, MOD_STACK_MAX=65536)
     vehicle.text('Module: loaded 2 modules')
@@ -292,7 +313,7 @@ def test_per_module_heap_and_stack_requests(tmp_path, launch, monkeypatch):
 
 def test_initial_heap_above_limit_rejected(tmp_path, launch):
     image = build.build(ROOT / 'libraries/AP_Module/examples/simple_loop.rs',
-                        tmp_path / 'large.apmod', 'x86_64-unknown-linux-gnu', 8192, heap_size=8193)
+                        tmp_path / 'large.apmod', native_target(), 8192, heap_size=8193)
     vehicle = launch({'large.apmod': image.read_bytes()}, SCR_ENABLE=0, MOD_HEAP_MAX=8192)
     vehicle.text('load failed: initial heap exceeds')
     assert not any('Module: started' in t for t in vehicle.texts)
@@ -464,7 +485,7 @@ def test_failed_generation_cleanup_and_recovery(launch, images):
 def many_module_image(tmp_path_factory):
     directory = tmp_path_factory.mktemp('many-modules')
     path = build.build(ROOT / 'libraries/AP_Module/tests/modules/many_modules.rs', directory / 'many.apmod',
-                       'x86_64-unknown-linux-gnu', 1024, heap_size=256)
+                       native_target(), 1024, heap_size=256)
     return path.read_bytes()
 
 
