@@ -268,7 +268,7 @@ void NavEKF3_core::FuseSetLatLng(const Vector2F &newPosNE, ftype delaySec)
     if (useSetLatLngAsMeasurement) {
         velPosObs[3] = newPosNE.x + setLatLngPosOffsetNE.x;
         velPosObs[4] = newPosNE.y + setLatLngPosOffsetNE.y;
-        if ((imuSampleTime_ms - lastSetlatLngPassTime_ms) < 5000) {
+        if ((lastSetlatLngPassTime_ms != 0) && ((imuSampleTime_ms - lastSetlatLngPassTime_ms) < 5000)) {
             fusePosData = true;
             setLatLngDataToFuse = true;
             // may be left set by the last SelectVelPosFusion()
