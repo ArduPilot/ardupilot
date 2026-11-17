@@ -490,13 +490,15 @@ AP_GPS_SBF::process_message(void)
         if (temp.Latitude > -200000) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
-            state.have_undulation = !is_DNU(temp.Undulation);
-            double height = temp.Height;  // in metres
-            if (state.have_undulation) {
-                height -= temp.Undulation;
-                state.undulation = -temp.Undulation;
+            // Height is above the ellipsoid; Undulation is the height
+            // of the geoid above the ellipsoid
+            if (!is_DNU(temp.Undulation)) {
+                set_heights(state, temp.Height - temp.Undulation, temp.Height);
+            } else {
+                // without the undulation the ellipsoid height is used
+                // as the AMSL height
+                set_heights(state, temp.Height, NaNf);
             }
-            set_alt_amsl_cm(state, (float)height * 1e2f);  // m -> cm
         }
 
         state.num_sats = temp.NrSV;

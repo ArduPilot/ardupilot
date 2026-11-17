@@ -218,8 +218,10 @@ public:
         bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         bool have_gps_yaw;                ///< does GPS give yaw? Set to true only once available.
         bool have_gps_yaw_accuracy;       ///< does the GPS give a heading accuracy estimate? Set to true only once available
-        float undulation;                   //<height that WGS84 is above AMSL at the current location
-        bool have_undulation;               ///<do we have a value for the undulation
+        float height_amsl;                  ///< height above the geoid (mean sea level) reported by the receiver, metres
+        float height_ellipsoid;             ///< height above the WGS84 ellipsoid reported by the receiver, metres
+        bool have_height_amsl;              ///< true if height_amsl is valid
+        bool have_height_ellipsoid;         ///< true if height_ellipsoid is valid
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
         bool announced_detection;           ///< true once we have announced GPS has been seen to the user
         uint64_t last_corrected_gps_time_us;///< the system time we got the last corrected GPS timestamp, microseconds
@@ -352,6 +354,11 @@ public:
     bool get_undulation(float &undulation) const {
         return get_undulation(primary_instance, undulation);
     }
+
+    // heights reported by the receiver, in metres, whichever height
+    // location.alt holds
+    bool get_height_amsl(uint8_t instance, float &height_m) const;
+    bool get_height_ellipsoid(uint8_t instance, float &height_m) const;
 
     // report speed accuracy
     bool speed_accuracy(uint8_t instance, float &sacc) const;
