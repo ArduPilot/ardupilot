@@ -404,7 +404,6 @@ bool AP_GPS_NMEA::_term_complete()
                     const float amsl_m = _new_altitude * 0.01;
                     set_heights(state, amsl_m,
                                 _new_have_geoid_separation ? amsl_m + _new_geoid_separation * 0.01 : NaNf);
-                    _new_have_geoid_separation = false;
                     state.location.lat  = _new_latitude;
                     state.location.lng  = _new_longitude;
                 }
@@ -645,6 +644,10 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_RMC;
         } else if (strcmp(term_type, "GGA") == 0) {
             _sentence_type = _GPS_SENTENCE_GGA;
+            // empty terms are not parsed, so forget any geoid
+            // separation from an earlier GGA (which may have failed
+            // its checksum or not been used)
+            _new_have_geoid_separation = false;
         } else if (strcmp(term_type, "HDT") == 0) {
             _sentence_type = _GPS_SENTENCE_HDT;
         } else if (strcmp(term_type, "THS") == 0) {
@@ -724,8 +727,8 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_GGA + GGA_TERM_ALTITUDE: // Altitude (GPGGA)
             _new_altitude = _parse_decimal_100(_term);
             break;
-        case _GPS_SENTENCE_GGA + GGA_TERM_GEOID_SEPARATION: // Geoid separation (GPGGA)
-            _new_have_geoid_separation = _term[0] != '\0';
+        case _GPS_SENTENCE_GGA + GGA_TERM_GEOID_SEPARATION: // Geoid separation (GPGGA), not parsed if empty
+            _new_have_geoid_separation = true;
             _new_geoid_separation = _parse_decimal_100(_term);
             break;
 
