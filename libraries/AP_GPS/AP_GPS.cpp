@@ -1931,10 +1931,18 @@ bool AP_GPS::get_height_ellipsoid(uint8_t instance, float &height_m) const
 
 /*
   the vehicle's absolute altitude is in the frame of the GPS height the
-  EKF origin was taken from: the ellipsoid height with HeightEllipsoid,
-  else AMSL.  That can differ from the current primary GPS's
-  location.alt, eg. after a change of primary to a GPS with only one
-  height, so the frame is decided by the option alone
+  EKF origin was taken from.  These assume that is the frame
+  HeightEllipsoid asks for: the ellipsoid height with the option, else
+  AMSL.  The current primary GPS's location.alt is not used, as the
+  primary can change after the origin is set.  With the option, a
+  primary GPS without an ellipsoid height means the origin may have
+  been AMSL, so the frame is unknown.
+
+  Known limitation: if the origin was taken from a GPS with only the
+  other height, the result is out by the undulation.  For example, with
+  the option off, an SBF receiver without an undulation sets the origin
+  from its ellipsoid height, and a GPS with both heights then becomes
+  primary.  Recording the frame when the origin is set would fix this.
  */
 bool AP_GPS::location_alt_to_amsl(float alt_m, float &amsl_m) const
 {
@@ -1953,6 +1961,9 @@ bool AP_GPS::location_alt_to_amsl(float alt_m, float &amsl_m) const
 bool AP_GPS::location_alt_to_ellipsoid(float alt_m, float &ellipsoid_m) const
 {
     if (option_set(HeightEllipsoid)) {
+        if (primary_instance >= GPS_MAX_INSTANCES || !state[primary_instance].have_height_ellipsoid) {
+            return false;
+        }
         ellipsoid_m = alt_m;
         return true;
     }
