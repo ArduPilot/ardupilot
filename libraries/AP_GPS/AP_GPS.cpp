@@ -1932,6 +1932,47 @@ bool AP_GPS::get_height_ellipsoid(uint8_t instance, float &height_m) const
 }
 
 /*
+  location.alt holds the ellipsoid height if the user asked for it with
+  HeightEllipsoid, or if the receiver gave no AMSL height (see
+  AP_GPS_Backend::set_heights)
+ */
+bool AP_GPS::location_alt_is_ellipsoid(uint8_t instance) const
+{
+    if (instance >= GPS_MAX_INSTANCES || !state[instance].have_height_ellipsoid) {
+        return false;
+    }
+    return option_set(HeightEllipsoid) || !state[instance].have_height_amsl;
+}
+
+bool AP_GPS::location_alt_to_amsl(float alt_m, float &amsl_m) const
+{
+    if (!location_alt_is_ellipsoid(primary_instance)) {
+        amsl_m = alt_m;
+        return true;
+    }
+    float undulation;
+    if (!get_undulation(primary_instance, undulation)) {
+        return false;
+    }
+    amsl_m = alt_m + undulation;
+    return true;
+}
+
+bool AP_GPS::location_alt_to_ellipsoid(float alt_m, float &ellipsoid_m) const
+{
+    if (location_alt_is_ellipsoid(primary_instance)) {
+        ellipsoid_m = alt_m;
+        return true;
+    }
+    float undulation;
+    if (!get_undulation(primary_instance, undulation)) {
+        return false;
+    }
+    ellipsoid_m = alt_m - undulation;
+    return true;
+}
+
+/*
   the undulation is the AMSL height minus the ellipsoid height; it is
   only known if the receiver reported both
  */
