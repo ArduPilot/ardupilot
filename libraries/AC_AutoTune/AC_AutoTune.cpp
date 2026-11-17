@@ -10,7 +10,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500         // restart tuning if pilot has left sticks in middle for 2 seconds
+#define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500         // restart tuning if pilot has left sticks in middle for 0.5 seconds
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
  # define AUTOTUNE_LEVEL_ANGLE_RAD          radians(5.0)    // angle which qualifies as level (Plane uses more relaxed 5deg)
  # define AUTOTUNE_LEVEL_RATE_RP_RADS       radians(10.0)   // rate which qualifies as level for roll and pitch (Plane uses more relaxed 10deg/sec)
@@ -20,7 +20,7 @@
 #endif
 #define AUTOTUNE_LEVEL_RATE_Y_RADS          radians(7.5)    // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     250         // time we require the aircraft to be level before starting next test
-#define AUTOTUNE_LEVEL_TIMEOUT_MS           2000        // time out for level
+#define AUTOTUNE_LEVEL_TIMEOUT_MS           2000        // level threshold relaxes over 2x this, level fails after 3x this
 #define AUTOTUNE_LEVEL_DEFER_MAX_MS         20000       // longest a yaw slew may postpone the level time out
 #define AUTOTUNE_LEVEL_WARNING_INTERVAL_MS  5000        // level failure warning messages sent at this interval to users
 
@@ -329,7 +329,7 @@ void AC_AutoTune::run()
 // return true if vehicle is close to level
 bool AC_AutoTune::currently_level()
 {
-    // abort AutoTune if we pass 2 * AUTOTUNE_LEVEL_TIMEOUT_MS
+    // abort AutoTune if we pass 3 * AUTOTUNE_LEVEL_TIMEOUT_MS
     const uint32_t now_ms = AP_HAL::millis();
     // bound the deferrals below: a yaw target which never settles must
     // not postpone the abort forever
@@ -363,7 +363,7 @@ bool AC_AutoTune::currently_level()
     }
 
     // slew threshold to ensure sufficient settling time for aircraft unable to obtain small thresholds
-    // relax threshold if we pass AUTOTUNE_LEVEL_TIMEOUT_MS
+    // threshold grows linearly from zero to 2x over 2 * AUTOTUNE_LEVEL_TIMEOUT_MS
     const float threshold_mul = constrain_float((float)(now_ms - level_start_time_ms) / (float)AUTOTUNE_LEVEL_TIMEOUT_MS, 0.0, 2.0);
 
     if (fabsf(ahrs_view->get_roll_rad() - desired_roll_rad) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_RAD) {
