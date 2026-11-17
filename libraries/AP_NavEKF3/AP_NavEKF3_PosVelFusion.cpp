@@ -703,7 +703,9 @@ void NavEKF3_core::SelectVelPosFusion()
     // only fall back to GPS for the states the operator has actually selected GPS to drive
     const bool gpsPosSelected = (posxy_source == AP_NavEKF_Source::SourceXY::GPS);
     const bool gpsVelSelected = frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index);
-    if (gpsDataToFuse && gpsGoodToAlign && (gpsPosSelected || gpsVelSelected) &&
+    if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion) &&
+        gpsDataToFuse && gpsGoodToAlign && (PV_AidingMode == AID_ABSOLUTE) &&
+        (gpsPosSelected || gpsVelSelected) &&
         (recentlatLngReset || filterStatus.flags.dead_reckoning)) {
         // prior bad data is likely so states are suspect and should be reset
         if (gpsVelSelected) {
