@@ -30,7 +30,8 @@ def test_canonical_hash():
 def test_import_section_includes_diagnostic_name(spec):
     entry = next(entry for entry in contracts.describe(spec) if entry['contract']['name'] == 'ahrs.get_gyro')
     imports = contracts.emit(spec, '')['sdk/rust/src/imports.rs']
-    assert f'#[link_section = ".ap_module_import_{entry["hash"]}.ahrs.get_gyro"]' in imports
+    assert (f'#[cfg_attr(not(target_vendor = "apple"), '
+            f'link_section = ".ap_module_import_{entry["hash"]}.ahrs.get_gyro")]') in imports
     assert f'#[export_name = "__ap_module_import_{entry["hash"]}.ahrs.get_gyro"]' in imports
 
 

@@ -266,7 +266,10 @@ def emit(spec, notice):
         diagnostic_name = entry['contract']['name']
         if len(diagnostic_name) > 63 or not re.fullmatch(r'[A-Za-z0-9_.]+', diagnostic_name):
             raise ValueError(f'unsupported diagnostic binding name: {diagnostic_name}')
-        rust += [f'#[link_section = ".ap_module_import_{entry["hash"]}.{diagnostic_name}"]',
+        # Native SDK tests use Mach-O on Apple hosts; executable modules still
+        # use ELF cross-targets there, so their import sections are unchanged.
+        rust += [f'#[cfg_attr(not(target_vendor = "apple"), '
+                 f'link_section = ".ap_module_import_{entry["hash"]}.{diagnostic_name}")]',
                  f'#[export_name = "__ap_module_import_{entry["hash"]}.{diagnostic_name}"]',
                  f'pub(crate) static BINDING_{names[entry["id"]].upper()}: Import = Import::new();', '']
     ids_header = [notice, '#pragma once', '#include <stdint.h>', '', 'namespace AP_Module', '{',
