@@ -19863,6 +19863,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def GPSHeightsEllipsoidOption(self):
+        '''check GPS_RAW_INT heights do not change with the ellipsoid height option'''
+        geoid = 20  # metres of geoid above the ellipsoid
+        self.set_parameter("SIM_GPS1_GEOID", geoid)
+        self.reboot_sitl()
+
+        def heights():
+            m = self.assert_receive_message('GPS_RAW_INT', condition='GPS_RAW_INT.fix_type>=3', timeout=60)
+            return (m.alt * 0.001, m.alt_ellipsoid * 0.001)
+
+        self.delay_sim_time(5, reason="GPS to settle")
+        (amsl, ellipsoid) = heights()
+        self.progress(f"AMSL {amsl:.2f} ellipsoid {ellipsoid:.2f}")
+        if abs(ellipsoid - amsl - geoid) > 0.5:
+            raise NotAchievedException(f"ellipsoid height {ellipsoid:.2f} is not {geoid}m above AMSL {amsl:.2f}")
+
+        # navigating on the ellipsoid height must not change what the
+        # message reports:
+        self.set_parameter("GPS_DRV_OPTIONS", int(self.get_parameter("GPS_DRV_OPTIONS")) | (1 << 4))
+        self.delay_sim_time(5, reason="option to take effect")
+        (amsl_opt, ellipsoid_opt) = heights()
+        self.progress(f"with HeightEllipsoid: AMSL {amsl_opt:.2f} ellipsoid {ellipsoid_opt:.2f}")
+        if abs(amsl_opt - amsl) > 0.5:
+            raise NotAchievedException(f"GPS_RAW_INT.alt {amsl_opt:.2f} is not the AMSL height {amsl:.2f}")
+        if abs(ellipsoid_opt - ellipsoid) > 0.5:
+            raise NotAchievedException(
+                f"GPS_RAW_INT.alt_ellipsoid {ellipsoid_opt:.2f} is not the ellipsoid height {ellipsoid:.2f}")
+
     def GPSBlendingAffinity(self):
         '''test blending when affinity in use'''
         # configure:
@@ -22555,6 +22583,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FlyEachFrame,
             self.GPSBlendingLog,
             self.GPSBlendingAffinity,
+            self.GPSHeightsEllipsoidOption,
             self.ProximitySensors,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
