@@ -159,9 +159,9 @@ void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 }
 
 #if HAL_QUADPLANE_ENABLED
-constexpr int8_t Plane::_failsafe_priorities[7];
+constexpr int8_t Plane::_failsafe_priorities[8];
 #else
-constexpr int8_t Plane::_failsafe_priorities[6];
+constexpr int8_t Plane::_failsafe_priorities[7];
 #endif
 
 // update AHRS system

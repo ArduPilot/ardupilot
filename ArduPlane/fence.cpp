@@ -64,6 +64,7 @@ void Plane::fence_check()
             case AC_Fence::Action::GUIDED_THROTTLE_PASS:
             case AC_Fence::Action::RTL_AND_LAND:
             case AC_Fence::Action::AUTOLAND_OR_RTL:
+            case AC_Fence::Action::AUTO_RTL_OR_RTL:
                 if (plane.control_mode_reason == ModeReason::FENCE_BREACHED &&
                     control_mode->is_guided_mode()) {
                     IGNORE_RETURN(set_mode(*previous_mode, ModeReason::FENCE_RETURN_PREVIOUS_MODE));
@@ -121,6 +122,7 @@ void Plane::fence_check()
             break;
 
         case AC_Fence::Action::AUTOLAND_OR_RTL:
+        case AC_Fence::Action::AUTO_RTL_OR_RTL:
         case AC_Fence::Action::RTL_AND_LAND:
             if (control_mode->is_auto_mode() &&
                 mission.get_in_landing_sequence_flag() &&
@@ -138,6 +140,9 @@ void Plane::fence_check()
                 break;
             }
 #endif
+            if ((fence_act == AC_Fence::Action::AUTO_RTL_OR_RTL) && set_mode(mode_auto_rtl, ModeReason::FENCE_BREACHED)) {
+                break;
+            }
             IGNORE_RETURN(set_mode(mode_rtl, ModeReason::FENCE_BREACHED));
             break;
 
@@ -213,9 +218,9 @@ bool Plane::fence_stickmixing(void) const
 
 bool Plane::in_fence_recovery() const
 {
-    if (control_mode->is_auto_mode() && !mission.get_in_landing_sequence_flag()) {
+    if (control_mode->is_auto_mode() && !mission.get_in_landing_sequence_flag() && !mission.get_in_return_path_flag()) {
         // the user may have changed target WP to be outside the
-        // landing sequence
+        // landing sequence or return path
         return false;
     }
     const bool current_mode_breach = plane.control_mode_reason == ModeReason::FENCE_BREACHED;

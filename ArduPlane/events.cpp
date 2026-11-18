@@ -157,6 +157,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
                IGNORE_RETURN(set_mode(mode_rtl, reason));
             }
 #endif
+        } else if (g.fs_action_long == FS_ACTION_LONG_AUTO_RTL) {
+            if (!set_mode(mode_auto_rtl, reason)) {
+                IGNORE_RETURN(set_mode(mode_rtl, reason));
+            }
         } else {
             IGNORE_RETURN(set_mode(mode_rtl, reason));
         }
@@ -214,6 +218,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
                IGNORE_RETURN(set_mode(mode_rtl, reason));
             } 
 #endif           
+        } else if (g.fs_action_long == FS_ACTION_LONG_AUTO_RTL) {
+            if (!set_mode(mode_auto_rtl, reason)) {
+                IGNORE_RETURN(set_mode(mode_rtl, reason));
+            }
         } else if (g.fs_action_long == FS_ACTION_LONG_RTL) {
             IGNORE_RETURN(set_mode(mode_rtl, reason));
         }
@@ -225,6 +233,8 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTOLAND) {
             IGNORE_RETURN(set_mode(mode_autoland, reason));
 #endif
+        } else if (g.fs_action_long == FS_ACTION_LONG_AUTO_RTL) {
+            IGNORE_RETURN(set_mode(mode_auto_rtl, reason));
         }
         break;
 #if HAL_QUADPLANE_ENABLED
@@ -308,7 +318,8 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             FALLTHROUGH;
         }
         case Failsafe_Action_RTL:
-        case Failsafe_Action_AUTOLAND_OR_RTL: {
+        case Failsafe_Action_AUTOLAND_OR_RTL:
+        case Failsafe_Action_AUTO_RTL_OR_RTL: {
             bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland ||
@@ -335,6 +346,9 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
                     break;
                 }
 #endif
+                if (((Failsafe_Action)action == Failsafe_Action_AUTO_RTL_OR_RTL) && set_mode(mode_auto_rtl, ModeReason::BATTERY_FAILSAFE)) {
+                    break;
+                }
                 IGNORE_RETURN(set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE));
             }
             break;

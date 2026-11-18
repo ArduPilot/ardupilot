@@ -1270,6 +1270,7 @@ private:
         Failsafe_Action_Loiter_alt_QLand = 6,
 #endif
         Failsafe_Action_AUTOLAND_OR_RTL = 7,
+        Failsafe_Action_AUTO_RTL_OR_RTL = 8,
     };
 
     // list of priorities, highest priority first
@@ -1280,6 +1281,7 @@ private:
                                                       Failsafe_Action_QLand,
 #endif
                                                       Failsafe_Action_Land,
+                                                      Failsafe_Action_AUTO_RTL_OR_RTL,
                                                       Failsafe_Action_RTL,
                                                       Failsafe_Action_None,
                                                       -1 // the priority list must end with a sentinel of -1
