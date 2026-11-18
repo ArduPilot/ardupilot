@@ -77,13 +77,13 @@ jobs:
         run: |
           python3 -m pip install pytest pyelftools numpy pexpect empy==3.3.4
           python3 -m pip install ./modules/mavlink/pymavlink
-      - name: Install Rust and its ARM target
+      - name: Install Rust and module targets
         shell: bash
         run: |
           python3 Tools/modules/rust/install_toolchain.py --directory "$RUNNER_TEMP/ap-rust"
           CARGO_HOME="$RUNNER_TEMP/ap-rust/cargo" RUSTUP_HOME="$RUNNER_TEMP/ap-rust/rustup" \
             "$RUNNER_TEMP/ap-rust/cargo/bin/rustup" target add \
-              --toolchain "$(cat Tools/modules/rust/rust-toolchain-version)" thumbv7em-none-eabihf
+              --toolchain "$(cat Tools/modules/rust/rust-toolchain-version)" thumbv7em-none-eabihf aarch64-linux-android
       - name: Expose Rust to generator probes
         run: dirname -- "$RUSTC" >> "$GITHUB_PATH"
       - name: Cache the GNAT LLVM frontend
