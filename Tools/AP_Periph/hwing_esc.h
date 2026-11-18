@@ -10,6 +10,12 @@
 
 #if AP_PERIPH_HOBBYWING_ESC_ENABLED
 
+#include <AP_ESC_Telem/AP_ESC_Telem_XRotor_Parser.h>
+
+#if !AP_ESC_TELEM_XROTOR_PARSER_ENABLED
+#error "AP_PERIPH_HOBBYWING_ESC_ENABLED needs AP_ESC_TELEM_XROTOR_PARSER_ENABLED"
+#endif
+
 class HWESC_Telem {
 public:
     HWESC_Telem();
@@ -61,7 +67,6 @@ private:
     struct HWESC decoded;
 
     bool parse_packet(void);
-    uint8_t temperature_decode(uint8_t temp_raw) const;
 };
 
 #endif // AP_PERIPH_HOBBYWING_ESC_ENABLED
