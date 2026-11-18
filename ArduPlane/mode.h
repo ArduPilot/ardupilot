@@ -350,12 +350,19 @@ public:
     // enter by joining the mission after the closest DO_RETURN_PATH_START, false if there is none
     bool enter_return_path(ModeReason reason);
 
+    // enter via the return path if there is one, else the landing sequence, false if there is neither.
+    // Unlike a plain mode request this also re-joins the mission when already in Auto RTL
+    bool enter_return_path_or_landing_sequence(ModeReason reason);
+
 protected:
 
     bool _enter() override;
     bool _pre_arm_checks(size_t buflen, char *buffer) const override;
 
 private:
+
+    // join the mission at the closest return path leg, else at the closest landing sequence
+    bool join_mission();
 
     // enter once an entry helper has moved the mission
     bool enter_joined(ModeReason reason);

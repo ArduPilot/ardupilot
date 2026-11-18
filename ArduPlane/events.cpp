@@ -158,7 +158,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             }
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO_RTL) {
-            if (!set_mode(mode_auto_rtl, reason)) {
+            if (!mode_auto_rtl.enter_return_path_or_landing_sequence(reason)) {
                 IGNORE_RETURN(set_mode(mode_rtl, reason));
             }
         } else {
@@ -219,7 +219,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             } 
 #endif           
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO_RTL) {
-            if (!set_mode(mode_auto_rtl, reason)) {
+            if (!mode_auto_rtl.enter_return_path_or_landing_sequence(reason)) {
                 IGNORE_RETURN(set_mode(mode_rtl, reason));
             }
         } else if (g.fs_action_long == FS_ACTION_LONG_RTL) {
@@ -234,7 +234,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             IGNORE_RETURN(set_mode(mode_autoland, reason));
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO_RTL) {
-            IGNORE_RETURN(set_mode(mode_auto_rtl, reason));
+            IGNORE_RETURN(mode_auto_rtl.enter_return_path_or_landing_sequence(reason));
         }
         break;
 #if HAL_QUADPLANE_ENABLED
@@ -346,7 +346,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
                     break;
                 }
 #endif
-                if (((Failsafe_Action)action == Failsafe_Action_AUTO_RTL_OR_RTL) && set_mode(mode_auto_rtl, ModeReason::BATTERY_FAILSAFE)) {
+                if (((Failsafe_Action)action == Failsafe_Action_AUTO_RTL_OR_RTL) && mode_auto_rtl.enter_return_path_or_landing_sequence(ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
                 IGNORE_RETURN(set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE));

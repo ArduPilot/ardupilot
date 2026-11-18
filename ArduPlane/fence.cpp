@@ -138,7 +138,7 @@ void Plane::fence_check()
                 break;
             }
 #endif
-            if ((fence_act == AC_Fence::Action::AUTO_RTL_OR_RTL) && set_mode(mode_auto_rtl, ModeReason::FENCE_BREACHED)) {
+            if ((fence_act == AC_Fence::Action::AUTO_RTL_OR_RTL) && mode_auto_rtl.enter_return_path_or_landing_sequence(ModeReason::FENCE_BREACHED)) {
                 break;
             }
             IGNORE_RETURN(set_mode(mode_rtl, ModeReason::FENCE_BREACHED));

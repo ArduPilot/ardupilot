@@ -3,14 +3,9 @@
 
 bool ModeAutoRTL::_enter()
 {
-    if (!mission_joined) {
-        // a plain mode request joins the return path if there is one, else the landing sequence
-        if (!plane.have_position ||
-            (!plane.mission.jump_to_closest_mission_leg(plane.current_loc) &&
-             !plane.mission.jump_to_landing_sequence(plane.current_loc))) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Auto RTL: no return path or landing sequence found");
-            return false;
-        }
+    if (!mission_joined && !join_mission()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Auto RTL: no return path or landing sequence found");
+        return false;
     }
 
     // carry on from where the jump put the mission rather than restarting it
@@ -36,6 +31,22 @@ bool ModeAutoRTL::enter_return_path(ModeReason reason)
         return false;
     }
     return enter_joined(reason);
+}
+
+bool ModeAutoRTL::enter_return_path_or_landing_sequence(ModeReason reason)
+{
+    if (!join_mission()) {
+        return false;
+    }
+    return enter_joined(reason);
+}
+
+bool ModeAutoRTL::join_mission()
+{
+    // the return path is preferred, it leads to the landing sequence anyway
+    return plane.have_position &&
+           (plane.mission.jump_to_closest_mission_leg(plane.current_loc) ||
+            plane.mission.jump_to_landing_sequence(plane.current_loc));
 }
 
 bool ModeAutoRTL::enter_joined(ModeReason reason)
