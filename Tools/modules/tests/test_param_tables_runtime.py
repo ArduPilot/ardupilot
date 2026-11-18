@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Declarative tables through the real SDK, loader and AP_Param implementation."""
 
+from test_runtime import ROOT
+from test_runtime import Vehicle
 from test_runtime import native_target
-from test_runtime import ROOT, Vehicle
 
 import build
 

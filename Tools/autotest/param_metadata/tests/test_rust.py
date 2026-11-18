@@ -7,11 +7,12 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
-import pytest
-
 from pathlib import Path
 
-from Tools.autotest.param_metadata.rust import parameter_matches, parameter_paths
+import pytest
+
+from Tools.autotest.param_metadata.rust import parameter_matches
+from Tools.autotest.param_metadata.rust import parameter_paths
 
 ROOT = Path(__file__).resolve().parents[4]
 

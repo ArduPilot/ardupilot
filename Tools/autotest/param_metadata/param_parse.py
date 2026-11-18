@@ -23,8 +23,6 @@ from xmlemit import XmlEmit
 
 from jsonemit import JSONEmit
 from mdemit import MDEmit
-from rust import parameter_matches as rust_parameter_matches
-from rust import parameter_paths as rust_parameter_paths
 from param import Library
 from param import Parameter
 from param import Vehicle
@@ -33,6 +31,8 @@ from param import known_param_fields
 from param import known_units
 from param import required_library_param_fields
 from param import required_param_fields
+from rust import parameter_matches as rust_parameter_matches
+from rust import parameter_paths as rust_parameter_paths
 
 parser = ArgumentParser(description="Parse ArduPilot parameters.")
 parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")

@@ -27,7 +27,6 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / 'Tools/renode/tests'))
 from test_peripherals import renode  # noqa: E402,F401
 
-
 AARCH64 = 'aarch64-linux-android'
 
 

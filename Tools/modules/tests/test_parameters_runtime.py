@@ -6,9 +6,9 @@ import os
 
 import pytest
 
-from test_runtime import native_target
 from test_runtime import ROOT
 from test_runtime import Vehicle
+from test_runtime import native_target
 
 import build
 
