@@ -14704,7 +14704,6 @@ switch value'''
             self.set_parameters({
                 "AFS_ENABLE": 1,
                 "MAV_GCS_SYSID": self.mav.source_system,
-                "RTL_AUTOLAND": 2,
             })
             self.drain_mav()
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)

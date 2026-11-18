@@ -48,11 +48,6 @@ class RunMission(vehicle_test_suite.TestSuite):
         )
         self.get_mavlink_connection_going()
 
-        # hack; Plane defaults are annoying... we should do better
-        # here somehow.
-        if self.vehicleinfo_key() == "ArduPlane":
-            self.set_parameter("RTL_AUTOLAND", 1)
-
         self.load_mission_from_filepath(self.mission_filepath, strict=False)
         self.change_mode('AUTO')
         self.set_streamrate(1)
