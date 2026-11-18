@@ -781,7 +781,8 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
     */
     // get the terminator of the device name string
     const uint8_t offset = strnlen((char*)info->payload,42U);
-    if (strncmp((char*)info->payload, "Tracer", 6) == 0) {
+    // Tracer firmware 6.66 names the receiver "TBS Tracer nanoRX" where 6.48 named it "Tracer nanoRX"
+    if (strncmp((char*)info->payload, "Tracer", 6) == 0 || strncmp((char*)info->payload, "TBS Tracer", 10) == 0) {
         _crsf_version.protocol = AP_CRSF_Protocol::ProtocolType::PROTOCOL_TRACER;
     } else if (strncmp((char*)&info->payload[offset+1], "ELRS", 4) == 0) {
         // ELRS magic number is ELRS encoded in the serial number
