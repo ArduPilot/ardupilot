@@ -7,14 +7,22 @@
 #if AP_BOOTLOADER_NETWORK_ENABLED
 
 #include <AP_Networking/AP_Networking.h>
+#if !AP_BOOTLOADER_NETWORK_PPP_ENABLED
 #include <AP_Networking/AP_Networking_ChibiOS.h>
+#endif
+#if AP_NETWORKING_CAN_MCAST_ENABLED
 #include <AP_Networking/AP_Networking_CAN.h>
+#endif
 
 #include <lwip/ip_addr.h>
 #include <lwip/tcpip.h>
 #include <lwip/netifapi.h>
 #include <lwip/sockets.h>
+#if AP_BOOTLOADER_NETWORK_PPP_ENABLED
+#include <netif/ppp/pppos.h>
+#else
 #include <lwip/etharp.h>
+#endif
 #if LWIP_DHCP
 #include <lwip/dhcp.h>
 #endif
@@ -31,7 +39,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <AP_HAL_ChibiOS/hwdef/common/flash.h>
+
+// can_printf() only exists when the bootloader has CAN
+#define BL_NETWORK_HAVE_CAN (HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES)
+#if BL_NETWORK_HAVE_CAN
 #include <AP_HAL_ChibiOS/CANIface.h>
+#endif
 
 #ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR
 #define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "C2:AF:51:03:CF:46"
@@ -53,6 +66,11 @@
 #define AP_BOOTLOADER_NETWORK_USE_DHCP 0
 #endif
 
+// firmware is received into RAM this much at a time between flash operations
+#ifndef AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE
+#define AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE 65536
+#endif
+
 #define LWIP_SEND_TIMEOUT_MS 50
 #define LWIP_NETIF_MTU       1500
 #define LWIP_LINK_POLL_INTERVAL TIME_S2I(5)
@@ -62,24 +80,27 @@
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
+#if AP_NETWORKING_CAN_MCAST_ENABLED
 static AP_Networking_CAN mcast_server;
+#endif
 
 void BL_Network::link_up_cb(void *p)
 {
-// firmware is received into RAM this much at a time between flash operations
-#ifndef AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE
-#define AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE 65536
-#endif
-
     auto *driver = (BL_Network *)p;
 #if AP_BOOTLOADER_NETWORK_USE_DHCP
     dhcp_start(driver->thisif);
 #endif
+#if BL_NETWORK_HAVE_CAN
     char ipstr[IP4_STR_LEN];
     can_printf("IP %s", SocketAPM::inet_addr_to_str(ntohl(driver->thisif->ip_addr.addr), ipstr, sizeof(ipstr)));
+#else
+    (void)driver;
+#endif
 
+#if AP_NETWORKING_CAN_MCAST_ENABLED
     // start mcast CAN server
     mcast_server.start((1U<<HAL_NUM_CAN_IFACES)-1);
+#endif
 }
 
 void BL_Network::link_down_cb(void *p)
@@ -90,6 +111,7 @@ void BL_Network::link_down_cb(void *p)
 #endif
 }
 
+#if !AP_BOOTLOADER_NETWORK_PPP_ENABLED
 /*
  * This function does the actual transmission of the packet. The packet is
  * contained in the pbuf that is passed to the function. This pbuf
@@ -296,6 +318,137 @@ void BL_Network::net_thread()
     }
 }
 
+#else  // AP_BOOTLOADER_NETWORK_PPP_ENABLED
+
+#ifndef AP_BOOTLOADER_NETWORK_PPP_BAUD
+#define AP_BOOTLOADER_NETWORK_PPP_BAUD 921600
+#endif
+
+#ifndef AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL
+#define AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL 0
+#endif
+
+#if AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL && (!defined(AP_BOOTLOADER_NETWORK_PPP_RTS_LINE) || !defined(AP_BOOTLOADER_NETWORK_PPP_RTS_AF))
+#error "PPP flow control needs AP_BOOTLOADER_NETWORK_PPP_RTS_LINE and AP_BOOTLOADER_NETWORK_PPP_RTS_AF"
+#endif
+
+#if !AP_NETWORKING_BACKEND_PPP
+// lwIP calls this for every incoming PPP frame; the bootloader does
+// not support packet capture. AP_Networking_PPP.cpp provides it when
+// that backend is enabled
+void ap_ppp_capture_hook(const struct ppp_pcb_s *pcb, const struct pbuf *pb)
+{
+}
+#endif
+
+/*
+  start the serial port the PPP link runs over
+ */
+void BL_Network::ppp_start_serial(void)
+{
+    static SerialConfig ppp_sercfg;
+    ppp_sercfg.speed = AP_BOOTLOADER_NETWORK_PPP_BAUD;
+#if defined(STM32H7)
+    // the H7 UART clock is 100MHz; rates above 6.25MBaud (up to
+    // 12.5MBaud) need 8x rather than 16x oversampling
+    if (ppp_sercfg.speed > 100000000UL / 16U) {
+        ppp_sercfg.cr1 |= USART_CR1_OVER8;
+    }
+#endif
+#ifdef USART_CR1_FIFOEN
+    // the serial driver takes an interrupt per byte, and at high
+    // baudrates kernel critical sections delay it for longer than two
+    // byte times; the FIFO covers that and the driver drains it
+    ppp_sercfg.cr1 |= USART_CR1_FIFOEN;
+#endif
+#if AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL
+    // hardware CTS, and hardware RTS, which is deasserted whenever the
+    // receive FIFO is full, including while flash operations stall
+    // the CPU
+    ppp_sercfg.cr3 |= USART_CR3_CTSE | USART_CR3_RTSE;
+#endif
+    sdStart(&AP_BOOTLOADER_NETWORK_PPP_SERIAL, &ppp_sercfg);
+#if AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL
+    // hwdef makes RTS a GPIO output for the HAL's software RTS; give
+    // it to the UART instead
+    palSetLineMode(AP_BOOTLOADER_NETWORK_PPP_RTS_LINE, PAL_MODE_ALTERNATE(AP_BOOTLOADER_NETWORK_PPP_RTS_AF));
+#endif
+}
+
+/*
+  send PPP data to the serial port
+ */
+uint32_t BL_Network::ppp_output_cb(struct ppp_pcb_s *pcb, const void *data, uint32_t len, void *ctx)
+{
+    return chnWriteTimeout(&AP_BOOTLOADER_NETWORK_PPP_SERIAL, (const uint8_t *)data, len, TIME_MS2I(LWIP_SEND_TIMEOUT_MS));
+}
+
+/*
+  PPP link status change
+ */
+void BL_Network::ppp_status_cb(struct ppp_pcb_s *pcb, int code, void *ctx)
+{
+    auto *driver = (BL_Network *)ctx;
+    switch (code) {
+    case PPPERR_NONE:
+        // link is up and we have our address from the peer
+        link_up_cb(driver);
+        break;
+    case PPPERR_USER:
+        break;
+    default:
+        // the link is dead; start negotiating again
+        driver->ppp_need_restart = true;
+        break;
+    }
+}
+
+/*
+  networking thread
+*/
+void BL_Network::net_thread()
+{
+    /* start tcpip thread */
+    tcpip_init(NULL, NULL);
+
+    thread_sleep_ms(100);
+
+    ppp_start_serial();
+
+    // our address comes from the peer over IPCP
+    LOCK_TCPIP_CORE();
+    ppp = pppos_create(thisif, ppp_output_cb, ppp_status_cb, this);
+    if (ppp == nullptr) {
+        AP_HAL::panic("Failed to create PPP link");
+    }
+    netif_set_default(thisif);
+    ppp_connect(ppp, 0);
+    UNLOCK_TCPIP_CORE();
+
+    uint8_t buf[256];
+    while (true) {
+        if (ppp_need_restart) {
+            ppp_need_restart = false;
+            LOCK_TCPIP_CORE();
+            ppp_connect(ppp, 0);
+            UNLOCK_TCPIP_CORE();
+        }
+
+        // wait for some data, then take whatever else is buffered
+        size_t n = chnReadTimeout(&AP_BOOTLOADER_NETWORK_PPP_SERIAL, buf, 1, TIME_MS2I(100));
+        if (n == 0) {
+            continue;
+        }
+        n += chnReadTimeout(&AP_BOOTLOADER_NETWORK_PPP_SERIAL, &buf[1], sizeof(buf)-1, TIME_IMMEDIATE);
+
+        LOCK_TCPIP_CORE();
+        pppos_input(ppp, buf, n);
+        UNLOCK_TCPIP_CORE();
+    }
+}
+
+#endif  // AP_BOOTLOADER_NETWORK_PPP_ENABLED
+
 void BL_Network::net_thread_trampoline(void *ctx)
 {
     auto *net = (BL_Network *)ctx;
@@ -378,6 +531,38 @@ char *BL_Network::read_headers(SocketAPM *sock)
         }
     }
     return ret;
+}
+
+/*
+  wait until the sender is blocked by our TCP receive window, or has
+  nothing left to send, so that nothing arrives while flash is
+  busy. remaining is the number of bytes the sender has yet to send
+  that we have not read
+ */
+void BL_Network::wait_sender_blocked(SocketAPM *sock, uint32_t remaining)
+{
+    // the sender may hold back less than a segment rather than send a
+    // runt, so a window within a segment of full counts as full
+    const uint32_t blocked = MIN(remaining, uint32_t(TCP_WND - TCP_MSS));
+    int last_avail = -1;
+    const uint32_t start_ms = AP_HAL::millis();
+    uint32_t last_change_ms = start_ms;
+    while (true) {
+        int avail = 0;
+        lwip_ioctl(sock->get_read_fd(), FIONREAD, &avail);
+        const uint32_t now_ms = AP_HAL::millis();
+        if (avail != last_avail) {
+            last_avail = avail;
+            last_change_ms = now_ms;
+        }
+        const uint32_t quiet_ms = now_ms - last_change_ms;
+        if ((uint32_t(avail) >= blocked && quiet_ms >= 20) ||
+            quiet_ms >= 200 ||
+            now_ms - start_ms >= 2000) {
+            break;
+        }
+        thread_sleep_ms(5);
+    }
 }
 
 /*
@@ -504,6 +689,11 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         failed = true;
     }
     flash_set_keep_unlocked(false);
+    if (failed) {
+        const char *str = "<html><body>Flash failed, see status</body></html>";
+        sock->send(str, strlen(str));
+        return;
+    }
 #if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
 #else
@@ -568,38 +758,6 @@ void BL_Network::handle_request(SocketAPM *sock)
 
     const char *get_reboot = "GET /REBOOT";
     if (strncmp(headers, get_reboot, strlen(get_reboot)) == 0) {
-/*
-  wait until the sender is blocked by our TCP receive window, or has
-  nothing left to send, so that nothing arrives while flash is
-  busy. remaining is the number of bytes the sender has yet to send
-  that we have not read
- */
-void BL_Network::wait_sender_blocked(SocketAPM *sock, uint32_t remaining)
-{
-    // the sender may hold back less than a segment rather than send a
-    // runt, so a window within a segment of full counts as full
-    const uint32_t blocked = MIN(remaining, uint32_t(TCP_WND - TCP_MSS));
-    int last_avail = -1;
-    const uint32_t start_ms = AP_HAL::millis();
-    uint32_t last_change_ms = start_ms;
-    while (true) {
-        int avail = 0;
-        lwip_ioctl(sock->get_read_fd(), FIONREAD, &avail);
-        const uint32_t now_ms = AP_HAL::millis();
-        if (avail != last_avail) {
-            last_avail = avail;
-            last_change_ms = now_ms;
-        }
-        const uint32_t quiet_ms = now_ms - last_change_ms;
-        if ((uint32_t(avail) >= blocked && quiet_ms >= 20) ||
-            quiet_ms >= 200 ||
-            now_ms - start_ms >= 2000) {
-            break;
-        }
-        thread_sleep_ms(5);
-    }
-}
-
         need_reboot = true;
     }
     
@@ -685,18 +843,21 @@ void BL_Network::web_server(void)
  */
 void BL_Network::init()
 {
+#if AP_BOOTLOADER_NETWORK_PPP_ENABLED
+    // received PPP data is processed through the whole IP stack on
+    // the network thread
+    const uint32_t net_thread_stack = 4096;
+#else
     AP_Networking_ChibiOS::allocate_buffers();
 
     macInit();
 
-    if (failed) {
-        const char *str = "<html><body>Flash failed, see status</body></html>";
-        sock->send(str, strlen(str));
-        return;
-    }
+    const uint32_t net_thread_stack = 2048;
+#endif
+
     thisif = NEW_NOTHROW netif;
 
-    net_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(2048),
+    net_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(net_thread_stack),
                                          "network",
                                          60,
                                          net_thread_trampoline,
@@ -732,7 +893,9 @@ void BL_Network::status_printf(const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(bl_status, sizeof(bl_status), fmt, ap);
     va_end(ap);
+#if BL_NETWORK_HAVE_CAN
     can_printf("%s", bl_status);
+#endif
 }
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED
