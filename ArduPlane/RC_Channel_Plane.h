@@ -57,6 +57,8 @@ public:
 
     void read_mode_switch() override;
 
+    bool control_input_required(RC_Channel::AUX_FUNC func) const override;
+
 protected:
 
     // note that these callbacks are not presently used on Plane:
