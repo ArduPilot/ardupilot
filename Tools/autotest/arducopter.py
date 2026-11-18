@@ -6963,6 +6963,60 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def MissionCommandRecursion(self):
+        '''Test recursive mission command dispatch is rejected while disarmed'''
+
+        self.wait_ready_to_arm()
+        home = self.home_position_as_location()
+
+        # AUTO_RTL joins the return path and starts the DO_AUX_FUNCTION.  That
+        # command requests AUTO_RTL again, which attempts to start the same
+        # mission command before its first invocation has returned.  This
+        # previously recursed until the main thread stack overflowed.
+        # Co-located navigation items ensure closest-leg selection starts at
+        # the unsupported command instead of bypassing the malformed chain.
+        self.upload_simple_relhome_mission([
+            self.create_MISSION_ITEM_INT(188),  # MAV_CMD_DO_RETURN_PATH_START
+            # This Plane-only navigation command is skipped by Copter.
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT,
+                x=int(home.lat * 1e7),
+                y=int(home.lng * 1e7),
+                z=0,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_AUX_FUNCTION,
+                p1=99,  # AUX_FUNC::AUTO_RTL
+                p2=2,   # AuxSwitchPos::HIGH
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                x=int(home.lat * 1e7),
+                y=int(home.lng * 1e7),
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LAND,
+                x=int(home.lat * 1e7),
+                y=int(home.lng * 1e7),
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            ),
+        ])
+
+        self.context_collect('STATUSTEXT')
+        self.change_mode('AUTO_RTL')
+        self.wait_statustext("Mission: command recursion denied", check_context=True)
+        self.wait_statustext("Internal Errors 0x100000", check_context=True)
+
+        # The recursion guard must leave the main loop alive and in the
+        # requested mode.  The vehicle remains disarmed throughout the test.
+        self.assert_mode_is('AUTO_RTL')
+        if self.armed():
+            raise NotAchievedException("Vehicle armed during recursion test")
+        self.wait_heartbeat()
+        self.wait_heartbeat()
+
     def InvalidJumpTags(self):
         '''Verify the behaviour when selecting invalid jump tags.'''
 
@@ -21226,6 +21280,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MissionIndexValidity,
             self.MAV_CMD_DO_SET_MISSION_CURRENT_no_nav_command,
             self.MissionUnstartableNavCommandLoop,
+            Test(self.MissionCommandRecursion, expected_internal_error=1 << 20),
             self.RPLidarA2,
             self.MAV_CMD_NAV_TAKEOFF_no_location,
             self.DualTuningChannels,
