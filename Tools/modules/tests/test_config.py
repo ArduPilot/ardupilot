@@ -109,7 +109,7 @@ def test_periph_module_selection(rust, rust_first, periph):
 
 
 @pytest.mark.parametrize('flags,enabled', [
-    ([], 1), (['-m32'], 0), (['-U__x86_64__', '-D__aarch64__'], 0),
+    ([], 1), (['-m32'], 0), (['-U__x86_64__', '-D__aarch64__'], 1),
     (['-U__x86_64__', '-D__arm__'], 0), (['-D__CYGWIN__'], 0),
     (['-m32', '-DAP_MODULE_ENABLED=1'], 1), (['-DAP_MODULE_ENABLED=0'], 0),
 ])
@@ -171,3 +171,12 @@ def test_periph_binding_override_does_not_enable_lua(native):
                              'AP_EXTERNAL_BINDING_ENABLED': native, 'AP_MODULE_ENABLED': native},
                             0, native, native, periph=True)
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize('source', ['tests/modules/lifecycle.cpp', 'examples/simple_loop.f90'])
+def test_aarch64_rejects_unsupported_languages(tmp_path, source):
+    import build
+
+    with pytest.raises(ValueError, match='AArch64 modules are currently Rust only'):
+        build.build(ROOT / 'libraries/AP_Module' / source, tmp_path / 'unsupported.apmod',
+                    'aarch64-linux-android', 8192)

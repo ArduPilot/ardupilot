@@ -14,8 +14,10 @@ from test_runtime import Vehicle
 
 import build
 
+TARGETS = ('thumbv7em-none-eabihf', 'x86_64-unknown-linux-gnu')
 
-@pytest.mark.parametrize('target', build.TARGETS)
+
+@pytest.mark.parametrize('target', TARGETS)
 @pytest.mark.parametrize('debug', [False, True])
 def test_cpp_rebases_without_rust(tmp_path, target, debug, monkeypatch):
     monkeypatch.setenv('RUSTC', '/no/rust/installation')
@@ -54,7 +56,7 @@ def test_mixed_rust_cpp_sitl(tmp_path, monkeypatch):
         vehicle.stop()
 
 
-@pytest.mark.parametrize('target', build.TARGETS)
+@pytest.mark.parametrize('target', TARGETS)
 def test_global_constructors_rejected(tmp_path, target):
     source = tmp_path / 'constructor.cpp'
     source.write_text('''#include <ap_module.hpp>
@@ -127,7 +129,7 @@ AP_MODULE(run)
     assert module['memory_size'] - module['rx_size'] >= 4
 
 
-@pytest.mark.parametrize('target', build.TARGETS)
+@pytest.mark.parametrize('target', TARGETS)
 def test_all_cpp_bindings_pack(tmp_path, target):
     # The host sanitizer test checks wire sizes/bytes. Also retain every client
     # here to catch target-specific compiler helpers or unsupported relocations.
@@ -161,7 +163,7 @@ def test_all_cpp_bindings_pack(tmp_path, target):
         entry['contract']['name'] for entry in entries}
 
 
-@pytest.mark.parametrize('target', build.TARGETS)
+@pytest.mark.parametrize('target', TARGETS)
 def test_runtime_helpers_pack(tmp_path, target):
     build.build(ROOT / 'Tools/modules/cpp/probe.cpp', tmp_path / 'helpers.apmod', target, 8192)
 

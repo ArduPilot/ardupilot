@@ -18,12 +18,14 @@ from test_runtime import Vehicle
 
 import build
 
+TARGETS = ('thumbv7em-none-eabihf', 'x86_64-unknown-linux-gnu')
+
 DEMO = ROOT / 'libraries/AP_Module/examples/simple_loop.f90'
 TARGET = 'x86_64-unknown-linux-gnu'
 
 
 @pytest.mark.parametrize('debug', [False, True])
-@pytest.mark.parametrize('target', list(build.TARGETS))
+@pytest.mark.parametrize('target', TARGETS)
 def test_fortran_rebases_without_rust(tmp_path, monkeypatch, debug, target):
     monkeypatch.setenv('RUSTC', '/no/rust/installation')
     if target != TARGET:
@@ -88,7 +90,7 @@ def test_fortran_missing_compiler(tmp_path, monkeypatch):
         build.build(DEMO, tmp_path / 'missing.apmod', TARGET, 8192)
 
 
-@pytest.mark.parametrize('target', list(build.TARGETS))
+@pytest.mark.parametrize('target', TARGETS)
 def test_fortran_io_dependency_fails_build(tmp_path, capfd, target, monkeypatch):
     if target != TARGET:
         monkeypatch.setenv('FC', os.environ.get('ARM_FC', 'arm-linux-gnueabihf-gfortran'))
