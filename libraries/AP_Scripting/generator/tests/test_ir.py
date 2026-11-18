@@ -67,7 +67,8 @@ def test_repository_ir_and_lua_output_unchanged(generator, tmp_path):
     assert parameter['fields'] == [] and parameter['operator_names'] == []
     assert not parameter['operators_manual']
     methods = {item['name']: item for item in parameter['methods']}
-    assert set(methods) == {'init', 'init_by_info', 'get', 'set', 'set_and_save', 'configured', 'set_default'}
+    assert set(methods) == {'init', 'init_by_info', 'get', 'get_int32', 'set', 'set_int32',
+                            'set_and_save', 'set_and_save_int32', 'configured', 'set_default'}
     assert methods['init']['arguments'][0]['kind'] == 'string'
     assert methods['get']['arguments'][0]['nullable']
     assert methods['set']['arguments'][0]['skip_check']
