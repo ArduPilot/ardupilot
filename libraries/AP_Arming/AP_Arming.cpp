@@ -51,6 +51,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
@@ -1495,6 +1496,24 @@ bool AP_Arming::fettec_checks(bool display_failure) const
 }
 #endif  // AP_FETTEC_ONEWIRE_ENABLED
 
+#if AP_ESC_TELEM_XROTOR_ENABLED
+bool AP_Arming::esc_telem_checks(bool display_failure) const
+{
+    const AP_ESC_Telem *esc_telem = AP_ESC_Telem::get_singleton();
+    if (esc_telem == nullptr) {
+        return true;
+    }
+
+    // check every output configured for serial ESC telemetry can get it
+    char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    if (!esc_telem->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+        check_failed(display_failure, "ESC telem: %s", fail_msg);
+        return false;
+    }
+    return true;
+}
+#endif  // AP_ESC_TELEM_XROTOR_ENABLED
+
 #if AP_ARMING_AUX_AUTH_ENABLED
 // request an auxiliary authorisation id.  This id should be used in subsequent calls to set_aux_auth_passed/failed
 // returns true on success
@@ -1781,6 +1800,9 @@ bool AP_Arming::pre_arm_checks(bool report)
 #endif
 #if AP_FETTEC_ONEWIRE_ENABLED
         &  fettec_checks(report)
+#endif
+#if AP_ESC_TELEM_XROTOR_ENABLED
+        &  esc_telem_checks(report)
 #endif
 #if HAL_VISUALODOM_ENABLED
         &  visodom_checks(report)
