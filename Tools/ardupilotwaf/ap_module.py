@@ -32,7 +32,8 @@ DEFAULT_CODE_MAX = 131072
 def module_target(env):
     '''rust target and CPU profile for the board being configured'''
     if env.BOARD_CLASS == 'ChibiOS':
-        if env.CORTEX in ('cortex-m4', 'cortex-m7'):
+        if env.CORTEX in ('cortex-m4', 'cortex-m7') and \
+                env.APJ_BOARD_TYPE in ('STM32F405xx', 'STM32H743xx', 'STM32H757xx'):
             return 'thumbv7em-none-eabihf', env.CORTEX
         return None, None
     if env.BOARD_CLASS in ('SITL', 'LINUX') and env.DEST_CPU in ('x86_64', 'amd64', None, ''):
