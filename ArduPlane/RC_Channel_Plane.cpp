@@ -181,6 +181,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
 #if MODE_AUTOLAND_ENABLED
     case AUX_FUNC::AUTOLAND:
 #endif
+    case AUX_FUNC::AUTO_RTL:
 #if AP_PLANE_SYSTEMID_ENABLED
     case AUX_FUNC::SYSTEMID:
 #endif
@@ -504,6 +505,10 @@ bool RC_Channel_Plane::do_aux_function(const AuxFuncTrigger &trigger)
         break;
 
 #endif
+
+    case AUX_FUNC::AUTO_RTL:
+        do_aux_function_change_mode(Mode::Number::AUTO_RTL, ch_flag);
+        break;
 
     default:
         return RC_Channel::do_aux_function(trigger);
