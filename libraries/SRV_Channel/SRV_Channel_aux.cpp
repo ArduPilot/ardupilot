@@ -775,16 +775,6 @@ bool SRV_Channels::get_output_pwm(SRV_Channel::Function function, uint16_t &valu
     return true;
 }
 
-// set output pwm to trim for the given function
-void SRV_Channels::set_output_to_trim(SRV_Channel::Function function)
-{
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function == function) {
-            channels[i].set_output_pwm(channels[i].servo_trim);
-        }
-    }
-}
-
 /*
   get the normalised output for a channel function from the pwm value
   of the first matching channel

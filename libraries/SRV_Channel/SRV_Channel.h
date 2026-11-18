@@ -481,15 +481,6 @@ public:
     // set the trim for a function channel to given pwm
     static void set_trim_to_pwm_for(SRV_Channel::Function function, int16_t pwm);
 
-    // set output to min value
-    static void set_output_to_min(SRV_Channel::Function function);
-
-    // set output to max value
-    static void set_output_to_max(SRV_Channel::Function function);
-
-    // set output to trim value
-    static void set_output_to_trim(SRV_Channel::Function function);
-
     // copy radio_in to servo out
     static void copy_radio_in_out(SRV_Channel::Function function, bool do_input_output=false);
 
