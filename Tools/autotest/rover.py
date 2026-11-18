@@ -7922,6 +7922,10 @@ return update()
         self.change_mode('HOLD')
         self.disarm_vehicle(force=True)
 
+    def DoRepositionUnsupportedFrame(self):
+        '''check DO_REPOSITION in a frame Rover can't use is refused with MAV_RESULT_COMMAND_UNSUPPORTED_MAV_FRAME'''
+        self.check_do_reposition_unsupported_frames()
+
     def UTMGlobalPosition(self):
         '''test UTM_GLOBAL_POSITION message sending'''
         self.wait_ready_to_arm()
@@ -8661,6 +8665,7 @@ return update()
             self.WP_SPEED,
             self.AutoModeAccelChanges,
             self.AutoModeAccelLimiting,
+            self.DoRepositionUnsupportedFrame,
             self.JSONLockstep,
             self.JSONNoLockstep,
             self.JSONNoTimeSync,
