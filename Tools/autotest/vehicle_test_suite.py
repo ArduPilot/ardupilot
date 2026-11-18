@@ -15148,6 +15148,42 @@ return update, 1000
             raise NotAchievedException("reply came back as %s" % bytes(p[4:]))
         self.wait_statustext("reply of 57 bytes refused", check_context=True)
 
+    def CRSFParameterMenuFolderLimits(self):
+        '''Test scripted CRSF menus are limited to what their folders hold'''
+        INFO = 12
+
+        self.install_script_content_context("crsf-folders.lua", """
+local INFO = %u
+local menu = crsf:add_menu("Sixteen chars ab")
+local entries = 0
+for i = 1, 40 do
+    if menu:add_parameter(string.pack(">Bzz", INFO, "P" .. i, "")) then
+        entries = entries + 1
+    end
+end
+local menus = 1
+for i = 1, 60 do
+    if crsf:add_menu("M" .. i) then
+        menus = menus + 1
+    end
+end
+gcs:send_text(6, string.format("added %%d entries and %%d menus", entries, menus))
+
+local function update()
+    -- reads the script does not ask for are answered directly
+    crsf:get_menu_event(2)
+    return update, 100
+end
+
+return update, 1000
+""" % INFO)
+        self.set_parameter("SCR_ENABLE", 1)
+        self.context_collect('STATUSTEXT')
+        self.crsf_parameter_menu_check()
+        # a menu with a 16 character name has room for 36 children, and the
+        # root folder for the Parameters folder and 47 menus
+        self.wait_statustext("added 36 entries and 47 menus", check_context=True)
+
     def CompassPrearms(self):
         '''test compass prearm checks'''
         self.wait_ready_to_arm()
