@@ -20,6 +20,7 @@ from pymavlink import mavextra
 from pymavlink import mavutil
 from pymavlink import quaternion
 from pymavlink.mavftp import MAVFTP
+from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
 
@@ -5849,6 +5850,59 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.do_RTL()
         self.disarm_vehicle()
 
+    def SET_POSITION_TARGET_LOCAL_NED_BODY_FRD(self):
+        '''Test SET_POSITION_TARGET_LOCAL_NED in MAV_FRAME_BODY_FRD'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # the target is an offset forward and right of the vehicle,
+        # rotated by its full attitude; Rover only uses the horizontal
+        # part:
+        start = self.get_local_position_NED()
+        fwd = 30.0
+        right = 30.0
+        ofs = mavextra.rotation(self.assert_receive_message('ATTITUDE')) * Vector3(fwd, right, 0)
+        expected = (start.x + ofs.x, start.y + ofs.y, start.z)
+        # body-frame targets are relative to where the vehicle is
+        # now, so only send this once:
+        self.mav.mav.set_position_target_local_ned_send(
+            0, # time_boot_ms
+            self.sysid_thismav(),
+            1,
+            mavutil.mavlink.MAV_FRAME_BODY_FRD,
+            mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE |
+            mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE |
+            mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+            mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE |
+            mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE |
+            mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+            mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE |
+            mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE,
+            fwd,    # pos-x
+            right,  # pos-y
+            0,      # pos-z
+            0,      # vel-x
+            0,      # vel-y
+            0,      # vel-z
+            0,      # acc-x
+            0,      # acc-y
+            0,      # acc-z
+            0,      # yaw
+            0,      # yaw rate
+        )
+
+        self.wait_distance_to_local_position(
+            expected,
+            distance_min=0,
+            distance_max=3,
+            timeout=60,
+            minimum_duration=5,  # make sure we stop!
+        )
+
+        self.do_RTL()
+        self.disarm_vehicle()
+
     def EndMissionBehavior(self, timeout=60):
         '''Test end mission behavior'''
         self.context_push()
@@ -8563,6 +8617,7 @@ return update()
             self.SET_ATTITUDE_TARGET,
             self.SET_ATTITUDE_TARGET_heading,
             self.SET_POSITION_TARGET_LOCAL_NED,
+            self.SET_POSITION_TARGET_LOCAL_NED_BODY_FRD,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
             self.MAV_CMD_DO_SET_MISSION_CURRENT_looped_mission,
             self.MAV_CMD_DO_CHANGE_SPEED,
