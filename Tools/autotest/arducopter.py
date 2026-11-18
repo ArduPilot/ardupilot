@@ -25757,6 +25757,7 @@ return update, 1000
             self.CRSFParameterMenuUnusedSlot,
             self.CRSFParameterMenuChunks,
             self.CRSFParameterMenuLongCommandReply,
+            self.CRSFParameterMenuFolderLimits,
             self.GSF,
             self.SIMCompare,
             self.WatchAlts,
