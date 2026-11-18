@@ -1364,20 +1364,36 @@ void AP_CRSF_Telem::calc_parameter() {
     }
 #endif // AP_CRSF_SCRIPTING_ENABLED
 
+    // the fields after the Parameters folder are the OSD parameter slots
+    const uint8_t slot = _param_request.param_num - (PARAMETER_MENU_ID + 1);
+    if (slot >= AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS) {
+        return;
+    }
+
     AP_OSD* osd = AP::osd();
-
-    if (osd == nullptr) {
-        return;
-    }
-
-    AP_OSD_ParamSetting* setting = osd->get_setting((_param_request.param_num - (PARAMETER_MENU_ID + 1)) / AP_OSD_ParamScreen::NUM_PARAMS,
-        (_param_request.param_num - (PARAMETER_MENU_ID + 1)) % AP_OSD_ParamScreen::NUM_PARAMS);
-
-    if (setting == nullptr) {
-        return;
-    }
+    AP_OSD_ParamSetting* setting = osd == nullptr ? nullptr :
+        osd->get_setting(slot / AP_OSD_ParamScreen::NUM_PARAMS, slot % AP_OSD_ParamScreen::NUM_PARAMS);
 
     _telem.ext.param_entry.header.param_num = _param_request.param_num;
+
+    // a slot is still answered when the vehicle has no OSD or its parameter can't be found, as a
+    // transmitter waits for every field in turn, but as a hidden INFO field since there is nothing to show
+    if (setting == nullptr || setting->_param == nullptr) {
+        static constexpr uint8_t HIDDEN = 0x80; // bit 7 of the type hides a field
+        _telem.ext.param_entry.header.chunks_left = 0;
+        _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // parent folder
+        _telem.ext.param_entry.payload[idx++] = ParameterType::INFO | HIDDEN;
+        strncpy((char*)&_telem.ext.param_entry.payload[idx], "Unused", ARRAY_SIZE(_telem.ext.param_entry.payload) - idx - 1);
+        idx += strlen("Unused") + 1;
+        _telem.ext.param_entry.payload[idx] = 0; // empty info
+
+        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
+        _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+        _pending_request.frame_type = 0;
+        _telem_pending = true;
+        return;
+    }
+
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
     if (setting->get_custom_metadata() != nullptr) {
         calc_text_selection(setting, _param_request.param_chunk);
@@ -1700,7 +1716,8 @@ void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write
     AP_OSD_ParamSetting* param = osd->get_setting((write_frame->param_num - (PARAMETER_MENU_ID + 1)) / AP_OSD_ParamScreen::NUM_PARAMS,
         (write_frame->param_num - (PARAMETER_MENU_ID + 1)) % AP_OSD_ParamScreen::NUM_PARAMS);
 
-    if (param == nullptr) {
+    // a slot whose parameter can't be found has nothing to write
+    if (param == nullptr || param->_param == nullptr) {
         return;
     }
 
