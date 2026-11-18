@@ -472,7 +472,7 @@ bool Runtime::load_generation()
         bool romfs_only = false;
 #ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_APMOD
         // A missing or unmounted SD card must not prevent embedded startup.
-        romfs_only = _slots != nullptr && (errno == EIO || errno == ENOSPC || errno == ENODEV);
+        romfs_only = _slots != nullptr && (errno == EIO || errno == ENOSPC || errno == ENODEV || errno == ENOSYS);
 #endif
         if (errno != ENOENT && !romfs_only) {
             fail("module directory unavailable");
