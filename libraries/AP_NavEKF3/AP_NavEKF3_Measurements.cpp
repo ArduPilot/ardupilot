@@ -112,6 +112,46 @@ void NavEKF3_core::readRangeFinder(void)
 }
 #endif  // AP_RANGEFINDER_ENABLED
 
+// true if the downward range finders readRangeFinder() takes, as they read now, have the vehicle off the
+// ground: at least one has a reading, and each that does reads at least ON_GROUND_HGT_MAX_M above rngOnGnd,
+// the clearance the EKF takes for them on the ground, once tilt corrected, or above its own range. Some
+// drivers report a lost return as above range, which this takes as off the ground. One reading the vehicle
+// lower, or out of range low, keeps it on the ground. Taken through the DAL, so Replay reaches the same answer
+bool NavEKF3_core::rangeFinderOffGround() const
+{
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    const auto *rng = dal.rangefinder();
+    if (rng == nullptr) {
+        return false;
+    }
+    bool offGround = false;
+    for (uint8_t sensorIndex = 0; sensorIndex < ARRAY_SIZE(rngMeasIndex); sensorIndex++) {
+        const auto *sensor = rng->get_backend(sensorIndex);
+        if ((sensor == nullptr) || (sensor->orientation() != ROTATION_PITCH_270)) {
+            continue;
+        }
+        switch (sensor->status()) {
+        case AP_DAL_RangeFinder::Status::OutOfRangeHigh:
+            offGround = true;
+            break;
+        case AP_DAL_RangeFinder::Status::Good:
+            if (sensor->distance() * prevTnb.c.z < rngOnGnd + ON_GROUND_HGT_MAX_M) {
+                return false;
+            }
+            offGround = true;
+            break;
+        case AP_DAL_RangeFinder::Status::OutOfRangeLow:
+            return false;
+        default:
+            break;
+        }
+    }
+    return offGround;
+#else
+    return false;
+#endif
+}
+
 void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
 #if EK3_FEATURE_BODY_ODOM

@@ -684,8 +684,9 @@ void NavEKF3_core::SelectVelPosFusion()
             // remain unobservable until the vehicle accelerates and are separately
             // inhibited by dvelBiasAxisInhibit in CovariancePrediction.
             // Use onGroundNotMoving to avoid fusing zero velocity when the vehicle
-            // is being moved (e.g. on a boat or carried by hand).
-            const bool onGroundNotFlying = onGroundNotMoving;
+            // is being moved (e.g. on a boat or carried by hand). That passes at terminal
+            // velocity, so armed, a range finder reading the vehicle off the ground withholds it.
+            const bool onGroundNotFlying = onGroundNotMoving && !(motorsArmed && rangeFinderOffGround());
             if (onGroundNotFlying && tiltAlignComplete) {
                 fuseVelData = true;
                 fusingStationaryZeroVel = true;
@@ -710,8 +711,9 @@ void NavEKF3_core::SelectVelPosFusion()
     // sensor data is being fused. Use onGroundNotMoving to avoid injecting zero velocity
     // when the vehicle is being moved, and takeoff_expected for armed-on-ground.
     // Gate behind fuseHgtData to limit fusion rate to baro rate (~10Hz) and avoid
-    // overconstraining the filter by fusing at IMU rate.
-    const bool onGroundNotFlying = onGroundNotMoving;
+    // overconstraining the filter by fusing at IMU rate. Armed, a range finder reading the
+    // vehicle off the ground withholds it, as the stillness test passes at terminal velocity.
+    const bool onGroundNotFlying = onGroundNotMoving && !(motorsArmed && rangeFinderOffGround());
 
     if (fuseHgtData && PV_AidingMode != AID_NONE && onGroundNotFlying) {
         // Check if we have recent velocity aiding from any source
