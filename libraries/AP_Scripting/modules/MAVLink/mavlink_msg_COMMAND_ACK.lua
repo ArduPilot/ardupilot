@@ -9,5 +9,6 @@ COMMAND_ACK.fields = {
              { "result_param2", "<i4" },
              { "target_system", "<B" },
              { "target_component", "<B" },
+             { "command_opaque_id", "<I4" },
              }
 return COMMAND_ACK

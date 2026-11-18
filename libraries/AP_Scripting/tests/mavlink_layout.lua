@@ -51,7 +51,7 @@ end
 -- Any other unset field raises an error naming it.
 do
   local id, payload = mav.encode('COMMAND_ACK', {command = 300, result = 4})
-  assert(id == 77 and payload == string.pack('<HBBi4BB', 300, 4, 0, 0, 0, 0))
+  assert(id == 77 and payload == string.pack('<HBBi4BBI4', 300, 4, 0, 0, 0, 0, 0))
   local ok, err = pcall(mav.encode, 'COMMAND_LONG', {
     target_sytem = 1, target_component = 1, command = 400, confirmation = 0,
     param1 = 1, param2 = 0, param3 = 0, param4 = 0, param5 = 0, param6 = 0, param7 = 0,

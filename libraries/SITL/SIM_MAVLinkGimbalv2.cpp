@@ -112,7 +112,7 @@ void MAVLinkGimbalv2::handle_message(const mavlink_message_t &msg)
             const uint32_t requested_msgid = (uint32_t)cmd.param1;
             if (requested_msgid == MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION) {
                 send_gimbal_device_information();
-                send_command_ack(msg.sysid, msg.compid,
+                send_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                  MAV_CMD_REQUEST_MESSAGE, MAV_RESULT_ACCEPTED);
             }
         }
@@ -139,11 +139,11 @@ void MAVLinkGimbalv2::handle_message(const mavlink_message_t &msg)
                 _roi.valid = true;
                 result = MAV_RESULT_ACCEPTED;
             }
-            send_command_ack(msg.sysid, msg.compid,
+            send_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                              MAV_CMD_DO_SET_ROI_LOCATION, result);
         } else if (cmd.command == MAV_CMD_DO_SET_ROI_NONE) {
             _roi.valid = false;
-            send_command_ack(msg.sysid, msg.compid,
+            send_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                              MAV_CMD_DO_SET_ROI_NONE, MAV_RESULT_ACCEPTED);
         }
         break;
@@ -440,6 +440,7 @@ void MAVLinkGimbalv2::send_attitude_status()
 }
 
 void MAVLinkGimbalv2::send_command_ack(uint32_t target_sysid, uint8_t target_compid,
+                                        uint32_t command_opaque_id,
                                         MAV_CMD command, MAV_RESULT result)
 {
     // pack rather than encode so a target over 255 goes in the extended
@@ -451,7 +452,8 @@ void MAVLinkGimbalv2::send_command_ack(uint32_t target_sysid, uint8_t target_com
         (uint16_t)command, (uint8_t)result,
         255,                // progress
         0,                  // result_param2
-        target_sysid, target_compid);
+        target_sysid, target_compid,
+        command_opaque_id);
     send_mavlink_message(msg);
 }
 
@@ -479,7 +481,8 @@ void MAVLinkGimbalv2::request_telemetry()
                                             _vehicle_system_id, _vehicle_component_id,
                                             MAV_CMD_SET_MESSAGE_INTERVAL, 0,
                                             message_ids[i], 100000, // 10 Hz, including on private links
-                                            0, 0, 0, 0, 0);
+                                            0, 0, 0, 0, 0,
+                                            0);  // command_opaque_id
         send_mavlink_message(msg);
     }
 }

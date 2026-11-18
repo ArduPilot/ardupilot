@@ -868,6 +868,7 @@ void GCS_MAVLINK_Plane::convert_MAV_CMD_NAV_TAKEOFF_to_COMMAND_INT(const mavlink
     // out.x = 0;  // we don't handle positioning when doing takeoffs
     // out.y = 0;
     out.z = -in.param7;  // up -> down
+    out.command_opaque_id = in.command_opaque_id;
 }
 
 void GCS_MAVLINK_Plane::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
