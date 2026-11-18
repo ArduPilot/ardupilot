@@ -12,6 +12,7 @@
 #else
 
 #include <netinet/in.h>
+#include <atomic>
 
 class HAL_SITL;
 
@@ -84,6 +85,13 @@ private:
     void _fdm_input_step(void);
 
     void wait_clock(uint64_t wait_time_usec);
+
+    // speedup for sleeps in other threads, set by the main thread; 0 means poll
+    void update_sleep_speedup(void);
+    uint64_t _speedup_wall_ms;
+    uint64_t _speedup_sim_us;
+    float _measured_speedup;
+    std::atomic<float> _sleep_speedup{0.0f};
 
     // internal state
     uint8_t _instance;
