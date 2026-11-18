@@ -91,10 +91,10 @@ tilting) part of the antenna tracker hardware. Just how you do this will
 depend on your exact hardware, but if the processor is mounted in anything
 other than the default orientation (ie with the processor default 'forward'
 direction pointing in the direction the antenna points, you will have to
-configure AHRS_ORIENTATION in the AntennaTracker configuration to suit your
+configure BRD_ORIENTATION in the AntennaTracker configuration to suit your
 mechanical mounting arrangements.
 
-In my case, I used a Flymaple with AHRS_ORIENTATION set to 1 (Yaw45). The
+In my case, I used a Flymaple with BRD_ORIENTATION set to 1 (Yaw45). The
 Flymaple was mounted on the antenna tracker with component side up and the
 green pin headers horizontal and perpendicular to the antenna beam (See
 pictures???).
@@ -117,7 +117,7 @@ software to check and change the configuration of your AntennaTracker.
 You will almost certainly have to change the following configuration items to
 suit, and possibly others besides:
 
-AHRS_ORIENTATION
+BRD_ORIENTATION
 RC1_MIN
 RC1_MAX
 RC1_REV
