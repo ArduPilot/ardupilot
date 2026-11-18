@@ -112,6 +112,7 @@ INS_HNTC2_BW    60
 INS_HNTC2_FREQ  80
 
 # rate controllers
+ATC_ANGLE_MAX          35
 ATC_ACC_R_MAX          1600
 ATC_ACC_P_MAX          1600
 ATC_ACC_Y_MAX          540
