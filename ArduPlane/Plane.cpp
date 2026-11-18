@@ -513,7 +513,7 @@ void Plane::update_GPS_10Hz(void)
  */
 void Plane::update_control_mode(void)
 {
-    if ((control_mode != &mode_auto) && (control_mode != &mode_takeoff)) {
+    if ((!control_mode->is_auto_mode()) && (control_mode != &mode_takeoff)) {
         // hold_course is only used in takeoff and landing
         steer_state.hold_course_cd = -1;
     }
@@ -697,7 +697,7 @@ void Plane::update_flight_stage(void)
 {
     // Update the speed & height controller states
     if (control_mode->does_auto_throttle() && !throttle_suppressed) {
-        if (control_mode == &mode_auto) {
+        if (control_mode->is_auto_mode()) {
 #if HAL_QUADPLANE_ENABLED
             if (quadplane.in_vtol_auto()) {
                 set_flight_stage(AP_FixedWing::FlightStage::VTOL);
@@ -774,7 +774,7 @@ void Plane::disarm_if_autoland_complete()
 
 bool Plane::trigger_land_abort(const float climb_to_alt_m)
 {
-    if (plane.control_mode != &plane.mode_auto) {
+    if (!plane.control_mode->is_auto_mode()) {
         return false;
     }
 #if HAL_QUADPLANE_ENABLED
@@ -936,6 +936,7 @@ bool Plane::get_target_location(Location& target_loc)
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::AUTO:
+    case Mode::Number::AUTO_RTL:
     case Mode::Number::LOITER:
     case Mode::Number::TAKEOFF:
 #if HAL_QUADPLANE_ENABLED

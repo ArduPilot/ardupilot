@@ -77,6 +77,7 @@ void Plane::setup_alt_slope(void)
         break;
 
     case Mode::Number::AUTO:
+    case Mode::Number::AUTO_RTL:
         // climb without doing slope if option is enabled
         if (!above_location_current(next_WP_loc) && plane.flight_option_enabled(FlightOptions::IMMEDIATE_CLIMB_IN_AUTO)) {
             reset_offset_altitude();
@@ -583,7 +584,7 @@ int32_t Plane::adjusted_relative_altitude_cm(void)
 float Plane::mission_alt_offset(void)
 {
     float ret = g.alt_offset;
-    if (control_mode == &mode_auto &&
+    if (control_mode->is_auto_mode() &&
             (flight_stage == AP_FixedWing::FlightStage::LAND || auto_state.wp_is_land_approach)) {
         // when landing after an aborted landing due to too high glide
         // slope we use an offset from the last landing attempt
@@ -795,7 +796,7 @@ void Plane::rangefinder_height_update(void)
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland ||
                 control_mode == &mode_qrtl ||
-                (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) {
+                (control_mode->is_auto_mode() && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) {
                 flightstage_good_for_rangefinder_landing = true;
             }
 #endif
@@ -877,6 +878,7 @@ const Plane::TerrainLookupTable Plane::Terrain_lookup[] = {
     {Mode::Number::FLY_BY_WIRE_B, terrain_bitmask::FLY_BY_WIRE_B},
     {Mode::Number::CRUISE, terrain_bitmask::CRUISE},
     {Mode::Number::AUTO, terrain_bitmask::AUTO},
+    {Mode::Number::AUTO_RTL, terrain_bitmask::AUTO},
     {Mode::Number::RTL, terrain_bitmask::RTL},
     {Mode::Number::AVOID_ADSB, terrain_bitmask::AVOID_ADSB},
     {Mode::Number::GUIDED, terrain_bitmask::GUIDED},

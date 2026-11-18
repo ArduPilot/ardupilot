@@ -502,6 +502,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Values: 25:Loiter to QLand
     // @Values: 26:AUTOLAND
     // @Values: 27:Glide
+    // @Values: 28:Auto RTL
     // @User: Standard
     GARRAY(flight_modes, 0,         "FLTMODE1",       FLIGHT_MODE_1),
 

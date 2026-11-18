@@ -64,7 +64,7 @@ bool Mode::enter()
 #endif
 
 #if AP_CAMERA_ENABLED
-    plane.camera.set_is_auto_mode(this == &plane.mode_auto);
+    plane.camera.set_is_auto_mode(is_auto_mode());
 #endif
 
     // zero initial pitch and highest airspeed on mode change

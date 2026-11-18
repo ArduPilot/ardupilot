@@ -59,7 +59,7 @@ void Plane::update_is_flying_5Hz(void)
                                 gps_confirmed_movement; // locked and we're moving
         }
 
-        if (control_mode == &mode_auto) {
+        if (control_mode->is_auto_mode()) {
             /*
               make is_flying() more accurate during various auto modes
              */
@@ -152,7 +152,7 @@ void Plane::update_is_flying_5Hz(void)
             started_flying_ms = now_ms;
         }
 
-        if ((control_mode == &mode_auto) &&
+        if ((control_mode->is_auto_mode()) &&
             ((auto_state.started_flying_in_auto_ms == 0) || !previous_is_flying) ) {
 
             // We just started flying, note that time also
@@ -210,7 +210,7 @@ bool Plane::is_flying(void)
  */
 void Plane::crash_detection_update(void)
 {
-    if (control_mode != &mode_auto || !aparm.crash_detection_enable)
+    if (!control_mode->is_auto_mode() || !aparm.crash_detection_enable)
     {
         // crash detection is only available in AUTO mode
         crash_state.debounce_timer_ms = 0;
@@ -340,7 +340,7 @@ bool Plane::in_preLaunch_flight_stage(void)
         return false;
     }
 #endif
-    return (control_mode == &mode_auto &&
+    return (control_mode->is_auto_mode() &&
             throttle_suppressed &&
             flight_stage == AP_FixedWing::FlightStage::NORMAL &&
             mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF);

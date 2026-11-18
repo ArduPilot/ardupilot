@@ -381,7 +381,7 @@ void Plane::check_long_failsafe()
         if (failsafe.rc_failsafe &&
             (tnow - rc_last_seen_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_LONG, ModeReason::RADIO_FAILSAFE);
-        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == &mode_auto &&
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode->is_auto_mode() &&
                    gcs_last_seen_ms != 0 &&
                    (tnow - gcs_last_seen_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);

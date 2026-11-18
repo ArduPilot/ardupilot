@@ -64,6 +64,7 @@ void Plane::rc_failsafe_short_on_event()
 #endif // HAL_QUADPLANE_ENABLED
 
     case Mode::Number::AUTO:
+    case Mode::Number::AUTO_RTL:
 #if MODE_AUTOLAND_ENABLED
     case Mode::Number::AUTOLAND:
 #endif
@@ -180,6 +181,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #endif  // HAL_QUADPLANE_ENABLED
 
     case Mode::Number::AUTO:
+    case Mode::Number::AUTO_RTL:
         if (failsafe_in_landing_sequence()) {
             // don't failsafe in a landing sequence
             break;
@@ -293,13 +295,12 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #endif
             if (!already_landing && plane.have_position) {
                 // never stop a landing if we were already committed
-                if (control_mode == &mode_auto && plane.mission.is_best_land_sequence(plane.current_loc)) {
+                if (control_mode->is_auto_mode() && plane.mission.is_best_land_sequence(plane.current_loc)) {
                     // continue mission as it will reach a landing in less distance
                     plane.mission.set_in_landing_sequence_flag(true);
                     break;
                 }
-                if (plane.mission.jump_to_landing_sequence(plane.current_loc) &&
-                    plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE)) {
+                if (mode_auto_rtl.enter_landing_sequence(ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
                 // no landing sequence or AUTO refused; fall back to RTL
@@ -322,7 +323,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #endif
             if (!already_landing) {
                 // never stop a landing if we were already committed
-                if ((g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) && control_mode == &mode_auto &&
+                if (control_mode->is_auto_mode() &&
                     plane.have_position && plane.mission.is_best_land_sequence(plane.current_loc)) {
                     // continue mission as it will reach a landing in less distance
                     plane.mission.set_in_landing_sequence_flag(true);

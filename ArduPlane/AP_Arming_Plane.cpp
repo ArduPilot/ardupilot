@@ -336,7 +336,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
-    if (plane.control_mode != &plane.mode_auto) {
+    if (!plane.control_mode->is_auto_mode()) {
         // reset the mission on disarm if we are not in auto
         plane.mission.reset();
     }

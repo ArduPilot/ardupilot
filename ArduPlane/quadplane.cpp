@@ -1881,7 +1881,7 @@ void QuadPlane::update_throttle_suppression(void)
     }
 
     // allow for takeoff
-    if (plane.control_mode == &plane.mode_auto && is_vtol_takeoff(plane.mission.get_current_nav_cmd().id)) {
+    if (plane.control_mode->is_auto_mode() && is_vtol_takeoff(plane.mission.get_current_nav_cmd().id)) {
         return;
     }
 
@@ -2032,7 +2032,7 @@ bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state) const
         gcs().send_text(MAV_SEVERITY_NOTICE, "VTOL not available");
         return false;
     }
-    if (plane.control_mode != &plane.mode_auto) {
+    if (!plane.control_mode->is_auto_mode()) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "VTOL transition only in AUTO");
         return false;
     }
@@ -2071,7 +2071,7 @@ bool QuadPlane::in_vtol_auto(void) const
     if (!available()) {
         return false;
     }
-    if (plane.control_mode != &plane.mode_auto) {
+    if (!plane.control_mode->is_auto_mode()) {
         return false;
     }
     if (plane.auto_state.vtol_mode) {
@@ -2838,7 +2838,7 @@ void QuadPlane::vtol_position_controller(void)
         FALLTHROUGH;
     case QPOS_POSITION2: {
         bool vtol_loiter_auto = false;
-        if (plane.control_mode == &plane.mode_auto) {
+        if (plane.control_mode->is_auto_mode()) {
             switch (plane.mission.get_current_nav_cmd().id) {
             case MAV_CMD_NAV_LOITER_UNLIM:
             case MAV_CMD_NAV_LOITER_TIME:
@@ -3547,7 +3547,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     plane.fence.auto_enable_fence_after_takeoff();
 #endif
 
-    if (plane.control_mode == &plane.mode_auto) {
+    if (plane.control_mode->is_auto_mode()) {
         // we reset TECS so that the target height filter is not
         // constrained by the climb and sink rates from the initial
         // takeoff height.
@@ -3616,7 +3616,7 @@ bool QuadPlane::check_land_complete(void)
             return false;
         }
 
-        if (plane.control_mode != &plane.mode_auto ||
+        if (!plane.control_mode->is_auto_mode() ||
             !plane.mission.continue_after_land()) {
             // disarm on land unless we have MIS_OPTIONS setup to
             // continue after land in AUTO
@@ -3709,7 +3709,7 @@ bool QuadPlane::verify_vtol_land(void)
         poscontrol.set_state(QPOS_LAND_DESCEND);
         last_land_final_agl_m = plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING);
         gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
-        if (plane.control_mode == &plane.mode_auto) {
+        if (plane.control_mode->is_auto_mode()) {
             // set height to mission height, so we can use the mission
             // WP height for triggering land final if no rangefinder
             // available
@@ -4053,10 +4053,10 @@ bool QuadPlane::guided_mode_enabled(void)
         return false;
     }
     // only use quadplane guided when in AUTO or GUIDED mode
-    if (plane.control_mode != &plane.mode_guided && plane.control_mode != &plane.mode_auto) {
+    if (plane.control_mode != &plane.mode_guided && !plane.control_mode->is_auto_mode()) {
         return false;
     }
-    if (plane.control_mode == &plane.mode_auto &&
+    if (plane.control_mode->is_auto_mode() &&
         plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_LOITER_TURNS) {
         // loiter turns is a fixed wing only operation
         return false;
@@ -4375,7 +4375,7 @@ bool QuadPlane::in_vtol_airbrake(void) const
         poscontrol.get_state() == QPOS_AIRBRAKE) {
         return true;
     }
-    if (plane.control_mode == &plane.mode_auto &&
+    if (plane.control_mode->is_auto_mode() &&
         is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
         poscontrol.get_state() == QPOS_AIRBRAKE) {
         return true;
@@ -4933,7 +4933,7 @@ void QuadPlane::setup_rp_fw_angle_gains(void)
 bool QuadPlane::abort_landing(void)
 {
     if (poscontrol.get_state() == QPOS_LAND_ABORT ||
-        !(plane.control_mode == &plane.mode_auto)) {
+        !(plane.control_mode->is_auto_mode())) {
         // already aborted or not in AUTO?
         return false;
     }

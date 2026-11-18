@@ -75,7 +75,7 @@ GliderPullup::GliderPullup(void)
 */
 bool GliderPullup::in_pullup(void) const
 {
-    return plane.control_mode == &plane.mode_auto &&
+    return plane.control_mode->is_auto_mode() &&
         plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_ALTITUDE_WAIT &&
         stage != Stage::NONE;
 }

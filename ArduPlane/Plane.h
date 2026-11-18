@@ -162,6 +162,7 @@ public:
     friend class ModeCruise;
     friend class ModeAutoTune;
     friend class ModeAuto;
+    friend class ModeAutoRTL;
     friend class ModeRTL;
     friend class ModeLoiter;
     friend class ModeAvoidADSB;
@@ -313,6 +314,7 @@ private:
     ModeCruise mode_cruise;
     ModeAutoTune mode_autotune;
     ModeAuto mode_auto;
+    ModeAutoRTL mode_auto_rtl;
     ModeRTL mode_rtl;
     ModeLoiter mode_loiter;
 #if HAL_ADSB_ENABLED
@@ -1067,7 +1069,7 @@ private:
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
     Mode *mode_from_mode_num(const enum Mode::Number num);
     bool current_mode_requires_mission() const override {
-        return control_mode == &mode_auto;
+        return control_mode->is_auto_mode();
     }
 
     bool autotuning;

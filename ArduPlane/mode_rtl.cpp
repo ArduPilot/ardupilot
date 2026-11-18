@@ -108,15 +108,10 @@ void ModeRTL::navigate()
             plane.reached_loiter_target() && 
             labs(plane.calc_altitude_error_cm()) < 1000)) {
                 // we've reached the RTL point, see if we have a landing sequence
-                if (plane.have_position && plane.mission.jump_to_landing_sequence(plane.current_loc)) {
-                    // switch from RTL -> AUTO
-                    plane.mission.set_force_resume(true);
-                    if (plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND)) {
-                        // return here so we don't change the radius and don't run the rtl update_loiter()
-                        return;
-                    }
-                    // mode change failed, revert force resume flag
-                    plane.mission.set_force_resume(false);
+                // switch from RTL -> AUTO RTL
+                if (plane.mode_auto_rtl.enter_landing_sequence(ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND)) {
+                    // return here so we don't change the radius and don't run the rtl update_loiter()
+                    return;
                 }
 
                 // prevent running the expensive jump_to_landing_sequence
@@ -124,14 +119,9 @@ void ModeRTL::navigate()
                 plane.auto_state.checked_for_autoland = true;
 
         } else if (plane.g.rtl_autoland == RtlAutoland::DO_RETURN_PATH_START) {
-            if (plane.have_position && plane.mission.jump_to_closest_mission_leg(plane.current_loc)) {
-                plane.mission.set_force_resume(true);
-                if (plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND)) {
-                    // return here so we don't change the radius and don't run the rtl update_loiter()
-                    return;
-                }
-                // mode change failed, revert force resume flag
-                plane.mission.set_force_resume(false);
+            if (plane.mode_auto_rtl.enter_return_path(ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND)) {
+                // return here so we don't change the radius and don't run the rtl update_loiter()
+                return;
             }
             plane.auto_state.checked_for_autoland = true;
         }

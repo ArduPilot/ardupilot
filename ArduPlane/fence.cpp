@@ -122,7 +122,7 @@ void Plane::fence_check()
 
         case AC_Fence::Action::AUTOLAND_OR_RTL:
         case AC_Fence::Action::RTL_AND_LAND:
-            if (control_mode == &mode_auto &&
+            if (control_mode->is_auto_mode() &&
                 mission.get_in_landing_sequence_flag() &&
                 (g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START ||
                     g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START)) {
@@ -213,7 +213,7 @@ bool Plane::fence_stickmixing(void) const
 
 bool Plane::in_fence_recovery() const
 {
-    if (control_mode == &mode_auto && !mission.get_in_landing_sequence_flag()) {
+    if (control_mode->is_auto_mode() && !mission.get_in_landing_sequence_flag()) {
         // the user may have changed target WP to be outside the
         // landing sequence
         return false;
