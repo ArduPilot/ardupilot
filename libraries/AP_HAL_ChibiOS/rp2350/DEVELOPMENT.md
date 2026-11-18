@@ -327,6 +327,7 @@ Debug and profiling switches and the `@SYS` files are in Performance.
 |---|---|
 | `Tools/scripts/rp2350_pioasm.py` | regenerate or `--check` PIO headers; `--install` pioasm and picotool |
 | `Tools/scripts/rp2350_ramfunc2_sizes.py` | annotate the RAMFUNC2 registry with symbol sizes and placement |
+| `Tools/scripts/rp2350_ramfunc2_update.py` | repair the placement registries after a rebase, and check the placement |
 | `Tools/scripts/rp2350_heap_budget_report.py` | estimate heap headroom from `Linker.map` and allocation sites |
 | `Tools/scripts/bin2uf2.py` | wrap a `.bin` as an RP2350 UF2; used by waf and `build_bootloaders.py` |
 | `Tools/debug/rp2350_pc_profiler.py` | sample DWT PCSR over OpenOCD TCL; see Performance |
@@ -733,6 +734,22 @@ Unpicked function sections fall through to `.text_rest` in flash.
 - Commented-out entries record A/B runs that took code back out; read the
   comment before re-adding one.
 
+After a rebase, master may have renamed, split or removed a function an
+entry names, which stops the copter build at "no symbol match", or grown a
+function already in Scratch X or Y until the bank overflows.
+`Tools/scripts/rp2350_ramfunc2_update.py --board <board> --build` repairs
+both without adding SRAM code. For an entry that matches nothing it finds
+the commit that removed the function, and places what that commit added in
+the same class or file and the callers that took over its code, up to the
+bytes the old entry held. For a bank overflow it moves the smallest entry
+that covers it to main SRAM, then links again. Once the build links, it
+checks that every registered function, and every function the port puts
+in `.ramtext`, really is in SRAM. It needs only git, waf and the cross
+binutils; without `--build` it prints the plan and `--apply` writes it.
+The choices are made by size, not measured, and each is marked
+`ramfunc2-update:` in the registry: profile them (see Acting on a profile)
+and remove the marker once they have been.
+
 Scratch X and Y sit outside the striped SRAM on their own bus ports. By
 convention X is core0's and Y core1's, so code there never queues behind the
 other core or DMA. A core0 caller of a function in Y contends with core1 and
@@ -751,9 +768,12 @@ costs SRAM where those functions are relocated.
 
 ### memcpy, memset and 64-bit division
 
-`rp2350/rp2350_memfunctions.S` replaces newlib-nano's byte-at-a-time
-`memcpy`/`memset`, top consumers on both cores, with the RP2040 bootrom's
-16-bytes-per-iteration versions in `.ramtext.memfunctions`. It is assembled
+`rp2350/rp2350_memfunctions.S` replaces the C library's `memcpy`/`memset`,
+top consumers on both cores, with the RP2040 bootrom's
+16-bytes-per-iteration versions in `.ramtext.memfunctions`. Picolibc
+defines both too, and the port's copies win only by link order;
+`rp2350_ramfunc2_update.py --verify` reports a link that took the other
+ones. It is assembled
 in divided syntax on purpose (under unified syntax the Thumb-1 forms stop
 setting flags and the loops overrun), and has no `#if defined(RP2350)` guard
 because an assembler source never sees `hwdef.h`. `rp_clock_init()` copies

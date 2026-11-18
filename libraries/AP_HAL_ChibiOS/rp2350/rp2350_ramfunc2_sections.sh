@@ -300,6 +300,7 @@ generate_ld_from_registry \
 
 if [[ -s "$misses_txt" ]]; then
     echo "rp2350_ramfunc2_sections: $(wc -l < "$misses_txt") registry entries matched no symbol" >&2
+    echo "rp2350_ramfunc2_sections: after a rebase, Tools/scripts/rp2350_ramfunc2_update.py --board $(basename "$buildroot") --build repairs them" >&2
     exit 1
 fi
 
