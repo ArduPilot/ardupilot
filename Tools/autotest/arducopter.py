@@ -20572,6 +20572,75 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.FETtecESC_btw_mask_checks()
         self.FETtecESC_flight()
 
+    def XRotorESCTelem(self):
+        '''Test HobbyWing XRotor serial ESC telemetry'''
+        # XRotor ESCs on outputs 1 and 3, with SITL's own ESC telemetry
+        # off. RPM1 reports the true speed of motor 1, which SITL only
+        # simulates when SIM_VIB_MOT_MAX is set.
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 52,
+            "SERIAL6_PROTOCOL": 52,
+            "ESC_TLM_SER_MASK": 0b0101,
+            "SIM_ESC_TELEM": 0,
+            "SIM_VIB_MOT_MAX": 350,
+            "RPM1_TYPE": 10,
+        })
+        self.customise_SITL_commandline([
+            "--serial5=sim:xrotor:1",
+            "--serial6=sim:xrotor:3",
+        ])
+
+        # a simulated ESC's capacitor reads hotter the higher its output
+        # (26 C on output 1, 29 C on output 3), so this shows the lower
+        # port went to the lower output, and output 2 got nothing
+        self.wait_message_field_values('ESC_TELEMETRY_1_TO_4', {
+            "temperature[0]": 26,
+            "temperature[1]": 0,
+            "temperature[2]": 29,
+            "temperature[3]": 0,
+        })
+
+        # the simulated ESCs report the battery voltage; they truncate it to
+        # 0.1 V, so allow twice that
+        battery_cV = self.assert_receive_message('SYS_STATUS').voltage_battery * 0.1
+        self.wait_message_field_values('ESC_TELEMETRY_1_TO_4', {
+            "voltage[0]": battery_cV,
+            "voltage[2]": battery_cV,
+        }, epsilon=20)
+
+        def rpm_ratio():
+            motor_rpm = self.get_rpm(1)
+            if motor_rpm == 0:
+                return 0
+            return self.get_esc_rpm(1) / motor_rpm
+
+        def wait_rpm_ratio(ratio):
+            # 5% covers the two messages being sampled at different times
+            self.wait_and_maintain(
+                value_name="ESC1 RPM / motor RPM",
+                target=ratio,
+                current_value_getter=rpm_ratio,
+                accuracy=0.05 * ratio,
+                minimum_duration=5,
+                timeout=30,
+            )
+
+        self.takeoff(10, mode='GUIDED')
+        wait_rpm_ratio(1.0)
+
+        # doubling the pole count halves the RPM read from the ESCs
+        self.set_parameter("ESC_TLM_SER_POLE", 56)
+        wait_rpm_ratio(0.5)
+
+        self.do_RTL()
+
+        # an output with no serial port to pair it with fails pre-arm, also
+        # when the mask is first set after boot
+        self.set_parameter("ESC_TLM_SER_MASK", 0)
+        self.reboot_sitl()
+        self.set_parameter("ESC_TLM_SER_MASK", 0b10101)
+        self.assert_prearm_failure("ESC telem: no serial port for SERVO5", other_prearm_failures_fatal=False)
+
     def PerfInfo(self):
         '''Test Scheduler PerfInfo output'''
         self.set_parameter('SCHED_OPTIONS', 1)  # enable gathering
@@ -21056,6 +21125,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptParamRegistration,
             self.PerfInfo,
             self.FETtecESC,
+            self.XRotorESCTelem,
             self.DO_CHANGE_SPEED,
             self.GPSForYaw,
             self.GPSForYawWindEstimation,
