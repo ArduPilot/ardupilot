@@ -1496,8 +1496,7 @@ bool AP_CRSF_Telem::calc_scripted_parameter()
     _telem.ext.param_entry.header.param_num = spw.param_num;
 
     // For a WRITE to a non-COMMAND parameter, the response type is PARAMETER_WRITE (0x2D).
-    if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE &&
-        !(spw.param->length > 0 && spw.param->data[0] == ParameterType::COMMAND)) {
+    if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE && !spw.param->is_command()) {
 
         memcpy((uint8_t*)_telem.ext.param_write.payload, spw.payload.payload, MIN(spw.payload.payload_length, 57));
         idx += spw.payload.payload_length;
@@ -1511,8 +1510,10 @@ bool AP_CRSF_Telem::calc_scripted_parameter()
         if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE) { // COMMAND type
             _telem.ext.param_entry.header.chunks_left = 0;
             _telem.ext.param_entry.payload[idx++] = spw.param->parent_id;
-            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], spw.payload.payload, MIN(spw.payload.payload_length, 57-idx));
-            idx += spw.payload.payload_length;
+            // as much of the reply from lua as fits after the parent folder
+            const uint8_t len = MIN(spw.payload.payload_length, ARRAY_SIZE(_telem.ext.param_entry.payload) - idx);
+            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], spw.payload.payload, len);
+            idx += len;
         } else { // READ type
             // each chunk carries up to CHUNK_SIZE bytes of the data, the first after the parent folder id
             const uint8_t CHUNK_SIZE = 55;  // This wastes a byte on chunks > 0 but makes the maths easier
@@ -1885,12 +1886,18 @@ bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
         memcpy((char*)spw.param->data, data, length);
         spw.param->length = length;
         break;
-    case ScriptedParameterEvents::PARAMETER_WRITE:
+    case ScriptedParameterEvents::PARAMETER_WRITE: {
+        // a COMMAND is answered with a settings entry, which has room for the reply after its parent folder
+        static constexpr uint8_t MAX_COMMAND_REPLY_LEN = sizeof(ParameterSettingsEntry::payload) - 1;
+        if (spw.param->is_command() && length > MAX_COMMAND_REPLY_LEN) {
+            return false;
+        }
         // For a WRITE response, Lua provides the data for the response packet.
         // This is stored in the payload field of the queued request.
         memcpy(spw.payload.payload, data, MIN(length, sizeof(spw.payload.payload)));
         spw.payload.payload_length = MIN(length, sizeof(spw.payload.payload));
         break;
+    }
     }
 
     // Update the object in the queue with the new data

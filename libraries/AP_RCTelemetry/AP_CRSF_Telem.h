@@ -191,6 +191,8 @@ public:
     struct ScriptedParameter : public ScriptedEntry {
         uint16_t length;
         const char* data;
+        // true if the script packed this parameter as a COMMAND
+        bool is_command() const { return length > 0 && data[0] == ParameterType::COMMAND; }
     };
 
     // each menu contains a number of parameters and has a name
