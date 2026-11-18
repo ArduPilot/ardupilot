@@ -136,6 +136,10 @@ def pack_elf(data, manifest=None):
     symbol_table = elf.get_section_by_name('.symtab')
     require(isinstance(symbol_table, SymbolTableSection), 'unstripped ELF symbol table required')
     for symbol in symbol_table.iter_symbols():
+        # compiler-builtins may retain this declaration after unwind sections
+        # are discarded. Live relocations must still name image symbols below.
+        if machine != 40 and symbol.name == 'rust_eh_personality' and symbol['st_shndx'] == 'SHN_UNDEF':
+            continue
         require(not symbol.name or symbol['st_shndx'] != 'SHN_UNDEF', f'undefined symbol {symbol.name}')
         if symbol['st_shndx'] in section_ids:
             symbol_values.add(symbol['st_value'])

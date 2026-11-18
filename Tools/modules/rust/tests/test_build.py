@@ -29,7 +29,8 @@ def test_minimum_rust_version_rejects_unsupported_compilers(version):
         check_rust_version(version)
 
 
-def test_float_remainder_links_without_unwind_dependencies(tmp_path):
+@pytest.mark.parametrize('target', ['x86_64-unknown-linux-gnu', 'aarch64-linux-android'])
+def test_float_remainder_links_without_unwind_dependencies(tmp_path, target):
     source = tmp_path / 'remainder.rs'
     source.write_text('''#![no_std]
 #![no_main]
@@ -41,11 +42,11 @@ fn run(context: &Context<'_>) -> Result {
     Ok(())
 }
 ''')
-    image = build.build(source, tmp_path / 'remainder.apmod', 'x86_64-unknown-linux-gnu', 8192)
+    image = build.build(source, tmp_path / 'remainder.apmod', target, 8192)
     assert image.is_file()
     with image.with_suffix('.elf').open('rb') as binary:
         elf = ELFFile(binary)
-        assert all(not symbol.name or symbol['st_shndx'] != 'SHN_UNDEF'
+        assert all(not symbol.name or symbol['st_shndx'] != 'SHN_UNDEF' or symbol.name == 'rust_eh_personality'
                    for symbol in elf.get_section_by_name('.symtab').iter_symbols())
         assert not any(section.name.startswith(('.eh_frame', '.gcc_except_table')) for section in elf.iter_sections())
 
@@ -61,3 +62,13 @@ def test_target_specific_rx_boundary(tmp_path, target):
         assert len(output.read_bytes()) < 8192
     else:
         assert module['rx_size'] % 4096 == 0
+
+
+@pytest.mark.parametrize('target', build.TARGETS)
+def test_mount_enum_fixture_packs(tmp_path, target):
+    build.build(build.SDK_ROOT / 'tests/modules/enums.rs', tmp_path / 'enums.apmod', target, 8192)
+
+
+@pytest.mark.parametrize('target', ['x86_64-unknown-linux-gnu', 'aarch64-linux-android'])
+def test_mount_poi_packs(tmp_path, target):
+    build.build(build.SDK_ROOT / 'applets/mount_poi/main.rs', tmp_path / 'mount.apmod', target, 16384)

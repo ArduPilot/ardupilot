@@ -16,6 +16,7 @@ import pack
 import pytest
 
 from elftools.elf.elffile import ELFFile
+from elftools.elf.relocation import RelocationSection
 from test_modules import upgrade_frozen_container
 
 import build
@@ -138,4 +139,25 @@ def test_import_in_nobits_rejected(one_import, tmp_path):
     # An import symbol may only identify initialized storage.
     struct.pack_into('<I', data, elf['e_shoff'] + index * elf['e_shentsize'] + 4, 8)
     with pytest.raises(ValueError, match='invalid import symbol'):
+        pack.pack_elf(data, pack.unpack(one_import)['contract'])
+
+
+def test_referenced_rust_personality_rejected(one_import, tmp_path):
+    data = bytearray((tmp_path / 'one.elf').read_bytes())
+    elf = ELFFile(io.BytesIO(data))
+    symbols = elf.get_section_by_name('.symtab')
+    references = {reloc['r_info_sym'] for section in elf.iter_sections()
+                  if isinstance(section, RelocationSection) and elf.get_section(section['sh_info'])['sh_flags'] & 2
+                  for reloc in section.iter_relocations() if reloc['r_info_type'] != 0}
+    index, symbol = next((index, symbol) for index, symbol in enumerate(symbols.iter_symbols())
+                         if index in references and symbol.name.startswith('__ap_module_import_'))
+    name = b'rust_eh_personality\0'
+    strings = elf.get_section(symbols['sh_link'])
+    offset = strings['sh_offset'] + symbol['st_name']
+    data[offset:offset + len(name)] = name
+    entry = symbol.entry
+    entry['st_shndx'] = 'SHN_UNDEF'
+    offset = symbols['sh_offset'] + index * symbols['sh_entsize']
+    data[offset:offset + symbols['sh_entsize']] = elf.structs.Elf_Sym.build(entry)
+    with pytest.raises(ValueError, match='undefined symbol rust_eh_personality|non-image relocation symbol'):
         pack.pack_elf(data, pack.unpack(one_import)['contract'])
