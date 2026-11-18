@@ -61,6 +61,7 @@ class ExtractFeatures(BuildScriptBase):
 
             ('HAL_WITH_ESC_TELEM', r'AP_ESC_Telem::AP_ESC_Telem\b',),
             ('AP_EXTENDED_ESC_TELEM_ENABLED', r'AP_DroneCAN::handle_esc_ext_status\b',),
+            ('AP_ESC_TELEM_XROTOR_ENABLED', r'AP_ESC_Telem_XRotor::update\b',),
 
             ('AP_TEMPERATURE_SENSOR_ENABLED', 'AP_TemperatureSensor::AP_TemperatureSensor',),
             ('AP_TEMPERATURE_SENSOR_{type}_ENABLED', 'AP_TemperatureSensor_(?P<type>.*)::update',),
