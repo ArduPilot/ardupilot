@@ -725,7 +725,7 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
 # uninitialised SRAM and the FC double-faults.
 #
 # memcpy and memset ARE in SRAM, but not from here - they come from
-# rp2350/rp2350_memfunctions.S, which replaces the newlib versions and
+# rp2350/rp2350_memfunctions.S, which replaces the C library's versions and
 # places them in its own .ramtext section. It is safe because the copy loop in
 # rp_clocks.c was rewritten as a volatile word loop so it no longer calls
 # them. See the memcpy/memset section of rp2350/DEVELOPMENT.md before

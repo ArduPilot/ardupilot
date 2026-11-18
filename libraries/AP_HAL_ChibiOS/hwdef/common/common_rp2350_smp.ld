@@ -167,7 +167,7 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
         __ram4_noinit__ = .;
     } > ram4 AT > flash
     ASSERT(SIZEOF(.c0_vectors) + SIZEOF(.ram4_init) <= 4096,
-           "Scratch X (SRAM8) overflow: reduce rp2350_scratchx_registry.txt entries")
+           "Scratch X (SRAM8) overflow: reduce rp2350_scratchx_registry.txt entries, or run Tools/scripts/rp2350_ramfunc2_update.py --build")
 
     /* RP2350 Scratch Y -- SRAM9 (0x20081000, 4 KB), wired to core1's dedicated I-CODE bus.
        Functions here get single-cycle instruction fetch on core1 with zero bus-fabric contention.
@@ -189,7 +189,7 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
         __ram5_noinit__ = .;
     } > ram5 AT > flash
     ASSERT(SIZEOF(.c1_vectors) + SIZEOF(.ram5_init) <= 4096,
-           "Scratch Y (SRAM9) overflow: reduce rp2350_scratchy_registry.txt entries")
+           "Scratch Y (SRAM9) overflow: reduce rp2350_scratchy_registry.txt entries, or run Tools/scripts/rp2350_ramfunc2_update.py --build")
 
     .text_rest : ALIGN(4) SUBALIGN(4)
     {
