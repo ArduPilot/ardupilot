@@ -217,9 +217,6 @@ GPS_HDOP_GOOD        160
 # throw mode
 THROW_NEXTMODE       5
 
-
-
-
-
-
-
+# the Sonix board's camera: record while armed
+CAM1_TYPE 6
+CAM1_OPTIONS 1
