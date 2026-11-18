@@ -176,7 +176,6 @@ void Plane::init_ardupilot()
 static bool mode_reason_is_landing_sequence(const ModeReason reason)
 {
     switch (reason) {
-    case ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND:
     case ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL:
     case ModeReason::QRTL_INSTEAD_OF_RTL:
     case ModeReason::QLAND_INSTEAD_OF_RTL:

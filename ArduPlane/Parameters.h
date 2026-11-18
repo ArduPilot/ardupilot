@@ -131,7 +131,7 @@ public:
         k_param_land_flap_percent,  // unused - moved to AP_Landing
         k_param_takeoff_flap_percent,
         k_param_flap_slewrate,
-        k_param_rtl_autoland,
+        k_param_rtl_autoland, // unused - RTL_AUTOLAND removed, use Auto RTL mode
         k_param_override_channel,
         k_param_stall_prevention,
         k_param_optflow,
@@ -375,8 +375,6 @@ public:
     };
 
     AP_Int16 format_version;
-
-    AP_Enum<RtlAutoland> rtl_autoland;
 
     AP_Int8  crash_accel_threshold;
 

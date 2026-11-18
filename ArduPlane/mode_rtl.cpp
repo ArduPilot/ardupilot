@@ -101,31 +101,6 @@ void ModeRTL::navigate()
     }
 
     plane.update_loiter(radius);
-
-    if (!plane.auto_state.checked_for_autoland) {
-        if ((plane.g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) ||
-            (plane.g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START &&
-            plane.reached_loiter_target() && 
-            labs(plane.calc_altitude_error_cm()) < 1000)) {
-                // we've reached the RTL point, see if we have a landing sequence
-                // switch from RTL -> AUTO RTL
-                if (plane.mode_auto_rtl.enter_landing_sequence(ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND)) {
-                    // return here so we don't change the radius and don't run the rtl update_loiter()
-                    return;
-                }
-
-                // prevent running the expensive jump_to_landing_sequence
-                // on every loop
-                plane.auto_state.checked_for_autoland = true;
-
-        } else if (plane.g.rtl_autoland == RtlAutoland::DO_RETURN_PATH_START) {
-            if (plane.mode_auto_rtl.enter_return_path(ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND)) {
-                // return here so we don't change the radius and don't run the rtl update_loiter()
-                return;
-            }
-            plane.auto_state.checked_for_autoland = true;
-        }
-    }
 }
 
 #if HAL_QUADPLANE_ENABLED

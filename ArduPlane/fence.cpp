@@ -125,9 +125,7 @@ void Plane::fence_check()
         case AC_Fence::Action::AUTO_RTL_OR_RTL:
         case AC_Fence::Action::RTL_AND_LAND:
             if (control_mode->is_auto_mode() &&
-                mission.get_in_landing_sequence_flag() &&
-                (g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START ||
-                    g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START)) {
+                mission.get_in_landing_sequence_flag()) {
                 // already landing
                 goto fence_check_complete;
             }
@@ -226,7 +224,6 @@ bool Plane::in_fence_recovery() const
     const bool current_mode_breach = plane.control_mode_reason == ModeReason::FENCE_BREACHED;
     const bool previous_mode_breach = plane.previous_mode_reason ==  ModeReason::FENCE_BREACHED;
     const bool previous_mode_complete = (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL) ||
-                                        (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND) ||
                                         (plane.control_mode_reason == ModeReason::QRTL_INSTEAD_OF_RTL) ||
                                         (plane.control_mode_reason == ModeReason::QLAND_INSTEAD_OF_RTL);
 
