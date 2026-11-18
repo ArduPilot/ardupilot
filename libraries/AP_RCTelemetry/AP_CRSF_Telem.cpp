@@ -1944,7 +1944,7 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uin
     AP_CRSF_Telem* telem = AP::crsf_telem();
     WITH_SEMAPHORE(telem->get_semaphore());
 
-    if (telem->scripted_ids_exhausted()) {
+    if (telem->scripted_ids_exhausted() || folder_full()) {
         return nullptr;
     }
 
@@ -1974,6 +1974,13 @@ AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uin
     debug("adding menu item %d", param.id);
 
     return &param;
+}
+
+// a menu's folder entry is its parent, type, name and NUL, a byte for each child and the 0xFF after
+// them, and has to fit in the payload of one settings entry
+bool AP_CRSF_Telem::ScriptedMenu::folder_full() const
+{
+    return num_params + strnlen(name, MAX_SCRIPTED_MENU_NAME_LEN) + 4U >= sizeof(ParameterSettingsEntry::payload);
 }
 
 AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::find_menu(uint8_t param_num)
@@ -2152,6 +2159,19 @@ bool AP_CRSF_Telem::process_scripted_param_read(ParameterSettingsReadFrame* read
 AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::add_menu(const char* name)
 {
     WITH_SEMAPHORE(scr_sem);
+
+    // the root folder entry is its parent, type, "root" and NUL, the Parameters folder, a byte for
+    // each top level menu and the 0xFF after them, and has to fit in the payload of one settings entry
+    static constexpr uint8_t MAX_TOP_LEVEL_MENUS = sizeof(ParameterSettingsEntry::payload) - 9;
+    uint8_t top_level_menus = 0;
+    for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; m = m->next_menu) {
+        if (m->parent_id == 0) {
+            top_level_menus++;
+        }
+    }
+    if (top_level_menus >= MAX_TOP_LEVEL_MENUS) {
+        return nullptr;
+    }
 
     // create a new menu
     ScriptedMenu* new_menu = scripted_menus.add_menu(name, 2, 0);

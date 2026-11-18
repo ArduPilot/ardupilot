@@ -214,6 +214,8 @@ public:
         ScriptedParameter* find_parameter(uint8_t param_num);
         ScriptedMenu* find_menu(uint8_t param_num);
         bool remove_menu(uint8_t param_num);
+        // true once another child would not fit in this menu's folder entry
+        bool folder_full() const;
 
         void dump_structure(uint8_t indent);
         ScriptedMenu() {}
