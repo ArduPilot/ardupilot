@@ -27555,6 +27555,10 @@ return update, 1000
         # the branch, which is why RudderDisarmMidair does not cover this.
         # raise the stream rate before taking off: the context form spends ten
         # seconds measuring the old rate, which is 170 m of fall if done later
+        # log what the EKF is told, in one log across the disarm, to check below it is not told the falling
+        # vehicle has landed
+        self.set_parameters({"LOG_REPLAY": 1, "LOG_DISARMED": 1})
+        self.reboot_sitl()
         self.context_set_message_rate_hz('LOCAL_POSITION_NED', 20)
         self.takeoff(250, mode='GUIDED', altitude_max=260, timeout=180)
         self.change_mode('STABILIZE')
@@ -27566,6 +27570,7 @@ return update, 1000
         self.progress("Pre-rearm z=%.1f m vz=%.1f m/s" % (pre.z, pre.vz))
         self.arm_vehicle()
         tstart = self.get_sim_time_cached()
+        rearm_us = tstart * 1e6
         min_vz = pre.vz
         max_z = pre.z
         while self.get_sim_time_cached() - tstart < 1:
@@ -27631,6 +27636,58 @@ return update, 1000
         self.wait_altitude(ground_amsl_m + 15, ground_amsl_m + 25, timeout=240,
                            altitude_source='SIM_STATE.alt')
         self.land_and_disarm()
+
+        # for the second after the re-arm the vehicle was falling with land_complete still set from the
+        # disarm (time flying 0), and the EKF must not have been told it had landed, or it puts the fall
+        # on the ground
+        dfreader = self.dfreader_for_current_onboard_log()
+        landed = None
+        time_flying_ms = None
+        samples = 0
+        while True:
+            m = dfreader.recv_match(type=['RFRN', 'RFRH', 'XKF1'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'RFRN':
+                landed = m.Flags2 & 1
+            elif mtype == 'RFRH':
+                time_flying_ms = m.TF
+            elif mtype == 'XKF1' and m.C == 0 and rearm_us + 0.1e6 <= m.TimeUS <= rearm_us + 1e6:
+                if landed is None or time_flying_ms is None:
+                    continue
+                samples += 1
+                if time_flying_ms != 0:
+                    raise NotAchievedException("the re-armed vehicle reported flying, so this proves nothing")
+                if landed:
+                    raise NotAchievedException("the EKF was told the vehicle had landed while it fell")
+        if samples < 3:
+            raise NotAchievedException("only %u EKF samples after the re-arm" % samples)
+
+        # the climb back cleared land_complete, so the mid-air disarm was over, and the landing at the end
+        # must reach the EKF as one
+        dfreader = self.dfreader_for_current_onboard_log()
+        land_complete_us = None
+        while True:
+            m = dfreader.recv_match(type='EV')
+            if m is None:
+                break
+            if m.Id == 18:  # LogEvent::LAND_COMPLETE
+                land_complete_us = m.TimeUS
+        if land_complete_us is None:
+            raise NotAchievedException("no LAND_COMPLETE for the final landing")
+        dfreader = self.dfreader_for_current_onboard_log()
+        landed = None
+        while True:
+            m = dfreader.recv_match(type=['RFRN', 'XKF1'])
+            if m is None:
+                break
+            if m.get_type() == 'RFRN':
+                landed = m.Flags2 & 1
+            elif m.TimeUS >= land_complete_us + 0.3e6:
+                break
+        if not landed:
+            raise NotAchievedException("the EKF was not told of the landing after the re-armed flight")
 
     def BaroDriftClearedAfterMidairDisarm(self):
         '''a ground arm after a mid-air disarm must still clear baro drift'''
