@@ -193,10 +193,6 @@ void ModeAuto::run()
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
 
-        SRV_Channels::set_output_to_trim(SRV_Channel::k_throttle);
-        SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleLeft);
-        SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleRight);
-
         // Relax attitude control
         reset_controllers();
 
@@ -205,4 +201,21 @@ void ModeAuto::run()
         Mode::run();
 
     }
+}
+
+// true if throttle min/max limits should be applied
+bool ModeAuto::use_throttle_limits() const
+{
+    bool in_glider_pullup = false;
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    in_glider_pullup = pullup.in_pullup();
+#endif
+
+    // Never apply limits in altitude wait, throttle is forced to zero above
+    if ((plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_ALTITUDE_WAIT) && !in_glider_pullup) {
+        return false;
+    }
+
+    // Else use base method
+    return Mode::use_throttle_limits();
 }

@@ -300,6 +300,9 @@ public:
     bool supports_fw_systemid() const override { return true; }
 #endif
 
+    // true if throttle min/max limits should be applied
+    bool use_throttle_limits() const override;
+
 protected:
 
     bool _enter() override;
