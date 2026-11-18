@@ -6069,6 +6069,21 @@ class TestSuite(abc.ABC):
         self.progress("log list: %s" % str(ret), send_statustext=False)
         return ret
 
+    def log_stat_list(self):
+        '''return a dict of log filepath to (size, mtime) in the logging dir
+
+        which names are present is not the same question as which logs
+        have been written.  SITL has been seen to hand out a log number
+        the logging directory already holds, and the writer then opens
+        that name and overwrites the log in place: a name-to-stat mapping
+        sees that happen, a list of names cannot.
+        '''
+        ret = {}
+        for log in self.log_list():
+            st = os.stat(log)
+            ret[log] = (st.st_size, st.st_mtime_ns)
+        return ret
+
     def assert_parameter_values(self, parameters, epsilon=None):
         names = parameters.keys()
         got = self.get_parameters(names)
@@ -19990,7 +20005,17 @@ switch value'''
         # afterwards which of the new logs is Replay's: "the latest log"
         # can just as easily be the one the SITL is still appending to.
         with self.SITL_stopped("the replay"):
-            logs_before = set(self.log_list())
+            # (size, mtime) for each log rather than just the names.
+            # Replay takes its log number from LASTLOG.TXT, and that is
+            # not always a number the logging directory is free to use: a
+            # restarted SITL has been seen calling 00000004.BIN the most
+            # recent log in a directory holding 52 of them.  Replay then
+            # writes its output over a log which is already there, the set
+            # of names does not change at all, and a replay which worked
+            # perfectly reports
+            #     Expected exactly one new log from Replay, got ([])
+            # with its output sitting in the directory the whole time.
+            logs_before = self.log_stat_list()
             # run it in our own working directory, not the top of the tree:
             # Replay writes into logs/ relative to where it runs, and
             # log_list() reads the logs/ of this instance's directory.  Those
@@ -20009,13 +20034,18 @@ switch value'''
                 show=True,
             )
             # with the SITL stopped Replay is the only writer, so its output
-            # is simply the log which appeared while it ran.  Work this out
-            # before restarting the SITL, which opens a log of its own:
-            new_logs = sorted(set(self.log_list()) - logs_before)
+            # is simply the log which appeared or changed while it ran.
+            # Work this out before restarting the SITL, which opens a log
+            # of its own:
+            new_logs = sorted([
+                path for (path, stat) in self.log_stat_list().items()
+                if logs_before.get(path) != stat
+            ])
 
         if len(new_logs) != 1:
             raise NotAchievedException(
-                "Expected exactly one new log from Replay, got (%s)" % str(new_logs))
+                "Expected exactly one log written by Replay, got (%s) of %u log(s)" %
+                (str(new_logs), len(logs_before)))
 
         return new_logs[0]
 
