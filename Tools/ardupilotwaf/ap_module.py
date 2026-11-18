@@ -17,7 +17,9 @@ import re
 import shlex
 import subprocess
 
-from waflib import Configure, Task, Utils
+from waflib import Configure
+from waflib import Task
+from waflib import Utils
 from waflib.Configure import conf
 
 MODULE_ROOT = 'libraries/AP_Module'
@@ -123,7 +125,14 @@ def ap_module(ctx, name, stack_size, heap_size, source='main.rs', thread_priorit
     root = ctx.srcnode.find_node(MODULE_ROOT)
     deps += root.ant_glob('sdk/rust/src/*.rs generator/*.py generator/*.json generator/templates/**')
     deps += ctx.srcnode.ant_glob('Tools/modules/*.py Tools/modules/rust/*.py Tools/modules/module.ld '
+                                 'libraries/AP_Scripting/generator/*.py '
+                                 'libraries/AP_Scripting/generator/templates/**/*.tmpl '
                                  'libraries/AP_Scripting/generator/description/bindings.desc')
+    deps += [ctx.srcnode.find_node(path) for path in (
+        'modules/mavlink/message_definitions/v1.0/common.xml',
+        'libraries/AP_GPS/AP_GPS.h', 'libraries/AP_GPS/AP_GPS_FixType.h',
+        'libraries/AP_Terrain/AP_Terrain.h', 'libraries/AP_Mission/AP_Mission.h',
+    )]
     tg = ctx(
         rule=shlex.join(cmd),
         source=deps,
