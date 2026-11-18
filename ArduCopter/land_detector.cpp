@@ -72,6 +72,7 @@ void Copter::update_land_detector()
                 land_detector_count++;
             } else {
                 ap.disarmed_in_air = false;
+                ahrs.set_vehicle_landed(ap.land_complete);
                 // set_land_complete() zeroes the shared counter on every
                 // change, so a disarmed vehicle has always logged it at zero.
                 // Leave it that way rather than parked at the trigger
@@ -252,9 +253,16 @@ void Copter::set_land_complete(bool b)
     AP::stats()->set_flying(!b);
 #endif
 
-    // tell AHRS flying state
+    // under power again after a re-arm in the air, as at any takeoff, so that disarm is over and the armed
+    // land detector decides when it lands: a later disarm records afresh whether it came in the air
+    if (!b) {
+        ap.disarmed_in_air = false;
+    }
+
+    // tell AHRS flying state. A vehicle disarmed in the air is not reported landed until the land
+    // detector says it has come to rest, whatever land_complete reads after a re-arm while it falls
     set_likely_flying(!b);
-    ahrs.set_vehicle_landed(b);
+    ahrs.set_vehicle_landed(b && !ap.disarmed_in_air);
 
     if (!b) {
         // not landed, no further action
