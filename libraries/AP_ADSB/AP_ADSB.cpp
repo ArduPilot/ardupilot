@@ -543,7 +543,7 @@ void AP_ADSB::handle_adsb_vehicle(const adsb_vehicle_t &vehicle)
             out_of_range ||
             out_of_range_alt ||
             detected_ourself ||
-            (vehicle.info.ICAO_address > 0x00FFFFFF) || // ICAO address is 24bits, so ignore higher values.
+            ((vehicle.info.ICAO_address & ~(0x00FFFFFFU | ADSB_NON_ICAO_ADDRESS_FLAG)) != 0) || // 24-bit address, optionally flagged as non-ICAO
             !(vehicle.info.flags & required_flags_position) ||
             now - vehicle.last_update_ms > VEHICLE_TIMEOUT_MS) {
 
