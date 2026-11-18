@@ -19940,6 +19940,47 @@ switch value'''
         for k, av, bv in diffs[:40]:
             self.progress("    %s: vehicle=%s tool=%s" % (k, av, bv))
 
+    def log_with_most_replay_data(self, logs):
+        '''return the one of logs holding the most to replay
+
+        a test which reboots more than once leaves several new logs behind
+        and only one of them has the flight in it.  Picking by position in
+        that list is guesswork, and it was wrong: ReplayOpticalFlow took the
+        first new log and so replayed the 0.4-second log the reboot before
+        the flight had opened - 22 IMU records, 1442 of its 3110 messages the
+        startup parameter dump, no OF at all.  Replay faithfully replayed
+        nothing, the EKF never had enough data to initialise, and the check
+        reported that as a divergence of the estimator:
+
+            Mismatch in field XKF4.errRP: 0.0 0.14142347872257233
+
+        errRP is sqrt(tiltErrorVariance), which is only ever written by
+        CovariancePrediction(), so it reads as exactly 0.0 on a core which
+        has never run - and the same records carry FS=128, which is
+        NavFilterFaultBit::NOT_INITIALISED saying so outright.
+
+        Replay consumes the DAL records, so count those: the log with the
+        most replay frames in it is the one worth replaying.
+        '''
+        best = None
+        best_frames = 0
+        for log in logs:
+            frames = 0
+            dfreader = self.dfreader_for_path(log)
+            while True:
+                m = dfreader.recv_match(type=['RFRH'])
+                if m is None:
+                    break
+                frames += 1
+            self.progress("%s: %u replay frame(s)" % (log, frames))
+            if frames > best_frames:
+                best_frames = frames
+                best = log
+        if best is None:
+            raise NotAchievedException(
+                "No replay data in any of (%s)" % str(logs))
+        return best
+
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''
         # stop the SITL for the duration of the replay.  Replay writes

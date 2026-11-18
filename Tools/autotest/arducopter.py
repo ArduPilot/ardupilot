@@ -18522,7 +18522,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         log_difference = [x for x in new_onboard_logs if x not in old_onboard_logs]
-        return log_difference[1] # index depends on the reboots and ordering thereof in BeaconPosition!
+        # BeaconPosition reboots more than once, so pick the log by what is
+        # in it rather than by its position in this list
+        return self.log_with_most_replay_data(log_difference)
 
     def test_replay_optical_flow_bit(self):
         self.set_parameters({
@@ -18535,8 +18537,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         new_onboard_logs = sorted(self.log_list())
 
         log_difference = [x for x in new_onboard_logs if x not in old_onboard_logs]
-        print("log difference: %s" % str(log_difference))
-        return log_difference[0]
+        # OpticalFlowLimits reboots before the flight and again after it, so
+        # the flight is not the first of these logs; pick the log by what is
+        # in it rather than by its position in this list
+        return self.log_with_most_replay_data(log_difference)
 
     def test_replay_wind_and_airspeed_bit(self):
         self.set_parameters({
