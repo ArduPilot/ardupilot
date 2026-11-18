@@ -1289,6 +1289,22 @@ class LTM(Telem):
 
 
 class CRSF(Telem):
+    # frame types, addresses and field types of the parameter menu protocol
+    FRAMETYPE_DEVICE_PING = 0x28
+    FRAMETYPE_DEVICE_INFO = 0x29
+    FRAMETYPE_PARAMETER_ENTRY = 0x2B
+    FRAMETYPE_PARAMETER_READ = 0x2C
+    FRAMETYPE_PARAMETER_WRITE = 0x2D
+    ADDRESS_FLIGHT_CONTROLLER = 0xC8
+    ADDRESS_RADIO = 0xEA
+    FIELD_FOLDER = 11
+    FIELD_INFO = 12
+    FIELD_COMMAND = 13
+    FIELD_HIDDEN = 0x80
+    # a frame is at most 64 bytes, and its length byte counts all but the
+    # sync and length bytes
+    MAX_FRAME_LENGTH = 62
+
     def __init__(self, destination_address):
         super(CRSF, self).__init__(destination_address)
 
@@ -1332,7 +1348,7 @@ class CRSF(Telem):
         frames = []
         while len(self.buffer) >= 2:
             length = self.buffer[1]
-            if length < 2 or length > 62:
+            if length < 2 or length > self.MAX_FRAME_LENGTH:
                 self.buffer = self.buffer[1:]
                 continue
             if len(self.buffer) < length + 2:
@@ -16682,14 +16698,6 @@ switch value'''
             crsf.read_frames()
             self.drain_mav()
 
-        DEVICE_PING = 0x28
-        DEVICE_INFO = 0x29
-        PARAMETER_ENTRY = 0x2B
-        PARAMETER_READ = 0x2C
-        FC = 0xC8
-        RADIO = 0xEA
-        FOLDER = 11
-
         def request(frame_type, payload, want_type, check, what, want_reply=True):
             # the request is resent every 0.5s until answered, as a transmitter
             # does.  With want_reply False it is sent once and fails if answered
@@ -16699,13 +16707,13 @@ switch value'''
             while self.get_sim_time_cached() - tstart < 10:
                 now = self.get_sim_time_cached()
                 if tsent is None or (want_reply and now - tsent >= 0.5):
-                    crsf.write_extended_frame(frame_type, FC, RADIO, payload)
+                    crsf.write_extended_frame(frame_type, CRSF.ADDRESS_FLIGHT_CONTROLLER, CRSF.ADDRESS_RADIO, payload)
                     tsent = now
                 # a reply can go out after each frame SITL receives
                 send_rc_frame()
                 self.drain_mav()
                 for (t, p) in crsf.read_frames():
-                    if t == want_type and len(p) >= 4 and p[0] == RADIO and check(p):
+                    if t == want_type and len(p) >= 4 and p[0] == CRSF.ADDRESS_RADIO and check(p):
                         if not want_reply:
                             raise NotAchievedException("Unexpected reply to %s" % what)
                         return p
@@ -16713,21 +16721,21 @@ switch value'''
                 raise NotAchievedException("No reply to %s" % what)
             return None
 
-        info = request(DEVICE_PING, [], DEVICE_INFO, lambda p: True, "ping")
+        info = request(CRSF.FRAMETYPE_DEVICE_PING, [], CRSF.FRAMETYPE_DEVICE_INFO, lambda p: True, "ping")
         name_end = info.index(0, 2)
         field_count = info[name_end + 13]
         self.progress("Device %s has %u fields" % (info[2:name_end].decode(), field_count))
 
         fields = {}
         for field_id in range(field_count + 1):
-            p = request(PARAMETER_READ, [field_id, 0], PARAMETER_ENTRY,
+            p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field_id, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY,
                         lambda p: p[2] == field_id, "field %u" % field_id)
             parent = p[4]
             field_type = p[5] & 0x7F
             name_end = p.index(0, 6)
             name = p[6:name_end].decode()
             children = []
-            if field_type == FOLDER:
+            if field_type == CRSF.FIELD_FOLDER:
                 children = list(p[name_end+1:p.index(0xFF, name_end+1)])
             self.progress("field %u: %s parent=%u children=%s" % (field_id, name, parent, children))
             fields[field_id] = (name, parent, children)
@@ -16742,11 +16750,20 @@ switch value'''
                     raise NotAchievedException("field %u lists %u, beyond the %u fields" % (field_id, child, field_count))
         return (fields, request, crsf)
 
+    def crsf_field_named(self, fields, name, parent=None):
+        '''return the number of the CRSF menu field called name, in the folder
+        called parent if given'''
+        for (field, (field_name, field_parent, children)) in fields.items():
+            if field_name == name and (parent is None or fields[field_parent][0] == parent):
+                return field
+        raise NotAchievedException("No CRSF menu field called %s" % name)
+
     def CRSFParameterMenu(self):
         '''Test every CRSF parameter menu entry can be read and is in a folder that lists it'''
         (fields, request, crsf) = self.crsf_parameter_menu_check()
+        # the root, the Parameters folder and the 18 OSD parameter slots in it
         if len(fields) != 20:
-            raise NotAchievedException("Expected 19 fields, got %u" % (len(fields) - 1))
+            raise NotAchievedException("Expected 20 fields, got %u" % len(fields))
 
     def CRSFParameterMenuScripted(self):
         '''Test the CRSF parameter menu with the scripted example menu'''
@@ -16757,42 +16774,34 @@ switch value'''
                 raise NotAchievedException("%s not in the menu" % want)
 
         # writes come back through the script, which echoes the value
-        options = [f for f in fields if fields[f][0] == "Options" and fields[fields[f][1]][0] == "Example Menu"][0]
+        options = self.crsf_field_named(fields, "Options", parent="Example Menu")
         self.context_collect('STATUSTEXT')
-        PARAMETER_WRITE = 0x2D
-        request(PARAMETER_WRITE, [options, 2], PARAMETER_WRITE,
+        request(CRSF.FRAMETYPE_PARAMETER_WRITE, [options, 2], CRSF.FRAMETYPE_PARAMETER_WRITE,
                 lambda p: p[2] == options, "write to field %u" % options)
         self.wait_statustext("Selected option 2", check_context=True)
 
     def CRSFParameterMenuUnusedSlot(self):
         '''Test a CRSF parameter menu slot with no parameter is answered but hidden'''
-        PARAMETER_ENTRY = 0x2B
-        PARAMETER_READ = 0x2C
-        PARAMETER_WRITE = 0x2D
-        FC = 0xC8
-        RADIO = 0xEA
-        INFO_HIDDEN = 0x8C
+        INFO_HIDDEN = CRSF.FIELD_INFO | CRSF.FIELD_HIDDEN
 
         # a key that matches no parameter, as after loading another vehicle's parameters
         self.set_parameter("OSD5_PARAM1_KEY", -1)
         (fields, request, crsf) = self.crsf_parameter_menu_check()
+        # the root, the Parameters folder and the 18 OSD parameter slots in it
         if len(fields) != 20:
-            raise NotAchievedException("Expected 19 fields, got %u" % (len(fields) - 1))
+            raise NotAchievedException("Expected 20 fields, got %u" % len(fields))
 
-        p = request(PARAMETER_READ, [2, 0], PARAMETER_ENTRY, lambda p: p[2] == 2, "field 2")
+        p = request(CRSF.FRAMETYPE_PARAMETER_READ, [2, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == 2, "field 2")
         if p[5] != INFO_HIDDEN:
             raise NotAchievedException("field 2 has type 0x%02x, want hidden INFO" % p[5])
 
         # a write to it has nothing to set, and the next field still reads back
-        crsf.write_extended_frame(PARAMETER_WRITE, FC, RADIO, [2, 1])
-        request(PARAMETER_READ, [3, 0], PARAMETER_ENTRY, lambda p: p[2] == 3, "field 3 after a write to field 2")
+        crsf.write_extended_frame(CRSF.FRAMETYPE_PARAMETER_WRITE, CRSF.ADDRESS_FLIGHT_CONTROLLER, CRSF.ADDRESS_RADIO, [2, 1])
+        request(CRSF.FRAMETYPE_PARAMETER_READ, [3, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == 3,
+                "field 3 after a write to field 2")
 
     def CRSFParameterMenuChunks(self):
         '''Test scripted CRSF menu fields come back whole however many chunks they need'''
-        PARAMETER_ENTRY = 0x2B
-        PARAMETER_READ = 0x2C
-        INFO = 12
-
         # lengths around one and two chunks of 55 bytes
         lengths = [10, 54, 55, 56, 109, 110, 111]
         self.install_script_content_context("crsf-chunks.lua", """
@@ -16810,19 +16819,20 @@ local function update()
 end
 
 return update, 1000
-""" % (INFO, ", ".join([str(length) for length in lengths])))
+""" % (CRSF.FIELD_INFO, ", ".join([str(length) for length in lengths])))
         self.set_parameter("SCR_ENABLE", 1)
         (fields, request, crsf) = self.crsf_parameter_menu_check()
 
         for length in lengths:
             name = "L%u" % length
-            field = [f for f in fields if fields[f][0] == name][0]
-            want = bytes([INFO]) + name.encode() + b"\0" + b"x" * (length - 3 - len(name)) + b"\0"
-            p = request(PARAMETER_READ, [field, 0], PARAMETER_ENTRY, lambda p: p[2] == field, "%s chunk 0" % name)
+            field = self.crsf_field_named(fields, name)
+            want = bytes([CRSF.FIELD_INFO]) + name.encode() + b"\0" + b"x" * (length - 3 - len(name)) + b"\0"
+            p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                        lambda p: p[2] == field, "%s chunk 0" % name)
             chunks = p[3] + 1
             got = p[5:]  # after the parent folder, which only the first chunk carries
             for chunk in range(1, chunks):
-                p = request(PARAMETER_READ, [field, chunk], PARAMETER_ENTRY,
+                p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field, chunk], CRSF.FRAMETYPE_PARAMETER_ENTRY,
                             lambda p: p[2] == field and p[3] == chunks - 1 - chunk, "%s chunk %u" % (name, chunk))
                 got += p[4:]
             self.progress("%s: %u bytes in %u chunks" % (name, len(got), chunks))
@@ -16830,14 +16840,11 @@ return update, 1000
                 raise NotAchievedException("%s came back as %s" % (name, bytes(got)))
 
         # a chunk past the end is not answered
-        request(PARAMETER_READ, [field, chunks], PARAMETER_ENTRY, lambda p: p[2] == field,
+        request(CRSF.FRAMETYPE_PARAMETER_READ, [field, chunks], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == field,
                 "%s chunk %u" % (name, chunks), want_reply=False)
 
     def CRSFParameterMenuLongCommandReply(self):
         '''Test a scripted CRSF command reply too long for its frame is refused'''
-        PARAMETER_ENTRY = 0x2B
-        PARAMETER_WRITE = 0x2D
-        COMMAND = 13
         START = 1
         PROGRESS = 2
 
@@ -16870,14 +16877,14 @@ local function update()
 end
 
 return update, 1000
-""" % (COMMAND, PROGRESS))
+""" % (CRSF.FIELD_COMMAND, PROGRESS))
         self.set_parameter("SCR_ENABLE", 1)
         (fields, request, crsf) = self.crsf_parameter_menu_check()
 
-        field = [f for f in fields if fields[f][0] == "Cmd"][0]
-        reply = bytes([COMMAND]) + b"Cmd\0" + bytes([PROGRESS, 10]) + b"x" * 47 + b"\0"
+        field = self.crsf_field_named(fields, "Cmd")
+        reply = bytes([CRSF.FIELD_COMMAND]) + b"Cmd\0" + bytes([PROGRESS, 10]) + b"x" * 47 + b"\0"
         # the write is resent until answered, so the refused reply is followed by one that fits
-        p = request(PARAMETER_WRITE, [field, START], PARAMETER_ENTRY,
+        p = request(CRSF.FRAMETYPE_PARAMETER_WRITE, [field, START], CRSF.FRAMETYPE_PARAMETER_ENTRY,
                     lambda p: p[2] == field and len(p) > 10 and p[10] == PROGRESS, "the command")
         if p[4] != fields[field][1] or bytes(p[5:]) != reply:
             raise NotAchievedException("reply came back as %s" % bytes(p[4:]))
@@ -16885,8 +16892,6 @@ return update, 1000
 
     def CRSFParameterMenuFolderLimits(self):
         '''Test scripted CRSF menus are limited to what their folders hold'''
-        INFO = 12
-
         self.install_script_content_context("crsf-folders.lua", """
 local INFO = %u
 local menu = crsf:add_menu("Sixteen chars ab")
@@ -16911,7 +16916,7 @@ local function update()
 end
 
 return update, 1000
-""" % INFO)
+""" % CRSF.FIELD_INFO)
         self.set_parameter("SCR_ENABLE", 1)
         self.context_collect('STATUSTEXT')
         self.crsf_parameter_menu_check()
