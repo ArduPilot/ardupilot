@@ -9,6 +9,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Gripper/AP_Gripper_config.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include "AP_Mission.h"
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents_config.h>
@@ -409,8 +410,19 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     }
 }
 
+// @StackCallLimit: 3
+// A mission command callback may legitimately re-enter mission handling once.
+// A third invocation returns at the depth guard.
 bool AP_Mission::start_command(const Mission_Command& cmd)
 {
+    WITH_DEPTH_GUARD(_command_start_depth);
+
+    if (WithDepthGuard::value(_command_start_depth) > 2) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mission: command recursion denied");
+        return false;
+    }
+
 #if HAL_LOGGING_ENABLED
     if (log_start_mission_item_bit != (uint32_t)-1) {
         auto &logger = AP::logger();
