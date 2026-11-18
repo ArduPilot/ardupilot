@@ -5360,6 +5360,253 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_FLOW_OFS_X", 0)
         self.disarm_vehicle(force=True)
 
+    def OpticalFlowLandedZeroNeedsGround(self):
+        '''an armed vehicle's ground zeros are withheld where its range finder reads it off the ground'''
+        # Before takeoff is detected, and on Copter whenever it reports itself landed, EKF3 fuses the flow as
+        # zero below 0.5 m above ground, and zero velocity when the IMU reads still.  Armed, a downward range
+        # finder reading the vehicle off the ground withholds both, and a landing has to keep them.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        def reboot():
+            self.reboot_sitl()
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+
+        def wait_landed():
+            self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                         mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, timeout=60)
+
+        # a range finder reading 0.2 m on the ground, more than the default RNGFND1_GNDCLR, as a taller
+        # vehicle left at that default does, still reads the vehicle as low enough for the zero.  The origin
+        # lets Copter's EKF failsafe run, which it does not without one
+        self.start_subtest("LOITER landing reading 0.2 m on the ground, left armed")
+        self.set_parameters({"RNGFND1_MIN": 0, "SIM_SONAR_OFFSET": 0.2})
+        reboot()
+        self.set_origin(self.sitl_start_location())
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        ground_rng_m = self.poll_message('RANGEFINDER').distance
+        if not self.get_parameter("RNGFND1_GNDCLR") + 0.05 < ground_rng_m < 0.5:
+            raise NotAchievedException("range on the ground %.2f m is not between the clearance and 0.5 m, "
+                                       "so the leg proves nothing" % ground_rng_m)
+        self.takeoff(altitude_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+        self.change_mode('LOITER')
+        self.set_rc(3, 1500)
+        self.delay_sim_time(5, reason="settle in LOITER")
+        self.set_rc(3, 1000)
+        wait_landed()
+        landed_s = self.get_sim_time()
+        self.context_collect('STATUSTEXT')
+        self.wait_disarmed(timeout=60)
+        disarm_s = self.get_sim_time()
+        armed_s = disarm_s - landed_s
+        stopped = self.statustext_in_collections("stopped aiding")
+        failsafe = self.statustext_in_collections("EKF Failsafe")
+        self.context_stop_collecting('STATUSTEXT')
+        self.set_rc(3, 1500)
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.progress("armed %.1fs after landing, range on the ground %.2f m" % (armed_s, ground_rng_m))
+        if stopped or failsafe:
+            raise NotAchievedException("aiding lost on the ground after landing (%s, %s)" % (stopped, failsafe))
+        # and the EKF was where the zero applies while landed: no takeoff detected, its height under 0.5 m
+        dfreader = self.dfreader_for_current_onboard_log()
+        tods = []
+        hagls = []
+        while True:
+            m = dfreader.recv_match(type=['XKF4', 'XKF5'])
+            if m is None:
+                break
+            if m.C != 0 or not ((landed_s + 1) * 1e6 <= m.TimeUS <= disarm_s * 1e6):
+                continue
+            if m.get_type() == 'XKF4':
+                tods.append((m.SS >> 10) & 1)
+            else:
+                hagls.append(m.HAGL)
+        if not tods or not hagls or max(tods) != 0 or max(hagls) >= 0.5:
+            raise NotAchievedException("not where the zero applies while landed, so the leg proves nothing")
+
+        # a range finder out of range low on the ground reads the vehicle as low enough too: bad flow there is
+        # replaced by the zero, so aiding is kept and the position does not walk
+        self.start_subtest("ALT_HOLD landing, range finder out of range low, bad flow on the ground")
+        self.set_parameters({"SIM_FLOW_OFS_X": 0, "RNGFND1_MIN": 0})
+        reboot()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(altitude_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+        self.set_parameter("RNGFND1_MIN", 0.2)
+        self.set_rc(3, 1000)
+        wait_landed()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_OFS_X", 2.0)
+        offset_us = self.get_sim_time() * 1e6
+        self.wait_disarmed(timeout=120)
+        disarm_us = self.get_sim_time() * 1e6
+        stopped = self.statustext_in_collections("stopped aiding")
+        self.context_stop_collecting('STATUSTEXT')
+        self.set_rc(3, 1500)
+        self.set_parameters({"RNGFND1_MIN": 0, "SIM_FLOW_OFS_X": 0})
+        self.delay_sim_time(2, reason="flush the log")
+        dfreader = self.dfreader_for_current_onboard_log()
+        positions = []
+        statuses = set()
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'RFND'])
+            if m is None:
+                break
+            if not (offset_us <= m.TimeUS <= disarm_us):
+                continue
+            if m.get_type() == 'RFND':
+                statuses.add(m.Stat)
+            elif m.C == 0:
+                positions.append((m.TimeUS, m.PN, m.PE))
+        if len(positions) < 10 or positions[-1][0] - positions[0][0] < 0.8 * (disarm_us - offset_us):
+            raise NotAchievedException("XKF1 covers too little of the time on the ground")
+        drift = math.hypot(positions[-1][1] - positions[0][1], positions[-1][2] - positions[0][2])
+        self.progress("armed %.1fs on the ground with bad flow, position drift %.2f m, range finder status %s" %
+                      ((disarm_us - offset_us) * 1e-6, drift, sorted(statuses)))
+        # RangeFinder::Status::OutOfRangeLow
+        if statuses != {2}:
+            raise NotAchievedException("range finder status %s on the ground, not out of range low" % sorted(statuses))
+        if stopped:
+            raise NotAchievedException("aiding lost on the ground after landing (%s)" % stopped)
+        if drift > 0.5:
+            raise NotAchievedException("bad flow fused on the ground (position drift %.2f m)" % drift)
+
+        # a range finder reading more than 0.5 m on the ground, with RNGFND1_GNDCLR left at the default, and no
+        # home, so the arm resets the height datum and puts the EKF's height at the clearance, under 0.5 m, for
+        # several seconds while the range finder pulls it back up.  The vehicle is on the ground, so the zero is
+        # kept, and aiding with it, however long it waits armed
+        self.start_subtest("Armed on the ground reading 0.55 m, clearance at the default, no home")
+        self.set_parameters({"SIM_SONAR_OFFSET": 0.55, "DISARM_DELAY": 0})
+        reboot()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        ground_rng_m = self.poll_message('RANGEFINDER').distance
+        self.change_mode('ALT_HOLD')
+        self.set_rc(3, 1000)
+        self.context_collect('STATUSTEXT')
+        self.arm_vehicle()
+        self.delay_sim_time(10, reason="armed idle on the ground")
+        stopped = self.statustext_in_collections("stopped aiding")
+        self.context_stop_collecting('STATUSTEXT')
+        self.disarm_vehicle()
+        self.set_rc(3, 1500)
+        self.set_parameters({"SIM_SONAR_OFFSET": 0, "DISARM_DELAY": 10})
+        dfreader = self.dfreader_for_current_onboard_log()
+        arm_us = None
+        hagls = []
+        while True:
+            m = dfreader.recv_match(type=['ARM', 'XKF5'])
+            if m is None:
+                break
+            if m.get_type() == 'ARM':
+                if m.ArmState == 1:
+                    arm_us = m.TimeUS
+            elif m.C == 0 and arm_us is not None and m.TimeUS - arm_us < 5e6:
+                hagls.append(m.HAGL)
+        if not hagls:
+            raise NotAchievedException("no XKF5 in the 5 s after arming")
+        self.progress("armed 10 s on the ground reading %.2f m, EKF height %.2f-%.2f m in the first 5 s, %s" %
+                      (ground_rng_m, min(hagls), max(hagls), stopped))
+        if ground_rng_m < 0.5 or max(hagls) >= 0.5:
+            raise NotAchievedException("not a tall vehicle where the zero applies after arming, so the leg proves "
+                                       "nothing")
+        if stopped:
+            raise NotAchievedException("aiding lost armed on the ground (%s)" % stopped)
+
+        # re-armed while falling: the vehicle reads landed, and with no home set the arm-time height datum
+        # reset puts the EKF's height at the ground clearance, so the zero flow would apply all the way down
+        # while the vehicle falls and drifts, and in SITL the zero velocity once the IMU reads still at
+        # terminal velocity.  The range finder reads the real height.  RNGFND1_MAX 60 lets flow fly high
+        # enough that the fall lasts a couple of seconds, whatever the arm command's round trip; lowered to
+        # 10 m before the disarm, the range finder reads above its range for the first part of the fall
+        self.start_subtest("Re-armed in the air: flow is not fused as zero")
+        self.set_parameters({"SIM_FLOW_OFS_X": 0, "SIM_SONAR_OFFSET": 0, "RNGFND1_MAX": 60})
+        reboot()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(altitude_min=40, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1450)
+        self.wait_groundspeed(1.0, 10, timeout=30)
+        self.set_rc(2, 1500)
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        self.set_parameter("RNGFND1_MAX", 10)
+        self.context_collect('STATUSTEXT')
+        # one command straight after the other, without waiting for a heartbeat to confirm each, so that the
+        # re-arm comes near the top of the fall
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, p1=0, p2=21196)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, p1=1)
+        self.wait_statustext("SIM Hit ground", check_context=True, timeout=20)
+        self.context_stop_collecting('STATUSTEXT')
+        self.disarm_vehicle(force=True)
+        self.delay_sim_time(2, reason="flush the log")
+        # from 0.3 s after the logged re-arm, by when a zero would have pulled the estimate down, to 2 m above
+        # ground, recording whether the range finder read above its range
+        dfreader = self.dfreader_for_current_onboard_log()
+        rearm_us = None
+        while True:
+            m = dfreader.recv_match(type='ARM')
+            if m is None:
+                break
+            if m.ArmState == 1:
+                rearm_us = m.TimeUS
+        if rearm_us is None:
+            raise NotAchievedException("no ARM record for the re-arm")
+        dfreader = self.dfreader_for_current_onboard_log()
+        truth = None
+        hagl = None
+        tod = None
+        rng = None
+        above_range = False
+        samples = []
+        while True:
+            m = dfreader.recv_match(type=['SIM2', 'XKF1', 'XKF4', 'XKF5', 'RFND'])
+            if m is None:
+                break
+            if m.TimeUS < rearm_us + 0.3e6:
+                continue
+            mtype = m.get_type()
+            if mtype == 'SIM2':
+                truth = (m.VN, m.VE)
+            elif mtype == 'RFND':
+                rng = m.Dist
+                # RangeFinder::Status::OutOfRangeHigh
+                above_range = above_range or m.Stat == 3
+            elif mtype == 'XKF4' and m.C == 0:
+                tod = (m.SS >> 10) & 1
+            elif mtype == 'XKF5' and m.C == 0:
+                hagl = m.HAGL
+            elif mtype == 'XKF1' and m.C == 0 and None not in (truth, hagl, tod, rng):
+                if rng < 2:
+                    break
+                samples.append((m.TimeUS, math.hypot(m.VN - truth[0], m.VE - truth[1]),
+                                math.hypot(truth[0], truth[1]), hagl, tod))
+        if len(samples) < 5 or samples[-1][0] - samples[0][0] < 1e6:
+            raise NotAchievedException("the fall after the re-arm covers too little of the log (%u samples)" %
+                                       len(samples))
+        worst = max(s[1] for s in samples)
+        speed = sum(s[2] for s in samples) / len(samples)
+        self.progress("re-armed in the air: worst velocity error %.2f m/s at %.2f m/s over %.1f s, EKF height "
+                      "%.2f-%.2f m, range finder above its range %s" %
+                      (worst, speed, (samples[-1][0] - samples[0][0]) * 1e-6,
+                       min(s[3] for s in samples), max(s[3] for s in samples), above_range))
+        if speed < 0.5:
+            raise NotAchievedException("drifting at %.2f m/s, too slow to show a zero" % speed)
+        # a zero fused pulls the estimate towards zero, an error near the whole speed
+        if worst > 0.5 * speed:
+            raise NotAchievedException("velocity estimate %.2f m/s off at %.2f m/s after a re-arm in the air" %
+                                       (worst, speed))
+        # and to pass, the EKF must have been where it fuses the zeros: no takeoff detected and its height
+        # under 0.5 m.  A build that keeps the height datum through an in-air re-arm never gets there, and needs
+        # another way in
+        if max(s[4] for s in samples) != 0 or max(s[3] for s in samples) >= 0.5 or not above_range:
+            raise NotAchievedException("not where the zero applies after the re-arm, or never above the range "
+                                       "finder's range, so the leg proves nothing")
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -21090,6 +21337,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.OpticalFlow,
             self.OpticalFlowLimits,
             self.OpticalFlowFocusAlt,
+            self.OpticalFlowLandedZeroNeedsGround,
             self.BodyFrameOdom,
             self.BodyFrameOdomDelay,
             self.RTLSpeed,
