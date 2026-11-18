@@ -14922,10 +14922,28 @@ switch value'''
         crsf = CRSF(("127.0.0.1", port))
         crsf.connect()
 
-        self.progress("Sending CRSF RC frames so the port is detected as CRSF")
+        # an RC frame each time sim time moves on, which is at each SYSTEM_TIME.
+        # At 50Hz the port never goes the 150ms without a frame after which the
+        # CRSF receiver counts as lost and the port is set up again, dropping
+        # what was sent to it.  Sent as fast as the loop runs they fill the
+        # socket before SITL has accepted the connection, and the write fails
+        self.context_set_message_rate_hz('SYSTEM_TIME', 50)
+        last_rc_frame_time = None
+
+        def send_rc_frame():
+            nonlocal last_rc_frame_time
+            now = self.get_sim_time_cached()
+            if now != last_rc_frame_time:
+                crsf.write_rc_frame()
+                last_rc_frame_time = now
+
+        self.progress("Sending CRSF RC frames until RC input is decoded as CRSF")
+        self.context_collect('STATUSTEXT')
         tstart = self.get_sim_time_cached()
-        while self.get_sim_time_cached() - tstart < 5:
-            crsf.write_rc_frame()
+        while not any("decoding CRSF" in m.text for m in self.context_collection('STATUSTEXT')):
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("RC input not decoded as CRSF")
+            send_rc_frame()
             crsf.read_frames()
             self.drain_mav()
 
@@ -14937,20 +14955,28 @@ switch value'''
         RADIO = 0xEA
         FOLDER = 11
 
-        def request(frame_type, payload, want_type, check, what):
-            # the request is resent until answered, as a transmitter does
+        def request(frame_type, payload, want_type, check, what, want_reply=True):
+            # the request is resent every 0.5s until answered, as a transmitter
+            # does.  With want_reply False it is sent once and fails if answered
+            crsf.read_frames()  # replies to earlier requests are not for this one
             tstart = self.get_sim_time_cached()
+            tsent = None
             while self.get_sim_time_cached() - tstart < 10:
-                crsf.write_extended_frame(frame_type, FC, RADIO, payload)
-                tsent = self.get_sim_time_cached()
-                while self.get_sim_time_cached() - tsent < 0.5:
-                    # replies are sent in the gap after RC frames
-                    crsf.write_rc_frame()
-                    self.drain_mav()
-                    for (t, p) in crsf.read_frames():
-                        if t == want_type and p[0] == RADIO and check(p):
-                            return p
-            raise NotAchievedException("No reply to %s" % what)
+                now = self.get_sim_time_cached()
+                if tsent is None or (want_reply and now - tsent >= 0.5):
+                    crsf.write_extended_frame(frame_type, FC, RADIO, payload)
+                    tsent = now
+                # a reply can go out after each frame SITL receives
+                send_rc_frame()
+                self.drain_mav()
+                for (t, p) in crsf.read_frames():
+                    if t == want_type and len(p) >= 4 and p[0] == RADIO and check(p):
+                        if not want_reply:
+                            raise NotAchievedException("Unexpected reply to %s" % what)
+                        return p
+            if want_reply:
+                raise NotAchievedException("No reply to %s" % what)
+            return None
 
         info = request(DEVICE_PING, [], DEVICE_INFO, lambda p: True, "ping")
         name_end = info.index(0, 2)
