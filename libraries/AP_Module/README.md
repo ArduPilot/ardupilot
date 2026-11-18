@@ -356,6 +356,8 @@ The optional H7 MPU stack guard (`--enable-STACK_GUARD`) defaults off and is
 compatible with USB debugging. It can recover a narrowly attributable stack
 overflow, not arbitrary bad pointers, skipped guard pages or shared-state damage.
 See the design for its limits.
+It disables the default `MEMPROTECT_TRACE` feature, which uses the same MPU region;
+explicitly enabling both is a build error.
 
 ## Tests
 
