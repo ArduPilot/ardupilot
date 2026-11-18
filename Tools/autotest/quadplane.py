@@ -80,9 +80,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def is_plane(self):
         return True
 
-    def get_stick_arming_channel(self):
-        return int(self.get_parameter("RCMAP_YAW"))
-
     def get_disarm_delay(self):
         return int(self.get_parameter("LAND_DISARMDELAY"))
 
@@ -116,8 +113,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.progress("Verify that flightmode channel is 5 (default)")
         default_fltmode_ch = 5
-        if (self.get_parameter("FLTMODE_CH") != default_fltmode_ch):
-            raise PreconditionFailedException("FLTMODE_CH not %d" % default_fltmode_ch)
+        if (self.find_rc_channel_for_option(224) != default_fltmode_ch):
+            raise PreconditionFailedException("Flight mode channel not default")
 
         """When disarmed, motor PWM will drop to min_pwm"""
         min_pwm = self.get_parameter("Q_M_PWM_MIN")

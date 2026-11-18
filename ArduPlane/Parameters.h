@@ -298,7 +298,7 @@ public:
         //
         // 210: flight modes
         //
-        k_param_flight_mode_channel = 210,
+        k_param_flight_mode_channel_old = 210,
         k_param_flight_modes0,
         k_param_flight_modes1,
         k_param_flight_modes2,
@@ -330,7 +330,7 @@ public:
         k_param_pitchController,
         k_param_yawController,
         k_param_L1_controller,
-        k_param_rcmap,
+        k_param_rcmap_old,
         k_param_TECS_controller,
         k_param_rally_total_old,  //unused
         k_param_steerController,
@@ -420,7 +420,6 @@ public:
 
     // Flight modes
     //
-    AP_Int8 flight_mode_channel;
     AP_Int8 flight_modes[6];
     AP_Int8 initial_mode;
 

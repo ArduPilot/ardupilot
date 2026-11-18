@@ -87,8 +87,9 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
     def is_rover(self):
         return True
 
-    def get_stick_arming_channel(self):
-        return int(self.get_parameter("RCMAP_ROLL"))
+    def rc_option_value_for_arming_channel(self):
+        # Rover uses the "roll" channel for arming
+        return 201
 
     ##########################################################
     #   TESTS DRIVE
@@ -544,6 +545,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''maximum distance allowed from home at end'''
         return 6.5
 
+    def AuxFunctionOnUnusedControlChannel(self):
+        '''aux functions on control channels Rover doesn't use do not stop arming'''
+        self.context_push()
+        # a pistol-grip setup: throttle on 2, aux functions on 3 and 4
+        self.set_parameters({
+            "RC2_OPTION": 203,
+            "RC3_OPTION": 28,
+            "RC4_OPTION": 34,
+        })
+        # the second boot catches an input first asked for on arming
+        for i in range(2):
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        self.context_pop()
+        self.reboot_sitl()
+
     def DriveRTL(self, timeout=120):
         '''Drive an RTL Mission'''
         self.wait_ready_to_arm()
@@ -811,7 +830,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def ModeSwitch(self):
         ''''Set modes via modeswitch'''
-        self.set_parameter("MODE_CH", 8)
+        self.set_parameter("RC8_OPTION", 224)  # AUX_FUNC::Mode
         self.set_rc(8, 1000)
         # mavutil.mavlink.ROVER_MODE_HOLD:
         self.set_parameter("MODE6", 4)
@@ -7412,38 +7431,49 @@ return update()
         self.assert_prearm_failure("Duplicate Aux Switch Options")
         self.assert_arm_failure("Duplicate Aux Switch Options")
 
-    def RCModeChannelOptionConflict(self):
-        '''ensure mode channel / RCn_OPTION conflict is a pre-arm failure'''
+    def RCModeChannelChanged(self):
+        '''ensure moving the mode channel without a reboot is a pre-arm failure'''
+        self.context_push()
         self.wait_ready_to_arm()
         self.set_parameters({
-            "MODE_CH": 8,
-            "RC8_OPTION": 4,  # RTL
+            "RC8_OPTION": 0,
+            "RC7_OPTION": 224,  # Mode
         })
         self.wait_not_ready_to_arm()
-        self.assert_prearm_failure("Mode channel and RC8_OPTION conflict")
+        self.assert_prearm_failure("Mode channel changed; reboot required")
 
-        self.progress("Conflict still blocks arming with PARAMETERS check skipped")
+        self.progress("Change still blocks arming with PARAMETERS check skipped")
         self.set_parameter("ARMING_SKIPCHK", 1 << 5)
-        self.assert_prearm_failure("Mode channel and RC8_OPTION conflict")
-        self.assert_arm_failure("Mode channel and RC8_OPTION conflict")
+        self.assert_prearm_failure("Mode channel changed; reboot required")
+        self.assert_arm_failure("Mode channel changed; reboot required")
         self.set_parameter("ARMING_SKIPCHK", 0)
 
-        self.progress("Conflict not reported with RC check skipped")
+        self.progress("Change not reported with RC check skipped")
         self.set_parameter("ARMING_SKIPCHK", 1 << 6)
         self.wait_ready_to_arm()
         self.set_parameter("ARMING_SKIPCHK", 0)
         self.wait_not_ready_to_arm()
 
-        self.progress("Conflict reported without RC input")
+        self.progress("Change reported without RC input")
         self.set_parameter("SIM_RC_FAIL", 1)
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER, healthy=False)
-        self.assert_prearm_failure("Mode channel and RC8_OPTION conflict",
+        self.assert_prearm_failure("Mode channel changed; reboot required",
                                    other_prearm_failures_fatal=False)
         self.set_parameter("SIM_RC_FAIL", 0)
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER, healthy=True)
 
-        self.set_parameter("RC8_OPTION", 0)
+        self.progress("Mode switches from its new channel after a reboot")
+        self.reboot_sitl()
         self.wait_ready_to_arm()
+        self.set_parameter("MODE1", 4)  # HOLD
+        self.set_rc(7, 1000)
+        self.wait_mode('HOLD')
+        self.set_parameter("MODE6", 0)  # MANUAL
+        self.set_rc(7, 2000)
+        self.wait_mode('MANUAL')
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def JammingSimulation(self):
         '''Test jamming simulation works'''
@@ -8535,6 +8565,7 @@ return update()
             self.MAVProxy_SetModeUsingMode,
             self.ModeSwitch,
             self.AuxModeSwitch,
+            self.AuxFunctionOnUnusedControlChannel,
             self.DriveRTL,
             self.SmartRTL,
             self.DriveSquare,
@@ -8642,7 +8673,7 @@ return update()
             self.MissionPolyEnabledPreArm,
             self.OpticalFlow,
             self.RCDuplicateOptionsExist,
-            self.RCModeChannelOptionConflict,
+            self.RCModeChannelChanged,
             self.ClearMission,
             self.JammingSimulation,
             self.BatteryInvalid,
