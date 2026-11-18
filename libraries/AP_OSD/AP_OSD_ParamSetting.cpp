@@ -292,15 +292,21 @@ void AP_OSD_ParamSetting::update()
     if (PARAM_TOKEN_INDEX(_current_token) == PARAM_COMPOSITE_INDEX(_param_key, _param_idx, _param_group) && _param_key >= 0) {
         return;
     }
-    // if a parameter was configured then use that
-    _current_token = AP_Param::ParamToken {};
+    // if a parameter was configured then use that, searching in locals as CRSF reads
+    // the setting from another thread and must not see the parameters passed on the way
+    AP_Param::ParamToken token {};
+    ap_var_type type = AP_PARAM_NONE;
+    AP_Param* param;
     // surely there is a more efficient way than brute-force search
-    for (_param = AP_Param::first(&_current_token, &_param_type);
-        _param && (AP_Param::get_persistent_key(_current_token.key) != uint16_t(_param_key.get())
-            || _current_token.idx != uint8_t(_param_idx.get())
-            || _current_token.group_element != uint32_t(_param_group.get()));
-        _param = AP_Param::next_scalar(&_current_token, &_param_type)) {
+    for (param = AP_Param::first(&token, &type);
+        param && (AP_Param::get_persistent_key(token.key) != uint16_t(_param_key.get())
+            || token.idx != uint8_t(_param_idx.get())
+            || token.group_element != uint32_t(_param_group.get()));
+        param = AP_Param::next_scalar(&token, &type)) {
     }
+    _current_token = token;
+    _param_type = type;
+    _param = param;
 
     if (_param == nullptr) {
         enabled.set(false);
