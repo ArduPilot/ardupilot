@@ -13,6 +13,7 @@
 #include <lwip/ip_addr.h>
 #include <lwip/tcpip.h>
 #include <lwip/netifapi.h>
+#include <lwip/sockets.h>
 #include <lwip/etharp.h>
 #if LWIP_DHCP
 #include <lwip/dhcp.h>
@@ -65,6 +66,11 @@ static AP_Networking_CAN mcast_server;
 
 void BL_Network::link_up_cb(void *p)
 {
+// firmware is received into RAM this much at a time between flash operations
+#ifndef AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE
+#define AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE 65536
+#endif
+
     auto *driver = (BL_Network *)p;
 #if AP_BOOTLOADER_NETWORK_USE_DHCP
     dhcp_start(driver->thisif);
@@ -411,57 +417,92 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         }
     }
     /*
-      erase all of flash
+      receive the file a chunk at a time into RAM, erasing flash
+      sectors as the chunks reach them. Erasing and writing flash can
+      stall the CPU, and the network interface with it, for long
+      enough to lose incoming data, so before touching flash we wait
+      for the sender to be blocked by our TCP receive window
      */
-    status_printf("Erasing ...");
-    flash_set_keep_unlocked(true);
-    uint32_t sec=0;
-    while (flash_func_sector_size(sec) != 0 &&
-           flash_func_erase_sector(sec)) {
-        thread_sleep_ms(10);
-        sec++;
-        if (stm32_flash_getpageaddr(sec) - stm32_flash_getpageaddr(0) >= content_length) {
-            break;
-        }
+    uint32_t chunk_size = AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE;
+    uint32_t *chunk = nullptr;
+    while (chunk_size >= 1024 && (chunk = (uint32_t *)malloc(chunk_size)) == nullptr) {
+        chunk_size /= 2;
     }
-    /*
-      receive file and write to flash
-     */
-    uint32_t buf[128];
-    uint32_t ofs = 0;
+    if (chunk == nullptr) {
+        status_printf("Flash failed: no memory");
+        return;
+    }
+
+    uint32_t flash_size = 0;
+    for (uint32_t sec=0; flash_func_sector_size(sec) != 0; sec++) {
+        flash_size += flash_func_sector_size(sec);
+    }
 
     // must be multiple of 4
     content_length &= ~3;
 
-    const uint32_t max_ofs = MIN(BOARD_FLASH_SIZE*1024, content_length);
+    const uint32_t max_ofs = MIN(flash_size, content_length);
+    uint32_t ofs = 0;
+    uint32_t erased_ofs = 0;
+    uint32_t erase_sec = 0;
+    bool failed = false;
     uint8_t last_pct = 0;
-    while (ofs < max_ofs) {
-        const uint32_t needed = MIN(sizeof(buf), max_ofs-ofs);
-        auto n = sock->recv((void*)buf, needed, 10000);
-        if (n <= 0) {
+    status_printf("Flashing 0%%");
+    flash_set_keep_unlocked(true);
+    while (ofs < max_ofs && !failed) {
+        const uint32_t want = MIN(chunk_size, max_ofs - ofs);
+        uint32_t len = 0;
+        while (len < want) {
+            const auto n = sock->recv(((uint8_t *)chunk) + len, want - len, 10000);
+            if (n <= 0) {
+                break;
+            }
+            len += n;
+        }
+        if (len < want) {
+            status_printf("Flash failed: upload stopped at %u of %u", unsigned(ofs+len), unsigned(max_ofs));
+            failed = true;
             break;
         }
-        // we need a whole number of words
-        if (n % 4 != 0 && n < needed) {
-            auto n2 = sock->recv(((uint8_t*)buf)+n, 4 - n%4, 10000);
-            if (n2 > 0) {
-                n += n2;
+        wait_sender_blocked(sock, content_length - (ofs + len));
+        while (erased_ofs < ofs + len) {
+            const uint32_t size = flash_func_sector_size(erase_sec);
+            if (size == 0 || !flash_func_erase_sector(erase_sec)) {
+                status_printf("Flash failed: erase of sector %u", unsigned(erase_sec));
+                failed = true;
+                break;
+            }
+            erased_ofs += size;
+            erase_sec++;
+        }
+        for (uint32_t i=0; i<len && !failed; i += 512) {
+            const uint32_t n = MIN(512U, len - i);
+            if (!flash_write_buffer(ofs + i, &chunk[i/4], n/4)) {
+                status_printf("Flash failed: write at %u", unsigned(ofs + i));
+                failed = true;
             }
         }
-        flash_write_buffer(ofs, buf, n/4);
-        ofs += n;
-        uint8_t pct = ofs*100/max_ofs;
-        if (pct % 10 == 0 && last_pct != pct) {
+        ofs += len;
+        const uint8_t pct = ofs*100/max_ofs;
+        // don't replace the reason for a failure
+        if (!failed && pct / 10 != last_pct / 10) {
             last_pct = pct;
             status_printf("Flashing %u%%", unsigned(pct));
         }
     }
-    if (ofs % 32 != 0) {
+    if (!failed && ofs % 32 != 0) {
         // pad to 32 bytes
-        memset(buf, 0xff, sizeof(buf));
-        flash_write_buffer(ofs, buf, (32 - ofs%32)/4);
+        memset(chunk, 0xff, 32);
+        flash_write_buffer(ofs, chunk, (32 - ofs%32)/4);
     }
-    flash_write_flush();
+    free(chunk);
+    // flush even after a failure, so that nothing of this upload is
+    // left buffered to be written into the next one
+    const bool flushed = flash_write_flush();
+    if (!failed && !flushed) {
+        status_printf("Flash failed: write");
+        failed = true;
+    }
     flash_set_keep_unlocked(false);
 #if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
@@ -527,6 +568,38 @@ void BL_Network::handle_request(SocketAPM *sock)
 
     const char *get_reboot = "GET /REBOOT";
     if (strncmp(headers, get_reboot, strlen(get_reboot)) == 0) {
+/*
+  wait until the sender is blocked by our TCP receive window, or has
+  nothing left to send, so that nothing arrives while flash is
+  busy. remaining is the number of bytes the sender has yet to send
+  that we have not read
+ */
+void BL_Network::wait_sender_blocked(SocketAPM *sock, uint32_t remaining)
+{
+    // the sender may hold back less than a segment rather than send a
+    // runt, so a window within a segment of full counts as full
+    const uint32_t blocked = MIN(remaining, uint32_t(TCP_WND - TCP_MSS));
+    int last_avail = -1;
+    const uint32_t start_ms = AP_HAL::millis();
+    uint32_t last_change_ms = start_ms;
+    while (true) {
+        int avail = 0;
+        lwip_ioctl(sock->get_read_fd(), FIONREAD, &avail);
+        const uint32_t now_ms = AP_HAL::millis();
+        if (avail != last_avail) {
+            last_avail = avail;
+            last_change_ms = now_ms;
+        }
+        const uint32_t quiet_ms = now_ms - last_change_ms;
+        if ((uint32_t(avail) >= blocked && quiet_ms >= 20) ||
+            quiet_ms >= 200 ||
+            now_ms - start_ms >= 2000) {
+            break;
+        }
+        thread_sleep_ms(5);
+    }
+}
+
         need_reboot = true;
     }
     
@@ -616,6 +689,11 @@ void BL_Network::init()
 
     macInit();
 
+    if (failed) {
+        const char *str = "<html><body>Flash failed, see status</body></html>";
+        sock->send(str, strlen(str));
+        return;
+    }
     thisif = NEW_NOTHROW netif;
 
     net_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(2048),

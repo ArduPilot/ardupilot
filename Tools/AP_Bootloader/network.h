@@ -31,6 +31,7 @@ private:
     static void net_request_trampoline(void *);
     void handle_request(SocketAPM *);
     void handle_post(SocketAPM *, uint32_t content_length);
+    void wait_sender_blocked(SocketAPM *, uint32_t remaining);
     char *read_headers(SocketAPM *);
 
     static void link_up_cb(void *p);
