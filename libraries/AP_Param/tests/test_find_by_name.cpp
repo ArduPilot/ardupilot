@@ -7,6 +7,9 @@
 
 #if AP_PARAM_DYNAMIC_ENABLED && defined(__linux__)
 #include <atomic>
+#include <memory>
+#include <stdio.h>
+#include <unistd.h>
 #include <thread>
 #endif
 
@@ -201,6 +204,50 @@ TEST_F(PersistentTable, ConcurrentFirstRegistration)
     EXPECT_FALSE(AP_Param::add_table(75, "RTHR_", 2));
     EXPECT_FALSE(AP_Param::add_table_persistent(75, "OTHER_", 2));
 }
+
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED && AP_FILESYSTEM_FILE_READING_ENABLED
+class ReadOnlyDefaultsUtil : public AP_HAL::Util {
+public:
+    ReadOnlyDefaultsUtil(const char *path) : AP_HAL::Util(), _path(path), _previous(hal.util)
+    {
+        AP_HAL::get_HAL_mutable().util = this;
+    }
+    ~ReadOnlyDefaultsUtil()
+    {
+        AP_HAL::get_HAL_mutable().util = _previous;
+    }
+    const char *get_custom_defaults_file() const override { return _path; }
+    void set_hw_rtc(uint64_t) override {}
+    uint64_t get_hw_rtc() const override { return 0; }
+private:
+    const char *_path;
+    AP_HAL::Util *_previous;
+};
+
+TEST_F(PersistentTable, DynamicReadOnlyDefaults)
+{
+    std::unique_ptr<FILE, decltype(&fclose)> file(tmpfile(), fclose);
+    ASSERT_NE(file, nullptr);
+    ASSERT_GT(fputs("RRO_FLOAT 3 @READONLY\nRRO_I32 7 @READONLY\nRRO_WRITE 4\n", file.get()), 0);
+    ASSERT_EQ(fflush(file.get()), 0);
+    char path[64];
+    hal.util->snprintf(path, sizeof(path), "/proc/self/fd/%d", fileno(file.get()));
+    ReadOnlyDefaultsUtil util(path);
+    ASSERT_TRUE(AP_Param::add_table_persistent(81, "RRO_", 3));
+    ASSERT_TRUE(AP_Param::add_param(81, 1, "FLOAT", 0));
+    ASSERT_TRUE(AP_Param::add_param_int32(81, 2, "I32", 0));
+    ASSERT_TRUE(AP_Param::add_param(81, 3, "WRITE", 0));
+    for (const char *name : {"RRO_FLOAT", "RRO_I32", "RRO_WRITE"}) {
+        ap_var_type type;
+        AP_Param *parameter = AP_Param::find(name, &type);
+        ASSERT_NE(parameter, nullptr);
+        EXPECT_EQ(parameter->is_read_only(), strcmp(name, "RRO_WRITE") != 0);
+    }
+    EXPECT_FALSE(testvehicle.g.a.is_read_only());
+    ASSERT_TRUE(AP_Param::add_param(81, 1, "FLOAT", 0));
+    EXPECT_TRUE(find("RRO_FLOAT")->is_read_only());
+}
+#endif
 
 TEST_F(PersistentTable, ConcurrentRegistrationModeConflict)
 {

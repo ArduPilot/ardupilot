@@ -1498,6 +1498,24 @@ bool AP_Param::configured(void) const
 
 bool AP_Param::is_read_only(void) const
 {
+#if AP_PARAM_DYNAMIC_ENABLED
+    // Defaults applied during dynamic registration live in the group flags,
+    // not the boot-time param_overrides array.
+    WITH_SEMAPHORE(_dynamic_registration_sem);
+    for (uint8_t i = 0; _var_info_dynamic != nullptr && i < AP_PARAM_MAX_DYNAMIC; i++) {
+        const auto &info = _var_info_dynamic[i];
+        if (info.ptr == nullptr) {
+            continue;
+        }
+        const uintptr_t offset = uintptr_t(this) - uintptr_t(info.ptr);
+        if (offset % sizeof(float) == 0 && offset / sizeof(float) <= _dynamic_table_sizes[i]) {
+            if (info.group_info[offset / sizeof(float)].flags & AP_PARAM_FLAG_READ_ONLY) {
+                return true;
+            }
+            break;
+        }
+    }
+#endif
     if (num_read_only == 0) {
         return false;
     }
