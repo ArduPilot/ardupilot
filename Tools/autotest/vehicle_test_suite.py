@@ -16641,8 +16641,8 @@ switch value'''
 
     def crsf_parameter_menu_check(self, script=None):
         '''read every CRSF parameter menu field and check each is in a folder
-        that lists it.  Returns the CRSF connection and a function to send
-        a request and wait for the reply'''
+        that lists it.  Returns the fields, a function to send a request
+        and wait for the reply, and the CRSF connection'''
         if script is not None:
             self.install_example_script_context(script)
             self.set_parameter("SCR_ENABLE", 1)
@@ -16740,14 +16740,14 @@ switch value'''
             for child in children:
                 if child not in fields:
                     raise NotAchievedException("field %u lists %u, beyond the %u fields" % (field_id, child, field_count))
-        return (fields, request)
+        return (fields, request, crsf)
 
     def CRSFParameterMenu(self):
         '''Test every CRSF parameter menu entry can be read and is in a folder that lists it'''
         self.context_push()
         ex = None
         try:
-            (fields, request) = self.crsf_parameter_menu_check()
+            (fields, request, crsf) = self.crsf_parameter_menu_check()
             if len(fields) != 20:
                 raise NotAchievedException("Expected 19 fields, got %u" % (len(fields) - 1))
         except Exception as e:  # noqa: BLE001
@@ -16763,7 +16763,7 @@ switch value'''
         self.context_push()
         ex = None
         try:
-            (fields, request) = self.crsf_parameter_menu_check(script="crsf-menu.lua")
+            (fields, request, crsf) = self.crsf_parameter_menu_check(script="crsf-menu.lua")
             names = [name for (name, parent, children) in fields.values()]
             for want in "Example Menu", "Another Menu", "Beethoven":
                 if want not in names:
@@ -16783,6 +16783,75 @@ switch value'''
         self.reboot_sitl()
         if ex is not None:
             raise ex
+
+    def CRSFParameterMenuUnusedSlot(self):
+        '''Test a CRSF parameter menu slot with no parameter is answered but hidden'''
+        PARAMETER_ENTRY = 0x2B
+        PARAMETER_READ = 0x2C
+        PARAMETER_WRITE = 0x2D
+        FC = 0xC8
+        RADIO = 0xEA
+        INFO_HIDDEN = 0x8C
+
+        # a key that matches no parameter, as after loading another vehicle's parameters
+        self.set_parameter("OSD5_PARAM1_KEY", -1)
+        (fields, request, crsf) = self.crsf_parameter_menu_check()
+        if len(fields) != 20:
+            raise NotAchievedException("Expected 19 fields, got %u" % (len(fields) - 1))
+
+        p = request(PARAMETER_READ, [2, 0], PARAMETER_ENTRY, lambda p: p[2] == 2, "field 2")
+        if p[5] != INFO_HIDDEN:
+            raise NotAchievedException("field 2 has type 0x%02x, want hidden INFO" % p[5])
+
+        # a write to it has nothing to set, and the next field still reads back
+        crsf.write_extended_frame(PARAMETER_WRITE, FC, RADIO, [2, 1])
+        request(PARAMETER_READ, [3, 0], PARAMETER_ENTRY, lambda p: p[2] == 3, "field 3 after a write to field 2")
+
+    def CRSFParameterMenuChunks(self):
+        '''Test scripted CRSF menu fields come back whole however many chunks they need'''
+        PARAMETER_ENTRY = 0x2B
+        PARAMETER_READ = 0x2C
+        INFO = 12
+
+        # lengths around one and two chunks of 55 bytes
+        lengths = [10, 54, 55, 56, 109, 110, 111]
+        self.install_script_content_context("crsf-chunks.lua", """
+local INFO = %u
+local menu = crsf:add_menu("Chunks")
+for _, len in ipairs({%s}) do
+    local name = "L" .. len
+    menu:add_parameter(string.pack(">Bzz", INFO, name, string.rep("x", len - 3 - #name)))
+end
+
+local function update()
+    -- reads the script does not ask for are answered directly
+    crsf:get_menu_event(2)
+    return update, 100
+end
+
+return update, 1000
+""" % (INFO, ", ".join([str(length) for length in lengths])))
+        self.set_parameter("SCR_ENABLE", 1)
+        (fields, request, crsf) = self.crsf_parameter_menu_check()
+
+        for length in lengths:
+            name = "L%u" % length
+            field = [f for f in fields if fields[f][0] == name][0]
+            want = bytes([INFO]) + name.encode() + b"\0" + b"x" * (length - 3 - len(name)) + b"\0"
+            p = request(PARAMETER_READ, [field, 0], PARAMETER_ENTRY, lambda p: p[2] == field, "%s chunk 0" % name)
+            chunks = p[3] + 1
+            got = p[5:]  # after the parent folder, which only the first chunk carries
+            for chunk in range(1, chunks):
+                p = request(PARAMETER_READ, [field, chunk], PARAMETER_ENTRY,
+                            lambda p: p[2] == field and p[3] == chunks - 1 - chunk, "%s chunk %u" % (name, chunk))
+                got += p[4:]
+            self.progress("%s: %u bytes in %u chunks" % (name, len(got), chunks))
+            if bytes(got) != want:
+                raise NotAchievedException("%s came back as %s" % (name, bytes(got)))
+
+        # a chunk past the end is not answered
+        request(PARAMETER_READ, [field, chunks], PARAMETER_ENTRY, lambda p: p[2] == field,
+                "%s chunk %u" % (name, chunks), want_reply=False)
 
     def CompassPrearms(self):
         '''test compass prearm checks'''
