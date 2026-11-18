@@ -55,8 +55,10 @@ def restart(vehicle, engine, counter):
 def test_airshow_parameters(tmp_path):
     lua = (LUA_DIR / 'plane_aerobatics.lua').read_text()
     declarations = re.findall(r"bind_add_param\('([^']+)',\s*(\d+),\s*(-?[\d.]+)\)", lua)
-    rust = (APPLET / 'parameters.rs').read_text().split('pub struct Parameters')[0]
-    native = re.findall(r'\((\d+), "([^"]+)", (-?[\d.]+)\)', rust)
+    rust = (APPLET / 'parameters.rs').read_text()
+    aero_table = re.search(r'prefix = "AEROM_";(.*?)^}', rust, re.MULTILINE | re.DOTALL)
+    assert aero_table is not None
+    native = re.findall(r'=\s*(\d+),\s*"([^"]+)",\s*f32:\s*(-?[\d.]+)\s*;', aero_table[1])
     assert ('35', 'LANG', '0.0') in native
     assert {(name, int(index), float(default)) for name, index, default in declarations} == \
         {(name, int(index), float(default)) for index, name, default in native if name != 'LANG'}
