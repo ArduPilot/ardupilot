@@ -16955,6 +16955,8 @@ return update, 1000
             self.SerialPassthroughRCIN,
             self.CRSFParameterMenu,
             self.CRSFParameterMenuScripted,
+            self.CRSFParameterMenuUnusedSlot,
+            self.CRSFParameterMenuChunks,
             self.MotorTest,
             self.AltEstimation,
             self.EKFSource,
