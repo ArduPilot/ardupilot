@@ -16957,6 +16957,7 @@ return update, 1000
             self.CRSFParameterMenuScripted,
             self.CRSFParameterMenuUnusedSlot,
             self.CRSFParameterMenuChunks,
+            self.CRSFParameterMenuLongCommandReply,
             self.MotorTest,
             self.AltEstimation,
             self.EKFSource,

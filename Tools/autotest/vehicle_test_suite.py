@@ -15098,6 +15098,56 @@ return update, 1000
         request(PARAMETER_READ, [field, chunks], PARAMETER_ENTRY, lambda p: p[2] == field,
                 "%s chunk %u" % (name, chunks), want_reply=False)
 
+    def CRSFParameterMenuLongCommandReply(self):
+        '''Test a scripted CRSF command reply too long for its frame is refused'''
+        PARAMETER_ENTRY = 0x2B
+        PARAMETER_WRITE = 0x2D
+        COMMAND = 13
+        START = 1
+        PROGRESS = 2
+
+        # a command entry packs to 8 bytes plus its info string, and 55 bytes
+        # fit after the parent folder in a settings entry
+        self.install_script_content_context("crsf-command.lua", """
+local COMMAND = %u
+local PROGRESS = %u
+local PARAMETER_WRITE = 2
+
+local function command_entry(status, info)
+    return string.pack(">BzBBz", COMMAND, "Cmd", status, 10, info)
+end
+
+local menu = crsf:add_menu("Long")
+local cmd = menu:add_parameter(command_entry(0, "Ready"))
+local writes = 0
+
+local function update()
+    local param, _, events = crsf:get_menu_event(PARAMETER_WRITE)
+    if (events & PARAMETER_WRITE) ~= 0 and param == cmd:id() then
+        -- the first reply is two bytes too long, the next just fits
+        writes = writes + 1
+        local info_len = writes == 1 and 49 or 47
+        if not crsf:send_write_response(command_entry(PROGRESS, string.rep("x", info_len))) then
+            gcs:send_text(6, string.format("reply of %%d bytes refused", 8 + info_len))
+        end
+    end
+    return update, 100
+end
+
+return update, 1000
+""" % (COMMAND, PROGRESS))
+        self.set_parameter("SCR_ENABLE", 1)
+        (fields, request, crsf) = self.crsf_parameter_menu_check()
+
+        field = [f for f in fields if fields[f][0] == "Cmd"][0]
+        reply = bytes([COMMAND]) + b"Cmd\0" + bytes([PROGRESS, 10]) + b"x" * 47 + b"\0"
+        # the write is resent until answered, so the refused reply is followed by one that fits
+        p = request(PARAMETER_WRITE, [field, START], PARAMETER_ENTRY,
+                    lambda p: p[2] == field and len(p) > 10 and p[10] == PROGRESS, "the command")
+        if p[4] != fields[field][1] or bytes(p[5:]) != reply:
+            raise NotAchievedException("reply came back as %s" % bytes(p[4:]))
+        self.wait_statustext("reply of 57 bytes refused", check_context=True)
+
     def CompassPrearms(self):
         '''test compass prearm checks'''
         self.wait_ready_to_arm()
