@@ -56,6 +56,25 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
             int16_t aux5,
             int16_t aux6)
 {
+    // MANUAL_CONTROL uses INT16_MAX to mark an axis as invalid
+    // (e.g. a joystick without that axis).  As other vehicles do in
+    // GCS_MAVLINK::manual_override(), the channel an invalid axis
+    // drives is released rather than overridden.  An invalid x or y
+    // leaves the attitude-mode trim unchanged; for input hold an
+    // invalid axis counts as neutral.
+    const bool x_valid = x != INT16_MAX;
+    const bool y_valid = y != INT16_MAX;
+    const bool z_valid = z != INT16_MAX;
+    const bool r_valid = r != INT16_MAX;
+    if (!x_valid) {
+        x = 0;
+    }
+    if (!y_valid) {
+        y = 0;
+    }
+    if (!z_valid) {
+        z = 500;  // 500 is neutral for throttle
+    }
 
     float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
     float throttleScale = 0.8*gain*g.throttle_gain; // Scale 0-1000 to 0-800 times gain
@@ -94,8 +113,12 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     // attitude mode:
     if (roll_pitch_flag == 1) {
     // adjust roll/pitch trim with joystick input instead of forward/lateral
-        pitchTrim = -x * rpyScale;
-        rollTrim  =  y * rpyScale;
+        if (x_valid) {
+            pitchTrim = -x * rpyScale;
+        }
+        if (y_valid) {
+            rollTrim  =  y * rpyScale;
+        }
     }
 
     uint32_t tnow = AP_HAL::millis();
@@ -119,14 +142,15 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     channel_pitch->set_override(constrain_int16(s * rpyScale + pitchTrim + rpyCenter,1100,1900), tnow);
     channel_roll->set_override(constrain_int16(t * rpyScale + rollTrim  + rpyCenter,1100,1900), tnow);
 
-    channel_throttle->set_override(constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow);
-    channel_yaw->set_override(constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);
+    // an override value of 0 releases the channel
+    channel_throttle->set_override(z_valid ? constrain_int16((zTot)*throttleScale+throttleBase,1100,1900) : 0, tnow);
+    channel_yaw->set_override(r_valid ? constrain_int16(r*rpyScale+rpyCenter,1100,1900) : 0, tnow);
 
     // maneuver mode:
     if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
-        channel_forward->set_override(constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow);
-        channel_lateral->set_override(constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow);
+        channel_forward->set_override(x_valid ? constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900) : 0, tnow);
+        channel_lateral->set_override(y_valid ? constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900) : 0, tnow);
     } else {
         // neutralize forward and lateral input while we are adjusting roll and pitch
         channel_forward->set_override(constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow);
