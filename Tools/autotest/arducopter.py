@@ -27507,6 +27507,7 @@ return update, 1000
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             self.CRSF,
             self.CRSFLinkRate,
+            Test(self.CRSFResync, speedup=1),
             self.SerialPassthroughRCIN,
             self.CRSFParameterMenu,
             self.CRSFParameterMenuScripted,

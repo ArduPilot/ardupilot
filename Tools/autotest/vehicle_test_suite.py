@@ -1314,6 +1314,14 @@ class CRSF(Telem):
     # sync and length bytes
     MAX_FRAME_LENGTH = 62
 
+    FRAMETYPE_RC_CHANNELS_PACKED = 0x16
+    FRAMETYPE_DEVICE_PING = 0x28
+    FRAMETYPE_DEVICE_INFO = 0x29
+    # frames sent to the flight controller start with its address
+    ADDRESS_FLIGHT_CONTROLLER = 0xC8
+    ADDRESS_RADIO_TRANSMITTER = 0xEA
+    ADDRESS_RECEIVER = 0xEC
+
     def __init__(self, destination_address):
         super(CRSF, self).__init__(destination_address)
 
@@ -1374,6 +1382,24 @@ class CRSF(Telem):
             frames.append((frame[0], frame[1:-1]))
             self.buffer = self.buffer[length+2:]
         return frames
+
+    @staticmethod
+    def frame_bytes(frame_type, payload):
+        '''return a frame to the flight controller'''
+        body = bytes([frame_type]) + bytes(payload)
+        return bytes([CRSF.ADDRESS_FLIGHT_CONTROLLER, len(body) + 1]) + body + bytes([CRSF.crc8_dvb_s2(body)])
+
+    @staticmethod
+    def rc_frame_bytes(pwm):
+        '''return an RC frame with all 16 channels at pwm, 880 to 2159'''
+        if not 880 <= pwm <= 2159:
+            raise ValueError("no CRSF value gives %uus" % pwm)
+        # the smallest value the flight controller's value * 5 / 8 + 880 takes to pwm
+        value = ((pwm - 880) * 8 + 4) // 5
+        bits = 0
+        for i in range(16):
+            bits |= value << (11 * i)
+        return CRSF.frame_bytes(CRSF.FRAMETYPE_RC_CHANNELS_PACKED, bits.to_bytes(22, 'little'))
 
     def progress_tag(self):
         return "CRSF"
@@ -17109,6 +17135,117 @@ return update, 1000
             raise NotAchievedException("No single packet passthrough: sub-types %s" % set(sub_types))
         if CRSF.CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH in sub_types:
             raise NotAchievedException("Multi packet passthrough from a Tracer")
+
+    def CRSFResync(self):
+        '''Test CRSF frames get through junk bytes and frames split across reads'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 23, # serial5 is RCIN input
+            "RC_PROTOCOLS": 512,    # CRSF only, so SITL's own RC input doesn't take over
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port # serial5 is a localhost port the receiver connects to
+        ])
+        self.context_set_message_rate_hz('RC_CHANNELS', 10)
+        # sim time moves on at each SYSTEM_TIME, and bytes go with each step
+        self.context_set_message_rate_hz('SYSTEM_TIME', 50)
+        crsf = CRSF(("127.0.0.1", port))
+        tstart = self.get_sim_time_cached()
+        while not crsf.connect():
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Could not connect to the CRSF port")
+            self.drain_mav()
+
+        ping_frame = CRSF.frame_bytes(CRSF.FRAMETYPE_DEVICE_PING,
+                                      [CRSF.ADDRESS_FLIGHT_CONTROLLER, CRSF.ADDRESS_RADIO_TRANSMITTER])
+        # name and its terminator, serial number, hardware id and a software id
+        # ending in firmware 6.66, then parameter count and version
+        receiver_info = list(b"CRSF RX") + [0] * 11 + [6, 66, 0, 0]
+        device_info_frame = CRSF.frame_bytes(CRSF.FRAMETYPE_DEVICE_INFO,
+                                             [CRSF.ADDRESS_FLIGHT_CONTROLLER, CRSF.ADDRESS_RECEIVER] + receiver_info)
+        rng = random.Random(1)
+        sync = CRSF.ADDRESS_FLIGHT_CONTROLLER
+
+        def noise(n):
+            return bytes(rng.choice([x for x in range(256) if x != sync]) for _ in range(n))
+
+        def junk_before(frame):
+            '''noise, stray sync bytes, impossible lengths, or a false header
+            whose length ends it inside the frame behind it and whose CRC
+            fails, so the parser always resyncs on that frame within the bytes
+            sent with it'''
+            kind = rng.randrange(6)
+            if kind == 0:
+                return b""
+            if kind == 1:
+                return noise(rng.randrange(1, 8))
+            if kind == 2:
+                return bytes([sync])
+            if kind == 3:
+                return bytes([sync, 0xFF])
+            if kind == 4:
+                return bytes([sync, 0x01])
+            while True:
+                filler = noise(rng.randrange(0, 6))
+                length = rng.randrange(len(filler) + 1, len(filler) + len(frame) + 1)
+                false_frame = (bytes([sync, length]) + filler + frame)[:length + 2]
+                if 2 <= length <= CRSF.MAX_FRAME_LENGTH and \
+                   CRSF.crc8_dvb_s2(false_frame[2:-1]) != false_frame[-1]:
+                    return bytes([sync, length]) + filler
+
+        counts = {"pings": 0, "replies": 0}
+        state = {"last_step_time": None, "last_ping_time": None, "pending": b""}
+
+        def send_until(done, what, timeout, pwm, ping):
+            '''each step, send junk and an RC frame at pwm, or with ping set a
+            ping every 0.5s, until done() is true. Each step's bytes are cut in
+            two and the second part goes with the next step's, so frames are
+            carried across reads. A step at speedup 1 is about 20ms, inside
+            CRSF's 50ms frame timeout, and no frame waits longer than a step'''
+            tstart = self.get_sim_time_cached()
+            while not done():
+                now = self.get_sim_time_cached()
+                if now - tstart > timeout:
+                    raise NotAchievedException("No %s" % what)
+                if now != state["last_step_time"]:
+                    state["last_step_time"] = now
+                    if ping and (state["last_ping_time"] is None or now - state["last_ping_time"] >= 0.5):
+                        frame = ping_frame
+                        state["last_ping_time"] = now
+                        counts["pings"] += 1
+                    else:
+                        frame = CRSF.rc_frame_bytes(pwm)
+                    data = junk_before(frame) + frame
+                    cut = rng.randrange(1, len(data))
+                    crsf.do_write(state["pending"] + data[:cut])
+                    state["pending"] = data[cut:]
+                for (frame_type, payload) in crsf.read_frames():
+                    if frame_type == CRSF.FRAMETYPE_DEVICE_INFO:
+                        counts["replies"] += 1
+                    elif frame_type == CRSF.FRAMETYPE_DEVICE_PING and payload[0] == CRSF.ADDRESS_RECEIVER:
+                        # answer the flight controller's version ping as a receiver
+                        # does, after the frame being sent; while it goes
+                        # unanswered, the flight controller keeps sending it and it
+                        # can take the place of the reply to a ping
+                        state["pending"] += device_info_frame
+                self.drain_mav()
+
+        def rc_at(pwm):
+            m = self.mav.messages.get('RC_CHANNELS')
+            return m is not None and m.chan1_raw == pwm
+
+        # the frames that detect CRSF are parsed a byte at a time, so a new
+        # value has to arrive after detection to come through the block path
+        send_until(lambda: rc_at(1700), "RC at 1700us through the junk", 20, 1700, False)
+        send_until(lambda: rc_at(1300), "RC at 1300us through the junk once detected", 10, 1300, False)
+        tstart = self.get_sim_time_cached()
+        send_until(lambda: self.get_sim_time_cached() - tstart > 10, "10s of frames", 20, 1300, True)
+        # no more pings, so the reply to the last can arrive
+        tstart = self.get_sim_time_cached()
+        send_until(lambda: self.get_sim_time_cached() - tstart > 1, "1s of frames", 10, 1300, False)
+        self.progress("%u pings, %u device info replies" % (counts["pings"], counts["replies"]))
+        if counts["replies"] != counts["pings"]:
+            raise NotAchievedException("%u of %u pings answered" % (counts["replies"], counts["pings"]))
 
     def CompassPrearms(self):
         '''test compass prearm checks'''
