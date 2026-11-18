@@ -16744,45 +16744,25 @@ switch value'''
 
     def CRSFParameterMenu(self):
         '''Test every CRSF parameter menu entry can be read and is in a folder that lists it'''
-        self.context_push()
-        ex = None
-        try:
-            (fields, request, crsf) = self.crsf_parameter_menu_check()
-            if len(fields) != 20:
-                raise NotAchievedException("Expected 19 fields, got %u" % (len(fields) - 1))
-        except Exception as e:  # noqa: BLE001
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        self.reboot_sitl()
-        if ex is not None:
-            raise ex
+        (fields, request, crsf) = self.crsf_parameter_menu_check()
+        if len(fields) != 20:
+            raise NotAchievedException("Expected 19 fields, got %u" % (len(fields) - 1))
 
     def CRSFParameterMenuScripted(self):
         '''Test the CRSF parameter menu with the scripted example menu'''
-        self.context_push()
-        ex = None
-        try:
-            (fields, request, crsf) = self.crsf_parameter_menu_check(script="crsf-menu.lua")
-            names = [name for (name, parent, children) in fields.values()]
-            for want in "Example Menu", "Another Menu", "Beethoven":
-                if want not in names:
-                    raise NotAchievedException("%s not in the menu" % want)
+        (fields, request, crsf) = self.crsf_parameter_menu_check(script="crsf-menu.lua")
+        names = [name for (name, parent, children) in fields.values()]
+        for want in "Example Menu", "Another Menu", "Beethoven":
+            if want not in names:
+                raise NotAchievedException("%s not in the menu" % want)
 
-            # writes come back through the script, which echoes the value
-            options = [f for f in fields if fields[f][0] == "Options" and fields[fields[f][1]][0] == "Example Menu"][0]
-            self.context_collect('STATUSTEXT')
-            PARAMETER_WRITE = 0x2D
-            request(PARAMETER_WRITE, [options, 2], PARAMETER_WRITE,
-                    lambda p: p[2] == options, "write to field %u" % options)
-            self.wait_statustext("Selected option 2", check_context=True)
-        except Exception as e:  # noqa: BLE001
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        self.reboot_sitl()
-        if ex is not None:
-            raise ex
+        # writes come back through the script, which echoes the value
+        options = [f for f in fields if fields[f][0] == "Options" and fields[fields[f][1]][0] == "Example Menu"][0]
+        self.context_collect('STATUSTEXT')
+        PARAMETER_WRITE = 0x2D
+        request(PARAMETER_WRITE, [options, 2], PARAMETER_WRITE,
+                lambda p: p[2] == options, "write to field %u" % options)
+        self.wait_statustext("Selected option 2", check_context=True)
 
     def CRSFParameterMenuUnusedSlot(self):
         '''Test a CRSF parameter menu slot with no parameter is answered but hidden'''
