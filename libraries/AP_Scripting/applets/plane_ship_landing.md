@@ -44,7 +44,6 @@ The following key parameters need to be set on the aircraft:
 - FOLL_ENABLE=1
 - FOLL_SYSID=17  # this needs to be the SYSID of the beacon set above
 - Q_RTL_MODE=0
-- RTL_AUTOLAND=0
 
 Note that you will need to refresh parameters and reboot for these to all take effect. The SHIP_ENABLE, SHIP_LAND_ANGLE and SHIP_AUTO_OFS parameters will appear when the script is running correctly.
 

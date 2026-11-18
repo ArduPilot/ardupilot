@@ -88,11 +88,6 @@ end
 
 -- trigger failsafe function
 function trigger_failsafe()
-  if param:get('RTL_AUTOLAND') == 2 then
-     -- we don't want to do the mission based autoland, so disable
-     -- RTL_AUTOLAND
-     param:set('RTL_AUTOLAND', 0)
-  end
   if param:get('TECS_SPDWEIGHT') < 2 then
      -- force airspeed priority
      param:set('TECS_SPDWEIGHT', 2)

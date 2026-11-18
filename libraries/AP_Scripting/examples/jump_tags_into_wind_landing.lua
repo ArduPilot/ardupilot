@@ -3,13 +3,12 @@ Usage for SITL PLANE testing:
 
 - set param SIM_WIND_SPD 5
 - set param SIM_WIND_DIR 0
-- set param RTL_AUTOLAND 2
 - set param SCR_ENABLE 1
 - restart, if needed
 - upload mission (jump_tags_into_wind_landing.waypoints)
 - launch plane (switch to AUTO and arm)
 - Mission will go to a loiter_unlim at wp 2.
-- switch mode to RTL, which jumps you back to AUTO at the DO_LAND_START which begins with a loiter_to_alt.
+- switch mode to Auto RTL, which joins the mission at the DO_LAND_START which begins with a loiter_to_alt.
 
 once the loiter_to_alt is done, it will jump to the landing pattern that has the headwind
 
