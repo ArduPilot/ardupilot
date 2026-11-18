@@ -34,6 +34,9 @@ from vehicle_test_suite import WaitModeTimeout
 testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = Location(-35.362938, 149.165085, 585, AltFrame.ABSOLUTE)
 SITL_START_HEADING = 354
+
+# pymavlink's Plane mode mapping does not know about Auto RTL yet
+PLANE_MODE_AUTO_RTL = 27
 WIND = "0,180,0.2"  # speed,direction,variance
 
 
@@ -10073,6 +10076,7 @@ return update()
             24: "Thermal",
             26: "Autoland",
             27: "Glide",
+            28: "Auto RTL",
         }
         initialising = self.get_mode_from_mode_mapping("INITIALISING")
         modes = self.assert_available_modes(expected_modes, not_user_selectable=[initialising])
@@ -10544,8 +10548,119 @@ return update()
         # joining point; move it away so this request has to do it:
         self.set_current_waypoint(2)
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START)
-        self.wait_mode('AUTO')
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
         self.wait_current_waypoint(5, timeout=10)
+
+        self.fly_home_land_and_disarm()
+
+    def AutoRTL(self):
+        '''Test Auto RTL pseudo mode via mode change, DO_LAND_START, DO_RETURN_PATH_START, RC option and RTL'''
+        alt = 50
+        home = self.home_position_as_location()
+        guided_loc = self.offset_location_ne(home, 1000, 0)
+        guided_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+
+        def fly_guided_to(loc):
+            self.change_mode('GUIDED')
+            self.send_do_reposition(loc)
+            self.wait_location(loc, accuracy=200, height_accuracy=None, timeout=240)
+
+        # required to arm with a DO_LAND_START in the mission
+        self.set_parameter("RTL_AUTOLAND", 2)
+
+        # takeoff on a mission with neither a landing sequence nor a return path
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 1000, alt),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        fly_guided_to(guided_loc)
+
+        self.start_subtest("refused with no landing sequence or return path in the mission")
+        try:
+            self.change_mode(PLANE_MODE_AUTO_RTL, timeout=10)
+            raise NotAchievedException("Should not change mode with no landing sequence")
+        except WaitModeTimeout:
+            pass
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_mode_is('GUIDED')
+
+        self.start_subtest("DO_LAND_START enters Auto RTL at the landing sequence")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),                     # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt),                # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, alt),                 # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 250, 0, alt),                 # 5
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),                         # 6
+        ])
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START)
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(4, timeout=10)
+
+        self.start_subtest("mission carries on when switching to AUTO")
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(4, timeout=10)
+
+        self.start_subtest("mode change to Auto RTL jumps to the landing sequence")
+        fly_guided_to(guided_loc)
+        self.change_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(4, timeout=10)
+
+        self.start_subtest("refused if Auto RTL may not be entered from the GCS")
+        self.change_mode('GUIDED')
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 22)  # Auto RTL
+        self.run_cmd_do_set_mode(PLANE_MODE_AUTO_RTL, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_mode_is('GUIDED')
+        self.set_parameter("FLTMODE_GCSBLOCK", 0)
+
+        self.start_subtest("RC option enters Auto RTL")
+        self.set_parameter("RC9_OPTION", 99)  # AUTO RTL
+        self.set_rc(9, 2000)
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(4, timeout=10)
+        self.change_mode('GUIDED')
+        self.set_rc(9, 1000)
+
+        self.start_subtest("DO_RETURN_PATH_START enters Auto RTL at the closest return path leg")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),                            # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, alt),                       # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, alt),                       # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt),                       # 5
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, alt),                        # 6
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),         # 7
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 150, 0, alt),                        # 8
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),                                # 9
+        ])
+        # beside the leg from item 5 to item 6; anywhere within the 200m
+        # wait_location accuracy of this point is still closest to that leg:
+        return_path_loc = self.offset_location_ne(home, 600, 100)
+        return_path_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        fly_guided_to(return_path_loc)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START)
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(6, timeout=10)
+
+        self.start_subtest("mode change to Auto RTL prefers the return path to the landing sequence")
+        fly_guided_to(return_path_loc)
+        self.change_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(6, timeout=10)
+
+        self.start_subtest("DO_LAND_START jumps to the landing sequence while in Auto RTL")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START)
+        self.wait_current_waypoint(8, timeout=10)
+        self.assert_mode_is(PLANE_MODE_AUTO_RTL)
+
+        self.start_subtest("RTL_AUTOLAND switches RTL to Auto RTL")
+        fly_guided_to(guided_loc)
+        self.change_mode('RTL')
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(8, timeout=10)
 
         self.fly_home_land_and_disarm()
 
@@ -11158,6 +11273,7 @@ return update()
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.GuidedOnlyOffboardControl,
             self.MAV_CMD_DO_RETURN_PATH_START,
+            self.AutoRTL,
             self.MAV_CMD_SET_HAGL,
             self.MAV_CMD_DO_PARACHUTE_actions,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,

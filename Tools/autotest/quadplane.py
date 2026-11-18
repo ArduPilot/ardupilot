@@ -31,6 +31,9 @@ from vehicle_test_suite import Test
 testdir = os.path.dirname(os.path.realpath(__file__))
 WIND = "0,180,0.2"  # speed,direction,variance
 SITL_START_LOCATION = Location(-27.274439, 151.290064, 343, AltFrame.ABSOLUTE)
+
+# pymavlink's Plane mode mapping does not know about Auto RTL yet
+PLANE_MODE_AUTO_RTL = 27
 SITL_START_HEADING = 8.7
 
 
@@ -815,7 +818,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.progress("Using %s to fly home" % filename)
         self.load_generic_mission(filename)
         self.send_cmd_do_set_mode("RTL")
-        self.wait_mode('AUTO')
+        self.wait_mode(PLANE_MODE_AUTO_RTL)
         self.wait_current_waypoint(4)
         self.wait_statustext('Land descend started')
         self.wait_statustext('Land final started', timeout=60)
