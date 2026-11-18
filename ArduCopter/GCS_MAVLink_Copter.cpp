@@ -442,16 +442,14 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_do_set_roi(const Location &roi_loc
 }
 
 // rejects a reboot while ESC calibration on the next boot is set to auto
-MAV_RESULT GCS_MAVLINK_Copter::handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Copter::check_preflight_reboot()
 {
     // reject reboot if user has also specified they want the "Auto" ESC calibration on next reboot
     if (copter.g.esc_calibrate == (uint8_t)Copter::ESCCalibrationModes::ESCCAL_AUTO) {
         send_text(MAV_SEVERITY_CRITICAL, "Reboot rejected, ESC cal on reboot");
         return MAV_RESULT_FAILED;
     }
-
-    // call parent
-    return GCS_MAVLINK::handle_preflight_reboot(packet, msg);
+    return MAV_RESULT_ACCEPTED;
 }
 
 // flies to the requested location in Guided, switching to Guided if the change mode flag is set
