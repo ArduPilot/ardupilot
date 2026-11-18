@@ -2095,7 +2095,8 @@ class LocationInt(object):
 
 class Test(object):
     '''a test definition - information about a test'''
-    def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None):
+    def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None,
+                 expected_internal_error: int | None = None):
         if kwargs is None:
             kwargs = {}
         self.name = function.__name__
@@ -2106,6 +2107,7 @@ class Test(object):
         self.kwargs = kwargs
         self.attempts = attempts
         self.speedup = speedup
+        self.expected_internal_error = expected_internal_error
 
 
 class Result(object):
@@ -3469,7 +3471,8 @@ class TestSuite(abc.ABC):
                                    defaults_filepath=None,
                                    wipe=False,
                                    set_streamrate_callback=None,
-                                   binary=None):
+                                   binary=None,
+                                   environment: dict | None = None):
         '''customisations could be "--serial5=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.mav.close()
@@ -3478,7 +3481,8 @@ class TestSuite(abc.ABC):
                         model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
-                        wipe=wipe)
+                        wipe=wipe,
+                        environment=environment)
         self.mav.do_connect()
         tstart = time.time()
         while True:
@@ -10351,6 +10355,12 @@ Also, ignores heartbeats not from our target system'''
 
         ex = None
         try:
+            if test.expected_internal_error is not None:
+                self.progress("Allowing expected internal error 0x%x" % test.expected_internal_error)
+                self.customise_SITL_commandline(
+                    [],
+                    environment={"SITL_EXPECTED_INTERNAL_ERROR": str(test.expected_internal_error)},
+                )
             self.check_rc_defaults()
             self.reboot_sitl_before_test()
             self.change_mode(self.default_mode())
