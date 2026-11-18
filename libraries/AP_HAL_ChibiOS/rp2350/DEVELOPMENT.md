@@ -1755,8 +1755,6 @@ build on a flight board comes from
 
 ### Bring-up and release
 
-- RPI_UAVFC's README references no image, which
-  `Tools/scripts/test_new_boards.py` requires of a new board.
 - 200 MHz at 1.15 V is 1.33 times the datasheet clock, validated only on
   bring-up samples, and has flown on one RPI_UAVFC, three flights on
   2026-11-07. The 100 MHz flash window was measured on another RPI_UAVFC,
