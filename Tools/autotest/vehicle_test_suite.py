@@ -13041,6 +13041,7 @@ Also, ignores heartbeats not from our target system'''
         old_sim_baro_count = self.get_parameter("SIM_BARO_COUNT")
         new_parameter_value = old_parameter_value + 5
         ex = None
+        reset_on_error = False
         try:
             self.set_parameter("STAT_BOOTCNT", 0)
             self.set_parameter("SIM_BARO_COUNT", -1)
@@ -13054,10 +13055,33 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Waiting for 'Config error'")
             # SYSTEM_TIME not sent in config error loop:
             self.wait_statustext("Config error", wallclock_timeout=True)
+            self.wait_statustext("Config Error: fix problem then reboot", wallclock_timeout=True)
             self.progress("Setting %s to %f" % (parameter_name, new_parameter_value))
             self.set_parameter(parameter_name, new_parameter_value)
+
+            if self.is_copter():
+                old_esc_calibration = self.get_parameter("ESC_CALIBRATION")
+                reset_on_error = True
+                self.set_parameter("ESC_CALIBRATION", 3)
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                    p1=1,
+                    p2=1,
+                    want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+                )
+                self.set_parameter("ESC_CALIBRATION", old_esc_calibration)
+                reset_on_error = False
         except Exception as e:  # noqa: BLE001
             ex = e
+
+        if ex is not None and reset_on_error:
+            # An unexpected reboot can enter ESC calibration and stop MAVLink.
+            # Restart before parameter cleanup, preserving the command failure
+            # even if recovery itself fails.
+            try:
+                self.reset_SITL_commandline()
+            finally:
+                raise ex
 
         self.progress("Resetting SIM_BARO_COUNT")
         self.set_parameter("SIM_BARO_COUNT", old_sim_baro_count)
