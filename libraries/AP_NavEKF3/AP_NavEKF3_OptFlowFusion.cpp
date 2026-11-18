@@ -35,7 +35,7 @@ void NavEKF3_core::SelectFlowFusion()
     of_elements ofDataDelayed;      // OF data at the fusion time horizon
 
     // Check for data at the fusion time horizon
-    const bool flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
+    bool flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
 
     // Perform Data Checks
     // Check if the optical flow data is still valid
@@ -47,10 +47,19 @@ void NavEKF3_core::SelectFlowFusion()
     // Constrain measurements to zero if takeoff is not detected and the height above ground
     // is insufficient to achieve acceptable focus. This allows the vehicle to be picked up
     // and carried to test optical flow operation
-    if (!takeOffDetected && ((terrainState - stateStruct.position.z) < 0.5f)) {
-        ofDataDelayed.flowRadXYcomp.zero();
-        ofDataDelayed.flowRadXY.zero();
-        flowDataValid = true;
+    flowWithheldOffGround = false;
+    if (!takeOffDetected && ((terrainState - stateStruct.position.z) < ON_GROUND_HGT_MAX_M)) {
+        // armed, a vehicle not yet seen to take off, or one its own flag says has landed, can be in the air,
+        // as after a re-arm while falling. Where the range finder reads it off the ground, neither the zero
+        // nor flow scaled by the EKF's height is a measurement
+        if (motorsArmed && rangeFinderOffGround()) {
+            flowDataToFuse = false;
+            flowWithheldOffGround = true;
+        } else {
+            ofDataDelayed.flowRadXYcomp.zero();
+            ofDataDelayed.flowRadXY.zero();
+            flowDataValid = true;
+        }
     }
 
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height

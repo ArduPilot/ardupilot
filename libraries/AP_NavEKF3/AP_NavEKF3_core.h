@@ -79,6 +79,13 @@
 // age at which a terrain altitude from the database is no longer used
 #define TERRAIN_SRTM_ALT_TIMEOUT_MS 5000
 
+// height above ground below which a vehicle not yet seen to take off may be on the ground: before takeoff is
+// detected its flow is fused as zero there, and armed, a downward range finder reading it this far above its
+// reading on the ground (RNGFNDx_GNDCLR), tilt corrected, has it off the ground. Measured from the clearance,
+// a tall vehicle, or one on uneven ground or with its clearance left at the default by up to this much, still
+// reads on the ground
+#define ON_GROUND_HGT_MAX_M 0.5f
+
 // accuracy threshold applied to GSF yaw estimate use
 #define GSF_YAW_ACCURACY_THRESHOLD_DEG 15.0f
 
@@ -993,6 +1000,9 @@ private:
     // Apply a median filter to range finder data
     void readRangeFinder();
 
+    // true if the downward range finders read the vehicle off the ground
+    bool rangeFinderOffGround() const;
+
 #if EK3_FEATURE_OPTFLOW_FUSION
     // check if the vehicle has taken off during optical flow navigation by looking at inertial and range finder data
     void detectOptFlowTakeoff(void);
@@ -1351,6 +1361,7 @@ private:
     EKF_obs_buffer_t<of_elements> storedOF;    // OF data buffer
     bool flowDataValid;             // true while optical flow data is still fresh
     bool flowRngBelowAltMin;        // true if the range used for fusing optical flow is below the altitude minimum
+    bool flowWithheldOffGround;     // true while flow is not fused because the range finder reads an armed vehicle off the ground
     Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
