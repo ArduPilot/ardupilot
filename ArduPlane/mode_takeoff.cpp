@@ -64,6 +64,7 @@ bool ModeTakeoff::_enter()
 {
     takeoff_mode_setup = false;
     have_autoenabled_fences = false;
+    plane.auto_state.height_below_takeoff_to_level_off_cm = 0;
 
     return true;
 }
