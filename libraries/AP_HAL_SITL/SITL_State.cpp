@@ -158,11 +158,18 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
                 }
             }
 #endif
-            // most devices can't sleep for 10us - so this is also
-            // essentially a yield.  At 30x speedup a 10us wall-clock
-            // sleep here can equate to your thread sleeping for 300us
-            // of simulated time
-            usleep(10);
+            // simulated time only moves when the main thread steps the
+            // FDM, once per frame, so sleep for the remaining wait (at
+            // least half a frame) rather than polling
+            const uint64_t now_usec = AP_HAL::micros64();
+            if (now_usec >= wait_time_usec) {
+                break;
+            }
+            const float rate_hz = sitl_model->get_rate_hz();
+            const uint64_t half_frame_usec = rate_hz > 0 ? uint64_t(500000 / rate_hz) : 500;
+            const uint64_t sim_usec = MAX(wait_time_usec - now_usec, half_frame_usec);
+            // capped so that a SIM_SPEEDUP change is seen promptly
+            usleep(constrain_uint64(sim_usec / speedup, 10, 10000));
         }
     }
     // check the outbound TCP queue size.  If it is too long then
