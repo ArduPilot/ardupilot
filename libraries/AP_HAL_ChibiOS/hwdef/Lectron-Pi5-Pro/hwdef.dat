@@ -5,15 +5,15 @@
 # MCU       : STM32H753
 # Reference : PX4 lectron/pi5-autopilot board files
 #
-# APJ_BOARD_ID : AP_HW_LECTRON_Pi5_H7 = 7140
-# board_types.txt entry: AP_HW_LECTRON_Pi5_H7   7140
+# APJ_BOARD_ID : AP_HW_LECTRON_Pi5_Pro = 7140
+# board_types.txt entry: AP_HW_LECTRON_Pi5_Pro   7140
 # ==============================================================
 
 MCU STM32H7xx STM32H753xx
 OSCILLATOR_HZ 16000000
 FLASH_SIZE_KB 2048
 FLASH_RESERVE_START_KB 128
-APJ_BOARD_ID AP_HW_LECTRON_Pi5_H7
+APJ_BOARD_ID AP_HW_LECTRON_Pi5_Pro
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 2
