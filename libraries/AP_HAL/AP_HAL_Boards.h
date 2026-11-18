@@ -428,8 +428,8 @@
 #if defined(HAL_BUILD_AP_PERIPH)
 #define AP_MODULE_ENABLED 0
 #elif (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX) && \
-    (!defined(__x86_64__) || defined(__ILP32__) || defined(__CYGWIN__))
-// Host modules use the SysV AMD64 calling convention.
+    ((!defined(__x86_64__) && !defined(__aarch64__)) || defined(__ILP32__) || defined(__CYGWIN__))
+// Host modules support SysV AMD64 and AArch64 with x18 reserved.
 #define AP_MODULE_ENABLED 0
 // WebAssembly cannot execute native module machine code.
 #elif defined(__EMSCRIPTEN__) || (defined(AP_EXTERNAL_BINDING_ENABLED) && !AP_EXTERNAL_BINDING_ENABLED)
