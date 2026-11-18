@@ -2167,6 +2167,10 @@ void AP_CRSF_Telem::clear_menus()
     }
     scripted_menus.next_menu = nullptr;
     next_scripted_id = SCRIPTED_MENU_START_ID;
+    // requests still queued point at the parameters just freed
+    inbound_params.clear();
+    outbound_params.clear();
+    ready_params.clear();
 }
 
 #ifdef CRSF_DEBUG
