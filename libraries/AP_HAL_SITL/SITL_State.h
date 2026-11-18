@@ -53,7 +53,7 @@ public:
                                 Location &loc,
                                 float &yaw_degrees);
     
-    uint8_t get_instance() const { return _instance; }
+    uint16_t get_instance() const { return _instance; }
 
 private:
     void _parse_command_line(int argc, char * const argv[]);
@@ -94,7 +94,7 @@ private:
     std::atomic<float> _sleep_speedup{0.0f};
 
     // internal state
-    uint8_t _instance;
+    uint16_t _instance;
     uint16_t _base_port;
     pid_t _parent_pid;
     uint32_t _update_count;
