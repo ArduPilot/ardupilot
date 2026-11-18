@@ -21193,12 +21193,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.install_terrain_handlers_context()
         self.set_parameters({
             "SCR_ENABLE": 0 if rust else 1,
-            "MOD_ENABLE": 1 if rust else 0,
-            "MOD_HEAP_MAX": 32768,
-            "MOD_CODE_MAXSIZE": 131072,
-            "MOD_STACK_MAX": 32768,
             "RC12_OPTION": 300,
         })
+        if rust:
+            self.set_parameters({
+                "MOD_ENABLE": 1,
+                "MOD_HEAP_MAX": 32768,
+                "MOD_CODE_MAXSIZE": 131072,
+                "MOD_STACK_MAX": 32768,
+            })
         self.setup_servo_mount()
         self.reboot_sitl()
         self.set_rc(6, 1300)
@@ -25088,13 +25091,14 @@ return update()
         self.ParamLockdown(rust=True)
 
     def ParamLockdown(self, rust):
-        self.set_parameters({
-            'SCR_ENABLE': 0 if rust else 1,
-            'MOD_ENABLE': 1 if rust else 0,
-            'MOD_HEAP_MAX': 32768,
-            'MOD_CODE_MAXSIZE': 131072,
-            'MOD_STACK_MAX': 32768,
-        })
+        self.set_parameter('SCR_ENABLE', 0 if rust else 1)
+        if rust:
+            self.set_parameters({
+                'MOD_ENABLE': 1,
+                'MOD_HEAP_MAX': 32768,
+                'MOD_CODE_MAXSIZE': 131072,
+                'MOD_STACK_MAX': 32768,
+            })
 
         self.context_push()
 
