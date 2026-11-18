@@ -33,7 +33,7 @@ WIND = "0,180,0.2"  # speed,direction,variance
 SITL_START_LOCATION = Location(-27.274439, 151.290064, 343, AltFrame.ABSOLUTE)
 
 # pymavlink's Plane mode mapping does not know about Auto RTL yet
-PLANE_MODE_AUTO_RTL = 27
+PLANE_MODE_AUTO_RTL = 28
 SITL_START_HEADING = 8.7
 
 
@@ -4142,6 +4142,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             25: "Loiter to QLand",
             26: "Autoland",
             27: "Glide",
+            28: "Auto RTL",
         }
         initialising = self.get_mode_from_mode_mapping("INITIALISING")
         self.assert_available_modes(expected_modes, not_user_selectable=[initialising])

@@ -36,7 +36,7 @@ SITL_START_LOCATION = Location(-35.362938, 149.165085, 585, AltFrame.ABSOLUTE)
 SITL_START_HEADING = 354
 
 # pymavlink's Plane mode mapping does not know about Auto RTL yet
-PLANE_MODE_AUTO_RTL = 27
+PLANE_MODE_AUTO_RTL = 28
 WIND = "0,180,0.2"  # speed,direction,variance
 
 
@@ -10531,30 +10531,24 @@ return update()
             if m.seq == 6:
                 raise NotAchievedException("Switched away from the return path being flown")
 
-        self.start_subtest("refused if AUTO may not be entered from the GCS")
+        self.start_subtest("joins the closest leg of the return path")
         self.change_mode('GUIDED')
         # beside the leg from item 4 to item 5:
         loc = self.offset_location_ne(self.home_position_as_location(), 400, 900)
         loc.set_alt_m(50, AltFrame.ABOVE_HOME)
         self.send_do_reposition(loc)
         self.wait_location(loc, accuracy=200, height_accuracy=None, timeout=120)
+        # like RTL, Auto RTL is always available from the GCS, even when AUTO is blocked:
         self.set_parameter("FLTMODE_GCSBLOCK", 1 << 9)  # AUTO
-        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
-        self.assert_mode_is('GUIDED')
-        self.set_parameter("FLTMODE_GCSBLOCK", 0)
-
-        self.start_subtest("joins the closest leg of the return path")
-        # the refused request has already moved the current item to the
-        # joining point; move it away so this request has to do it:
-        self.set_current_waypoint(2)
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START)
         self.wait_mode(PLANE_MODE_AUTO_RTL)
         self.wait_current_waypoint(5, timeout=10)
+        self.set_parameter("FLTMODE_GCSBLOCK", 0)
 
         self.fly_home_land_and_disarm()
 
     def AutoRTL(self):
-        '''Test Auto RTL pseudo mode via mode change, DO_LAND_START, DO_RETURN_PATH_START, RC option and RTL'''
+        '''Test Auto RTL mode via mode change, DO_LAND_START, DO_RETURN_PATH_START, RC option and RTL'''
         alt = 50
         home = self.home_position_as_location()
         guided_loc = self.offset_location_ne(home, 1000, 0)
@@ -10610,11 +10604,11 @@ return update()
         self.change_mode(PLANE_MODE_AUTO_RTL)
         self.wait_current_waypoint(4, timeout=10)
 
-        self.start_subtest("refused if Auto RTL may not be entered from the GCS")
+        self.start_subtest("available from the GCS even when AUTO is blocked, like RTL")
         self.change_mode('GUIDED')
-        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 22)  # Auto RTL
-        self.run_cmd_do_set_mode(PLANE_MODE_AUTO_RTL, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
-        self.assert_mode_is('GUIDED')
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 9)  # AUTO
+        self.run_cmd_do_set_mode(PLANE_MODE_AUTO_RTL)
+        self.wait_current_waypoint(4, timeout=10)
         self.set_parameter("FLTMODE_GCSBLOCK", 0)
 
         self.start_subtest("RC option enters Auto RTL")
