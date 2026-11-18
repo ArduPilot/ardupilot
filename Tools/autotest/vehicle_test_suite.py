@@ -16795,10 +16795,13 @@ switch value'''
         if p[5] != INFO_HIDDEN:
             raise NotAchievedException("field 2 has type 0x%02x, want hidden INFO" % p[5])
 
-        # a write to it has nothing to set, and the next field still reads back
+        # a write to it has nothing to set, and the next slot, which has a
+        # parameter, still reads back and is not hidden
         crsf.write_extended_frame(CRSF.FRAMETYPE_PARAMETER_WRITE, CRSF.ADDRESS_FLIGHT_CONTROLLER, CRSF.ADDRESS_RADIO, [2, 1])
-        request(CRSF.FRAMETYPE_PARAMETER_READ, [3, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == 3,
-                "field 3 after a write to field 2")
+        p = request(CRSF.FRAMETYPE_PARAMETER_READ, [3, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == 3,
+                    "field 3 after a write to field 2")
+        if p[5] & CRSF.FIELD_HIDDEN:
+            raise NotAchievedException("field 3 has type 0x%02x, want a visible field" % p[5])
 
     def CRSFParameterMenuChunks(self):
         '''Test scripted CRSF menu fields come back whole however many chunks they need'''
@@ -16830,6 +16833,10 @@ return update, 1000
             p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY,
                         lambda p: p[2] == field, "%s chunk 0" % name)
             chunks = p[3] + 1
+            # each chunk carries up to 55 bytes, the first after the parent folder
+            want_chunks = max(1, (length + 54) // 55)
+            if chunks != want_chunks:
+                raise NotAchievedException("%s is sent in %u chunks, want %u" % (name, chunks, want_chunks))
             got = p[5:]  # after the parent folder, which only the first chunk carries
             for chunk in range(1, chunks):
                 p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field, chunk], CRSF.FRAMETYPE_PARAMETER_ENTRY,
@@ -16839,9 +16846,11 @@ return update, 1000
             if bytes(got) != want:
                 raise NotAchievedException("%s came back as %s" % (name, bytes(got)))
 
-        # a chunk past the end is not answered
-        request(CRSF.FRAMETYPE_PARAMETER_READ, [field, chunks], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == field,
-                "%s chunk %u" % (name, chunks), want_reply=False)
+        # a chunk past the end is not answered.  Ask about the field read first,
+        # so that no late reply to an earlier read of it can still arrive
+        field = self.crsf_field_named(fields, "L10")
+        request(CRSF.FRAMETYPE_PARAMETER_READ, [field, 1], CRSF.FRAMETYPE_PARAMETER_ENTRY, lambda p: p[2] == field,
+                "L10 chunk 1", want_reply=False)
 
     def CRSFParameterMenuLongCommandReply(self):
         '''Test a scripted CRSF command reply too long for its frame is refused'''
@@ -16866,9 +16875,9 @@ local writes = 0
 local function update()
     local param, _, events = crsf:get_menu_event(PARAMETER_WRITE)
     if (events & PARAMETER_WRITE) ~= 0 and param == cmd:id() then
-        -- the first reply is two bytes too long, the next just fits
+        -- the first reply is one byte too long, the next just fits
         writes = writes + 1
-        local info_len = writes == 1 and 49 or 47
+        local info_len = writes == 1 and 48 or 47
         if not crsf:send_write_response(command_entry(PROGRESS, string.rep("x", info_len))) then
             gcs:send_text(6, string.format("reply of %%d bytes refused", 8 + info_len))
         end
@@ -16888,7 +16897,7 @@ return update, 1000
                     lambda p: p[2] == field and len(p) > 10 and p[10] == PROGRESS, "the command")
         if p[4] != fields[field][1] or bytes(p[5:]) != reply:
             raise NotAchievedException("reply came back as %s" % bytes(p[4:]))
-        self.wait_statustext("reply of 57 bytes refused", check_context=True)
+        self.wait_statustext("reply of 56 bytes refused", check_context=True)
 
     def CRSFParameterMenuFolderLimits(self):
         '''Test scripted CRSF menus are limited to what their folders hold'''
