@@ -1,12 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <AP_gtest.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Filesystem/AP_Filesystem_backend.h>
 #include <AP_HAL/AP_HAL.h>
 
 #include <string>
 #include <vector>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+
+TEST(DirectoryStreams, UnsupportedBackendReportsError)
+{
+    AP_Filesystem_Backend backend;
+    errno = 0;
+    EXPECT_EQ(backend.opendir("modules"), nullptr);
+    EXPECT_EQ(errno, ENOSYS);
+}
 
 #if AP_FILESYSTEM_FILE_READING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
 TEST(DirectoryStreams, IndependentVirtualEntries)

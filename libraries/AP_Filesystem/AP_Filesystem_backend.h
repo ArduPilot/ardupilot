@@ -18,6 +18,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <errno.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #include "AP_Filesystem_config.h"
@@ -54,7 +55,7 @@ public:
     virtual int stat(const char *pathname, struct stat *stbuf) { return -1; }
     virtual int unlink(const char *pathname) { return -1; }
     virtual int mkdir(const char *pathname) { return -1; }
-    virtual void *opendir(const char *pathname) { return nullptr; }
+    virtual void *opendir(const char *pathname) { errno = ENOSYS; return nullptr; }
     virtual struct dirent *readdir(void *dirp) { return nullptr; }
     virtual int closedir(void *dirp) { return -1; }
     virtual int rename(const char *oldpath, const char *newpath) { return -1; }
