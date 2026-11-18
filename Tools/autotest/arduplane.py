@@ -10658,6 +10658,81 @@ return update()
 
         self.fly_home_land_and_disarm()
 
+    def AutoRTLFailsafes(self):
+        '''Test the Auto RTL actions of the RC, GCS, battery and fence failsafes'''
+        alt = 50
+        home = self.home_position_as_location()
+        # beside the leg from item 5 to item 6 of the mission below; anywhere
+        # within the 200m wait_location accuracy of this point is still
+        # closest to that leg:
+        return_path_loc = self.offset_location_ne(home, 600, 100)
+        return_path_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+
+        def fly_guided_to(loc):
+            self.change_mode('GUIDED')
+            self.send_do_reposition(loc)
+            self.wait_location(loc, accuracy=200, height_accuracy=None, timeout=240)
+
+        def wait_joined_return_path():
+            self.wait_mode(PLANE_MODE_AUTO_RTL, timeout=30)
+            self.wait_current_waypoint(6, timeout=10)
+
+        self.set_parameters({
+            "RTL_AUTOLAND": 2,  # required to arm with a DO_LAND_START in the mission
+            "FS_LONG_ACTN": 6,  # Auto RTL
+            "FS_GCS_ENABL": 1,
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "BATT_LOW_VOLT": 11,
+            "BATT_LOW_TIMER": 1,
+            "BATT_FS_LOW_ACT": 8,  # Auto RTL or RTL
+            "FENCE_TYPE": 2,  # circle centred on home
+            "FENCE_RADIUS": 300,
+            "FENCE_ACTION": 9,  # Auto RTL if possible else RTL
+        })
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),                            # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, alt),                       # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, alt),                       # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt),                       # 5
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, alt),                        # 6
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),         # 7
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 150, 0, alt),                        # 8
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),                                # 9
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+
+        self.start_subtest("RC long failsafe enters Auto RTL")
+        fly_guided_to(return_path_loc)
+        self.set_parameter("SIM_RC_FAIL", 1)  # no pulses
+        wait_joined_return_path()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_statustext("RC Long Failsafe Cleared", timeout=30, check_context=True)
+
+        self.start_subtest("GCS failsafe enters Auto RTL")
+        fly_guided_to(return_path_loc)
+        self.set_heartbeat_rate(0)
+        wait_joined_return_path()
+        self.context_collect('STATUSTEXT')
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=30, check_context=True)
+
+        self.start_subtest("battery failsafe enters Auto RTL")
+        fly_guided_to(return_path_loc)
+        self.set_parameter("SIM_BATT_VOLTAGE", 9.5)
+        wait_joined_return_path()
+
+        self.start_subtest("fence breach enters Auto RTL")
+        fly_guided_to(return_path_loc)
+        # the plane is already outside the circle; a guided target outside
+        # the fence would be refused, so enable the fence around it instead
+        self.set_parameter("FENCE_ENABLE", 1)
+        wait_joined_return_path()
+        self.set_parameter("FENCE_ENABLE", 0)
+
+        self.fly_home_land_and_disarm()
+
     def MAV_CMD_SET_HAGL(self):
         '''test height above ground from MAV_CMD_SET_HAGL is used for the landing flare'''
         self.start_flying_simple_relhome_mission([
@@ -11268,6 +11343,7 @@ return update()
             self.GuidedOnlyOffboardControl,
             self.MAV_CMD_DO_RETURN_PATH_START,
             self.AutoRTL,
+            self.AutoRTLFailsafes,
             self.MAV_CMD_SET_HAGL,
             self.MAV_CMD_DO_PARACHUTE_actions,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
