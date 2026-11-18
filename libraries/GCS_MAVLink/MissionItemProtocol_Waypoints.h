@@ -2,6 +2,8 @@
 
 #include "MissionItemProtocol.h"
 
+#include <AP_Mission/AP_Mission.h>
+
 class MissionItemProtocol_Waypoints : public MissionItemProtocol {
 public:
     MissionItemProtocol_Waypoints(class AP_Mission &_mission) :
@@ -37,6 +39,13 @@ protected:
     ap_message next_item_ap_message_id() const override {
         return MSG_NEXT_MISSION_REQUEST_WAYPOINTS;
     }
+
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    uint16_t opaque_id_first_item() const override { return 1; }
+    uint32_t items_change_count() const override {
+        return mission.change_count();
+    }
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
 
 private:
     AP_Mission &mission;
