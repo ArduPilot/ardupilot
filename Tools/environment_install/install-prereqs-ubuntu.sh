@@ -111,7 +111,7 @@ case ${RELEASE_DISTRIBUTOR} in
 esac
 
 PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default Python interpreter
-PIP=pip3
+PIP="python3 -m pip"
 
 case "${RELEASE_CODENAME}" in
     bionic)   ;&
@@ -140,30 +140,17 @@ case "${RELEASE_CODENAME}" in
         ;;
 
     *)
-        echo "This install script does not handle installation for ${RELEASE_CODENAME}"
-        exit 1
+        # newer releases are set up as the newest supported one
+        echo "${RELEASE_CODENAME} is not tested with this install script, trying anyway"
         ;;
 esac
 
-if false; then :
-elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'forky' ]; then
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
-    PYTHON_V="python3"
-    PIP="python3 -m pip"
+# Python packages go in a venv (PEP 668) from bookworm and noble on;
+# jammy is the only supported release that predates it
+if [ ${RELEASE_CODENAME} == 'jammy' ]; then
+    USE_VENV=false
+else
+    USE_VENV=true
 fi
 
 # Check whether the specific ARM pkg-config package is available or whether we should emulate the effect of installing it.
@@ -202,14 +189,8 @@ fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
 
-if false ||
-   [ ${RELEASE_CODENAME} == 'trixie' ] ||
-   [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-   [ ${RELEASE_CODENAME} == 'forky' ] ||
-   [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'resolute' ] ||
-   false; then
-    # on Ubuntu 23.04 Lunar (and presumably later releases), we install in venv, below
+if $USE_VENV; then
+    # installed in the venv, below
     PYTHON_PKGS+=" numpy pyparsing psutil"
     SITL_PKGS="python3-dev"
 else
@@ -218,13 +199,7 @@ fi
 
 # add some packages required for commonly-used MAVProxy modules:
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-    if false ||
-       [ ${RELEASE_CODENAME} == 'trixie' ] ||
-       [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-       [ ${RELEASE_CODENAME} == 'forky' ] ||
-       [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'resolute' ] ||
-       false; then
+    if $USE_VENV; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
         # the -dev packages pull in the matching versioned libraries
         SITL_PKGS+=" xterm xfonts-base libcsfml-dev libsfml-dev"
@@ -304,59 +279,22 @@ heading "Add user to dialout group to allow managing serial ports"
 sudo usermod -a -G dialout $USER
 echo "Done!"
 
-# Add back python symlink to python interpreter on Ubuntu >= 20.04
-if false; then :
-elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
+# Add back python symlink to python interpreter; a venv has its own
+if ! $USE_VENV; then
     BASE_PKGS+=" python-is-python3"
-    SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
-    SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-    SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'forky' ]; then
-    SITL_PKGS+=" libpython3-stdlib" # for argparse
 fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if false; then :
-  elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+  if $USE_VENV; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-  elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'forky' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  fi
-
-  if false; then :
-  elif false ||
-       [ ${RELEASE_CODENAME} == 'trixie' ] ||
-       [ ${RELEASE_CODENAME} == 'forky' ] ||
-       false; then
-      SITL_PKGS+=" python3-wxgtk4.0"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-      SITL_PKGS+=" python3-wxgtk4.0"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif false ||
-       [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'resolute' ] ||
-       false; then
+    if [ ${RELEASE_DISTRIBUTOR} != 'debian' ]; then
+      # Ubuntu and its derivatives also install wxPython in the venv
       PYTHON_PKGS+=" wxpython"
-      SITL_PKGS+=" python3-wxgtk4.0"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
-    SITL_PKGS+=" python3-wxgtk4.0"
-    SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
+    fi
   fi
+  SITL_PKGS+=" python3-wxgtk4.0"
+  SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
 fi
 
 # Check if we need to manually install libtool-bin
@@ -396,13 +334,7 @@ ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
-if false ||
-     [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-     [ ${RELEASE_CODENAME} == 'trixie' ] ||
-     [ ${RELEASE_CODENAME} == 'forky' ] ||
-     [ ${RELEASE_CODENAME} == 'noble' ] ||
-     [ ${RELEASE_CODENAME} == 'resolute' ] ||
-     false; then
+if $USE_VENV; then
     $APT_GET install python3-venv
 
     # Check if venv already exists in ARDUPILOT_ROOT (check both venv-ardupilot and venv)
@@ -448,13 +380,7 @@ if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
 fi
 
-if false ||
-   [ ${RELEASE_CODENAME} == 'trixie' ] ||
-   [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-   [ ${RELEASE_CODENAME} == 'forky' ] ||
-   [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'resolute' ] ||
-   false; then
+if $USE_VENV; then
     # must do this ahead of wxPython pip3 run :-/
     $PIP install $PIP_USER_ARGUMENT --upgrade attrdict3
 fi
@@ -465,11 +391,10 @@ for PACKAGE in $PYTHON_PKGS; do
     if [ "$PACKAGE" == "wxpython" ]; then
         # PyPI only has the wxPython sources for Linux, try the prebuilt
         # wheel from the latest GitHub release before building it
-        case ${RELEASE_CODENAME} in
-            noble)    WX_UBUNTU="ubuntu2404" ;;
-            resolute) WX_UBUNTU="ubuntu2604" ;;
-            *)        WX_UBUNTU="none" ;;
-        esac
+        # wheels are built per Ubuntu release, e.g. ubuntu2404; Mint
+        # gives the Ubuntu release it is based on in upstream-release
+        WX_RELEASE=$( (. /etc/upstream-release/lsb-release && echo "$DISTRIB_RELEASE") 2>/dev/null || lsb_release -r -s)
+        WX_UBUNTU="ubuntu${WX_RELEASE//./}"
         WX_TAG=$(python3 -c 'import urllib.request; print(urllib.request.urlopen("https://github.com/wxWidgets/Phoenix/releases/latest").geturl().rsplit("/", 1)[1])' || true)
         PY_TAG=$(python3 -c 'import sys; print("cp%d%d" % sys.version_info[:2])')
         WX_WHEEL="https://github.com/wxWidgets/Phoenix/releases/download/$WX_TAG/wxpython-${WX_TAG#wxPython-}%2B$WX_UBUNTU-$PY_TAG-$PY_TAG-linux_$(uname -m).whl"
