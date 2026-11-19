@@ -596,8 +596,9 @@ def setup_optimization(env):
         if fpu:
             env.CHIBIOS_BUILD_FLAGS += " USE_FPU_OPT='%s -fsingle-precision-constant'" % ' '.join(fpu)
         # these use frame size pragmas to protect small thread stacks,
-        # which are only checked when compiled without LTO
-        env.NO_LTO_SOURCES['AP_HAL_ChibiOS'] = ['UARTDriver.cpp', 'shared_dma.cpp']
+        # which are only checked when compiled without LTO. USB_Debug.cpp
+        # is placed by object name in common.ld
+        env.NO_LTO_SOURCES['AP_HAL_ChibiOS'] = ['UARTDriver.cpp', 'shared_dma.cpp', 'USB_Debug.cpp']
         if not env.BOOTLOADER:
             # AP_FWVersion::fwver is read from the firmware by external
             # tools, keep it when LTO folds away all reads of it
