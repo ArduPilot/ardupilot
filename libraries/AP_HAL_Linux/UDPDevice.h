@@ -14,6 +14,8 @@ public:
     virtual void set_speed(uint32_t speed) override;
     virtual ssize_t write(const uint8_t *buf, uint16_t n) override;
     virtual ssize_t read(uint8_t *buf, uint16_t n) override;
+    virtual bool is_datagram() const override { return true; }
+    virtual ssize_t read_datagrams(const ByteBuffer::IoVec *vec, uint8_t n_vec, uint32_t max_space) override;
 private:
     SocketAPM_native socket{true};
     const char *_ip;

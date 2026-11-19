@@ -393,6 +393,26 @@ void UARTDriver::_timer_tick(void)
     int ret;
     ByteBuffer::IoVec vec[2];
 
+    if (_device->is_datagram()) {
+        /*
+          a datagram has to be read in one go, so give both parts of the
+          free space to the device: at the end of the ring buffer the
+          first part can be just a few bytes long. An empty ring buffer
+          has get_size() - 1 bytes of space
+         */
+        const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
+        ret = n_vec > 0 ? _device->read_datagrams(vec, n_vec, _readbuf.get_size() - 1) : -1;
+        if (ret > 0) {
+            _readbuf.commit((unsigned)ret);
+
+            // update receive timestamp
+            _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
+            _receive_timestamp_idx ^= 1;
+        }
+        _in_timer = false;
+        return;
+    }
+
     const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
     for (int i = 0; i < n_vec; i++) {
         ret = _read_fd(vec[i].data, vec[i].len);
