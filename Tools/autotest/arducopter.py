@@ -9940,6 +9940,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.land_and_disarm()
 
+        # The driver moves to an angle with a P controller, so the gimbal lags the
+        # angle setpoint.  Use a long movement so that most of it is at the commanded rate.
+        self.mount_test_angle_at_rate(low_pitch=-80, high_pitch=20, no_limit_timeout=4.5)
+
     def MountTopotek(self):
         '''test Topotek gimbal using SIM_Topotek simulator'''
         self.set_parameters({
