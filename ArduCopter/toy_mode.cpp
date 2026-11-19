@@ -1008,7 +1008,11 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
  */
 void ToyMode::send_named_int(const char *name, int32_t value)
 {
-    mavlink_msg_named_value_int_send(MAVLINK_COMM_1, AP_HAL::millis(), name, value);
+    // the message copies its whole name field, so give it one rather
+    // than reading past the end of a shorter name
+    char buf[MAVLINK_MSG_NAMED_VALUE_INT_FIELD_NAME_LEN] {};
+    strncpy_noterm(buf, name, sizeof(buf));
+    mavlink_msg_named_value_int_send(MAVLINK_COMM_1, AP_HAL::millis(), buf, value);
 }
 
 /*
