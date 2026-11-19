@@ -354,6 +354,11 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     flowRngBelowAltMin = takeOffDetected && rangeIsEstimated && (range < ofDataDelayed.altMin);
     if (flowRngBelowAltMin) {
         really_fuse = false;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        // neither axis is tested down here, so neither is locked out: without this the first sample
+        // back above the focus altitude that fails one axis would count the dip as a lockout and reset
+        flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
+#endif
     }
 
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
