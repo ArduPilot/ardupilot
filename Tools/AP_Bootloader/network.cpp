@@ -735,6 +735,15 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         status_printf("Flash failed: write");
         failed = true;
     }
+    // erase the rest of flash, as the serial protocol does, so that
+    // nothing of an older, larger firmware is left after this one
+    while (!failed && flash_func_sector_size(erase_sec) != 0) {
+        if (!flash_func_erase_sector(erase_sec)) {
+            status_printf("Flash failed: erase of sector %u", unsigned(erase_sec));
+            failed = true;
+        }
+        erase_sec++;
+    }
     flash_set_keep_unlocked(false);
     if (failed) {
         // read the rest of the body so that the uploader gets our reply
