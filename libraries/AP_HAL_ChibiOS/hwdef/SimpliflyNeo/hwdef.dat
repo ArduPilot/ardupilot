@@ -145,7 +145,7 @@ PB8 I2C1_SCL I2C1
 PA8 I2C3_SCL I2C3
 PH8 I2C3_SDA I2C3
 
-# I2C4 - internal sensor bus: BMM150 magnetometer, BMP390 barometer,
+# I2C4 - internal sensor bus: BMM150 magnetometer, BMP390 or BMP581 barometer,
 # an SE050C1HQ1/Z01SCZ secure element, and a 24LC64T-I/MC EEPROM.
 PF14 I2C4_SCL I2C4
 PF15 I2C4_SDA I2C4
@@ -223,8 +223,10 @@ PF9 TIM14_CH1 TIM14 GPIO(77) ALARM
 # RC input
 PI5 TIM8_CH1 TIM8 RCININT PULLDOWN LOW
 
-# barometer: BMP390 on the internal I2C bus, handled by the BMP388 driver
+# barometer on the internal I2C bus: BMP390 on earlier boards, handled by
+# the BMP388 driver, and BMP581 on later boards
 BARO BMP388 I2C:0:0x77
+BARO BMP581 I2C:0:0x47
 
 # compass: BMM150 on the internal I2C bus.  ROTATION_NONE: the die is aligned
 # with the body FRD frame, and an internal compass ignores COMPASS_ORIENT.
@@ -258,6 +260,9 @@ define HAL_BATT_MONITOR_DEFAULT 21
 
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
+
+# safety switch disabled by default
+define BOARD_SAFETY_ENABLE_DEFAULT 0
 
 DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
 DMA_NOSHARE SPI3* TIM*
