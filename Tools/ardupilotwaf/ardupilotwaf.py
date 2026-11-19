@@ -9,7 +9,9 @@ from waflib.TaskGen import before_method, after_method, feature
 import os.path, os
 from pathlib import Path
 from collections import OrderedDict
+import re
 import subprocess
+import sys
 
 SOURCE_EXTS = [
     '*.S',
@@ -305,6 +307,30 @@ class upload_fw_blueos(Task.Task):
     def keyword(self):
           return "Uploading to BlueOS"
 
+def _cygwin_path(path, mode):
+    if not sys.platform.startswith('cygwin'):
+        return path
+    return subprocess.check_output(['cygpath', mode, path], text=True).strip()
+
+def host_path(path):
+    '''path reported by the toolchain, as seen by Cygwin Python'''
+    return _cygwin_path(path, '-u')
+
+def tool_path(path):
+    '''path to pass to the toolchain, which is a native Windows build on Cygwin'''
+    return _cygwin_path(path, '-m')
+
+# a Windows path in a linker map, which may contain spaces
+_MAP_DRIVE_PATH = re.compile(r'(?<!\S)[A-Za-z]:[\\/]')
+
+def _map_archive(line, end):
+    '''archive path ending at end in a linker map line'''
+    start = line.rfind(' ', 0, end) + 1
+    drives = list(_MAP_DRIVE_PATH.finditer(line, 0, end))
+    if drives and drives[-1].start() < start:
+        start = drives[-1].start()
+    return line[start:end]
+
 class check_elf_symbols(Task.Task):
     # Recheck an unchanged binary when the symbol policy or inspection tool changes.
     vars = ['SYMBOLS_BLACKLIST', 'CHECK_MALLOC_WRAPPING', 'CHECK_SYMBOLS',
@@ -371,18 +397,24 @@ class check_elf_symbols(Task.Task):
                 if archive + '(' in map_contents:
                     raise Errors.WafError("Forbidden toolchain archive in %s: %s" % (map_path, archive))
             found_picolibc = False
+            archive_paths = {}
+
+            def archive_path(line, end):
+                archive = _map_archive(line, end)
+                if archive not in archive_paths:
+                    archive_paths[archive] = os.path.realpath(host_path(archive))
+                return archive_paths[archive]
+
             for line in map_contents.splitlines():
                 libm_start = line.find('libm.a(')
                 if libm_start != -1:
-                    archive_start = line.rfind(' ', 0, libm_start) + 1
-                    archive = os.path.realpath(line[archive_start:libm_start + len('libm.a')])
+                    archive = archive_path(line, libm_start + len('libm.a'))
                     if not self.env.NEWLIB_LIBM or archive != os.path.realpath(self.env.NEWLIB_LIBM):
                         raise Errors.WafError("Unexpected libm archive in %s: %s" % (map_path, archive))
                 libc_start = line.find('libc.a(')
                 if libc_start == -1:
                     continue
-                archive_start = line.rfind(' ', 0, libc_start) + 1
-                archive = os.path.realpath(line[archive_start:libc_start + len('libc.a')])
+                archive = archive_path(line, libc_start + len('libc.a'))
                 if archive != picolibc_archive:
                     raise Errors.WafError("Unexpected libc archive in %s: %s" % (map_path, archive))
                 found_picolibc = True
@@ -462,7 +494,7 @@ def post_link(self):
         map_prefix = '-Wl,-Map,Linker.map,'
         self.link_task.env = self.link_task.env.derive()
         self.link_task.env.LINKFLAGS = [
-            flag.replace(map_prefix, '-Wl,-Map,%s,' % map_path)
+            flag.replace(map_prefix, '-Wl,-Map,%s,' % tool_path(map_path))
             for flag in self.link_task.env.LINKFLAGS
         ]
 
