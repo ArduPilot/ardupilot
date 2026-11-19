@@ -10549,6 +10549,60 @@ return update()
 
         self.fly_home_land_and_disarm()
 
+    def ReturnPathWatchdogResume(self):
+        '''watchdog reset during a return path rejoin resumes at the end of the leg'''
+        if self.gdb:
+            self.progress("######## Skipping ReturnPathWatchdogResume test under GDB")
+            return
+
+        self.set_parameters({
+            "BRD_OPTIONS": 1 << 0,  # enable watchdog
+            "RTL_AUTOLAND": 4,
+        })
+        self.reboot_sitl()
+
+        ex = None
+        try:
+            self.start_flying_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),     # 1
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 400, 50),  # 2
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START),  # 3
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 800, 50),  # 4
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 800, 50),    # 5
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 50),      # 6
+            ])
+            self.wait_current_waypoint(2, timeout=120)
+            self.change_mode('GUIDED')
+            # beside the leg from item 4 to item 5:
+            loc = self.offset_location_ne(self.home_position_as_location(), 400, 900)
+            loc.set_alt_m(50, AltFrame.ABOVE_HOME)
+            self.send_do_reposition(loc)
+            self.wait_location(loc, accuracy=200, height_accuracy=None, timeout=120)
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START)
+            self.wait_mode('AUTO')
+            # the rejoin point part way along the leg carries the leg start index
+            self.assert_current_waypoint(4)
+
+            old_bootcount = self.get_parameter('STAT_BOOTCNT')
+            self.progress("Forcing watchdog reset during the rejoin")
+            os.kill(self.sitl.pid, signal.SIGALRM)
+            self.detect_and_handle_reboot(old_bootcount)
+            self.wait_statustext("WDG:")
+            self.context_collect('STATUSTEXT')
+            self.change_mode('AUTO')
+            self.wait_statustext("Watchdog: resume WP 5", timeout=5, check_context=True)
+            self.assert_current_waypoint(5)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        # the watchdog reset follows this SITL process, so start a new one,
+        # see WatchdogHome
+        self.customise_SITL_commandline([])
+
+        if ex is not None:
+            raise ex
+
     def MAV_CMD_SET_HAGL(self):
         '''test height above ground from MAV_CMD_SET_HAGL is used for the landing flare'''
         self.start_flying_simple_relhome_mission([
@@ -11158,6 +11212,7 @@ return update()
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.GuidedOnlyOffboardControl,
             self.MAV_CMD_DO_RETURN_PATH_START,
+            self.ReturnPathWatchdogResume,
             self.MAV_CMD_SET_HAGL,
             self.MAV_CMD_DO_PARACHUTE_actions,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
