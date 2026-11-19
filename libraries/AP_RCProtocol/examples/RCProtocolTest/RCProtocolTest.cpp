@@ -61,6 +61,7 @@ protected:
 #define RC_CHANNEL_SUBCLASS RC_Channel_Example
 
 #include <RC_Channel/RC_Channels_VarInfo.h>
+#include <AP_Common/ExampleFirmwareVersion.h>
 
 static RC_Channels_Example rchannels;
 static AP_SerialManager serial_manager;
