@@ -207,8 +207,10 @@ define HAL_BARO_ALLOW_INIT_NO_BARO 1
 define AP_GCS_UPDATE_RATE_HZ 25
 
 # The rate controller thread runs on core1 with a deeper call chain than the
-# 1536 byte default allows.
-define AP_RATE_THREAD_STACK_SIZE 5120
+# 1536 byte default allows. Static analysis (ArduPilot/ardupilot#34623) puts
+# its worst case at 1.6 KB plus 320 bytes of saved context; it peaked at
+# 760 bytes armed on the RPI_UAVFC bench.
+define AP_RATE_THREAD_STACK_SIZE 3072
 
 # 32-bit timestamps in the rcout cycle. The 64-bit default puts micros64() and
 # the wrap arithmetic around it on core1's dshot path, where PC sampling found
