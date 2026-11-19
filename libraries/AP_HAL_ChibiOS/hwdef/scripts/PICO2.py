@@ -55,6 +55,17 @@ mcu = {
         # than one update of target motion. The default gate is the declared
         # FLASH_SIZE_KB rather than the FPU, which is why these boards had it.
         'HAL_WITH_POSTYPE_DOUBLE' : '0',
+        # Scripting with the memory-class defaults (100 KB heap, 80 KB log
+        # buffer) left 36 KB free armed on RPI_UAVFC. LED_roll.lua used 13 KB
+        # of Lua heap. A 50 KB heap, and a 64 KB log buffer while scripting is
+        # enabled and LOG_FILE_BUFSIZE is unset, leave room for small scripts.
+        # LED_roll.lua peaked at 4 KB of the scripting thread's 17 KB stack.
+        # Recursion through pcall (~400 B a level) or gsub callbacks (~850 B)
+        # overflows 10 KB at ~15 or ~7 levels, 17 KB at ~34 or ~16: Lua's
+        # 200-level limit protects neither.
+        'SCRIPTING_HEAP_SIZE' : '(50*1024)',
+        'SCRIPTING_STACK_SIZE' : '(10*1024)',
+        'HAL_LOGGING_FILE_BUFSIZE_SCRIPTING' : '64',
     },
     'CORTEX'    : 'cortex-m33',
 # Use fpv5-sp-d16 with hard ABI: - hard: float args go in FPU registers directly (eliminates the int-register round-trip that softfp incurs per float call).
