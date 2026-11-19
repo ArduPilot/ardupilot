@@ -25,6 +25,10 @@
 #error "Don't include Socket.hpp directly"
 #endif
 
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+struct iovec;
+#endif
+
 #define IP4_STR_LEN 16
 
 class SOCKET_CLASS_NAME {
@@ -62,6 +66,11 @@ public:
     ssize_t sendto(const void *buf, size_t size, const char *address, uint16_t port);
     ssize_t sendto(const void *buf, size_t size, uint32_t address, uint16_t port);
     ssize_t recv(void *pkt, size_t size, uint32_t timeout_ms);
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+    // receive without waiting into iovcnt buffers, the first one first.
+    // On a datagram socket this is one datagram, cut if it does not fit
+    ssize_t recv_iov(struct iovec *iov, int iovcnt);
+#endif
 
     // return the IP address and port of the last received packet
     void last_recv_address(const char *&ip_addr, uint16_t &port) const;
@@ -132,6 +141,9 @@ private:
     bool pending_connect;
 
     void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
+
+    // common part of recv() and recv_iov()
+    ssize_t finish_recv(ssize_t ret, const uint32_t in_addr[4]);
 };
 
 #endif // AP_NETWORKING_SOCKETS_ENABLED
