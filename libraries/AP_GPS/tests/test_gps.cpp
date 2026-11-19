@@ -18,6 +18,8 @@
 
 #include <AP_GPS/AP_GPS_NMEA.h>
 #include <AP_GPS/AP_GPS_Blended.h>
+#include <memory>
+#include <string>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
@@ -28,6 +30,37 @@ public:
     {
         return AP_GPS_NMEA::_parse_decimal_100(p);
     }
+
+    // drivers are always heap allocated, which zeroes them; a stack
+    // instance would leave members like _last_KSXT_pos_ms uninitialised
+    static AP_GPS_NMEA *make(AP_GPS::GPS_State &state);
+
+    // feed a sentence body, adding '$', the checksum and line ending
+    static void feed(AP_GPS_NMEA &nmea, const std::string &body, bool with_checksum=true)
+    {
+        uint8_t cs = 0;
+        for (char c : body) {
+            cs ^= uint8_t(c);
+        }
+        char tail[8];
+        snprintf(tail, sizeof(tail), "*%02X\r\n", cs);
+        const std::string s = "$" + body + (with_checksum ? tail : "\r\n");
+        for (char c : s) {
+            nmea._decode(c);
+        }
+    }
+    static const double *ksxt_fields(const AP_GPS_NMEA &nmea) { return nmea._ksxt.fields; }
+    static bool is_rmc(const AP_GPS_NMEA &nmea) { return nmea._sentence_type == AP_GPS_NMEA::_GPS_SENTENCE_RMC; }
+    // the RMC term number that lands on a given GGA term in the dispatch switch
+    static uint16_t rmc_term_aliasing_gga(uint8_t gga_term)
+    {
+        return AP_GPS_NMEA::_GPS_SENTENCE_GGA - AP_GPS_NMEA::_GPS_SENTENCE_RMC + gga_term;
+    }
+    static std::string phd_bytes(const AP_GPS_NMEA &nmea) { return std::string((const char *)&nmea._phd, sizeof(nmea._phd)); }
+    static std::string ksxt_bytes(const AP_GPS_NMEA &nmea) { return std::string((const char *)&nmea._ksxt, sizeof(nmea._ksxt)); }
+#if AP_GPS_NMEA_UNICORE_ENABLED
+    static std::string agrica_bytes(const AP_GPS_NMEA &nmea) { return std::string((const char *)&nmea._agrica, sizeof(nmea._agrica)); }
+#endif
 };
 
 TEST(AP_GPS_NMEA, parse_decimal_100)
@@ -70,8 +103,9 @@ TEST(AP_GPS_NMEA, parse_decimal_100)
     ASSERT_EQ(-100, test.parse_decimal_100("-1"));
 }
 
-#if GPS_MAX_RECEIVERS > 1
 static AP_GPS gps;
+
+#if GPS_MAX_RECEIVERS > 1
 
 class AP_GPS_Test
 {
@@ -171,6 +205,112 @@ TEST(AP_GPS, blended_fix_priority)
     AP_GPS_Test::teardown();
 }
 #endif
+
 #endif
+
+// NMEA parser tests don't need more than one receiver
+static AP_GPS::Params nmea_params;
+
+AP_GPS_NMEA *AP_GPS_NMEA_Test::make(AP_GPS::GPS_State &state)
+{
+    AP_GPS_NMEA *nmea = NEW_NOTHROW AP_GPS_NMEA(gps, nmea_params, state, nullptr);
+    EXPECT_NE(nullptr, nmea);
+    return nmea;
+}
+
+static const char *KSXT_21_FIELDS = "KSXT,20211016083433.00,116.31296102,39.95817066,49.4911,223.57,-11.32,330.19,0.024,,1,3,28,27,,,,-0.012,0.021,0.020,,";
+
+TEST(AP_GPS_NMEA, ksxt_fields)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+
+    AP_GPS_NMEA_Test::feed(nmea, KSXT_21_FIELDS);
+    const double *f = AP_GPS_NMEA_Test::ksxt_fields(nmea);
+    EXPECT_NEAR(116.31296102, f[1], 1e-4);
+    EXPECT_NEAR(39.95817066, f[2], 1e-4);
+    EXPECT_NEAR(0.020, f[18], 1e-4);
+
+#if AP_GPS_NMEA_UNICORE_ENABLED
+    // a 22nd field must not be written past the end of _ksxt.fields
+    const std::string agrica = AP_GPS_NMEA_Test::agrica_bytes(nmea);
+    AP_GPS_NMEA_Test::feed(nmea, std::string(KSXT_21_FIELDS) + ",12345.678");
+    EXPECT_EQ(agrica, AP_GPS_NMEA_Test::agrica_bytes(nmea));
+#endif
+}
+
+// a sentence with many terms must not alias into the fields of another
+// sentence type (issue #35181)
+TEST(AP_GPS_NMEA, long_sentences_do_not_alias)
+{
+    const char *heads[] = { "GPRMC", "GPGGA", "GPVTG", "GPHDT", "PHD", "GPTHS", "KSXT" };
+    for (const char *head : heads) {
+        for (uint16_t terms = 1; terms <= 300; terms++) {
+            AP_GPS::GPS_State state {};
+            std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+            AP_GPS_NMEA &nmea = *nmea_ptr;
+            const std::string phd = AP_GPS_NMEA_Test::phd_bytes(nmea);
+            const std::string ksxt = AP_GPS_NMEA_Test::ksxt_bytes(nmea);
+#if AP_GPS_NMEA_UNICORE_ENABLED
+            const std::string agrica = AP_GPS_NMEA_Test::agrica_bytes(nmea);
+#endif
+            std::string body = head;
+            for (uint16_t i = 0; i < terms; i++) {
+                body += ",7";
+            }
+            // fields are stored before the checksum is checked
+            AP_GPS_NMEA_Test::feed(nmea, body, false);
+            if (strcmp(head, "PHD") != 0) {
+                EXPECT_EQ(phd, AP_GPS_NMEA_Test::phd_bytes(nmea)) << head << " terms=" << terms;
+            }
+            if (strcmp(head, "KSXT") != 0) {
+                EXPECT_EQ(ksxt, AP_GPS_NMEA_Test::ksxt_bytes(nmea)) << head << " terms=" << terms;
+            }
+#if AP_GPS_NMEA_UNICORE_ENABLED
+            EXPECT_EQ(agrica, AP_GPS_NMEA_Test::agrica_bytes(nmea)) << head << " terms=" << terms;
+#endif
+        }
+    }
+}
+
+TEST(AP_GPS_NMEA, long_rmc_keeps_position)
+{
+    const std::string rmc = "GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W";
+
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+    AP_GPS_NMEA_Test::feed(nmea, rmc);
+    const int32_t lat = state.location.lat;
+    const int32_t lng = state.location.lng;
+    EXPECT_NE(0, lat);
+
+    // pad with empty terms up to the RMC terms that alias onto GGA
+    // latitude, N/S and longitude (GGA terms 2..4)
+    std::string body = rmc;
+    for (uint16_t i = 12; i < AP_GPS_NMEA_Test::rmc_term_aliasing_gga(2); i++) {
+        body += ",";
+    }
+    body += ",1234.000,S,05000.000";
+    AP_GPS_NMEA_Test::feed(nmea, body);
+    EXPECT_EQ(lat, state.location.lat);
+    EXPECT_EQ(lng, state.location.lng);
+}
+
+TEST(AP_GPS_NMEA, term_number_does_not_wrap)
+{
+    AP_GPS::GPS_State state {};
+    std::unique_ptr<AP_GPS_NMEA> nmea_ptr {AP_GPS_NMEA_Test::make(state)};
+    AP_GPS_NMEA &nmea = *nmea_ptr;
+
+    // 65536 terms would wrap a uint16_t term number back to 0 and
+    // re-detect the sentence type from the next term
+    std::string body = "GPRMC";
+    body.append(65536, ',');
+    body += KSXT_21_FIELDS;
+    AP_GPS_NMEA_Test::feed(nmea, body, false);
+    EXPECT_TRUE(AP_GPS_NMEA_Test::is_rmc(nmea));
+}
 
 AP_GTEST_MAIN()
