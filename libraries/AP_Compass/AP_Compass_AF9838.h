@@ -32,11 +32,11 @@
 class AP_Compass_AF9838 : public AP_Compass_Backend
 {
 public:
-    AP_Compass_AF9838(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    AP_Compass_AF9838(AP_HAL::Device &dev,
                       bool force_external,
                       enum Rotation rotation);
 
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::Device &dev,
                                      bool force_external,
                                      enum Rotation rotation);
 
@@ -44,7 +44,7 @@ private:
     bool init();
     void timer();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 
     bool _force_external;
     enum Rotation _rotation;
