@@ -38,17 +38,20 @@ bool NavEKF3_core::healthy(void) const
 }
 
 /*
-  return true when on the ground with more than 1 m of filtered height
-  innovation. onGround only means disarmed, so a vehicle disarmed in the air
-  is excluded while it falls freely, with over 0.5 g of filtered kinematic
-  acceleration down, and the re-arm that could recover it is not refused.
-  Aided modes are excluded while a measured vertical velocity agrees with
-  the state: the vertical velocity is then known good, and baro
-  disturbances on the ground against it are a source of false positives.
+  return true when disarmed on the ground with more than 1 m of filtered
+  height innovation. It is a check before arming: a Copter that reports it
+  has landed is on the ground while armed too, and there a height error
+  would fail healthy() and allow a lane switch with the motors running. A
+  vehicle disarmed in the air is excluded while it falls freely, with over
+  0.5 g of filtered kinematic acceleration down, and the re-arm that could
+  recover it is not refused. Aided modes are excluded while a measured
+  vertical velocity agrees with the state: the vertical velocity is then
+  known good, and baro disturbances on the ground against it are a source
+  of false positives.
 */
 bool NavEKF3_core::onGroundHgtError(void) const
 {
-    if (!onGround || (velDotNEDfilt.z > 0.5f * GRAVITY_MSS)) {
+    if (!onGround || motorsArmed || (velDotNEDfilt.z > 0.5f * GRAVITY_MSS)) {
         return false;
     }
     return ((PV_AidingMode == AID_NONE) || !measuredVertVelAgrees()) && (fabsF(hgtInnovFiltState) > GND_HGT_ERR_LIMIT);
