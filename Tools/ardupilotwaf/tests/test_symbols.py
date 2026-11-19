@@ -3,6 +3,7 @@
 
 import importlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -157,6 +158,47 @@ def test_chibios_picolibc_archive_check(checker, monkeypatch, tmp_path, map_cont
     task.env.PICOLIBC_LIB = "/build/modules/picolibc/libc.a"
     task.env.CHECK_MALLOC_WRAPPING = False
     task.env.SYMBOLS_BLACKLIST = []
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "00001000 T main\n")
+    if error:
+        with pytest.raises(waf.Errors.WafError, match=error):
+            task.run()
+    else:
+        task.run()
+
+
+def _fake_cygwin_path(path, mode):
+    # cygpath -u for the Windows paths a native toolchain writes in its map
+    assert mode == "-u"
+    m = re.match(r"([A-Za-z]):[\\/](.*)", path)
+    if m is None:
+        return path
+    return "/cygdrive/%s/%s" % (m.group(1).lower(), m.group(2).replace("\\", "/"))
+
+
+@pytest.mark.parametrize("map_contents, error", [
+    ("C:/Users/me/My Build/modules/picolibc/libc.a(strtod.o)\n"
+     "c:\\program files (x86)\\arm\\lib\\libm.a(sin.o)\n", None),
+    ("strtod                                            "
+     "C:/Users/me/My Build/modules/picolibc/libc.a(strtod.o)\n", None),
+    ("c:/program files (x86)/arm/lib/libc.a(strtod.o)\n", "Unexpected libc archive"),
+    ("C:/Users/me/My Build/modules/picolibc/libc.a(strtod.o)\n"
+     "d:/other toolchain/lib/libm.a(sin.o)\n", "Unexpected libm archive"),
+])
+def test_chibios_picolibc_archive_check_windows_paths(checker, monkeypatch, tmp_path, map_contents, error):
+    waf, task = checker
+    elf = tmp_path / "build" / "bin" / "firmware"
+    elf.parent.mkdir(parents=True)
+    map_path = tmp_path / "firmware.map"
+    map_path.write_text(map_contents)
+    task.inputs = [SimpleNamespace(abspath=lambda: str(elf))]
+    task.env.PICOLIBC = True
+    task.env.PICOLIBC_MODE = "chibios"
+    task.env.PICOLIBC_LIB = "/cygdrive/c/Users/me/My Build/modules/picolibc/libc.a"
+    task.env.PICOLIBC_MAP_PATH = str(map_path)
+    task.env.NEWLIB_LIBM = "/cygdrive/c/program files (x86)/arm/lib/libm.a"
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.SYMBOLS_BLACKLIST = []
+    monkeypatch.setattr(waf, "_cygwin_path", _fake_cygwin_path)
     monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "00001000 T main\n")
     if error:
         with pytest.raises(waf.Errors.WafError, match=error):
