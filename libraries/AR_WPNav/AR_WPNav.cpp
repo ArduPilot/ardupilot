@@ -623,20 +623,21 @@ bool AR_WPNav::calc_arc_geometry(const Location& origin, const Location& dest, f
 
 // returns the angle of the arc from origin to dest that remains to be
 // driven from the vehicle's stopping point, measured about the arc's
-// centre.  Returns the full arc angle if it cannot be determined or
-// the vehicle is no longer on the arc, and zero if the stopping point
-// is past the destination along the arc.  Used when an interrupted
-// arc command is started again, so the arc is not re-planned with
-// its full angle from the stopping point
+// centre.  Returns zero if it cannot be determined or the vehicle is
+// no longer on the arc, so the caller plans a straight leg to the
+// destination instead of re-planning the arc with its full angle
+// from the stopping point; zero is also returned if the stopping
+// point is past the destination along the arc.  Used when an
+// interrupted arc command is started again
 float AR_WPNav::get_remaining_arc_angle_rad(const Location& origin, const Location& dest, float arc_rad)
 {
     Location stopping_loc;
     if (!get_stopping_location(stopping_loc)) {
-        return arc_rad;
+        return 0.0f;
     }
     float remaining_rad;
     if (!get_remaining_arc_angle_rad_from(origin, dest, arc_rad, stopping_loc, remaining_rad)) {
-        return arc_rad;
+        return 0.0f;
     }
     return remaining_rad;
 }

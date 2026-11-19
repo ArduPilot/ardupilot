@@ -74,9 +74,9 @@ public:
 
     // returns the angle of the arc from origin to dest that remains to
     // be driven from the vehicle's stopping point, measured about the
-    // arc's centre.  Returns the full arc angle if it cannot be
-    // determined or the vehicle is no longer on the arc, and zero if
-    // the stopping point is past the destination along the arc
+    // arc's centre.  Returns zero if it cannot be determined or the
+    // vehicle is no longer on the arc, and if the stopping point is
+    // past the destination along the arc
     float get_remaining_arc_angle_rad(const Location& origin, const Location& dest, float arc_rad);
 
     // for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
