@@ -27276,6 +27276,7 @@ return update, 1000
             self.NavControllerOutputAltError,
             self.AmslAltPreservedOnRearmAtDifferentElevation,
             self.HeightDatumKeptOnMidairRearm,
+            self.MidairRearmLandedAtRest,
             self.BaroDriftClearedAfterMidairDisarm,
         ])
         return ret
@@ -27688,6 +27689,65 @@ return update, 1000
                 break
         if not landed:
             raise NotAchievedException("the EKF was not told of the landing after the re-armed flight")
+
+    def MidairRearmLandedAtRest(self):
+        '''a copter re-armed in the air that falls to rest is reported landed while still armed'''
+        # A re-arm in the air leaves land_complete set from the disarm until throttle clears it, and the
+        # vehicle is not reported landed while that disarm lasts. Left at zero throttle it falls to the
+        # ground armed, and once it is at rest the EKF must be told it has landed. DISARM_DELAY 0 keeps it
+        # armed, so only the armed land detector can tell it
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "LOG_FILE_BUFSIZE": 32767,
+            "DISARM_DELAY": 0,
+        })
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+        self.takeoff(30, mode='GUIDED')
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        self.disarm_vehicle(force=True)
+        self.assert_receive_message('LOCAL_POSITION_NED', condition='LOCAL_POSITION_NED.vz > 3', timeout=10)
+        self.arm_vehicle()
+        rearm_us = self.get_sim_time_cached() * 1e6
+        self.wait_statustext("SIM Hit ground", check_context=True, timeout=30)
+        hit_us = self.get_sim_time_cached() * 1e6
+        self.delay_sim_time(5, "lie at rest, armed at zero throttle")
+        if not self.armed():
+            raise NotAchievedException("disarmed on the ground; the armed land detector was not tested")
+        disarm_us = self.get_sim_time_cached() * 1e6
+        self.disarm_vehicle(force=True)
+
+        # the landed flag the EKF is given, from the re-arm to the disarm. RFRN has no time of its own, so
+        # each EKF sample is taken as seeing the flag last recorded before it
+        dfreader = self.dfreader_for_current_onboard_log()
+        landed = None
+        landed_us = None
+        samples = 0
+        while True:
+            m = dfreader.recv_match(type=['RFRN', 'XKF1'])
+            if m is None:
+                break
+            if m.get_type() == 'RFRN':
+                landed = m.Flags2 & 1
+                continue
+            if m.C != 0 or landed is None or m.TimeUS < rearm_us + 0.1e6 or m.TimeUS > disarm_us:
+                continue
+            samples += 1
+            if landed and landed_us is None:
+                landed_us = m.TimeUS
+        if samples < 10:
+            raise NotAchievedException("only %u EKF samples between the re-arm and the disarm" % samples)
+        if landed_us is None:
+            raise NotAchievedException("the EKF was not told the re-armed vehicle had landed while it lay armed")
+        self.progress("landed reported %.1f s after hitting the ground" % ((landed_us - hit_us) * 1e-6))
+        # one second of rest is what the land detector needs, and it must not come while still falling
+        if landed_us < hit_us:
+            raise NotAchievedException("the EKF was told the vehicle had landed while it fell")
+        if landed_us > hit_us + 3e6:
+            raise NotAchievedException("landed reported %.1f s after hitting the ground" %
+                                       ((landed_us - hit_us) * 1e-6))
 
     def BaroDriftClearedAfterMidairDisarm(self):
         '''a ground arm after a mid-air disarm must still clear baro drift'''
