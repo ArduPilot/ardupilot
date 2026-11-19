@@ -73,18 +73,19 @@ void Siyi_ZT30::handle_message(const PackedMessage<GimbalAttitudeRequest> &reque
     Vector3f delta_angles;
     Vector3f delta_velocities;
     gimbal.get_deltas(delta_angles, delta_velocities, delta_time_us);
+    // the message order is yaw, pitch, roll and yaw is positive to the left
     const Vector3<int16_t> rates_decidegrees(
-        (delta_angles.x * RAD_TO_DEG * 1e6 / delta_time_us),
-        delta_angles.y * RAD_TO_DEG * 1e6 / delta_time_us,
-        delta_angles.z * RAD_TO_DEG * 1e6 / delta_time_us
+        -delta_angles.z * 10 * RAD_TO_DEG * 1e6 / delta_time_us,
+        delta_angles.y * 10 * RAD_TO_DEG * 1e6 / delta_time_us,
+        delta_angles.x * 10 * RAD_TO_DEG * 1e6 / delta_time_us
     );
 
     Vector3f joint_angles;
     gimbal.get_joint_angles(joint_angles);
     const Vector3<int16_t> joint_angles_decidegrees(
-        joint_angles.x * 10 * RAD_TO_DEG,
+        -joint_angles.z * 10 * RAD_TO_DEG,
         joint_angles.y * 10 * RAD_TO_DEG,
-        joint_angles.z * 10 * RAD_TO_DEG
+        joint_angles.x * 10 * RAD_TO_DEG
     );
 
     const PackedMessage<GimbalAttitude> response{
@@ -138,13 +139,31 @@ void Siyi_ZT30::handle_message(const PackedMessage<AcquireGimbalConfigInfo> &req
 
 void Siyi_ZT30::handle_message(const PackedMessage<GimbalRotation> &request)
 {
-    const float max_demanded_yaw_rate_rad = 2*M_PI;
-    const float max_demanded_pitch_rate_rad = 2*M_PI;
+    // the ArduPilot driver assumes that 100% is 90 deg/s
+    const float max_demanded_yaw_rate_rad = radians(90);
+    const float max_demanded_pitch_rate_rad = radians(90);
 
+    const float pitch_rate_rad = max_demanded_pitch_rate_rad * request.msg.pitch_rate_pct * 0.01f;
+    const float yaw_rate_rad = max_demanded_yaw_rate_rad * request.msg.yaw_rate_pct * 0.01f;
+
+    // The message gives the rates of the pitch and yaw angles. Their frame
+    // depends on the motion mode, which this simulator ignores: it reads them
+    // as joint rates, relative to the vehicle. The gimbal model takes rates
+    // about the roll, pitch and yaw axes of the gimbal body, so convert the
+    // joint rates with the 312 Euler joint angles.
+    Vector3f joint_angles;
+    gimbal.get_joint_angles(joint_angles);
+    const float roll_rad = joint_angles.x;
+    const float pitch_rad = joint_angles.y;
+    // The rates stay constant until the next message, while the angles change.
+    // This adds a small roll error in each movement in pitch and yaw together.
+    // A real gimbal holds the roll at zero, so add a roll rate that removes
+    // the error.
+    const float roll_rate_rad = -5 * roll_rad;
     const Vector3f demanded_rates{
-        max_demanded_yaw_rate_rad * request.msg.yaw_rate_pct * 0.01f,
-        max_demanded_pitch_rate_rad * request.msg.pitch_rate_pct * 0.01f,
-        0
+        roll_rate_rad * cosf(pitch_rad) - yaw_rate_rad * cosf(roll_rad) * sinf(pitch_rad),
+        pitch_rate_rad + yaw_rate_rad * sinf(roll_rad),
+        roll_rate_rad * sinf(pitch_rad) + yaw_rate_rad * cosf(roll_rad) * cosf(pitch_rad)
     };
     gimbal.set_demanded_rates(demanded_rates);
 
