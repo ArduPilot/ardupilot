@@ -46,7 +46,8 @@ static int posix_fopen_modes_to_open(const char *mode)
         return flag;
     }
     if (modecmp(mode,"r+") || modecmp(mode, "r+b" ) || modecmp(mode, "rb+" )) {
-        flag = O_RDWR | O_TRUNC;
+        // read and write an existing file, keeping its contents
+        flag = O_RDWR;
         return flag;
     }
     if (modecmp(mode,"w") || modecmp(mode,"wb")) {
