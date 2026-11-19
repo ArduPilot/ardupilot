@@ -449,9 +449,11 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board CubeOrangePlus \
              --extra-hwdef=Tools/autotest/mavlink-deprecations.hwdef
         $waf clean
-        $waf copter plane rover sub antennatracker blimp
-        # heli shares objects with copter, so build it separately:
-        $waf heli
+        # each vehicle compiles the shared libraries with its own feature
+        # defines into the same build directory, so build them one at a time
+        for v in copter plane rover sub antennatracker blimp heli; do
+            $waf "$v"
+        done
         continue
     fi
 
