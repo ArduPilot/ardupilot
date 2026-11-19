@@ -150,12 +150,14 @@ const char* AP_RCProtocol_CRSF::get_protocol_string(ProtocolType protocol) const
     }
 }
 
-// return the link rate as defined by the LinkStatistics
+// return the link rate as defined by the LinkStatistics. A Tracer leaves its
+// rf_mode at 50Hz whatever its rate, so for a Tracer return the RF frame rate
+// from its TX link statistics, or 250Hz until it has reported one
 uint16_t AP_RCProtocol_CRSF::get_link_rate(ProtocolType protocol) const {
     if (protocol == ProtocolType::PROTOCOL_ELRS) {
         return RF_MODE_RATES[_link_status.rf_mode + RFMode::CRSF_RF_MAX_MODES];
     } else if (protocol == ProtocolType::PROTOCOL_TRACER) {
-        return 250;
+        return _tx_frame_rate_hz > 0 ? _tx_frame_rate_hz : 250;
     } else {
         return RF_MODE_RATES[_link_status.rf_mode];
     }
@@ -423,7 +425,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             process_link_stats_rx_frame((uint8_t*)&_frame.payload);
             break;
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
-            process_link_stats_tx_frame((uint8_t*)&_frame.payload);
+            process_link_stats_tx_frame((uint8_t*)&_frame.payload, _frame.length - 2U);
             break;
         default:
             break;
@@ -647,8 +649,8 @@ void AP_RCProtocol_CRSF::process_link_stats_rx_frame(const void* data)
     }
 }
 
-// process link statistics to get TX RSSI
-void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
+// process TX link statistics to get TX RSSI and the RF frame rate
+void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data, uint8_t payload_length)
 {
     const LinkStatisticsTXFrame* link = (const LinkStatisticsTXFrame*)data;
 
@@ -657,6 +659,9 @@ void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
     } else {
         _link_status.rssi = link->rssi_percent * 255.0f * 0.01f;
     }
+
+    // take fps only from a frame that carries it, not a byte left by an earlier frame
+    _tx_frame_rate_hz = payload_length >= sizeof(LinkStatisticsTXFrame) ? link->fps * 10U : 0;
 }
 
 // start the uart if we have one

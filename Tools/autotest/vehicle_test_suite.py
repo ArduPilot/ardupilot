@@ -1289,6 +1289,22 @@ class LTM(Telem):
 
 
 class CRSF(Telem):
+    # frame types, addresses and custom telemetry sub-types
+    FRAMETYPE_LINK_STATISTICS = 0x14
+    FRAMETYPE_RC_CHANNELS_PACKED = 0x16
+    FRAMETYPE_LINK_STATISTICS_TX = 0x1D
+    FRAMETYPE_DEVICE_PING = 0x28
+    FRAMETYPE_DEVICE_INFO = 0x29
+    FRAMETYPE_AP_CUSTOM_TELEM = 0x80
+    CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH = 0xF0
+    CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH = 0xF2
+    # frames sent to the flight controller start with its address
+    ADDRESS_FLIGHT_CONTROLLER = 0xC8
+    ADDRESS_RECEIVER = 0xEC
+    # a frame is at most 64 bytes, and its length byte counts all but the
+    # sync and length bytes
+    MAX_FRAME_LENGTH = 62
+
     def __init__(self, destination_address):
         super(CRSF, self).__init__(destination_address)
 
@@ -1304,6 +1320,51 @@ class CRSF(Telem):
 
     def write_data_id(self, dataid):
         self.do_write(self.data_id_map[dataid])
+
+    @staticmethod
+    def crc8_dvb_s2(data):
+        crc = 0
+        for b in data:
+            crc ^= b
+            for _ in range(8):
+                crc = ((crc << 1) ^ 0xD5) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+        return crc
+
+    def write_frame(self, frame_type, payload):
+        '''send a frame to the flight controller'''
+        body = bytearray([frame_type]) + bytearray(payload)
+        self.do_write(bytearray([self.ADDRESS_FLIGHT_CONTROLLER, len(body) + 1]) + body +
+                      bytearray([self.crc8_dvb_s2(body)]))
+
+    def write_extended_frame(self, frame_type, destination, origin, payload):
+        '''send a frame carrying a destination and origin address'''
+        self.write_frame(frame_type, bytearray([destination, origin]) + bytearray(payload))
+
+    def write_rc_frame(self, value=992):
+        '''send 16 channels of packed 11-bit RC values'''
+        bits = 0
+        for i in range(16):
+            bits |= value << (11 * i)
+        self.write_frame(self.FRAMETYPE_RC_CHANNELS_PACKED, bits.to_bytes(22, 'little'))
+
+    def read_frames(self):
+        '''return a list of (type, payload) for the complete frames received'''
+        self.buffer += self.do_read()
+        frames = []
+        while len(self.buffer) >= 2:
+            length = self.buffer[1]
+            if length < 2 or length > self.MAX_FRAME_LENGTH:
+                self.buffer = self.buffer[1:]
+                continue
+            if len(self.buffer) < length + 2:
+                break
+            frame = self.buffer[2:length+2]
+            if self.crc8_dvb_s2(frame[:-1]) != frame[-1]:
+                self.buffer = self.buffer[1:]
+                continue
+            frames.append((frame[0], frame[1:-1]))
+            self.buffer = self.buffer[length+2:]
+        return frames
 
     def progress_tag(self):
         return "CRSF"
@@ -16598,6 +16659,107 @@ switch value'''
         self.reboot_sitl()
         if ex is not None:
             raise ex
+
+    def CRSFLinkRate(self):
+        '''Test the link rate of a CRSF receiver that reports its RF frame rate'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 23, # serial5 is RCIN input
+            "RC_PROTOCOLS": 512,    # CRSF only, so SITL's own RC input doesn't take over
+            "RC_OPTIONS": 256,      # CRSF custom telemetry, packed according to the link rate
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port # serial5 is a localhost port the receiver connects to
+        ])
+        self.context_collect('STATUSTEXT')
+
+        # a receiver that leaves rf_mode at 1 (50Hz) in its link statistics
+        # and reports its RF frame rate, in tens of Hz, in its TX link statistics
+        frame_rate_hz = 670
+        rf_mode_50hz = 1
+        link_statistics = [50, 50, 100, 10, 0, rf_mode_50hz, 3, 50, 100, 10]
+        link_statistics_tx = [30, 100, 100, 10, 13, frame_rate_hz // 10]
+
+        def device_info(name, firmware_major, firmware_minor):
+            # name, serial number, hardware id, software id ending in the
+            # firmware version, field count and parameter version
+            return list(name.encode()) + [0] * 11 + [firmware_major, firmware_minor, 0, 0]
+
+        def link_rate_messages():
+            return [m.text for m in self.context_collection('STATUSTEXT') if "Link rate" in m.text]
+
+        def connect_receiver():
+            # sim time moves on at each SYSTEM_TIME, and an RC frame goes with
+            # each step; set after every boot, as a reboot drops the rate
+            self.context_set_message_rate_hz('SYSTEM_TIME', 50)
+            crsf = CRSF(("127.0.0.1", port))
+            tstart = self.get_sim_time_cached()
+            while not crsf.connect():
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("Could not connect to the CRSF port")
+                self.drain_mav()
+            return crsf
+
+        def act_as_receiver(crsf, info, done, what, timeout=30):
+            '''send RC frames and both link statistics and answer the version
+            ping until done(sub_types) returns true, where sub_types are the
+            custom telemetry sub-types received.  This is not wait_statustext
+            because the receiver would be taken as lost without RC frames'''
+            sub_types = []
+            last_rc_frame_time = None
+            last_statistics_time = None
+            tstart = self.get_sim_time_cached()
+            while not done(sub_types):
+                now = self.get_sim_time_cached()
+                if now - tstart > timeout:
+                    raise NotAchievedException("No %s, got %s" % (what, link_rate_messages()))
+                if now != last_rc_frame_time:
+                    crsf.write_rc_frame()
+                    last_rc_frame_time = now
+                if last_statistics_time is None or now - last_statistics_time >= 0.1:
+                    crsf.write_frame(CRSF.FRAMETYPE_LINK_STATISTICS, link_statistics)
+                    crsf.write_frame(CRSF.FRAMETYPE_LINK_STATISTICS_TX, link_statistics_tx)
+                    last_statistics_time = now
+                for (frame_type, payload) in crsf.read_frames():
+                    if frame_type == CRSF.FRAMETYPE_DEVICE_PING and payload[0] == CRSF.ADDRESS_RECEIVER:
+                        crsf.write_extended_frame(CRSF.FRAMETYPE_DEVICE_INFO, CRSF.ADDRESS_FLIGHT_CONTROLLER,
+                                                  CRSF.ADDRESS_RECEIVER, info)
+                    elif frame_type == CRSF.FRAMETYPE_AP_CUSTOM_TELEM:
+                        sub_types.append(payload[0])
+                self.drain_mav()
+            return sub_types
+
+        self.progress("A receiver not known by name keeps the rate of its rf_mode")
+        crsf = connect_receiver()
+        # custom telemetry frames only start once the version ping is answered,
+        # and a second link rate report comes after the rate settles
+        act_as_receiver(crsf, device_info("CRSF RX", 6, 66),
+                        lambda sub_types: (CRSF.CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH in sub_types and
+                                           len(link_rate_messages()) >= 2),
+                        "multi packet passthrough and a second link rate report")
+        if any("Link rate %uHz" % frame_rate_hz in text for text in link_rate_messages()):
+            raise NotAchievedException("Reported frame rate used for a receiver not known by name")
+        crsf.port.close()
+
+        self.progress("A Tracer on firmware 6.66 reports its frame rate")
+        self.reboot_sitl()
+        crsf = connect_receiver()
+        info = device_info("TBS Tracer nanoRX", 6, 66)
+        want = "Link rate %uHz" % frame_rate_hz
+        act_as_receiver(crsf, info, lambda sub_types: any(want in text for text in link_rate_messages()),
+                        "'%s'" % want)
+        # passthrough is packed several to a frame on a low rate link and one to
+        # a frame on a high rate one; frames sent before the report may still be
+        # arriving for a moment after it
+        tstart = self.get_sim_time_cached()
+        act_as_receiver(crsf, info, lambda sub_types: self.get_sim_time_cached() - tstart > 1, "1s")
+        tstart = self.get_sim_time_cached()
+        sub_types = act_as_receiver(crsf, info, lambda sub_types: self.get_sim_time_cached() - tstart > 5,
+                                    "5s of custom telemetry")
+        if CRSF.CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH not in sub_types:
+            raise NotAchievedException("No single packet passthrough: sub-types %s" % set(sub_types))
+        if CRSF.CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH in sub_types:
+            raise NotAchievedException("Multi packet passthrough from a Tracer")
 
     def CompassPrearms(self):
         '''test compass prearm checks'''

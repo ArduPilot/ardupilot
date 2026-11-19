@@ -219,7 +219,8 @@ private:
     bool process_telemetry(bool check_constraint = true);
     void process_link_stats_frame(const void* data);
     void process_link_stats_rx_frame(const void* data);
-    void process_link_stats_tx_frame(const void* data);
+    // process TX link statistics, payload_length bytes long
+    void process_link_stats_tx_frame(const void* data, uint8_t payload_length);
     // crsf v3 decoding
     void decode_variable_bit_channels(const uint8_t* data, uint8_t frame_length, uint8_t nchannels, uint16_t *values);
 
@@ -242,6 +243,7 @@ private:
     int16_t derive_scaled_lq_value(uint8_t uplink_lq);
 
     volatile struct LinkStatus _link_status;
+    uint16_t _tx_frame_rate_hz; // RF frame rate from the TX link statistics, 0 until a receiver reports one
 
     static const uint16_t RF_MODE_RATES[RFMode::RF_MODE_MAX_MODES];
 
