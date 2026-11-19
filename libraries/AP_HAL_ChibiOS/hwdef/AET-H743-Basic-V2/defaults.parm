@@ -1,0 +1,6 @@
+# setup for LEDs on chan13
+SERVO13_FUNCTION 120
+
+# 9Vsw (VTX) rail is active-low on PD10, so relay 1 must be inverted.
+# RELAY1_DEFAULT stays 0, which leaves the rail off after boot.
+RELAY1_INVERTED 1
