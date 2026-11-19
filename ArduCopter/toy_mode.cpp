@@ -971,6 +971,19 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
     }
     mavlink_named_value_int_t m;
     mavlink_msg_named_value_int_decode(&msg, &m);
+    if (strncmp(m.name, "WIFICHAN", 10) == 0) {
+        // the radio needs this whether or not toy mode is enabled
+#if AP_RADIO_ENABLED
+        AP_Radio *radio = AP_Radio::get_singleton();
+        if (radio) {
+            radio->set_wifi_channel(m.value);
+        }
+#endif
+        return;
+    }
+    if (!enabled()) {
+        return;
+    }
     if (strncmp(m.name, "BLINKR", 10) == 0) {
         red_blink_pattern = (uint16_t)m.value;
         red_blink_count = m.value >> 16;
@@ -989,13 +1002,6 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
         last_video_ms = AP_HAL::millis();
         // immediately update AP_Notify recording flag
         AP_Notify::flags.video_recording = true;
-    } else if (strncmp(m.name, "WIFICHAN", 10) == 0) {
-#if AP_RADIO_ENABLED
-        AP_Radio *radio = AP_Radio::get_singleton();
-        if (radio) {
-            radio->set_wifi_channel(m.value);
-        }
-#endif
     } else if (strncmp(m.name, "LOGDISARM", 10) == 0) {
         enum ap_var_type vtype;
         AP_Int8 *log_disarmed = (AP_Int8 *)AP_Param::find("LOG_DISARMED", &vtype);
