@@ -92,6 +92,32 @@ private:
         _GPS_SENTENCE_OTHER = 0
     };
 
+    /*
+      the last term parsed for each sentence type, used both in the
+      _term_complete() case labels and to bound _term_number so the two
+      can't get out of step. When adding a later term, add a constant
+      for it and make it the sentence's *_LAST_TERM.
+     */
+    static constexpr uint8_t RMC_TERM_DATE = 9;
+    static constexpr uint8_t RMC_LAST_TERM = RMC_TERM_DATE;
+    static constexpr uint8_t GGA_TERM_ALTITUDE = 9;
+    static constexpr uint8_t GGA_LAST_TERM = GGA_TERM_ALTITUDE;
+    static constexpr uint8_t VTG_TERM_SPEED = 5;
+    static constexpr uint8_t VTG_LAST_TERM = VTG_TERM_SPEED;
+    static constexpr uint8_t HDT_TERM_HEADING = 1;
+    static constexpr uint8_t HDT_LAST_TERM = HDT_TERM_HEADING;
+    static constexpr uint8_t THS_TERM_HEADING = 1;
+    static constexpr uint8_t THS_LAST_TERM = THS_TERM_HEADING;
+    static constexpr uint8_t PHD_FIRST_FIELD_TERM = 6;   // first term stored in _phd.fields
+    static constexpr uint8_t PHD_LAST_TERM = 11;
+    static constexpr uint8_t KSXT_LAST_TERM = 21;
+    static constexpr uint8_t AGRICA_LAST_TERM = 65;
+    static constexpr uint8_t VERSIONA_LAST_TERM = 20;
+    static constexpr uint8_t UNIHEADINGA_LAST_TERM = 28;
+
+    /// return the last term parsed for a sentence type, 0 if none
+    static uint8_t last_term_number(uint16_t sentence_type);
+
     /// Update the decode state machine with a new character
     ///
     /// @param	c		The next character in the NMEA input stream
