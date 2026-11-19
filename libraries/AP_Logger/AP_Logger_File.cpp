@@ -30,6 +30,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Scripting/AP_Scripting.h>
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 
@@ -75,6 +76,13 @@ void AP_Logger_File::Init()
 {
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
+#if AP_SCRIPTING_LUA_ENABLED && defined(HAL_LOGGING_FILE_BUFSIZE_SCRIPTING)
+    // a board short of RAM can leave room for the scripting heap, unless the size was chosen
+    const AP_Scripting *scripting = AP_Scripting::get_singleton();
+    if (scripting != nullptr && scripting->enabled() && !_front._params.file_bufsize.configured()) {
+        bufsize = MIN(bufsize, uint32_t(HAL_LOGGING_FILE_BUFSIZE_SCRIPTING));
+    }
+#endif
     bufsize *= 1024;
 
     const uint32_t desired_bufsize = bufsize;
