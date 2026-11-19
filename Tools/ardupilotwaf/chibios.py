@@ -799,6 +799,9 @@ def pre_build(bld):
         bld.get_board().with_littlefs = True
     setup_optimization(bld.env)
 
+def copy_linker_script(task):
+    shutil.copy(task.inputs[0].abspath(), task.outputs[0].abspath())
+
 def build(bld):
 
     # make ccache effective on ChibiOS builds
@@ -828,6 +831,16 @@ def build(bld):
         target=bld.bldnode.find_or_declare('chibios_flags.h')
     )
     
+    if bld.env.CHIBIOS_LINKER_SCRIPT:
+        # hwdef processing copies the common linker script at configure
+        # time, refresh it when the source changes
+        bld(
+            rule=copy_linker_script,
+            group='dynamic_sources',
+            source=bld.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/' + bld.env.CHIBIOS_LINKER_SCRIPT),
+            target=bld.bldnode.find_or_declare('common.ld')
+        )
+
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
                   bld.bldnode.find_or_declare('hw.dat'),
                   bld.bldnode.find_or_declare('ldscript.ld'),
