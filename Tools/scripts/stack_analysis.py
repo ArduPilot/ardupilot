@@ -462,6 +462,18 @@ class Program:
                 # variable sized frame
                 self.elf_dynamic.add(func)
                 continue
+            vm = re.fullmatch(r'__(.+)_veneer', func)
+            if vm and (re.match(r'ldr\S*\s+pc,', insn) or re.match(r'bx\s+(?:r\d+|ip)\b', insn)):
+                # Linker long-branch veneers tail-call the function named by
+                # the stub rather than making an unresolved indirect call.
+                target = vm.group(1)
+                if target in self.sym_values:
+                    self.elf_calls[func].add(target)
+                    self.elf_call_sites.append((addr, func, target))
+                else:
+                    self.elf_indirect[func] += 1
+                    self.elf_call_sites.append((addr, func, INDIRECT))
+                continue
             if re.match(r'(?:blx|bx)\s+(?:r\d+|ip)\b', insn) or re.match(r'(?:ldr|mov)\S*\s+pc,', insn):
                 # call or tail call through a register
                 self.elf_indirect[func] += 1
@@ -1770,7 +1782,6 @@ def main():
         matches = [f for f in prog.all_funcs() if r.search(prog.demangle(f))]
         if matches:
             entries[key] = matches
-
     how = {}
     for h, n in a.site_info.values():
         how[h] = how.get(h, 0) + 1

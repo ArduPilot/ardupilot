@@ -275,6 +275,31 @@ class StackAnalysisTests(unittest.TestCase):
             self.g.p.disassemble('unused')
         self.assertEqual(self.g.p.elf_returns, {'first': 1, 'second': 1})
 
+    def test_linker_veneers_resolve_named_tail_calls(self):
+        disassembly = '''00000010 <__flash_func_veneer>:
+  10:\tpush\t{r0}
+  12:\tldr\tr0, [pc, #8]
+  14:\tmov\tip, r0
+  16:\tpop\t{r0}
+  18:\tbx\tip
+00000020 <__other_func_veneer>:
+  20:\tldr.w\tpc, [pc, #4]
+00000028 <ordinary_indirect>:
+  28:\tbx\tip
+00000030 <__missing_func_veneer>:
+  30:\tbx\tip
+'''
+        self.g.p.sym_values.update({'flash_func': (0x100, 8), 'other_func': (0x200, 8)})
+        with patch.object(sa.subprocess, 'run') as run:
+            run.return_value.stdout = disassembly
+            self.g.p.disassemble('unused')
+        self.assertEqual(self.g.p.elf_calls['__flash_func_veneer'], {'flash_func'})
+        self.assertEqual(self.g.p.elf_calls['__other_func_veneer'], {'other_func'})
+        self.assertEqual(self.g.p.elf_indirect['__flash_func_veneer'], 0)
+        self.assertEqual(self.g.p.elf_indirect['__other_func_veneer'], 0)
+        self.assertEqual(self.g.p.elf_indirect['ordinary_indirect'], 1)
+        self.assertEqual(self.g.p.elf_indirect['__missing_func_veneer'], 1)
+
     def test_suppression_parser_preserves_original_and_contextual_rules(self):
         path = os.path.join(self.temp.name, 'rules.txt')
         with open(path, 'w') as f:
