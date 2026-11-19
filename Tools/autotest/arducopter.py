@@ -27557,7 +27557,7 @@ return update, 1000
         # seconds measuring the old rate, which is 170 m of fall if done later
         # log what the EKF is told, in one log across the disarm, to check below it is not told the falling
         # vehicle has landed
-        self.set_parameters({"LOG_REPLAY": 1, "LOG_DISARMED": 1})
+        self.set_parameters({"LOG_REPLAY": 1, "LOG_DISARMED": 1, "LOG_FILE_BUFSIZE": 32767})
         self.reboot_sitl()
         self.context_set_message_rate_hz('LOCAL_POSITION_NED', 20)
         self.takeoff(250, mode='GUIDED', altitude_max=260, timeout=180)
