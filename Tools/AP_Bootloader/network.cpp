@@ -623,6 +623,9 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         flash_size += flash_func_sector_size(sec);
     }
 
+    // the body after the form headers: the file, then the closing form boundary
+    const uint32_t body_length = content_length;
+
     // must be multiple of 4
     content_length &= ~3;
 
@@ -673,6 +676,19 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         if (!failed && pct / 10 != last_pct / 10) {
             last_pct = pct;
             status_printf("Flashing %u%%", unsigned(pct));
+        }
+    }
+    if (!failed) {
+        // read the rest of the body; closing the socket with data
+        // unread resets the connection, losing our reply
+        uint8_t discard[64];
+        uint32_t left = body_length - ofs;
+        while (left > 0) {
+            const auto n = sock->recv(discard, MIN(sizeof(discard), left), 1000);
+            if (n <= 0) {
+                break;
+            }
+            left -= n;
         }
     }
     if (!failed && ofs % 32 != 0) {
