@@ -445,8 +445,10 @@ define HAL_HNF_MAX_FILTERS 64
 define AP_GCS_UPDATE_RATE_HZ 25
 
 # The rate controller thread runs on core1 with a deeper call chain than the
-# 1536 byte default allows.
-define AP_RATE_THREAD_STACK_SIZE 5120
+# 1536 byte default allows. Static analysis (ArduPilot/ardupilot#34623) puts
+# its worst case at 1.6 KB plus 320 bytes of saved context; it peaked at
+# 760 bytes armed on the RPI_UAVFC bench.
+define AP_RATE_THREAD_STACK_SIZE 3072
 
 # the rate thread runs on core1, so a deeper gyro queue rides out core0 stalls
 define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 32

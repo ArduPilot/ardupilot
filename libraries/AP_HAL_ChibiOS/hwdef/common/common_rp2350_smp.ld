@@ -253,8 +253,9 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
     /* Core 1 MSP exception stack -- same size as core0 MSP. */
     __c1_main_stack_size__    = __main_stack_size__;
     /* Core1 PSP: only c1_main() runs on it, and after starting the core1 OS
-       instance that thread just sleeps. */
-    __c1_process_stack_size__ = 0x400;
+       instance that thread just sleeps. Static analysis puts its worst case
+       at 164 bytes plus 320 bytes of saved context. */
+    __c1_process_stack_size__ = 0x280;
 
     .c1_mstack (NOLOAD) :
     {
