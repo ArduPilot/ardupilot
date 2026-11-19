@@ -580,9 +580,11 @@ def setup_optimization(env):
     env.CXXFLAGS += [ OPTIMIZE ]
     env.CHIBIOS_BUILD_FLAGS += ' USE_COPT=%s' % OPTIMIZE
     if env.ENABLE_LTO:
-        env.CFLAGS += [ '-flto=auto' ]
-        env.CXXFLAGS += [ '-flto=auto' ]
-        env.LINKFLAGS += [ '-flto=auto', OPTIMIZE ]
+        # the Windows lto-wrapper passes an empty -j to make for auto
+        flto = '-flto=%u' % os.cpu_count() if sys.platform.startswith('cygwin') else '-flto=auto'
+        env.CFLAGS += [ flto ]
+        env.CXXFLAGS += [ flto ]
+        env.LINKFLAGS += [ flto, OPTIMIZE ]
         # with LTO code is generated at link time, so diagnostics from
         # late compiler passes need to be enabled there. These are
         # warnings as per-function pragmas are not honoured at link time
