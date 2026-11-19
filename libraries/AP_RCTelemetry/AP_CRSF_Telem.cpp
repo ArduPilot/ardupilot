@@ -1267,6 +1267,22 @@ void AP_CRSF_Telem::calc_bind() {
     _telem_pending = true;
 }
 
+/*
+  the folder the OSD parameters are listed from. With a scripted menu they
+  go in the Parameters folder beside it; with none they are listed from the
+  root, so the menu opens straight onto them, and the Parameters folder is
+  still answered, hidden, as a transmitter reads every field in turn
+ */
+uint8_t AP_CRSF_Telem::osd_param_folder() const
+{
+#if AP_CRSF_SCRIPTING_ENABLED
+    if (scripted_menus.next_menu != nullptr) {
+        return PARAMETER_MENU_ID;
+    }
+#endif
+    return 0;
+}
+
 // return parameter information
 void AP_CRSF_Telem::calc_parameter() {
 #if OSD_PARAM_ENABLED
@@ -1291,6 +1307,12 @@ void AP_CRSF_Telem::calc_parameter() {
         _telem.ext.param_entry.payload[idx++] = 0; // null terminator
 
         _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // root parameter screen ardupilot menu
+        if (osd_param_folder() == 0) {
+            // no scripted menu, so the menu opens straight onto the OSD parameters
+            for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
+                _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID + i + 1;
+            }
+        }
 #if AP_CRSF_SCRIPTING_ENABLED
         for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; m = m->next_menu) {
             if (m->parent_id == 0) {
@@ -1307,18 +1329,19 @@ void AP_CRSF_Telem::calc_parameter() {
         return;
     }
 
-    // Parameters folder request
+    // Parameters folder request, answered hidden and empty when the OSD parameters are in the root
     if (_param_request.param_num == PARAMETER_MENU_ID) {
+        const bool shown = osd_param_folder() == PARAMETER_MENU_ID;
         _telem.ext.param_entry.header.param_num = PARAMETER_MENU_ID;
         _telem.ext.param_entry.header.chunks_left = 0;
         _telem.ext.param_entry.payload[idx++] = 0; // parent folder
-        _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER; // type
+        _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER | (shown ? 0 : PARAMETER_HIDDEN); // type
         // name
         strncpy((char*)&_telem.ext.param_entry.payload[idx], "Parameters", ARRAY_SIZE(_telem.ext.param_entry.payload) - idx - 1);
         idx += strlen("Parameters");
         _telem.ext.param_entry.payload[idx++] = 0; // null terminator
         // write out all of the ids we are going to send
-        for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
+        for (uint8_t i = 0; shown && i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
             _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID + i + 1;
         }
         _telem.ext.param_entry.payload[idx] = 0xFF; // terminator
@@ -1377,10 +1400,9 @@ void AP_CRSF_Telem::calc_parameter() {
     // a slot is still answered when the vehicle has no OSD or its parameter can't be found, as a
     // transmitter waits for every field in turn, but as a hidden INFO field since there is nothing to show
     if (setting == nullptr || setting->_param == nullptr) {
-        static constexpr uint8_t HIDDEN = 0x80; // bit 7 of the type hides a field
         _telem.ext.param_entry.header.chunks_left = 0;
-        _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // parent folder
-        _telem.ext.param_entry.payload[idx++] = ParameterType::INFO | HIDDEN;
+        _telem.ext.param_entry.payload[idx++] = osd_param_folder(); // parent folder
+        _telem.ext.param_entry.payload[idx++] = ParameterType::INFO | PARAMETER_HIDDEN;
         strncpy((char*)&_telem.ext.param_entry.payload[idx], "Unused", ARRAY_SIZE(_telem.ext.param_entry.payload) - idx - 1);
         idx += strlen("Unused") + 1;
         _telem.ext.param_entry.payload[idx] = 0; // empty info
@@ -1399,7 +1421,7 @@ void AP_CRSF_Telem::calc_parameter() {
     }
 #endif
     _telem.ext.param_entry.header.chunks_left = 0;
-    _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // parent folder
+    _telem.ext.param_entry.payload[idx++] = osd_param_folder(); // parent folder
     idx++;  // leave a gap for the type
     setting->copy_name_camel_case((char*)&_telem.ext.param_entry.payload[idx], 17);
     idx += strnlen((char*)&_telem.ext.param_entry.payload[idx], 16) + 1;
@@ -1641,7 +1663,7 @@ void AP_CRSF_Telem::calc_text_selection(AP_OSD_ParamSetting* param, uint8_t chun
     // chunk the output
     BufferChunker chunker(_telem.ext.param_entry.payload, CHUNK_SIZE, chunk);
 
-    chunker.put_byte(PARAMETER_MENU_ID);  // parent folder
+    chunker.put_byte(osd_param_folder());  // parent folder
     chunker.put_byte(ParameterType::TEXT_SELECTION);  // parameter type
 
     char name[17];
