@@ -2610,6 +2610,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_arm_failure("height error", ignore_prearm_failures=ignore)
         baro_glitch(0)
 
+        # Copter reports it has landed, so armed on the ground the EKF is on the ground too. The
+        # height check is for arming: the same step with the motors armed on the ground must leave
+        # the EKF healthy rather than allow a lane switch. DISARM_DELAY 0 keeps it armed
+        self.start_subtest("flow: armed on the ground, the same baro step leaves the EKF healthy")
+        self.set_parameter("DISARM_DELAY", 0)
+        self.change_mode('STABILIZE')
+        self.zero_throttle()
+        self.wait_ready_to_arm(require_absolute=False)
+        self.arm_vehicle()
+        baro_glitch(5)
+        tstart = self.get_sim_time_cached()
+        max_ratio = 0
+        while self.get_sim_time_cached() - tstart < 10:
+            m = self.assert_receive_message('EKF_STATUS_REPORT', timeout=5)
+            max_ratio = max(max_ratio, m.pos_vert_variance)
+            if not (m.flags & mavutil.mavlink.ESTIMATOR_ATTITUDE):
+                self.progress("EKF unhealthy %.1f s after the step, height ratio up to %.2f" %
+                              (self.get_sim_time_cached() - tstart, max_ratio))
+                baro_glitch(0)
+                self.disarm_vehicle(force=True)
+                raise NotAchievedException("EKF unhealthy armed on the ground after a baro step")
+        self.progress("EKF healthy for 10 s after the step, height ratio up to %.2f" % max_ratio)
+        baro_glitch(0)
+        self.disarm_vehicle(force=True)
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
