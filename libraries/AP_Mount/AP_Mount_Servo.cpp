@@ -39,7 +39,7 @@ void AP_Mount_Servo::update()
 // called by the backend to set the servo angles:
 void AP_Mount_Servo::send_target_angles(const MountAngleTarget& angle_rad)
 {
-    update_angle_outputs(mnt_target.angle_rad);
+    update_angle_outputs(angle_rad);
 
     // write the results to the servos
     move_servo(_roll_idx, degrees(_angle_bf_output_rad.x)*10, _params.roll_angle_min*10, _params.roll_angle_max*10);

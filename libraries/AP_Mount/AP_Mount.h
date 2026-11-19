@@ -200,7 +200,8 @@ public:
     // roll and pitch are in earth-frame
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
     void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame) { set_angle_target(_primary, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame); }
-    void set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
+    // pitch_rate_degs and yaw_rate_degs are the rates at which to move to the angle target.  Zero or NaN means no limit
+    void set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame, float pitch_rate_degs = 0, float yaw_rate_degs = 0);
 
     // sets rate target in deg/s
     // yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
