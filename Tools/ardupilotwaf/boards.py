@@ -1312,7 +1312,8 @@ class chibios(Board):
             '-mno-thumb-interwork',
             '-mthumb',
             '-D__USE_CMSIS',
-            '-include', cfg.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/stdio.h').abspath(),
+            # relative to the build dir, as Cygwin paths don't work with the native Windows compiler
+            '-include', cfg.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/stdio.h').path_from(cfg.bldnode.make_node(cfg.variant)),
             '-DNDEBUG=1'
         ] + libc_specs
         if not cfg.options.Werror:
