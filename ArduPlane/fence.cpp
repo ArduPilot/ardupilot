@@ -23,6 +23,7 @@ void Plane::fence_checks_async()
 
     uint16_t mission_id = plane.mission.get_current_nav_cmd().id;
     bool landing_or_landed = plane.flight_stage == AP_FixedWing::FlightStage::LAND
+                         || plane.flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING
                          || !armed
 #if HAL_QUADPLANE_ENABLED
                          || control_mode->mode_number() == Mode::Number::QLAND
