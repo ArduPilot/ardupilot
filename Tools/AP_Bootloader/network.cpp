@@ -640,6 +640,7 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     const uint32_t trailer_len = delim_len + 6;
     const uint32_t max_ofs = body_length - trailer_len;
     uint32_t ofs = 0;
+    uint32_t body_read = 0;
     uint32_t erased_ofs = 0;
     uint32_t erase_sec = 0;
     bool failed = false;
@@ -663,6 +664,7 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
                 break;
             }
             len += n;
+            body_read += n;
         }
         if (len < want) {
             status_printf("Flash failed: upload stopped at %u of %u", unsigned(ofs+len), unsigned(max_ofs));
@@ -709,6 +711,7 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
                 break;
             }
             got += n;
+            body_read += n;
         }
         if (got != trailer_len ||
             memcmp(trailer, "\r\n", 2) != 0 ||
@@ -734,7 +737,20 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     }
     flash_set_keep_unlocked(false);
     if (failed) {
-        const char *str = "<html><body>Flash failed, see status</body></html>";
+        // read the rest of the body so that the uploader gets our reply
+        uint8_t discard[64];
+        while (body_read < body_length) {
+            const auto n = sock->recv(discard, MIN(sizeof(discard), body_length - body_read), 1000);
+            if (n <= 0) {
+                break;
+            }
+            body_read += n;
+        }
+        char str[sizeof(bl_status) + 32];
+        {
+            WITH_SEMAPHORE(status_mtx);
+            snprintf(str, sizeof(str), "<html><body>%s</body></html>", bl_status);
+        }
         sock->send(str, strlen(str));
         return;
     }
