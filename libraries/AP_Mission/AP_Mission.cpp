@@ -128,12 +128,13 @@ void AP_Mission::stop()
 
 /// resume - continues the mission execution from where we last left off
 ///     previous running commands will be re-initialized
-void AP_Mission::resume()
+///     returns false if no mission command could be restarted
+bool AP_Mission::resume()
 {
     // if mission had completed then start it from the first command
     if (_flags.state == MISSION_COMPLETE) {
         start();
-        return;
+        return _flags.state == MISSION_RUNNING;
     }
 
     // if mission had stopped then restart it
@@ -143,7 +144,7 @@ void AP_Mission::resume()
         // if no valid nav command index restart from beginning
         if (_nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
             start();
-            return;
+            return _flags.state == MISSION_RUNNING;
         }
     }
 
@@ -153,7 +154,7 @@ void AP_Mission::resume()
         // been from a previously loaded mission it is illogical to ever resume
         // flying to a command that has been excluded from the current mission
         start();
-        return;
+        return _flags.state == MISSION_RUNNING;
     }
 
     // rewind the mission wp if the repeat distance has been set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
@@ -170,7 +171,7 @@ void AP_Mission::resume()
             _flags.nav_cmd_loaded = true;
             // set flag to prevent history being re-written
             _flags.resuming_mission = true;
-            return;
+            return true;
         }
     }
 
@@ -181,14 +182,15 @@ void AP_Mission::resume()
 
     if (_flags.do_cmd_loaded && _do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
         // restart the active do command, which will also load the nav command for us
-        set_current_cmd(_do_cmd.index);
+        return set_current_cmd(_do_cmd.index);
     } else if (_flags.nav_cmd_loaded) {
         // restart the active nav command
-        set_current_cmd(_nav_cmd.index);
+        return set_current_cmd(_nav_cmd.index);
     }
 
     // Note: if there is no active command then the mission must have been stopped just after the previous nav command completed
     //      update will take care of finding and starting the nav command
+    return true;
 }
 
 /// check if the next nav command is a takeoff, skipping delays
@@ -2639,8 +2641,9 @@ bool AP_Mission::jump_to_landing_sequence(const Location &current_loc)
     if (land_idx != 0 && set_current_cmd(land_idx)) {
 
         //if the mission has ended it has to be restarted
-        if (state() == AP_Mission::MISSION_STOPPED) {
-            resume();
+        if (state() == AP_Mission::MISSION_STOPPED && !resume()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to resume landing sequence");
+            return false;
         }
 
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing sequence start");
@@ -2693,8 +2696,9 @@ bool AP_Mission::jump_to_closest_mission_leg(const Location &current_loc)
     if (landing_start_index != 0 && set_current_cmd(landing_start_index)) {
 
         // if the mission has ended it has to be restarted
-        if (state() == AP_Mission::MISSION_STOPPED) {
-            resume();
+        if (state() == AP_Mission::MISSION_STOPPED && !resume()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to resume return path");
+            return false;
         }
 
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Return path started");
@@ -2733,8 +2737,9 @@ bool AP_Mission::jump_to_abort_landing_sequence(const Location &current_loc)
     if (abort_index != 0 && set_current_cmd(abort_index)) {
 
         //if the mission has ended it has to be restarted
-        if (state() == AP_Mission::MISSION_STOPPED) {
-            resume();
+        if (state() == AP_Mission::MISSION_STOPPED && !resume()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unable to resume landing abort sequence");
+            return false;
         }
 
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing abort sequence start");
