@@ -300,6 +300,30 @@ class StackAnalysisTests(unittest.TestCase):
         self.assertEqual(self.g.p.elf_indirect['ordinary_indirect'], 1)
         self.assertEqual(self.g.p.elf_indirect['__missing_func_veneer'], 1)
 
+    def test_literal_thread_create_names_resolve_method_wrappers(self):
+        g = self.g
+        caller = g.func('Copter::one_hz_loop()')
+        rate = g.func('void Functor<void>::method_wrapper<Copter, '
+                      '&Copter::rate_controller_thread>(void*)')
+        g.lines.extend([
+            'hal.scheduler->thread_create(',
+            '    FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),',
+            '    "rate", 1536, AP_HAL::Scheduler::PRIORITY_RCOUT, 1);',
+        ])
+        # GCC may attribute the call to the last line of a multi-line call.
+        caller.edges.append((sa.INDIRECT, 'fixture.cpp:3:16'))
+        entries = sa.registered_thread_entries(g.analyser())
+        self.assertEqual(entries, {'rate': [rate]})
+
+    def test_variable_thread_create_names_are_not_guessed(self):
+        g = self.g
+        caller = g.func('AP_DroneCAN::init()')
+        g.func('void Functor<void>::method_wrapper<AP_DroneCAN, &AP_DroneCAN::loop>(void*)')
+        g.lines.append('hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DroneCAN::loop, void), '
+                       '_thread_name, 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0);')
+        caller.edges.append((sa.INDIRECT, 'fixture.cpp:1:16'))
+        self.assertEqual(sa.registered_thread_entries(g.analyser()), {})
+
     def test_suppression_parser_preserves_original_and_contextual_rules(self):
         path = os.path.join(self.temp.name, 'rules.txt')
         with open(path, 'w') as f:
@@ -690,6 +714,36 @@ class StackAnalysisTests(unittest.TestCase):
                 elif allocation == 80:
                     # 16 bytes of caller + three 24-byte recursive frames.
                     self.assertIn('STACK OVERFLOW: rcin needs up to 88 bytes', output.getvalue())
+
+    def test_strict_check_ignores_unsized_dynamic_thread_recursion(self):
+        g = self.g
+        g.func('ChibiOS::Scheduler::_rcin_thread(void*)', 16)
+        creator = g.func('Copter::one_hz_loop()', 8)
+        scripting = g.func('void Functor<void>::method_wrapper<AP_Scripting, '
+                           '&AP_Scripting::thread>(void*)', 24)
+        recursive = g.func('recursive()', 32)
+        g.edge(scripting, recursive)
+        g.edge(recursive, recursive)
+        g.lines.append('hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Scripting::thread, void), '
+                       '"Scripting", 2048, AP_HAL::Scheduler::PRIORITY_SCRIPTING, 0);')
+        creator.edges.append((sa.INDIRECT, 'fixture.cpp:1:16'))
+        g.analyser()  # write the fixture source
+        output = StringIO()
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(sa, 'Program', return_value=g.p))
+            stack.enter_context(patch.object(sa, 'ClassModel', return_value=g.classes))
+            stack.enter_context(patch.object(sa.glob, 'glob', return_value=['fixture.ci']))
+            for name in ('load_ci', 'load_cgraph_dumps', 'load_elf', 'add_elf_funcs', 'demangle_all'):
+                stack.enter_context(patch.object(g.p, name))
+            stack.enter_context(patch.object(g.p, 'remove_unlinked', return_value=0))
+            stack.enter_context(patch.object(g.classes, 'load'))
+            stack.enter_context(patch.object(sa, 'static_allocations', return_value={'rcin': 1000}))
+            argv = ['stack_analysis', g.root, '--srcroot', g.root, '--elf', 'unused', '--check']
+            stack.enter_context(patch.object(sa.sys, 'argv', argv))
+            stack.enter_context(redirect_stdout(output))
+            sa.main()
+        self.assertIn('Scripting', output.getvalue())
+        self.assertNotIn('UNBOUNDED RECURSION:', output.getvalue())
 
     def test_external_recursion_annotations_are_specific_to_elf_functions(self):
         g = self.g
