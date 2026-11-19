@@ -13,7 +13,6 @@ import re
 import shutil
 import socket
 import struct
-import subprocess
 import tempfile
 import time
 import tty
@@ -19096,16 +19095,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         rsll_len = self.truncate_log_message(log_filepath, short_log_filepath, "RSLL", drop_fields=1, drop_bytes=4)
 
         self.build_replay()
-        old_logs = set(self.log_list())
-        replay = subprocess.run(
-            [self.replay_tool, short_log_filepath],
-            cwd=os.getcwd(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        output = replay.stdout.decode('utf-8', errors='replace')
-        if replay.returncode != 0:
-            raise NotAchievedException("Replay failed (%d): %s" % (replay.returncode, output[-1000:]))
+        # run_replay_get_output() rather than running the tool here: it
+        # identifies Replay's output log by what was written rather than
+        # by a difference of log names, which misses an output written
+        # over a log number the directory already held, and it stops the
+        # SITL while Replay runs - this test is the one which found out
+        # why that matters, having had its SITL wedge in the outqueue-full
+        # loop while nobody was reading its MAVLink
+        (replay_log_filepath, output) = self.run_replay_get_output(short_log_filepath)
         warnings = [line for line in output.splitlines() if line.startswith("Warning: RSLL is")]
         self.progress("Replay warnings: %s" % str(warnings))
         expected = "Warning: RSLL is %u bytes in the log but %u bytes in Replay" % (rsll_len - 4, rsll_len)
@@ -19115,10 +19112,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # RSLL is not used while GPS is good, so the replay must still
         # match despite the missing field
         check_replay = util.load_local_module("Tools/Replay/check_replay.py")
-        new_logs = [x for x in self.log_list() if x not in old_logs]
-        if len(new_logs) != 1:
-            raise NotAchievedException("Expected one new log from Replay, got %s" % str(new_logs))
-        replay_log_filepath = new_logs[0]
         if not check_replay.check_log(replay_log_filepath, self.progress, verbose=True):
             raise NotAchievedException("check_replay (%s) failed" % replay_log_filepath)
 
