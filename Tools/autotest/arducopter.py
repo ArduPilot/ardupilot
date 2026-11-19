@@ -2814,10 +2814,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_mode(want_mode, timeout=60)
             self.set_rc(2, 1500)
 
-        def assert_mode_change_locked():
+        def assert_mode_change_locked(mode="AUTO_RTL"):
             self.progress("Mode change must be refused during fence recovery")
             self.run_cmd_do_set_mode("LOITER", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
-            self.assert_mode_is("AUTO_RTL")
+            self.assert_mode_is(mode)
+            self.progress("Re-selecting the current mode must not release the lock")
+            self.run_cmd_do_set_mode(mode)
+            self.run_cmd_do_set_mode("LOITER", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is(mode)
 
         self.change_mode("LOITER")
         self.wait_ready_to_arm()
@@ -2826,6 +2830,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("No landing sequence: falls back to RTL")
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         fly_loiter_into_fence("RTL")
+        assert_mode_change_locked("RTL")
         self.wait_disarmed(timeout=120)
         self.zero_throttle()
         self.end_subtest("No landing sequence: falls back to RTL")
