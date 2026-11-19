@@ -798,8 +798,26 @@ only when enabled at boot. Measure with MAVLink `MEMINFO.freemem32` or
 fly. `@SYS/memory.txt` FREE counts only the heap's free list, not memory the
 heap has yet to take from the core allocator: on RPI_UAVFC at 200 MHz it read
 2 KB while `MEMINFO` gave 153 KB, 150 KB armed, with the full 80 KB log
-buffer, scripting off and the OSD on. Scripting takes `SCR_HEAP_SIZE`
-(100 KB) more when enabled.
+buffer, scripting off and the OSD on.
+
+Scripting is sized for small scripts (`PICO2.py`): a 50 KB `SCR_HEAP_SIZE`
+default, a 10 KB scripting thread stack, and, while `SCR_ENABLE` is set and
+`LOG_FILE_BUFSIZE` has not been set, a 64 KB log buffer
+(`HAL_LOGGING_FILE_BUFSIZE_SCRIPTING`). With the memory-class defaults
+(100 KB heap, 17 KB stack, 80 KB buffer) `LED_roll.lua` on four NeoPixels
+left 36 KB free armed on RPI_UAVFC; with these, 110 KB. That script uses
+13 KB of Lua heap and 3 KB of stack, and costs about 4% of core0 at 50 Hz,
+mostly in the Lua VM running from flash. The XIP hit rate rose from 84% to
+88% with it: the interpreter loop stays in the cache and misses rose 13%.
+
+Lua stops nested C calls at 200 (`LUAI_MAXCCALLS`), which does not protect
+the stack here. A level of `pcall` costs about 400 B and a level of
+`string.gsub` callback about 850 B (its `luaL_Buffer`), so a script
+overflows 10 KB at about 15 or 7 levels (17 KB at about 34 or 16). The
+M33's stack limit (`PSPLIM`) turns the overflow into a HardFault rather
+than corruption, but the board reboots, and a script that recurses at
+start-up does so on every boot: stop it with `MAV_CMD_SCRIPTING` and clear
+`SCR_ENABLE` in the seconds before it runs.
 
 `Tools/scripts/rp2350_heap_budget_report.py --map build/<board>/Linker.map`
 breaks SRAM down and suggests a `__rp2350_min_heap__`; with `--threads-file`
