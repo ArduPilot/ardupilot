@@ -147,33 +147,21 @@ esac
 
 if false; then :
 elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'forky' ]; then
-    SITLFML_VERSION="3.1"
-    SITLCFML_VERSION="3.0"
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
-    SITLFML_VERSION="3.0"
-    SITLCFML_VERSION="3.0"
     PYTHON_V="python3"
     PIP="python3 -m pip"
 fi
@@ -238,9 +226,10 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
        [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
-        SITL_PKGS+=" xterm xfonts-base libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION}"
+        # the -dev packages pull in the matching versioned libraries
+        SITL_PKGS+=" xterm xfonts-base libcsfml-dev libsfml-dev"
   else
-  SITL_PKGS="$SITL_PKGS xterm xfonts-base ${PYTHON_V}-matplotlib ${PYTHON_V}-serial ${PYTHON_V}-scipy ${PYTHON_V}-opencv libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION} ${PYTHON_V}-yaml"
+  SITL_PKGS="$SITL_PKGS xterm xfonts-base ${PYTHON_V}-matplotlib ${PYTHON_V}-serial ${PYTHON_V}-scipy ${PYTHON_V}-opencv libcsfml-dev libsfml-dev ${PYTHON_V}-yaml"
   fi
 fi
 if [[ $SKIP_AP_COV_ENV -ne 1 ]]; then
