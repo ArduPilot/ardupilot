@@ -4,6 +4,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Common/ExampleFirmwareVersion.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

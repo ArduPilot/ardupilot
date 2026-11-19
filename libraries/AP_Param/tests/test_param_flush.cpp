@@ -13,6 +13,7 @@
 #include <mutex>
 #include <string.h>
 #include <thread>
+#include <AP_Common/ExampleFirmwareVersion.h>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
