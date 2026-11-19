@@ -900,6 +900,7 @@ void ToyMode::throttle_adjust(float &throttle_control)
  */
 void ToyMode::blink_update(void)
 {
+#if AP_RELAY_ENABLED
     if (red_blink_pattern & (1U<<red_blink_index)) {
         copter.relay.on(1);
     } else {
@@ -910,6 +911,7 @@ void ToyMode::blink_update(void)
     } else {
         copter.relay.off(0);
     }
+#endif
     green_blink_index = (green_blink_index+1) % 16;
     red_blink_index = (red_blink_index+1) % 16;
     if (green_blink_index == 0 && green_blink_count > 0) {
