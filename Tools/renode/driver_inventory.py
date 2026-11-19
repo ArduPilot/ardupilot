@@ -50,7 +50,7 @@ VALID_PROBE_ASSERTIONS = frozenset((
     'output-suppression-recovery', 'stuck-sample-recovery',
 ))
 SOURCE_EXCLUDED_PARTS = frozenset((
-    'examples', 'tests', 'AP_HAL', 'AP_HAL_ChibiOS', 'AP_HAL_Empty',
+    'examples', 'tests', 'target', 'AP_HAL', 'AP_HAL_ChibiOS', 'AP_HAL_Empty',
     'AP_HAL_ESP32', 'AP_HAL_Linux', 'AP_HAL_QURT', 'AP_HAL_SITL', 'SITL',
 ))
 

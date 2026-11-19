@@ -50,10 +50,10 @@ jobs:
 
       - name: Install pip dependencies
         run: |
-          python3 -m pip install github-release-downloader empy==3.3.4
+          python3 -m pip install github-release-downloader empy==3.3.4 pytest
 
       - name: Test binding generator
-        run: python3 -m unittest discover -s libraries/AP_Scripting/generator/tests -v
+        run: python3 -m pytest libraries/AP_Scripting/generator/tests -v
 
       - name: Register lua check problem matcher
         run: |

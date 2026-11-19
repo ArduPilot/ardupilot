@@ -1,0 +1,48 @@
+use crate::{result, Result};
+
+/// Complete owned parameters for a MAVLink COMMAND_INT. Omitted Lua table
+/// fields map to zero; `Default` preserves that behavior without sentinels.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct CommandIntParams {
+    pub p1: f32,
+    pub p2: f32,
+    pub p3: f32,
+    pub p4: f32,
+    pub x: i32,
+    pub y: i32,
+    pub z: f32,
+    pub frame: u8,
+}
+
+impl crate::bindings::Gcs<'_, '_> {
+    /// Execute a command through the same channel-0 COMMAND_INT path as Lua.
+    /// The host copies every field and holds the scheduler semaphore while the
+    /// vehicle command handler runs while holding the scheduler semaphore.
+    /// Floating-point bit patterns, including non-finite values, are preserved.
+    pub fn run_command_int(
+        &self,
+        command: u16,
+        params: &CommandIntParams,
+    ) -> Result<crate::enums::MavResult> {
+        let mut input = [0u8; ${wire_size}];
+        input[..2].copy_from_slice(&command.to_le_bytes());
+        for (offset, value) in [
+            (2, params.p1),
+            (6, params.p2),
+            (10, params.p3),
+            (14, params.p4),
+        ] {
+            input[offset..offset + 4].copy_from_slice(&value.to_bits().to_le_bytes());
+        }
+        input[18..22].copy_from_slice(&params.x.to_le_bytes());
+        input[22..26].copy_from_slice(&params.y.to_le_bytes());
+        input[26..30].copy_from_slice(&params.z.to_bits().to_le_bytes());
+        input[30] = params.frame;
+        let mut output = [0u8; 4];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw, crate::imports::BINDING_${method_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        Ok(crate::enums::MavResult(i32::from_le_bytes(output)))
+    }
+}

@@ -224,6 +224,9 @@ AP_Notify::AP_Notify()
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_flags_and_values_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
+#if AP_NOTIFY_EVENT_COUNTS_ENABLED
+std::atomic<uint8_t> AP_Notify::event_counts[32];
+#endif
 
 NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_MAX];
 uint8_t AP_Notify::_num_devices;
@@ -422,6 +425,18 @@ void AP_Notify::update(void)
             _devices[i]->update();
         }
     }
+
+#if AP_NOTIFY_EVENT_COUNTS_ENABLED
+    // count events so consumers not running at our rate do not miss them
+    uint32_t bits;
+    static_assert(sizeof(events) == sizeof(bits), "events must fit in 32 bits");
+    memcpy(&bits, &events, sizeof(bits));
+    while (bits != 0) {
+        auto &count = event_counts[__builtin_ctz(bits)];
+        count.store(count.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
+        bits &= bits - 1;
+    }
+#endif
 
     //reset the events
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));

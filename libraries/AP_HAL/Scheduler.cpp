@@ -6,6 +6,18 @@ using namespace AP_HAL;
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_OWNED_THREADS_ENABLED
+bool Scheduler::thread_reap(OwnedThread *&thread)
+{
+    if (thread == nullptr || !thread->join_if_finished()) {
+        return false;
+    }
+    delete thread;
+    thread = nullptr;
+    return true;
+}
+#endif
+
 void Scheduler::register_delay_callback(AP_HAL::Proc proc,
                                         uint16_t min_time_ms)
 {

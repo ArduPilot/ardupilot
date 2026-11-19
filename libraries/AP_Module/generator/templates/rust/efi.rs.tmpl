@@ -1,0 +1,205 @@
+use crate::{result, Context, Error, Result};
+
+macro_rules! efi_enum {
+    ($$name:ident { $$first:ident = $$zero:expr, $$($$variant:ident = $$value:expr),+ $$(,)? }) => {
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        #[repr(u8)]
+        pub enum $$name { $$first = $$zero, $$($$variant = $$value),+ }
+        impl Default for $$name { fn default() -> Self { Self::$$first } }
+        impl TryFrom<u8> for $$name {
+            type Error = Error;
+            fn try_from(value: u8) -> Result<Self> {
+                match value {
+                    $$zero => Ok(Self::$$first), $$($$value => Ok(Self::$$variant),)+ _ => Err(Error::Host),
+                }
+            }
+        }
+    };
+}
+
+efi_enum!(EngineState { Stopped = 0, Starting = 1, Running = 2, Fault = 3 });
+efi_enum!(CrankshaftSensorStatus { NotSupported = 0, Ok = 1, Error = 2 });
+efi_enum!(TemperatureStatus { NotSupported = 0, Ok = 1, BelowNominal = 2, AboveNominal = 3,
+                              Overheating = 4, EgtAboveNominal = 5 });
+efi_enum!(FuelPressureStatus { NotSupported = 0, Ok = 1, BelowNominal = 2, AboveNominal = 3 });
+efi_enum!(OilPressureStatus { NotSupported = 0, Ok = 1, BelowNominal = 2, AboveNominal = 3 });
+efi_enum!(DetonationStatus { NotSupported = 0, NotObserved = 1, Observed = 2 });
+efi_enum!(MisfireStatus { NotSupported = 0, NotObserved = 1, Observed = 2 });
+efi_enum!(DebrisStatus { NotSupported = 0, NotDetected = 1, Detected = 2 });
+efi_enum!(SparkPlugUsage { Single = 0, FirstActive = 1, SecondActive = 2, BothActive = 3 });
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct EfiCylinderState {
+    pub ignition_timing_deg: Option<f32>,
+    pub injection_time_ms: Option<f32>,
+    pub cylinder_head_temperature: Option<f32>,
+    pub cylinder_head_temperature2: Option<f32>,
+    pub exhaust_gas_temperature: Option<f32>,
+    pub exhaust_gas_temperature2: Option<f32>,
+    pub lambda_coefficient: Option<f32>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct EfiState {
+    pub last_updated_ms: u32,
+    pub engine_state: EngineState,
+    pub general_error: bool,
+    pub crankshaft_sensor_status: CrankshaftSensorStatus,
+    pub temperature_status: TemperatureStatus,
+    pub fuel_pressure_status: FuelPressureStatus,
+    pub oil_pressure_status: OilPressureStatus,
+    pub detonation_status: DetonationStatus,
+    pub misfire_status: MisfireStatus,
+    pub debris_status: DebrisStatus,
+    pub engine_load_percent: u8,
+    pub engine_speed_rpm: u32,
+    pub spark_dwell_time_ms: Option<f32>,
+    pub atmospheric_pressure_kpa: Option<f32>,
+    pub intake_manifold_pressure_kpa: Option<f32>,
+    pub intake_manifold_temperature: Option<f32>,
+    pub coolant_temperature: Option<f32>,
+    pub oil_pressure: Option<f32>,
+    pub oil_temperature: Option<f32>,
+    pub fuel_pressure: Option<f32>,
+    pub fuel_consumption_rate_cm3pm: Option<f32>,
+    pub estimated_consumed_fuel_volume_cm3: Option<f32>,
+    pub throttle_position_percent: u8,
+    pub ecu_index: u8,
+    pub spark_plug_usage: SparkPlugUsage,
+    pub cylinder_status: EfiCylinderState,
+    pub ignition_voltage: Option<f32>,
+    pub throttle_out: Option<f32>,
+    pub pt_compensation: Option<f32>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct EfiBackend { index: u8 }
+
+fn efi_float(output: &mut [u8], offset: usize, value: Option<f32>) -> Result {
+    if value.is_some_and(f32::is_nan) { return Err(Error::Invalid); }
+    output[offset..offset+4].copy_from_slice(&value.unwrap_or(f32::NAN).to_bits().to_le_bytes());
+    Ok(())
+}
+
+fn efi_read_float(input: &[u8], offset: usize) -> f32 {
+    f32::from_le_bytes(input[offset..offset + 4].try_into().unwrap())
+}
+
+fn efi_optional_float(input: &[u8], offset: usize) -> Option<f32> {
+    let value = efi_read_float(input, offset);
+    (!value.is_nan()).then_some(value)
+}
+
+fn efi_decode(input: &[u8]) -> Result<EfiState> {
+    if input.len() != ${state_wire_size} || input[5] > 1 { return Err(Error::Host); }
+    let ignition_voltage = efi_read_float(input, 89);
+    if ignition_voltage.is_nan() { return Err(Error::Host); }
+    Ok(EfiState {
+        last_updated_ms: u32::from_le_bytes(input[0..4].try_into().unwrap()),
+        engine_state: input[4].try_into()?,
+        general_error: input[5] != 0,
+        crankshaft_sensor_status: input[6].try_into()?,
+        temperature_status: input[7].try_into()?,
+        fuel_pressure_status: input[8].try_into()?,
+        oil_pressure_status: input[9].try_into()?,
+        detonation_status: input[10].try_into()?,
+        misfire_status: input[11].try_into()?,
+        debris_status: input[12].try_into()?,
+        engine_load_percent: input[13],
+        engine_speed_rpm: u32::from_le_bytes(input[14..18].try_into().unwrap()),
+        spark_dwell_time_ms: efi_optional_float(input, 18),
+        atmospheric_pressure_kpa: efi_optional_float(input, 22),
+        intake_manifold_pressure_kpa: efi_optional_float(input, 26),
+        intake_manifold_temperature: efi_optional_float(input, 30),
+        coolant_temperature: efi_optional_float(input, 34),
+        oil_pressure: efi_optional_float(input, 38),
+        oil_temperature: efi_optional_float(input, 42),
+        fuel_pressure: efi_optional_float(input, 46),
+        fuel_consumption_rate_cm3pm: efi_optional_float(input, 50),
+        estimated_consumed_fuel_volume_cm3: efi_optional_float(input, 54),
+        throttle_position_percent: input[58],
+        ecu_index: input[59],
+        spark_plug_usage: input[60].try_into()?,
+        cylinder_status: EfiCylinderState {
+            ignition_timing_deg: efi_optional_float(input, 61),
+            injection_time_ms: efi_optional_float(input, 65),
+            cylinder_head_temperature: efi_optional_float(input, 69),
+            cylinder_head_temperature2: efi_optional_float(input, 73),
+            exhaust_gas_temperature: efi_optional_float(input, 77),
+            exhaust_gas_temperature2: efi_optional_float(input, 81),
+            lambda_coefficient: efi_optional_float(input, 85),
+        },
+        ignition_voltage: (ignition_voltage != -1.0).then_some(ignition_voltage),
+        throttle_out: efi_optional_float(input, 93),
+        pt_compensation: efi_optional_float(input, 97),
+    })
+}
+
+impl crate::bindings::Efi<'_, '_> {
+    pub fn get_backend(&self, index: u8) -> Result<Option<EfiBackend>> {
+        let input = [index];
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw,
+                crate::imports::BINDING_${get_backend_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] { 0 => Ok(None), 1 => Ok(Some(EfiBackend { index })), _ => Err(Error::Host) }
+    }
+
+    pub fn get_state(&self) -> Result<EfiState> {
+        let mut output = [0u8; ${state_wire_size}];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw,
+                crate::imports::BINDING_${get_state_id}.slot(),
+                core::ptr::null(), 0, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        efi_decode(&output)
+    }
+}
+
+impl EfiBackend {
+    pub fn handle_scripting(&self, context: &Context<'_>, state: &EfiState) -> Result<bool> {
+        if state.ignition_voltage.is_some_and(|value| value.is_nan() || value == -1.0) {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; ${state_wire_size_plus_1}];
+        input[0] = self.index;
+        input[1..5].copy_from_slice(&state.last_updated_ms.to_le_bytes());
+        input[5..15].copy_from_slice(&[
+            state.engine_state as u8, u8::from(state.general_error), state.crankshaft_sensor_status as u8,
+            state.temperature_status as u8, state.fuel_pressure_status as u8, state.oil_pressure_status as u8,
+            state.detonation_status as u8, state.misfire_status as u8, state.debris_status as u8,
+            state.engine_load_percent,
+        ]);
+        input[15..19].copy_from_slice(&state.engine_speed_rpm.to_le_bytes());
+        for (offset, value) in [
+            (19, state.spark_dwell_time_ms), (23, state.atmospheric_pressure_kpa),
+            (27, state.intake_manifold_pressure_kpa), (31, state.intake_manifold_temperature),
+            (35, state.coolant_temperature), (39, state.oil_pressure), (43, state.oil_temperature),
+            (47, state.fuel_pressure), (51, state.fuel_consumption_rate_cm3pm),
+            (55, state.estimated_consumed_fuel_volume_cm3),
+        ] { efi_float(&mut input, offset, value)?; }
+        input[59..62].copy_from_slice(&[
+            state.throttle_position_percent, state.ecu_index, state.spark_plug_usage as u8,
+        ]);
+        for (offset, value) in [
+            (62, state.cylinder_status.ignition_timing_deg),
+            (66, state.cylinder_status.injection_time_ms),
+            (70, state.cylinder_status.cylinder_head_temperature),
+            (74, state.cylinder_status.cylinder_head_temperature2),
+            (78, state.cylinder_status.exhaust_gas_temperature),
+            (82, state.cylinder_status.exhaust_gas_temperature2),
+            (86, state.cylinder_status.lambda_coefficient),
+        ] { efi_float(&mut input, offset, value)?; }
+        input[90..94].copy_from_slice(&state.ignition_voltage.unwrap_or(-1.0).to_bits().to_le_bytes());
+        efi_float(&mut input, 94, state.throttle_out)?;
+        efi_float(&mut input, 98, state.pt_compensation)?;
+        let mut output = [0u8; 1];
+        result(unsafe {
+            context.api.binding_call.unwrap()(context.raw, crate::imports::BINDING_${handle_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), output.len() as u32)
+        })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+}

@@ -1,0 +1,28 @@
+use crate::{result, Error, Location, Result};
+
+pub const FENCE_POLYGON_POINTS_MAX: usize = ${points_max};
+
+impl crate::bindings::Fence<'_, '_> {
+    /// Replace all stored fence items with one inclusion polygon of
+    /// ${points_min} to ${points_max} points. Only latitude and longitude are used.
+    /// Returns false if the fence loader rejects or cannot store the polygon.
+    pub fn write_inclusion_polygon(&self, points: &[Location]) -> Result<bool> {
+        if points.len() < ${points_min} || points.len() > FENCE_POLYGON_POINTS_MAX {
+            return Err(Error::Invalid);
+        }
+        let mut input = [0u8; ${input_size}];
+        input[0] = points.len() as u8;
+        for (i, point) in points.iter().enumerate() {
+            let offset = 1 + 8 * i;
+            input[offset..offset + 4].copy_from_slice(&point.lat().to_le_bytes());
+            input[offset + 4..offset + 8].copy_from_slice(&point.lng().to_le_bytes());
+        }
+        let mut output = [0u8; 1];
+        result(unsafe {
+            self.context.api.binding_call.unwrap()(self.context.raw,
+                crate::imports::BINDING_${binding_id}.slot(),
+                input.as_ptr(), input.len() as u32, output.as_mut_ptr(), 1)
+        })?;
+        match output[0] { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+    }
+}

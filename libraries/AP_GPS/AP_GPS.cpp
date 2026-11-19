@@ -1259,8 +1259,18 @@ void AP_GPS::update_primary(void)
 }
 #endif  // GPS_MAX_RECEIVERS > 1
 
+void AP_GPS::note_rtcm_message(mavlink_channel_t chan)
+{
+#if AP_GPS_RTCM_COUNT_ENABLED
+    if (unsigned(chan) < ARRAY_SIZE(rtcm_message_count)) {
+        auto &count = rtcm_message_count[chan];
+        count.store(count.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
+    }
+#endif
+}
+
 #if HAL_GCS_ENABLED
-void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
+void AP_GPS::handle_gps_inject(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     mavlink_gps_inject_data_t packet;
     mavlink_msg_gps_inject_data_decode(&msg, &packet);
@@ -1270,7 +1280,9 @@ void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
         return;
     }
 
-    handle_gps_rtcm_fragment(0, packet.data, packet.len);
+    if (handle_gps_rtcm_fragment(0, packet.data, packet.len)) {
+        note_rtcm_message(chan);
+    }
 }
 
 /*
@@ -1284,7 +1296,7 @@ void AP_GPS::handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg)
         handle_gps_rtcm_data(chan, msg);
         break;
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
-        handle_gps_inject(msg);
+        handle_gps_inject(chan, msg);
         break;
     default: {
         uint8_t i;
@@ -1539,12 +1551,12 @@ bool AP_GPS::all_consistent(float &distance) const
 /*
    re-assemble fragmented RTCM data
  */
-void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_t len)
+bool AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_t len)
 {
     if ((flags & 1) == 0) {
         // it is not fragmented, pass direct
         inject_data(data, len);
-        return;
+        return true;
     }
 
     // see if we need to allocate re-assembly buffer
@@ -1552,7 +1564,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         rtcm_buffer = (struct rtcm_buffer *)calloc(1, sizeof(*rtcm_buffer));
         if (rtcm_buffer == nullptr) {
             // nothing to do but discard the data
-            return;
+            return false;
         }
     }
 
@@ -1568,7 +1580,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         // check whether this is a duplicate fragment. If it is, we can
         // return early.
         if (!sequence_nr_changed && seen_this_fragment_index && !memcmp(start_of_fragment_in_buffer, data, len)) {
-            return;
+            return false;
         }
 
         // not a duplicate
@@ -1612,7 +1624,9 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         inject_data(rtcm_buffer->buffer, rtcm_buffer->total_length);
         rtcm_buffer->fragment_count = 0;
         rtcm_buffer->fragments_received = 0;
+        return true;
     }
+    return false;
 }
 
 /*
@@ -1645,7 +1659,9 @@ void AP_GPS::handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_
     }
 #endif
 
-    handle_gps_rtcm_fragment(packet.flags, packet.data, packet.len);
+    if (handle_gps_rtcm_fragment(packet.flags, packet.data, packet.len)) {
+        note_rtcm_message(chan);
+    }
 }
 
 #if AP_GPS_RTCM_DECODE_ENABLED
@@ -1673,6 +1689,7 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
             // we have a full message, inject it
             const uint8_t *buf = nullptr;
             uint16_t len = rtcm.parsers[chan]->get_len(buf);
+            note_rtcm_message(chan);
 
             // see if we have already sent it. This prevents
             // duplicates from multiple sources

@@ -27,6 +27,9 @@
 #include "GPS_detect_state.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_MSP/msp.h>
+#if AP_GPS_RTCM_COUNT_ENABLED
+#include <atomic>
+#endif
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <SITL/SIM_GPS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -587,8 +590,15 @@ public:
         _force_disable_gps_yaw = disable;
     }
 
-    // handle possibly fragmented RTCM injection data
-    void handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_t len);
+    // handle possibly fragmented RTCM injection data, true when a complete message was injected
+    bool handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_t len);
+
+#if AP_GPS_RTCM_COUNT_ENABLED
+    // number of complete RTCM messages received on a MAVLink channel since boot
+    uint32_t get_rtcm_message_count(uint8_t chan) const {
+        return chan < ARRAY_SIZE(rtcm_message_count) ? rtcm_message_count[chan].load(std::memory_order_relaxed) : 0;
+    }
+#endif
 
     // get configured type by instance
     GPS_Type get_type(uint8_t instance) const {
@@ -774,7 +784,12 @@ private:
 
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_t &msg);
-    void handle_gps_inject(const mavlink_message_t &msg);
+    void handle_gps_inject(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void note_rtcm_message(mavlink_channel_t chan);
+#if AP_GPS_RTCM_COUNT_ENABLED
+    // written on the main thread only, read from others
+    std::atomic<uint32_t> rtcm_message_count[MAVLINK_COMM_NUM_BUFFERS];
+#endif
 
     //Inject a packet of raw binary to a GPS
     void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);

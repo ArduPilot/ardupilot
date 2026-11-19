@@ -19,6 +19,9 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include "AP_Notify_config.h"
+#if AP_NOTIFY_EVENT_COUNTS_ENABLED
+#include <atomic>
+#endif
 #include <AP_IOMCU/AP_IOMCU.h>
 
 #include "NotifyDevice.h"
@@ -177,6 +180,13 @@ public:
     static struct notify_flags_and_values_type flags;
     static struct notify_events_type events;
 
+#if AP_NOTIFY_EVENT_COUNTS_ENABLED
+    // wrapping count of an event, by its bit position in notify_events_type
+    static uint8_t get_event_count(uint8_t bit) {
+        return bit < ARRAY_SIZE(event_counts) ? event_counts[bit].load(std::memory_order_relaxed) : 0;
+    }
+#endif
+
     // initialisation
     void init(void);
 
@@ -234,6 +244,10 @@ public:
 #endif
 
 private:
+#if AP_NOTIFY_EVENT_COUNTS_ENABLED
+    // written by update() only
+    static std::atomic<uint8_t> event_counts[32];
+#endif
 
     static AP_Notify *_singleton;
 

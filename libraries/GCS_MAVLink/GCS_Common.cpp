@@ -53,6 +53,9 @@
 #include <AP_EFI/AP_EFI.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Scripting/AP_Scripting.h>
+#if AP_MODULE_ENABLED
+#include <AP_Module/BindingMAVLink.h>
+#endif
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Winch/AP_Winch.h>
@@ -1925,6 +1928,13 @@ void GCS_MAVLINK::raw_packetReceived(uint8_t framing_status,
     }
 #endif // AP_SCRIPTING_LUA_ENABLED
 
+#if AP_MODULE_ENABLED
+    // modules only see packets the vehicle would accept
+    if (accept_packet(status, msg)) {
+        AP_Module::binding_mavlink_handle_message(msg, chan);
+    }
+#endif
+
 #if AP_MAVLINK_FOLLOW_HANDLING_ENABLED
     {
         AP_Follow *follow = AP_Follow::get_singleton();
@@ -2003,15 +2013,21 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             hal.util->persistent_data.last_mavlink_msgid = 0;
 
         }
-#if AP_SCRIPTING_LUA_ENABLED
         if (framing == MAVLINK_FRAMING_BAD_CRC) {
             // This may be a valid message that we don't know the crc extra for, pass it to scripting which might
+#if AP_SCRIPTING_LUA_ENABLED
             AP_Scripting *scripting = AP_Scripting::get_singleton();
             if (scripting != nullptr) {
                 scripting->handle_message(msg, chan);
             }
-        }
 #endif // AP_SCRIPTING_LUA_ENABLED
+#if AP_MODULE_ENABLED
+            // a known message with a bad CRC is corrupt
+            if (mavlink_get_msg_entry(msg.msgid) == nullptr && accept_packet(status, msg)) {
+                AP_Module::binding_mavlink_handle_message(msg, chan);
+            }
+#endif
+        }
 
         if (parsed_packet || i % 100 == 0) {
             // make sure we don't spend too much time parsing mavlink messages
@@ -5424,6 +5440,11 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
         return;
     }
 #endif
+#if AP_MODULE_ENABLED
+    if (AP_Module::binding_mavlink_is_handling_command(packet.command)) {
+        return;
+    }
+#endif
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
@@ -5954,6 +5975,11 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     AP_Scripting *scripting = AP_Scripting::get_singleton();
     if (scripting != nullptr && scripting->is_handling_command(packet.command)) {
         // Scripting has registered to receive this command, do not procces it internaly
+        return;
+    }
+#endif
+#if AP_MODULE_ENABLED
+    if (AP_Module::binding_mavlink_is_handling_command(packet.command)) {
         return;
     }
 #endif
@@ -7768,6 +7794,10 @@ uint64_t GCS_MAVLINK::capabilities() const
     if (!AP_BoardConfig::ftp_disabled()){  //if ftp disable board option is not set
         ret |= MAV_PROTOCOL_CAPABILITY_FTP;
     }
+#endif
+
+#if AP_EXTERNAL_BINDING_ENABLED
+    ret |= gcs().get_extra_capabilities();
 #endif
 
     return ret;

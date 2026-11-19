@@ -1,0 +1,36 @@
+#pragma once
+
+#include <AP_Param/AP_Param.h>
+
+/// Fast param access via pointer helper
+class Parameter
+{
+public:
+
+    // init to param by name
+    bool init(const char *name);
+
+    // init by token, to get the value of old params
+    bool init_by_info(uint16_t key, uint32_t group_element, enum ap_var_type type);
+
+    // setters and getters
+    bool set(float value);
+    bool set_and_save(float value);
+    bool get(float &value);
+    bool configured();
+    bool set_default(float value);
+
+    // exact access to integer parameters, false for float parameters and
+    // values outside the parameter's type
+    bool get_int32(int32_t &value);
+    bool set_int32(int32_t value);
+    bool set_and_save_int32(int32_t value);
+
+    enum ap_var_type type() const { return vtype; }
+
+private:
+    bool set_int32_internal(int32_t value, bool save);
+
+    enum ap_var_type vtype;
+    AP_Param *vp;
+};

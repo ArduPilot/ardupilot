@@ -403,6 +403,9 @@ public:
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
+#if AP_EXTERNAL_BINDING_ENABLED
+        DRONE_SHOW_START =   248, // polled by scripts and modules
+#endif
 
         // inputs 250-254 are reserved for the custom integrations.
         // No code which uses these auxiliary channel options will be

@@ -20976,6 +20976,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrottleGainBoost,
             self.ThrottleGainBoostRateThread,
             self.ScriptMountPOI,
+            self.ScriptMountPOIRust,
             self.GuidedYawRate,
             self.MISSION_OPTION_CLEAR_MISSION_AT_BOOT,
             self.SafetySwitch,
@@ -21110,6 +21111,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MissionRTLYawBehaviour,
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingFlipMode,
+            self.ScriptingCustomModeTakeoff,
             self.UTMGlobalPosition,
         ])
         return ret
@@ -21239,17 +21241,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def ScriptMountPOI(self):
         '''test the MountPOI example script'''
+        self.ScriptMountPOIMain(rust=False)
+
+    def ScriptMountPOIRust(self):
+        '''test the native Rust MountPOI applet'''
+        self.ScriptMountPOIMain(rust=True)
+
+    def ScriptMountPOIMain(self, rust):
         self.context_push()
 
         self.install_terrain_handlers_context()
         self.set_parameters({
-            "SCR_ENABLE": 1,
+            "SCR_ENABLE": 0 if rust else 1,
+            "MOD_ENABLE": 1 if rust else 0,
+            "MOD_HEAP_MAX": 32768,
+            "MOD_CODE_MAXSIZE": 131072,
+            "MOD_STACK_MAX": 32768,
             "RC12_OPTION": 300,
         })
         self.setup_servo_mount()
         self.reboot_sitl()
         self.set_rc(6, 1300)
-        self.install_applet_script_context('mount-poi.lua')
+        if rust:
+            self.install_rust_applet_context(
+                'mount_poi/main.rs',
+                install_name='mount-poi.apmod',
+            )
+        else:
+            self.install_applet_script_context('mount-poi.lua')
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.context_collect('STATUSTEXT')
@@ -23611,6 +23630,172 @@ RTL_ALT_M 111
             "OA_BR_LOOKAHEAD": 42,
         })
 
+    def DynamicParamDefaults(self):
+        '''test that defaults files apply to parameters registered after boot'''
+        files = []
+        for content in ("SCR_ENABLE 1\nTST_A 7\nTST_B 8\n", "TST_A 9\n"):
+            f = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+            f.write(content)
+            f.close()
+            files.append(f.name)
+        script_content = """
+local KEY = 10
+assert(param:add_table(KEY, "TST_", 16), 'could not add param table')
+assert(param:add_param(KEY, 5, "A", 22), 'could not add TST_A')
+assert(param:add_param(KEY, 1, "B", 33), 'could not add TST_B')
+assert(param:add_param(KEY, 2, "C", 44), 'could not add TST_C')
+
+function update()
+  gcs:send_text(3, "test script running")
+  return update, 1000
+end
+
+return update, 1000
+"""
+        self.install_script_content_context("test.lua", script_content)
+        self.customise_SITL_commandline([], defaults_filepath=files, wipe=True)
+        self.wait_statustext('test script running')
+        # the last defaults file wins; unlisted names keep the coded default
+        self.assert_parameter_value('TST_A', 9)
+        self.assert_parameter_value('TST_B', 8)
+        self.assert_parameter_value('TST_C', 44)
+
+        self.start_subtest("Saved values take precedence over defaults files")
+        self.set_parameter('TST_B', 55)
+        self.reboot_sitl()
+        self.wait_statustext('test script running')
+        self.assert_parameter_value('TST_A', 9)
+        self.assert_parameter_value('TST_B', 55)
+
+    def ScriptingInt32Params(self):
+        """Test exact integer parameter access and saved values through Lua."""
+        self.context_push()
+        script_content = """
+local KEY = 20
+assert(param:add_table(KEY, "L32_", 8))
+assert(param:add_param_int32(KEY, 1, "VALUE", 0))
+assert(param:add_param_int32(KEY, 2, "SAVED", 16777216))
+assert(param:add_param(KEY, 3, "FLOAT", 1.5))
+assert(not param:add_param_int32(KEY, 4, "BAD", 16777217))
+assert(not param:add_param(KEY, 2, "SAVED", 0))
+assert(param:add_param_int32(KEY, 5, "DEFAULT", 0))
+assert(param:add_param_int32(KEY, 6, "INEXACT", 7))
+assert(param:add_param_int32(KEY, 7, "RO", 0))
+assert(param:add_param_int32(KEY, 8, "EXP", 0))
+assert(Parameter("L32_DEFAULT"):get_int32() == 1000)
+assert(Parameter("L32_INEXACT"):get_int32() == 7)
+assert(Parameter("L32_RO"):get_int32() == 3)
+assert(Parameter("L32_EXP"):get_int32() == 1000000000)
+local value = Parameter("L32_VALUE")
+local saved = Parameter("L32_SAVED")
+local f = Parameter("L32_FLOAT")
+assert(f:get_int32() == nil)
+assert(not f:set_int32(1))
+assert(not Parameter("FENCE_ENABLE"):set_int32(300))
+for _, v in ipairs({1491234567, -2147483648, 2147483647}) do
+  assert(value:set_int32(v))
+  assert(value:get_int32() == v)
+end
+if saved:get_int32() == 16777216 then
+  assert(saved:set_and_save_int32(16777217))
+elseif saved:get_int32() == 16777217 then
+  gcs:send_text(6, "L32 saved integer kept")
+else
+  error("unexpected saved integer")
+end
+gcs:send_text(6, "L32 integer checks passed")
+return function() end, 1000
+"""
+        self.install_script_content_context("int32-params.lua", script_content)
+        defaults = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults.write("SCR_ENABLE 1\nL32_DEFAULT 1e3\nL32_INEXACT 1491234567\n"
+                       "L32_RO 3.0 @READONLY\nL32_EXP 1e9\n")
+        defaults.close()
+        self.context_collect('STATUSTEXT')
+        self.customise_SITL_commandline([], defaults_filepath=[defaults.name], wipe=True)
+        self.wait_text('L32 integer checks passed', check_context=True)
+        self.mav.mav.param_set_send(self.sysid_thismav(), 1, b'L32_RO', 4, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+        self.delay_sim_time(2, reason='read-only Lua parameter set ignored')
+        self.assert_parameter_value('L32_RO', 3)
+        self.delay_sim_time(2, reason='wait for integer save IO')
+        self.reboot_sitl()
+        self.wait_text('L32 saved integer kept', check_context=True)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def NativeModuleParamDefaults(self):
+        '''test exact int32 parameters and defaults files for native module parameters'''
+        self.context_push()
+        self.install_rust_test_module_context('param_defaults.rs', install_name='param-defaults.apmod')
+        # limits also admit a module built into ROMFS with --module
+        defaults = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults.write("MOD_ENABLE 1\nMOD_HEAP_MAX 262144\nMOD_CODE_MAXSIZE 262144\nMOD_STACK_MAX 65536\n"
+                       "SCR_ENABLE 0\nPDD_I32 16777216.0\nPDD_BIG 2147483648\nPDD_RO 3.0 @READONLY\n"
+                       "PDD_MAX 2147483647\nPDD_MIN -2147483648\nPDD_ROUND 1491234567\nPDD_LARGE 1e9\n")
+        defaults.close()
+        self.context_collect('STATUSTEXT')
+        self.install_message_hook_context(self.FailFastStatusText(self, ['PDT fail', 'Module fatal:']))
+        self.customise_SITL_commandline([], defaults_filepath=[defaults.name], wipe=True)
+        self.wait_text('PDT ready', check_context=True, timeout=60)
+        self.assert_parameter_value('PDD_RO', 3)
+        self.mav.mav.param_set_send(self.sysid_thismav(), 1, b'PDD_RO', 4, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+        self.delay_sim_time(2, reason='read-only parameter set ignored')
+        self.assert_parameter_value('PDD_RO', 3)
+
+        # an int32 value next to an exactly representable default must survive a reboot
+        self.reboot_sitl()
+        self.wait_text('PDT saved int32 kept', check_context=True, timeout=60)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def NativeModuleControlBindings(self):
+        '''test native bindings for int32 parameters, fence, notify, mkdir, disarm methods and mode reasons'''
+        self.context_push()
+        self.install_rust_test_module_context('module_control.rs', install_name='module-control.apmod')
+        # defaults for parameters the module registers after boot
+        defaults = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        # limits also admit a module built into ROMFS with --module
+        defaults.write("MOD_ENABLE 1\nMOD_HEAP_MAX 262144\nMOD_CODE_MAXSIZE 262144\nMOD_STACK_MAX 65536\n"
+                       "SCR_ENABLE 0\nMCD_I32 16777216\nMCD_BIG 2147483648\nMCD_RO 3 @READONLY\n"
+                       "MCD_MAX 2147483647\n")
+        defaults.close()
+        self.context_collect('STATUSTEXT')
+        self.install_message_hook_context(self.FailFastStatusText(self, ['MCT fail', 'Module fatal:']))
+        self.customise_SITL_commandline([], defaults_filepath=[defaults.name], wipe=True)
+        try:
+            self.wait_text('MCT setup ok', check_context=True, timeout=60)
+            self.assert_parameter_value('MCT_I32', -7)
+            self.assert_parameter_value('MCD_RO', 3)
+            self.mav.mav.param_set_send(self.sysid_thismav(), 1, b'MCD_RO', 4, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+            self.delay_sim_time(2, reason='read-only parameter set ignored')
+            self.assert_parameter_value('MCD_RO', 3)
+            # four vertices plus the legacy return point and closing point
+            self.assert_parameter_value('FENCE_TOTAL', 6)
+            items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+            if len(items) != 4 or any(
+                    item.command != mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION or item.param1 != 4
+                    for item in items):
+                raise NotAchievedException("Unexpected fence items %s" % str(items))
+
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.wait_text('MCT disarmed', check_context=True)
+            self.wait_disarmed()
+            self.wait_text('MCT mode ok', check_context=True)
+            self.wait_mode('LAND')
+
+            # an int32 saved next to its inexact default must survive a reboot
+            os.rmdir(os.path.join('modules', 'mct_dir'))
+            self.reboot_sitl()
+            self.wait_text('MCT saved int32 kept', check_context=True, timeout=60)
+        finally:
+            directory = os.path.join('modules', 'mct_dir')
+            if os.path.isdir(directory):
+                os.rmdir(directory)
+            self.clear_fence()
+        self.context_pop()
+        self.reboot_sitl()
+
     def SerialPassthru(self):
         '''smoke test serial passthrough timeout and manual disable'''
         # SITL does not enforce UART thread ownership, so this cannot
@@ -23700,6 +23885,52 @@ RTL_ALT_M 111
 
         # Test done
         self.land_and_disarm()
+
+    def ScriptingCustomModeTakeoff(self):
+        '''scripting takeoff and position targets act on the running custom guided mode'''
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+        })
+        self.install_script_content_context("custom_takeoff.lua", """
+local mode = assert(vehicle:register_custom_mode(101, "LuaGuided", "LGUI"))
+mode:allow_entry(true)
+local stage = 0
+local target
+function update()
+    if vehicle:get_mode() ~= 101 or not arming:is_armed() then
+        return update, 100
+    end
+    local pos = ahrs:get_relative_position_NED_origin()
+    if stage == 0 and vehicle:start_takeoff(10) then
+        gcs:send_text(6, "LCM: takeoff started")
+        stage = 1
+    elseif stage == 1 and vehicle:is_taking_off() then
+        gcs:send_text(6, "LCM: taking off")
+        stage = 2
+    elseif stage == 2 and pos and pos:z() < -9 and not vehicle:is_taking_off() then
+        target = pos:copy()
+        target:x(target:x() + 10)
+        gcs:send_text(6, "LCM: PVA")
+        stage = 3
+    elseif stage == 3 then
+        if not vehicle:set_target_posvelaccel_NED(target, Vector3f(), Vector3f(), false, 0, false, 0, false) then
+            gcs:send_text(6, "LCM: PVA rejected")
+        end
+    end
+    return update, 100
+end
+return update, 100
+""")
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode(101)
+        self.context_collect('STATUSTEXT')
+        self.arm_vehicle()
+        self.wait_statustext("LCM: taking off", timeout=10, check_context=True)
+        self.wait_statustext("LCM: PVA", timeout=60, check_context=True)
+        self.wait_distance(10, accuracy=1.5, timeout=30)
+        self.change_mode("LAND")
+        self.wait_disarmed()
 
     def ScriptingFlyVelocity(self):
         '''test flying a velocity vector using scripting'''
@@ -25043,16 +25274,194 @@ return update()
             if reply.get_payload().ljust(10, b'\0')[8] != (255 if wide else target):
                 raise NotAchievedException("Incorrect Lua payload target")
 
+    def RustCustomModeController(self):
+        '''exercise native custom mode controller requests, options and owner supervision'''
+        # limits also admit a module built into ROMFS with --module
+        self.set_parameters({
+            'MOD_ENABLE': 1,
+            'MOD_HEAP_MAX': 262144,
+            'MOD_CODE_MAXSIZE': 262144,
+            'MOD_STACK_MAX': 65536,
+        })
+        self.context_push()
+        self.install_rust_test_module_context('custom_mode_controller.rs', install_name='custom-mode-controller.apmod')
+        mode = 100
+        status_ok = r'CMT: gen (\d+) app \1 ok 1 done 0'
+        status_done = r'CMT: gen (\d+) app \1 ok 1 done 1'
+
+        def start():
+            self.reboot_sitl()
+            self.wait_parameter_value('CMT_CMD', 0, timeout=30)
+            self.context_collect('STATUSTEXT')
+
+        def command(cmd, arg=0, text=None, regex=False, timeout=30):
+            self.context_clear_collection('STATUSTEXT')
+            self.set_parameter('CMT_ARG', arg, add_to_context=False)
+            self.send_set_parameter_direct('CMT_CMD', cmd)
+            self.wait_statustext('CMT: command %u' % cmd, check_context=True)
+            if text is not None:
+                self.wait_statustext(text, check_context=True, regex=regex, timeout=timeout)
+
+        def takeoff(alt=10):
+            self.set_parameter('CMT_ALT', alt, add_to_context=False)
+            command(1, text=status_done, regex=True, timeout=60)
+            self.wait_altitude(alt - 1, alt + 1, relative=True)
+
+        start()
+        self.wait_ready_to_arm()
+        self.change_mode(mode)
+        self.wait_statustext('CMT: gen 0 app 0 ok 0 done 0 act 1', check_context=True)
+
+        self.start_subtest('takeoff, guided PVA, loiter and land')
+        self.arm_vehicle()
+        takeoff(10)
+        command(11, text=r'CMT: early PVA rejected [1-9]\d* inconsistent 0', regex=True)
+        self.wait_statustext(status_ok, check_context=True, regex=True)
+        command(2, arg=10, text='CMT: guided applied, PVA start')
+        self.wait_distance(10, accuracy=1.5, timeout=40)
+        if self.statustext_in_collections('CMT: PVA rejected'):
+            raise NotAchievedException('PVA target rejected')
+        command(3, text=status_ok, regex=True)
+        loc = self.mav.location()
+        self.delay_sim_time(5, reason='loiter holds')
+        self.assert_distance(loc, self.mav.location(), 0, 2)
+        command(4, text=status_done, regex=True, timeout=90)
+        self.wait_disarmed()
+        self.assert_mode(mode)
+
+        self.start_subtest('NO_EXTERNAL_GUIDED and takeoff event')
+        command(6, arg=1)
+        self.arm_vehicle()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p2=0,
+            x=int(self.mav.location().lat * 1e7),
+            y=int(self.mav.location().lng * 1e7),
+            z=20,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=5)
+        self.wait_statustext('CMT: takeoff event', check_context=True)
+        self.wait_statustext('CMT: request Loiter', check_context=True, timeout=60)
+        self.wait_altitude(9, 11, relative=True)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE, p1=0, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        command(2, text='CMT: guided applied, PVA start')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE, p1=0, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        loc = self.mav.location()
+        self.mav.mav.set_position_target_local_ned_send(
+            0, 1, 1, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 0b0000111111000111, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0)
+        self.delay_sim_time(3, reason='external target ignored')
+        self.assert_distance(loc, self.mav.location(), 0, 2)
+        command(6, arg=0)
+
+        self.start_subtest('RTL without disarm')
+        command(2, arg=20, text='CMT: guided applied, PVA start')
+        self.wait_distance_to_home(18, 25, timeout=60)
+        command(5, text=status_done, regex=True, timeout=120)
+        self.wait_distance_to_home(0, 3)
+        if not self.armed():
+            raise NotAchievedException('RTL request disarmed the vehicle')
+        self.assert_mode(mode)
+        self.disarm_vehicle()
+
+        self.start_subtest('ARMING_GATED')
+        command(6, arg=4)
+        self.set_rc(3, 1000)
+        self.set_output_to_max(self.get_stick_arming_channel())
+        self.delay_sim_time(5, reason='RC arming attempt')
+        self.set_output_to_trim(self.get_stick_arming_channel())
+        if self.armed():
+            raise NotAchievedException('armed from RC without arming_ready')
+        command(7, arg=1)
+        self.arm_motors_with_rc_input()
+        self.disarm_vehicle()
+        command(7, arg=0)
+        self.arm_vehicle()  # MAVLink arming always allowed
+        self.disarm_vehicle()
+        command(6, arg=0)
+
+        self.start_subtest('arm request and owned targets')
+        command(12, text='CMT: arm request 1 armed 1')
+        takeoff(10)
+        command(2, arg=0, text='CMT: guided applied, PVA start')
+        command(13, text='CMT: owned PVA 1')
+        # ordinary GUIDED must not take the owner's targets
+        self.change_mode('GUIDED')
+        command(13, text='CMT: owned PVA 0')
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=90)
+        self.change_mode(mode)
+
+        self.start_subtest('EKF_FS_DISARM')
+        self.arm_vehicle()
+        takeoff(10)
+        command(6, arg=2)
+        self.set_parameter('FS_EKF_THRESH', 0.001)
+        self.wait_statustext('EKF Failsafe: forced disarm', check_context=True, timeout=30)
+        self.wait_disarmed()
+        self.set_parameter('FS_EKF_THRESH', 0.8)
+        command(6, arg=0)
+        self.wait_ready_to_arm()
+
+        self.start_subtest('supervision expiry lands once')
+        self.change_mode('LOITER')
+        self.change_mode(mode)
+        self.arm_vehicle()
+        takeoff(10)
+        command(8, arg=1000)
+        command(9, text='owner lost, landing', timeout=10)
+        self.wait_statustext('lost 1', check_context=True)
+        self.wait_disarmed(timeout=90)
+        self.assert_mode(mode)
+        if len([m for m in self.context_collection('STATUSTEXT') if 'owner lost' in m.text]) != 1:
+            raise NotAchievedException('owner loss not latched once')
+        self.change_mode('LOITER')
+        self.send_cmd_do_set_mode(mode)
+        self.delay_sim_time(2, reason='re-entry refused')
+        self.assert_mode('LOITER')
+
+        self.start_subtest('owner cleanup lands once')
+        start()
+        self.wait_ready_to_arm()
+        self.change_mode(mode)
+        self.arm_vehicle()
+        takeoff(10)
+        command(8, arg=1000)
+        command(10, text='owner lost, landing', timeout=10)
+        self.wait_disarmed(timeout=90)
+        self.assert_mode(mode)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def LuaParamLockdown(self):
         '''test param-lockdown.lua applet'''
+        self.ParamLockdown(rust=False)
+
+    def RustParamLockdown(self):
+        '''test the native Rust param-lockdown applet'''
+        self.ParamLockdown(rust=True)
+
+    def ParamLockdown(self, rust):
         self.set_parameters({
-            'SCR_ENABLE': 1,
+            'SCR_ENABLE': 0 if rust else 1,
+            'MOD_ENABLE': 1 if rust else 0,
+            'MOD_HEAP_MAX': 32768,
+            'MOD_CODE_MAXSIZE': 131072,
+            'MOD_STACK_MAX': 32768,
         })
 
         self.context_push()
 
-        self.install_mavlink_module_context("MAVLink")
-        self.install_applet_script_context("param-lockdown.lua")
+        if rust:
+            self.install_rust_applet_context(
+                'param_lockdown/main.rs',
+                install_name='param-lockdown.apmod',
+            )
+        else:
+            self.install_mavlink_module_context("MAVLink")
+            self.install_applet_script_context("param-lockdown.lua")
         self.reboot_sitl()
 
         # collect original parameter values for everything other than
@@ -25623,6 +26032,7 @@ return update, 1000
             self.PAUSE_CONTINUE,
             self.MAV_CMD_AIRFRAME_CONFIGURATION,
             self.DefaultsCommaList,
+            self.NativeModuleControlBindings,
             self.FenceRelativeToHomeMinAlt,
             self.FenceRelativeToAMSLMinAlt,
             self.MotorVibration,
@@ -25701,12 +26111,17 @@ return update, 1000
             self.LoweheiserManual,
             self.Weathervane,
             self.ReadOnlyDefaults,
+            self.DynamicParamDefaults,
+            self.ScriptingInt32Params,
+            self.NativeModuleParamDefaults,
             self.SerialPassthru,
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
             self.mission_NAV_LOITER_TURNS_direction,
             self.LuaMAVLinkTarget,
             self.LuaParamLockdown,
+            self.RustParamLockdown,
+            self.RustCustomModeController,
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             self.CRSF,

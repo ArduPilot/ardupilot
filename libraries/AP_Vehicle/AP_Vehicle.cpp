@@ -268,6 +268,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: SCR_
     // @Path: ../AP_Scripting/AP_Scripting.cpp
     AP_SUBGROUPINFO(scripting, "SCR_", 28, AP_Vehicle, AP_Scripting),
+#elif AP_MODULE_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+    // Preserve the shared SCR_SDEV* configuration when native modules are the sole
+    // scripting runtime.
+    // @Group: SCR_
+    // @Path: ../AP_Scripting/AP_Scripting_SerialDevice.cpp
+    AP_SUBGROUPINFO(scripting_serialdevice, "SCR_", 28, AP_Vehicle, AP_Scripting_SerialDevice),
 #endif
 
 #if HAL_LOGGING_ENABLED
@@ -299,6 +305,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_Beacon/AP_Beacon.cpp
     AP_SUBGROUPINFO(beacon, "BCN", 33, AP_Vehicle, AP_Beacon),
 #endif  // AP_BEACON_ENABLED
+
+#if AP_MODULE_ENABLED
+    // @Group: MOD_
+    // @Path: ../AP_Module/Runtime.cpp
+    AP_SUBGROUPINFO(native_modules, "MOD_", 34, AP_Vehicle, AP_Module::Runtime),
+#endif
 
     AP_GROUPEND
 };
@@ -395,8 +407,16 @@ void AP_Vehicle::setup()
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
     // must be done now so ports are registered and drivers get set up properly
     // (in particular mavlink which checks during init_ardupilot())
+#if AP_MODULE_ENABLED
+    scripting.init_serialdevice_ports(native_modules.enabled());
+#else
     scripting.init_serialdevice_ports();
 #endif
+#endif
+#elif AP_MODULE_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+    if (native_modules.enabled()) {
+        scripting_serialdevice.init();
+    }
 #endif
 
 #if AP_NETWORKING_ENABLED
@@ -462,6 +482,10 @@ void AP_Vehicle::setup()
 #if AP_SCRIPTING_LUA_ENABLED
     scripting.init();
 #endif // AP_SCRIPTING_LUA_ENABLED
+
+#if AP_MODULE_ENABLED
+    native_modules.init();
+#endif
 
 #if AP_AIRSPEED_ENABLED
     airspeed.init();
@@ -721,6 +745,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,   &vehicle.gripper,        update,                   10,  75, 251),
 #endif
+#if AP_RELAY_TIMEOUT_ENABLED
+    SCHED_TASK_CLASS(AP_Relay,     &vehicle.relay,          update,                   10,  50, 251),
+#endif
     SCHED_TASK(one_Hz_update,                                                         1, 100, 252),
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
     SCHED_TASK(check_motor_noise,      5,     50, 252),
@@ -830,6 +857,20 @@ bool AP_Vehicle::is_crashed() const
     return false;
 #endif
 }
+
+#if AP_EXTERNAL_BINDING_ENABLED
+bool AP_Vehicle::set_mode_with_reason(uint8_t new_mode, ModeReason reason)
+{
+    switch (reason) {
+    case ModeReason::SCRIPTING:
+    case ModeReason::FENCE_BREACHED:
+    case ModeReason::EKF_FAILSAFE:
+        return set_mode(new_mode, reason);
+    default:
+        return false;
+    }
+}
+#endif
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 // update the harmonic notch filter for throttle based notch
@@ -1192,6 +1233,10 @@ void AP_Vehicle::one_Hz_update(void)
 
 #if AP_SCRIPTING_LUA_ENABLED
     scripting.update();
+#endif
+
+#if AP_MODULE_ENABLED
+    native_modules.update();
 #endif
 
 #if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED

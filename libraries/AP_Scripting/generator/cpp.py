@@ -114,7 +114,8 @@ class CppGenerator:
             function = 'lua_pushstring'
         else:
             function = 'lua_pushinteger'
-        if field and arg.kind == 'enum':
+        if arg.kind == 'enum':
+            # scoped enums do not convert implicitly
             expression = f'static_cast<int32_t>({expression})'
         return f'{indent}{function}(L, {expression});\n'
 

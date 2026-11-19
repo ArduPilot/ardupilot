@@ -6,9 +6,12 @@ import argparse
 import importlib.util
 import io
 import json
+import os
 import queue
+import shutil
 import socket
 import struct
+import subprocess
 import sys
 import tempfile
 import threading
@@ -104,6 +107,202 @@ class USBLauncherTests(unittest.TestCase):
             args.elf = unittest.mock.Mock()
             args.elf.resolve.return_value = 'firmware'
             self.assertIn('target remote COM12', gdb_usb.gdb_command(args))
+
+    def test_seer_arguments_and_deferred_setup(self):
+        with tempfile.TemporaryDirectory(prefix='seer setup $ with spaces ') as directory:
+            args = argparse.Namespace(port='/dev/ttyACM0', elf=Path('/tmp/firmware elf'), gdb='arm-gdb',
+                                      gdb_server=None, ex=['print "$literal"'],
+                                      apmod=[Path('/tmp/module symbols.apmod')])
+            with patch.object(gdb_usb.shutil, 'which', return_value='/usr/bin/arm-gdb'):
+                command = gdb_usb.seer_command(args, Path(directory))
+            self.assertEqual(command[0], 'seergdb')
+            self.assertIn('/usr/bin/arm-gdb', command)
+            self.assertEqual(command[command.index('--connect')+1], args.port)
+            self.assertIn('--interpreter=mi', command[command.index('--gdb-arguments')+1])
+            self.assertNotIn(directory, command[command.index('--gdb-arguments')+1])
+            startup = (Path(directory) / 'startup.gdb').read_text()
+            self.assertIn('set serial baud 115200', startup)
+            self.assertIn('gdb.events.new_objfile.connect', startup)
+            self.assertIn('gdb.events.stop.connect', startup)
+            self.assertIn('apmod symbols', startup)
+            self.assertIn('$literal', startup)
+            args.gdb_server = 'localhost:3333'
+            with patch.object(gdb_usb.shutil, 'which', return_value='/usr/bin/arm-gdb'):
+                command = gdb_usb.seer_command(args, Path(directory))
+            self.assertEqual(command[command.index('--connect')+1], args.gdb_server)
+
+    def test_seer_launch_lifetime(self):
+        startup = []
+
+        def launch(command, cwd=None):
+            startup.append(Path(cwd) / 'startup.gdb')
+            self.assertTrue(startup[-1].is_file())
+            self.assertEqual(command[0], 'seergdb')
+            child = unittest.mock.Mock()
+            child.wait.return_value = 0
+            return child
+
+        with patch.object(gdb_usb, 'validate_elf'), \
+                patch.object(gdb_usb.shutil, 'which', return_value='/tmp/gdb'), \
+                patch.object(gdb_usb.subprocess, 'Popen', side_effect=launch), \
+                patch.object(gdb_usb, 'connect') as connect:
+            self.assertEqual(gdb_usb.main(['firmware', '--port', '/dev/fake', '--seer', '--no-break']), 0)
+            connect.assert_called_once_with('/dev/fake', 30, trigger=False)
+        self.assertFalse(startup[0].exists())
+
+    def test_seer_startup_in_gdb(self):
+        debugger = shutil.which(os.environ.get('AP_MODULE_ARM_GDB', 'gdb'))
+        if debugger is None:
+            self.skipTest('Requires Python-enabled GDB')
+        probe = subprocess.run([debugger, '-nx', '--batch', '-ex', 'python print("PYTHON_OK")'],
+                               capture_output=True, text=True, timeout=15)
+        if probe.returncode != 0:
+            self.skipTest('Requires Python-enabled GDB')
+        with tempfile.TemporaryDirectory(prefix='seer startup with spaces ') as directory:
+            args = argparse.Namespace(port='/dev/fake', elf=Path('/tmp/firmware'), gdb=debugger,
+                                      gdb_server=None, ex=['print "$literal"'], apmod=[])
+            gdb_usb.seer_command(args, Path(directory))
+            result = subprocess.run([debugger, '-nx', '--batch', '-x', str(Path(directory) / 'startup.gdb'),
+                                     '-ex', 'python assert callable(_usb_seer_event)'],
+                                    capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_seer_preflight(self):
+        for arguments, diagnostic in [(['--batch'], '--batch cannot'), ([], 'Seer executable not found')]:
+            with self.subTest(arguments=arguments), patch.object(gdb_usb, 'validate_elf'), \
+                    patch.object(gdb_usb.shutil, 'which', side_effect=lambda name: None if name == 'seergdb' else name), \
+                    patch.object(gdb_usb, 'connect') as connect, \
+                    patch('sys.stderr', new_callable=io.StringIO) as stderr:
+                self.assertEqual(gdb_usb.main(['firmware', '--port', '/dev/fake', '--seer'] + arguments), 1)
+                self.assertIn(diagnostic, stderr.getvalue())
+                connect.assert_not_called()
+
+    def test_rust_module_commands(self):
+        args = argparse.Namespace(port='/dev/ttyACM0', elf=Path('/tmp/firmware'), gdb='python-arm-gdb',
+                                  gdb_server=None, batch=False, ex=['bt'], apmod=[Path('/tmp/module symbols.apmod')])
+        command = gdb_usb.gdb_command(args)
+        self.assertNotIn('apmod printers', command)  # selected automatically from module DWARF
+        self.assertIn('apmod symbols "/tmp/module symbols.apmod"', command)
+        helper = Path(gdb_usb.__file__).resolve().parents[1] / 'modules/apmod_gdb.py'
+        self.assertIn(f'source {helper}', command)
+        self.assertEqual(command[-2:], ['-ex', 'bt'])
+        args.apmod = [Path('/tmp/module\u00e9.apmod')]
+        self.assertIn('apmod symbols "/tmp/module\u00e9.apmod"', gdb_usb.gdb_command(args))
+
+    def test_rust_helper_source_in_gdb(self):
+        debugger = shutil.which(os.environ.get('AP_MODULE_ARM_GDB', 'gdb'))
+        if debugger is None:
+            self.skipTest('Requires Python-enabled GDB and pyelftools')
+        probe = subprocess.run([debugger, '-nx', '--batch', '-ex', 'python import elftools'],
+                               capture_output=True, text=True, timeout=15)
+        if probe.returncode != 0:
+            self.skipTest('Requires Python-enabled GDB and pyelftools')
+        with tempfile.TemporaryDirectory(prefix='usb rust debug ') as directory:
+            helper_dir = Path(directory) / 'modules'
+            helper_dir.mkdir()
+            source_dir = Path(gdb_usb.__file__).resolve().parents[1] / 'modules'
+            for name in ('apmod_gdb.py', 'apmod_debug.py', 'pack.py', 'targets.py'):
+                shutil.copyfile(source_dir / name, helper_dir / name)
+            args = argparse.Namespace(port='/dev/unused', elf=Path('/tmp/unused'), gdb=debugger,
+                                      gdb_server=None, batch=True, ex=[], apmod=[Path('/tmp/unused.apmod')])
+            with patch.object(gdb_usb, '__file__', str(Path(directory) / 'debug/gdb_usb.py')):
+                command = gdb_usb.gdb_command(args)
+            source = next(word for word in command if word.startswith('source '))
+            result = subprocess.run([debugger, '-nx', '--batch', '-ex', source, '-ex', 'help apmod'],
+                                    capture_output=True, text=True, timeout=15)
+            output = result.stdout + result.stderr
+            self.assertEqual(result.returncode, 0, output)
+            self.assertIn('Native module symbols', output)
+            self.assertNotIn('No such file or directory', output)
+
+    def test_apmod_wildcards_sorted_and_deduplicated(self):
+        with tempfile.TemporaryDirectory(prefix='module symbols ') as directory:
+            root = Path(directory)
+            for name in ('b.apmod', 'a.apmod', 'ignored.elf'):
+                (root / name).touch()
+            modules = gdb_usb.expand_apmod_paths([root / '*.apmod', root / 'a.apmod'])
+            self.assertEqual(modules, [(root / name).resolve() for name in ('a.apmod', 'b.apmod')])
+            self.assertEqual(gdb_usb.expand_apmod_paths([root / '*']), modules)
+            literal = root / 'literal[1].apmod'
+            literal.touch()
+            self.assertEqual(gdb_usb.expand_apmod_paths([literal]), [literal.resolve()])
+
+    def test_apmod_wildcard_command(self):
+        with tempfile.TemporaryDirectory(prefix='module symbols ') as directory:
+            root = Path(directory)
+            for name in ('b.apmod', 'a.apmod'):
+                module = root / name
+                module.touch()
+                module.with_suffix('.elf').touch()
+            with patch.object(gdb_usb, 'validate_elf'), \
+                    patch.object(gdb_usb.shutil, 'which', return_value='/tmp/gdb'), \
+                    patch.object(gdb_usb.subprocess, 'run',
+                                 return_value=argparse.Namespace(returncode=0, stdout='APMOD_PYTHON_OK')), \
+                    patch.object(gdb_usb.subprocess, 'Popen') as child, \
+                    patch.object(gdb_usb, 'connect') as connect:
+                child.return_value.wait.return_value = 0
+                arguments = ['firmware', '--port', '/dev/fake', '--apmod', str(root / '*.apmod'),
+                             '--apmod', str(root / 'a.apmod')]
+                self.assertEqual(gdb_usb.main(arguments), 0)
+                command = child.call_args.args[0]
+                paths = [json.dumps(str((root / name).resolve())) for name in ('a.apmod', 'b.apmod')]
+                expected = 'apmod symbols ' + ' '.join(paths)
+                self.assertIn(expected, command)
+                connect.assert_called_once()
+
+    def test_apmod_symlink_matches_debugger_resolution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / 'build/module.apmod'
+            target.parent.mkdir()
+            target.touch()
+            target.with_suffix('.elf').touch()
+            alias = root / 'module.apmod'
+            try:
+                alias.symlink_to(target)
+            except (OSError, NotImplementedError):
+                self.skipTest('Requires symbolic-link support')
+            # ModuleSymbols and gdb_command resolve the module before looking
+            # for its ELF. Preflight must validate that same companion path.
+            modules = gdb_usb.expand_apmod_paths([alias, target])
+            self.assertEqual(modules, [target.resolve()])
+            self.assertTrue(modules[0].with_suffix('.elf').is_file())
+            self.assertFalse(alias.with_suffix('.elf').exists())
+
+    def test_apmod_wildcard_errors_before_usb_attachment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for error in ('no matches', 'missing companion'):
+                with self.subTest(error=error):
+                    if error == 'missing companion':
+                        (root / 'module.apmod').touch()
+                    with patch.object(gdb_usb, 'validate_elf'), \
+                            patch.object(gdb_usb.shutil, 'which', return_value='/tmp/gdb'), \
+                            patch.object(gdb_usb.subprocess, 'run') as probe, \
+                            patch.object(gdb_usb, 'connect') as connect, \
+                            patch('sys.stderr', new_callable=io.StringIO) as stderr:
+                        self.assertEqual(gdb_usb.main(['firmware', '--port', '/dev/fake',
+                                                      '--apmod', str(root / '*.apmod')]), 1)
+                        diagnostic = 'matched no files' if error == 'no matches' else 'matching companion .elf'
+                        self.assertIn(diagnostic, stderr.getvalue())
+                        probe.assert_not_called()
+                        connect.assert_not_called()
+
+    def test_rust_requires_python_before_usb_attachment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            elf = Path(directory) / 'firmware'
+            header = bytearray(52)
+            header[:6] = b'\x7fELF\x01\x01'
+            struct.pack_into('<HH', header, 16, 2, 40)
+            elf.write_bytes(header)
+            module = Path(directory) / 'module.apmod'
+            module.write_bytes(b'module')
+            module.with_suffix('.elf').write_bytes(b'ELF')
+            with patch.object(gdb_usb.shutil, 'which', return_value='/tmp/gdb'), \
+                    patch.object(gdb_usb.subprocess, 'run', return_value=argparse.Namespace(returncode=1, stdout='')), \
+                    patch.object(gdb_usb, 'connect') as connect:
+                self.assertEqual(gdb_usb.main([str(elf), '--port', '/dev/fake', '--apmod', str(module)]), 1)
+                connect.assert_not_called()
 
     def test_vscode_workspace(self):
         with tempfile.TemporaryDirectory(prefix='usb debug ') as directory:

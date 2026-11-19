@@ -116,4 +116,10 @@ void MultiHeap::heap_free(void *ptr)
     free(header);
 }
 
+uint32_t MultiHeap::heap_free_size(void *heap_ptr) const
+{
+    const auto *heapp = static_cast<const struct heap *>(heap_ptr);
+    return heapp->max_heap_size - heapp->current_heap_usage;
+}
+
 #endif // CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS

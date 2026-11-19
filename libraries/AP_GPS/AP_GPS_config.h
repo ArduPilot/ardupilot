@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <GCS_MAVLink/GCS_config.h>
+#include <AP_Scripting/AP_Scripting_config.h>
 
 #ifndef AP_GPS_ENABLED
 #define AP_GPS_ENABLED 1
@@ -99,6 +100,11 @@
 
 #ifndef AP_GPS_UBLOX_CFGV2_ENABLED
   #define AP_GPS_UBLOX_CFGV2_ENABLED AP_GPS_UBLOX_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#endif
+
+// per MAVLink channel RTCM message counts, for scripts and modules
+#ifndef AP_GPS_RTCM_COUNT_ENABLED
+  #define AP_GPS_RTCM_COUNT_ENABLED AP_EXTERNAL_BINDING_ENABLED
 #endif
 
 #ifndef AP_GPS_RTCM_DECODE_ENABLED
