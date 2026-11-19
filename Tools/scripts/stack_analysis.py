@@ -1698,6 +1698,47 @@ def thread_key(name):
     return name
 
 
+def registered_thread_entries(analyser):
+    '''map literal thread_create names to their bound method wrappers;
+    variable names remain covered by explicit THREAD_ENTRIES mappings'''
+    wrappers = [(f, analyser.p.demangle(f)) for f in analyser.p.all_funcs()
+                if 'method_wrapper' in analyser.p.demangle(f)]
+    result = {}
+    seen_sites = set()
+    for f in analyser.p.all_funcs():
+        for _, loc in f.edges:
+            m = re.match(r'(.*):([0-9]+):[0-9]+$', loc)
+            if m is None or loc in seen_sites:
+                continue
+            seen_sites.add(loc)
+            path, lineno = m.group(1), int(m.group(2))
+            lines = []
+            for n in range(max(1, lineno - 11), lineno):
+                line = analyser.source_line(path, n)
+                if line is not None:
+                    lines.append(line)
+            statement = ''.join(lines).rsplit(';', 1)[-1]
+            for n in range(lineno, lineno + 12):
+                line = analyser.source_line(path, n)
+                if line is None:
+                    break
+                statement += line
+                if ';' in line:
+                    break
+            tm = re.search(r'thread_create\s*\(\s*FUNCTOR_BIND(?:_MEMBER)?\s*\('
+                           r'\s*(?:this\s*,\s*)?&([A-Za-z_][A-Za-z0-9_:]*)\s*,\s*void\s*\)'
+                           r'\s*,\s*"([^"]+)"', statement)
+            if tm is None:
+                continue
+            method, name = tm.groups()
+            name = thread_key(name)
+            marker = '&' + method + '>'
+            matches = [wrapper for wrapper, demangled in wrappers if marker in demangled]
+            if matches:
+                result.setdefault(name, set()).update(matches)
+    return {name: sorted(matches, key=lambda f: f.title) for name, matches in result.items()}
+
+
 def main():
     parser = argparse.ArgumentParser(description='static stack usage analysis for ChibiOS firmware')
     parser.add_argument('builddir', help='board build directory, e.g. build/CubeOrange')
@@ -1782,6 +1823,9 @@ def main():
         matches = [f for f in prog.all_funcs() if r.search(prog.demangle(f))]
         if matches:
             entries[key] = matches
+    for key, matches in registered_thread_entries(a).items():
+        known = {f.title for f in entries.get(key, ())}
+        entries.setdefault(key, []).extend(f for f in matches if f.title not in known)
     how = {}
     for h, n in a.site_info.values():
         how[h] = how.get(h, 0) + 1
@@ -1854,15 +1898,17 @@ def main():
                 path = levels[:i] + p
             above += lv.size
         unresolved, dynamic, cycles = v.reachable(roots + levels, skip)
-        for c in cycles & v.unbounded:
-            members = v.cycles[c]
-            signature = tuple(sorted({v.source_function(m) for m in members}))
-            if signature not in unbounded_recursion:
-                unbounded_recursion[signature] = (set(), {v.source_function(m): m for m in members})
-            unbounded_recursion[signature][0].add(name)
         margin = '' if total is None else str(total - depth)
+        # Unsized dynamic threads remain visible in the report; strict mode
+        # only judges threads with known stack allocations.
         if total is not None:
             checked += 1
+            for c in cycles & v.unbounded:
+                members = v.cycles[c]
+                signature = tuple(sorted({v.source_function(m) for m in members}))
+                if signature not in unbounded_recursion:
+                    unbounded_recursion[signature] = (set(), {v.source_function(m): m for m in members})
+                unbounded_recursion[signature][0].add(name)
             if depth + args.margin > total:
                 failures.append((name, total, depth, path))
         flags = []
