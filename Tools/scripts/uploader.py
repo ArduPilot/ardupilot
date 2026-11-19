@@ -1033,6 +1033,174 @@ class uploader(object):
         self.port.close()
 
 
+def network_bootloader_board_id(page):
+    '''return the board ID shown on a network bootloader's upload page,
+    or None if the page is not one'''
+    if page is None or '<h1>Bootloader</h1>' not in page:
+        return None
+    m = re.search(r'<td>Board ID</td><td>(\d+)</td>', page)
+    if m is None:
+        return None
+    return int(m.group(1))
+
+
+class network_uploader(object):
+    '''uploads firmware over HTTP to a bootloader with networking'''
+
+    def __init__(self,
+                 host,
+                 mavlink=None,
+                 target_system=None,
+                 target_component=None,
+                 source_system=255,
+                 source_component=0):
+        self.host = host.split(':')[0]
+        self.base_url = "http://%s" % host
+        self.mavlink = mavlink
+        self.target_system = target_system
+        self.target_component = target_component
+        self.source_system = source_system
+        self.source_component = source_component
+        self.last_status = None
+
+    def get(self, path, timeout=2, base_url=None):
+        '''fetch a page, returning None if it could not be fetched'''
+        import http.client
+        import urllib.request
+        if base_url is None:
+            base_url = self.base_url
+        try:
+            with urllib.request.urlopen(base_url + path, timeout=timeout) as r:
+                return r.read().decode('utf-8', errors='replace')
+        except (OSError, http.client.HTTPException):
+            return None
+
+    def reboot_with_mavlink(self):
+        from pymavlink import mavutil
+        print("Rebooting into the bootloader using MAVLink on %s" % self.mavlink)
+        m = mavutil.mavlink_connection(self.mavlink,
+                                       source_system=self.source_system,
+                                       source_component=self.source_component)
+        try:
+            hb = m.wait_heartbeat(timeout=10)
+            if hb is None:
+                raise RuntimeError("no MAVLink heartbeat on %s" % self.mavlink)
+            target_system = self.target_system
+            if target_system is None:
+                target_system = m.target_system
+            target_component = self.target_component
+            if target_component is None:
+                target_component = 1
+            m.mav.command_long_send(target_system,
+                                    target_component,
+                                    mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                                    0,
+                                    3,  # remain in bootloader
+                                    0, 0, 0, 0, 0, 0)
+            ack = m.recv_match(type='COMMAND_ACK', blocking=True, timeout=3)
+            if ack is not None and ack.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+                raise RuntimeError("reboot into bootloader refused (result %u)" % ack.result)
+        finally:
+            m.close()
+
+    def request_bootloader(self):
+        '''ask the vehicle to reboot into its bootloader'''
+        if self.mavlink is not None:
+            self.reboot_with_mavlink()
+            return
+        # use net_webserver.lua's firmware update link, which is on
+        # port 8080 unless WEB_BIND_PORT says otherwise
+        for base_url in [self.base_url, "http://%s:8080" % self.host]:
+            reply = self.get('/?FWUPDATE', base_url=base_url)
+            if reply is None:
+                continue
+            print("Asked %s/?FWUPDATE to reboot into the bootloader" % base_url)
+            if 'Rebooting' not in reply:
+                raise RuntimeError("vehicle web server did not reboot into the bootloader: %s" %
+                                   re.sub(r'<[^>]*>', '', reply).strip())
+            return
+        # the bootloader may have its own address, or still be starting
+        print("No web server at %s/ or on port 8080; waiting for the bootloader "
+              "(reboot the board into it, or use --mavlink)" % self.base_url)
+
+    def wait_for_bootloader(self, timeout=60):
+        '''wait for the bootloader's upload page, returning its board ID'''
+        tstart = time.time()
+        while time.time() - tstart < timeout:
+            board_id = network_bootloader_board_id(self.get('/'))
+            if board_id is not None:
+                return board_id
+            time.sleep(0.5)
+        raise RuntimeError("no network bootloader at %s/ after %us" % (self.base_url, timeout))
+
+    def poll_status(self, done):
+        '''print the bootloader's status while it flashes'''
+        while not done.is_set():
+            status = self.get('/bootloader_status.html')
+            # a request the bootloader could not read gets its upload page
+            if status and '<' not in status:
+                status = status.strip()
+                if status != self.last_status:
+                    self.last_status = status
+                    print(status)
+            done.wait(1)
+
+    def post_firmware(self, image):
+        '''send the image the way the upload page's form does'''
+        import http.client
+        import threading
+        import urllib.request
+        boundary = '----ArduPilotUploader%x' % int(time.time())
+        head = ('--%s\r\n'
+                'Content-Disposition: form-data; name="fileToUpload"; filename="firmware.bin"\r\n'
+                'Content-Type: application/octet-stream\r\n\r\n' % boundary).encode()
+        tail = ('\r\n--%s--\r\n' % boundary).encode()
+        request = urllib.request.Request(self.base_url + '/',
+                                         data=head + bytes(image) + tail,
+                                         method='POST',
+                                         headers={'Content-Type': 'multipart/form-data; boundary=%s' % boundary})
+        done = threading.Event()
+        poller = threading.Thread(target=self.poll_status, args=(done,), daemon=True)
+        poller.start()
+        reply = None
+        try:
+            with urllib.request.urlopen(request, timeout=120) as r:
+                reply = r.read().decode('utf-8', errors='replace')
+        except (OSError, http.client.HTTPException) as ex:
+            # the bootloader may already have closed the connection
+            # and started the new firmware
+            print("Upload connection ended: %s" % ex)
+        done.set()
+        poller.join()
+        if reply is not None:
+            reply = re.sub(r'<[^>]*>', '', reply).strip()
+            if reply != self.last_status:
+                print(reply)
+            return 'Flash OK' in reply
+        if self.last_status is not None and self.last_status.startswith('Flash done: OK'):
+            return True
+        raise RuntimeError("lost the connection before the bootloader reported a result")
+
+    def upload(self, fw, force=False):
+        if fw.extf_image:
+            raise RuntimeError("firmware has an external flash image, which network bootloaders cannot program")
+        board_id = network_bootloader_board_id(self.get('/'))
+        if board_id is None:
+            self.request_bootloader()
+            board_id = self.wait_for_bootloader()
+        print("Found network bootloader at %s/, board ID %u" % (self.base_url, board_id))
+        if board_id != fw.property('board_id'):
+            msg = "Firmware not suitable for this board (Firmware board_id=%u, bootloader board_id=%u)" % (
+                fw.property('board_id'), board_id)
+            if not force:
+                raise RuntimeError(msg)
+            print("WARNING: %s" % msg)
+            print("FORCED WRITE, FLASHING ANYWAY!")
+        if not self.post_firmware(fw.image):
+            raise RuntimeError("network upload failed")
+        print("Upload complete, the board is starting the new firmware")
+
+
 def ports_to_try(args):
     portlist = []
     if args.port is None:
@@ -1362,11 +1530,21 @@ def main():
     parser.add_argument('--erase-extflash', type=lambda x: int(x, 0), default=None,
                         help="Erase sectors containing specified amount of bytes from ext flash")
     parser.add_argument('--force-erase', action="store_true", help="Do not check for pre cleared flash, always erase the chip")
+    parser.add_argument('--ip', action="store", default=None,
+                        help="Upload over the network to a bootloader with networking at this address (host[:port])")
+    parser.add_argument('--mavlink', action="store", default=None,
+                        help="With --ip, reboot the vehicle into its bootloader using MAVLink on this pymavlink "
+                        "connection (e.g. tcp:192.168.144.100:5760) rather than its web server")
     parser.add_argument('firmware', nargs="?", action="store", default=None, help="Firmware file to be uploaded")
     args = parser.parse_args()
 
+    if args.ip is not None and (args.download or args.identify or args.verify_firmware_is or
+                                args.erase_extflash or args.boot_delay is not None):
+        parser.error("--ip only supports uploading firmware")
+
     # warn people about ModemManager which interferes badly with Pixhawk
-    modemmanager_check()
+    if args.ip is None:
+        modemmanager_check()
 
     if args.firmware is None and not args.identify and not args.erase_extflash:
         parser.error("Firmware filename required for upload or download")
@@ -1377,6 +1555,20 @@ def main():
         fw = firmware(args.firmware)
         print("Loaded firmware for %x,%x, size: %d bytes, waiting for the bootloader..." %
               (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size')))
+
+    if args.ip is not None:
+        up = network_uploader(args.ip,
+                              args.mavlink,
+                              args.target_system,
+                              args.target_component,
+                              args.source_system,
+                              args.source_component)
+        try:
+            up.upload(fw, force=args.force)
+        except RuntimeError as ex:
+            sys.exit("\nERROR: %s" % ex.args)
+        sys.exit(0)
+
     print("If the board does not respond within 1-2 seconds, unplug and re-plug the USB connector.")
 
     baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
