@@ -61,6 +61,8 @@ public:
      */
     void set_speedup(float speedup);
     float get_speedup() const { return target_speedup; }
+    // false when an external simulator drives the clock
+    bool get_use_time_sync() const { return use_time_sync; }
 
     /* return a monotonic wall clock time in microseconds */
     uint64_t get_wall_time_us(void) const;
