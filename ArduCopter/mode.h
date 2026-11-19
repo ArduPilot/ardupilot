@@ -164,6 +164,10 @@ public:
 
     virtual bool is_landing() const { return false; }
 
+    // true while the vehicle reads landed but is held or carried off the ground, so that it is not
+    // reported to AHRS as on the ground
+    virtual bool is_carried() const { return false; }
+
     // mode requires terrain to be present to be functional
     virtual bool requires_terrain_failsafe() const { return false; }
 
@@ -1898,6 +1902,8 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
+    // held in the hand or under a carrier from arming until the throw or drop is detected
+    bool is_carried() const override { return stage == Throw_Detecting; }
 
     // Throw types
     enum class ThrowType {

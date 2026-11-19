@@ -207,10 +207,12 @@ void Copter::Log_LDET(uint16_t logging_flags, uint32_t detector_count)
 #endif
 
 // tell AHRS whether the vehicle is on the ground, which EKF3 reads through
-// the DAL. Called whenever land_complete changes
+// the DAL: landed, and not carried by the flight mode. Called whenever
+// land_complete changes, on a mode change and when the mode starts or stops
+// carrying the vehicle
 void Copter::update_vehicle_landed()
 {
-    ahrs.set_vehicle_landed(ap.land_complete);
+    ahrs.set_vehicle_landed(ap.land_complete && !flightmode->is_carried());
 }
 
 // set land_complete flag and disarm motors if disarm-on-land is configured

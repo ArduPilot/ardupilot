@@ -219,6 +219,9 @@ void ModeThrow::run()
     Throw_PosHold - the copter is kept at a constant position and height
     */
 
+    // the carry starts on arming and ends at the throw or on a disarm; AHRS is told below when it does
+    const bool was_carried = is_carried();
+
     throw_follow_yaw_reset();
     throw_follow_height_reset();
 
@@ -373,6 +376,10 @@ void ModeThrow::run()
     // timeout alone, which can end with it still tumbling
     if ((stage == Throw_HgtStabilise || stage == Throw_PosHold) && throw_attitude_good()) {
         throw_set_completion_sources();
+    }
+
+    if (is_carried() != was_carried) {
+        copter.update_vehicle_landed();
     }
 
     // Throw State Processing
