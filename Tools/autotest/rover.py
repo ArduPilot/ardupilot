@@ -8311,18 +8311,27 @@ return update()
         sim_time = self.get_sim_time()
         return sim_time, before, physics.timestamp
 
-    def JSON_assert_elapsed_equal(self, start, end, tolerance=0.05):
+    def JSON_assert_elapsed_equal(self, start, end, tolerance=0.05, drift_fraction=0.0):
         '''SITL time elapsed between two samples is the physics time elapsed
 
         Each physics read brackets its SITL read, which bounds the message
         latency exactly instead of allowing for it with a guessed tolerance.
+
+        drift_fraction allows SITL's clock to be that fraction of the window
+        ahead of the physics, for a caller where SITL paces itself - see
+        where it is passed.
         '''
         (sim0, before0, after0) = start
         (sim1, before1, after1) = end
         sim = sim1 - sim0
-        self.progress("sim elapsed %f, physics elapsed %f-%f" % (sim, before1 - after0, after1 - before0))
-        if not before1 - after0 - tolerance <= sim <= after1 - before0 + tolerance:
-            raise NotAchievedException("SITL time drifted from physics time")
+        window = after1 - before0
+        lower = before1 - after0 - tolerance
+        upper = window + max(tolerance, drift_fraction * window)
+        self.progress("sim elapsed %f, physics elapsed %f-%f, allowed %f-%f" %
+                      (sim, before1 - after0, window, lower, upper))
+        if not lower <= sim <= upper:
+            raise NotAchievedException(
+                "SITL time drifted from physics time (sim elapsed %f, wanted %f-%f)" % (sim, lower, upper))
 
     def JSON_frame_rate(self, physics):
         '''median of the frame rates SITL sent in its last servo packets'''
@@ -8424,7 +8433,20 @@ return update()
             # after the pause SITL time follows the physics again
             resumed = self.JSON_sim_and_physics_time(physics)
             self.delay_sim_time(4, reason="physics resumed")
-            self.JSON_assert_elapsed_equal(resumed, self.JSON_sim_and_physics_time(physics))
+            # drift_fraction: in no_lockstep SITL paces itself instead of
+            # waiting for the physics, so the two clocks are only as close as
+            # the machine lets them be, and delay_sim_time() returns on the
+            # first SYSTEM_TIME past its deadline - which puts the SITL side
+            # exactly on the top of the physics window.  Measured over six
+            # Rover rounds at --parallel=32: sim 4.200000 every time against a
+            # window of 4.100000-4.200000, with the physics holding real time
+            # to within 0.04%.  So 50ms is the whole headroom in that
+            # direction and a SITL running 1.2% fast fails; seen twice, at
+            # 2.7% and about 7%.  SITL falling *behind* the physics is the
+            # no_lockstep fault this is here to catch, and the lower bound
+            # still holds that to 50ms.
+            self.JSON_assert_elapsed_equal(resumed, self.JSON_sim_and_physics_time(physics),
+                                           drift_fraction=0.1)
 
     def JSONNoTimeSync(self):
         '''check SITL runs as fast as a JSON physics backend using no_time_sync'''
