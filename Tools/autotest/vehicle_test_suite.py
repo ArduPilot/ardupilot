@@ -16758,12 +16758,26 @@ switch value'''
                 return field
         raise NotAchievedException("No CRSF menu field called %s" % name)
 
+    def crsf_field_hidden(self, request, field_id):
+        '''return True if the CRSF menu field is hidden from the menu'''
+        p = request(CRSF.FRAMETYPE_PARAMETER_READ, [field_id, 0], CRSF.FRAMETYPE_PARAMETER_ENTRY,
+                    lambda p: p[2] == field_id, "field %u" % field_id)
+        return bool(p[5] & CRSF.FIELD_HIDDEN)
+
     def CRSFParameterMenu(self):
         '''Test every CRSF parameter menu entry can be read and is in a folder that lists it'''
         (fields, request, crsf) = self.crsf_parameter_menu_check()
-        # the root, the Parameters folder and the 18 OSD parameter slots in it
+        # the root, the Parameters folder and the 18 OSD parameter slots
         if len(fields) != 20:
             raise NotAchievedException("Expected 20 fields, got %u" % len(fields))
+        # with no scripted menu the menu opens straight onto the OSD parameters,
+        # and the Parameters folder is answered but hidden
+        params = self.crsf_field_named(fields, "Parameters")
+        if not self.crsf_field_hidden(request, params):
+            raise NotAchievedException("Parameters folder shown with no scripted menu")
+        for field_id in range(params + 1, len(fields)):
+            if fields[field_id][1] != 0:
+                raise NotAchievedException("OSD parameter field %u is not in the root" % field_id)
 
     def CRSFParameterMenuScripted(self):
         '''Test the CRSF parameter menu with the scripted example menu'''
@@ -16772,6 +16786,13 @@ switch value'''
         for want in "Example Menu", "Another Menu", "Beethoven":
             if want not in names:
                 raise NotAchievedException("%s not in the menu" % want)
+        # beside a scripted menu the OSD parameters are in a Parameters folder at the root
+        params = self.crsf_field_named(fields, "Parameters", parent="root")
+        if self.crsf_field_hidden(request, params):
+            raise NotAchievedException("Parameters folder hidden beside a scripted menu")
+        osd_params = [f for f in fields if f != params and fields[f][1] == params]
+        if len(osd_params) != 18:
+            raise NotAchievedException("Expected 18 OSD parameter fields in the Parameters folder, got %u" % len(osd_params))
 
         # writes come back through the script, which echoes the value
         options = self.crsf_field_named(fields, "Options", parent="Example Menu")
@@ -16787,7 +16808,7 @@ switch value'''
         # a key that matches no parameter, as after loading another vehicle's parameters
         self.set_parameter("OSD5_PARAM1_KEY", -1)
         (fields, request, crsf) = self.crsf_parameter_menu_check()
-        # the root, the Parameters folder and the 18 OSD parameter slots in it
+        # the root, the Parameters folder and the 18 OSD parameter slots
         if len(fields) != 20:
             raise NotAchievedException("Expected 20 fields, got %u" % len(fields))
 
