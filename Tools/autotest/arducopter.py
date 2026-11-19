@@ -9811,6 +9811,70 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if settings.camera_device_id != 2:
             raise NotAchievedException("Mount-backed settings use the mount ID: %s" % settings)
 
+        # The gimbal must move directly to a lower pitch angle and to a yaw angle to
+        # the left, while the vehicle holds a roll, a pitch and a yaw angle.
+        self.takeoff(10, mode="ALT_HOLD")
+        self.set_rc(4, 1600)
+        self.wait_heading(45, accuracy=10)
+        self.set_rc(4, 1500)
+        self.set_rc(1, 1800)    # roll to the right
+        self.set_rc(2, 1200)    # pitch forward
+        self.wait_attitude(desroll=18, despitch=-18, tolerance=5, timeout=10)
+        for (axis, pitch, yaw) in ("pitch", -30, 0), ("yaw", 0, -30):
+            self.progress("Checking that the gimbal moves directly to %s -30" % axis)
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                p1=0,               # pitch angle in degrees
+                p2=0,               # yaw angle in degrees
+                p3=float('nan'),    # pitch rate in degrees/s (NaN for no limit)
+                p4=float('nan'),    # yaw rate in degrees/s (NaN for no limit)
+            )
+            self.wait_mount_roll_pitch_yaw_deg(r=0, p=0, y=0, tolerance=2, minimum_duration=1)
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                p1=pitch,
+                p2=yaw,
+                p3=float('nan'),
+                p4=float('nan'),
+            )
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("Mount did not get to %s -30" % axis)
+                mount_roll, mount_pitch, mount_yaw, _ = self.get_mount_roll_pitch_yaw_deg()
+                angle = mount_pitch if axis == "pitch" else mount_yaw
+                if angle > 5:
+                    raise NotAchievedException("Mount %s moved away from the target (%f)" % (axis, angle))
+                # the gimbal stabilizes the roll relative to the earth
+                if abs(mount_roll) > 5:
+                    raise NotAchievedException("Mount roll is not level (%f)" % mount_roll)
+                if abs(angle - -30) < 1:
+                    break
+        # A movement in pitch and yaw together must not add roll. The roll error
+        # of one movement is small, so repeat the movement to let the error add up.
+        self.progress("Checking that movements in pitch and yaw together do not add roll")
+        for i in range(10):
+            # A roll error changes the pitch and yaw that the test reads at a
+            # large pitch angle, so use a large tolerance there.
+            for (pitch, yaw, tolerance) in (-60, -60, 10), (0, 0, 2):
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                    p1=pitch,
+                    p2=yaw,
+                    p3=float('nan'),
+                    p4=float('nan'),
+                )
+                self.wait_mount_roll_pitch_yaw_deg(p=pitch, y=yaw, tolerance=tolerance, minimum_duration=1)
+            mount_roll, _, _, _ = self.get_mount_roll_pitch_yaw_deg()
+            self.progress("Mount roll after %u movements: %f" % (2 * (i + 1), mount_roll))
+            if abs(mount_roll) > 2:
+                raise NotAchievedException("Mount roll is not level after %u movements (%f)" % (2 * (i + 1), mount_roll))
+        # the vehicle must still hold its roll and pitch angles
+        self.wait_attitude(desroll=18, despitch=-18, tolerance=5)
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+        self.land_and_disarm()
+
     def MountTopotek(self):
         '''test Topotek gimbal using SIM_Topotek simulator'''
         self.set_parameters({
