@@ -1,7 +1,8 @@
 //
 // ICM-42688-P IMU as AP_InertialSensor_Invensensev3 drives it. The
 // model supplies banked register storage, the 0x47 product ID, and
-// 16-byte little-endian FIFO records at 1kHz. Acceleration and angular-rate
+// 16-byte little-endian FIFO records at 1kHz. The ICM-42670 register map
+// (MREG indirect access, 1.6kHz) is used when whoAmI is 0x67. Acceleration and angular-rate
 // samples follow physics truth after applying the board's sensor rotation;
 // temperature follows the board thermal model.
 //
@@ -25,12 +26,15 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
             this.whoAmI = whoAmI;
             this.rotation = rotation;
+            icm42670 = whoAmI == WhoAmIIcm42670;
+            fifoData = icm42670 ? Icm42670FifoData : FifoData;
             physics = AP_PhysicsState.ForMachine(machine);
             thermal = AP_BoardThermalState.ForMachine(machine);
             fifo = new Queue<byte>();
             registers = new byte[BankCount, RegisterCount];
+            mregs = new byte[MregBankCount, RegisterCount];
             sampleTimer = new LimitTimer(machine.ClockSource, 1000000, this, "icm42688 odr",
-                                         limit: SamplePeriodUs, direction: Direction.Ascending,
+                                         limit: icm42670 ? (ulong)Icm42670SamplePeriodUs : SamplePeriodUs, direction: Direction.Ascending,
                                          enabled: true, workMode: WorkMode.Periodic, eventEnabled: true);
             sampleTimer.LimitReached += OnSampleTick;
             Reset();
@@ -39,6 +43,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public void Reset()
         {
             Array.Clear(registers, 0, registers.Length);
+            Array.Clear(mregs, 0, mregs.Length);
             fifo.Clear();
             transferByte = 0;
             currentBank = 0;
@@ -60,7 +65,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             else if(reading)
             {
                 response = ReadRegister(currentRegister);
-                if(currentRegister != FifoData)
+                if(currentRegister != fifoData)
                 {
                     currentRegister = (byte)((currentRegister + 1) & RegisterMask);
                 }
@@ -68,7 +73,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             else
             {
                 WriteRegister(currentRegister, value);
-                if(currentRegister != FifoData)
+                if(currentRegister != fifoData)
                 {
                     currentRegister = (byte)((currentRegister + 1) & RegisterMask);
                 }
@@ -92,6 +97,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private byte ReadRegister(byte register)
         {
+            if(icm42670)
+            {
+                return ReadRegister42670(register);
+            }
             if(currentBank == 0)
             {
                 switch(register)
@@ -113,6 +122,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private void WriteRegister(byte register, byte value)
         {
+            if(icm42670)
+            {
+                WriteRegister42670(register, value);
+                return;
+            }
             if(register == BankSelect)
             {
                 var bank = (byte)(value & BankMask);
@@ -133,12 +147,65 @@ namespace Antmicro.Renode.Peripherals.Sensors
             registers[currentBank, register] = value;
         }
 
+        private byte ReadRegister42670(byte register)
+        {
+            switch(register)
+            {
+            case Icm42670MclkReady:
+                return (registers[0, Icm42670PowerManagement] & SensorsLowNoise) != 0 ? MclkReady : (byte)0;
+            case Icm42670FifoCountLow:
+                return (byte)(fifo.Count / CurrentSampleSize);
+            case Icm42670FifoCountHigh:
+                return (byte)((fifo.Count / CurrentSampleSize) >> 8);
+            case Icm42670FifoData:
+                return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
+            case Icm42670MregRead:
+                return mregs[MregBank(registers[0, Icm42670BlockSelectRead]), registers[0, Icm42670MregAddressRead] & RegisterMask];
+            }
+            return registers[0, register];
+        }
+
+        private void WriteRegister42670(byte register, byte value)
+        {
+            switch(register)
+            {
+            case Icm42670SignalPathReset:
+                // soft reset and FIFO flush both empty the FIFO
+                fifo.Clear();
+                return;
+            case Icm42670FifoData:
+                return;
+            case Icm42670MregWrite:
+                mregs[MregBank(registers[0, Icm42670BlockSelectWrite]), registers[0, Icm42670MregAddressWrite] & RegisterMask] = value;
+                return;
+            }
+            registers[0, register] = value;
+        }
+
+        // MREG1/2/3 are selected by block values 0x00/0x28/0x50
+        private static int MregBank(byte block)
+        {
+            return Math.Min(block / 0x28, MregBankCount - 1);
+        }
+
+        private bool SamplingEnabled
+        {
+            get
+            {
+                if(icm42670)
+                {
+                    return (registers[0, Icm42670PowerManagement] & SensorsLowNoise) == SensorsLowNoise &&
+                           (mregs[0, Icm42670FifoConfig5] & Icm42670FifoSensorsEnabled) == Icm42670FifoSensorsEnabled;
+                }
+                return (registers[0, FifoConfig1] & FifoSensorsEnabled) == FifoSensorsEnabled &&
+                       (registers[0, PowerManagement] & SensorsLowNoise) == SensorsLowNoise;
+            }
+        }
+
         private void OnSampleTick()
         {
             var sampleSize = CurrentSampleSize;
-            if((registers[0, FifoConfig1] & FifoSensorsEnabled) != FifoSensorsEnabled ||
-               (registers[0, PowerManagement] & SensorsLowNoise) != SensorsLowNoise ||
-               fifo.Count + sampleSize > FifoCapacity)
+            if(!SamplingEnabled || fifo.Count + sampleSize > FifoCapacity)
             {
                 return;
             }
@@ -214,12 +281,16 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private bool HalfDegreeTemperature =>
             whoAmI == WhoAmIIcm42670 || whoAmI == WhoAmIIcm45686;
 
-        private bool HighResolutionEnabled =>
+        private bool HighResolutionEnabled => icm42670 ?
+            (mregs[0, Icm42670FifoConfig5] & Icm42670FifoHighResolutionEnable) != 0 :
             (registers[0, FifoConfig1] & FifoHighResolutionEnable) != 0;
         private int CurrentSampleSize => HighResolutionEnabled ? HighResolutionSampleSize : SampleSize;
 
         private readonly Queue<byte> fifo;
         private readonly byte[,] registers;
+        private readonly byte[,] mregs;
+        private readonly bool icm42670;
+        private readonly byte fifoData;
         private readonly LimitTimer sampleTimer;
         private readonly byte whoAmI;
         private readonly byte rotation;
@@ -234,6 +305,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const int BankCount = 5;
         private const int RegisterCount = 128;
         private const int SamplePeriodUs = 1000;
+        private const int Icm42670SamplePeriodUs = 625;
+        private const int MregBankCount = 3;
         private const int SampleSize = 16;
         private const int HighResolutionSampleSize = 20;
         private const int FifoCapacity = 2048;
@@ -248,6 +321,23 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte WhoAmI = 0x75;
         private const byte Icm45686WhoAmI = 0x72;
         private const byte BankSelect = 0x76;
+
+        private const byte Icm42670MclkReady = 0x00;
+        private const byte Icm42670SignalPathReset = 0x02;
+        private const byte Icm42670PowerManagement = 0x1F;
+        private const byte Icm42670FifoCountLow = 0x3D;
+        private const byte Icm42670FifoCountHigh = 0x3E;
+        private const byte Icm42670FifoData = 0x3F;
+        private const byte Icm42670BlockSelectWrite = 0x79;
+        private const byte Icm42670MregAddressWrite = 0x7A;
+        private const byte Icm42670MregWrite = 0x7B;
+        private const byte Icm42670BlockSelectRead = 0x7C;
+        private const byte Icm42670MregAddressRead = 0x7D;
+        private const byte Icm42670MregRead = 0x7E;
+        private const byte Icm42670FifoConfig5 = 0x01;
+        private const byte Icm42670FifoSensorsEnabled = 0x03;
+        private const byte Icm42670FifoHighResolutionEnable = 0x08;
+        private const byte MclkReady = 0x08;
 
         private const byte ReadFlag = 0x80;
         private const byte RegisterMask = 0x7F;
