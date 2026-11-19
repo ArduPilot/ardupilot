@@ -34,6 +34,13 @@ By default the web server serves the root of your microSD card. You
 can include html, javascript (*.js), image files etc on your microSD
 to create a full web server with any structure you want.
 
+The "Firmware Update" link on the front page (/?FWUPDATE) reboots the
+vehicle into its bootloader, unless it is armed. On boards whose
+bootloader has networking, the bootloader then serves a firmware
+upload page on port 80 of the same address, which the page reloads to.
+Tools/scripts/uploader.py --ip ADDRESS uses this link to reboot the
+vehicle before uploading.
+
 ## Server Side Scripting
 
 The web server supports embedding lua script elements inside html
