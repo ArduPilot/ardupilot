@@ -549,7 +549,8 @@ public:
 
     /// resume - continues the mission execution from where we last left off
     ///     previous running commands will be re-initialised
-    void resume();
+    ///     returns false if no mission command could be restarted
+    bool resume();
 
     /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
     void start_or_resume();
