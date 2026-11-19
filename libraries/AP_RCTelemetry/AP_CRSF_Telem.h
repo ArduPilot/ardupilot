@@ -165,6 +165,7 @@ public:
     } _param_request;
 
     const static uint8_t PARAMETER_MENU_ID = 1; // id of the parameter menu
+    const static uint8_t PARAMETER_HIDDEN = 0x80; // bit 7 of a field's type hides it
 
 #if AP_CRSF_SCRIPTING_ENABLED
     // scripted CRSF menus
@@ -388,6 +389,8 @@ private:
     void calc_command_response();
     void calc_bind();
     void calc_parameter();
+    // the folder the OSD parameters are listed from, the Parameters folder or the root
+    uint8_t osd_param_folder() const;
 #if AP_CRSF_SCRIPTING_ENABLED
     bool calc_scripted_parameter();
     // true once every id a scripted field can have has been given out
