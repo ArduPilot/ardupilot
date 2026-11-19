@@ -768,9 +768,13 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     if (!is_zero(cmd_arc_rad) && arc_resume_valid && arc_resume_index == cmd.index &&
         arc_resume_dest.same_latlon_as(cmdloc) && is_equal(arc_resume_rad, cmd_arc_rad)) {
         arc_rad = g2.wp_nav.get_remaining_arc_angle_rad(arc_resume_origin, cmdloc, cmd_arc_rad);
-        // the full angle back means the arc is treated as a fresh
-        // start (see get_remaining_arc_angle_rad), so the execution
-        // is recorded below like any other fresh start
+        // the full angle back means the arc had not been entered
+        // yet and is treated as a fresh start (see
+        // get_remaining_arc_angle_rad), so the execution is
+        // recorded below like any other fresh start.  Zero means
+        // the arc is complete or its remaining angle could not be
+        // determined; either way the arc is resumed as a straight
+        // leg to the destination
         arc_resumed = !is_equal(arc_rad, cmd_arc_rad);
     }
 
