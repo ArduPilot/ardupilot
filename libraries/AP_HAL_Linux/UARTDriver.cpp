@@ -375,8 +375,8 @@ bool UARTDriver::_write_pending_bytes(void)
 
 /*
   push any pending bytes to/from the serial port. This is called at
-  1kHz in the timer thread. Doing it this way reduces the system call
-  overhead in the main task enormously.
+  APM_LINUX_UART_RATE (100Hz) in the UART thread. Doing it this way
+  reduces the system call overhead in the main task enormously.
  */
 void UARTDriver::_timer_tick(void)
 {
