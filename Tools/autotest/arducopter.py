@@ -20628,6 +20628,84 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if turned > 20:
             raise NotAchievedException("an EKF yaw reset turned the vehicle %.1f deg" % turned)
 
+    def ThrowCarryNotLanded(self):
+        '''THROW tells the EKF a vehicle waiting to be thrown is not on the ground'''
+        # Armed in THROW the vehicle reads landed until the throw, but it is held in the hand or hung under a
+        # carrier, so the EKF must not be told it is on the ground through the carry. Leaving that stage
+        # before a throw, by a mode change or a disarm, must tell the EKF the landed state again
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "LOG_FILE_BUFSIZE": 32767,
+        })
+        self.reboot_sitl()
+
+        def landed_flags(windows):
+            '''the landed flag the EKF was given at each core 0 EKF sample in each (start_us, end_us) window;
+            RFRN has no time of its own, so each sample takes the flag recorded last before it'''
+            found = [[] for w in windows]
+            landed = None
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type=['RFRN', 'XKF1'])
+                if m is None:
+                    break
+                if m.get_type() == 'RFRN':
+                    landed = m.Flags2 & 1
+                    continue
+                if m.C != 0 or landed is None:
+                    continue
+                for (i, (start_us, end_us)) in enumerate(windows):
+                    if start_us <= m.TimeUS <= end_us:
+                        found[i].append(landed)
+            for (i, f) in enumerate(found):
+                if len(f) < 10:
+                    raise NotAchievedException("only %u EKF samples in window %u" % (len(f), i))
+            return found
+
+        self.start_subtest("held in THROW, then switched to STABILIZE")
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        armed_us = self.get_sim_time() * 1e6
+        self.delay_sim_time(3, "held, waiting to be thrown")
+        held_end_us = self.get_sim_time() * 1e6
+        self.change_mode('STABILIZE')
+        switched_us = self.get_sim_time() * 1e6
+        self.delay_sim_time(3, "on the ground in STABILIZE")
+        stabilize_end_us = self.get_sim_time() * 1e6
+        self.disarm_vehicle()
+        (held, stabilize) = landed_flags([(armed_us + 0.2e6, held_end_us),
+                                          (switched_us + 0.2e6, stabilize_end_us)])
+        if any(held):
+            raise NotAchievedException("the EKF was told the vehicle waiting to be thrown was on the ground")
+        if not all(stabilize):
+            raise NotAchievedException("the EKF was not told the vehicle had landed after leaving THROW")
+
+        self.start_subtest("held in THROW, disarmed, then armed in STABILIZE")
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.delay_sim_time(3, "held, waiting to be thrown")
+        self.disarm_vehicle()
+        # still in THROW, so only THROW itself can have reported that the carry is over
+        disarmed_us = self.get_sim_time() * 1e6
+        self.delay_sim_time(2, "disarmed in THROW")
+        disarmed_end_us = self.get_sim_time() * 1e6
+        self.change_mode('STABILIZE')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        rearmed_us = self.get_sim_time() * 1e6
+        self.delay_sim_time(3, "on the ground in STABILIZE")
+        rearmed_end_us = self.get_sim_time() * 1e6
+        self.disarm_vehicle()
+        (disarmed, rearmed) = landed_flags([(disarmed_us + 0.2e6, disarmed_end_us),
+                                            (rearmed_us + 0.2e6, rearmed_end_us)])
+        if not all(disarmed):
+            raise NotAchievedException("the landed state was not reported again on a disarm in THROW")
+        if not all(rearmed):
+            raise NotAchievedException("the EKF was not told the vehicle had landed after a disarm in THROW")
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -22569,6 +22647,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowTossIntoLandWithoutFlow,
             self.ThrowZeroDescentSettlesBeforeHandover,
             self.ThrowYawFollowsEKFYawReset,
+            self.ThrowCarryNotLanded,
             self.ThrowHeightSourceSwitchNoClimb,
             self.ThrowNextModeAutoStaleSubmode,
         ])
