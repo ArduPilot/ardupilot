@@ -314,6 +314,14 @@ void Scheduler::reboot(bool hold_in_bootloader)
     // disable all interrupt sources
     port_disable();
 
+#if HAL_ENABLE_DFU_BOOT && defined(STM32H7)
+    if (hal.util->persistent_data.boot_to_dfu) {
+        // the H7 ROM bootloader's USB never enumerates after a reset
+        // taken with the OTG clocks on
+        RCC->AHB1ENR &= ~(RCC_AHB1ENR_USB1OTGHSEN | RCC_AHB1ENR_USB2OTGFSEN);
+    }
+#endif
+
     // reboot
     NVIC_SystemReset();
 }
