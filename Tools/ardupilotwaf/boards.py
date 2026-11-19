@@ -1250,6 +1250,12 @@ class chibios(Board):
     abstract = True
     toolchain = 'arm-none-eabi'
 
+    def native_path(self, cfg, node):
+        # the native Windows compiler used with Cygwin can't open /cygdrive paths
+        if Utils.unversioned_sys_platform() == 'cygwin':
+            return cfg.cmd_and_log(['cygpath', '-m', node.abspath()], quiet=Context.BOTH).strip()
+        return node.abspath()
+
     def configure_env(self, cfg, env):
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
@@ -1312,7 +1318,7 @@ class chibios(Board):
             '-mno-thumb-interwork',
             '-mthumb',
             '-D__USE_CMSIS',
-            '-include', cfg.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/stdio.h').abspath(),
+            '-include', self.native_path(cfg, cfg.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/stdio.h')),
             '-DNDEBUG=1'
         ] + libc_specs
         if not cfg.options.Werror:
