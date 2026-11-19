@@ -56,6 +56,7 @@ static const struct LogStructure log_structure[] = {
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
+#include <AP_Common/ExampleFirmwareVersion.h>
 SITL::SIM sitl;
 #endif
 
