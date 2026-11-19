@@ -206,6 +206,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RCPROTOCOL_ENABLED', r'AP_RCProtocol::init\b',),
             ('AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED', r'AP_RCProtocol_MAVLinkRadio::update_radio_rc_channels',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_byte\b',),
+            ('AP_RCPROTOCOL_CRSF_ENABLED', r'AP_RCProtocol_CRSF::process_bytes\b',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::process_pulse\b',),
 
             ('AP_SERVO_TELEM_ENABLED', r'AP_Servo_Telem::update\b',),
