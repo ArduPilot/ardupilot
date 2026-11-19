@@ -1256,8 +1256,10 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         # a stale resume record would apply the remaining 90 degrees
         # and stay on the original circle; only the completion clear
         # makes the re-run fly the full 180 degrees from there, on the
-        # circle through (28, 8) and (20, 16) - the off-circle case is
-        # already covered by the firmware's fresh-start fallback
+        # circle through (28, 8) and (20, 16).  (Resuming with a
+        # valid record from off the circle is covered by the
+        # straight-leg resume subtest below; the completion clear
+        # itself is only exercised on the circle here.)
         self.arm_vehicle()
         self.change_mode("GUIDED")
         target_loc = self.offset_location_ne(self._arc_origin_loc, 28, 8)
@@ -1362,6 +1364,111 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         if min_dist_to_skipped_m < 5.0:
             raise NotAchievedException(
                 "Vehicle came within %.2f m of the skipped waypoint" % min_dist_to_skipped_m)
+
+        self.start_subtest("Arc resumed from off the circle runs straight to the exit")
+        self.set_parameter("WP_SPEED", 2)
+        self.start_driving_arc_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_ARC_WAYPOINT, 30, 8, 0, {"p1": 180}),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 8, 0),
+        ])
+        self.reset_arc_samples()
+        self.wait_current_waypoint(2, timeout=120)
+        # run the arc slowly while staging the stop: the stop is
+        # staged by polling the position, and at full speed a
+        # polling gap can carry the vehicle past the exit (the same
+        # staging as the late-resume subtest above)
+        self.set_parameter("WP_SPEED", 0.5)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 240:
+            loc = self.get_location()
+            (n, e) = self.arc_ne_from_latlon(loc.lat, loc.lng)
+            if math.hypot(n - 30, e - 0) > 3.5:
+                break
+            self.delay_sim_time(0.5, reason="waiting to get partway around the arc")
+        else:
+            raise NotAchievedException("Vehicle did not get partway around the arc")
+        self.change_mode("HOLD")
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        self.set_parameter("WP_SPEED", 2)
+        arc_stop_loc = self.get_location()
+        arc_stop_ne = self.arc_ne_from_latlon(arc_stop_loc.lat, arc_stop_loc.lng)
+        (remaining_deg, _) = self.arc_remaining_deg((30, 0), (30, 8), 180, arc_stop_ne)
+        if remaining_deg < 30:
+            raise NotAchievedException(
+                "Stop staged with %.1f degrees of the arc remaining, "
+                "expected a mid-arc stop" % remaining_deg)
+        # move the vehicle well off the arc's circle (centre (30, 4),
+        # radius 4): from (30, 16) it is 8m off the circle, so the
+        # remaining angle cannot be determined and the resume must
+        # run straight to the exit instead of re-planning the arc
+        self.change_mode("GUIDED")
+        target_loc = self.offset_location_ne(self._arc_origin_loc, 30, 16)
+        self.mav.mav.set_position_target_global_int_send(
+            0, 1, 1, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            0b0000111111111000, int(target_loc.lat * 1e7), int(target_loc.lng * 1e7),
+            0, 0, 0, 0, 0, 0, 0, 0, 0)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 120:
+            loc = self.get_location()
+            (n, e) = self.arc_ne_from_latlon(loc.lat, loc.lng)
+            if math.hypot(n - 30, e - 16) < 1.5:
+                break
+            self.delay_sim_time(0.5, reason="driving in GUIDED")
+        else:
+            raise NotAchievedException("Vehicle did not reach the off-circle point in GUIDED")
+        self.change_mode("HOLD")
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        stop_loc = self.get_location()
+        stop_ne = self.arc_ne_from_latlon(stop_loc.lat, stop_loc.lng)
+        stop_offset_m = abs(math.hypot(stop_ne[0] - 30, stop_ne[1] - 4) - 4.0)
+        if stop_offset_m < 3.0:
+            raise NotAchievedException(
+                "Off-circle point staged only %.3fm off the original circle" % stop_offset_m)
+        resume_time = self.get_sim_time()
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode("AUTO")
+        self.wait_waypoint(2, 3, max_dist_to_final_wp_m=5, timeout=400)
+        self.wait_statustext("Mission Complete", timeout=60, check_context=True)
+        self.disarm_vehicle()
+        # samples near the ends are excluded: at the stop the
+        # vehicle first turns around in a loop (the exit is behind
+        # it after the drive out to (30, 16)), and at the exit the
+        # following leg blends in and cuts the corner, as on any
+        # fast waypoint; neither is part of what this subtest checks
+        post = [s for s in self._arc_samples
+                if s[0] > resume_time + 1 and s[1] == 2
+                and math.hypot(s[2] - stop_ne[0], s[3] - stop_ne[1]) > 3.0
+                and math.hypot(s[2] - 30, s[3] - 8) > 3.0]
+        if len(post) < 5:
+            raise NotAchievedException("Too few post-resume samples on the arc item: %u" % len(post))
+        # distance of each post-resume sample from the straight line
+        # from the stopping point to the exit at (30, 8). The turn
+        # around at the start leaves the vehicle running up to about
+        # 2m off the line before it converges on the exit, while
+        # re-planning the 180 degree arc from the stopping point
+        # would bulge about 4m off the line in the middle of the leg
+        seg = (30 - stop_ne[0], 8 - stop_ne[1])
+        seg_len = math.hypot(seg[0], seg[1])
+        max_line_dev_m = 0.0
+        for s in post:
+            rel = (s[2] - stop_ne[0], s[3] - stop_ne[1])
+            along = (rel[0] * seg[0] + rel[1] * seg[1]) / seg_len
+            along = min(max(along, 0.0), seg_len)
+            closest = (stop_ne[0] + seg[0] * along / seg_len,
+                       stop_ne[1] + seg[1] * along / seg_len)
+            max_line_dev_m = max(max_line_dev_m, math.hypot(s[2] - closest[0], s[3] - closest[1]))
+        self.progress("Off-circle resume: max deviation from the straight line to the exit %.3fm"
+                      % max_line_dev_m)
+        if max_line_dev_m > 2.5:
+            raise NotAchievedException(
+                "Off-circle resume deviated %.3fm from the straight line to the exit" % max_line_dev_m)
+        swept_deg = self.arc_swept_deg(post, 2, (30, 4), gross=True)
+        self.progress("Off-circle resume swept %.1f degrees about the original centre" % swept_deg)
+        if swept_deg > 15:
+            raise NotAchievedException(
+                "Off-circle resume swept %.1f degrees about the original centre, "
+                "expected a straight run" % swept_deg)
 
         self.context_pop()
 
