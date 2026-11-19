@@ -38,6 +38,7 @@
 #include <sys/socket.h>
 #if defined(AP_SOCKET_NATIVE_ENABLED)
 #include <sys/stat.h>
+#include <sys/uio.h>
 #include <sys/un.h>
 #endif
 #include <netinet/in.h>
@@ -561,9 +562,36 @@ ssize_t SOCKET_CLASS_NAME::recv(void *buf, size_t size, uint32_t timeout_ms)
     }
     socklen_t len = sizeof(struct sockaddr_in);
     int fin = get_read_fd();
-    ssize_t ret;
     uint32_t in_addr[4] = {};
-    ret = CALL_PREFIX(recvfrom)(fin, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr[0], &len);
+    const ssize_t ret = CALL_PREFIX(recvfrom)(fin, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr[0], &len);
+    return finish_recv(ret, in_addr);
+}
+
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+/*
+  receive into iovcnt buffers without waiting, filling the first one
+  first. On a datagram socket this is one datagram, cut if it is
+  larger than all buffers together
+ */
+ssize_t SOCKET_CLASS_NAME::recv_iov(struct iovec *iov, int iovcnt)
+{
+    uint32_t in_addr[4] = {};
+    struct msghdr msg {};
+    msg.msg_name = &in_addr[0];
+    msg.msg_namelen = sizeof(struct sockaddr_in);
+    msg.msg_iov = iov;
+    msg.msg_iovlen = iovcnt;
+    const ssize_t ret = CALL_PREFIX(recvmsg)(get_read_fd(), &msg, MSG_DONTWAIT);
+    return finish_recv(ret, in_addr);
+}
+#endif
+
+/*
+  common part of recv() and recv_iov(): remember the sender of the
+  data and drop multicast packets that we sent ourselves
+ */
+ssize_t SOCKET_CLASS_NAME::finish_recv(ssize_t ret, const uint32_t in_addr[4])
+{
     if (ret > 0) {
         // only update last_in_addr if we received data
         memcpy(last_in_addr, in_addr, sizeof(last_in_addr));
