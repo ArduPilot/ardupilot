@@ -18688,6 +18688,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ('Beacon', self.test_replay_beacon_bit),
             ('OpticalFlow', self.test_replay_optical_flow_bit),
             ('AccelBiasInhibit', self.test_replay_accel_bias_inhibit_bit),
+            ('HoverZBias', self.test_replay_hover_z_bias_bit),
         ]
         for (name, func) in bits:
             self.start_subtest("%s" % name)
@@ -18716,6 +18717,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # with the inhibit nothing absorbs the platform's acceleration, so the EKF's
         # vertical velocity runs away on it and is not fit to arm until the vehicle is off it
         self.set_parameter("SIM_PLAT_ACC_Z", 0)
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(10, "hover")
+        self.land_and_disarm()
+
+        self.reboot_sitl()
+
+        return current_log_filepath
+
+    def test_replay_hover_z_bias_bit(self):
+        # with ACC_ZBIAS_LEARN's use bit the EKF takes the saved hover Z-bias off the accels while
+        # armed; Replay is told the feature is on through RFRN, and without that it flies the log
+        # with no correction
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "ACC_ZBIAS_LEARN": 2,
+            "INS_ACC_VRFB_Z": 0.2,
+            "INS_ACC2_VRFB_Z": 0.2,
+            "INS_ACC3_VRFB_Z": 0.2,
+        })
+        self.reboot_sitl()
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
+
+        # earlier bits leave the sticks where their flights put them
+        self.set_rc_default()
         self.wait_ready_to_arm()
         self.takeoff(10, mode='LOITER')
         self.delay_sim_time(10, "hover")
