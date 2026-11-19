@@ -24829,6 +24829,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 ek2_origin.altitude != ek3_origin.altitude):
             raise NotAchievedException("Did not get matching EK2 and EK3 origins")
 
+        # GPS_GLOBAL_ORIGIN is the AHRS's common origin whichever EKF
+        # is active, so also check EKF3 navigates from it: EKF3 sees the
+        # glitched GPS, so it is about 100m north of the common origin,
+        # where it would be at 0 from an origin of its own
+        self.assert_active_estimator_uses_origin(ek2_origin)
+
     def EKF2YawAt90Degrees(self):
         """EKF2 must still fuse yaw, and so take up GPS, facing exactly west"""
         if self.sitl_start_heading() not in (90, 270):
