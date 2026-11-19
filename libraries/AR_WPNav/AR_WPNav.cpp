@@ -701,11 +701,20 @@ bool AR_WPNav::get_remaining_arc_angle_rad_from(const Location& origin, const Lo
 // arc that remains.  Used when the limits change mid-arc: re-timing
 // the existing track leaves the target far behind the vehicle,
 // which then cuts across the inside of the arc
-// returns false if the remaining angle cannot be determined or
-// too little of the arc is left, in which case the caller falls
-// back to re-timing the existing track
+// returns false if the remaining angle cannot be determined, the
+// next leg has already started or too little of the arc is left,
+// in which case the caller falls back to re-timing the existing
+// track
 bool AR_WPNav::replan_arc_this_leg()
 {
+    // once the next leg has started blending into this leg its
+    // progress is already part of the target; replacing this leg
+    // would keep that progress and end the new leg early, away
+    // from the destination
+    if (_scurve_next_leg.has_started()) {
+        return false;
+    }
+
     Location current_loc;
     if (!AP::ahrs().get_location(current_loc)) {
         return false;
@@ -721,8 +730,7 @@ bool AR_WPNav::replan_arc_this_leg()
     const bool have_speed = _atc.get_forward_speed(forward_speed);
 
     // too little track remains to be worth re-planning once the
-    // vehicle is within braking distance of the destination, which
-    // is also where the next leg starts to blend into this leg
+    // vehicle is within braking distance of the destination
     Vector2f center_NE;
     float radius_m;
     if (have_speed && is_positive(get_accel_max()) &&
