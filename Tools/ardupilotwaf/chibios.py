@@ -799,10 +799,25 @@ def pre_build(bld):
         bld.get_board().with_littlefs = True
     setup_optimization(bld.env)
 
+def ar_argfile_exec_command(self, cmd, **kw):
+    # pass the archive members in a response file, waf's own argfile
+    # handling uses a Cygwin path the native Windows tools can't read
+    if isinstance(cmd, str) or len(cmd) < 4:
+        return Task.Task.exec_command(self, cmd, **kw)
+    rsp = self.outputs[0].abspath() + '.rsp'
+    with open(rsp, 'w') as f:
+        f.write('\n'.join(cmd[3:]))
+    return Task.Task.exec_command(self, cmd[:3] + ['@' + os.path.relpath(rsp, self.get_cwd().abspath())], **kw)
+
 def copy_linker_script(task):
     shutil.copy(task.inputs[0].abspath(), task.outputs[0].abspath())
 
 def build(bld):
+    if bld.env.ENABLE_LTO and sys.platform.startswith('cygwin'):
+        # the native Windows gcc-ar is limited to a 32k command line
+        from waflib.Tools import c, cxx
+        c.cstlib.exec_command = ar_argfile_exec_command
+        cxx.cxxstlib.exec_command = ar_argfile_exec_command
 
     # make ccache effective on ChibiOS builds
     if not bld.env.PICOLIBC:
