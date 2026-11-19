@@ -644,7 +644,8 @@
 #endif
 
 #ifndef TOY_MODE_ENABLED
-#define TOY_MODE_ENABLED 0
+// built in SITL so that it can be tested there
+#define TOY_MODE_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL && FRAME_CONFIG != HELI_FRAME && MODE_ALTHOLD_ENABLED)
 #endif
 
 #if TOY_MODE_ENABLED && FRAME_CONFIG == HELI_FRAME
