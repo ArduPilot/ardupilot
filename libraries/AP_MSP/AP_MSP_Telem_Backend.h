@@ -180,6 +180,18 @@ protected:
         bool pitmode;
         bool valid;
     } _vtx_pushed;
+    // last raw MSP_SET_VTX_CONFIG frame reported by the air unit, to ignore
+    // duplicate periodic resends without clobbering FC-side changes
+    struct {
+        uint8_t band;
+        uint8_t channel;
+        uint16_t freq_mhz;
+        uint16_t power_mw;
+        uint8_t power_idx;
+        bool pitmode;
+        bool has_power_pit;
+        bool valid;
+    } _vtx_reported;
 #endif  // AP_MSP_VIDEOTX_ENABLED
 
     // passthrough WFQ scheduler
@@ -264,6 +276,7 @@ private:
     // MSP_SET_VTX_CONFIG / MSP_SET_VTXTABLE_POWERLEVEL onto the configured VTX
     void msp_vtx_set_band_and_channel(uint8_t band, uint8_t channel);
     void msp_vtx_set_frequency(uint16_t freq_mhz);
+    uint16_t msp_vtx_power_mw_for_index(uint8_t index) const;
     void msp_vtx_set_power_index(uint8_t index);
     uint8_t msp_vtx_get_power_index() const;
     void msp_vtx_set_pitmode(bool pitmode);
