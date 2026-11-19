@@ -6996,6 +6996,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 y=int(home.lng * 1e7),
                 frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
             ),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),
             self.create_MISSION_ITEM_INT(
                 mavutil.mavlink.MAV_CMD_NAV_LAND,
                 x=int(home.lat * 1e7),
@@ -7007,6 +7008,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_collect('STATUSTEXT')
         self.change_mode('AUTO_RTL')
         self.wait_statustext("Mission: command recursion denied", check_context=True)
+        self.wait_statustext("Unable to resume landing sequence", check_context=True)
         self.wait_statustext("Internal Errors 0x100000", check_context=True)
 
         # The recursion guard must leave the main loop alive and in the
