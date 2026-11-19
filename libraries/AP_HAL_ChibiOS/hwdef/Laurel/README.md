@@ -57,6 +57,10 @@ Channels within the same group need to use the same output rate. If any
 channel in a group uses DShot then all channels in the group need to use
 DShot.
 
+ESCs can be configured and flashed through the outputs with BLHeli
+passthrough. It has been tested with AM32 ESCs on RPI_UAVFC, not yet on
+Laurel.
+
 ## Battery Monitoring
 
 The battery voltage is measured on the board, and the current-sense input
