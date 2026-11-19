@@ -746,6 +746,3 @@ libraries/AP_HAL_ChibiOS/RCOutput_bdshot.cpp|ChibiOS::RCOutput::bdshot_count_rep
 # ramfunc2-update: moved here from rp2350_scratchy_registry.txt, which overflowed by 8 B. Placed
 # by size, not profiled:
 libraries/AC_PID/AC_PID.cpp|AC_PID::get_ff  # 14 B
-# ramfunc2-update: moved here from rp2350_scratchy_registry.txt, which overflowed by 56 B.
-# Placed by size, not profiled:
-libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::apply  # 94 B

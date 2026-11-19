@@ -24,8 +24,7 @@ libraries/AC_PID/AC_PID.cpp|AC_PID::update_i
 # RAMFUNC2 - it is the slow half and is also reachable from the core0 AP_Vehicle path.
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::apply_gyro_filters
 libraries/Filter/NotchFilter.h|NotchFilter<Vector3<float>>::apply
-# ramfunc2-update: HarmonicNotchFilter<Vector3<float>>::apply: moved to
-# rp2350_ramfunc2_registry.txt, as this bank overflowed by 56 B.
+libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::apply
 #
 # NOT the motor mixing. AP_MotorsMatrix output_armed_stabilizing/output_to_motors/
 # check_for_failed_motor are core1-only and the biggest core1 consumer (~2.1% armed), but moving
