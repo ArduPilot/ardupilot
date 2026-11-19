@@ -193,6 +193,9 @@ uint8_t  RCOutput_pico::_gpio[RCOutput_pico::MAX_CHANNELS];
 uint8_t  RCOutput_pico::_len_transition[4];
 uint8_t  RCOutput_pico::_stall_count[RCOutput_pico::MAX_CHANNELS];
 uint32_t RCOutput_pico::_stall_restarts[RCOutput_pico::MAX_CHANNELS];
+#if HAL_SERIAL_ESC_COMM_ENABLED
+uint32_t RCOutput_pico::_paused_mask;
+#endif
 #endif // HAL_DSHOT_ENABLED
 
 #if HAL_SERIALLED_ENABLED
@@ -436,6 +439,51 @@ void RCOutput_pico::restart_sm(uint8_t chan, uint16_t frame)
     _stall_count[chan] = 0;
     _stall_restarts[chan]++;
 }
+
+#if HAL_SERIAL_ESC_COMM_ENABLED
+void RCOutput_pico::stop_sm(uint8_t chan)
+{
+    PIO_TypeDef *pio = DSHOT_PIO;
+    const uint8_t sm = chan;
+
+    rp2350_reg_clear_bits(&pio->CTRL, 1U << (PIO_CTRL_SM_ENABLE_LSB + sm));
+    // toggling the FIFO join flushes both halves; there is no direct flush
+    pio->SM[sm].SHIFTCTRL ^= PIO_SHIFTCTRL_FJOIN_RX;
+    pio->SM[sm].SHIFTCTRL ^= PIO_SHIFTCTRL_FJOIN_RX;
+}
+
+/*
+  ESC passthrough runs on core0 while write_frame() and read_telemetry() run on
+  core1, so the channel leaves _chan_mask before its state machine stops: core1
+  checks the mask on every call and stops using the channel. A call that passed
+  the check just before can still queue a frame or restart the state machine,
+  but neither reaches the pin, which the caller gives to SIO, and
+  resume_channel() flushes the FIFOs again before starting the state machine.
+  Only core0 writes _chan_mask and _paused_mask.
+ */
+bool RCOutput_pico::pause_channel(uint8_t chan)
+{
+    if (!_initialised || chan >= MAX_CHANNELS || !(_chan_mask & (1U << chan))) {
+        return false;
+    }
+    _chan_mask &= ~(1U << chan);
+    _paused_mask |= (1U << chan);
+    stop_sm(chan);
+    return true;
+}
+
+void RCOutput_pico::resume_channel(uint8_t chan)
+{
+    if (chan >= MAX_CHANNELS || !(_paused_mask & (1U << chan))) {
+        return;
+    }
+    stop_sm(chan);
+    start_sm(chan, _gpio[chan]);
+    _stall_count[chan] = 0;
+    _paused_mask &= ~(1U << chan);
+    _chan_mask |= (1U << chan);
+}
+#endif // HAL_SERIAL_ESC_COMM_ENABLED
 
 /*
   ----------------------------------------------------------------------------

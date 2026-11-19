@@ -72,6 +72,17 @@ public:
 
     // channels bound so far, as a mask
     static uint32_t channel_mask(void) { return _chan_mask; }
+
+#if HAL_SERIAL_ESC_COMM_ENABLED
+    // ESC passthrough: stop a bound channel's state machine, leaving its pad to the caller
+    static bool pause_channel(uint8_t chan);
+    // ESC passthrough: hand a paused channel's pad back to its state machine
+    static void resume_channel(uint8_t chan);
+    // channels taken off their state machines by pause_channel(), as a mask
+    static uint32_t paused_mask(void) { return _paused_mask; }
+    // the GPIO a bound or paused channel drives
+    static uint8_t channel_gpio(uint8_t chan) { return _gpio[chan]; }
+#endif
 #endif // HAL_DSHOT_ENABLED
 
 #if HAL_SERIALLED_ENABLED
@@ -144,6 +155,12 @@ private:
     // forced a restart - the second is a diagnostic for a flaky ESC or wiring
     static uint8_t  _stall_count[MAX_CHANNELS];
     static uint32_t _stall_restarts[MAX_CHANNELS];
+
+#if HAL_SERIAL_ESC_COMM_ENABLED
+    // stop a state machine and empty both of its FIFOs
+    static void stop_sm(uint8_t chan);
+    static uint32_t _paused_mask;
+#endif
 #endif // HAL_DSHOT_ENABLED
 
 #if HAL_SERIALLED_ENABLED

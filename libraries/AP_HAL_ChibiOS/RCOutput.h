@@ -415,7 +415,7 @@ private:
 
         eventmask_t dshot_event_mask;
         thread_t* dshot_waiter;
-#if HAL_SERIAL_ESC_COMM_ENABLED
+#if HAL_SERIAL_ESC_COMM_ENABLED && !defined(RP2350)
         // serial output
         struct {
             // expected time per bit
@@ -537,6 +537,7 @@ private:
     // binary semaphore to mediate consumer/producer access to the serial buffer
     static HAL_BinarySemaphore serial_sem;
   
+#if !defined(RP2350)
     // the group being used for serial output
     struct pwm_group *serial_group;
     // preserved state
@@ -544,10 +545,11 @@ private:
     iomode_t serial_mode;
     // mask of channels configured for serial output
     uint32_t serial_chanmask;
+#endif // !defined(RP2350)
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
 
     static bool soft_serial_waiting() {
-#if HAL_SERIAL_ESC_COMM_ENABLED
+#if HAL_SERIAL_ESC_COMM_ENABLED && !defined(RP2350)
       return irq.waiter != nullptr;
 #else
       return false;
@@ -555,7 +557,7 @@ private:
     }
 
     bool in_soft_serial() const {
-#if HAL_SERIAL_ESC_COMM_ENABLED
+#if HAL_SERIAL_ESC_COMM_ENABLED && !defined(RP2350)
       return serial_group != nullptr;
 #else
       return false;
@@ -823,6 +825,11 @@ private:
     void fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t b , uint32_t bitval);
     static void serial_bit_irq(void);
     static void serial_byte_timeout(virtual_timer_t* vt, void *ctx);
+#endif
+#if defined(RP2350) && HAL_SERIAL_ESC_COMM_ENABLED
+    // ESC passthrough on RP2350: attach serial_bit_irq() to a line, fresh, and detach it
+    static bool serial_rx_attach(ioline_t line, uint16_t bit_time_us);
+    static void serial_rx_detach(ioline_t line);
 #endif
 };
 

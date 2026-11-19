@@ -2227,6 +2227,7 @@ void RCOutput::dma_cancel(pwm_group& group)
 #if HAL_SERIAL_ESC_COMM_ENABLED
 #define BYTE_BITS 10U
 
+#if !defined(RP2350)
 bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t chanmask)
 {
     osalDbgAssert(hal.scheduler->in_main_thread(), "serial_setup_output(): not called from main thread");
@@ -2318,11 +2319,13 @@ void RCOutput::fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t
         b >>= 1;
     }
 }
+#endif // !defined(RP2350)
 
 // timeout should come well after the next start bit, on BlueJay start to start is about 624us
 // timeout behaviour can be stressed by setting this to BYTE_BITS + 2
 #define BYTE_TIME(bitus) (bitus *  (BYTE_BITS + 3U))
 
+#if !defined(RP2350)
 /*
   send one serial byte, blocking call, should be called with the DMA lock held
 */
@@ -2403,6 +2406,7 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     return false;
 #endif // HAL_DSHOT_ENABLED
 }
+#endif // !defined(RP2350)
 
 #define BAD_BYTE 0xFFFF
 #define START_BIT_TIMEOUT 2000 // 2ms
@@ -2553,6 +2557,7 @@ bool RCOutput::serial_read_byte(uint8_t &b, uint32_t timeout_us)
     }
 }
 
+#if !defined(RP2350)
 /*
   read a byte from a port, using serial parameters from serial_setup_output()
   timeout_us is the maximum time to wait for input - it is important to timeout
@@ -2662,6 +2667,7 @@ void RCOutput::serial_reset(uint32_t chanmask)
         pwmStart(serial_group->pwm_drv, &serial_group->pwm_cfg);
     }
 }
+#endif // !defined(RP2350)
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
 
 /*

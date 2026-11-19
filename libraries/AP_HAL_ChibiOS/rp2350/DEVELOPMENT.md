@@ -1136,7 +1136,8 @@ declared `PWMn_A`/`PWMn_B` with type `TIMn`, slices 0-11, FUNCSEL 4; both
 share the slice's divider and TOP. The divider's integer part is 8 bits, so
 a 1 MHz counter needs `clk_sys` under 256 MHz (`static_assert`). OneShot is
 refused (no EGR), and `setup_group_DMA()` always fails: with no timer DMAR,
-BLHeli passthrough is off and DShot and LEDs use the PIO.
+DShot and LEDs use the PIO, and ESC passthrough drives the motor pins from
+the CPU (see ESC passthrough).
 
 The buzzer is an `ALARM` pin with no `GPIO(n)` or `HAL_BUZZER_PIN`, either
 of which lets `AP_Notify::Buzzer::init()` switch it to SIO. The transducers
@@ -1215,6 +1216,44 @@ timer path's 5 s reset, so `ESC.Err` shows frame loss. The counter is not
 yet checked against a flight log. It lives in RAMFUNC2 because Scratch Y
 has 8 bytes left. Betaflight reports 5-8% decode failures for this program
 under load.
+
+### ESC passthrough
+
+`RCOutput_pico_serial.cpp` gives AP_BLHeli's passthrough, ESC configuration
+and flashing over the signal wire as a one-wire 19200 baud UART, the
+`serial_*()` calls the STM32 path implements with timer DMA. A board turns it
+on with `HAL_SERIAL_ESC_COMM_ENABLED`, which needs DShot. As in Betaflight's
+RP2350 port the pin leaves the PIO and the CPU transmits; replies are read
+by `serial_bit_irq()` and `serial_read_byte()` in `RCOutput.cpp`, the
+edge-timed reader the STM32 path uses.
+
+- Setup takes every motor channel off its state machine and drives its pad
+  high, the idle line. `pause_channel()` drops the channel from
+  `_chan_mask` first, which core1's `write_frame()` and `read_telemetry()`
+  test on every call; a frame queued by a call already past the test
+  cannot reach the pin, now SIO, and `resume_channel()` flushes it.
+  `in_soft_serial()` stays false on RP2350, so the core1 hot path is the
+  same with passthrough built in.
+- Each byte is timed against the microsecond clock with core0's interrupts
+  masked to the kernel's level for about 520 us. Betaflight masks nothing,
+  as its passthrough loop is all that runs; here a thread could preempt the
+  main thread mid-byte. The kernel lock is not taken, so core1 never waits.
+  Core0's own interrupts wait up to a byte, so a fast PIO UART such as CRSF
+  can overrun its eight-entry FIFO while an ESC is written (derived from the
+  source, not measured).
+- The line is released at the start of the last stop bit, as in Betaflight,
+  and the pad's pull-up holds the stop bit high, so the line is never driven
+  while the ESC answers. `serial_bit_irq()` is attached before the last
+  byte, and the edges that byte latches in `IO_BANK0` INTR are cleared at
+  release, inside its masked window: the reader sees only the reply. A
+  latched edge reaching it first would read as a 0x00 byte.
+- There is no wait for the ESCs to enter their bootloader after setup, as
+  in Betaflight and the STM32 path; the configurator retries a command the
+  ESC does not answer.
+
+On the bench RPI_UAVFC, esc-configurator read, configured and flashed AM32
+ESCs through it (2026-11-19). BLHeli_S, Bluejay and BLHeli_32 have not been
+tried.
 
 ### NeoPixel
 
