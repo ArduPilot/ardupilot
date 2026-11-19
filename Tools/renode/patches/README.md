@@ -4,6 +4,11 @@
 `usbip-unlink.patch` applies on top of it and adds USB/IP URB cancellation and
 ordered endpoint reads, needed when GDB closes and reopens the CDC port.
 
+`cortex-m-stacking-fault.patch` preserves the original exception-return value
+and incomplete frame on ARMv7-M stacking faults. Stack-guard tests need this
+in addition to the USB/debug patches: the older CPU path tries to unstack the
+incomplete frame, so firmware sees a nested fault instead of the thread overflow.
+
 `cortex-m-debug-monitor.patch` adds guest DebugMonitor enable, BKPT status,
 MON_STEP, FPB instruction matching, and corrects SysTick wakeup when the timer
 was disabled before sleep. These are independent of Renode's host GDB server.
@@ -23,6 +28,7 @@ and tlib `d50c868f33fb42954d85b8d06ce6f7d5bac23dd4`.
 ```sh
 patch -p1 < /path/to/ardupilot/Tools/renode/patches/usbip-device-state.patch
 patch -p1 < /path/to/ardupilot/Tools/renode/patches/usbip-unlink.patch
+patch -p1 -d src/Emulator/Cores/tlib < /path/to/ardupilot/Tools/renode/patches/cortex-m-stacking-fault.patch
 patch -p1 < /path/to/ardupilot/Tools/renode/patches/cortex-m-debug-monitor.patch
 patch -p1 < /path/to/ardupilot/Tools/renode/patches/cortex-m-usb-debug-extensions.patch
 ```

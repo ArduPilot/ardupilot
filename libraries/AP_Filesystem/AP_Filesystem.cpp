@@ -60,7 +60,14 @@ static AP_Filesystem_Param fs_param;
 
 #if AP_FILESYSTEM_SYS_ENABLED
 #include "AP_Filesystem_Sys.h"
-static AP_Filesystem_Sys fs_sys;
+// Logger workers can still access SYS files during process exit. Retain the
+// backend and its semaphore until the process has stopped all threads.
+static union SysBackendStorage {
+    AP_Filesystem_Sys backend;
+    SysBackendStorage() : backend() {}
+    ~SysBackendStorage() {}
+} fs_sys_storage;
+static AP_Filesystem_Sys &fs_sys = fs_sys_storage.backend;
 #endif
 
 #if AP_FILESYSTEM_MISSION_ENABLED
@@ -341,20 +348,6 @@ int AP_Filesystem::rename(const char *oldpath, const char *newpath)
 
 AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
 {
-    // support reading a list of "@" filesystems (e.g. @SYS) in
-    // listing of root directory.  Note that backend_by_path modifies
-    // its parameter.
-    if (strlen(pathname) == 0 ||
-        (strlen(pathname) == 1 && pathname[0] == '/')) {
-        virtual_dirent.backend_ofs = 0;
-        virtual_dirent.d_off = 0;
-#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
-        virtual_dirent.de.d_type = DT_DIR;
-#endif
-    } else {
-        virtual_dirent.backend_ofs = 255;
-    }
-
     const ResolvedPath resolved { *this, pathname };
     if (!resolved.valid()) {
         return nullptr;
@@ -371,6 +364,18 @@ AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
     }
     h->fs_index = BACKEND_IDX(backend);
 
+    // Root streams include the virtual filesystems (e.g. @SYS).
+    if (strlen(pathname) == 0 ||
+        (strlen(pathname) == 1 && pathname[0] == '/')) {
+        h->virtual_dirent.backend_ofs = 0;
+        h->virtual_dirent.d_off = 0;
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
+        h->virtual_dirent.de.d_type = DT_DIR;
+#endif
+    } else {
+        h->virtual_dirent.backend_ofs = 255;
+    }
+
     return h;
 }
 
@@ -386,6 +391,7 @@ struct dirent *AP_Filesystem::readdir(DirHandle *dirp)
     }
 
     // virtual directory entries in the root directory (e.g. @SYS, @MISSION)
+    auto &virtual_dirent = dirp->virtual_dirent;
     for (; ret == nullptr && virtual_dirent.backend_ofs < ARRAY_SIZE(AP_Filesystem::backends); virtual_dirent.backend_ofs++) {
         const char *prefix = backends[virtual_dirent.backend_ofs].prefix;
         if (prefix == nullptr) {

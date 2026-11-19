@@ -1,0 +1,4 @@
+    pub fn ${name}(&self, context: &Context<'_>) -> Result<Option<u8>> {
+        let mut byte = [0u8];
+        Ok((self.${target}(context, &mut byte)? == 1).then_some(byte[0]))
+    }

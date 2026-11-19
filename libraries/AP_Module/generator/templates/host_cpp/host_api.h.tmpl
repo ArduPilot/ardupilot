@@ -1,0 +1,21 @@
+${notice}
+#pragma once
+#include <stddef.h>
+#include <stdint.h>
+
+#define AP_MODULE_ABI_VERSION ${version}U
+#define AP_MODULE_API_FINGERPRINT {${fingerprint}}
+
+${statuses}
+typedef struct AP_ModuleHostApi {
+    uint32_t version;
+    uint32_t size;
+    uint8_t fingerprint[16];
+${functions}} AP_ModuleHostApi;
+
+#ifdef __cplusplus
+#define AP_MODULE_LAYOUT_ASSERT static_assert
+#else
+#define AP_MODULE_LAYOUT_ASSERT _Static_assert
+#endif
+${assertions}#undef AP_MODULE_LAYOUT_ASSERT

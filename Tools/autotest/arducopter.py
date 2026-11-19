@@ -20976,6 +20976,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrottleGainBoost,
             self.ThrottleGainBoostRateThread,
             self.ScriptMountPOI,
+            self.ScriptMountPOIRust,
             self.GuidedYawRate,
             self.MISSION_OPTION_CLEAR_MISSION_AT_BOOT,
             self.SafetySwitch,
@@ -21239,17 +21240,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def ScriptMountPOI(self):
         '''test the MountPOI example script'''
+        self.ScriptMountPOIMain(rust=False)
+
+    def ScriptMountPOIRust(self):
+        '''test the native Rust MountPOI applet'''
+        self.ScriptMountPOIMain(rust=True)
+
+    def ScriptMountPOIMain(self, rust):
         self.context_push()
 
         self.install_terrain_handlers_context()
         self.set_parameters({
-            "SCR_ENABLE": 1,
+            "SCR_ENABLE": 0 if rust else 1,
             "RC12_OPTION": 300,
         })
+        if rust:
+            self.set_parameters({
+                "MOD_ENABLE": 1,
+                "MOD_HEAP_MAX": 32768,
+                "MOD_CODE_MAXSIZE": 131072,
+                "MOD_STACK_MAX": 32768,
+            })
         self.setup_servo_mount()
         self.reboot_sitl()
         self.set_rc(6, 1300)
-        self.install_applet_script_context('mount-poi.lua')
+        if rust:
+            self.install_rust_applet_context(
+                'mount_poi/main.rs',
+                install_name='mount-poi.apmod',
+            )
+        else:
+            self.install_applet_script_context('mount-poi.lua')
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.context_collect('STATUSTEXT')
@@ -23611,6 +23632,124 @@ RTL_ALT_M 111
             "OA_BR_LOOKAHEAD": 42,
         })
 
+    def DynamicParamDefaults(self):
+        '''test that defaults files apply to parameters registered after boot'''
+        files = []
+        for content in ("SCR_ENABLE 1\nTST_A 7\nTST_B 8\n", "TST_A 9\n"):
+            f = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+            f.write(content)
+            f.close()
+            files.append(f.name)
+        script_content = """
+local KEY = 10
+assert(param:add_table(KEY, "TST_", 16), 'could not add param table')
+assert(param:add_param(KEY, 5, "A", 22), 'could not add TST_A')
+assert(param:add_param(KEY, 1, "B", 33), 'could not add TST_B')
+assert(param:add_param(KEY, 2, "C", 44), 'could not add TST_C')
+
+function update()
+  gcs:send_text(3, "test script running")
+  return update, 1000
+end
+
+return update, 1000
+"""
+        self.install_script_content_context("test.lua", script_content)
+        self.customise_SITL_commandline([], defaults_filepath=files, wipe=True)
+        self.wait_statustext('test script running')
+        # the last defaults file wins; unlisted names keep the coded default
+        self.assert_parameter_value('TST_A', 9)
+        self.assert_parameter_value('TST_B', 8)
+        self.assert_parameter_value('TST_C', 44)
+
+        self.start_subtest("Saved values take precedence over defaults files")
+        self.set_parameter('TST_B', 55)
+        self.reboot_sitl()
+        self.wait_statustext('test script running')
+        self.assert_parameter_value('TST_A', 9)
+        self.assert_parameter_value('TST_B', 55)
+
+    def ScriptingInt32Params(self):
+        """Test exact integer parameter access and saved values through Lua."""
+        self.context_push()
+        script_content = """
+local KEY = 20
+assert(param:add_table(KEY, "L32_", 8))
+assert(param:add_param_int32(KEY, 1, "VALUE", 0))
+assert(param:add_param_int32(KEY, 2, "SAVED", 16777216))
+assert(param:add_param(KEY, 3, "FLOAT", 1.5))
+assert(not param:add_param_int32(KEY, 4, "BAD", 16777217))
+assert(not param:add_param(KEY, 2, "SAVED", 0))
+assert(param:add_param_int32(KEY, 5, "DEFAULT", 0))
+assert(param:add_param_int32(KEY, 6, "INEXACT", 7))
+assert(param:add_param_int32(KEY, 7, "RO", 0))
+assert(param:add_param_int32(KEY, 8, "EXP", 0))
+assert(Parameter("L32_DEFAULT"):get_int32() == 1000)
+assert(Parameter("L32_INEXACT"):get_int32() == 7)
+assert(Parameter("L32_RO"):get_int32() == 3)
+assert(Parameter("L32_EXP"):get_int32() == 1000000000)
+local value = Parameter("L32_VALUE")
+local saved = Parameter("L32_SAVED")
+local f = Parameter("L32_FLOAT")
+assert(f:get_int32() == nil)
+assert(not f:set_int32(1))
+assert(not Parameter("FENCE_ENABLE"):set_int32(300))
+for _, v in ipairs({1491234567, -2147483648, 2147483647}) do
+  assert(value:set_int32(v))
+  assert(value:get_int32() == v)
+end
+if saved:get_int32() == 16777216 then
+  assert(saved:set_and_save_int32(16777217))
+elseif saved:get_int32() == 16777217 then
+  gcs:send_text(6, "L32 saved integer kept")
+else
+  error("unexpected saved integer")
+end
+gcs:send_text(6, "L32 integer checks passed")
+return function() end, 1000
+"""
+        self.install_script_content_context("int32-params.lua", script_content)
+        defaults = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults.write("SCR_ENABLE 1\nL32_DEFAULT 1e3\nL32_INEXACT 1491234567\n"
+                       "L32_RO 3.0 @READONLY\nL32_EXP 1e9\n")
+        defaults.close()
+        self.context_collect('STATUSTEXT')
+        self.customise_SITL_commandline([], defaults_filepath=[defaults.name], wipe=True)
+        self.wait_text('L32 integer checks passed', check_context=True)
+        self.mav.mav.param_set_send(self.sysid_thismav(), 1, b'L32_RO', 4, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+        self.delay_sim_time(2, reason='read-only Lua parameter set ignored')
+        self.assert_parameter_value('L32_RO', 3)
+        self.delay_sim_time(2, reason='wait for integer save IO')
+        self.reboot_sitl()
+        self.wait_text('L32 saved integer kept', check_context=True)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def NativeModuleParamDefaults(self):
+        '''test exact int32 parameters and defaults files for native module parameters'''
+        self.context_push()
+        self.install_rust_test_module_context('param_defaults.rs', install_name='param-defaults.apmod')
+        # limits also admit a module built into ROMFS with --module
+        defaults = tempfile.NamedTemporaryFile(mode='w', suffix='.parm', delete=False)
+        defaults.write("MOD_ENABLE 1\nMOD_HEAP_MAX 262144\nMOD_CODE_MAXSIZE 262144\nMOD_STACK_MAX 65536\n"
+                       "SCR_ENABLE 0\nPDD_I32 16777216.0\nPDD_BIG 2147483648\nPDD_RO 3.0 @READONLY\n"
+                       "PDD_MAX 2147483647\nPDD_MIN -2147483648\nPDD_ROUND 1491234567\nPDD_LARGE 1e9\n")
+        defaults.close()
+        self.context_collect('STATUSTEXT')
+        self.install_message_hook_context(self.FailFastStatusText(self, ['PDT fail', 'Module fatal:']))
+        self.customise_SITL_commandline([], defaults_filepath=[defaults.name], wipe=True)
+        self.wait_text('PDT ready', check_context=True, timeout=60)
+        self.assert_parameter_value('PDD_RO', 3)
+        self.mav.mav.param_set_send(self.sysid_thismav(), 1, b'PDD_RO', 4, mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+        self.delay_sim_time(2, reason='read-only parameter set ignored')
+        self.assert_parameter_value('PDD_RO', 3)
+
+        # an int32 value next to an exactly representable default must survive a reboot
+        self.reboot_sitl()
+        self.wait_text('PDT saved int32 kept', check_context=True, timeout=60)
+        self.context_pop()
+        self.reboot_sitl()
+
     def SerialPassthru(self):
         '''smoke test serial passthrough timeout and manual disable'''
         # SITL does not enforce UART thread ownership, so this cannot
@@ -25045,14 +25184,32 @@ return update()
 
     def LuaParamLockdown(self):
         '''test param-lockdown.lua applet'''
-        self.set_parameters({
-            'SCR_ENABLE': 1,
-        })
+        self.ParamLockdown(rust=False)
+
+    def RustParamLockdown(self):
+        '''test the native Rust param-lockdown applet'''
+        self.ParamLockdown(rust=True)
+
+    def ParamLockdown(self, rust):
+        self.set_parameter('SCR_ENABLE', 0 if rust else 1)
+        if rust:
+            self.set_parameters({
+                'MOD_ENABLE': 1,
+                'MOD_HEAP_MAX': 32768,
+                'MOD_CODE_MAXSIZE': 131072,
+                'MOD_STACK_MAX': 32768,
+            })
 
         self.context_push()
 
-        self.install_mavlink_module_context("MAVLink")
-        self.install_applet_script_context("param-lockdown.lua")
+        if rust:
+            self.install_rust_applet_context(
+                'param_lockdown/main.rs',
+                install_name='param-lockdown.apmod',
+            )
+        else:
+            self.install_mavlink_module_context("MAVLink")
+            self.install_applet_script_context("param-lockdown.lua")
         self.reboot_sitl()
 
         # collect original parameter values for everything other than
@@ -25701,12 +25858,16 @@ return update, 1000
             self.LoweheiserManual,
             self.Weathervane,
             self.ReadOnlyDefaults,
+            self.DynamicParamDefaults,
+            self.ScriptingInt32Params,
+            self.NativeModuleParamDefaults,
             self.SerialPassthru,
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
             self.mission_NAV_LOITER_TURNS_direction,
             self.LuaMAVLinkTarget,
             self.LuaParamLockdown,
+            self.RustParamLockdown,
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             self.CRSF,

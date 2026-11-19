@@ -31,6 +31,8 @@ from param import known_param_fields
 from param import known_units
 from param import required_library_param_fields
 from param import required_param_fields
+from rust import parameter_matches as rust_parameter_matches
+from rust import parameter_paths as rust_parameter_paths
 
 parser = ArgumentParser(description="Parse ArduPilot parameters.")
 parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
@@ -138,6 +140,13 @@ def lua_applets():
     return lua_lib
 
 
+def rust_applets():
+    """Rust applets, drivers and examples have the same metadata fields as Lua."""
+    lib = Library("", reference="Rust Module", not_rst=True, check_duplicates=True)
+    lib.Path = ','.join(rust_parameter_paths(apm_path))
+    return lib
+
+
 libraries = []
 
 if args.vehicle != "AP_Periph":
@@ -148,6 +157,9 @@ if args.vehicle != "AP_Periph":
     libraries.append(ap_vehicle_lib)
 
 libraries.append(lua_applets())
+rust_lib = rust_applets()
+if rust_lib.Path:
+    libraries.append(rust_lib)
 
 error_count = 0
 current_param = None
@@ -306,7 +318,10 @@ def process_library(vehicle, library, pathprefix=None):
             error("Path %s not found for library %s (fname=%s)" % (path, library.name, libraryfname))
             continue
 
-        param_matches = prog_param.findall(p_text)
+        if libraryfname.endswith('.rs'):
+            param_matches = rust_parameter_matches(p_text)
+        else:
+            param_matches = prog_param.findall(p_text)
         debug("Found %u documented parameters" % len(param_matches))
         for param_match in param_matches:
             (only_vehicles, param_name, field_text) = (param_match[0].strip(),

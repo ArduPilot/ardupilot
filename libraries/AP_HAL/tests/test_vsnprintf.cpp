@@ -171,4 +171,106 @@ TEST(vsnprintf_Test, SpecialFormat)
 }
 
 
+#if AP_MODULE_ENABLED
+TEST(vsnprintf_Test, TypedArguments)
+{
+    using Arg = AP_HAL::Util::FormatArg;
+    Arg args[8]{};
+    args[0].type = Arg::Type::INT32;
+    args[0].i32 = -7;
+    args[1].type = Arg::Type::FLOAT64;
+    args[1].real = 12.5;
+    args[2].type = Arg::Type::STRING;
+    args[2].text = "abc";
+    args[3].type = Arg::Type::INT64;
+    args[3].i64 = -1234567890123LL;
+    args[4].type = Arg::Type::UINT64;
+    args[4].u64 = UINT64_MAX;
+    args[5].type = Arg::Type::UINT32;
+    args[5].u32 = 0xdeadbeef;
+    args[6].type = Arg::Type::FLOAT64;
+    args[6].real = 0.25;
+    args[7].type = Arg::Type::INT32;
+    args[7].i32 = 'A';
+    const char *format = "%d %.1f %s %lld %llu %08X %.2f %c %%";
+    char actual[256], expected[256];
+    const int length = hal.util->snprintf(expected, sizeof(expected), format,
+                                        -7, 12.5, "abc", -1234567890123LL,
+                                        static_cast<unsigned long long>(UINT64_MAX), 0xdeadbeefU, 0.25, 'A');
+    EXPECT_EQ(length, hal.util->snprintf_args(actual, sizeof(actual), format, args, 8));
+    EXPECT_STREQ(actual, expected);
+    EXPECT_EQ(length, hal.util->snprintf_args(nullptr, 0, format, args, 8));
+    EXPECT_EQ(length, hal.util->snprintf_args(actual, 4, format, args, 8));
+    EXPECT_STREQ(actual, "-7 ");
+}
+
+TEST(vsnprintf_Test, TypedArgumentsScalarSlots)
+{
+    using Arg = AP_HAL::Util::FormatArg;
+    Arg args[8]{};
+    args[0].type = Arg::Type::INT32;
+    args[0].i32 = -1;
+    args[1].type = Arg::Type::UINT32;
+    args[1].u32 = UINT32_MAX;
+    args[2].type = Arg::Type::INT32;
+    args[2].i32 = 'Z';
+    args[3].type = Arg::Type::STRING;
+    args[3].text = "slots";
+    args[4].type = Arg::Type::INT32;
+    args[4].i32 = INT32_MIN;
+    args[5].type = Arg::Type::INT64;
+    args[5].i64 = INT64_MIN;
+    args[6].type = Arg::Type::UINT64;
+    args[6].u64 = UINT64_MAX;
+    args[7].type = Arg::Type::FLOAT64;
+    args[7].real = -0.5;
+    const char *format = "%i %u %c %s %i %lld %llu %.1f";
+    char actual[256], expected[256];
+    const int length = hal.util->snprintf(expected, sizeof(expected), format,
+                                        -1, UINT32_MAX, 'Z', "slots", INT32_MIN,
+                                        static_cast<long long>(INT64_MIN),
+                                        static_cast<unsigned long long>(UINT64_MAX), -0.5);
+    EXPECT_EQ(length, hal.util->snprintf_args(actual, sizeof(actual), format, args, 8));
+    EXPECT_STREQ(actual, expected);
+}
+
+TEST(vsnprintf_Test, TypedArgumentsFloatSlots)
+{
+    using Arg = AP_HAL::Util::FormatArg;
+    Arg args[8]{};
+    for (uint8_t i = 0; i < ARRAY_SIZE(args); i++) {
+        args[i].type = Arg::Type::FLOAT64;
+        args[i].real = (i - 4) * 0.25;
+    }
+    const char *format = "%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f";
+    char actual[128], expected[128];
+    const int length = hal.util->snprintf(expected, sizeof(expected), format,
+                                        -1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75);
+    EXPECT_EQ(length, hal.util->snprintf_args(actual, sizeof(actual), format, args, ARRAY_SIZE(args)));
+    EXPECT_STREQ(actual, expected);
+}
+
+TEST(vsnprintf_Test, TypedArgumentsRejectInvalidFormats)
+{
+    using Arg = AP_HAL::Util::FormatArg;
+    Arg arg{};
+    arg.type = Arg::Type::FLOAT64;
+    arg.real = 12.5;
+    const char *invalid[] = {"%d", "%s", "%n", "%p", "%*f", "%.*f", "%1$f", "%ld",
+                             "%256f", "%.61f", "%llf", "%", "%l", "%ll", "%f %f", "unused"};
+    char output[32] = "unchanged";
+    for (const char *format : invalid) {
+        EXPECT_EQ(-1, hal.util->snprintf_args(output, sizeof(output), format, &arg, 1)) << format;
+        EXPECT_STREQ(output, "unchanged");
+    }
+    EXPECT_EQ(-1, hal.util->snprintf_args(output, sizeof(output), "%f", &arg, 0));
+    EXPECT_EQ(-1, hal.util->snprintf_args(output, sizeof(output), "%f", &arg, 9));
+    EXPECT_EQ(-1, hal.util->snprintf_args(output, sizeof(output), "%f", nullptr, 1));
+    EXPECT_EQ(-1, hal.util->snprintf_args(output, sizeof(output), nullptr, &arg, 1));
+    EXPECT_EQ(-1, hal.util->snprintf_args(nullptr, 1, "%f", &arg, 1));
+    EXPECT_EQ(4, hal.util->snprintf_args(output, sizeof(output), "100%%", nullptr, 0));
+    EXPECT_STREQ(output, "100%");
+}
+#endif // AP_MODULE_ENABLED
+
 AP_GTEST_MAIN()

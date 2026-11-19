@@ -97,6 +97,8 @@ uint16_t AP_Param::_num_vars_base;
 AP_Param::Info *AP_Param::_var_info_dynamic;
 static const char *_empty_string = "";
 uint8_t AP_Param::_dynamic_table_sizes[AP_PARAM_MAX_DYNAMIC];
+bool AP_Param::_dynamic_table_persistent[AP_PARAM_MAX_DYNAMIC];
+HAL_Semaphore AP_Param::_dynamic_registration_sem;
 #endif
 
 // cached parameter count
@@ -123,6 +125,34 @@ bool AP_Param::registered_save_handler;
 bool AP_Param::done_all_default_params;
 
 AP_Param::defaults_list *AP_Param::default_list;
+
+#if AP_PARAM_DEFAULTS_ENABLED
+HAL_Semaphore AP_Param::_defaults_sem;
+std::atomic<bool> AP_Param::_defaults_locking{false};
+
+// Some defaults are registered by global constructors, before the semaphore
+// or HAL objects necessarily exist. Those calls are single-threaded. Once
+// setup() runs, all list readers and writers use the same lock, including purge.
+class AP_Param::DefaultsLock
+{
+public:
+    DefaultsLock() : _locked(_defaults_locking.load(std::memory_order_acquire))
+    {
+        if (_locked) {
+            _defaults_sem.take_blocking();
+        }
+    }
+    ~DefaultsLock()
+    {
+        if (_locked) {
+            _defaults_sem.give();
+        }
+    }
+    CLASS_NO_COPY(DefaultsLock);
+private:
+    const bool _locked;
+};
+#endif
 
 // we need a dummy object for the parameter save callback
 static AP_Param save_dummy;
@@ -361,6 +391,9 @@ void AP_Param::check_var_info(void)
 // setup the _var_info[] table
 bool AP_Param::setup(void)
 {
+#if AP_PARAM_DEFAULTS_ENABLED
+    _defaults_locking.store(true, std::memory_order_release);
+#endif
     struct EEPROM_header hdr {};
 
     // check the header
@@ -1228,7 +1261,11 @@ void AP_Param::save_sync(bool force_save, bool send_to_gcs)
         } else {
             v2 = get_default_value(this, *info);
         }
-        if (is_equal(v1,v2) && !force_save) {
+        // int32 values that round to the same float as the default may differ
+        const bool equal = phdr.type == AP_PARAM_INT32 ?
+            (v2 >= -2147483648.0f && v2 < 2147483648.0f && int64_t(v2) == ((AP_Int32 *)this)->get() && is_equal(float(int64_t(v2)), v2)) :
+            is_equal(v1, v2);
+        if (equal && !force_save) {
             if (send_to_gcs) {
                 GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2);
             }
@@ -1461,6 +1498,24 @@ bool AP_Param::configured(void) const
 
 bool AP_Param::is_read_only(void) const
 {
+#if AP_PARAM_DYNAMIC_ENABLED
+    // Defaults applied during dynamic registration live in the group flags,
+    // not the boot-time param_overrides array.
+    WITH_SEMAPHORE(_dynamic_registration_sem);
+    for (uint8_t i = 0; _var_info_dynamic != nullptr && i < AP_PARAM_MAX_DYNAMIC; i++) {
+        const auto &info = _var_info_dynamic[i];
+        if (info.ptr == nullptr) {
+            continue;
+        }
+        const uintptr_t offset = uintptr_t(this) - uintptr_t(info.ptr);
+        if (offset % sizeof(float) == 0 && offset / sizeof(float) <= _dynamic_table_sizes[i]) {
+            if (info.group_info[offset / sizeof(float)].flags & AP_PARAM_FLAG_READ_ONLY) {
+                return true;
+            }
+            break;
+        }
+    }
+#endif
     if (num_read_only == 0) {
         return false;
     }
@@ -1475,7 +1530,7 @@ bool AP_Param::is_read_only(void) const
 // MAVLink interface:
 bool AP_Param::allow_set_via_mavlink(uint16_t flags) const
 {
-    if (is_read_only()) {
+    if (is_read_only() || (flags & AP_PARAM_FLAG_READ_ONLY)) {
         return false;
     }
 
@@ -2966,6 +3021,7 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
     if (default_value == nullptr || ap == nullptr) {
         return;
     }
+    const DefaultsLock lock;
     if (default_list != nullptr) {
         for (defaults_list *item = default_list; item; item = item->next) {
             if (item->ap == ap) {
@@ -2983,6 +3039,7 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
 #if AP_PARAM_DEFAULTS_ENABLED
 void AP_Param::purge_defaults_list_overrides(void)
 {
+    const DefaultsLock lock;
     defaults_list **prev = &default_list;
     defaults_list *item = default_list;
     while (item != nullptr) {
@@ -3008,6 +3065,7 @@ void AP_Param::purge_defaults_list_overrides(void)
 
 void AP_Param::add_default(AP_Param *ap, float v)
 {
+    const DefaultsLock lock;
     // Embedded defaults trump runtime, don't allow override
     for (uint16_t i=0; i<num_param_overrides; i++) {
         if (ap == param_overrides[i].object_ptr) {
@@ -3098,7 +3156,8 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
 
 #if AP_PARAM_DEFAULTS_ENABLED
     uint16_t list_len = 0;
-    if (default_list != nullptr) {
+    {
+        const DefaultsLock lock;
         for (defaults_list *item = default_list; item; item = item->next) {
             list_len++;
         }
@@ -3120,6 +3179,36 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
     - the last GroupInfo is a footer
 */
 bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
+{
+    return add_table_internal(_key, prefix, num_params, false);
+}
+
+bool AP_Param::add_table_persistent(uint8_t key, const char *prefix, uint8_t num_params)
+{
+    if (prefix == nullptr || num_params == 0) {
+        return false;
+    }
+    return add_table_internal(key, prefix, num_params, true);
+}
+
+bool AP_Param::add_table_internal(uint8_t key, const char *prefix, uint8_t num_params, bool persistent)
+{
+    AP_Param *crc_param = nullptr;
+    bool success;
+    {
+        WITH_SEMAPHORE(_dynamic_registration_sem);
+        success = add_table_locked(key, prefix, num_params, persistent, crc_param);
+    }
+    // A full save queue can wait for the IO thread. Do not stall every other
+    // registration while enqueueing this immutable, firmware-owned CRC value.
+    if (success && crc_param != nullptr) {
+        crc_param->save(true);
+    }
+    return success;
+}
+
+bool AP_Param::add_table_locked(uint8_t _key, const char *prefix, uint8_t num_params, bool persistent,
+                                AP_Param *&crc_param)
 {
     // check if the key already exists. We only check base params to allow
     // for scripting reload without a conflict
@@ -3174,6 +3263,16 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
                 // prefix has changed, reject as two scripts running
                 // with the same key
                 return false;
+            }
+            if (_dynamic_table_persistent[i] != persistent) {
+                // A legacy registration must not reset a retained table, and
+                // a module must not adopt another registration's metadata.
+                return false;
+            }
+            if (persistent) {
+                // Names, indices and visibility must remain stable. Repeating
+                // initialization would lose the allocated parameter names.
+                return true;
             }
             break;
         }
@@ -3250,15 +3349,17 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
     }
     
     // make the group active
+    _dynamic_table_persistent[i] = persistent;
     info.key = key;
     info.type = AP_PARAM_GROUP;
 
     invalidate_count();
 
-    // save the CRC
-    AP_Int32 *crc_param = const_cast<AP_Int32 *>((AP_Int32 *)info.ptr);
-    crc_param->set(crc);
-    crc_param->save(true);
+    // Publish the CRC before releasing the registration lock. Its storage is
+    // retained until reboot, so the caller can enqueue the save afterwards.
+    AP_Int32 *crc_value = const_cast<AP_Int32 *>((AP_Int32 *)info.ptr);
+    crc_value->set(crc);
+    crc_param = crc_value;
 
     return true;
 }
@@ -3287,10 +3388,133 @@ bool AP_Param::load_int32(uint16_t key, uint32_t group_element, int32_t &value)
 }
 
 /*
+  find the value for name in the defaults sources, in the order
+  reload_defaults_file() applies them so the last one wins
+ */
+bool AP_Param::find_dynamic_default(const char *name, DynamicDefault &d)
+{
+    bool found = false;
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+    const char *default_file = hal.util->get_custom_defaults_file();
+    if (default_file != nullptr) {
+#if AP_FILESYSTEM_FILE_READING_ENABLED
+        char *filenames = strdup(default_file);
+        if (filenames != nullptr) {
+            char *saveptr = nullptr;
+            for (char *fname = strtok_r(filenames, ",", &saveptr);
+                 fname != nullptr;
+                 fname = strtok_r(nullptr, ",", &saveptr)) {
+                found |= find_default_in_file(fname, name, d);
+            }
+            free(filenames);
+        }
+#elif AP_ROMFS_ENABLED
+        const char *prefix = "@ROMFS/";
+        if (strncmp(default_file, prefix, strlen(prefix)) == 0) {
+            uint32_t length;
+            const uint8_t *text = AP_ROMFS::find_decompress(&default_file[strlen(prefix)], length);
+            if (text != nullptr) {
+                found |= find_default_in_string((const char *)text, length, name, d);
+                AP_ROMFS::free(text);
+            }
+        }
+#endif
+    }
+#endif  // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
+    if (param_defaults_data.length != 0) {
+        found |= find_default_in_string(param_defaults_data.data, param_defaults_data.length, name, d);
+    }
+#endif
+    return found;
+}
+
+// true if line sets name, keeping its value text and read-only flag
+bool AP_Param::match_default_line(char *line, const char *name, DynamicDefault &d)
+{
+    char *pname;
+    float v;
+    bool read_only;
+    if (!parse_param_line(line, &pname, v, read_only) || strcmp(pname, name) != 0) {
+        return false;
+    }
+    // parse_param_line() NUL terminated the name and the value token
+    const char *value_s = pname + strlen(pname) + 1;
+    value_s += strspn(value_s, ", =\t\r\n");
+    // An oversized token must not become a different valid value when truncated.
+    if (strlen(value_s) >= sizeof(d.value)) {
+        d.value[0] = 0;
+        d.read_only = false;
+        return true;
+    }
+    strcpy(d.value, value_s);
+    d.read_only = read_only;
+    return true;
+}
+
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+bool AP_Param::find_default_in_file(const char *filename, const char *name, DynamicDefault &d)
+{
+    const int fd = AP::FS().open(filename, O_RDONLY, true);
+    if (fd == -1) {
+        return false;
+    }
+    bool found = false;
+    char line[100];
+    while (AP::FS().fgets(line, sizeof(line), fd)) {
+        found |= match_default_line(line, name, d);
+    }
+    AP::FS().close(fd);
+    return found;
+}
+#endif
+
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
+bool AP_Param::find_default_in_string(const volatile char *ptr, int32_t length, const char *name, DynamicDefault &d)
+{
+    bool found = false;
+    while (length > 0) {
+        char line[100];
+        int32_t i;
+        for (i=0; i<length && ptr[i] != '\n'; i++) {
+        }
+        const uint16_t linelen = MIN(i, int32_t(sizeof(line)-1));
+        memcpy(line, (const void *)ptr, linelen);
+        line[linelen] = 0;
+        length -= i+1;
+        ptr += i+1;
+
+        found |= match_default_line(line, name, d);
+    }
+    return found;
+}
+#endif
+
+/*
   add a parameter to a dynamic table
  */
-bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, float default_value)
+bool AP_Param::add_param(uint8_t key, uint8_t param_num, const char *pname, float default_value)
 {
+    return add_param_typed(key, param_num, pname, AP_PARAM_FLOAT, default_value);
+}
+
+bool AP_Param::add_param_int32(uint8_t key, uint8_t param_num, const char *pname, int32_t default_value)
+{
+    // GroupInfo holds the default as a float
+    const float fdefault = float(default_value);
+    if (fdefault >= 2147483648.0f || int32_t(fdefault) != default_value) {
+        return false;
+    }
+    return add_param_typed(key, param_num, pname, AP_PARAM_INT32, fdefault);
+}
+
+bool AP_Param::add_param_typed(uint8_t _key, uint8_t param_num, const char *pname, ap_var_type type,
+                               float default_value)
+{
+    static_assert(sizeof(AP_Float) == sizeof(float) && sizeof(AP_Int32) == sizeof(float),
+                  "dynamic parameter slots are float sized");
+    WITH_SEMAPHORE(_dynamic_registration_sem);
     if (_var_info_dynamic == nullptr) {
         // No dynamic tables available
         return false;
@@ -3324,6 +3548,13 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
         return false;
     }
 
+    if (_dynamic_table_persistent[i]) {
+        const auto &entry = info.group_info[param_num];
+        if (entry.name != _empty_string && strcmp(entry.name, pname) != 0) {
+            return false;
+        }
+    }
+
     // check CRC
     const auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
     const int32_t crc = float_to_int32_le(hinfo.def_value);
@@ -3343,14 +3574,14 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     }
 
     // Get param object
-    AP_Float *pvalues = const_cast<AP_Float *>((const AP_Float *)info.ptr);
-    AP_Float &p = pvalues[param_num];
+    AP_Param *p = (AP_Param *)((uint8_t *)const_cast<void *>(info.ptr) + param_num*sizeof(float));
 
     // Check for conflicting name
     enum ap_var_type existingType;
     AP_Param* existingParam = find(fullName, &existingType);
-    if ((existingParam != nullptr) && ((existingType != AP_PARAM_FLOAT) || ((AP_Float*)existingParam != &p))) {
-        // There is a existing parameter with this name (which is not this parameter from a previous script run)
+    if ((existingParam != nullptr) && ((existingType != type) || (existingParam != p))) {
+        // There is a existing parameter with this name (which is not this
+        // parameter of the same type from a previous script run)
         return false;
     }
 
@@ -3366,7 +3597,39 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
         }
     }
 
+    // the defaults files were applied before this parameter existed. A
+    // Defaults remain float-backed, so integer overrides must also be
+    // exactly representable as a float. Runtime and saved values stay int32.
+    DynamicDefault dd {};
+    bool read_only = false;
+    if (find_dynamic_default(fullName, dd)) {
+        char *end;
+        if (type == AP_PARAM_INT32) {
+            const double v = strtod(dd.value, &end);
+            // Fuzzy equality could accept an inexact integer default.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+            if (end != dd.value && *end == 0 && v >= double(INT32_MIN) && v <= double(INT32_MAX) &&
+                double(int32_t(v)) == v && double(float(v)) == v) {
+#pragma GCC diagnostic pop
+                default_value = float(v);
+                read_only = dd.read_only;
+            }
+        } else {
+            const float v = strtof(dd.value, &end);
+            if (end != dd.value && isfinite(v)) {
+                default_value = v;
+                read_only = dd.read_only;
+            }
+        }
+    }
+
     auto &ginfo = const_cast<GroupInfo*>(info.group_info)[param_num];
+
+    if (ginfo.name != _empty_string && ginfo.type != type) {
+        // a retained registration cannot change type
+        return false;
+    }
 
     if (ginfo.name == _empty_string) {
         // we don't allow name change while running
@@ -3380,17 +3643,21 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     ginfo.idx = param_num;
     float *def_value = const_cast<float *>(&ginfo.def_value);
     *def_value = default_value;
-    ginfo.type = AP_PARAM_FLOAT;
+    ginfo.type = type;
 
     // load from storage if available, the param is hidden during this
     // load so the param is not visible to MAVLink until after it is
     // loaded
-    p.set_default(default_value);
-    p.load();
+    if (type == AP_PARAM_INT32) {
+        ((AP_Int32 *)p)->set_default(int32_t(default_value));
+    } else {
+        ((AP_Float *)p)->set_default(default_value);
+    }
+    p->load();
 
     // clear the hidden flag if set and invalidate the count
     // so we recount the parameters
-    ginfo.flags = 0;
+    ginfo.flags = read_only ? AP_PARAM_FLAG_READ_ONLY : 0;
     invalidate_count();
     
     return true;

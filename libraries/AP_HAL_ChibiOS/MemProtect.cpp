@@ -21,6 +21,9 @@
 #include <ch.h>
 #include "hal.h"
 
+#if HAL_STACK_GUARD_ENABLED
+#error "MEMPROTECT_TRACE needs MPU region 7, used by HAL_STACK_GUARD_ENABLED"
+#endif
 #if defined(PORT_ENABLE_GUARD_PAGES) && PORT_ENABLE_GUARD_PAGES == TRUE
 #error "MEMPROTECT_TRACE needs MPU region 7, used by the ChibiOS stack guard"
 #endif

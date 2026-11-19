@@ -32,6 +32,10 @@ extern const AP_HAL::HAL& hal;
 // singleton instance
 AP_Motors *AP_Motors::_singleton;
 
+#if AP_EXTERNAL_BINDING_ENABLED
+static HAL_Semaphore frame_string_sem;
+#endif
+
 // Constructor
 AP_Motors::AP_Motors(uint16_t speed_hz) :
     _speed_hz(speed_hz),
@@ -61,6 +65,9 @@ AP_Motors::AP_Motors(uint16_t speed_hz) :
 
 void AP_Motors::get_frame_and_type_string(char *buffer, uint8_t buflen) const
 {
+#if AP_EXTERNAL_BINDING_ENABLED
+    WITH_SEMAPHORE(frame_string_sem);
+#endif
     const char *frame_str = get_frame_string();
     const char *type_str = get_type_string();
     if (type_str != nullptr && strlen(type_str)
@@ -259,6 +266,7 @@ bool AP_Motors::is_digital_pwm_type() const
 const char* AP_Motors::get_frame_string() const
 {
 #if AP_EXTERNAL_BINDING_ENABLED
+    WITH_SEMAPHORE(frame_string_sem);
     if (custom_frame_string != nullptr) {
         return custom_frame_string;
     }
@@ -269,13 +277,15 @@ const char* AP_Motors::get_frame_string() const
 #if AP_EXTERNAL_BINDING_ENABLED
 // set custom frame string
 void AP_Motors::set_frame_string(const char * str) {
+    WITH_SEMAPHORE(frame_string_sem);
     if (custom_frame_string != nullptr) {
         return;
     }
     const size_t len = strlen(str)+1;
-    custom_frame_string = NEW_NOTHROW char[len];
-    if (custom_frame_string != nullptr) {
-        strncpy(custom_frame_string, str, len);
+    char *frame = NEW_NOTHROW char[len];
+    if (frame != nullptr) {
+        memcpy(frame, str, len);
+        custom_frame_string = frame;
     }
 }
 #endif

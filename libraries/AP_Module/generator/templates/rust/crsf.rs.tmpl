@@ -1,0 +1,217 @@
+use crate::{result, Context, Error, Result};
+use core::num::NonZeroU32;
+
+pub const CRSF_MENU_NAME_MAX: usize = ${menu_name_max};
+pub const CRSF_PARAMETER_DATA_MAX: usize = ${parameter_data_max};
+pub const CRSF_EVENT_PAYLOAD_MAX: usize = ${event_payload_max};
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct CrsfMenu { token: NonZeroU32 }
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct CrsfParameter { token: NonZeroU32 }
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CrsfParameterData { data: [u8; CRSF_PARAMETER_DATA_MAX], length: u8 }
+
+impl CrsfParameterData {
+    pub fn bytes(&self) -> &[u8] { &self.data[..self.length as usize] }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CrsfMenuName { data: [u8; CRSF_MENU_NAME_MAX], length: u8 }
+
+impl CrsfMenuName {
+    pub fn bytes(&self) -> &[u8] { &self.data[..self.length as usize] }
+
+    pub fn as_str(&self) -> Result<&str> {
+        core::str::from_utf8(self.bytes()).map_err(|_| Error::Host)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CrsfMenuEvent {
+    pub queue_depth: u8,
+    pub param_id: u8,
+    pub events: u8,
+    payload: [u8; CRSF_EVENT_PAYLOAD_MAX],
+    payload_length: u8,
+}
+
+impl CrsfMenuEvent {
+    pub fn payload(&self) -> &[u8] { &self.payload[..self.payload_length as usize] }
+}
+
+fn crsf_name(name: &str) -> Result<[u8; 16]> {
+    let bytes = name.as_bytes();
+    if bytes.len() > CRSF_MENU_NAME_MAX || bytes.contains(&0) { return Err(Error::Invalid); }
+    let mut output = [0u8; 16];
+    output[0] = bytes.len() as u8;
+    output[1..1 + bytes.len()].copy_from_slice(bytes);
+    Ok(output)
+}
+
+fn crsf_token(output: [u8; 4]) -> Option<NonZeroU32> {
+    NonZeroU32::new(u32::from_le_bytes(output))
+}
+
+fn crsf_bool(output: u8) -> Result<bool> {
+    match output { 0 => Ok(false), 1 => Ok(true), _ => Err(Error::Host) }
+}
+
+impl crate::bindings::Crsf<'_, '_> {
+    /// Add a top-level menu owned by this module instance.
+    pub fn add_menu(&self, name: &str) -> Result<Option<CrsfMenu>> {
+        let input = crsf_name(name)?;
+        let mut output = [0u8; 4];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${add_root_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        Ok(crsf_token(output).map(|token| CrsfMenu { token }))
+    }
+
+    /// Peek only when the global queue head belongs to this module.
+    pub fn peek_menu_event(&self) -> Result<Option<CrsfMenuEvent>> {
+        let mut output = [0u8; 62];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${peek_id}.slot(), core::ptr::null(), 0,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        match output[0] {
+            0 => Ok(None),
+            1 if output[4] as usize <= CRSF_EVENT_PAYLOAD_MAX => {
+                let mut payload = [0u8; CRSF_EVENT_PAYLOAD_MAX];
+                payload.copy_from_slice(&output[5..]);
+                Ok(Some(CrsfMenuEvent { queue_depth: output[1], param_id: output[2],
+                    events: output[3], payload_length: output[4], payload }))
+            }
+            _ => Err(Error::Host),
+        }
+    }
+
+    /// Pop the same owned event that was observed by `crsf_peek_menu_event`.
+    pub fn pop_menu_event(&self, event: &CrsfMenuEvent) -> Result<bool> {
+        let input = [event.param_id, event.events];
+        let mut output = [0u8; 1];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${pop_id}.slot(), input.as_ptr(), 2,
+            output.as_mut_ptr(), 1) })?;
+        crsf_bool(output[0])
+    }
+
+    pub fn send_write_response(&self, data: &[u8]) -> Result<bool> {
+        if data.len() > CRSF_PARAMETER_DATA_MAX { return Err(Error::Invalid); }
+        let mut input = [0u8; 1 + CRSF_PARAMETER_DATA_MAX];
+        input[0] = data.len() as u8;
+        input[1..1 + data.len()].copy_from_slice(data);
+        let mut output = [0u8; 1];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${send_write_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), 1) })?;
+        crsf_bool(output[0])
+    }
+
+    pub fn send_response(&self) -> Result<bool> {
+        let mut output = [0u8; 1];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${send_id}.slot(), core::ptr::null(), 0,
+            output.as_mut_ptr(), 1) })?;
+        crsf_bool(output[0])
+    }
+
+    /// Consume the owned event at the queue head using the legacy filtered-event semantics.
+    pub fn get_menu_event(&self, events: u8) -> Result<Option<CrsfMenuEvent>> {
+        let input = [events];
+        let mut output = [0u8; 61];
+        result(unsafe { self.context.api.binding_call.unwrap()(self.context.raw,
+            crate::imports::BINDING_${get_event_id}.slot(), input.as_ptr(), 1,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        match output[0] {
+            0 => Ok(None),
+            1 if output[3] as usize <= CRSF_EVENT_PAYLOAD_MAX => {
+                let mut payload = [0u8; CRSF_EVENT_PAYLOAD_MAX];
+                payload.copy_from_slice(&output[4..]);
+                Ok(Some(CrsfMenuEvent { queue_depth: 0, param_id: output[1],
+                    events: output[2], payload_length: output[3], payload }))
+            }
+            _ => Err(Error::Host),
+        }
+    }
+}
+
+impl CrsfMenu {
+    fn call_u8(&self, context: &Context<'_>, id: u32) -> Result<u8> {
+        let input = self.token.get().to_le_bytes();
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw, id,
+            input.as_ptr(), 4, output.as_mut_ptr(), 1) })?;
+        Ok(output[0])
+    }
+
+    pub fn id(&self, context: &Context<'_>) -> Result<u8> {
+        self.call_u8(context, crate::imports::BINDING_${menu_id_id}.slot())
+    }
+
+    pub fn name(&self, context: &Context<'_>) -> Result<CrsfMenuName> {
+        let input = self.token.get().to_le_bytes();
+        let mut output = [0u8; 1 + CRSF_MENU_NAME_MAX];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${menu_name_id}.slot(), input.as_ptr(), 4,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        if output[0] as usize > CRSF_MENU_NAME_MAX { return Err(Error::Host); }
+        let mut data = [0u8; CRSF_MENU_NAME_MAX];
+        data.copy_from_slice(&output[1..]);
+        Ok(CrsfMenuName { data, length: output[0] })
+    }
+
+    pub fn num_params(&self, context: &Context<'_>) -> Result<u8> {
+        self.call_u8(context, crate::imports::BINDING_${menu_num_params_id}.slot())
+    }
+
+    pub fn add_menu(&self, context: &Context<'_>, name: &str) -> Result<Option<CrsfMenu>> {
+        let encoded = crsf_name(name)?;
+        let mut input = [0u8; 20];
+        input[..4].copy_from_slice(&self.token.get().to_le_bytes());
+        input[4..].copy_from_slice(&encoded);
+        let mut output = [0u8; 4];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${add_menu_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        Ok(crsf_token(output).map(|token| CrsfMenu { token }))
+    }
+
+    pub fn add_parameter(&self, context: &Context<'_>, data: &[u8]) -> Result<Option<CrsfParameter>> {
+        if data.is_empty() || data.len() > CRSF_PARAMETER_DATA_MAX { return Err(Error::Invalid); }
+        let mut input = [0u8; 5 + CRSF_PARAMETER_DATA_MAX];
+        input[..4].copy_from_slice(&self.token.get().to_le_bytes());
+        input[4] = data.len() as u8;
+        input[5..5 + data.len()].copy_from_slice(data);
+        let mut output = [0u8; 4];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${add_parameter_id}.slot(), input.as_ptr(), input.len() as u32,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        Ok(crsf_token(output).map(|token| CrsfParameter { token }))
+    }
+}
+
+impl CrsfParameter {
+    pub fn id(&self, context: &Context<'_>) -> Result<u8> {
+        let input = self.token.get().to_le_bytes();
+        let mut output = [0u8; 1];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${parameter_id_id}.slot(), input.as_ptr(), 4,
+            output.as_mut_ptr(), 1) })?;
+        Ok(output[0])
+    }
+
+    pub fn data(&self, context: &Context<'_>) -> Result<CrsfParameterData> {
+        let input = self.token.get().to_le_bytes();
+        let mut output = [0u8; 1 + CRSF_PARAMETER_DATA_MAX];
+        result(unsafe { context.api.binding_call.unwrap()(context.raw,
+            crate::imports::BINDING_${parameter_data_id}.slot(), input.as_ptr(), 4,
+            output.as_mut_ptr(), output.len() as u32) })?;
+        let length = output[0];
+        let mut data = [0u8; CRSF_PARAMETER_DATA_MAX];
+        data.copy_from_slice(&output[1..]);
+        Ok(CrsfParameterData { data, length })
+    }
+}

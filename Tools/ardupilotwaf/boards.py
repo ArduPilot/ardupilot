@@ -114,6 +114,10 @@ class Board:
         self.disable_buggy_compiler_warnings(cfg, env)
 
         # Setup scripting:
+        if cfg.options.enable_scripting and cfg.options.disable_scripting:
+            cfg.fatal('Cannot both enable and disable Lua scripting')
+        if cfg.options.enable_modules and cfg.options.disable_modules:
+            cfg.fatal('Cannot both enable and disable native modules')
         env.DEFINES.update(
             LUA_32BITS = 1,
         )
@@ -131,6 +135,11 @@ class Board:
             env.DEFINES.update(
                 AP_SCRIPTING_LUA_ENABLED = 0,
             )
+
+        if cfg.options.enable_modules:
+            env.DEFINES.update(AP_MODULE_ENABLED=1)
+        elif cfg.options.disable_modules:
+            env.DEFINES.update(AP_MODULE_ENABLED=0)
 
         # embed any scripts from ROMFS/scripts
         if os.path.exists('ROMFS/scripts'):
@@ -437,6 +446,7 @@ class Board:
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
+            cfg.options.disable_modules = True
 
         if cfg.options.enable_math_check_indexes:
             env.CXXFLAGS += ['-DMATH_CHECK_INDEXES']
@@ -608,14 +618,13 @@ class Board:
             ]
 
         if cfg.env.DEST_OS == 'darwin':
-            if self.cc_version_gte(cfg, 15, 0):
-                env.LINKFLAGS += [
-                    '-Wl,-dead_strip,-ld_classic',
-                ]
-            else:
-                env.LINKFLAGS += [
-                    '-Wl,-dead_strip',
-                ]
+            env.LINKFLAGS += ['-Wl,-dead_strip']
+            # A newer Clang can still use an older macOS system linker.
+            if self.cc_version_gte(cfg, 15, 0) and cfg.check(
+                    compiler='cxx', fragment='int main() { return 0; }',
+                    linkflags=['-Wl,-ld_classic'], mandatory=False,
+                    msg='Checking for Darwin classic linker support'):
+                env.LINKFLAGS += ['-Wl,-ld_classic']
         else:
             env.LINKFLAGS += [
                 '-fno-exceptions',
@@ -701,7 +710,12 @@ class Board:
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
-        if bld.env.ROMFS_FILES:
+        if bld.env.AP_MODULES:
+            # modules from --module are built first, then ROMFS is embedded as a task
+            import ap_module
+            files = ap_module.build_modules(bld, self.prelink_apmods(bld))
+            self.set_ROMFS_flags(bld, files)
+        elif bld.env.ROMFS_FILES:
             self.embed_ROMFS_files(bld)
 
     def build(self, bld):
@@ -724,20 +738,40 @@ class Board:
             bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
             bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
 
+    def prelink_apmods(self, ctx):
+        # Global raw ROMFS has borrowed find_decompress() ownership semantics,
+        # so keep its modules canonical and let the runtime copy-relocate them.
+        return ctx.env.BOARD_CLASS == 'ChibiOS' and not ctx.env.ROMFS_UNCOMPRESSED
+
     def embed_ROMFS_files(self, ctx):
         '''embed some files using AP_ROMFS'''
         import embed
         header = ctx.bldnode.make_node('ap_romfs_embedded.h').abspath()
-        if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES, ctx.env.ROMFS_UNCOMPRESSED):
+        if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES, ctx.env.ROMFS_UNCOMPRESSED,
+                                       prelink_apmods=self.prelink_apmods(ctx)):
             ctx.fatal("Failed to created ap_romfs_embedded.h")
+        self.set_ROMFS_flags(ctx, ctx.env.ROMFS_FILES)
 
+    def set_ROMFS_flags(self, ctx, files):
+        '''compiler flags that depend on the names of the embedded files'''
+        prelink_apmods = self.prelink_apmods(ctx)
         ctx.env.CFLAGS += ['-DAP_ROMFS_ENABLED=1']
         ctx.env.CXXFLAGS += ['-DAP_ROMFS_ENABLED=1']
 
         # Allow lua to load from ROMFS if any lua files are added
-        for file in ctx.env.ROMFS_FILES:
+        for file in files:
             if file[0].startswith("scripts") and file[0].endswith(".lua"):
                 ctx.env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_LUA']
+                break
+
+        # Prelinked files outside rust/ still need canonical ordinary reads.
+        if prelink_apmods and any(file[0].endswith(".apmod") for file in files):
+            ctx.env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_PRELINKED_APMOD']
+
+        # Native modules under modules/ are discovered directly from ROMFS.
+        for file in files:
+            if os.path.dirname(file[0]) == "modules" and file[0].endswith(".apmod"):
+                ctx.env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_APMOD']
                 break
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
