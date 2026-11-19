@@ -451,12 +451,14 @@ def convert_file(path: str, vehicle: str, patch: int, sig_digits: int, dry_run: 
     logging.info("%s: %u parameters converted", path, len(changes))
 
 
-def collect_files(paths: List[str]) -> List[Tuple[str, str]]:
+def collect_files(paths: List[str], output_dir: Optional[str] = None) -> List[Tuple[str, str]]:
     '''Return (file, root) pairs for all parameter files under the given paths.'''
     files = []
     for path in paths:
         if os.path.isdir(path):
-            found = list(cps.iter_param_files(path))
+            if output_dir is not None and os.path.normcase(os.path.realpath(path)) == output_dir:
+                raise ConversionError(f"{path}: input directory is also the output directory")
+            found = list(cps.iter_param_files(path, exclude_dir=output_dir))
             if not found:
                 logging.warning("%s: no parameter files found", path)
             files += [(f, path) for f in found]
@@ -486,7 +488,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parse_arguments(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING, format='%(levelname)s: %(message)s')
     try:
-        files = collect_files(args.paths)
+        output_dir = os.path.normcase(os.path.realpath(args.output_dir)) if args.output_dir else None
+        files = collect_files(args.paths, output_dir)
     except ConversionError as e:
         logging.error("%s", e)
         return 1

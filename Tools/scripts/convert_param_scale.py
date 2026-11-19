@@ -235,9 +235,11 @@ def format_int(value: int, like: str) -> str:
     return str(value)
 
 
-def iter_param_files(directory: str) -> Iterator[str]:
-    '''Yield all parameter files below a directory, in a stable order.'''
+def iter_param_files(directory: str, exclude_dir: Optional[str] = None) -> Iterator[str]:
+    '''Yield parameter files in stable order, skipping the given canonical directory.'''
     for root, dirs, files in os.walk(directory):
+        if exclude_dir is not None:
+            dirs[:] = [d for d in dirs if os.path.normcase(os.path.realpath(os.path.join(root, d))) != exclude_dir]
         dirs.sort()
         for file in sorted(files):
             if file.lower().endswith(PARAM_FILE_EXTENSIONS):
