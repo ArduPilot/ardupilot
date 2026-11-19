@@ -225,8 +225,14 @@ bool Plane::in_fence_recovery() const
                                         (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND) ||
                                         (plane.control_mode_reason == ModeReason::QRTL_INSTEAD_OF_RTL) ||
                                         (plane.control_mode_reason == ModeReason::QLAND_INSTEAD_OF_RTL);
+    // pilot manually overrode the fence-triggered mode; treat as still in
+    // recovery so the fence does not re-trigger until the fence switch is cycled
+    const bool pilot_override = previous_mode_breach &&
+                                (plane.control_mode_reason == ModeReason::RC_COMMAND ||
+                                 plane.control_mode_reason == ModeReason::GCS_COMMAND ||
+                                 plane.control_mode_reason == ModeReason::AUX_FUNCTION);
 
-    return current_mode_breach || (previous_mode_breach && previous_mode_complete);
+    return current_mode_breach || (previous_mode_breach && previous_mode_complete) || pilot_override;
 }
 
 #endif
