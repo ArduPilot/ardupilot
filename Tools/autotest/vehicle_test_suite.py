@@ -28,6 +28,7 @@ import shutil
 import signal
 import socket
 import struct
+import subprocess
 import sys
 import tempfile
 import threading
@@ -20007,6 +20008,16 @@ switch value'''
 
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''
+        (log_filepath, _) = self.run_replay_get_output(filepath)
+        return log_filepath
+
+    def run_replay_get_output(self, filepath):
+        '''run replay in filepath, return (Replay logfile, Replay's output)
+
+        for a caller which has to check what Replay said rather than
+        only what it wrote - ReplayShortMessage wants its warning about
+        the short message.
+        '''
         # stop the SITL for the duration of the replay.  Replay writes
         # its output into the same logs/ directory the SITL logs into,
         # and these tests run with LOG_DISARMED set, so with the SITL
@@ -20031,17 +20042,26 @@ switch value'''
             # are the same place only at instance zero, so anywhere else the
             # log lands somewhere we never look:
             #     Expected exactly one new log from Replay, got ([])
-            # not output=True: run_cmd returns the captured output in that
-            # case and never looks at the exit status, so checkfail does
-            # nothing and a Replay which died is simply not noticed - the
-            # check below then compares against whatever log is lying around.
-            # Letting its output through to ours puts it in the test log.
-            util.run_cmd(
+            # capture the output and check the exit status here rather
+            # than handing both to util.run_cmd: with output=True it
+            # returns the output and never looks at the status, so
+            # checkfail does nothing and a Replay which died is simply
+            # not noticed - the check below would then compare against
+            # whatever log was lying around.  The output is echoed into
+            # the test log either way, with no statustext because the
+            # SITL we would send it to is stopped.
+            replay = subprocess.run(
                 [self.replay_tool, filepath],
-                directory=os.getcwd(),
-                checkfail=True,
-                show=True,
+                cwd=os.getcwd(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
             )
+            output = replay.stdout.decode('utf-8', errors='replace')
+            for line in output.splitlines():
+                self.progress("Replay: %s" % line, send_statustext=False)
+            if replay.returncode != 0:
+                raise NotAchievedException(
+                    "Replay failed (%u): %s" % (replay.returncode, output[-1000:]))
             # with the SITL stopped Replay is the only writer, so its output
             # is simply the log which appeared or changed while it ran.
             # Work this out before restarting the SITL, which opens a log
@@ -20056,7 +20076,7 @@ switch value'''
                 "Expected exactly one log written by Replay, got (%s) of %u log(s)" %
                 (str(new_logs), len(logs_before)))
 
-        return new_logs[0]
+        return (new_logs[0], output)
 
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''
