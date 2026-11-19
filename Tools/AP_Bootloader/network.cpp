@@ -628,38 +628,48 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         status_printf("Flash failed: no memory");
         return;
     }
+    uint8_t *chunk8 = (uint8_t *)chunk;
 
     uint32_t flash_size = 0;
     for (uint32_t sec=0; flash_func_sector_size(sec) != 0; sec++) {
         flash_size += flash_func_sector_size(sec);
     }
 
-    // the body after the form headers: the file, then CRLF, the
-    // delimiter, "--" and CRLF
+    // the file ends at CRLF and the delimiter, which start either the
+    // next part of the form or, followed by "--" and CRLF, its end
+    uint8_t marker[sizeof(delim) + 2];
+    const uint32_t marker_len = delim_len + 2;
+    marker[0] = '\r';
+    marker[1] = '\n';
+    memcpy(&marker[2], delim, delim_len);
+
     const uint32_t body_length = content_length;
-    const uint32_t trailer_len = delim_len + 6;
-    const uint32_t max_ofs = body_length - trailer_len;
     uint32_t ofs = 0;
     uint32_t body_read = 0;
     uint32_t erased_ofs = 0;
     uint32_t erase_sec = 0;
     bool failed = false;
-    if (in_delim || delim_len < 3 || delim_len == sizeof(delim) || body_length <= trailer_len) {
+    if (in_delim || delim_len < 3 || delim_len == sizeof(delim) || body_length < marker_len + 4) {
         status_printf("Flash failed: bad form data");
         failed = true;
-    } else if (max_ofs > flash_size) {
-        status_printf("Flash failed: firmware is %u bytes, flash is %u", unsigned(max_ofs), unsigned(flash_size));
+    } else if (body_length - (marker_len + 4) > flash_size) {
+        status_printf("Flash failed: firmware is %u bytes, flash is %u",
+                      unsigned(body_length - (marker_len + 4)), unsigned(flash_size));
         failed = true;
     } else {
         status_printf("Flashing 0%%");
     }
     uint8_t last_pct = 0;
+    // bytes at the start of chunk kept back from the last chunk, as
+    // they may be the start of the marker
+    uint32_t carry = 0;
+    bool found_end = false;
     flash_set_keep_unlocked(true);
-    while (ofs < max_ofs && !failed) {
-        const uint32_t want = MIN(chunk_size, max_ofs - ofs);
+    while (!failed && !found_end) {
+        const uint32_t want = MIN(chunk_size - carry, body_length - body_read);
         uint32_t len = 0;
         while (len < want) {
-            const auto n = sock->recv(((uint8_t *)chunk) + len, want - len, 10000);
+            const auto n = sock->recv(&chunk8[carry + len], want - len, 10000);
             if (n <= 0) {
                 break;
             }
@@ -667,14 +677,38 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
             body_read += n;
         }
         if (len < want) {
-            status_printf("Flash failed: upload stopped at %u of %u", unsigned(ofs+len), unsigned(max_ofs));
+            status_printf("Flash failed: upload stopped at %u of %u", unsigned(body_read), unsigned(body_length));
             failed = true;
             break;
         }
-        wait_sender_blocked(sock, body_length - (ofs + len));
+        const uint32_t avail = carry + len;
+        uint32_t file_len = 0;
+        for (uint32_t i=0; i + marker_len <= avail; i++) {
+            if (chunk8[i] == '\r' && memcmp(&chunk8[i], marker, marker_len) == 0) {
+                file_len = i;
+                found_end = true;
+                break;
+            }
+        }
+        if (!found_end) {
+            if (body_read == body_length) {
+                status_printf("Flash failed: no form boundary after the firmware");
+                failed = true;
+                break;
+            }
+            // keep back what may be the start of the marker, and
+            // write whole words
+            file_len = avail >= marker_len ? (avail - (marker_len - 1)) & ~3U : 0;
+        }
+        if (ofs + file_len > flash_size) {
+            status_printf("Flash failed: firmware is larger than flash (%u)", unsigned(flash_size));
+            failed = true;
+            break;
+        }
+        wait_sender_blocked(sock, body_length - body_read);
         // flash is written in words; pad the end of the file
-        const uint32_t wlen = (len + 3) & ~3U;
-        memset(((uint8_t *)chunk) + len, 0xff, wlen - len);
+        const uint32_t wlen = (file_len + 3) & ~3U;
+        memset(&chunk8[file_len], 0xff, wlen - file_len);
         while (erased_ofs < ofs + wlen) {
             const uint32_t size = flash_func_sector_size(erase_sec);
             if (size == 0 || !flash_func_erase_sector(erase_sec)) {
@@ -692,8 +726,12 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
                 failed = true;
             }
         }
-        ofs += len;
-        const uint8_t pct = ofs*100/max_ofs;
+        ofs += file_len;
+        if (!found_end) {
+            carry = avail - file_len;
+            memmove(chunk8, &chunk8[file_len], carry);
+        }
+        const uint8_t pct = body_read*100/body_length;
         // don't replace the reason for a failure
         if (!failed && pct / 10 != last_pct / 10) {
             last_pct = pct;
@@ -701,31 +739,15 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         }
     }
     if (!failed) {
-        // read and check the rest of the body; closing the socket with
-        // data unread resets the connection, losing our reply
-        char trailer[sizeof(delim) + 6];
-        uint32_t got = 0;
-        while (got < trailer_len) {
-            const auto n = sock->recv(&trailer[got], trailer_len - got, 1000);
-            if (n <= 0) {
-                break;
-            }
-            got += n;
-            body_read += n;
-        }
-        if (got != trailer_len ||
-            memcmp(trailer, "\r\n", 2) != 0 ||
-            memcmp(&trailer[2], delim, delim_len) != 0 ||
-            memcmp(&trailer[2+delim_len], "--\r\n", 4) != 0) {
-            status_printf("Flash failed: no form boundary after the firmware");
-            failed = true;
-        }
         ofs = (ofs + 3) & ~3U;
-    }
-    if (!failed && ofs % 32 != 0) {
-        // pad to 32 bytes
-        memset(chunk, 0xff, 32);
-        flash_write_buffer(ofs, chunk, (32 - ofs%32)/4);
+        if (ofs % 32 != 0) {
+            // pad to 32 bytes
+            memset(chunk, 0xff, 32);
+            if (!flash_write_buffer(ofs, chunk, (32 - ofs%32)/4)) {
+                status_printf("Flash failed: write at %u", unsigned(ofs));
+                failed = true;
+            }
+        }
     }
     free(chunk);
     // flush even after a failure, so that nothing of this upload is
@@ -745,16 +767,19 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         erase_sec++;
     }
     flash_set_keep_unlocked(false);
-    if (failed) {
-        // read the rest of the body so that the uploader gets our reply
-        uint8_t discard[64];
-        while (body_read < body_length) {
-            const auto n = sock->recv(discard, MIN(sizeof(discard), body_length - body_read), 1000);
-            if (n <= 0) {
-                break;
-            }
-            body_read += n;
+
+    // read the rest of the body, which holds the end of the form;
+    // closing the socket with data unread resets the connection,
+    // losing our reply
+    uint8_t discard[64];
+    while (body_read < body_length) {
+        const auto n = sock->recv(discard, MIN(sizeof(discard), body_length - body_read), 1000);
+        if (n <= 0) {
+            break;
         }
+        body_read += n;
+    }
+    if (failed) {
         char str[sizeof(bl_status) + 32];
         {
             WITH_SEMAPHORE(status_mtx);
