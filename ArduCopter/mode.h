@@ -604,8 +604,6 @@ public:
 
     bool requires_terrain_failsafe() const override { return true; }
 
-    void payload_place_start();
-
     // for GCS_MAVLink to call:
     bool do_guided(const AP_Mission::Mission_Command& cmd);
 
