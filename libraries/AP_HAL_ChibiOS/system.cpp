@@ -361,7 +361,16 @@ void __entry_hook()
         pd.boot_to_dfu = false;
         stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
 #if defined(STM32H7)
-        const uint32_t *app_base = (const uint32_t *)(0x1FF09800); 
+        // The ROM listens for a USART1 sync byte on PB15 before it
+        // starts USB. Low there when it enables the USART, it takes a
+        // start bit and waits on USART1 for good. PB15 is a data line on
+        // boards that use it, so pull it up and give it time to rise.
+        RCC->AHB4ENR |= RCC_AHB4ENR_GPIOBEN;
+        (void)RCC->AHB4ENR;
+        GPIOB->PUPDR = (GPIOB->PUPDR & ~GPIO_PUPDR_PUPD15) | GPIO_PUPDR_PUPD15_0;
+        GPIOB->MODER &= ~GPIO_MODER_MODE15;
+        for (volatile uint32_t i = 0; i < 10000 && !(GPIOB->IDR & GPIO_IDR_ID15); i++) {}
+        const uint32_t *app_base = (const uint32_t *)(0x1FF09800);
 #else
         const uint32_t *app_base = (const uint32_t *)(0x1FFF0000);
 #endif
