@@ -77,8 +77,8 @@ int GetOptLong::getoption(void)
 
         place = argv[optind];
 
-        if (place[0] != '-')
-        {
+        if (place[0] != '-' || place[1] == '\0')
+        { /* not an option; a lone "-" is an operand (e.g. stdin) */
             place = "";
             return -1;
         }

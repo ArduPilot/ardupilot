@@ -153,6 +153,23 @@ TEST(GetOptLong, NonOptionStopsParsing)
     EXPECT_EQ(gopt.optind, 1);
 }
 
+TEST(GetOptLong, LoneDashIsOperand)
+{
+    // a lone "-" is an operand, not an option; it must stop parsing
+    // without reading past the end of the argument string
+    MAKE_ARGS("-", "-h");
+    EXPECT_EQ(gopt.getoption(), -1);
+    EXPECT_EQ(gopt.optind, 1);
+}
+
+TEST(GetOptLong, LoneDashAfterOption)
+{
+    MAKE_ARGS("-h", "-");
+    EXPECT_EQ(gopt.getoption(), 'h');
+    EXPECT_EQ(gopt.getoption(), -1);
+    EXPECT_EQ(gopt.optind, 2);
+}
+
 TEST(GetOptLong, MixedOptions)
 {
     MAKE_ARGS("-h", "--level=3", "-L", "x", "rest");
