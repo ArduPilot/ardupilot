@@ -105,7 +105,7 @@ struct log_RFRN {
     uint8_t vehicle_class;
     uint8_t ekf_type;
     uint8_t armed:1;
-    uint8_t hover_z_bias_enabled:1;
+    uint8_t unused:1;  // was get_compass_is_null
     uint8_t fly_forward:1;
     uint8_t ahrs_airspeed_sensor_enabled_unused:1;
     uint8_t opticalflow_enabled:1;
@@ -113,6 +113,7 @@ struct log_RFRN {
     uint8_t takeoff_expected:1;
     uint8_t touchdown_expected:1;
     uint8_t vehicle_landed:1;
+    uint8_t hover_z_bias_enabled:1;
     uint8_t _end;
 };
 

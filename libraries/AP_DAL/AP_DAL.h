@@ -108,7 +108,7 @@ public:
 
     enum class RFRNFlags {
         ARMED = (1U<<0),
-        HOVER_Z_BIAS_ENABLED = (1U<<1),
+        UNUSED = (1U<<1),
         FLY_FORWARD = (1U<<2),
         AHRS_AIRSPEED_SENSOR_ENABLED_UNUSED = (1U<<3),
         OPTICALFLOW_ENABLED = (1U<<4),
@@ -119,6 +119,7 @@ public:
 
     enum class RFRNFlags2 {
         VEHICLE_LANDED = (1U<<0),
+        HOVER_Z_BIAS_ENABLED = (1U<<1),
     };
 
     // EKF ID for timing checks
