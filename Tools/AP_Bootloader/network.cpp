@@ -751,6 +751,9 @@ void BL_Network::handle_request(SocketAPM *sock)
         if (p != nullptr) {
             p += strlen(clen1);
             const uint32_t content_length = atoi(p);
+            // the upload may have started in the window before the
+            // bootloader would boot the application; don't let it
+            bootloader_hold();
             handle_post(sock, content_length);
             delete headers;
             delete sock;

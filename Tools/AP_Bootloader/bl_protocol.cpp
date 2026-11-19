@@ -457,6 +457,18 @@ static void test_flash()
 }
 #endif
 
+static volatile bool hold_requested;
+
+void bootloader_hold(void)
+{
+    hold_requested = true;
+}
+
+bool bootloader_held(void)
+{
+    return hold_requested;
+}
+
 void
 bootloader(unsigned timeout)
 {
@@ -511,7 +523,7 @@ bootloader(unsigned timeout)
 #if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
             bool ser_forward_active = update_otg2_serial_forward();
 #endif
-            if (timeout && !timer[TIMER_BL_WAIT]
+            if (timeout && !timer[TIMER_BL_WAIT] && !hold_requested
 #if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
             // do serial forward only when idle
             && !ser_forward_active

@@ -1,5 +1,9 @@
 void jump_to_app(void);
 void bootloader(unsigned timeout);
+// stop the bootloader timing out and jumping to the application, e.g.
+// because a firmware upload has started on an interface other than serial
+void bootloader_hold(void);
+bool bootloader_held(void);
 
 /*****************************************************************************
  * Chip/board functions.
