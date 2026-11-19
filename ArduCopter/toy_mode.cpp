@@ -859,7 +859,7 @@ void ToyMode::throttle_adjust(float &throttle_control)
 
     // limit descent rate close to the ground
     float pos_d_m;  
-    if (AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {  
+    if (!AP::ahrs().get_relative_position_D_origin_float(pos_d_m)) {  
         // we do not know how high we are, let alone where the ground is  
         return;  
     }  
