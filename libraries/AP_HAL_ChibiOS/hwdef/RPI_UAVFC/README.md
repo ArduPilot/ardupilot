@@ -172,7 +172,8 @@ ArduPilot ground station.
   runs at 100 MHz. Both have flown on one board, three flights on
   2026-11-07; earlier flights ran at 225 MHz with a 75 MHz flash clock.
 - DShot600 is the only DShot rate.
-- BLHeli passthrough is not supported.
+- ESC passthrough, for configuring and flashing ESCs through the motor
+  outputs, has been tested with AM32 ESCs only.
 - CAN is not available on the RP2350.
 - The battery current input does not track load on the vehicles tested.
 - ESC calibration works with the throttle-high procedure only;
