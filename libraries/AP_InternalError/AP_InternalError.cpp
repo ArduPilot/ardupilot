@@ -8,6 +8,7 @@
 #include <AP_HAL/Util.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -23,9 +24,16 @@ void AP_InternalError::error(const AP_InternalError::error_t e, uint16_t line) {
         // don't panic on these to facilitate watchdog testing
         break;
     default:
-        char buffer[50];
-        AP::internalerror().error_to_string(buffer, ARRAY_SIZE(buffer), e);
-        AP_HAL::panic("AP_InternalError::error_t::%s", buffer);
+        // Autotest can exercise a specific error path without disabling the
+        // debug-build panic for any other internal error.
+        const char *expected_error = getenv("SITL_EXPECTED_INTERNAL_ERROR");
+        char *end = nullptr;
+        const unsigned long expected_value = expected_error == nullptr ? 0 : strtoul(expected_error, &end, 0);
+        if (expected_error == nullptr || end == expected_error || *end != '\0' || expected_value != uint32_t(e)) {
+            char buffer[50];
+            AP::internalerror().error_to_string(buffer, ARRAY_SIZE(buffer), e);
+            AP_HAL::panic("AP_InternalError::error_t::%s", buffer);
+        }
     }
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
