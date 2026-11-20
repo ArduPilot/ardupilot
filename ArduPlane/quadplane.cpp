@@ -1690,6 +1690,26 @@ void SLT_Transition::VTOL_update()
     quadplane.assist.reset();
 }
 
+#if HAL_LOGGING_ENABLED
+void Transition::write_log()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint8_t state = get_log_transition_state();
+    if (state == last_log_state && now_ms - last_log_ms < 40) {
+        return;
+    }
+    last_log_state = state;
+    last_log_ms = now_ms;
+
+    const struct log_Transition pkt {
+        LOG_PACKET_HEADER_INIT(log_msg_id()),
+        time_us          : AP_HAL::micros64(),
+        transition_state : state,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+#endif  // HAL_LOGGING_ENABLED
+
 /*
   update motor output for quadplane
  */
@@ -1787,6 +1807,9 @@ void QuadPlane::update(void)
     }
 
 #if HAL_LOGGING_ENABLED
+    // transition state logging
+    transition->write_log();
+
     // motors logging
     if (motors->armed()) {
         const bool motors_active = in_vtol_mode() || assisted_flight;
@@ -3802,7 +3825,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         assist_flags |= (uint8_t)log_assistance_flags::spin_recovery;
     }
 
-    struct log_QControl_Tuning pkt = {
+    const struct log_QTUN pkt {
         LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
         time_us             : AP_HAL::micros64(),
         throttle_in         : attitude_control->get_throttle_in(),
@@ -3815,7 +3838,6 @@ void QuadPlane::Log_Write_QControl_Tuning()
         target_climb_rate   : int16_t(target_climb_rate_ms * 100.0),
         climb_rate          : int16_t(inertial_nav.get_velocity_z_up_cms()),
         throttle_mix        : attitude_control->get_throttle_mix(),
-        transition_state    : transition->get_log_transition_state(),
         assist              : assist_flags,
     };
     plane.logger.WriteBlock(&pkt, sizeof(pkt));

@@ -465,12 +465,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: DCRt: desired climb rate
 // @Field: CRt: climb rate
 // @Field: TMix: transition throttle mix value
-// @Field: Trn: Transition state: 0-AirspeedWait,1-Timer,2-Done / TailSitter: 0-FW Wait,1-VTOL Wait,2-Done
 // @Field: Ast: bitmask of assistance flags
 // @FieldBitmaskEnum: Ast: log_assistance_flags
 #if HAL_QUADPLANE_ENABLED
-    { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
-      "QTUN", "QffffffeccfBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Trn,Ast", "s----mmmnn---", "F----00000---" , true },
+    { LOG_QTUN_MSG, sizeof(QuadPlane::log_QTUN),
+      "QTUN", "QffffffeccfB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Ast", "s----mmmnn--", "F----00000--" , true },
 #endif
 
 // @LoggerMessage: PIQR
@@ -512,9 +511,29 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Ss: speed scaling used for control surfaces method from Q_TAILSIT_GSCMSK
 // @Field: Tmin: minimum output throttle calculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
 #if HAL_QUADPLANE_ENABLED
-    { LOG_TSIT_MSG, sizeof(Tailsitter::log_tailsitter),
+    { LOG_TSIT_MSG, sizeof(Tailsitter::log_TSIT),
       "TSIT", "Qfff",  "TimeUS,Ts,Ss,Tmin", "s---", "F---" , true },
 #endif
+
+// @LoggerMessage: SLT
+// @Description: Separate lift thrust (including tiltrotor) transition state
+// @Field: TimeUS: Time since system startup
+// @Field: Trn: transition state
+// @FieldValueEnum: Trn: SLT_Transition::State
+#if HAL_QUADPLANE_ENABLED
+    { LOG_SLT_MSG, sizeof(Transition::log_Transition),
+      "SLT", "QB",  "TimeUS,Trn", "s-", "F-" , true },
+#endif  // HAL_QUADPLANE_ENABLED
+
+// @LoggerMessage: TSTR
+// @Description: Tailsitter transition state
+// @Field: TimeUS: Time since system startup
+// @Field: Trn: transition state
+// @FieldValueEnum: Trn: Tailsitter_Transition::State
+#if HAL_QUADPLANE_ENABLED
+    { LOG_TSTR_MSG, sizeof(Transition::log_Transition),
+      "TSTR", "QB",  "TimeUS,Trn", "s-", "F-" , true },
+#endif  // HAL_QUADPLANE_ENABLED
 
 // @LoggerMessage: TILT
 // @Description: Tiltrotor tilt values

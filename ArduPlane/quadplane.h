@@ -150,7 +150,7 @@ public:
 
     uint16_t get_pilot_velocity_z_max_dn_m() const;
     
-    struct PACKED log_QControl_Tuning {
+    struct PACKED log_QTUN {
         LOG_PACKET_HEADER;
         uint64_t time_us;
         float    throttle_in;
@@ -163,7 +163,6 @@ public:
         int16_t  target_climb_rate;
         int16_t  climb_rate;
         float    throttle_mix;
-        uint8_t  transition_state;
         uint8_t  assist;
     };
 
