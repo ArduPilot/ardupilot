@@ -1,6 +1,6 @@
-# Architecture decision (initial, pending upstream build evidence)
+# Architecture decision (development architecture)
 
-Status: selected architecture for development, not approved for physical deployment. Based on reference commit `9eadb1a92a9635c706c2f5ec6710167a6ab512e7` and official ArduPilot upstream checkout under construction in this repository.
+Status: selected architecture for development, not approved for physical deployment. Based on reference commit `9eadb1a92a9635c706c2f5ec6710167a6ab512e7` and official ArduPilot checkout `4ca1bc74fc088242931054cac963cdfd91589b51`. The native Linux `sub` target builds and starts with empty RC output; real sensor/estimator integration is still missing.
 
 ## Options
 
@@ -14,7 +14,7 @@ Status: selected architecture for development, not approved for physical deploym
 
 Develop an upstream ArduPilot checkout at repository root and a thin `integration/` layer here. Do not maintain a parallel rewritten autopilot fork if a documented interface can carry the measurements. Preserve upstream history and isolate local changes in integration files or small upstream patches.
 
-For estimator development, keep the Xsens sample as inertial source of record. Test whether ArduSub's `AP_ExternalAHRS` and EKF support external orientation plus usable rate/acceleration for this hardware. The generic external navigation MAVLink path carries pose/velocity and cannot replace the high-rate inertial sensor. If this exact Xsens device cannot use a supported upstream path, a small `AP_InertialSensor` serial backend is the next candidate, after validating sample time, alignment, units, calibration and data completeness. Do not fuse ROS's receipt-time quaternion as if it were independent global position.
+For estimator development, keep the Xsens sample as inertial source of record. The `AP_InertialSensor_ExternalAHRS` route can inject raw gyro/acceleration, but `AP_ExternalAHRS` has no Xsens backend and its existing backend owns one serial port. Bar30 remains on a separate ESP32 port, so a single multi-device ExternalAHRS backend would couple unrelated transports. A focused Xsens INS backend plus a separate ESP32 pressure backend is the current preferred next implementation; compare its actual initialization and maintenance burden against an ExternalAHRS backend before finalizing. The generic external navigation MAVLink path carries pose/velocity and cannot replace the high-rate inertial sensor. Validate sample time, alignment, units, calibration and data completeness. Do not fuse ROS's receipt-time quaternion as if it were independent global position.
 
 For DVL, the reference provides body velocity but does not correctly parse the A50's separate `position_local` packets or preserve `time_of_validity` and covariance. This checkout's `GCS_MAVLink/GCS_Common.cpp:handle_vision_speed_estimate` accepts NED velocity, while `handle_odometry` also supplies pose. Use `VISION_SPEED_ESTIMATE` for velocity-only input once A50 body FRD to NED rotation is based on a fresh, validated attitude. Do not synthesize global position from velocity in the migration adapter without tested integration and reset behavior. Manufacturer axes and clock semantics are documented at [Water Linked A50 JSON protocol](https://docs.waterlinked.com/dvl/dvl-json-protocol/) and [axes](https://docs.waterlinked.com/dvl/axes/).
 
