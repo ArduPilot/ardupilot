@@ -11,6 +11,8 @@ static bool failsafe_enabled;
 static uint16_t failsafe_last_ticks;
 static uint32_t failsafe_last_timestamp;
 static bool in_failsafe;
+// set when failsafe_check() disarms the motors underneath the vehicle
+static volatile bool failsafe_disarmed_motors;
 
 //
 // failsafe_enable - enable failsafe
@@ -67,8 +69,38 @@ void Copter::failsafe_check()
         if(motors->armed()) {
             motors->armed(false);
             motors->output();
+            failsafe_disarmed_motors = true;
         }
     }
+}
+
+//
+// failsafe_check_disarm - finish a disarm started by failsafe_check().
+// That runs from the timer while the main loop may be stuck, so it can
+// only stop the motors.  Once the main loop is running again, disarm
+// the vehicle so the arming library, soft-armed state and logs agree
+//
+void Copter::failsafe_check_disarm()
+{
+    if (!failsafe_disarmed_motors || in_failsafe) {
+        return;
+    }
+    failsafe_disarmed_motors = false;
+    // the main loop stopped while we were armed; don't let the
+    // vehicle be armed again without a reboot or a forced arm.  The
+    // HAL may already have reported it, with more detail
+    if ((AP::internalerror().errors() & uint32_t(AP_InternalError::error_t::main_loop_stuck)) == 0) {
+        INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
+    }
+#if MODE_TURTLE_ENABLED
+    // Turtle arms and disarms itself, reversing the motors and turning
+    // failsafes off; let it undo that, and stop it re-arming as soon as
+    // the arming library and soft-armed state say we are disarmed
+    if (flightmode == &mode_turtle) {
+        mode_turtle.shutdown_motors();
+    }
+#endif
+    arming.disarm(AP_Arming::Method::CPUFAILSAFE, false);
 }
 
 
