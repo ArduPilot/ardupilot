@@ -241,7 +241,7 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
 #if EK3_FEATURE_OPTFLOW_AGL_KF
 void NavEKF3_core::Log_Write_XKF7(uint64_t time_us) const
 {
-    if (!frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
+    if (!flowLockoutRecoveryConfigured()) {
         return;
     }
 

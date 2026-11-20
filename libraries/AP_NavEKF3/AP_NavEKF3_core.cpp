@@ -230,6 +230,7 @@ void NavEKF3_core::InitialiseVariables()
     flowVelResetUnhealthy = false;
     aglKfRestartConfirm = 0;
     rngNewReadingTime_ms = 0;
+    rngHgtRestartConfirm = 0;
     flowVelInitPending = false;
     flowVelInitStart_ms = 0;
     flowVelInitRestartedAglKf = false;
