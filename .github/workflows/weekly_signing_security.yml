@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -72,6 +72,7 @@ jobs:
           SMTP_USERNAME: ${{ secrets.SECURITY_CI_SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SECURITY_CI_SMTP_PASSWORD }}
           SMTP_FROM: ${{ secrets.SECURITY_CI_SMTP_FROM }}
+          JOB_RESULT: ${{ needs.renode-signing-security.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           python3 - <<'PY'
@@ -86,11 +87,13 @@ jobs:
               raise SystemExit('missing SMTP secrets: ' + ', '.join(missing))
 
           message = EmailMessage()
-          message['Subject'] = 'ArduPilot weekly signing security CI failed'
+          result = os.environ['JOB_RESULT']
+          message['Subject'] = 'ArduPilot weekly signing security CI ' + result
           message['From'] = os.environ['SMTP_FROM']
           message['To'] = 'security@ardupilot.org'
           message.set_content(
-              'The weekly Renode signing security regression suite failed.\n\n' +
+              'The weekly Renode signing security regression suite finished ' +
+              result + '.\n\n' +
               os.environ['RUN_URL'] + '\n')
 
           port = int(os.environ.get('SMTP_PORT') or 587)
