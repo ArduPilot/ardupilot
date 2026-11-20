@@ -26,15 +26,7 @@ const struct ap_secure_data public_keys __attribute__((section(".apsec_data")));
  */
 static bool all_zero_public_keys(void)
 {
-    /*
-      look over all public keys, if one matches then we are OK
-     */
-    for (const auto &public_key : public_keys.public_key) {
-        if (!ap_public_key_is_zero(public_key.key)) {
-            return false;
-        }
-    }
-    return true;
+    return ap_public_keys_all_zero(public_keys);
 }
 
 /*
@@ -103,12 +95,9 @@ static check_fw_result_t check_firmware_signature(const app_descriptor_signed *a
         }
         crypto_check_ctx ctx {};
         crypto_check_ctx_abstract *actx = (crypto_check_ctx_abstract*)&ctx;
-        crypto_check_init(actx, extf_signature+sizeof(extf_signature_length)+sizeof(extf_signature_version), public_key.key);
-
-        static const uint8_t signature_domain[] = "ArduPilotFwSig2";
-        const uint32_t image_lengths[] { len1, len2, ad->extf_image_size };
-        crypto_check_update(actx, signature_domain, sizeof(signature_domain)-1);
-        crypto_check_update(actx, (const uint8_t *)image_lengths, sizeof(image_lengths));
+        ap_extf_signature_check_init(actx,
+                                     extf_signature+sizeof(extf_signature_length)+sizeof(extf_signature_version),
+                                     public_key.key, len1, len2, ad->extf_image_size);
         crypto_check_update(actx, flash1, len1);
         crypto_check_update(actx, flash2, len2);
 
