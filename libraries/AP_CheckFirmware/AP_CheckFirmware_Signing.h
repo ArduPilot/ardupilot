@@ -24,6 +24,31 @@ struct ap_signature_buffer {
     size_t length;
 };
 
+struct ap_secure_command_sequence {
+    bool accept(uint32_t sequence)
+    {
+        if (have_sequence) {
+            // accept forward progress across wrap, but not the ambiguous half-range
+            const uint32_t distance = sequence - last_sequence;
+            if (distance == 0 || distance >= (1U << 31)) {
+                return false;
+            }
+        }
+        last_sequence = sequence;
+        have_sequence = true;
+        return true;
+    }
+
+    void reset()
+    {
+        have_sequence = false;
+    }
+
+private:
+    uint32_t last_sequence {};
+    bool have_sequence {};
+};
+
 static inline bool ap_public_key_is_zero(const uint8_t key[AP_PUBLIC_KEY_LEN])
 {
     uint8_t key_bytes = 0;
