@@ -104,7 +104,8 @@ public:
     // set angle target in degrees
     // roll and pitch are in earth-frame
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
-    void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
+    // pitch_rate_degs and yaw_rate_degs are the rates at which to move to the angle target.  Zero or NaN means no limit
+    void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame, float pitch_rate_degs = 0, float yaw_rate_degs = 0);
 
     // sets rate target in deg/s
     // yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
@@ -425,7 +426,7 @@ protected:
     struct {
         MountTargetType target_type;// MAVLink targeting mode's current target type (e.g. angle or rate)
         MountAngleTarget angle_rad; // angle target in radians
-        MountRateTarget rate_rads;  // rate target in rad/s
+        MountRateTarget rate_rads;  // rate target in rad/s.  For an angle target this is the rate at which to move to the angle (zero means no limit)
         uint32_t last_rate_request_ms;
         uint32_t poi_start_ms;  // time we started trying to find the gimbal POI for an AuxFunc::MOUNT_POI_LOCK
         bool pointing_at_poi_at_home_alt;
@@ -455,6 +456,18 @@ private:
     // calculate the Location that the gimbal is pointing at, assuming the target is at home altitude
     bool calculate_poi_at_home_alt(Location &target_location);
 #endif
+
+    // update the angle setpoint from the angle target
+    void update_angle_setpoint();
+
+    // record the given angles as the angle setpoint and send them to the gimbal
+    void send_angle_setpoint(const MountAngleTarget& angle_rad);
+
+    // angle most recently sent to the gimbal. This equals the angle target, except in MAVLink
+    // targeting with a commanded rate, where it moves to the angle target at that rate
+    MountAngleTarget _angle_setpoint_rad;
+    uint32_t _angle_setpoint_update_ms;     // system time of the last update of _angle_setpoint_rad
+    bool _angle_setpoint_valid;             // true if _angle_setpoint_rad holds the angle most recently sent to the gimbal
 
     bool _yaw_lock;                 // yaw_lock used in RC_TARGETING mode. True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
 

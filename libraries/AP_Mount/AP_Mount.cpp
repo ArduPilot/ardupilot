@@ -339,7 +339,8 @@ void AP_Mount::set_pitch_lock(uint8_t instance, bool pitch_lock)
 // set angle target in degrees
 // roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
-void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
+// pitch_rate_degs and yaw_rate_degs are the rates at which to move to the angle target.  Zero or NaN means no limit
+void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame, float pitch_rate_degs, float yaw_rate_degs)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
@@ -347,7 +348,7 @@ void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_de
     }
 
     // send command to backend
-    backend->set_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
+    backend->set_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame, pitch_rate_degs, yaw_rate_degs);
 }
 
 // sets rate target in deg/s
@@ -418,15 +419,16 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     // param2 : yaw angle (in degrees)
     const float pitch_angle_deg = packet.param1;
     const float yaw_angle_deg = packet.param2;
-    if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
-        backend->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
-        return MAV_RESULT_ACCEPTED;
-    }
-
     // param3 : pitch_rate (in deg/s)
     // param4 : yaw rate (in deg/s)
     const float pitch_rate_degs = packet.param3;
     const float yaw_rate_degs = packet.param4;
+    if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
+        // move to the angles at the given rates
+        backend->set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK, pitch_rate_degs, yaw_rate_degs);
+        return MAV_RESULT_ACCEPTED;
+    }
+
     if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
         backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;

@@ -206,7 +206,8 @@ void AP_Mount_Backend::adjust_mnt_target_if_RP_locked()
 // set angle target in degrees
 // roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
-void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
+// pitch_rate_degs and yaw_rate_degs are the rates at which to move to the angle target.  Zero or NaN means no limit
+void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame, float pitch_rate_degs, float yaw_rate_degs)
 {
     // enforce angle limits
     roll_deg = constrain_float(roll_deg, _params.roll_angle_min, _params.roll_angle_max);
@@ -226,6 +227,12 @@ void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float y
     mnt_target.angle_rad.pitch = radians(pitch_deg);
     mnt_target.angle_rad.yaw = radians(yaw_deg);
     mnt_target.angle_rad.yaw_is_ef = yaw_is_earth_frame;
+
+    // set the rates at which to move to the angle target.  The sign is not used
+    mnt_target.rate_rads.roll = 0;
+    mnt_target.rate_rads.pitch = isnan(pitch_rate_degs) ? 0 : radians(fabsf(pitch_rate_degs));
+    mnt_target.rate_rads.yaw = isnan(yaw_rate_degs) ? 0 : radians(fabsf(yaw_rate_degs));
+    mnt_target.rate_rads.yaw_is_ef = yaw_is_earth_frame;
 
     // set the mode to mavlink targeting
     set_mode(Mode::MAVLINK_TARGETING);
@@ -1266,6 +1273,7 @@ void AP_Mount_Backend::update_mnt_target()
     if (apply_bf_roll_pitch_adjustments_in_rc_targeting()) {
         adjust_mnt_target_if_RP_locked();
     }
+    update_angle_setpoint();
 }
 
 // method for the mount backends to update mnt_target based on
@@ -1336,6 +1344,88 @@ void AP_Mount_Backend::_update_mnt_target()
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
+// update the angle setpoint, which is the angle sent to the gimbal for an angle target.
+// The setpoint equals the angle target, except in MAVLink targeting with a
+// commanded rate, where it moves to the angle target at that rate
+void AP_Mount_Backend::update_angle_setpoint()
+{
+    // backends update at different rates so measure the time step
+    const uint32_t now_ms = AP_HAL::millis();
+    const float dt = MIN((now_ms - _angle_setpoint_update_ms) * 0.001f, 0.2f);
+    _angle_setpoint_update_ms = now_ms;
+
+    if (mnt_target.target_type != MountTargetType::ANGLE) {
+        // send_target_to_gimbal maintains the setpoint for the other target types
+        return;
+    }
+
+    const MountAngleTarget &target = mnt_target.angle_rad;
+    const MountRateTarget &rate = mnt_target.rate_rads;
+    // set_angle_target stores the rates as magnitudes, and zero means no limit
+    const bool rate_commanded = is_positive(rate.pitch) || is_positive(rate.yaw);
+    if ((get_mode() != Mode::MAVLINK_TARGETING) || !rate_commanded) {
+        _angle_setpoint_rad = target;
+        _angle_setpoint_valid = true;
+        return;
+    }
+
+    if (!_angle_setpoint_valid) {
+        Quaternion att_quat;
+        // Try to start from the current gimbal attitude.
+        if (!get_attitude_quaternion(att_quat)) {
+            _angle_setpoint_rad = target;
+            _angle_setpoint_valid = true;
+            return;
+        }
+        _angle_setpoint_rad.pitch = att_quat.get_euler_pitch();
+        _angle_setpoint_rad.yaw = att_quat.get_euler_yaw();
+        _angle_setpoint_rad.yaw_is_ef = false;
+        _angle_setpoint_valid = true;
+    }
+
+    // largest change of the setpoint in one update. An axis with no
+    // commanded rate gets a step larger than any angle error
+    const float pitch_step_rad = is_positive(rate.pitch) ? rate.pitch * dt : M_2PI;
+    const float yaw_step_rad = is_positive(rate.yaw) ? rate.yaw * dt : M_2PI;
+
+    // roll has no commanded rate
+    _angle_setpoint_rad.roll = target.roll;
+    _angle_setpoint_rad.roll_is_ef = target.roll_is_ef;
+    _angle_setpoint_rad.pitch_is_ef = target.pitch_is_ef;
+
+    // move pitch towards the target
+    _angle_setpoint_rad.pitch += constrain_float(target.pitch - _angle_setpoint_rad.pitch, -pitch_step_rad, pitch_step_rad);
+
+    // ensure setpoint yaw frame matches target yaw frame
+    if (_angle_setpoint_rad.yaw_is_ef != target.yaw_is_ef) {
+        if (target.yaw_is_ef) {
+            _angle_setpoint_rad.yaw = _angle_setpoint_rad.get_ef_yaw();
+        } else {
+            _angle_setpoint_rad.yaw = _angle_setpoint_rad.get_bf_yaw();
+        }
+        _angle_setpoint_rad.yaw_is_ef = target.yaw_is_ef;
+    }
+
+    // move yaw towards the target. Earth-frame yaw takes the shortest path,
+    // body-frame yaw stays within the body-frame limits
+    float yaw_err_rad = target.yaw - _angle_setpoint_rad.yaw;
+    if (target.yaw_is_ef) {
+        yaw_err_rad = wrap_PI(yaw_err_rad);
+    }
+    _angle_setpoint_rad.yaw += constrain_float(yaw_err_rad, -yaw_step_rad, yaw_step_rad);
+    if (target.yaw_is_ef) {
+        _angle_setpoint_rad.yaw = wrap_PI(_angle_setpoint_rad.yaw);
+    }
+}
+
+// record the given angles as the angle setpoint and send them to the gimbal
+void AP_Mount_Backend::send_angle_setpoint(const MountAngleTarget& angle_rad)
+{
+    _angle_setpoint_rad = angle_rad;
+    _angle_setpoint_valid = true;
+    send_target_angles(_angle_setpoint_rad);
+}
+
 void AP_Mount_Backend::send_target_to_gimbal()
 {
     // process any pending clear-roi-target 
@@ -1349,18 +1439,22 @@ void AP_Mount_Backend::send_target_to_gimbal()
     if (natively_supports(mnt_target.target_type)) {
         switch (mnt_target.target_type) {
         case MountTargetType::ANGLE:
-            send_target_angles(mnt_target.angle_rad);
+            send_target_angles(_angle_setpoint_rad);
             return;
         case MountTargetType::RATE:
+            _angle_setpoint_valid = false;
             send_target_rates(mnt_target.rate_rads);
             return;
         case MountTargetType::RETRACTED:
+            _angle_setpoint_valid = false;
             send_target_retracted();
             return;
         case MountTargetType::NEUTRAL:
+            _angle_setpoint_valid = false;
             send_target_neutral();
             return;
         case MountTargetType::LOCATION:
+            _angle_setpoint_valid = false;
             send_target_location(_roi_target);
             return;
         }
@@ -1379,7 +1473,7 @@ void AP_Mount_Backend::send_target_to_gimbal()
         if (natively_supports(MountTargetType::ANGLE)) {
             // we integrate the rates into the angle:
             update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-            send_target_angles(mnt_target.angle_rad);
+            send_angle_setpoint(mnt_target.angle_rad);
             return;
         }
         break;
@@ -1389,7 +1483,7 @@ void AP_Mount_Backend::send_target_to_gimbal()
             // we update mnt_target for reporting purposes
             const Vector3f &angle_bf_target = _params.retract_angles.get();
             mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            send_target_angles(mnt_target.angle_rad);
+            send_angle_setpoint(mnt_target.angle_rad);
             return;
         }
         break;
@@ -1399,14 +1493,14 @@ void AP_Mount_Backend::send_target_to_gimbal()
             // we update mnt_target for reporting purposes
             const Vector3f &angle_bf_target = _params.neutral_angles.get();
             mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            send_target_angles(mnt_target.angle_rad);
+            send_angle_setpoint(mnt_target.angle_rad);
             return;
         }
         break;
     case MountTargetType::LOCATION:
         if (natively_supports(MountTargetType::ANGLE)) {
             if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                send_target_angles(mnt_target.angle_rad);
+                send_angle_setpoint(mnt_target.angle_rad);
             }
             return;
         }
