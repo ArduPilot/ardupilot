@@ -33,7 +33,15 @@ void AR_WPNav_OA::update(float dt)
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
         _desired_lat_accel = 0.0f;
         _desired_turn_rate_rads = 0.0f;
-        _oa_active = false;
+        if (_oa_active) {
+            // reset target to original destination, otherwise the
+            // avoidance destination would be backed up as the original.
+            // This fails without a position, in which case avoidance is
+            // left active so the original stays backed up
+            if (AR_WPNav::set_desired_location(_destination_oabak)) {
+                _oa_active = false;
+            }
+        }
         return;
     }
 
@@ -81,7 +89,15 @@ void AR_WPNav_OA::update(float dt)
         case AP_OAPathPlanner::OA_ERROR:
             // during processing or in case of error, slow vehicle to a stop
             stop_vehicle = true;
-            _oa_active = false;
+            if (_oa_active) {
+                // reset target to original destination, otherwise the
+                // avoidance destination would be backed up as the original
+                if (!AR_WPNav::set_desired_location(_destination_oabak)) {
+                    // this should never happen because we should have an EKF origin and the destination must be valid
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                }
+                _oa_active = false;
+            }
             break;
 
         case AP_OAPathPlanner::OA_SUCCESS:

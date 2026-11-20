@@ -4761,6 +4761,85 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_distance_to_home(3, 7, timeout=300)
         self.disarm_vehicle()
 
+    def PolyFenceObjectAvoidanceErrorKeepsDestination(self):
+        '''an object avoidance error part-way round an obstacle does not lose the destination'''
+        here = self.get_location()
+        obstacle = (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+            self.offset_location_ne(here, -50, 20),
+            self.offset_location_ne(here, 50, 20),
+            self.offset_location_ne(here, 50, 40),
+            self.offset_location_ne(here, -50, 40),
+        ])
+        target = self.offset_location_ne(here, 0, 60)
+        # an exclusion around the target leaves no path to it
+        around_target = (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+            self.offset_location_ne(target, -5, -5),
+            self.offset_location_ne(target, 5, -5),
+            self.offset_location_ne(target, 5, 5),
+            self.offset_location_ne(target, -5, 5),
+        ])
+        self.upload_fences_from_locations([obstacle])
+        self.set_parameters({
+            "AVOID_ENABLE": 3,
+            "OA_TYPE": 2,
+        })
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.set_parameter("FENCE_ENABLE", 1)
+        self.arm_vehicle()
+        self.send_guided_mission_item(target)
+
+        self.progress("Waiting to be on the way round the obstacle")
+        self.wait_distance_to_home(30, 1000, timeout=120)
+
+        self.progress("Fencing off the target")
+        self.upload_fences_from_locations([obstacle, around_target])
+        self.wait_statustext("Dijkstra: could not find path", check_context=True, timeout=30)
+        self.delay_sim_time(5, reason="the error to last")
+
+        self.progress("Restoring the path to the target")
+        self.upload_fences_from_locations([obstacle])
+        self.wait_location(target, height_accuracy=None, timeout=120)
+
+        self.disarm_vehicle(force=True)
+        self.clear_fence()
+
+    def PolyFenceObjectAvoidanceRearmKeepsDestination(self):
+        '''disarming part-way round an obstacle does not lose the destination'''
+        here = self.get_location()
+        obstacle = (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+            self.offset_location_ne(here, -50, 20),
+            self.offset_location_ne(here, 50, 20),
+            self.offset_location_ne(here, 50, 40),
+            self.offset_location_ne(here, -50, 40),
+        ])
+        target = self.offset_location_ne(here, 0, 60)
+        self.upload_fences_from_locations([obstacle])
+        self.set_parameters({
+            "AVOID_ENABLE": 3,
+            "OA_TYPE": 2,
+        })
+        self.reboot_sitl()
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.set_parameter("FENCE_ENABLE", 1)
+        self.arm_vehicle()
+        self.send_guided_mission_item(target)
+
+        self.progress("Waiting to be on the way round the obstacle")
+        self.wait_distance_to_home(30, 1000, timeout=120)
+
+        self.progress("Disarming and re-arming")
+        self.disarm_vehicle(force=True)
+        self.wait_groundspeed(0, 0.1, minimum_duration=2)
+        self.arm_vehicle()
+        self.wait_location(target, height_accuracy=None, timeout=120)
+
+        self.disarm_vehicle(force=True)
+        self.clear_fence()
+
     def send_guided_mission_item(self, loc, target_system=1, target_component=1):
         self.mav.mav.mission_item_send(
             target_system,
@@ -8587,6 +8666,8 @@ return update()
             self.PolyFenceAvoidance,
             self.PolyFenceObjectAvoidanceAuto,
             self.PolyFenceObjectAvoidanceGuided,
+            self.PolyFenceObjectAvoidanceErrorKeepsDestination,
+            self.PolyFenceObjectAvoidanceRearmKeepsDestination,
             self.PolyFenceObjectAvoidanceBendyRuler,
             self.SendToComponents,
             self.PolyFenceObjectAvoidanceBendyRulerEasierGuided,
