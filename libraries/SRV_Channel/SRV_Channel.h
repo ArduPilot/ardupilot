@@ -247,8 +247,14 @@ public:
     // set the output value as a pwm value
     void set_output_pwm(uint16_t pwm, bool force = false);
 
+#ifndef HAL_BUILD_AP_PERIPH
+    // get the output value as a pwm value: the SERVOn_FSPWM failsafe position
+    // while it applies, otherwise the commanded value
+    uint16_t get_output_pwm(void) const;
+#else
     // get the output value as a pwm value
     uint16_t get_output_pwm(void) const { return output_pwm; }
+#endif
 
     // set normalised output from -1 to 1, assuming 0 at mid point of servo_min/servo_max
     void set_output_norm(float value);
@@ -326,6 +332,17 @@ private:
     // reversal, following convention that 1 means reversed, 0 means normal
     AP_Int8 reversed;
     AP_Enum16<Function> function;
+#ifndef HAL_BUILD_AP_PERIPH
+    // per-channel failsafe position: PWM this channel is driven to when a
+    // selected failsafe is active. 0 = disabled (leave normal output).
+    AP_Int16 servo_fs_pwm;
+
+    // true while a selected failsafe is active and this output should be
+    // driven to its SERVOn_FSPWM position
+    bool failsafe_pwm_applies(void) const;
+    // true for outputs the failsafe positions never move
+    static bool failsafe_pwm_excluded(Function function);
+#endif
 
     // a pending output value as PWM
     uint16_t output_pwm;
@@ -601,6 +618,16 @@ public:
     // get E - stop
     static bool get_emergency_stop() { return emergency_stop;}
 
+#ifndef HAL_BUILD_AP_PERIPH
+    // set whether a servo failsafe is currently active. When true, any
+    // channel with a non-zero SERVOn_FSPWM is driven to that PWM. The vehicle
+    // decides which failsafe(s) qualify and sets this each loop.
+    static void set_failsafe_active(bool state) { failsafe_active = state; }
+
+    // get servo-failsafe active state
+    static bool get_failsafe_active() { return failsafe_active; }
+#endif
+
     // singleton for Lua
     static SRV_Channels *get_singleton(void) {
         return _singleton;
@@ -714,6 +741,9 @@ private:
     }
 
     static bool emergency_stop;
+#ifndef HAL_BUILD_AP_PERIPH
+    static bool failsafe_active;
+#endif
 
     // linked list for slew rate handling
     struct slew_list {
