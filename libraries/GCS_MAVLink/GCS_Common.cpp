@@ -7589,6 +7589,33 @@ void GCS::restore_passthru_line_settings()
 /*
   called at 1kHz to handle pass-thru between SERIAL_PASS1 and SERIAL_PASS2 ports
  */
+/*
+  put a locked passthrough port back to the line passthrough set up, if
+  anything has changed it since
+ */
+static void fix_passthru_line(AP_HAL::UARTDriver &port, uint32_t baud, uint32_t options, uint8_t parity, uint32_t lock_key)
+{
+    bool reopened = false;
+    // a USB port's baud rate is the host's, and get_baud_rate() is 0 on a
+    // HAL that doesn't know it
+    const uint32_t current_baud = port.get_baud_rate();
+    if (port.get_usb_baud() == 0 && current_baud != 0 && current_baud != baud) {
+        port.end();
+        port.begin_locked(baud, 0, 0, lock_key);
+        reopened = true;
+    }
+    if (port.get_options() != options) {
+        port.set_options_locked(options, lock_key);
+    }
+    if (port.get_stop_bits() != 1) {
+        port.set_stop_bits_locked(1, lock_key);
+    }
+    // begin() may drop the parity without get_parity() knowing
+    if (reopened || port.get_parity() != parity) {
+        port.configure_parity_locked(parity, lock_key);
+    }
+}
+
 void GCS::passthru_timer(void)
 {
     WITH_SEMAPHORE(_passthru.sem);
@@ -7647,40 +7674,27 @@ void GCS::passthru_timer(void)
         _passthru.port2->configure_parity_locked(0, lock_key);
     }
 
-    // Check for requested Baud rates and parity over USB
-    uint32_t baud = _passthru.port1->get_usb_baud();
-    uint8_t parity = _passthru.port1->get_usb_parity();
-    if (baud != 0) { // port1 is USB
-        const bool baud_changed = _passthru.baud2 != baud;
-        if (baud_changed) {
-            _passthru.baud2 = baud;
-            _passthru.port2->end();
-            _passthru.port2->begin_locked(baud, 0, 0, lock_key);
-        }
-
-        // compare with the port's parity, not what we last set, so a change
-        // that got in as passthrough took the port is put right
-        if (baud_changed || _passthru.port2->get_parity() != parity) {
-            _passthru.port2->configure_parity_locked(parity, lock_key);
-        }
+    // the parity each port should have: the USB host's when the other port
+    // is USB, otherwise none. A USB host may also change the baud rate
+    uint8_t parity1 = 0;
+    uint8_t parity2 = 0;
+    uint32_t usb_baud = _passthru.port1->get_usb_baud();
+    if (usb_baud != 0) { // port1 is USB
+        parity2 = _passthru.port1->get_usb_parity();
+        _passthru.baud2 = usb_baud;
+    }
+    usb_baud = _passthru.port2->get_usb_baud();
+    if (usb_baud != 0) { // port2 is USB
+        parity1 = _passthru.port2->get_usb_parity();
+        _passthru.baud1 = usb_baud;
     }
 
-    baud = _passthru.port2->get_usb_baud();
-    parity = _passthru.port2->get_usb_parity();
-    if (baud != 0) { // port2 is USB
-        const bool baud_changed = _passthru.baud1 != baud;
-        if (baud_changed) {
-            _passthru.baud1 = baud;
-            _passthru.port1->end();
-            _passthru.port1->begin_locked(baud, 0, 0, lock_key);
-        }
-
-        // compare with the port's parity, not what we last set, so a change
-        // that got in as passthrough took the port is put right
-        if (baud_changed || _passthru.port1->get_parity() != parity) {
-            _passthru.port1->configure_parity_locked(parity, lock_key);
-        }
-    }
+    // put back anything another user changed. This covers a USB host's new
+    // baud rate or parity, and a change from another user, such as RC
+    // input's protocol search, that was already under way when the ports
+    // were locked and landed after the setup above
+    fix_passthru_line(*_passthru.port1, _passthru.baud1, _passthru.options1, parity1, lock_key);
+    fix_passthru_line(*_passthru.port2, _passthru.baud2, _passthru.options2, parity2, lock_key);
 
     uint8_t buf[64];
 
