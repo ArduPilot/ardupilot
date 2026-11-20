@@ -22054,10 +22054,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
 
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
         run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        self.wait_statustext('Using EKF Source Set 2', check_context=True)
 
         self.assert_prearm_failure('Need Position Estimate')
         run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 1)
+        self.wait_statustext('Using EKF Source Set 1', check_context=True)
+
+        self.context_pop()
 
         self.wait_ready_to_arm()
 
