@@ -352,55 +352,12 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if false; then :
-  elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-  elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'forky' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif apt-cache search python-wxgtk3.0 | grep wx; then
-      SITL_PKGS+=" python-wxgtk3.0"
-  elif apt-cache search python3-wxgtk4.0 | grep wx; then
-      # see below
-      :
-  else
-      # we only support back to trusty:
-      SITL_PKGS+=" python-wxgtk2.8"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng12-0 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
+  # wxPython: the distribution package if there is one, else pip (see below)
+  if apt-cache show python3-wxgtk4.0 >/dev/null 2>&1; then
+      SITL_PKGS+=" python3-wxgtk4.0"
   fi
-
-  if false; then :
-  elif false ||
-       [ ${RELEASE_CODENAME} == 'trixie' ] ||
-       [ ${RELEASE_CODENAME} == 'forky' ] ||
-       false; then
-      PYTHON_PKGS+=" opencv-python"
-      SITL_PKGS+=" python3-wxgtk4.0"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-      PYTHON_PKGS+=" opencv-python"
-      SITL_PKGS+=" python3-wxgtk4.0"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif false ||
-       [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'resolute' ] ||
-       false; then
-      PYTHON_PKGS+=" wxpython opencv-python"
-      SITL_PKGS+=" python3-wxgtk4.0"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
-    SITL_PKGS+=" python3-wxgtk4.0"
-    SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  fi
+  PYTHON_PKGS+=" wxpython"
+  SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
 fi
 
 # Check if we need to manually install realpath
@@ -514,24 +471,29 @@ fi
 # is causing problems:
 for PACKAGE in $PYTHON_PKGS; do
     if [ "$PACKAGE" == "wxpython" ]; then
-        echo "##### $PACKAGE takes a *VERY* long time to install (~30 minutes).  Be patient."
-        # Use wheel repository for specific supported Ubuntu releases only
+        # use python3-wxgtk4.0 if this Python can import it (a venv made
+        # with --system-site-packages, or no venv)
+        if python3 -c 'import wx' 2>/dev/null; then
+            echo "wxPython $(python3 -c 'import wx; print(wx.version())') is already available"
+            continue
+        fi
+        # PyPI only has the wxPython sources for Linux, try the prebuilt
+        # wheel from the latest GitHub release before building it
         case ${RELEASE_CODENAME} in
-            jammy)
-                echo "##### Adding wxpython wheel repository for faster installation"
-                WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04"
-                time $PIP install $PIP_USER_ARGUMENT --upgrade --find-links $WXPYTHON_WHEEL_REPO $PACKAGE
-                ;;
-            noble)
-                echo "##### Adding wxpython wheel repository for faster installation"
-                WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04"
-                time $PIP install $PIP_USER_ARGUMENT --upgrade --find-links $WXPYTHON_WHEEL_REPO $PACKAGE
-                ;;
-            *)
-                echo "##### Installing wxpython from PyPI (no specific wheel repository for this release)"
-                time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
-                ;;
+            jammy)    WX_UBUNTU="ubuntu2204" ;;
+            noble)    WX_UBUNTU="ubuntu2404" ;;
+            resolute) WX_UBUNTU="ubuntu2604" ;;
+            *)        WX_UBUNTU="none" ;;
         esac
+        WX_TAG=$(python3 -c 'import urllib.request; print(urllib.request.urlopen("https://github.com/wxWidgets/Phoenix/releases/latest").geturl().rsplit("/", 1)[1])' || true)
+        PY_TAG=$(python3 -c 'import sys; print("cp%d%d" % sys.version_info[:2])')
+        WX_WHEEL="https://github.com/wxWidgets/Phoenix/releases/download/$WX_TAG/wxpython-${WX_TAG#wxPython-}%2B$WX_UBUNTU-$PY_TAG-$PY_TAG-linux_$(uname -m).whl"
+        time $PIP install $PIP_USER_ARGUMENT --upgrade "$WX_WHEEL" || {
+            echo "##### No prebuilt $PACKAGE wheel, building it takes a *VERY* long time (~30 minutes).  Be patient."
+            # the PyPI sources build their own copy of wxWidgets
+            $APT_GET install libgtk-3-dev
+            time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
+        }
     else
         time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
     fi
