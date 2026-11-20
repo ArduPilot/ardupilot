@@ -183,9 +183,14 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         }
     }
 
-    // path has been created, return latest point
+    // path has been created, return latest point.  the last point is the destination, which the
+    // vehicle flies to directly, unless it was moved inside the fence.  then the last point is the
+    // exit point, which the vehicle must reach before flying on to the destination
     Vector2f dest_pos;
-    const uint8_t path_length = get_shortest_path_numpoints() > 0 ? (get_shortest_path_numpoints() - 1) : 0;
+    uint8_t path_length = get_shortest_path_numpoints();
+    if (!_path_destination_relocated && (path_length > 0)) {
+        path_length--;
+    }
     if ((_path_idx_returned < path_length) && get_shortest_path_point(_path_idx_returned, dest_pos)) {
 
         // for the first point return origin as current_loc
@@ -913,6 +918,9 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
 
     // record whether the origin was moved so the entry point can be returned to the vehicle
     _path_source_relocated = !origin_in_fence.same_latlon_as(origin);
+
+    // record whether the destination was moved so the exit point can be returned to the vehicle
+    _path_destination_relocated = !destination_in_fence.same_latlon_as(destination);
 
     // convert origin and destination to offsets from EKF origin
     if (!origin_in_fence.get_vector_xy_from_origin_NE_cm(_path_source) ||
