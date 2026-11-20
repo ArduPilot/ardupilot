@@ -965,8 +965,8 @@ private:
     enum class FlowResetRange : uint8_t {
         Good,
         Stale,      // no range fused recently enough to have produced a median
-        Restarted,  // the AGL KF restarted from one sample and the samples since have not confirmed it
-        Step,       // the AGL KF lags a step in the ground the range has already seen
+        Restarted,  // the height restarted from one sample and the samples since have not confirmed it
+        Step,       // the height lags a step in the ground the range has already seen
     };
     // the height above ground a flow velocity reset scales by, and how recently a range measured it
     struct FlowResetHeight {
@@ -978,6 +978,8 @@ private:
     FlowResetRange flowResetRangeState(const of_elements &ofDataDelayed, ftype range, const FlowResetHeight &resetHgt) const;
     // the height a flow velocity reset scales by; false if there is none to scale by
     bool flowResetHeight(FlowResetHeight &resetHgt) const;
+    // true on a lane navigating on flow with a downward range finder, where the lockout recovery can run
+    bool flowLockoutRecoveryConfigured() const;
     // set the horizontal velocity from a flow sample once relative aiding has started in flight; true if it did
     bool InitVelocityFromFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody);
 #endif
@@ -1452,16 +1454,18 @@ private:
     bool flowVelResetUnhealthy;     // true when the flow sensor reports a lockout sample too poor to recover from
     uint32_t flowQualRecoverStart_ms; // start of the current run of flow samples clear of the quality that releases flowVelResetUnhealthy, 0 if none
     // after a restart from one range sample, the further samples in a row that must agree with the
-    // AGL KF before a flow lockout recovery may scale by its height; 0 once confirmed. A sample from
+    // restarted height before a flow lockout recovery may scale by it; 0 once confirmed. A sample from
     // a reading an earlier sample came from is a copy and does not count, so each reading counts at
     // most once, however long its backend holds it
     static const uint8_t AGLKF_RESTART_CONFIRM_SAMPLES = 3;
-    // a sample agrees within this many standard deviations of the AGL KF's innovation: inside its own
-    // gate (EK3_RNG_I_GATE, 5 by default), so a sample it fuses but is pulled by does not confirm it,
+    // a sample agrees within this many standard deviations of its innovation: inside the gate the AGL
+    // KF and the terrain estimator share (EK3_RNG_I_GATE, 5 by default) and the main filter's height
+    // gate (EK3_HGT_I_GATE, 5 by default), so a sample fused but pulled by does not confirm it,
     // and wide enough that a right one misses only 0.3% of the time, costing one more sample
     static constexpr ftype aglKfRestartConfirmSigma = 3.0f;
     uint8_t aglKfRestartConfirm;
     uint32_t rngNewReadingTime_ms;  // time a range sample that was not a copy of an earlier reading last reached the fusion time horizon
+    uint8_t rngHgtRestartConfirm;  // as aglKfRestartConfirm, for the terrain estimate, or the main filter's height while the range finder is its source
     bool flowVelInitPending;        // relative aiding started in flight, so its zero velocity is to be set from the flow
     uint32_t flowVelInitStart_ms;   // time that relative aiding started
     bool flowVelInitRestartedAglKf; // that setting has asked for the AGL KF to restart from the range once

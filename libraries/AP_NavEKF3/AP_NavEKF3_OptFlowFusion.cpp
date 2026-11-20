@@ -140,7 +140,8 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed, bool 
         // fuse range finder data
         if (rangeDataToFuse) {
             // reset terrain state if rangefinder data not fused for 5 seconds
-            if (imuSampleTime_ms - gndHgtValidTime_ms > 5000) {
+            const bool terrainRestart = (imuSampleTime_ms - gndHgtValidTime_ms > 5000);
+            if (terrainRestart) {
                 terrainState = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd) + stateStruct.position.z;
             }
 
@@ -170,6 +171,20 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed, bool 
 
             // calculate the innovation consistency test ratio
             auxRngTestRatio = sq(innovRng) / (sq(MAX(0.01f * (ftype)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            // a restart is confirmed as the AGL KF's is, by a run of later samples that agree with it,
+            // and a sample the gate below rejects does not agree
+            if (terrainRestart) {
+                rngHgtRestartConfirm = AGLKF_RESTART_CONFIRM_SAMPLES;
+            } else if (rngHgtRestartConfirm != 0) {
+                if ((auxRngTestRatio >= 1.0f) || (sq(innovRng) > sq(aglKfRestartConfirmSigma) * varInnovRng)) {
+                    rngHgtRestartConfirm = AGLKF_RESTART_CONFIRM_SAMPLES;
+                } else if (!rangeDataDelayed.repeated) {
+                    rngHgtRestartConfirm--;
+                }
+            }
+#endif
 
             // Check the innovation test ratio and don't fuse if too large
             if (auxRngTestRatio < 1.0f) {
@@ -995,18 +1010,44 @@ bool NavEKF3_core::InitVelocityFromFlow(const of_elements &ofDataDelayed, ftype 
     return true;
 }
 
-// The height above ground a flow velocity reset scales by: the AGL KF's, which the flow is then
-// scaled by. False if it is not running
+// The height above ground a flow velocity reset scales by: the AGL KF's while it scales the flow,
+// else the main filter's terrain estimate, which the flow is then scaled by. False if a range has not
+// measured the terrain estimate in the 5 s it stays valid: with no downward range finder it never
+// has, and the flow is scaled by a height nothing checks, so a reset would adopt that height's error
 bool NavEKF3_core::flowResetHeight(FlowResetHeight &resetHgt) const
 {
-    if (!frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) || !aglKf.valid) {
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKf.valid) {
+        resetHgt.hgt = aglKf.hgt;
+        resetHgt.var = aglKf.cov[0][0];
+        resetHgt.rngTime_ms = aglKf.lastRngFuseTime_ms;
+        resetHgt.restartUnconfirmed = (aglKfRestartConfirm != 0);
+        return true;
+    }
+    if (!gndOffsetValid) {
         return false;
     }
-    resetHgt.hgt = aglKf.hgt;
-    resetHgt.var = aglKf.cov[0][0];
-    resetHgt.rngTime_ms = aglKf.lastRngFuseTime_ms;
-    resetHgt.restartUnconfirmed = (aglKfRestartConfirm != 0);
+    resetHgt.hgt = terrainState - stateStruct.position.z;
+    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+        // the ground is the height datum, and the main filter fuses the range as its height
+        resetHgt.var = P[9][9];
+        resetHgt.rngTime_ms = lastHgtPassTime_ms;
+    } else {
+        // the terrain estimator takes the vehicle's height as exact, so its variance is the height's
+        resetHgt.var = Popt;
+        resetHgt.rngTime_ms = gndHgtValidTime_ms;
+    }
+    resetHgt.restartUnconfirmed = (rngHgtRestartConfirm != 0);
     return true;
+}
+
+// true on a lane navigating on flow with a downward range finder to measure the height a flow
+// velocity reset scales by, which the lockout recovery needs whether or not the AGL KF runs
+bool NavEKF3_core::flowLockoutRecoveryConfigured() const
+{
+    const auto *rng = dal.rangefinder();
+    return (frontend->_flowUse == FLOW_USE_NAV) &&
+           frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index) &&
+           (rng != nullptr) && rng->has_orientation(ROTATION_PITCH_270);
 }
 
 // Whether the range under a flow sample is fit to scale a velocity reset to it, and if not why not.

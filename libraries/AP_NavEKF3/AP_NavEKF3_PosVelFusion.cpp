@@ -1447,12 +1447,36 @@ void NavEKF3_core::selectHeightForFusion()
         fuseHgtData = false;
     }
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // a height restarted from one range as the range finder became the height source is confirmed as
+    // the terrain estimate's is, by a run of later samples that agree with it, and one the height
+    // gate would reject does not agree. The sample it restarted from is the one at the switch below
+    if ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && (prevHgtSource == activeHgtSource) &&
+        fuseHgtData && (rngHgtRestartConfirm != 0)) {
+        const ftype innov = stateStruct.position.z - velPosObs[5];
+        const ftype innovVar = P[9][9] + posDownObsNoise;
+        // the sigma is read by value: MIN() binding the static constexpr member by reference would need
+        // it defined out of class under C++11, and Replay's build fails to link without that
+        const ftype agreeSigma = MIN(MAX(0.01f * (ftype)frontend->_hgtInnovGate, 1.0f), ftype(aglKfRestartConfirmSigma));
+        if (sq(innov) > sq(agreeSigma) * innovVar) {
+            rngHgtRestartConfirm = AGLKF_RESTART_CONFIRM_SAMPLES;
+        } else if (!rangeDataDelayed.repeated) {
+            rngHgtRestartConfirm--;
+        }
+    }
+#endif
+
     // detect changes in source and reset height
     if ((activeHgtSource != prevHgtSource) && fuseHgtData) {
         prevHgtSource = activeHgtSource;
         // a baro in ground effect is no height to reset to, so a switch to it keeps the height held
         if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO || !baroInGndEffect) {
             ResetPositionD(-hgtMea);
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+                rngHgtRestartConfirm = AGLKF_RESTART_CONFIRM_SAMPLES;
+            }
+#endif
         }
     }
 
