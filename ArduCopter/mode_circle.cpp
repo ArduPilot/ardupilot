@@ -103,8 +103,12 @@ void ModeCircle::run()
         }
     }
 
-    // get pilot desired climb rate (or zero if in radio failsafe)
-    float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
+    // get pilot desired climb rate only when manual control is enabled
+    // when manual control is disabled (CIRCLE_OPTIONS bit0 not set) ignore pilot throttle
+    float target_climb_rate_ms = 0.0f;
+    if (copter.circle_nav->pilot_control_enabled()) {
+        target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
+    }
 
     // get avoidance adjusted climb rate
     target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
@@ -128,6 +132,13 @@ void ModeCircle::run()
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+}
+
+// returns true if pilot's yaw input should be used to adjust vehicle's heading
+// yaw is only passed through when manual control is enabled (CIRCLE_OPTIONS bit0)
+bool ModeCircle::use_pilot_yaw() const
+{
+    return copter.circle_nav->pilot_control_enabled();
 }
 
 float ModeCircle::wp_distance_m() const
