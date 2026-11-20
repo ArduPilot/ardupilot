@@ -54,6 +54,18 @@ extern const AP_HAL::HAL &hal;
 #define BMP581_REG_OSR_EFF            0x38
 #define BMP581_REG_CMD                0x7E
 
+#define BMP581_CMD_SOFT_RESET         0xB6
+
+// STATUS register (0x28) bits
+#define BMP581_STATUS_NVM_RDY         (1U << 1)
+#define BMP581_STATUS_NVM_ERR         (1U << 2)
+
+// INT_STATUS register (0x27): set on power-on or soft reset, cleared on read
+#define BMP581_INT_STATUS_POR         (1U << 4)
+
+// datasheet soft-reset duration is 2ms; use a margin
+#define BMP581_RESET_DELAY_MS         5
+
 AP_Baro_BMP581::AP_Baro_BMP581(AP_Baro &baro, AP_HAL::Device &dev)
     : AP_Baro_Backend(baro)
     , _dev(&dev)
@@ -103,12 +115,35 @@ bool AP_Baro_BMP581::init()
         return false;
     }
 
+    // On a warm reboot the MCU restarts but the BMP581 can stay powered, and
+    // init() then rejects a working sensor: STATUS reads 0x01 (core_rdy=1,
+    // nvm_rdy=0, nvm_err=0) and the INT_STATUS POR bit is 0, though pressure
+    // output is still valid. nvm_rdy and POR only reflect the chip's own
+    // power-on, so soft reset here to re-run that sequence and keep the
+    // STATUS/INT_STATUS checks below valid. The I2C reset write may not be
+    // ACKed, so its result is intentionally ignored; the reads below confirm
+    // the state.
+    _dev->write_register(BMP581_REG_CMD, BMP581_CMD_SOFT_RESET);
+    hal.scheduler->delay(BMP581_RESET_DELAY_MS);
+
+    // A soft reset drops SPI back to the chip's default interface. The first
+    // SPI read afterwards is a dummy whose value is discarded to re-lock SPI;
+    // then confirm the ID still reads back before continuing.
+    if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+        uint8_t dummy;
+        _dev->read_registers(BMP581_REG_CHIP_ID, &dummy, 1);
+
+        if (!_dev->read_registers(BMP581_REG_CHIP_ID, &whoami, 1) || whoami != BMP581_ID) {
+            return false;
+        }
+    }
+
     uint8_t status;
     if (!_dev->read_registers(BMP581_REG_STATUS, &status, 1)) {
         return false;
     }
 
-    if ((status & 0b10) == 0 || (status & 0b100)) {
+    if ((status & BMP581_STATUS_NVM_RDY) == 0 || (status & BMP581_STATUS_NVM_ERR)) {
         return false;
     }
 
@@ -117,7 +152,7 @@ bool AP_Baro_BMP581::init()
         return false;
     }
 
-    if ((int_status & 0x10) == 0) {
+    if ((int_status & BMP581_INT_STATUS_POR) == 0) {
         return false;
     }
 
