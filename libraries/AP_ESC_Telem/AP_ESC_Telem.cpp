@@ -583,7 +583,7 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     }
 #endif
 
-    telemdata.count++;
+    telemdata.count = telemdata.count + 1;
     telemdata.types |= data_mask;
     telemdata.last_update_ms = AP_HAL::millis();
     telemdata.any_data_valid = true;
