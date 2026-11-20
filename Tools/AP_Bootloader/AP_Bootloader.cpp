@@ -60,6 +60,11 @@ struct boardinfo board_info = {
 
 #if EXT_FLASH_SIZE_MB
 AP_FlashIface_JEDEC ext_flash;
+
+bool ext_flash_read(uint32_t offset, uint8_t *data, uint32_t size)
+{
+    return ext_flash.read(offset + EXT_FLASH_RESERVE_START_KB * 1024U, data, size);
+}
 #endif
 
 #if AP_BOOTLOADER_NETWORK_ENABLED
@@ -101,6 +106,14 @@ int main(void)
 
 #if AP_BOOTLOADER_NETWORK_ENABLED
     network.restore_comms_ip();
+#endif
+
+#if EXT_FLASH_SIZE_MB
+    while (!ext_flash.init()) {
+        // keep trying until we get it working
+        // there's no future without it
+        chThdSleep(chTimeMS2I(20));
+    }
 #endif
 
 #if AP_FASTBOOT_ENABLED
@@ -193,14 +206,6 @@ int main(void)
     if (palReadLine(HAL_GPIO_PIN_STAY_IN_BOOTLOADER) == HAL_STAY_IN_BOOTLOADER_VALUE) {
         try_boot = false;
         timeout = 0;
-    }
-#endif
-
-#if EXT_FLASH_SIZE_MB
-    while (!ext_flash.init()) {
-        // keep trying until we get it working
-        // there's no future without it
-        chThdSleep(chTimeMS2I(20));
     }
 #endif
 
