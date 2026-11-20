@@ -6964,7 +6964,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_RTL()
 
     def MissionCommandRecursion(self):
-        '''Test recursive mission command dispatch is rejected while disarmed'''
+        '''Test recursive mission command dispatch is rejected'''
 
         self.wait_ready_to_arm()
         home = self.home_position_as_location()
@@ -6975,7 +6975,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # previously recursed until the main thread stack overflowed.
         # Co-located navigation items ensure closest-leg selection starts at
         # the unsupported command instead of bypassing the malformed chain.
-        self.upload_simple_relhome_mission([
+        mission_items = [
             self.create_MISSION_ITEM_INT(188),  # MAV_CMD_DO_RETURN_PATH_START
             # This Plane-only navigation command is skipped by Copter.
             self.create_MISSION_ITEM_INT(
@@ -7003,7 +7003,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 y=int(home.lng * 1e7),
                 frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
             ),
-        ])
+        ]
+        self.upload_simple_relhome_mission(mission_items)
 
         self.context_collect('STATUSTEXT')
         self.change_mode('AUTO_RTL')
@@ -7018,6 +7019,54 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Vehicle armed during recursion test")
         self.wait_heartbeat()
         self.wait_heartbeat()
+        self.change_mode('STABILIZE')
+
+        # Exercise the same recursion while airborne without a horizontal
+        # position estimate.  The nested AUTO entry completes the mission
+        # before AUTO is active; its completion callback must not switch the
+        # active ALT_HOLD mode to LAND.
+        self.start_subtest("Inactive AUTO mission completion")
+        mission_items[3] = self.create_MISSION_ITEM_INT(
+            mavutil.mavlink.MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT,
+            x=int(home.lat * 1e7),
+            y=int(home.lng * 1e7),
+            z=0,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+        )
+        self.upload_simple_relhome_mission(mission_items[:4])
+        self.context_push()
+        self.set_parameters({
+            "GPS1_TYPE": 2,
+            "SIM_GPS1_ENABLE": 0,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELZ": 0,
+            "EK3_SRC1_VELXY": 0,
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(30, reason="accels/gyros to settle")
+
+        expected_ekf_flags = (mavutil.mavlink.ESTIMATOR_ATTITUDE |
+                              mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
+                              mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
+                              mavutil.mavlink.ESTIMATOR_CONST_POS_MODE)
+        if self.get_parameter("AHRS_EKF_TYPE") == 2:
+            expected_ekf_flags |= mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL
+        self.wait_ekf_flags(expected_ekf_flags, 0, timeout=120)
+
+        self.change_mode('STABILIZE')
+        self.arm_vehicle()
+        self.takeoff(10, require_absolute=False, mode='ALT_HOLD')
+        self.context_collect('STATUSTEXT')
+        self.run_cmd_do_set_mode(
+            "AUTO_RTL",
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.wait_statustext("Mission: command recursion denied", check_context=True)
+        self.assert_mode_is('ALT_HOLD')
+
+        self.land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
 
     def InvalidJumpTags(self):
         '''Verify the behaviour when selecting invalid jump tags.'''
