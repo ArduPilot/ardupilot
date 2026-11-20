@@ -6,7 +6,11 @@ script to determine what features have been built into an ArduPilot binary
 AP_FLAKE8_CLEAN
 """
 import argparse
+import os
 import re
+import struct
+import subprocess
+import sys
 
 import build_options
 
@@ -19,11 +23,25 @@ class ExtractFeatures(BuildScriptBase):
         def __init__(self, string):
             self.string = string
 
-    def __init__(self, filename, nm="arm-none-eabi-nm", strings="strings"):
+    # absolute symbol the build defines in LTO firmware
+    LTO_MARKER = '__AP_LTO'
+    # non-allocated ELF section the build embeds the feature list in
+    FEATURES_SECTION = '.ap_features'
+    # GNU ld pads cref symbol names to this column
+    CREF_FILE_COLUMN = 50
+
+    def __init__(self, filename, nm="arm-none-eabi-nm", strings="strings", map_filename=None, cxxfilt=None):
         super().__init__()
         self.filename = filename
         self.nm = nm
         self.strings = strings
+        self.map_filename = map_filename
+        if cxxfilt is None:
+            # the c++filt beside nm, e.g. arm-none-eabi-nm.exe -> arm-none-eabi-c++filt.exe
+            cxxfilt = re.sub(r'(gcc-)?nm(\.exe)?$', r'c++filt\2', nm)
+            if cxxfilt == nm:
+                cxxfilt = 'c++filt'
+        self.cxxfilt = cxxfilt
 
         # feature_name should match the equivalent feature in
         # build_options.py ('FEATURE_NAME', 'EXPECTED_SYMBOL').
@@ -446,6 +464,124 @@ class ExtractFeatures(BuildScriptBase):
 
         return ret
 
+    def find_map_file(self):
+        '''returns the linker map for the ELF, or None if there isn't one'''
+        if self.map_filename is not None:
+            return self.map_filename
+        candidate = self.filename + '.map'
+        if os.path.exists(candidate):
+            return candidate
+        return None
+
+    def add_symbols_from_map(self, symbols, map_filename):
+        '''add the symbols in a GNU ld --cref table to symbols.
+
+        With LTO, functions which are inlined everywhere have no symbol
+        in the ELF, but the cross reference table lists the symbols of
+        every object file which went into the link.'''
+        with open(map_filename, 'r', encoding='utf-8', errors='replace') as f:
+            lines = f.read().split('\n')
+        try:
+            start = lines.index('Cross Reference Table')
+        except ValueError:
+            raise ValueError("%s has no cross reference table (link with --cref)" % map_filename)
+        plugin_suffix = ' (symbol from plugin)'
+        lines = [line.rstrip() for line in lines[start+1:]]
+        col = self.CREF_FILE_COLUMN
+        # files are alone on referencing lines and at the file column after
+        # short names, which lets them be split from long names even if
+        # they contain spaces
+        files = set()
+        for line in lines:
+            if line == '':
+                continue
+            if line[0].isspace():
+                f = line.strip()
+            elif len(line) > col and line[col-2:col] == '  ':
+                f = line[col:]
+            else:
+                continue
+            if f.endswith(plugin_suffix):
+                f = f[:-len(plugin_suffix)]
+            files.add(f)
+        names = []
+        for line in lines:
+            if line == '' or line[0].isspace():
+                # blank or a file referencing the symbol above
+                continue
+            if len(line) > col and line[col-2:col] == '  ' and not line[col].isspace():
+                # a short name is padded to the file column
+                name = line[:col].rstrip()
+            else:
+                # a long name is followed by a single space
+                if line.endswith(plugin_suffix):
+                    line = line[:-len(plugin_suffix)]
+                name = None
+                for i in [i for i, c in enumerate(line) if c == ' ']:
+                    if line[i+1:] in files:
+                        name = line[:i]
+                        break
+                if name is None and ' /' in line:
+                    # an absolute path, demangled names don't contain ' /'
+                    name = line[:line.index(' /')]
+                if name is None:
+                    fields = line.rsplit(None, 1)
+                    if len(fields) != 2:
+                        continue
+                    name = fields[0]
+            if name != 'Symbol':
+                names.append(name)
+        names = self.demangle(names)
+        for name in names:
+            if name not in symbols.symbols:
+                symbols.add(name, {
+                    "size": 0,
+                })
+
+    def demangle(self, names):
+        '''demangle any mangled names, as the map isn't always demangled'''
+        mangled = [n for n in names if n.startswith('_Z')]
+        if len(mangled) == 0:
+            return names
+        try:
+            out = subprocess.run([self.cxxfilt], input='\n'.join(mangled), capture_output=True,
+                                 text=True, check=True).stdout.split('\n')
+        except (OSError, subprocess.CalledProcessError) as e:
+            raise ValueError("failed to demangle the linker map with %s: %s" % (self.cxxfilt, e))
+        demangled = dict(zip(mangled, out))
+        return [demangled.get(n, n) for n in names]
+
+    def read_elf_section(self, filename, section_name):
+        '''returns the contents of the named ELF section, or None'''
+        with open(filename, 'rb') as f:
+            data = f.read()
+        if data[:4] != b'\x7fELF':
+            return None
+        is64 = data[4] == 2
+        endian = '<' if data[5] == 1 else '>'
+        if is64:
+            (shoff,) = struct.unpack_from(endian + 'Q', data, 0x28)
+            (shentsize, shnum, shstrndx) = struct.unpack_from(endian + 'HHH', data, 0x3A)
+            sh_fmt = endian + 'IIQQQQ'
+        else:
+            (shoff,) = struct.unpack_from(endian + 'I', data, 0x20)
+            (shentsize, shnum, shstrndx) = struct.unpack_from(endian + 'HHH', data, 0x2E)
+            sh_fmt = endian + 'IIIIII'
+
+        def header(i):
+            # name, type, flags, addr, offset, size
+            return struct.unpack_from(sh_fmt, data, shoff + i * shentsize)
+
+        if shoff == 0 or shstrndx >= shnum:
+            return None
+        strtab_offset = header(shstrndx)[4]
+        for i in range(shnum):
+            (name, _, _, _, offset, size) = header(i)
+            end = data.index(b'\0', strtab_offset + name)
+            if data[strtab_offset + name:end].decode() == section_name:
+                return data[offset:offset+size]
+        return None
+
     def extract_strings_from_elf(self, filename):
         """Runs strings on filename, returns as a list"""
         text_output = self.run_program('EF', [
@@ -459,7 +595,19 @@ class ExtractFeatures(BuildScriptBase):
 
         build_options_defines = set([x.define for x in build_options.BUILD_OPTIONS])
 
+        embedded = self.read_elf_section(self.filename, self.FEATURES_SECTION)
+        if embedded is not None:
+            # the feature list found at build time
+            compiled_in = [d for d in embedded.decode().split() if d in build_options_defines]
+            return (compiled_in, build_options_defines - set(compiled_in))
+
         symbols = self.extract_symbols_from_elf(self.filename)
+        if self.LTO_MARKER in symbols.symbols:
+            map_filename = self.find_map_file()
+            if map_filename is None:
+                raise ValueError("%s was built with LTO, so the linker map is needed: "
+                                 "expected %s.map, or use --map" % (self.filename, self.filename))
+            self.add_symbols_from_map(symbols, map_filename)
         strings = self.extract_strings_from_elf(self.filename)
 
         remaining_build_options_defines = build_options_defines
@@ -528,8 +676,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='extract_features.py', description='Extract ArduPilot features from binaries')
     parser.add_argument('firmware_file', help='firmware binary')
     parser.add_argument('--nm', type=str, default="arm-none-eabi-nm", help='nm binary to use.')
+    parser.add_argument('--cxxfilt', type=str, default=None,
+                        help='c++filt binary to use, default is the one beside nm')
+    parser.add_argument('--map', type=str, default=None,
+                        help='linker map of an LTO build, default is the firmware file with .map appended')
     args = parser.parse_args()
     # print(args.firmware_file, args.nm)
 
-    ef = ExtractFeatures(args.firmware_file, args.nm)
-    ef.run()
+    ef = ExtractFeatures(args.firmware_file, args.nm, map_filename=args.map, cxxfilt=args.cxxfilt)
+    try:
+        ef.run()
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
