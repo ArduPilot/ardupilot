@@ -660,6 +660,12 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         status_printf("Flashing 0%%");
     }
     uint8_t last_pct = 0;
+    // the first words of the firmware are written last, as they are
+    // by the serial protocol; jump_to_app() won't start a firmware
+    // which lacks them, so a board reset part way through an upload
+    // stays in the bootloader
+    uint32_t lead_words[RESERVE_LEAD_WORDS];
+    memset(lead_words, 0xff, sizeof(lead_words));
     // bytes at the start of chunk kept back from the last chunk, as
     // they may be the start of the marker
     uint32_t carry = 0;
@@ -719,7 +725,12 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
             erased_ofs += size;
             erase_sec++;
         }
-        for (uint32_t i=0; i<wlen && !failed; i += 512) {
+        uint32_t lead_len = 0;
+        if (ofs < sizeof(lead_words)) {
+            lead_len = MIN(wlen, sizeof(lead_words) - ofs);
+            memcpy(&((uint8_t *)lead_words)[ofs], chunk8, lead_len);
+        }
+        for (uint32_t i=lead_len; i<wlen && !failed; i += 512) {
             const uint32_t n = MIN(512U, wlen - i);
             if (!flash_write_buffer(ofs + i, &chunk[i/4], n/4)) {
                 status_printf("Flash failed: write at %u", unsigned(ofs + i));
@@ -740,7 +751,7 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     }
     if (!failed) {
         ofs = (ofs + 3) & ~3U;
-        if (ofs % 32 != 0) {
+        if (ofs % 32 != 0 && ofs > sizeof(lead_words)) {
             // pad to 32 bytes
             memset(chunk, 0xff, 32);
             if (!flash_write_buffer(ofs, chunk, (32 - ofs%32)/4)) {
@@ -765,6 +776,11 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
             failed = true;
         }
         erase_sec++;
+    }
+    // the firmware is complete; write its first words
+    if (!failed && (!flash_write_buffer(0, lead_words, RESERVE_LEAD_WORDS) || !flash_write_flush())) {
+        status_printf("Flash failed: write at 0");
+        failed = true;
     }
     flash_set_keep_unlocked(false);
 

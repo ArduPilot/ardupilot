@@ -1,3 +1,7 @@
+// keep back 32 bytes at the front of flash. This is long enough to allow for aligned
+// access on STM32H7
+#define RESERVE_LEAD_WORDS 8
+
 void jump_to_app(void);
 void bootloader(unsigned timeout);
 // stop the bootloader timing out and jumping to the application, e.g.

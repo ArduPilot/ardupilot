@@ -149,10 +149,6 @@ static enum led_state led_state;
 
 volatile unsigned timer[NTIMERS];
 
-// keep back 32 bytes at the front of flash. This is long enough to allow for aligned
-// access on STM32H7
-#define RESERVE_LEAD_WORDS 8
-
 
 #if EXT_FLASH_SIZE_MB
 extern AP_FlashIface_JEDEC ext_flash;
