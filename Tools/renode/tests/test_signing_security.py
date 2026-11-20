@@ -194,6 +194,10 @@ class RenodeBoard:
                 message = self.mav.parse_char(bytes((value,)))
                 if message is not None and message.get_type() != 'BAD_DATA':
                     self.pending_messages.append(message)
+        for index, message in enumerate(self.pending_messages):
+            if (message.get_type() == message_type and
+                    (predicate is None or predicate(message))):
+                return self.pending_messages.pop(index)
         raise TimeoutError('timed out waiting for %s' % message_type)
 
     def secure_command(self, sequence, operation, data, signature):
