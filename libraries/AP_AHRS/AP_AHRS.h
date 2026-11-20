@@ -248,6 +248,9 @@ public:
     // returns true if the global navigation origin is valid
     bool has_origin() const WARN_IF_UNUSED { return state.origin_ok; }
 
+    // Returns true if the EKF origin has been set
+    bool has_origin() const;
+
     bool have_inertial_nav() const;
 
     // return a ground velocity in meters/second, North/East/Down
