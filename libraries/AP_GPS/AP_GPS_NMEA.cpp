@@ -107,7 +107,10 @@ bool AP_GPS_NMEA::_decode(char c)
             _term[_term_offset] = 0;
             valid_sentence = _term_complete();
         }
-        ++_term_number;
+        if (_term_number < UINT16_MAX) {
+            // saturate so a very long sentence can't wrap back to term 0
+            ++_term_number;
+        }
         _term_offset = 0;
         _is_checksum_term = c == '*';
         return valid_sentence;
@@ -292,6 +295,41 @@ bool AP_GPS_NMEA::_have_new_message()
     _last_GGA_ms = 1;
     _last_RMC_ms = 1;
     return true;
+}
+
+/*
+  return the last term parsed for a sentence type, 0 if none
+ */
+uint8_t AP_GPS_NMEA::last_term_number(uint16_t sentence_type)
+{
+    static_assert(PHD_LAST_TERM - PHD_FIRST_FIELD_TERM < ARRAY_SIZE(_phd.fields), "PHD terms must fit _phd.fields");
+    static_assert(KSXT_LAST_TERM == ARRAY_SIZE(_ksxt.fields), "KSXT terms must match _ksxt.fields");
+
+    switch (sentence_type) {
+    case _GPS_SENTENCE_RMC:
+        return RMC_LAST_TERM;
+    case _GPS_SENTENCE_GGA:
+        return GGA_LAST_TERM;
+    case _GPS_SENTENCE_VTG:
+        return VTG_LAST_TERM;
+    case _GPS_SENTENCE_HDT:
+        return HDT_LAST_TERM;
+    case _GPS_SENTENCE_THS:
+        return THS_LAST_TERM;
+    case _GPS_SENTENCE_PHD:
+        return PHD_LAST_TERM;
+    case _GPS_SENTENCE_KSXT:
+        return KSXT_LAST_TERM;
+#if AP_GPS_NMEA_UNICORE_ENABLED
+    case _GPS_SENTENCE_AGRICA:
+        return AGRICA_LAST_TERM;
+    case _GPS_SENTENCE_VERSIONA:
+        return VERSIONA_LAST_TERM;
+    case _GPS_SENTENCE_UNIHEADINGA:
+        return UNIHEADINGA_LAST_TERM;
+#endif
+    }
+    return 0;
 }
 
 // Processes a just-completed term
@@ -588,8 +626,21 @@ bool AP_GPS_NMEA::_term_complete()
         return false;
     }
 
+    /*
+      the switch below dispatches on _sentence_type + _term_number, so
+      a sentence with more terms than we parse would alias into the
+      case range of another sentence type (e.g. RMC term 34 is GGA
+      latitude, RMC term 112 indexes _phd.fields far out of
+      bounds). Ignore any term beyond the last one we parse for this
+      sentence type.
+     */
+    if (_term_number > last_term_number(_sentence_type)) {
+        return false;
+    }
+
     // 32 = RMC, 64 = GGA, 96 = VTG, 128 = HDT, 160 = THS
-    if (_sentence_type != _GPS_SENTENCE_OTHER && _term[0]) {
+    // (_GPS_SENTENCE_OTHER has no terms, so it never gets here)
+    if (_term[0]) {
         switch (_sentence_type + _term_number) {
         // operational status
         //
@@ -615,7 +666,7 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_GGA + 1: // Time (GGA)
             _new_time = _parse_decimal_100(_term);
             break;
-        case _GPS_SENTENCE_RMC + 9: // Date (GPRMC)
+        case _GPS_SENTENCE_RMC + RMC_TERM_DATE: // Date (GPRMC)
             _new_date = atol(_term);
             break;
 
@@ -639,20 +690,20 @@ bool AP_GPS_NMEA::_term_complete()
             if (_term[0] == 'W')
                 _new_longitude = -_new_longitude;
             break;
-        case _GPS_SENTENCE_GGA + 9: // Altitude (GPGGA)
+        case _GPS_SENTENCE_GGA + GGA_TERM_ALTITUDE: // Altitude (GPGGA)
             _new_altitude = _parse_decimal_100(_term);
             break;
 
         // course and speed
         //
         case _GPS_SENTENCE_RMC + 7: // Speed (GPRMC)
-        case _GPS_SENTENCE_VTG + 5: // Speed (VTG)
+        case _GPS_SENTENCE_VTG + VTG_TERM_SPEED: // Speed (VTG)
             _new_speed = (_parse_decimal_100(_term) * 514) / 1000;       // knots-> m/sec, approximates * 0.514
             break;
-        case _GPS_SENTENCE_HDT + 1: // Course (HDT)
+        case _GPS_SENTENCE_HDT + HDT_TERM_HEADING: // Course (HDT)
             _new_gps_yaw = _parse_decimal_100(_term);
             break;
-        case _GPS_SENTENCE_THS + 1: // Course (THS)
+        case _GPS_SENTENCE_THS + THS_TERM_HEADING: // Course (THS)
             _new_gps_yaw = _parse_decimal_100(_term);
             break;
         case _GPS_SENTENCE_RMC + 8: // Course (GPRMC)
@@ -669,21 +720,21 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_PHD + 5: // PHD message, itow
             _phd.itow = strtoul(_term, nullptr, 10);
             break;
-        case _GPS_SENTENCE_PHD + 6 ... _GPS_SENTENCE_PHD + 11: // PHD message, fields
-            _phd.fields[_term_number-6] = atol(_term);
+        case _GPS_SENTENCE_PHD + PHD_FIRST_FIELD_TERM ... _GPS_SENTENCE_PHD + PHD_LAST_TERM: // PHD message, fields
+            _phd.fields[_term_number-PHD_FIRST_FIELD_TERM] = atol(_term);
             break;
-        case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 22: // KSXT message, fields
+        case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + KSXT_LAST_TERM: // KSXT message, fields
             _ksxt.fields[_term_number-1] = atof(_term);
             break;
 #if AP_GPS_NMEA_UNICORE_ENABLED
-        case _GPS_SENTENCE_AGRICA + 1 ... _GPS_SENTENCE_AGRICA + 65: // AGRICA message
+        case _GPS_SENTENCE_AGRICA + 1 ... _GPS_SENTENCE_AGRICA + AGRICA_LAST_TERM: // AGRICA message
             parse_agrica_field(_term_number, _term);
             break;
-        case _GPS_SENTENCE_VERSIONA + 1 ... _GPS_SENTENCE_VERSIONA + 20:
+        case _GPS_SENTENCE_VERSIONA + 1 ... _GPS_SENTENCE_VERSIONA + VERSIONA_LAST_TERM:
             parse_versiona_field(_term_number, _term);
             break;
 #if GPS_MOVING_BASELINE
-        case _GPS_SENTENCE_UNIHEADINGA + 1 ... _GPS_SENTENCE_UNIHEADINGA + 28: // UNIHEADINGA message
+        case _GPS_SENTENCE_UNIHEADINGA + 1 ... _GPS_SENTENCE_UNIHEADINGA + UNIHEADINGA_LAST_TERM: // UNIHEADINGA message
             parse_uniheadinga_field(_term_number, _term);
             break;
 #endif
