@@ -71,8 +71,29 @@ void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
 void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe, int16_t _rssi, int16_t _rx_link_quality)
 {
     num_values = MIN(num_values, MAX_RCIN_CHANNELS);
+    /*
+      Do not copy a failsafe frame into the live channel values. Those
+      values are not pilot input. iBUS already returns before calling
+      add_input() when a frame fails its checksum, so a bad frame leaves
+      the previous channels alone. SBUS has no checksum: it marks a
+      zeroed frame as failsafe and used to copy it here anyway, which
+      drove every channel to the protocol minimum for one frame.
+
+      IGNORE_FAILSAFE only suppresses the flight-mode failsafe. It must
+      not turn a rejected frame into stick positions.
+
+      The IOMCU build has no RC_Channel object. It still forwards the
+      samples and lets AP_IOMCU sort out the failsafe.
+     */
+#if !AP_RC_CHANNEL_ENABLED
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
     _num_channels = num_values;
+#else
+    if (!in_failsafe) {
+        memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
+        _num_channels = num_values;
+    }
+#endif
     rc_frame_count++;
     frontend.set_failsafe_active(in_failsafe);
 #if !AP_RC_CHANNEL_ENABLED
@@ -81,6 +102,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
 #else
     if (rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
         in_failsafe = false;
+        frontend.set_failsafe_active(false);
     }
 #endif
     if (!in_failsafe) {
