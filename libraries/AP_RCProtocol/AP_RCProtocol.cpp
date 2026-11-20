@@ -242,6 +242,23 @@ void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool 
     }
 }
 
+/*
+  hand a block of bytes read from the added UART to the detected
+  protocol's backend in one call. check_added_uart() reads a block only
+  for an enabled protocol detected on bytes whose backend takes blocks,
+  with no search due, and decides that before reading, as bytes once
+  read can't be given back to the UART for a backend that times its
+  replies from the bytes still unread there
+ */
+void AP_RCProtocol::process_bytes(const uint8_t *bytes, uint16_t count, uint32_t baudrate)
+{
+    backend[_detected_protocol]->process_bytes(bytes, count, baudrate);
+    if (backend[_detected_protocol]->new_input()) {
+        _new_input = true;
+        _last_input_ms = AP_HAL::millis();
+    }
+}
+
 bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 {
     uint32_t now = AP_HAL::millis();
@@ -391,7 +408,24 @@ void AP_RCProtocol::check_added_uart(void)
 
     uint32_t n = added.uart->available();
     n = MIN(n, 255U);
-    for (uint8_t i=0; i<n; i++) {
+    // a detected backend that takes blocks is read a block at a time, and the
+    // rest a byte at a time, as some time their replies from the bytes still
+    // unread in the UART
+    const bool read_blocks = !searching && _detected_protocol != AP_RCProtocol::NONE &&
+        protocol_enabled(_detected_protocol) && backend[_detected_protocol] != nullptr &&
+        backend[_detected_protocol]->takes_byte_blocks();
+    // a block the size of the longest CRSF frame keeps the reads few and the RC thread's stack use small
+    static constexpr uint8_t UART_READ_BLOCK_LEN = 64;
+    uint8_t block[UART_READ_BLOCK_LEN];
+    while (read_blocks && n > 0) {
+        const ssize_t nread = added.uart->read(block, MIN(n, sizeof(block)));
+        if (nread <= 0) {
+            break;
+        }
+        process_bytes(block, static_cast<uint16_t>(nread), current_baud);
+        n -= static_cast<uint32_t>(nread);
+    }
+    for (uint8_t i=0; i<n && !read_blocks; i++) {
         int16_t b = added.uart->read();
         if (b >= 0) {
             process_byte(uint8_t(b), current_baud);
