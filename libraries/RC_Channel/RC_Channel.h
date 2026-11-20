@@ -10,6 +10,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Bitmask.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #include <AC_Sprayer/AC_Sprayer_config.h>
 #include <AP_Airspeed/AP_Airspeed_config.h>
@@ -194,7 +195,9 @@ public:
         AVOID_PROXIMITY =     40, // enable object avoidance using proximity sensors (ie. horizontal lidar)
         ARMDISARM_UNUSED =    41, // UNUSED
         SMART_RTL =           42, // change to SmartRTL flight mode
+#if AP_INVERTED_FLIGHT_ENABLED
         INVERTED  =           43, // enable inverted flight
+#endif  // AP_INVERTED_FLIGHT_ENABLED
 #if AP_WINCH_ENABLED
         WINCH_ENABLE =        44, // winch enable/disable
         WINCH_CONTROL =       45, // winch control
