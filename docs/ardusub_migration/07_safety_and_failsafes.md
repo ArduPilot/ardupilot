@@ -1,0 +1,7 @@
+# Safety and failsafes
+
+Current development boundary: `integration/vehicle_defaults.json` sets `actuators.enabled=false`. Upstream generic Linux `HAL_Linux_Class.cpp` selects `Empty::RCOutput`; no custom output driver has been introduced. No motor serial port, ESC, firmware or deployed service has been touched. A future build variant with physical RCOutput must require a different explicit board/configuration and human-supervised commissioning.
+
+The existing reference firmware is not adequate as an unguarded target: `firmware/esp32_thrusters/thruster_esp_final.ino` enables command acceptance 1.5 s after boot, accepts partial indexed commands and uses a 2.5 s timeout that neutralizes but does not revoke the armed state. `esp32_bridge_node.py` can forward 1100–1900 despite nominal mixer limits 1300–1700 and its launch sets a 1.5 s host watchdog. These are source observations, not deployed-firmware confirmation.
+
+Required before actuator integration: atomic eight-channel frames or fail-closed rejection; explicit arm/disarm handshake bound to a fresh session; independent MCU watchdog and latched fault/re-arm behavior; CRC/sequence or equivalent corruption/replay defense; neutral startup/restart/shutdown; no command continuation after USB loss, host crash or stale sensor/control; external hardware power isolation/E-stop; one authoritative low-level owner. No code or test in this repository yet proves these conditions. Physical actuator power stays disconnected during software validation.

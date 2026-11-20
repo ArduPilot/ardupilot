@@ -1,0 +1,43 @@
+{
+  "source": "AUV-IITK/ATAL_controller@9eadb1a92a9635c706c2f5ec6710167a6ab512e7",
+  "provisional": true,
+  "frames": {
+    "vehicle": "FRD",
+    "navigation": "NED"
+  },
+  "xsens": {
+    "device": "/dev/ttyUSB0",
+    "baudrate": 115200,
+    "rate_hz": 100,
+    "mount_quaternion_wxyz": [1, 0, 0, 0],
+    "offset_m_frd": [0, 0, 0]
+  },
+  "dvl_a50": {
+    "ip": "192.168.194.95",
+    "tcp_port": 16171,
+    "mount_quaternion_wxyz": [1, 0, 0, 0],
+    "offset_m_frd": [0, 0, 0],
+    "fom_max_mps": 0.25,
+    "velocity_timeout_s": 0.75
+  },
+  "bar30": {
+    "device": "auto",
+    "baudrate": 115200,
+    "density_kg_m3": 1000,
+    "offset_m_frd": [-0.238205, 0.040534, -0.023156]
+  },
+  "actuators": {
+    "enabled": false,
+    "firmware_esp32_id_to_gpio": [27, 12, 18, 19, 4, 14, 5, 13],
+    "motors": [
+      {"logical_id": 1, "name": "H_front_right", "factors_rpyvfl": [0, 0, -1, 0, 1, -1], "direction": 1, "esp32_gpio": 14, "position_m_frd": [0.2, 0.2, 0]},
+      {"logical_id": 2, "name": "V_front_right", "factors_rpyvfl": [-1, 1, 0, 1, 0, 0], "direction": 1, "esp32_gpio": 13, "position_m_frd": [0.15, 0.15, 0]},
+      {"logical_id": 3, "name": "V_back_right", "factors_rpyvfl": [-1, -1, 0, 1, 0, 0], "direction": 1, "esp32_gpio": 12, "position_m_frd": [-0.15, 0.15, 0]},
+      {"logical_id": 4, "name": "H_back_right", "factors_rpyvfl": [0, 0, -1, 0, 1, 1], "direction": -1, "esp32_gpio": 27, "position_m_frd": [-0.2, 0.2, 0]},
+      {"logical_id": 5, "name": "H_back_left", "factors_rpyvfl": [0, 0, 1, 0, 1, -1], "direction": -1, "esp32_gpio": 18, "position_m_frd": [-0.2, -0.2, 0]},
+      {"logical_id": 6, "name": "V_back_left", "factors_rpyvfl": [1, -1, 0, 1, 0, 0], "direction": 1, "esp32_gpio": 19, "position_m_frd": [-0.15, -0.15, 0]},
+      {"logical_id": 7, "name": "V_front_left", "factors_rpyvfl": [1, 1, 0, 1, 0, 0], "direction": 1, "esp32_gpio": 4, "position_m_frd": [0.15, -0.15, 0]},
+      {"logical_id": 8, "name": "H_front_left", "factors_rpyvfl": [0, 0, 1, 0, 1, 1], "direction": 1, "esp32_gpio": 5, "position_m_frd": [0.2, -0.2, 0]}
+    ]
+  }
+}
