@@ -84,7 +84,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	AP_SUBGROUPINFO(params[0], "1_", 25, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 1_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[0], "1_",  57, RangeFinder, backend_var_info[0]),
 
 #if RANGEFINDER_MAX_INSTANCES > 1
@@ -93,7 +93,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[1], "2_", 27, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 2_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_",  58, RangeFinder, backend_var_info[1]),
 #endif
 
@@ -103,7 +103,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[2], "3_", 29, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 3_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_",  59, RangeFinder, backend_var_info[2]),
 #endif
 
@@ -113,7 +113,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[3], "4_", 31, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 4_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_",  60, RangeFinder, backend_var_info[3]),
 #endif
 
@@ -123,7 +123,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[4], "5_", 33, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 5_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[4], "5_",  34, RangeFinder, backend_var_info[4]),
 #endif
 
@@ -133,7 +133,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[5], "6_", 35, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 6_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[5], "6_",  36, RangeFinder, backend_var_info[5]),
 #endif
 
@@ -143,7 +143,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[6], "7_", 37, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 7_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[6], "7_",  38, RangeFinder, backend_var_info[6]),
 #endif
 
@@ -153,7 +153,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[7], "8_", 39, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 8_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[7], "8_",  40, RangeFinder, backend_var_info[7]),
 #endif
 
@@ -163,7 +163,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[8], "9_", 41, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 9_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[8], "9_",  42, RangeFinder, backend_var_info[8]),
 #endif
 
@@ -173,7 +173,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[9], "A_", 43, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: A_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp,AP_RangeFinder_DroneCAN.cpp
     AP_SUBGROUPVARPTR(drivers[9], "A_",  44, RangeFinder, backend_var_info[9]),
 #endif
 
@@ -224,15 +224,7 @@ __INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
     for (uint8_t i=0, serial_instance = 0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         // serial_instance will be increased inside detect_instance
         // if a serial driver is loaded for this instance
-        WITH_SEMAPHORE(detect_sem);
         detect_instance(i, serial_instance);
-        if (drivers[i] != nullptr) {
-            // we loaded a driver for this instance, so it must be
-            // present (although it may not be healthy). We use MAX()
-            // here as a UAVCAN rangefinder may already have been
-            // found
-            num_instances = MAX(num_instances, i+1);
-        }
 
         // initialise status
         state[i].status = Status::NotConnected;
@@ -244,6 +236,7 @@ __INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
         state[i].temperature_update_ms = 0;
 #endif
     }
+    init_done = true;
 }
 
 /*
@@ -527,12 +520,7 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 
 #if AP_RANGEFINDER_DRONECAN_ENABLED
     case Type::UAVCAN:
-        /*
-          the UAVCAN driver gets created when we first receive a
-          measurement. We take the instance slot now, even if we don't
-          yet have the driver
-         */
-        num_instances = MAX(num_instances, instance+1);
+        _add_backend(NEW_NOTHROW AP_RangeFinder_DroneCAN(state[instance], params[instance]), instance);
         break;
 #endif
 
@@ -724,26 +712,7 @@ void RangeFinder::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 // return true if we have a range finder with the specified orientation
 bool RangeFinder::has_orientation(enum Rotation orientation) const
 {
-    if ((find_instance(orientation) != nullptr)) {
-        // we have a rangefinder with this orientation
-        return true;
-    }
-
-    // special case for DroneCAN
-    // DroneCAN rangefinder backend is not created until we receive a
-    // measurement, so we need to check the params directly
-#if AP_RANGEFINDER_DRONECAN_ENABLED
-     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        if ((RangeFinder::Type)params[i].type.get() == RangeFinder::Type::UAVCAN) {
-            if (params[i].orientation.get() == orientation) {
-                return true;
-            }
-        }
-    }
-#endif
-
-    // no rangefinder with this orientation
-    return false;
+    return find_instance(orientation) != nullptr;
 }
 
 // find first range finder instance with the specified orientation
