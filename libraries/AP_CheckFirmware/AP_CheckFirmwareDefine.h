@@ -10,7 +10,7 @@
 extern const app_descriptor_t app_descriptor;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-const app_descriptor_t app_descriptor __attribute__((section(".app_descriptor"))) = {
+const app_descriptor_t app_descriptor __attribute__((section(".app_descriptor"), used)) = {
 #else
 const app_descriptor_t app_descriptor = {
 #endif

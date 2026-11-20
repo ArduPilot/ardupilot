@@ -1302,10 +1302,18 @@ class chibios(Board):
             '-fno-builtin-vprintf',
             '-fno-builtin-vfprintf',
             '-fno-builtin-puts',
+            '-fno-builtin-snprintf',
+            '-fno-builtin-vsnprintf',
+            '-fno-builtin-sprintf',
+            '-fno-builtin-vsprintf',
+            '-fno-builtin-scanf',
+            '-fno-builtin-sscanf',
             '-fno-math-errno',
             '-mno-thumb-interwork',
             '-mthumb',
             '-D__USE_CMSIS',
+            # relative to the build dir, as Cygwin paths don't work with the native Windows compiler
+            '-include', cfg.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/stdio.h').path_from(cfg.bldnode.make_node(cfg.variant)),
             '-DNDEBUG=1'
         ] + libc_specs
         if not cfg.options.Werror:
@@ -1734,6 +1742,7 @@ class WASMBoard(SITLBoard):
 
         # Output a .js ES module (the paired .wasm is emitted automatically)
         env.cxxprogram_PATTERN = '%s.js'
+        env.LINK_EXTRA_OUTPUTS = ['.wasm']
 
         env.LINKFLAGS += [
             '-sPROXY_TO_PTHREAD=1',

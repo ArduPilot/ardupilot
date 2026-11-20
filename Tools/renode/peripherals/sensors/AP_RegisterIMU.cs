@@ -1,6 +1,6 @@
 // Register-oriented IMUs used by ArduPilot, with physics-driven samples:
 // I2C MPU6000/ICM20789/BMI160/BMI270/ICM20948 models, and an SPI model for
-// Bosch BMI055/BMI088/BMI160/BMI270 and ST LSM9DS0/LSM6DSV devices.
+// Bosch BMI055/BMI088/BMI160/BMI270 and ST LSM9DS0/LSM6DSV/ASM330 devices.
 //
 using System;
 using System.Collections.Generic;
@@ -500,7 +500,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             registers[ChipId] = ChipIdValue;
             pointer = 0;
             readDummyBytes = 0;
-            configurationUploaded = false;
+            configurationBytes = 0;
         }
 
         public void Write(byte[] data)
@@ -519,9 +519,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 return;
             }
 
-            if(pointer == InitData && data.Length > 2)
+            if(pointer == InitData)
             {
-                configurationUploaded = true;
+                configurationBytes += data.Length - 1;
                 return;
             }
 
@@ -575,7 +575,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             case FifoData:
                 return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
             case InternalStatus:
-                return configurationUploaded && registers[InitControl] == 1
+                return configurationBytes >= ConfigurationSize && registers[InitControl] == 1
                     ? InitOk : (byte)0;
             case TemperatureLow:
                 return (byte)(TemperatureRaw() & 0xFF);
@@ -596,6 +596,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
             if(register == Command && value == FifoFlush)
             {
                 fifo.Clear();
+            }
+            if(register == InitControl && value == 0)
+            {
+                // a new config upload starts
+                configurationBytes = 0;
             }
             registers[register] = value;
         }
@@ -644,7 +649,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly byte[] registers;
         private byte pointer;
         private byte readDummyBytes;
-        private bool configurationUploaded;
+        private int configurationBytes;
 
         private const byte ChipId = 0x00;
         private const byte InternalStatus = 0x21;
@@ -661,6 +666,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte CombinedFrame = 0x8C;
         private const byte FifoSensors = 0xC0;
         private const byte InitOk = 0x01;
+        // size of the driver's maximum-FIFO config file
+        private const int ConfigurationSize = 328;
         private const byte SoftwareReset = 0xB6;
         private const byte FifoFlush = 0xB0;
         private const byte ReadFlag = 0x80;
@@ -858,16 +865,18 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const double TemperatureScale = 1.0 / 333.87;
     }
 
-    // SPI Bosch BMI055/BMI088 (accel and gyro dies), BMI160, BMI270 and ST
-    // LSM9DS0 (gyro and accel/mag dies) and LSM6DSV, selected by whoAmI, on
-    // SPI or, for the Bosch dies, I2C.
-    // Each FIFO or status poll latches one physics sample in the register
-    // and FIFO layout the ArduPilot backend decodes.
+    // SPI Bosch BMI055/BMI088/BMI085 (accel and gyro dies), BMI160, BMI270 and
+    // ST LSM9DS0 (gyro and accel/mag dies), LSM6DSV16X/32X, LSM6DSK320X and
+    // ASM330LHH, selected by whoAmI, on SPI or, for the Bosch dies, I2C.
+    // Each FIFO or status poll latches physics samples in the register and
+    // FIFO layout the ArduPilot backend decodes: one per poll, or for BMI160
+    // and ASM330 (polled slower than their ODR) as many as the ODR produced.
     public class AP_RegisterIMU : ISPIPeripheral, II2CPeripheral, IGPIOReceiver
     {
         // the generator passes every IMU its hwdef rotation
         public AP_RegisterIMU(IMachine machine, byte whoAmI, byte rotation = 0)
         {
+            this.machine = machine;
             this.whoAmI = whoAmI;
             this.rotation = rotation;
             chip = ChipFor(whoAmI);
@@ -881,12 +890,30 @@ namespace Antmicro.Renode.Peripherals.Sensors
         // rotation of the LSM303D magnetometer in the LSM9DS0 accel/mag die
         public byte CompassRotation { get; set; }
 
+        // LSM6DSV32X: shares WHO_AM_I 0x70, CTRL8 bit 2 resets to 1
+        public bool Lsm6dsv32x
+        {
+            get { return lsm6dsv32x; }
+            set
+            {
+                lsm6dsv32x = value;
+                Reset();
+            }
+        }
+
         public void Reset()
         {
             Array.Clear(registers, 0, registers.Length);
             fifo.Clear();
             registers[IsLsm ? LsmWhoAmI : WhoAmI] = whoAmI;
+            if(chip == Chip.Lsm6dsv && lsm6dsv32x)
+            {
+                registers[Lsm6dsvControl8] = Lsm6dsv32xControl8Reset;
+            }
             transferByte = 0;
+            bmi270ConfigBytes = 0;
+            lastRefillS = -1;
+            sampleCredit = 0;
             currentRegister = 0;
             reading = false;
             skipDummy = false;
@@ -979,6 +1006,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             Lsm9ds0Gyro,
             Lsm9ds0AccelMag,
             Lsm6dsv,
+            Asm330,
         }
 
         private static Chip ChipFor(byte whoAmI)
@@ -1002,14 +1030,17 @@ namespace Antmicro.Renode.Peripherals.Sensors
             case 0x49:
                 return Chip.Lsm9ds0AccelMag;
             case 0x70:
+            case 0x75:
                 return Chip.Lsm6dsv;
+            case 0x6B:
+                return Chip.Asm330;
             default:
                 return Chip.Unknown;
             }
         }
 
         private bool IsLsm => chip == Chip.Lsm9ds0Gyro ||
-            chip == Chip.Lsm9ds0AccelMag || chip == Chip.Lsm6dsv;
+            chip == Chip.Lsm9ds0AccelMag || chip == Chip.Lsm6dsv || chip == Chip.Asm330;
 
         // LSM9DS0 uses address bit 6 as the auto-increment flag
         private byte AddressMask =>
@@ -1028,6 +1059,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             case Chip.Bmi160:
                 return register == Bmi160FifoData;
             case Chip.Lsm6dsv:
+            case Chip.Asm330:
                 return register == Lsm6dsvFifoTag;
             default:
                 return false;
@@ -1094,7 +1126,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 switch(register)
                 {
                 case Bmi270InternalStatus:
-                    return registers[Bmi270InitControl] == 1 ? Bmi270InitOk : (byte)0;
+                    return bmi270ConfigBytes >= Bmi270ConfigSize && registers[Bmi270InitControl] == 1
+                        ? Bmi270InitOk : (byte)0;
                 case Bmi270TemperatureLsb:
                     return (byte)Bmi270Temperature();
                 case Bmi270TemperatureMsb:
@@ -1153,6 +1186,23 @@ namespace Antmicro.Renode.Peripherals.Sensors
                     return Dequeue();
                 }
                 break;
+            case Chip.Asm330:
+                switch(register)
+                {
+                case Asm330FifoStatus1:
+                    Refill((registers[Lsm6dsvFifoCtrl4] & 0x07) == Lsm6dsvContinuous &&
+                           registers[Lsm6dsvFifoCtrl3] != 0, 1);
+                    return (byte)(fifo.Count / Lsm6dsvWordSize);
+                case Asm330FifoStatus2:
+                    return (byte)(((fifo.Count / Lsm6dsvWordSize) >> 8) & 0x03);
+                case Lsm6dsvTemperature:
+                    WriteInt16(Lsm6dsvTemperature, (short)Clamp(Math.Round((thermal.TemperatureC - 25.0) * 256.0),
+                                                                Int16.MinValue, Int16.MaxValue));
+                    break;
+                case Lsm6dsvFifoTag:
+                    return Dequeue();
+                }
+                break;
             }
             return registers[register];
         }
@@ -1166,7 +1216,16 @@ namespace Antmicro.Renode.Peripherals.Sensors
             }
             if(IsStreamRegister(register))
             {
+                if(chip == Chip.Bmi270 && register == Bmi270InitData)
+                {
+                    bmi270ConfigBytes++;
+                }
                 return;
+            }
+            if(chip == Chip.Bmi270 && register == Bmi270InitControl && value == 0)
+            {
+                // a new config upload starts
+                bmi270ConfigBytes = 0;
             }
             if(register == BoschCommand && (chip == Chip.Bmi088Accel || chip == Chip.Bmi160 || chip == Chip.Bmi270))
             {
@@ -1192,20 +1251,56 @@ namespace Antmicro.Renode.Peripherals.Sensors
             case Chip.Bmi270:
                 return register == BoschCommand && value == BoschSoftReset;
             case Chip.Lsm6dsv:
+            case Chip.Asm330:
                 return register == Lsm6dsvControl3 && (value & Lsm6dsvSoftwareReset) != 0;
             default:
                 return false;
             }
         }
 
-        // latch one sample into the FIFO and return its BMI055/BMI088 gyro frame count
+        // latch samples into the FIFO and return its frame count for frameBytes frames
         private byte Refill(bool enabled, int frameBytes)
         {
             fifo.Clear();
             if(!enabled)
             {
+                lastRefillS = -1;
                 return 0;
             }
+            var count = 1;
+            if(chip == Chip.Bmi160)
+            {
+                count = SamplesDue(Bmi160OdrHz);
+            }
+            else if(chip == Chip.Asm330)
+            {
+                count = SamplesDue(Asm330OdrHz);
+            }
+            for(var sample = 0; sample < count; sample++)
+            {
+                PushSample();
+            }
+            return (byte)(fifo.Count / frameBytes);
+        }
+
+        // samples produced at odrHz since the previous refill
+        private int SamplesDue(double odrHz)
+        {
+            var now = machine.ElapsedVirtualTime.TimeElapsed.TotalSeconds;
+            if(lastRefillS < 0)
+            {
+                lastRefillS = now;
+                return 1;
+            }
+            sampleCredit = Math.Min(sampleCredit + (now - lastRefillS) * odrHz, MaxSamplesPerRefill);
+            lastRefillS = now;
+            var count = (int)sampleCredit;
+            sampleCredit -= count;
+            return count;
+        }
+
+        private void PushSample()
+        {
             var truth = Truth();
             var accel = AP_SensorOrientation.BodyToSensor(truth.SpecificForceMS2, rotation);
             var gyro = AP_SensorOrientation.BodyToSensor(truth.GyroRadS, rotation);
@@ -1223,7 +1318,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 break;
             case Chip.Bmi088Accel:
                 fifo.Enqueue(BoschAccelFrame);
-                PushVector(accel, Bmi088AccelScale);
+                // BMI085 has a 16g range at the driver's range setting
+                PushVector(accel, whoAmI == Bmi085ChipId ? Accel16GScale : Bmi088AccelScale);
                 break;
             case Chip.Bmi160:
                 PushVector(gyro, Bmi160GyroScale);
@@ -1235,13 +1331,13 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 PushVector(accel, Accel16GScale);
                 break;
             case Chip.Lsm6dsv:
+            case Chip.Asm330:
                 fifo.Enqueue(Lsm6dsvGyroTag);
                 PushVector(gyro, LsmGyroScale);
                 fifo.Enqueue(Lsm6dsvAccelTag);
                 PushVector(accel, Accel16GScale);
                 break;
             }
-            return (byte)(fifo.Count / frameBytes);
         }
 
         // the LSM9DS0 backend reads its axes as (x, -y, -z)
@@ -1313,6 +1409,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             return Math.Max(minimum, Math.Min(maximum, value));
         }
 
+        private readonly IMachine machine;
         private readonly byte rotation;
         private readonly byte whoAmI;
         private readonly Chip chip;
@@ -1324,8 +1421,15 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private byte currentRegister;
         private bool reading;
         private bool skipDummy;
+        private bool lsm6dsv32x;
+        private int bmi270ConfigBytes;
+        private double lastRefillS;
+        private double sampleCredit;
 
         private const int RegisterCount = 128;
+        private const double MaxSamplesPerRefill = 8;
+        private const double Bmi160OdrHz = 1600;
+        private const double Asm330OdrHz = 3333;
         private const byte ReadFlag = 0x80;
         private const byte WhoAmI = 0x00;
         private const byte LsmWhoAmI = 0x0F;
@@ -1359,6 +1463,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte BoschAccelFrame = 0x84;
         private const byte Bmi270CombinedFrame = 0x8C;
         private const byte Bmi270InitOk = 0x01;
+        // size of the driver's maximum-FIFO config file
+        private const int Bmi270ConfigSize = 328;
+        private const byte Bmi085ChipId = 0x1F;
 
         private const byte Lsm9ds0Temperature = 0x05;
         private const byte Lsm9ds0StatusM = 0x07;
@@ -1370,11 +1477,15 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte Lsm6dsvFifoCtrl3 = 0x09;
         private const byte Lsm6dsvFifoCtrl4 = 0x0A;
         private const byte Lsm6dsvControl3 = 0x12;
+        private const byte Lsm6dsvControl8 = 0x17;
+        private const byte Lsm6dsv32xControl8Reset = 0x04;
         private const byte Lsm6dsvFifoStatus1 = 0x1B;
         private const byte Lsm6dsvFifoStatus2 = 0x1C;
         private const byte Lsm6dsvStatus = 0x1E;
         private const byte Lsm6dsvTemperature = 0x20;
         private const byte Lsm6dsvFifoTag = 0x78;
+        private const byte Asm330FifoStatus1 = 0x3A;
+        private const byte Asm330FifoStatus2 = 0x3B;
         private const byte Lsm6dsvSoftwareReset = 0x01;
         private const byte Lsm6dsvContinuous = 0x06;
         private const byte Lsm6dsvDataReady = 0x07;

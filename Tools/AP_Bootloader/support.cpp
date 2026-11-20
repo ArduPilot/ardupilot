@@ -392,7 +392,7 @@ void led_pulses(uint8_t npulses)
 }
 
 //simple variant of std c function to reduce used flash space
-void *memcpy(void *dest, const void *src, size_t n)
+__attribute__((used)) void *memcpy(void *dest, const void *src, size_t n)
 {
     uint8_t *tdest = (uint8_t *)dest;
     uint8_t *tsrc = (uint8_t *)src;
@@ -434,7 +434,7 @@ size_t strlen(const char *s1)
 }
 
 //simple variant of std c function to reduce used flash space
-void *memset(void *s, int c, size_t n)
+__attribute__((used)) void *memset(void *s, int c, size_t n)
 {
     uint8_t *b = (uint8_t *)s;
     while (n--) {

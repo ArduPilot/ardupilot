@@ -89,8 +89,9 @@ int *__wrap___errno(void)
     return ap_picolibc_errno();
 }
 
-// STM32 firmware has no process environment.
-char *__wrap_getenv(const char *name)
+// STM32 firmware has no process environment. used: only reached via
+// --wrap, which LTO can't see
+__attribute__((used)) char *__wrap_getenv(const char *name)
 {
     (void)name;
     return NULL;

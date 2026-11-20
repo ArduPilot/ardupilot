@@ -158,6 +158,31 @@ class set_default_parameters(Task.Task):
             defaults.save()
 
 
+class embed_features(Task.Task):
+    '''copy the ELF and embed the features found from it and its map, as
+    LTO removes many of the symbols extract_features.py looks for'''
+    color='CYAN'
+    vars = ['NM', 'CXXFILT', 'OBJCOPY']
+    def keyword(self):
+        return "Embedding features"
+    def run(self):
+        sys.path.append(os.path.join(self.env.SRCROOT, 'Tools', 'scripts'))
+        from extract_features import ExtractFeatures
+        elf, map_file = [n.abspath() for n in self.inputs]
+        ef = ExtractFeatures(elf, nm=self.env.get_flat('NM'), map_filename=map_file,
+                             cxxfilt=self.env.get_flat('CXXFILT'))
+        features = self.outputs[0].abspath() + '.features'
+        with open(features, 'w') as f:
+            f.write(ef.create_string())
+        cmd = [self.env.get_flat('OBJCOPY'),
+               '--add-section', '%s=%s' % (ExtractFeatures.FEATURES_SECTION, features),
+               '--set-section-flags', '%s=readonly' % ExtractFeatures.FEATURES_SECTION,
+               elf, self.outputs[0].abspath()]
+        ret = self.exec_command(cmd)
+        os.unlink(features)
+        return ret
+
+
 class generate_bin(Task.Task):
     color='CYAN'
     # run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
@@ -427,20 +452,46 @@ class build_intel_hex(Task.Task):
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
+    # link inputs passed via LIB and LINKFLAGS that waf doesn't track
+    link_deps = ['modules/ChibiOS/libch.a', 'ldscript.ld', 'common.ld']
+    if 'DSP' in self.env.LIB:
+        link_deps.append('modules/ChibiOS/libDSP.a')
+    if self.env.ENABLE_CRASHDUMP:
+        link_deps.append('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')
+    for d in link_deps:
+        self.link_task.dep_nodes.append(self.bld.bldnode.find_or_declare(d))
+    if self.env.CHIBIOS_LINKER_SCRIPT:
+        # common_mixf.ld is included from the source tree by ldscript.ld
+        ld = self.bld.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/' + self.env.CHIBIOS_LINKER_SCRIPT)
+        if ld is not None:
+            self.link_task.dep_nodes.append(ld)
+
     # every step below writes its own files and never modifies its inputs,
     # so waf only reruns a step when what it reads has changed. waf orders
     # the steps from their input and output files.
     link_output = self.link_task.outputs[0]
+    self.final_elf = link_output
     # bootloader builds don't get an app descriptor patched in at all
     do_patch = not self.bld.env.BOOTLOADER
 
     elf = link_output
-    if do_patch or self.env.DEFAULT_PARAMETERS:
+    if do_patch or self.env.DEFAULT_PARAMETERS or self.env.ENABLE_LTO:
         # link to a private file, the steps below write the final ELF
         elf = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name)
-        self.link_task.outputs = [elf]
+        self.link_task.outputs = [elf] + self.link_task.outputs[1:]
         # report the size of the final ELF, not the unpatched one
         self.build_summary['binary'] = link_output.path_from(self.bld.bldnode)
+
+    if self.env.ENABLE_LTO:
+        features_elf = link_output
+        if do_patch or self.env.DEFAULT_PARAMETERS:
+            features_elf = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name + '_features')
+        # the map post_link puts beside the final ELF
+        map_node = link_output.parent.find_or_declare(link_output.name + '.map')
+        features_task = self.create_task('embed_features', src=[elf, map_node], tgt=features_elf)
+        for script in ['extract_features.py', 'build_options.py']:
+            features_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/' + script))
+        elf = features_elf
 
     if self.env.DEFAULT_PARAMETERS:
         defaults_elf = link_output
@@ -565,11 +616,40 @@ def setup_optimization(env):
     env.CFLAGS += [ OPTIMIZE ]
     env.CXXFLAGS += [ OPTIMIZE ]
     env.CHIBIOS_BUILD_FLAGS += ' USE_COPT=%s' % OPTIMIZE
+    if env.ENABLE_LTO:
+        # the Windows lto-wrapper passes an empty -j to make for auto
+        flto = '-flto=%u' % os.cpu_count() if sys.platform.startswith('cygwin') else '-flto=auto'
+        env.CFLAGS += [ flto ]
+        env.CXXFLAGS += [ flto ]
+        env.LINKFLAGS += [ flto, OPTIMIZE ]
+        # zero size marker so tools can tell an ELF was built with LTO
+        env.LINKFLAGS += [ '-Wl,--defsym=__AP_LTO=1' ]
+        # with LTO code is generated at link time, so diagnostics from
+        # late compiler passes need to be enabled there. These are
+        # warnings as per-function pragmas are not honoured at link time
+        env.LINKFLAGS += [ '-Wframe-larger-than=1300',
+                           '-Warray-bounds',
+                           '-Wuninitialized' ]
+        env.CHIBIOS_BUILD_FLAGS += ' USE_LTO=yes'
+        # ChibiOS defaults to a single precision FPU. Mixing code built for
+        # different FPUs in LTO can crash gcc, so use the board's FPU
+        fpu = [f for f in env.CPU_FLAGS if f.startswith('-mfpu=') or f.startswith('-mfloat-abi=')]
+        if fpu:
+            env.CHIBIOS_BUILD_FLAGS += " USE_FPU_OPT='%s -fsingle-precision-constant'" % ' '.join(fpu)
+        # these use frame size pragmas to protect small thread stacks,
+        # which are only checked when compiled without LTO. USB_Debug.cpp
+        # is placed by object name in common.ld
+        env.NO_LTO_SOURCES['AP_HAL_ChibiOS'] = ['UARTDriver.cpp', 'shared_dma.cpp', 'USB_Debug.cpp']
+        if not env.BOOTLOADER:
+            # AP_FWVersion::fwver is read from the firmware by external
+            # tools, keep it when LTO folds away all reads of it
+            env.LINKFLAGS += [ '-Wl,-u,_ZN12AP_FWVersion5fwverE' ]
 
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
     cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
+    cfg.find_program('arm-none-eabi-c++filt', var='CXXFILT')
     env = cfg.env
 
     # Flash and FATFS use the same crash dump in a mutually exclusive way.
@@ -627,6 +707,23 @@ def configure(cfg):
         traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
     hal_common.process_hwdef_results(cfg, hwdef_obj)
+
+    if env.ENABLE_LTO and env.CHIBIOS_LINKER_SCRIPT != 'common.ld':
+        # the external flash linker scripts place code by object file
+        # name, which doesn't match the objects LTO generates
+        env.ENABLE_LTO = False
+        cfg.msg("Enabling LTO", "no (not supported with %s)" % env.CHIBIOS_LINKER_SCRIPT)
+    elif env.ENABLE_LTO and env.OPTIMIZE and env.OPTIMIZE != '-Os' and not env.DEBUG:
+        # LTO is used to save flash. Boards optimised for speed get much
+        # larger with LTO from inlining between files
+        env.ENABLE_LTO = False
+        cfg.msg("Enabling LTO", "no (not used with %s)" % env.OPTIMIZE)
+    elif env.ENABLE_LTO:
+        # archives need an LTO symbol index
+        env.AR = cfg.find_program('%s-gcc-ar' % env.TOOLCHAIN, var='GCC_AR')
+        cfg.msg("Enabling LTO", "yes")
+    else:
+        cfg.msg("Enabling LTO", "no")
 
     if env.IOMCU_BOOTLOADER:
         # The F1 IOMCU ABI leaves only 4 KiB for ChibiOS and the protocol.
@@ -744,7 +841,25 @@ def pre_build(bld):
         bld.get_board().with_littlefs = True
     setup_optimization(bld.env)
 
+def ar_argfile_exec_command(self, cmd, **kw):
+    # pass the archive members in a response file, waf's own argfile
+    # handling uses a Cygwin path the native Windows tools can't read
+    if isinstance(cmd, str) or len(cmd) < 4:
+        return Task.Task.exec_command(self, cmd, **kw)
+    rsp = self.outputs[0].abspath() + '.rsp'
+    with open(rsp, 'w') as f:
+        f.write('\n'.join(cmd[3:]))
+    return Task.Task.exec_command(self, cmd[:3] + ['@' + os.path.relpath(rsp, self.get_cwd().abspath())], **kw)
+
+def copy_linker_script(task):
+    shutil.copy(task.inputs[0].abspath(), task.outputs[0].abspath())
+
 def build(bld):
+    if bld.env.ENABLE_LTO and sys.platform.startswith('cygwin'):
+        # the native Windows gcc-ar is limited to a 32k command line
+        from waflib.Tools import c, cxx
+        c.cstlib.exec_command = ar_argfile_exec_command
+        cxx.cxxstlib.exec_command = ar_argfile_exec_command
 
     # make ccache effective on ChibiOS builds
     if not bld.env.PICOLIBC:
@@ -773,6 +888,16 @@ def build(bld):
         target=bld.bldnode.find_or_declare('chibios_flags.h')
     )
     
+    if bld.env.CHIBIOS_LINKER_SCRIPT:
+        # hwdef processing copies the common linker script at configure
+        # time, refresh it when the source changes
+        bld(
+            rule=copy_linker_script,
+            group='dynamic_sources',
+            source=bld.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/' + bld.env.CHIBIOS_LINKER_SCRIPT),
+            target=bld.bldnode.find_or_declare('common.ld')
+        )
+
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
                   bld.bldnode.find_or_declare('hw.dat'),
                   bld.bldnode.find_or_declare('ldscript.ld'),

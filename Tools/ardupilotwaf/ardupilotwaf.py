@@ -9,6 +9,7 @@ from waflib.TaskGen import before_method, after_method, feature
 import os.path, os
 from pathlib import Path
 from collections import OrderedDict
+import re
 import subprocess
 
 SOURCE_EXTS = [
@@ -350,7 +351,10 @@ class check_elf_symbols(Task.Task):
             # checking global symbols, code and undefined/weak references.
             if symbol_type in ('b', 'd', 'g', 'r', 's'):
                 continue
-            name = symbol.split('@', 1)[0].split('.', 1)[0]
+            name = symbol.split('@', 1)[0]
+            # Strip function-clone suffixes, not LTO debug symbols such as
+            # time.cpp.<hash>, which nm reports as weak symbols.
+            name = re.split(r'\.(?:constprop|isra|part|cold|lto_priv|llvm)(?:\.|$)', name, maxsplit=1)[0]
             if check_blacklist and name in self.env.SYMBOLS_BLACKLIST:
                 raise Errors.WafError("Disallowed unwrapped symbol in %s: %s" % (elfpath, symbol))
 
@@ -458,13 +462,20 @@ def post_link(self):
 
     map_path = None
     if self.env.BOARD_CLASS == 'ChibiOS':
-        map_path = link_output.abspath() + '.map'
+        # beside the final ELF, where extract_features.py looks for it
+        final_elf = getattr(self, 'final_elf', link_output)
+        map_node = final_elf.parent.find_or_declare(final_elf.name + '.map')
+        map_path = map_node.abspath()
         map_prefix = '-Wl,-Map,Linker.map,'
         self.link_task.env = self.link_task.env.derive()
         self.link_task.env.LINKFLAGS = [
             flag.replace(map_prefix, '-Wl,-Map,%s,' % map_path)
             for flag in self.link_task.env.LINKFLAGS
         ]
+        self.link_task.outputs.append(map_node)
+    # additional files written by the linker, so they are rebuilt if missing
+    for ext in self.env.LINK_EXTRA_OUTPUTS:
+        self.link_task.outputs.append(link_output.change_ext(ext))
 
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
     if map_path is not None:

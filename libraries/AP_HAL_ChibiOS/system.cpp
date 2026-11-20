@@ -209,8 +209,9 @@ void UsageFault_Handler(void) {
 
 #if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
 // the trace handler falls through to this for faults it can't recover from
+// used: only reached from the trace handler asm, keep it with LTO
 void MemManage_Handler_default(void);
-void MemManage_Handler_default(void) {
+__attribute__((used)) void MemManage_Handler_default(void) {
 #else
 void MemManage_Handler(void);
 void MemManage_Handler(void) {
