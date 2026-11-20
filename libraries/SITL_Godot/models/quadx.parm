@@ -1,0 +1,12 @@
+# ArduCopter parameters for models/quadx.gltf, applied on top of
+# Tools/autotest/default_params/copter.parm
+FRAME_CLASS     1
+FRAME_TYPE      1
+MOT_THST_EXPO   0.65
+MOT_THST_HOVER  0.375
+
+# Physics steps per simulated second. The gyro runs at the physics rate
+# and must be 1.8x the loop rate to arm: 800Hz for the stock 400Hz loop.
+SIM_RATE_HZ 200
+# the 100Hz loop set here needs only 180Hz of physics
+SCHED_LOOP_RATE 100

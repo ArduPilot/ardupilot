@@ -31,6 +31,7 @@ import balancebot
 import blimp
 import examples
 import helicopter
+import hexapod
 import quadplane
 import rover
 import sailboat
@@ -323,6 +324,7 @@ __bin_names = {
     "Blimp": "blimp",
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
+    "Hexapod": "ardurover",
     "SITLPeriphUniversal": ("sitl_periph_universal", "AP_Periph"),
     "SITLPeriphBattMon": ("sitl_periph_battmon", "AP_Periph"),
     "CAN": "arducopter",
@@ -402,6 +404,7 @@ tester_class_map = {
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
+    "test.Hexapod": hexapod.AutoTestHexapod,
     "test.Helicopter": helicopter.AutoTestHelicopter,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
@@ -571,6 +574,11 @@ def run_step(step):
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
         "unix_domain_socket": opts.unix_domain_socket,
+        "godot": opts.godot,
+        "godot_headless": opts.godot_headless,
+        "godot_vehicles": opts.godot_vehicles,
+        "godot_spacing": opts.godot_spacing,
+        "godot_model": opts.godot_model,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -1038,6 +1046,39 @@ if __name__ == "__main__":
                          default=None,
                          type='int',
                          help='speedup to run the simulations at')
+    group_sim.add_option("--godot",
+                         action='store_true',
+                         default=False,
+                         help='take the vehicle physics from the Godot and Jolt backend in '
+                         'libraries/SITL_Godot instead of SITL itself; '
+                         'needs Godot 4.4 or later on the PATH or in $GODOT')
+    group_sim.add_option("--godot-headless",
+                         action='store_true',
+                         default=False,
+                         help='with --godot, run the backend without its window, '
+                         'which is faster and needs no display')
+    group_sim.add_option("--godot-vehicles",
+                         dest='godot_vehicles',
+                         type='int',
+                         default=1,
+                         help='with --godot, this many vehicles (up to 5) share the '
+                         'world on consecutive SITL instances, and every one is sent '
+                         'the same commands and RC as the vehicle under test')
+    group_sim.add_option("--godot-spacing",
+                         dest='godot_spacing',
+                         type='string',
+                         default=None,
+                         help='with -n, east,north metres between one vehicle\'s spawn '
+                         'and the next (default 5,0); identical flight plans keep '
+                         'this separation only as well as each vehicle tracks its '
+                         'own path, so give aerobatics room')
+    group_sim.add_option("--godot-model",
+                         dest='godot_model',
+                         type='string',
+                         default=None,
+                         help='with --godot, fly this model from the backend\'s models '
+                         'directory instead of the one mapped to the frame, with its '
+                         '.parm applied; e.g. --godot-model griffin')
     group_sim.add_option("--check-parameter-leaks",
                          action='store_true',
                          dest='check_parameter_leaks',

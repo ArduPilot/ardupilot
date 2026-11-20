@@ -1,0 +1,120 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {
+   "shapes": [
+    {"type": "box", "box": {"size": [0.1, 0.12, 1.1]}},
+    {"type": "box", "box": {"size": [1.88, 0.03, 0.24]}},
+    {"type": "box", "box": {"size": [0.6, 0.01, 0.167]}},
+    {"type": "box", "box": {"size": [0.01, 0.3, 0.2]}}
+   ]
+  },
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.6, "dynamicFriction": 0.5, "restitution": 0.1}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "plane3d",
+   "translation": [0, 0.25, 0],
+   "children": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 2.0, "inertiaDiagonal": [0.18, 0.3, 0.13], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"chassis": {"style": "plane", "size": [0.1, 0.12, 1.1]}, "drag": {"area": [0.06, 0.06, 0.045]}}
+   }
+  },
+  {"name": "fuselage", "translation": [0, 0, -0.1], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {"name": "wing_box", "translation": [0, 0, -0.03], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {"name": "tail_box", "translation": [0, 0, -0.78], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {"name": "fin_box", "translation": [0, 0.15, -0.79], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}}},
+  {
+   "name": "wing_left_inner",
+   "translation": [0.235, 0, 0.03],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {"span": 0.47, "chord": 0.24, "aspectRatio": 7.85, "cl0": 0.0, "cd0": 0.02, "stallAngle": 27, "flapServo": 1, "flapChordFraction": 0.3, "flapAngleMin": -30, "flapAngleMax": 30}
+    }
+   }
+  },
+  {
+   "name": "wing_left_outer",
+   "translation": [0.705, 0, 0.03],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {"span": 0.47, "chord": 0.24, "aspectRatio": 7.85, "cl0": 0.0, "cd0": 0.02, "stallAngle": 27, "flapServo": 1, "flapChordFraction": 0.3, "flapAngleMin": -30, "flapAngleMax": 30}
+    }
+   }
+  },
+  {
+   "name": "wing_right_inner",
+   "translation": [-0.235, 0, 0.03],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {"span": 0.47, "chord": 0.24, "aspectRatio": 7.85, "cl0": 0.0, "cd0": 0.02, "stallAngle": 27, "flapServo": 1, "flapChordFraction": 0.3, "flapAngleMin": 30, "flapAngleMax": -30}
+    }
+   }
+  },
+  {
+   "name": "wing_right_outer",
+   "translation": [-0.705, 0, 0.03],
+   "extensions": {
+    "ARDUPILOT_sitl": {
+     "surface": {"span": 0.47, "chord": 0.24, "aspectRatio": 7.85, "cl0": 0.0, "cd0": 0.02, "stallAngle": 27, "flapServo": 1, "flapChordFraction": 0.3, "flapAngleMin": 30, "flapAngleMax": -30}
+    }
+   }
+  },
+  {
+   "name": "tailplane",
+   "translation": [0, 0, -0.75],
+   "extensions": {
+    "ARDUPILOT_sitl": {"surface": {"span": 0.6, "chord": 0.167, "cd0": 0.02, "stallAngle": 35, "downwash": 0.45, "flapServo": 2, "flapAngleMin": 30, "flapAngleMax": -30, "flapChordFraction": 0.5}}
+   },
+   "rotation": [0.00436331, 0.0, 0.0, 0.99999048]
+  },
+  {
+   "name": "fin",
+   "translation": [0, 0.15, -0.76],
+   "extensions": {
+    "ARDUPILOT_sitl": {"surface": {"span": 0.3, "chord": 0.2, "aspectRatio": 2.5, "cd0": 0.02, "stallAngle": 35, "flapServo": 4, "flapAngleMin": 35, "flapAngleMax": -35, "flapChordFraction": 0.7}}
+   },
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  },
+  {
+   "name": "fuselage_side",
+   "translation": [0, 0, 0],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.12, "chord": 1.1, "aspectRatio": 0.3, "cd0": 0.0, "stallAngle": 40}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  },
+  {
+   "name": "propeller",
+   "translation": [0, 0, 0.5],
+   "extensions": {"ARDUPILOT_sitl": {"rotor": {"servo": 3, "maxThrust": 42.0, "thrustExpo": 0.5, "torqueRatio": 0.003, "direction": "ccw", "timeConstant": 0.05, "diameter": 0.3, "pitchSpeed": 0.0}}},
+   "rotation": [0.70710678, 0.0, 0.0, 0.70710678]
+  },
+  {
+   "name": "wheel_nose",
+   "translation": [-0.14, 0, 0],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.035, "travel": 0.04, "spring": 400, "damping": 15, "grip": 0.9, "rollingResistance": 0.03}}},
+   "rotation": [0.0, 0.0, -0.70710678, 0.70710678]
+  },
+  {
+   "name": "steering_nose",
+   "translation": [0, -0.06, 0.32],
+   "extensions": {"ARDUPILOT_sitl": {"hinge": {"servo": 4, "angleMin": 25, "angleMax": -25, "maxRate": 200}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "children": [13]
+  },
+  {
+   "name": "wheel_left",
+   "translation": [0.16, -0.2, -0.07],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.04, "travel": 0.04, "spring": 700, "damping": 25, "grip": 0.8, "rollingResistance": 0.03}}}
+  },
+  {
+   "name": "wheel_right",
+   "translation": [-0.16, -0.2, -0.07],
+   "extensions": {"ARDUPILOT_sitl": {"wheel": {"radius": 0.04, "travel": 0.04, "spring": 700, "damping": 25, "grip": 0.8, "rollingResistance": 0.03}}}
+  }
+ ]
+}

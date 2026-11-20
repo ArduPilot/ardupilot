@@ -5545,6 +5545,32 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.zero_throttle()
         self.disarm_vehicle()
 
+    def DriveMotorBoat(self):
+        '''drive a motorboat a lap of six points in GUIDED'''
+        model = "motorboat"
+        self.customise_SITL_commandline([],
+                                        model=model,
+                                        defaults_filepath=self.model_defaults_filepath(model))
+
+        self.wait_ready_to_arm()
+        here = self.get_location()
+        # A hexagon about home, which on a backend with water is the middle
+        # of it: twenty metres keeps every leg afloat, and six legs turn the
+        # boat through every heading.
+        radius = 20
+        legs = [(radius * math.cos(math.radians(bearing)),
+                 radius * math.sin(math.radians(bearing)))
+                for bearing in range(0, 360, 60)]
+        self.change_mode('GUIDED')
+        self.arm_vehicle()
+        for num, (north, east) in enumerate(legs):
+            target = self.offset_location_ne(here, north, east)
+            self.progress("Leg %u of %u: %.0fm north, %.0fm east of home" %
+                          (num + 1, len(legs), north, east))
+            self.send_do_reposition(int(target.lat * 1e7), int(target.lng * 1e7))
+            self.wait_location(target, accuracy=5, height_accuracy=None, timeout=120)
+        self.disarm_vehicle(force=True)
+
     def MotorBoatSkidGuided(self):
         '''ensure a skid-steering motorboat does not spin in GUIDED when retargeting directly behind'''
         model = "motorboat-skid"
@@ -8581,6 +8607,7 @@ return update()
             self.DataFlashOverMAVLink,
             self.DataFlash,
             self.SkidSteer,
+            self.DriveMotorBoat,
             self.MotorBoatSkidGuided,
             self.PolyFence,
             self.SDPolyFence,

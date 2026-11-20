@@ -1,0 +1,18 @@
+# Parameters for models/sailboat.gltf, applied on top of
+# Tools/autotest/default_params/sailboat.parm. It has no motor at all:
+# SERVO1 is the rudder and SERVO4 is the mainsail sheet.
+SAIL_ENABLE     1
+
+# Wind vane from the backend: type 10 is SITL's own wind model, 11 is the
+# apparent wind the physics reports. With 10 the vane reads a dead calm.
+WNDVN_TYPE      11
+WNDVN_SPEED_TYPE 11
+
+SERVO1_MIN      1000
+SERVO1_MAX      2000
+SERVO4_MIN      1000
+SERVO4_MAX      2000
+
+# Rover's loop runs at 50Hz; 1200Hz of physics is two dozen steps per
+# control step and holds the backend to about twice real time.
+SIM_RATE_HZ     200

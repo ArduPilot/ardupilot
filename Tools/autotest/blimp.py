@@ -15,6 +15,11 @@ from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import TestSuite
 
+# pymavlink's Blimp mode table stops at RTL, so the suite cannot ask for
+# AUTO and HOLD by name. The numbers are those in Blimp/mode.h.
+mavutil.mode_mapping_blimp.setdefault(5, "AUTO")
+mavutil.mode_mapping_blimp.setdefault(6, "HOLD")
+
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = Location(-35.362938, 149.165085, 584, AltFrame.ABSOLUTE)
@@ -182,6 +187,17 @@ class AutoTestBlimp(TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
+        if self.godot:
+            # A free body rests on its gondola until the lift fan pushes
+            # it up, and drags along the grass if asked to move first.
+            self.progress("Climbing clear of the ground.")
+            self.set_rc(3, 2000)
+            self.wait_altitude(5, 25, relative=True, timeout=120)
+            self.set_rc(3, 1500)
+            # Full stick in VELOCITY is LOIT_MAX_VELX/Y, which the Godot
+            # model sets to the speeds this test asks for.
+            self.change_mode('VELOCITY')
+
         def stop_blimp():
             self.progress("Stopping.")
             self.set_rc(1, 1500)
@@ -236,6 +252,62 @@ class AutoTestBlimp(TestSuite):
         stop_blimp()
 
         self.disarm_vehicle()
+
+    def FourMotorHold(self):
+        """Push the four-motor blimp off station, then hold it in LOITER"""
+        self.customise_SITL_commandline(
+            [],
+            model='blimp-motor',
+            defaults_filepath=self.model_defaults_filepath('blimp-motor'),
+        )
+
+        self.change_mode('MANUAL')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Neutrally buoyant, it rests on the ground and would drag if moved
+        # first, so climb clear. Stick up is a climb: the pilot's z is the
+        # negated up channel and drives the down output.
+        self.progress("Climbing clear of the ground.")
+        self.set_rc(3, 2000)
+        self.wait_altitude(8, 25, relative=True, timeout=120)
+        self.set_rc(3, 1500)
+
+        # Drive it a long way off station. Stopping after a metre or two
+        # shows it can brake and nothing else; it has to cover ground
+        # under its own thrust for this to be navigation.
+        start = self.get_location()
+        self.progress("Driving it off station.")
+        self.set_rc(2, 2000)
+        self.wait_distance_to_location(start, 30, 10000, timeout=240)
+        here = self.get_location()
+        self.progress("Drove %.0fm off station." % self.get_distance(start, here))
+
+        # Centred sticks are no thrust, so in MANUAL an airship only coasts;
+        # LOITER brakes with the thrusters and holds station.
+        self.set_rc_default()
+        self.progress("Holding position in LOITER.")
+        self.change_mode('LOITER')
+        self.wait_speed_vector(Vector3(0, 0, 0), accuracy=0.15, timeout=120)
+        self.wait_distance_to_location(here, 0, 20, timeout=60)
+
+        # RTL aims at home in three dimensions, and home is on the ground,
+        # so the airship would descend and drag. A mission in AUTO navigates.
+        self.progress("Flying a square in AUTO.")
+        side = 20
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 8),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, side, 0, 8),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, side, side, 8),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, side, 8),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 8),
+        ])
+        self.set_current_waypoint(0, check_afterwards=False)
+        self.change_mode('AUTO')
+        self.wait_statustext("Mission Complete", timeout=400)
+        self.progress("Mission flown.")
+
+        self.disarm_vehicle(force=True)
 
     def FlyLoiter(self):
         '''test loiter mode'''
@@ -392,6 +464,7 @@ class AutoTestBlimp(TestSuite):
         ret.extend([
             self.FlyManualFinned,
             self.FlyManualFourMotor,
+            self.FourMotorHold,
             self.FlyLoiter,
             self.FlyAuto,
             self.SIMCompare,

@@ -1,0 +1,8 @@
+# Helicopter parameters for models/heli.gltf, applied on top of
+# Tools/autotest/default_params/copter-heli.parm. The rotor reaches
+# nominal rpm at the default H_RSC_SETPOINT of 66%.
+
+# The stock 400Hz loop needs 800Hz of physics; a 100Hz loop needs 200Hz
+# and runs faster. For simulation only.
+SCHED_LOOP_RATE 100
+SIM_RATE_HZ 200

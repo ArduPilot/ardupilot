@@ -1,0 +1,82 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {"shapes": [{"type": "box", "box": {"size": [0.3, 0.16, 1.2]}}, {"type": "box", "box": {"size": [0.05, 0.3, 0.26]}}]},
+  "KHR_physics_rigid_bodies": {"physicsMaterials": [{"staticFriction": 0.4, "dynamicFriction": 0.3, "restitution": 0.1}]},
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0]}],
+ "nodes": [
+  {
+   "name": "sailboat",
+   "translation": [0, 0.05, 0],
+   "children": [1, 2, 3, 4, 5, 10, 11, 12, 13, 15],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 4.0, "inertiaDiagonal": [0.4885, 0.51, 0.0385], "centerOfMass": [0, -0.335, 0]}},
+    "ARDUPILOT_sitl": {"chassis": {"style": "boat", "size": [0.3, 0.16, 1.2]}, "water": {"level": 0.0}}
+   }
+  },
+  {"name": "hull", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {"name": "floater_fore_port", "translation": [0.09, 0.0, 0.432], "extensions": {"ARDUPILOT_sitl": {"floater": {"volume": 0.0022, "height": 0.2, "dragArea": [0.03, 0.006, 0.0003], "damping": 0.1}}}},
+  {
+   "name": "floater_fore_stbd",
+   "translation": [-0.09, 0.0, 0.432],
+   "extensions": {"ARDUPILOT_sitl": {"floater": {"volume": 0.0022, "height": 0.2, "dragArea": [0.03, 0.006, 0.0003], "damping": 0.1}}}
+  },
+  {"name": "floater_aft_port", "translation": [0.09, 0.0, -0.432], "extensions": {"ARDUPILOT_sitl": {"floater": {"volume": 0.0022, "height": 0.2, "dragArea": [0.03, 0.006, 0.0003], "damping": 0.1}}}},
+  {
+   "name": "floater_aft_stbd",
+   "translation": [-0.09, 0.0, -0.432],
+   "extensions": {"ARDUPILOT_sitl": {"floater": {"volume": 0.0022, "height": 0.2, "dragArea": [0.03, 0.006, 0.0003], "damping": 0.1}}}
+  },
+  {
+   "name": "mainsail_1",
+   "translation": [0.125, 0, 0.0102],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.25, "chord": 0.379, "aspectRatio": 2.38, "cl0": 0.0, "cd0": 0.02, "stallAngle": 25, "oswald": 0.8}}}
+  },
+  {
+   "name": "mainsail_2",
+   "translation": [0.375, 0, 0.0307],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.25, "chord": 0.2971, "aspectRatio": 2.38, "cl0": 0.0, "cd0": 0.02, "stallAngle": 25, "oswald": 0.8}}}
+  },
+  {
+   "name": "mainsail_3",
+   "translation": [0.625, 0, 0.0512],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.25, "chord": 0.2152, "aspectRatio": 2.38, "cl0": 0.0, "cd0": 0.02, "stallAngle": 25, "oswald": 0.8}}}
+  },
+  {
+   "name": "mainsail_4",
+   "translation": [0.875, 0, 0.0717],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.25, "chord": 0.1333, "aspectRatio": 2.38, "cl0": 0.0, "cd0": 0.02, "stallAngle": 25, "oswald": 0.8}}}
+  },
+  {"name": "telltale", "translation": [0, 1.08, 0.18], "extensions": {"ARDUPILOT_sitl": {"streamer": {"length": 0.66, "width": 0.045, "whip": 0.5}}}},
+  {
+   "name": "mast",
+   "translation": [0, 0.08, 0.18],
+   "extensions": {"ARDUPILOT_sitl": {"hinge": {"servo": 4, "angleMin": 0.0, "angleMax": 90.0, "maxRate": 60.0, "sheet": true}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "children": [6, 7, 8, 9]
+  },
+  {
+   "name": "keel",
+   "translation": [0, -0.23, 0.22],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.3, "chord": 0.26, "fluid": "water", "aspectRatio": 1.15, "cl0": 0.0, "cd0": 0.015, "stallAngle": 20}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678]
+  },
+  {"name": "ballast", "translation": [0, -0.23, 0.22], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {
+   "name": "rudder_blade",
+   "translation": [-0.09, 0, 0],
+   "extensions": {"ARDUPILOT_sitl": {"surface": {"span": 0.18, "chord": 0.09, "fluid": "water", "aspectRatio": 2.0, "cd0": 0.015, "stallAngle": 22}}}
+  },
+  {
+   "name": "rudder",
+   "translation": [0, -0.08, -0.52],
+   "extensions": {"ARDUPILOT_sitl": {"hinge": {"servo": 1, "angleMin": -35.0, "angleMax": 35.0, "maxRate": 180.0}}},
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "children": [14]
+  }
+ ]
+}

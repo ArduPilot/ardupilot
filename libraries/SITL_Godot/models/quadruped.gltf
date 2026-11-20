@@ -1,0 +1,254 @@
+{
+ "asset": {"version": "2.0", "generator": "ArduPilot SITL Godot example"},
+ "extensionsUsed": ["KHR_physics_rigid_bodies", "KHR_implicit_shapes", "ARDUPILOT_sitl"],
+ "extensions": {
+  "KHR_implicit_shapes": {
+   "shapes": [
+    {"type": "box", "box": {"size": [0.1556, 0.05, 0.1556]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.016, 0.03, 0.03]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.016, 0.03, 0.03]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.016, 0.03, 0.03]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.08, 0.022, 0.022]}},
+    {"type": "box", "box": {"size": [0.016, 0.03, 0.03]}}
+   ]
+  },
+  "KHR_physics_rigid_bodies": {
+   "physicsMaterials": [{"staticFriction": 0.6, "dynamicFriction": 0.5, "restitution": 0.05}, {"staticFriction": 1.6, "dynamicFriction": 1.3, "restitution": 0.0}],
+   "physicsJoints": [{"limits": []}]
+  },
+  "ARDUPILOT_sitl": {"vehicle": 0}
+ },
+ "scene": 0,
+ "scenes": [{"nodes": [0, 4, 7, 11, 14, 17, 21, 24, 27, 31, 34, 37, 41]}],
+ "nodes": [
+  {
+   "name": "quadruped",
+   "translation": [0, 0.1184, 0],
+   "children": [1],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"motion": {"mass": 1.0, "inertiaDiagonal": [0.004242, 0.008067, 0.004242], "centerOfMass": [0, 0, 0]}},
+    "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.16, 0.17, 0.2]}}
+   }
+  },
+  {"name": "body_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 0}, "physicsMaterial": 0}}}},
+  {"name": "leg1_coxa_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 1}, "physicsMaterial": 0}}}},
+  {
+   "name": "leg1_coxa_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 0, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 1, "angleMin": 40.0, "angleMax": -40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg1_coxa",
+   "translation": [0.1061, 0.1184, 0.1061],
+   "rotation": [0.0, -0.38268343, 0.0, 0.92387953],
+   "children": [2, 3],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.75, 0.1, 0.1]}}}
+  },
+  {"name": "leg1_thigh_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 2}, "physicsMaterial": 0}}}},
+  {
+   "name": "leg1_thigh_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.12278781, -0.69636424, 0.12278781, 0.69636424],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 4, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 2, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg1_thigh",
+   "translation": [0.1609, 0.1047, 0.1609],
+   "rotation": [0.06645228, -0.37686961, -0.16043, 0.90984372],
+   "children": [5, 6],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.95, 0.55, 0.1]}}}
+  },
+  {"name": "leg1_shin_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 3}, "physicsMaterial": 0}}}},
+  {"name": "leg1_shin_foot", "translation": [0.04, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 4}, "physicsMaterial": 1}}}},
+  {
+   "name": "leg1_shin_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.5, -0.5, 0.5, 0.5],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 7, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 3, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg1_shin",
+   "translation": [0.1875, 0.051, 0.1875],
+   "rotation": [0.27059805, -0.27059805, -0.65328148, 0.65328148],
+   "children": [8, 9, 10],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.9, 0.9, 0.92]}}}
+  },
+  {"name": "leg2_coxa_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 5}, "physicsMaterial": 0}}}},
+  {
+   "name": "leg2_coxa_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 0, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 4, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg2_coxa",
+   "translation": [-0.1061, 0.1184, 0.1061],
+   "rotation": [0.0, -0.92387953, 0.0, 0.38268343],
+   "children": [12, 13],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.75, 0.1, 0.1]}}}
+  },
+  {"name": "leg2_thigh_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 6}, "physicsMaterial": 0}}}},
+  {
+   "name": "leg2_thigh_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.12278781, -0.69636424, 0.12278781, 0.69636424],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 14, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 5, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg2_thigh",
+   "translation": [-0.1609, 0.1047, 0.1609],
+   "rotation": [0.16043, -0.90984372, -0.06645228, 0.37686961],
+   "children": [15, 16],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.95, 0.55, 0.1]}}}
+  },
+  {"name": "leg2_shin_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 7}, "physicsMaterial": 0}}}},
+  {"name": "leg2_shin_foot", "translation": [0.04, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 8}, "physicsMaterial": 1}}}},
+  {
+   "name": "leg2_shin_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.5, -0.5, 0.5, 0.5],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 17, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 6, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg2_shin",
+   "translation": [-0.1875, 0.051, 0.1875],
+   "rotation": [0.65328148, -0.65328148, -0.27059805, 0.27059805],
+   "children": [18, 19, 20],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.9, 0.9, 0.92]}}}
+  },
+  {"name": "leg3_coxa_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 9}, "physicsMaterial": 0}}}},
+  {
+   "name": "leg3_coxa_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 0, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 7, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg3_coxa",
+   "translation": [-0.1061, 0.1184, -0.1061],
+   "rotation": [0.0, -0.92387953, 0.0, -0.38268343],
+   "children": [22, 23],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.75, 0.1, 0.1]}}}
+  },
+  {"name": "leg3_thigh_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 10}, "physicsMaterial": 0}}}},
+  {
+   "name": "leg3_thigh_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.12278781, -0.69636424, 0.12278781, 0.69636424],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 24, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 8, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg3_thigh",
+   "translation": [-0.1609, 0.1047, -0.1609],
+   "rotation": [0.16043, -0.90984372, 0.06645228, -0.37686961],
+   "children": [25, 26],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.95, 0.55, 0.1]}}}
+  },
+  {"name": "leg3_shin_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 11}, "physicsMaterial": 0}}}},
+  {"name": "leg3_shin_foot", "translation": [0.04, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 12}, "physicsMaterial": 1}}}},
+  {
+   "name": "leg3_shin_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.5, -0.5, 0.5, 0.5],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 27, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 9, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg3_shin",
+   "translation": [-0.1875, 0.051, -0.1875],
+   "rotation": [0.65328148, -0.65328148, 0.27059805, -0.27059805],
+   "children": [28, 29, 30],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.9, 0.9, 0.92]}}}
+  },
+  {"name": "leg4_coxa_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 13}, "physicsMaterial": 0}}}},
+  {
+   "name": "leg4_coxa_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.0, 0.0, 0.70710678, 0.70710678],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 0, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 10, "angleMin": 40.0, "angleMax": -40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg4_coxa",
+   "translation": [0.1061, 0.1184, -0.1061],
+   "rotation": [0.0, 0.38268343, 0.0, 0.92387953],
+   "children": [32, 33],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.75, 0.1, 0.1]}}}
+  },
+  {"name": "leg4_thigh_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 14}, "physicsMaterial": 0}}}},
+  {
+   "name": "leg4_thigh_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.12278781, -0.69636424, 0.12278781, 0.69636424],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 34, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 11, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg4_thigh",
+   "translation": [0.1609, 0.1047, -0.1609],
+   "rotation": [-0.06645228, 0.37686961, -0.16043, 0.90984372],
+   "children": [35, 36],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.95, 0.55, 0.1]}}}
+  },
+  {"name": "leg4_shin_box", "translation": [0, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 15}, "physicsMaterial": 0}}}},
+  {"name": "leg4_shin_foot", "translation": [0.04, 0, 0], "extensions": {"KHR_physics_rigid_bodies": {"collider": {"geometry": {"shape": 16}, "physicsMaterial": 1}}}},
+  {
+   "name": "leg4_shin_servo",
+   "translation": [-0.04, 0, 0],
+   "rotation": [0.5, -0.5, 0.5, 0.5],
+   "extensions": {
+    "KHR_physics_rigid_bodies": {"joint": {"connectedNode": 37, "joint": 0}},
+    "ARDUPILOT_sitl": {"hinge": {"servo": 12, "angleMin": -40.0, "angleMax": 40.0, "maxRate": 500.0, "maxTorque": 1.5}}
+   }
+  },
+  {
+   "name": "leg4_shin",
+   "translation": [0.1875, 0.051, -0.1875],
+   "rotation": [-0.27059805, 0.27059805, -0.65328148, 0.65328148],
+   "children": [38, 39, 40],
+   "extensions": {"KHR_physics_rigid_bodies": {"motion": {"mass": 0.05, "inertiaDiagonal": [0.0001, 0.0001, 0.0001]}}, "ARDUPILOT_sitl": {"chassis": {"style": "solid", "colour": [0.9, 0.9, 0.92]}}}
+  }
+ ]
+}

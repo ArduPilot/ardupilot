@@ -1,0 +1,9 @@
+# ArduPlane parameters for models/quadplane.gltf, applied on top of
+# Tools/autotest/default_params/quadplane.parm
+Q_M_THST_HOVER  0.45
+TKOFF_ROTATE_SPD 12
+
+# A quadplane's default 300Hz loop needs 600Hz of physics; a 100Hz loop
+# needs 200Hz and runs faster. For simulation only.
+SCHED_LOOP_RATE 100
+SIM_RATE_HZ 200
