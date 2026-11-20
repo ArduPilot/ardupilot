@@ -333,37 +333,39 @@ bool AP_RangeFinder_LightWareI2C::legacy_get_reading(float &reading_m)
 bool AP_RangeFinder_LightWareI2C::sf20_get_reading(float &reading_m)
 {
     // Parses up to 5 ASCII streams for LiDAR data.
-    // If a parse fails, the stream measurement is not updated until it is successfully read in the future.
+    // If a parse fails, the stream measurement is not updated until it is
+    // successfully read in the future. The stream request is always re-issued,
+    // so one bad reply cannot stop the driver polling the sensor.
     uint8_t stream[lx20_max_expected_stream_reply_len_bytes+1]; // Maximum response length for a stream ie "ldf,0:40.99" is 11 characters
 
     uint8_t i = streamSequence[currentStreamSequenceIndex];
     size_t num_processed_chars = 0;
+    bool reading_valid = false;
 
     /* Reads the LiDAR value requested during the last interrupt. */
-    if (!dev.read(stream, sizeof(stream))) {
-        return false;
-    }
-    stream[lx20_max_expected_stream_reply_len_bytes] = 0;
-
-    if (!sf20_parse_stream(stream, &num_processed_chars, parse_stream_id[i], sf20_stream_val[i])) {
-        return false;
+    if (dev.read(stream, sizeof(stream))) {
+        stream[lx20_max_expected_stream_reply_len_bytes] = 0;
+        reading_valid = sf20_parse_stream(stream, &num_processed_chars, parse_stream_id[i], sf20_stream_val[i]);
     }
 
-    if (i==0) {
-        reading_m = sf20_stream_val[0];
+    if (reading_valid) {
+        if (i==0) {
+            reading_m = sf20_stream_val[0];
+        }
+
+        // Increment the stream sequence
+        currentStreamSequenceIndex++;
+        if (currentStreamSequenceIndex >= numStreamSequenceIndexes) {
+            currentStreamSequenceIndex = 0;
+        }
+        i = streamSequence[currentStreamSequenceIndex];
     }
 
-    // Increment the stream sequence
-    currentStreamSequenceIndex++;
-    if (currentStreamSequenceIndex >= numStreamSequenceIndexes) {
-        currentStreamSequenceIndex = 0;
-    }
-    i = streamSequence[currentStreamSequenceIndex];
-
-    // Request the next stream in the sequence from the SF20
+    // Request the next stream in the sequence from the SF20. Keep the same
+    // stream on a failed read or parse so the next reply can be parsed.
     write_bytes((uint8_t*)init_stream_id[i], strlen(init_stream_id[i]));
 
-    return true;
+    return reading_valid;
 }
 
 bool AP_RangeFinder_LightWareI2C::sf20_parse_stream(uint8_t *stream_buf,
