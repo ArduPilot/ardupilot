@@ -145,5 +145,5 @@ PUBLIC complete:
     set    pins, 1                          ; Set pin HIGH (idle state)
     set    y, 4                             ;
 delay_next_output:
-    jmp    !y, delay_next_output [29]       ; TODO how much min delay here? 2us seen somewhere?? 5*30/75 = 2 us
+    jmp    y--, delay_next_output [29]      ; Abundance of caution delay of 2us/4us/8us (at DSHOT 600/300/150) before next transmit
 .wrap
