@@ -464,14 +464,15 @@ def process_library(vehicle, library, pathprefix=None):
                 if do_append:
                     lib.set_name(library.name + lib.name)
                 debug("Group name: %s" % lib.name)
+                nparams = len(lib.params)
                 process_library(vehicle, lib, os.path.dirname(libraryfname))
-                if do_append:
-                    if group == "":
-                        # an unnamed group shares this library's prefix,
-                        # so its parameters belong in this library
-                        library.params.extend(lib.params)
-                    else:
-                        alllibs.append(lib)
+                if group == "":
+                    # an unnamed group shares this library's prefix, so its
+                    # parameters belong in this library; a repeated unnamed
+                    # group reuses lib, so only take the newly added ones
+                    library.params.extend(lib.params[nparams:])
+                elif do_append:
+                    alllibs.append(lib)
 
     current_file = None
 
