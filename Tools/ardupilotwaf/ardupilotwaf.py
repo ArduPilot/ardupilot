@@ -462,13 +462,17 @@ def post_link(self):
 
     map_path = None
     if self.env.BOARD_CLASS == 'ChibiOS':
-        map_path = link_output.abspath() + '.map'
+        # beside the final ELF, where extract_features.py looks for it
+        final_elf = getattr(self, 'final_elf', link_output)
+        map_node = final_elf.parent.find_or_declare(final_elf.name + '.map')
+        map_path = map_node.abspath()
         map_prefix = '-Wl,-Map,Linker.map,'
         self.link_task.env = self.link_task.env.derive()
         self.link_task.env.LINKFLAGS = [
             flag.replace(map_prefix, '-Wl,-Map,%s,' % map_path)
             for flag in self.link_task.env.LINKFLAGS
         ]
+        self.link_task.outputs.append(map_node)
     # additional files written by the linker, so they are rebuilt if missing
     for ext in self.env.LINK_EXTRA_OUTPUTS:
         self.link_task.outputs.append(link_output.change_ext(ext))
