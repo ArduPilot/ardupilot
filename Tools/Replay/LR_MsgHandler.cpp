@@ -235,14 +235,38 @@ void LR_MsgHandler_RBRI::process_message(uint8_t *msgbytes)
     AP::dal().handle_message(msg);
 }
 
+/*
+  4.6 and earlier logged the range finder distances as integer
+  centimetres. Copying those bytes into the current structure would give
+  a nonsense sensor count, and the EKF would see no range finder, so read
+  them by field and convert
+ */
 void LR_MsgHandler_RRNH::process_message(uint8_t *msgbytes)
 {
+    if (strncmp(f.format, "hhB", ARRAY_SIZE(f.format)) == 0) {
+        log_RRNH msg {};
+        msg.ground_clearance = require_field_int16_t(msgbytes, "GCl") * 0.01f;
+        msg.max_distance = require_field_int16_t(msgbytes, "MaxD") * 0.01f;
+        msg.num_sensors = require_field_uint8_t(msgbytes, "NumSensors");
+        AP::dal().handle_message(msg);
+        return;
+    }
     MSG_CREATE(RRNH, msgbytes);
     AP::dal().handle_message(msg);
 }
 
 void LR_MsgHandler_RRNI::process_message(uint8_t *msgbytes)
 {
+    if (strncmp(f.format, "fffHBBB", ARRAY_SIZE(f.format)) == 0) {
+        log_RRNI msg {};
+        require_field(msgbytes, "P", msg.pos_offset);
+        msg.distance = require_field_uint16_t(msgbytes, "Dist") * 0.01f;
+        msg.orientation = require_field_uint8_t(msgbytes, "Orient");
+        msg.status = require_field_uint8_t(msgbytes, "Status");
+        msg.instance = require_field_uint8_t(msgbytes, "I");
+        AP::dal().handle_message(msg);
+        return;
+    }
     MSG_CREATE(RRNI, msgbytes);
     AP::dal().handle_message(msg);
 }
