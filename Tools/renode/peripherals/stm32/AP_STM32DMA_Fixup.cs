@@ -45,6 +45,14 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 throw new ConstructionException("STM32DMA no longer has a streams field - revisit this fix");
             }
             var streams = (Array)streamsField.GetValue(dma);
+            var tcStatusField = typeof(STM32DMA).GetField("transferCompleteIrqStatus", BindingFlags.NonPublic | BindingFlags.Instance);
+            var updateInterrupts = typeof(STM32DMA).GetMethod("UpdateInterrupts", BindingFlags.NonPublic | BindingFlags.Instance);
+            if(tcStatusField == null || updateInterrupts == null)
+            {
+                throw new ConstructionException("STM32DMA transfer complete internals changed - revisit this fix");
+            }
+            var tcStatus = (Array)tcStatusField.GetValue(dma);
+            var enabled = new bool[streams.Length];
 
             for(var i = 0; i < streams.Length; i++)
             {
@@ -53,11 +61,24 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 var resetter = new OffsetResetter(streams.GetValue(i));
                 // SxNDTR = 0x14 + 0x18 * stream
                 dma.RegistersCollection.AddAfterWriteHook(0x14 + 0x18 * i, resetter.Reset);
+                var stream = i;
                 dma.RegistersCollection.AddAfterWriteHook(configurationOffset, (offset, value) =>
                 {
                     const uint enable = 1U << 0;
                     const uint directionMask = 3U << 6;
                     const uint peripheralToMemory = 0;
+                    // hardware sets TCIF when software disables an active
+                    // stream, ArduPilot's F4 UART IDLE handler relies on it
+                    // to harvest a partly filled RX buffer
+                    var wasEnabled = enabled[stream];
+                    enabled[stream] = (value & enable) != 0;
+                    if(wasEnabled && !enabled[stream] &&
+                        (value & directionMask) == peripheralToMemory &&
+                        dma.ReadDoubleWord(0x14 + 0x18 * stream) != 0)
+                    {
+                        ((IFlagRegisterField)tcStatus.GetValue(stream)).Value = true;
+                        updateInterrupts.Invoke(dma, null);
+                    }
                     if((value & enable) != 0 &&
                         (value & directionMask) != peripheralToMemory)
                     {

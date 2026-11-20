@@ -758,6 +758,82 @@ def test_every_imu_model_accepts_its_rotation():
                    for parameters in constructors), name
 
 
+@pytest.mark.parametrize('device_name, whoami', [
+    ('mpu6000', 0x68), ('mpu6500', 0x70), ('mpu9250_ext', 0x71),
+    ('icm20601', 0xAC), ('icm20602_2', 0x12), ('icm20608', 0xAF),
+    ('icm20689_board', 0x98), ('icm20789', 0x03)])
+def test_invensense_imu_whoami_from_device_name(device_name, whoami):
+    assert gen_board._imu_whoami(device_name, {}) == whoami
+
+
+@pytest.mark.parametrize('device_name, whoami', [
+    ('icm20648', 0xE0), ('icm20948_ext', 0xEA), ('icm20649_2', 0xE1)])
+def test_invensensev2_imu_whoami_from_device_name(device_name, whoami):
+    assert gen_board._imu_whoami(device_name, {}) == whoami
+
+
+@pytest.mark.parametrize('device_name, whoami', [
+    ('ICM40605_ext', 0x33), ('icm40609d', 0x3B), ('icm42605', 0x42),
+    ('iim42652_1', 0x6F), ('icm42652', 0x6F), ('iim42653_ext2', 0x56),
+    ('icm42653', 0x56), ('icm42670_fmu', 0x67), ('icm42688p', 0x47),
+    ('icm45686-2', 0xE9), ('icm56686', 0x08)])
+def test_invensensev3_imu_whoami_from_device_name(device_name, whoami):
+    assert gen_board._imu_whoami(device_name, {}) == whoami
+
+
+def test_invensensev3_whoami_from_chip_select_label(tmp_path):
+    # Morakot names its ICM-45686 SPIDEV imu1 on CS ICM_45686_1_CS
+    generated = gen_board.generate(
+        launch.ROOT, 'Morakot', tmp_path / 'generated', state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    imu = repl[repl.index('Sensors.AP_ICM42688'):]
+    imu = imu[:imu.index('\n\n')]
+    assert 'whoAmI: 0xE9' in imu
+
+
+@pytest.mark.parametrize('driver, whoami', [
+    ('ASM330', 0x6B), ('BMI160', 0xD1), ('BMI270', 0x24), ('LSM6DSV', 0x70)])
+def test_single_die_st_and_bosch_imus_get_fixed_whoami(driver, whoami):
+    # JFB200's ASM330LHH, which no runnable board carries
+    children = gen_board._imu_children(
+        [driver, 'SPI:imu', 'ROTATION_ROLL_180'], [('imu', 'SPI3', None)],
+        {}, 'imu1')
+    assert children == [('imu1', 'Sensors.AP_RegisterIMU', 'SPI3', None, [
+        '    rotation: %u' % gen_board.ROTATIONS['ROTATION_ROLL_180'],
+        '    whoAmI: 0x%02X' % whoami])]
+
+
+@pytest.mark.parametrize('device_name, product', [
+    ('adis16470', None), ('adis16477', 0x405D), ('adis16507', 0x407B)])
+def test_adis1647x_product_from_device_name(device_name, product):
+    children = gen_board._imu_children(
+        ['ADIS1647x', 'SPI:%s' % device_name, 'ROTATION_NONE'],
+        [(device_name, 'SPI6', None)], {}, 'imu0')
+    expected = ['    rotation: 0']
+    if product is not None:
+        expected.append('    productId: 0x%04X' % product)
+    assert children == [('imu0', 'Sensors.AP_ADIS1647x', 'SPI6', None, expected)]
+
+
+def test_adis16607_sync_clock_from_define():
+    children = gen_board._imu_children(
+        ['ADIS16607', 'SPI:adis16607', 'ROTATION_NONE'],
+        [('adis16607', 'SPI1', None)],
+        {'ADIS16607_SYNC_INPUT_CLOCK_HZ': '4000'}, 'imu0')
+    assert '    syncClockHz: 4000' in children[0][4]
+
+
+def test_adis1647x_data_ready_follows_hwdef_gpio(tmp_path):
+    # mRoNexus passes HAL_DRDY_ADIS16470_PIN (GPIO 93 on PD8)
+    generated = gen_board.generate(
+        launch.ROOT, 'mRoNexus', tmp_path / 'generated', state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    imu = repl[repl.index('Sensors.AP_ADIS1647x'):]
+    assert '    DataReady -> gpioPortD@8' in imu[:imu.index('\n\n')]
+
+
 def test_unknown_named_imu_is_rejected(tmp_path):
     with pytest.raises(ValueError, match='unknown IMU device: absent'):
         gen_board.generate(
