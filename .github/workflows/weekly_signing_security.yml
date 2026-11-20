@@ -43,7 +43,7 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/modules/mavlink
         run: >-
-          Tools/renode/tests/test_signing_security.py
+          Tools/renode/tests/signing_security.py
           --renode build/renode/renode --timeout 180
       - name: ccache statistics
         if: always()
