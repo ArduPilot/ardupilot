@@ -57,7 +57,6 @@ ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_4  GPIO_NUM_5   400*KHZ  true     false
 
 # rcin on what pin?
 define HAL_ESP32_RCIN GPIO_NUM_13
-define HAL_ESP32_RMT_RX_PIN_NUMBER			13
 
 #-----UARTS-----
 ESP32_SERIAL  UART_NUM_0  GPIO_NUM_3   GPIO_NUM_1
