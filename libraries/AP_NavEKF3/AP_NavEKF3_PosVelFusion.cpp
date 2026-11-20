@@ -647,7 +647,8 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
 
-    // A disarmed vehicle the IMU reads as still is taken to have no vertical velocity, so one
+    // A vehicle on the ground the IMU reads as still, which on Copter includes one held still in the
+    // air through THROW's armed wait, is taken to have no vertical velocity, so one
     // the EKF reports with no measured vertical velocity agreeing, as after a drop whose impact
     // the IMU clipped, is reset away with the height when the vehicle comes to rest. Only then:
     // a velocity that builds while it stays still comes from an accel bias, which repeated
