@@ -15141,6 +15141,66 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(11, 1000)
         self.wait_rtl_complete()
 
+    def AC_Avoidance_Dijkstra_EntryLegFromExclusion(self):
+        '''Test Dijkstra's object avoidance for a vehicle inside a U-shaped
+        exclusion polygon outside the fence: no path is planned when the leg to
+        the fence entry point leaves one arm and crosses the other, and a path is
+        planned when the leg only leaves the polygon'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # rectangular inclusion fence spanning N -20 to 120 by E -70 to 70, with
+        # a U-shaped exclusion polygon outside its western edge, open to the
+        # north: west arm E -115 to -105, east arm E -95 to -85, base N 50 to 60
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -20, -70),
+                self.offset_location_ne(home_loc_plus_15m, -20, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, -70),
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, n, e) for (n, e) in [
+                    (50, -115), (85, -115), (85, -105), (60, -105),
+                    (60, -95), (85, -95), (85, -85), (50, -85),
+                ]]),
+        ])
+
+        # enable fence
+        self.set_rc(11, 2000)
+
+        self.takeoff(15, mode="GUIDED")
+
+        # disable the fence and fly into the west arm of the exclusion polygon
+        self.set_rc(11, 1000)
+        self.fly_guided_move_local(70, -110, 15)
+
+        # re-enable the fence; the breach triggers RTL.  the leg to the entry
+        # point at (70,-65) leaves the west arm and crosses the east arm, so no
+        # path is planned and the vehicle holds outside the east arm
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_statustext("Dijkstra: could not find path", check_context=False, timeout=30)
+        self.assert_dijkstra_holds_outside(lambda n, e: 60 <= n <= 85 and -95 <= e <= -85)
+
+        # disable the fence before leaving RTL, then fly into the east arm
+        self.set_rc(11, 1000)
+        self.change_mode("GUIDED")
+        self.fly_guided_move_local(70, -90, 15)
+
+        # re-enable the fence; the breach triggers RTL.  the leg to the entry
+        # point at (70,-65) only leaves the east arm, so the path is planned
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_dijkstra_route([(70, -65)])
+
     def AC_Avoidance_Dijkstra_DestinationInExclusion(self):
         '''Test Dijkstra's object avoidance refuses to plan a path to a
         destination inside an exclusion polygon'''
@@ -21736,6 +21796,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AC_Avoidance_Dijkstra_HomeOutside_ThroughFence,
             self.AC_Avoidance_Dijkstra_ExclusionBesideEdge,
             self.AC_Avoidance_Dijkstra_EntryLegExclusion,
+            self.AC_Avoidance_Dijkstra_EntryLegFromExclusion,
             self.AC_Avoidance_Dijkstra_DestinationInExclusion,
             self.SetpointGlobalVel,
             self.SetpointBadVel,
