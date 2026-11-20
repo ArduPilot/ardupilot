@@ -46,7 +46,6 @@ d = json.loads(apj)
 
 # get image data
 img = bytearray(zlib.decompress(base64.b64decode(d['image'])))
-img_len = len(img)
 if 'extf_image' in d:
     extf_img = zlib.decompress(base64.b64decode(d['extf_image']))
 else:
@@ -71,6 +70,17 @@ if offset == -1:
 
 offset += 8
 desc_len = 92
+
+# A previously signed mixed-flash image has a 76-byte external-image
+# signature trailer after the descriptor's internal image_size. Remove it
+# before calculating CRCs and signatures so re-signing is idempotent.
+image_size = struct.unpack_from('<I', img, offset + 8)[0]
+descriptor_tail_len = 12
+if image_size < offset + desc_len + descriptor_tail_len or image_size > len(img):
+    print("Bad internal image length %u" % image_size)
+    sys.exit(1)
+img = img[:image_size]
+img_len = len(img)
 
 # Store the external image size in the signed portion of the internal image.
 # version, version_minor and board_id occupy the preceding four bytes.
