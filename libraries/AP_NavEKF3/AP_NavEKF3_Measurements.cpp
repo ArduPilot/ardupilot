@@ -51,6 +51,7 @@ void NavEKF3_core::readRangeFinder(void)
                 }
                 storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
                 storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance();
+                storedRngReadTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->last_reading_ms();
             } else {
                 continue;
             }
@@ -85,6 +86,20 @@ void NavEKF3_core::readRangeFinder(void)
 
                 // limit the measured range to be no less than the on-ground range
                 rangeDataNew.rng = MAX(storedRngMeas[sensorIndex][midIndex],rngOnGnd);
+                // a backend reports its last reading until the next arrives, and a reading stays in the median's
+                // window for three samples, so the median can be the reading either of the last two samples was.
+                // A log from before reading times were kept counts every sample. Of equal ranges the median is
+                // whichever slot the comparisons land on, so a steady range read again, as a sensor reporting
+                // whole cm does, is the newest sample's reading
+                const uint8_t newestIndex = rngMeasIndex[sensorIndex];
+                const uint8_t readIndex = is_equal(storedRngMeas[sensorIndex][newestIndex], storedRngMeas[sensorIndex][midIndex]) ?
+                                          newestIndex : midIndex;
+                const uint32_t readTime_ms = storedRngReadTime_ms[sensorIndex][readIndex];
+                uint32_t *lastReadTime_ms = rngLastReadTime_ms[sensorIndex];
+                rangeDataNew.repeated = _rng->have_reading_time(sensorIndex) &&
+                                        (readTime_ms == lastReadTime_ms[0] || readTime_ms == lastReadTime_ms[1]);
+                lastReadTime_ms[1] = lastReadTime_ms[0];
+                lastReadTime_ms[0] = readTime_ms;
 
                 // get position in body frame for the current sensor
                 rangeDataNew.sensor_idx = sensorIndex;
@@ -99,6 +114,7 @@ void NavEKF3_core::readRangeFinder(void)
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
+                rangeDataNew.repeated = true;   // assumed, not read
 
                 // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
                 storedRange.push(rangeDataNew);
@@ -173,6 +189,24 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
 // this needs to be called externally.
 void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride, float altMin)
 {
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // a poor lockout sample latches flow out, but a sensor that drops out over a bad patch and then
+    // reports an unbroken run of samples 10% clear of EK3_FLOW_QMIN has recovered, so flow aiding may
+    // restart. Checked first, so every sample breaks or extends the run: the quality 0 samples a dropout
+    // gives are dropped below, and so is a sample inside the sensor interval
+    if (flowVelResetUnhealthy) {
+        const int16_t releaseQuality = MIN(frontend->_flowQualMin + frontend->_flowQualMin / 10, 255);
+        if ((rawFlowQuality < releaseQuality) || (imuSampleTime_ms - flowMeaTime_ms > 500)) {
+            flowQualRecoverStart_ms = 0;
+        } else if (flowQualRecoverStart_ms == 0) {
+            flowQualRecoverStart_ms = imuSampleTime_ms;
+        } else if (imuSampleTime_ms - flowQualRecoverStart_ms >= FLOW_QUAL_RECOVER_MS) {
+            flowVelResetUnhealthy = false;
+            flowQualRecoverStart_ms = 0;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u flow quality recovered", (unsigned)imu_index);
+        }
+    }
+#endif
     // limit update rate to maximum allowed by sensor buffers
     if ((imuSampleTime_ms - flowMeaTime_ms) < frontend->sensorIntervalMin_ms) {
         return;
@@ -224,6 +258,9 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         ofDataNew.heightOverride = heightOverride;
         // write the altitude above terrain below which the flow sensor cannot focus
         ofDataNew.altMin = altMin;
+        // carry the sensor's own quality to the fusion time horizon, where it can be
+        // matched against the sample it describes
+        ofDataNew.quality = rawFlowQuality;
         // write flow rate measurements corrected for body rates
         ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
         ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;

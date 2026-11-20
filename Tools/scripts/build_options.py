@@ -60,7 +60,7 @@ BUILD_OPTIONS = [
     Feature('AHRS', 'EKF3_WINDEST', 'EK3_FEATURE_DRAG_FUSION', 'Enable Wind estimation for EKF3', 0, 'EKF3'),
     Feature('AHRS', 'EKF3_OPTFLOW', 'EK3_FEATURE_OPTFLOW_FUSION', 'Enable OpticalFlow fusion for EKF3', 0, 'EKF3,OPTICALFLOW'),
     Feature('AHRS', 'EKF3_OPTFLOW_SRTM', 'EK3_FEATURE_OPTFLOW_SRTM', 'Enable OpticalFlow using SRTM for EKF3', 0, 'EKF3_OPTFLOW'),  # noqa: E501
-    Feature('AHRS', 'EKF3_OPTFLOW_AGL_KF', 'EK3_FEATURE_OPTFLOW_AGL_KF', 'Enable OpticalFlow AGL Kalman filter for EKF3', 0, 'EKF3_OPTFLOW'),  # noqa: E501
+    Feature('AHRS', 'EKF3_OPTFLOW_AGL_KF', 'EK3_FEATURE_OPTFLOW_AGL_KF', 'Enable OpticalFlow AGL Kalman filter and flow lockout recovery for EKF3', 0, 'EKF3_OPTFLOW'),  # noqa: E501
     Feature('AHRS', 'EKF3_RESET', 'AP_AHRS_EKF_RESET_ENABLED', 'Enable EKF bootstrap reset aux function', 1, 'EKF3'),
     Feature('AHRS', 'AHRS_POS_RESET', 'AP_AHRS_POSITION_RESET_ENABLED', 'Enable setting position from external position estimates', 0, 'EKF3'),  # noqa: E501
     Feature('AHRS', 'BARO_WIND_COMP', 'HAL_BARO_WIND_COMP_ENABLED', 'Enable Baro wind compensation', 0, None),
@@ -147,6 +147,7 @@ BUILD_OPTIONS = [
     Feature('OSD', 'PLUSCODE', 'HAL_PLUSCODE_ENABLE', 'Enable PlusCode', 0, 'OSD'),
     Feature('OSD', 'OSD_PARAM', 'OSD_PARAM_ENABLED', 'Enable OSD param', 0, None),
     Feature('OSD', 'OSD_SIDEBARS', 'HAL_OSD_SIDEBAR_ENABLE', 'Enable Scrolling sidebars', 0, 'OSD'),
+    Feature('OSD', 'OSD_EKF_LANES', 'AP_OSD_EKF_LANES_ENABLED', 'Enable OSD items showing what each EKF3 lane is navigating on', 0, 'OSD,EKF3'),  # noqa
     Feature('OSD', 'OSD_EXTENDED_LINK_STATS', 'AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', 'Enable OSD panels with extended link stats data', 0, "OSD,RC_CRSF,MSP"),  # noqa
 
     Feature('VTX', 'VIDEO_TX', 'AP_VIDEOTX_ENABLED', 'Enable VideoTX control', 0, None),
