@@ -9,7 +9,7 @@ Development host: Ubuntu 22.04.5 x86-64, Python 3.10.12, g++ 11.4.0. Build prere
 ./waf sub -j4
 ```
 
-`libraries/AP_HAL_Linux/hwdef/linux/hwdef.dat` selects native toolchain and `HAL_INS_NONE`. `HAL_Linux_Class.cpp` chooses `Empty::RCOutput` on this generic board. Build success does **not** make a deployable real-vehicle autopilot: Bar30 input and ESP32 output are not yet integrated; the Xsens backend has only passed parser and startup-command checks, and no estimator initialization has been verified. Use this build only for software investigation with actuator power isolated.
+`libraries/AP_HAL_Linux/hwdef/linux/hwdef.dat` selects native toolchain and `HAL_INS_NONE`. `HAL_Linux_Class.cpp` chooses `Empty::RCOutput` on this generic board. Build success does **not** make a deployable real-vehicle autopilot: Bar30 input and ESP32 output are not yet integrated; the Xsens backend has passed parser, startup-command and synthetic IMU replay checks, and no estimator initialization has been verified. Use this build only for software investigation with actuator power isolated.
 
 For a software-only Xsens startup check on generic Linux, build with the test-only barometer exception and run the pseudo-terminal harness:
 
@@ -19,7 +19,7 @@ For a software-only Xsens startup check on generic Linux, build with the test-on
 python3 integration/test_xsens_native_startup.py
 ```
 
-The generic Linux board has no barometer and otherwise stops before IMU startup. This profile permits the process to start for a virtual-serial test; it has no pressure source and must never be used for deployment. It retains generic Linux `Empty::RCOutput`. Restore the ordinary build with `./waf configure --board=linux` and `./waf sub -j4` when the test profile is no longer needed.
+The generic Linux board has no barometer and otherwise stops before IMU startup. This profile permits the process to start for virtual-serial Xsens command and sample replay; it has no pressure source and must never be used for deployment. The harness imports `pymavlink` from the checked-out `modules/mavlink` submodule. It retains generic Linux `Empty::RCOutput`. Restore the ordinary build with `./waf configure --board=linux` and `./waf sub -j4` when the test profile is no longer needed.
 
 Provisional hardware constants live in `integration/vehicle_defaults.json`; change that file and re-run `python3 integration/check_layout.py`. This is not yet loaded into ArduSub parameters automatically. No deployment launcher, firmware flashing or startup-service changes exist. The old ROS 2 deployment remains the rollback path, subject to its normal operator procedure.
 

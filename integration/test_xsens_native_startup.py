@@ -5,7 +5,9 @@ import os
 import pty
 import selectors
 import signal
+import struct
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -14,12 +16,42 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BINARY = ROOT / "build/linux/bin/ardusub"
 HWDEF = ROOT / "build/linux/hwdef.h"
+sys.path.insert(0, str(ROOT / "modules/mavlink"))
+from pymavlink import mavutil  # noqa: E402
 
 
 def packet(mid, payload=b""):
     header = bytes((0xFA, 0xFF, mid, len(payload)))
     checksum = -(sum(header[1:]) + sum(payload)) & 0xFF
     return header + payload + bytes((checksum,))
+
+
+def data_item(data_id, value):
+    return data_id.to_bytes(2, "big") + bytes((len(value),)) + value
+
+
+def replay_imu(master, connection):
+    payload = (
+        data_item(0x2014, struct.pack(">4f", 1, 0, 0, 0))
+        + data_item(0x8020, struct.pack(">3f", 0.1, 0.2, 0.3))
+        + data_item(0x4020, struct.pack(">3f", 1.0, 2.0, -9.81))
+    )
+    deadline = time.monotonic() + 4
+    counter = 0
+    while time.monotonic() < deadline:
+        sample = data_item(0x1020, counter.to_bytes(2, "big"))
+        os.write(master, packet(0x36, payload + sample))
+        counter += 1
+        message = connection.recv_match(blocking=False)
+        if message is not None and message.get_type() == "RAW_IMU":
+            values = (message.xacc, message.yacc, message.zacc,
+                      message.xgyro, message.ygyro, message.zgyro)
+            expected = (102, 204, -1000, 100, 200, 300)
+            if all(abs(actual - target) <= 5 for actual, target in zip(values, expected)):
+                print("Synthetic Xsens sample observed in RAW_IMU telemetry")
+                return
+        time.sleep(0.01)
+    raise SystemExit("Xsens RAW_IMU telemetry did not match the injected sample")
 
 
 def main():
@@ -37,6 +69,8 @@ def main():
         packet(0x10),
     )
     with tempfile.TemporaryDirectory(prefix="atal-xsens-") as directory:
+        connection = mavutil.mavlink_connection("udpin:127.0.0.1:0")
+        telemetry_port = connection.port.getsockname()[1]
         master, slave = pty.openpty()
         defaults = Path(directory) / "defaults.parm"
         defaults.write_text(
@@ -45,7 +79,7 @@ def main():
         )
         command = [
             str(BINARY),
-            "--serial0", "udp:127.0.0.1:14551",
+            "--serial0", f"udp:127.0.0.1:{telemetry_port}",
             "--serial1", os.ttyname(slave),
             "--defaults", str(defaults),
             "--log-directory", directory,
@@ -66,12 +100,14 @@ def main():
                     received.extend(os.read(master, 4096))
                 if all(item in received for item in expected):
                     print("Xsens configuration commands observed on virtual serial")
-                    return
-            seen = [item in received for item in expected]
-            raise SystemExit(
-                f"Xsens startup incomplete: config/output/measurement={seen}; "
-                f"received={len(received)} bytes; process={process.poll()}"
-            )
+                    break
+            else:
+                seen = [item in received for item in expected]
+                raise SystemExit(
+                    f"Xsens startup incomplete: config/output/measurement={seen}; "
+                    f"received={len(received)} bytes; process={process.poll()}"
+                )
+            replay_imu(master, connection)
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -81,6 +117,7 @@ def main():
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
             selector.close()
+            connection.close()
             os.close(master)
             os.close(slave)
 
