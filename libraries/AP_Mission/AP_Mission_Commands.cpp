@@ -224,17 +224,22 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
         return true;
     }
 
-    // handle angle target
-    const bool pitch_angle_valid = abs(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) <= 90;
-    const bool yaw_angle_valid = abs(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) <= 360;
-    if (pitch_angle_valid && yaw_angle_valid) {
+    // handle angle target, the mount constrains it to its limits
+    if ((cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg != INT8_MIN) && (cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg != INT16_MIN)) {
         mount->set_angle_target(gimbal_instance, 0, cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg, cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return true;
     }
 
     // handle rate target
-    if (!isnan(cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs) && !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs)) {
+    if ((cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs != INT8_MIN) && (cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs != INT8_MIN)) {
         mount->set_rate_target(gimbal_instance, 0, cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs, cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return true;
+    }
+
+    // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
+    if ((cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg == INT8_MIN) && (cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg == INT16_MIN) &&
+        (cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs == INT8_MIN) && (cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs == INT8_MIN)) {
+        mount->set_yaw_lock(gimbal_instance, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return true;
     }
 
