@@ -97,6 +97,17 @@
   #define AP_GPS_UBLOX_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
 #endif
 
+// baud rates GPS autobaud detection cycles through, 1.2s each.  The
+// serial port's configured rate (SERIALn_BAUD) is tried first, in place
+// of this list's first entry on the first pass, so list that rate
+// first.  e.g. for a u-blox, which ArduPilot detects at 230400, that
+// starts at 9600 when it loses its configuration on power-off, with
+// SERIALn_BAUD 230400:
+//   define AP_GPS_AUTOBAUD_RATES 230400U, 9600U
+#ifndef AP_GPS_AUTOBAUD_RATES
+  #define AP_GPS_AUTOBAUD_RATES 9600U, 115200U, 4800U, 19200U, 38400U, 57600U, 230400U, 460800U
+#endif
+
 #ifndef AP_GPS_UBLOX_CFGV2_ENABLED
   #define AP_GPS_UBLOX_CFGV2_ENABLED AP_GPS_UBLOX_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
