@@ -688,7 +688,9 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     }
 
     if (!AP_Arming::arm(method, do_arming_checks)) {
-        AP_Notify::events.arming_failed = true;
+        if (!_pending_arm_quiet) {
+            AP_Notify::events.arming_failed = true;
+        }
         in_arm_motors = false;
         return false;
     }
@@ -785,9 +787,94 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     return true;
 }
 
+// set_pending_arm - enter pending arm state, will retry until checks pass
+void AP_Arming_Copter::set_pending_arm(bool with_airmode)
+{
+    AP_Arming::set_pending_arm(with_airmode);
+    _pending_arm_airmode = with_airmode;
+    const uint32_t now_ms = millis();
+    _pending_arm_start_ms = now_ms;
+    _pending_arm_last_check_ms = 0;
+    _pending_arm_last_display_ms = now_ms;
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Arm pending");
+}
+
+// clear_pending_arm - cancel pending arm state
+void AP_Arming_Copter::clear_pending_arm()
+{
+    if (_pending_arm) {
+        AP_Arming::clear_pending_arm();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Arm pending cancelled");
+    }
+}
+
+// update_pending_arm - retry arming periodically while pending
+// called at 10Hz from auto_disarm_check
+void AP_Arming_Copter::update_pending_arm()
+{
+    if (!_pending_arm) {
+        return;
+    }
+
+    // armed by another route, so the request is met and the reset below must not run
+    if (copter.motors->armed()) {
+        _pending_arm = false;
+        return;
+    }
+
+    const uint32_t now_ms = millis();
+
+    // run pre-arm checks at 4Hz (every 250ms) for faster response
+    const bool run_checks = (now_ms - _pending_arm_last_check_ms >= 250);
+    if (run_checks) {
+        _pending_arm_last_check_ms = now_ms;
+
+        // display failure reason every 3 seconds
+        const bool display = (now_ms - _pending_arm_last_display_ms >= 3000);
+        if (pre_arm_checks(display)) {
+            // checks pass - attempt to arm, reporting a failure as often as the pre-arm ones
+            _pending_arm_quiet = !display;
+            const bool success = arm(AP_Arming::Method::AUXSWITCH);
+            _pending_arm_quiet = false;
+            if (success) {
+                if (_pending_arm_airmode) {
+                    copter.ap.armed_with_airmode_switch = true;
+                }
+                _pending_arm = false;
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Arm pending complete");
+                return;
+            }
+        }
+        if (display) {
+            _pending_arm_last_display_ms = now_ms;
+        }
+    }
+#if AP_AHRS_EKF_RESET_ENABLED
+    // after timeout, reset EKF bootstrap once to force convergence.
+    // only fire once - repeated resets prevent the EKF from converging.
+    // A reset cannot supply a missing input such as GPS, only restart a filter
+    // that has failed, so wait until the AHRS reports a failure of its own.
+    const float timeout_s = _pending_arm_timeout_s;
+    char failure_msg[50];
+    if (timeout_s > 0 && _pending_arm_start_ms != 0 &&
+        (now_ms - _pending_arm_start_ms >= uint32_t(timeout_s * 1000)) &&
+        !AP::ahrs().pre_arm_check(false, failure_msg, sizeof(failure_msg))) {
+        if (AP::ahrs().reset_configured_backend()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Arm pending: EKF bootstrap reset");
+        }
+        // clear so we don't reset again
+        _pending_arm_start_ms = 0;
+    }
+#endif
+}
+
 // arming.disarm - disarm motors
 bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
+    // cancel any pending arm request, including when already disarmed
+    clear_pending_arm();
+
     // return immediately if we are already disarmed
     if (!copter.motors->armed()) {
         return true;
