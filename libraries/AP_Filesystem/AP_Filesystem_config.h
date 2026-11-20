@@ -66,6 +66,11 @@
 #define AP_FILESYSTEM_SYS_FLASH_ENABLED CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #endif
 
+// the address @SYS/flash.bin starts reading from
+#ifndef AP_FILESYSTEM_SYS_FLASH_BASE
+#define AP_FILESYSTEM_SYS_FLASH_BASE 0x08000000
+#endif
+
 #ifndef AP_FILESYSTEM_MISSION_ENABLED
 #include <AP_Mission/AP_Mission_config.h>
 #define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED

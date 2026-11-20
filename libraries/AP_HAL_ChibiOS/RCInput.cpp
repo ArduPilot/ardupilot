@@ -47,6 +47,11 @@ void RCInput::init()
     pulse_input_enabled = true;
 #endif
 
+#if defined(HAL_RCIN_IS_GPIO)
+    sig_reader.init(HAL_RCIN_GPIO_LINE);
+    pulse_input_enabled = true;
+#endif  // defined(HAL_RCIN_IS_GPIO)
+
     _init = true;
 }
 
@@ -57,7 +62,7 @@ void RCInput::init()
 void RCInput::pulse_input_enable(bool enable)
 {
     pulse_input_enabled = enable;
-#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
+#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE || defined(HAL_RCIN_IS_GPIO)
     if (!enable) {
         sig_reader.disable();
     }
@@ -152,9 +157,25 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
+#if defined(HAL_RCIN_IS_GPIO)
+    if (pulse_input_enabled) {
+        sig_reader.enable();
+        uint32_t width_s0, width_s1;
+        while (sig_reader.read(width_s0, width_s1)) {
+            rcprot.process_pulse(width_s0, width_s1);
+        }
+    }
+#endif  // defined(HAL_RCIN_IS_GPIO)
+
     if (rcprot.new_input()) {
         WITH_SEMAPHORE(rcin_mutex);
+#if defined(RP2350)
+        // only new_input() reads this, as a change marker, so a counter
+        // avoids an hrt_micros64() read that starves Pico2 USB under pulse bursts
+        _rcin_timestamp_last_signal++;
+#else
         _rcin_timestamp_last_signal = AP_HAL::micros();
+#endif  // defined(RP2350)
         _num_channels = rcprot.num_channels();
         _num_channels = MIN(_num_channels, RC_INPUT_MAX_CHANNELS);
         rcprot.read(_rc_values, _num_channels);

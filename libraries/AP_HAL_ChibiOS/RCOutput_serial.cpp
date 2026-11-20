@@ -15,6 +15,7 @@
 
 #include <hal.h>
 #include "RCOutput.h"
+#include "RCOutput_pico.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
@@ -51,19 +52,29 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
 #endif
     // first make sure we have the DMA channel before anything else
 #if AP_HAL_SHARED_DMA_ENABLED
-    osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
-    group.dma_handle->lock();
+    // no handle on RP2350, see dshot_send()
+    if (group.dma_handle != nullptr) {
+        osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
+        group.dma_handle->lock();
+    }
 #endif
 
     // only the timer thread releases the locks
     group.dshot_waiter = rcout_thread_ctx;
     bool bdshot_telem = false;
-#ifdef HAL_WITH_BIDIR_DSHOT
+// serial ESC passthrough is not supported on RP2350 (setup_group_DMA refuses),
+// and bdshot_prepare_for_next_pulse has no equivalent there
+#if defined(HAL_WITH_BIDIR_DSHOT) && !defined(RP2350)
     bdshot_prepare_for_next_pulse(group);
     bdshot_telem = group.bdshot.enabled;
+#elif defined(HAL_WITH_BIDIR_DSHOT)
+    // the PIO does the receive, so take the direction from the same place its program does
+    bdshot_telem = is_bidir_dshot_enabled(group);
 #endif    
 
+#if !defined(RP2350)
     memset((uint8_t *)group.dma_buffer, 0, DSHOT_BUFFER_LENGTH);
+#endif  // !defined(RP2350)
 
     // keep the other ESCs armed rather than sending nothing
     const uint16_t zero_packet = create_dshot_packet(0, false, bdshot_telem);
@@ -74,11 +85,17 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
             continue;
         }
 
+#if defined(RP2350)
+        // the PIO takes the packet as-is; there is no DMA buffer to fill
+        RCOutput_pico::write_frame(group.chan[i],
+                                   (group.chan[i] == chan || chan == RCOutput::ALL_CHANNELS) ? packet : zero_packet);
+#else
         if (group.chan[i] == chan || chan == RCOutput::ALL_CHANNELS) {
             fill_DMA_buffer_dshot(group.dma_buffer + i, 4, packet, group.bit_width_mul);
         } else {
             fill_DMA_buffer_dshot(group.dma_buffer + i, 4, zero_packet, group.bit_width_mul);
         }
+#endif  // defined(RP2350)
     }
 
     chEvtGetAndClearEvents(group.dshot_event_mask);
