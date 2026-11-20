@@ -246,6 +246,8 @@ void AP_Beacon_Marvelmind::update(void)
                     break;
                 }
                 }
+                // the 5-byte header and 2-byte CRC must also fit in input_buffer
+                good_byte = good_byte && (received_char <= AP_BEACON_MARVELMIND_BUF_SIZE - 7);
                 if (good_byte) {
                     parse_state = RECV_DGRAM;
                 }
