@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Loiter mode options
-    // @Description: Enables optional Loiter mode behaviors
+    // @Description: Enables optional Loiter mode behaviors. Coordinated turns are reduced when the pilot request uses the full lean angle.
     // @Bitmask: 0: Enable Coordinated turns
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 7, AC_Loiter, _options, LOITER_DEFAULT_OPTIONS),
@@ -203,9 +203,30 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
         Vector3f target_ang_vel_rads = _attitude_control.get_attitude_target_ang_vel();
         Vector3f desired_velocity_ms = _pos_control.get_vel_desired_NED_ms();
         Vector2f turn_accel_ne_mss = Vector2f(-desired_velocity_ms.y * target_ang_vel_rads.z, desired_velocity_ms.x * target_ang_vel_rads.z);
+        turn_accel_ne_mss = limit_turn_accel(_desired_accel_ne_mss, turn_accel_ne_mss);
         _desired_accel_ne_mss += turn_accel_ne_mss;
         _predicted_accel_ne_mss += turn_accel_ne_mss;
     }
+}
+
+// Returns accel_turn_mss shortened so that |accel_pilot_mss + turn| does not exceed the pilot lean angle limit.
+Vector2f AC_Loiter::limit_turn_accel(const Vector2f& accel_pilot_mss, const Vector2f& accel_turn_mss) const
+{
+    const float accel_turn_mag_mss = accel_turn_mss.length();
+    if (!is_positive(accel_turn_mag_mss)) {
+        return Vector2f();
+    }
+    const Vector2f turn_unit = accel_turn_mss / accel_turn_mag_mss;
+    const float accel_max_mss = angle_rad_to_accel_mss(MIN(get_angle_max_rad(), _attitude_control.get_althold_lean_angle_max_rad()));
+
+    // largest t >= 0 satisfying |accel_pilot_mss + t * turn_unit| <= accel_max_mss
+    const float accel_dir_mss = accel_pilot_mss * turn_unit;
+    const float accel_dir_max_sq = sq(accel_dir_mss) - accel_pilot_mss.length_squared() + sq(accel_max_mss);
+    if (!is_positive(accel_dir_max_sq)) {
+        return Vector2f();
+    }
+    const float accel_turn_max_mss = MAX(sqrtf(accel_dir_max_sq) - accel_dir_mss, 0.0f);
+    return turn_unit * MIN(accel_turn_mag_mss, accel_turn_max_mss);
 }
 
 // Calculates the expected stopping point based on current velocity and position in the NE frame.
