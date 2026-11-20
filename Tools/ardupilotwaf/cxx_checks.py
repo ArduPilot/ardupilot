@@ -176,6 +176,29 @@ def check_librt(cfg, env):
     return ret
 
 @conf
+def check_ld_classic(cfg):
+    '''check whether the linker still accepts -ld_classic
+
+    The flag was added for Xcode 15.3, whose new linker miscompiled some
+    targets. Apple has since removed the classic linker entirely; those
+    linkers warn that the flag is ignored rather than failing, so
+    -fatal_warnings is what makes this detectable.
+    '''
+    if cfg.env.DEST_OS != 'darwin':
+        return False
+
+    return cfg.check(
+        compiler='cxx',
+        fragment='int main() { return 0; }',
+        linkflags=['-Wl,-ld_classic,-fatal_warnings'],
+        msg='Checking for -ld_classic linker support',
+        okmsg='available',
+        errmsg='unavailable',
+        define_name='',
+        mandatory=False,
+    )
+
+@conf
 def check_feenableexcept(cfg):
 
     cfg.check(
