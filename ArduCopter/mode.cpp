@@ -183,10 +183,10 @@ bool Copter::fence_recovery_blocks_mode_change() const
 }
 #endif
 
-// update the reason for remaining in the current mode without releasing the fence recovery lock
+// record a request for the current mode, keeping FENCE_BREACHED as the mode reason while the fence lock holds
 void Copter::set_current_mode_reason(ModeReason reason)
 {
-    _last_reason = reason;
+    _last_requested_mode_reason = reason;
 #if AP_FENCE_ENABLED
     if (fence_recovery_blocks_mode_change()) {
         return;
@@ -342,8 +342,8 @@ uint32_t Copter::get_available_mode_enabled_mask() const
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
     // update last reason
-    const ModeReason last_reason = _last_reason;
-    _last_reason = reason;
+    const ModeReason last_reason = _last_requested_mode_reason;
+    _last_requested_mode_reason = reason;
 
     // return immediately if we are already in the desired mode
     if (mode == flightmode->mode_number()) {

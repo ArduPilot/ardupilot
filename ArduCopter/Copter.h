@@ -939,7 +939,9 @@ private:
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
-    ModeReason _last_reason;
+    // reason given to the most recent mode request, accepted or not, used only to choose the re-select tone,
+    // control_mode_reason holds the reason for the current mode
+    ModeReason _last_requested_mode_reason;
     void set_current_mode_reason(ModeReason reason);
 #if AP_FENCE_ENABLED
     bool fence_recovery_blocks_mode_change() const;
