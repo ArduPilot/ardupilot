@@ -378,43 +378,49 @@ private:
                                   const Vector2l &point,
                                   Vector2f &pos_cm) const WARN_IF_UNUSED;
 
-    // helper for get_closest_loc_within_fence: moves a point to the far side of the nearest fence
-    // boundary, clearing it by margin_cm.  Works for both inclusion and exclusion boundaries
-    //   from_pos_cm: point to move, as an offset in cm from the EKF origin
-    //   closest_vec_cm: vector from from_pos_cm to the nearest point on the boundary
-    //   margin_cm: distance to clear the boundary by
-    // returns the new point, as an offset in cm from the EKF origin
-    Vector2f move_pos_away_from_boundary(const Vector2f &from_pos_cm, const Vector2f &closest_vec_cm, float margin_cm) const;
+    // best point found so far by get_closest_loc_within_fence
+    struct ClosestCandidate {
+        bool found;
+        float dist_cm_sq;       // squared distance from the point being moved
+        Vector2f pos_cm;        // offset in cm from the fence origin
+    };
 
-    // helper for get_closest_loc_within_fence: keeps candidate_pos_cm if it does not breach the
-    // fence and is closer to scaled_pos_cm than the best candidate found so far
-    //   candidate_pos_cm: candidate point to test, as an offset in cm from the EKF origin
-    //   scaled_pos_cm: point candidates are being compared against, as an offset in cm from the EKF origin
-    //   found, closest_dist_cm_sq, closest_loc: best candidate found so far; updated if candidate_pos_cm is better
-    void compare_closest_point_candidate(const Vector2f &candidate_pos_cm,
-                                          const Vector2f &scaled_pos_cm,
-                                          bool &found,
-                                          float &closest_dist_cm_sq,
-                                          Location &closest_loc) const;
+    // helper for get_closest_loc_within_fence: tests candidate_pos_cm and keeps it as the best point that
+    // clears every boundary by margin_cm, and as the best point that is merely inside the fence, if it is
+    // closer to pos_cm than the best of each found so far
+    //   candidate_pos_cm, pos_cm: offsets in cm from the fence origin
+    void consider_candidate(const Vector2f &candidate_pos_cm, const Vector2f &pos_cm, float margin_cm,
+                            ClosestCandidate &best_clear, ClosestCandidate &best_inside) const;
 
-    // helper for get_closest_loc_within_fence: finds the closest point to pos_cm on the polygon formed by
-    // moving each edge of the polygon inwards by margin_cm (outwards if margin_cm is negative).  each
-    // corner of this inset polygon is where its two moved edges meet, so every point on it, including
-    // its corners, is margin_cm from the polygon's edges
-    //   points, count: polygon vertices, as offsets in cm from the fence origin
-    //   margin_cm: distance to move each edge inwards
-    //   pos_cm: point to find the closest inset point to, as an offset in cm from the fence origin
-    //   closest_pos_cm: closest point on the inset polygon, as an offset in cm from the fence origin
+    // helper for get_closest_loc_within_fence: returns true if pos_cm (an offset in cm from the fence
+    // origin) is at least margin_cm from the edge of every loaded polygon and circle
+    bool clears_margin(const Vector2f &pos_cm, float margin_cm) const;
+
+    // helper for get_closest_loc_within_fence: returns the number of loaded inclusion and exclusion polygons
+    uint8_t offset_polygon_count() const;
+
+    // helper for get_closest_loc_within_fence: gets polygon idx (inclusion polygons first, then exclusion
+    // polygons) and the distance each of its edges must move to its left to move margin_cm into the fence
+    //   points, count: polygon vertices (unclosed), as offsets in cm from the fence origin
     // returns false if the polygon has fewer than 3 vertices
-    bool closest_point_on_inset_polygon(const Vector2f *points, uint16_t count, float margin_cm, const Vector2f &pos_cm, Vector2f &closest_pos_cm) const;
+    bool get_offset_polygon(uint8_t idx, float margin_cm, const Vector2f *&points, uint16_t &count, float &inset_cm) const;
 
-    // helper for closest_point_on_inset_polygon: returns vertex i of the polygon moved to where its two
-    // neighbouring edges meet once each is moved inset_cm to its left
+    // helper for get_closest_loc_within_fence: returns the number of loaded inclusion and exclusion circles
+    uint8_t offset_circle_count() const;
+
+    // helper for get_closest_loc_within_fence: gets circle idx (inclusion circles first, then exclusion
+    // circles) with its radius changed so that its edge is margin_cm into the fence
+    //   center_pos_cm: offset in cm from the fence origin
+    // returns false if the circle could not be retrieved or an inclusion circle is smaller than margin_cm
+    bool get_offset_circle(uint8_t idx, float margin_cm, Vector2f &center_pos_cm, float &radius_cm) const;
+
+    // helper for get_closest_loc_within_fence: returns vertex i of the polygon moved to where its two
+    // neighbouring edges meet once each is moved inset_cm to its left.  At a near hairpin corner the
+    // move is limited, so that corner is less than inset_cm from its edges
     //   points, count: polygon vertices (unclosed), as offsets in cm from the fence origin
     //   i: index of the vertex to move
     //   inset_cm: distance to move each edge to its left (the inside of a polygon with positive area)
     Vector2f inset_vertex(const Vector2f *points, uint16_t count, uint16_t i, float inset_cm) const;
-
 
     // read_polygon_from_storage - reads vertex_count
     // latitude/longitude points from offset in permanent storage,
