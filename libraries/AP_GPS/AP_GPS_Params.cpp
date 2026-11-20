@@ -80,14 +80,14 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("DELAY_MS", 5, AP_GPS::Params, delay_ms, 0),
 
-#if AP_GPS_SBF_ENABLED
+#if AP_GPS_SBF_ENABLED || AP_GPS_UBLOX_ENABLED
     // @Param: COM_PORT
     // @DisplayName: GPS physical COM port
-    // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS
+    // @Description: The physical COM port on the connected device, currently only applies to SBF, GSOF and u-blox GPS. For u-blox, set 2 if the autopilot is connected to the receiver's UART2, so the auto-configuration baud rate change is sent for that port; any other value means UART1. u-blox moving baseline still assumes the autopilot is on UART1.
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
-    // @Values: 0:COM1(RS232) on GSOF, 1:COM2(TTL) on GSOF
+    // @Values: 0:COM1(RS232) on GSOF, 1:COM2(TTL) on GSOF or UART1 on u-blox, 2:UART2 on u-blox
     // @RebootRequired: True
     AP_GROUPINFO("COM_PORT", 6, AP_GPS::Params, com_port, HAL_GPS_COM_PORT_DEFAULT),
 #endif
