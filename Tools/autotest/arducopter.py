@@ -7449,15 +7449,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def SurfaceTracking(self):
         '''Test Surface Tracking'''
+        self._surface_tracking(use_rangefinder=True)
+
+    def SurfaceTrackingTerrain(self):
+        '''Test Surface Tracking using the terrain database'''
+        self._surface_tracking(use_rangefinder=False)
+
+    def _surface_tracking(self, use_rangefinder):
         ex = None
         self.context_push()
 
         self.install_terrain_handlers_context()
 
         try:
-            self.set_analog_rangefinder_parameters()
-            self.set_parameter("RC9_OPTION", 10) # rangefinder
-            self.set_rc(9, 2000)
+            if use_rangefinder:
+                self.set_analog_rangefinder_parameters()
+                self.set_parameter("RC9_OPTION", 10) # rangefinder
+                self.set_rc(9, 2000)
+            else:
+                self.set_parameter("SURFTRAK_MODE", 3) # terrain database
 
             self.reboot_sitl() # needed for both rangefinder and initial position
             self.assert_vehicle_location_is_at_startup_location()
@@ -20994,6 +21004,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.BeaconPosition,
             self.MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET,
             self.SurfaceTracking,
+            self.SurfaceTrackingTerrain,
             self.SurfaceTracking2,
             self.FlyRangeFinderMAVlink,
             self.FlyRangeFinderSITL,
