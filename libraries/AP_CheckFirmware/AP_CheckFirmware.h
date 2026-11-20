@@ -159,11 +159,9 @@ public:
     static bool check_signed_bootloader(const uint8_t *fw, uint32_t fw_size);
 
 private:
-#if HAL_GCS_ENABLED
+#if HAL_GCS_ENABLED && AP_SIGNED_FIRMWARE
     static uint8_t session_key[8];
-    static uint32_t last_secure_command_sequence;
-    static bool have_secure_command_sequence;
-    static bool is_new_secure_command_sequence(uint32_t sequence);
+    static ap_secure_command_sequence secure_command_sequence;
 #endif
 };
 
