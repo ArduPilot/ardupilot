@@ -5440,6 +5440,806 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_FLOW_OFS_X", 0)
         self.disarm_vehicle(force=True)
 
+    def EK3_FlowAxisLockoutRecovery(self):
+        '''Recover horizontal velocity from a single-axis optical-flow innovation lockout'''
+        # A rate offset on one flow axis is rejected by that axis's innovation gate while the
+        # other keeps passing, so the shared flow-fusion timer stays fresh and the 5 s
+        # AID_RELATIVE timeout never fires.  An accel bias reaches the same state only
+        # indirectly - the vehicle drifts until the flow agrees again - and did not provoke it
+        # reliably, so the fault is injected at the sensor.  XKF5.NI hits its 100 ceiling while
+        # an axis is being rejected and XKF7.FVC counts the resets, so each leg can show it saw
+        # the lockout and what the recovery made of it.
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        def fly_with_stuck_flow_axis(options, qmin=0, quality=51, inject=True):
+            self.set_parameters({"EK3_OPTIONS": options, "SIM_FLOW_OFS_X": 0,
+                                 "EK3_FLOW_QMIN": qmin, "SIM_FLOW_QUAL": quality})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            # ALT_HOLD leaves horizontal position uncontrolled, so nothing fights the estimate
+            self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+            self.delay_sim_time(5, "let the height above ground settle before injecting the fault")
+            if inject:
+                self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+
+        def check_resets_agree_with_range(tstart, hagl_msg, hagl_field):
+            '''check every reset the primary core logged after tstart scaled by a height that agreed
+            with the range, as XKF5 is logged for that core alone; returns how many there were'''
+            # the speed error a height difference puts into a reset is the flow rate times that
+            # difference, and it may be no more than EK3_FLOW_M_NSE times the height
+            flow_noise = self.get_parameter("EK3_FLOW_M_NSE")
+            dfreader = self.dfreader_for_current_onboard_log()
+            hagl = None
+            dist = None
+            flow_rate = None
+            resets = 0
+            checked = 0
+            while True:
+                m = dfreader.recv_match(type=[hagl_msg, 'RFND', 'XKF7', 'OF'])
+                if m is None:
+                    break
+                mtype = m.get_type()
+                if mtype == hagl_msg and m.C == 0:
+                    hagl = getattr(m, hagl_field)
+                elif mtype == 'RFND' and m.Instance == 0:
+                    dist = m.Dist
+                elif mtype == 'OF':
+                    flow_rate = math.hypot(m.flowX - m.bodyX, m.flowY - m.bodyY)
+                elif mtype == 'XKF7' and m.C == 0 and m.FVC > resets:
+                    resets = m.FVC
+                    if m.TimeUS * 1e-6 < tstart:
+                        continue
+                    if hagl is None or dist is None or flow_rate is None:
+                        raise NotAchievedException("reset with no height, range or flow logged before it")
+                    # 0.15 m/s for the logging rate
+                    spd_err = flow_rate * abs(hagl - dist)
+                    if spd_err > flow_noise * hagl + 0.15:
+                        raise NotAchievedException("reset with %.2f m/s from the height step (height %.2f m, range %.2f m)" %
+                                                   (spd_err, hagl, dist))
+                    checked += 1
+            return checked
+
+        def check_reset_waited_for_restart(what):
+            '''check each core deferred its recovery over a height restart before it reset'''
+            texts = [m.text for m in self.context_collection('STATUSTEXT')]
+            for imu in ("IMU0", "IMU1"):
+                deferred = [i for i, t in enumerate(texts) if imu in t and "recovery deferred, range restarted" in t]
+                reset = [i for i, t in enumerate(texts) if imu in t and "flow vel reset" in t]
+                if not reset:
+                    raise NotAchievedException("%s made no reset after %s restart" % (imu, what))
+                if not deferred or deferred[0] > reset[0]:
+                    raise NotAchievedException("%s reset on %s restart sample, before any confirmed it" % (imu, what))
+
+        self.start_subtest("AGL KF gate on: single-axis lockout is recovered")
+        self.context_collect('STATUSTEXT')
+        fly_with_stuck_flow_axis(8)  # AglKfForOptflow
+        self.wait_statustext("flow vel reset", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        # the reset re-anchors velocity to the faulty axis, so don't expect a graceful landing
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("no flow axis lockout was provoked")
+        if self.max_dfreader_field('XKF7', 'FVC') == 0:
+            raise NotAchievedException("recovery announced but XKF7 logged no reset")
+
+        self.start_subtest("Quiet resets option: the lockout is recovered without a message")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8 | 64)  # AglKfForOptflow, QuietFlowVelResets
+        # with no message the core 0 count in XKF7 is the only sign of the reset
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("no flow vel reset logged with the quiet option")
+            self.delay_sim_time(2, "the next look at the log for a reset")
+            dfreader = self.dfreader_for_current_onboard_log()
+            resets = 0
+            while True:
+                m = dfreader.recv_match(type='XKF7')
+                if m is None:
+                    break
+                if m.C == 0:
+                    resets = max(resets, m.FVC)
+            if resets > 0:
+                break
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        # the per-reset message only; a pause after a burst is still announced
+        if self.statustext_in_collections("(axis lockout)"):
+            raise NotAchievedException("flow vel reset announced with the quiet option set")
+
+        # without the AGL KF the flow is scaled by the main filter's terrain estimate, which the
+        # range finder measures, so the reset scales by that
+        self.start_subtest("AGL KF off: the lockout is recovered from the terrain estimate")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(0)  # clear AglKfForOptflow
+        self.wait_statustext("flow vel reset", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("AGL KF off leg did not reproduce the lockout")
+        if check_resets_agree_with_range(0, 'XKF5', 'HAGL') == 0:
+            raise NotAchievedException("recovery announced but XKF7 logged no reset")
+
+        # the terrain estimate follows a step in the ground over a second or more, as the AGL KF
+        # does, and the recovery waits for it the same way
+        self.start_subtest("AGL KF off, step in the ground: the recovery waits for the terrain estimate")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(0, inject=False)
+        rng = self.assert_receive_message('DISTANCE_SENSOR').current_distance * 0.01
+        tstep = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 0.5 - rng)
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("recovery deferred, range step", check_context=True, timeout=4)
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(3, "back over the ground, let the heights agree")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_OFS_X", -1.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        if check_resets_agree_with_range(tstep, 'XKF5', 'HAGL') == 0:
+            raise NotAchievedException("no reset once the terrain estimate agreed with the range again")
+
+        # the terrain estimate lapses 5 s after its last range and restarts from the first one
+        # back, as the AGL KF does, and the recovery waits for the samples after it to confirm it
+        self.start_subtest("AGL KF off, range back after an outage: the recovery waits for the terrain estimate's restart")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(0, inject=False)
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.delay_sim_time(6, "out of range past the terrain estimate's 5 s timeout")
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        # no message or event marks a lockout, which takes 500 ms to declare
+        self.delay_sim_time(1, "the flow axis locks out")
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        for imu in ("IMU0", "IMU1"):
+            self.wait_statustext("%s flow vel reset" % imu, check_context=True, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        check_reset_waited_for_restart("the terrain estimate's")
+
+        # with the range finder as the main height source the filter falls back to the baro while the
+        # range is gone, and resets its height to the first range back; the recovery waits for the
+        # samples after that to confirm it, as it does for the terrain estimate
+        self.start_subtest("AGL KF off, range finder the height source: the recovery waits for its height's restart")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("EK3_SRC1_POSZ", 2)  # range finder
+        fly_with_stuck_flow_axis(0, inject=False)
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.delay_sim_time(2, "out of range for longer than the 500 ms the filter holds a range height")
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.delay_sim_time(1, "the flow axis locks out")
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        for imu in ("IMU0", "IMU1"):
+            self.wait_statustext("%s flow vel reset" % imu, check_context=True, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        self.set_parameter("EK3_SRC1_POSZ", 1)  # baro
+        check_reset_waited_for_restart("the range height's")
+
+        # with no downward range finder the flow is scaled by a height nothing measures, and a reset
+        # would adopt that height's error, so the lockout is left alone
+        self.start_subtest("No range finder: the lockout is not recovered")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameters({"RNGFND1_TYPE": 0, "EK3_OPTIONS": 0, "SIM_FLOW_OFS_X": 0,
+                             "EK3_FLOW_QMIN": 0, "SIM_FLOW_QUAL": 51})
+        self.reboot_sitl()
+        # the filter then aids velocity from flow but claims no relative position, so arm in
+        # ALT_HOLD once relative aiding has started rather than wait for one
+        self.wait_statustext("started relative aiding", check_context=True, timeout=120)
+        self.change_mode('ALT_HOLD')
+        self.set_rc(3, 1000)
+        self.wait_prearm_sys_status_healthy(timeout=120)
+        self.arm_vehicle()
+        self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+        # with no range the filter detects takeoff from a body rate over 0.1 rad/s, which a calm
+        # SITL hover does not reach, and nothing is recovered before it
+        self.set_rc(4, 1700)
+        self.assert_receive_message('ATTITUDE', condition='ATTITUDE.yawspeed > 0.3', timeout=10)
+        self.set_rc(4, 1500)
+        self.assert_receive_message('ATTITUDE', condition='abs(ATTITUDE.yawspeed) < 0.05', timeout=10)
+        tinject = self.get_sim_time()
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.delay_sim_time(10, "ten times the second a recovery takes with a range")
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        self.set_analog_rangefinder_parameters()
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("the lockout was not reproduced with no range finder")
+        takeoff_detected = False
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='XKF4', condition='XKF4.C==0')
+            if m is None:
+                break
+            if m.TimeUS * 1e-6 >= tinject and (m.SS & (1 << 10)):
+                takeoff_detected = True
+                break
+        if not takeoff_detected:
+            raise NotAchievedException("takeoff not detected, so the leg cannot show the height decides")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("reset scaled by a height no range measures")
+        # skipped for want of a height rather than deferred as if a range might come back
+        if self.statustext_in_collections("recovery deferred"):
+            raise NotAchievedException("recovery deferred with no range finder to wait for")
+
+        # A touchdown can leave a velocity error the flow then rejects for as long as the vehicle sits
+        # there: on the ground the flow is scaled by the range finder's ground clearance, so a few cm/s
+        # of error predicts several rad/s, and the velocity walks away. Landed and on the floor, the
+        # velocity's variance is held at what the assumption that the vehicle is still is worth, so the
+        # flow is never shut out. A pulse of accel bias on one axis, landed and still armed, puts the
+        # error in, and the residual bias left after it makes it grow, as an accel bias does: without
+        # the hold that axis locks out and the velocity reaches 5.3 m/s. With the AGL KF scaling the
+        # flow and without
+        def landed_lane_speeds(tstart, tend):
+            '''the highest speed each core's velocity estimate reached between tstart and tend (s)'''
+            speeds = {}
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type='XKF1')
+                if m is None:
+                    break
+                if tstart <= m.TimeUS * 1e-6 <= tend:
+                    speeds[m.C] = max(speeds.get(m.C, 0), math.hypot(m.VN, m.VE))
+            return speeds
+
+        # the legs after these land and wait for the auto-disarm, so the delay comes back each time
+        disarm_delay = self.get_parameter("DISARM_DELAY")
+        for options in (0, 8):
+            self.start_subtest("Landed: an accel bias does not walk the velocity away, EK3_OPTIONS %u" % options)
+            self.context_clear_collection('STATUSTEXT')
+            self.set_parameter("DISARM_DELAY", 0)  # stay armed once landed
+            fly_with_stuck_flow_axis(options, inject=False)
+            self.set_rc(3, 1000)
+            self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+            self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                         landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, timeout=30)
+            # set once with read-back so the suite restores them; send_set_parameter below, as that
+            # read-back takes over a second of sim time
+            self.set_parameters({"SIM_ACC1_BIAS_X": 0, "SIM_ACC2_BIAS_X": 0})
+            tpulse = self.get_sim_time()
+            for bias in (3, 0.3):
+                self.send_set_parameter("SIM_ACC1_BIAS_X", bias)
+                self.send_set_parameter("SIM_ACC2_BIAS_X", bias)
+                if bias == 3:
+                    self.delay_sim_time(0.5, "a half-second pulse of accel bias")
+            self.delay_sim_time(12, "the residual bias acting on the ground")
+            self.set_parameters({"SIM_ACC1_BIAS_X": 0, "SIM_ACC2_BIAS_X": 0, "DISARM_DELAY": disarm_delay})
+            self.disarm_vehicle(force=True)
+            # the pulse and the residual were sent without read-back, so check the log saw them
+            biases = set()
+            shut_out = 0
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type=['PARM', 'XKF5'])
+                if m is None:
+                    break
+                if m.TimeUS * 1e-6 < tpulse:
+                    continue
+                if m.get_type() == 'PARM':
+                    if m.Name == 'SIM_ACC1_BIAS_X':
+                        biases.add(round(m.Value, 1))
+                elif m.C == 0:
+                    shut_out = max(shut_out, m.NI)
+            if not {3.0, 0.3} <= biases:
+                raise NotAchievedException("accel bias pulse not applied: %s" % biases)
+            if shut_out >= 100:
+                raise NotAchievedException("the flow was shut out on the ground")
+            # the pulse moves the estimate with it, to 0.9 m/s, and the flow brings it back within a
+            # second; without the hold it stays out and the residual adds 0.3 m/s a second
+            speeds = landed_lane_speeds(tpulse + 1.5, tpulse + 12)
+            if len(speeds) < 2 or max(speeds.values()) > 0.3:
+                raise NotAchievedException("landed velocity estimates %s m/s walked away" % speeds)
+            if self.statustext_in_collections("flow vel reset"):
+                raise NotAchievedException("a landed lane's velocity was reset rather than its variance raised")
+
+        # EK3_FLOW_QMIN declines to re-anchor to a sample the sensor calls poor.  Same
+        # lockout again, but now the sensor reports it is unhappy, as a defocused or
+        # poor-surface sensor does - so the recovery must stop flow aiding rather than
+        # adopt a measurement that is as likely to be the fault as the cure.
+        self.start_subtest("Low flow quality: lockout is not recovered by a reset")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, qmin=40, quality=10)
+        self.wait_statustext("flow quality", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("low-quality half did not reproduce the lockout")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("re-anchored to a flow sample below EK3_FLOW_QMIN")
+        if self.max_dfreader_field('XKF7', 'FVC') != 0:
+            raise NotAchievedException("XKF7 logged a reset below EK3_FLOW_QMIN")
+
+        # That latch is held until disarm or until the sensor recovers.  A sensor that sends
+        # nothing between landing and the next arm must not carry it into the next flight,
+        # where it would refuse flow-only relative aiding from the start.
+        self.start_subtest("Low flow quality: the latch ends with the flight, sensor silent or not")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, qmin=40, quality=10)
+        self.wait_statustext("flow quality", check_context=True, timeout=60)
+        self.set_parameters({"SIM_FLOW_OFS_X": 0, "SIM_FLOW_ENABLE": 0})
+        self.set_rc(3, 1000)
+        self.wait_disarmed()  # landed and auto-disarmed with no flow sample arriving
+        # stay armed on the ground: an auto-disarm would end the latch and meet the wait below
+        self.set_parameters({"SIM_FLOW_QUAL": 51, "DISARM_DELAY": 0})
+        self.arm_vehicle()
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+        fvu = None
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type=['ARM', 'XKF7'])
+            if m is None:
+                break
+            if m.get_type() == 'ARM':
+                if m.ArmState == 1:
+                    fvu = []
+            elif fvu is not None:
+                fvu.append(m.FVU)
+        if not fvu:
+            raise NotAchievedException("no XKF7 logged after the second arm")
+        if max(fvu) != 0:
+            raise NotAchievedException("the low-quality latch carried into the next flight")
+
+        # Outdoors a sensor drops out over a bad patch and comes back good, so the latch lets go
+        # after a long run of samples 10% clear of EK3_FLOW_QMIN, and not at the threshold itself.
+        self.start_subtest("Low flow quality: the latch lets go once the sensor recovers")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, qmin=40, quality=10)
+        self.wait_statustext("too low to recover", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.set_parameter("SIM_FLOW_QUAL", 42)
+        self.delay_sim_time(5, "quality above EK3_FLOW_QMIN but inside the release margin")
+        if self.statustext_in_collections("flow quality recovered"):
+            raise NotAchievedException("latch let go at quality 42, inside the 10% margin over 40")
+        # a dropout flickering between nothing and good is not a recovery: the run must be unbroken.
+        # send_set_parameter, as set_parameter's read-back takes over a second of sim time
+        for i in range(12):
+            self.send_set_parameter("SIM_FLOW_QUAL", 60 if i % 2 == 0 else 0)
+            self.delay_sim_time(0.5, "half a second of the flicker")
+        if self.statustext_in_collections("flow quality recovered"):
+            raise NotAchievedException("latch let go while quality flickered to 0")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_QUAL", 60)
+        self.wait_statustext("flow quality recovered", check_context=True, timeout=10)
+        self.wait_statustext("started relative aiding", check_context=True, timeout=10)
+        self.disarm_vehicle(force=True)
+
+        # Flying onto something higher, a car bonnet say, the range drops at once while the AGL
+        # KF height the reset scales the flow by follows it down over a second or more, and a
+        # reset in that window adopts a velocity wrong in proportion.  The recovery must wait
+        # until the two agree, so every reset over the step is checked against them in the log.
+        # The step is bonnet-like, to 0.5 m: a step of a third of the height is followed inside
+        # the 500 ms a lockout takes to declare.
+        self.start_subtest("Step in the ground: the recovery waits for the height to settle")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        rng = self.assert_receive_message('DISTANCE_SENSOR').current_distance * 0.01
+        tstep = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 0.5 - rng)
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("recovery deferred, range step", check_context=True, timeout=4)
+        self.delay_sim_time(3, "hold the lockout over the step")
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(3, "back over the ground, let the heights agree")
+        # the step may have ended the first lockout on its own, so start a fresh one: recovery
+        # must still go ahead once the heights agree
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_OFS_X", -1.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        if check_resets_agree_with_range(tstep, 'XKFA', 'HAgl') == 0:
+            raise NotAchievedException("no reset once the heights agreed again")
+
+        # The recovery scales the recovered velocity by the AGL KF height, and aglKf.valid
+        # outlives the last range fusion by 5 s - long enough for that height to coast metres
+        # low.  Take the range finder out of range first and inject into that window: a fault
+        # injected while the range is fresh is recovered by one reset, and that reset
+        # re-anchors velocity to the faulty flow and ends the lockout, leaving nothing to
+        # defer.  The recovery must then resume with the range rather than be cancelled by it.
+        self.start_subtest("Stale range: the recovery is deferred, not taken")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("recovery deferred", check_context=True, timeout=4)
+        self.context_clear_collection('STATUSTEXT')
+        self.delay_sim_time(2, "hold the lockout with the range stale")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("re-anchored to a height with no current range")
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+
+        # Out of range for over 5 s the AGL KF times out, and when the range comes back it restarts
+        # from that one sample, which the reset's range tests then compare with itself. The
+        # recovery must wait for the samples after the restart to confirm it. A lockout held
+        # through the outage ends of itself once the flow scales by the main filter's height, so
+        # the fault starts after the timeout, when the recovery leaves the lockout alone, and the
+        # range comes back while it is still locked out
+        self.start_subtest("Range back after an outage: the recovery waits for the restart to be confirmed")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.delay_sim_time(6, "out of range past the AGL KF's 5 s timeout")
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        # no message or event marks a lockout, which takes 500 ms to declare
+        self.delay_sim_time(1, "the flow axis locks out")
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+        texts = [m.text for m in self.context_collection('STATUSTEXT')]
+        deferred = [i for i, t in enumerate(texts) if "recovery deferred, range restarted" in t]
+        reset = [i for i, t in enumerate(texts) if "flow vel reset" in t]
+        if not deferred or deferred[0] > reset[0]:
+            raise NotAchievedException("reset taken on the AGL KF's restart sample, before any confirmed it")
+
+        # A range finder backend holds its last reading as Good for 500 ms, or 3 s for NMEA, and the
+        # EKF polls it every 50 ms, so one reading after an outage restarts the AGL KF by itself.
+        # Copies of that reading must not then confirm the restart.  A second range finder, on
+        # MAVLink, gives the one reading while the first is still out of range.  It sits off the IMU,
+        # so the EKF's correction for its position moves the copies with the vehicle's attitude
+        self.start_subtest("One held range reading after an outage does not confirm the restart")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameters({
+            "RNGFND2_TYPE": 10,  # MAVLink
+            "RNGFND2_ORIENT": 25,
+            "RNGFND2_MAX": 40,
+            "RNGFND2_POS_X": 0.1,
+            "ARMING_SKIPCHK": 1 << 15,  # range finder: the MAVLink one has no data until it is sent some
+        })
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.delay_sim_time(6, "out of range past the AGL KF's 5 s timeout")
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.delay_sim_time(1, "the flow axis locks out")
+        hagl_cm = int(-100 * self.assert_receive_message('LOCAL_POSITION_NED').z)
+        self.mav.mav.distance_sensor_send(
+            0,  # time_boot_ms
+            10,  # min_distance cm
+            4000,  # max_distance cm
+            hagl_cm,  # current_distance cm
+            mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER,  # type
+            1,  # id
+            mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270,  # orientation
+            255)  # covariance
+        self.wait_statustext("recovery deferred, range restarted", check_context=True, timeout=5)
+        self.delay_sim_time(2, "past the 500 ms the reading is held for")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("AGL KF restart confirmed by one held range reading")
+        # the first range finder's readings then confirm it, and a fresh lockout is recovered at once
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        self.delay_sim_time(6, "the range finder's readings confirm the restart and the old lockout ends")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_OFS_X", -1.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=10)
+        self.disarm_vehicle(force=True)
+        self.set_parameters({"RNGFND2_TYPE": 0, "ARMING_SKIPCHK": 0})
+
+        # A steady offset is reset once and then agreed with, so flip its sign every 4 s: each
+        # flip is a fresh lockout and a fresh reset, as repeated hard manoeuvres would give.  Five
+        # resets within 20 s pause the resets, for 5 s and then 10 s, while flow aiding carries on.
+        self.start_subtest("Repeated lockouts: bursts of resets pause them, for longer each time")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        t0 = self.get_sim_time()
+        for i in range(1, 17):
+            self.delay_sim_time(t0 + 4 * i - self.get_sim_time(), "the next flip")
+            self.set_parameter("SIM_FLOW_OFS_X", 1.0 if i % 2 == 0 else -1.0)
+        self.delay_sim_time(4, "the last flip and its reset")
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        stopped = self.statustext_in_collections("stopped aiding")
+        paused = [self.statustext_in_collections("EKF3 IMU0 flow vel resets paused %us" % s) for s in (5, 10)]
+        self.disarm_vehicle(force=True)
+        resets = []
+        dfreader = self.dfreader_for_current_onboard_log()
+        last = 0
+        while True:
+            m = dfreader.recv_match(type='XKF7')
+            if m is None:
+                break
+            if m.C == 0 and m.FVC != last:
+                resets.append(m.TimeUS * 1e-6)
+                last = m.FVC
+        self.progress("reset times: %s" % ' '.join('%.1f' % t for t in resets))
+        if stopped:
+            raise NotAchievedException("flow aiding stopped through the bursts of resets")
+        if not all(paused):
+            raise NotAchievedException("expected pauses of 5 s then 10 s to be reported")
+        if self.max_dfreader_field('XKF7', 'FVU') != 0:
+            raise NotAchievedException("a burst of resets latched flow aiding off")
+        if len(resets) < 11:
+            raise NotAchievedException("resets did not resume after the pauses (%u)" % len(resets))
+        if resets[5] - resets[4] < 4.9 or resets[10] - resets[9] < 9.9:
+            raise NotAchievedException("resets not paused for 5 s then 10 s: %s" % str(resets))
+
+        # In a fast rotation the flow lags its own gyro, and the sample a recovery would adopt can be
+        # wrong on both axes; a reset to it then puts a jump on the axis that was right.  Lock out X
+        # and hold an offset on Y across the moment the lockout is declared, so Y is rejected there
+        # but has passed within the last 500 ms.  Y measures the forward speed, so a reset that waits
+        # for a sample Y passed leaves it alone, where one taken during the burst jumps it by about
+        # the offset times the height.
+        self.start_subtest("Both axes wrong: the recovery waits for a sample the other axis passed")
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        # the harness only sees sim time move when SYSTEM_TIME arrives, and at the default rate and
+        # speedup a 0.2 s delay came out at 0.4-0.6 s, longer than the gap the Y burst must fall in
+        self.set_parameters({"SIM_FLOW_OFS_Y": 0, "SIM_SPEEDUP": 1})
+        self.set_message_rate_hz('SYSTEM_TIME', 50)
+        self.delay_sim_time(1, "SYSTEM_TIME at its new rate")
+        for i in range(3):
+            self.context_clear_collection('STATUSTEXT')
+            # send_set_parameter, as set_parameter's read-back takes over a second of sim time
+            self.send_set_parameter("SIM_FLOW_OFS_X", 1.0 if i % 2 == 0 else -1.0)
+            self.delay_sim_time(0.3, "X passing its last samples")
+            self.send_set_parameter("SIM_FLOW_OFS_Y", 1.0)
+            self.delay_sim_time(1.0, "Y rejected across the 500 ms lockout mark")
+            self.send_set_parameter("SIM_FLOW_OFS_Y", 0)
+            self.wait_statustext("flow vel reset", check_context=True, timeout=10)
+            self.delay_sim_time(3, "settle before the next lockout")
+        self.set_message_rate_hz('SYSTEM_TIME', 0)
+        self.set_parameters({"SIM_FLOW_OFS_X": 0, "SIM_SPEEDUP": self.speedup})
+        self.disarm_vehicle(force=True)
+        fwd = {}
+        reset_times = []
+        last = {}
+        x_flips = []
+        y_on = []
+        y_off = []
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'XKF7', 'PARM'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            mtype = m.get_type()
+            if mtype == 'PARM':
+                if m.Name == 'SIM_FLOW_OFS_X' and m.Value != 0:
+                    x_flips.append(t)
+                elif m.Name == 'SIM_FLOW_OFS_Y':
+                    (y_on if m.Value != 0 else y_off).append(t)
+            elif mtype == 'XKF1':
+                yaw = math.radians(m.Yaw)
+                fwd.setdefault(m.C, []).append((t, m.VN * math.cos(yaw) + m.VE * math.sin(yaw)))
+            elif m.FVC != last.get(m.C, 0):
+                reset_times.append((m.C, t))
+                last[m.C] = m.FVC
+        if not reset_times:
+            raise NotAchievedException("no reset logged")
+        # at the 10 Hz SITL flow rate a burst starting under 0.2 s after its X flip leaves Y over
+        # 500 ms stale when X's lockout is declared, and one starting over 0.5 s after it begins once
+        # that lockout is recovered: either way the recovery never needs the other axis check
+        # each set is logged twice, a few ms apart
+        flips = [t for (i, t) in enumerate(x_flips) if i == 0 or t - x_flips[i - 1] > 0.1] + [float('inf')]
+        for (tx, tnext) in zip(flips, flips[1:]):
+            y_start = min((t for t in y_on if tx < t < tnext), default=None)
+            y_end = min((t for t in y_off if tx < t < tnext), default=None)
+            if y_start is None or y_end is None or not 0.2 <= y_start - tx <= 0.5:
+                raise NotAchievedException("Y burst after the X flip at %.1f s missed the window" % tx)
+            early = [t for (_, t) in reset_times if tx < t < y_end]
+            if early:
+                raise NotAchievedException("reset at %.1f s, inside the Y burst" % early[0])
+        for (core, t) in reset_times:
+            # XKF1 is written before XKF7 in a frame, so step clear of the reset frame on both sides
+            before = [v for (tv, v) in fwd[core] if tv < t - 0.05]
+            after = [v for (tv, v) in fwd[core] if tv > t + 0.05]
+            if not before or not after:
+                raise NotAchievedException("no XKF1 either side of the reset at %.1f s" % t)
+            jump = after[0] - before[-1]
+            self.progress("core %u reset at %.1f s: forward speed %.2f -> %.2f m/s" % (core, t, before[-1], after[0]))
+            if abs(jump) > 1.0:
+                raise NotAchievedException("core %u reset at %.1f s jumped the forward speed %.2f m/s" % (core, t, jump))
+
+        # Below FLOW_ALT_MIN the flow is not fused, through a dropout no flow arrives, and over
+        # EK3_FLOW_MAX neither axis can pass, so neither is locked out. A lockout on the samples after
+        # any of them has to last the 500 ms it takes to declare, not be counted from before the spell.
+        # Each spell lasts 1.5 s, inside the 5 s flow aiding timeout, with the X offset put on during
+        # it: the dip by raising FLOW_ALT_MIN over the hover height, the dropout by turning the
+        # simulated sensor off, and the fast flow by lowering EK3_FLOW_MAX under the offset.
+        # send_set_parameter, as set_parameter's read-back takes over a second of sim time
+        def check_lockout_after_spell(what, name, spell_value, normal_value):
+            self.start_subtest("After %s: a lockout still takes 500 ms to declare" % what)
+            self.context_clear_collection('STATUSTEXT')
+            fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+            self.send_set_parameter(name, spell_value, add_to_context=True)
+            self.send_set_parameter("SIM_FLOW_OFS_X", 1.0)
+            self.delay_sim_time(1.5, what)
+            self.send_set_parameter(name, normal_value)
+            self.wait_statustext("flow vel reset", check_context=True, timeout=10)
+            self.set_parameter("SIM_FLOW_OFS_X", 0)
+            self.disarm_vehicle(force=True)
+            spell_us = None
+            offset_us = None
+            restore_us = None
+            reset_us = None
+            last = {}
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type=['PARM', 'XKF7'])
+                if m is None:
+                    break
+                if m.get_type() == 'PARM':
+                    if m.Name == name and m.Value == spell_value and spell_us is None:
+                        spell_us = m.TimeUS
+                    elif m.Name == name and m.Value == normal_value and spell_us is not None and restore_us is None:
+                        restore_us = m.TimeUS
+                    elif m.Name == 'SIM_FLOW_OFS_X' and m.Value != 0 and offset_us is None:
+                        offset_us = m.TimeUS
+                    continue
+                if m.FVC != last.get(m.C, 0):
+                    last[m.C] = m.FVC
+                    if spell_us is not None and restore_us is None:
+                        raise NotAchievedException("flow vel reset during %s" % what)
+                    if restore_us is not None and reset_us is None:
+                        reset_us = m.TimeUS
+            if spell_us is None or restore_us is None or offset_us is None or not spell_us <= offset_us < restore_us:
+                raise NotAchievedException("%s with the offset on is not in the log" % what)
+            # the X axis has to be stale for more than 500 ms at the return, or the spell tests nothing
+            if restore_us - spell_us < 1.0e6:
+                raise NotAchievedException("%s lasted only %.2f s" % (what, (restore_us - spell_us) * 1e-6))
+            if reset_us is None:
+                raise NotAchievedException("no reset logged after %s" % what)
+            delay_s = (reset_us - restore_us) * 1e-6
+            self.progress("reset %.2f s after %s" % (delay_s, what))
+            # counted from the spell, the lockout is declared on the first sample back, within one 10 Hz
+            # flow sample; the 0.1 s under 500 ms is margin for the flow and log timing. A lockout that has
+            # lasted 500 ms is still recovered on the next sample, so the reset comes well inside 1 s
+            if delay_s < 0.4:
+                raise NotAchievedException("reset %.2f s after %s, under the 500 ms a lockout takes to "
+                                           "declare" % (delay_s, what))
+            if delay_s > 1.0:
+                raise NotAchievedException("reset %.2f s after %s, a lockout was recovered late" % (delay_s, what))
+
+        check_lockout_after_spell("a dip below FLOW_ALT_MIN", "FLOW_ALT_MIN", 10, 0)
+        check_lockout_after_spell("a flow dropout", "SIM_FLOW_ENABLE", 0, 1)
+        check_lockout_after_spell("flow over EK3_FLOW_MAX", "EK3_FLOW_MAX", 0.5, 2.5)
+
+    def flow_switch_parameters(self):
+        '''source set 2 on optical flow, source set 3 with no horizontal aiding'''
+        params = {
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_OPTIONS": 8,          # AglKfForOptflow
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,       # optical flow
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "EK3_SRC3_POSXY": 0,
+            "EK3_SRC3_VELXY": 0,
+            "EK3_SRC3_POSZ": 1,
+            "EK3_SRC3_VELZ": 0,
+            "EK3_SRC3_YAW": 1,
+        }
+        params.update(self.analog_rangefinder_parameters())
+        return params
+
+    def flow_lane_errors_after(self, t_start_us, offsets_s):
+        '''core 0's horizontal velocity error against SITL truth (m/s) at each offset after t_start_us'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        ekf, sim = [], []
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'SIM2'])
+            if m is None:
+                break
+            if m.TimeUS < t_start_us - 1000000:
+                continue
+            if m.get_type() == 'XKF1':
+                if m.C == 0:
+                    ekf.append((m.TimeUS, m.VN, m.VE))
+            else:
+                sim.append((m.TimeUS, m.VN, m.VE))
+        errors = []
+        for offset in offsets_s:
+            t = t_start_us + offset * 1e6
+            e = min(ekf, key=lambda r: abs(r[0] - t))
+            v = min(sim, key=lambda r: abs(r[0] - t))
+            errors.append((math.hypot(e[1] - v[1], e[2] - v[2]), math.hypot(v[1], v[2])))
+        return errors
+
+    def first_message_time_us(self, text, after_us=0):
+        '''TimeUS of the first MSG containing text after after_us in the current onboard log'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='MSG')
+            if m is None:
+                raise NotAchievedException("no '%s' in the log" % text)
+            if m.TimeUS > after_us and text in m.Message:
+                return m.TimeUS
+
+    def flow_aiding_start_errors(self):
+        '''fly on GPS, gather speed on set 3 with no horizontal aiding and switch to the flow set:
+        the speed and core 0's velocity error (m/s) as relative aiding starts and 0.3 and 1 s on'''
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_clear_collection('STATUSTEXT')
+        self.takeoff(4, mode='LOITER')
+        self.change_mode('ALT_HOLD')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=3)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+        # gather speed with nothing measuring it
+        self.set_rc(2, 1350)
+        self.delay_sim_time(4, "gather speed on the set with no aiding")
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, p1=2)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True)
+        self.delay_sim_time(3, "fly on with the flow")
+        self.set_rc(2, 1500)
+        self.disarm_vehicle(force=True)
+        start_us = self.first_message_time_us("EKF3 IMU0 started relative aiding", after_us=10e6)
+        errors = self.flow_lane_errors_after(start_us, [0.0, 0.3, 1.0])
+        self.progress("speed %.2f m/s at the start; velocity error %s m/s at 0, 0.3 and 1 s" %
+                      (errors[0][1], ", ".join("%.2f" % e[0] for e in errors)))
+        return errors
+
+    def EK3_FlowVelocityAtAidingStart(self):
+        '''Relative aiding started in flight takes its velocity from the flow, not zero'''
+        self.set_parameters(self.flow_switch_parameters())
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("without the AGL KF the velocity starts at zero")
+        self.set_parameter("EK3_OPTIONS", 0)
+        errors = self.flow_aiding_start_errors()
+        if errors[0][1] < 2.5:
+            raise NotAchievedException("only %.2f m/s at the start of aiding, too slow to show it" % errors[0][1])
+        if errors[1][0] < 2.0:
+            raise NotAchievedException("velocity only %.2f m/s out 0.3 s after aiding started" % errors[1][0])
+        if self.statustext_in_collections("flow velocity set at aiding start"):
+            raise NotAchievedException("velocity set from the flow without the AGL KF")
+
+        self.start_subtest("with the AGL KF it is set from the flow")
+        self.set_parameter("EK3_OPTIONS", 8)
+        errors = self.flow_aiding_start_errors()
+        if errors[0][1] < 2.5:
+            raise NotAchievedException("only %.2f m/s at the start of aiding, too slow to show it" % errors[0][1])
+        if errors[1][0] > 1.0:
+            raise NotAchievedException("velocity %.2f m/s out 0.3 s after aiding started" % errors[1][0])
+        if not self.statustext_in_collections("EKF3 IMU0 flow velocity set at aiding start"):
+            raise NotAchievedException("no message for the velocity set at the start of aiding")
+
+        self.start_subtest("no set when aiding starts on the ground")
+        # a flow only set, with the flow coming in once armed on the ground, so relative aiding starts
+        # there. An armed Copter that has not taken off is on the ground, where the flow below 0.5 m is
+        # replaced by zero, and the set must not take that. Aiding starts some 17 s after the flow
+        # comes in, later than auto disarm, so that is off. On a loaded terrain tile the range reads
+        # 0.545 m on the ground, above 0.5 m, so the ground is flat
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 5,
+            "EK3_SRC1_POSZ": 1,
+            "EK3_SRC1_VELZ": 0,
+            "SIM_FLOW_ENABLE": 0,
+            "DISARM_DELAY": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.reboot_sitl()
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        # nothing on the set gives a position until the flow comes in, which arming checks for
+        self.delay_sim_time(20, "EKF to align")
+        self.arm_vehicle(force=True)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        if not self.armed():
+            raise NotAchievedException("disarmed before relative aiding started")
+        self.delay_sim_time(6, "the set's 5 s wait on the ground")
+        self.disarm_vehicle(force=True)
+        if self.statustext_in_collections("EKF3 IMU0 flow velocity set at aiding start"):
+            raise NotAchievedException("velocity set when aiding started on the ground")
+        self.reboot_sitl()
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -21102,6 +21902,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
+            self.EK3_FlowAxisLockoutRecovery,
+            self.EK3_FlowVelocityAtAidingStart,
         ])
         return ret
 
@@ -23857,6 +24659,111 @@ return update()
                                        (len(script_only), len(frames)))
         self.progress("%u OSD frames, every one with the normal screen and the script's text" % len(frames))
 
+    def OSDEKFLanes(self):
+        '''OSD EKF lane items show each lane and the state of its optical flow'''
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            # each lane runs the source set with its own index: lane 0 on GPS,
+            # lane 1 on optical flow
+            "EK3_SRC_OPTIONS": 8,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SERIAL5_PROTOCOL": 42,  # MSP DisplayPort
+            "OSD_TYPE": 5,           # MSP DisplayPort
+            "OSD1_EKF0_EN": 1,
+            "OSD1_EKF0_X": 1,
+            "OSD1_EKF0_Y": 9,
+            "OSD1_EKF1_EN": 1,
+            "OSD1_EKF1_X": 1,
+            "OSD1_EKF1_Y": 10,
+            # SITL's range finder measures to cached terrain, 0.55 m below home at
+            # CMAC, leaving the lane REL for only 1 s once its flow stops
+            "SIM_TERRAIN": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port
+        ])
+        self.wait_ready_to_arm()
+        msp = self.msp_connect(port)
+
+        self.start_subtest("Both lanes report, the GPS lane marked as the one flying")
+        # 0xEA is the right arrow marking the lane flying the vehicle
+        self.wait_osd_ekf_lane(msp, 9, b"C0\xeaABS")
+        texts = self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
+        # the flow signal strength after the RSSI symbol (0x01 in both symbol
+        # tables), then a forward and a sideways arrow
+        if re.fullmatch(rb"\x01[ 0-9][0-9]", texts[-1][7:10]) is None:
+            raise NotAchievedException("flow lane shows no signal strength: %s" % texts[-1])
+        arrows = texts[-1][10:12]
+        if len(arrows) != 2 or b" " in arrows:
+            raise NotAchievedException("flow lane shows no flow arrows: %s" % texts[-1])
+
+        self.start_subtest("A lane with no flow data flashes its position type")
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL", flashing=True)
+        texts = [s[10] for s in self.osd_displayport_rows(msp, [10], 2)]
+        if any(len(t) > 10 for t in texts):
+            raise NotAchievedException("flow arrows shown with no flow data: %s" % texts)
+        if not any(t[7:10] == b"\x01--" for t in texts):
+            raise NotAchievedException("no flow data not shown as -- signal strength: %s" % texts)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
+
+        self.start_subtest("EK3_FLOW_QMIN reads 50 on the signal strength, flashing below it")
+        # SITL's flow sensor always reports quality 51, which reads 20 with no floor
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL\x0120")
+        self.set_parameter("EK3_FLOW_QMIN", 51)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL\x0150")
+        texts = [s[10] for s in self.osd_displayport_rows(msp, [10], 2)]
+        if not all(b"C1 REL\x0150" in t for t in texts):
+            raise NotAchievedException("signal strength at the quality floor flashes: %s" % texts)
+        self.set_parameter("EK3_FLOW_QMIN", 102)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL\x0125", flashing=True)
+        self.set_parameter("EK3_FLOW_QMIN", 0)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL\x0120")
+
+        self.start_subtest("A GPS lane coasting on its last fix reads CST, flashing")
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_osd_ekf_lane(msp, 9, b"CST", flashing=True)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+
+        self.start_subtest("The flow arrows map to the Betaflight font")
+        self.set_parameter("MSP_OPTIONS", 4)  # DisplayPort uses the Betaflight symbol table
+        self.reboot_sitl()
+        msp = self.msp_connect(port)
+        texts = self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
+        # Betaflight's north and east direction arrows
+        if texts[-1][10:12] != bytes([0x68, 0x64]):
+            raise NotAchievedException("flow arrows not mapped to the Betaflight font: %s" % texts[-1])
+
+        self.start_subtest("A lane latched out below the quality floor reads against it")
+        # a lockout below the floor latches the flow lane out until disarm or until the
+        # sensor recovers past the floor, with or without the AGL KF
+        self.set_parameters({"EK3_FLOW_QMIN": 40, "SIM_FLOW_QUAL": 10})
+        self.context_collect('STATUSTEXT')
+        self.wait_ready_to_arm()
+        self.takeoff(altitude_min=3, mode='ALT_HOLD')
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("flow quality 10 too low", check_context=True, timeout=60)
+        # still below the floor and its release, quality 20 reads 25 and flashes against it
+        # and 7 without it.  Nothing read the OSD through the flight, so the screens drawn
+        # before this change are still queued ahead of it
+        self.set_parameter("SIM_FLOW_QUAL", 20)
+        self.wait_osd_ekf_lane(msp, 10, b"\x0125", flashing=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        self.reboot_sitl()
+
     def ScriptingOSD(self):
         '''test OSD scripting with waypoint mission - requires SFML OSD'''
         # This test requires SITL to be built with SFML support:
@@ -25715,6 +26622,7 @@ return update, 1000
             self.TestEKF3CompassFailover,
             self.EKF3SRCPerCore,
             self.ToyModeDescentLimit,
+            self.OSDEKFLanes,
         ])
         return ret
 
