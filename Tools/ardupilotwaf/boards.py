@@ -274,9 +274,6 @@ class Board:
                 env.ROMFS_FILES += [(f'scripts/{bname}', d)]
                 cfg.msg(f"Embedded {bname}", 'yes', color='GREEN')
 
-        if cfg.options.disable_networking:
-            env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=0']
-
         if cfg.options.enable_networking_tests:
             env.CXXFLAGS += ['-DAP_NETWORKING_TESTS_ENABLED=1']
 
@@ -966,7 +963,8 @@ class SITLBoard(Board):
             '-Werror=missing-declarations',
         ]
 
-        if not cfg.options.disable_networking and 'clang' not in cfg.env.COMPILER_CC and cfg.env.TOOLCHAIN != 'emscripten':
+        networking_disabled = build_option_defines(vars(cfg.options)).get('AP_NETWORKING_ENABLED') == 0
+        if not networking_disabled and 'clang' not in cfg.env.COMPILER_CC and cfg.env.TOOLCHAIN != 'emscripten':
             # lwip doesn't build with clang
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=1']
         

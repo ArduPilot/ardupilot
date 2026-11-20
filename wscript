@@ -297,9 +297,6 @@ submodules at specific revisions.
                  default=False,
                  help="Enables GPS logging")
 
-    g.add_option('--disable-networking', action='store_true',
-                 help="Disable the networking API code")
-
     g.add_option('--enable-networking-tests', action='store_true',
                  help="Enable the networking test code. Automatically enables networking.")
     
