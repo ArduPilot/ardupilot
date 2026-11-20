@@ -452,7 +452,7 @@ def chibios_firmware(self):
     if do_patch or self.env.DEFAULT_PARAMETERS:
         # link to a private file, the steps below write the final ELF
         elf = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name)
-        self.link_task.outputs = [elf]
+        self.link_task.outputs = [elf] + self.link_task.outputs[1:]
         # report the size of the final ELF, not the unpatched one
         self.build_summary['binary'] = link_output.path_from(self.bld.bldnode)
 
@@ -585,6 +585,8 @@ def setup_optimization(env):
         env.CFLAGS += [ flto ]
         env.CXXFLAGS += [ flto ]
         env.LINKFLAGS += [ flto, OPTIMIZE ]
+        # zero size marker so tools can tell an ELF was built with LTO
+        env.LINKFLAGS += [ '-Wl,--defsym=__AP_LTO=1' ]
         # with LTO code is generated at link time, so diagnostics from
         # late compiler passes need to be enabled there. These are
         # warnings as per-function pragmas are not honoured at link time
