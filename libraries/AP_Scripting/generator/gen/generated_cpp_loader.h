@@ -2,6 +2,48 @@
 
 // for inclusion at the end of the generated .cpp
 
+// its address is a key no script can form, and not const so no build merges it with another
+// constant: in the registry it holds the metatable shared by the method caches, and in each
+// cache the index function the cache loads from
+static char index_cache_key;
+
+// __index of a method cache: look the name up with the cache's index function and keep a hit.
+// Misses are not kept, so a cache holds at most its type's methods and enums
+static int index_cache_miss(lua_State *L) {
+    // a bad key fails here, where the error names __index as it did before the cache
+    luaL_checkstring(L, 2);
+    lua_rawgetp(L, 1, &index_cache_key);
+    lua_pushvalue(L, 1);
+    lua_pushvalue(L, 2);
+    lua_call(L, 2, 1);
+    if (!lua_isnil(L, -1)) {
+        lua_pushvalue(L, 2);
+        lua_pushvalue(L, -2);
+        lua_rawset(L, 1);
+    }
+    return 1;
+}
+
+// replace the __index function of the metatable on top of the stack with a cache of what it
+// finds, so a method is looked up by name once rather than on every call. Right only while an
+// index function's answer depends on the name alone, never the object, as the generated ones
+// do. A metatable's last step, so a failed allocation here leaves it complete and uncached
+static void cache_index(lua_State *L) {
+    lua_createtable(L, 0, 1);
+    lua_getfield(L, -2, "__index");
+    lua_rawsetp(L, -2, &index_cache_key);
+    if (lua_rawgetp(L, LUA_REGISTRYINDEX, &index_cache_key) == LUA_TNIL) {
+        lua_pop(L, 1);
+        lua_createtable(L, 0, 1);
+        lua_pushcfunction(L, index_cache_miss);
+        lua_setfield(L, -2, "__index");
+        lua_pushvalue(L, -1);
+        lua_rawsetp(L, LUA_REGISTRYINDEX, &index_cache_key);
+    }
+    lua_setmetatable(L, -2);
+    lua_setfield(L, -2, "__index");
+}
+
 void * new_ap_object(lua_State *L, size_t size, const char * name) {
     void * ud = lua_newuserdata(L, size);
     if (luaL_newmetatable(L, name)) { // metatable just created, set it up
@@ -9,6 +51,7 @@ void * new_ap_object(lua_State *L, size_t size, const char * name) {
             if (strcmp(name, ap_object_fun[i].name) == 0) {
                 lua_pushcfunction(L, ap_object_fun[i].func);
                 lua_setfield(L, -2, "__index");
+                cache_index(L);
                 break;
             }
         }
@@ -30,6 +73,7 @@ void set_userdata_metatable(lua_State *L, const char * name) {
                 if (userdata_fun[i].operators != nullptr) {
                     luaL_setfuncs(L, userdata_fun[i].operators, 0);
                 }
+                cache_index(L);
                 break;
             }
         }
@@ -51,6 +95,7 @@ static int binding_index(lua_State *L) {
             if (luaL_newmetatable(L, name)) { // need to create metatable
                 lua_pushcfunction(L, singleton_fun[i].func);
                 lua_setfield(L, -2, "__index");
+                cache_index(L);
             }
             lua_setmetatable(L, -2);
             found = true;
