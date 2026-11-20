@@ -1,0 +1,6 @@
+# Enable DisplayPort OSD
+OSD_TYPE2 5
+# Relay 2 drives the VTX power switch, which is active low
+RELAY2_INVERTED 1
+# PWM 13 (LED pad) drives a NeoPixel serial LED strip
+SERVO13_FUNCTION 120
