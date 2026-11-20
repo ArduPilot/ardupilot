@@ -1020,7 +1020,9 @@ bool NavEKF3_core::flowResetHeight(FlowResetHeight &resetHgt) const
         resetHgt.var = Popt;
         resetHgt.rngTime_ms = gndHgtValidTime_ms;
     }
-    resetHgt.restartUnconfirmed = (rngHgtRestartConfirm != 0);
+    // a change of height source is made one update and the height reset to the new source on the
+    // next with height data, so until then the height is still the old source's
+    resetHgt.restartUnconfirmed = (rngHgtRestartConfirm != 0) || (activeHgtSource != prevHgtSource);
     return true;
 }
 
