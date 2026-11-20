@@ -80,8 +80,8 @@
 #endif
 
 // constructor
-AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted, uint32_t configured_baud) :
-    AP_RCProtocol_Backend(_frontend),
+AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, AP_RCProtocol::rcprotocol_t protocol, bool _inverted, uint32_t configured_baud) :
+    AP_RCProtocol_Backend(_frontend, protocol),
     inverted(_inverted),
     ss{configured_baud, SoftSerial::SERIAL_CONFIG_8E2I}
 {}

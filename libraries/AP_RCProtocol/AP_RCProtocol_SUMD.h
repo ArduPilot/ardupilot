@@ -28,7 +28,7 @@
 #define SUMD_FRAME_MAXLEN   40
 class AP_RCProtocol_SUMD : public AP_RCProtocol_Backend {
 public:
-    AP_RCProtocol_SUMD(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
+    AP_RCProtocol_SUMD(AP_RCProtocol &_frontend, AP_RCProtocol::rcprotocol_t protocol) : AP_RCProtocol_Backend(_frontend, protocol) {}
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 

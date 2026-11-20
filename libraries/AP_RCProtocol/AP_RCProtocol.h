@@ -236,9 +236,7 @@ public:
     const char *detected_protocol_name() const;
 
     // return detected protocol
-    enum rcprotocol_t protocol_detected(void) const {
-        return _detected_protocol;
-    }
+    enum rcprotocol_t protocol_detected(void) const;
 
     // add a UART for RCIN
     void add_uart(AP_HAL::UARTDriver* uart);
@@ -292,7 +290,8 @@ private:
     // having them make an "add_input" callback):
     bool detect_async_protocol(rcprotocol_t protocol);
 
-    enum rcprotocol_t _detected_protocol = NONE;
+    AP_RCProtocol_Backend *_active_backend;
+
     uint32_t _disabled_for_pulses;
     static_assert(NONE <= 32, "_disabled_for_pulses needs more bits");
     bool _detected_with_bytes;

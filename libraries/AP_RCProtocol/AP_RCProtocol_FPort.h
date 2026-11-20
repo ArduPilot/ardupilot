@@ -31,7 +31,8 @@ struct FPort_Frame;
 
 class AP_RCProtocol_FPort : public AP_RCProtocol_Backend {
 public:
-    AP_RCProtocol_FPort(AP_RCProtocol &_frontend, bool inverted);
+    AP_RCProtocol_FPort(AP_RCProtocol &_frontend, AP_RCProtocol::rcprotocol_t protocol, bool inverted);
+
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 
