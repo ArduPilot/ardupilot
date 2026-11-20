@@ -18,7 +18,7 @@ import shutil
 import build_options
 import glob
 
-from waflib import Build, ConfigSet, Configure, Context, Utils
+from waflib import Build, ConfigSet, Configure, Context, Options, Utils
 from waflib.Configure import conf
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
@@ -74,6 +74,11 @@ def submodulesync(ctx):
     subprocess.call(['Tools/gittools/submodule-sync.sh'])
 
 def init(ctx):
+    if 'configure' in Options.commands and any(
+        assignment.split('=', 1)[0].strip() == 'board' for assignment in Options.envvars
+    ):
+        ctx.fatal("Invalid board option 'board='. Use --board=BOARD.")
+
     # Generate Task List, so that VS Code extension can keep track
     # of changes to possible build targets
     generate_tasklist(ctx, False)
