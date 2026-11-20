@@ -659,10 +659,8 @@ void NavEKF3_core::SelectVelPosFusion()
     // check also waits until the fusion time horizon has reached the moment the vehicle came
     // to rest: samples still buffered from before it, such as a landing's impact, would
     // otherwise build the velocity again after the reset.
-    if (!onGroundNotMoving) {
-        velDCheckedAtRest = false;
-    } else if (fuseHgtData && !velDCheckedAtRest && !measuredVertVelFused() &&
-               (int32_t)(imuDataDelayed.time_ms - restStartTime_ms) >= 0) {
+    if (onGroundNotMoving && fuseHgtData && !velDCheckedAtRest && !measuredVertVelFused() &&
+        (int32_t)(imuDataDelayed.time_ms - restStartTime_ms) >= 0) {
         velDCheckedAtRest = true;
         if (!measuredVertVelAgrees() && (fabsF(stateStruct.velocity.z) > 0.5f)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u vertical velocity reset at rest", (unsigned)imu_index);
