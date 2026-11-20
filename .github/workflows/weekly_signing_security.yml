@@ -1,0 +1,99 @@
+name: weekly signing security
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  renode-signing-security:
+    if: github.repository == 'ArduPilot/ardupilot'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    container:
+      image: ardupilot/ardupilot-dev-chibios:v0.2.0
+      options: --user root
+    steps:
+      - name: Install test dependencies
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y curl dosfstools python3-pytest
+          python3 -m pip install --no-cache-dir pyfatfs==1.1.0 pymonocypher==3.1.3.2
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: renode-signing-security
+      - name: Fetch Renode
+        run: Tools/renode/tests/fetch_renode.sh
+      - name: Run signing unit tests
+        run: |
+          ./waf configure --board sitl
+          ./waf --targets tests/test_signing
+          build/sitl/tests/test_signing
+      - name: Run signing tests on emulated boards
+        env:
+          PYTHONPATH: ${{ github.workspace }}/modules/mavlink
+        run: >-
+          Tools/renode/tests/test_signing_security.py
+          --renode build/renode/renode --timeout 180
+      - name: ccache statistics
+        if: always()
+        run: ccache -s
+      - uses: ./.github/actions/save-ccache
+        if: always()
+        with:
+          key-suffix: renode-signing-security
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: renode-signing-security
+          path: build/renode-signing-security/
+
+  notify-security:
+    if: always() && needs.renode-signing-security.result == 'failure'
+    needs: renode-signing-security
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Email security alias
+        env:
+          SMTP_HOST: ${{ secrets.SECURITY_CI_SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SECURITY_CI_SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SECURITY_CI_SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SECURITY_CI_SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SECURITY_CI_SMTP_FROM }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import smtplib
+          import ssl
+          from email.message import EmailMessage
+
+          required = ('SMTP_HOST', 'SMTP_USERNAME', 'SMTP_PASSWORD', 'SMTP_FROM')
+          missing = [name for name in required if not os.environ.get(name)]
+          if missing:
+              raise SystemExit('missing SMTP secrets: ' + ', '.join(missing))
+
+          message = EmailMessage()
+          message['Subject'] = 'ArduPilot weekly signing security CI failed'
+          message['From'] = os.environ['SMTP_FROM']
+          message['To'] = 'security@ardupilot.org'
+          message.set_content(
+              'The weekly Renode signing security regression suite failed.\n\n' +
+              os.environ['RUN_URL'] + '\n')
+
+          port = int(os.environ.get('SMTP_PORT') or 587)
+          with smtplib.SMTP(os.environ['SMTP_HOST'], port, timeout=30) as smtp:
+              smtp.starttls(context=ssl.create_default_context())
+              smtp.login(os.environ['SMTP_USERNAME'], os.environ['SMTP_PASSWORD'])
+              smtp.send_message(message)
+          PY
