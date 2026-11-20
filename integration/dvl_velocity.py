@@ -75,7 +75,10 @@ def parse_velocity(line, received_monotonic_s, fom_max_mps=0.25):
         if covariance is not None:
             if len(covariance) != 3 or any(len(row) != 3 for row in covariance):
                 return None
-            diagonal = [float(covariance[i][i]) for i in range(3)]
+            matrix = [[float(value) for value in row] for row in covariance]
+            if not all(math.isfinite(value) for row in matrix for value in row):
+                return None
+            diagonal = [matrix[i][i] for i in range(3)]
             if not all(math.isfinite(v) and v >= 0 for v in diagonal):
                 return None
             vel_error = math.sqrt(sum(diagonal))

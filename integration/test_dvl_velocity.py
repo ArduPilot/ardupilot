@@ -33,7 +33,8 @@ class DvlVelocityTests(unittest.TestCase):
         for change in ({"velocity_valid": False}, {"type": "velocity_water"},
                        {"type": "position_local"}, {"status": 1}, {"fom": float("nan")},
                        {"vx": float("inf")}, {"altitude": -1},
-                       {"time_of_validity": -5}, {"covariance": [[-1, 0, 0]] * 3}):
+                       {"time_of_validity": -5}, {"covariance": [[-1, 0, 0]] * 3},
+                       {"covariance": [[0.01, float("nan"), 0], [0, 0.01, 0], [0, 0, 0.01]]}):
             report = self.report | change
             with self.subTest(change=change):
                 self.assertIsNone(parse_velocity(json.dumps(report), 10.0))
