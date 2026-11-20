@@ -8,6 +8,7 @@ AP_FLAKE8_CLEAN
 Amilcar do Carmo Lucas, IAV GmbH
 '''
 
+import struct
 import unittest
 
 from unittest.mock import MagicMock
@@ -217,8 +218,8 @@ class TestOutputParams(unittest.TestCase):
         output_params(defaults, 'mavproxy')
 
         # Check if the print function was called with the correct parameters
-        expected_calls = [unittest.mock.call("%-15s %.6f" % ('PARAM1', 1.0)),
-                          unittest.mock.call("%-15s %.6f" % ('PARAM2', 2.0))]
+        expected_calls = [unittest.mock.call("%-15s %s" % ('PARAM1', '1')),
+                          unittest.mock.call("%-15s %s" % ('PARAM2', '2'))]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
     @patch('extract_param_defaults.print')
@@ -232,8 +233,8 @@ class TestOutputParams(unittest.TestCase):
 
         # Check if the print function was called with the correct parameters
         expected_calls = [unittest.mock.call("\n# # Vehicle-Id Component-Id Name Value Type\n"),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (1, 1, 'PARAM1', 1.0, 9)),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (1, 1, 'PARAM2', 2.0, 9))]
+                          unittest.mock.call("%u %u %-15s %s %u" % (1, 1, 'PARAM1', '1', 9)),
+                          unittest.mock.call("%u %u %-15s %s %u" % (1, 1, 'PARAM2', '2', 9))]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
     @patch('extract_param_defaults.print')
@@ -247,8 +248,8 @@ class TestOutputParams(unittest.TestCase):
 
         # Check if the print function was called with the correct parameters
         expected_calls = [unittest.mock.call("\n# # Vehicle-Id Component-Id Name Value Type\n"),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (2, 4, 'PARAM1', 1.0, 9)),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (2, 4, 'PARAM2', 2.0, 9))]
+                          unittest.mock.call("%u %u %-15s %s %u" % (2, 4, 'PARAM1', '1', 9)),
+                          unittest.mock.call("%u %u %-15s %s %u" % (2, 4, 'PARAM2', '2', 9))]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
     @patch('extract_param_defaults.print')
@@ -263,9 +264,9 @@ class TestOutputParams(unittest.TestCase):
         # Check if the print function was called with the correct parameters
         expected_calls = [
             unittest.mock.call("\n# # Vehicle-Id Component-Id Name Value Type\n"),
-            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'MAV_SYSID', 3.0, 9)),
-            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM1', 1.0, 9)),
-            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM2', 2.0, 9)),
+            unittest.mock.call("%u %u %-15s %s %u" % (3, 7, 'MAV_SYSID', '3', 9)),
+            unittest.mock.call("%u %u %-15s %s %u" % (3, 7, 'PARAM1', '1', 9)),
+            unittest.mock.call("%u %u %-15s %s %u" % (3, 7, 'PARAM2', '2', 9)),
         ]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
@@ -302,6 +303,20 @@ class TestOutputParams(unittest.TestCase):
             defaults = sort_params(defaults, 'qgcs')
             output_params(defaults, 'qgcs', 1, MAVLINK_COMPID_MAX+3)
         self.assertEqual(str(cm.exception), f"Invalid component ID parameter 259 must be smaller than {MAVLINK_COMPID_MAX}")
+
+    @patch('extract_param_defaults.print')
+    def test_output_params_float32_round_trip(self, mock_print):
+        for format_type in ('missionplanner', 'mavproxy', 'qgcs'):
+            for value in (1e-7, -1e-7, 0.123456789, 0.0):
+                with self.subTest(format_type=format_type, value=value):
+                    original = struct.pack('<f', value)
+                    output_params({'PARAM1': struct.unpack('<f', original)[0]}, format_type)
+                    row = mock_print.call_args.args[0]
+                    if format_type == 'missionplanner':
+                        exported_value = row.split(',')[1]
+                    else:
+                        exported_value = row.split()[3 if format_type == 'qgcs' else 1]
+                    self.assertEqual(struct.pack('<f', float(exported_value)), original)
 
     @patch('extract_param_defaults.print')
     def test_output_params_integer(self, mock_print):
