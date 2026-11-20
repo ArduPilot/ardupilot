@@ -216,8 +216,10 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     // results.using_extnav_for_yaw = false;
 
     // are we consuming yaw from a source which is *not* a compass
-    // (e.g. the GSF)
-    // results.using_noncompass_for_yaw = false;
+    // (e.g. the GSF)?  SIM always takes yaw from the simulator, but
+    // only reports so when no compass is configured for yaw, so a
+    // vehicle with a compass keeps its compass-health checks:
+    results.using_noncompass_for_yaw = AP::compass().get_num_enabled() == 0;
 
 #if AP_AHRS_GET_MAG_DATA_ENABLED
     // estimators can provide their predicted magnetic fields:
