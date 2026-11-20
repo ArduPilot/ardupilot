@@ -27,6 +27,11 @@ public:
         return _RBCH.enabled;
     }
 
+    // return true if the beacon positions are relative to the EKF origin
+    bool origin_type_ekf(void) const {
+        return _RBCH.origin_type_ekf;
+    }
+
     // return beacon health
     bool beacon_healthy(uint8_t i) const {
         return _RBCI[i].healthy;

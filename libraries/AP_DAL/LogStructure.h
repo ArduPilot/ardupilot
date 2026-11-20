@@ -455,7 +455,7 @@ struct log_RMGI {
 // @Field: OLat: origin latitude
 // @Field: OLng: origin longitude
 // @Field: OAlt: origin altitude
-// @Field: Flags: vehicle_position_ned_returncode,get_origin_returncode,enabled
+// @Field: Flags: vehicle_position_ned_returncode,get_origin_returncode,enabled,origin_type_ekf
 // @Field: NumInst: number of beacons
 struct log_RBCH {
     Vector3f vehicle_position_ned;
@@ -466,6 +466,7 @@ struct log_RBCH {
     uint8_t get_vehicle_position_ned_returncode:1;
     uint8_t get_origin_returncode:1;
     uint8_t enabled:1;
+    uint8_t origin_type_ekf:1;
     uint8_t count;
     uint8_t _end;
 };

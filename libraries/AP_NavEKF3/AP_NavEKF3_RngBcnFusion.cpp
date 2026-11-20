@@ -4,6 +4,7 @@
 #if EK3_FEATURE_BEACON_FUSION
 
 #include <AP_DAL/AP_DAL.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define P (const_cast<const Matrix24 &>(Pmut))
 
@@ -44,16 +45,26 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
     delete[] fusionReport;
     fusionReport = nullptr;
     numFusionReports = 0;
-    auto *beacon = dal.beacon();
-    if (beacon != nullptr) {
-        const uint8_t count = beacon->count();
-        fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[count];
+    if (dal.beacon() != nullptr) {
+        // beacons may be discovered after initialisation, so allow for the maximum number
+        fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[AP_BEACON_MAX_BEACONS];
         if (fusionReport != nullptr) {
-            numFusionReports = count;
+            numFusionReports = AP_BEACON_MAX_BEACONS;
         }
     }
     posOffsetNED.zero();
     originEstInit = false;
+    fusionMode = RngFusionMode::STATIC;
+    recPassCount    = 0;
+    failFusionCount = 0;
+    hdop = 0.0f;
+}
+
+// return true if the range beacon positions are relative to the EKF origin
+bool NavEKF3_core::rngBcnUsesEkfOrigin() const
+{
+    const auto *beacon = dal.beacon();
+    return beacon != nullptr && beacon->origin_type_ekf();
 }
 
 /********************************************************
@@ -69,14 +80,42 @@ void NavEKF3_core::SelectRngBcnFusion()
     // Determine if we need to fuse range beacon data on this time step
     if (rngBcn.dataToFuse) {
         if (PV_AidingMode == AID_ABSOLUTE) {
-            if ((frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::BEACON) && rngBcn.alignmentCompleted) {
+            // beacon positions relative to the EKF origin need no offset from the static alignment filter
+            if ((frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::BEACON) &&
+                (rngBcn.alignmentCompleted || rngBcnUsesEkfOrigin())) {
                 if (!rngBcn.originEstInit) {
                     rngBcn.originEstInit = true;
-                    rngBcn.posOffsetNED.x = rngBcn.receiverPos.x - stateStruct.position.x;
-                    rngBcn.posOffsetNED.y = rngBcn.receiverPos.y - stateStruct.position.y;
+                    if (rngBcnUsesEkfOrigin()) {
+                        // beacon positions are relative to the public origin, which differs from the EKF
+                        // origin only by the horizontal moves of the EKF origin while using GPS
+                        rngBcn.posOffsetNED.xy() = public_origin.get_distance_NE_ftype(EKF_origin);
+                        // the static alignment may not have completed, so start the receiver from the EKF position
+                        rngBcn.receiverPos.xy() = stateStruct.position.xy() + rngBcn.posOffsetNED.xy();
+                        rngBcn.receiverPos.z = stateStruct.position.z;
+                    } else {
+                        rngBcn.posOffsetNED.x = rngBcn.receiverPos.x - stateStruct.position.x;
+                        rngBcn.posOffsetNED.y = rngBcn.receiverPos.y - stateStruct.position.y;
+                    }
                 }
                 // beacons are used as the primary means of position reference
                 FuseRngBcn();
+
+                // cap the counter to avoid overflow when recovery is disabled
+                if (!rngBcn.health &&
+                    frontend->_rngBcnRecFailures > 0 &&
+                    rngBcn.failFusionCount < (uint16_t)frontend->_rngBcnRecFailures) {
+                    rngBcn.failFusionCount++;
+                }
+
+                const bool isDead =
+                    (frontend->_rngBcnRecFailures > 0) &&
+                    (rngBcn.failFusionCount >= (uint16_t)frontend->_rngBcnRecFailures);
+
+                if (isDead) {
+                    DoRngBcnRecovery();
+                } else {
+                    rngBcn.recPassCount = 0;
+                }
             } else {
                 // If another source (i.e. GPS, ExtNav) is the primary reference, we continue to use the beacon data
                 // to calculate an independent position that is used to update the beacon position offset if we need to
@@ -96,6 +135,16 @@ void NavEKF3_core::SelectRngBcnFusion()
 
 void NavEKF3_core::FuseRngBcn()
 {
+    rngBcn.fusionMode = BeaconFusion::RngFusionMode::RANGE;
+
+    // Save raw beacon position before any modification (for fusionReport)
+    const Vector3F raw_beacon_posNED = rngBcn.dataDelayed.beacon_posNED;
+
+    // Apply XY posOffsetNED in-place to convert beacon frame -> EKF frame.
+    // Must happen before CalcRangeBeaconPosDownOffset (which reads beacon_posNED.xy).
+    rngBcn.dataDelayed.beacon_posNED.x -= rngBcn.posOffsetNED.x;
+    rngBcn.dataDelayed.beacon_posNED.y -= rngBcn.posOffsetNED.y;
+
     // declarations
     ftype pn;
     ftype pe;
@@ -109,7 +158,7 @@ void NavEKF3_core::FuseRngBcn()
     // health is set bad until test passed
     rngBcn.health = false;
 
-    if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
+    if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON && !rngBcnUsesEkfOrigin()) {
         // calculate the vertical offset from EKF datum to beacon datum
         CalcRangeBeaconPosDownOffset(R_BCN, stateStruct.position, false);
     } else {
@@ -271,7 +320,7 @@ void NavEKF3_core::FuseRngBcn()
         // Update the fusion report
         if (rngBcn.dataDelayed.beacon_ID < rngBcn.numFusionReports) {
             auto &report = rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID];
-            report.beaconPosNED = rngBcn.dataDelayed.beacon_posNED;
+            report.beaconPosNED = raw_beacon_posNED;
             report.innov = rngBcn.innov;
             report.innovVar = rngBcn.varInnov;
             report.rng = rngBcn.dataDelayed.rng;
@@ -287,6 +336,8 @@ https://github.com/priseborough/InertialNav/blob/master/derivations/range_beacon
 */
 void NavEKF3_core::FuseRngBcnStatic()
 {
+    rngBcn.fusionMode = BeaconFusion::RngFusionMode::STATIC;
+
     // get the estimated range measurement variance
     const ftype R_RNG = sq(MAX(rngBcn.dataDelayed.rngErr , 0.1f));
 
@@ -335,8 +386,10 @@ void NavEKF3_core::FuseRngBcnStatic()
 
         }
 
+        const bool estimateDownOffset = activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON &&
+                                        !rngBcnUsesEkfOrigin();
         if (rngBcn.alignmentCompleted) {
-            if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
+            if (estimateDownOffset) {
                 // We are using a different height reference for the main EKF so need to estimate a vertical
                 // position offset to be applied to the beacon system that minimises the range innovations
                 // The position estimate should be stable after 100 iterations so we use a simple dual
@@ -348,12 +401,13 @@ void NavEKF3_core::FuseRngBcnStatic()
                 CalcRangeBeaconPosDownOffset(R_RNG, refPosNED, true);
 
             } else {
-                // we are using the beacons as the primary height source, so don't modify their vertical position
+                // we are using the beacons as the primary height source, or they are relative to the EKF origin,
+                // so don't modify their vertical position
                 rngBcn.posOffsetNED.z = 0.0f;
 
             }
         } else {
-            if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
+            if (estimateDownOffset) {
                 // The position estimate is not yet stable so we cannot run the 1-state EKF to estimate
                 // beacon system vertical position offset. Instead we initialise the dual hypothesis offset states
                 // using the beacon vertical position, vertical position estimate relative to the beacon origin
@@ -379,7 +433,8 @@ void NavEKF3_core::FuseRngBcnStatic()
                 rngBcn.posDownOffsetMax = stateStruct.position.z - receiverPosDownMin;
                 rngBcn.posDownOffsetMin = stateStruct.position.z - receiverPosDownMax;
             } else {
-                // We are using the beacons as the primary height reference, so don't modify their vertical position
+                // We are using the beacons as the primary height reference, or they are relative to the EKF origin,
+                // so don't modify their vertical position
                 rngBcn.posOffsetNED.z = 0.0f;
             }
         }
@@ -643,6 +698,173 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(ftype obsVar, Vector3F &vehicleP
 
     // apply the vertical offset to the beacon positions
     rngBcn.dataDelayed.beacon_posNED.z += rngBcn.posOffsetNED.z;
+}
+
+
+// Compute 2-D HDOP from the Fisher Information Matrix of unit-vector rows:
+//   H^T*H = [[hxx, hxy],[hxy, hyy]]
+//   HDOP  = sqrt(trace(inv(H^T*H))) = sqrt((hxx+hyy)/det)
+bool NavEKF3_core::CalcRngBcnHdop(const rng_bcn_elements *samples, uint8_t n)
+{
+    ftype hxx = 0.0f, hyy = 0.0f, hxy = 0.0f;
+    uint8_t valid = 0;
+
+    for (uint8_t i = 0; i < n; i++) {
+        const ftype dx   = samples[i].beacon_posNED.x - rngBcn.receiverPos.x;
+        const ftype dy   = samples[i].beacon_posNED.y - rngBcn.receiverPos.y;
+        const ftype norm = sqrtF(dx * dx + dy * dy);
+        if (norm < 0.1f) {
+            continue;
+        }
+        const ftype ux = dx / norm;
+        const ftype uy = dy / norm;
+        hxx += ux * ux;
+        hyy += uy * uy;
+        hxy += ux * uy;
+        valid++;
+    }
+
+    if (valid < 3) {
+        return false;
+    }
+
+    const ftype det = hxx * hyy - hxy * hxy;
+    if (det < 1e-6f) {
+        return false;  // collinear
+    }
+
+    rngBcn.hdop = sqrtF((hxx + hyy) / det);
+
+    return true;
+}
+
+
+// 2-D gradient-descent MLAT solver seeded from rngBcn.receiverPos.
+// Altitude is left unchanged — handled separately by posOffsetNED.z.
+// Measured ranges are slant ranges, so each one is reduced to its horizontal
+// component using the vertical separation between the beacon and the receiver.
+Vector2F NavEKF3_core::SolveMlat(const rng_bcn_elements *samples, uint8_t n, ftype& residualSq)
+{
+    static constexpr ftype   MLAT_LEARNING_RATE      = 0.1f;
+    static constexpr ftype   MLAT_TOLERANCE          = 1.f;    // m
+    static constexpr uint8_t MLAT_MAX_ITER           = 30;
+
+    ftype sx = rngBcn.receiverPos.x, sy = rngBcn.receiverPos.y;
+
+    // receiver height in the beacon frame; posOffsetNED.z converts beacon frame to EKF frame
+    const ftype receiverD = stateStruct.position.z - rngBcn.posOffsetNED.z;
+
+    // horizontal range to each beacon
+    ftype hRng[AP_BEACON_MAX_BEACONS];
+    for (uint8_t i = 0; i < n; i++) {
+        hRng[i] = sqrtF(MAX(sq(samples[i].rng) - sq(samples[i].beacon_posNED.z - receiverD), 0.0f));
+    }
+
+    for (uint8_t iter = 0; iter < MLAT_MAX_ITER; iter++) {
+        ftype gx = 0.0f, gy = 0.0f;
+        residualSq = 0.0f;
+        uint8_t used = 0;
+
+        for (uint8_t i = 0; i < n; i++) {
+            const ftype dx   = sx - samples[i].beacon_posNED.x;
+            const ftype dy   = sy - samples[i].beacon_posNED.y;
+            const ftype dist = sqrtF(sq(dx) + sq(dy));
+            if (dist < 0.1f) {
+                continue;
+            }
+            const ftype err  = dist - hRng[i];
+            const ftype err2 = 2.0f * err;
+            gx += err2 * dx / dist;
+            gy += err2 * dy / dist;
+            residualSq += sq(err);
+            used++;
+        }
+
+        if (used == 0) {
+            break;
+        }
+        residualSq /= used;
+
+        const ftype nx = sx - MLAT_LEARNING_RATE * gx;
+        const ftype ny = sy - MLAT_LEARNING_RATE * gy;
+
+        if (fabsF(nx - sx) < MLAT_TOLERANCE && fabsF(ny - sy) < MLAT_TOLERANCE) {
+            sx = nx;
+            sy = ny;
+            break;
+        }
+        sx = nx;
+        sy = ny;
+    }
+
+    return {sx, sy};
+}
+
+// MLAT-based recovery when range beacon fusion is dead.
+// Soft-resets the EKF position so FuseRngBcn() can re-engage from a valid linearisation point.
+void NavEKF3_core::DoRngBcnRecovery()
+{
+    rngBcn.fusionMode = BeaconFusion::RngFusionMode::MLAT;
+
+    rng_bcn_elements samples[AP_BEACON_MAX_BEACONS];
+    uint8_t numSamples = 0;
+
+    auto *beacon = dal.beacon();
+    if (beacon == nullptr) {
+        return;
+    }
+    const uint8_t numBcn = beacon->count();
+    for (uint8_t i = 0; i < numBcn && numSamples < AP_BEACON_MAX_BEACONS; i++) {
+        if (!beacon->beacon_healthy(i)) {
+            continue;
+        }
+        if ((imuSampleTime_ms - beacon->beacon_last_update_ms(i)) > 1000U) {
+            continue;
+        }
+        samples[numSamples].beacon_posNED = beacon->beacon_position(i).toftype();
+        samples[numSamples].rng           = beacon->beacon_distance(i);
+        numSamples++;
+    }
+
+    if (!CalcRngBcnHdop(samples, numSamples)) {
+        return;
+    }
+
+    if (rngBcn.hdop >= frontend->_rngBcnMaxHDOP) {
+        return;
+    }
+
+    ftype residualSq;
+    auto result = SolveMlat(samples, numSamples, residualSq);
+
+    rngBcn.receiverPos.x = result.x;
+    rngBcn.receiverPos.y = result.y;
+    rngBcn.recPassCount++;
+
+    if (rngBcn.recPassCount < (uint8_t)frontend->_rngBcnRecPasses) {
+        return;
+    }
+
+    result += EKF_origin.get_distance_NE_ftype(public_origin);
+    stateStruct.position.x = result.x;
+    stateStruct.position.y = result.y;
+
+    for (uint8_t i = 0; i <= stateIndexLim; i++) {
+        Pmut[7][i] = Pmut[i][7] = 0.0f;
+        Pmut[8][i] = Pmut[i][8] = 0.0f;
+    }
+
+    Pmut[7][7] = residualSq;
+    Pmut[8][8] = residualSq;
+
+    ConstrainVariances();
+
+    rngBcn.originEstInit    = false;
+    rngBcn.lastPassTime_ms  = imuSampleTime_ms;
+    rngBcn.recPassCount     = 0;
+    rngBcn.failFusionCount  = 0;
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RNG IMU%u MLAT reset", (unsigned)imu_index);
 }
 
 #endif  // EK3_FEATURE_BEACON_FUSION
