@@ -666,6 +666,9 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
 #endif
 #if AP_GPS_GSOF_ENABLED
     case GPS_TYPE_GSOF:
+        if (port == nullptr) {
+            return nullptr;
+        }
         dstate->auto_detected_baud = false; // specified, not detected
         return NEW_NOTHROW AP_GPS_GSOF(*this, params[instance], state[instance], port);
 #endif //AP_GPS_GSOF_ENABLED
