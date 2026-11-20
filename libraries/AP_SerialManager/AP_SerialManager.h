@@ -152,6 +152,7 @@ public:
         SerialProtocol_PPP = 48,
         SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
         SerialProtocol_IOMCU = 50,                     // IOMCU 
+        SerialProtocol_ATALDepth = 51,                // dedicated ESP32 Bar30 stream
         SerialProtocol_NumProtocols                    // must be the last value
     };
 

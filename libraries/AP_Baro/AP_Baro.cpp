@@ -28,6 +28,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/I2CDevice.h>
 
 #include "AP_Baro_SITL.h"
@@ -49,6 +50,7 @@
 #include "AP_Baro_ICP101XX.h"
 #include "AP_Baro_ICP201XX.h"
 #include "AP_Baro_AUAV.h"
+#include "AP_Baro_ATAL_Depth.h"
 
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -644,6 +646,16 @@ void AP_Baro::init(void)
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::BARO);
     if (serial_port >= 0) {
         _add_backend(NEW_NOTHROW AP_Baro_ExternalAHRS(*this, serial_port));
+        RETURN_IF_NO_SPACE;
+    }
+#endif
+
+#if AP_BARO_ATAL_DEPTH_ENABLED
+    auto &serial = AP::serialmanager();
+    auto *depth_uart = serial.find_serial(AP_SerialManager::SerialProtocol_ATALDepth, 0);
+    if (depth_uart != nullptr) {
+        const int8_t port = serial.find_portnum(AP_SerialManager::SerialProtocol_ATALDepth, 0);
+        _add_backend(NEW_NOTHROW AP_Baro_ATAL_Depth(*this, depth_uart, port));
         RETURN_IF_NO_SPACE;
     }
 #endif
