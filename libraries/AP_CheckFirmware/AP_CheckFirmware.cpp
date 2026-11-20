@@ -14,6 +14,10 @@
 #include <string.h>
 #include "monocypher.h"
 
+#ifndef BOOT_FROM_EXT_FLASH
+#define BOOT_FROM_EXT_FLASH 0
+#endif
+
 const struct ap_secure_data public_keys __attribute__((section(".apsec_data")));
 
 /*
@@ -22,16 +26,7 @@ const struct ap_secure_data public_keys __attribute__((section(".apsec_data")));
  */
 static bool all_zero_public_keys(void)
 {
-    /*
-      look over all public keys, if one matches then we are OK
-     */
-    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
-    for (const auto &public_key : public_keys.public_key) {
-        if (memcmp(public_key.key, zero_key, AP_PUBLIC_KEY_LEN) != 0) {
-            return false;
-        }
-    }
-    return true;
+    return ap_public_keys_all_zero(public_keys);
 }
 
 /*
@@ -39,36 +34,74 @@ static bool all_zero_public_keys(void)
  */
 static check_fw_result_t check_firmware_signature(const app_descriptor_signed *ad,
                                                   const uint8_t *flash1, uint32_t len1,
-                                                  const uint8_t *flash2, uint32_t len2)
+                                                  const uint8_t *flash2, uint32_t len2,
+                                                  const uint8_t *extf_signature)
 {
     if (all_zero_public_keys()) {
         return check_fw_result_t::CHECK_FW_OK;
     }
 
     // 8 byte signature version
-    static const uint64_t sig_version = 30437LLU;
+    static const uint64_t sig_version_legacy = 30437LLU;
+    uint64_t sig_version;
     if (ad->signature_length != 72) {
         return check_fw_result_t::FAIL_REASON_BAD_FIRMWARE_SIGNATURE;
     }
-    if (memcmp((const uint8_t*)&sig_version, ad->signature, sizeof(sig_version)) != 0) {
+    memcpy(&sig_version, ad->signature, sizeof(sig_version));
+
+    if (sig_version != sig_version_legacy) {
         return check_fw_result_t::FAIL_REASON_BAD_FIRMWARE_SIGNATURE;
     }
 
-    /*
-      look over all public keys, if one matches then we are OK
-     */
+    const struct ap_signature_buffer buffers[] {
+        { flash1, len1 },
+        { flash2, len2 },
+    };
+    if (!ap_check_signature(public_keys, &ad->signature[sizeof(sig_version)], buffers, 2)) {
+        return check_fw_result_t::FAIL_REASON_VERIFICATION;
+    }
+
+#if EXT_FLASH_SIZE_MB && !BOOT_FROM_EXT_FLASH
+    static const uint64_t sig_version_extf = 30438LLU;
+    uint32_t extf_signature_length;
+    uint64_t extf_signature_version;
+    memcpy(&extf_signature_length, extf_signature, sizeof(extf_signature_length));
+    memcpy(&extf_signature_version, extf_signature+sizeof(extf_signature_length), sizeof(extf_signature_version));
+    if (ad->extf_image_size == 0 ||
+        ad->extf_image_size > board_info.extf_size ||
+        extf_signature_length != 72 ||
+        extf_signature_version != sig_version_extf) {
+        return check_fw_result_t::FAIL_REASON_BAD_LENGTH_EXTF;
+    }
+
     for (const auto &public_key : public_keys.public_key) {
+        if (ap_public_key_is_zero(public_key.key)) {
+            continue;
+        }
         crypto_check_ctx ctx {};
         crypto_check_ctx_abstract *actx = (crypto_check_ctx_abstract*)&ctx;
-        crypto_check_init(actx, &ad->signature[sizeof(sig_version)], public_key.key);
-
+        ap_extf_signature_check_init(actx,
+                                     extf_signature+sizeof(extf_signature_length)+sizeof(extf_signature_version),
+                                     public_key.key, len1, len2, ad->extf_image_size);
         crypto_check_update(actx, flash1, len1);
         crypto_check_update(actx, flash2, len2);
+
+        uint8_t extf_buffer[256];
+        for (uint32_t offset = 0; offset < ad->extf_image_size; offset += sizeof(extf_buffer)) {
+            const uint32_t remaining = ad->extf_image_size - offset;
+            const uint32_t read_size = remaining < sizeof(extf_buffer) ? remaining : sizeof(extf_buffer);
+            if (!ext_flash_read(offset, extf_buffer, read_size)) {
+                return check_fw_result_t::FAIL_REASON_EXTF_READ;
+            }
+            crypto_check_update(actx, extf_buffer, read_size);
+        }
         if (crypto_check_final(actx) == 0) {
-            // good signature
             return check_fw_result_t::CHECK_FW_OK;
         }
     }
+#else
+    return check_fw_result_t::CHECK_FW_OK;
+#endif
 
     // none of the public keys matched
     return check_fw_result_t::FAIL_REASON_VERIFICATION;
@@ -105,8 +138,9 @@ static check_fw_result_t check_good_firmware_signed(void)
     const uint8_t *flash2 = (const uint8_t *)&ad->version_major;
     const uint8_t desc_len = offsetof(app_descriptor_signed, version_major) - offsetof(app_descriptor_signed, image_crc1);
     const uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash1;
+    const uint8_t descriptor_tail_len = sizeof(app_descriptor_signed) - offsetof(app_descriptor_signed, version_major);
 
-    if ((len1 + desc_len) > ad->image_size) {
+    if ((len1 + desc_len + descriptor_tail_len) > ad->image_size) {
         return check_fw_result_t::FAIL_REASON_BAD_LENGTH_DESCRIPTOR;
     }
 
@@ -120,7 +154,15 @@ static check_fw_result_t check_good_firmware_signed(void)
     check_fw_result_t ret = check_fw_result_t::CHECK_FW_OK;
 
 #if AP_SIGNED_FIRMWARE
-    ret = check_firmware_signature(ad, flash1, len1, flash2, len2);
+    const uint8_t *extf_signature = nullptr;
+#if EXT_FLASH_SIZE_MB && !BOOT_FROM_EXT_FLASH
+    static const uint8_t extf_signature_size = 76;
+    if (ad->image_size > flash_size-extf_signature_size) {
+        return check_fw_result_t::FAIL_REASON_BAD_LENGTH_EXTF;
+    }
+    extf_signature = flash1+ad->image_size;
+#endif
+    ret = check_firmware_signature(ad, flash1, len1, flash2, len2, extf_signature);
 #endif
 
     return ret;

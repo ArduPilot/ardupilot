@@ -248,32 +248,39 @@ def to_unsigned(i):
         i += 2**32
     return i
 
-def sign_firmware(image, private_keyfile):
+def sign_firmware(img1, img2, extf_img, private_keyfile):
     '''sign firmware with private key'''
     try:
         import monocypher
     except ImportError:
         Logs.error("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
-        return None
+        return None, None
 
     if monocypher.__version__ != "3.1.3.2":
         Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
-        return None
+        return None, None
 
     try:
         key = open(private_keyfile, 'r').read()
     except Exception as ex:
         Logs.error("Failed to open %s" % private_keyfile)
-        return None
+        return None, None
     keytype = "PRIVATE_KEYV1:"
     if not key.startswith(keytype):
         Logs.error("Bad private key file %s" % private_keyfile)
-        return None
+        return None, None
     key = base64.b64decode(key[len(keytype):])
-    sig = monocypher.signature_sign(key, image)
+    sig = monocypher.signature_sign(key, img1 + img2)
     sig_len = len(sig)
-    sig_version = 30437
-    return struct.pack("<IQ64s", sig_len+8, sig_version, sig)
+    signed_descriptor = struct.pack("<IQ64s", sig_len+8, 30437, sig)
+    extf_signature = None
+    if extf_img:
+        signature_domain = b'ArduPilotFwSig2'
+        image_lengths = struct.pack('<III', len(img1), len(img2), len(extf_img))
+        image = signature_domain + image_lengths + img1 + img2 + extf_img
+        extf_sig = monocypher.signature_sign(key, image)
+        extf_signature = struct.pack("<IQ64s", len(extf_sig)+8, 30438, extf_sig)
+    return signed_descriptor, extf_signature
 
 
 class set_app_descriptor(Task.Task):
@@ -289,7 +296,8 @@ class set_app_descriptor(Task.Task):
         else:
             descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
 
-        elf_in, bin_in = self.inputs
+        elf_in, bin_in = self.inputs[:2]
+        extf_img = bytearray(open(self.inputs[2].abspath(), 'rb').read()) if len(self.inputs) > 2 else bytearray()
         elf_out, bin_out = self.outputs
 
         img = bytearray(open(bin_in.abspath(), 'rb').read())
@@ -310,15 +318,21 @@ class set_app_descriptor(Task.Task):
                 desc_len = 92
             else:
                 desc_len = 16
+            # version, version_minor and board_id occupy four bytes after
+            # the descriptor body. The external image size follows them and
+            # is covered by both the internal CRC and firmware signature.
+            extf_size_offset = offset + desc_len + 4
+            struct.pack_into('<I', img, extf_size_offset, len(extf_img))
             img1 = bytearray(img[:offset])
             img2 = bytearray(img[offset+desc_len:])
             crc1 = to_unsigned(crc32(img1))
             crc2 = to_unsigned(crc32(img2))
             githash = to_unsigned(int('0x' + self.env.APP_DESCRIPTOR_GITHASH, 16))
+            extf_signature = None
             if self.generator.bld.env.AP_SIGNED_FIRMWARE:
                 sig = bytearray([0 for i in range(76)])
                 if self.generator.bld.env.PRIVATE_KEY:
-                    sig_signed = sign_firmware(img1+img2, self.generator.bld.env.PRIVATE_KEY)
+                    sig_signed, extf_signature = sign_firmware(img1, img2, extf_img, self.generator.bld.env.PRIVATE_KEY)
                     if sig_signed:
                         Logs.info("Signed firmware")
                         sig = sig_signed
@@ -328,6 +342,8 @@ class set_app_descriptor(Task.Task):
             else:
                 desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
             img[offset:offset+desc_len] = desc
+            if self.generator.bld.env.AP_SIGNED_FIRMWARE and extf_signature:
+                img += extf_signature
             Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
         open(bin_out.abspath(), 'wb').write(img)
 
@@ -340,6 +356,7 @@ class set_app_descriptor(Task.Task):
             else:
                 elf_ofs += len(descriptor)
                 elf_img[elf_ofs:elf_ofs+desc_len] = desc
+                struct.pack_into('<I', elf_img, elf_ofs+desc_len+4, len(extf_img))
                 Logs.info("Applying APP_DESCRIPTOR %08x%08x to elf" % (crc1, crc2))
         open(elf_out.abspath(), 'wb').write(elf_img)
 
@@ -475,7 +492,7 @@ def chibios_firmware(self):
     if do_patch:
         self.env.APP_DESCRIPTOR_GITHASH = os.environ.get('GIT_VERSION', self.env.GIT_HEAD_HASH)
         app_descriptor_task = self.create_task('set_app_descriptor',
-                                                src=[elf, raw_bin],
+                                                src=[elf, raw_bin] + extf_bin,
                                                 tgt=[link_output, intf_bin])
         # the step imports crc32 from uploader.py, so an edit to it patches again
         app_descriptor_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/uploader.py'))

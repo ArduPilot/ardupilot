@@ -26,6 +26,8 @@ enum class check_fw_result_t : uint8_t {
     FAIL_REASON_BAD_LENGTH_DESCRIPTOR = 16,
     FAIL_REASON_BAD_FIRMWARE_SIGNATURE = 17,
     FAIL_REASON_VERIFICATION = 18,
+    FAIL_REASON_BAD_LENGTH_EXTF = 19,
+    FAIL_REASON_EXTF_READ = 20,
 };
 
 #if AP_CHECK_FIRMWARE_ENABLED
@@ -72,7 +74,8 @@ struct app_descriptor_unsigned {
     // APJ_BOARD_ID (hardware version). This is also used in CAN NodeInfo
     // with high byte in HardwareVersion.major and low byte in HardwareVersion.minor
     uint16_t  board_id;
-    uint8_t reserved[8];
+    uint32_t extf_image_size;
+    uint8_t reserved[4];
 };
 
 struct app_descriptor_signed {
@@ -95,7 +98,8 @@ struct app_descriptor_signed {
     // APJ_BOARD_ID (hardware version). This is also used in CAN NodeInfo
     // with high byte in HardwareVersion.major and low byte in HardwareVersion.minor
     uint16_t  board_id;
-    uint8_t reserved[8];
+    uint32_t extf_image_size;
+    uint8_t reserved[4];
 };
 
 #if AP_SIGNED_FIRMWARE
@@ -111,17 +115,7 @@ static_assert(sizeof(app_descriptor_unsigned) == APP_DESCRIPTOR_UNSIGNED_TOTAL_L
 static_assert(sizeof(app_descriptor_signed) == APP_DESCRIPTOR_SIGNED_TOTAL_LENGTH, "app_descriptor_signed incorrect length");
 
 #if AP_SIGNED_FIRMWARE
-
-#define AP_PUBLIC_KEY_LEN 32
-#define AP_PUBLIC_KEY_MAX_KEYS 10
-#define AP_PUBLIC_KEY_SIGNATURE {0x4e, 0xcf, 0x4e, 0xa5, 0xa6, 0xb6, 0xf7, 0x29}
-
-struct PACKED ap_secure_data {
-    uint8_t sig[8] = AP_PUBLIC_KEY_SIGNATURE;
-    struct PACKED {
-        uint8_t key[AP_PUBLIC_KEY_LEN] = {};
-    } public_key[AP_PUBLIC_KEY_MAX_KEYS];
-};
+#include "AP_CheckFirmware_Signing.h"
 #endif
 
 #ifdef HAL_BOOTLOADER_BUILD
@@ -165,8 +159,9 @@ public:
     static bool check_signed_bootloader(const uint8_t *fw, uint32_t fw_size);
 
 private:
-#if HAL_GCS_ENABLED
+#if HAL_GCS_ENABLED && AP_SIGNED_FIRMWARE
     static uint8_t session_key[8];
+    static ap_secure_command_sequence secure_command_sequence;
 #endif
 };
 
