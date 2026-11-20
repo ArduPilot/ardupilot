@@ -34,7 +34,7 @@
 #include "usbcfg.h"
 // #pragma GCC optimize("O0")
 
-#if defined(HAL_USB_PRODUCT_ID) && !HAL_HAVE_DUAL_USB_CDC
+#if defined(HAL_USB_PRODUCT_ID) && !HAL_HAVE_DUAL_USB_CDC && !HAL_WITH_USB_CDC_ECM
 
 /* Virtual serial port over USB.*/
 SerialUSBDriver SDU1;
