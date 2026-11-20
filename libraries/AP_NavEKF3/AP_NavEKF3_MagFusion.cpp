@@ -332,6 +332,22 @@ void NavEKF3_core::alignYawAngle(const yaw_elements &yawAngData)
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
 
+// store the current yaw as the reference fused while the vehicle is on the ground and not moving
+void NavEKF3_core::storeStaticYaw()
+{
+    if (fabsF(prevTnb[0][2]) < fabsF(prevTnb[1][2])) {
+        // A 321 rotation order is best conditioned because the X axis is closer to horizontal than the Y axis
+        yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_321;
+        yawAngDataStatic.yawAng = atan2F(prevTnb[0][1], prevTnb[0][0]);
+    } else {
+        // A 312 rotation order is best conditioned because the Y axis is closer to horizontal than the X axis
+        yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_312;
+        yawAngDataStatic.yawAng = atan2F(-prevTnb[1][0], prevTnb[1][1]);
+    }
+    yawAngDataStatic.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
+    yawAngDataStatic.time_ms = imuDataDelayed.time_ms;
+}
+
 // select fusion of magnetometer data
 void NavEKF3_core::SelectMagFusion()
 {
@@ -339,19 +355,11 @@ void NavEKF3_core::SelectMagFusion()
     // used for load levelling
     magFusePerformed = false;
 
-    // Store yaw angle when moving for use as a static reference when not moving
-    if (!onGroundNotMoving) {
-        if (fabsF(prevTnb[0][2]) < fabsF(prevTnb[1][2])) {
-            // A 321 rotation order is best conditioned because the X axis is closer to horizontal than the Y axis
-            yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_321;
-            yawAngDataStatic.yawAng = atan2F(prevTnb[0][1], prevTnb[0][0]);
-        } else {
-            // A 312 rotation order is best conditioned because the Y axis is closer to horizontal than the X axis
-            yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_312;
-            yawAngDataStatic.yawAng = atan2F(-prevTnb[1][0], prevTnb[1][1]);
-        }
-        yawAngDataStatic.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
-        yawAngDataStatic.time_ms = imuDataDelayed.time_ms;
+    // Store yaw angle when moving for use as a static reference when not moving, and once at the
+    // start, as a vehicle still from its first sample would otherwise fuse an unset reference.
+    // Store it within 5 s of a yaw sensor fusion too, as that can turn the yaw with no reset.
+    if (!onGroundNotMoving || (yawAngDataStatic.time_ms == 0) || recentYawFusion()) {
+        storeStaticYaw();
     }
 
     // Handle case where we are not using a yaw sensor of any type and attempt to reset the yaw in
@@ -1583,6 +1591,9 @@ void NavEKF3_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, rotationO
 
     // Update the rotation matrix
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
+
+    // a still vehicle fuses the static yaw reference, so it follows the reset
+    storeStaticYaw();
     
     // calculate the change in the quaternion state and apply it to the output history buffer
     QuaternionF quat_delta = stateStruct.quat / quatBeforeReset;
