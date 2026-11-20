@@ -1,4 +1,4 @@
-# Lectron Pi5-H7 defaults
+# Lectron Pi5-Pro defaults
 
 NET_ENABLE 1
 NET_P1_TYPE 1
