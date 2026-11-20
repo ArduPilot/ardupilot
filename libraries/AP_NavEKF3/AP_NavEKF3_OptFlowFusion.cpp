@@ -365,12 +365,24 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     flowRngBelowAltMin = takeOffDetected && rangeIsEstimated && (range < ofDataDelayed.altMin);
     if (flowRngBelowAltMin) {
         really_fuse = false;
-#if EK3_FEATURE_OPTFLOW_AGL_KF
-        // neither axis is tested down here, so neither is locked out: without this the first sample
-        // back above the focus altitude that fails one axis would count the dip as a lockout and reset
-        flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
-#endif
     }
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // an axis rejected for this long while the other passes is locked out, see below
+    const uint32_t FLOW_AXIS_LOCKOUT_MS = 500;
+    // neither axis can pass a sample through a dropout, a tilt past the flow limit, a dip below the
+    // focus altitude or flow faster than EK3_FLOW_MAX, so neither is locked out there: without this
+    // the first sample back that fails one axis would count the whole spell as a lockout and reset
+    // at once. A spell is a gap longer than half a lockout, so at least half of any lockout was
+    // tested, and longer than the 200 ms one dropped sample leaves at 10 Hz
+    if (really_fuse && (fabsF(ofDataDelayed.flowRadXY.x) < frontend->_maxFlowRate) &&
+        (fabsF(ofDataDelayed.flowRadXY.y) < frontend->_maxFlowRate)) {
+        if ((imuSampleTime_ms - flowTestTime_ms) > FLOW_AXIS_LOCKOUT_MS / 2) {
+            flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
+        }
+        flowTestTime_ms = imuSampleTime_ms;
+    }
+#endif
 
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
@@ -772,7 +784,6 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // diverges undetected because the healthy axis keeps the shared flow-fusion timer fresh, so the
     // 5 s AID_RELATIVE timeout never fires. Re-anchor horizontal velocity to the flow measurement.
     // The AGL KF supplies the range and its variance, so require it to be running.
-    const uint32_t FLOW_AXIS_LOCKOUT_MS = 500;
     const uint32_t FLOW_RESET_WINDOW_MS = 20000;
     // aglKf.valid survives 5 s without a range fusion, long enough for aglKf.hgt to coast
     // metres low, so require a range recent enough to have produced a median
