@@ -247,6 +247,10 @@ void Copter::seed_hover_bias_learning(void)
             // a switch hands back an estimate the EKF did not settle itself, frozen part settled while the
             // accel was out of use; it settles far slower than the rest wait, so only a zeroing reopens it
             _hover_bias_baseline[imu] = HoverBiasBaseline::SWITCHED;
+        } else if ((_hover_bias_held_ms != 0) && (hover_bias_age_ms(now_ms, _hover_bias_held_ms) < zero_age_ms)) {
+            // released by clearing bit 2, the bias overshoots on the error built up while held and takes
+            // 25-30 s to settle in SITL, against 10 s after a zeroing, so only a zeroing reopens it
+            _hover_bias_baseline[imu] = HoverBiasBaseline::HELD;
         } else if (rest_ms < HOVER_BIAS_REST_MS) {
             // a zeroed bias holds only part of the motors-off bias until it settles at rest
             _hover_bias_baseline[imu] = HoverBiasBaseline::TOO_SOON;
@@ -362,6 +366,7 @@ void Copter::save_hover_bias_learning(void)
     const bool bit2_changed = inhibit_disarmed != ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_DISARMED)) != 0);
     bool reset = false;
     bool changed = false;
+    bool held = false;
     bool too_soon = false;
     bool switched = false;
     bool not_first = false;
@@ -403,6 +408,10 @@ void Copter::save_hover_bias_learning(void)
             changed = true;
             continue;
         }
+        if (_hover_bias_baseline[imu] == HoverBiasBaseline::HELD) {
+            held = true;
+            continue;
+        }
         if (_hover_bias_baseline[imu] == HoverBiasBaseline::TOO_SOON) {
             too_soon = true;
             continue;
@@ -422,6 +431,9 @@ void Copter::save_hover_bias_learning(void)
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Hover Z-bias not saved: EKF accel bias reset");
     } else if (changed) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Hover Z-bias not saved: ACC_ZBIAS_LEARN changed");
+    } else if (held) {
+        // waiting does not settle a released bias as a zeroing does, so only a reboot reopens a first flight
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Hover Z-bias not saved: bit 2 held, reboot");
     } else if (too_soon) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Hover Z-bias not saved: armed <10s after EKF reset");
     } else if (switched) {
@@ -436,10 +448,14 @@ void Copter::save_hover_bias_learning(void)
 // update_accel_bias_inhibit - inhibit EKF accel bias learning while disarmed when
 // ACC_ZBIAS_LEARN bit 2 is set, so the motors-off bias is not learned as the correction.
 // arm() clears it at once; clearing it here too undoes a set that raced an arm from
-// another thread.
+// another thread. Records when it last held the bias, as a first flight after that is not saved.
 // called from one_hz_loop
 void Copter::update_accel_bias_inhibit(void)
 {
     const bool inhibit_disarmed = (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_DISARMED)) != 0;
-    ahrs.set_inhibit_accel_bias_learning(inhibit_disarmed && !motors->armed());
+    const bool inhibit = inhibit_disarmed && !motors->armed();
+    ahrs.set_inhibit_accel_bias_learning(inhibit);
+    if (inhibit) {
+        _hover_bias_held_ms = AP_HAL::millis();
+    }
 }

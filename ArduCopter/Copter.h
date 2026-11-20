@@ -313,11 +313,13 @@ private:
     uint32_t _hover_bias_rest_zero_ms[INS_MAX_INSTANCES];  // when the EKF last zeroed each IMU's bias, last seen
     bool _hover_bias_switched[INS_MAX_INSTANCES];  // an accel switch has handed the IMU an estimate since it was zeroed
     uint32_t _hover_bias_flight_end_ms;  // when the last flight was disarmed, 0 for none
+    uint32_t _hover_bias_held_ms;  // when ACC_ZBIAS_LEARN bit 2 last held the EKF's accel bias at rest, 0 for never
     enum class HoverBiasBaseline : uint8_t {
         OK,         // the EKF's bias at arming was learnt at rest
         TOO_SOON,   // armed before the bias settled after a restart at rest
         SWITCHED,   // an accel switch on the ground handed over an estimate the EKF did not settle
         NOT_FIRST,  // flown since the bias was last restarted at rest
+        HELD,       // ACC_ZBIAS_LEARN bit 2 held the bias at rest since it was restarted
     };
     HoverBiasBaseline _hover_bias_baseline[INS_MAX_INSTANCES];
     bool _hover_bias_flew;  // airborne since arming
