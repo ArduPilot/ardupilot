@@ -8306,23 +8306,49 @@ return update()
             raise NotAchievedException("Expected no RC channels, got %u" % m.chancount)
 
     def JSON_sim_and_physics_time(self, physics):
-        '''SITL time, and the physics time just before and after reading it'''
+        '''SITL time, the physics time just before and after reading it, and
+        the wall clock a free-running physics paces itself against'''
         before = physics.timestamp
         sim_time = self.get_sim_time()
-        return sim_time, before, physics.timestamp
+        return sim_time, before, physics.timestamp, time.monotonic()
 
-    def JSON_assert_elapsed_equal(self, start, end, tolerance=0.05):
+    def JSON_assert_elapsed_equal(self, start, end, tolerance=0.05, physics_paced_by_wall_clock=False):
         '''SITL time elapsed between two samples is the physics time elapsed
 
         Each physics read brackets its SITL read, which bounds the message
         latency exactly instead of allowing for it with a guessed tolerance.
+
+        physics_paced_by_wall_clock allows for a backend which did not manage
+        the pace it set itself - see below.
         '''
-        (sim0, before0, after0) = start
-        (sim1, before1, after1) = end
+        (sim0, before0, after0, wall0) = start
+        (sim1, before1, after1, wall1) = end
         sim = sim1 - sim0
+        lower = before1 - after0 - tolerance
+        upper = after1 - before0 + tolerance
         self.progress("sim elapsed %f, physics elapsed %f-%f" % (sim, before1 - after0, after1 - before0))
-        if not before1 - after0 - tolerance <= sim <= after1 - before0 + tolerance:
-            raise NotAchievedException("SITL time drifted from physics time")
+        wall = wall1 - wall0
+        # a backend which lost more real time than this has not merely been
+        # late with its steps - something has stopped it, and that is a
+        # failure rather than something to allow for.  The round which failed
+        # this check had kept 0.94 of real time; a backend whose thread has
+        # died keeps none of it from that point on.
+        pace = (after1 - before0) / wall if wall > 0 else 0
+        if physics_paced_by_wall_clock and pace >= 0.8 and wall + tolerance > upper:
+            # a free-running backend sends a step when the wall clock says to
+            # and abandons any step it was late for (json_physics.run():
+            # next_send = max(next_send, now - dt) + dt), so under load its
+            # clock falls behind real time and never wins the deficit back,
+            # while SITL - paced by real time too - does not.  SITL is then
+            # ahead of the physics through no fault of its own, and what this
+            # checks for is SITL falling *behind*: judge the top of the window
+            # against the real time which paces them both.
+            self.progress("physics kept %f of real time (%fs of %fs); judging SITL against the wall clock" %
+                          (pace, after1 - before0, wall))
+            upper = wall + tolerance
+        if not lower <= sim <= upper:
+            raise NotAchievedException(
+                "SITL time drifted from physics time (sim elapsed %f, wanted %f-%f)" % (sim, lower, upper))
 
     def JSON_frame_rate(self, physics):
         '''median of the frame rates SITL sent in its last servo packets'''
@@ -8356,7 +8382,7 @@ return update()
             self.wait_ready_to_arm()
 
             # SITL time is physics time, counted from the first frame
-            self.JSON_assert_elapsed_equal((0, start_time, start_time), self.JSON_sim_and_physics_time(physics))
+            self.JSON_assert_elapsed_equal((0, start_time, start_time, 0), self.JSON_sim_and_physics_time(physics))
 
             # SITL matches its frame rate to the physics step
             frame_rate = self.JSON_frame_rate(physics)
@@ -8400,7 +8426,7 @@ return update()
             ratio = self.JSON_sim_wall_ratio()
             if not 0.5 < ratio < 1.5:
                 raise NotAchievedException("SITL ran at %fx, expected the physics real time" % ratio)
-            self.JSON_assert_elapsed_equal((0, 0, 0), self.JSON_sim_and_physics_time(physics))
+            self.JSON_assert_elapsed_equal((0, 0, 0, 0), self.JSON_sim_and_physics_time(physics))
 
             # frame rate is not forced to the physics step
             sim_rate = self.get_parameter("SIM_RATE_HZ")
@@ -8424,7 +8450,8 @@ return update()
             # after the pause SITL time follows the physics again
             resumed = self.JSON_sim_and_physics_time(physics)
             self.delay_sim_time(4, reason="physics resumed")
-            self.JSON_assert_elapsed_equal(resumed, self.JSON_sim_and_physics_time(physics))
+            self.JSON_assert_elapsed_equal(resumed, self.JSON_sim_and_physics_time(physics),
+                                           physics_paced_by_wall_clock=True)
 
     def JSONNoTimeSync(self):
         '''check SITL runs as fast as a JSON physics backend using no_time_sync'''
@@ -8452,7 +8479,7 @@ return update()
             self.wait_heartbeat()
 
             # SITL time counts from the first frame, without drift
-            first = (0, start_time, start_time)
+            first = (0, start_time, start_time, 0)
             self.JSON_assert_elapsed_equal(first, self.JSON_sim_and_physics_time(physics))
             self.delay_sim_time(200, reason="clock drift")
             self.JSON_assert_elapsed_equal(first, self.JSON_sim_and_physics_time(physics))
@@ -8503,11 +8530,25 @@ return update()
             for velocity, speed in ([0, 1, 0], 1), ([2, 0, 0], 2):
                 physics.set(velocity=velocity)
                 self.wait_groundspeed(speed - 0.1, speed + 0.1)
-                start = self.get_location()
+                # bracket each position with the clock either side of it, as
+                # JSON_assert_elapsed_equal() does: a position and a time read
+                # one after the other are not the same instant, and both gaps
+                # lengthen the measured travel, so taking them unpaired leaves
+                # an error which is always positive
+                before_start = self.get_sim_time()
+                start = self.get_location(location_source='SIMSTATE')
+                after_start = self.get_sim_time()
                 self.delay_sim_time(10, reason="vehicle moving")
-                dist = self.get_distance(start, self.get_location())
-                if abs(dist - 10 * speed) > 1:
-                    raise NotAchievedException("moved %fm in 10s, expected %fm" % (dist, 10 * speed))
+                before_end = self.get_sim_time()
+                end = self.get_location(location_source='SIMSTATE')
+                after_end = self.get_sim_time()
+                dist = self.get_distance(start, end)
+                least = speed * (before_end - after_start)
+                most = speed * (after_end - before_start)
+                self.progress("moved %fm, travel bounded by %fm-%fm" % (dist, least, most))
+                if not least - 1 <= dist <= most + 1:
+                    raise NotAchievedException(
+                        "moved %fm, expected %fm-%fm" % (dist, least, most))
             physics.set(velocity=[0, 0, 0])
 
             # euler attitude, then quaternion which takes precedence over it
