@@ -63,6 +63,12 @@ typedef uint64_t __ap_bitwise be64_t;
 #define __BIG_ENDIAN __ORDER_BIG_ENDIAN__
 #endif
 
+#if defined(__BIONIC__)
+#define __bswap_16(x) bswap_16(x)
+#define __bswap_32(x) bswap_32(x)
+#define __bswap_64(x) bswap_64(x)
+#endif
+
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define bswap_16_on_le(x) __bswap_16(x)
 #define bswap_32_on_le(x) __bswap_32(x)

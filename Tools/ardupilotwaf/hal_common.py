@@ -14,6 +14,8 @@ def process_hwdef_results(cfg, hwdef_obj):
             raise ValueError(f"hwdef redefines environment variable {k} "
                              f"with existing value {env[k]!r} to value {v!r}")
         else:
+            if k in ('CFLAGS', 'CXXFLAGS', 'LINKFLAGS'):
+                v = v.split()
             env[k] = v
             print("env set %s=%s" % (k, v))
 
