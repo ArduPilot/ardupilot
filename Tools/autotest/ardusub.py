@@ -617,6 +617,42 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.set_parameter("MOT_THST_HOVER", value)
             self.AltitudeHold()
 
+    def AltitudeMeasurementNoise(self):
+        """User-configured EKF altitude measurement noise survives a reboot"""
+        for name in ('EK2_ALT_M_NSE', 'EK3_ALT_M_NSE'):
+            self.assert_parameter_value(name, 0.1, epsilon=0.0001)
+
+        configured_noise = {
+            'EK2_ALT_M_NSE': 0.7,
+            'EK3_ALT_M_NSE': 1.4,
+        }
+        self.set_parameters(configured_noise)
+        self.reboot_sitl()
+        for name, value in configured_noise.items():
+            self.assert_parameter_value(name, value, epsilon=0.0001)
+
+    def AltitudeMeasurementNoiseWithoutDepth(self):
+        """No depth sensor does not change the configured EKF noise parameters"""
+        self.set_parameter('SIM_BARO_COUNT', 0)
+        self.reboot_sitl()
+        for name in ('EK2_ALT_M_NSE', 'EK3_ALT_M_NSE'):
+            self.assert_parameter_value(name, 0.1, epsilon=0.0001)
+
+        self.set_parameter('SIM_BARO_COUNT', 2)
+        self.reboot_sitl()
+        for name in ('EK2_ALT_M_NSE', 'EK3_ALT_M_NSE'):
+            self.assert_parameter_value(name, 0.1, epsilon=0.0001)
+
+        configured_noise = {
+            'EK2_ALT_M_NSE': 0.7,
+            'EK3_ALT_M_NSE': 1.4,
+        }
+        self.set_parameters(configured_noise)
+        self.set_parameter('SIM_BARO_COUNT', 0)
+        self.reboot_sitl()
+        for name, value in configured_noise.items():
+            self.assert_parameter_value(name, value, epsilon=0.0001)
+
     def SIMCompare(self):
         '''compare logged EKF2 and EKF3 estimates against simulator truth'''
         self.set_parameters({
@@ -1895,6 +1931,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.mission_NAV_LOITER_TURNS,
             self.mission_NAV_LOITER_TURNS_ccw,
             self.MotorThrustHoverParameterIgnore,
+            self.AltitudeMeasurementNoise,
+            self.AltitudeMeasurementNoiseWithoutDepth,
             self.SET_POSITION_TARGET_GLOBAL_INT,
             self.TestLogDownloadMAVProxy,
             self.TestLogDownloadMAVProxyNetwork,
