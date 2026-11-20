@@ -26,6 +26,8 @@ enum class check_fw_result_t : uint8_t {
     FAIL_REASON_BAD_LENGTH_DESCRIPTOR = 16,
     FAIL_REASON_BAD_FIRMWARE_SIGNATURE = 17,
     FAIL_REASON_VERIFICATION = 18,
+    FAIL_REASON_BAD_LENGTH_EXTF = 19,
+    FAIL_REASON_EXTF_READ = 20,
 };
 
 #if AP_CHECK_FIRMWARE_ENABLED
@@ -72,7 +74,8 @@ struct app_descriptor_unsigned {
     // APJ_BOARD_ID (hardware version). This is also used in CAN NodeInfo
     // with high byte in HardwareVersion.major and low byte in HardwareVersion.minor
     uint16_t  board_id;
-    uint8_t reserved[8];
+    uint32_t extf_image_size;
+    uint8_t reserved[4];
 };
 
 struct app_descriptor_signed {
@@ -95,7 +98,8 @@ struct app_descriptor_signed {
     // APJ_BOARD_ID (hardware version). This is also used in CAN NodeInfo
     // with high byte in HardwareVersion.major and low byte in HardwareVersion.minor
     uint16_t  board_id;
-    uint8_t reserved[8];
+    uint32_t extf_image_size;
+    uint8_t reserved[4];
 };
 
 #if AP_SIGNED_FIRMWARE
@@ -122,6 +126,15 @@ struct PACKED ap_secure_data {
         uint8_t key[AP_PUBLIC_KEY_LEN] = {};
     } public_key[AP_PUBLIC_KEY_MAX_KEYS];
 };
+
+static inline bool ap_public_key_is_zero(const uint8_t key[AP_PUBLIC_KEY_LEN])
+{
+    uint8_t key_bytes = 0;
+    for (uint8_t i = 0; i < AP_PUBLIC_KEY_LEN; i++) {
+        key_bytes |= key[i];
+    }
+    return key_bytes == 0;
+}
 #endif
 
 #ifdef HAL_BOOTLOADER_BUILD

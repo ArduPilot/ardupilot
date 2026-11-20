@@ -30,6 +30,7 @@ const app_descriptor_t app_descriptor = {
     .version_major = APP_FW_MAJOR,
     .version_minor = APP_FW_MINOR,
     .board_id = APJ_BOARD_ID,
-    .reserved = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
+    .extf_image_size = 0xffffffffU,
+    .reserved = { 0xff, 0xff, 0xff, 0xff }
 };
 #endif // AP_CHECK_FIRMWARE_ENABLED

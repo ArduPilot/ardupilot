@@ -38,12 +38,11 @@ const struct ap_secure_data *AP_CheckFirmware::find_public_keys(void)
  */
 bool AP_CheckFirmware::all_zero_keys(const struct ap_secure_data *sec_data)
 {
-    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
     /*
       look over all public keys, if one matches then we are OK
      */
     for (const auto &public_key : sec_data->public_key) {
-        if (memcmp(public_key.key, zero_key, AP_PUBLIC_KEY_LEN) != 0) {
+        if (!ap_public_key_is_zero(public_key.key)) {
             return false;
         }
     }
@@ -208,6 +207,9 @@ bool AP_CheckFirmware::check_signature(const mavlink_secure_command_t &pkt)
       look over all public keys, if one matches then we are OK
      */
     for (const auto &public_key : sec_data->public_key) {
+        if (ap_public_key_is_zero(public_key.key)) {
+            continue;
+        }
         crypto_check_ctx ctx {};
         crypto_check_ctx_abstract *actx = (crypto_check_ctx_abstract*)&ctx;
         crypto_check_init(actx, &pkt.data[pkt.data_length], public_key.key);
@@ -405,22 +407,48 @@ void AP_CheckFirmware::handle_msg(mavlink_channel_t chan, const mavlink_message_
 
 /*
   check that a bootloader is OK to flash. We don't want to allow
-  flashing of a bootloader unless we either have no public keys setup
-  or the bootloader has public keys embedded. This prevents an easy
-  mistake of including an insecure bootloader in ROMFS with a secure build
+  flashing of a bootloader unless we either have no public keys setup or
+  the candidate has exactly the same trust set. Key rotation is performed
+  separately using SECURE_COMMAND, which is authorised by the current keys.
  */
 bool AP_CheckFirmware::check_signed_bootloader(const uint8_t *fw, uint32_t fw_size)
 {
-    const struct ap_secure_data *sec_data = find_public_keys();
-    if (sec_data == nullptr || all_zero_keys(sec_data)) {
+    const struct ap_secure_data *current_keys = find_public_keys();
+    if (current_keys == nullptr || all_zero_keys(current_keys)) {
         // current bootloader doesn't have public keys, so OK to load any bootloader
         return true;
     }
     const uint8_t key[] = AP_PUBLIC_KEY_SIGNATURE;
-    sec_data = (const struct ap_secure_data *)memmem(fw, fw_size, key, sizeof(key));
-    if (sec_data == nullptr || all_zero_keys(sec_data)) {
+    const struct ap_secure_data *candidate_keys = (const struct ap_secure_data *)memmem(fw, fw_size, key, sizeof(key));
+    if (candidate_keys == nullptr || all_zero_keys(candidate_keys)) {
         // new bootloader doesn't have any public keys, not allowed
         return false;
+    }
+
+    // Require multiset equality so a candidate cannot add a retired key while
+    // retaining one current key, or use duplicate keys to hide a removal.
+    bool candidate_matched[AP_PUBLIC_KEY_MAX_KEYS] {};
+    for (const auto &current_key : current_keys->public_key) {
+        if (ap_public_key_is_zero(current_key.key)) {
+            continue;
+        }
+        bool found = false;
+        for (uint8_t i = 0; i < AP_PUBLIC_KEY_MAX_KEYS; i++) {
+            if (!candidate_matched[i] &&
+                memcmp(current_key.key, candidate_keys->public_key[i].key, AP_PUBLIC_KEY_LEN) == 0) {
+                candidate_matched[i] = true;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            return false;
+        }
+    }
+    for (uint8_t i = 0; i < AP_PUBLIC_KEY_MAX_KEYS; i++) {
+        if (!candidate_matched[i] && !ap_public_key_is_zero(candidate_keys->public_key[i].key)) {
+            return false;
+        }
     }
     return true;
 }
