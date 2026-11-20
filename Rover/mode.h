@@ -121,6 +121,9 @@ public:
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() const { return true; }
 
+    // true when mode state intentionally requests stopping or holding position
+    virtual bool is_stopping() const { return false; }
+
     // get default speed for this mode (held in CRUISE_SPEED, WP_SPEED or RTL_SPEED)
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
     float get_speed_default(bool rtl = false) const;
@@ -278,6 +281,10 @@ public:
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
     bool set_desired_location(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
     bool reached_destination() const override;
+
+    // true while a reached mission waypoint's timed hold is active
+    bool is_waypoint_hold() const;
+    bool is_stopping() const override;
 
     // set desired speed in m/s
     bool set_desired_speed(float speed_ms) override;
@@ -546,6 +553,7 @@ public:
 
     // return true if vehicle has reached destination
     bool reached_destination() const override;
+    bool is_stopping() const override;
 
     // set desired speed in m/s
     bool set_desired_speed(float speed_ms) override;
@@ -658,6 +666,7 @@ public:
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
+    bool is_stopping() const override;
 
     // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override { return _desired_yaw_cd * 0.01f; }
@@ -716,6 +725,7 @@ public:
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
+    bool is_stopping() const override { return reached_destination(); }
 
     // do not allow arming from this mode
     bool allows_arming() const override { return false; }
@@ -755,6 +765,7 @@ public:
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
+    bool is_stopping() const override;
 
     // do not allow arming from this mode
     bool allows_arming() const override { return false; }
@@ -856,6 +867,7 @@ public:
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
+    bool is_stopping() const override { return _reached_destination; }
 
     // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override;
@@ -926,6 +938,7 @@ public:
     void update() override;
 
     bool is_autopilot_mode() const override { return true; }
+    bool is_stopping() const override { return _docking_complete; }
 
     // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
