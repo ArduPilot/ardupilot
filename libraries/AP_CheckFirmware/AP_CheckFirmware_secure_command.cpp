@@ -250,16 +250,18 @@ bool AP_CheckFirmware::set_public_keys(uint8_t key_idx, uint8_t num_keys, const 
     /*
       pack so non-zero keys are at the start
      */
-    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
-    uint8_t max_keys = AP_PUBLIC_KEY_MAX_KEYS;
-    for (uint8_t i=0; max_keys>1 && i<max_keys-1; i++) {
-        if (memcmp(zero_key, sec_data->public_key[i].key, AP_PUBLIC_KEY_LEN) == 0) {
-            memmove(sec_data->public_key[i].key, sec_data->public_key[i+1].key, AP_PUBLIC_KEY_LEN*(max_keys-(i+1)));
-            max_keys--;
-            i--;
+    uint8_t next_key = 0;
+    for (uint8_t i = 0; i < AP_PUBLIC_KEY_MAX_KEYS; i++) {
+        if (!ap_public_key_is_zero(sec_data->public_key[i].key)) {
+            if (next_key != i) {
+                memcpy(sec_data->public_key[next_key].key, sec_data->public_key[i].key, AP_PUBLIC_KEY_LEN);
+            }
+            next_key++;
         }
     }
-    memset(sec_data->public_key[max_keys-1].key, 0, AP_PUBLIC_KEY_LEN*(AP_PUBLIC_KEY_MAX_KEYS-max_keys));
+    if (next_key < AP_PUBLIC_KEY_MAX_KEYS) {
+        memset(sec_data->public_key[next_key].key, 0, AP_PUBLIC_KEY_LEN*(AP_PUBLIC_KEY_MAX_KEYS-next_key));
+    }
 
     bool ret = write_bootloader(bld);
     delete bld;
@@ -327,7 +329,8 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
     }
 
     case SECURE_COMMAND_SET_PUBLIC_KEYS: {
-        if (pkt.data_length < AP_PUBLIC_KEY_LEN+1) {
+        if (pkt.data_length < AP_PUBLIC_KEY_LEN+1 ||
+            (pkt.data_length-1) % AP_PUBLIC_KEY_LEN != 0) {
             reply.result = MAV_RESULT_FAILED;
             goto send_reply;
         }
