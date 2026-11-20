@@ -23355,6 +23355,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'EAHRS_SENSORS': 0xD,        # GPS|BARO|COMPASS (exclude IMU)
             'AHRS_EKF_TYPE': 11,         # read the ExternalAHRS origin below
         })
+        # collect before the reboot so the start-up messages are caught
+        self.context_collect('STATUSTEXT')
         self.reboot_sitl()
 
         # The ExternalAHRS obtains an origin from its (un-glitched) GPS well
@@ -23373,16 +23375,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "ExternalAHRS origin too far from home (%.1fm) - glitched GPS won the race" % dist)
 
+        # let the EKFs pass their GPS checks, so they navigate on the
+        # glitched SITL GPS:
+        self.set_parameters({
+            'EK2_CHECK_SCALE': 100,
+            'EK3_CHECK_SCALE': 100,
+        })
+
         # each EKF must report the same origin: the common-origin code shared
         # the ExternalAHRS origin into them, so despite their own GPS being
         # glitched they hold the un-glitched ExternalAHRS origin
         for ekf_type, name in (3, "EKF3"), (2, "EKF2"):
+            self.wait_statustext("%s IMU0 is using GPS" % name, timeout=60, check_context=True)
             self.set_parameter('AHRS_EKF_TYPE', ekf_type)
+            self.wait_statustext("%s active" % name, timeout=60, check_context=True)
             ekf_origin = self.poll_message('GPS_GLOBAL_ORIGIN')
             if (ext_origin.latitude != ekf_origin.latitude or
                     ext_origin.longitude != ekf_origin.longitude or
                     ext_origin.altitude != ekf_origin.altitude):
                 raise NotAchievedException("%s did not adopt the ExternalAHRS origin" % name)
+            # GPS_GLOBAL_ORIGIN is the AHRS's common origin whichever
+            # EKF is active, so also check the EKF navigates from it:
+            # on the glitched GPS it is about 100m north of the
+            # ExternalAHRS origin, where it would be at 0 from an
+            # origin of its own
+            self.assert_active_estimator_uses_origin(ext_origin)
 
     def CommonOriginExternalAHRSReceives(self):
         '''ensure an EKF-established origin is shared into the ExternalAHRS'''
