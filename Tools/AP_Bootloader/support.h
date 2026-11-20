@@ -29,6 +29,10 @@ bool update_otg2_serial_forward(void);
 #endif
 void flash_init();
 
+#if EXT_FLASH_SIZE_MB
+bool ext_flash_read(uint32_t offset, uint8_t *data, uint32_t size);
+#endif
+
 uint32_t flash_func_read_word(uint32_t offset);
 bool flash_func_write_word(uint32_t offset, uint32_t v);
 bool flash_func_write_words(uint32_t offset, uint32_t *v, uint8_t n);
