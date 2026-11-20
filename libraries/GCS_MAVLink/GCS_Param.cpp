@@ -283,6 +283,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     }
     if (isnan(packet.param_value) || isinf(packet.param_value)) {
         send_param_error(msg, packet, MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE);
+        send_parameter_value(key, var_type, vp->cast_to_float(var_type));
         return;
     }
 
