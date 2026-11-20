@@ -18,6 +18,9 @@ protected:
 
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
+#if AP_HOME_ENABLED
+    MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet) override;
+#endif
     void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
 
     // override sending of scaled_pressure3 to send on-board temperature:
