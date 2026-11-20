@@ -196,34 +196,32 @@ bool AP_GPS_DroneCAN::inter_instance_pre_arm_checks(char failure_msg[], uint16_t
         if (!is_dronecan_gps_type(params_i.type)) {
             continue;
         }
-        bool overriden_node_found = false;
-        bool bad_override_config = false;
         if (params_i.override_node_id == 0) {
             //anything goes
             continue;
         }
+        // no other DroneCAN GPS may select the same node:
         for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
             const auto &params_j = AP::gps().params[j];
-            // we are only interested in parameters for DroneCAN GPSs:
-            if (!is_dronecan_gps_type(params_j.type)) {
-                continue;
+            if (j != i &&
+                is_dronecan_gps_type(params_j.type) &&
+                params_i.override_node_id == params_j.override_node_id) {
+                snprintf(failure_msg, failure_msg_len, "Same Node Id %lu set for multiple GPS", (unsigned long int)params_i.override_node_id.get());
+                return false;
             }
-            if (params_i.override_node_id == params_j.override_node_id && (i != j)) {
-                bad_override_config = true;
+        }
+        // the selected node must have been detected as this instance.
+        // Detected modules are not indexed by GPS instance, so look at
+        // all of them:
+        bool overriden_node_found = false;
+        for (const auto &module : _detected_modules) {
+            if (module.driver != nullptr &&
+                module.instance == i &&
+                module.node_id == params_i.override_node_id) {
+                overriden_node_found = true;
                 break;
             }
-            if (i == _detected_modules[j].instance && _detected_modules[j].driver) {
-                if (params_i.override_node_id == _detected_modules[j].node_id) {
-                    overriden_node_found = true;
-                    break;
-                }
-            }
         }
-        if (bad_override_config) {
-            snprintf(failure_msg, failure_msg_len, "Same Node Id %lu set for multiple GPS", (unsigned long int)params_i.override_node_id.get());
-            return false;
-        }
-
         if (!overriden_node_found) {
             snprintf(failure_msg, failure_msg_len, "Selected GPS Node %lu not set as instance %d", (unsigned long int)params_i.override_node_id.get(), i + 1);
             return false;
