@@ -11,6 +11,8 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Camera/AP_Camera.h>
+#include <AP_Common/Location.h>
 
 class AP_ExternalControl
 {
@@ -49,6 +51,26 @@ public:
         Disarm the vehicle
     */
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks) WARN_IF_UNUSED;
+
+    /*
+        Start image capture
+    */
+    virtual bool start_image_capture(uint8_t camera_id, uint32_t interval_msec, uint16_t total_images) WARN_IF_UNUSED;
+
+    /*
+        Stop image capture
+    */
+    virtual bool stop_image_capture(uint8_t camera_id) WARN_IF_UNUSED;
+
+    /*
+        Get total images captured since start of image capture
+    */
+    virtual uint16_t total_image_cap(uint8_t camera_id) WARN_IF_UNUSED;
+
+    /*
+        Get current image sequence number
+    */
+    virtual uint16_t image_current_seq(uint8_t camera_id) WARN_IF_UNUSED;
 
     static AP_ExternalControl *get_singleton(void) WARN_IF_UNUSED {
         return singleton;

@@ -1,0 +1,27 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/ImageStopCapture.srv
+// generated code does not contain a copyright notice
+
+
+module ardupilot_msgs {
+  module srv {
+    @verbatim (language="comment", text=
+      "Request")
+    struct ImageStopCapture_Request {
+      @verbatim (language="comment", text=
+        "0 = all cameras, 1,2,3... = specific camera")
+      uint8 camera_id;
+    };
+    @verbatim (language="comment", text=
+      "Response")
+    struct ImageStopCapture_Response {
+      boolean success;
+
+      string message;
+
+      @verbatim (language="comment", text=
+        "Total images captured")
+      uint16 total_captured;
+    };
+  };
+};
