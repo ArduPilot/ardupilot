@@ -38,15 +38,7 @@ const struct ap_secure_data *AP_CheckFirmware::find_public_keys(void)
  */
 bool AP_CheckFirmware::all_zero_keys(const struct ap_secure_data *sec_data)
 {
-    /*
-      look over all public keys, if one matches then we are OK
-     */
-    for (const auto &public_key : sec_data->public_key) {
-        if (!ap_public_key_is_zero(public_key.key)) {
-            return false;
-        }
-    }
-    return true;
+    return ap_public_keys_all_zero(*sec_data);
 }
 
 
@@ -203,29 +195,14 @@ bool AP_CheckFirmware::check_signature(const mavlink_secure_command_t &pkt)
         // monocypher signatures are 64 bytes
         return false;
     }
-    /*
-      look over all public keys, if one matches then we are OK
-     */
-    for (const auto &public_key : sec_data->public_key) {
-        if (ap_public_key_is_zero(public_key.key)) {
-            continue;
-        }
-        crypto_check_ctx ctx {};
-        crypto_check_ctx_abstract *actx = (crypto_check_ctx_abstract*)&ctx;
-        crypto_check_init(actx, &pkt.data[pkt.data_length], public_key.key);
-
-        crypto_check_update(actx, (const uint8_t*)&pkt.sequence, sizeof(pkt.sequence));
-        crypto_check_update(actx, (const uint8_t*)&pkt.operation, sizeof(pkt.operation));
-        crypto_check_update(actx, pkt.data, pkt.data_length);
-        if (pkt.operation != SECURE_COMMAND_GET_SESSION_KEY) {
-            crypto_check_update(actx, session_key, sizeof(session_key));
-        }
-        if (crypto_check_final(actx) == 0) {
-            // good signature
-            return true;
-        }
-    }
-    return false;
+    struct ap_signature_buffer buffers[] {
+        { (const uint8_t *)&pkt.sequence, sizeof(pkt.sequence) },
+        { (const uint8_t *)&pkt.operation, sizeof(pkt.operation) },
+        { pkt.data, pkt.data_length },
+        { session_key, sizeof(session_key) },
+    };
+    const uint8_t num_buffers = pkt.operation == SECURE_COMMAND_GET_SESSION_KEY ? 3 : 4;
+    return ap_check_signature(*sec_data, &pkt.data[pkt.data_length], buffers, num_buffers);
 }
 
 /*
@@ -247,21 +224,7 @@ bool AP_CheckFirmware::set_public_keys(uint8_t key_idx, uint8_t num_keys, const 
     }
     memcpy(sec_data->public_key[key_idx].key, key_data, num_keys*AP_PUBLIC_KEY_LEN);
 
-    /*
-      pack so non-zero keys are at the start
-     */
-    uint8_t next_key = 0;
-    for (uint8_t i = 0; i < AP_PUBLIC_KEY_MAX_KEYS; i++) {
-        if (!ap_public_key_is_zero(sec_data->public_key[i].key)) {
-            if (next_key != i) {
-                memcpy(sec_data->public_key[next_key].key, sec_data->public_key[i].key, AP_PUBLIC_KEY_LEN);
-            }
-            next_key++;
-        }
-    }
-    if (next_key < AP_PUBLIC_KEY_MAX_KEYS) {
-        memset(sec_data->public_key[next_key].key, 0, AP_PUBLIC_KEY_LEN*(AP_PUBLIC_KEY_MAX_KEYS-next_key));
-    }
+    ap_public_keys_compact(*sec_data);
 
     bool ret = write_bootloader(bld);
     delete bld;
@@ -430,32 +393,7 @@ bool AP_CheckFirmware::check_signed_bootloader(const uint8_t *fw, uint32_t fw_si
         return false;
     }
 
-    // Require multiset equality so a candidate cannot add a retired key while
-    // retaining one current key, or use duplicate keys to hide a removal.
-    bool candidate_matched[AP_PUBLIC_KEY_MAX_KEYS] {};
-    for (const auto &current_key : current_keys->public_key) {
-        if (ap_public_key_is_zero(current_key.key)) {
-            continue;
-        }
-        bool found = false;
-        for (uint8_t i = 0; i < AP_PUBLIC_KEY_MAX_KEYS; i++) {
-            if (!candidate_matched[i] &&
-                memcmp(current_key.key, candidate_keys->public_key[i].key, AP_PUBLIC_KEY_LEN) == 0) {
-                candidate_matched[i] = true;
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            return false;
-        }
-    }
-    for (uint8_t i = 0; i < AP_PUBLIC_KEY_MAX_KEYS; i++) {
-        if (!candidate_matched[i] && !ap_public_key_is_zero(candidate_keys->public_key[i].key)) {
-            return false;
-        }
-    }
-    return true;
+    return ap_public_key_sets_equal(*current_keys, *candidate_keys);
 }
 
 #endif // AP_CHECK_FIRMWARE_ENABLED
