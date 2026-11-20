@@ -6846,6 +6846,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if not self.current_onboard_log_contains_message("XKFD"):
                 raise NotAchievedException(f"Did not find expected XKFD message at VISO_DELAY_MS={delay_ms}")
 
+    def VisionVelocityOnly(self):
+        """Disable GPS navigation, Loiter using only VISION_SPEED_ESTIMATE."""
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+        self.wait_ready_to_arm()
+        old_pos = self.assert_receive_message('GLOBAL_POSITION_INT')
+
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_VELZ": 0,
+            "GPS1_TYPE": 0,
+            "VISO_TYPE": 1,
+            "SERIAL5_PROTOCOL": 1,
+            "SIM_VICON_TMASK": 2,  # send VISION_SPEED_ESTIMATE only
+        })
+        self.reboot_sitl()
+        self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
+        self.set_origin(old_pos)
+
+        self.takeoff(10, mode='LOITER', require_absolute=False)
+        start = self.get_location('SIMSTATE')
+        self.delay_sim_time(60, reason="hold Loiter on velocity-only aiding")
+        self.assert_mode('LOITER')
+        drift = self.get_distance(start, self.get_location('SIMSTATE'))
+        self.progress("Drifted %.2fm in Loiter" % drift)
+        if drift > 5:
+            raise NotAchievedException("Drifted %.1fm in Loiter" % drift)
+        self.set_parameter("SIM_VICON_FAIL", 1)
+        self.wait_mode('LAND')  # EKF failsafe once velocity times out
+        self.wait_disarmed()
+
     def FlyMissionTwice(self):
         '''fly a mission twice in a row without changing modes in between.
         Seeks to show bugs in mission state machine'''
@@ -21152,6 +21183,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.OpticalFlowFocusAlt,
             self.BodyFrameOdom,
             self.BodyFrameOdomDelay,
+            self.VisionVelocityOnly,
             self.RTLSpeed,
             self.MountYawVehicleForMountROI,
             self.MAV_CMD_DO_MOUNT_CONTROL,

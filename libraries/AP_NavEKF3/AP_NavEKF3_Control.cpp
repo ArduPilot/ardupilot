@@ -315,7 +315,7 @@ void NavEKF3_core::setAidingMode()
 #if EK3_FEATURE_OPTFLOW_FUSION
                 readyToUseOptFlow() ||
 #endif
-                readyToUseBodyOdm()) {
+                readyToUseBodyOdm() || readyToUseExtNavVel()) {
                 PV_AidingMode = AID_RELATIVE;
             }
             break;
@@ -329,7 +329,7 @@ void NavEKF3_core::setAidingMode()
             // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
             if (readyToUseGPS() || readyToUseRangeBeacon() || readyToUseExtNav()) {
                 PV_AidingMode = AID_ABSOLUTE;
-            } else if (flowFusionTimeout && bodyOdmFusionTimeout) {
+            } else if (flowFusionTimeout && bodyOdmFusionTimeout && !readyToUseExtNavVel()) {
                 PV_AidingMode = AID_NONE;
             }
             break;
@@ -650,6 +650,23 @@ bool NavEKF3_core::readyToUseExtNav(void) const
 #endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
+// return true if the filter is ready to use external nav velocity without a horizontal position source
+bool NavEKF3_core::readyToUseExtNavVel(void) const
+{
+#if EK3_FEATURE_EXTERNAL_NAV
+    if ((frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::NONE) ||
+        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV, core_index)) {
+        return false;
+    }
+
+    // earth frame velocity requires yaw alignment, once aiding allow 5 seconds without data
+    const bool velRecent = extNav.velToFuse || ((PV_AidingMode != AID_NONE) && (dal.millis() - extNav.velInnovTime_ms < 5000));
+    return tiltAlignComplete && yawAlignComplete && velRecent;
+#else
+    return false;
+#endif // EK3_FEATURE_EXTERNAL_NAV
+}
+
 // return true if we should use the compass
 bool NavEKF3_core::use_compass(void) const
 {
@@ -809,7 +826,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     // init return value
     nav_filter_status status;
     status.value = 0;
-    bool doingBodyVelNav = (PV_AidingMode != AID_NONE) && (imuSampleTime_ms - bodyOdm.prevFuseTime_ms < 5000);
+    bool doingBodyVelNav = (PV_AidingMode != AID_NONE) && ((imuSampleTime_ms - bodyOdm.prevFuseTime_ms < 5000) || readyToUseExtNavVel());
     bool doingFlowNav = (PV_AidingMode != AID_NONE) && flowDataValid;
     bool doingWindRelNav = (!tasTimeout && assume_zero_sideslip()) || !dragTimeout;
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
