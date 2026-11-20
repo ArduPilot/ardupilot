@@ -805,7 +805,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         const bool axisLockout = !resetsPaused &&
                                  (MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) &&
                                  (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS);
-        const bool rangeCurrent = (imuSampleTime_ms - aglKf.lastRngFuseTime_ms) < FLOW_RESET_RANGE_MAX_AGE_MS;
+        // the AGL KF also fuses the copies a backend sends while it holds a reading, as NMEA does for 3 s,
+        // so the reading itself must be recent too
+        const bool rangeCurrent = ((imuSampleTime_ms - aglKf.lastRngFuseTime_ms) < FLOW_RESET_RANGE_MAX_AGE_MS) &&
+                                  ((imuSampleTime_ms - rngNewReadingTime_ms) < FLOW_RESET_RANGE_MAX_AGE_MS);
         // after a step in the ground, a car bonnet say, the AGL KF height the reset scales the flow by
         // lags the range for a while. The speed error that puts into the reset, the flow rate times the
         // height difference taken along the sensor axis as range is, may be no more than the flow noise
