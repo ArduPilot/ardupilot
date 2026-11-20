@@ -1412,6 +1412,7 @@ private:
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     uint32_t flowFuseTimeAxis_ms[2];// per-axis time the flow innovation test last passed, used to detect a single-axis lockout
+    uint32_t flowTestTime_ms;       // time of the last flow sample either axis could pass
     uint8_t flowVelResetCount;      // count of horizontal velocity resets triggered by optical flow recovery
     static const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
     uint32_t flowVelResetTimes_ms[FLOW_RESET_MAX_IN_WINDOW]; // times of the latest optical-flow velocity resets, 0 if none
