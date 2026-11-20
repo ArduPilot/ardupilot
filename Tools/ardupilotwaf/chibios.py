@@ -158,6 +158,31 @@ class set_default_parameters(Task.Task):
             defaults.save()
 
 
+class embed_features(Task.Task):
+    '''copy the ELF and embed the features found from it and its map, as
+    LTO removes many of the symbols extract_features.py looks for'''
+    color='CYAN'
+    vars = ['NM', 'CXXFILT', 'OBJCOPY']
+    def keyword(self):
+        return "Embedding features"
+    def run(self):
+        sys.path.append(os.path.join(self.env.SRCROOT, 'Tools', 'scripts'))
+        from extract_features import ExtractFeatures
+        elf, map_file = [n.abspath() for n in self.inputs]
+        ef = ExtractFeatures(elf, nm=self.env.get_flat('NM'), map_filename=map_file,
+                             cxxfilt=self.env.get_flat('CXXFILT'))
+        features = self.outputs[0].abspath() + '.features'
+        with open(features, 'w') as f:
+            f.write(ef.create_string())
+        cmd = [self.env.get_flat('OBJCOPY'),
+               '--add-section', '%s=%s' % (ExtractFeatures.FEATURES_SECTION, features),
+               '--set-section-flags', '%s=readonly' % ExtractFeatures.FEATURES_SECTION,
+               elf, self.outputs[0].abspath()]
+        ret = self.exec_command(cmd)
+        os.unlink(features)
+        return ret
+
+
 class generate_bin(Task.Task):
     color='CYAN'
     # run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
@@ -449,12 +474,23 @@ def chibios_firmware(self):
     do_patch = not self.bld.env.BOOTLOADER
 
     elf = link_output
-    if do_patch or self.env.DEFAULT_PARAMETERS:
+    if do_patch or self.env.DEFAULT_PARAMETERS or self.env.ENABLE_LTO:
         # link to a private file, the steps below write the final ELF
         elf = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name)
         self.link_task.outputs = [elf] + self.link_task.outputs[1:]
         # report the size of the final ELF, not the unpatched one
         self.build_summary['binary'] = link_output.path_from(self.bld.bldnode)
+
+    if self.env.ENABLE_LTO:
+        features_elf = link_output
+        if do_patch or self.env.DEFAULT_PARAMETERS:
+            features_elf = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name + '_features')
+        # the map post_link puts beside the linked ELF
+        map_node = elf.parent.find_or_declare(elf.name + '.map')
+        features_task = self.create_task('embed_features', src=[elf, map_node], tgt=features_elf)
+        for script in ['extract_features.py', 'build_options.py']:
+            features_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/' + script))
+        elf = features_elf
 
     if self.env.DEFAULT_PARAMETERS:
         defaults_elf = link_output
@@ -612,6 +648,7 @@ def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
     cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
+    cfg.find_program('arm-none-eabi-c++filt', var='CXXFILT')
     env = cfg.env
 
     # Flash and FATFS use the same crash dump in a mutually exclusive way.
