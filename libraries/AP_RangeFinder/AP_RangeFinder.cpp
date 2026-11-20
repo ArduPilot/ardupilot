@@ -66,6 +66,7 @@
 #include "AP_RangeFinder_LightWare_GRF.h"
 #include "AP_RangeFinder_LightWare_GRF_I2C.h"
 #include "AP_RangeFinder_DTS6012M.h"
+#include "AP_RangeFinder_TWTOF240UI.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -653,6 +654,15 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         serial_create_fn = AP_RangeFinder_DTS6012M::create;
         break;
 #endif // AP_RANGEFINDER_DTS6012M_ENABLED
+
+#if AP_RANGEFINDER_TWTOF240UI_ENABLED
+    case Type::TWTOF240UI: {
+        const uint8_t addr = params[instance].address ? params[instance].address
+                                                      : AP_RANGEFINDER_TWTOF240UI_DEFAULT_ADDR;
+        probe_i2c_buses(instance, addr, AP_RangeFinder_TWTOF240UI::detect);
+        break;
+    }
+#endif
 
     case Type::NONE:
         break;
