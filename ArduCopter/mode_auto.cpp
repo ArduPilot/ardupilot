@@ -322,7 +322,7 @@ bool ModeAuto::enter_auto_rtl(ModeReason reason)
         copter.set_current_mode_reason(reason);
 #if HAL_LOGGING_ENABLED
         // log entry into AUTO RTL
-        copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
+        copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), copter.control_mode_reason);
 #endif
 
         // make happy noise
