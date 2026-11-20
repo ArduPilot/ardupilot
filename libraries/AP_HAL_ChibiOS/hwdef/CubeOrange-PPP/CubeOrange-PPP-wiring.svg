@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="170" viewBox="0 0 720 170" font-family="sans-serif" font-size="14">
+  <rect width="720" height="170" fill="#ffffff"/>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333333"/>
+    </marker>
+  </defs>
+  <rect x="10" y="45" width="170" height="80" rx="8" fill="#ffe6cc" stroke="#cc6600" stroke-width="2"/>
+  <text x="95" y="80" text-anchor="middle" font-weight="bold">CubeOrange</text>
+  <text x="95" y="102" text-anchor="middle">CubeOrange-PPP</text>
+  <rect x="290" y="45" width="170" height="80" rx="8" fill="#e6f0ff" stroke="#3366cc" stroke-width="2"/>
+  <text x="375" y="80" text-anchor="middle" font-weight="bold">CubeNode-ETH</text>
+  <text x="375" y="102" text-anchor="middle">PPP gateway</text>
+  <rect x="570" y="45" width="140" height="80" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="640" y="80" text-anchor="middle" font-weight="bold">Ethernet</text>
+  <text x="640" y="102" text-anchor="middle">network / PC</text>
+  <line x1="182" y1="85" x2="288" y2="85" stroke="#333333" stroke-width="2" marker-start="url(#a)" marker-end="url(#a)"/>
+  <text x="235" y="40" text-anchor="middle">TELEM1</text>
+  <text x="235" y="150" text-anchor="middle">PPP, 12.5 Mbaud</text>
+  <text x="235" y="166" text-anchor="middle">RTS/CTS</text>
+  <line x1="462" y1="85" x2="568" y2="85" stroke="#333333" stroke-width="2" marker-start="url(#a)" marker-end="url(#a)"/>
+  <text x="515" y="150" text-anchor="middle">Ethernet</text>
+</svg>

@@ -149,10 +149,6 @@ static enum led_state led_state;
 
 volatile unsigned timer[NTIMERS];
 
-// keep back 32 bytes at the front of flash. This is long enough to allow for aligned
-// access on STM32H7
-#define RESERVE_LEAD_WORDS 8
-
 
 #if EXT_FLASH_SIZE_MB
 extern AP_FlashIface_JEDEC ext_flash;
@@ -457,6 +453,18 @@ static void test_flash()
 }
 #endif
 
+static volatile bool hold_requested;
+
+void bootloader_hold(void)
+{
+    hold_requested = true;
+}
+
+bool bootloader_held(void)
+{
+    return hold_requested;
+}
+
 void
 bootloader(unsigned timeout)
 {
@@ -511,7 +519,7 @@ bootloader(unsigned timeout)
 #if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
             bool ser_forward_active = update_otg2_serial_forward();
 #endif
-            if (timeout && !timer[TIMER_BL_WAIT]
+            if (timeout && !timer[TIMER_BL_WAIT] && !hold_requested
 #if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
             // do serial forward only when idle
             && !ser_forward_active

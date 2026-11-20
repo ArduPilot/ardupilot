@@ -7,13 +7,22 @@
 #if AP_BOOTLOADER_NETWORK_ENABLED
 
 #include <AP_Networking/AP_Networking.h>
+#if !AP_BOOTLOADER_NETWORK_PPP_ENABLED
 #include <AP_Networking/AP_Networking_ChibiOS.h>
+#endif
+#if AP_NETWORKING_CAN_MCAST_ENABLED
 #include <AP_Networking/AP_Networking_CAN.h>
+#endif
 
 #include <lwip/ip_addr.h>
 #include <lwip/tcpip.h>
 #include <lwip/netifapi.h>
+#include <lwip/sockets.h>
+#if AP_BOOTLOADER_NETWORK_PPP_ENABLED
+#include <netif/ppp/pppos.h>
+#else
 #include <lwip/etharp.h>
+#endif
 #if LWIP_DHCP
 #include <lwip/dhcp.h>
 #endif
@@ -30,7 +39,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <AP_HAL_ChibiOS/hwdef/common/flash.h>
+
+// can_printf() only exists when the bootloader has CAN
+#define BL_NETWORK_HAVE_CAN (HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES)
+#if BL_NETWORK_HAVE_CAN
 #include <AP_HAL_ChibiOS/CANIface.h>
+#endif
 
 #ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR
 #define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "C2:AF:51:03:CF:46"
@@ -52,6 +66,11 @@
 #define AP_BOOTLOADER_NETWORK_USE_DHCP 0
 #endif
 
+// firmware is received into RAM this much at a time between flash operations
+#ifndef AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE
+#define AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE 65536
+#endif
+
 #define LWIP_SEND_TIMEOUT_MS 50
 #define LWIP_NETIF_MTU       1500
 #define LWIP_LINK_POLL_INTERVAL TIME_S2I(5)
@@ -61,7 +80,9 @@
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
+#if AP_NETWORKING_CAN_MCAST_ENABLED
 static AP_Networking_CAN mcast_server;
+#endif
 
 void BL_Network::link_up_cb(void *p)
 {
@@ -69,11 +90,17 @@ void BL_Network::link_up_cb(void *p)
 #if AP_BOOTLOADER_NETWORK_USE_DHCP
     dhcp_start(driver->thisif);
 #endif
+#if BL_NETWORK_HAVE_CAN
     char ipstr[IP4_STR_LEN];
     can_printf("IP %s", SocketAPM::inet_addr_to_str(ntohl(driver->thisif->ip_addr.addr), ipstr, sizeof(ipstr)));
+#else
+    (void)driver;
+#endif
 
+#if AP_NETWORKING_CAN_MCAST_ENABLED
     // start mcast CAN server
     mcast_server.start((1U<<HAL_NUM_CAN_IFACES)-1);
+#endif
 }
 
 void BL_Network::link_down_cb(void *p)
@@ -84,6 +111,7 @@ void BL_Network::link_down_cb(void *p)
 #endif
 }
 
+#if !AP_BOOTLOADER_NETWORK_PPP_ENABLED
 /*
  * This function does the actual transmission of the packet. The packet is
  * contained in the pbuf that is passed to the function. This pbuf
@@ -290,6 +318,137 @@ void BL_Network::net_thread()
     }
 }
 
+#else  // AP_BOOTLOADER_NETWORK_PPP_ENABLED
+
+#ifndef AP_BOOTLOADER_NETWORK_PPP_BAUD
+#define AP_BOOTLOADER_NETWORK_PPP_BAUD 921600
+#endif
+
+#ifndef AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL
+#define AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL 0
+#endif
+
+#if AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL && (!defined(AP_BOOTLOADER_NETWORK_PPP_RTS_LINE) || !defined(AP_BOOTLOADER_NETWORK_PPP_RTS_AF))
+#error "PPP flow control needs AP_BOOTLOADER_NETWORK_PPP_RTS_LINE and AP_BOOTLOADER_NETWORK_PPP_RTS_AF"
+#endif
+
+#if !AP_NETWORKING_BACKEND_PPP
+// lwIP calls this for every incoming PPP frame; the bootloader does
+// not support packet capture. AP_Networking_PPP.cpp provides it when
+// that backend is enabled
+void ap_ppp_capture_hook(const struct ppp_pcb_s *pcb, const struct pbuf *pb)
+{
+}
+#endif
+
+/*
+  start the serial port the PPP link runs over
+ */
+void BL_Network::ppp_start_serial(void)
+{
+    static SerialConfig ppp_sercfg;
+    ppp_sercfg.speed = AP_BOOTLOADER_NETWORK_PPP_BAUD;
+#if defined(STM32H7)
+    // the H7 UART clock is 100MHz; rates above 6.25MBaud (up to
+    // 12.5MBaud) need 8x rather than 16x oversampling
+    if (ppp_sercfg.speed > 100000000UL / 16U) {
+        ppp_sercfg.cr1 |= USART_CR1_OVER8;
+    }
+#endif
+#ifdef USART_CR1_FIFOEN
+    // the serial driver takes an interrupt per byte, and at high
+    // baudrates kernel critical sections delay it for longer than two
+    // byte times; the FIFO covers that and the driver drains it
+    ppp_sercfg.cr1 |= USART_CR1_FIFOEN;
+#endif
+#if AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL
+    // hardware CTS, and hardware RTS, which is deasserted whenever the
+    // receive FIFO is full, including while flash operations stall
+    // the CPU
+    ppp_sercfg.cr3 |= USART_CR3_CTSE | USART_CR3_RTSE;
+#endif
+    sdStart(&AP_BOOTLOADER_NETWORK_PPP_SERIAL, &ppp_sercfg);
+#if AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL
+    // hwdef makes RTS a GPIO output for the HAL's software RTS; give
+    // it to the UART instead
+    palSetLineMode(AP_BOOTLOADER_NETWORK_PPP_RTS_LINE, PAL_MODE_ALTERNATE(AP_BOOTLOADER_NETWORK_PPP_RTS_AF));
+#endif
+}
+
+/*
+  send PPP data to the serial port
+ */
+uint32_t BL_Network::ppp_output_cb(struct ppp_pcb_s *pcb, const void *data, uint32_t len, void *ctx)
+{
+    return chnWriteTimeout(&AP_BOOTLOADER_NETWORK_PPP_SERIAL, (const uint8_t *)data, len, TIME_MS2I(LWIP_SEND_TIMEOUT_MS));
+}
+
+/*
+  PPP link status change
+ */
+void BL_Network::ppp_status_cb(struct ppp_pcb_s *pcb, int code, void *ctx)
+{
+    auto *driver = (BL_Network *)ctx;
+    switch (code) {
+    case PPPERR_NONE:
+        // link is up and we have our address from the peer
+        link_up_cb(driver);
+        break;
+    case PPPERR_USER:
+        break;
+    default:
+        // the link is dead; start negotiating again
+        driver->ppp_need_restart = true;
+        break;
+    }
+}
+
+/*
+  networking thread
+*/
+void BL_Network::net_thread()
+{
+    /* start tcpip thread */
+    tcpip_init(NULL, NULL);
+
+    thread_sleep_ms(100);
+
+    ppp_start_serial();
+
+    // our address comes from the peer over IPCP
+    LOCK_TCPIP_CORE();
+    ppp = pppos_create(thisif, ppp_output_cb, ppp_status_cb, this);
+    if (ppp == nullptr) {
+        AP_HAL::panic("Failed to create PPP link");
+    }
+    netif_set_default(thisif);
+    ppp_connect(ppp, 0);
+    UNLOCK_TCPIP_CORE();
+
+    uint8_t buf[256];
+    while (true) {
+        if (ppp_need_restart) {
+            ppp_need_restart = false;
+            LOCK_TCPIP_CORE();
+            ppp_connect(ppp, 0);
+            UNLOCK_TCPIP_CORE();
+        }
+
+        // wait for some data, then take whatever else is buffered
+        size_t n = chnReadTimeout(&AP_BOOTLOADER_NETWORK_PPP_SERIAL, buf, 1, TIME_MS2I(100));
+        if (n == 0) {
+            continue;
+        }
+        n += chnReadTimeout(&AP_BOOTLOADER_NETWORK_PPP_SERIAL, &buf[1], sizeof(buf)-1, TIME_IMMEDIATE);
+
+        LOCK_TCPIP_CORE();
+        pppos_input(ppp, buf, n);
+        UNLOCK_TCPIP_CORE();
+    }
+}
+
+#endif  // AP_BOOTLOADER_NETWORK_PPP_ENABLED
+
 void BL_Network::net_thread_trampoline(void *ctx)
 {
     auto *net = (BL_Network *)ctx;
@@ -375,14 +534,50 @@ char *BL_Network::read_headers(SocketAPM *sock)
 }
 
 /*
+  wait until the sender is blocked by our TCP receive window, or has
+  nothing left to send, so that nothing arrives while flash is
+  busy. remaining is the number of bytes the sender has yet to send
+  that we have not read
+ */
+void BL_Network::wait_sender_blocked(SocketAPM *sock, uint32_t remaining)
+{
+    // the sender may hold back less than a segment rather than send a
+    // runt, so a window within a segment of full counts as full
+    const uint32_t blocked = MIN(remaining, uint32_t(TCP_WND - TCP_MSS));
+    int last_avail = -1;
+    const uint32_t start_ms = AP_HAL::millis();
+    uint32_t last_change_ms = start_ms;
+    while (true) {
+        int avail = 0;
+        lwip_ioctl(sock->get_read_fd(), FIONREAD, &avail);
+        const uint32_t now_ms = AP_HAL::millis();
+        if (avail != last_avail) {
+            last_avail = avail;
+            last_change_ms = now_ms;
+        }
+        const uint32_t quiet_ms = now_ms - last_change_ms;
+        if ((uint32_t(avail) >= blocked && quiet_ms >= 20) ||
+            quiet_ms >= 200 ||
+            now_ms - start_ms >= 2000) {
+            break;
+        }
+        thread_sleep_ms(5);
+    }
+}
+
+/*
   handle an incoming HTTP POST request
  */
 void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
 {
     /*
       skip over form boundary. We don't care about the filename as we
-      only support one file
+      only support one file. The first line is the boundary delimiter,
+      which also follows the file
      */
+    char delim[74];
+    uint8_t delim_len = 0;
+    bool in_delim = true;
     uint8_t state = 0;
     while (true) {
         char c;
@@ -390,6 +585,13 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
             return;
         }
         content_length--;
+        if (in_delim) {
+            if (c == '\r') {
+                in_delim = false;
+            } else if (delim_len < sizeof(delim)) {
+                delim[delim_len++] = c;
+            }
+        }
         // absorb up to \r\n\r\n
         if (c == '\r') {
             if (state == 2) {
@@ -411,58 +613,197 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
         }
     }
     /*
-      erase all of flash
+      receive the file a chunk at a time into RAM, erasing flash
+      sectors as the chunks reach them. Erasing and writing flash can
+      stall the CPU, and the network interface with it, for long
+      enough to lose incoming data, so before touching flash we wait
+      for the sender to be blocked by our TCP receive window
      */
-    status_printf("Erasing ...");
-    flash_set_keep_unlocked(true);
-    uint32_t sec=0;
-    while (flash_func_sector_size(sec) != 0 &&
-           flash_func_erase_sector(sec)) {
-        thread_sleep_ms(10);
-        sec++;
-        if (stm32_flash_getpageaddr(sec) - stm32_flash_getpageaddr(0) >= content_length) {
-            break;
-        }
+    uint32_t chunk_size = AP_BOOTLOADER_NETWORK_FLASH_CHUNK_SIZE;
+    uint32_t *chunk = nullptr;
+    while (chunk_size >= 1024 && (chunk = (uint32_t *)malloc(chunk_size)) == nullptr) {
+        chunk_size /= 2;
     }
-    /*
-      receive file and write to flash
-     */
-    uint32_t buf[128];
+    if (chunk == nullptr) {
+        status_printf("Flash failed: no memory");
+        return;
+    }
+    uint8_t *chunk8 = (uint8_t *)chunk;
+
+    uint32_t flash_size = 0;
+    for (uint32_t sec=0; flash_func_sector_size(sec) != 0; sec++) {
+        flash_size += flash_func_sector_size(sec);
+    }
+
+    // the file ends at CRLF and the delimiter, which start either the
+    // next part of the form or, followed by "--" and CRLF, its end
+    uint8_t marker[sizeof(delim) + 2];
+    const uint32_t marker_len = delim_len + 2;
+    marker[0] = '\r';
+    marker[1] = '\n';
+    memcpy(&marker[2], delim, delim_len);
+
+    const uint32_t body_length = content_length;
     uint32_t ofs = 0;
-
-    // must be multiple of 4
-    content_length &= ~3;
-
-    const uint32_t max_ofs = MIN(BOARD_FLASH_SIZE*1024, content_length);
+    uint32_t body_read = 0;
+    uint32_t erased_ofs = 0;
+    uint32_t erase_sec = 0;
+    bool failed = false;
+    if (in_delim || delim_len < 3 || delim_len == sizeof(delim) || body_length < marker_len + 4) {
+        status_printf("Flash failed: bad form data");
+        failed = true;
+    } else if (body_length - (marker_len + 4) > flash_size) {
+        status_printf("Flash failed: firmware is %u bytes, flash is %u",
+                      unsigned(body_length - (marker_len + 4)), unsigned(flash_size));
+        failed = true;
+    } else {
+        status_printf("Flashing 0%%");
+    }
     uint8_t last_pct = 0;
-    while (ofs < max_ofs) {
-        const uint32_t needed = MIN(sizeof(buf), max_ofs-ofs);
-        auto n = sock->recv((void*)buf, needed, 10000);
-        if (n <= 0) {
+    // the first words of the firmware are written last, as they are
+    // by the serial protocol; jump_to_app() won't start a firmware
+    // which lacks them, so a board reset part way through an upload
+    // stays in the bootloader
+    uint32_t lead_words[RESERVE_LEAD_WORDS];
+    memset(lead_words, 0xff, sizeof(lead_words));
+    // bytes at the start of chunk kept back from the last chunk, as
+    // they may be the start of the marker
+    uint32_t carry = 0;
+    bool found_end = false;
+    flash_set_keep_unlocked(true);
+    while (!failed && !found_end) {
+        const uint32_t want = MIN(chunk_size - carry, body_length - body_read);
+        uint32_t len = 0;
+        while (len < want) {
+            const auto n = sock->recv(&chunk8[carry + len], want - len, 10000);
+            if (n <= 0) {
+                break;
+            }
+            len += n;
+            body_read += n;
+        }
+        if (len < want) {
+            status_printf("Flash failed: upload stopped at %u of %u", unsigned(body_read), unsigned(body_length));
+            failed = true;
             break;
         }
-        // we need a whole number of words
-        if (n % 4 != 0 && n < needed) {
-            auto n2 = sock->recv(((uint8_t*)buf)+n, 4 - n%4, 10000);
-            if (n2 > 0) {
-                n += n2;
+        const uint32_t avail = carry + len;
+        uint32_t file_len = 0;
+        for (uint32_t i=0; i + marker_len <= avail; i++) {
+            if (chunk8[i] == '\r' && memcmp(&chunk8[i], marker, marker_len) == 0) {
+                file_len = i;
+                found_end = true;
+                break;
             }
         }
-        flash_write_buffer(ofs, buf, n/4);
-        ofs += n;
-        uint8_t pct = ofs*100/max_ofs;
-        if (pct % 10 == 0 && last_pct != pct) {
+        if (!found_end) {
+            if (body_read == body_length) {
+                status_printf("Flash failed: no form boundary after the firmware");
+                failed = true;
+                break;
+            }
+            // keep back what may be the start of the marker, and
+            // write whole words
+            file_len = avail >= marker_len ? (avail - (marker_len - 1)) & ~3U : 0;
+        }
+        if (ofs + file_len > flash_size) {
+            status_printf("Flash failed: firmware is larger than flash (%u)", unsigned(flash_size));
+            failed = true;
+            break;
+        }
+        wait_sender_blocked(sock, body_length - body_read);
+        // flash is written in words; pad the end of the file
+        const uint32_t wlen = (file_len + 3) & ~3U;
+        memset(&chunk8[file_len], 0xff, wlen - file_len);
+        while (erased_ofs < ofs + wlen) {
+            const uint32_t size = flash_func_sector_size(erase_sec);
+            if (size == 0 || !flash_func_erase_sector(erase_sec)) {
+                status_printf("Flash failed: erase of sector %u", unsigned(erase_sec));
+                failed = true;
+                break;
+            }
+            erased_ofs += size;
+            erase_sec++;
+        }
+        uint32_t lead_len = 0;
+        if (ofs < sizeof(lead_words)) {
+            lead_len = MIN(wlen, sizeof(lead_words) - ofs);
+            memcpy(&((uint8_t *)lead_words)[ofs], chunk8, lead_len);
+        }
+        for (uint32_t i=lead_len; i<wlen && !failed; i += 512) {
+            const uint32_t n = MIN(512U, wlen - i);
+            if (!flash_write_buffer(ofs + i, &chunk[i/4], n/4)) {
+                status_printf("Flash failed: write at %u", unsigned(ofs + i));
+                failed = true;
+            }
+        }
+        ofs += file_len;
+        if (!found_end) {
+            carry = avail - file_len;
+            memmove(chunk8, &chunk8[file_len], carry);
+        }
+        const uint8_t pct = body_read*100/body_length;
+        // don't replace the reason for a failure
+        if (!failed && pct / 10 != last_pct / 10) {
             last_pct = pct;
             status_printf("Flashing %u%%", unsigned(pct));
         }
     }
-    if (ofs % 32 != 0) {
-        // pad to 32 bytes
-        memset(buf, 0xff, sizeof(buf));
-        flash_write_buffer(ofs, buf, (32 - ofs%32)/4);
+    if (!failed) {
+        ofs = (ofs + 3) & ~3U;
+        if (ofs % 32 != 0 && ofs > sizeof(lead_words)) {
+            // pad to 32 bytes
+            memset(chunk, 0xff, 32);
+            if (!flash_write_buffer(ofs, chunk, (32 - ofs%32)/4)) {
+                status_printf("Flash failed: write at %u", unsigned(ofs));
+                failed = true;
+            }
+        }
     }
-    flash_write_flush();
+    free(chunk);
+    // flush even after a failure, so that nothing of this upload is
+    // left buffered to be written into the next one
+    const bool flushed = flash_write_flush();
+    if (!failed && !flushed) {
+        status_printf("Flash failed: write");
+        failed = true;
+    }
+    // erase the rest of flash, as the serial protocol does, so that
+    // nothing of an older, larger firmware is left after this one
+    while (!failed && flash_func_sector_size(erase_sec) != 0) {
+        if (!flash_func_erase_sector(erase_sec)) {
+            status_printf("Flash failed: erase of sector %u", unsigned(erase_sec));
+            failed = true;
+        }
+        erase_sec++;
+    }
+    // the firmware is complete; write its first words
+    if (!failed && (!flash_write_buffer(0, lead_words, RESERVE_LEAD_WORDS) || !flash_write_flush())) {
+        status_printf("Flash failed: write at 0");
+        failed = true;
+    }
     flash_set_keep_unlocked(false);
+
+    // read the rest of the body, which holds the end of the form;
+    // closing the socket with data unread resets the connection,
+    // losing our reply
+    uint8_t discard[64];
+    while (body_read < body_length) {
+        const auto n = sock->recv(discard, MIN(sizeof(discard), body_length - body_read), 1000);
+        if (n <= 0) {
+            break;
+        }
+        body_read += n;
+    }
+    if (failed) {
+        char str[sizeof(bl_status) + 32];
+        {
+            WITH_SEMAPHORE(status_mtx);
+            snprintf(str, sizeof(str), "<html><body>%s</body></html>", bl_status);
+        }
+        sock->send(str, strlen(str));
+        return;
+    }
 #if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
 #else
@@ -504,6 +845,9 @@ void BL_Network::handle_request(SocketAPM *sock)
         if (p != nullptr) {
             p += strlen(clen1);
             const uint32_t content_length = atoi(p);
+            // the upload may have started in the window before the
+            // bootloader would boot the application; don't let it
+            bootloader_hold();
             handle_post(sock, content_length);
             delete headers;
             delete sock;
@@ -612,13 +956,21 @@ void BL_Network::web_server(void)
  */
 void BL_Network::init()
 {
+#if AP_BOOTLOADER_NETWORK_PPP_ENABLED
+    // received PPP data is processed through the whole IP stack on
+    // the network thread
+    const uint32_t net_thread_stack = 4096;
+#else
     AP_Networking_ChibiOS::allocate_buffers();
 
     macInit();
 
+    const uint32_t net_thread_stack = 2048;
+#endif
+
     thisif = NEW_NOTHROW netif;
 
-    net_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(2048),
+    net_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(net_thread_stack),
                                          "network",
                                          60,
                                          net_thread_trampoline,
@@ -654,7 +1006,9 @@ void BL_Network::status_printf(const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(bl_status, sizeof(bl_status), fmt, ap);
     va_end(ap);
+#if BL_NETWORK_HAVE_CAN
     can_printf("%s", bl_status);
+#endif
 }
 
 #endif // AP_BOOTLOADER_NETWORK_ENABLED

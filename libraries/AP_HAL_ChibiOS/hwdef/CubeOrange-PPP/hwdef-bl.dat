@@ -1,0 +1,24 @@
+# CubeOrange bootloader with network (web) firmware updates over PPP on
+# TELEM1 (USART2)
+
+include ../CubeOrange/hwdef-bl.dat
+
+include ../include/network_bootloader_ppp.inc
+
+# the CubeOrange bootloader has no CAN
+undef AP_NETWORKING_CAN_MCAST_ENABLED
+define AP_NETWORKING_CAN_MCAST_ENABLED 0
+
+# TELEM1 carries the PPP link, so is not a bootloader serial port
+undef SERIAL_ORDER
+SERIAL_ORDER OTG1 USART3 UART7
+
+PD3 USART2_CTS USART2
+PD4 USART2_RTS USART2
+
+# the defaults of the CubeNode-ETH as a PPP gateway
+define AP_BOOTLOADER_NETWORK_PPP_SERIAL SD2
+define AP_BOOTLOADER_NETWORK_PPP_BAUD 12500000
+define AP_BOOTLOADER_NETWORK_PPP_FLOW_CONTROL 1
+define AP_BOOTLOADER_NETWORK_PPP_RTS_LINE HAL_GPIO_PIN_USART2_RTS
+define AP_BOOTLOADER_NETWORK_PPP_RTS_AF 7

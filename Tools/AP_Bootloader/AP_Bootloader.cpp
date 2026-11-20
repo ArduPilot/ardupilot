@@ -234,7 +234,7 @@ int main(void)
     // CAN and network only
     while (true) {
         uint32_t t0 = AP_HAL::millis();
-        while (timeout == 0 || AP_HAL::millis() - t0 <= timeout) {
+        while (timeout == 0 || bootloader_held() || AP_HAL::millis() - t0 <= timeout) {
             can_update();
             chThdSleep(chTimeMS2I(1));
         }
