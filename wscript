@@ -149,6 +149,11 @@ def options(opt):
 
     g = opt.ap_groups['configure']
 
+    g.add_option('--consistent-builds',
+        action='store_true',
+        default=False,
+        help='force consistent build outputs for things like __LINE__ and build hashes')
+
     boards_names = boards.get_boards_names()
     removed_names = boards.get_removed_boards()
     g.add_option('--board',
@@ -412,11 +417,6 @@ configuration in order to save typing.
         action='store_true',
         default=False,
         help='force single precision postype_t')
-
-    g.add_option('--consistent-builds',
-        action='store_true',
-        default=False,
-        help='force consistent build outputs for things like __LINE__ and build hashes')
 
     g.add_option('--extra-hwdef',
 	    action='store',
