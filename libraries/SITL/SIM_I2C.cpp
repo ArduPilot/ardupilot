@@ -47,6 +47,7 @@
 #include "SIM_Temperature_TSYS03.h"
 #include "SIM_TeraRangerI2C.h"
 #include "SIM_TFS20L.h"
+#include "SIM_Pono_TSD20_I2C.h"
 #include "SIM_ToshibaLED.h"
 
 #include <signal.h>
@@ -137,6 +138,10 @@ static AS5600 as5600;  // AoA sensor
 static TFS20L tfs20l;  // Benewake TFS20L rangefinder
 #endif  // AP_SIM_TFS20L_ENABLED
 
+#if AP_SIM_PONO_TSD20_I2C_ENABLED
+static Pono_TSD20_I2C pono_tsd20_i2c;  // Pono TSD20 rangefinder
+#endif  // AP_SIM_PONO_TSD20_I2C_ENABLED
+
 #if AP_SIM_RF_TOFSENSEF_I2C_ENABLED
 static TOFSenseF_I2C tofsensef;
 #endif  // AP_SIM_RF_TOFSENSEF_I2C_ENABLED
@@ -223,6 +228,9 @@ struct i2c_device_at_address {
 #if AP_SIM_TFS20L_ENABLED
     { 0, 0x10, tfs20l },          // RNGFNDx_TYPE = 46, RNGFNDx_ADDR = 0x10
 #endif  // AP_SIM_TFS20L_ENABLED
+#if AP_SIM_PONO_TSD20_I2C_ENABLED
+    { 0, 0x52, pono_tsd20_i2c },  // RNGFNDx_TYPE = 49, RNGFNDx_ADDR = 0x52
+#endif  // AP_SIM_PONO_TSD20_I2C_ENABLED
 #if AP_SIM_RF_TOFSENSEF_I2C_ENABLED
     { 0, 0x08, tofsensef },          // RNGFNDx_TYPE = 40, RNGFNDx_ADDR = 0x08
 #endif  // AP_SIM_RF_TOFSENSEF_I2C_ENABLED

@@ -138,6 +138,42 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const ushort SignalStrength = 200;
     }
 
+    // Pono TSD20 single-point LiDAR register protocol at 0x52.
+    public class AP_PonoTSD20 : AP_I2CRegisterDevice
+    {
+        public AP_PonoTSD20(IMachine machine)
+        {
+            physics = AP_PhysicsState.ForMachine(machine);
+            Reset();
+        }
+
+        public override void Reset()
+        {
+            base.Reset();
+            Registers[Id] = LidarId;
+            Registers[Laser] = 1;
+        }
+
+        public override byte[] Read(int count = 1)
+        {
+            var millimetres = SuppressData ? (ushort)0 :
+                AP_I2CRangefinderPhysics.DistanceMillimetres(physics, RangefinderIndex);
+            Registers[DistanceHigh] = (byte)(millimetres >> 8);
+            Registers[DistanceLow] = (byte)millimetres;
+            return base.Read(count);
+        }
+
+        public uint RangefinderIndex { get; set; }
+        public bool SuppressData { get; set; }
+
+        private readonly AP_PhysicsState physics;
+        private const byte DistanceHigh = 0x00;
+        private const byte DistanceLow = 0x01;
+        private const byte Laser = 0x02;
+        private const byte Id = 0x03;
+        private const byte LidarId = 0x4A;
+    }
+
     // Benewake TFMini Plus command protocol at 0x10.
     public class AP_TFMiniPlusI2C : II2CPeripheral
     {
