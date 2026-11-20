@@ -21,6 +21,7 @@ float Mode::AutoYaw::look_ahead_yaw_rad()
         const float speed_ms_sq = vel_ned_ms.xy().length_squared();
         if (speed_ms_sq > (YAW_LOOK_AHEAD_MIN_SPEED_MS * YAW_LOOK_AHEAD_MIN_SPEED_MS)) {
             _look_ahead_yaw_rad = atan2f(vel_ned_ms.y,vel_ned_ms.x);
+            _look_ahead_yaw_rad += _look_ahead_yaw_offset_rad;
         }
     }
     return _look_ahead_yaw_rad;
@@ -59,6 +60,11 @@ Mode::AutoYaw::Mode Mode::AutoYaw::default_mode(bool rtl) const
 // set_mode - sets the yaw mode for auto
 void Mode::AutoYaw::set_mode(Mode yaw_mode)
 {
+    // any request for a yaw mode, including the current one, cancels
+    // a heading-relative look-ahead offset and its turn rate
+    _look_ahead_yaw_offset_rad = 0.0;
+    _look_ahead_slewrate_rads = 0.0;
+
     // return immediately if no change
     if (_mode == yaw_mode) {
         return;
@@ -143,6 +149,20 @@ void Mode::AutoYaw::set_fixed_yaw_rad(float yaw_rad, float yaw_rate_rads, int8_t
 
     // set yaw mode
     set_mode(Mode::FIXED);
+}
+
+// set_vehicle_heading_yaw_rad - sets the yaw look at heading to be relative to vehicle travel.
+// If turn_rate_rads is positive the yaw target slews towards that heading at no more than that rate
+void Mode::AutoYaw::set_vehicle_heading_yaw_rad(float relative_angle_rad, float turn_rate_rads)
+{
+    // set_mode clears the offset and turn rate, so set them afterwards
+    set_mode(Mode::LOOK_AHEAD);
+    _look_ahead_yaw_offset_rad = relative_angle_rad;
+    _look_ahead_slewrate_rads = is_positive(turn_rate_rads) ? turn_rate_rads : 0.0;
+
+    // slew from the current yaw target
+    _yaw_angle_rad = copter.attitude_control->get_att_target_euler_rad().z;
+    _last_update_ms = millis();
 }
 
 // set_fixed_yaw_rad - sets the yaw look at heading for auto mode
@@ -252,10 +272,22 @@ float Mode::AutoYaw::yaw_rad()
         break;
     }
 
-    case Mode::LOOK_AHEAD:
+    case Mode::LOOK_AHEAD: {
         // Commanded Yaw to automatically look ahead.
-        _yaw_angle_rad = look_ahead_yaw_rad();
+        const float look_ahead_rad = look_ahead_yaw_rad();
+        if (!is_positive(_look_ahead_slewrate_rads)) {
+            _yaw_angle_rad = look_ahead_rad;
+            break;
+        }
+        // heading-relative yaw with a turn rate: slew towards the look-ahead heading
+        const uint32_t now_ms = millis();
+        const float dt = (now_ms - _last_update_ms) * 0.001;
+        _last_update_ms = now_ms;
+        const float max_step_rad = dt * _look_ahead_slewrate_rads;
+        const float step_rad = constrain_float(wrap_PI(look_ahead_rad - _yaw_angle_rad), -max_step_rad, max_step_rad);
+        _yaw_angle_rad = wrap_2PI(_yaw_angle_rad + step_rad);
         break;
+    }
 
     case Mode::RESET_TO_ARMED_YAW:
         // changes yaw to be same as when quad was armed
