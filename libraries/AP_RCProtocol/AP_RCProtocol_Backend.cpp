@@ -68,10 +68,23 @@ void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
 /*
   provide input from a backend
  */
-void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe, int16_t _rssi, int16_t _rx_link_quality)
+void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe, int16_t _rssi, int16_t _rx_link_quality, uint32_t _active_mask)
 {
     num_values = MIN(num_values, MAX_RCIN_CHANNELS);
-    memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
+
+    if (_active_mask == UINT32_MAX) {
+        memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
+
+    } else {
+        // apply active mask
+        for (uint8_t i = 0; i < num_values; i++) {
+            if ((_active_mask & (1 << i)) != 0) {
+                _pwm_values[i] = values[i];
+
+            }
+        }
+    }
+
     _num_channels = num_values;
     rc_frame_count++;
     frontend.set_failsafe_active(in_failsafe);
@@ -88,6 +101,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     }
     rssi = _rssi;
     rx_link_quality = _rx_link_quality;
+    active_mask = _active_mask;
 }
 
 
