@@ -4207,6 +4207,10 @@ return update()
 
         self.fly_home_land_and_disarm()
 
+    def XsensEAHRS(self):
+        '''Test Xsens EAHRS support'''
+        self.fly_external_AHRS("Xsens", 12)
+
     def AeronEAHRS(self):
         '''Test AeronPlx3 EAHRS support'''
         self.fly_external_AHRS("Aeron-PLX3", 10)
@@ -11086,6 +11090,7 @@ return update()
             self.TerrainMissionInterrupt,
             self.AcroLocking,
             self.InertialLabsEAHRS,
+            self.XsensEAHRS,
             self.KebniSensAItionExternalIMU,
             self.GpsSensorPreArmEAHRS,
             self.Deadreckoning,
