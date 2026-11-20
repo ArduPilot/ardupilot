@@ -630,7 +630,7 @@ void Plane::set_throttle(void)
     if (suppress_throttle()) {
         if (g.throttle_suppress_manual) {
             // manual pass through of throttle while throttle is suppressed
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input_norm(true) * 100.0f);
 
         } else if (landing.is_flaring() && landing.use_thr_min_during_flare() ) {
             // throttle is suppressed (above) to zero in final flare in auto mode, but we allow instead thr_min if user prefers, eg turbines:

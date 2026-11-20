@@ -160,7 +160,7 @@ void ModeAcro::stabilize_quaternion()
     IGNORE_RETURN(ahrs.get_quaternion(ahrs_q));
 
     // zero target if not flying, no stick input and zero throttle
-    if (is_zero(plane.get_throttle_input()) &&
+    if (is_zero(plane.get_throttle_input_norm()) &&
         !plane.is_flying() &&
         is_zero(roll_rate) &&
         is_zero(pitch_rate) &&

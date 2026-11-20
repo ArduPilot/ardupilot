@@ -62,7 +62,7 @@ void SRV_Channel::output_ch(void)
                     if (rc().has_valid_input()) {
                         switch (c->get_type()) {
                         case RC_Channel::ControlType::ANGLE:
-                            radio_in = pwm_from_angle(c->norm_input_dz() * 4500);
+                            radio_in = pwm_from_angle(c->norm_input_dz_centered_on_trim() * 4500);
                             break;
                         case RC_Channel::ControlType::RANGE:
                             // convert RC normalised input from -1 to +1 range to 0 to +1 and output as range

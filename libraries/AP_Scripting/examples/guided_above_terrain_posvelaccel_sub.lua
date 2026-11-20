@@ -108,7 +108,7 @@ local function update()
     -- get the pilot yaw intent semantically via RCMAP_YAW parameter (defaulting to channel 4)
     local yaw_channel_num = param:get('RCMAP_YAW') or 4
     local yaw_chan = rc:get_channel(yaw_channel_num)
-    local yaw_input = yaw_chan and yaw_chan:norm_input_dz() or 0
+    local yaw_input = yaw_chan and yaw_chan:norm_input_dz_centered_on_trim() or 0
 
     -- get the current yaw rate
     local gyro = ahrs:get_gyro()

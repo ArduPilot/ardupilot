@@ -108,11 +108,11 @@ local function init()
     pitch_dir = 0.0
 
     -- choose direction based on pilot's roll and pitch sticks
-    if pilot_pitch:norm_input_dz() > 0.1 then
+    if pilot_pitch:norm_input_dz_centered_on_trim() > 0.1 then
         pitch_dir = 1.0
-    elseif pilot_pitch:norm_input_dz() < -0.1 then
+    elseif pilot_pitch:norm_input_dz_centered_on_trim() < -0.1 then
         pitch_dir = -1.0
-    elseif pilot_roll:norm_input_dz() >= 0 then
+    elseif pilot_roll:norm_input_dz_centered_on_trim() >= 0 then
         roll_dir = 1.0
     else
         roll_dir = -1.0
@@ -133,7 +133,7 @@ local function run()
     local NOW = millis()
 
     -- Disarmed, pilot input or timeout then return to previous mode
-    local PILOT_INPUT = (math.abs(pilot_roll:norm_input_dz()) > 0.85) or (math.abs(pilot_pitch:norm_input_dz()) > 0.85)
+    local PILOT_INPUT = (math.abs(pilot_roll:norm_input_dz_centered_on_trim()) > 0.85) or (math.abs(pilot_pitch:norm_input_dz_centered_on_trim()) > 0.85)
     if (not arming:is_armed()) or PILOT_INPUT or ((NOW - start_ms) > 2500) then
         vehicle:set_mode(previous_mode)
         return

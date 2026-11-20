@@ -85,7 +85,7 @@ void ModeGuided::update()
     // Throttle output
     if (plane.guided_throttle_passthru) {
         // manual passthrough of throttle in fence breach
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input_norm(true) * 100.0f);
 
     }  else if (plane.aparm.throttle_cruise > 1 &&
             plane.guided_state.last_forced_throttle_ms > 0 &&

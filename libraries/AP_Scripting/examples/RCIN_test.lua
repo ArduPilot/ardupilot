@@ -13,7 +13,7 @@ function update()
 
   -- read normalized input from designated scripting RCx_OPTION
   if scripting_rc_1 then
-    gcs:send_text(0, "Scripting in 1:" .. tostring(scripting_rc_1:norm_input()))
+    gcs:send_text(0, "Scripting in 1:" .. tostring(scripting_rc_1:norm_input_centered_on_trim()))
   end
 
   -- read switch input from second designated scripting RCx_OPTION
