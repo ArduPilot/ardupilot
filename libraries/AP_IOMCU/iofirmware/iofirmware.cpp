@@ -1131,17 +1131,17 @@ bool AP_IOMCU_FW::handle_code_write()
     }
 
     case PAGE_GPIO:
-        if (rx_io_packet.count != 1) {
+        if (rx_io_packet.offset != 0 || rx_io_packet.count != sizeof(GPIO)/2) {
             return false;
         }
-        memcpy(&GPIO, &rx_io_packet.regs[0] + rx_io_packet.offset, sizeof(GPIO));
+        memcpy(&GPIO, &rx_io_packet.regs[0], sizeof(GPIO));
         break;
 
     case PAGE_DSHOT: {
-        if (rx_io_packet.count != sizeof(dshot)/2) {
+        if (rx_io_packet.offset != 0 || rx_io_packet.count != sizeof(dshot)/2) {
             return false;
         }
-        memcpy(((uint16_t *)&dshot)+rx_io_packet.offset, &rx_io_packet.regs[0], rx_io_packet.count*2);
+        memcpy(&dshot, &rx_io_packet.regs[0], sizeof(dshot));
         if(dshot.telem_mask) {
             hal.rcout->set_telem_request_mask(dshot.telem_mask);
         }
