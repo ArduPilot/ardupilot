@@ -1,6 +1,7 @@
 // ICM-20649/ICM-20948-compatible SPI IMU for ArduPilot's Invensense-v2
 // backend. It implements banked register access, checked-register readback,
-// reset/wake behavior, and a 1125 Hz FIFO containing physics-driven samples.
+// reset/wake behavior, and a FIFO of physics-driven samples at 1125 Hz /
+// (1 + GYRO_SMPLRT_DIV), or 9 kHz with the gyro DLPF bypassed (fast sampling).
 // The ICM-20948 variant also carries an AK09916 compass reachable through
 // the I2C master slave registers and EXT_SLV_SENS_DATA.
 //
@@ -34,8 +35,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
                     CompensateExternalProbeRotation = false,
                 };
             }
-            sampleTimer = new LimitTimer(machine.ClockSource, 1000000, this, "invensense-v2 odr",
-                                         limit: SamplePeriodUs, direction: Direction.Ascending,
+            sampleTimer = new LimitTimer(machine.ClockSource, FastSampleRateHz, this, "invensense-v2 odr",
+                                         limit: FastSamplesPerTick, direction: Direction.Ascending,
                                          enabled: true, workMode: WorkMode.Periodic, eventEnabled: true);
             sampleTimer.LimitReached += OnSampleTick;
             Reset();
@@ -129,6 +130,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
                     return (byte)TemperatureRaw();
                 }
             }
+            if(register == BankSelect)
+            {
+                return (byte)(currentBank << 4);
+            }
             return registers[currentBank, register];
         }
 
@@ -165,7 +170,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
             Array.Clear(registers, 0, registers.Length);
             fifo.Clear();
             currentBank = 0;
-            registers[0, PowerManagement1] = Sleep;
+            registers[0, PowerManagement1] = Sleep | ClockAuto;
+            registers[2, GyroConfig1] = Fchoice;
+            registers[2, AccelConfig] = Fchoice;
+            divideCount = 0;
             auxiliaryCompass?.Reset();
         }
 
@@ -244,24 +252,37 @@ namespace Antmicro.Renode.Peripherals.Sensors
             {
                 return;
             }
-            if(fifo.Count + SampleSize > FifoCapacity)
+            // DLPF bypassed: 9 kHz gyro, so 8 samples per 1125 Hz tick
+            var samples = FastSamplesPerTick;
+            if((registers[2, GyroConfig1] & Fchoice) != 0)
             {
-                return;
+                if(divideCount++ < registers[2, GyroSampleRateDivider])
+                {
+                    return;
+                }
+                divideCount = 0;
+                samples = 1;
             }
             var truth = physics.Current;
             var acceleration = AP_SensorOrientation.BodyToSensor(
                 truth.SpecificForceMS2, rotation);
             var gyro = AP_SensorOrientation.BodyToSensor(
                 truth.GyroRadS, rotation);
-            var accelScale = Gravity /
-                (whoAmI == WhoAmIIcm20649 ? 1024.0 : 2048.0);
-            PushWord(ScaleWord(acceleration[1], accelScale));
-            PushWord(ScaleWord(acceleration[0], accelScale));
-            PushWord(ScaleWord(-acceleration[2], accelScale));
-            PushWord(ScaleWord(gyro[1], GyroScale));
-            PushWord(ScaleWord(gyro[0], GyroScale));
-            PushWord(ScaleWord(-gyro[2], GyroScale));
-            PushWord(TemperatureRaw());
+            // full scale from ACCEL_FS_SEL/GYRO_FS_SEL; the 20649 ranges are doubled
+            var range = whoAmI == WhoAmIIcm20649 ? 2 : 1;
+            var accelScale = Gravity * range * (1 << ((registers[2, AccelConfig] >> 1) & 3)) / 16384.0;
+            var gyroScale = Math.PI / 180.0 * range * (1 << ((registers[2, GyroConfig1] >> 1) & 3)) / (16.4 * 8);
+            var temperature = TemperatureRaw();
+            for(var sample = 0; sample < samples && fifo.Count + SampleSize <= FifoCapacity; sample++)
+            {
+                PushWord(ScaleWord(acceleration[1], accelScale));
+                PushWord(ScaleWord(acceleration[0], accelScale));
+                PushWord(ScaleWord(-acceleration[2], accelScale));
+                PushWord(ScaleWord(gyro[1], gyroScale));
+                PushWord(ScaleWord(gyro[0], gyroScale));
+                PushWord(ScaleWord(-gyro[2], gyroScale));
+                PushWord(temperature);
+            }
         }
 
         // the driver checks FIFO temperature against TEMP_OUT, so both use this
@@ -294,10 +315,12 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private byte currentRegister;
         private int transferByte;
         private bool reading;
+        private int divideCount;
 
         private const int BankCount = 4;
         private const int RegisterCount = 128;
-        private const int SamplePeriodUs = 889;
+        private const int FastSampleRateHz = 9000;
+        private const int FastSamplesPerTick = 8;
         private const int SampleSize = 14;
         private const int FifoCapacity = 4096;
         private const int AuxiliarySlaveCount = 4;
@@ -319,12 +342,17 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte FifoCountLow = 0x71;
         private const byte FifoReadWrite = 0x72;
         private const byte BankSelect = 0x7F;
+        private const byte GyroSampleRateDivider = 0x00;
+        private const byte GyroConfig1 = 0x01;
+        private const byte AccelConfig = 0x14;
         private const byte I2cSlave0Address = 0x03;
         private const byte I2cSlave0Control = 0x05;
         private const byte I2cSlave3Control = 0x11;
 
         private const byte DeviceReset = 0x80;
         private const byte Sleep = 0x40;
+        private const byte ClockAuto = 0x01;
+        private const byte Fchoice = 0x01;
         private const byte FifoEnable = 0x40;
         private const byte SramReset = 0x04;
         private const byte I2cRead = 0x80;
@@ -335,6 +363,5 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte WhoAmIIcm20948 = 0xEA;
         private const byte WhoAmIIcm20649 = 0xE1;
         private const double Gravity = 9.80665;
-        private const double GyroScale = Math.PI / 180.0 / 16.4;
     }
 }
