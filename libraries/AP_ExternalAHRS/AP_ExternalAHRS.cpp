@@ -187,16 +187,6 @@ bool AP_ExternalAHRS::initialised(void) const
     return backend && backend->initialised();
 }
 
-bool AP_ExternalAHRS::get_quaternion(Quaternion &quat)
-{
-    if (state.have_quaternion) {
-        WITH_SEMAPHORE(state.sem);
-        quat = state.quat;
-        return true;
-    }
-    return false;
-}
-
 bool AP_ExternalAHRS::get_origin(Location &loc)
 {
     if (state.have_origin) {
@@ -220,61 +210,6 @@ bool AP_ExternalAHRS::set_origin(const Location &loc)
     }
     state.origin = loc;
     state.have_origin = true;
-    return true;
-}
-
-bool AP_ExternalAHRS::get_location(Location &loc)
-{
-    if (!state.have_location) {
-        return false;
-    }
-    WITH_SEMAPHORE(state.sem);
-    loc = state.location;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (!loc.initialised()) {
-        AP_HAL::panic("Uninitialized location in AP_ExternalAHRS.");
-    }
-#endif
-
-    if (state.last_location_update_us != 0 &&
-        state.have_velocity) {
-        // extrapolate position based on velocity to cope with slow backends
-        const float dt = (AP_HAL::micros() - state.last_location_update_us)*1.0e-6;
-        if (dt < 1) {
-            // only extrapolate for 1s max
-            Vector3p ofs = state.velocity.topostype();
-            ofs *= dt;
-            loc.offset(ofs);
-        }
-    }
-
-    return true;
-}
-
-Vector2f AP_ExternalAHRS::get_groundspeed_vector()
-{
-    WITH_SEMAPHORE(state.sem);
-    Vector2f vec{state.velocity.x, state.velocity.y};
-    return vec;
-}
-
-bool AP_ExternalAHRS::get_velocity_NED(Vector3f &vel)
-{
-    if (!state.have_velocity) {
-        return false;
-    }
-    WITH_SEMAPHORE(state.sem);
-    vel = state.velocity;
-    return true;
-}
-
-bool AP_ExternalAHRS::get_speed_down(float &speedD)
-{
-    if (!state.have_velocity) {
-        return false;
-    }
-    WITH_SEMAPHORE(state.sem);
-    speedD = state.velocity.z;
     return true;
 }
 
@@ -338,26 +273,6 @@ bool AP_ExternalAHRS::get_variances(float &velVar, float &posVar, float &hgtVar,
         return backend->get_variances(velVar, posVar, hgtVar, magVar, tasVar);
     }
     return false;
-}
-
-bool AP_ExternalAHRS::get_gyro(Vector3f &gyro)
-{
-    WITH_SEMAPHORE(state.sem);
-    if (!has_sensor(AvailableSensor::IMU)) {
-        return false;
-    }
-    gyro = state.gyro;
-    return true;
-}
-
-bool AP_ExternalAHRS::get_accel(Vector3f &accel)
-{
-    WITH_SEMAPHORE(state.sem);
-    if (!has_sensor(AvailableSensor::IMU)) {
-        return false;
-    }
-    accel = state.accel;
-    return true;
 }
 
 void AP_ExternalAHRS::update(void)
