@@ -45,7 +45,7 @@
 #define CXOF_HEADER         (uint8_t)0xFE
 #define CXOF_FOOTER         (uint8_t)0xAA
 #define CXOF_FRAME_LENGTH               9
-#define CXOF_PIXEL_SCALING      (1.76e-3)
+#define CXOF_PIXEL_SCALING      (1.76e-3f)
 #define CXOF_TIMEOUT_SEC             0.3f
 
 extern const AP_HAL::HAL& hal;
