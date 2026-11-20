@@ -193,14 +193,21 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
     }
     if ((_path_idx_returned < path_length) && get_shortest_path_point(_path_idx_returned, dest_pos)) {
 
-        // for the first point return origin as current_loc
+        // the origin is the previous point on the path.  the first point is only returned when it is
+        // the entry point into the fence, and its origin is where the vehicle was when the path was calculated
         Vector2f origin_pos;
-        if ((_path_idx_returned > 0) && get_shortest_path_point(_path_idx_returned-1, origin_pos)) {
+        bool origin_valid;
+        if (_path_idx_returned == 0) {
+            origin_pos = _path_vehicle_origin;
+            origin_valid = true;
+        } else {
+            origin_valid = get_shortest_path_point(_path_idx_returned-1, origin_pos);
+        }
+        if (origin_valid) {
             // convert offset from ekf origin to Location
             Location temp_loc(Vector3f{origin_pos.x, origin_pos.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);
             origin_new = temp_loc;
         } else {
-            // for first point use current loc as origin
             origin_new = current_loc;
         }
 
@@ -918,6 +925,7 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
 
     // record whether the origin was moved so the entry point can be returned to the vehicle
     _path_source_relocated = !origin_in_fence.same_latlon_as(origin);
+    _path_vehicle_origin = origin_cm;
 
     // record whether the destination was moved so the exit point can be returned to the vehicle
     _path_destination_relocated = !destination_in_fence.same_latlon_as(destination);

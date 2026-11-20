@@ -196,6 +196,7 @@ private:
     AP_ExpandingArray<AP_OAVisGraph::OAItemID> _path;   // ids of points on return path in reverse order (i.e. destination is first element)
     uint8_t _path_numpoints;                            // number of points on return path
     Vector2f _path_source;                              // source point used in shortest path calculations (offset in cm from EKF origin)
+    Vector2f _path_vehicle_origin;                      // vehicle position when the path was calculated, before any move inside the fence (offset in cm from EKF origin)
     Vector2f _path_destination;                         // destination position used in shortest path calculations (offset in cm from EKF origin)
 
     // return number of points on path
