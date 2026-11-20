@@ -378,12 +378,12 @@ namespace Antmicro.Renode.Peripherals.Sensors
             var truth = physics.Current;
             var acceleration = AP_SensorOrientation.BodyToSensor(truth.SpecificForceMS2, rotation);
             var gyro = AP_SensorOrientation.BodyToSensor(truth.GyroRadS, rotation);
-            PushWord(ScaleWord(acceleration[0], accelScale));
-            PushWord(ScaleWord(acceleration[1], accelScale));
-            PushWord(ScaleWord(acceleration[2], accelScale));
-            PushWord(ScaleWord(gyro[0], gyroScale));
-            PushWord(ScaleWord(gyro[1], gyroScale));
-            PushWord(ScaleWord(gyro[2], gyroScale));
+            PushWord(ScaleSampleWord(acceleration[0], accelScale));
+            PushWord(ScaleSampleWord(acceleration[1], accelScale));
+            PushWord(ScaleSampleWord(acceleration[2], accelScale));
+            PushWord(ScaleSampleWord(gyro[0], gyroScale));
+            PushWord(ScaleSampleWord(gyro[1], gyroScale));
+            PushWord(ScaleSampleWord(gyro[2], gyroScale));
             fifo.Enqueue((byte)(sbyte)Math.Max(sbyte.MinValue, Math.Min(sbyte.MaxValue,
                 Math.Round((thermal.TemperatureC - 25.0) * temperatureSensitivity))));
             PushWord((short)timestamp++);
@@ -422,9 +422,19 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 Math.Min(Int16.MaxValue, Math.Round(value / scale)));
         }
 
-        private static int ScaleHighResolution(float value, double scale)
+        private short ScaleSampleWord(float value, double scale)
         {
-            return (int)Math.Max(-524288,
+            var minimum = icm456 ? -32767 : Int16.MinValue;
+            return (short)Math.Max(minimum,
+                Math.Min(Int16.MaxValue, Math.Round(value / scale)));
+        }
+
+        private int ScaleHighResolution(float value, double scale)
+        {
+            // 456xy uses upper 16 bits 0x8000 as its invalid marker, so
+            // 0x80000 through 0x8000F are not valid saturated samples.
+            var minimum = icm456 ? -524272 : -524288;
+            return (int)Math.Max(minimum,
                 Math.Min(524287, Math.Round(value / scale)));
         }
 
