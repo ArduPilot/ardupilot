@@ -63,6 +63,43 @@ function test_uint64()
   return pass
 end
 
+local index_checked, index_passed = false, false
+
+function test_index()
+  -- the first lookup of a name on a binding and later ones agree, and types with a method of the
+  -- same name keep their own. Checked once, on names nothing else here looks up, so a later pass
+  -- cannot hide a failure
+  if index_checked then
+    return index_passed
+  end
+  index_checked = true
+  local v3, v3_other, v2 = Vector3f(), Vector3f(), Vector2f()
+  local ch1, ch2 = assert(rc:get_channel(1)), assert(rc:get_channel(2))
+  v3_other:x(2)
+  local is_zero, healthy, norm_input, fix_3d = v3.is_zero, ahrs.healthy, ch1.norm_input, gps.GPS_OK_FIX_3D
+  for _ = 1, 2 do
+    if v3_other.is_zero ~= is_zero or ahrs.healthy ~= healthy or ch2.norm_input ~= norm_input or
+       not is_zero(v3) or is_zero(v3_other) then
+      gcs:send_text(0, "Failed: a method lookup gave the wrong function")
+      return false
+    end
+    if v2.is_zero == is_zero or baro.healthy == healthy then
+      gcs:send_text(0, "Failed: a method is shared between types")
+      return false
+    end
+    if gps.GPS_OK_FIX_3D ~= fix_3d or fix_3d ~= 3 then
+      gcs:send_text(0, "Failed: wrong enum value")
+      return false
+    end
+    if ahrs.no_such_method ~= nil or v3[1] ~= nil then -- luacheck: ignore 143
+      gcs:send_text(0, "Failed: an unknown name gave a value")
+      return false
+    end
+  end
+  index_passed = true
+  return true
+end
+
 function update()
   local all_tests_passed = true
   local require_test_local = require('test/nested')
@@ -82,6 +119,7 @@ function update()
   -- each test should run then and it's result with the previous ones
   all_tests_passed = test_offset(500, 200) and all_tests_passed
   all_tests_passed = test_uint64() and all_tests_passed
+  all_tests_passed = test_index() and all_tests_passed
 
   if all_tests_passed then
     gcs:send_text(3, "Internal tests passed")
