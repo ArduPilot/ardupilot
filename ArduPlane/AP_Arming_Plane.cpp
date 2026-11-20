@@ -218,14 +218,6 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
         ret = false;
     }
 
-    // combining Q_RTL_MODE with either of the RTL_AUTOLAND options
-    // leads to precedence questions, so just don't allow it:
-    if (plane.g.rtl_autoland != RtlAutoland::RTL_DISABLE &&
-        plane.quadplane.rtl_mode != QuadPlane::RTL_MODE::NONE) {
-        check_failed(Check::PARAMETERS, display_failure, "unset one of RTL_AUTOLAND or Q_RTL_MODE");
-        ret = false;
-    }
-
     return ret;
 }
 #endif // HAL_QUADPLANE_ENABLED
@@ -336,7 +328,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
-    if (plane.control_mode != &plane.mode_auto) {
+    if (!plane.control_mode->is_auto_mode()) {
         // reset the mission on disarm if we are not in auto
         plane.mission.reset();
     }
@@ -422,16 +414,6 @@ bool AP_Arming_Plane::mission_checks(bool report)
 {
     // base checks
     bool ret = AP_Arming::mission_checks(report);
-    if (plane.g.rtl_autoland == RtlAutoland::RTL_DISABLE) {
-        if (plane.mission.contains_item(MAV_CMD_DO_LAND_START)) {
-            ret = false;
-            check_failed(Check::MISSION, report, "DO_LAND_START set and RTL_AUTOLAND disabled");
-        }
-        if (plane.mission.contains_item(MAV_CMD_DO_RETURN_PATH_START)) {
-            ret = false;
-            check_failed(Check::MISSION, report, "DO_RETURN_PATH_START set and RTL_AUTOLAND disabled");
-        }
-    }
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.available()) {
         const uint16_t num_commands = plane.mission.num_commands();

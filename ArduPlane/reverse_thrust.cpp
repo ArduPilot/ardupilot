@@ -38,6 +38,7 @@ bool Plane::allow_reverse_thrust(void) const
 
     switch (control_mode->mode_number()) {
     case Mode::Number::AUTO:
+    case Mode::Number::AUTO_RTL:
         {
         uint16_t nav_cmd = mission.get_current_nav_cmd().id;
 

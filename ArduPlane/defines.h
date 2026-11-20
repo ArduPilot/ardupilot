@@ -50,6 +50,7 @@ enum failsafe_action_long {
     FS_ACTION_LONG_PARACHUTE = 3,
     FS_ACTION_LONG_AUTO = 4,
     FS_ACTION_LONG_AUTOLAND = 5,
+    FS_ACTION_LONG_AUTO_RTL = 6,
 };
 
 // type of stick mixing enabled
@@ -59,15 +60,6 @@ enum class StickMixing {
     DIRECT_REMOVED = 2,
     VTOL_YAW = 3,
     FBW_NO_PITCH = 4,
-};
-
-// values for RTL_AUTOLAND
-enum class RtlAutoland {
-    RTL_DISABLE = 0,
-    RTL_THEN_DO_LAND_START = 1,
-    RTL_IMMEDIATE_DO_LAND_START = 2,
-    NO_RTL_GO_AROUND = 3,
-    DO_RETURN_PATH_START = 4,
 };
 
 // PID broadcast bitmask

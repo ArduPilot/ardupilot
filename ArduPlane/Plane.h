@@ -162,6 +162,7 @@ public:
     friend class ModeCruise;
     friend class ModeAutoTune;
     friend class ModeAuto;
+    friend class ModeAutoRTL;
     friend class ModeRTL;
     friend class ModeLoiter;
     friend class ModeAvoidADSB;
@@ -313,6 +314,7 @@ private:
     ModeCruise mode_cruise;
     ModeAutoTune mode_autotune;
     ModeAuto mode_auto;
+    ModeAutoRTL mode_auto_rtl;
     ModeRTL mode_rtl;
     ModeLoiter mode_loiter;
 #if HAL_ADSB_ENABLED
@@ -540,9 +542,6 @@ private:
 
         // in FBWA taildragger takeoff mode
         bool fbwa_tdrag_takeoff_mode;
-
-        // have we checked for an auto-land?
-        bool checked_for_autoland;
 
         // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
         // are we in idle mode? used for balloon launch to stop servo
@@ -1067,7 +1066,7 @@ private:
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
     Mode *mode_from_mode_num(const enum Mode::Number num);
     bool current_mode_requires_mission() const override {
-        return control_mode == &mode_auto;
+        return control_mode->is_auto_mode();
     }
 
     bool autotuning;
@@ -1268,6 +1267,7 @@ private:
         Failsafe_Action_Loiter_alt_QLand = 6,
 #endif
         Failsafe_Action_AUTOLAND_OR_RTL = 7,
+        Failsafe_Action_AUTO_RTL_OR_RTL = 8,
     };
 
     // list of priorities, highest priority first
@@ -1278,6 +1278,7 @@ private:
                                                       Failsafe_Action_QLand,
 #endif
                                                       Failsafe_Action_Land,
+                                                      Failsafe_Action_AUTO_RTL_OR_RTL,
                                                       Failsafe_Action_RTL,
                                                       Failsafe_Action_None,
                                                       -1 // the priority list must end with a sentinel of -1

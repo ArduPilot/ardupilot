@@ -39,7 +39,7 @@ void Plane::throttle_slew_limit()
     }
 
     uint16_t slewrate = aparm.throttle_slewrate;
-    if (control_mode == &mode_auto) {
+    if (control_mode->is_auto_mode()) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
             slewrate = g.takeoff_throttle_slewrate;
         } else if (landing.get_throttle_slewrate() != 0 && flight_stage == AP_FixedWing::FlightStage::LAND) {
@@ -106,7 +106,7 @@ bool Plane::suppress_throttle(void)
 
     bool gps_movement = (gps.status() >= AP_GPS_FixType::FIX_2D && gps.ground_speed() >= 5);
     
-    if ((control_mode == &mode_auto &&
+    if ((control_mode->is_auto_mode() &&
          auto_state.takeoff_complete == false) ||
         control_mode == &mode_takeoff) {
 
@@ -981,7 +981,7 @@ void Plane::set_servos(void)
 void Plane::landing_neutral_control_surface_servos(void)
 {
     if (!(landing.get_then_servos_neutral() > 0 &&
-            control_mode == &mode_auto &&
+            control_mode->is_auto_mode() &&
             landing.get_disarm_delay() > 0 &&
             landing.is_complete() &&
             !arming.is_armed())) {
