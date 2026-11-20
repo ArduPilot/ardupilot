@@ -1442,6 +1442,7 @@ void PayloadPlace::run()
         break;
 
     case State::Release:
+        release_time_ms = now_ms;
         // Reinitialise vertical position controller to remove discontinuity due to touch down of payload
         pos_control->D_init_controller_no_descent();
 #if AP_GRIPPER_ENABLED
@@ -1468,7 +1469,7 @@ void PayloadPlace::run()
 
     case State::Delay:
         // If we get here we have finished releasing the gripper
-        if (now_ms - place_start_time_ms < placed_check_duration_ms + g2.pldp_delay_s * 1000.0) {
+        if (now_ms - release_time_ms < g2.pldp_delay_s * 1000.0) {
             break;
         }
         FALLTHROUGH;
