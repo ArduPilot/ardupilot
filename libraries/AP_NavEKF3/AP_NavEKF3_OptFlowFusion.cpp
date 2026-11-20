@@ -896,6 +896,28 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             }
         }
     }
+
+    // Landed, the flow is scaled by the range finder's ground clearance and, before takeoff is
+    // detected, taken as zero (above). Fused at its own noise, that zero makes the velocity far more
+    // certain than an assumption is worth, so a velocity error of a few tenths of a m/s that a
+    // touchdown left predicts several rad/s and the axis it lies along is rejected for as long as the
+    // vehicle sits there, while an accel bias walks the velocity away; and the vehicle lifts off sure
+    // of a zero, rejecting the flow that measures its first motion. That the vehicle is still is an
+    // assumption, which its report that it has landed and a range finder reading the floor support
+    // but a takeoff ramp or a moving deck can break, so for as long as it holds, keep the velocity's
+    // variance at what the assumption is worth: the noise a synthetic zero velocity is fused with on
+    // the ground, or the whole of the speed estimate if that is more, as an error built up through a
+    // lockout is. Nothing is scaled by the height, so of the reset's range tests only a current range
+    // is needed
+    const ftype FLOW_FLOOR_RANGE_MARGIN_M = 0.1f;   // a range this far above the ground clearance reads takeoff, as detectOptFlowTakeoff() takes it
+    if (really_fuse && motorsArmed && dal.get_vehicle_landed() && !takeOffDetected &&
+        flowResetHeight(resetHgt) && (flowResetRangeState(ofDataDelayed, range, resetHgt) != FlowResetRange::Stale) &&
+        (rangeDataDelayed.rng * prevTnb.c.z < rngOnGnd + FLOW_FLOOR_RANGE_MARGIN_M)) {
+        // within the NE velocity variance limit ConstrainVariances() applies
+        const ftype landedVelVar = MIN(MAX(sq(MIN(frontend->_noaidHorizNoise, 1.0f)), stateStruct.velocity.xy().length_squared()), 1.0e3f);
+        Pmut[4][4] = MAX(P[4][4], landedVelVar);
+        Pmut[5][5] = MAX(P[5][5], landedVelVar);
+    }
 #endif
 
     // store optical flow rates for use in external calibration
