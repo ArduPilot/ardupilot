@@ -38,16 +38,7 @@ const struct ap_secure_data *AP_CheckFirmware::find_public_keys(void)
  */
 bool AP_CheckFirmware::all_zero_keys(const struct ap_secure_data *sec_data)
 {
-    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
-    /*
-      look over all public keys, if one matches then we are OK
-     */
-    for (const auto &public_key : sec_data->public_key) {
-        if (memcmp(public_key.key, zero_key, AP_PUBLIC_KEY_LEN) != 0) {
-            return false;
-        }
-    }
-    return true;
+    return ap_public_keys_all_zero(*sec_data);
 }
 
 
@@ -133,17 +124,17 @@ AP_CheckFirmware::bl_data *AP_CheckFirmware::read_bootloader(void)
 
 #if HAL_GCS_ENABLED
 uint8_t AP_CheckFirmware::session_key[8];
+ap_secure_command_sequence AP_CheckFirmware::secure_command_sequence;
 
 /*
   make a session key
  */
-static void make_session_key(uint8_t key[8])
+static bool make_session_key(uint8_t key[8])
 {
     struct {
         uint32_t time_us;
         uint8_t unique_id[12];
-        uint16_t rand1;
-        uint16_t rand2;
+        uint8_t random[8];
     } data {};
     static_assert(sizeof(data) % 4 == 0, "data must be multiple of 4 bytes");
 
@@ -151,10 +142,12 @@ static void make_session_key(uint8_t key[8])
     uint8_t uid_len = 12;
     hal.util->get_system_id_unformatted(data.unique_id, uid_len);
     data.time_us = AP_HAL::micros();
-    data.rand1 = get_random16();
-    data.rand2 = get_random16();
+    if (!hal.util->get_true_random_vals(data.random, sizeof(data.random), 100U * 1000U)) {
+        return false;
+    }
     const uint64_t c64 = crc_crc64((const uint32_t *)&data, sizeof(data)/sizeof(uint32_t));
     memcpy(key, (uint8_t *)&c64, 8);
+    return true;
 }
 
 
@@ -204,26 +197,14 @@ bool AP_CheckFirmware::check_signature(const mavlink_secure_command_t &pkt)
         // monocypher signatures are 64 bytes
         return false;
     }
-    /*
-      look over all public keys, if one matches then we are OK
-     */
-    for (const auto &public_key : sec_data->public_key) {
-        crypto_check_ctx ctx {};
-        crypto_check_ctx_abstract *actx = (crypto_check_ctx_abstract*)&ctx;
-        crypto_check_init(actx, &pkt.data[pkt.data_length], public_key.key);
-
-        crypto_check_update(actx, (const uint8_t*)&pkt.sequence, sizeof(pkt.sequence));
-        crypto_check_update(actx, (const uint8_t*)&pkt.operation, sizeof(pkt.operation));
-        crypto_check_update(actx, pkt.data, pkt.data_length);
-        if (pkt.operation != SECURE_COMMAND_GET_SESSION_KEY) {
-            crypto_check_update(actx, session_key, sizeof(session_key));
-        }
-        if (crypto_check_final(actx) == 0) {
-            // good signature
-            return true;
-        }
-    }
-    return false;
+    struct ap_signature_buffer buffers[] {
+        { (const uint8_t *)&pkt.sequence, sizeof(pkt.sequence) },
+        { (const uint8_t *)&pkt.operation, sizeof(pkt.operation) },
+        { pkt.data, pkt.data_length },
+        { session_key, sizeof(session_key) },
+    };
+    const uint8_t num_buffers = pkt.operation == SECURE_COMMAND_GET_SESSION_KEY ? 3 : 4;
+    return ap_check_signature(*sec_data, &pkt.data[pkt.data_length], buffers, num_buffers);
 }
 
 /*
@@ -245,19 +226,7 @@ bool AP_CheckFirmware::set_public_keys(uint8_t key_idx, uint8_t num_keys, const 
     }
     memcpy(sec_data->public_key[key_idx].key, key_data, num_keys*AP_PUBLIC_KEY_LEN);
 
-    /*
-      pack so non-zero keys are at the start
-     */
-    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
-    uint8_t max_keys = AP_PUBLIC_KEY_MAX_KEYS;
-    for (uint8_t i=0; max_keys>1 && i<max_keys-1; i++) {
-        if (memcmp(zero_key, sec_data->public_key[i].key, AP_PUBLIC_KEY_LEN) == 0) {
-            memmove(sec_data->public_key[i].key, sec_data->public_key[i+1].key, AP_PUBLIC_KEY_LEN*(max_keys-(i+1)));
-            max_keys--;
-            i--;
-        }
-    }
-    memset(sec_data->public_key[max_keys-1].key, 0, AP_PUBLIC_KEY_LEN*(AP_PUBLIC_KEY_MAX_KEYS-max_keys));
+    ap_public_keys_compact(*sec_data);
 
     bool ret = write_bootloader(bld);
     delete bld;
@@ -283,10 +252,21 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
         goto send_reply;
     }
 
+    if (pkt.operation != SECURE_COMMAND_GET_SESSION_KEY) {
+        if (!secure_command_sequence.accept(pkt.sequence)) {
+            reply.result = MAV_RESULT_DENIED;
+            goto send_reply;
+        }
+    }
+
     switch (pkt.operation) {
 
     case SECURE_COMMAND_GET_SESSION_KEY: {
-        make_session_key(session_key);
+        if (!make_session_key(session_key)) {
+            reply.result = MAV_RESULT_FAILED;
+            break;
+        }
+        secure_command_sequence.reset();
         reply.data_length = sizeof(session_key);
         memcpy(reply.data, session_key, reply.data_length);
         reply.result = MAV_RESULT_ACCEPTED;
@@ -325,7 +305,8 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
     }
 
     case SECURE_COMMAND_SET_PUBLIC_KEYS: {
-        if (pkt.data_length < AP_PUBLIC_KEY_LEN+1) {
+        if (pkt.data_length < AP_PUBLIC_KEY_LEN+1 ||
+            (pkt.data_length-1) % AP_PUBLIC_KEY_LEN != 0) {
             reply.result = MAV_RESULT_FAILED;
             goto send_reply;
         }
@@ -405,24 +386,27 @@ void AP_CheckFirmware::handle_msg(mavlink_channel_t chan, const mavlink_message_
 
 /*
   check that a bootloader is OK to flash. We don't want to allow
-  flashing of a bootloader unless we either have no public keys setup
-  or the bootloader has public keys embedded. This prevents an easy
-  mistake of including an insecure bootloader in ROMFS with a secure build
+  flashing of a bootloader unless we either have no public keys setup or
+  the candidate has exactly the same trust set. Key rotation is performed
+  separately using SECURE_COMMAND, which is authorised by the current keys.
  */
 bool AP_CheckFirmware::check_signed_bootloader(const uint8_t *fw, uint32_t fw_size)
 {
-    const struct ap_secure_data *sec_data = find_public_keys();
-    if (sec_data == nullptr || all_zero_keys(sec_data)) {
+    const struct ap_secure_data *current_keys = find_public_keys();
+    if (current_keys == nullptr || all_zero_keys(current_keys)) {
         // current bootloader doesn't have public keys, so OK to load any bootloader
         return true;
     }
     const uint8_t key[] = AP_PUBLIC_KEY_SIGNATURE;
-    sec_data = (const struct ap_secure_data *)memmem(fw, fw_size, key, sizeof(key));
-    if (sec_data == nullptr || all_zero_keys(sec_data)) {
+    const struct ap_secure_data *candidate_keys = (const struct ap_secure_data *)memmem(fw, fw_size, key, sizeof(key));
+    if (candidate_keys == nullptr || fw_size < sizeof(*candidate_keys) ||
+        uint32_t((const uint8_t *)candidate_keys - fw) > fw_size - sizeof(*candidate_keys) ||
+        all_zero_keys(candidate_keys)) {
         // new bootloader doesn't have any public keys, not allowed
         return false;
     }
-    return true;
+
+    return ap_public_key_sets_equal(*current_keys, *candidate_keys);
 }
 
 #endif // AP_CHECK_FIRMWARE_ENABLED

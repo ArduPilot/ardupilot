@@ -31,7 +31,6 @@ if offset == -1:
 
 offset += 8
 desc = b''
-desc_len = 0
 
 keys = []
 
@@ -68,6 +67,6 @@ for kfile in keys:
         print("Bad key length %u in %s" % (len(key), kfile))
         sys.exit(1)
     desc += key
-    desc_len += key_len
-img = img[:offset] + desc + img[offset+desc_len:]
+desc += bytes((max_keys-len(keys))*key_len)
+img = img[:offset] + desc + img[offset+max_keys*key_len:]
 open(args.bootloader, 'wb').write(img)
