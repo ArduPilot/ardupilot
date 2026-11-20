@@ -99,6 +99,7 @@ bool GliderPullup::pullup_start(void)
     if (!plane.ahrs.airspeed_EAS(aspeed)) {
         aspeed = -1;
     }
+    release_alt = plane.current_loc.alt*0.01;
     gcs().send_text(MAV_SEVERITY_INFO, "Start pullup airspeed %.1fm/s at %.1fm AMSL", aspeed, plane.current_loc.alt*0.01);
     return true;
 }
@@ -115,7 +116,8 @@ bool GliderPullup::verify_pullup(void)
     switch (stage) {
     case Stage::WAIT_AIRSPEED: {
         float aspeed;
-        if (ahrs.airspeed_EAS(aspeed) && (aspeed > airspeed_start || ahrs.get_pitch_deg() > pitch_start)) {
+        bool min_fallen_alt = (release_alt - current_loc.alt*0.01) > 2.0f;
+        if (ahrs.airspeed_EAS(aspeed) && (aspeed > airspeed_start || (min_fallen_alt && ahrs.pitch_sensor*0.01 > pitch_start))) {
             gcs().send_text(MAV_SEVERITY_INFO, "Pullup airspeed %.1fm/s alt %.1fm AMSL", aspeed, current_loc.alt*0.01);
             stage = Stage::WAIT_PITCH;
         }
