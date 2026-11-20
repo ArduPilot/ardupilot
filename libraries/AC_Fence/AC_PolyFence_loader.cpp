@@ -524,7 +524,11 @@ bool AC_PolyFence_loader::get_closest_loc_within_fence(const Location& loc, floa
         return false;
     }
 
-    loc_closest = closest_loc;
+    // return the caller's location moved horizontally, leaving its altitude and frame
+    // untouched so that the result matches the no adjustment case above
+    loc_closest = loc;
+    loc_closest.lat = closest_loc.lat;
+    loc_closest.lng = closest_loc.lng;
     return true;
 }
 
