@@ -2,7 +2,9 @@
 
 ## Xsens MTi-300
 
-The reference's `xsens_mti_driver_node.py` parses Xbus/MTData2 with quaternion, gyro and accelerometer fields at 100 Hz. It does not validate gyro/accel presence before publishing an IMU ROS message, and it timestamps on receipt. Upstream at `4ca1bc74` has `AP_InertialSensor_ExternalAHRS.cpp`, which can accept raw gyro/accel from an `AP_ExternalAHRS` backend. Its existing vendor list in `AP_ExternalAHRS.cpp` has no Xsens. The generic Linux hwdef has `HAL_INS_NONE`. Thus the native binary cannot use MTi-300 without a new backend or another proven input. Proposed backend must decode the exact Xbus packet, verify checksum/counter/all required fields and rates, rotate into FRD and provide raw inertial samples to the INS at the configured 100 Hz. A quaternion alone is insufficient. Time synchronization and EKF initialization remain unverified.
+The reference's `xsens_mti_driver_node.py` parses Xbus/MTData2 with quaternion, gyro and accelerometer fields at 100 Hz. The native fork now has `AP_ExternalAHRS_Xsens` (type 12) and a strict MTData2 parser. The parser requires a valid checksum, packet counter, NED quaternion, angular rate and acceleration; it rejects incomplete or duplicate samples. The backend configures those fields at 100 Hz, publishes gyro/accel through `AP_InertialSensor_ExternalAHRS`, and keeps IMU health false without fresh samples. Mount rotation remains an editable identity placeholder; no physical Xsens has been connected.
+
+The parser unit tests and native `./waf sub -j4` build pass. A virtual-serial startup check with `EAHRS_TYPE=12` and `SERIAL1_PROTOCOL=36` observed no Xbus setup bytes in eight seconds. A second run traced the defaults file being read and the PTY being opened, but still saw no Xbus writes in four seconds. The reason is unresolved; **do not treat the native sensor path as validated**. Diagnose ExternalAHRS update scheduling and startup progress before claiming IMU or EKF health. Time synchronization and EKF initialization also remain unverified.
 
 ## A50 DVL
 

@@ -8,10 +8,12 @@
 - Wrote existing-system audit and initial architecture decision / implementation plan. These are evidence-based but architecture remains pending upstream Linux/driver inspection.
 - User directed that physical parameters remain editable placeholders initialized from ROS 2 repository defaults.
 
+- Added strict MTData2 parsing and a native Xsens MTi-300 ExternalAHRS IMU backend in local commits `891daa8` and `a2c368d`. Three synthetic parser tests and a fresh native Sub build pass. An eight-second PTY startup check saw no configuration bytes, so the runtime sensor path is **not yet validated**. No physical sensor was opened.
+
 ## Current state
 
 M1 reference baseline: complete. M2 native build and smoke test: complete, but real sensors and outputs are not integrated. The generic Linux board has no default IMU and an `Empty::RCOutput` driver. The new `integration/vehicle_defaults.json` preserves editable provisional ROS defaults, and `integration/check_layout.py` validates its six-axis rank and unique mapping to upstream Vectored-6DOF factors. A non-actuating A50 velocity bridge has been added; live end-to-end fusion remains unverified. No actuator driver, firmware change or real vehicle operation has been performed. Physical actuator interface remains absent.
 
 ## Next evidence
 
-Integrate Xsens inertial and ESP32 Bar30 measurements with the native executable, then verify EKF initialization and DVL velocity fusion with replay. Implement a gated ESP32 output path only after sensor and estimation validation; keep physical output disabled during development.
+Resolve Xsens virtual-serial startup, then integrate ESP32 Bar30 measurements with the native executable, then verify EKF initialization and DVL velocity fusion with replay. Implement a gated ESP32 output path only after sensor and estimation validation; keep physical output disabled during development.
