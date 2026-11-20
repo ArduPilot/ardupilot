@@ -392,6 +392,7 @@ rcc: Miscellaneous.AP_STM32H7_RCC @ sysbus 0x58024400
     timer15: timer15
 
 pwr: Miscellaneous.AP_STM32H7_PWR @ sysbus 0x58024800
+    IRQ -> exti@16
 
 // installs a real ICSR.RETTOBASE on the stock NVIC (ChibiOS drops every
 // preemptive context switch without it); bus address is a formality
