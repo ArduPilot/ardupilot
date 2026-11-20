@@ -119,6 +119,13 @@ private:
     // returns true if line segment intersects polygon or circular fence
     bool intersects_fence(const Vector2f &seg_start, const Vector2f &seg_end) const;
 
+    // returns true if line segment intersects an inclusion polygon or circle
+    bool intersects_inclusion(const Vector2f &seg_start, const Vector2f &seg_end) const;
+
+    // returns true if line segment intersects an exclusion polygon or circle.  if allow_leaving_start_zone
+    // is true then a segment may leave the exclusion zone it starts in but not cross back into it
+    bool intersects_exclusion(const Vector2f &seg_start, const Vector2f &seg_end, bool allow_leaving_start_zone) const;
+
     // create visibility graph for all fence (with margin) points
     // returns true on success.  returns false on failure and err_id is updated
     bool create_fence_visgraph(AP_OADijkstra_Error &err_id);
@@ -139,6 +146,8 @@ private:
     Location _destination_prev;     // destination of previous iterations (used to determine if path should be re-calculated)
     Location _next_destination_prev;// next_destination of previous iterations (used to determine if path should be re-calculated)
     uint8_t _path_idx_returned;     // index into _path array which gives location vehicle should be currently moving towards
+    bool _path_source_relocated;    // true if the path's source was moved inside the fence because the vehicle was outside it
+    bool _path_destination_relocated;   // true if the path's destination was moved inside the fence because the destination was outside it
     bool _dest_to_next_dest_clear;  // true if path from dest to next_dest is clear (i.e. does not intersects a fence)
 
     // inclusion polygon (with margin) related variables
@@ -194,6 +203,7 @@ private:
     AP_ExpandingArray<AP_OAVisGraph::OAItemID> _path;   // ids of points on return path in reverse order (i.e. destination is first element)
     uint8_t _path_numpoints;                            // number of points on return path
     Vector2f _path_source;                              // source point used in shortest path calculations (offset in cm from EKF origin)
+    Vector2f _path_vehicle_origin;                      // vehicle position when the path was calculated, before any move inside the fence (offset in cm from EKF origin)
     Vector2f _path_destination;                         // destination position used in shortest path calculations (offset in cm from EKF origin)
 
     // return number of points on path

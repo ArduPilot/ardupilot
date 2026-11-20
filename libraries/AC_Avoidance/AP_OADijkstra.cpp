@@ -167,8 +167,10 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
             Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
-        // start from 2nd point on path (first is the original origin)
-        _path_idx_returned = 1;
+        // start from the 2nd point on the path because the first is the vehicle's own position.
+        // if the origin was moved inside the fence then the first point is the entry point,
+        // which the vehicle has not reached yet, so it must be returned as a destination
+        _path_idx_returned = _path_source_relocated ? 0 : 1;
 
         // check if path from destination to next_destination intersects with a fence
         _dest_to_next_dest_clear = false;
@@ -181,19 +183,31 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         }
     }
 
-    // path has been created, return latest point
+    // path has been created, return latest point.  the last point is the destination, which the
+    // vehicle flies to directly, unless it was moved inside the fence.  then the last point is the
+    // exit point, which the vehicle must reach before flying on to the destination
     Vector2f dest_pos;
-    const uint8_t path_length = get_shortest_path_numpoints() > 0 ? (get_shortest_path_numpoints() - 1) : 0;
+    uint8_t path_length = get_shortest_path_numpoints();
+    if (!_path_destination_relocated && (path_length > 0)) {
+        path_length--;
+    }
     if ((_path_idx_returned < path_length) && get_shortest_path_point(_path_idx_returned, dest_pos)) {
 
-        // for the first point return origin as current_loc
+        // the origin is the previous point on the path.  the first point is only returned when it is
+        // the entry point into the fence, and its origin is where the vehicle was when the path was calculated
         Vector2f origin_pos;
-        if ((_path_idx_returned > 0) && get_shortest_path_point(_path_idx_returned-1, origin_pos)) {
+        bool origin_valid;
+        if (_path_idx_returned == 0) {
+            origin_pos = _path_vehicle_origin;
+            origin_valid = true;
+        } else {
+            origin_valid = get_shortest_path_point(_path_idx_returned-1, origin_pos);
+        }
+        if (origin_valid) {
             // convert offset from ekf origin to Location
             Location temp_loc(Vector3f{origin_pos.x, origin_pos.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);
             origin_new = temp_loc;
         } else {
-            // for first point use current loc as origin
             origin_new = current_loc;
         }
 
@@ -612,6 +626,12 @@ bool AP_OADijkstra::get_point(uint16_t index, Vector2f &point) const
 // returns true if line segment intersects polygon or circular fence
 bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &seg_end) const
 {
+    return intersects_inclusion(seg_start, seg_end) || intersects_exclusion(seg_start, seg_end, false);
+}
+
+// returns true if line segment intersects an inclusion polygon or circle
+bool AP_OADijkstra::intersects_inclusion(const Vector2f &seg_start, const Vector2f &seg_end) const
+{
     // return immediately if fence is not enabled
     const AC_Fence *fence = AC_Fence::get_singleton();
     if (fence == nullptr) {
@@ -622,17 +642,6 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
     uint16_t num_points = 0;
     for (uint8_t i = 0; i < fence->polyfence().get_inclusion_polygon_count(); i++) {
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
-        if (boundary != nullptr) {
-            Vector2f intersection;
-            if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
-                return true;
-            }
-        }
-    }
-
-    // determine if segment crosses any of the exclusion polygons
-    for (uint8_t i = 0; i < fence->polyfence().get_exclusion_polygon_count(); i++) {
-        const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
         if (boundary != nullptr) {
             Vector2f intersection;
             if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
@@ -657,16 +666,74 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
         }
     }
 
+    // if we got this far then no intersection
+    return false;
+}
+
+// returns true if a segment that starts inside a polygon crosses the polygon's boundary again after leaving it
+static bool segment_reenters_polygon(const Vector2f *boundary, uint16_t num_points, const Vector2f &seg_start, const Vector2f &seg_end)
+{
+    if (Polygon_complete(boundary, num_points)) {
+        num_points--;
+    }
+    float first_dist_cm = FLT_MAX;
+    float last_dist_cm = -FLT_MAX;
+    for (uint16_t i = 0; i < num_points; i++) {
+        Vector2f intersection;
+        if (Vector2f::segment_intersection(boundary[i], boundary[(i + 1) % num_points], seg_start, seg_end, intersection)) {
+            const float dist_cm = (intersection - seg_start).length();
+            first_dist_cm = MIN(first_dist_cm, dist_cm);
+            last_dist_cm = MAX(last_dist_cm, dist_cm);
+        }
+    }
+    // crossings within 1cm are one crossing, e.g. both edges meeting at a vertex the segment passes through
+    return (last_dist_cm - first_dist_cm) > 1.0f;
+}
+
+// returns true if line segment intersects an exclusion polygon or circle.  if allow_leaving_start_zone
+// is true then a segment may leave the exclusion zone it starts in but not cross back into it
+bool AP_OADijkstra::intersects_exclusion(const Vector2f &seg_start, const Vector2f &seg_end, bool allow_leaving_start_zone) const
+{
+    // return immediately if fence is not enabled
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return false;
+    }
+
+    // determine if segment crosses any of the exclusion polygons
+    uint16_t num_points = 0;
+    for (uint8_t i = 0; i < fence->polyfence().get_exclusion_polygon_count(); i++) {
+        const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
+        if (boundary != nullptr) {
+            if (allow_leaving_start_zone && !Polygon_outside(seg_start, boundary, num_points)) {
+                if (segment_reenters_polygon(boundary, num_points, seg_start, seg_end)) {
+                    return true;
+                }
+                continue;
+            }
+            Vector2f intersection;
+            if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
+                return true;
+            }
+        }
+    }
+
     // determine if segment crosses any of the exclusion circles
     for (uint8_t i = 0; i < fence->polyfence().get_exclusion_circle_count(); i++) {
         Vector2f center_pos_cm;
         float radius;
         if (fence->polyfence().get_exclusion_circle(i, center_pos_cm, radius)) {
+            const float radius_cm = radius * 100.0f;
+            // a straight segment leaves a circle at most once
+            if (allow_leaving_start_zone && ((seg_start - center_pos_cm).length() < radius_cm)) {
+                continue;
+            }
+
             // calculate distance between circle's center and segment
             const float dist_cm = Vector2f::closest_distance_between_line_and_point(seg_start, seg_end, center_pos_cm);
 
             // intersects if distance is less than radius
-            if (dist_cm <= (radius * 100.0f)) {
+            if (dist_cm <= radius_cm) {
                 return true;
             }
         }
@@ -879,10 +946,55 @@ bool AP_OADijkstra::find_closest_node_idx(node_index &node_idx) const
 // resulting path is stored in _shortest_path array as vector offsets from EKF origin
 bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &destination, AP_OADijkstra_Error &err_id)
 {
-    // convert origin and destination to offsets from EKF origin
-    if (!origin.get_vector_xy_from_origin_NE_cm(_path_source) ||
-        !destination.get_vector_xy_from_origin_NE_cm(_path_destination)) {
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
+        return false;
+    }
+
+    Vector2f origin_cm, destination_cm;
+    if (!origin.get_vector_xy_from_origin_NE_cm(origin_cm) ||
+        !destination.get_vector_xy_from_origin_NE_cm(destination_cm)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_NO_POSITION_ESTIMATE;
+        return false;
+    }
+
+    // if the straight line from origin to destination crosses the fence then replace an origin or
+    // destination that is outside the fence with the closest point within the fence so that a path
+    // can still be planned.  if the straight line is clear it is flown as is, even if both ends are
+    // outside the fence (e.g. an RTL climb that starts outside the fence)
+    Location origin_in_fence = origin;
+    Location destination_in_fence = destination;
+    if (intersects_fence(origin_cm, destination_cm)) {
+        if (!fence->polyfence().get_closest_loc_within_fence(origin, _polyfence_margin * 100.0f, origin_in_fence)) {
+            err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
+            return false;
+        }
+        if (!fence->polyfence().get_closest_loc_within_fence(destination, _polyfence_margin * 100.0f, destination_in_fence)) {
+            err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
+            return false;
+        }
+    }
+
+    // record whether the origin was moved so the entry point can be returned to the vehicle
+    _path_source_relocated = !origin_in_fence.same_latlon_as(origin);
+    _path_vehicle_origin = origin_cm;
+
+    // record whether the destination was moved so the exit point can be returned to the vehicle
+    _path_destination_relocated = !destination_in_fence.same_latlon_as(destination);
+
+    // convert origin and destination to offsets from EKF origin
+    if (!origin_in_fence.get_vector_xy_from_origin_NE_cm(_path_source) ||
+        !destination_in_fence.get_vector_xy_from_origin_NE_cm(_path_destination)) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_NO_POSITION_ESTIMATE;
+        return false;
+    }
+
+    // the legs from the vehicle to the entry point and from the exit point to the destination are flown
+    // directly, so they must not cross an exclusion zone.  a vehicle inside an exclusion zone may leave it
+    if ((_path_source_relocated && intersects_exclusion(origin_cm, _path_source, true)) ||
+        (_path_destination_relocated && intersects_exclusion(_path_destination, destination_cm, false))) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
         return false;
     }
 

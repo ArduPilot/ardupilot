@@ -339,6 +339,334 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     return false;
 }
 
+// finds the two points where circles cross.  returns false if they do not cross
+static bool circle_crossings(const Vector2f &center1, float radius1, const Vector2f &center2, float radius2, Vector2f &crossing1, Vector2f &crossing2)
+{
+    const Vector2f center1_to_2 = center2 - center1;
+    const float dist = center1_to_2.length();
+    if (is_zero(dist) || (dist > radius1 + radius2) || (dist < fabsf(radius1 - radius2))) {
+        return false;
+    }
+
+    // the crossings lie either side of the line between the centers, on a chord perpendicular to it
+    const Vector2f unit = center1_to_2 / dist;
+    const float chord_dist = (sq(dist) + sq(radius1) - sq(radius2)) / (2.0f * dist);
+    const float half_chord = safe_sqrt(sq(radius1) - sq(chord_dist));
+    const Vector2f chord_center = center1 + unit * chord_dist;
+    const Vector2f perpendicular {-unit.y, unit.x};
+    crossing1 = chord_center + perpendicular * half_chord;
+    crossing2 = chord_center - perpendicular * half_chord;
+    return true;
+}
+
+// get_closest_loc_within_fence - finds the closest point to loc that is inside the fence and,
+// where possible, at least margin_cm from the edge of every loaded polygon and circle.
+// if loc does not breach the fence then loc_closest is simply set to loc.
+// returns false if no such point could be found (e.g. fence not loaded)
+bool AC_PolyFence_loader::get_closest_loc_within_fence(const Location& loc, float margin_cm, Location& loc_closest) const
+{
+    if (!loaded() || total_fence_count() == 0) {
+        return false;
+    }
+
+    // if loc does not breach the fence then no adjustment is required
+    if (!breached(loc)) {
+        loc_closest = loc;
+        return true;
+    }
+
+    // calculate loc as an offset (in cm) from the fence origin
+    Vector2f pos_cm;
+    Vector2l latlon { loc.lat, loc.lng };
+    if (!scale_latlon_from_origin(loaded_origin, latlon, pos_cm)) {
+        return false;
+    }
+
+    // if the fence is too small for every candidate to clear margin_cm then all of them lie outside it,
+    // so the margin is halved until a point is found.  below 1cm clears_margin() accepts any point inside the fence
+    Vector2f closest_pos_cm;
+    for (float search_margin_cm = margin_cm; !find_closest_pos_within_fence(pos_cm, search_margin_cm, closest_pos_cm); search_margin_cm *= 0.5f) {
+        if (search_margin_cm < 1.0f) {
+            return false;
+        }
+    }
+
+    // return the caller's location moved horizontally, leaving its altitude and frame
+    // untouched so that the result matches the no adjustment case above
+    Location closest_loc = loaded_origin;
+    closest_loc.offset(closest_pos_cm.x * 0.01f, closest_pos_cm.y * 0.01f);
+    loc_closest = loc;
+    loc_closest.lat = closest_loc.lat;
+    loc_closest.lng = closest_loc.lng;
+    return true;
+}
+
+// helper for get_closest_loc_within_fence: finds the closest point to pos_cm that is inside the fence and,
+// where possible, at least margin_cm from the edge of every loaded polygon and circle
+bool AC_PolyFence_loader::find_closest_pos_within_fence(const Vector2f &pos_cm, float margin_cm, Vector2f &closest_pos_cm) const
+{
+    // each boundary is moved margin_cm into the fence.  the closest point is either the closest point
+    // on one of these moved boundaries or a point where two of them cross
+    ClosestCandidate best_clear {};
+    ClosestCandidate best_inside {};
+
+    // polygon edges: the closest point on each edge, and where it crosses every later edge and every circle
+    for (uint8_t p1 = 0; p1 < offset_polygon_count(); p1++) {
+        const Vector2f *points1;
+        uint16_t count1;
+        float inset1_cm;
+        if (!get_offset_polygon(p1, margin_cm, points1, count1, inset1_cm)) {
+            continue;
+        }
+        Vector2f start1_cm = inset_vertex(points1, count1, count1 - 1, inset1_cm);
+        for (uint16_t e1 = 0; e1 < count1; e1++) {
+            const Vector2f end1_cm = inset_vertex(points1, count1, e1, inset1_cm);
+            consider_candidate(Vector2f::closest_point(pos_cm, start1_cm, end1_cm), pos_cm, margin_cm, best_clear, best_inside);
+
+            for (uint8_t p2 = p1; p2 < offset_polygon_count(); p2++) {
+                const Vector2f *points2;
+                uint16_t count2;
+                float inset2_cm;
+                if (!get_offset_polygon(p2, margin_cm, points2, count2, inset2_cm)) {
+                    continue;
+                }
+                // within the same polygon only the edges after this one are tested
+                const uint16_t first_e2 = (p2 == p1) ? e1 + 1 : 0;
+                if (first_e2 >= count2) {
+                    continue;
+                }
+                Vector2f start2_cm = inset_vertex(points2, count2, (first_e2 + count2 - 1) % count2, inset2_cm);
+                for (uint16_t e2 = first_e2; e2 < count2; e2++) {
+                    const Vector2f end2_cm = inset_vertex(points2, count2, e2, inset2_cm);
+                    Vector2f crossing_cm;
+                    if (Vector2f::segment_intersection(start1_cm, end1_cm, start2_cm, end2_cm, crossing_cm)) {
+                        consider_candidate(crossing_cm, pos_cm, margin_cm, best_clear, best_inside);
+                    }
+                    start2_cm = end2_cm;
+                }
+            }
+
+            for (uint8_t c = 0; c < offset_circle_count(); c++) {
+                Vector2f center_cm;
+                float radius_cm;
+                if (!get_offset_circle(c, margin_cm, center_cm, radius_cm)) {
+                    continue;
+                }
+                // an edge can cross a circle twice and each call finds the crossing nearest its first argument
+                Vector2f crossing_cm;
+                if (Vector2f::circle_segment_intersection(start1_cm, end1_cm, center_cm, radius_cm, crossing_cm)) {
+                    consider_candidate(crossing_cm, pos_cm, margin_cm, best_clear, best_inside);
+                }
+                if (Vector2f::circle_segment_intersection(end1_cm, start1_cm, center_cm, radius_cm, crossing_cm)) {
+                    consider_candidate(crossing_cm, pos_cm, margin_cm, best_clear, best_inside);
+                }
+            }
+            start1_cm = end1_cm;
+        }
+    }
+
+    // circles: the closest point on each circle, and where it crosses every later circle
+    for (uint8_t c1 = 0; c1 < offset_circle_count(); c1++) {
+        Vector2f center1_cm;
+        float radius1_cm;
+        if (!get_offset_circle(c1, margin_cm, center1_cm, radius1_cm)) {
+            continue;
+        }
+        // a point at the centre has no closest direction, so north is used
+        const Vector2f center_to_pos_cm = pos_cm - center1_cm;
+        const Vector2f direction = center_to_pos_cm.is_zero() ? Vector2f{1.0f, 0.0f} : center_to_pos_cm.normalized();
+        consider_candidate(center1_cm + direction * radius1_cm, pos_cm, margin_cm, best_clear, best_inside);
+        for (uint8_t c2 = c1 + 1; c2 < offset_circle_count(); c2++) {
+            Vector2f center2_cm;
+            float radius2_cm;
+            if (!get_offset_circle(c2, margin_cm, center2_cm, radius2_cm)) {
+                continue;
+            }
+            Vector2f crossing1_cm, crossing2_cm;
+            if (circle_crossings(center1_cm, radius1_cm, center2_cm, radius2_cm, crossing1_cm, crossing2_cm)) {
+                consider_candidate(crossing1_cm, pos_cm, margin_cm, best_clear, best_inside);
+                consider_candidate(crossing2_cm, pos_cm, margin_cm, best_clear, best_inside);
+            }
+        }
+    }
+
+    // a point inside the fence that is closer than margin_cm to an edge is only used if no point clears every edge
+    const ClosestCandidate &best = best_clear.found ? best_clear : best_inside;
+    if (!best.found) {
+        return false;
+    }
+    closest_pos_cm = best.pos_cm;
+    return true;
+}
+
+// helper for get_closest_loc_within_fence: tests candidate_pos_cm and keeps it as the best point that
+// clears every boundary by margin_cm, and as the best point that is merely inside the fence, if it is
+// closer to pos_cm than the best of each found so far
+void AC_PolyFence_loader::consider_candidate(const Vector2f &candidate_pos_cm, const Vector2f &pos_cm, float margin_cm,
+                                             ClosestCandidate &best_clear, ClosestCandidate &best_inside) const
+{
+    const float dist_cm_sq = (candidate_pos_cm - pos_cm).length_squared();
+    const bool closer_than_clear = !best_clear.found || (dist_cm_sq < best_clear.dist_cm_sq);
+    const bool closer_than_inside = !best_inside.found || (dist_cm_sq < best_inside.dist_cm_sq);
+    if (!closer_than_clear && !closer_than_inside) {
+        return;
+    }
+
+    Location candidate_loc = loaded_origin;
+    candidate_loc.offset(candidate_pos_cm.x * 0.01f, candidate_pos_cm.y * 0.01f);
+    if (breached(candidate_loc)) {
+        return;
+    }
+
+    if (closer_than_inside) {
+        best_inside = {true, dist_cm_sq, candidate_pos_cm};
+    }
+    if (closer_than_clear && clears_margin(candidate_pos_cm, margin_cm)) {
+        best_clear = {true, dist_cm_sq, candidate_pos_cm};
+    }
+}
+
+// helper for get_closest_loc_within_fence: returns true if pos_cm (an offset in cm from the fence
+// origin) is at least margin_cm from the edge of every loaded polygon and circle
+bool AC_PolyFence_loader::clears_margin(const Vector2f &pos_cm, float margin_cm) const
+{
+    // 1cm allows for float error in points placed exactly on a moved boundary
+    const float min_dist_cm = margin_cm - 1.0f;
+
+    for (uint8_t i = 0; i < _num_loaded_inclusion_boundaries; i++) {
+        const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
+        Vector2f closest_vec_cm;
+        if (Polygon_closest_distance_point(boundary.points, boundary.count, pos_cm, closest_vec_cm) &&
+            (closest_vec_cm.length() < min_dist_cm)) {
+            return false;
+        }
+    }
+
+    for (uint8_t i = 0; i < _num_loaded_exclusion_boundaries; i++) {
+        const ExclusionBoundary &boundary = _loaded_exclusion_boundary[i];
+        Vector2f closest_vec_cm;
+        if (Polygon_closest_distance_point(boundary.points, boundary.count, pos_cm, closest_vec_cm) &&
+            (closest_vec_cm.length() < min_dist_cm)) {
+            return false;
+        }
+    }
+
+    for (uint8_t i = 0; i < get_inclusion_circle_count(); i++) {
+        Vector2f center_pos_cm;
+        float radius_m;
+        if (get_inclusion_circle(i, center_pos_cm, radius_m) &&
+            (fabsf((pos_cm - center_pos_cm).length() - (radius_m * 100.0f)) < min_dist_cm)) {
+            return false;
+        }
+    }
+
+    for (uint8_t i = 0; i < get_exclusion_circle_count(); i++) {
+        Vector2f center_pos_cm;
+        float radius_m;
+        if (get_exclusion_circle(i, center_pos_cm, radius_m) &&
+            (fabsf((pos_cm - center_pos_cm).length() - (radius_m * 100.0f)) < min_dist_cm)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// helper for get_closest_loc_within_fence: returns the number of loaded inclusion and exclusion polygons
+uint8_t AC_PolyFence_loader::offset_polygon_count() const
+{
+    return _num_loaded_inclusion_boundaries + _num_loaded_exclusion_boundaries;
+}
+
+// helper for get_closest_loc_within_fence: gets polygon idx (inclusion polygons first, then exclusion
+// polygons) and the distance each of its edges must move to its left to move margin_cm into the fence
+bool AC_PolyFence_loader::get_offset_polygon(uint8_t idx, float margin_cm, const Vector2f *&points, uint16_t &count, float &inset_cm) const
+{
+    // inclusion edges move inwards and exclusion edges move outwards
+    float move_cm;
+    if (idx < _num_loaded_inclusion_boundaries) {
+        points = _loaded_inclusion_boundary[idx].points;
+        count = _loaded_inclusion_boundary[idx].count;
+        move_cm = margin_cm;
+    } else {
+        idx -= _num_loaded_inclusion_boundaries;
+        if (idx >= _num_loaded_exclusion_boundaries) {
+            return false;
+        }
+        points = _loaded_exclusion_boundary[idx].points;
+        count = _loaded_exclusion_boundary[idx].count;
+        move_cm = -margin_cm;
+    }
+
+    if (Polygon_complete(points, count)) {
+        count--;
+    }
+    if (count < 3) {
+        return false;
+    }
+
+    // the sign of the polygon's area gives its winding, which decides which side of each edge is inside
+    float area_x2 = 0.0f;
+    for (uint16_t i = 0; i < count; i++) {
+        area_x2 += points[i] % points[(i + 1) % count];
+    }
+    inset_cm = is_negative(area_x2) ? -move_cm : move_cm;
+    return true;
+}
+
+// helper for get_closest_loc_within_fence: returns the number of loaded inclusion and exclusion circles
+uint8_t AC_PolyFence_loader::offset_circle_count() const
+{
+    return get_inclusion_circle_count() + get_exclusion_circle_count();
+}
+
+// helper for get_closest_loc_within_fence: gets circle idx (inclusion circles first, then exclusion
+// circles) with its radius changed so that its edge is margin_cm into the fence
+bool AC_PolyFence_loader::get_offset_circle(uint8_t idx, float margin_cm, Vector2f &center_pos_cm, float &radius_cm) const
+{
+    float radius_m;
+    if (idx < get_inclusion_circle_count()) {
+        if (!get_inclusion_circle(idx, center_pos_cm, radius_m)) {
+            return false;
+        }
+        radius_cm = (radius_m * 100.0f) - margin_cm;
+        return is_positive(radius_cm);
+    }
+    idx -= get_inclusion_circle_count();
+    if (!get_exclusion_circle(idx, center_pos_cm, radius_m)) {
+        return false;
+    }
+    radius_cm = (radius_m * 100.0f) + margin_cm;
+    return true;
+}
+
+// helper for get_closest_loc_within_fence: returns vertex i of the polygon moved to where its two
+// neighbouring edges meet once each is moved inset_cm to its left.  At a near hairpin corner the
+// move is limited, so that corner is less than inset_cm from its edges
+//   points, count: polygon vertices (unclosed), as offsets in cm from the fence origin
+//   i: index of the vertex to move
+//   inset_cm: distance to move each edge to its left (the inside of a polygon with positive area)
+Vector2f AC_PolyFence_loader::inset_vertex(const Vector2f *points, uint16_t count, uint16_t i, float inset_cm) const
+{
+    const Vector2f &vertex = points[i];
+    Vector2f edge_in = vertex - points[(i + count - 1) % count];
+    Vector2f edge_out = points[(i + 1) % count] - vertex;
+    if (edge_in.is_zero() || edge_out.is_zero()) {
+        return vertex;
+    }
+    edge_in.normalize();
+    edge_out.normalize();
+
+    // left-hand normal of each edge
+    const Vector2f normal_in {-edge_in.y, edge_in.x};
+    const Vector2f normal_out {-edge_out.y, edge_out.x};
+
+    // the moved edges meet at vertex + (normal_in + normal_out) * inset_cm / (1 + cos(turn angle)).
+    // limit the divisor so a near hairpin corner does not throw the point far away
+    const float divisor = MAX(1.0f + (normal_in * normal_out), 0.1f);
+    return vertex + (normal_in + normal_out) * (inset_cm / divisor);
+}
+
 bool AC_PolyFence_loader::formatted() const
 {
     return (fence_storage.read_uint8(0) == new_fence_storage_magic &&
@@ -1401,6 +1729,7 @@ bool AC_PolyFence_loader::get_inclusion_circle(uint8_t index, Vector2f &center_p
 
 bool AC_PolyFence_loader::breached() const { return false; }
 bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_fence, Vector2f& fence_direction) const { return false; }
+bool AC_PolyFence_loader::get_closest_loc_within_fence(const Location& loc, float margin_cm, Location& loc_closest) const { return false; }
 
 uint16_t AC_PolyFence_loader::max_items() const { return 0; }
 

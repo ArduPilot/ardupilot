@@ -14611,6 +14611,523 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("FENCE_ENABLE", 1)
         self.check_avoidance_corners()
 
+    def AC_Avoidance_Dijkstra_OutsideFence(self):
+        '''Test Dijkstra's object avoidance can plan a path home
+        from outside a T-shaped polygon fence.  Check vehicle passes
+        close to one of the fence vertices rather than flying straight home'''
+
+        self.context_set_speedup(8)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # T-shaped inclusion fence.  Home sits inside the "stalk"; the "bar"
+        # is to the north.  Vertices are offsets (north, east) from home
+        home_loc = self.home_position_as_location()
+        home_loc_plus_15m = self.offset_location_up(home_loc, 15)
+        stalk_bottom_left = self.offset_location_ne(home_loc_plus_15m, -10, -20)
+        stalk_bottom_right = self.offset_location_ne(home_loc_plus_15m, -10, 20)
+        stalk_top_right = self.offset_location_ne(home_loc_plus_15m, 50, 20)
+        bar_bottom_right = self.offset_location_ne(home_loc_plus_15m, 50, 60)
+        bar_top_right = self.offset_location_ne(home_loc_plus_15m, 80, 60)
+        bar_top_left = self.offset_location_ne(home_loc_plus_15m, 80, -60)
+        bar_bottom_left = self.offset_location_ne(home_loc_plus_15m, 50, -60)
+        stalk_top_left = self.offset_location_ne(home_loc_plus_15m, 50, -20)
+
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                stalk_bottom_left,
+                stalk_bottom_right,
+                stalk_top_right,
+                bar_bottom_right,
+                bar_top_right,
+                bar_top_left,
+                bar_bottom_left,
+                stalk_top_left,
+            ]),
+        ])
+
+        # enable fence
+        self.set_rc(11, 2000)
+
+        # takeoff in Loiter and face North
+        self.takeoff(15, mode="LOITER")
+        self.reach_heading_manual(0)
+
+        # roll left and pitch forward, sliding along the fence
+        # until reaching the North-West corner
+        self.set_rc(1, 1400)
+        self.set_rc(2, 1400)
+        self.wait_location(bar_top_left, timeout=100)
+
+        # stop pitching forward; keep rolling left
+        self.set_rc(2, 1500)
+
+        # disable the fence and let the vehicle fly out past the corner to the west
+        self.set_rc(11, 1000)
+        self.wait_distance_to_home(150, 300, timeout=60)
+
+        # centre the roll stick and re-enable the fence; this should trigger
+        # RTL, and Dijkstra must route the vehicle home passing close to
+        # the stalk-top-left point rather than flying straight home
+        self.set_rc(1, 1500)
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_location(stalk_top_left, accuracy=5, timeout=100)
+        self.wait_rtl_complete()
+
+    def upload_T_shaped_fence(self):
+        '''upload a T-shaped inclusion fence around home and return its vertices
+        as Locations 15m above home.  Home sits inside the "stalk", which spans
+        N -10 to 50 by E -20 to 20; the "bar" is to the north and spans
+        N 50 to 80 by E -60 to 60'''
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        vertices = {
+            "stalk_bottom_left": self.offset_location_ne(home_loc_plus_15m, -10, -20),
+            "stalk_bottom_right": self.offset_location_ne(home_loc_plus_15m, -10, 20),
+            "stalk_top_right": self.offset_location_ne(home_loc_plus_15m, 50, 20),
+            "bar_bottom_right": self.offset_location_ne(home_loc_plus_15m, 50, 60),
+            "bar_top_right": self.offset_location_ne(home_loc_plus_15m, 80, 60),
+            "bar_top_left": self.offset_location_ne(home_loc_plus_15m, 80, -60),
+            "bar_bottom_left": self.offset_location_ne(home_loc_plus_15m, 50, -60),
+            "stalk_top_left": self.offset_location_ne(home_loc_plus_15m, 50, -20),
+        }
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, list(vertices.values())),
+        ])
+        return vertices
+
+    def AC_Avoidance_Dijkstra_InsideFence(self):
+        '''Test Dijkstra's object avoidance can plan a path home from inside a
+        T-shaped polygon fence whose border blocks line-of-sight to home'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        vertices = self.upload_T_shaped_fence()
+
+        self.takeoff(15, mode="GUIDED")
+
+        # fly into the western arm of the bar.  Guided only routes position
+        # targets through wpnav (and so through OA) when GUID_OPTIONS bit 6 is
+        # set, so turn the fence off for the trip out and back on once in place.
+        # from there the straight line to home leaves the fence at N=50 where E
+        # is -38.5, well outside the stalk, so the fence blocks line-of-sight home
+        self.set_rc(11, 1000)
+        self.fly_guided_move_local(65, -50, 15)
+        self.set_rc(11, 2000)
+
+        # RTL must round the inside corner at stalk-top-left rather than fly
+        # the blocked straight line, which would pass 14.7m from that vertex
+        self.change_mode("RTL")
+        self.wait_location(vertices["stalk_top_left"], accuracy=8, timeout=100)
+        self.wait_rtl_complete()
+
+    def AC_Avoidance_Dijkstra_FenceEntryPoint(self):
+        '''Test Dijkstra's object avoidance returns the fence entry point to a
+        vehicle outside the fence, even when that entry point can see home
+        directly and the resulting path holds only two points'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # rectangular inclusion fence spanning N -20 to 120 by E -70 to 70.
+        # home sits well inside it, so that from a point beyond the western edge
+        # the entry point back into the fence has a clear line to home and the
+        # planned path holds only those two points.  home is deliberately placed
+        # off the bearing from that start point to its entry point, so flying
+        # straight home is clearly distinguishable from being routed via it
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -20, -70),
+                self.offset_location_ne(home_loc_plus_15m, -20, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, -70),
+            ]),
+        ])
+
+        # enable fence
+        self.set_rc(11, 2000)
+
+        self.takeoff(15, mode="GUIDED")
+
+        # disable the fence and fly out 40m beyond its western edge
+        self.set_rc(11, 1000)
+        self.fly_guided_move_local(70, -110, 15)
+
+        # the closest fence feature to (70,-110) is the western edge at (70,-70),
+        # so the entry point is the OA margin of 5m inside it
+        entry_point = self.offset_location_ne(home_loc_plus_15m, 70, -65)
+
+        # re-enable the fence; the breach triggers RTL and the vehicle must be
+        # routed via the entry point.  flying straight home instead would pass
+        # 24m from it
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_location(entry_point, accuracy=8, timeout=100)
+        self.wait_rtl_complete()
+
+    def AC_Avoidance_Dijkstra_ExclusionPolygon(self):
+        '''Test Dijkstra's object avoidance routes around an exclusion polygon'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+
+        # exclusion rectangle lying across the direct line between home and a
+        # point 90m north.  it reaches 10m east of that line and 40m west, so
+        # the shortest way around it is to the east
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, 30, -40),
+                self.offset_location_ne(home_loc_plus_15m, 60, -40),
+                self.offset_location_ne(home_loc_plus_15m, 60, 10),
+                self.offset_location_ne(home_loc_plus_15m, 30, 10),
+            ]),
+        ])
+
+        self.takeoff(15, mode="GUIDED")
+
+        # fly to the far side of the exclusion polygon.  Guided only routes
+        # position targets through wpnav (and so through OA) when GUID_OPTIONS
+        # bit 6 is set, so turn the fence off for the trip out and back on once
+        # in place
+        self.set_rc(11, 1000)
+        self.fly_guided_move_local(90, 0, 15)
+        self.set_rc(11, 2000)
+
+        # RTL must route around the exclusion polygon.  the eastern leg runs
+        # down E=13.5, the polygon expanded by the 5m OA margin, and flying
+        # straight down the middle would pass 13.5m from its midpoint
+        self.change_mode("RTL")
+        detour_midpoint = self.offset_location_ne(home_loc_plus_15m, 45, 13.5)
+        self.wait_location(detour_midpoint, accuracy=8, timeout=120)
+        self.wait_rtl_complete()
+
+    def AC_Avoidance_Dijkstra_ExclusionBesideEdge(self):
+        '''Test Dijkstra's object avoidance finds the fence entry point for a
+        vehicle outside the fence when an exclusion polygon sits just inside
+        the fence edge nearest the vehicle'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # rectangular inclusion fence spanning N -20 to 120 by E -70 to 70, with
+        # an exclusion rectangle spanning N 60 to 90 by E -68 to -50, 2m inside
+        # its western edge
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -20, -70),
+                self.offset_location_ne(home_loc_plus_15m, -20, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, -70),
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, 60, -68),
+                self.offset_location_ne(home_loc_plus_15m, 90, -68),
+                self.offset_location_ne(home_loc_plus_15m, 90, -50),
+                self.offset_location_ne(home_loc_plus_15m, 60, -50),
+            ]),
+        ])
+
+        # enable fence
+        self.set_rc(11, 2000)
+
+        self.takeoff(15, mode="GUIDED")
+
+        # disable the fence and fly out 40m beyond its western edge, level with
+        # the exclusion polygon
+        self.set_rc(11, 1000)
+        self.fly_guided_move_local(70, -110, 15)
+
+        # the point 5m inside the western edge at (70,-65) is inside the
+        # exclusion polygon, so the entry point is where the western edge and
+        # the exclusion polygon's southern edge, each moved 5m into the fence,
+        # cross.  flying straight home instead would pass 14m from it
+        entry_point = self.offset_location_ne(home_loc_plus_15m, 55, -65)
+
+        # re-enable the fence; the breach triggers RTL and the vehicle must be
+        # routed via the entry point
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_location(entry_point, accuracy=8, timeout=100)
+        self.wait_rtl_complete()
+
+    def assert_dijkstra_holds_outside(self, inside, duration=20):
+        '''check for duration seconds that the vehicle's (north, east) offset
+        from home never satisfies inside(north, east)'''
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < duration:
+            pos = self.assert_receive_message('LOCAL_POSITION_NED')
+            if inside(pos.x, pos.y):
+                raise NotAchievedException("Vehicle entered the exclusion zone at N=%.1f E=%.1f" % (pos.x, pos.y))
+
+    def AC_Avoidance_Dijkstra_EntryLegExclusion(self):
+        '''Test Dijkstra's object avoidance refuses to plan a path for a vehicle
+        outside the fence when the leg to the fence entry point crosses an
+        exclusion polygon'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # rectangular inclusion fence spanning N -20 to 120 by E -70 to 70, with
+        # an exclusion rectangle outside its western edge spanning N 65 to 80 by
+        # E -100 to -85.  the straight line home from (70,-110) passes south of it
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -20, -70),
+                self.offset_location_ne(home_loc_plus_15m, -20, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, -70),
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, 65, -100),
+                self.offset_location_ne(home_loc_plus_15m, 80, -100),
+                self.offset_location_ne(home_loc_plus_15m, 80, -85),
+                self.offset_location_ne(home_loc_plus_15m, 65, -85),
+            ]),
+        ])
+
+        # enable fence
+        self.set_rc(11, 2000)
+
+        self.takeoff(15, mode="GUIDED")
+
+        # disable the fence and fly out 40m beyond its western edge
+        self.set_rc(11, 1000)
+        self.fly_guided_move_local(70, -110, 15)
+
+        # re-enable the fence; the breach triggers RTL.  the leg to the entry
+        # point at (70,-65) crosses the exclusion polygon, so no path is planned
+        # and the vehicle holds outside it
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_statustext("Dijkstra: could not find path", check_context=False, timeout=30)
+        self.assert_dijkstra_holds_outside(lambda n, e: 65 <= n <= 80 and -100 <= e <= -85)
+
+        # disable the fence so the vehicle can fly straight home
+        self.set_rc(11, 1000)
+        self.wait_rtl_complete()
+
+    def AC_Avoidance_Dijkstra_EntryLegFromExclusion(self):
+        '''Test Dijkstra's object avoidance for a vehicle inside a U-shaped
+        exclusion polygon outside the fence: no path is planned when the leg to
+        the fence entry point leaves one arm and crosses the other, and a path is
+        planned when the leg only leaves the polygon'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # rectangular inclusion fence spanning N -20 to 120 by E -70 to 70, with
+        # a U-shaped exclusion polygon outside its western edge, open to the
+        # north: west arm E -115 to -105, east arm E -95 to -85, base N 50 to 60
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -20, -70),
+                self.offset_location_ne(home_loc_plus_15m, -20, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, -70),
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, n, e) for (n, e) in [
+                    (50, -115), (85, -115), (85, -105), (60, -105),
+                    (60, -95), (85, -95), (85, -85), (50, -85),
+                ]]),
+        ])
+
+        # enable fence
+        self.set_rc(11, 2000)
+
+        self.takeoff(15, mode="GUIDED")
+
+        # disable the fence and fly into the west arm of the exclusion polygon
+        self.set_rc(11, 1000)
+        self.fly_guided_move_local(70, -110, 15)
+
+        # re-enable the fence; the breach triggers RTL.  the leg to the entry
+        # point at (70,-65) leaves the west arm and crosses the east arm, so no
+        # path is planned and the vehicle holds outside the east arm
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_statustext("Dijkstra: could not find path", check_context=False, timeout=30)
+        self.assert_dijkstra_holds_outside(lambda n, e: 60 <= n <= 85 and -95 <= e <= -85)
+
+        # disable the fence before leaving RTL, then fly into the east arm
+        self.set_rc(11, 1000)
+        self.change_mode("GUIDED")
+        self.fly_guided_move_local(70, -90, 15)
+
+        # re-enable the fence; the breach triggers RTL.  the leg to the entry
+        # point at (70,-65) only leaves the east arm, so the path is planned
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_dijkstra_route([(70, -65)])
+
+    def AC_Avoidance_Dijkstra_DestinationInExclusion(self):
+        '''Test Dijkstra's object avoidance refuses to plan a path to a
+        destination inside an exclusion polygon'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # rectangular inclusion fence spanning N -20 to 120 by E -70 to 70, with
+        # an exclusion square around home spanning N -10 to 10 by E -10 to 10
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -20, -70),
+                self.offset_location_ne(home_loc_plus_15m, -20, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, -70),
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -10, -10),
+                self.offset_location_ne(home_loc_plus_15m, 10, -10),
+                self.offset_location_ne(home_loc_plus_15m, 10, 10),
+                self.offset_location_ne(home_loc_plus_15m, -10, 10),
+            ]),
+        ])
+
+        # home is inside the exclusion polygon, so the fence must be disabled to
+        # arm and to fly out of it
+        self.set_rc(11, 2000)
+        self.set_rc(11, 1000)
+        self.takeoff(15, mode="GUIDED")
+        self.fly_guided_move_local(60, 0, 15)
+        self.set_rc(11, 2000)
+
+        # RTL to home inside the exclusion polygon is refused, so the vehicle
+        # holds outside it
+        self.change_mode("RTL")
+        self.wait_statustext("Dijkstra: could not find path", check_context=False, timeout=30)
+        self.assert_dijkstra_holds_outside(lambda n, e: -10 <= n <= 10 and -10 <= e <= 10)
+
+        # disable the fence so the vehicle can fly home
+        self.set_rc(11, 1000)
+        self.wait_rtl_complete()
+
+    def upload_T_shaped_fence_home_outside(self):
+        '''upload a T-shaped inclusion fence placed north of home so that home
+        lies outside it.  The "stalk" spans N 40 to 85 by E -30 to 10; the "bar"
+        is to the north and spans N 85 to 115 by E -75 to 45'''
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, n, e) for (n, e) in [
+                    (85, -75), (115, -75), (115, 45), (85, 45),
+                    (85, 10), (40, 10), (40, -30), (85, -30),
+                ]]),
+        ])
+
+    def dijkstra_rtl_home_outside_fence(self, start_n, start_e):
+        '''fly to (start_n, start_e) with the fence disabled, then enable it so
+        the breach triggers RTL to a home that is also outside the fence'''
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+        self.upload_T_shaped_fence_home_outside()
+
+        # home is outside the fence, so it must be disabled to arm
+        self.set_rc(11, 2000)
+        self.set_rc(11, 1000)
+        self.takeoff(15, mode="GUIDED")
+        self.fly_guided_move_local(start_n, start_e, 15)
+
+        # re-enable the fence; the breach triggers RTL
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+
+    def wait_dijkstra_route(self, route):
+        '''wait for the vehicle to pass within 8m of each (north, east) offset
+        from home in route, in order, then for RTL to complete'''
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        for (n, e) in route:
+            self.wait_location(self.offset_location_ne(home_loc_plus_15m, n, e), accuracy=8, timeout=100)
+        self.wait_rtl_complete()
+
+    def AC_Avoidance_Dijkstra_HomeOutside_EntryNearest(self):
+        '''Test Dijkstra's object avoidance RTL with home and the vehicle both
+        outside the fence, where the fence entry point is closer to the vehicle
+        than any Dijkstra point'''
+        # the straight line home from (70,-40) crosses the stalk.  the entry
+        # point 5m inside the stalk's west edge is 15m away while the nearest
+        # Dijkstra point, inside the stalk-top-left corner, is 23m away.  the
+        # vehicle leaves the fence at the exit point 5m inside the stalk's
+        # southern edge, on the way to home
+        self.dijkstra_rtl_home_outside_fence(70, -40)
+        self.wait_dijkstra_route([(70, -25), (45, 0)])
+
+    def AC_Avoidance_Dijkstra_HomeOutside_ViaInnerCorner(self):
+        '''Test Dijkstra's object avoidance RTL with home and the vehicle both
+        outside the fence, where the path runs via the stalk-top-left inner corner'''
+        # the vehicle enters at the bar's inset north-west corner.  the line
+        # from there to the exit point leaves the fence across the bottom of the
+        # bar's western arm, so the path turns at the Dijkstra point inside the
+        # stalk-top-left corner
+        self.dijkstra_rtl_home_outside_fence(110, -85)
+        self.wait_dijkstra_route([(110, -70), (88.5, -26.5), (45, 0)])
+
+    def AC_Avoidance_Dijkstra_HomeOutside_NorthWestCorner(self):
+        '''Test Dijkstra's object avoidance RTL with home and the vehicle both
+        outside the fence, where the vehicle starts just north of the bar's
+        north-west corner'''
+        self.dijkstra_rtl_home_outside_fence(120, -75)
+        self.wait_dijkstra_route([(110, -70), (88.5, -26.5), (45, 0)])
+
+    def AC_Avoidance_Dijkstra_HomeOutside_ThroughFence(self):
+        '''Test Dijkstra's object avoidance RTL with home and the vehicle both
+        outside the fence, where the vehicle starts directly north of the T so
+        the straight line home passes through the bar and down the stalk'''
+        self.dijkstra_rtl_home_outside_fence(125, 0)
+        self.wait_dijkstra_route([(110, 0), (45, 0)])
+
     def AvoidanceAltFence(self):
         '''Test fence avoidance at minimum and maximum altitude'''
         self.context_push()
@@ -20965,6 +21482,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.BatteryFailsafeBrakeLandNoGPS,
             self.AC_Avoidance_Proximity,
             self.AC_Avoidance_Fence,
+            self.AC_Avoidance_Dijkstra_OutsideFence,
+            self.AC_Avoidance_Dijkstra_InsideFence,
+            self.AC_Avoidance_Dijkstra_FenceEntryPoint,
+            self.AC_Avoidance_Dijkstra_ExclusionPolygon,
+            self.AC_Avoidance_Dijkstra_HomeOutside_EntryNearest,
+            self.AC_Avoidance_Dijkstra_HomeOutside_ViaInnerCorner,
+            self.AC_Avoidance_Dijkstra_HomeOutside_NorthWestCorner,
+            self.AC_Avoidance_Dijkstra_HomeOutside_ThroughFence,
+            self.AC_Avoidance_Dijkstra_ExclusionBesideEdge,
+            self.AC_Avoidance_Dijkstra_EntryLegExclusion,
+            self.AC_Avoidance_Dijkstra_EntryLegFromExclusion,
+            self.AC_Avoidance_Dijkstra_DestinationInExclusion,
             self.SetpointGlobalVel,
             self.SetpointBadVel,
             self.ModeLoiter,
