@@ -71,9 +71,7 @@ public:
     // surface dshot telemetry for use by the harmonic notch and status information
 #ifdef HAL_WITH_BIDIR_DSHOT
     uint16_t get_erpm(uint8_t chan) const override { return _bdshot.erpm[chan]; }
-    float get_erpm_error_rate(uint8_t chan) const override {
-      return 100.0f * float(_bdshot.erpm_errors[chan]) / (1 + _bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan]);
-    }
+    float get_erpm_error_rate(uint8_t chan) const override { return _bdshot.erpm_error_rate[chan]; }
     /*
       allow all erpm values to be read and for new updates to be detected - primarily for IOMCU
      */
@@ -423,6 +421,7 @@ private:
             uint8_t telem_tim_ch[4];
             uint8_t curr_telem_chan;
             uint8_t prev_telem_chan;
+            bool command_sent; // the last pulse sent a DShot command to the telemetry channel, which gets no reply
             Shared_DMA *curr_ic_dma_handle; // a shortcut to avoid logic errors involving the wrong lock
             uint16_t telempsc;
             dmar_uint_t dma_buffer_copy[GCR_TELEMETRY_BIT_LEN];
@@ -578,6 +577,12 @@ private:
     uint16_t period_corked[max_channels];
 
     // handling of bi-directional dshot
+#ifdef HAL_WITH_BIDIR_DSHOT
+    // frames a stats window counts before its own error rate is reported, and the fewest its errors
+    // are divided by: with fewer, a run of good frames makes an ESC failing 5% of its replies read
+    // under 1%, and a single miss counts for more
+    static constexpr uint16_t BDSHOT_ERROR_RATE_MIN_FRAMES = 250;
+#endif
     struct {
         uint32_t mask;
         uint32_t disabled_mask; // record of channels that were tried, but failed
@@ -587,6 +592,9 @@ private:
         uint16_t erpm_errors[max_channels];
         uint16_t erpm_clean_frames[max_channels];
         uint32_t erpm_last_stats_ms[max_channels];
+        float erpm_window_error_rate[max_channels]; // error rate of the last full stats window, percent
+        uint32_t erpm_window_mask; // channels that have had a full stats window
+        volatile float erpm_error_rate[max_channels]; // the rate to report, percent, written only by the RCOutput thread
         uint8_t motor_poles;
 #endif
     } _bdshot;
@@ -754,6 +762,8 @@ private:
     static uint32_t bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32_t count, bool reversed);
     bool bdshot_decode_telemetry_from_erpm(uint16_t erpm, uint8_t chan);
     bool bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan);
+    // the error rate of a channel's replies from its counts, percent
+    float bdshot_error_rate(uint8_t chan) const;
     static uint8_t bdshot_find_next_ic_channel(const pwm_group& group);
     static void bdshot_dma_ic_irq_callback(void *p, uint32_t flags);
     static void bdshot_finish_dshot_gcr_transaction(virtual_timer_t* vt, void *p);
