@@ -32,6 +32,11 @@
 
 #define ADSB_MAX_INSTANCES             1   // Maximum number of ADSB sensor instances available on this platform
 
+// Set on a 24-bit address that is not an ICAO address, e.g. a TIS-B track the ground station
+// couldn't tie to an aircraft. Same as MODES_NON_ICAO_ADDRESS in dump1090 and readsb, which
+// show these as "~" followed by the 24 bits. A real ICAO address never has it set.
+#define ADSB_NON_ICAO_ADDRESS_FLAG     (1U << 24)
+
 #define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
 #define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
 #define ADSB_BITBASK_RF_CAPABILITIES_UAT_OUT        (1 << 2)
