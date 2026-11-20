@@ -1,5 +1,6 @@
 # 3DR_X8-M model
-
+# command to run this model in sitl.  Go to the ArduCopter directory and run the following command:
+# sim_vehicle.py -f statespace-multi:../Tools/autotest/models/3DR_X8-M.json --console --map --add-param-file=../Tools/autotest/models/3DR_X8-M.param
 {
     # Stability Derivatives
 
