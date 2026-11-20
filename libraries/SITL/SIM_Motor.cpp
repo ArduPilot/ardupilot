@@ -78,22 +78,6 @@ void Motor::calculate_forces(const struct sitl_input &input,
     // add velocity of motor about center due to vehicle rotation
     motor_vel += -(position % gyro);
 
-    // calculate velocity into prop, clipping at zero
-    float velocity_in = MAX(0, -motor_vel.projected(thrust_vector).z);
-
-    // get thrust for untilted motor
-    float motor_thrust = thrust_sign * calc_thrust(command, air_density, velocity_in, voltage_scale);
-
-    // the yaw torque of the motor. A variable-pitch rotor spins in
-    // the same direction regardless of blade pitch sign, so the drag
-    // torque reaction on the frame does not reverse with negative
-    // thrust
-    const float yaw_scale = 0.05 * diagonal_size * motor_thrust * thrust_sign;
-    Vector3f rotor_torque = thrust_vector * yaw_factor * command * yaw_scale * -1.0;
-
-    // thrust in bodyframe NED
-    thrust = thrust_vector * motor_thrust;
-
     // work out roll and pitch of motor relative to it pointing straight up
     float roll = 0, pitch = 0;
 
@@ -118,13 +102,29 @@ void Motor::calculate_forces(const struct sitl_input &input,
     }
     last_change_usec = now;
 
-    // possibly rotate the thrust vector and the rotor torque
+    // actual thrust axis, accounting for any current roll/pitch tilt of the motor
+    Vector3f actual_thrust_vector = thrust_vector;
     if (!is_zero(roll) || !is_zero(pitch)) {
         Matrix3f rotation;
         rotation.from_euler(radians(roll), radians(pitch), 0);
-        thrust = rotation * thrust;
-        rotor_torque = rotation * rotor_torque;
+        actual_thrust_vector = rotation * thrust_vector;
     }
+
+    // calculate velocity into prop, clipping at zero
+    float velocity_in = MAX(0, -motor_vel.projected(actual_thrust_vector).z);
+
+    // get thrust for motor at its current tilt
+    float motor_thrust = thrust_sign * calc_thrust(command, air_density, velocity_in, voltage_scale);
+
+    // the yaw torque of the motor. A variable-pitch rotor spins in
+    // the same direction regardless of blade pitch sign, so the drag
+    // torque reaction on the frame does not reverse with negative
+    // thrust
+    const float yaw_scale = 0.05 * diagonal_size * motor_thrust * thrust_sign;
+    Vector3f rotor_torque = actual_thrust_vector * yaw_factor * command * yaw_scale * -1.0;
+
+    // thrust in bodyframe NED
+    thrust = actual_thrust_vector * motor_thrust;
 
     if (use_drag) {
         // Momentum drag is modelled as isotropic, scaled by the total
