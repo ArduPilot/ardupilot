@@ -395,6 +395,14 @@ TEST(MathTest, Constrain)
     EXPECT_EQ(1.0f, constrain_float(nanf("0x4152"), 1.0f, 1.0f));
     EXPECT_EQ(1.0f, constrain_value(nanf("0x4152"), 1.0f, 1.0f));
 #endif
+
+    // inverted limits are a caller bug, flagged in SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && defined(HAL_DEBUG_BUILD)
+    EXPECT_EXIT(constrain_float(1.0f, 2.0f, 0.5f), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::invalid arguments");
+#else
+    EXPECT_EQ(2.0f, constrain_float(1.0f, 2.0f, 0.5f));
+    EXPECT_EQ(0.5f, constrain_float(3.0f, 2.0f, 0.5f));
+#endif
 }
 
 TEST(MathWrapTest, Angle180)
