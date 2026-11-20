@@ -245,13 +245,19 @@ void AP_Mount_XFRobot::read_incoming_packets()
             continue;
         }
 
+        // reset before writing if the previous message filled the buffer
+        if (msg_buff_len >= ARRAY_SIZE(msg_buff.bytes)) {
+            msg_buff_len = 0;
+            parser.state = ParseState::WAITING_FOR_HEADER1;
+        }
+
+        // discard bytes until the first header byte is found
+        if (parser.state == ParseState::WAITING_FOR_HEADER1 && b != RECV_HEADER1) {
+            continue;
+        }
+
         // add latest byte to buffer
         msg_buff.bytes[msg_buff_len++] = b;
-
-        // protect against overly long messages
-        if (msg_buff_len > AP_MOUNT_XFROBOT_RECV_LENGTH_MAX) {
-            reset_parser = true;
-        }
 
         // process byte depending upon current state
         switch (parser.state) {
