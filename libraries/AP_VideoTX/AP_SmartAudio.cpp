@@ -178,6 +178,9 @@ void AP_SmartAudio::update_vtx_params()
                 vtx.update_configured_channel_and_band();
             }
         }
+        if (!_vtx_freq_change_pending) {
+            _freq_attempts = 0;
+        }
 
         debug("update_params(): freq %d->%d, chan: %d->%d, band: %d->%d, pwr: %d->%d, opts: %d->%d",
             vtx.get_frequency_mhz(),  vtx.get_configured_frequency_mhz(),
@@ -219,7 +222,22 @@ void AP_SmartAudio::update_vtx_params()
         } else if (_vtx_freq_change_pending) {
             debug("update frequency");
             if (_vtx_use_set_freq) {
-                set_frequency(vtx.get_configured_frequency_mhz(), false);
+                const uint16_t freq = vtx.get_configured_frequency_mhz();
+                if (freq != _freq_attempt_mhz) {
+                    _freq_attempt_mhz = freq;
+                    _freq_attempts = 0;
+                }
+                if (_freq_attempts >= VTX_MAX_FREQUENCY_ATTEMPTS) {
+                    // the VTX does not take this frequency (it may be out of
+                    // its range, or locked): stop asking so that other changes
+                    // can go out
+                    vtx.frequency_rejected();
+                    _vtx_freq_change_pending = false;
+                    _freq_attempts = 0;
+                    return;
+                }
+                _freq_attempts++;
+                set_frequency(freq, false);
             } else {
                 set_channel(vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel());
             }
@@ -517,7 +535,14 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     AP_VideoTX& vtx = AP::vtx();
 
     vtx.set_enabled(true);
-    vtx.set_frequency_mhz(settings.frequency);
+    // in channel mode the settings frequency is the VTX's stored user
+    // frequency, not the one it is on, so take it from the band and channel.
+    // Mode bit 0 is set in frequency mode, as print_settings() reads it
+    if ((settings.mode & 1) || settings.band >= AP_VideoTX::MAX_BANDS) {
+        vtx.set_frequency_mhz(settings.frequency);
+    } else {
+        vtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(settings.band, settings.channel));
+    }
     vtx.set_band(settings.band);
     vtx.set_channel(settings.channel);
     // SA21 sends us a complete packet with the supported power levels
@@ -620,10 +645,11 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U16ResponseFrame *resp = (const U16ResponseFrame *)buffer;
-        unpack_frequency(&settings, resp->payload);
+        unpack_frequency(&settings, be16toh(resp->payload));
+        // the reply says what the VTX is now on. The configuration is what
+        // the user set and is left alone, so a change made while the command
+        // was in flight is still sent
         vtx.set_frequency_mhz(settings.frequency);
-        vtx.set_configured_frequency_mhz(vtx.get_frequency_mhz());
-        vtx.update_configured_channel_and_band();
         debug("Frequency was set to %d", settings.frequency);
     }
         break;
@@ -633,11 +659,14 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U8ResponseFrame *resp = (const U8ResponseFrame *)buffer;
-        vtx.set_band(resp->payload / VTX_MAX_CHANNELS);
-        vtx.set_channel(resp->payload % VTX_MAX_CHANNELS);
-        vtx.set_configured_channel(vtx.get_channel());
-        vtx.set_configured_band(vtx.get_band());
-        vtx.update_configured_frequency();
+        // as for SET_FREQUENCY, only what the VTX is on is updated
+        const uint8_t band = resp->payload / VTX_MAX_CHANNELS;
+        const uint8_t channel = resp->payload % VTX_MAX_CHANNELS;
+        vtx.set_band(band);
+        vtx.set_channel(channel);
+        if (band < AP_VideoTX::MAX_BANDS) {
+            vtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(band, channel));
+        }
         debug("Channel was set to %d", resp->payload);
     }
         break;

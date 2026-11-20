@@ -188,6 +188,17 @@ bool AP_VideoTX::get_band_and_channel(uint16_t freq, VideoBand& band, uint8_t& c
     return false;
 }
 
+void AP_VideoTX::frequency_rejected(bool warn)
+{
+    if (warn && !configured_rejected()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: rejected frequency %uMHz", unsigned(_frequency_mhz.get()));
+    }
+    _rejected = true;
+    _rejected_band = _band;
+    _rejected_channel = _channel;
+    _rejected_frequency = _frequency_mhz;
+}
+
 // set the current power
 void AP_VideoTX::set_configured_power_mw(uint16_t power)
 {
@@ -437,7 +448,9 @@ void AP_VideoTX::update(void)
         if (_power_levels[find_current_power()].active == PowerActive::Inactive) {
             // reset to something we know works
             debug("power reset to %dmw from %dmw", get_power_mw(), _power_mw.get());
-            _power_mw.set_and_save(get_power_mw());
+            // for this boot only: what the VTX supports is never saved over
+            // the user's setting
+            _power_mw.set(get_power_mw());
         }
     }
 }
@@ -543,24 +556,23 @@ bool AP_VideoTX::set_defaults()
         }
     }
 
+    // settings the user has not set follow the VTX, for this boot only: what
+    // the VTX reports is never saved over the parameters
     if (!_options.configured()) {
-        _options.set_and_save(_current_options);
-    }
-    if (!_channel.configured()) {
-        _channel.set_and_save(_current_channel);
-    }
-    if (!_band.configured()) {
-        _band.set_and_save(_current_band);
+        _options.set(_current_options);
     }
     if (!_power_mw.configured()) {
-        _power_mw.set_and_save(get_power_mw());
+        _power_mw.set(get_power_mw());
     }
-    if (!_frequency_mhz.configured()) {
-        _frequency_mhz.set_and_save(_current_frequency);
-    }
-
-    // Now check that the user didn't screw up by selecting incompatible options
-    if (_frequency_mhz != get_frequency_mhz(_band, _channel)) {
+    // band, channel and frequency are one setting: if the user has set any of
+    // them (a channel of 1 is the default, so it is often not stored) the VTX
+    // is tuned to it, otherwise it follows the VTX
+    if (!_band.configured() && !_channel.configured() && !_frequency_mhz.configured()) {
+        _band.set(_current_band);
+        _channel.set(_current_channel);
+        _frequency_mhz.set(_current_frequency);
+    } else if (_frequency_mhz != get_frequency_mhz(_band, _channel)) {
+        // the user's settings disagree, e.g. a frequency set without a band
         if (_frequency_mhz > 0) {
             update_configured_channel_and_band();
         } else {

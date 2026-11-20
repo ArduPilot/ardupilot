@@ -179,6 +179,9 @@ private:
     uint16_t _packets_rcvd;
 
     bool _vtx_freq_change_pending; // a vtx command has been issued but not confirmed by a vtx broadcast frame
+    // frequency last sent by SET_FREQUENCY and how many times in a row
+    uint16_t _freq_attempt_mhz;
+    uint8_t _freq_attempts;
     bool _vtx_power_change_pending;
     bool _vtx_options_change_pending;
     bool _vtx_changes_pending;
