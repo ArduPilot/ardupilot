@@ -248,10 +248,15 @@ void AP_AIS::update()
 }
 
 // Send a AIS mavlink message
-void AP_AIS::send(mavlink_channel_t chan)
+bool AP_AIS::send(mavlink_channel_t chan)
 {
     if (!enabled()) {
-        return;
+        return true;
+    }
+
+    // check before choosing a vessel, as choosing one marks it as sent
+    if (!HAVE_PAYLOAD_SPACE(chan, AIS_VESSEL)) {
+        return false;
     }
 
     const uint16_t list_size = _list.max_items();
@@ -269,9 +274,10 @@ void AP_AIS::send(mavlink_channel_t chan)
                 _list[_send_index].last_send_ms = now;
                 _list[_send_index].info.tslc = (now - _list[_send_index].last_update_ms) * 0.001;
                 mavlink_msg_ais_vessel_send_struct(chan,&_list[_send_index].info);
-                return;
+                return true;
         }
     }
+    return true;
 }
 
 #if AP_OADATABASE_ENABLED
@@ -1149,7 +1155,7 @@ bool AP_AIS::enabled() const { return false; }
 
 void AP_AIS::init() {};
 void AP_AIS::update() {};
-void AP_AIS::send(mavlink_channel_t chan) {};
+bool AP_AIS::send(mavlink_channel_t chan) { return true; };
 
 AP_AIS *AP_AIS::get_singleton() { return nullptr; }
 
