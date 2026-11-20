@@ -904,7 +904,12 @@ void AC_PosControl::D_init_controller()
     _pos_target_ned_m.z = _pos_estimate_ned_m.z;
     _pos_desired_ned_m.z = _pos_target_ned_m.z - _pos_offset_ned_m.z;
 
-    _vel_target_ned_ms.z = _vel_estimate_ned_ms.z;
+    // scale the target so the velocity PID P and FF terms cancel on the first cycle:
+    //   0 = (target - measurement) * kP + target * kFF, so target = measurement * kP / (kP + kFF)
+    // negative FF is not compensated, and the target is the measurement if kP + kFF is not positive
+    const float kP = _pid_vel_d_m.kP();
+    const float kP_plus_kFF = kP + MAX(_pid_vel_d_m.ff(), 0.0f);
+    _vel_target_ned_ms.z = _vel_estimate_ned_ms.z * (is_positive(kP_plus_kFF) ? kP / kP_plus_kFF : 1.0f);
     _vel_desired_ned_ms.z = _vel_target_ned_ms.z - _vel_offset_ned_ms.z;
 
     // Reset I term of velocity PID
