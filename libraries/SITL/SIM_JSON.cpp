@@ -91,6 +91,14 @@ void JSON::set_interface_ports(const char* address, const int port_in, const int
     sock.set_blocking(false);
     sock.reuseaddress();
 
+    // Bind input port only if explicitly specified (port_in > 0).
+    // If port_in is 0, leave it ephemeral (0) to avoid socket collision with the simulator backend.
+    if (port_in > 0) {
+        if (!sock.bind("0.0.0.0", port_in)) {
+            ::printf("SIM_JSON: Failed to bind input port %u - %s\n", port_in, strerror(errno));
+        }
+    }
+
     if (strcmp("127.0.0.1",address) != 0) {
         target_ip = address;
     }
