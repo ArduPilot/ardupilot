@@ -215,7 +215,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
 
     // steering PID
     if (g.gcs_pid_mask & 1) {
-        pid_info = &g2.attitude_control.get_steering_rate_pid().get_pid_info();
+        pid_info = &g2.attitude_control.get_steering_rate_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_STEER,
                                     degrees(pid_info->target),
                                     degrees(pid_info->actual),
