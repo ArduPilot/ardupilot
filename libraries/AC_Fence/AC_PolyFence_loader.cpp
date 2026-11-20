@@ -490,6 +490,29 @@ bool AC_PolyFence_loader::get_closest_loc_within_fence(const Location& loc, floa
         return false;
     }
 
+    // if the fence is too small for every candidate to clear margin_cm then all of them lie outside it,
+    // so the margin is halved until a point is found.  below 1cm clears_margin() accepts any point inside the fence
+    Vector2f closest_pos_cm;
+    for (float search_margin_cm = margin_cm; !find_closest_pos_within_fence(pos_cm, search_margin_cm, closest_pos_cm); search_margin_cm *= 0.5f) {
+        if (search_margin_cm < 1.0f) {
+            return false;
+        }
+    }
+
+    // return the caller's location moved horizontally, leaving its altitude and frame
+    // untouched so that the result matches the no adjustment case above
+    Location closest_loc = loaded_origin;
+    closest_loc.offset(closest_pos_cm.x * 0.01f, closest_pos_cm.y * 0.01f);
+    loc_closest = loc;
+    loc_closest.lat = closest_loc.lat;
+    loc_closest.lng = closest_loc.lng;
+    return true;
+}
+
+// helper for get_closest_loc_within_fence: finds the closest point to pos_cm that is inside the fence and,
+// where possible, at least margin_cm from the edge of every loaded polygon and circle
+bool AC_PolyFence_loader::find_closest_pos_within_fence(const Vector2f &pos_cm, float margin_cm, Vector2f &closest_pos_cm) const
+{
     // each boundary is moved margin_cm into the fence.  the closest point is either the closest point
     // on one of these moved boundaries or a point where two of them cross
     ClosestCandidate best_clear {};
@@ -557,10 +580,10 @@ bool AC_PolyFence_loader::get_closest_loc_within_fence(const Location& loc, floa
         if (!get_offset_circle(c1, margin_cm, center1_cm, radius1_cm)) {
             continue;
         }
+        // a point at the centre has no closest direction, so north is used
         const Vector2f center_to_pos_cm = pos_cm - center1_cm;
-        if (!center_to_pos_cm.is_zero()) {
-            consider_candidate(center1_cm + center_to_pos_cm.normalized() * radius1_cm, pos_cm, margin_cm, best_clear, best_inside);
-        }
+        const Vector2f direction = center_to_pos_cm.is_zero() ? Vector2f{1.0f, 0.0f} : center_to_pos_cm.normalized();
+        consider_candidate(center1_cm + direction * radius1_cm, pos_cm, margin_cm, best_clear, best_inside);
         for (uint8_t c2 = c1 + 1; c2 < offset_circle_count(); c2++) {
             Vector2f center2_cm;
             float radius2_cm;
@@ -580,14 +603,7 @@ bool AC_PolyFence_loader::get_closest_loc_within_fence(const Location& loc, floa
     if (!best.found) {
         return false;
     }
-
-    // return the caller's location moved horizontally, leaving its altitude and frame
-    // untouched so that the result matches the no adjustment case above
-    Location closest_loc = loaded_origin;
-    closest_loc.offset(best.pos_cm.x * 0.01f, best.pos_cm.y * 0.01f);
-    loc_closest = loc;
-    loc_closest.lat = closest_loc.lat;
-    loc_closest.lng = closest_loc.lng;
+    closest_pos_cm = best.pos_cm;
     return true;
 }
 
