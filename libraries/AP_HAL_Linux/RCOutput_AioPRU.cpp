@@ -97,7 +97,7 @@ void RCOutput_AioPRU::enable_ch(uint8_t ch)
 void RCOutput_AioPRU::disable_ch(uint8_t ch)
 {
    if(ch < PWM_CHAN_COUNT) {
-      pwm->channelenable &= !(1U << ch);
+      pwm->channelenable &= ~(1U << ch);
    }
 }
 
