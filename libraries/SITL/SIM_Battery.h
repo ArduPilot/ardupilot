@@ -36,6 +36,8 @@ public:
     void consume_energy(float attempted_current_amp, uint64_t now_us);
 
     float get_voltage(void) const { return voltage_filter.get(); }
+    // Get the configured maximum battery voltage in volts.
+    float get_max_voltage_v(void) const { return max_voltage; }
     float get_capacity(void) const { return capacity_Ah; }
     float get_temperature_degC(void) const { return temperature_degC; }
     bool capacity_is_unlimited(void) const { return !(is_positive(capacity_Ah)); } // for readability
