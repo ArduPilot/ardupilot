@@ -23,6 +23,7 @@ AP_Logger &AP::logger() {
     return *((AP_Logger*)nologger);  // this is not usually a good idea...
 }
 void AP_Logger::WriteBlock(void const*, unsigned short) {}
+void AP_Logger::Write_Event(LogEvent) {}
 
 class AP_HAL_DAL_Standalone : public AP_HAL::HAL {
 public:
