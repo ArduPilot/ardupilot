@@ -788,14 +788,14 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // Recover from a single-axis flow innovation lockout. When one axis is rejected for longer than
     // FLOW_AXIS_LOCKOUT_MS while the other keeps passing, the rejected axis's velocity component
     // diverges undetected because the healthy axis keeps the shared flow-fusion timer fresh, so the
-    // 5 s AID_RELATIVE timeout never fires. Re-anchor horizontal velocity to the flow measurement.
-    // The AGL KF supplies the range and its variance, so require it to be running.
+    // 5 s AID_RELATIVE timeout never fires. Re-anchor horizontal velocity to the flow measurement,
+    // scaled by the height flowResetHeight() gives, so require one.
     const uint32_t FLOW_RESET_WINDOW_MS = 20000;
     const uint32_t FLOW_RESET_DEFER_REPORT_MS = 10000;
     const uint32_t FLOW_RESET_PAUSE_MIN_MS = 5000;
     const uint32_t FLOW_RESET_PAUSE_MAX_MS = 40000;
-    if (really_fuse && !flowVelResetUnhealthy &&
-        frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKf.valid &&
+    FlowResetHeight resetHgt;
+    if (really_fuse && !flowVelResetUnhealthy && flowResetHeight(resetHgt) &&
         PV_AidingMode == AID_RELATIVE && takeOffDetected &&
         (fabsF(ofDataDelayed.flowRadXY.x) < frontend->_maxFlowRate) &&
         (fabsF(ofDataDelayed.flowRadXY.y) < frontend->_maxFlowRate)) {
@@ -808,7 +808,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         const bool axisLockout = !resetsPaused &&
                                  (MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) &&
                                  (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS);
-        const FlowResetRange rangeState = flowResetRangeState(ofDataDelayed, range);
+        const FlowResetRange rangeState = flowResetRangeState(ofDataDelayed, range, resetHgt);
         // a fast rotation can corrupt both axes at once, so reset only on a sample the other axis passed
         const bool otherAxisPassed = MIN(stale0, stale1) == 0;
         if (axisLockout && rangeState != FlowResetRange::Good) {
@@ -831,7 +831,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             flowVelResetUnhealthy = true;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow quality %u too low to recover",
                           (unsigned)imu_index, (unsigned)ofDataDelayed.quality);
-        } else if (axisLockout && otherAxisPassed && ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
+        } else if (axisLockout && otherAxisPassed && ResetVelocityToFlow(ofDataDelayed, range, resetHgt.var, posOffsetBody)) {
             flowVelResetAxis_ms[(stale0 > stale1) ? 0 : 1] = imuSampleTime_ms;
             flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
             if (flowVelResetCount < UINT8_MAX) {
@@ -880,7 +880,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
 // vertical velocity state. Inverts the flow observation model losPred = {relVelSensor.y,
 // -relVelSensor.x}/range for the two body axes flow constrains, then solves those two equations
 // for north and east velocity. Returns false when the tilt makes that system ill conditioned.
-bool NavEKF3_core::ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody)
+bool NavEKF3_core::ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype range, ftype hgtVar, const Vector3F &posOffsetBody)
 {
     // for a rotation matrix this determinant equals prevTnb.c.z, so it is the usual flow tilt check
     const ftype det = prevTnb.a.x * prevTnb.b.y - prevTnb.a.y * prevTnb.b.x;
@@ -901,10 +901,10 @@ bool NavEKF3_core::ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype r
     stateStruct.velocity.y = (rhsY * prevTnb.a.x - rhsX * prevTnb.b.x) / det;
 
     // both solved equations carry the range and the vertical velocity, so their errors are
-    // correlated and the same M^-1 rotates the pair. range is aglKf.hgt/prevTnb.c.z and c.z is det,
-    // so the AGL KF height variance scales by 1/det^2 on the way in.
+    // correlated and the same M^-1 rotates the pair. range is the height/prevTnb.c.z and c.z is det,
+    // so the height variance scales by 1/det^2 on the way in.
     const ftype flowVar = sq(MAX(frontend->_flowNoise, 0.05f) * range);
-    const ftype rangeVar = aglKf.cov[0][0] / sq(det);
+    const ftype rangeVar = hgtVar / sq(det);
     const ftype vertVar = P[6][6];
     const ftype fx = ofDataDelayed.flowRadXYcomp.x;
     const ftype fy = ofDataDelayed.flowRadXYcomp.y;
@@ -955,13 +955,17 @@ bool NavEKF3_core::InitVelocityFromFlow(const of_elements &ofDataDelayed, ftype 
     if (aglKfRestartRequested) {
         return false;
     }
-    const FlowResetRange rangeState = flowResetRangeState(ofDataDelayed, range);
+    FlowResetHeight resetHgt;
+    if (!flowResetHeight(resetHgt)) {
+        return false;
+    }
+    const FlowResetRange rangeState = flowResetRangeState(ofDataDelayed, range, resetHgt);
     if ((rangeState == FlowResetRange::Step) && !flowVelInitRestartedAglKf) {
         flowVelInitRestartedAglKf = true;
         aglKfRestartRequested = true;
         return false;
     }
-    if ((rangeState != FlowResetRange::Good) || !ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
+    if ((rangeState != FlowResetRange::Good) || !ResetVelocityToFlow(ofDataDelayed, range, resetHgt.var, posOffsetBody)) {
         return false;
     }
     flowVelInitPending = false;
@@ -975,30 +979,43 @@ bool NavEKF3_core::InitVelocityFromFlow(const of_elements &ofDataDelayed, ftype 
     return true;
 }
 
-// Whether the range under a flow sample is fit to scale a velocity reset to it, and if not why not.
-// range is the sensor-axis range the flow is scaled by, from the AGL KF height
-NavEKF3_core::FlowResetRange NavEKF3_core::flowResetRangeState(const of_elements &ofDataDelayed, ftype range) const
+// The height above ground a flow velocity reset scales by: the AGL KF's, which the flow is then
+// scaled by. False if it is not running
+bool NavEKF3_core::flowResetHeight(FlowResetHeight &resetHgt) const
 {
-    // aglKf.valid survives 5 s without a range fusion, long enough for aglKf.hgt to coast
-    // metres low, so require a range recent enough to have produced a median. The AGL KF also
-    // fuses the copies a backend sends while it holds a reading, as NMEA does for 3 s, so the
-    // reading itself must be recent too
+    if (!frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) || !aglKf.valid) {
+        return false;
+    }
+    resetHgt.hgt = aglKf.hgt;
+    resetHgt.var = aglKf.cov[0][0];
+    resetHgt.rngTime_ms = aglKf.lastRngFuseTime_ms;
+    resetHgt.restartUnconfirmed = (aglKfRestartConfirm != 0);
+    return true;
+}
+
+// Whether the range under a flow sample is fit to scale a velocity reset to it, and if not why not.
+// range is the sensor-axis range the flow is scaled by, from the height in resetHgt
+NavEKF3_core::FlowResetRange NavEKF3_core::flowResetRangeState(const of_elements &ofDataDelayed, ftype range, const FlowResetHeight &resetHgt) const
+{
+    // the height stays valid for 5 s without a range fusion, long enough to coast metres low, so
+    // require a range recent enough to have produced a median. The copies a backend sends while it
+    // holds a reading, as NMEA does for 3 s, are fused too, so the reading itself must be recent
     const uint32_t FLOW_RESET_RANGE_MAX_AGE_MS = 500;
-    if (((imuSampleTime_ms - aglKf.lastRngFuseTime_ms) >= FLOW_RESET_RANGE_MAX_AGE_MS) ||
+    if (((imuSampleTime_ms - resetHgt.rngTime_ms) >= FLOW_RESET_RANGE_MAX_AGE_MS) ||
         ((imuSampleTime_ms - rngNewReadingTime_ms) >= FLOW_RESET_RANGE_MAX_AGE_MS)) {
         return FlowResetRange::Stale;
     }
-    // after a range outage the AGL KF restarts from one sample, which the test below then
+    // after a range outage the height restarts from one sample, which the test below then
     // compares with itself, so wait for the samples that follow to confirm it
-    if (aglKfRestartConfirm != 0) {
+    if (resetHgt.restartUnconfirmed) {
         return FlowResetRange::Restarted;
     }
-    // after a step in the ground, a car bonnet say, the AGL KF height the reset scales the flow by
-    // lags the range for a while. The speed error that puts into the reset, the flow rate times the
+    // after a step in the ground, a car bonnet say, the height the reset scales the flow by lags
+    // the range for a while. The speed error that puts into the reset, the flow rate times the
     // height difference taken along the sensor axis as range is, may be no more than the flow noise
     // term the reset already allows for
     const ftype rngHgt = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
-    const ftype stepSpdErr = ofDataDelayed.flowRadXYcomp.length() * fabsF(aglKf.hgt - rngHgt) / prevTnb.c.z;
+    const ftype stepSpdErr = ofDataDelayed.flowRadXYcomp.length() * fabsF(resetHgt.hgt - rngHgt) / prevTnb.c.z;
     if (!(stepSpdErr < MAX(frontend->_flowNoise, 0.05f) * range)) {
         return FlowResetRange::Step;
     }

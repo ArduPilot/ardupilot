@@ -956,8 +956,9 @@ private:
 
     // Reset horizontal velocity to the optical-flow-derived ground velocity. Used to recover from a
     // single-axis flow innovation lockout, and to set the velocity when relative aiding starts in
-    // flight. Returns false if the tilt makes the solve ill conditioned.
-    bool ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody);
+    // flight. hgtVar is the variance of the height the range comes from (m^2). Returns false if the
+    // tilt makes the solve ill conditioned.
+    bool ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype range, ftype hgtVar, const Vector3F &posOffsetBody);
     // restart the AGL Kalman filter from one range height (m), to be confirmed by the samples that follow
     void RestartAglKf(ftype hgt);
     // whether the range under a flow sample is fit to scale a velocity reset, and if not why not
@@ -967,7 +968,16 @@ private:
         Restarted,  // the AGL KF restarted from one sample and the samples since have not confirmed it
         Step,       // the AGL KF lags a step in the ground the range has already seen
     };
-    FlowResetRange flowResetRangeState(const of_elements &ofDataDelayed, ftype range) const;
+    // the height above ground a flow velocity reset scales by, and how recently a range measured it
+    struct FlowResetHeight {
+        ftype hgt;                // height above ground (m)
+        ftype var;                // its variance (m^2)
+        uint32_t rngTime_ms;      // when a range was last fused into it
+        bool restartUnconfirmed;  // restarted from one range, and the ranges since have not confirmed it
+    };
+    FlowResetRange flowResetRangeState(const of_elements &ofDataDelayed, ftype range, const FlowResetHeight &resetHgt) const;
+    // the height a flow velocity reset scales by; false if there is none to scale by
+    bool flowResetHeight(FlowResetHeight &resetHgt) const;
     // set the horizontal velocity from a flow sample once relative aiding has started in flight; true if it did
     bool InitVelocityFromFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody);
 #endif
