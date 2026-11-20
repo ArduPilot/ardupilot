@@ -74,7 +74,7 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 256
 define AP_PERIPH_AIRSPEED_ENABLED 1
 
 # 10" DLVR sensor by default
-define HAL_AIRSPEED_TYPE_DEFAULT 10  
+define HAL_AIRSPEED_TYPE_DEFAULT 9
 define AIRSPEED_MAX_SENSORS 1
 
 # keep ROMFS uncompressed as we don't have enough RAM
