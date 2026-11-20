@@ -173,10 +173,42 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
 // this needs to be called externally.
 void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride, float altMin)
 {
+    // A sensor faster than the update rate allowed below has every usable sample averaged into the
+    // next measurement taken, as the filter treats it as the rate averaged since the last one, rather
+    // than all but one discarded. The samples are weighted equally, as only when each arrived is known,
+    // not the interval the sensor integrated it over. A gap longer than an interval leaves the samples
+    // before it out. Samples with a low quality indicator or extreme rates are not used (helps catch
+    // corrupt sensor data)
+    if (imuSampleTime_ms - flowSampleRecvTime_ms > frontend->sensorIntervalMin_ms) {
+        flowRatesSum.zero();
+        flowGyroRatesSum.zero();
+        flowSampleCount = 0;
+    }
+    flowSampleRecvTime_ms = imuSampleTime_ms;
+    if ((rawFlowQuality > 0) && (rawFlowRates.length() < 4.2f) && (rawGyroRates.length() < 4.2f) &&
+        (flowSampleCount < UINT8_MAX)) {
+        flowRatesSum += rawFlowRates;
+        flowGyroRatesSum += rawGyroRates;
+        flowSampleCount++;
+    }
+
     // limit update rate to maximum allowed by sensor buffers
     if ((imuSampleTime_ms - flowMeaTime_ms) < frontend->sensorIntervalMin_ms) {
         return;
     }
+
+    // the average of the usable samples. Where none was, this sample's body rates still feed the gyro
+    // bias estimate below, as they did before, but nothing is written
+    Vector2f flowRates;
+    Vector2f gyroRates = rawGyroRates;
+    const bool haveUsableSample = (flowSampleCount > 0);
+    if (haveUsableSample) {
+        flowRates = flowRatesSum / flowSampleCount;
+        gyroRates = flowGyroRatesSum / flowSampleCount;
+    }
+    flowRatesSum.zero();
+    flowGyroRatesSum.zero();
+    flowSampleCount = 0;
 
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
     // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
@@ -189,8 +221,8 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     // reset the accumulated body delta angle and time
     // don't do the calculation if not enough time lapsed for a reliable body rate measurement
     if (delTimeOF > 0.01f) {
-        flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_ftype((rawGyroRates.x - delAngBodyOF.x/delTimeOF),-0.1f,0.1f);
-        flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_ftype((rawGyroRates.y - delAngBodyOF.y/delTimeOF),-0.1f,0.1f);
+        flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_ftype((gyroRates.x - delAngBodyOF.x/delTimeOF),-0.1f,0.1f);
+        flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_ftype((gyroRates.y - delAngBodyOF.y/delTimeOF),-0.1f,0.1f);
         delAngBodyOF.zero();
         delTimeOF = 0.0f;
     }
@@ -198,12 +230,12 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     // need to run the optical flow takeoff detection
     detectOptFlowTakeoff();
 
-    // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
-    if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
+    // only write samples that passed the quality and rate checks above
+    if (haveUsableSample) {
         // correct flow sensor body rates for bias and write
         of_elements ofDataNew {};
-        ofDataNew.bodyRadXYZ.x = rawGyroRates.x - flowGyroBias.x;
-        ofDataNew.bodyRadXYZ.y = rawGyroRates.y - flowGyroBias.y;
+        ofDataNew.bodyRadXYZ.x = gyroRates.x - flowGyroBias.x;
+        ofDataNew.bodyRadXYZ.y = gyroRates.y - flowGyroBias.y;
         // the sensor interface doesn't provide a z axis rate so use the rate from the nav sensor instead
         if (delTimeOF > 0.001f) {
             // first preference is to use the rate averaged over the same sampling period as the flow sensor
@@ -217,7 +249,7 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         }
         // write uncorrected flow rate measurements
         // note correction for different axis and sign conventions used by the px4flow sensor
-        ofDataNew.flowRadXY = - rawFlowRates.toftype(); // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
+        ofDataNew.flowRadXY = - flowRates.toftype(); // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
         // write the flow sensor position in body frame
         ofDataNew.body_offset = posOffset.toftype();
         // write the flow sensor height override
