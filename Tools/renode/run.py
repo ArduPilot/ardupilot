@@ -663,6 +663,43 @@ def stop_renode_process(process, timeout=5):
         process.wait()
 
 
+# Renode stops a failed -e command list but keeps running, so a model that
+# fails to compile would leave a silent, idle emulator. Run the setup
+# commands from the monitor's Python and exit with this code on the first
+# failure instead.
+STARTUP_FAILED = 3
+
+STARTUP_SCRIPT = '''import System
+from Antmicro.Renode.UserInterface import CommandInteractionEater
+commands = [%s]
+interaction = monitor.Interaction
+for command in commands:
+    # nested scripts report errors through monitor.Interaction
+    eater = CommandInteractionEater()
+    monitor.Interaction = eater
+    try:
+        ok = monitor.Parse(command, eater)
+    finally:
+        monitor.Interaction = interaction
+    output = eater.GetContents()
+    for character in output or '':
+        interaction.Write(character)
+    if not ok:
+        System.Console.Error.WriteLine(
+            'Renode startup command failed: %%s\\n%%s' %% (command, eater.GetError()))
+        System.Console.Error.Flush()
+        System.Environment.Exit(%u)
+'''
+
+
+def make_startup_script(path, commands):
+    '''Write a monitor Python script that runs commands and exits on failure.'''
+    # IronPython 2 reads the script as ASCII
+    literals = ', '.join('u' + ascii(command) for command in commands)
+    path.write_text(STARTUP_SCRIPT % (literals, STARTUP_FAILED))
+    return path
+
+
 def run_renode(cmd, env, cpusel):
     '''Run Renode, optionally pinning only its emulated CPU thread.'''
     process = None
@@ -679,6 +716,8 @@ def run_renode(cmd, env, cpusel):
         signal.signal(signal.SIGTERM, terminate)
         signal.signal(signal.SIGHUP, terminate)
     pinned = set()
+    # keep our banner ahead of Renode's output when redirected
+    sys.stdout.flush()
     try:
         process = subprocess.Popen(
             cmd, env=env, start_new_session=(os.name == 'posix'))
@@ -1390,7 +1429,17 @@ def main():
     for attachment in generated['attachments']:
         print('device:  %s on %s' % (
             attachment['device']['name'], attachment['port']['name']))
-    cmd = [renode, '--disable-xwt'] + monitor + ['-e', '; '.join(commands)]
+    # 'start' runs from the -e list: running it from a startup script
+    # deadlocks with the Python peripheral hooks
+    startup = ['include @%s' % make_startup_script(state_dir / 'startup.py', commands)]
+    if 'start' in commands:
+        split = commands.index('start')
+        startup = [
+            'include @%s' % make_startup_script(state_dir / 'startup.py', commands[:split]),
+            'start',
+            'include @%s' % make_startup_script(state_dir / 'post-start.py', commands[split + 1:]),
+        ]
+    cmd = [renode, '--disable-xwt'] + monitor + ['-e', '; '.join(startup)]
     if args.dfu:
         try:
             dfu_device = dfu.DfuDevice(

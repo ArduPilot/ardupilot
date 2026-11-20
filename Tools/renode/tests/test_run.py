@@ -183,3 +183,46 @@ def test_convert_hex_firmware_ignores_bootloader(tmp_path):
         source, destination, APP_BASE, FLASH_SIZE)
 
     assert destination.read_bytes() == b'\x01\x02\x03'
+
+
+def run_startup_script(tmp_path, commands):
+    executable = Path(os.environ.get(
+        'RENODE', MODULE_PATH.parents[2] / 'build/renode/renode'))
+    if not executable.is_file():
+        pytest.skip('build Renode or set RENODE')
+    script = renode_run.make_startup_script(tmp_path / 'startup.py', commands)
+    return subprocess.run(
+        [str(executable.resolve()), '--disable-xwt', '--console', '--plain',
+         '-e', 'include @%s; quit' % script],
+        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT, text=True, timeout=120,
+        env=dict(os.environ, TMPDIR=str(tmp_path),
+                 XDG_CONFIG_HOME=str(tmp_path / 'xdg')))
+
+
+def test_startup_script_quotes_commands(tmp_path):
+    commands = ['$a=@/path with space', 'cpu AddHook 0 "monitor.Parse(\'x\')"',
+                '$b=@/home/j\u00f6rg']
+    script = renode_run.make_startup_script(tmp_path / 'startup.py', commands)
+    assert script.read_bytes().isascii()
+    line = next(line for line in script.read_text().splitlines()
+                if line.startswith('commands = '))
+    assert eval(line.split('=', 1)[1]) == commands
+
+
+def test_startup_script_exits_on_nested_compile_error(tmp_path):
+    model = tmp_path / 'Broken.cs'
+    model.write_text('namespace X { class Broken { int f = "x"; } }\n')
+    nested = tmp_path / 'nested.resc'
+    nested.write_text('include @%s\n' % model)
+    result = run_startup_script(
+        tmp_path, ['include @%s' % nested, 'echo "not reached"'])
+    assert result.returncode == renode_run.STARTUP_FAILED
+    assert 'error CS0029' in result.stdout
+    assert 'not reached' not in result.stdout
+
+
+def test_startup_script_runs_all_commands(tmp_path):
+    result = run_startup_script(tmp_path, ['$x=@/home/j\u00f6rg', 'echo "reached"'])
+    assert result.returncode == 0
+    assert 'reached' in result.stdout
