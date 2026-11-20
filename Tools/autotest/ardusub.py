@@ -1246,6 +1246,43 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 f"Did not get good TEMP message (want {temp_min} < Temp < {temp_max})")
 
+    def MLX90614(self):
+        '''test the MLX90614 driver reports the object temperature'''
+        self.set_parameters({
+            'TEMP1_TYPE': 7,
+            'TEMP1_BUS': 0,
+            'TEMP1_ADDR': 0x5A,
+            'TEMP_LOG': 1,
+        })
+        self.reboot_sitl()
+        self.context_push()
+        self.set_parameter('LOG_DISARMED', 1)
+        self.delay_sim_time(10, reason="temperature data to be logged")
+        self.context_pop()
+
+        # the simulated sensor is pointed at something 40 degC above
+        # its own (ambient) temperature, which comes from the baro
+        ambient = self.assert_receive_message('SCALED_PRESSURE').temperature * 0.01
+        want = ambient + 40
+        self.progress(f"ambient {ambient:.1f} degC, want object temperature {want:.1f} degC")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        count = 0
+        while True:
+            m = dfreader.recv_match(type='TEMP')
+            if m is None:
+                break
+            if count == 0 and m.Temp == 0:
+                # logged before the first reading
+                continue
+            count += 1
+            if abs(m.Temp - want) > 5:
+                raise NotAchievedException(
+                    f"Bad MLX90614 temperature {m.Temp:.1f} (want {want:.1f}, ambient {ambient:.1f})")
+        if count == 0:
+            raise NotAchievedException("No TEMP messages logged")
+        self.progress(f"{count} TEMP messages near {want:.1f} degC")
+
     def MAV_mgs(self):
         '''test individual GCS backends timestamps'''
         self.reboot_sitl()
@@ -1912,6 +1949,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.INA3221,
             self.PosHoldBounceBack,
             self.SHT3X,
+            self.MLX90614,
             self.SurfaceSensorless,
             self.GPSForYaw,
             self.WaterDepth,
