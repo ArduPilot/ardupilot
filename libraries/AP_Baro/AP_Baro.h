@@ -55,9 +55,18 @@ public:
     void update(void);
 
     // healthy - returns true if sensor and derived altitude are good
-    bool healthy(void) const { return healthy(_primary); }
+    bool healthy(void) const { return healthy(_primary) && use(_primary); }
 
     bool healthy(uint8_t instance) const;
+
+    // check if barometer is enabled for use
+    bool use(uint8_t instance) const {
+        if (instance >= BARO_MAX_INSTANCES) {
+            return false;
+        }
+        return sensors[instance].use.get() != 0;
+    }
+    bool use(void) const { return use(_primary); }
 
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
@@ -299,6 +308,7 @@ private:
         bool alt_ok;                    // true if calculated altitude is ok
         bool calibrated;                // true if calculated calibrated successfully
         AP_UInt32 bus_id;
+        AP_Int8 use;
 #if HAL_BARO_WIND_COMP_ENABLED
         WindCoeff wind_coeff;
         Vector3f dynamic_pressure;      // calculated dynamic pressure
@@ -386,6 +396,9 @@ private:
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
 
     void update_field_elevation();
+
+    // check if any physical sensor is healthy (independent of EKF use flag)
+    bool _has_healthy_sensor(void) const;
 
     // atmosphere model functions
     float get_altitude_difference_extended(float base_pressure, float pressure) const;
