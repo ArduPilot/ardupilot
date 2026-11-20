@@ -134,8 +134,7 @@ static void make_session_key(uint8_t key[8])
     struct {
         uint32_t time_us;
         uint8_t unique_id[12];
-        uint16_t rand1;
-        uint16_t rand2;
+        uint8_t random[8];
     } data {};
     static_assert(sizeof(data) % 4 == 0, "data must be multiple of 4 bytes");
 
@@ -143,8 +142,7 @@ static void make_session_key(uint8_t key[8])
     uint8_t uid_len = 12;
     hal.util->get_system_id_unformatted(data.unique_id, uid_len);
     data.time_us = AP_HAL::micros();
-    data.rand1 = get_random16();
-    data.rand2 = get_random16();
+    hal.util->get_random_vals(data.random, sizeof(data.random));
     const uint64_t c64 = crc_crc64((const uint32_t *)&data, sizeof(data)/sizeof(uint32_t));
     memcpy(key, (uint8_t *)&c64, 8);
 }
