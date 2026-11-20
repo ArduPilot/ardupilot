@@ -1,3 +1,4 @@
 # CAN
 CAN_P1_DRIVER 1  # Enables the use of CAN
 RELAY1_DEFAULT 1
+INS_ENABLE_MASK 3
