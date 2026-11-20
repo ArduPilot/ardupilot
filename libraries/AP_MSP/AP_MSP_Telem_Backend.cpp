@@ -1194,35 +1194,69 @@ void AP_MSP_Telem_Backend::msp_vtx_set_pitmode(bool pitmode)
 // index 1 == 25mW. 14dBm (25mW), 20dBm (100mW), 26dBm (400mW), 29dBm (800mW)
 static const uint16_t msp_vtx_default_power_mw[] { 25, 100, 400, 800 };
 
-// apply a one-based betaflight power index, leaving power unchanged for 0
-void AP_MSP_Telem_Backend::msp_vtx_set_power_index(uint8_t index)
+uint16_t AP_MSP_Telem_Backend::msp_vtx_power_mw_for_index(uint8_t index) const
 {
-    AP_VideoTX& vtx = AP::vtx();
+    const AP_VideoTX& vtx = AP::vtx();
     // prefer the table the VTX declared for itself, fall back to the default
     uint16_t mw = vtx.get_power_mw_for_index(index);
     if (mw == 0 && index >= 1 && index <= ARRAY_SIZE(msp_vtx_default_power_mw)) {
         mw = msp_vtx_default_power_mw[index - 1];
     }
+    return mw;
+}
+
+// apply a one-based betaflight power index, leaving power unchanged for 0
+void AP_MSP_Telem_Backend::msp_vtx_set_power_index(uint8_t index)
+{
+    const uint16_t mw = msp_vtx_power_mw_for_index(index);
     if (mw > 0) {
-        vtx.set_configured_power_mw(mw);
+        AP::vtx().set_configured_power_mw(mw);
     }
 }
 
-// convert the configured power back to the one-based index, 0 if unmatched
+// convert the configured power back to the one-based index, 0 if 0mW/unmatched
 uint8_t AP_MSP_Telem_Backend::msp_vtx_get_power_index() const
 {
     const AP_VideoTX& vtx = AP::vtx();
     const uint16_t mw = vtx.get_configured_power_mw();
+    if (mw == 0) {
+        return 0;
+    }
     const uint8_t index = vtx.get_power_index_for_mw(mw);
     if (index > 0) {
         return index;
     }
+    // clamp to the highest supported level not exceeding mw rather than
+    // returning 0, which HDZero interprets as 0mW RF shutoff
+    const uint8_t nlevels = vtx.get_num_power_levels();
+    if (nlevels > 0) {
+        uint8_t best = 1;
+        uint16_t best_mw = 0;
+        uint8_t lowest_idx = 1;
+        uint16_t lowest_mw = UINT16_MAX;
+        for (uint8_t i = 1; i <= nlevels; i++) {
+            const uint16_t level_mw = vtx.get_power_mw_for_index(i);
+            if (level_mw == 0) {
+                continue;
+            }
+            if (level_mw < lowest_mw) {
+                lowest_mw = level_mw;
+                lowest_idx = i;
+            }
+            if (level_mw <= mw && level_mw >= best_mw) {
+                best_mw = level_mw;
+                best = i;
+            }
+        }
+        return best_mw > 0 ? best : lowest_idx;
+    }
+    uint8_t best = 1;
     for (uint8_t i = 0; i < ARRAY_SIZE(msp_vtx_default_power_mw); i++) {
-        if (mw == msp_vtx_default_power_mw[i]) {
-            return i + 1;
+        if (mw >= msp_vtx_default_power_mw[i]) {
+            best = i + 1;
         }
     }
-    return 0;
+    return best;
 }
 
 // store a frequency along with the matching band/channel; all setters are
@@ -1264,20 +1298,38 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_in_vtx_config(sbuf_t *src, sb
         return MSP_RESULT_ERROR;
     }
 
+    uint8_t in_band = vtx.get_configured_band();
+    uint8_t in_channel = vtx.get_configured_channel();
+    uint16_t in_freq_mhz;
+    uint8_t in_power_idx = 0;
+    uint16_t in_power_mw = 0;
+    bool in_pitmode = false;
+    bool has_power_pit = false;
+
     // the leading u16 is overloaded: values <= VTX_MSP_BANDCHAN_CHKVAL encode
     // band and channel (band = v/8, channel = v%8, both zero based internally),
     // larger values are a direct frequency in MHz
     const uint16_t VTX_MSP_BANDCHAN_CHKVAL = (7 << 3) + 7;
     const uint16_t freq_or_bandchan = sbuf_read_u16(src);
     if (freq_or_bandchan <= VTX_MSP_BANDCHAN_CHKVAL) {
-        msp_vtx_set_band_and_channel(freq_or_bandchan / VTX_MAX_CHANNELS, freq_or_bandchan % VTX_MAX_CHANNELS);
+        in_band = freq_or_bandchan / VTX_MAX_CHANNELS;
+        in_channel = freq_or_bandchan % VTX_MAX_CHANNELS;
+        in_freq_mhz = AP_VideoTX::get_frequency_mhz(in_band, in_channel);
     } else {
-        msp_vtx_set_frequency(freq_or_bandchan);
+        in_freq_mhz = freq_or_bandchan;
+        AP_VideoTX::VideoBand calc_band;
+        uint8_t calc_chan;
+        if (AP_VideoTX::get_band_and_channel(in_freq_mhz, calc_band, calc_chan)) {
+            in_band = uint8_t(calc_band);
+            in_channel = calc_chan;
+        }
     }
 
     if (sbuf_bytes_remaining(src) >= 2) {
-        msp_vtx_set_power_index(sbuf_read_u8(src));
-        msp_vtx_set_pitmode(sbuf_read_u8(src) != 0);
+        in_power_idx = sbuf_read_u8(src);
+        in_power_mw = msp_vtx_power_mw_for_index(in_power_idx);
+        in_pitmode = (sbuf_read_u8(src) != 0);
+        has_power_pit = true;
     }
 
     // lowPowerDisarm - not supported, consume to stay aligned
@@ -1298,18 +1350,62 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_in_vtx_config(sbuf_t *src, sb
         const uint8_t channel = sbuf_read_u8(src);
         const uint16_t freq = sbuf_read_u16(src);
         if (band > 0) {
-            msp_vtx_set_band_and_channel(band - 1, channel > 0 ? channel - 1 : 0);
+            in_band = band - 1;
+            in_channel = channel > 0 ? channel - 1 : 0;
+            in_freq_mhz = AP_VideoTX::get_frequency_mhz(in_band, in_channel);
         } else {
-            msp_vtx_set_frequency(freq);
+            in_freq_mhz = freq;
+            AP_VideoTX::VideoBand calc_band;
+            uint8_t calc_chan;
+            if (AP_VideoTX::get_band_and_channel(in_freq_mhz, calc_band, calc_chan)) {
+                in_band = uint8_t(calc_band);
+                in_channel = calc_chan;
+            }
         }
+    }
+
+    // ignore duplicate unchanged MSP_SET_VTX_CONFIG frames from the air unit so
+    // periodic resends neither spam STATUSTEXT nor overwrite FC-side changes
+    if (_vtx_reported.valid
+        && in_band == _vtx_reported.band
+        && in_channel == _vtx_reported.channel
+        && in_freq_mhz == _vtx_reported.freq_mhz
+        && has_power_pit == _vtx_reported.has_power_pit
+        && (!has_power_pit || (in_power_idx == _vtx_reported.power_idx
+                               && in_power_mw == _vtx_reported.power_mw
+                               && in_pitmode == _vtx_reported.pitmode))) {
+        return MSP_RESULT_ACK;
+    }
+    _vtx_reported = { in_band, in_channel, in_freq_mhz, in_power_mw, in_power_idx, in_pitmode, has_power_pit, true };
+
+    const bool was_received = _vtx_config_received;
+    const bool changed = (in_band != vtx.get_configured_band())
+                         || (in_channel != vtx.get_configured_channel())
+                         || (in_freq_mhz != vtx.get_configured_frequency_mhz())
+                         || (has_power_pit && ((in_power_mw > 0 && in_power_mw != vtx.get_configured_power_mw())
+                                               || in_pitmode != vtx.get_configured_pitmode()));
+
+    msp_vtx_set_band_and_channel(in_band, in_channel);
+    if (in_freq_mhz != AP_VideoTX::get_frequency_mhz(in_band, in_channel)) {
+        msp_vtx_set_frequency(in_freq_mhz);
+    }
+    if (has_power_pit) {
+        if (in_power_mw > 0) {
+            vtx.set_configured_power_mw(in_power_mw);
+        }
+        msp_vtx_set_pitmode(in_pitmode);
     }
 
     vtx.set_provider_enabled(AP_VideoTX::VTXType::MSP);
     // the VTX has pushed its own config, so the boot handshake is complete and
     // we may now advertise readiness and push config changes back to it
     _vtx_config_received = true;
-    // make sure the configured values now reflect reality
-    if (!vtx.set_defaults()) {
+    // make sure the configured values now reflect reality; if set_defaults()
+    // populated unconfigured VTX_* parameters from _current_*, invalidate
+    // _vtx_reported so the air unit's next resend repairs them
+    if (vtx.set_defaults()) {
+        _vtx_reported.valid = false;
+    } else if (!was_received || changed) {
         vtx.announce_vtx_settings();
     }
     // seed the push snapshot with the VTX's own values so we only push once the
