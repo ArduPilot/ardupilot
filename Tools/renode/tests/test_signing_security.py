@@ -70,12 +70,16 @@ def provision_bootloader(source, public_key, destination):
     ])
 
 
-def build_signed_copter(board, private_key, extra_hwdef=None):
+def build_signed_copter(board, private_key, extra_hwdef=None,
+                        artifact_name=None, configure=True):
     options = ['--signed-fw', '--private-key', str(private_key)]
     if extra_hwdef is not None:
         options += ['--extra-hwdef', str(extra_hwdef)]
-    configure_and_build(board, 'copter', *options)
-    destination = OUTPUT / ('%s-arducopter.apj' % board)
+    if configure:
+        configure_and_build(board, 'copter', *options)
+    else:
+        run_checked([sys.executable, ROOT / 'waf', 'copter'])
+    destination = OUTPUT / (artifact_name or '%s-arducopter.apj' % board)
     shutil.copyfile(ROOT / 'build' / board / 'bin' / 'arducopter.apj', destination)
     return destination
 
@@ -116,7 +120,7 @@ class SocketWriter:
 
 class RenodeBoard:
     def __init__(self, dialect, renode, board, firmware, bootloader,
-                 name, timeout, expect_heartbeat=True):
+                 name, timeout):
         self.dialect = dialect
         self.timeout = timeout
         self.uart_port = free_port()
@@ -142,17 +146,10 @@ class RenodeBoard:
             start_new_session=True)
         self.sock = None
         self.mav = None
+        self.pending_messages = []
         try:
             self._connect()
-            if expect_heartbeat is True:
-                self.wait_message('HEARTBEAT', timeout)
-            elif expect_heartbeat is False:
-                try:
-                    self.wait_message('HEARTBEAT', min(timeout, 30))
-                except TimeoutError:
-                    pass
-                else:
-                    raise AssertionError('%s booted tampered firmware' % board)
+            self.wait_message('HEARTBEAT', timeout)
         except BaseException:
             self.close()
             raise
@@ -180,6 +177,10 @@ class RenodeBoard:
     def wait_message(self, message_type, timeout, predicate=None):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
+            for index, message in enumerate(self.pending_messages):
+                if (message.get_type() == message_type and
+                        (predicate is None or predicate(message))):
+                    return self.pending_messages.pop(index)
             if self.process.poll() is not None:
                 raise RuntimeError('Renode exited while waiting for %s' % message_type)
             self.sock.settimeout(min(1, max(0.01, deadline - time.monotonic())))
@@ -191,9 +192,8 @@ class RenodeBoard:
                 raise RuntimeError('Renode UART closed while waiting for %s' % message_type)
             for value in data:
                 message = self.mav.parse_char(bytes((value,)))
-                if (message is not None and message.get_type() == message_type and
-                        (predicate is None or predicate(message))):
-                    return message
+                if message is not None and message.get_type() != 'BAD_DATA':
+                    self.pending_messages.append(message)
         raise TimeoutError('timed out waiting for %s' % message_type)
 
     def secure_command(self, sequence, operation, data, signature):
@@ -274,6 +274,23 @@ def test_cubeorange_commands(dialect, renode, firmware, bootloader,
             lambda message: message.command == dialect.MAV_CMD_FLASH_BOOTLOADER)
         if reply.result != MAV_RESULT_FAILED:
             raise AssertionError('bootloader with a different trust set was accepted')
+        board.wait_message(
+            'STATUSTEXT', timeout,
+            lambda message: 'Bootloader not signed' in message.text)
+
+
+def test_matching_bootloader(dialect, renode, firmware, bootloader, timeout):
+    with RenodeBoard(
+            dialect, renode, 'CubeOrange', firmware, bootloader,
+            'cubeorange-matching-bootloader', timeout) as board:
+        board.mav.command_int_send(
+            1, 1, dialect.MAV_FRAME_GLOBAL, dialect.MAV_CMD_FLASH_BOOTLOADER,
+            0, 0, 0, 0, 0, 0, 290876, 0, 0)
+        reply = board.wait_message(
+            'COMMAND_ACK', timeout,
+            lambda message: message.command == dialect.MAV_CMD_FLASH_BOOTLOADER)
+        if reply.result != MAV_RESULT_ACCEPTED:
+            raise AssertionError('bootloader with the same trust set was rejected')
 
 
 def main():
@@ -299,13 +316,22 @@ def main():
     try:
         cubeorange_bootloader = OUTPUT / 'CubeOrange-key-a_bl.bin'
         cubeorange_base = build_bootloader('CubeOrange')
-        provision_bootloader(cubeorange_base, public_a_path, cubeorange_bootloader)
-        provision_bootloader(cubeorange_base, public_b_path, candidate_path)
+        cubeorange_base_copy = OUTPUT / 'CubeOrange-base_bl.bin'
+        shutil.copyfile(cubeorange_base, cubeorange_base_copy)
+        provision_bootloader(cubeorange_base_copy, public_a_path, cubeorange_bootloader)
+        provision_bootloader(cubeorange_base_copy, public_b_path, candidate_path)
         cubeorange_firmware = build_signed_copter(
             'CubeOrange', private_a_path, extra_hwdef)
         test_cubeorange_commands(
             dialect, args.renode, cubeorange_firmware,
             cubeorange_bootloader, private_a, args.timeout)
+        provision_bootloader(cubeorange_base_copy, public_a_path, candidate_path)
+        matching_firmware = build_signed_copter(
+            'CubeOrange', private_a_path, extra_hwdef,
+            artifact_name='CubeOrange-matching-arducopter.apj', configure=False)
+        test_matching_bootloader(
+            dialect, args.renode, matching_firmware,
+            cubeorange_bootloader, args.timeout)
     finally:
         candidate_path.unlink(missing_ok=True)
 
