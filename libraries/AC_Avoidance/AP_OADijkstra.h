@@ -122,9 +122,9 @@ private:
     // returns true if line segment intersects an inclusion polygon or circle
     bool intersects_inclusion(const Vector2f &seg_start, const Vector2f &seg_end) const;
 
-    // returns true if line segment intersects an exclusion polygon or circle.  if skip_zones_containing_start
-    // is true then exclusion zones that contain seg_start are ignored, so a segment may leave the zone it starts in
-    bool intersects_exclusion(const Vector2f &seg_start, const Vector2f &seg_end, bool skip_zones_containing_start) const;
+    // returns true if line segment intersects an exclusion polygon or circle.  if allow_leaving_start_zone
+    // is true then a segment may leave the exclusion zone it starts in but not cross back into it
+    bool intersects_exclusion(const Vector2f &seg_start, const Vector2f &seg_end, bool allow_leaving_start_zone) const;
 
     // create visibility graph for all fence (with margin) points
     // returns true on success.  returns false on failure and err_id is updated
