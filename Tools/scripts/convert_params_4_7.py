@@ -490,11 +490,21 @@ def main(argv: Optional[List[str]] = None) -> int:
     except ConversionError as e:
         logging.error("%s", e)
         return 1
-    failed = 0
+    destinations: Dict[str, str] = {}
+    conversions: List[Tuple[str, Optional[str]]] = []
     for path, root in files:
         out_path = None
-        if args.output_dir is not None:
+        if args.output_dir is not None and not args.dry_run:
             out_path = os.path.join(args.output_dir, os.path.relpath(path, root))
+            destination = os.path.normcase(os.path.realpath(out_path))
+            if destination in destinations:
+                logging.error("%s and %s both map to %s", destinations[destination], path, out_path)
+                return 1
+            destinations[destination] = path
+        conversions.append((path, out_path))
+
+    failed = 0
+    for path, out_path in conversions:
         try:
             convert_file(path, args.vehicle, args.patch, args.sig_digits, args.dry_run, out_path)
         except (ConversionError, OSError, ValueError, OverflowError) as e:
