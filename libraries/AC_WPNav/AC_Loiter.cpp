@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Loiter mode options
     // @Description: Enables optional Loiter mode behaviors
-    // @Bitmask: 0: Enable Coordinated turns
+    // @Bitmask: 0: Enable Coordinated turns, 1: Hold level yaw (Copter LOITER with a thrust-vector attitude controller)
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 7, AC_Loiter, _options, LOITER_DEFAULT_OPTIONS),
 
@@ -171,12 +171,14 @@ void AC_Loiter::set_pilot_desired_acceleration_cd(float euler_roll_angle_cd, flo
 // - Internally computes a smoothed acceleration vector based on predictive rate shaping.
 // - Inputs: `euler_roll_angle_rad`, `euler_pitch_angle_rad` in radians.
 // - Applies internal shaping using the current attitude controller dt.
-void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad)
+// - If `hold_level_yaw`, the lean is resolved at the attitude target's level yaw, otherwise at the vehicle heading.
+void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, bool hold_level_yaw)
 {
     const float dt_s = _attitude_control.get_dt_s();
+    const float heading_rad = hold_level_yaw ? _attitude_control.get_attitude_target_level_yaw_rad() : _ahrs.yaw;
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
-    const Vector3f desired_euler_rad {euler_roll_angle_rad, euler_pitch_angle_rad, _ahrs.yaw};
+    const Vector3f desired_euler_rad {euler_roll_angle_rad, euler_pitch_angle_rad, heading_rad};
     _desired_accel_ne_mss = _pos_control.lean_angles_rad_to_accel_NED_mss(desired_euler_rad).xy();
 
     // Reset brake timer if there is pilot input
@@ -194,7 +196,7 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
     _predicted_euler_angle_rad += _predicted_euler_rate * dt_s;
 
     // Convert predicted angles into an acceleration vector for braking/shaping
-    const Vector3f predicted_euler_rad {_predicted_euler_angle_rad.x, _predicted_euler_angle_rad.y, _ahrs.yaw};
+    const Vector3f predicted_euler_rad {_predicted_euler_angle_rad.x, _predicted_euler_angle_rad.y, heading_rad};
     const Vector3f predicted_accel_ned_mss = _pos_control.lean_angles_rad_to_accel_NED_mss(predicted_euler_rad);
 
     _predicted_accel_ne_mss = predicted_accel_ned_mss.xy();

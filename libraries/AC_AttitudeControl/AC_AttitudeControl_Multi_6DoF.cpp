@@ -59,7 +59,7 @@ void AC_AttitudeControl_Multi_6DoF::input_euler_angle_roll_pitch_yaw_rad(float e
 // Used for tilt-based navigation with independent yaw control.
 // The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
 // while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
-void AC_AttitudeControl_Multi_6DoF::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw)
+void AC_AttitudeControl_Multi_6DoF::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw, bool hold_level_yaw)
 {
     // convert thrust vector to a roll and pitch angles
     // this negates the advantage of using thrust vector control, but works just fine

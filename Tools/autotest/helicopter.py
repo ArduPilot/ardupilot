@@ -459,6 +459,59 @@ class AutoTestHelicopter(AutoTestCopter):
         self.fly_inverted_flight(yaw_tolerance=30)
         self.do_RTL()
 
+    def HeliLoiterInvertedStick(self):
+        '''LOITER with LOIT_OPTIONS hold level yaw while inverted: roll, pitch
+        and diagonal stick move the vehicle along the stick'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-quad'),
+            model="heli-quad:@ROMFS/models/heliquad.json",
+            wipe=True,
+        )
+        self.set_parameters({
+            "LOIT_OPTIONS": 2,
+            "RC10_OPTION": 43,  # inverted flight
+        })
+        self.set_rc(10, 1000)
+        self.zero_throttle()
+        self.set_rc(8, 1000)
+        self.takeoff(30, mode='ALT_HOLD')
+        self.set_rc(10, 2000)
+        tstart = self.get_sim_time()
+        while abs(math.degrees(self.assert_receive_message('ATTITUDE').roll)) < 150:
+            if self.get_sim_time_cached() - tstart > 15:
+                raise NotAchievedException("Did not roll inverted")
+        self.change_mode('LOITER')
+        self.set_rc(3, 1500)
+
+        # stick name, roll and pitch PWM, stick direction relative to the nose
+        for name, roll_pwm, pitch_pwm, stick_deg in [
+                ("pitch forward", 1500, 1200, 0),
+                ("roll right", 1800, 1500, 90),
+                ("diagonal back left", 1200, 1800, -135),
+        ]:
+            self.set_rc_from_map({1: 1500, 2: 1500})
+            self.wait_groundspeed(0, 1, timeout=30)
+            self.set_rc_from_map({1: roll_pwm, 2: pitch_pwm})
+            self.delay_sim_time(5, "accelerate along the stick")
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            att = self.assert_receive_message('ATTITUDE')
+            if abs(math.degrees(att.roll)) < 150:
+                raise NotAchievedException(f"{name}: not inverted (roll {math.degrees(att.roll):.1f})")
+            speed = math.hypot(m.vx, m.vy) * 0.01
+            course_deg = math.degrees(math.atan2(m.vy, m.vx))
+            err_deg = (course_deg - (math.degrees(att.yaw) + stick_deg) + 180) % 360 - 180
+            self.progress(f"{name}: speed {speed:.1f}m/s course error {err_deg:.1f}deg")
+            if speed < 3:
+                raise NotAchievedException(f"{name}: no ground speed ({speed:.1f}m/s)")
+            if abs(err_deg) > 30:
+                raise NotAchievedException(f"{name}: course {err_deg:.1f}deg off the stick")
+
+        self.set_rc_from_map({1: 1500, 2: 1500})
+        self.set_rc(10, 1000)
+        self.wait_attitude(desroll=0, despitch=0, tolerance=10, timeout=15)
+        self.do_RTL()
+
     def hover(self):
         self.progress("Setting hover collective")
         self.set_rc(3, 1500)
@@ -1462,6 +1515,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.HeliQuadFlip,
             self.HeliQuadInvertedFlight,
             self.HeliSingleInvertedFlight,
+            self.HeliLoiterInvertedStick,
             self.MountFailsafeAction,
             self.StickArmingRequiresZeroThrottle,
         ])
