@@ -88,8 +88,13 @@ void NavEKF3_core::readRangeFinder(void)
                 rangeDataNew.rng = MAX(storedRngMeas[sensorIndex][midIndex],rngOnGnd);
                 // a backend reports its last reading until the next arrives, and a reading stays in the median's
                 // window for three samples, so the median can be the reading either of the last two samples was.
-                // A log from before reading times were kept counts every sample
-                const uint32_t readTime_ms = storedRngReadTime_ms[sensorIndex][midIndex];
+                // A log from before reading times were kept counts every sample. Of equal ranges the median is
+                // whichever slot the comparisons land on, so a steady range read again, as a sensor reporting
+                // whole cm does, is the newest sample's reading
+                const uint8_t newestIndex = rngMeasIndex[sensorIndex];
+                const uint8_t readIndex = is_equal(storedRngMeas[sensorIndex][newestIndex], storedRngMeas[sensorIndex][midIndex]) ?
+                                          newestIndex : midIndex;
+                const uint32_t readTime_ms = storedRngReadTime_ms[sensorIndex][readIndex];
                 uint32_t *lastReadTime_ms = rngLastReadTime_ms[sensorIndex];
                 rangeDataNew.repeated = _rng->have_reading_time(sensorIndex) &&
                                         (readTime_ms == lastReadTime_ms[0] || readTime_ms == lastReadTime_ms[1]);
