@@ -626,6 +626,12 @@ bool AP_OADijkstra::get_point(uint16_t index, Vector2f &point) const
 // returns true if line segment intersects polygon or circular fence
 bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &seg_end) const
 {
+    return intersects_inclusion(seg_start, seg_end) || intersects_exclusion(seg_start, seg_end, false);
+}
+
+// returns true if line segment intersects an inclusion polygon or circle
+bool AP_OADijkstra::intersects_inclusion(const Vector2f &seg_start, const Vector2f &seg_end) const
+{
     // return immediately if fence is not enabled
     const AC_Fence *fence = AC_Fence::get_singleton();
     if (fence == nullptr) {
@@ -636,17 +642,6 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
     uint16_t num_points = 0;
     for (uint8_t i = 0; i < fence->polyfence().get_inclusion_polygon_count(); i++) {
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
-        if (boundary != nullptr) {
-            Vector2f intersection;
-            if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
-                return true;
-            }
-        }
-    }
-
-    // determine if segment crosses any of the exclusion polygons
-    for (uint8_t i = 0; i < fence->polyfence().get_exclusion_polygon_count(); i++) {
-        const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
         if (boundary != nullptr) {
             Vector2f intersection;
             if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
@@ -671,16 +666,50 @@ bool AP_OADijkstra::intersects_fence(const Vector2f &seg_start, const Vector2f &
         }
     }
 
+    // if we got this far then no intersection
+    return false;
+}
+
+// returns true if line segment intersects an exclusion polygon or circle.  if skip_zones_containing_start
+// is true then exclusion zones that contain seg_start are ignored, so a segment may leave the zone it starts in
+bool AP_OADijkstra::intersects_exclusion(const Vector2f &seg_start, const Vector2f &seg_end, bool skip_zones_containing_start) const
+{
+    // return immediately if fence is not enabled
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return false;
+    }
+
+    // determine if segment crosses any of the exclusion polygons
+    uint16_t num_points = 0;
+    for (uint8_t i = 0; i < fence->polyfence().get_exclusion_polygon_count(); i++) {
+        const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
+        if (boundary != nullptr) {
+            if (skip_zones_containing_start && !Polygon_outside(seg_start, boundary, num_points)) {
+                continue;
+            }
+            Vector2f intersection;
+            if (Polygon_intersects(boundary, num_points, seg_start, seg_end, intersection)) {
+                return true;
+            }
+        }
+    }
+
     // determine if segment crosses any of the exclusion circles
     for (uint8_t i = 0; i < fence->polyfence().get_exclusion_circle_count(); i++) {
         Vector2f center_pos_cm;
         float radius;
         if (fence->polyfence().get_exclusion_circle(i, center_pos_cm, radius)) {
+            const float radius_cm = radius * 100.0f;
+            if (skip_zones_containing_start && ((seg_start - center_pos_cm).length() < radius_cm)) {
+                continue;
+            }
+
             // calculate distance between circle's center and segment
             const float dist_cm = Vector2f::closest_distance_between_line_and_point(seg_start, seg_end, center_pos_cm);
 
             // intersects if distance is less than radius
-            if (dist_cm <= (radius * 100.0f)) {
+            if (dist_cm <= radius_cm) {
                 return true;
             }
         }
@@ -934,6 +963,14 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
     if (!origin_in_fence.get_vector_xy_from_origin_NE_cm(_path_source) ||
         !destination_in_fence.get_vector_xy_from_origin_NE_cm(_path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_NO_POSITION_ESTIMATE;
+        return false;
+    }
+
+    // the legs from the vehicle to the entry point and from the exit point to the destination are flown
+    // directly, so they must not cross an exclusion zone.  a vehicle inside an exclusion zone may leave it
+    if ((_path_source_relocated && intersects_exclusion(origin_cm, _path_source, true)) ||
+        (_path_destination_relocated && intersects_exclusion(_path_destination, destination_cm, false))) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
         return false;
     }
 
