@@ -1,0 +1,62 @@
+# XET model
+
+{
+    # simulate a XET helicopter.  This model was scaled from Bell 206.
+
+    # General Aircraft Data
+    "hover_lean": -3.2,
+    "nominal_rpm": 1040,
+    "coll_max": 12,
+    "coll_min": -2,
+    "coll_hover": 5,
+
+
+    # Stability and Control Derivatives
+    # scale factor, N, is 2
+    # rad/s^2/rad = 1/s^2
+    "Ma1s":7.9072,
+    "Lb1s":42.728,
+    # m/s^2/rad = m/s^2 no change
+    "Xa1s":-9.81,
+    "Yb1s":9.81,
+    # rad/s^2/m/s = 1/m*s
+    "Mu":0.1,
+    "Mv":0,
+    "Lu":0,
+    "Lv":0.2,
+    # m/s^2/m/s = 1/s
+    "Xu":-0.002,
+    "Yv":-0.005,
+    "Zw":-0.872976732794179,
+    # rad/s^2/rad/s = 1/s
+    #"Lr":-0.6223,
+    "Lr":0,
+    "Nr":-1.65531912331127,
+    "Nw":0,
+    "Nv":0,
+    # m/s^2/rad/s = m/s
+    "Yr":0.880650733427114,
+    # rad/s^2/%
+    "Ncol":0,
+    "Nped":3.6,
+    # m/s^2/%:,
+    "Zcol":-21.47,
+
+    # rotor derivatives
+    # sec
+    "tf":0.0515290549107977,
+    # rad/s/rad = 1/s
+    "Lfa1s":0.249824217080731,
+    "Mfb1s":0.976780268668445,
+    #rad/s/% = 1/s
+    "Lflt":0.870740454636168,
+    "Lflg":-0.333797053522047,
+    "Mflt":-0.0991937265072746,
+    "Mflg":0.286077953991565,
+
+    # Time Delay
+    "time_delay_rp" : 20,
+    "time_delay_ped" : 20,
+    "time_delay_col" : 20
+
+}

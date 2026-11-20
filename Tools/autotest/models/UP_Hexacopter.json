@@ -1,0 +1,32 @@
+#  UP Hexacopter model
+
+{
+    # Stability Derivatives
+
+    "Xu" : -0.22,
+    "Yv" : -0.22,
+    "Zw" : -0.28,
+    "Lv" : -1.85,
+    "Mu" : 1.85,
+    "Nr" : -0.5513,
+
+    # Control Derivatives
+    "Xlon" : 0.0,
+    "Ylat" : 0.0,
+    "Zcol" : -26.9,
+    "Llat" : 119,
+    "Mlon" : 137,
+    "Nped" : 12.16,
+
+    # Motor dynamics
+    "Lag" : 15,
+    "Lead" : 1.333,
+
+    # Time Delay
+    "time_delay_rp" : 15,
+    "time_delay_ped" : 15,
+    "time_delay_col" : 15,
+
+    "thr_hover": 0.3
+
+}
