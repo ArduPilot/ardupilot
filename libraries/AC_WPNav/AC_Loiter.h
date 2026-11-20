@@ -120,6 +120,7 @@ protected:
     AP_Float    _brake_jerk_max_msss;   // Maximum braking jerk (in m/s³) applied during braking transitions after pilot release.
     AP_Float    _brake_delay_s;         // Delay in seconds before braking begins after sticks are centered. Prevents premature deceleration during brief pauses.
     AP_UInt8    _options;               // Loiter options bit mask
+    AP_Float    _airframe_drag_coef;    // Vehicle's own drag deceleration per m/s of speed, fed forward (1/s)
 
     // Bitfields of LOITER_OPTIONS
     enum class LoiterOption {
