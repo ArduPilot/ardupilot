@@ -1,0 +1,11 @@
+# Provisional native sensor settings from the ROS 2 reference defaults.
+# Assign SERIAL1 and SERIAL2 to the measured Xsens and dedicated depth ports.
+# This file does not enable actuator outputs.
+EAHRS_TYPE 12
+EAHRS_RATE 100
+EAHRS_SENSORS 2
+SERIAL1_PROTOCOL 36
+SERIAL1_BAUD 115
+SERIAL2_PROTOCOL 51
+SERIAL2_BAUD 115
+BARO_SPEC_GRAV 1.0
