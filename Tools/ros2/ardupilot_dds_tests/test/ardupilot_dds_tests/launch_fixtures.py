@@ -40,6 +40,13 @@ def launch_sitl_copter_dds_udp_use_ns(sitl_copter_dds_udp_use_ns):
 
 
 @launch_pytest.fixture(scope="function")
+def launch_sitl_sub_dds_udp(sitl_sub_dds_udp):
+    """Launch SITL Sub with DDS over UDP."""
+    sitl_ld, sitl_actions = sitl_sub_dds_udp
+    yield LaunchDescription([sitl_ld, launch_pytest.actions.ReadyToTest()]), sitl_actions
+
+
+@launch_pytest.fixture(scope="function")
 def launch_sitl_plane_dds_serial(sitl_plane_dds_serial):
     """Launch SITL Plane with DDS over serial."""
     sitl_ld, sitl_actions = sitl_plane_dds_serial
