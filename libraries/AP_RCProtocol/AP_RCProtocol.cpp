@@ -367,6 +367,13 @@ void AP_RCProtocol::check_added_uart(void)
         // not using this uart
         return;
     }
+    if (added.opened && !added.uart->is_owned_by_current_thread() && !added.uart->is_write_locked()) {
+        // another thread has opened the port since we did, e.g. serial
+        // passthrough. Only the thread that opened it can read it, and the
+        // other user may have changed its baud rate, parity, stop bits or
+        // inversion, so open it again here with our config
+        added.opened = false;
+    }
     if (!added.opened) {
         added.opened = true;
         added.last_config_change_ms = AP_HAL::millis();

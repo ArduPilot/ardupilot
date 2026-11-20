@@ -299,8 +299,11 @@ void AP_RCProtocol_CRSF::update(void)
     // if we are in standalone mode, process data from the uart
     if (_uart) {
         uint32_t now = AP_HAL::millis();
-        // for some reason it's necessary to keep trying to start the uart until we get data
-        if (now - _last_uart_start_time_ms > 1000U && _last_frame_time_us == 0) {
+        // for some reason it's necessary to keep trying to start the uart until we get data.
+        // Start it again too if another thread has opened it since, e.g. serial passthrough,
+        // as only that thread can then read it and it may have a different baud rate
+        if ((now - _last_uart_start_time_ms > 1000U && _last_frame_time_us == 0) ||
+            (!_uart->is_owned_by_current_thread() && !_uart->is_write_locked())) {
             start_uart();
             _last_uart_start_time_ms = now;
         }
