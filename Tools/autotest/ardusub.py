@@ -291,6 +291,59 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.progress("GSC Failsafe OK")
         self.disarm_vehicle()
 
+    def MANUAL_CONTROL(self):
+        '''test MANUAL_CONTROL, including axes marked invalid with INT16_MAX'''
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.change_mode('MANUAL')
+        self.set_message_rate_hz('RC_CHANNELS', 10)
+
+        # Sub's default RC mapping: 3=throttle, 4=yaw, 5=forward, 6=lateral
+        def wait_rc(x, y, z, r, want, timeout=5):
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(f"RC channels did not reach {want}")
+                self.mav.mav.manual_control_send(
+                    1,  # target system
+                    x,  # forward
+                    y,  # lateral
+                    z,  # throttle
+                    r,  # yaw
+                    0,  # buttons
+                )
+                m = self.assert_receive_message('RC_CHANNELS', timeout=2)
+                got = {ch: getattr(m, f"chan{ch}_raw") for ch in want}
+                self.progress(f"x={x} y={y} z={z} r={r}: {got}")
+                if all(lo <= got[ch] <= hi for ch, (lo, hi) in want.items()):
+                    return
+
+        neutral = (1490, 1510)
+
+        self.start_subtest("valid axes")
+        wait_rc(0, 0, 500, 1000, {
+            3: neutral,
+            4: (1600, 1900),
+            5: neutral,
+            6: neutral,
+        })
+
+        self.start_subtest("INT16_MAX marks an axis invalid: treated as neutral")
+        invalid = 32767  # INT16_MAX
+        wait_rc(invalid, invalid, invalid, invalid, {
+            3: neutral,
+            4: neutral,
+            5: neutral,
+            6: neutral,
+        })
+
+        self.start_subtest("one invalid axis does not affect the others")
+        wait_rc(1000, invalid, 500, invalid, {
+            3: neutral,
+            4: neutral,
+            5: (1600, 1900),
+            6: neutral,
+        })
+
     # Tests actions and logic behind the radio failsafe
     def ThrottleFailsafe(self):
         '''Test RC and RC Failsafe'''
@@ -1880,6 +1933,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.DiveManual,
             self.SIMCompare,
             self.GCSFailsafe,
+            self.MANUAL_CONTROL,
             self.ThrottleFailsafe,
             self.AltitudeHold,
             self.Surftrak,

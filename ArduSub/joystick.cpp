@@ -56,6 +56,21 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
             int16_t aux5,
             int16_t aux6)
 {
+    // MANUAL_CONTROL uses INT16_MAX to mark an axis as invalid
+    // (e.g. a joystick without that axis); treat it as neutral
+    // rather than as full deflection
+    if (x == INT16_MAX) {
+        x = 0;
+    }
+    if (y == INT16_MAX) {
+        y = 0;
+    }
+    if (z == INT16_MAX) {
+        z = 500;  // 500 is neutral for throttle
+    }
+    if (r == INT16_MAX) {
+        r = 0;
+    }
 
     float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
     float throttleScale = 0.8*gain*g.throttle_gain; // Scale 0-1000 to 0-800 times gain
