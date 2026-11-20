@@ -5,6 +5,11 @@ void ModeGlide::update()
 {
     plane.nav_roll_cd = 0;
     plane.nav_pitch_cd = 0;
+    if (plane.flight_stage != AP_FixedWing::FlightStage::VTOL) {
+        // throttle is always zero, so apply the full low throttle pitch down
+        plane.nav_pitch_cd = -plane.g.stab_pitch_down * 100.0f;
+    }
+    plane.nav_pitch_cd = constrain_int32(plane.nav_pitch_cd, plane.pitch_limit_min*100, plane.aparm.pitch_limit_max.get()*100);
 }
 
 void ModeGlide::run()

@@ -1091,7 +1091,7 @@ protected:
 
 #endif
 
-// Glide mode that maintains 0 roll and pitch and zero throttle.
+// Glide mode that maintains 0 roll, STAB_PITCH_DOWN pitch and zero throttle.
 // There is no pilot input.
 // This is a failsafe mode.
 class ModeGlide : public Mode
