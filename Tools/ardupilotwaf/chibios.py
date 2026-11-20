@@ -287,7 +287,8 @@ class set_app_descriptor(Task.Task):
 
         elf_file = self.inputs[0].abspath()
         bin_file = self.inputs[1].abspath()
-        img = open(bin_file, 'rb').read()
+        extf_img = bytearray(open(self.inputs[2].abspath(), 'rb').read()) if len(self.inputs) > 2 else bytearray()
+        img = bytearray(open(bin_file, 'rb').read())
         offset = img.find(descriptor)
         if offset == -1:
             Logs.info("No APP_DESCRIPTOR found")
@@ -305,6 +306,10 @@ class set_app_descriptor(Task.Task):
             desc_len = 92
         else:
             desc_len = 16
+        # version, version_minor and board_id occupy four bytes after
+        # the descriptor body. The external image size follows them and
+        # is covered by both the internal CRC and firmware signature.
+        struct.pack_into('<I', img, offset + desc_len + 4, len(extf_img))
         img1 = bytearray(img[:offset])
         img2 = bytearray(img[offset+desc_len:])
         crc1 = to_unsigned(crc32(img1))
@@ -313,7 +318,7 @@ class set_app_descriptor(Task.Task):
         if self.generator.bld.env.AP_SIGNED_FIRMWARE:
             sig = bytearray([0 for i in range(76)])
             if self.generator.bld.env.PRIVATE_KEY:
-                sig_signed = sign_firmware(img1+img2, self.generator.bld.env.PRIVATE_KEY)
+                sig_signed = sign_firmware(img1+img2+extf_img, self.generator.bld.env.PRIVATE_KEY)
                 if sig_signed:
                     Logs.info("Signed firmware")
                     sig = sig_signed
@@ -322,18 +327,19 @@ class set_app_descriptor(Task.Task):
             desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
         else:
             desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
-        img = img[:offset] + desc + img[offset+desc_len:]
+        img[offset:offset+desc_len] = desc
         Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
         open(bin_file, 'wb').write(img)
 
-        elf_img = open(elf_file,'rb').read()
+        elf_img = bytearray(open(elf_file,'rb').read())
         zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
         elf_ofs = elf_img.find(zero_descriptor)
         if elf_ofs == -1:
             Logs.info("No APP_DESCRIPTOR found in elf file")
             return
         elf_ofs += len(descriptor)
-        elf_img = elf_img[:elf_ofs] + desc + elf_img[elf_ofs+desc_len:]
+        elf_img[elf_ofs:elf_ofs+desc_len] = desc
+        struct.pack_into('<I', elf_img, elf_ofs+desc_len+4, len(extf_img))
         Logs.info("Applying APP_DESCRIPTOR %08x%08x to elf" % (crc1, crc2))
         open(elf_file, 'wb').write(elf_img)
 
@@ -470,7 +476,7 @@ def chibios_firmware(self):
 
     # we need to setup the app descriptor so the bootloader can validate the firmware
     if not self.bld.env.BOOTLOADER:
-        app_descriptor_task = self.create_task('set_app_descriptor', src=[link_output,bin_target[0]])
+        app_descriptor_task = self.create_task('set_app_descriptor', src=[link_output] + bin_target)
         app_descriptor_task.set_run_after(generate_bin_task)
         generate_apj_task.set_run_after(app_descriptor_task)
         if hex_task is not None:
