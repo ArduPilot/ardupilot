@@ -115,26 +115,7 @@ static_assert(sizeof(app_descriptor_unsigned) == APP_DESCRIPTOR_UNSIGNED_TOTAL_L
 static_assert(sizeof(app_descriptor_signed) == APP_DESCRIPTOR_SIGNED_TOTAL_LENGTH, "app_descriptor_signed incorrect length");
 
 #if AP_SIGNED_FIRMWARE
-
-#define AP_PUBLIC_KEY_LEN 32
-#define AP_PUBLIC_KEY_MAX_KEYS 10
-#define AP_PUBLIC_KEY_SIGNATURE {0x4e, 0xcf, 0x4e, 0xa5, 0xa6, 0xb6, 0xf7, 0x29}
-
-struct PACKED ap_secure_data {
-    uint8_t sig[8] = AP_PUBLIC_KEY_SIGNATURE;
-    struct PACKED {
-        uint8_t key[AP_PUBLIC_KEY_LEN] = {};
-    } public_key[AP_PUBLIC_KEY_MAX_KEYS];
-};
-
-static inline bool ap_public_key_is_zero(const uint8_t key[AP_PUBLIC_KEY_LEN])
-{
-    uint8_t key_bytes = 0;
-    for (uint8_t i = 0; i < AP_PUBLIC_KEY_LEN; i++) {
-        key_bytes |= key[i];
-    }
-    return key_bytes == 0;
-}
+#include "AP_CheckFirmware_Signing.h"
 #endif
 
 #ifdef HAL_BOOTLOADER_BUILD
