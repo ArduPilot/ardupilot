@@ -129,7 +129,7 @@ ap_secure_command_sequence AP_CheckFirmware::secure_command_sequence;
 /*
   make a session key
  */
-static void make_session_key(uint8_t key[8])
+static bool make_session_key(uint8_t key[8])
 {
     struct {
         uint32_t time_us;
@@ -142,9 +142,12 @@ static void make_session_key(uint8_t key[8])
     uint8_t uid_len = 12;
     hal.util->get_system_id_unformatted(data.unique_id, uid_len);
     data.time_us = AP_HAL::micros();
-    hal.util->get_random_vals(data.random, sizeof(data.random));
+    if (!hal.util->get_true_random_vals(data.random, sizeof(data.random), 100U * 1000U)) {
+        return false;
+    }
     const uint64_t c64 = crc_crc64((const uint32_t *)&data, sizeof(data)/sizeof(uint32_t));
     memcpy(key, (uint8_t *)&c64, 8);
+    return true;
 }
 
 
@@ -259,7 +262,10 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
     switch (pkt.operation) {
 
     case SECURE_COMMAND_GET_SESSION_KEY: {
-        make_session_key(session_key);
+        if (!make_session_key(session_key)) {
+            reply.result = MAV_RESULT_FAILED;
+            break;
+        }
         secure_command_sequence.reset();
         reply.data_length = sizeof(session_key);
         memcpy(reply.data, session_key, reply.data_length);
