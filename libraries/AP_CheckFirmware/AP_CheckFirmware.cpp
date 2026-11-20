@@ -53,26 +53,11 @@ static check_fw_result_t check_firmware_signature(const app_descriptor_signed *a
         return check_fw_result_t::FAIL_REASON_BAD_FIRMWARE_SIGNATURE;
     }
 
-    /*
-      look over all public keys, if one matches then we are OK
-     */
-    bool signature_ok = false;
-    for (const auto &public_key : public_keys.public_key) {
-        if (ap_public_key_is_zero(public_key.key)) {
-            continue;
-        }
-        crypto_check_ctx ctx {};
-        crypto_check_ctx_abstract *actx = (crypto_check_ctx_abstract*)&ctx;
-        crypto_check_init(actx, &ad->signature[sizeof(sig_version)], public_key.key);
-
-        crypto_check_update(actx, flash1, len1);
-        crypto_check_update(actx, flash2, len2);
-        if (crypto_check_final(actx) == 0) {
-            signature_ok = true;
-            break;
-        }
-    }
-    if (!signature_ok) {
+    const struct ap_signature_buffer buffers[] {
+        { flash1, len1 },
+        { flash2, len2 },
+    };
+    if (!ap_check_signature(public_keys, &ad->signature[sizeof(sig_version)], buffers, 2)) {
         return check_fw_result_t::FAIL_REASON_VERIFICATION;
     }
 
