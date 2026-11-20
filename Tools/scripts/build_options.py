@@ -5,6 +5,9 @@ AP_FLAKE8_CLEAN
 
 '''
 
+from typing import Iterable
+from typing import Set
+
 
 class Feature:
     '''defines a feature which can be built into the firmware, along with
@@ -26,6 +29,9 @@ class Feature:
     def config_option(self):
         '''the name of the configure option to be used by waf'''
         return "enable-" + self.label.replace(" ", "-")
+
+    def __hash__(self):
+        return hash(self.label)
 
 
 # list of build options to offer
@@ -558,6 +564,41 @@ BUILD_OPTIONS = [
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
+
+
+class BuildOptions():
+    '''convenience methods for working with build options'''
+
+    def update_get_required_features_for_feature(self, ret: Set[Feature], feature: Feature) -> None:
+        '''recursive function to add feature and everything it depends on
+        to ret'''
+        ret.add(feature)
+        if feature.dependency is None:
+            return
+        for depname in feature.dependency.split(','):
+            dep = None
+            for f in BUILD_OPTIONS:
+                if f.label == depname:
+                    dep = f
+            if dep is None:
+                raise ValueError("Invalid dep (%s) for feature (%s)" %
+                                 (depname, feature.label))
+            self.update_get_required_features_for_feature(ret, dep)
+
+    def get_required_features_for_feature(self, feature: Feature) -> Set[Feature]:
+        '''returns feature and everything it depends on'''
+        ret = set()
+        self.update_get_required_features_for_feature(ret, feature)
+        return ret
+
+    def get_enable_defines_for_feature(self, feature: Feature) -> Set[str]:
+        '''returns defines required to turn feature on'''
+        return set(f.define for f in self.get_required_features_for_feature(feature))
+
+    def options(self) -> Iterable[Feature]:
+        '''returns list of all build options'''
+        return BUILD_OPTIONS
+
 
 # sanity check the list to ensure names don't get too long.  These are
 # used in various displays, so a good English "name" for the feature

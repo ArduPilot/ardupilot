@@ -2,12 +2,6 @@
 #include <AP_SerialManager/AP_SerialManager_config.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
 
-#if defined(AP_NETWORKING_BACKEND_PPP) && !defined(AP_NETWORKING_ENABLED)
-// allow --enable-PPP to enable networking
-#define AP_NETWORKING_ENABLED AP_NETWORKING_BACKEND_PPP
-#endif
-
-
 #ifndef AP_NETWORKING_ENABLED
 #if !defined(__APPLE__) && defined(__clang__)
 // clang fails on linux
@@ -15,6 +9,11 @@
 #else
 #define AP_NETWORKING_ENABLED ((CONFIG_HAL_BOARD == HAL_BOARD_LINUX) || (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
 #endif
+#endif
+
+#if defined(AP_NETWORKING_BACKEND_PPP) && AP_NETWORKING_BACKEND_PPP && !AP_NETWORKING_ENABLED
+// waf and the hwdef files enable networking along with PPP
+#error AP_NETWORKING_BACKEND_PPP requires AP_NETWORKING_ENABLED
 #endif
 
 #ifndef AP_NETWORKING_BACKEND_DEFAULT_ENABLED
