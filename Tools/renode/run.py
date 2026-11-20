@@ -26,6 +26,7 @@ import errno
 import json
 import os
 import secrets
+import select
 import shutil
 import signal
 import socket
@@ -47,6 +48,8 @@ import dfu
 import fat_image
 import gen_board
 import renode_data
+
+from process_utils import arm_parent_death_signal
 
 EXT_FLASH_BASE = gen_board.EXT_FLASH_BASE
 SHF_ALLOC = 0x2
@@ -700,7 +703,29 @@ def make_startup_script(path, commands):
     return path
 
 
-def run_renode(cmd, env, cpusel):
+def output_pipe_disconnected(streams=(sys.stdout, sys.stderr)):
+    '''Return true when a captured output pipe no longer has a reader.'''
+    if not hasattr(select, 'poll'):
+        return False
+    poller = select.poll()
+    registered = False
+    for stream in streams:
+        try:
+            fd = stream.fileno()
+            mode = os.fstat(fd).st_mode
+        except (AttributeError, OSError, ValueError):
+            continue
+        if not stat.S_ISFIFO(mode):
+            continue
+        poller.register(fd, select.POLLERR | select.POLLHUP | select.POLLNVAL)
+        registered = True
+    if not registered:
+        return False
+    failure = select.POLLERR | select.POLLHUP | select.POLLNVAL
+    return any(events & failure for _fd, events in poller.poll(0))
+
+
+def run_renode(cmd, env, cpusel, launcher_pid):
     '''Run Renode, optionally pinning only its emulated CPU thread.'''
     process = None
     # a signal while Popen runs is deferred so the child is always reaped
@@ -719,24 +744,30 @@ def run_renode(cmd, env, cpusel):
     # keep our banner ahead of Renode's output when redirected
     sys.stdout.flush()
     try:
+        run_pid = os.getpid()
         process = subprocess.Popen(
-            cmd, env=env, start_new_session=(os.name == 'posix'))
+            cmd, env=env, start_new_session=(os.name == 'posix'),
+            preexec_fn=(lambda: arm_parent_death_signal(run_pid))
+            if sys.platform.startswith('linux') else None)
         launching = False
         if pending:
             raise SystemExit(128 + pending[0])
-        if cpusel is None:
-            return process.wait()
         while process.poll() is None:
-            live_threads = renode_cpu_threads(process.pid)
-            pinned.intersection_update(live_threads)
-            for thread_id in sorted(live_threads - pinned):
-                try:
-                    os.sched_setaffinity(thread_id, {cpusel})
-                except ProcessLookupError:
-                    continue
-                pinned.add(thread_id)
-                print('pinned Renode emulation thread %u to host CPU %u' %
-                      (thread_id, cpusel))
+            if os.getppid() != launcher_pid:
+                raise SystemExit('Renode launcher parent exited')
+            if output_pipe_disconnected():
+                raise SystemExit('Renode launcher output disconnected')
+            if cpusel is not None:
+                live_threads = renode_cpu_threads(process.pid)
+                pinned.intersection_update(live_threads)
+                for thread_id in sorted(live_threads - pinned):
+                    try:
+                        os.sched_setaffinity(thread_id, {cpusel})
+                    except ProcessLookupError:
+                        continue
+                    pinned.add(thread_id)
+                    print('pinned Renode emulation thread %u to host CPU %u' %
+                          (thread_id, cpusel))
             time.sleep(0.05 if not pinned else 0.5)
         return process.returncode
     except BaseException as error:
@@ -748,6 +779,7 @@ def run_renode(cmd, env, cpusel):
 
 
 def main():
+    launcher_pid = os.getppid()
     root = Path(__file__).resolve().parents[2]
     boards = gen_board.supported_boards(root)
 
@@ -1475,7 +1507,7 @@ def main():
                 '--node-id', str(node_id),
             ]))
         try:
-            ret = run_renode(cmd, env, args.cpusel)
+            ret = run_renode(cmd, env, args.cpusel, launcher_pid)
         except KeyboardInterrupt:
             ret = 130
         except OSError as error:

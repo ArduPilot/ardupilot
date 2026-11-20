@@ -8,11 +8,14 @@ import base64
 import importlib.util
 import json
 import os
+import select
 import shutil
+import signal
 import socket
 import struct
 import subprocess
 import sys
+import time
 import zlib
 
 from pathlib import Path
@@ -29,6 +32,101 @@ SPEC.loader.exec_module(renode_run)
 
 APP_BASE = 0x08020000
 FLASH_SIZE = 2 * 1024 * 1024
+
+
+@pytest.mark.skipif(not sys.platform.startswith('linux'),
+                    reason='requires Linux parent-death signals')
+def test_parent_death_signal_stops_child():
+    child_code = '''
+import os
+import signal
+import sys
+import time
+sys.path.insert(0, sys.argv[1])
+from process_utils import arm_parent_death_signal
+arm_parent_death_signal(os.getppid(), signal.SIGTERM)
+print(os.getpid(), flush=True)
+time.sleep(30)
+'''
+    launcher_code = '''
+import subprocess
+import sys
+child = subprocess.Popen(
+    [sys.executable, '-c', sys.argv[2], sys.argv[1]],
+    stdout=subprocess.PIPE, text=True)
+print(child.stdout.readline().strip(), flush=True)
+'''
+    launcher = subprocess.Popen(
+        [sys.executable, '-c', launcher_code, str(MODULE_PATH.parent),
+         child_code], stdout=subprocess.PIPE, text=True)
+    child_pid = int(launcher.stdout.readline())
+    assert launcher.wait(timeout=5) == 0
+
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        try:
+            stat_fields = Path('/proc/%u/stat' % child_pid).read_text().split()
+        except FileNotFoundError:
+            break
+        if stat_fields[2] == 'Z':
+            break
+        time.sleep(0.05)
+    else:
+        os.kill(child_pid, signal.SIGKILL)
+        pytest.fail('child survived its parent')
+
+
+@pytest.mark.skipif(not sys.platform.startswith('linux'),
+                    reason='requires Linux parent-death signals')
+def test_parent_death_signal_overrides_deferring_handler():
+    # the parent is already gone, as seen by a child whose inherited
+    # handler would otherwise swallow the signal
+    child_code = '''
+import os
+import signal
+import sys
+sys.path.insert(0, sys.argv[1])
+from process_utils import arm_parent_death_signal
+signal.signal(signal.SIGTERM, lambda signum, frame: None)
+arm_parent_death_signal(os.getppid() + 1, signal.SIGTERM)
+'''
+    child = subprocess.run([sys.executable, '-c', child_code, str(MODULE_PATH.parent)],
+                           timeout=10)
+    assert child.returncode == -signal.SIGTERM
+
+
+@pytest.mark.skipif(not sys.platform.startswith('linux'),
+                    reason='requires Linux parent-death signals')
+def test_parent_death_signal_resets_handler_while_parent_alive():
+    child_code = '''
+import os
+import signal
+import sys
+sys.path.insert(0, sys.argv[1])
+from process_utils import arm_parent_death_signal
+signal.signal(signal.SIGTERM, lambda signum, frame: None)
+arm_parent_death_signal(os.getppid(), signal.SIGTERM)
+sys.exit(0 if signal.getsignal(signal.SIGTERM) == signal.SIG_DFL else 1)
+'''
+    child = subprocess.run([sys.executable, '-c', child_code, str(MODULE_PATH.parent)],
+                           timeout=10)
+    assert child.returncode == 0
+
+
+@pytest.mark.skipif(not hasattr(select, 'poll'),
+                    reason='requires poll support')
+def test_output_pipe_disconnect_detection():
+    read_fd, write_fd = os.pipe()
+    write_stream = os.fdopen(write_fd, 'w')
+    try:
+        assert not renode_run.output_pipe_disconnected((write_stream,))
+        os.close(read_fd)
+        read_fd = None
+        assert renode_run.output_pipe_disconnected((write_stream,))
+    finally:
+        if read_fd is not None:
+            os.close(read_fd)
+        write_stream.close()
 
 
 @pytest.mark.skipif(not hasattr(socket, 'AF_UNIX'),
