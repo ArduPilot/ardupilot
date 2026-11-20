@@ -706,13 +706,14 @@ def generate_hwdef_h(env):
     if env.HWDEF_EXTRA:
         hwdef.append(env.HWDEF_EXTRA)
 
+    build_option_defines = boards.build_option_defines(env.OPTIONS)
     hwdef_obj = chibios_hwdef.ChibiOSHWDef(
         outdir=hwdef_out,
         bootloader=bootloader_flag,
         signed_fw=bool(env.AP_SIGNED_FIRMWARE),
         mass_storage_option=get_build_option_value(env, 'MASS_STORAGE'),
         hwdef=hwdef,
-        build_option_defines=boards.build_option_defines(env.OPTIONS),
+        build_option_defines=build_option_defines,
         # stringify like old subprocess based invocation. note that no error is
         # generated if this path is missing!
         default_params_filepath=str(env.DEFAULT_PARAMETERS),
@@ -720,9 +721,8 @@ def generate_hwdef_h(env):
     )
     hwdef_obj.run()
 
-    if get_build_option_value(env, 'USB_debug_startup_wait') and not get_build_option_value(env, 'USB_debug'):
-        raise Errors.WafError('USB debug startup wait requires --enable-USB-debug')
-    if get_build_option_value(env, 'USB_debug'):
+    # --enable-USB-debug-startup-wait enables USB debug as a dependency
+    if build_option_defines.get('AP_USB_DEBUG_ENABLED'):
         if (bootloader_flag or hwdef_obj.mcu_series != 'STM32H7xx' or
                 not hwdef_obj.dual_USB_enabled or 'OTG1' not in hwdef_obj.bytype or
                 hwdef_obj.get_mcu_config('STM32_OTG2_IS_OTG1', False)):

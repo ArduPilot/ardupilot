@@ -10,7 +10,7 @@ import platform
 import glob
 
 import waflib
-from waflib import Utils, Context
+from waflib import Utils, Context, Errors
 from waflib.Configure import conf
 import json
 _board_classes = {}
@@ -35,11 +35,40 @@ def build_option_value(options, opt):
         return 0
     return None
 
+def build_option_settings(options):
+    '''{define: (value, label, label of the option it is a dependency
+    of or None)} for the build options given to waf configure, plus
+    everything the enabled ones depend on'''
+    ret = {}
+    for opt in build_options.BUILD_OPTIONS:
+        value = build_option_value(options, opt)
+        if value is not None:
+            ret[opt.define] = (value, opt.label, None)
+    helper = build_options.BuildOptions()
+    for opt in build_options.BUILD_OPTIONS:
+        if build_option_value(options, opt) != 1:
+            continue
+        for dep in sorted(helper.get_required_features_for_feature(opt), key=lambda f: f.define):
+            if dep.define not in ret:
+                ret[dep.define] = (1, dep.label, opt.label)
+            elif ret[dep.define][0] == 0:
+                raise Errors.ConfigurationError(
+                    f"{opt.label} requires {dep.label}, which is disabled")
+    return ret
+
+def check_build_options(cfg):
+    '''fail configure cleanly if the build options conflict, before the
+    hwdef scripts use them'''
+    try:
+        build_option_settings(vars(cfg.options))
+    except Errors.ConfigurationError as ex:
+        cfg.fatal(str(ex))
+
 def build_option_defines(options):
-    '''{define: 0 or 1} for the build options given to waf configure, for
-    the hwdef scripts to write those values in hwdef.h'''
-    values = {opt.define: build_option_value(options, opt) for opt in build_options.BUILD_OPTIONS}
-    return {d: v for d, v in values.items() if v is not None}
+    '''{define: 0 or 1} for the build options given to waf configure and
+    their dependencies, for the hwdef scripts to write those values in
+    hwdef.h'''
+    return {d: s[0] for d, s in build_option_settings(options).items()}
 
 def add_optimisation(env, level):
     '''use the same optimisation level for C and C++'''
@@ -220,20 +249,19 @@ class Board:
             cfg.msg("GPS Debug Logging", 'no', color='YELLOW')
 
         # support enabling any option in build_options.py
-        for opt in build_options.BUILD_OPTIONS:
-            value = build_option_value(vars(cfg.options), opt)
-            if value is None:
-                continue
-            env.CXXFLAGS += ['-D%s=%u' % (opt.define, value)]
-            if value:
-                cfg.msg("Enabled %s" % opt.label, 'yes', color='GREEN')
+        for define, (value, label, dependent) in build_option_settings(vars(cfg.options)).items():
+            env.CXXFLAGS += ['-D%s=%u' % (define, value)]
+            if dependent is not None:
+                cfg.msg(f"Enabled {label} (dependency of {dependent})", 'yes', color='GREEN')
+            elif value:
+                cfg.msg("Enabled %s" % label, 'yes', color='GREEN')
             else:
-                cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
+                cfg.msg("Enabled %s" % label, 'no', color='YELLOW')
             # the option replaces any default a board set for this define:
             # DEFINES and ap_config.h come after CXXFLAGS, so they would win
-            env.DEFINES.pop(opt.define, None)
-            if cfg.is_defined(opt.define):
-                cfg.undefine(opt.define)
+            env.DEFINES.pop(define, None)
+            if cfg.is_defined(define):
+                cfg.undefine(define)
 
         # support embedding lua drivers and applets
         driver_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/drivers/*.lua"))

@@ -519,6 +519,7 @@ def configure(cfg):
         cfg.env.HWDEF_EXTRA = os.path.abspath(cfg.env.HWDEF_EXTRA)
 
     cfg.env.OPTIONS = cfg.options.__dict__
+    boards.check_build_options(cfg)
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
