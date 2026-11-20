@@ -44,8 +44,12 @@ apj = open(args.apj_file, 'r').read()
 d = json.loads(apj)
 
 # get image data
-img = zlib.decompress(base64.b64decode(d['image']))
+img = bytearray(zlib.decompress(base64.b64decode(d['image'])))
 img_len = len(img)
+if 'extf_image' in d:
+    extf_img = zlib.decompress(base64.b64decode(d['extf_image']))
+else:
+    extf_img = b''
 
 def decode_key(ktype, key):
     ktype += "_KEYV1:"
@@ -67,9 +71,20 @@ if offset == -1:
 offset += 8
 desc_len = 92
 
+# Store the external image size in the signed portion of the internal image.
+# version, version_minor and board_id occupy the preceding four bytes.
+struct.pack_into('<I', img, offset + desc_len + 4, len(extf_img))
+
+# Updating the external size changes the second internal CRC range.
+def crc32_small(data, state=0):
+    return zlib.crc32(data, state ^ 0xFFFFFFFF) ^ 0xFFFFFFFF
+
+struct.pack_into('<I', img, offset, crc32_small(img[:offset]))
+struct.pack_into('<I', img, offset + 4, crc32_small(img[offset + desc_len:]))
+
 flash1 = img[:offset]
 flash2 = img[offset+desc_len:]
-flash12 = flash1 + flash2
+flash12 = flash1 + flash2 + extf_img
 
 signature = monocypher.signature_sign(key, flash12)
 if len(signature) != sig_len:
@@ -89,6 +104,7 @@ if len(img) != img_len:
 print("Applying signature")
 
 d["image"] = base64.b64encode(zlib.compress(img,9)).decode('utf-8')
+d["extf_image_size"] = len(extf_img)
 d["signed_firmware"] = True
 
 f = open(args.apj_file, "w")
