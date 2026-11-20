@@ -11,8 +11,11 @@ static void set_key(struct ap_secure_data &keys, uint8_t index, uint8_t value)
 
 TEST(AP_CheckFirmware, ZeroKeyForgeryIsSkipped)
 {
-    const std::array<uint8_t, 5> transcript {
-        0x78, 0x56, 0x34, 0x12, 0x00
+    // SECURE_COMMAND signs both sequence and operation as little-endian
+    // uint32_t values. Sequence 14 makes this low-order Ed25519 forgery
+    // validate against an all-zero public key.
+    const std::array<uint8_t, 8> transcript {
+        0x0e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
     const std::array<uint8_t, 64> forged_signature {
         0x58, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
@@ -82,6 +85,24 @@ TEST(AP_CheckFirmware, CandidateMustPreserveExactKeyMultiset)
     set_key(candidate, 1, 0x11);
     set_key(candidate, 2, 0x33);
     EXPECT_FALSE(ap_public_key_sets_equal(current, candidate));
+}
+
+TEST(AP_CheckFirmware, SecureCommandSequenceRejectsReplay)
+{
+    ap_secure_command_sequence sequence;
+    EXPECT_TRUE(sequence.accept(100));
+    EXPECT_FALSE(sequence.accept(100));
+    EXPECT_FALSE(sequence.accept(99));
+    EXPECT_FALSE(sequence.accept(100U + (1U << 31)));
+    EXPECT_TRUE(sequence.accept(101));
+
+    sequence.reset();
+    EXPECT_TRUE(sequence.accept(UINT32_MAX));
+    EXPECT_TRUE(sequence.accept(0));
+    EXPECT_FALSE(sequence.accept(UINT32_MAX));
+
+    sequence.reset();
+    EXPECT_TRUE(sequence.accept(99));
 }
 
 static bool check_extf_signature(const uint8_t signature[64],

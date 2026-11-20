@@ -124,19 +124,7 @@ AP_CheckFirmware::bl_data *AP_CheckFirmware::read_bootloader(void)
 
 #if HAL_GCS_ENABLED
 uint8_t AP_CheckFirmware::session_key[8];
-uint32_t AP_CheckFirmware::last_secure_command_sequence;
-bool AP_CheckFirmware::have_secure_command_sequence;
-
-bool AP_CheckFirmware::is_new_secure_command_sequence(uint32_t sequence)
-{
-    if (!have_secure_command_sequence) {
-        return true;
-    }
-
-    // accept forward progress across wrap, but not the ambiguous half-range
-    const uint32_t distance = sequence - last_secure_command_sequence;
-    return distance != 0 && distance < (1U << 31);
-}
+ap_secure_command_sequence AP_CheckFirmware::secure_command_sequence;
 
 /*
   make a session key
@@ -264,19 +252,17 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
     }
 
     if (pkt.operation != SECURE_COMMAND_GET_SESSION_KEY) {
-        if (!is_new_secure_command_sequence(pkt.sequence)) {
+        if (!secure_command_sequence.accept(pkt.sequence)) {
             reply.result = MAV_RESULT_DENIED;
             goto send_reply;
         }
-        last_secure_command_sequence = pkt.sequence;
-        have_secure_command_sequence = true;
     }
 
     switch (pkt.operation) {
 
     case SECURE_COMMAND_GET_SESSION_KEY: {
         make_session_key(session_key);
-        have_secure_command_sequence = false;
+        secure_command_sequence.reset();
         reply.data_length = sizeof(session_key);
         memcpy(reply.data, session_key, reply.data_length);
         reply.result = MAV_RESULT_ACCEPTED;
