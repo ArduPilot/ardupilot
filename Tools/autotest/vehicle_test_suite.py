@@ -2095,7 +2095,8 @@ class LocationInt(object):
 
 class Test(object):
     '''a test definition - information about a test'''
-    def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None):
+    def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None,
+                 expected_internal_error: int | None = None):
         if kwargs is None:
             kwargs = {}
         self.name = function.__name__
@@ -2106,6 +2107,7 @@ class Test(object):
         self.kwargs = kwargs
         self.attempts = attempts
         self.speedup = speedup
+        self.expected_internal_error = expected_internal_error
 
 
 class Result(object):
@@ -3469,7 +3471,8 @@ class TestSuite(abc.ABC):
                                    defaults_filepath=None,
                                    wipe=False,
                                    set_streamrate_callback=None,
-                                   binary=None):
+                                   binary=None,
+                                   environment: dict | None = None):
         '''customisations could be "--serial5=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.mav.close()
@@ -3478,7 +3481,8 @@ class TestSuite(abc.ABC):
                         model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
-                        wipe=wipe)
+                        wipe=wipe,
+                        environment=environment)
         self.mav.do_connect()
         tstart = time.time()
         while True:
@@ -10351,6 +10355,12 @@ Also, ignores heartbeats not from our target system'''
 
         ex = None
         try:
+            if test.expected_internal_error is not None:
+                self.progress("Allowing expected internal error 0x%x" % test.expected_internal_error)
+                self.customise_SITL_commandline(
+                    [],
+                    environment={"SITL_EXPECTED_INTERNAL_ERROR": str(test.expected_internal_error)},
+                )
             self.check_rc_defaults()
             self.reboot_sitl_before_test()
             self.change_mode(self.default_mode())
@@ -13096,6 +13106,7 @@ Also, ignores heartbeats not from our target system'''
         old_sim_baro_count = self.get_parameter("SIM_BARO_COUNT")
         new_parameter_value = old_parameter_value + 5
         ex = None
+        reset_on_error = False
         try:
             self.set_parameter("STAT_BOOTCNT", 0)
             self.set_parameter("SIM_BARO_COUNT", -1)
@@ -13109,10 +13120,33 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Waiting for 'Config error'")
             # SYSTEM_TIME not sent in config error loop:
             self.wait_statustext("Config error", wallclock_timeout=True)
+            self.wait_statustext("Config Error: fix problem then reboot", wallclock_timeout=True)
             self.progress("Setting %s to %f" % (parameter_name, new_parameter_value))
             self.set_parameter(parameter_name, new_parameter_value)
+
+            if self.is_copter():
+                old_esc_calibration = self.get_parameter("ESC_CALIBRATION")
+                reset_on_error = True
+                self.set_parameter("ESC_CALIBRATION", 3)
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                    p1=1,
+                    p2=1,
+                    want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+                )
+                self.set_parameter("ESC_CALIBRATION", old_esc_calibration)
+                reset_on_error = False
         except Exception as e:  # noqa: BLE001
             ex = e
+
+        if ex is not None and reset_on_error:
+            # An unexpected reboot can enter ESC calibration and stop MAVLink.
+            # Restart before parameter cleanup, preserving the command failure
+            # even if recovery itself fails.
+            try:
+                self.reset_SITL_commandline()
+            finally:
+                raise ex
 
         self.progress("Resetting SIM_BARO_COUNT")
         self.set_parameter("SIM_BARO_COUNT", old_sim_baro_count)

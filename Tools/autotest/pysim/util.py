@@ -597,6 +597,7 @@ def start_SITL(binary,
                stdout_prefix=None,
                asan=False,
                unix_domain_socket=False,
+               environment: dict | None = None,
                ):
     """Launch a SITL instance."""
 
@@ -740,6 +741,32 @@ def start_SITL(binary,
         pexpect_logfile_prefix = os.path.basename(binary)
     pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
 
+    spawn_env = dict(os.environ)
+    if environment is not None:
+        spawn_env.update(environment)
+    # Tell SITL where to find dumpstack.sh and dumpcore.sh.  It looks
+    # for them relative to its working directory, which works for a
+    # serial run - that runs in the repo root - but not under
+    # --parallel, where each instance runs in its own directory and
+    # every lookup misses.  A panic there produces no backtrace at
+    # all, which is exactly when one is wanted.
+    spawn_env.setdefault('AP_SCRIPTS_DIR_PATH',
+                         os.path.abspath(reltopdir('Tools/scripts')))
+    if asan:
+        log_base = asan_log_filepath(binary=binary, model=model)
+        existing = spawn_env.get('ASAN_OPTIONS', '')
+        # Append our options after any inherited ones so that our
+        # log_path and verbosity=0 take precedence (last value wins).
+        # verbosity=0 suppresses startup noise that would make the log
+        # non-empty even when no errors are detected, and
+        # print_suppressions=0 stops the summary of the leaks we
+        # deliberately ignore doing the same.
+        our_opts = 'log_path=%s:symbolize=1:verbosity=0:print_suppressions=0' % log_base
+        spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
+        # stop llvm-symbolizer trying to fetch debug info over the
+        # network, which blocks for ~90 seconds a frame
+        spawn_env['DEBUGINFOD_URLS'] = ''
+
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
         atexit.register(kill_mac_terminal)
@@ -749,7 +776,7 @@ def start_SITL(binary,
         runme = [os.path.join(autotest_dir, "run_in_terminal_window.sh"), 'mactest']
         runme.extend(cmd)
         print(cmd)
-        out = subprocess.Popen(runme, stdout=subprocess.PIPE, cwd=cwd).communicate()[0]
+        out = subprocess.Popen(runme, stdout=subprocess.PIPE, cwd=cwd, env=spawn_env).communicate()[0]
         out = out.decode('utf-8')
         p = re.compile('tab 1 of window id (.*)')
 
@@ -769,7 +796,7 @@ def start_SITL(binary,
             print("Cannot find %s process terminal" % binary)
         child = FakeMacOSXSpawn()
     elif gdb and not os.getenv('DISPLAY'):
-        subprocess.Popen(cmd, cwd=cwd)
+        subprocess.Popen(cmd, cwd=cwd, env=spawn_env)
         atexit.register(kill_screen_gdb)
         # we are expected to return a pexpect wrapped around the
         # stdout of the ArduPilot binary.  Not going to happen until
@@ -784,29 +811,6 @@ def start_SITL(binary,
 
         first = cmd[0]
         rest = cmd[1:]
-        spawn_env = dict(os.environ)
-        # Tell SITL where to find dumpstack.sh and dumpcore.sh.  It looks
-        # for them relative to its working directory, which works for a
-        # serial run - that runs in the repo root - but not under
-        # --parallel, where each instance runs in its own directory and
-        # every lookup misses.  A panic there produces no backtrace at
-        # all, which is exactly when one is wanted.
-        spawn_env.setdefault('AP_SCRIPTS_DIR_PATH',
-                             os.path.abspath(reltopdir('Tools/scripts')))
-        if asan:
-            log_base = asan_log_filepath(binary=binary, model=model)
-            existing = spawn_env.get('ASAN_OPTIONS', '')
-            # Append our options after any inherited ones so that our
-            # log_path and verbosity=0 take precedence (last value wins).
-            # verbosity=0 suppresses startup noise that would make the log
-            # non-empty even when no errors are detected, and
-            # print_suppressions=0 stops the summary of the leaks we
-            # deliberately ignore doing the same.
-            our_opts = 'log_path=%s:symbolize=1:verbosity=0:print_suppressions=0' % log_base
-            spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
-            # stop llvm-symbolizer trying to fetch debug info over the
-            # network, which blocks for ~90 seconds a frame
-            spawn_env['DEBUGINFOD_URLS'] = ''
         child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd, env=spawn_env)
         pexpect_autoclose(child)
     if gdb or lldb:

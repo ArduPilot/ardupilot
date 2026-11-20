@@ -549,7 +549,8 @@ public:
 
     /// resume - continues the mission execution from where we last left off
     ///     previous running commands will be re-initialised
-    void resume();
+    ///     returns false if no mission command could be restarted
+    bool resume();
 
     /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
     void start_or_resume();
@@ -959,6 +960,7 @@ private:
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
 
     // internal variables
+    uint8_t                 _command_start_depth;
     bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
     uint16_t                _repeat_dist; // Distance to repeat on mission resume (m), can be set with MAV_CMD_DO_SET_RESUME_REPEAT_DIST
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
