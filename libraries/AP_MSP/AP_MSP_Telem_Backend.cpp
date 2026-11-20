@@ -506,6 +506,12 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
     case MSP_STATUS:
     case MSP_STATUS_EX:
         return msp_process_out_status(dst);
+    case MSP_BOXIDS: {
+        // bit 0 of flight_mode_flags is permanent ID 0 (BOXARM)
+        const uint8_t boxids[] { 0 };
+        sbuf_write_data(dst, boxids, sizeof(boxids));
+        return MSP_RESULT_ACK;
+    }
     case MSP_RAW_GPS:
         return msp_process_out_raw_gps(dst);
     case MSP_COMP_GPS:
@@ -1159,25 +1165,32 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RC_CHANNEL_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
-    float roll = rc().get_roll_channel().norm_input_dz();
-    float pitch = -rc().get_pitch_channel().norm_input_dz();
-    float yaw = rc().get_yaw_channel().norm_input_dz();
-    float throttle = rc().get_throttle_channel().norm_input_dz();
+    float roll = 0.0f;
+    float pitch = 0.0f;
+    float yaw = 0.0f;
+    float throttle = 0.0f;
+    if (rc().has_valid_input()) {
+        roll = rc().get_roll_channel().norm_input_dz();
+        pitch = -rc().get_pitch_channel().norm_input_dz();
+        yaw = rc().get_yaw_channel().norm_input_dz();
+        throttle = rc().get_throttle_channel().norm_input_ignore_trim();
+    }
 
     const struct PACKED {
         uint16_t a;
         uint16_t e;
         uint16_t r;
         uint16_t t;
-    } rc {
-        // send only 4 channels, MSP order is AERT
-        a : uint16_t(roll*500+1500),       // A
-        e : uint16_t(pitch*500+1500),      // E
-        r : uint16_t(yaw*500+1500),        // R
-        t : uint16_t(throttle*1000+1000)    // T
+    } rc_out {
+        // send only 4 channels, MSP order is AERT; keep neutral when RC input
+        // is invalid so zeroed radio_in cannot spoof stick-corner CMS gestures
+        a : uint16_t(roll * 500 + 1500),        // A
+        e : uint16_t(pitch * 500 + 1500),       // E
+        r : uint16_t(yaw * 500 + 1500),         // R
+        t : uint16_t(throttle * 500 + 1500)     // T
     };
 
-    sbuf_write_data(dst, &rc, sizeof(rc));
+    sbuf_write_data(dst, &rc_out, sizeof(rc_out));
     return MSP_RESULT_ACK;
 }
 #endif  // AP_RC_CHANNEL_ENABLED
