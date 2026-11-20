@@ -22045,19 +22045,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self._MAV_CMD_DO_LAND_START(self.run_cmd_int)
 
     def _MAV_CMD_SET_EKF_SOURCE_SET(self, run_cmd):
+        def assert_no_source_set_text(reason):
+            self.delay_sim_time(2, reason=reason)
+            for m in self.context_collection('STATUSTEXT'):
+                if 'EKF Source Set' in m.text:
+                    raise NotAchievedException("Unexpected text: %s" % m.text)
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
         run_cmd(
             mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET,
             17,
             want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
+        assert_no_source_set_text("denied source set must not be announced")
 
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
 
         run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        self.wait_statustext('Using EKF Source Set 2', check_context=True)
+
+        self.context_clear_collection('STATUSTEXT')
+        run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        assert_no_source_set_text("active source set must not be announced again")
 
         self.assert_prearm_failure('Need Position Estimate')
         run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 1)
+        self.wait_statustext('Using EKF Source Set 1', check_context=True)
+
+        self.context_pop()
 
         self.wait_ready_to_arm()
 
