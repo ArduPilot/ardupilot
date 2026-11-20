@@ -596,6 +596,8 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         const float vel_input_ms = !_paused ? _wp_desired_speed_ne_ms * offset_d_scalar : 0.0;
         shape_vel_accel(vel_input_ms, 0.0, _offset_vel_ms, _offset_accel_mss, -get_wp_acceleration_mss(), get_wp_acceleration_mss(),
                         _pos_control.get_shaping_jerk_NE_msss(), dt, true);
+        // never run the track backwards
+        _offset_vel_ms = MAX(_offset_vel_ms, 0.0);
         vel_dt_scalar = _offset_vel_ms / _wp_desired_speed_ne_ms;
     }
 
