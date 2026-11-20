@@ -385,6 +385,12 @@ private:
         Vector2f pos_cm;        // offset in cm from the fence origin
     };
 
+    // helper for get_closest_loc_within_fence: finds the closest point to pos_cm that is inside the fence and,
+    // where possible, at least margin_cm from the edge of every loaded polygon and circle
+    //   pos_cm, closest_pos_cm: offsets in cm from the fence origin
+    // returns false if no candidate is inside the fence
+    bool find_closest_pos_within_fence(const Vector2f &pos_cm, float margin_cm, Vector2f &closest_pos_cm) const;
+
     // helper for get_closest_loc_within_fence: tests candidate_pos_cm and keeps it as the best point that
     // clears every boundary by margin_cm, and as the best point that is merely inside the fence, if it is
     // closer to pos_cm than the best of each found so far
