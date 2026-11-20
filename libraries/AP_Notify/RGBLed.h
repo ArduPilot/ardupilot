@@ -68,6 +68,8 @@ private:
     uint32_t get_colour_sequence() const;
     uint32_t get_colour_sequence_obc() const;
     uint32_t get_colour_sequence_traffic_light() const;
+    uint32_t get_colour_sequence_port_flash() const;
+    uint32_t get_colour_sequence_starboard_flash() const;
 
     uint8_t get_brightness(void) const;
 
@@ -110,6 +112,8 @@ private:
         mavlink = 1,
         obc = 2,
         traffic_light = 3,
+        port_flash = 4,
+        starboard_flash = 5,
     };
     Source rgb_source() const;
 
