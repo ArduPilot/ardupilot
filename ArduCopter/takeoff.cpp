@@ -70,7 +70,7 @@ void Mode::_TakeOff::stop()
 // do_pilot_takeoff_ms - controls the vertical position controller during the process of taking off
 //  take off is complete when the vertical target reaches the take off altitude.
 //  climb is cancelled if pilot_climb_rate_ms becomes negative
-//  sets take off to complete when target altitude is within 1% of the take off altitude
+//  sets take off to complete when target altitude is within 0.1% of the take off climb height
 void Mode::_TakeOff::do_pilot_takeoff_ms(float pilot_climb_rate_ms)
 {
     // return pilot_climb_rate if take-off inactive
@@ -90,8 +90,7 @@ void Mode::_TakeOff::do_pilot_takeoff_ms(float pilot_climb_rate_ms)
             (is_positive(take_off_complete_alt_m - take_off_start_alt_m) && copter.pos_control->get_pos_estimate_U_m() - take_off_start_alt_m > 0.5 * (take_off_complete_alt_m - take_off_start_alt_m))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
-            // velocity > 10% maximum velocity && commanded climb rate
-            // velocity > 50% maximum velocity
+            // velocity > pilot climb rate, constrained to 10% to 50% of maximum velocity
             // altitude change greater than half complete alt from start off alt
             copter.set_land_complete(false);
         }
@@ -102,7 +101,7 @@ void Mode::_TakeOff::do_pilot_takeoff_ms(float pilot_climb_rate_ms)
         // command the aircraft to the take off altitude and current pilot climb rate
         copter.pos_control->input_pos_vel_accel_D_m(pos_d_m, vel_d_ms, 0.0);
 
-        // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
+        // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off climb height
         if (is_negative(pilot_climb_rate_ms) ||
             (take_off_complete_alt_m  - take_off_start_alt_m) * 0.999f < copter.pos_control->get_pos_desired_U_m() - take_off_start_alt_m) {
             stop();
@@ -111,7 +110,8 @@ void Mode::_TakeOff::do_pilot_takeoff_ms(float pilot_climb_rate_ms)
 }
 
 // auto_takeoff_run - controls the vertical position controller during the process of taking off in auto modes
-// auto_takeoff_complete set to true when target altitude is within 10% of the take off altitude and less than 50% max climb rate
+// complete is set to true when the target altitude is within stopping distance of the take off altitude
+// and the target climb rate is less than 10% of max climb rate
 void _AutoTakeoff::run()
 {
     const auto &g2 = copter.g2;
@@ -173,7 +173,7 @@ void _AutoTakeoff::run()
             // throttle > 90%
             // acceleration > 50% maximum acceleration
             // velocity > 10% maximum velocity
-            // altitude change greater than half auto_takeoff_no_nav_alt_cm
+            // altitude change greater than WP_NAVALT_MIN
             copter.set_land_complete(false);
         }
         return;
@@ -204,8 +204,8 @@ void _AutoTakeoff::run()
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), copter.flightmode->auto_yaw.get_heading());
 
-    // takeoff complete when we are less than 1% of the stopping distance from the target altitude
-    // and 10% our maximum climb rate
+    // takeoff complete when the target altitude is within stop_distance_m of the take off altitude
+    // and our target climb rate is less than 10% of our maximum climb rate
     const float vel_threshold_fraction = 0.1;
     // stopping distance from vel_threshold_fraction * max velocity
     const float stop_distance_m = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_ms()) / copter.pos_control->D_get_max_accel_mss();
