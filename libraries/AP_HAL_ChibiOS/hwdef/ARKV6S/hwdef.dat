@@ -79,21 +79,16 @@ PH14 UART4_RX UART4
 PD8 USART3_TX USART3
 PD9 USART3_RX USART3
 
-# used for RC SBUS
+# USART6 is the PAB X1 IO MCU bus pin (per DS-010). It goes to the
+# carrier's RC input, or to its IO MCU on carriers that have one.
+# BRD_IO_ENABLE selects which at boot: 0 (the default, see
+# defaults.parm) leaves it as SERIAL8 RC input, 1 hands it to the IO MCU.
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
 define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_RCIN
-
-# USART6 is the PAB X1 IO MCU bus pin (per DS-010). The ARK FMU PAB
-# Carrier wires it directly to the RC input header, so this build
-# defaults to DEFAULT_SERIAL8_PROTOCOL = RCIN. To use this FMU on a
-# carrier that has an on-board IO MCU on USART6 (e.g. the Holybro
-# Pixhawk6X carrier), comment out the SERIAL_ORDER above and the three
-# USART6 / DEFAULT_SERIAL8_PROTOCOL lines just above this comment, then
-# uncomment the block below.
-# SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
-# IOMCU_UART USART6
-# ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+IOMCU_UART USART6
+# IO MCU carriers for this FMU use an STM32F103
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
 
 # Ethernet
 PB11 ETH_RMII_TX_EN     ETH1
