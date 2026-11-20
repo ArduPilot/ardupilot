@@ -76,8 +76,16 @@ void ModeRTL::update()
 
 void ModeRTL::navigate()
 {
+    bool fence_breached = false;
+#if AP_FENCE_ENABLED
+    // Return inside horizontal fences before starting a landing approach.
+    // The immediate VTOL handovers in _enter() remain available at low speed.
+    fence_breached = plane.fence.get_action() != AC_Fence::Action::REPORT_ONLY &&
+                     (plane.fence.get_breaches() & plane.fence.get_enabled_fences() &
+                      (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON));
+#endif
 #if HAL_QUADPLANE_ENABLED
-    if (plane.quadplane.available()) {
+    if (plane.quadplane.available() && !fence_breached) {
         if (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::VTOL_APPROACH_QRTL) {
             // VTOL approach landing
             AP_Mission::Mission_Command cmd;
@@ -101,6 +109,10 @@ void ModeRTL::navigate()
     }
 
     plane.update_loiter(radius);
+
+    if (fence_breached) {
+        return;
+    }
 
     if (!plane.auto_state.checked_for_autoland) {
         if ((plane.g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) ||
