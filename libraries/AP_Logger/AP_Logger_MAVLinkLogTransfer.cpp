@@ -176,6 +176,11 @@ void AP_Logger::handle_log_request_end(GCS_MAVLINK &link, const mavlink_message_
     WITH_SEMAPHORE(_log_send_sem);
     // mavlink_log_request_end_t packet;
     // mavlink_msg_log_request_end_decode(&msg, &packet);
+    if (_log_sending_link != nullptr &&
+        _log_sending_link->get_chan() != link.get_chan()) {
+        // only the link running the transfer may end it
+        return;
+    }
     end_log_transfer();
 }
 
