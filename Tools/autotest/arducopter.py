@@ -3164,8 +3164,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         except Exception as e:
             raise e
 
-        # Check descent is not too fast, allow 10% above the configured backup speed
-        max_descent_rate = -self.get_parameter("AVOID_BACKUP_SPD") * 1.1
+        # Check descent is not too fast, allow 20% above the configured backup speed for the overshoot on the SITL tune
+        max_descent_rate = -self.get_parameter("AVOID_BACKZ_SPD") * 1.2
 
         def get_climb_rate(mav, m):
             m_type = m.get_type()
@@ -3334,8 +3334,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         except Exception as e:
             raise e
 
-        # Check ascent is not too fast, allow 10% above the configured backup speed
-        max_ascent_rate = self.get_parameter("AVOID_BACKUP_SPD") * 1.1
+        # Check ascent is not too fast, allow 20% above the configured backup speed for the overshoot on the SITL tune
+        max_ascent_rate = self.get_parameter("AVOID_BACKZ_SPD") * 1.2
 
         def get_climb_rate(mav, m):
             m_type = m.get_type()
