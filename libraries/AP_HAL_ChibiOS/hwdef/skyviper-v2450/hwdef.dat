@@ -299,7 +299,8 @@ define AP_VIDEOTX_ENABLED 0
 define AP_WINCH_ENABLED 0
 
 define AP_CAMERA_BACKEND_DEFAULT_ENABLED 0
-define AP_CAMERA_MAVLINK_ENABLED 1
+# the Sonix board is a MAVLink camera (component 100)
+define AP_CAMERA_MAVLINKCAMV2_ENABLED 1
 
 # SkyViper uses AP_Radio, which does its own RC protocol decoding:
 define AP_RCPROTOCOL_ENABLED 1
