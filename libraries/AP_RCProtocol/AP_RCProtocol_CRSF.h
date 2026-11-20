@@ -221,7 +221,7 @@ private:
     void process_link_stats_rx_frame(const void* data);
     void process_link_stats_tx_frame(const void* data);
     // crsf v3 decoding
-    void decode_variable_bit_channels(const uint8_t* data, uint8_t frame_length, uint8_t nchannels, uint16_t *values);
+    void decode_variable_bit_channels(const uint8_t* data, uint8_t frame_length);
 
     void write_frame(Frame* frame);
     void start_uart();
