@@ -47,7 +47,7 @@ class udp_socket(object):
 udp = udp_socket("127.0.0.1:5123")
 fgout = udp_socket("127.0.0.1:5124", is_input=False)
 
-tlast = time.time()
+tlast = time.monotonic()
 count = 0
 
 fg = fgFDM.fgFDM()
@@ -57,10 +57,10 @@ while True:
     fg.parse(udp_buffer)
     fgout.write(fg.pack())
     count += 1
-    if time.time() - tlast > 1.0:
+    if time.monotonic() - tlast > 1.0:
         print("%u FPS len=%u" % (count, len(udp_buffer)))
         count = 0
-        tlast = time.time()
+        tlast = time.monotonic()
         print(fg.get('latitude', units='degrees'),
               fg.get('longitude', units='degrees'),
               fg.get('altitude', units='meters'),

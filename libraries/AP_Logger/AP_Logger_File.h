@@ -148,10 +148,17 @@ private:
     // bad fd
     HAL_Semaphore write_fd_semaphore;
 
+    // lastlog_semaphore mediates access to LASTLOG.TXT, and to the
+    // discard mark which is read out of it.  Rewriting the file
+    // truncates it first, and a reader which lands in that window
+    // would otherwise take the empty file for "no logs"
+    HAL_Semaphore lastlog_semaphore;
+
     // async erase state
     struct {
         bool was_logging;
         uint16_t log_num;
+        uint16_t last_log_num;
     } erase;
     void erase_next(void);
 

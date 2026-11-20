@@ -20,8 +20,13 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
+#if defined(__linux__)
+// the TAP device is attached through the Linux tun driver; another host
+// wanting the bridge will need its own headers here alongside an
+// equivalent attach in init() (utun on macOS, /dev/tap* on the BSDs)
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#endif
 
 #include <lwip/tcpip.h>
 #include <lwip/netifapi.h>
@@ -55,6 +60,7 @@ bool AP_Networking_SITL_TUN::init()
     }
     snprintf(ifname, sizeof(ifname), "%s", dev);
 
+#if defined(__linux__)
     tap_fd = open("/dev/net/tun", O_RDWR);
     if (tap_fd >= 0) {
         struct ifreq ifr {};
@@ -65,6 +71,7 @@ bool AP_Networking_SITL_TUN::init()
             tap_fd = -1;
         }
     }
+#endif
     if (tap_fd < 0) {
         // TAP not available - skip the host bridge but still expose IP
         // params via activeSettings so a paired PPP backend can still do

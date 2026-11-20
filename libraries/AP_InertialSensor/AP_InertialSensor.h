@@ -865,6 +865,14 @@ public:
     void set_rate_decimation(uint8_t rdec);
     // push a new gyro sample into the fast rate buffer
     bool push_next_gyro_sample(const Vector3f& gyro);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // SITL lockstep extension: wait for the rate thread to drain the
+    // fast rate buffer before simulated time advances
+    void wait_for_rate_loop_gyro_consumption(void);
+    // the rate loop has written the motor outputs for the sample it
+    // took; this is the event the wait above rendezvous on
+    void rate_loop_outputs_written(void);
+#endif
     // run the filter parmeter update code.
     void update_backend_filters();
     // are rate loop samples enabled for this instance?

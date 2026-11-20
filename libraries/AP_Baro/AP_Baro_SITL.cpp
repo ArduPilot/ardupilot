@@ -57,14 +57,22 @@ void AP_Baro_SITL::_timer()
     if ((now - _last_sample_time) < 10) {
         return;
     }
-    _last_sample_time = now;
 
     float sim_alt = _sitl->state.altitude;
 
     if (_sitl->baro[_instance].disable) {
         // barometer is disabled
+        _last_sample_time = now;
         return;
     }
+
+    // simulate slow-starting sensor
+    const float start_delay_s = _sitl->baro[_instance].start_delay;
+    if (start_delay_s > 0 && now < (uint32_t)(start_delay_s * 1000)) {
+        return;
+    }
+
+    _last_sample_time = now;
 
     // ground effect: downwash raises static pressure so the baro under-reads altitude,
     // decaying to zero at 2m AGL; only applied while the motors are running
@@ -147,10 +155,18 @@ void AP_Baro_SITL::_timer()
     _has_sample = true;
 }
 
-// unhealthy if baro is turned off or beyond supported instances
+// unhealthy if baro is turned off, has not supplied a sample yet or is
+// beyond supported instances
 bool AP_Baro_SITL::healthy(uint8_t instance) 
 {
-    return _last_sample_time != 0 && !_sitl->baro[instance].disable;
+    // _timer() sets _last_sample_time before it has a sample to pass to
+    // the frontend, so require that a sample arrived as well - the
+    // frontend calculates an altitude as soon as we report healthy, and
+    // doing that with a zero pressure is an internal error.  This is the
+    // same condition the generic backend applies
+    return _last_sample_time != 0 &&
+        !is_zero(_frontend.sensors[instance].pressure) &&
+        !_sitl->baro[instance].disable;
 }
 
 // Read the sensor
