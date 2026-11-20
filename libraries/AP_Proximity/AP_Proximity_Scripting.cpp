@@ -61,6 +61,20 @@ bool AP_Proximity_Scripting::handle_script_distance_msg(float dist_m, float yaw_
 {
     _last_update_ms = AP_HAL::millis();
 
+    const bool accepted = add_distance(dist_m, yaw_deg, pitch_deg);
+
+    // flush even if this reading was rejected, otherwise an out-of-range
+    // final reading drops the whole frame and leaves stale data in temp_boundary
+    if (push_to_boundary) {
+        update_virtual_boundary();
+    }
+
+    return accepted;
+}
+
+// validate a reading and add it to the temp boundary and object database
+bool AP_Proximity_Scripting::add_distance(float dist_m, float yaw_deg, float pitch_deg)
+{
     Vector3f current_pos;
     Matrix3f body_to_ned;
     const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
@@ -90,11 +104,6 @@ bool AP_Proximity_Scripting::handle_script_distance_msg(float dist_m, float yaw_
     // add to temp boundary
     temp_boundary.add_distance(face, pitch_deg, yaw_deg, dist_m);
 
-    if (push_to_boundary) {
-        temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
-        temp_boundary.reset();
-    }
-
     if (database_ready) {
         database_push(yaw_deg, pitch_deg, dist_m, _last_update_ms, current_pos, body_to_ned);
     }
@@ -119,6 +128,8 @@ bool AP_Proximity_Scripting::handle_script_3d_msg(const Vector3f &vec_to_obstacl
 // update the temporary (buffer) boundary
 bool AP_Proximity_Scripting::update_virtual_boundary()
 {
+    // a flush is sensor activity: a frame with nothing in range must not time out
+    _last_update_ms = AP_HAL::millis();
     temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
     temp_boundary.reset();
     return true;
