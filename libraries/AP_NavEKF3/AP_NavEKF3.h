@@ -107,10 +107,11 @@ public:
     void resetGyroBias(void);
 
     // Resets the baro so that it reads zero at the current height
-    // Resets the EKF height to zero
+    // Resets to zero the height of each core whose height source allows it
     // Adjusts the reference height so that the reported height stays consistent;
     // EKF_origin itself is not moved
-    // Returns true if the primary core performed the height datum reset
+    // Returns true if any core performed the height datum reset, as each one moves the shared
+    // baro, though the primary core's height may not have been reset
     // No reset is performed (and false is returned) unless on the ground with baro or GPS
     // as the height source and OGN_HGT_MASK bit 2 clear
     bool resetHeightDatum(void);
