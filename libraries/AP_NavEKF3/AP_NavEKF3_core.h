@@ -1432,6 +1432,7 @@ private:
     // and wide enough that a right one misses only 0.3% of the time, costing one more sample
     static constexpr ftype aglKfRestartConfirmSigma = 3.0f;
     uint8_t aglKfRestartConfirm;
+    uint32_t rngNewReadingTime_ms;  // time a range sample that was not a copy of an earlier reading last reached the fusion time horizon
 #endif
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator

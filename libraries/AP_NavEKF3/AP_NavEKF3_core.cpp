@@ -228,6 +228,7 @@ void NavEKF3_core::InitialiseVariables()
     flowVelResetDeferTime_ms = 0;
     flowVelResetUnhealthy = false;
     aglKfRestartConfirm = 0;
+    rngNewReadingTime_ms = 0;
 #endif
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
