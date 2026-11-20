@@ -216,6 +216,8 @@ SECTIONS
     /* The crash log uses the unused part of a flash section.*/
     .crash_log (NOLOAD) :
     {
+        /* signed mixed-flash images append a 76-byte signature trailer */
+        . += 76;
         . = ALIGN(32);
         __crash_log_base__ = .;
         . = ORIGIN(flash) + LENGTH(flash);
