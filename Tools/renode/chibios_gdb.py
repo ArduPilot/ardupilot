@@ -29,6 +29,10 @@ THREAD_STATES = (
     "WTMTX", "WTCOND", "SLEEPING", "WTEXIT", "WTOREVT", "WTANDEVT",
     "SNDMSGQ", "SNDMSG", "WTMSG", "FINAL",
 )
+# from Tools/renode/peripherals/common/AP_GdbTime.cs
+RESYNC_COMMAND = b"emulation APResyncHostTime"
+# shorter halts (single steps) are not worth a monitor round trip
+RESYNC_MIN_HALT = 0.1
 
 
 def elf_symbols(elf):
@@ -122,6 +126,10 @@ class RSPConnection:
     @staticmethod
     def is_stop(payload):
         return payload.startswith((b"S", b"T", b"W", b"X"))
+
+    @staticmethod
+    def is_console_output(payload):
+        return payload.startswith(b"O") and payload != b"OK"
 
     @staticmethod
     def expects_stop(payload):
@@ -333,6 +341,26 @@ class Proxy:
         )
         self.selected_thread = 1
         self.threads_fresh = False
+        # Renode halts the CPU when a debugger connects
+        self.halted_since = time.monotonic()
+
+    def resync_host_time(self):
+        """Stop Renode running unthrottled to catch up the time spent halted."""
+        if (self.halted_since is None or
+                time.monotonic() - self.halted_since < RESYNC_MIN_HALT):
+            return
+        response = self.upstream.send_command(
+            b"qRcmd," + RESYNC_COMMAND.hex().encode())
+        while response is None or RSPConnection.is_console_output(response):
+            response = self.upstream.receive_packet()
+
+    def release_target(self):
+        """Leave a halted target running when GDB goes away."""
+        if self.halted_since is None:
+            return
+        self.resync_host_time()
+        self.upstream.send_command(b"c")
+        self.halted_since = None
 
     def refresh_threads(self):
         if not self.threads_fresh:
@@ -431,6 +459,11 @@ class Proxy:
             if b"qXfer:threads:read+" not in features:
                 features.append(b"qXfer:threads:read+")
             return b";".join(features)
+        if text.startswith("D") or text == "k":
+            # Renode leaves a CPU paused by GDB paused after the connection
+            # closes, and killing it would end the session.
+            self.release_target()
+            return None if text == "k" else b"OK"
         if text == "QStartNoAckMode":
             # Keep both sides in acknowledgement mode.  This also handles
             # GDB versions which probe the command without first checking the
@@ -514,8 +547,12 @@ class Proxy:
         forwarded = self.physical_execution_packet(payload) if execution else payload
         if execution:
             self.threads_fresh = False
+            self.resync_host_time()
+            self.halted_since = None
         response = (self.forward_execution(forwarded)
                     if execution else self.forward(forwarded))
+        if execution and RSPConnection.is_stop(response):
+            self.halted_since = time.monotonic()
         if text == "?" or execution:
             reverse = text.startswith(("bc", "bs"))
             if reverse and RSPConnection.is_stop(response):
@@ -543,6 +580,7 @@ class Proxy:
                 if kind == b"\x03":
                     self.upstream.send_raw(kind)
                     response = self.upstream.receive_packet()
+                    self.halted_since = time.monotonic()
                     self.threads_fresh = False
                     self.refresh_threads()
                     self.selected_thread = self.chibios.current
@@ -559,8 +597,14 @@ class Proxy:
                         raise RuntimeError(
                             "%s while handling %r" % (error, payload)
                         ) from error
+                    if response is None:
+                        continue
                 self.client.send_packet(response)
         finally:
+            try:
+                self.release_target()
+            except (OSError, EOFError, RuntimeError):
+                pass
             self.upstream.sock.close()
 
     def forward_monitor_command(self, payload):
@@ -579,7 +623,7 @@ class Proxy:
                         "GDB did not acknowledge monitor output: %r %r" %
                         (kind, client_payload)
                     )
-            if not response.startswith(b"O"):
+            if not RSPConnection.is_console_output(response):
                 return
             response = None
 
