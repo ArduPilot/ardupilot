@@ -14837,32 +14837,49 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(11, 2000)
         self.wait_mode("RTL")
 
+    def wait_dijkstra_route(self, route):
+        '''wait for the vehicle to pass within 8m of each (north, east) offset
+        from home in route, in order, then for RTL to complete'''
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        for (n, e) in route:
+            self.wait_location(self.offset_location_ne(home_loc_plus_15m, n, e), accuracy=8, timeout=100)
+        self.wait_rtl_complete()
+
     def AC_Avoidance_Dijkstra_HomeOutside_EntryNearest(self):
         '''Test Dijkstra's object avoidance RTL with home and the vehicle both
         outside the fence, where the fence entry point is closer to the vehicle
         than any Dijkstra point'''
-        self.dijkstra_rtl_home_outside_fence(12, -72)
-        self.wait_rtl_complete()
+        # the straight line home from (70,-40) crosses the stalk.  the entry
+        # point 5m inside the stalk's west edge is 15m away while the nearest
+        # Dijkstra point, inside the stalk-top-left corner, is 23m away.  the
+        # vehicle leaves the fence at the exit point 5m inside the stalk's
+        # southern edge, on the way to home
+        self.dijkstra_rtl_home_outside_fence(70, -40)
+        self.wait_dijkstra_route([(70, -25), (45, 0)])
 
     def AC_Avoidance_Dijkstra_HomeOutside_ViaInnerCorner(self):
         '''Test Dijkstra's object avoidance RTL with home and the vehicle both
         outside the fence, where the path runs via the stalk-top-left inner corner'''
-        self.dijkstra_rtl_home_outside_fence(14, -124)
-        self.wait_rtl_complete()
+        # the vehicle enters at the bar's inset north-west corner.  the line
+        # from there to the exit point leaves the fence across the bottom of the
+        # bar's western arm, so the path turns at the Dijkstra point inside the
+        # stalk-top-left corner
+        self.dijkstra_rtl_home_outside_fence(110, -85)
+        self.wait_dijkstra_route([(110, -70), (88.5, -26.5), (45, 0)])
 
     def AC_Avoidance_Dijkstra_HomeOutside_NorthWestCorner(self):
         '''Test Dijkstra's object avoidance RTL with home and the vehicle both
         outside the fence, where the vehicle starts just north of the bar's
         north-west corner'''
         self.dijkstra_rtl_home_outside_fence(120, -75)
-        self.wait_rtl_complete()
+        self.wait_dijkstra_route([(110, -70), (88.5, -26.5), (45, 0)])
 
     def AC_Avoidance_Dijkstra_HomeOutside_ThroughFence(self):
         '''Test Dijkstra's object avoidance RTL with home and the vehicle both
         outside the fence, where the vehicle starts directly north of the T so
         the straight line home passes through the bar and down the stalk'''
         self.dijkstra_rtl_home_outside_fence(125, 0)
-        self.wait_rtl_complete()
+        self.wait_dijkstra_route([(110, 0), (45, 0)])
 
     def AvoidanceAltFence(self):
         '''Test fence avoidance at minimum and maximum altitude'''
