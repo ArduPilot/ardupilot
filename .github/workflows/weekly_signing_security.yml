@@ -59,7 +59,9 @@ jobs:
           path: build/renode-signing-security/
 
   notify-security:
-    if: always() && needs.renode-signing-security.result == 'failure'
+    if: >-
+      always() && needs.renode-signing-security.result != 'success' &&
+      needs.renode-signing-security.result != 'skipped'
     needs: renode-signing-security
     runs-on: ubuntu-22.04
     steps:
