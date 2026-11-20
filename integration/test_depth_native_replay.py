@@ -28,6 +28,7 @@ def main():
             "SERIAL1_PROTOCOL 36\nSERIAL1_BAUD 115\n"
             "SERIAL2_PROTOCOL 51\nSERIAL2_BAUD 115\n"
             "BARO_SPEC_GRAV 1.0\n"
+            + (ROOT / "integration/atal_motor_defaults.parm").read_text()
         )
         connection = mavutil.mavlink_connection("udpin:127.0.0.1:0")
         telemetry_port = connection.port.getsockname()[1]

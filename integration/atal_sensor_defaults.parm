@@ -4,6 +4,9 @@
 EAHRS_TYPE 12
 EAHRS_RATE 100
 EAHRS_SENSORS 2
+# Identity Xsens-to-vehicle rotation from the ROS 2 placeholder.
+# Change to a measured AHRS_ORIENTATION/CUST_ROT setting before vehicle use.
+AHRS_ORIENTATION 0
 SERIAL1_PROTOCOL 36
 SERIAL1_BAUD 115
 SERIAL2_PROTOCOL 51

@@ -1,0 +1,14 @@
+# Provisional software-only Vectored-6DOF allocation from ROS 2 reference.
+# Derived motor permutation is documented in docs/ardusub_migration/06_thruster_allocation.md.
+# These settings do not enable an actuator port; do not use for commissioning.
+FRAME_CONFIG 2
+MOT_PWM_MIN 1300
+MOT_PWM_MAX 1700
+MOT_1_DIRECTION -1
+MOT_2_DIRECTION -1
+MOT_3_DIRECTION -1
+MOT_4_DIRECTION -1
+MOT_5_DIRECTION -1
+MOT_6_DIRECTION -1
+MOT_7_DIRECTION -1
+MOT_8_DIRECTION -1

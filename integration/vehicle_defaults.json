@@ -28,6 +28,9 @@
   },
   "actuators": {
     "enabled": false,
+    "pwm_min_us": 1300,
+    "pwm_neutral_us": 1500,
+    "pwm_max_us": 1700,
     "firmware_esp32_id_to_gpio": [27, 12, 18, 19, 4, 14, 5, 13],
     "motors": [
       {"logical_id": 1, "name": "H_front_right", "factors_rpyvfl": [0, 0, -1, 0, 1, -1], "direction": 1, "esp32_gpio": 14, "position_m_frd": [0.2, 0.2, 0]},

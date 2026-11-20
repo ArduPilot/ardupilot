@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = Path(__file__).with_name("vehicle_defaults.json")
 MOTORS = ROOT / "libraries/AP_Motors/AP_Motors6DOF.cpp"
+MOTOR_DEFAULTS = Path(__file__).with_name("atal_motor_defaults.parm")
 
 
 def upstream_factors(source):
@@ -85,9 +86,37 @@ def mapping(config, upstream):
     return resolved
 
 
+def check_motor_defaults(resolved, actuators, source):
+    """Catch drift between the editable geometry and provisional AP parameters."""
+    params = {}
+    for line in source.splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        name, value = line.split()
+        if name in params:
+            raise ValueError(f"Duplicate motor parameter {name}")
+        params[name] = value
+    if params.get("FRAME_CONFIG") != "2":
+        raise ValueError("Motor defaults must select Vectored-6DOF")
+    pwm_min = actuators["pwm_min_us"]
+    pwm_neutral = actuators["pwm_neutral_us"]
+    pwm_max = actuators["pwm_max_us"]
+    if not (1000 <= pwm_min < pwm_neutral == 1500 < pwm_max <= 2000):
+        raise ValueError("Invalid provisional PWM range")
+    if (params.get("MOT_PWM_MIN") != str(pwm_min) or
+            params.get("MOT_PWM_MAX") != str(pwm_max)):
+        raise ValueError("Motor PWM defaults do not match vehicle_defaults.json")
+    for number, item in resolved.items():
+        name = f"MOT_{number}_DIRECTION"
+        if params.get(name) != str(item["MOT_DIRECTION"]):
+            raise ValueError(f"{name} does not match vehicle_defaults.json")
+
+
 def main():
     config = json.loads(CONFIG.read_text())
     result = mapping(config, upstream_factors(MOTORS.read_text()))
+    check_motor_defaults(result, config["actuators"], MOTOR_DEFAULTS.read_text())
     for number, item in result.items():
         print(f"AP motor {number}: logical M{item['logical_id']} -> ESP32 ID {item['esp32_id']}; "
               f"MOT_{number}_DIRECTION={item['MOT_DIRECTION']}")
