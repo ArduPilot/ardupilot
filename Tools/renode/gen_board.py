@@ -306,6 +306,7 @@ FAMILIES['STM32L4R5xx'] = dict(
 IMU_MODELS = {
     'ADIS1647x': 'Sensors.AP_ADIS1647x',
     'ADIS16607': 'Sensors.AP_ADIS16607',
+    'ASM330': 'Sensors.AP_RegisterIMU',
     'BMI055': 'Sensors.AP_RegisterIMU',
     'BMI088': 'Sensors.AP_RegisterIMU',
     'BMI160': 'Sensors.AP_RegisterIMU',
@@ -329,6 +330,7 @@ WHOAMI_VALUES = {
     'MPU_WHOAMI_ICM20608': 0xAF,
     'MPU_WHOAMI_ICM20602': 0x12,
     'MPU_WHOAMI_ICM20689': 0x98,
+    'INV2_WHOAMI_ICM20648': 0xE0,
     'INV2_WHOAMI_ICM20948': 0xEA,
     'INV2_WHOAMI_ICM20649': 0xE1,
 }
@@ -897,15 +899,27 @@ def _imu_whoami(device_name, defines):
         except ValueError:
             pass
     names = {
+        'icm20601': 0xAC,
         'icm20602': 0x12,
         'icm20608': 0xAF,
         'icm20689': 0x98,
+        'icm20789': 0x03,
+        'icm20648': 0xE0,
         'icm20948': 0xEA,
         'icm20649': 0xE1,
+        'icm40605': 0x33,
+        'icm40609': 0x3B,
+        'icm42605': 0x42,
+        'icm42652': 0x6F,
+        'icm42653': 0x56,
         'icm42670': 0x67,
         'icm42688': 0x47,
         'icm45686': 0xE9,
+        'icm56686': 0x08,
+        'iim42652': 0x6F,
+        'iim42653': 0x56,
         'mpu6000': 0x68,
+        'mpu6500': 0x70,
         'mpu9250': 0x71,
     }
     for part, value in names.items():
@@ -923,6 +937,16 @@ def _imu_children(imu, resolved_devices, defines, name):
         'ROTATION_NONE')
     rotation = ROTATIONS.get(rotation_name)
     rotation_property = [] if rotation is None else ['    rotation: %u' % rotation]
+    if driver == 'ADIS1647x':
+        # the driver reads PROD_ID; 16477/16507 parts default to the -3 range
+        device_name = resolved_devices[0][0].lower()
+        product = next((value for part, value in (
+            ('16477', 0x405D), ('16507', 0x407B)) if part in device_name), None)
+        if product is not None:
+            rotation_property = rotation_property + ['    productId: 0x%04X' % product]
+    if driver == 'ADIS16607' and 'ADIS16607_SYNC_INPUT_CLOCK_HZ' in defines:
+        rotation_property = rotation_property + ['    syncClockHz: %u' % _constant_integer(
+            defines['ADIS16607_SYNC_INPUT_CLOCK_HZ'])]
     if driver == 'SCHA63T':
         # the probe takes the UNO die first, then the DUE die
         return [('%sPart%d' % (name, index), model, bus, cs,
@@ -952,12 +976,16 @@ def _imu_children(imu, resolved_devices, defines, name):
     device_name, bus, cs = resolved_devices[0]
     properties = list(rotation_property)
     fixed_whoami = {
+        'ASM330': 0x6B,
         'BMI160': 0xD1,
         'BMI270': 0x24,
         'LSM6DSV': 0x70,
     }.get(driver)
     whoami = fixed_whoami if fixed_whoami is not None else _imu_whoami(
         device_name, defines)
+    if whoami is None and driver == 'Invensensev3':
+        # generic SPIDEV names (imu1) often have the part in the CS label
+        whoami = _imu_whoami(cs.label.replace('_', ''), {})
     if whoami is not None:
         properties.append('    whoAmI: 0x%02X' % whoami)
     return [(name, model, bus, cs, properties)]
@@ -1160,6 +1188,18 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
         name = 'imu%d' % index
         children = _imu_children(imu, resolved_devices, defines, name)
         if children:
+            if imu[0] == 'ADIS1647x':
+                # the driver waits for a rising edge on its DRDY GPIO
+                drdy = [argument for argument in imu[2:]
+                        if not argument.startswith(('ROTATION_', 'BOARD_MATCH'))]
+                try:
+                    gpio = _constant_integer(defines.get(drdy[0], drdy[0])) if drdy else None
+                except (SyntaxError, ValueError):
+                    gpio = None
+                pin = dict(_hwdef_gpios(config)).get(gpio)
+                if pin is not None:
+                    children[0][4].append('    DataReady -> gpioPort%s@%u' %
+                                          (pin.port, pin.pin))
             if imu[0] == 'Invensensev2':
                 # AK09916 behind the ICM20948 I2C master, probed by instance
                 rotation = icm20948_compass_rotations.get(inv2_instance)
