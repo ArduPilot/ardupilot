@@ -52,13 +52,14 @@ The file format of the @PARAM/param.pck file is as follows
 There is a 6 byte header, consisting of 3 uint16_t values
 
 ```c
-  uint16_t magic # 0x671b
+  uint16_t magic # 0x671b or 0x671c
   uint16_t num_params
   uint16_t total_params
 ```
 
-The magic value is used to give the version of the packing format. It
-should have a value of 0x671b. The num_params is how many parameters
+The magic value gives the version of the packing format. It is
+0x671b for standard parameter files, or 0x671c when default values are
+included (requested via ?withdefaults=1). The num_params is how many parameters
 will be sent (may be less than total if client requests a subset, see
 query strings below). The total_params is the total number of
 parameters the flight controller has.
@@ -96,7 +97,9 @@ The name_len field is the number of non-common characters, minus one.
 
 The default value is included only if requested by the withdefaults
 query string and if different from the set value. Otherwise, flags
-bit 0 will not be set, and default will be of zero length.
+bit 0 will not be set, and default will be of zero length (meaning the
+default value matches the current value). When included, default is of
+the same type and length as data.
 
 ### Query Strings
 
