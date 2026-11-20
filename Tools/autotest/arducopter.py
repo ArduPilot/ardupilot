@@ -14857,6 +14857,116 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_location(entry_point, accuracy=8, timeout=100)
         self.wait_rtl_complete()
 
+    def assert_dijkstra_holds_outside(self, inside, duration=20):
+        '''check for duration seconds that the vehicle's (north, east) offset
+        from home never satisfies inside(north, east)'''
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < duration:
+            pos = self.assert_receive_message('LOCAL_POSITION_NED')
+            if inside(pos.x, pos.y):
+                raise NotAchievedException("Vehicle entered the exclusion zone at N=%.1f E=%.1f" % (pos.x, pos.y))
+
+    def AC_Avoidance_Dijkstra_EntryLegExclusion(self):
+        '''Test Dijkstra's object avoidance refuses to plan a path for a vehicle
+        outside the fence when the leg to the fence entry point crosses an
+        exclusion polygon'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # rectangular inclusion fence spanning N -20 to 120 by E -70 to 70, with
+        # an exclusion rectangle outside its western edge spanning N 65 to 80 by
+        # E -100 to -85.  the straight line home from (70,-110) passes south of it
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -20, -70),
+                self.offset_location_ne(home_loc_plus_15m, -20, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, -70),
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, 65, -100),
+                self.offset_location_ne(home_loc_plus_15m, 80, -100),
+                self.offset_location_ne(home_loc_plus_15m, 80, -85),
+                self.offset_location_ne(home_loc_plus_15m, 65, -85),
+            ]),
+        ])
+
+        # enable fence
+        self.set_rc(11, 2000)
+
+        self.takeoff(15, mode="GUIDED")
+
+        # disable the fence and fly out 40m beyond its western edge
+        self.set_rc(11, 1000)
+        self.fly_guided_move_local(70, -110, 15)
+
+        # re-enable the fence; the breach triggers RTL.  the leg to the entry
+        # point at (70,-65) crosses the exclusion polygon, so no path is planned
+        # and the vehicle holds outside it
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_statustext("Dijkstra: could not find path", check_context=False, timeout=30)
+        self.assert_dijkstra_holds_outside(lambda n, e: 65 <= n <= 80 and -100 <= e <= -85)
+
+        # disable the fence so the vehicle can fly straight home
+        self.set_rc(11, 1000)
+        self.wait_rtl_complete()
+
+    def AC_Avoidance_Dijkstra_DestinationInExclusion(self):
+        '''Test Dijkstra's object avoidance refuses to plan a path to a
+        destination inside an exclusion polygon'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # rectangular inclusion fence spanning N -20 to 120 by E -70 to 70, with
+        # an exclusion square around home spanning N -10 to 10 by E -10 to 10
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -20, -70),
+                self.offset_location_ne(home_loc_plus_15m, -20, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, -70),
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -10, -10),
+                self.offset_location_ne(home_loc_plus_15m, 10, -10),
+                self.offset_location_ne(home_loc_plus_15m, 10, 10),
+                self.offset_location_ne(home_loc_plus_15m, -10, 10),
+            ]),
+        ])
+
+        # home is inside the exclusion polygon, so the fence must be disabled to
+        # arm and to fly out of it
+        self.set_rc(11, 2000)
+        self.set_rc(11, 1000)
+        self.takeoff(15, mode="GUIDED")
+        self.fly_guided_move_local(60, 0, 15)
+        self.set_rc(11, 2000)
+
+        # RTL to home inside the exclusion polygon is refused, so the vehicle
+        # holds outside it
+        self.change_mode("RTL")
+        self.wait_statustext("Dijkstra: could not find path", check_context=False, timeout=30)
+        self.assert_dijkstra_holds_outside(lambda n, e: -10 <= n <= 10 and -10 <= e <= 10)
+
+        # disable the fence so the vehicle can fly home
+        self.set_rc(11, 1000)
+        self.wait_rtl_complete()
+
     def upload_T_shaped_fence_home_outside(self):
         '''upload a T-shaped inclusion fence placed north of home so that home
         lies outside it.  The "stalk" spans N 40 to 85 by E -30 to 10; the "bar"
@@ -21301,6 +21411,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AC_Avoidance_Dijkstra_HomeOutside_NorthWestCorner,
             self.AC_Avoidance_Dijkstra_HomeOutside_ThroughFence,
             self.AC_Avoidance_Dijkstra_ExclusionBesideEdge,
+            self.AC_Avoidance_Dijkstra_EntryLegExclusion,
+            self.AC_Avoidance_Dijkstra_DestinationInExclusion,
             self.SetpointGlobalVel,
             self.SetpointBadVel,
             self.ModeLoiter,
