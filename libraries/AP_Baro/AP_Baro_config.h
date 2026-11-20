@@ -95,6 +95,12 @@
 
 #define AP_BARO_MS56XX_ENABLED (AP_BARO_MS5607_ENABLED || AP_BARO_MS5611_ENABLED || AP_BARO_MS5637_ENABLED || AP_BARO_MS5837_ENABLED)
 
+// keep a copy of each on-board MS5611/MS5607 PROM in the StorageBaroPROM
+// storage area, and use it when the sensor's PROM later fails its CRC
+#ifndef AP_BARO_PROM_BACKUP_ENABLED
+#define AP_BARO_PROM_BACKUP_ENABLED 0
+#endif
+
 #ifndef AP_BARO_MSP_ENABLED
 #define AP_BARO_MSP_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif

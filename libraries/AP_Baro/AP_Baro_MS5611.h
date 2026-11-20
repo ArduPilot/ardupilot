@@ -40,6 +40,13 @@ public:
 
     AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::Device &dev);
 
+#if AP_BARO_PROM_BACKUP_ENABLED
+    // replace prom with a stored copy that passes its CRC and differs
+    // from prom by at most AP_BARO_PROM_MAX_BIT_DIFF bits. bus_id is the
+    // sensor's bus ID with devtype 0
+    static bool find_stored_prom(uint16_t prom[8], uint32_t bus_id);
+#endif
+
 protected:
 
     // convenience methods for derivative classes to call.  Will free
@@ -94,6 +101,15 @@ private:
     uint8_t _state;
 
     bool _discard_next;
+
+#if AP_BARO_PROM_BACKUP_ENABLED
+    // store a PROM that passed its CRC
+    static void save_prom(const uint16_t prom[8], uint32_t bus_id);
+    bool _on_board_bus() const;
+    bool _using_stored_prom;
+    bool _prom_logged;
+    uint16_t _prom_read[8];
+#endif
 
     virtual bool _read_prom(uint16_t *prom) = 0;
     virtual void _calculate() = 0;

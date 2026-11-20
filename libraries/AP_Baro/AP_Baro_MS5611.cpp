@@ -20,7 +20,10 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
+#include <AP_HAL/I2CDevice.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Logger/AP_Logger.h>
+#include <StorageManager/StorageManager.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -212,14 +215,159 @@ bool AP_Baro_MS56XX::_read_prom_5611(uint16_t prom[8])
         return false;
     }
 
+#if AP_BARO_PROM_BACKUP_ENABLED
+    memcpy(_prom_read, prom, sizeof(_prom_read));
+#endif
+
     /* save the read crc */
     const uint16_t crc_read = prom[7] & 0xf;
 
     /* remove CRC byte */
-    prom[7] &= 0xff00;
+    uint16_t crc_check[8];
+    memcpy(crc_check, prom, sizeof(crc_check));
+    crc_check[7] &= 0xff00;
 
-    return crc_read == crc_crc4(prom);
+    if (crc_read == crc_crc4(crc_check)) {
+#if AP_BARO_PROM_BACKUP_ENABLED
+        if (_on_board_bus()) {
+            save_prom(prom, _dev->get_bus_id_devtype(0));
+        }
+#endif
+        return true;
+    }
+
+#if AP_BARO_PROM_BACKUP_ENABLED
+    if (_on_board_bus() && find_stored_prom(prom, _dev->get_bus_id_devtype(0))) {
+        _using_stored_prom = true;
+        return true;
+    }
+#endif
+    return false;
 }
+
+#if AP_BARO_PROM_BACKUP_ENABLED
+// a PROM backup is only kept for sensors on the board itself: SPI or
+// an internal I2C bus
+bool AP_Baro_MS56XX::_on_board_bus() const
+{
+    switch (_dev->bus_type()) {
+    case AP_HAL::Device::BUS_TYPE_SPI:
+        return true;
+    case AP_HAL::Device::BUS_TYPE_I2C:
+        return (hal.i2c_mgr->get_bus_mask_internal() & (1U << _dev->bus_num())) != 0;
+    default:
+        return false;
+    }
+}
+
+// a different chip differs in far more bits than this
+#define AP_BARO_PROM_MAX_BIT_DIFF 4
+
+/*
+  PROM records in the StorageBaroPROM storage area, one per sensor and
+  matched by bus ID. This area is not erased by a parameter or storage
+  erase.
+ */
+struct PACKED BaroPromRecord {
+    uint16_t magic;
+    uint8_t version;
+    uint8_t reserved;
+    uint32_t bus_id;
+    uint16_t prom[8];
+    uint32_t crc;
+};
+
+#define BARO_PROM_RECORD_MAGIC 0x5042
+#define BARO_PROM_RECORD_VERSION 1
+
+static StorageAccess prom_storage(StorageManager::StorageBaroPROM);
+
+static uint32_t prom_record_crc(const BaroPromRecord &rec)
+{
+    return crc_crc32(0, (const uint8_t *)&rec, offsetof(BaroPromRecord, crc));
+}
+
+// read record idx, false if it is unused or invalid
+static bool read_prom_record(uint8_t idx, BaroPromRecord &rec)
+{
+    return prom_storage.read_block(&rec, idx * sizeof(rec), sizeof(rec)) &&
+        rec.magic == BARO_PROM_RECORD_MAGIC &&
+        rec.version == BARO_PROM_RECORD_VERSION &&
+        rec.crc == prom_record_crc(rec);
+}
+
+static void write_prom_record(uint8_t idx, const uint16_t prom[8], uint32_t bus_id)
+{
+    BaroPromRecord rec {};
+    rec.magic = BARO_PROM_RECORD_MAGIC;
+    rec.version = BARO_PROM_RECORD_VERSION;
+    rec.bus_id = bus_id;
+    memcpy(rec.prom, prom, sizeof(rec.prom));
+    rec.crc = prom_record_crc(rec);
+    prom_storage.write_block(idx * sizeof(rec), &rec, sizeof(rec));
+}
+
+void AP_Baro_MS56XX::save_prom(const uint16_t prom[8], uint32_t bus_id)
+{
+    // update this sensor's storage record, or use the first free one
+    const uint8_t num_records = prom_storage.size() / sizeof(BaroPromRecord);
+    int16_t free_idx = -1;
+    for (uint8_t idx = 0; idx < num_records; idx++) {
+        BaroPromRecord rec;
+        if (!read_prom_record(idx, rec)) {
+            if (free_idx < 0) {
+                free_idx = idx;
+            }
+            continue;
+        }
+        if (rec.bus_id == bus_id) {
+            if (memcmp(rec.prom, prom, sizeof(rec.prom)) != 0) {
+                write_prom_record(idx, prom, bus_id);
+            }
+            return;
+        }
+    }
+    if (free_idx >= 0) {
+        write_prom_record(free_idx, prom, bus_id);
+    }
+}
+
+// true if stored can replace prom: it passes its CRC and differs from
+// prom by at most AP_BARO_PROM_MAX_BIT_DIFF bits
+static bool prom_matches(const uint16_t stored[8], const uint16_t prom[8])
+{
+    uint8_t bit_diff = 0;
+    for (uint8_t i = 0; i < 8; i++) {
+        bit_diff += __builtin_popcount(stored[i] ^ prom[i]);
+    }
+    if (bit_diff > AP_BARO_PROM_MAX_BIT_DIFF) {
+        return false;
+    }
+    // MS5611 CRC4 is computed with the CRC nibble cleared
+    uint16_t crc_check[8];
+    memcpy(crc_check, stored, sizeof(crc_check));
+    crc_check[7] &= 0xff00;
+    return (stored[7] & 0xf) == crc_crc4(crc_check);
+}
+
+bool AP_Baro_MS56XX::find_stored_prom(uint16_t prom[8], uint32_t bus_id)
+{
+    uint16_t stored[8];
+    const uint8_t num_records = prom_storage.size() / sizeof(BaroPromRecord);
+    for (uint8_t idx = 0; idx < num_records; idx++) {
+        BaroPromRecord rec;
+        if (!read_prom_record(idx, rec) || rec.bus_id != bus_id) {
+            continue;
+        }
+        memcpy(stored, rec.prom, sizeof(stored));
+        if (prom_matches(stored, prom)) {
+            memcpy(prom, stored, sizeof(stored));
+            return true;
+        }
+    }
+    return false;
+}
+#endif  // AP_BARO_PROM_BACKUP_ENABLED
 
 bool AP_Baro_MS56XX::_read_prom_5637(uint16_t prom[8])
 {
@@ -327,6 +475,20 @@ void AP_Baro_MS56XX::update()
 {
     uint32_t sD1, sD2;
     uint8_t d1count, d2count;
+
+#if AP_BARO_PROM_BACKUP_ENABLED && HAL_LOGGING_ENABLED
+    // log the PROM every boot so it can be recovered from old logs
+    if (!_prom_logged && AP::logger().logging_started()) {
+        const unsigned inst = _instance + 1;
+        const uint16_t *p = _prom_read;
+        AP::logger().Write_MessageF("Baro%u: PROM %04X %04X %04X %04X %04X %04X %04X %04X", inst,
+                                    p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+        if (_using_stored_prom) {
+            AP::logger().Write_MessageF("Baro%u: PROM CRC fail, using stored PROM", inst);
+        }
+        _prom_logged = true;
+    }
+#endif
 
     {
         WITH_SEMAPHORE(_sem);

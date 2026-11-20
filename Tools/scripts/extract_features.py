@@ -235,6 +235,7 @@ class ExtractFeatures(BuildScriptBase):
             ('HAL_NMEA_OUTPUT_ENABLED', r'AP_NMEA_Output::update\b',),
             ('HAL_BARO_WIND_COMP_ENABLED', r'AP_Baro::wind_pressure_correction\b',),
             ('AP_BARO_THST_COMP_ENABLED', r'AP_Baro::thrust_pressure_correction\b',),
+            ('AP_BARO_PROM_BACKUP_ENABLED', r'AP_Baro_MS56XX::find_stored_prom\b',),
             ('AP_TEMPCALIBRATION_ENABLED', r'AP_TempCalibration::apply_calibration',),
 
             ('AP_PICCOLOCAN_ENABLED', r'AP_PiccoloCAN::update',),
