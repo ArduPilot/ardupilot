@@ -254,21 +254,21 @@ def sign_firmware(img1, img2, extf_img, private_keyfile):
         import monocypher
     except ImportError:
         Logs.error("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
-        return None
+        return None, None
 
     if monocypher.__version__ != "3.1.3.2":
         Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
-        return None
+        return None, None
 
     try:
         key = open(private_keyfile, 'r').read()
     except Exception as ex:
         Logs.error("Failed to open %s" % private_keyfile)
-        return None
+        return None, None
     keytype = "PRIVATE_KEYV1:"
     if not key.startswith(keytype):
         Logs.error("Bad private key file %s" % private_keyfile)
-        return None
+        return None, None
     key = base64.b64decode(key[len(keytype):])
     sig = monocypher.signature_sign(key, img1 + img2)
     sig_len = len(sig)
