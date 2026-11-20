@@ -24,8 +24,9 @@ parameter list without the source tree present.
 
 Top-level keys are vehicle names: `ArduCopter`, `ArduPlane`, `Rover`,
 `ArduSub`, `AntennaTracker`, `Helicopter`, `Blimp`, `sitl_periph_universal`,
-`sitl_periph_PPP`. Every vehicle except the `sitl_periph_*` boards needs a
-`default_frame`, which `sim_vehicle.py` uses when started without `-f`.
+`sitl_periph_PPP`, `sitl_periph_volz`. Every vehicle except the
+`sitl_periph_*` boards needs a `default_frame`, which `sim_vehicle.py` uses
+when started without `-f`.
 
 ## Per-frame fields
 
