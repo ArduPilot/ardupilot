@@ -174,12 +174,25 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 // true if FENCE_OPTIONS bit 0 blocks mode changes during fence breach recovery
 bool Copter::fence_recovery_blocks_mode_change() const
 {
-    return fence.enabled() &&
-        fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE) &&
-        fence.get_breaches() &&
-        motors->armed() &&
-        get_control_mode_reason() == ModeReason::FENCE_BREACHED &&
-        !ap.land_complete;
+    if (!fence.enabled()) {
+        return false;
+    }
+    if (!fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE)) {
+        return false;
+    }
+    if (!fence.get_breaches()) {
+        return false;
+    }
+    if (!motors->armed()) {
+        return false;
+    }
+    if (get_control_mode_reason() != ModeReason::FENCE_BREACHED) {
+        return false;
+    }
+    if (ap.land_complete) {
+        return false;
+    }
+    return true;
 }
 #endif
 
