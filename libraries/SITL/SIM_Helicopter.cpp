@@ -88,6 +88,9 @@ Helicopter::Helicopter(const char *frame_str) :
                   sitl->batt_voltage,
                   ambient_outside_temperature_degC());
 
+    if (gas_heli) {
+        motor_mask |= (1U<<1);
+    }
 }
 
 /*
@@ -162,7 +165,10 @@ void Helicopter::update(const struct sitl_input &input)
         thrust = (rpm[0] / nominal_rpm) * thrust_scale * sq(nominal_rpm * 0.104667f) * coll;
 
         // determine RPM
-        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
+        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, _engine_rpm, coll, dt);
+        if (gas_heli) {
+            rpm[1] = _engine_rpm; // engine speed in RPM
+        }
 
         // Calculate rotor tip path plane angle
         float roll_cyclic = 1.283 * (swash1 - swash2) / cyclic_scalar;
@@ -208,7 +214,10 @@ void Helicopter::update(const struct sitl_input &input)
         thrust = (rpm[0] / nominal_rpm) * thrust_scale * sq(nominal_rpm * 0.104667f) * coll;
 
         // determine RPM
-        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
+        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, _engine_rpm, coll, dt);
+        if (gas_heli) {
+            rpm[1] = _engine_rpm; // engine speed in RPM
+        }
 
         // Calculate rotor tip path plane angle
         float roll_cyclic = 1.283 * (swash1 - swash2) / cyclic_scalar;
@@ -252,7 +261,10 @@ void Helicopter::update(const struct sitl_input &input)
         thrust = (rpm[0] / nominal_rpm) * thrust_scale * sq(nominal_rpm * 0.104667f) * coll;
 
         // determine RPM
-        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
+        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, _engine_rpm, coll, dt);
+        if (gas_heli) {
+            rpm[1] = _engine_rpm; // engine speed in RPM
+        }
 
         // Calculate rotor tip path plane angle
         float roll_cyclic = 1.283 * (swash1 - swash2) / cyclic_scalar;
@@ -304,7 +316,10 @@ void Helicopter::update(const struct sitl_input &input)
         float coll = 3.51 * ((swash1+swash2+swash3) / 3.0f - 0.5f);
 
         // determine RPM
-        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
+        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, _engine_rpm, coll, dt);
+        if (gas_heli) {
+            rpm[1] = _engine_rpm; // engine speed in RPM
+        }
 
         // Calculate rotor tip path plane angle
         float roll_cyclic = 1.283f * (swash1 - swash2);
@@ -363,7 +378,10 @@ void Helicopter::update(const struct sitl_input &input)
         update_rotor_dynamics(gyro, ctrl_pos_2, _tpp_angle_2, dt);
 
         // determine RPM
-        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, (coll_1 + coll_2) * 0.5f, dt);
+        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, _engine_rpm, (coll_1 + coll_2) * 0.5f, dt);
+        if (gas_heli) {
+            rpm[1] = _engine_rpm; // engine speed in RPM
+        }
 
         thrust_1 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * coll_1;
         thrust_2 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * coll_2;
@@ -397,7 +415,10 @@ void Helicopter::update(const struct sitl_input &input)
         thrust = thrust_scale * sq(rpm[0] * 0.104667f) * coll;
 
         // determine RPM
-        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
+        rpm[0] = update_rpm(rpm[0], rsc, eng_torque, _engine_rpm, coll, dt);
+        if (gas_heli) {
+            rpm[1] = _engine_rpm; // engine speed in RPM
+        }
 
          // Calculate rotor tip path plane angle
         float roll_cyclic = 1.283 * (swash1 - swash2) / cyclic_scalar;
@@ -488,19 +509,21 @@ void Helicopter::update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector
 
 }
 
-float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torque, float collective, float dt)
+float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torque, float &engine_rpm, float collective, float dt)
 {
     static float rotor_runup_output;
     static uint8_t motor_status;
     float accel_scale;
+    float input_torque;
     float auto_ss_torque;
     float descent_torque;
     float rotor_torque;
     float rpm_dot;
-    float rpm_engine;
+    float const engine_rotor_ratio = 5.0f; // engine rpm is 5.0 times rotor rpm for gas heli
 
     //use this to make rpm model more realistic
     accel_scale = 100.0f;
+    input_torque = 0.0f;
 
     // calculate aerodynamic rotor drag torque
     rotor_torque = (sq(curr_rpm * 0.104667f) * (torque_mpog + torque_scale * powf(fabsf(collective),1.5f))) / izz;
@@ -518,30 +541,95 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
 
     if (gas_heli) {
 
-        // calculate engine RPM.  Based off of throttle and it matches rotor RPM at 30% throttle
-        rpm_engine = nominal_rpm * throttle / 0.3f;
+        // --- Centrifugal Clutch & Drivetrain Constants ---
+        constexpr float clutch_start_rpm = 3200.0f; // Engine RPM where shoes begin to touch drum
+        constexpr float clutch_lock_rpm  = 5200.0f; // Engine RPM where clutch fully locks up
+        constexpr float clutch_max_slip_torque = 0.85f; // Max friction torque while slipping [N*m]
 
-        // calculate engine torque.  extra 20% given to have a little extra power
-        engine_torque = 1.20f * throttle * engine_torque_max;
+        // Rotor speed reflected at the engine clutch bell
+        float rotor_as_engine_rpm = curr_rpm * engine_rotor_ratio;
 
-        // model clutch on gas heli 
-        float input_torque;
-        if (throttle >= 0.15f && rpm_engine > curr_rpm) {
-            input_torque = engine_torque;
+        float engine_load_torque = 0.0f; // Torque load seen by the engine [N*m]
+        float clutch_torque_to_rotor_Nm = 0.0f; // Torque delivered to main gear [N*m]
+
+        // -------------------------------------------------------------
+        // 1. DETERMINE CLUTCH / SPRAG STATE
+        // -------------------------------------------------------------
+        if (engine_rpm <= rotor_as_engine_rpm && curr_rpm > 100.0f) {
+            // --- STATE A: FREEWHEELING (One-Way Bearing Disengaged) ---
+            // Rotor is spinning faster than engine (e.g., autorotation or throttle cut).
+            // Engine is decoupled and feels zero load from the rotor.
+            engine_load_torque = 0.0f;
+            clutch_torque_to_rotor_Nm = 0.0f;
+
+        } else if (engine_rpm < clutch_start_rpm) {
+            // --- STATE B: DISENGAGED (Clutch Springs Retracted) ---
+            // Engine is idling; clutch shoes do not touch the drum.
+            engine_load_torque = 0.0f;
+            clutch_torque_to_rotor_Nm = 0.0f;
+
+        } else if (engine_rpm < clutch_lock_rpm && engine_rpm > rotor_as_engine_rpm) {
+            // --- STATE C: SLIPPING CLUTCH (Runup / Spooling Phase) ---
+            // Centrifugal force presses shoes against the drum with progressive force.
+            float slip_fraction = (engine_rpm - clutch_start_rpm) / (clutch_lock_rpm - clutch_start_rpm);
+            slip_fraction = constrain_float(slip_fraction, 0.0f, 1.0f);
+
+            // Transmitted torque is proportional to shoe normal force
+            float slip_torque = slip_fraction * clutch_max_slip_torque;
+
+            engine_load_torque = slip_torque;
+            clutch_torque_to_rotor_Nm = slip_torque * engine_rotor_ratio;
+
         } else {
-            input_torque = 0.0f;
+            // --- STATE D: FULLY LOCKED UP ---
+            // Engine and rotor are mechanically locked together via gear ratio.
+            // Engine speed strictly matches rotor speed.
+            engine_rpm = rotor_as_engine_rpm;
+
+            // Load on engine is the actual aerodynamic drag of the rotor reflected through the gears
+            // (aero rotor torque in N*m = rotor_torque * izz)
+            float aero_torque_Nm = (sq(curr_rpm * 0.104667f) * 
+                                   (torque_mpog + torque_scale * powf(fabsf(collective), 1.5f)));
+            engine_load_torque = aero_torque_Nm / engine_rotor_ratio;
         }
 
-        // help spool down quickly go to zero
-        if (throttle <= 0.15f && curr_rpm < 300) {
-            rpm_dot = - 40.0f;
+        // -------------------------------------------------------------
+        // 2. STEP THE ENGINE SIMULATION
+        // -------------------------------------------------------------
+        float engine_rps = engine_rpm * (2.0f * M_PI / 60.0f);
+        EngineOutput engine_output = two_stroke_step(throttle, engine_rps, engine_load_torque, dt);
+
+        if (engine_rpm >= clutch_lock_rpm && engine_rpm <= (rotor_as_engine_rpm + 50.0f)) {
+            // In locked state, engine brake torque directly drives the rotor system
+            clutch_torque_to_rotor_Nm = engine_output.torque_brake * engine_rotor_ratio;
+            // Engine RPM stays locked to the heavy rotor
+            engine_rpm = curr_rpm * engine_rotor_ratio;
+        } else {
+            // In slipping or disengaged states, update engine RPM from internal crank inertia
+            engine_rpm = engine_output.omega_next * (60.0f / (2.0f * M_PI));
+        }
+
+        // -------------------------------------------------------------
+        // 3. DRIVE ROTOR ACCELERATION
+        // -------------------------------------------------------------
+        // Convert input torque (N*m) to angular acceleration (divide by rotor inertia izz)
+        input_torque = clutch_torque_to_rotor_Nm / izz;
+        engine_torque = input_torque; // Export for telemetry / logging
+
+        rpm_dot = 0.0f;
+        // Spool down to zero if throttle cut and low RPM
+        if (throttle <= 0.15f && curr_rpm < 300.0f) {
+            rpm_dot = -40.0f;
             if (curr_rpm <= 0.0f) {
                 rpm_dot = 0.0f;
                 curr_rpm = 0.0f;
             }
         } else {
+            // Rotor angular acceleration (rad/s^2) converted to RPM/s
+            // (1 rad/s^2 = 9.5493 RPM/s, accel_scale tunes apparent inertia response)
             rpm_dot = accel_scale * (input_torque + descent_torque - rotor_torque);
-            if (curr_rpm <= 0.0 && !is_positive(rpm_dot)) {
+
+            if (curr_rpm <= 0.0f && !is_positive(rpm_dot)) {
                 rpm_dot = 0.0f;
                 curr_rpm = 0.0f;
             }
@@ -587,7 +675,6 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
         engine_torque = 0.333f * rotor_runup_output * engine_torque_max;
 
         // manage input torque so descent torque combined with engine torque doesn't allow rotor to overspeed
-        float input_torque;
         if (rotor_runup_output >= 1.0f && curr_rpm > nominal_rpm - 100.0f) {
             // want the rpm to seek the nominal rpm so set the input torque to only be that for nominal RPM
             input_torque = rotor_torque * sq(nominal_rpm / curr_rpm);
@@ -614,6 +701,61 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
 
     return curr_rpm;
 
+}
+
+/**
+ * Simulates one discrete time step of a ~26cc, 650W 2-stroke engine.
+ * 
+ *  u        Throttle position [0.0 to 1.0]
+ *  omega    Current engine speed [rad/s]
+ *  T_load   External load torque applied to the engine [N*m]
+ *  dt       Time step in seconds (keep dt <= 0.001s for stability)
+ *        
+ *  returns-  EngineOutput containing the updated state
+ */
+
+Helicopter::EngineOutput Helicopter::two_stroke_step(float u, float omega, float T_load, float dt)
+{
+    // Engine physical parameters
+    constexpr float T_max      = 1.18;     // Peak combustion torque [N*m]
+    constexpr float omega_peak = 650.0;    // Peak breathing speed (~6200 RPM) [rad/s]
+    constexpr float c_v        = 0.40;     // Volumetric efficiency drop factor
+    constexpr float c0         = 0.08;     // Static friction [N*m]
+    constexpr float c1         = 0.0002;   // Viscous bearing friction
+    constexpr float c2         = 1.5e-7;   // High-speed air/scavenging losses
+    constexpr float J          = 0.0004;   // Flywheel & crank inertia [kg*m^2]
+    constexpr float omega_idle = 300.0;    // Idle speed (~2860 RPM) [rad/s]
+//    static float omega_rps = 0.0f;
+
+    // Clamp throttle input between 0.0 and 1.0
+    u = constrain_float(u, 0.0, 1.0);
+
+    // 1. Volumetric Efficiency (scavenging curve)
+    float speed_ratio = (omega - omega_peak) / omega_peak;
+    float eta_v = 1.0 - c_v * (speed_ratio * speed_ratio);
+    eta_v = MAX(0.0, eta_v);
+
+    // 2. Torques
+    float T_indicated = u * T_max * eta_v;
+    float T_friction  = c0 + (c1 * omega) + (c2 * omega * omega);
+    float T_brake     = T_indicated - T_friction;
+
+    // 3. Power Output [Watts]
+    // float power = T_brake * omega;  // Not used yet.
+
+    // 4. Rotational dynamics: d(omega)/dt = (T_brake - T_load) / J
+    float d_omega_dt = (T_brake - T_load) / J;
+    float omega_next = omega + d_omega_dt * dt;
+
+    // Idle stop / stall protection
+    if (!is_positive(u)) {
+        omega_next = 0.0f;
+    } else if (omega_next < omega_idle) {
+        omega_next = omega_idle;
+    }
+//    omega_rps = omega_next;
+
+    return {omega_next, T_brake};
 }
 
 // push servo input to buffer
