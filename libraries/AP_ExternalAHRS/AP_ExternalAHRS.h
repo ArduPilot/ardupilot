@@ -75,6 +75,9 @@ public:
 #if AP_EXTERNAL_AHRS_SENSAITION_ENABLED
         SensAItion = 11,
 #endif
+#if AP_EXTERNAL_AHRS_XSENS_ENABLED
+        Xsens = 12,
+#endif
     };
 
     static AP_ExternalAHRS *get_singleton(void) {
@@ -225,4 +228,3 @@ namespace AP {
 };
 
 #endif  // AP_EXTERNAL_AHRS_ENABLED
-
