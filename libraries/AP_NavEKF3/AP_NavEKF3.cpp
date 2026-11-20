@@ -1344,7 +1344,7 @@ void NavEKF3::resetGyroBias(void)
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
 // Adjusts the reference height ekfGpsRefHgt so that the reported height stays consistent (EKF_origin itself is not moved)
-// Returns true if the primary core performed the height datum reset
+// Returns true if any core performed the height datum reset
 // No reset is performed (and false is returned) unless on the ground with baro or GPS as the height source and OGN_HGT_MASK bit 2 clear
 bool NavEKF3::resetHeightDatum(void)
 {
@@ -1354,15 +1354,12 @@ bool NavEKF3::resetHeightDatum(void)
         return false;
     }
 
-    // reset every core but report the primary's result: the height a
-    // caller sees comes from the primary, and a secondary core can refuse
-    // for a height source of its own
+    // each core decides for its own height source, but any core that resets
+    // recalibrates the barometer they all share, so the datum has moved for
+    // the caller whichever core it was
     bool status = false;
     for (uint8_t i=0; i<num_cores; i++) {
-        const bool reset = core[i].resetHeightDatum();
-        if (i == primary) {
-            status = reset;
-        }
+        status |= core[i].resetHeightDatum();
     }
     return status;
 }
