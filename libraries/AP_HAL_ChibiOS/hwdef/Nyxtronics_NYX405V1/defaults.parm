@@ -1,0 +1,4 @@
+SERVO6_FUNCTION 120
+
+# DisplayPort OSD on the HD VTX connector (SERIAL3)
+OSD_TYPE2 5
