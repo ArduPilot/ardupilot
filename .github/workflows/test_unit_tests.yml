@@ -175,6 +175,13 @@ jobs:
         run: |
           Tools/autotest/unittest/annotate_params_unittest.py
 
+      - name: Unittest extract_features
+        env:
+          PYTHONPATH: "${{ github.workspace }}/Tools/scripts"
+        if: matrix.config == 'unit-tests'
+        run: |
+          Tools/autotest/unittest/extract_features_unittest.py
+
       - name: Unittest test_new_boards
         env:
           PYTHONPATH: "${{ github.workspace }}/Tools/scripts"

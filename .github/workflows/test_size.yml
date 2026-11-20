@@ -399,8 +399,8 @@ jobs:
       - name: Binary compare with ${{ env.BASE_REF }}
         shell: bash
         run: |
-          diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.abin --exclude=*.apj || true
-          diff_output=$(diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.abin --exclude=*.apj || true)
+          diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.abin --exclude=*.apj --exclude=*.map || true
+          diff_output=$(diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.abin --exclude=*.apj --exclude=*.map || true)
           echo "### Binary Diff Output"
           if [ -n "$diff_output" ]; then
             echo "$diff_output"
