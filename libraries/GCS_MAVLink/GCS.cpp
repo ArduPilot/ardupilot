@@ -62,8 +62,8 @@ const AP_Param::GroupInfo GCS::var_info[] {
     
     // @Param: _OPTIONS
     // @DisplayName: MAVLink Options
-    // @Description: Alters various behaviour of the MAVLink interface
-    // @Bitmask: 0:Accept MAVLink only from system IDs given by MAV_SYSID_GCS and MAV_SYSID_GCS_HI
+    // @Description: Alters various behaviour of the MAVLink interface. Basing the GCS failsafe on timesync responses guarantees that round trips to the GCS work, giving a better chance of good control, but is likely to trigger significantly more failsafes than basing it on received messages, especially on links with packet loss.
+    // @Bitmask: 0:Accept MAVLink only from system IDs given by MAV_SYSID_GCS and MAV_SYSID_GCS_HI,1:Base GCS failsafe on timesync responses
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS",    3,      GCS, mav_options, 0),
 
