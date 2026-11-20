@@ -15,6 +15,10 @@ static_assert(ESC_TELEM_MAX_ESCS > 0, "Cannot have 0 ESC telemetry instances");
 #define ESC_TELEM_DATA_TIMEOUT_MS 5000UL
 #define ESC_RPM_DATA_TIMEOUT_US 1000000UL
 
+#if AP_ESC_TELEM_XROTOR_ENABLED
+class AP_ESC_Telem_XRotor;
+#endif
+
 class AP_ESC_Telem {
 public:
     friend class AP_ESC_Telem_Backend;
@@ -108,8 +112,13 @@ public:
     // send telemetry data to mavlink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
-    // update at 10Hz to log telemetry
+    // read serial ESC telemetry, if any is configured, and log telemetry
     void update();
+
+#if AP_ESC_TELEM_XROTOR_ENABLED
+    // false, with a reason, if outputs set for serial ESC telemetry cannot get it
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
+#endif
 
     // is rpm telemetry configured for the provided channel mask
     bool is_telemetry_active(uint32_t servo_channel_mask) const;
@@ -158,6 +167,19 @@ private:
     bool _have_data;
 
     AP_Int8 mavlink_offset;
+
+#if AP_ESC_TELEM_XROTOR_ENABLED
+    // outputs whose ESC sends telemetry on a serial port of its own
+    AP_UInt32 serial_esc_mask;
+    // pole count of the motors on those outputs
+    AP_Int8 serial_esc_poles;
+    // created on the first update if serial_esc_mask is set
+    AP_ESC_Telem_XRotor *xrotor;
+    // true once an update with serial_esc_mask set has created the backend
+    bool xrotor_init_done;
+    // read XRotor serial telemetry, creating its backend on the first call
+    void update_xrotor();
+#endif
 
     static AP_ESC_Telem *_singleton;
 };

@@ -25,6 +25,8 @@
 
 #include <AP_Math/AP_Math.h>
 
+#include "AP_ESC_Telem_XRotor.h"
+
 //#define ESC_TELEM_DEBUG
 
 #define ESC_RPM_CHECK_TIMEOUT_US 210000UL   // timeout for motor running validity
@@ -42,6 +44,23 @@ const AP_Param::GroupInfo AP_ESC_Telem::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_MAV_OFS", 1, AP_ESC_Telem, mavlink_offset, 0),
     
+#if AP_ESC_TELEM_XROTOR_ENABLED
+    // @Param: _SER_MASK
+    // @DisplayName: Serial ESC telemetry outputs
+    // @Description: Outputs whose ESC sends its telemetry on a serial port of its own, as HobbyWing XRotor and T-Motor Alpha ESCs do. Give each such ESC its own serial port with SERIALn_PROTOCOL set to 52 (HobbyWing XRotor ESC Telemetry). The lowest numbered such port is paired with the lowest output set here, the next port with the next output, and so on. The ESCs report RPM, voltage and temperature.
+    // @Bitmask: 0:SERVO1,1:SERVO2,2:SERVO3,3:SERVO4,4:SERVO5,5:SERVO6,6:SERVO7,7:SERVO8,8:SERVO9,9:SERVO10,10:SERVO11,11:SERVO12,12:SERVO13,13:SERVO14,14:SERVO15,15:SERVO16,16:SERVO17,17:SERVO18,18:SERVO19,19:SERVO20,20:SERVO21,21:SERVO22,22:SERVO23,23:SERVO24,24:SERVO25,25:SERVO26,26:SERVO27,27:SERVO28,28:SERVO29,29:SERVO30,30:SERVO31,31:SERVO32
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("_SER_MASK", 3, AP_ESC_Telem, serial_esc_mask, 0),
+
+    // @Param: _SER_POLE
+    // @DisplayName: Serial ESC telemetry motor poles
+    // @Description: Number of magnetic poles in the motors on the outputs set in ESC_TLM_SER_MASK, used to convert the electrical RPM the ESCs report into motor RPM. The default suits the 28-pole motors these ESCs usually drive, and matches the fixed scaling AP_Periph applies to the same ESCs.
+    // @Range: 2 127
+    // @User: Advanced
+    AP_GROUPINFO("_SER_POLE", 4, AP_ESC_Telem, serial_esc_poles, 28),
+#endif
+
     AP_GROUPEND
 };
 
@@ -672,8 +691,65 @@ uint16_t AP_ESC_Telem::merge_edt2_stress(uint16_t old_stress, uint16_t new_stres
 
 #endif // AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
 
+#if AP_ESC_TELEM_XROTOR_ENABLED
+/*
+  read XRotor serial telemetry. The backend is created on the first
+  call with outputs configured for it, which is after the serial ports
+  are set up; later changes to the outputs need a reboot.
+ */
+void AP_ESC_Telem::update_xrotor()
+{
+    if (!xrotor_init_done && serial_esc_mask != 0) {
+        xrotor_init_done = true;
+        xrotor = NEW_NOTHROW AP_ESC_Telem_XRotor();
+        if (xrotor != nullptr && !xrotor->init(serial_esc_mask)) {
+            delete xrotor;
+            xrotor = nullptr;
+        }
+    }
+    if (xrotor != nullptr) {
+        xrotor->update(serial_esc_poles);
+    }
+}
+
+/*
+  fail, with the reason in failure_msg, if an output set in
+  ESC_TLM_SER_MASK cannot get telemetry: it has no serial port, it is
+  beyond the outputs ESC telemetry covers, or there was no memory.
+  Fails until the first update has looked for the ESCs.
+ */
+bool AP_ESC_Telem::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
+{
+    if (serial_esc_mask == 0) {
+        return true;
+    }
+    if (!xrotor_init_done) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "not started");
+        return false;
+    }
+    if (xrotor == nullptr) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "out of memory");
+        return false;
+    }
+    const uint8_t output = xrotor->get_unpaired_output();
+    if (output > ESC_TELEM_MAX_ESCS) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "SERVO%u above output limit", unsigned(output));
+        return false;
+    }
+    if (output != 0) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "no serial port for SERVO%u", unsigned(output));
+        return false;
+    }
+    return true;
+}
+#endif  // AP_ESC_TELEM_XROTOR_ENABLED
+
 void AP_ESC_Telem::update()
 {
+#if AP_ESC_TELEM_XROTOR_ENABLED
+    update_xrotor();
+#endif
+
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     const bool logging_enabled = logger != nullptr && logger->logging_enabled();
