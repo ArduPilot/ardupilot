@@ -330,6 +330,17 @@ struct PACKED log_Guided_Position_Target {
     float accel_target_y;
     float accel_target_z;
 };
+//Latitude and Longitude target Logging
+
+struct PACKED log_Guided_Location_Target {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t type;
+    int32_t lat;
+    int32_t lon;
+    int32_t alt;
+    uint8_t alt_frame;
+};
 
 // guided attitude target logging
 struct PACKED log_Guided_Attitude_Target {
@@ -377,6 +388,21 @@ void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const
         accel_target_y  : accel_target_mss.y,
         accel_target_z  : accel_target_mss.z
     };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Copter::Log_Write_Guided_Location_Target(ModeGuided::SubMode submode, const Location& loc)
+{
+    const log_Guided_Location_Target pkt {
+        LOG_PACKET_HEADER_INIT(LOG_GUIDED_LOCATION_TARGET_MSG),
+        time_us  : AP_HAL::micros64(),
+        type     : (uint8_t)submode,
+        lat      : loc.lat,
+        lon      : loc.lng,
+        alt      : loc.alt,
+        alt_frame: (uint8_t)loc.get_alt_frame()
+    };
+
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
@@ -544,6 +570,18 @@ const struct LogStructure Copter::log_structure[] = {
 
     { LOG_GUIDED_POSITION_TARGET_MSG, sizeof(log_Guided_Position_Target),
       "GUIP",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-000-000000" , true },
+
+// @LoggerMessage: GUIL
+// @Description: Guided mode location target information
+// @Field: TimeUS: Time since system startup
+// @Field: Type: Type of guided mode
+// @Field: Lat: Target latitude
+// @Field: Lon: Target longitude
+// @Field: Alt: Target altitude
+// @Field: AltFrame: Altitude frame
+
+    { LOG_GUIDED_LOCATION_TARGET_MSG, sizeof(log_Guided_Location_Target),
+      "GUIL", "QBiiiB", "TimeUS,Type,Lat,Lon,Alt,AltFrame" , "s-uuu-" , "F-000-", true },
 
 // @LoggerMessage: GUIA
 // @Description: Guided mode attitude target information
