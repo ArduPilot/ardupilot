@@ -12,6 +12,8 @@ class AP_RangeFinder_USD1_Serial : public AP_RangeFinder_Backend_Serial
 
 public:
 
+    friend class AP_RangeFinder_USD1_Test;
+
     static AP_RangeFinder_Backend_Serial *create(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params) {
