@@ -491,6 +491,7 @@ AP_HW_SULILGH7-P1-P2                 2005
 
 AP_HW_AET-H743-Basic                 2024
 
+# IDs 2481-2501 reserved for Botlab Dynamics
 AP_HW_BOTWINGF405                    2501
 
 AP_HW_AET-H743-AIR-Por               2508
