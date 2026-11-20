@@ -248,7 +248,7 @@ def to_unsigned(i):
         i += 2**32
     return i
 
-def sign_firmware(image, private_keyfile):
+def sign_firmware(img1, img2, extf_img, private_keyfile):
     '''sign firmware with private key'''
     try:
         import monocypher
@@ -270,10 +270,17 @@ def sign_firmware(image, private_keyfile):
         Logs.error("Bad private key file %s" % private_keyfile)
         return None
     key = base64.b64decode(key[len(keytype):])
-    sig = monocypher.signature_sign(key, image)
+    sig = monocypher.signature_sign(key, img1 + img2)
     sig_len = len(sig)
-    sig_version = 30437
-    return struct.pack("<IQ64s", sig_len+8, sig_version, sig)
+    signed_descriptor = struct.pack("<IQ64s", sig_len+8, 30437, sig)
+    extf_signature = None
+    if extf_img:
+        signature_domain = b'ArduPilotFwSig2'
+        image_lengths = struct.pack('<III', len(img1), len(img2), len(extf_img))
+        image = signature_domain + image_lengths + img1 + img2 + extf_img
+        extf_sig = monocypher.signature_sign(key, image)
+        extf_signature = struct.pack("<IQ64s", len(extf_sig)+8, 30438, extf_sig)
+    return signed_descriptor, extf_signature
 
 
 class set_app_descriptor(Task.Task):
@@ -321,10 +328,11 @@ class set_app_descriptor(Task.Task):
             crc1 = to_unsigned(crc32(img1))
             crc2 = to_unsigned(crc32(img2))
             githash = to_unsigned(int('0x' + self.env.APP_DESCRIPTOR_GITHASH, 16))
+            extf_signature = None
             if self.generator.bld.env.AP_SIGNED_FIRMWARE:
                 sig = bytearray([0 for i in range(76)])
                 if self.generator.bld.env.PRIVATE_KEY:
-                    sig_signed = sign_firmware(img1+img2+extf_img, self.generator.bld.env.PRIVATE_KEY)
+                    sig_signed, extf_signature = sign_firmware(img1, img2, extf_img, self.generator.bld.env.PRIVATE_KEY)
                     if sig_signed:
                         Logs.info("Signed firmware")
                         sig = sig_signed
@@ -334,6 +342,8 @@ class set_app_descriptor(Task.Task):
             else:
                 desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
             img[offset:offset+desc_len] = desc
+            if self.generator.bld.env.AP_SIGNED_FIRMWARE and extf_signature:
+                img += extf_signature
             Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
         open(bin_out.abspath(), 'wb').write(img)
 
