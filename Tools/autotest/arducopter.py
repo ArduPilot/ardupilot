@@ -19872,6 +19872,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("INS_USE", 1)
         assert_kept(fly(5), kept, "Hover Z-bias not saved: accel switched on ground")
 
+        self.start_subtest("Bit 2 cleared after a boot with it keeps the value: the bias it held has not settled")
+        # released, the bias overshoots on the error built up while it was held: without the rule a flight
+        # armed 15 s after the release saved 0.048
+        self.set_parameter("INS_ACC_VRFB_Z", 0.5)
+        self.set_parameter("ACC_ZBIAS_LEARN", 5)
+        self.context_clear_collection('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("EKF3 IMU0 initialised", check_context=True, timeout=60)
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(5, "bias learning held")
+        self.set_parameter("ACC_ZBIAS_LEARN", 1)
+        assert_kept(fly(15), 0.5, "Hover Z-bias not saved: bit 2 held, reboot")
+
+        self.start_subtest("A reset at rest after the release opens the first flight")
+        ekf_reset()
+        assert_saved(fly(15), expected, "the first flight after a reset")
+
     def VibrationRectificationBiasLearning(self):
         '''Test hover Z-bias learning for vibration rectification'''
         # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
