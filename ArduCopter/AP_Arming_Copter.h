@@ -58,6 +58,10 @@ protected:
 
 private:
 
+    // clear baro drift accumulated while disarmed, unless the vehicle was
+    // disarmed in the air
+    void reset_height_datum();
+
     // actually contains the pre-arm checks.  This is wrapped so that
     // we can store away success/failure of the checks.
     bool run_pre_arm_checks(bool display_failure);
