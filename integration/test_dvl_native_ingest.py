@@ -92,13 +92,15 @@ def main():
             while message := log.recv_match(type="VISV"):
                 if (abs(message.VX - 0.4) < 0.01 and
                         abs(message.VY + 0.2) < 0.01 and
-                        abs(message.VZ - 0.1) < 0.01):
+                        abs(message.VZ - 0.1) < 0.01 and
+                        abs(message.VErr - 0.1) < 0.01 and
+                        message.Ign == 0 and message.Q == 0):
                     found = True
                     break
             log.close()
         if not found:
-            raise AssertionError("Synthetic velocity was not recorded as native VISV")
-        print("Native ArduSub VisualOdom logged synthetic DVL velocity")
+            raise AssertionError("Native VISV did not contain the expected velocity, error and acceptance")
+        print("Native ArduSub VisualOdom logged accepted synthetic DVL velocity and error")
 
 
 if __name__ == "__main__":
