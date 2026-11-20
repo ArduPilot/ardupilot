@@ -19,7 +19,6 @@ from pathlib import Path
 
 import monocypher
 
-
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = ROOT / 'build' / 'renode-signing-security'
 FORGED_ZERO_KEY_SIGNATURE = bytes.fromhex('58' + '66' * 31 + '01' + '00' * 31)
