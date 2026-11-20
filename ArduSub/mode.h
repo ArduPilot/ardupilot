@@ -66,6 +66,13 @@ public:
 
     // returns a unique number specific to this mode
     virtual Mode::Number number() const = 0;
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // progress towards this mode's navigation target, for
+    // NAV_CONTROLLER_PROGRESS.  Returns false if the mode has no
+    // progress to report
+    virtual bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) { return false; }
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
   
     // pilot input processing
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
@@ -244,6 +251,9 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return true; }
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     bool guided_limit_check();
     void guided_limit_init_time_and_pos();
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
@@ -299,6 +309,9 @@ public:
     bool requires_altitude() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) override;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
     bool auto_loiter_start();
     void auto_wp_start(const Vector3f& destination_neu_cm);
     void auto_wp_start(const Location& dest_loc);
@@ -395,6 +408,13 @@ protected:
     const char *name4() const override { return "SURF"; }
     Mode::Number number() const override { return Mode::Number::SURFACE; }
     bool nobaro_mode;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+public:
+    // depth still to ascend, as a part of the depth when the ascent started
+    bool get_nav_progress(AP_Mission::ItemProgress &progress, Location &target) override;
+private:
+    float start_depth_m;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 };
 
 

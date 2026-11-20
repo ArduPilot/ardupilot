@@ -584,3 +584,27 @@ void ModeAuto::auto_terrain_recover_run()
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
 }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+// progress of the mission item being run.  Sub does not report AUTO as
+// requiring a mission, so the mission item's progress is reported here
+bool ModeAuto::get_nav_progress(AP_Mission::ItemProgress &progress, Location &target)
+{
+    const uint16_t index = sub.mission.get_current_nav_index();
+    if (index == 0) {
+        return false;
+    }
+    progress = sub.mission.get_item_progress(index);
+    progress.index = index;
+    if (sub.auto_mode == Auto_Circle) {
+        // circling the centre
+        Location origin;
+        if (AP::ahrs().get_origin(origin)) {
+            target = Location::from_ekf_offset_NED_m(sub.circle_nav.get_center_NED_m(), sub.circle_nav.center_is_terrain_alt() ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        }
+    } else {
+        UNUSED_RESULT(sub.wp_nav.get_wp_leg_destination_loc(target));
+    }
+    return true;
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED

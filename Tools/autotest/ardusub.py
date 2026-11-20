@@ -921,6 +921,117 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self._MAV_CMD_CONDITION_YAW(self.run_cmd)
         self._MAV_CMD_CONDITION_YAW(self.run_cmd_int)
 
+    def NAV_CONTROLLER_PROGRESS(self):
+        '''test NAV_CONTROLLER_PROGRESS reports progress through mission items'''
+        wp_hold_s = 3
+        loiter_time_s = 4
+        home = self.home_position_as_location()
+        circle_centre = self.offset_location_ne(home, 0, 20)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, -5, {"p1": wp_hold_s}),     # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, -5),                       # 2
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME, 20, 20, -5, {                  # 3
+                "p1": loiter_time_s,
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            }),
+            self.create_MISSION_ITEM_INT(                                            # 4
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                p1=1,
+                p3=5,
+                x=int(circle_centre.lat * 1e7),
+                y=int(circle_centre.lng * 1e7),
+                z=-5,
+            ),
+            # Sub rejects a NAV_DELAY with the absolute frame it is
+            # downloaded with ("Bad alt frame"), so there is none here
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),                             # 5
+        ])
+        self.context_push()
+        self.context_set_message_rate_hz('NAV_CONTROLLER_PROGRESS', 10)
+        self.context_collect('NAV_CONTROLLER_PROGRESS')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(5, timeout=300)
+        self.wait_altitude(-0.5, 5, relative=True, timeout=120)
+        msgs = self.context_collection('NAV_CONTROLLER_PROGRESS')
+        self.context_pop()
+        self.disarm_vehicle()
+
+        by_seq = self.nav_progress_by_seq(msgs, 5)
+
+        def phases(seq, want):
+            return self.assert_nav_progress_phases(by_seq[seq], f"item {seq}", want)
+
+        self.start_subtest("WAYPOINT reports 3D distance then hold time")
+        (dive, hold) = phases(1, ['distance_remaining', 'time_remaining'])
+        self.assert_nav_progress_distance_closes("item 1", dive, 4, leg=5, close=1)
+        self.assert_nav_progress_countdown("item 1", hold, 'time_remaining', wp_hold_s, min_values=2)
+
+        self.start_subtest("WAYPOINT reports its leg")
+        (approach, ) = phases(2, ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("item 2", approach, 15, leg=20, close=2)
+        self.assert_nav_progress_target("item 2", approach, loc=self.offset_location_ne(home, 20, 0))
+
+        self.start_subtest("LOITER_TIME reports distance then loiter time")
+        (approach, hold) = phases(3, ['distance_remaining', 'time_remaining'])
+        self.assert_nav_progress_distance_closes("item 3", approach, 15, leg=20, close=2)
+        self.assert_nav_progress_countdown("item 3", hold, 'time_remaining', loiter_time_s)
+
+        self.start_subtest("LOITER_TURNS reports distance to edge then turns")
+        (approach, turns) = phases(4, ['distance_remaining', 'count_remaining'])
+        self.assert_nav_progress_distance_closes("item 4", approach, 3, close=2)
+        self.assert_nav_progress_countdown("item 4", turns, 'count_remaining', 1)
+        self.assert_nav_progress_target("item 4", turns, loc=circle_centre)
+
+        self.start_subtest("LAND reports distance to its location then to the surface")
+        (land, ) = phases(5, ['distance_remaining'])
+        if land[-1].distance_remaining > 1.5:
+            raise NotAchievedException(f"item 5: ended {land[-1].distance_remaining}m from the surface")
+
+    def NAV_CONTROLLER_PROGRESS_Modes(self):
+        '''test NAV_CONTROLLER_PROGRESS reports progress towards the targets of modes other than AUTO'''
+        self.context_push()
+        self.context_set_message_rate_hz('NAV_CONTROLLER_PROGRESS', 10)
+
+        def collect(description, fn):
+            self.context_collect('NAV_CONTROLLER_PROGRESS')
+            fn()
+            msgs = self.context_stop_collecting('NAV_CONTROLLER_PROGRESS')
+            if len(msgs) == 0:
+                raise NotAchievedException(f"{description}: no NAV_CONTROLLER_PROGRESS")
+            self.assert_nav_progress_not_mission(description, msgs)
+            return msgs
+
+        self.dive(-10)
+
+        self.start_subtest("GUIDED reports 3D distance to its destination")
+        self.change_mode('GUIDED')
+        dest = self.offset_location_ne(self.get_location(), 20, 0)
+        dest.set_alt_m(-10, AltFrame.ABOVE_HOME)
+
+        def reposition():
+            self.send_do_reposition(dest)
+            self.wait_location(dest, accuracy=1, timeout=120)
+        msgs = collect("guided", reposition)
+        # GUIDED holds position until the reposition arrives
+        msgs = self.nav_progress_from_distance(msgs, "guided", 15)
+        (approach, ) = self.assert_nav_progress_phases(msgs, "guided", ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("guided", approach, 15, leg=20, close=2)
+        self.assert_nav_progress_target("guided", approach, loc=dest)
+
+        self.start_subtest("SURFACE reports depth still to ascend")
+        msgs = collect("surface", lambda: (self.change_mode('SURFACE'),
+                                           self.wait_altitude(-0.5, 5, relative=True, timeout=120)))
+        msgs = self.nav_progress_from_distance(msgs, "surface", 5)
+        (ascent, ) = self.assert_nav_progress_phases(msgs, "surface", ['distance_remaining'])
+        self.assert_nav_progress_distance_closes("surface", ascent, 8, leg=10, close=1.5)
+        self.assert_nav_progress_target("surface", ascent, loc=dest, max_dist=3)
+
+        self.context_pop()
+        self.disarm_vehicle()
+
     def MAV_CMD_DO_REPOSITION(self):
         """Move vehicle using MAV_CMD_DO_REPOSITION"""
         # Dive so that rangefinder is in range, required for MAV_FRAME_GLOBAL_TERRAIN_ALT
@@ -1878,6 +1989,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         ret.extend([
             self.DiveManual,
+            self.NAV_CONTROLLER_PROGRESS,
+            self.NAV_CONTROLLER_PROGRESS_Modes,
             self.SIMCompare,
             self.GCSFailsafe,
             self.ThrottleFailsafe,
