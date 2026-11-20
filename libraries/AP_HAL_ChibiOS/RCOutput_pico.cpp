@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * PIO-driven outputs for RP2350: DShot600 on PIO2, WS2812 / NeoPixel on PIO1.
+ * PIO-driven outputs for RP2350: DShot150/300/600 on PIO2, WS2812 / NeoPixel on PIO1.
  *
  * The DShot programs are assembled from Betaflight's src/platform/PICO/dshot.pio
  * (GPLv3), by Matthew Selby, Andy Piper and qqqlab, and the WS2812 program is
@@ -106,15 +106,14 @@ extern const AP_HAL::HAL& hal;
 #define DSHOT600_BIDIR_STALL_LIMIT  2U
 
 /*
-  Bit periods in PIO cycles, fixed by the programs above. These set the PIO
-  clock: DShot600 is 1/600000 s per bit, so the non-bidirectional program wants
-  24 MHz and the bidirectional one 75 MHz.
+  Bit periods in PIO cycles, fixed by the programs above. The bitrate sets the
+  PIO clock, as in Betaflight: DShot600 runs the non-bidirectional program at
+  24 MHz and the bidirectional one at 75 MHz, DShot300 at half that and
+  DShot150 at a quarter. The ESC answers at 5/4 of the bitrate, so the receive
+  loop takes the same 5.56 samples a telemetry bit at every rate.
  */
-#define DSHOT600_CYCLES_PER_BIT       40U
-#define DSHOT600_BIDIR_CYCLES_PER_BIT 125U
-
-#define DSHOT600_PIO_HZ       24000000U
-#define DSHOT600_BIDIR_PIO_HZ 75000000U
+#define DSHOT_CYCLES_PER_BIT       40U
+#define DSHOT_BIDIR_CYCLES_PER_BIT 125U
 
 /*
   The PIO clock divider for a program clock, in the 16.8 fixed point CLKDIV
@@ -128,16 +127,20 @@ static constexpr uint32_t pio_div256(uint32_t pio_hz)
     return (uint32_t)(((uint64_t)RP_CLK_SYS_FREQ * 256U) / pio_hz);
 }
 
-static_assert(pio_div256(DSHOT600_BIDIR_PIO_HZ) >= 256U,
-              "bidirectional DShot needs a system clock of at least 75MHz");
+static_assert(pio_div256(600000U * DSHOT_BIDIR_CYCLES_PER_BIT) >= 256U,
+              "bidirectional DShot600 needs a system clock of at least 75MHz");
 
 /*
-  18 PIO cycles per sample against a 1/(5/4 * 600000) telemetry bit, at the
-  PIO clock the divider actually gives, so the run-length decode stays on
-  scale at a system clock that is not a multiple of 75 MHz.
+  Telemetry bits per sample: 18 PIO cycles per sample against a telemetry bit
+  at 5/4 of the DShot bitrate, at the PIO clock the divider actually gives, so
+  the run-length decode stays on scale at a system clock that is not a
+  multiple of the program clock.
  */
-#define SAMPLES_TO_BITS (18.0f * 750000.0f * pio_div256(DSHOT600_BIDIR_PIO_HZ) / \
-                         ((float)RP_CLK_SYS_FREQ * 256.0f))
+static float samples_to_bits(uint32_t bitrate)
+{
+    return 18.0f * 1.25f * (float)bitrate * (float)pio_div256(bitrate * DSHOT_BIDIR_CYCLES_PER_BIT) /
+           ((float)RP_CLK_SYS_FREQ * 256.0f);
+}
 
 #define TELEM_WORDS   4     // 4 x 32 samples
 #define TELEM_MAX_EDGES 24  // 21 data bits plus the return to idle
@@ -188,6 +191,7 @@ static_assert(ws2812_T1 + ws2812_T2 + ws2812_T3 == WS2812_CYCLES_PER_BIT, "ws281
 #if HAL_DSHOT_ENABLED
 bool     RCOutput_pico::_initialised;
 bool     RCOutput_pico::_bidir;
+uint32_t RCOutput_pico::_bitrate;
 uint32_t RCOutput_pico::_chan_mask;
 uint8_t  RCOutput_pico::_gpio[RCOutput_pico::MAX_CHANNELS];
 uint8_t  RCOutput_pico::_len_transition[4];
@@ -234,15 +238,20 @@ void RCOutput_pico::load_program(bool bidir)
     }
 }
 
-bool RCOutput_pico::init(bool bidir)
+bool RCOutput_pico::init(bool bidir, uint32_t bitrate)
 {
-    if (_initialised && _bidir == bidir) {
+    if (_initialised && _bidir == bidir && _bitrate == bitrate) {
         return true;
     }
 
     load_program(bidir);
 
+    // the run-length table first: core1's read_telemetry() starts on _bidir
+    if (bidir) {
+        set_transitions(samples_to_bits(bitrate));
+    }
     _bidir = bidir;
+    _bitrate = bitrate;
     _initialised = true;
 
     // rebind anything already added, since the program moved underneath it
@@ -282,7 +291,7 @@ void RCOutput_pico::start_sm(uint8_t chan, uint8_t gpio)
 
     rp2350_reg_clear_bits(&pio->CTRL, 1U << (PIO_CTRL_SM_ENABLE_LSB + sm));
 
-    const uint32_t div256 = pio_div256(_bidir ? DSHOT600_BIDIR_PIO_HZ : DSHOT600_PIO_HZ);
+    const uint32_t div256 = pio_div256(_bitrate * (_bidir ? DSHOT_BIDIR_CYCLES_PER_BIT : DSHOT_CYCLES_PER_BIT));
     pio->SM[sm].CLKDIV = ((div256 >> 8) << PIO_CLKDIV_INT_LSB)
                        | ((div256 & 0xFFU) << PIO_CLKDIV_FRAC_LSB);
 
@@ -360,8 +369,8 @@ bool RCOutput_pico::add_channel(uint8_t chan, uint8_t gpio)
   DShot packet meaning throttle zero, which an ESC accepts and sits on.
 
   Dropping the frame when the FIFO is full is deliberate: a stale frame is worse
-  than a missed one, and at DShot600 the state machine is always ready well
-  inside a rate-loop period.
+  than a missed one, and the send pacing (dshot_pulse_time_us) keeps frames
+  further apart than a frame and its reply take at every rate.
  */
 void RCOutput_pico::write_frame(uint8_t chan, uint16_t frame)
 {
@@ -542,10 +551,6 @@ RCOutput_pico::TelemetryResult RCOutput_pico::read_telemetry(uint8_t chan, uint1
     // anything left is stale; the next response must start clean
     while (!(pio->FSTAT & (1U << (PIO_FSTAT_RXEMPTY_LSB + sm)))) {
         (void)pio->RXF[sm];
-    }
-
-    if (_len_transition[0] == 0) {
-        set_transitions(SAMPLES_TO_BITS);
     }
 
     /*

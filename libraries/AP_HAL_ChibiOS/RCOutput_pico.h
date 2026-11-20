@@ -38,11 +38,12 @@ public:
 
 #if HAL_DSHOT_ENABLED
     /*
-      Claim the PIO block and load the program for the requested direction.
-      Safe to call again to change direction; the block is reloaded. Returns
-      false if the PIO could not be claimed.
+      Claim the PIO block and load the program for the requested direction,
+      clocked for the DShot bitrate in bits per second. Safe to call again to
+      change either; the block is reloaded. Returns false if the PIO could not
+      be claimed.
      */
-    static bool init(bool bidir);
+    static bool init(bool bidir, uint32_t bitrate);
 
     // bind a channel to a GPIO. init() must have been called first.
     static bool add_channel(uint8_t chan, uint8_t gpio);
@@ -145,6 +146,7 @@ private:
 
     static bool     _initialised;
     static bool     _bidir;
+    static uint32_t _bitrate;
     static uint32_t _chan_mask;
     static uint8_t  _gpio[MAX_CHANNELS];
 

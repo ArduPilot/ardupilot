@@ -1173,16 +1173,26 @@ use output 5 for PWM there.
 `RCOutput_pico.cpp` drives DShot from PIO2; `set_group_mode()` and
 `dshot_send()` branch to it.
 
-- DShot600 only (`MOT_PWM_TYPE` 6); other rates raise a config error. SM n
-  drives output n+1, so DShot is limited to `SERVO1`-`SERVO4`.
-- One program fits at a time, so `SERVO_BLH_BDMASK` must cover every DShot
-  output or none (else a config error); a direction change reloads the
-  block. `HAL_WITH_BIDIR_DSHOT` is emitted for every RP2350 board with
-  DShot, and the hwdef `BIDIR` tag means nothing here.
-- PIO clock 24 MHz plain, 75 MHz bidirectional. A `clk_sys` that is not a
-  multiple gets a fractional divider (75.07 MHz at 200 MHz), and the decode
-  takes its scale from the divider it programs. At 200 MHz on the bench the
-  ESC's replies, at 0 rpm, decoded with no errors; no spinning motor yet.
+- DShot150, 300 and 600 (`MOT_PWM_TYPE` 4-6), as in Betaflight: both
+  programs run at every rate, clocked by the divider. DShot1200, which
+  Betaflight does not offer either, raises a config error. SM n drives
+  output n+1, so DShot is limited to `SERVO1`-`SERVO4`.
+- One program and one rate fit at a time, so `SERVO_BLH_BDMASK` must cover
+  every DShot output or none, and every DShot output must use the same rate
+  (else a config error); a change of either reloads the block.
+  `HAL_WITH_BIDIR_DSHOT` is emitted for every RP2350 board with DShot, and
+  the hwdef `BIDIR` tag means nothing here.
+- The PIO clock is 40 cycles a bit plain and 125 bidirectional: 24 and
+  75 MHz at DShot600, half that at 300, a quarter at 150. A `clk_sys` that
+  is not a multiple gets a fractional divider (75.07 MHz at 200 MHz), and
+  the decode takes its scale from the divider it programs. The ESC answers
+  at 5/4 of the bitrate, so a reply is 5.56 samples a telemetry bit at every
+  rate. At 200 MHz on the bench, AM32 replies at 0 rpm decoded with no
+  errors at DShot600 and DShot300; no spinning motor yet. At bidirectional
+  DShot150 the ESCs never answered: ESC firmware answers at 300 and 600, as
+  ArduPilot's DShot documentation says. Plain DShot150 and 300 ran at their
+  rates and the state machines took every frame; ESC acceptance could not be
+  seen without motors.
 - The frame goes in the low half of the FIFO word, as both programs start
   with `out y, 16`; in the high half a valid throttle-zero frame goes out.
 - `send_pulses_DMAR()` returns the group to IDLE itself, as no DMA
