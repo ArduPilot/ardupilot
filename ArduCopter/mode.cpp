@@ -318,6 +318,8 @@ uint32_t Copter::get_available_mode_enabled_mask() const
 // @StackCallLimit: 3
 // AUTO_RTL mission commands may make two nested mode-change calls before the
 // AP_Mission command-dispatch guard rejects the third command invocation.
+// ModeAuto::exit_mission ignores completion unless AUTO is active, preventing
+// a failed nested entry from adding another mode-change call.
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
     // update last reason

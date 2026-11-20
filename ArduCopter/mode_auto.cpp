@@ -905,6 +905,12 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 // exit_mission - function that is called once the mission completes
 void ModeAuto::exit_mission()
 {
+    // A recursive AUTO_RTL attempt can complete this mission before AUTO is
+    // entered.  Do not let its completion callback affect the active mode.
+    if (copter.flightmode != this) {
+        return;
+    }
+
     // play a tone
     AP_Notify::events.mission_complete = 1;
     // if we are not on the ground switch to loiter or land
