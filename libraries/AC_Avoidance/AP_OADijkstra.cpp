@@ -670,9 +670,29 @@ bool AP_OADijkstra::intersects_inclusion(const Vector2f &seg_start, const Vector
     return false;
 }
 
-// returns true if line segment intersects an exclusion polygon or circle.  if skip_zones_containing_start
-// is true then exclusion zones that contain seg_start are ignored, so a segment may leave the zone it starts in
-bool AP_OADijkstra::intersects_exclusion(const Vector2f &seg_start, const Vector2f &seg_end, bool skip_zones_containing_start) const
+// returns true if a segment that starts inside a polygon crosses the polygon's boundary again after leaving it
+static bool segment_reenters_polygon(const Vector2f *boundary, uint16_t num_points, const Vector2f &seg_start, const Vector2f &seg_end)
+{
+    if (Polygon_complete(boundary, num_points)) {
+        num_points--;
+    }
+    float first_dist_cm = FLT_MAX;
+    float last_dist_cm = -FLT_MAX;
+    for (uint16_t i = 0; i < num_points; i++) {
+        Vector2f intersection;
+        if (Vector2f::segment_intersection(boundary[i], boundary[(i + 1) % num_points], seg_start, seg_end, intersection)) {
+            const float dist_cm = (intersection - seg_start).length();
+            first_dist_cm = MIN(first_dist_cm, dist_cm);
+            last_dist_cm = MAX(last_dist_cm, dist_cm);
+        }
+    }
+    // crossings within 1cm are one crossing, e.g. both edges meeting at a vertex the segment passes through
+    return (last_dist_cm - first_dist_cm) > 1.0f;
+}
+
+// returns true if line segment intersects an exclusion polygon or circle.  if allow_leaving_start_zone
+// is true then a segment may leave the exclusion zone it starts in but not cross back into it
+bool AP_OADijkstra::intersects_exclusion(const Vector2f &seg_start, const Vector2f &seg_end, bool allow_leaving_start_zone) const
 {
     // return immediately if fence is not enabled
     const AC_Fence *fence = AC_Fence::get_singleton();
@@ -685,7 +705,10 @@ bool AP_OADijkstra::intersects_exclusion(const Vector2f &seg_start, const Vector
     for (uint8_t i = 0; i < fence->polyfence().get_exclusion_polygon_count(); i++) {
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
         if (boundary != nullptr) {
-            if (skip_zones_containing_start && !Polygon_outside(seg_start, boundary, num_points)) {
+            if (allow_leaving_start_zone && !Polygon_outside(seg_start, boundary, num_points)) {
+                if (segment_reenters_polygon(boundary, num_points, seg_start, seg_end)) {
+                    return true;
+                }
                 continue;
             }
             Vector2f intersection;
@@ -701,7 +724,8 @@ bool AP_OADijkstra::intersects_exclusion(const Vector2f &seg_start, const Vector
         float radius;
         if (fence->polyfence().get_exclusion_circle(i, center_pos_cm, radius)) {
             const float radius_cm = radius * 100.0f;
-            if (skip_zones_containing_start && ((seg_start - center_pos_cm).length() < radius_cm)) {
+            // a straight segment leaves a circle at most once
+            if (allow_leaving_start_zone && ((seg_start - center_pos_cm).length() < radius_cm)) {
                 continue;
             }
 
