@@ -368,6 +368,8 @@ AP_HW_DAKEFPVF405WING                1237
 
 # FlyingRC
 AP_HW_FLYINGRCH7DPRO                 1242
+AP_HW_HMJ_FCv1                       1243
+AP_HW_HMJ_FCv2                       1244
 
 AP_HW_PRINCIPIOT_H7PI                1248
 
