@@ -38,6 +38,17 @@ private:
         struct ppp_pcb_s *ppp;
         bool need_restart;
         uint32_t last_read_ms;
+
+        // outgoing frames are staged here so only complete frames
+        // reach the uart. A frame that does not fit waits for space
+        // instead of being lost
+        struct {
+            HAL_Semaphore sem;
+            uint8_t *buf;
+            uint32_t len;
+            bool pending;
+        } tx;
+        bool write_frame(void);
 #if AP_NETWORKING_CAPTURE_ENABLED
         struct {
             HAL_Semaphore sem;
