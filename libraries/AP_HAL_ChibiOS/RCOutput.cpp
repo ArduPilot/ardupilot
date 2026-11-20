@@ -1242,28 +1242,28 @@ void RCOutput::set_group_mode(pwm_group &group)
 #if defined(RP2350)
         /*
           On RP2350 DShot comes out of the PIO rather than a timer plus DMAR,
-          so none of the setup below applies. Only DShot600 has a PIO program;
-          the other rates would need their own timing and are not built.
+          so none of the setup below applies. As in Betaflight the programs run
+          at DShot150, 300 or 600 by their clock divider, and not at 1200.
          */
-        if (group.current_mode != MODE_PWM_DSHOT600) {
-            AP_BoardConfig::config_error("RP2350 DShot: only DShot600 is supported");
+        if (group.current_mode == MODE_PWM_DSHOT1200) {
+            AP_BoardConfig::config_error("RP2350 DShot: DShot1200 is not supported");
         }
         {
             const bool bidir = is_bidir_dshot_enabled(group);
             /*
-              The PIO holds one program for every motor, so DShot groups
-              configured with different directions would reload it under
-              each other and one group's ESCs would reject every frame. Check
-              the configuration rather than what is loaded now: while the mask
-              is being applied the groups are re-initialised one at a time.
+              The PIO holds one program and rate for every motor, so groups with
+              different directions or rates would reload it under each other and
+              one group's ESCs would reject every frame. Check the configuration
+              rather than what is loaded now: while the mask is being applied
+              the groups are re-initialised one at a time.
              */
             for (auto &other : pwm_group_list) {
                 if (&other != &group && is_dshot_protocol(other.current_mode) &&
-                    is_bidir_dshot_enabled(other) != bidir) {
-                    AP_BoardConfig::config_error("RP2350 DShot: BDMASK must cover all DShot outputs");
+                    (is_bidir_dshot_enabled(other) != bidir || other.current_mode != group.current_mode)) {
+                    AP_BoardConfig::config_error("RP2350 DShot: %s", is_bidir_dshot_enabled(other) != bidir ? "BDMASK must cover all DShot outputs" : "all DShot outputs need the same rate");
                 }
             }
-            bool ok = RCOutput_pico::init(bidir);
+            bool ok = RCOutput_pico::init(bidir, protocol_bitrate(group.current_mode));
             for (uint8_t j = 0; ok && j < HAL_PWM_GROUP_CHANNELS; j++) {
                 if (group.chan[j] == CHAN_DISABLED) {
                     continue;
