@@ -18977,6 +18977,72 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # without this the next test starts on this test's drift
         self.reboot_sitl()
 
+    def BaroDriftClearedOnSecondaryCore(self):
+        '''a datum reset made by a core other than the primary is reported'''
+        # each core that resets recalibrates the barometer they all share, so
+        # when the primary refuses and another core resets, the datum has still
+        # moved and the caller has to be told, which Copter shows by logging
+        # EKF_ALT_RESET.  Core 0,
+        # the primary, takes its height from the rangefinder and refuses; core
+        # 1 runs the second source set on baro and GPS and resets
+        self.set_parameters({
+            "EK3_SRC_OPTIONS": 8,  # each core runs its own source set
+            "EK3_SRC1_POSZ": 2,    # rangefinder
+            "EK3_SRC2_POSXY": 3,
+            "EK3_SRC2_VELXY": 3,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 3,
+            "EK3_SRC2_YAW": 1,
+            "EK3_PRIMARY": 0,
+            "LOG_DISARMED": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.accumulate_baro_drift()
+        # pin the precondition: the reported height is the primary's, and on
+        # the rangefinder it does not see the drift
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+        self.progress("Pre-arm altitude with drift: %.2f m" % pre_arm_alt)
+        if abs(pre_arm_alt) > 1.0:
+            raise NotAchievedException(
+                "Primary is not on rangefinder height: %.2f m of drift is reported" % pre_arm_alt)
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        self.delay_sim_time(2, reason="let the log record the arm")
+        self.disarm_vehicle(force=True)
+        dfreader = self.dfreader_for_current_onboard_log()
+        resets = 0
+        baro_alt = None
+        peak_baro_alt = 0
+        while True:
+            m = dfreader.recv_match(type=["EV", "BARO"])
+            if m is None:
+                break
+            if m.get_type() == "BARO":
+                if m.I == 0:
+                    baro_alt = m.Alt
+                    peak_baro_alt = max(peak_baro_alt, abs(m.Alt))
+                continue
+            if m.Id == 60:  # LogEvent::EKF_ALT_RESET
+                resets += 1
+        self.progress("Peak BARO.Alt: %s, final BARO.Alt: %s, EKF_ALT_RESET events: %u" %
+                      (peak_baro_alt, baro_alt, resets))
+        if peak_baro_alt < 5.0:
+            raise NotAchievedException(
+                "Expected >5 m of logged baro drift before the arm, got %s" % peak_baro_alt)
+        # the re-zeroed barometer says core 1 reset; the event says the caller
+        # was told
+        if baro_alt is None or abs(baro_alt) > 1.0:
+            raise NotAchievedException(
+                "Barometer was not re-zeroed at arm: BARO.Alt %s" % baro_alt)
+        if resets < 1:
+            raise NotAchievedException(
+                "Barometer re-zeroed at arm with no EKF_ALT_RESET: the reset core 1 "
+                "made was not reported because the primary refused")
+        # SIM_BARO_DRIFT integrates into a total that only a boot clears
+        self.reboot_sitl()
+
     def BaroDriftClearedWithEKF2(self):
         '''EKF2 must not floor the height observation at the cleared drift'''
         # EKF2 clamps the height observation at meaHgtAtTakeOff while takeoff
@@ -27105,6 +27171,7 @@ return update, 1000
             self.BaroDriftClearedWithAltOffset,
             self.BaroDriftClearedWithEKF2,
             self.BaroDriftClearedWithRangefinderHeightSwitch,
+            self.BaroDriftClearedOnSecondaryCore,
             self.EKFBootstrapReset,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
