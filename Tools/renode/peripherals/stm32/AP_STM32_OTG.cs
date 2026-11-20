@@ -632,6 +632,12 @@ namespace Antmicro.Renode.Peripherals.USB
             var maximumPacket = GetMaximumPacketSize(state.Control);
             var remaining =
                 Math.Max(0, state.TransferSize - state.Transferred);
+            if(remaining == 0 && offset < data.Length)
+            {
+                // The endpoint is armed only for SETUP reception. Keep the
+                // pending data until firmware arms the data-stage transfer.
+                return;
+            }
             var length = Math.Min(maximumPacket,
                 Math.Min(data.Length - offset, remaining));
             var packet = new byte[length];
