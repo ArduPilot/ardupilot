@@ -234,9 +234,17 @@ The default battery parameters are:
 
 This autopilot has a built-in compass. The compass is the IIS2MDC
 
+## External IMU
+
+An ADIS16507, such as the ARK ADIS16507, connects to the SPI port. Set INS_ENABLE_MASK to 7 to use it. The mask's bits follow the IMU probe list, not the IMUs found. Bits 0 and 1 are the two internal IMU variants, and bit 2 is the ADIS16507, so the default of 3 skips its probe.
+
 ## OSD Support
 
 This flight controller has an MSP-DisplayPort output on a 6-pin DJI-compatible JST SH.
+
+An analog OSD that speaks the MAX7456 protocol, such as the ARK OSD, connects to the SPI port. Set OSD_TYPE to 1 to use it. To keep MSP DisplayPort on SERIAL2 as well, set OSD_TYPE2 to 5.
+
+An OSD that takes MSP DisplayPort, such as the ARK OSD, can instead connect to the TELEM port. Set SERIAL1_PROTOCOL to 42 and SERIAL1_BAUD to 115, and leave OSD_TYPE at 5.
 
 ## PWM Output
 

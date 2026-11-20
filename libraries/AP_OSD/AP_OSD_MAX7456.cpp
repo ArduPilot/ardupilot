@@ -143,13 +143,17 @@ AP_OSD_MAX7456::AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev):
 bool AP_OSD_MAX7456::init()
 {
     uint8_t status = 0xFF;
+    uint8_t osdm = 0;
 
     _dev->get_semaphore()->take_blocking();
     _dev->write_register(MAX7456ADD_VM0, MAX7456_RESET);
     hal.scheduler->delay(1);
     _dev->read_registers(MAX7456ADD_VM0|MAX7456ADD_READ, &status, 1);
+    // a bus with no chip on it can read VM0 as 0 too, but not OSDM's
+    // reset value, which this driver never changes
+    _dev->read_registers(MAX7456ADD_OSDM|MAX7456ADD_READ, &osdm, 1);
     _dev->get_semaphore()->give();
-    if (status != 0) {
+    if (status != 0 || osdm != 0x1B) {
         return false;
     }
     return update_font();
