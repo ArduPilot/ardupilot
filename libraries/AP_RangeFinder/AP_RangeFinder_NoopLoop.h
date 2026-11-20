@@ -24,7 +24,13 @@ protected:
     }
 
 private:
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_NoopLoop(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // TOFSense datasheet: 0.03m to 8m
+        params.min_distance.set_default(0.03f);
+        params.max_distance.set_default(8.0f);
+    }
 
 
     // get a reading

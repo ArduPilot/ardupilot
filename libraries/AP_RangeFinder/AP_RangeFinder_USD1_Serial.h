@@ -34,7 +34,13 @@ protected:
 
 private:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_USD1_Serial(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+        AP_RangeFinder_Backend_Serial(_state, _params)
+    {
+        // US-D1 manual: readings may be erroneous outside 0.5m to 50m
+        params.min_distance.set_default(0.5f);
+        params.max_distance.set_default(45.0f);
+    }
 
     // detect USD1_Serial Firmware Version
     bool detect_version(void);
