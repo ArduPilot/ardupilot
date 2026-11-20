@@ -25,9 +25,8 @@ static bool all_zero_public_keys(void)
     /*
       look over all public keys, if one matches then we are OK
      */
-    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
     for (const auto &public_key : public_keys.public_key) {
-        if (memcmp(public_key.key, zero_key, AP_PUBLIC_KEY_LEN) != 0) {
+        if (!ap_public_key_is_zero(public_key.key)) {
             return false;
         }
     }
@@ -58,12 +57,26 @@ static check_fw_result_t check_firmware_signature(const app_descriptor_signed *a
       look over all public keys, if one matches then we are OK
      */
     for (const auto &public_key : public_keys.public_key) {
+        if (ap_public_key_is_zero(public_key.key)) {
+            continue;
+        }
         crypto_check_ctx ctx {};
         crypto_check_ctx_abstract *actx = (crypto_check_ctx_abstract*)&ctx;
         crypto_check_init(actx, &ad->signature[sizeof(sig_version)], public_key.key);
 
         crypto_check_update(actx, flash1, len1);
         crypto_check_update(actx, flash2, len2);
+#if EXT_FLASH_SIZE_MB && !defined(BOOT_FROM_EXT_FLASH)
+        uint8_t extf_buffer[256];
+        for (uint32_t offset = 0; offset < ad->extf_image_size; offset += sizeof(extf_buffer)) {
+            const uint32_t remaining = ad->extf_image_size - offset;
+            const uint32_t read_size = remaining < sizeof(extf_buffer) ? remaining : sizeof(extf_buffer);
+            if (!ext_flash_read(offset, extf_buffer, read_size)) {
+                return check_fw_result_t::FAIL_REASON_EXTF_READ;
+            }
+            crypto_check_update(actx, extf_buffer, read_size);
+        }
+#endif
         if (crypto_check_final(actx) == 0) {
             // good signature
             return check_fw_result_t::CHECK_FW_OK;
@@ -101,6 +114,12 @@ static check_fw_result_t check_good_firmware_signed(void)
     if (!id_ok) {
         return check_fw_result_t::FAIL_REASON_BAD_BOARD_ID;
     }
+
+#if EXT_FLASH_SIZE_MB && !defined(BOOT_FROM_EXT_FLASH)
+    if (ad->extf_image_size == 0 || ad->extf_image_size > board_info.extf_size) {
+        return check_fw_result_t::FAIL_REASON_BAD_LENGTH_EXTF;
+    }
+#endif
 
     const uint8_t *flash2 = (const uint8_t *)&ad->version_major;
     const uint8_t desc_len = offsetof(app_descriptor_signed, version_major) - offsetof(app_descriptor_signed, image_crc1);
