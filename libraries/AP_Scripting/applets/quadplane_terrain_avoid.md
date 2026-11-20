@@ -83,10 +83,12 @@ in windy conditions. This attempts to achieve that.
 
 ### TA_GSP_AIRBRAKE
 
-If the vehicle exceeds ZTB_GSP_MAX and slowing the motors (desired airspeed)
-isn't working then if this is set to 1, the script will attempt to use QHOVER
-to reduce airspeed. This doesn't work very well, so test it for your use case.
-It defaults to off.
+If the vehicle exceeds TA_GSP_MAX and slowing the motors (desired airspeed)
+isn't working, the script will attempt to use QLOITER to reduce airspeed.
+This is a negative value in m/s: airbraking is triggered when the groundspeed
+exceeds TA_GSP_MAX by more than its magnitude, e.g. -3 triggers it at 3 m/s
+over TA_GSP_MAX. This doesn't work very well, so test it for your use case.
+It defaults to 0, which is off.
 
 ### TA_CMTC_ENABLE
 

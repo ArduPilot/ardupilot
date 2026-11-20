@@ -386,7 +386,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @DisplayName: Takeoff time failure scalar
     // @Description: Scalar for how long past the expected takeoff time a takeoff should be considered as failed and the vehicle will switch to QLAND. If set to 0 there is no limit on takeoff time.
     // @Range: 1.1 5.0
-    // @Increment: 5.1
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("TKOFF_FAIL_SCL", 14, QuadPlane, takeoff_failure_scalar, 0),
 
