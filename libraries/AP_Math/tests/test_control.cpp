@@ -658,5 +658,100 @@ TEST(Control, test_limit_accel_reversal_no_lateral_spike)
     EXPECT_LT(worst_east, 0.1f * accel_max);
 }
 
+// shaper limits for the shape_vel_accel step tests
+static const float shape_vel_step_dt = 0.0025f;
+static const float shape_vel_step_accel_max = 2.5f;
+static const float shape_vel_step_jerk_max = 5.0f;
+
+struct ShapeVelStepResult {
+    float overshoot;    // furthest past the target along the step direction
+    float cross_peak;   // largest velocity error across the step direction
+    float accel_peak;
+    float jerk_peak;
+    float settle_time;  // time from which the velocity stays within 1% of the step
+    float final_error;
+};
+
+// step the velocity from vel_start to vel_desired with shape_vel_accel_xy(), or with the
+// scalar shape_vel_accel() on the x axis, and measure the response
+static ShapeVelStepResult shape_vel_step(const Vector2f &vel_start, const Vector2f &vel_desired, bool use_xy)
+{
+    const float dt = shape_vel_step_dt;
+    const float accel_max = shape_vel_step_accel_max;
+    const float jerk_max = shape_vel_step_jerk_max;
+
+    const float step = (vel_desired - vel_start).length();
+    const Vector2f dir = (vel_desired - vel_start).normalized();
+    Vector2f vel = vel_start;
+    Vector2f accel;
+    Vector2f accel_prev;
+    ShapeVelStepResult res {};
+    res.settle_time = -1.0f;
+    for (uint32_t i = 1; i <= 4.0f / dt; i++) {
+        if (use_xy) {
+            shape_vel_accel_xy(vel_desired, Vector2f(), vel, accel, accel_max, jerk_max, dt, true);
+        } else {
+            shape_vel_accel(vel_desired.x, 0.0f, vel.x, accel.x, -accel_max, accel_max, jerk_max, dt, true);
+        }
+        vel += accel * dt;
+        const Vector2f vel_error = vel - vel_desired;
+        res.overshoot = MAX(res.overshoot, vel_error * dir);
+        res.cross_peak = MAX(res.cross_peak, fabsf(vel_error % dir));
+        res.accel_peak = MAX(res.accel_peak, accel.length());
+        res.jerk_peak = MAX(res.jerk_peak, (accel - accel_prev).length() / dt);
+        accel_prev = accel;
+        if (vel_error.length() > 0.01f * step) {
+            res.settle_time = -1.0f;
+        } else if (res.settle_time < 0.0f) {
+            res.settle_time = i * dt;
+        }
+    }
+    res.final_error = (vel - vel_desired).length();
+    return res;
+}
+
+TEST(Control, test_shape_vel_accel_step_response)
+{
+    const float accel_max = shape_vel_step_accel_max;
+    const float jerk_max = shape_vel_step_jerk_max;
+    const Vector2f dir_30deg {cosf(radians(30.0f)), sinf(radians(30.0f))};
+
+    struct StepCase {
+        Vector2f vel_start;
+        Vector2f vel_desired;
+        bool use_xy;
+    };
+    const StepCase cases[] = {
+        // scalar, jerk limited with peak accel sqrt(v * J) below accel_max, then reaching accel_max
+        {{0.0f, 0.0f}, {0.75f, 0.0f}, false},
+        {{0.75f, 0.0f}, {0.0f, 0.0f}, false},
+        {{0.0f, 0.0f}, {3.0f, 0.0f}, false},
+        {{3.0f, 0.0f}, {0.0f, 0.0f}, false},
+        // the same steps through shape_vel_accel_xy() along the x axis
+        {{0.0f, 0.0f}, {0.75f, 0.0f}, true},
+        {{0.75f, 0.0f}, {0.0f, 0.0f}, true},
+        {{0.0f, 0.0f}, {3.0f, 0.0f}, true},
+        {{3.0f, 0.0f}, {0.0f, 0.0f}, true},
+        // and off the axes
+        {Vector2f(), dir_30deg * 3.0f, true},
+        {dir_30deg * 3.0f, Vector2f(), true},
+    };
+
+    for (const StepCase &c : cases) {
+        const ShapeVelStepResult res = shape_vel_step(c.vel_start, c.vel_desired, c.use_xy);
+        const float step = (c.vel_desired - c.vel_start).length();
+        // minimum time for a jerk and acceleration limited velocity change
+        const float accel_peak_min_time = MIN(safe_sqrt(step * jerk_max), accel_max);
+        const float min_time = step / accel_peak_min_time + accel_peak_min_time / jerk_max;
+        EXPECT_LE(res.overshoot, 0.005f * step);
+        EXPECT_LE(res.cross_peak, 0.001f * step);
+        EXPECT_LE(res.accel_peak, accel_max * 1.001f);
+        EXPECT_LE(res.jerk_peak, jerk_max * 1.001f);
+        EXPECT_GT(res.settle_time, 0.0f);
+        EXPECT_LE(res.settle_time, min_time);
+        EXPECT_LE(res.final_error, 1.0e-4f);
+    }
+}
+
 AP_GTEST_MAIN()
 int hal = 0;
