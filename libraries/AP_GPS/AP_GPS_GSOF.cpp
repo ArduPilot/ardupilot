@@ -114,6 +114,9 @@ bool AP_GPS_GSOF::configure(void)
             gsofmsgreq_index++;
             next_req_gsof++;
         }
+    } else {
+        // all message outputs are configured; manage internal logging
+        update_raw_data_logging();
     }
     return true;
 }
@@ -190,6 +193,72 @@ AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, con
     buffer[19] = checksum;
 
     port->write((const uint8_t*)buffer, sizeof(buffer));
+}
+
+void
+AP_GPS_GSOF::update_raw_data_logging()
+{
+    const int8_t raw_data = gps._raw_data;
+    if (raw_data == 0) {
+        return;
+    }
+    if (!validate_raw_data(raw_data)) {
+        // warn once per boot rather than spamming
+        if (!logging_state_known) {
+            logging_state_known = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GSOF instance %d has invalid GPS_RAW_DATA of %d", state.instance, (int)raw_data);
+        }
+        return;
+    }
+
+    bool want_logging = true;
+    if (raw_data == RAW_DATA_STOP_WHEN_DISARMED) {
+        // log until the first arm completes, stop on disarm, resume on re-arm
+        if (hal.util->get_soft_armed()) {
+            has_been_armed = true;
+        } else if (has_been_armed) {
+            want_logging = false;
+        }
+    }
+
+    if (!logging_state_known || want_logging != logging_requested) {
+        logging_state_known = true;
+        logging_requested = want_logging;
+        requestLogging(want_logging);
+    }
+}
+
+void
+AP_GPS_GSOF::requestLogging(const bool enable)
+{
+    // Binary command to start/stop the DEFAULT log; see Trimble OEM GNSS
+    // "Logging" file control. Byte 4 is the action (0x08 start, 0x09 stop),
+    // not a transaction number.
+    uint8_t buffer[15] = {0x02,0x00,0x4C,0x09,
+                          static_cast<uint8_t>(enable ? 0x08 : 0x09),
+                          'D','E','F','A','U','L','T',0x00,
+                          0x00,0x03}; // checksum, ETX
+
+    uint8_t checksum = 0;
+    for (uint8_t a = 1; a < (sizeof(buffer) - 2); a++) {
+        checksum += buffer[a];
+    }
+    buffer[sizeof(buffer) - 2] = checksum;
+
+    port->write((const uint8_t*)buffer, sizeof(buffer));
+}
+
+bool
+AP_GPS_GSOF::validate_raw_data(const int8_t raw_data) const
+{
+    switch (raw_data) {
+    case RAW_DATA_IGNORE:
+    case RAW_DATA_ALWAYS_LOG:
+    case RAW_DATA_STOP_WHEN_DISARMED:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool

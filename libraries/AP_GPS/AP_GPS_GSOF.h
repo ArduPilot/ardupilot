@@ -68,7 +68,21 @@ private:
     // Send a request to the GPS to enable a message type on the port at the specified rate.
     void requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz);
 
+    // GPS_RAW_DATA values understood by this driver
+    static constexpr int8_t RAW_DATA_IGNORE = 0;
+    static constexpr int8_t RAW_DATA_ALWAYS_LOG = 1;
+    static constexpr int8_t RAW_DATA_STOP_WHEN_DISARMED = 2;
+
+    // Send a request to the GPS to start or stop logging to its internal storage.
+    // The ACK from the device is ignored.
+    void requestLogging(const bool enable);
+
+    // Start/stop the receiver's internal logging according to GPS_RAW_DATA
+    // and the vehicle's armed state.
+    void update_raw_data_logging();
+
     bool validate_baud(const uint8_t baud) const WARN_IF_UNUSED;
+    bool validate_raw_data(const int8_t raw_data) const WARN_IF_UNUSED;
     bool validate_com_port(const uint8_t com_port) const WARN_IF_UNUSED;
 
     void pack_state_data();
@@ -78,5 +92,10 @@ private:
     uint8_t gsofmsgreq_index;
     uint16_t next_req_gsof;
     AP_GSOF::MsgTypes requested_msgs;
+
+    // state for GPS_RAW_DATA handling
+    bool logging_requested;     // true if we have asked the receiver to log
+    bool logging_state_known;   // false until the first start/stop request has been sent
+    bool has_been_armed;        // true once the vehicle has armed
 };
 #endif
