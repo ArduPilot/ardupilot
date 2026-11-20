@@ -112,6 +112,7 @@ def pre_build(self):
     lib_vars['WAF_BUILD_TARGET'] = self.targets
     lib_vars['ARDUPILOT_LIB'] = self.bldnode.find_or_declare('lib/').abspath()
     lib_vars['ARDUPILOT_BIN'] = self.bldnode.find_or_declare('lib/bin').abspath()
+    lib_vars['HWDEF_DIR'] = os.path.dirname(self.env.HWDEF)
     target = self.env.ESP32_TARGET
     esp_idf = self.cmake(
             name='esp-idf',
@@ -126,8 +127,18 @@ def pre_build(self):
     # the .defaults changes. it uses a stamp to find the sdkconfig. changing
     # the sdkconfig WILL NOT cause it to be deleted as it's not an input. this
     # is by design so the user can tweak it for testing purposes.
+    sdkconfig_defaults = [
+        self.srcnode.find_or_declare(self.env.AP_HAL_ESP32+"/sdkconfig.defaults")
+    ]
+
+    board_defaults = os.path.join(os.path.dirname(self.env.HWDEF), 'sdkconfig.defaults')
+    if os.path.isfile(board_defaults):
+        sdkconfig_defaults.append(
+            self.srcnode.find_resource(os.path.relpath(board_defaults, self.srcnode.abspath()))
+        )
+
     clean_sdkconfig_task = esp_idf_showinc.create_task("clean_sdkconfig",
-        src=self.srcnode.find_or_declare(self.env.AP_HAL_ESP32+"/sdkconfig.defaults"),
+        src=sdkconfig_defaults,
         tgt=self.bldnode.find_or_declare("esp-idf_build/.clean-stamp-sdkconfig"))
 
     esp_idf_showinc.post()
