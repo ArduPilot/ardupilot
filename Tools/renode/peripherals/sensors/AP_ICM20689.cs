@@ -1,20 +1,22 @@
 //
-// ICM-20689 IMU on SPI, as AP_InertialSensor_Invensense drives it:
-// WHOAMI 0x98, PWR_MGMT_1 reset self-clears and the CLK_ZGYRO wake
+// Invensense MPU6000/MPU6500/MPU9250/ICM2060x/ICM20689/ICM20789 IMU on SPI,
+// as AP_InertialSensor_Invensense drives it: WHOAMI selects the part
+// (default 0x98, ICM-20689), PWR_MGMT_1 reset self-clears and the CLK_ZGYRO wake
 // value must read back verbatim (the probe's pass/fail gate), all
 // configuration registers read back what was written (the driver
 // re-reads its 13 checked registers every 20 transfers and resets on
 // any mismatch), and samples arrive through the FIFO: big-endian
 // int16 records of accel XYZ, temp, gyro XYZ (14 bytes), count in
 // FIFO_COUNTH/L, streamed from non-incrementing FIFO_R_W. All other
-// registers are plain read/write storage.
+// registers are plain read/write storage. Scaling follows ACCEL_CONFIG and
+// GYRO_CONFIG (ICM-20601 ranges are doubled).
 //
-// Populate enough interpolated records to cover elapsed physics time when the
-// driver reads FIFO_COUNTH. Renode's emulated F405 cannot drain a free-running
-// 1kHz FIFO in real time; coupling production to the driver's poll preserves
-// fresh lockstep feedback without accumulating stale motion data. Acceleration
-// and angular-rate samples follow physics truth; FIFO and TEMP_OUT report the
-// same board temperature so the driver's raw-temperature check passes.
+// A 1kHz virtual-time tick fills the FIFO at the configured rate: 8kHz with
+// the DLPF bypassed (DLPF_CFG 0/7, fast sampling), 32kHz with FCHOICE_B set,
+// else 1kHz / (1 + SMPLRT_DIV). The FIFO has the part's size and, when full,
+// drops new records (CONFIG FIFO_MODE) or the oldest. Samples follow physics
+// truth; FIFO and TEMP_OUT report the same board temperature so the driver's
+// raw-temperature check passes.
 //
 using System;
 using System.Collections.Generic;
@@ -22,6 +24,8 @@ using Antmicro.Renode.Core;
 using Antmicro.Renode.Peripherals;
 using Antmicro.Renode.Peripherals.SPI;
 using Antmicro.Renode.Peripherals.Miscellaneous;
+using Antmicro.Renode.Peripherals.Timers;
+using Antmicro.Renode.Time;
 
 namespace Antmicro.Renode.Peripherals.Sensors
 {
@@ -39,6 +43,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
             thermal = AP_BoardThermalState.ForMachine(machine);
             fifo = new Queue<byte>();
             registers = new byte[128];
+            sampleTimer = new LimitTimer(machine.ClockSource, TickRateHz * 8, this, "invensense odr",
+                                         limit: 8, direction: Direction.Ascending,
+                                         enabled: true, workMode: WorkMode.Periodic, eventEnabled: true);
+            sampleTimer.LimitReached += OnSampleTick;
             Reset();
         }
 
@@ -46,9 +54,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
             Array.Clear(registers, 0, registers.Length);
             fifo.Clear();
-            previousAcceleration = null;
-            previousGyro = null;
-            previousTimestampUs = 0;
+            rateAccumulator = 0;
+            latchedCount = 0;
             transferByte = 0;
             reading = false;
             currentReg = 0;
@@ -103,39 +110,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
             switch(reg)
             {
             case FIFO_COUNTH:
-                fifo.Clear();
-                if((registers[USER_CTRL] & FIFO_EN_BIT) != 0)
-                {
-                    var truth = physics.Current;
-                    var acceleration = AP_SensorOrientation.BodyToSensor(
-                        truth.SpecificForceMS2, rotation);
-                    var gyro = AP_SensorOrientation.BodyToSensor(
-                        truth.GyroRadS, rotation);
-                    var elapsedUs = previousTimestampUs == 0 ||
-                        truth.TimestampUs <= previousTimestampUs ?
-                        NominalPollPeriodUs : truth.TimestampUs - previousTimestampUs;
-                    var sampleCount = Math.Max(1, (int)Math.Min(
-                        MaxSamplesPerPoll,
-                        (elapsedUs + SamplePeriodUs / 2) / SamplePeriodUs));
-                    if(previousAcceleration == null)
-                    {
-                        previousAcceleration = acceleration;
-                        previousGyro = gyro;
-                    }
-                    for(var i = 0; i < sampleCount; i++)
-                    {
-                        var alpha = (i + 1.0f) / sampleCount;
-                        QueueSample(
-                            Interpolate(previousAcceleration, acceleration, alpha),
-                            Interpolate(previousGyro, gyro, alpha));
-                    }
-                    previousAcceleration = acceleration;
-                    previousGyro = gyro;
-                    previousTimestampUs = truth.TimestampUs;
-                }
-                return (byte)(fifo.Count >> 8);
+                // latch so COUNTL matches even if a tick lands between them
+                latchedCount = fifo.Count;
+                return (byte)(latchedCount >> 8);
             case FIFO_COUNTL:
-                return (byte)(fifo.Count & 0xFF);
+                return (byte)(latchedCount & 0xFF);
             case FIFO_R_W:
                 return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
             case INT_STATUS:
@@ -161,6 +140,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 if((value & FIFO_RESET) != 0)
                 {
                     fifo.Clear();
+                    rateAccumulator = 0;
                 }
                 registers[reg] = (byte)(value & ~FIFO_RESET); // FIFO_RESET self-clears
                 break;
@@ -172,17 +152,105 @@ namespace Antmicro.Renode.Peripherals.Sensors
             }
         }
 
+        private void OnSampleTick()
+        {
+            if((registers[USER_CTRL] & FIFO_EN_BIT) == 0 || registers[FIFO_EN] == 0)
+            {
+                return;
+            }
+            rateAccumulator += FifoRateHz();
+            var samples = rateAccumulator / TickRateHz;
+            rateAccumulator %= TickRateHz;
+            if(samples == 0)
+            {
+                return;
+            }
+            var truth = physics.Current;
+            var acceleration = AP_SensorOrientation.BodyToSensor(
+                truth.SpecificForceMS2, rotation);
+            var gyro = AP_SensorOrientation.BodyToSensor(
+                truth.GyroRadS, rotation);
+            var capacity = FifoCapacity();
+            for(var i = 0; i < samples; i++)
+            {
+                if(fifo.Count + SampleSize > capacity)
+                {
+                    if((registers[CONFIG] & FIFO_MODE_STOP) != 0)
+                    {
+                        break;
+                    }
+                    for(var b = 0; b < SampleSize && fifo.Count > 0; b++)
+                    {
+                        fifo.Dequeue();
+                    }
+                }
+                QueueSample(acceleration, gyro);
+            }
+        }
+
+        private int FifoRateHz()
+        {
+            var div = 1 + registers[SMPLRT_DIV];
+            if(whoAmI != WHOAMI_MPU6000 && (registers[GYRO_CONFIG] & 3) != 0)
+            {
+                return 32000; // FCHOICE_B: DLPF and SMPLRT_DIV bypassed
+            }
+            var dlpf = registers[CONFIG] & 7;
+            if(dlpf == 0 || dlpf == 7)
+            {
+                // SMPLRT_DIV only divides the 8kHz rate on the MPU6000
+                return whoAmI == WHOAMI_MPU6000 ? 8000 / div : 8000;
+            }
+            return 1000 / div;
+        }
+
+        private int FifoCapacity()
+        {
+            switch(whoAmI)
+            {
+            case WHOAMI_MPU6000:
+                return 1024;
+            case 0x12: // ICM20602
+                return 1008;
+            case 0x98: // ICM20689, ICM20789: ACCEL_CONFIG2 FIFO_SIZE
+            case 0x02:
+            case 0x03:
+                return 512 << (registers[ACCEL_CONFIG2] >> 6);
+            default:
+                return 512;
+            }
+        }
+
         private void QueueSample(float[] acceleration, float[] gyro)
         {
             // The Invensense backend maps packet words to sensor axes as
             // (word1, word0, -word2), for both acceleration and gyro.
-            PushWord(ScaleWord(acceleration[1], AccelScale));
-            PushWord(ScaleWord(acceleration[0], AccelScale));
-            PushWord(ScaleWord(-acceleration[2], AccelScale));
+            var accelScale = AccelScale();
+            var gyroScale = GyroScale();
+            PushWord(ScaleWord(acceleration[1], accelScale));
+            PushWord(ScaleWord(acceleration[0], accelScale));
+            PushWord(ScaleWord(-acceleration[2], accelScale));
             PushWord(TemperatureRaw());
-            PushWord(ScaleWord(gyro[1], GyroScale));
-            PushWord(ScaleWord(gyro[0], GyroScale));
-            PushWord(ScaleWord(-gyro[2], GyroScale));
+            PushWord(ScaleWord(gyro[1], gyroScale));
+            PushWord(ScaleWord(gyro[0], gyroScale));
+            PushWord(ScaleWord(-gyro[2], gyroScale));
+        }
+
+        // m/s^2 per LSB for ACCEL_FS_SEL: +/-2g..16g, ICM-20601 +/-4g..32g
+        private double AccelScale()
+        {
+            var lsbPerG = (whoAmI == WHOAMI_ICM20601 ? 8192.0 : 16384.0) /
+                (1 << ((registers[ACCEL_CONFIG] >> 3) & 3));
+            return Gravity / lsbPerG;
+        }
+
+        // rad/s per LSB for FS_SEL: 250..2000dps, ICM-20601 500..4000dps;
+        // 16.4 LSB/dps at 2000dps as the driver decodes it
+        private double GyroScale()
+        {
+            var lsbPerDps = (whoAmI == WHOAMI_ICM20601 ? 65.6 : 131.2) /
+                (1 << ((registers[GYRO_CONFIG] >> 3) & 3));
+            return Math.PI / 180.0 / lsbPerDps;
         }
 
         // zero and LSB/C from AP_InertialSensor_Invensense for each part
@@ -199,21 +267,17 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 zero = 36.53;
                 scale = 1.0 / 340;
                 break;
+            case 0x02: // ICM20789
+            case 0x03:
+                scale = 0.003;
+                break;
             case 0x71: // MPU9250
+            case 0x73: // MPU9255
                 zero = 21.0;
                 scale = 1.0 / 340;
                 break;
             }
             return ScaleWord((float)(thermal.TemperatureC - zero), scale);
-        }
-
-        private static float[] Interpolate(float[] from, float[] to, float alpha)
-        {
-            return new float[] {
-                from[0] + (to[0] - from[0]) * alpha,
-                from[1] + (to[1] - from[1]) * alpha,
-                from[2] + (to[2] - from[2]) * alpha,
-            };
         }
 
         private static short ScaleWord(float value, double scale)
@@ -234,18 +298,23 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly byte rotation;
         private readonly AP_PhysicsState physics;
         private readonly AP_BoardThermalState thermal;
-        private float[] previousAcceleration;
-        private float[] previousGyro;
-        private ulong previousTimestampUs;
+        private readonly LimitTimer sampleTimer;
+        private int rateAccumulator;
+        private int latchedCount;
         private int transferByte;
         private bool reading;
         private byte currentReg;
 
-        private const ulong SamplePeriodUs = 1000;
-        private const ulong NominalPollPeriodUs = 8000;
-        private const ulong MaxSamplesPerPoll = 64;
+        private const int TickRateHz = 1000;
+        private const int SampleSize = 14;
 
         private const byte PRODUCT_ID = 0x0C;
+        private const byte SMPLRT_DIV = 0x19;
+        private const byte CONFIG = 0x1A;
+        private const byte GYRO_CONFIG = 0x1B;
+        private const byte ACCEL_CONFIG = 0x1C;
+        private const byte ACCEL_CONFIG2 = 0x1D;
+        private const byte FIFO_EN = 0x23;
         private const byte INT_STATUS = 0x3A;
         private const byte TEMP_OUT_H = 0x41;
         private const byte TEMP_OUT_L = 0x42;
@@ -258,8 +327,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private const byte FIFO_RESET = 0x04;
         private const byte FIFO_EN_BIT = 0x40;
+        private const byte FIFO_MODE_STOP = 0x40;
+        private const byte WHOAMI_MPU6000 = 0x68;
         private const double Gravity = 9.80665;
-        private const double AccelScale = Gravity / 2048.0;
-        private const double GyroScale = Math.PI / 180.0 / 16.4;
+        private const byte WHOAMI_ICM20601 = 0xAC;
     }
 }
