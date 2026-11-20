@@ -8,9 +8,6 @@
 #ifndef STM32_WDG_TIMEOUT_MS
 #define STM32_WDG_TIMEOUT_MS 2048
 #endif
-#if STM32_WDG_TIMEOUT_MS < 1000
-#error "STM32_WDG_TIMEOUT_MS must be at least 1000"
-#endif
 
 /*
   SysTick based lockup detection, needs crash dump support and a
@@ -24,6 +21,11 @@
 #define AP_WATCHDOG_LOCKUP_DETECT_ENABLED 0
 #endif
 #endif
+
+// the lockup detector triggers 250ms before the watchdog would
+#if AP_WATCHDOG_LOCKUP_DETECT_ENABLED && STM32_WDG_TIMEOUT_MS < 1000
+#error "STM32_WDG_TIMEOUT_MS must be at least 1000 with lockup detection"
+#endif // AP_WATCHDOG_LOCKUP_DETECT_ENABLED && STM32_WDG_TIMEOUT_MS < 1000
 
 #ifdef __cplusplus
 extern "C" {
