@@ -7,19 +7,23 @@ local warn_speed = 10 -- metres/second
 local failsafe_speed = 15 -- metres/second
 local warning_interval_ms = uint32_t(15000) -- send user message every 15s
 
-local warning_last_sent_ms = uint32_t() -- time we last sent a warning message to the user
+-- constants
+local MODE_RTL = 11 -- Return to Launch mode for ArduPlane
+local PERIOD_MS = 1000
 
-function update()
+local warning_last_sent_ms = uint32_t() -- time last warning message was sent to the user
+
+local function update()
     local wind = ahrs:get_wind() -- get the wind estimate
     if wind then
         -- make a 2D wind vector
-        wind_xy = Vector2f()
+        local wind_xy = Vector2f()
         wind_xy:x(wind:x())
         wind_xy:y(wind:y())
-        speed = wind_xy:length() -- compute the wind speed
+        local speed = wind_xy:length() -- compute the wind speed
         if speed > failsafe_speed then
             gcs:send_text(0, "Wind failsafe at " .. speed .. " metres/second")
-            vehicle:set_mode(11) -- FIXME: should be an enum.  11 is RTL.
+            vehicle:set_mode(MODE_RTL)
             return
         end
         if speed > warn_speed then
@@ -29,7 +33,7 @@ function update()
             end
         end
     end
-    return update, 1000
+    return update, PERIOD_MS
 end
 
-return update, 1000
+return update, PERIOD_MS
