@@ -359,6 +359,9 @@ AP_HW_CORVON743V2                    1229
 AP_HW_CORVON_V6                      1230
 
 
+# FC-H743 Rev.A
+AP_HW_FCH743                         1241
+
 # IDs 1231-1240 reserved for YARI Robotics
 AP_HW_YARIV6S                        1233
 AP_HW_YARIV6X                        1234
