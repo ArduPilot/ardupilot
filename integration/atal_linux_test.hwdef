@@ -1,0 +1,5 @@
+# Software-only native Linux validation profile.
+# The generic Linux board has no barometer, so ArduSub otherwise stops in
+# configuration error handling before its external IMU can run. This profile
+# must not be used for deployment; a real Bar30 path is still required.
+define HAL_BARO_ALLOW_INIT_NO_BARO 1

@@ -8,7 +8,7 @@
 - Wrote existing-system audit and initial architecture decision / implementation plan. These are evidence-based but architecture remains pending upstream Linux/driver inspection.
 - User directed that physical parameters remain editable placeholders initialized from ROS 2 repository defaults.
 
-- Added strict MTData2 parsing and a native Xsens MTi-300 ExternalAHRS IMU backend in local commits `891daa8` and `a2c368d`. Three synthetic parser tests and a fresh native Sub build pass. An eight-second PTY startup check saw no configuration bytes, so the runtime sensor path is **not yet validated**. No physical sensor was opened.
+- Added strict MTData2 parsing and a native Xsens MTi-300 ExternalAHRS IMU backend in local commits `891daa8` and `a2c368d`. Three synthetic parser tests and a fresh native Sub build pass. The initial PTY startup check saw no configuration bytes because the generic Linux board halted at barometer initialization. A test-only no-barometer hwdef now allows startup, and the PTY check observes all three Xsens configuration commands. No IMU sample or estimator health has yet been verified. No physical sensor was opened.
 
 ## Current state
 
@@ -16,4 +16,4 @@ M1 reference baseline: complete. M2 native build and smoke test: complete, but r
 
 ## Next evidence
 
-Resolve Xsens virtual-serial startup, then integrate ESP32 Bar30 measurements with the native executable, then verify EKF initialization and DVL velocity fusion with replay. Implement a gated ESP32 output path only after sensor and estimation validation; keep physical output disabled during development.
+Replay Xsens IMU samples and verify estimator input health, then integrate ESP32 Bar30 measurements with the native executable, then verify EKF initialization and DVL velocity fusion with replay. Implement a gated ESP32 output path only after sensor and estimation validation; keep physical output disabled during development.
