@@ -8,9 +8,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using Antmicro.Renode.Core;
 using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals;
 using Antmicro.Renode.Peripherals.Bus;
+using Antmicro.Renode.Peripherals.Memory;
+using Range = Antmicro.Renode.Core.Range;
 
 namespace Antmicro.Renode.Peripherals.Miscellaneous
 {
@@ -18,6 +21,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
     public class AP_STM32H7_RCC : IDoubleWordPeripheral, IKnownSize
     {
         public AP_STM32H7_RCC(
+            IMachine machine,
             IPeripheral nvic = null, IPeripheral dwt = null,
             IPeripheral usart1 = null, IPeripheral usart2 = null,
             IPeripheral usart3 = null, IPeripheral uart4 = null,
@@ -30,8 +34,17 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             IPeripheral timer12 = null, IPeripheral timer13 = null,
             IPeripheral timer14 = null, IPeripheral timer15 = null,
             uint hseFrequency = DefaultHseFrequency,
-            uint lseFrequency = DefaultLseFrequency)
+            uint lseFrequency = DefaultLseFrequency,
+            MappedMemory sram1 = null, MappedMemory sram2 = null,
+            MappedMemory sram3 = null, bool hasCpu1Registers = false,
+            bool cpu2InStop = false)
         {
+            this.machine = machine;
+            this.sram1 = sram1;
+            this.sram2 = sram2;
+            this.sram3 = sram3;
+            this.hasCpu1Registers = hasCpu1Registers;
+            this.cpu2InStop = cpu2InStop;
             registers = new Dictionary<long, uint>();
             appliedFrequencies = new Dictionary<IPeripheral, ulong>();
             frequencyErrors = new HashSet<Type>();
@@ -113,11 +126,13 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             registers[CR] = HSION;
             registers[RSR] = PORRSTF | PINRSTF | BORRSTF;
             appliedFrequencies.Clear();
+            UpdateSramClocks();
             UpdateClocks();
         }
 
         public uint ReadDoubleWord(long offset)
         {
+            offset = ResolveCpu1Register(offset);
             uint value;
             registers.TryGetValue(offset, out value);
             switch(offset)
@@ -138,8 +153,17 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
         public void WriteDoubleWord(long offset, uint value)
         {
+            offset = ResolveCpu1Register(offset);
             switch(offset)
             {
+            case AHB1ENR:
+            case AHB2ENR:
+            case APB1LENR:
+            case APB1HENR:
+            case APB2ENR:
+                registers[offset] = value;
+                UpdateSramClocks();
+                return;
             case CR:
                 registers[CR] = value & ~CR_READ_ONLY_MASK;
                 UpdateClocks();
@@ -176,6 +200,56 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 }
                 return;
             }
+        }
+
+        private long ResolveCpu1Register(long offset)
+        {
+            // The H757 platform runs CPU1 only. Explicit C1 D2 enable registers
+            // and their current-CPU aliases address the same allocations.
+            if(hasCpu1Registers)
+            {
+                switch(offset - Cpu1RegisterOffset)
+                {
+                case AHB1ENR:
+                case AHB2ENR:
+                case APB1LENR:
+                case APB1HENR:
+                case APB2ENR:
+                    return offset - Cpu1RegisterOffset;
+                }
+            }
+            return offset;
+        }
+
+        private void UpdateSramClocks()
+        {
+            // RM0399, Memory handling: all D2 SRAM operates while D2 is in
+            // DRun, even with its SRAM enable bits clear. Any D2 allocation
+            // keeps that domain running while CPU1 runs. H757's CPU2 held at
+            // boot also keeps D2 active: hold is not CStop. cpu2InStop selects
+            // the alternative initial condition; CPU2 execution and power-state
+            // transitions are not modeled here.
+            bool enabled = (hasCpu1Registers && !cpu2InStop)
+                || (Register(AHB1ENR) | Register(AHB2ENR)
+                    | Register(APB1LENR) | Register(APB1HENR) | Register(APB2ENR)) != 0;
+            SetSramClock(sram1, 0x30000000, enabled);
+            SetSramClock(sram2, 0x30020000, enabled);
+            SetSramClock(sram3, 0x30040000, enabled);
+        }
+
+        private void SetSramClock(MappedMemory memory, ulong address, bool enabled)
+        {
+            if(memory == null)
+            {
+                return;
+            }
+            // CPU/scalar bus accesses to clock-disabled SRAM read as zero and
+            // drop writes. Renode bulk/DMA accesses bypass these locks. Lock the
+            // bus range rather than only disabling the peripheral: CPU direct
+            // memory mappings must be revoked too. Unlocking restores the fast
+            // mapped-memory path without discarding the SRAM contents.
+            machine.SystemBus.SetAddressRangeLocked(
+                new Range(address, (ulong)memory.Size), !enabled);
         }
 
         // This is intentionally monitor-visible.  It makes it possible to
@@ -643,6 +717,11 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             R,
         }
 
+        private readonly IMachine machine;
+        private readonly bool hasCpu1Registers;
+        private readonly bool cpu2InStop;
+        private readonly MappedMemory sram1, sram2, sram3;
+
         private const long CR = 0x00;
         private const long CFGR = 0x10;
         private const long D1CFGR = 0x18;
@@ -662,6 +741,12 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const long BDCR = 0x70;
         private const long CSR = 0x74;
         private const long RSR = 0xD0;
+        private const long AHB1ENR = 0xD8;
+        private const long AHB2ENR = 0xDC;
+        private const long APB1LENR = 0xE8;
+        private const long APB1HENR = 0xEC;
+        private const long APB2ENR = 0xF0;
+        private const long Cpu1RegisterOffset = 0x60;
 
         private const uint HSION = 1u << 0;
         private const uint HSIRDY = 1u << 2;
