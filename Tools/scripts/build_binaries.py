@@ -857,6 +857,11 @@ is bob we will attempt to checkout bob-AVR'''
             shutil.rmtree(self.tmpdir)
 
     def buildlogs_dirpath(self):
+        # the autotest server points BUILDLOGS at a per-run directory,
+        # but binaries and their build history persist between runs:
+        out = os.getenv("BUILD_BINARIES_BUILDLOGS_DIR", None)
+        if out is not None:
+            return out
         return os.getenv("BUILDLOGS",
                          os.path.join(os.getcwd(), "..", "buildlogs"))
 

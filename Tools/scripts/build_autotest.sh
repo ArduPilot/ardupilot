@@ -43,6 +43,7 @@ lock_file() {
 
 
 lock_file build.lck || {
+    echo "$(date) Build locked" >> build.log
     exit 1
 }
 
@@ -54,6 +55,7 @@ lock_file build.lck || {
 
 (
 set -x
+set -e
 
 date
 
@@ -86,12 +88,6 @@ popd
 githash=$(cd APM && git rev-parse HEAD)
 hdate=$(date +"%Y-%m-%d-%H:%M")
 
-pushd $ARDUPILOT_ROOT
-Tools/scripts/build_parameters.sh
-Tools/scripts/build_log_message_documentation.sh
-Tools/scripts/build_docs.sh
-popd
-
 killall -9 JSBSim || /bin/true
 
 # raise core limit
@@ -122,17 +118,107 @@ else
     TIMELIMIT_CMD="timelimit -s 9 -t $TIMELIMIT_TIME_LIMIT"
 fi
 
-AUTOTEST_LOG="buildlogs/autotest-output.txt"
+# Each run's autotest results go in their own directory under history.
+# State which must persist from one run to the next (binaries, the
+# build history database, the lock) stays at the top level.  The
+# doxygen output from build_docs.sh stays in the git checkout.
+BUILDLOGS_ROOT="$PWD/buildlogs"
+export AUTOTEST_LOCKFILE="$PWD/autotest.lck"
+export BUILD_BINARIES_BUILDLOGS_DIR="$BUILDLOGS_ROOT"
+
+# refuse to reuse a directory, which would mix two runs' results:
+mkdir -p "$BUILDLOGS_ROOT/history"
+RUN_DIR="$BUILDLOGS_ROOT/history/$hdate"
+mkdir "$RUN_DIR"
+echo "$githash" > "$RUN_DIR/githash.txt"
+
+# move a real file or directory left by the old copy-into-place
+# layout out of the way of a link:
+move_aside() {
+    if [ -e "$1" ] && [ ! -L "$1" ]; then
+        mv -T "$1" "$1.pre-links"
+    fi
+}
+
+# atomically point the link NAME in BUILDLOGS_ROOT at TARGET (relative
+# to BUILDLOGS_ROOT):
+switch_link() {
+    move_aside "$BUILDLOGS_ROOT/$1"
+    ln -sfn "$2" "$BUILDLOGS_ROOT/$1.new"
+    mv -T "$BUILDLOGS_ROOT/$1.new" "$BUILDLOGS_ROOT/$1"
+}
+
+# if anything below fails, set -e ends this subshell; mark the run
+# rather than leaving in-progress pointing at it:
+abandon_run() {
+    local status=$?
+    if [ "$status" -ne 0 ]; then
+        echo "run aborted with status $status" > "$RUN_DIR/ABORTED"
+        rm -f "$BUILDLOGS_ROOT/in-progress"
+    fi
+}
+trap abandon_run EXIT
+
+switch_link in-progress "history/$hdate"
+
+# autotest.py kills its whole process group on timeout, so give it
+# its own session to stop it killing this script too.
+AUTOTEST_LOG="$RUN_DIR/autotest-output.txt"
 echo "AutoTest log file is ($AUTOTEST_LOG)"
-$TIMELIMIT_CMD python3 $AUTOTEST --autotest-server --timeout=$AUTOTEST_TIME_LIMIT > "$AUTOTEST_LOG" 2>&1
+autotest_status=0
+BUILDLOGS="$RUN_DIR" setsid --wait $TIMELIMIT_CMD python3 $AUTOTEST --autotest-server --timeout=$AUTOTEST_TIME_LIMIT > "$AUTOTEST_LOG" 2>&1 || autotest_status=$?
 
-mkdir -p "buildlogs/history/$hdate"
+# autotest.py exits 0 if every test passed and 1 if any failed, but also
+# 1 if it could not start or crashed.  It writes index.html once it has
+# results, including when it times out itself, so publish any run which
+# has one:
+if [ "$autotest_status" -gt 1 ]; then
+    echo "autotest did not finish (exit status $autotest_status)" > "$RUN_DIR/INCOMPLETE"
+fi
+if [ -e "$RUN_DIR/index.html" ]; then
+    switch_link last-completed "history/$hdate"
+    # keep the old top-level URLs (index.html, autotest-badge.svg, the
+    # per-test files) working.  The links go through last-completed, so
+    # switching that link updates them all at once:
+    for f in "$RUN_DIR"/*; do
+        name=$(basename "$f")
+        case "$name" in
+            binaries|history|Parameters|LogMessages|in-progress|last-completed) continue ;;
+        esac
+        move_aside "$BUILDLOGS_ROOT/$name"
+        ln -sfn "last-completed/$name" "$BUILDLOGS_ROOT/$name"
+    done
+else
+    echo "autotest wrote no results (exit status $autotest_status)" >> "$RUN_DIR/INCOMPLETE"
+fi
 
-(cd buildlogs && cp -f *.txt *.flashlog *.tlog *.km[lz] *.gpx *.html *.png *.bin *.BIN *.elf "history/$hdate/")
-echo $githash > "buildlogs/history/$hdate/githash.txt"
+# build_binaries.py checks out release tags; a timeout can leave the
+# tree on one of those:
+pushd "$ARDUPILOT_ROOT"
+git checkout -f "$githash"
+Tools/scripts/build_docs.sh || echo "build_docs.sh failed"
+
+# generate into the run directory, only switching the published link
+# if generation succeeds:
+if BUILDLOGS="$RUN_DIR/param-generation" Tools/scripts/build_parameters.sh; then
+    switch_link Parameters "history/$hdate/param-generation/Parameters"
+else
+    echo "parameter generation failed; Parameters is still $(readlink "$BUILDLOGS_ROOT/Parameters")" > "$RUN_DIR/PARAMETERS-NOT-PUBLISHED"
+fi
+if BUILDLOGS="$RUN_DIR/logmessage-generation" Tools/scripts/build_log_message_documentation.sh; then
+    switch_link LogMessages "history/$hdate/logmessage-generation/LogMessages"
+else
+    echo "log message generation failed; LogMessages is still $(readlink "$BUILDLOGS_ROOT/LogMessages")" > "$RUN_DIR/LOGMESSAGES-NOT-PUBLISHED"
+fi
+popd
+
+rm -f "$BUILDLOGS_ROOT/in-progress"
 
 ) >> build.log 2>&1
+status=$?
 
 # autotest done, let's mark GTD flags
 touch /tmp/.autotest.done
+
+exit $status
 
