@@ -4,11 +4,31 @@
 
 """Process lifecycle helpers shared by Renode launchers and tests."""
 
+import ctypes
 import os
 import signal
 import subprocess
 import sys
 import time
+
+PR_SET_PDEATHSIG = 1
+
+
+def arm_parent_death_signal(parent_pid, death_signal=signal.SIGTERM):
+    """Ask Linux to signal this process when its current parent exits."""
+    if not sys.platform.startswith('linux'):
+        return
+
+    # A forked child may have inherited a handler that defers the signal.
+    signal.signal(death_signal, signal.SIG_DFL)
+    libc = ctypes.CDLL(None, use_errno=True)
+    if libc.prctl(PR_SET_PDEATHSIG, death_signal, 0, 0, 0) != 0:
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error))
+
+    # The parent can exit between capturing its PID and calling prctl().
+    if os.getppid() != parent_pid:
+        os.kill(os.getpid(), death_signal)
 
 
 def _linux_process_group_has_live_members(process_group):
