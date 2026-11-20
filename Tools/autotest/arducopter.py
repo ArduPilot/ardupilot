@@ -6219,6 +6219,76 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if self.statustext_in_collections("recovery deferred"):
             raise NotAchievedException("recovery deferred with no range finder to wait for")
 
+        # A touchdown can leave a velocity error the flow then rejects for as long as the vehicle sits
+        # there: on the ground the flow is scaled by the range finder's ground clearance, so a few cm/s
+        # of error predicts several rad/s, and the velocity walks away. Landed and on the floor, the
+        # velocity's variance is held at what the assumption that the vehicle is still is worth, so the
+        # flow is never shut out. A pulse of accel bias on one axis, landed and still armed, puts the
+        # error in, and the residual bias left after it makes it grow, as an accel bias does: without
+        # the hold that axis locks out and the velocity reaches 5.3 m/s. With the AGL KF scaling the
+        # flow and without
+        def landed_lane_speeds(tstart, tend):
+            '''the highest speed each core's velocity estimate reached between tstart and tend (s)'''
+            speeds = {}
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type='XKF1')
+                if m is None:
+                    break
+                if tstart <= m.TimeUS * 1e-6 <= tend:
+                    speeds[m.C] = max(speeds.get(m.C, 0), math.hypot(m.VN, m.VE))
+            return speeds
+
+        # the legs after these land and wait for the auto-disarm, so the delay comes back each time
+        disarm_delay = self.get_parameter("DISARM_DELAY")
+        for options in (0, 8):
+            self.start_subtest("Landed: an accel bias does not walk the velocity away, EK3_OPTIONS %u" % options)
+            self.context_clear_collection('STATUSTEXT')
+            self.set_parameter("DISARM_DELAY", 0)  # stay armed once landed
+            fly_with_stuck_flow_axis(options, inject=False)
+            self.set_rc(3, 1000)
+            self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+            self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                         landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, timeout=30)
+            # set once with read-back so the suite restores them; send_set_parameter below, as that
+            # read-back takes over a second of sim time
+            self.set_parameters({"SIM_ACC1_BIAS_X": 0, "SIM_ACC2_BIAS_X": 0})
+            tpulse = self.get_sim_time()
+            for bias in (3, 0.3):
+                self.send_set_parameter("SIM_ACC1_BIAS_X", bias)
+                self.send_set_parameter("SIM_ACC2_BIAS_X", bias)
+                if bias == 3:
+                    self.delay_sim_time(0.5, "a half-second pulse of accel bias")
+            self.delay_sim_time(12, "the residual bias acting on the ground")
+            self.set_parameters({"SIM_ACC1_BIAS_X": 0, "SIM_ACC2_BIAS_X": 0, "DISARM_DELAY": disarm_delay})
+            self.disarm_vehicle(force=True)
+            # the pulse and the residual were sent without read-back, so check the log saw them
+            biases = set()
+            shut_out = 0
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type=['PARM', 'XKF5'])
+                if m is None:
+                    break
+                if m.TimeUS * 1e-6 < tpulse:
+                    continue
+                if m.get_type() == 'PARM':
+                    if m.Name == 'SIM_ACC1_BIAS_X':
+                        biases.add(round(m.Value, 1))
+                elif m.C == 0:
+                    shut_out = max(shut_out, m.NI)
+            if not {3.0, 0.3} <= biases:
+                raise NotAchievedException("accel bias pulse not applied: %s" % biases)
+            if shut_out >= 100:
+                raise NotAchievedException("the flow was shut out on the ground")
+            # the pulse moves the estimate with it, to 0.9 m/s, and the flow brings it back within a
+            # second; without the hold it stays out and the residual adds 0.3 m/s a second
+            speeds = landed_lane_speeds(tpulse + 1.5, tpulse + 12)
+            if len(speeds) < 2 or max(speeds.values()) > 0.3:
+                raise NotAchievedException("landed velocity estimates %s m/s walked away" % speeds)
+            if self.statustext_in_collections("flow vel reset"):
+                raise NotAchievedException("a landed lane's velocity was reset rather than its variance raised")
+
         # EK3_FLOW_QMIN declines to re-anchor to a sample the sensor calls poor.  Same
         # lockout again, but now the sensor reports it is unhappy, as a defocused or
         # poor-surface sensor does - so the recovery must stop flow aiding rather than
