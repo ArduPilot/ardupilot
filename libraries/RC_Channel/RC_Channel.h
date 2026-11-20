@@ -15,6 +15,7 @@
 #include <AP_Airspeed/AP_Airspeed_config.h>
 #include <AP_Camera/AP_Camera_config.h>
 #include <AP_Compass/AP_Compass_config.h>
+#include <AP_RCProtocol/AP_RCProtocol_ThrottleFailsafe.h>
 #include <AP_Gripper/AP_Gripper_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
 #include <AP_Parachute/AP_Parachute_config.h>
@@ -655,6 +656,16 @@ public:
 
     virtual bool in_rc_failsafe() const { return true; };
     virtual bool has_valid_input() const;
+
+    // true if the receiver input most recently consumed by
+    // read_input() came from a receiver in failsafe:
+    bool input_in_failsafe() const { return _input_in_failsafe; }
+
+    // false if the receiver input most recently consumed by
+    // read_input() should not be trusted, for example because the
+    // receiver is in failsafe or is suspected of being in failsafe:
+    bool input_valid() const { return _input_valid; }
+
     virtual RC_Channel *get_arming_channel(void) const { return nullptr; };
 
     bool gcs_overrides_enabled() const { return _gcs_overrides_enabled; }
@@ -799,6 +810,14 @@ private:
     bool has_new_overrides;
     bool _has_had_rc_receiver; // true if we have had a direct detach RC receiver, does not include overrides
     bool _has_had_override; // true if we have had an override on any channel
+    bool _input_in_failsafe;
+    bool _input_valid = true;
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // the bind-value test AP_RCProtocol applies to receiver input,
+    // applied to input AP_RCProtocol has not vetted itself:
+    AP_RCProtocol_ThrottleFailsafe unvetted_throttle_failsafe;
+    bool unvetted_throttle_failsafe_seeded;
+#endif
     int16_t override_start_throttle; // throttle value at the moment an override was activated
 
     AP_Float _override_timeout;

@@ -4,10 +4,17 @@
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <GCS_MAVLink/GCS_config.h>
 #include <AP_Radio/AP_Radio_config.h>
+#include <RC_Channel/RC_Channel_config.h>
 
 #ifndef AP_RCPROTOCOL_ENABLED
 #define AP_RCPROTOCOL_ENABLED 1
 #endif
+
+// the throttle failsafe test is configured by vehicle code through
+// RC_Channel, so there is nothing to test against without it:
+#ifndef AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+#define AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED AP_RCPROTOCOL_ENABLED && AP_RC_CHANNEL_ENABLED
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 
 #ifndef AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED
 #define AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED AP_RCPROTOCOL_ENABLED
