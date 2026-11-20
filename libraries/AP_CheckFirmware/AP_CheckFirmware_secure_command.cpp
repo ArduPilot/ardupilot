@@ -423,7 +423,9 @@ bool AP_CheckFirmware::check_signed_bootloader(const uint8_t *fw, uint32_t fw_si
     }
     const uint8_t key[] = AP_PUBLIC_KEY_SIGNATURE;
     const struct ap_secure_data *candidate_keys = (const struct ap_secure_data *)memmem(fw, fw_size, key, sizeof(key));
-    if (candidate_keys == nullptr || all_zero_keys(candidate_keys)) {
+    if (candidate_keys == nullptr || fw_size < sizeof(*candidate_keys) ||
+        uint32_t((const uint8_t *)candidate_keys - fw) > fw_size - sizeof(*candidate_keys) ||
+        all_zero_keys(candidate_keys)) {
         // new bootloader doesn't have any public keys, not allowed
         return false;
     }
