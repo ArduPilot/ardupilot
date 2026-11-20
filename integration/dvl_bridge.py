@@ -34,7 +34,11 @@ def measurement(line, received_s, attitude, config):
 
 def update_attitude(master, attitude):
     """Drain telemetry; retain only a fresh, finite attitude and body-rate sample."""
+    heartbeat = False
     while (msg := master.recv_match(blocking=False)) is not None:
+        if (msg.get_type() == "HEARTBEAT" and
+                msg.get_srcSystem() == 1 and msg.get_srcComponent() == 1):
+            heartbeat = True
         if (msg.get_type() != "ATTITUDE_QUATERNION" or
                 msg.get_srcSystem() != 1 or msg.get_srcComponent() != 1):
             continue
@@ -42,7 +46,16 @@ def update_attitude(master, attitude):
         rates = (msg.rollspeed, msg.pitchspeed, msg.yawspeed)
         if all(math.isfinite(v) for v in quat + rates):
             attitude = (time.monotonic(), quat, rates)
-    return attitude
+    return attitude, heartbeat
+
+
+def request_attitude(master, mavutil):
+    """Ask ArduSub for 10 Hz quaternion/rates; the default stream omits it."""
+    master.mav.command_long_send(
+        1, 1, mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+        mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE_QUATERNION, 100_000,
+        0, 0, 0, 0, 0,
+    )
 
 
 def main():
@@ -63,12 +76,20 @@ def main():
     master = mavutil.mavlink_connection(args.mavlink, source_system=200,
                                        source_component=191, dialect="ardupilotmega")
     attitude = None
+    heard_ardusub = False
+    next_attitude_request = 0.0
     last_validity = None
     with socket.create_connection((config["ip"], config["tcp_port"]), timeout=3) as dvl:
         dvl.settimeout(0.1)
         buffer = b""
         while True:
-            attitude = update_attitude(master, attitude)
+            attitude, heartbeat = update_attitude(master, attitude)
+            heard_ardusub |= heartbeat
+            now = time.monotonic()
+            if (heard_ardusub and now >= next_attitude_request and
+                    (attitude is None or now - attitude[0] > 0.5)):
+                request_attitude(master, mavutil)
+                next_attitude_request = now + 2.0
             try:
                 chunk = dvl.recv(4096)
             except socket.timeout:

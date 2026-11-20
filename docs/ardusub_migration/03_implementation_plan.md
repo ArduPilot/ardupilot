@@ -2,7 +2,7 @@
 
 Use small verifiable milestones inside this repository; do not change the ROS 2 reference.
 
-As of the current local commits, M1–M4 have software-only build/parser/replay evidence, M5 has bridge wire replay without native EKF fusion, and M6 has an algebraic motor mapping plus a documented saturation difference. M7–M9 remain open. The detailed evidence is in `08_testing_and_validation.md` and `10_migration_progress.md`.
+As of the current local commits, M1–M4 have software-only build/parser/replay evidence. M5 has separate bridge wire replay and native synthetic EKF velocity-source comparison, with the combined bridge-to-native chain and real sensor still open. M6 has an algebraic motor mapping and source-derived allocation simulation, with a saturation-policy decision still open. M7–M9 remain open. The detailed evidence is in `08_testing_and_validation.md` and `10_migration_progress.md`.
 
 1. **M1 baseline:** done for reference snapshot; packages build on Ubuntu 22.04/ROS Humble and 147 tests pass. Record local upstream ArduPilot commit once clone completes; preserve reference commit and rollback instructions.
 2. **M2 Linux ArduSub:** build official ArduSub for upstream Linux board. Inspect runtime options and dependencies. Add only a local non-actuating invocation/config; prove no actuator serial device is opened. SITL remains an independent simulator.

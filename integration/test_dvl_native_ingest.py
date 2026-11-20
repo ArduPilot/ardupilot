@@ -13,18 +13,21 @@ from pathlib import Path
 from test_xsens_native_startup import BINARY, ROOT, data_item, mavutil, packet
 
 
-def main():
+def run_replay(velocity_source):
     if not BINARY.is_file():
         raise SystemExit("Build native Linux ArduSub first")
     with tempfile.TemporaryDirectory(prefix="atal-dvl-native-") as directory:
         xsens_master, xsens_slave = pty.openpty()
         depth_master, depth_slave = pty.openpty()
         defaults = Path(directory) / "defaults.parm"
+        replay_params = (ROOT / "integration/atal_dvl_ekf_replay.parm").read_text()
+        replay_params = replay_params.replace("EK3_SRC1_VELXY 6", f"EK3_SRC1_VELXY {velocity_source}")
         defaults.write_text(
             "EAHRS_TYPE 12\nEAHRS_RATE 100\nEAHRS_SENSORS 2\n"
             "SERIAL1_PROTOCOL 36\nSERIAL1_BAUD 115\n"
             "SERIAL2_PROTOCOL 51\nSERIAL2_BAUD 115\n"
-            "VISO_TYPE 1\nLOG_DISARMED 1\n"
+            "LOG_DISARMED 1\n"
+            + replay_params
             + (ROOT / "integration/atal_motor_defaults.parm").read_text()
         )
         connection = mavutil.mavlink_connection(
@@ -87,20 +90,34 @@ def main():
         if not log_files:
             raise AssertionError("Native ArduSub produced no binary log")
         found = False
+        ekf_velocities = []
         for log_file in log_files:
             log = mavutil.mavlink_connection(str(log_file))
-            while message := log.recv_match(type="VISV"):
-                if (abs(message.VX - 0.4) < 0.01 and
+            while message := log.recv_match(type=["VISV", "XKF1"]):
+                if message.get_type() == "XKF1":
+                    ekf_velocities.append((message.VN, message.VE, message.VD))
+                elif (abs(message.VX - 0.4) < 0.01 and
                         abs(message.VY + 0.2) < 0.01 and
                         abs(message.VZ - 0.1) < 0.01 and
                         abs(message.VErr - 0.1) < 0.01 and
                         message.Ign == 0 and message.Q == 0):
                     found = True
-                    break
             log.close()
         if not found:
             raise AssertionError("Native VISV did not contain the expected velocity, error and acceptance")
-        print("Native ArduSub VisualOdom logged accepted synthetic DVL velocity and error")
+        if not ekf_velocities:
+            raise AssertionError("Native EKF produced no XKF1 state")
+        return ekf_velocities[-1]
+
+
+def main():
+    control = run_replay(0)
+    external = run_replay(6)
+    if abs(control[0]) > 0.1 or external[0] < 0.2 or external[0] - control[0] < 0.2:
+        raise AssertionError(f"DVL velocity did not affect native EKF as expected: "
+                             f"control={control}, external={external}")
+    print(f"Native DVL ingest and EKF velocity-source comparison passed: "
+          f"control={control}, external={external}")
 
 
 if __name__ == "__main__":

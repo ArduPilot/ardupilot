@@ -1,0 +1,8 @@
+# Virtual-sensor replay only. Do not treat this as a vehicle calibration.
+# DVL supplies NED velocity, not absolute position or yaw.
+VISO_TYPE 1
+EK3_SRC1_POSXY 0
+EK3_SRC1_VELXY 6
+EK3_SRC1_POSZ 1
+EK3_SRC1_VELZ 0
+EK3_SRC1_YAW 0

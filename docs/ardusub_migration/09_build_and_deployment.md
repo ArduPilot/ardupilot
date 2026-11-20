@@ -9,7 +9,7 @@ Development host: Ubuntu 22.04.5 x86-64, Python 3.10.12, g++ 11.4.0. Build prere
 ./waf sub -j4
 ```
 
-`libraries/AP_HAL_Linux/hwdef/linux/hwdef.dat` selects native toolchain and `HAL_INS_NONE`. `HAL_Linux_Class.cpp` chooses `Empty::RCOutput` on this generic board. The Xsens and Bar30 serial backends have passed synthetic pseudo-terminal replay, but no estimator initialization or physical-sensor validation has been verified. The ESP32 actuator output is not integrated. Use this build only for software investigation with actuator power isolated.
+`libraries/AP_HAL_Linux/hwdef/linux/hwdef.dat` selects native toolchain and `HAL_INS_NONE`. `HAL_Linux_Class.cpp` chooses `Empty::RCOutput` on this generic board. The Xsens and Bar30 serial backends have passed synthetic pseudo-terminal replay, and a separate native DVL replay produced EKF3 velocity states with external velocity selected. Physical-sensor and navigation readiness remain unverified. The ESP32 actuator output is not integrated. Use this build only for software investigation with actuator power isolated.
 
 `integration/atal_sensor_defaults.parm` is an editable provisional parameter template. `SERIAL1_PROTOCOL=36` selects Xsens and `SERIAL2_PROTOCOL=51` selects the separate ESP32 depth stream; both use the ROS 2 reference's 115200 baud default (`SERIALx_BAUD=115`). `AHRS_ORIENTATION=0` retains the reference's identity mounting placeholder, and `BARO_SPEC_GRAV=1.0` is its provisional freshwater setting. Assign the real port paths and measured values before any vehicle deployment. To reproduce the software-only combined replay on the normal Linux build:
 
