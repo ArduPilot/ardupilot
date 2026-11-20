@@ -6343,63 +6343,69 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if abs(jump) > 1.0:
                 raise NotAchievedException("core %u reset at %.1f s jumped the forward speed %.2f m/s" % (core, t, jump))
 
-        # Below FLOW_ALT_MIN the flow is not fused, so neither axis is tested there and neither is
-        # locked out. A lockout on the samples back above it has to last the 500 ms it takes to declare,
-        # not be counted from before the dip. The dip is made by raising FLOW_ALT_MIN over the hover
-        # height for 1.5 s, inside the 5 s flow aiding timeout, with the X offset put on during it.
+        # Below FLOW_ALT_MIN the flow is not fused, through a dropout no flow arrives, and over
+        # EK3_FLOW_MAX neither axis can pass, so neither is locked out. A lockout on the samples after
+        # any of them has to last the 500 ms it takes to declare, not be counted from before the spell.
+        # Each spell lasts 1.5 s, inside the 5 s flow aiding timeout, with the X offset put on during
+        # it: the dip by raising FLOW_ALT_MIN over the hover height, the dropout by turning the
+        # simulated sensor off, and the fast flow by lowering EK3_FLOW_MAX under the offset.
         # send_set_parameter, as set_parameter's read-back takes over a second of sim time
-        self.start_subtest("Back above FLOW_ALT_MIN: a lockout still takes 500 ms to declare")
-        self.context_clear_collection('STATUSTEXT')
-        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
-        self.send_set_parameter("FLOW_ALT_MIN", 10, add_to_context=True)
-        self.send_set_parameter("SIM_FLOW_OFS_X", 1.0)
-        self.delay_sim_time(1.5, "below FLOW_ALT_MIN")
-        self.send_set_parameter("FLOW_ALT_MIN", 0)
-        self.wait_statustext("flow vel reset", check_context=True, timeout=10)
-        self.set_parameter("SIM_FLOW_OFS_X", 0)
-        self.disarm_vehicle(force=True)
-        dip_us = None
-        offset_us = None
-        restore_us = None
-        reset_us = None
-        last = {}
-        dfreader = self.dfreader_for_current_onboard_log()
-        while True:
-            m = dfreader.recv_match(type=['PARM', 'XKF7'])
-            if m is None:
-                break
-            if m.get_type() == 'PARM':
-                if m.Name == 'FLOW_ALT_MIN' and m.Value == 10 and dip_us is None:
-                    dip_us = m.TimeUS
-                elif m.Name == 'FLOW_ALT_MIN' and m.Value == 0 and dip_us is not None and restore_us is None:
-                    restore_us = m.TimeUS
-                elif m.Name == 'SIM_FLOW_OFS_X' and m.Value != 0 and offset_us is None:
-                    offset_us = m.TimeUS
-                continue
-            if m.FVC != last.get(m.C, 0):
-                last[m.C] = m.FVC
-                if dip_us is not None and restore_us is None:
-                    raise NotAchievedException("flow vel reset while below FLOW_ALT_MIN")
-                if restore_us is not None and reset_us is None:
-                    reset_us = m.TimeUS
-        if dip_us is None or restore_us is None or offset_us is None or not dip_us <= offset_us < restore_us:
-            raise NotAchievedException("the dip below FLOW_ALT_MIN with the offset on is not in the log")
-        # the X axis has to be stale for more than 500 ms at the return, or the dip tests nothing
-        if restore_us - dip_us < 1.0e6:
-            raise NotAchievedException("the dip below FLOW_ALT_MIN lasted only %.2f s" % ((restore_us - dip_us) * 1e-6))
-        if reset_us is None:
-            raise NotAchievedException("no reset logged after the return above FLOW_ALT_MIN")
-        delay_s = (reset_us - restore_us) * 1e-6
-        self.progress("reset %.2f s after the return above FLOW_ALT_MIN" % delay_s)
-        # counted from the dip, the lockout is declared on the first sample back, within one 10 Hz flow
-        # sample; the 0.1 s under 500 ms is margin for the flow and log timing. A lockout that has
-        # lasted 500 ms is still recovered on the next sample, so the reset comes well inside 1 s
-        if delay_s < 0.4:
-            raise NotAchievedException("reset %.2f s after the return above FLOW_ALT_MIN, under the 500 ms "
-                                       "a lockout takes to declare" % delay_s)
-        if delay_s > 1.0:
-            raise NotAchievedException("reset %.2f s after the return above FLOW_ALT_MIN, a lockout was "
-                                       "recovered late" % delay_s)
+        def check_lockout_after_spell(what, name, spell_value, normal_value):
+            self.start_subtest("After %s: a lockout still takes 500 ms to declare" % what)
+            self.context_clear_collection('STATUSTEXT')
+            fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+            self.send_set_parameter(name, spell_value, add_to_context=True)
+            self.send_set_parameter("SIM_FLOW_OFS_X", 1.0)
+            self.delay_sim_time(1.5, what)
+            self.send_set_parameter(name, normal_value)
+            self.wait_statustext("flow vel reset", check_context=True, timeout=10)
+            self.set_parameter("SIM_FLOW_OFS_X", 0)
+            self.disarm_vehicle(force=True)
+            spell_us = None
+            offset_us = None
+            restore_us = None
+            reset_us = None
+            last = {}
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type=['PARM', 'XKF7'])
+                if m is None:
+                    break
+                if m.get_type() == 'PARM':
+                    if m.Name == name and m.Value == spell_value and spell_us is None:
+                        spell_us = m.TimeUS
+                    elif m.Name == name and m.Value == normal_value and spell_us is not None and restore_us is None:
+                        restore_us = m.TimeUS
+                    elif m.Name == 'SIM_FLOW_OFS_X' and m.Value != 0 and offset_us is None:
+                        offset_us = m.TimeUS
+                    continue
+                if m.FVC != last.get(m.C, 0):
+                    last[m.C] = m.FVC
+                    if spell_us is not None and restore_us is None:
+                        raise NotAchievedException("flow vel reset during %s" % what)
+                    if restore_us is not None and reset_us is None:
+                        reset_us = m.TimeUS
+            if spell_us is None or restore_us is None or offset_us is None or not spell_us <= offset_us < restore_us:
+                raise NotAchievedException("%s with the offset on is not in the log" % what)
+            # the X axis has to be stale for more than 500 ms at the return, or the spell tests nothing
+            if restore_us - spell_us < 1.0e6:
+                raise NotAchievedException("%s lasted only %.2f s" % (what, (restore_us - spell_us) * 1e-6))
+            if reset_us is None:
+                raise NotAchievedException("no reset logged after %s" % what)
+            delay_s = (reset_us - restore_us) * 1e-6
+            self.progress("reset %.2f s after %s" % (delay_s, what))
+            # counted from the spell, the lockout is declared on the first sample back, within one 10 Hz
+            # flow sample; the 0.1 s under 500 ms is margin for the flow and log timing. A lockout that has
+            # lasted 500 ms is still recovered on the next sample, so the reset comes well inside 1 s
+            if delay_s < 0.4:
+                raise NotAchievedException("reset %.2f s after %s, under the 500 ms a lockout takes to "
+                                           "declare" % (delay_s, what))
+            if delay_s > 1.0:
+                raise NotAchievedException("reset %.2f s after %s, a lockout was recovered late" % (delay_s, what))
+
+        check_lockout_after_spell("a dip below FLOW_ALT_MIN", "FLOW_ALT_MIN", 10, 0)
+        check_lockout_after_spell("a flow dropout", "SIM_FLOW_ENABLE", 0, 1)
+        check_lockout_after_spell("flow over EK3_FLOW_MAX", "EK3_FLOW_MAX", 0.5, 2.5)
 
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
