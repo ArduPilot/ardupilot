@@ -20,4 +20,4 @@ M1 reference baseline: complete. M2 native build and software-test runtime: comp
 
 ## Next evidence
 
-Verify Xsens timing and estimator input health with a real sensor; calibrate/zero the water-pressure sensor at the surface and check its measured medium; then verify EKF initialization and DVL velocity fusion with replay. Implement a gated ESP32 output path only after sensor and estimation validation; keep physical output disabled during development.
+Verify Xsens timing and estimator input health with a real sensor; calibrate/zero the water-pressure sensor at the surface and check its measured medium; then verify EKF initialization and DVL velocity fusion with replay after enabling the MAVLink VisualOdom backend. Resolve the documented ROS-versus-ArduSub saturation and PWM differences in a software allocation test before implementing a gated ESP32 output path. Keep physical output disabled during development.
