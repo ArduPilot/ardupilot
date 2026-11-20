@@ -1,0 +1,74 @@
+# hw definition file for processing by chibios_hwdef.py
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# node name
+define CAN_APP_NODE_NAME "com.uav-dev.ethernet"
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_UAV-DEV-ETHERNET-H7
+
+FLASH_SIZE_KB 2048
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H757 has 128k sectors, assign 2 sectors for BL
+FLASH_BOOTLOADER_LOAD_KB 256
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# LED
+PE7 LED_3 OUTPUT OPENDRAIN HIGH
+PE8 LED_2 OUTPUT OPENDRAIN HIGH
+PE9 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH
+define HAL_LED_ON 0
+
+# CAN1
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+PE3 SHUTDOWNCAN1 OUTPUT PUSHPULL SPEED_LOW LOW
+
+# CAN2
+PB5    CAN2_RX    CAN2
+PB6    CAN2_TX    CAN2
+PE4 SHUTDOWNCAN1 OUTPUT PUSHPULL SPEED_LOW LOW
+
+# SERIAL
+PA10 USART1_RX  USART1
+PA9  USART1_TX  USART1
+PA11 USART1_CTS_NSS USART1
+PA12 USART1_RTS USART1
+
+PD9  USART3_RX  USART3
+PD8  USART3_TX  USART3
+PD11 USART3_CTS USART3
+PD12 USART3_RTS USART3
+
+SERIAL_ORDER USART1 USART3
+
+# SWD
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+ Ethernet
+PC1  ETH_MDC            ETH1
+PA2  ETH_MDIO           ETH1
+PC4  ETH_RMII_RXD0      ETH1
+PC5  ETH_RMII_RXD1      ETH1
+PB12 ETH_RMII_TXD0      ETH1
+PB13 ETH_RMII_TXD1      ETH1
+PB11 ETH_RMII_TX_EN     ETH1
+PA7  ETH_RMII_CRS_DV    ETH1
+PA1  ETH_RMII_REF_CLK   ETH1
+
+define BOARD_PHY_ID  MII_LAN8742A_ID
+define BOARD_PHY_RMII
+
+include ../include/network_bootloader.inc
