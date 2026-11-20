@@ -63,7 +63,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: STAB_PITCH_DOWN
     // @DisplayName: Low throttle pitch down trim 
-    // @Description: Degrees of down pitch added when throttle is below TRIM_THROTTLE in FBWA and AUTOTUNE modes. Scales linearly so full value is added when THR_MIN is reached. Helps to keep airspeed higher in glides or landing approaches and prevents accidental stalls. 2 degrees recommended for most planes.
+    // @Description: Degrees of down pitch added when throttle is below TRIM_THROTTLE in FBWA and AUTOTUNE modes. Scales linearly so full value is added when THR_MIN is reached. The full value is always added in GLIDE mode. Helps to keep airspeed higher in glides or landing approaches and prevents accidental stalls. 2 degrees recommended for most planes.
     // @Range: 0 15
     // @Increment: 0.1
     // @Units: deg

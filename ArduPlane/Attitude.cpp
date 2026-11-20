@@ -250,9 +250,11 @@ float Plane::stabilize_pitch_get_pitch_out()
        - flare switch high
        - throttle stick at zero thrust
        - in fixed wing non auto-throttle mode
+       - not in GLIDE mode, which sets its own pitch target
     */
     if (!quadplane_in_frwd_transition &&
         !control_mode->is_vtol_mode() &&
+        control_mode != &mode_glide &&
         !control_mode->does_auto_throttle() &&
         flare_mode == FlareMode::ENABLED_PITCH_TARGET &&
         throttle_at_zero()) {
