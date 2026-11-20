@@ -309,6 +309,30 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         }, check_context=True, very_verbose=True)
         self.context_pop()
 
+        self.start_subtest("Reject non-finite parameter values with current value")
+        param_name = "SIM_ACC1_RND"
+        current_value = self.get_parameter(param_name)
+        for value in (float("nan"), float("inf"), float("-inf")):
+            self.context_push()
+            self.context_collect('PARAM_ERROR')
+            self.send_set_parameter_direct(param_name, value)
+            self.assert_received_message_field_values('PARAM_ERROR', {
+                "target_system": 250,
+                "target_component": 250,
+                "param_id": param_name,
+                "param_index": -1,
+                "error": mavutil.mavlink.MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE,
+            }, check_context=True, very_verbose=True)
+            reply = self.assert_receive_message(
+                'PARAM_VALUE',
+                condition="PARAM_VALUE.param_id == '%s'" % param_name,
+            )
+            self.assert_message_field_values(reply, {
+                "param_value": current_value,
+            })
+            self.context_pop()
+            self.assert_parameter_value(param_name, current_value)
+
     def Sprayer(self):
         """Test sprayer functionality."""
         rc_ch = 5
