@@ -13,6 +13,7 @@
 - Exercised the A50 bridge with a loopback TCP server and simulated ArduSub MAVLink attitude. Correct velocity and covariance reached `VISION_SPEED_ESTIMATE`; invalid bottom lock, duplicate timestamps and stale attitude suppressed packets, then fresh attitude restored output. Native ArduSub estimator fusion remains unverified.
 - A native Linux ArduSub replay with virtual Xsens and depth ports received synthetic `VISION_SPEED_ESTIMATE` and logged the velocity in `VISV`. This establishes MAVLink VisualOdom ingest, but does not establish EKF fusion or navigation health.
 - Compared the ROS 2 and ArduSub Vectored-6DOF source paths beyond factor mapping. Their normalized outputs diverge at saturation, and their thrust-to-PWM curves differ. The concrete roll/heave case is recorded in `06_thruster_allocation.md`; allocation equivalence remains an explicit gate before any output driver.
+- Added a software-only allocation comparison across 12 single-axis cases, one mixed unsaturated case and two saturated cases. Unsaturated thrust agrees after mapping; saturated thrust and PWM shaping differ as documented in `06_thruster_allocation.md`. The eventual saturation policy still needs a decision before actuator output is implemented.
 - Added provisional `FRAME_CONFIG`, eight motor directions and ROS PWM limits in `integration/atal_motor_defaults.parm`. The layout validator checks the directions against the editable JSON and the normal Linux virtual-sensor replay passes with the template loaded. No ESP32 or physical output path exists.
 
 ## Current state
