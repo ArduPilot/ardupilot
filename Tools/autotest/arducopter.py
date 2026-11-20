@@ -14802,6 +14802,61 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_location(detour_midpoint, accuracy=8, timeout=120)
         self.wait_rtl_complete()
 
+    def AC_Avoidance_Dijkstra_ExclusionBesideEdge(self):
+        '''Test Dijkstra's object avoidance finds the fence entry point for a
+        vehicle outside the fence when an exclusion polygon sits just inside
+        the fence edge nearest the vehicle'''
+
+        self.context_set_speedup(4)
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # rectangular inclusion fence spanning N -20 to 120 by E -70 to 70, with
+        # an exclusion rectangle spanning N 60 to 90 by E -68 to -50, 2m inside
+        # its western edge
+        home_loc_plus_15m = self.offset_location_up(self.home_position_as_location(), 15)
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, -20, -70),
+                self.offset_location_ne(home_loc_plus_15m, -20, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, 70),
+                self.offset_location_ne(home_loc_plus_15m, 120, -70),
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home_loc_plus_15m, 60, -68),
+                self.offset_location_ne(home_loc_plus_15m, 90, -68),
+                self.offset_location_ne(home_loc_plus_15m, 90, -50),
+                self.offset_location_ne(home_loc_plus_15m, 60, -50),
+            ]),
+        ])
+
+        # enable fence
+        self.set_rc(11, 2000)
+
+        self.takeoff(15, mode="GUIDED")
+
+        # disable the fence and fly out 40m beyond its western edge, level with
+        # the exclusion polygon
+        self.set_rc(11, 1000)
+        self.fly_guided_move_local(70, -110, 15)
+
+        # the point 5m inside the western edge at (70,-65) is inside the
+        # exclusion polygon, so the entry point is where the western edge and
+        # the exclusion polygon's southern edge, each moved 5m into the fence,
+        # cross.  flying straight home instead would pass 14m from it
+        entry_point = self.offset_location_ne(home_loc_plus_15m, 55, -65)
+
+        # re-enable the fence; the breach triggers RTL and the vehicle must be
+        # routed via the entry point
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_location(entry_point, accuracy=8, timeout=100)
+        self.wait_rtl_complete()
+
     def upload_T_shaped_fence_home_outside(self):
         '''upload a T-shaped inclusion fence placed north of home so that home
         lies outside it.  The "stalk" spans N 40 to 85 by E -30 to 10; the "bar"
@@ -21245,6 +21300,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AC_Avoidance_Dijkstra_HomeOutside_ViaInnerCorner,
             self.AC_Avoidance_Dijkstra_HomeOutside_NorthWestCorner,
             self.AC_Avoidance_Dijkstra_HomeOutside_ThroughFence,
+            self.AC_Avoidance_Dijkstra_ExclusionBesideEdge,
             self.SetpointGlobalVel,
             self.SetpointBadVel,
             self.ModeLoiter,
