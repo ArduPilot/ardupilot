@@ -1113,7 +1113,7 @@ void AP_Radio_beken::irq_timeout(uint32_t when)
             }
         } else {
             // Normal modes - we have timed out for channel hopping
-            int32_t d = synctm.sync_time_us; // Time between packets, e.g. 5100 us
+            uint32_t d = synctm.sync_time_us; // Time between packets, e.g. 5100 us
             uint32_t dt = when - synctm.rx_time_us;
             if (dt > 50*d) { // We have lost sync (missed 50 packets) so slow down the channel hopping until we resync
                 d *= 5; // 3 or 5 are relatively prime to the table size of 16.
