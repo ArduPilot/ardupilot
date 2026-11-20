@@ -520,7 +520,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 // @Field: VD: Velocity down
 // @Field: As: Airspeed
 // @Field: ASpdU: Achieved simulation speedup value
-// @Field: UFC: Number of times simulation paused for serial0 output
+// @Field: UFC: Number of times simulation paused for paced serial output
         Vector3d pos = get_position_relhome();
         Vector3f vel = get_velocity_ef();
         AP::logger().WriteStreaming(
