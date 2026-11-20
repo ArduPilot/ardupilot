@@ -261,6 +261,31 @@ TEST(NotchFilterTest, HarmonicNotchTest2)
 }
 
 /*
+  regression test for https://github.com/ArduPilot/ardupilot/issues/30284
+
+  BW greater than 2x FREQ is an invalid config for the notch shape (Q
+  depends only on the BW/FREQ ratio, and collapses towards zero as
+  that ratio approaches 2). Previously this was "resolved" by
+  distorting the center frequency used only for the one-off Q
+  calculation, producing a near-zero Q that then got applied
+  wholesale to whatever frequency was tracked dynamically
+  afterwards - here, the real ~9Hz rotor frequency - producing an
+  extremely wide notch and severe phase lag. The fix instead clamps
+  the bandwidth against the real center frequency, so the resulting
+  notch stays reasonably narrow instead of near-degenerate.
+ */
+TEST(NotchFilterTest, HarmonicNotchInvalidBandwidthTest)
+{
+    float phase_lag, attenuation_dB;
+    // FREQ=9, BW=40 as reported, tracking a live source frequency of 9Hz
+    test_one_filter(9, 40, 40, 9, 9, 1, 0, phase_lag, attenuation_dB);
+    ::printf("HarmonicNotchInvalidBandwidthTest: phase_lag=%.2f attenuation_dB=%.2f\n", phase_lag, attenuation_dB);
+    // before the fix this measured ~31.7 degrees; a well-conditioned
+    // notch at its own center frequency should have very little lag
+    EXPECT_LT(phase_lag, 15.0);
+}
+
+/*
   test behaviour with TreatLowAsMin, we expect attenuation to decrease
   as we get close to zero source frequency and phase lag to approach
   zero
