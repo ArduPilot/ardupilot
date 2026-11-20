@@ -21,6 +21,9 @@
 extern const AP_HAL::HAL &hal;
 
 #define BMP581_ID                     0x50
+// the BMP585 is register-compatible with the BMP581 and reuses this driver;
+// only the chip id differs
+#define BMP585_ID                     0x51
 
 #define BMP581_REG_CHIP_ID            0x01
 #define BMP581_REG_REV_ID             0x02
@@ -99,7 +102,26 @@ bool AP_Baro_BMP581::init()
     case BMP581_ID:
         _dev->set_device_type(DEVTYPE_BARO_BMP581);
         break;
+    case BMP585_ID:
+        _dev->set_device_type(DEVTYPE_BARO_BMP585);
+        break;
     default:
+        return false;
+    }
+
+    // the checks below test INT_STATUS.por, which the datasheet sets on
+    // power-up or soft reset and clears on the first read. The sensor keeps
+    // its power across a warm MCU reboot, so a previous boot has already
+    // cleared por and init() would only succeed after a physical power cycle.
+    // Soft reset the chip (datasheet 4.3.10: write 0xB6 to CMD, ready after
+    // tsoft_res = 2ms) to return it to its power-on state.
+    _dev->write_register(BMP581_REG_CMD, 0xB6);
+    hal.scheduler->delay(5);
+
+    // the reset leaves the interface in I2C/I3C mode (datasheet 5.1), so on
+    // SPI the first read switches it back and returns invalid data
+    if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI &&
+        !_dev->read_registers(BMP581_REG_CHIP_ID, &whoami, 1)) {
         return false;
     }
 
