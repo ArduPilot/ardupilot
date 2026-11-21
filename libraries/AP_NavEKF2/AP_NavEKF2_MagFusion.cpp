@@ -745,24 +745,19 @@ void NavEKF2_core::fuseEulerYaw()
         ftype t8 = q1*q2*2.0f;
         ftype t9 = t7+t8;
         ftype t10 = sq(t6);
-        if (t10 > 1e-6f) {
-            t10 = 1.0f / t10;
-        } else {
-            return;
-        }
         ftype t11 = t9*t9;
-        ftype t12 = t10*t11;
-        ftype t13 = t12+1.0f;
+        // yaw is atan2(t9, t6): its derivative is over t6^2+t9^2, not
+        // t6^2, which is zero at +-90 degrees yaw
+        ftype t13 = t10+t11;
         ftype t14;
         if (fabsF(t13) > 1e-3f) {
             t14 = 1.0f/t13;
         } else {
             return;
         }
-        ftype t15 = 1.0f/t6;
         H_YAW[0] = 0.0f;
-        H_YAW[1] = t14*(t15*(q0*q1*2.0f-q2*q3*2.0f)+t9*t10*(q0*q2*2.0f+q1*q3*2.0f));
-        H_YAW[2] = t14*(t15*(t2-t3+t4-t5)+t9*t10*(t7-t8));
+        H_YAW[1] = t14*(t6*(q0*q1*2.0f-q2*q3*2.0f)+t9*(q0*q2*2.0f+q1*q3*2.0f));
+        H_YAW[2] = t14*(t6*(t2-t3+t4-t5)+t9*(t7-t8));
 
         // calculate predicted and measured yaw angle
         Vector3F euler321;
@@ -807,24 +802,18 @@ void NavEKF2_core::fuseEulerYaw()
         ftype t10 = q1*q2*2.0f;
         ftype t8 = t7-t10;
         ftype t9 = sq(t6);
-        if (t9 > 1e-6f) {
-            t9 = 1.0f/t9;
-        } else {
-            return;
-        }
         ftype t11 = t8*t8;
-        ftype t12 = t9*t11;
-        ftype t13 = t12+1.0f;
+        // as for 321: yaw is atan2(t8, t6), over t6^2+t8^2
+        ftype t13 = t9+t11;
         ftype t14;
         if (fabsF(t13) > 1e-3f) {
             t14 = 1.0f/t13;
         } else {
             return;
         }
-        ftype t15 = 1.0f/t6;
-        H_YAW[0] = -t14*(t15*(q0*q2*2.0+q1*q3*2.0)-t8*t9*(q0*q1*2.0-q2*q3*2.0));
+        H_YAW[0] = -t14*(t6*(q0*q2*2.0+q1*q3*2.0)-t8*(q0*q1*2.0-q2*q3*2.0));
         H_YAW[1] = 0.0f;
-        H_YAW[2] = t14*(t15*(t2+t3-t4-t5)+t8*t9*(t7+t10));
+        H_YAW[2] = t14*(t6*(t2+t3-t4-t5)+t8*(t7+t10));
 
         // calculate predicted and measured yaw angle
         Vector3F euler312 = stateStruct.quat.to_vector312();
