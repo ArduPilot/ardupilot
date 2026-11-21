@@ -1260,6 +1260,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         num_wp = self.load_mission("copter_loiter_to_alt.txt")
 
+        # record every MISSION_ITEM_REACHED sequence number we see
+        reached = set()
+
+        def check_reached(mav, m):
+            if m.get_type() != "MISSION_ITEM_REACHED":
+                return
+            reached.add(m.seq)
+        self.install_message_hook_context(check_reached)
+
         self.change_mode('LOITER')
 
         self.install_terrain_handlers_context()
@@ -1278,6 +1287,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_waypoint(0, num_wp-1, timeout=500)
 
         self.wait_disarmed()
+
+        # items 2 and 3 are NAV_LOITER_TO_ALT
+        for seq in [2, 3]:
+            if seq not in reached:
+                raise NotAchievedException("No MISSION_ITEM_REACHED for item %u" % seq)
 
         self.context_pop()
         self.reboot_sitl()
