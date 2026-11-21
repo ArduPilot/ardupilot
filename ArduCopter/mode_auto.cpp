@@ -265,6 +265,10 @@ bool ModeAuto::move_vehicle_on_ekf_reset() const
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
+    if (!auto_rtl_entry_allowed(reason)) {
+        return false;
+    }
+
     if (!mission.jump_to_landing_sequence(get_stopping_point())) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
         // make sad noise
@@ -281,6 +285,10 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 // Join mission after DO_RETURN_PATH_START waypoint, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::return_path_start_auto_RTL(ModeReason reason)
 {
+    if (!auto_rtl_entry_allowed(reason)) {
+        return false;
+    }
+
     if (!mission.jump_to_closest_mission_leg(get_stopping_point())) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
         // make sad noise
@@ -297,6 +305,10 @@ bool ModeAuto::return_path_start_auto_RTL(ModeReason reason)
 // Try join return path else do land start
 bool ModeAuto::return_path_or_jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
+    if (!auto_rtl_entry_allowed(reason)) {
+        return false;
+    }
+
     const Location stopping_point = get_stopping_point();
     if (!mission.jump_to_closest_mission_leg(stopping_point) && !mission.jump_to_landing_sequence(stopping_point)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
@@ -309,6 +321,18 @@ bool ModeAuto::return_path_or_jump_to_landing_sequence_auto_RTL(ModeReason reaso
     }
 
     return enter_auto_rtl(reason);
+}
+
+// moving a stopped mission starts its nav command, which overwrites the current
+// mode's waypoint destination, so run set_mode's checks for AUTO before moving it.
+// ModeAuto::init() can still refuse afterwards
+bool ModeAuto::auto_rtl_entry_allowed(ModeReason reason)
+{
+    if (copter.flightmode == this) {
+        return true;
+    }
+    return copter.gcs_mode_change_allowed(Number::AUTO, reason) &&
+           copter.mode_change_checks_passed(this, !motors->armed());
 }
 
 // Enter auto rtl pseudo mode

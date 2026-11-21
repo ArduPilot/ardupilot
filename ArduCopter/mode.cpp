@@ -223,6 +223,89 @@ void Copter::mode_change_failed(const Mode *mode, const char *reason)
     }
 }
 
+// returns true if new_flightmode may be entered, without changing any state
+bool Copter::mode_change_checks_passed(const Mode *new_flightmode, bool ignore_checks)
+{
+#if FRAME_CONFIG == HELI_FRAME
+    // do not allow helis to enter a non-manual throttle mode if the
+    // rotor runup is not complete
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() && motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        mode_change_failed(new_flightmode, "runup not complete");
+        return false;
+    }
+#endif
+
+#if FRAME_CONFIG != HELI_FRAME
+    // ensure vehicle doesn't leap off the ground if a user switches
+    // into a manual throttle mode from a non-manual-throttle mode
+    // (e.g. user arms in guided, raises throttle to 1300 (not enough to
+    // trigger auto takeoff), then switches into manual):
+    bool user_throttle = new_flightmode->has_manual_throttle();
+#if MODE_DRIFT_ENABLED
+    if (new_flightmode == &mode_drift) {
+        user_throttle = true;
+    }
+#endif
+    if (!ignore_checks &&
+        ap.land_complete &&
+        user_throttle &&
+        !copter.flightmode->has_manual_throttle() &&
+        new_flightmode->get_pilot_desired_throttle() > copter.get_non_takeoff_throttle()) {
+        mode_change_failed(new_flightmode, "throttle too high");
+        return false;
+    }
+#endif
+
+    if (!ignore_checks &&
+        new_flightmode->requires_position() &&
+        !copter.position_ok()) {
+        mode_change_failed(new_flightmode, "requires position");
+        return false;
+    }
+
+    // check for valid altitude if old mode did not require it but new one does
+    // we only want to stop changing modes if it could make things worse
+    if (!ignore_checks &&
+        !copter.ekf_alt_ok() &&
+        flightmode->has_manual_throttle() &&
+        !new_flightmode->has_manual_throttle()) {
+        mode_change_failed(new_flightmode, "need alt estimate");
+        return false;
+    }
+
+#if AP_FENCE_ENABLED
+    // may not be allowed to change mode if recovering from fence breach
+    if (!ignore_checks && fence_recovery_blocks_mode_change()) {
+        mode_change_failed(new_flightmode, "in fence recovery");
+        return false;
+    }
+#endif
+
+    if (rc().in_rc_failsafe() && !new_flightmode->allows_entry_in_rc_failsafe()) {
+        mode_change_failed(new_flightmode, "in RC failsafe");
+        return false;
+    }
+
+    return true;
+}
+
+// returns false, reporting the failure, if a GCS command may not enter mode
+bool Copter::gcs_mode_change_allowed(const Mode::Number mode, const ModeReason reason)
+{
+    // Check if GCS mode change is disabled via parameter
+    if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled(mode)) {
+        // Mode disabled, try and grab a mode name to give a better warning.
+        const Mode *new_flightmode = mode_from_mode_num(mode);
+        if (new_flightmode == nullptr) {
+            notify_no_such_mode((uint8_t)mode);
+        } else {
+            mode_change_failed(new_flightmode, "GCS entry disabled (FLTMODE_GCSBLOCK)");
+        }
+        return false;
+    }
+    return true;
+}
+
 // Check if this mode can be entered from the GCS
 bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
 {
@@ -371,15 +454,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         return true;
     }
 
-    // Check if GCS mode change is disabled via parameter
-    if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled(mode)) {
-        // Mode disabled, try and grab a mode name to give a better warning.
-        const Mode *new_flightmode = mode_from_mode_num(mode);
-        if (new_flightmode == nullptr) {
-            notify_no_such_mode((uint8_t)mode);
-        } else {
-            mode_change_failed(new_flightmode, "GCS entry disabled (FLTMODE_GCSBLOCK)");
-        }
+    if (!gcs_mode_change_allowed(mode, reason)) {
         return false;
     }
 
@@ -399,63 +474,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 
-#if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter a non-manual throttle mode if the
-    // rotor runup is not complete
-    if (!ignore_checks && !new_flightmode->has_manual_throttle() && motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
-        mode_change_failed(new_flightmode, "runup not complete");
-        return false;
-    }
-#endif
-
-#if FRAME_CONFIG != HELI_FRAME
-    // ensure vehicle doesn't leap off the ground if a user switches
-    // into a manual throttle mode from a non-manual-throttle mode
-    // (e.g. user arms in guided, raises throttle to 1300 (not enough to
-    // trigger auto takeoff), then switches into manual):
-    bool user_throttle = new_flightmode->has_manual_throttle();
-#if MODE_DRIFT_ENABLED
-    if (new_flightmode == &mode_drift) {
-        user_throttle = true;
-    }
-#endif
-    if (!ignore_checks &&
-        ap.land_complete &&
-        user_throttle &&
-        !copter.flightmode->has_manual_throttle() &&
-        new_flightmode->get_pilot_desired_throttle() > copter.get_non_takeoff_throttle()) {
-        mode_change_failed(new_flightmode, "throttle too high");
-        return false;
-    }
-#endif
-
-    if (!ignore_checks &&
-        new_flightmode->requires_position() &&
-        !copter.position_ok()) {
-        mode_change_failed(new_flightmode, "requires position");
-        return false;
-    }
-
-    // check for valid altitude if old mode did not require it but new one does
-    // we only want to stop changing modes if it could make things worse
-    if (!ignore_checks &&
-        !copter.ekf_alt_ok() &&
-        flightmode->has_manual_throttle() &&
-        !new_flightmode->has_manual_throttle()) {
-        mode_change_failed(new_flightmode, "need alt estimate");
-        return false;
-    }
-
-#if AP_FENCE_ENABLED
-    // may not be allowed to change mode if recovering from fence breach
-    if (!ignore_checks && fence_recovery_blocks_mode_change()) {
-        mode_change_failed(new_flightmode, "in fence recovery");
-        return false;
-    }
-#endif
-
-    if (rc().in_rc_failsafe() && !new_flightmode->allows_entry_in_rc_failsafe()) {
-        mode_change_failed(new_flightmode, "in RC failsafe");
+    if (!mode_change_checks_passed(new_flightmode, ignore_checks)) {
         return false;
     }
 
