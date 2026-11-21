@@ -39,6 +39,11 @@ public:
 
     const char *name() const override { return "GSOF"; }
 
+    // Build the binary command that starts or stops logging to the
+    // receiver's internal storage. Public so it can be unit tested.
+    static constexpr uint8_t LOGGING_REQUEST_LEN = 15;
+    static void build_logging_request(uint8_t (&buffer)[LOGGING_REQUEST_LEN], bool enable);
+
 private:
 
     // Configure the GPS device
@@ -96,6 +101,7 @@ private:
     // state for GPS_RAW_DATA handling
     bool logging_requested;     // true if we have asked the receiver to log
     bool logging_state_known;   // false until the first start/stop request has been sent
+    bool warned_invalid_raw_data; // true once we have warned about a bad GPS_RAW_DATA
     bool has_been_armed;        // true once the vehicle has armed
 };
 #endif

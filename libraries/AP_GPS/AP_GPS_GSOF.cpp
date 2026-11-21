@@ -204,8 +204,8 @@ AP_GPS_GSOF::update_raw_data_logging()
     }
     if (!validate_raw_data(raw_data)) {
         // warn once per boot rather than spamming
-        if (!logging_state_known) {
-            logging_state_known = true;
+        if (!warned_invalid_raw_data) {
+            warned_invalid_raw_data = true;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GSOF instance %d has invalid GPS_RAW_DATA of %d", state.instance, (int)raw_data);
         }
         return;
@@ -229,23 +229,35 @@ AP_GPS_GSOF::update_raw_data_logging()
 }
 
 void
-AP_GPS_GSOF::requestLogging(const bool enable)
+AP_GPS_GSOF::build_logging_request(uint8_t (&buffer)[LOGGING_REQUEST_LEN], const bool enable)
 {
-    // Binary command to start/stop the DEFAULT log; see Trimble OEM GNSS
-    // "Logging" file control. Byte 4 is the action (0x08 start, 0x09 stop),
-    // not a transaction number.
-    uint8_t buffer[15] = {0x02,0x00,0x4C,0x09,
-                          static_cast<uint8_t>(enable ? 0x08 : 0x09),
-                          'D','E','F','A','U','L','T',0x00,
-                          0x00,0x03}; // checksum, ETX
+    // Start: 02 00 4C 09 08 "DEFAULT" 00 <csum> 03
+    // Stop:  02 00 4C 09 09 "DEFAULT" 00 <csum> 03
+    // Packet bytes are taken from the GPS_RAW_DATA feature request
+    // (ArduPilot issue 25517). Byte 4 is 0x08 to start and 0x09 to stop;
+    // the meaning of the remaining fields is not documented here.
+    const uint8_t packet[LOGGING_REQUEST_LEN] = {
+        0x02, 0x00, 0x4C, 0x09,
+        static_cast<uint8_t>(enable ? 0x08 : 0x09),
+        'D', 'E', 'F', 'A', 'U', 'L', 'T', 0x00,
+        0x00, // checksum, filled in below
+        0x03};
+    memcpy(buffer, packet, sizeof(packet));
 
+    // checksum covers everything between STX and the checksum byte
     uint8_t checksum = 0;
-    for (uint8_t a = 1; a < (sizeof(buffer) - 2); a++) {
+    for (uint8_t a = 1; a < LOGGING_REQUEST_LEN - 2; a++) {
         checksum += buffer[a];
     }
-    buffer[sizeof(buffer) - 2] = checksum;
+    buffer[LOGGING_REQUEST_LEN - 2] = checksum;
+}
 
-    port->write((const uint8_t*)buffer, sizeof(buffer));
+void
+AP_GPS_GSOF::requestLogging(const bool enable)
+{
+    uint8_t buffer[LOGGING_REQUEST_LEN];
+    build_logging_request(buffer, enable);
+    port->write(buffer, sizeof(buffer));
 }
 
 bool
