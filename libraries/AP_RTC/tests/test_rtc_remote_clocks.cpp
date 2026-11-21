@@ -30,9 +30,11 @@ struct Remote {
         return uint32_t(llround((double(local_ms) - double(boot_start_ms)) * (1.0 + crystal_error)));
     }
     uint64_t unix_usec(uint32_t local_ms) const { return uint64_t(int64_t(local_ms) * 1000 + LOCAL_OFFSET_US); }
-    // a SYSTEM_TIME sampled at local_ms, received at rx_ms (at once if zero)
-    void send_time(AP_RTC_RemoteClocks &clocks, uint32_t local_ms, int64_t error_us=0, uint32_t rx_ms=0) const {
-        clocks.handle_system_time(sysid, compid, unix_usec(local_ms) + error_us, boot_ms(local_ms), rx_ms != 0 ? rx_ms : local_ms);
+    // a SYSTEM_TIME sampled at local_ms, received at rx_ms (at once if zero) by a clock
+    // following GPS time (unless local_locked is false)
+    void send_time(AP_RTC_RemoteClocks &clocks, uint32_t local_ms, int64_t error_us=0, uint32_t rx_ms=0, bool local_locked=true) const {
+        clocks.handle_system_time_at(sysid, compid, unix_usec(local_ms) + error_us, boot_ms(local_ms),
+                                     rx_ms != 0 ? rx_ms : local_ms, local_locked, LOCAL_OFFSET_US);
     }
 };
 
@@ -117,7 +119,7 @@ TEST(AP_RTC_RemoteClocks, unknown_remote_time_ignored)
     uint32_t now_ms = START_MS;
     clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
     for (uint8_t i=0; i<5; i++) {
-        clocks.handle_system_time(TARGET_SYSID, TARGET_COMPID, 0, target.boot_ms(now_ms), now_ms);
+        clocks.handle_system_time_at(TARGET_SYSID, TARGET_COMPID, 0, target.boot_ms(now_ms), now_ms, true, LOCAL_OFFSET_US);
         now_ms += 1000;
     }
     uint32_t local_ms;
@@ -290,6 +292,87 @@ TEST(AP_RTC_RemoteClocks, held_offset_follows_boot_clock_drift)
         ASSERT_TRUE(convert(clocks, drifting.boot_ms(check_ms), check_ms, local_ms));
         EXPECT_NEAR(double(check_ms), double(local_ms), 3.0);
     }
+}
+
+// a message can't arrive before it was sent, so a remote clock ahead of GPS time is never acquired
+TEST(AP_RTC_RemoteClocks, clock_ahead_never_acquired)
+{
+    AP_RTC_RemoteClocks clocks;
+    ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
+    uint32_t now_ms = START_MS;
+    clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
+    for (uint8_t i=0; i<10; i++) {
+        target.send_time(clocks, now_ms, 200000);
+        now_ms += 5000;
+    }
+    clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
+    uint32_t local_ms;
+    EXPECT_FALSE(convert(clocks, target.boot_ms(now_ms), now_ms, local_ms));
+}
+
+// a remote clock jumping ahead after lock is never acquired again
+TEST(AP_RTC_RemoteClocks, clock_ahead_after_lock_not_reacquired)
+{
+    AP_RTC_RemoteClocks clocks;
+    ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
+    uint32_t now_ms = START_MS;
+    acquire(clocks, now_ms);
+    uint32_t local_ms;
+    ASSERT_TRUE(convert(clocks, target.boot_ms(now_ms), now_ms, local_ms));
+    for (uint8_t i=0; i<10; i++) {
+        target.send_time(clocks, now_ms, 200000);
+        clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
+        now_ms += 5000;
+    }
+    EXPECT_FALSE(convert(clocks, target.boot_ms(now_ms), now_ms, local_ms));
+}
+
+// a timestamp converting into the future shows the offset is wrong, so it is dropped
+TEST(AP_RTC_RemoteClocks, conversion_into_future_drops_offset)
+{
+    AP_RTC_RemoteClocks clocks;
+    ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
+    uint32_t now_ms = START_MS;
+    acquire(clocks, now_ms);
+    uint32_t local_ms;
+    ASSERT_TRUE(convert(clocks, target.boot_ms(now_ms), now_ms, local_ms));
+    EXPECT_FALSE(convert(clocks, target.boot_ms(now_ms + 100), now_ms, local_ms));
+    EXPECT_FALSE(convert(clocks, target.boot_ms(now_ms), now_ms, local_ms));
+
+    // and is acquired again from new consistent samples
+    acquire(clocks, now_ms);
+    EXPECT_TRUE(convert(clocks, target.boot_ms(now_ms), now_ms, local_ms));
+}
+
+// clock errors within the tolerance are accepted
+TEST(AP_RTC_RemoteClocks, small_lead_within_tolerance)
+{
+    AP_RTC_RemoteClocks clocks;
+    ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
+    uint32_t now_ms = START_MS;
+    clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
+    for (uint8_t i=0; i<3; i++) {
+        target.send_time(clocks, now_ms, 15000);
+        now_ms += 5000;
+    }
+    uint32_t local_ms;
+    ASSERT_TRUE(convert(clocks, target.boot_ms(now_ms - 5000), now_ms - 5000, local_ms));
+    EXPECT_EQ(now_ms - 5000 + 15, local_ms);
+}
+
+// causality can only be judged by a clock that follows GPS time
+TEST(AP_RTC_RemoteClocks, ignored_while_not_locked)
+{
+    AP_RTC_RemoteClocks clocks;
+    ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
+    uint32_t now_ms = START_MS;
+    clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
+    for (uint8_t i=0; i<5; i++) {
+        target.send_time(clocks, now_ms, 0, 0, false);
+        now_ms += 1000;
+    }
+    uint32_t local_ms;
+    EXPECT_FALSE(convert(clocks, target.boot_ms(now_ms), now_ms, local_ms));
 }
 
 TEST(AP_RTC_RemoteClocks, registrations_counted_and_limited)

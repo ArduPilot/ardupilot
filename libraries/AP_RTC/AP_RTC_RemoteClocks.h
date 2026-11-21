@@ -40,6 +40,11 @@ public:
     // offset is acquired and held.  The boot time is also checked for a reboot
     bool remote_to_local_ms(uint8_t sysid, uint8_t compid, uint32_t remote_boot_ms, uint32_t &local_ms);
 
+    // as above, given the local time, whether this clock follows GPS time and
+    // the local UTC minus boot time; used by the unit tests
+    void handle_system_time_at(uint8_t sysid, uint8_t compid, uint64_t time_unix_usec, uint32_t time_boot_ms,
+                               uint32_t now_ms, bool local_locked, int64_t local_offset_us);
+
     // as above, given the local time and the local UTC minus boot time; used by the unit tests
     bool remote_to_local_ms_at(uint8_t sysid, uint8_t compid, uint32_t remote_boot_ms,
                                uint32_t now_ms, int64_t local_offset_us, uint32_t &local_ms);
@@ -81,6 +86,7 @@ private:
     void add_to_fit(Source &s, int64_t sample_us, uint32_t boot_ms);
     int64_t offset_at(const Source &s, uint32_t boot_ms) const;
     void try_acquire(Source &s, uint32_t now_ms);
+    void restart_acquisition(Source &s);
 };
 
 #endif  // AP_RTC_REMOTE_CLOCKS_ENABLED

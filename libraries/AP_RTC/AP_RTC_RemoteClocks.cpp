@@ -148,7 +148,25 @@ void AP_RTC_RemoteClocks::try_acquire(Source &s, uint32_t now_ms)
     }
 }
 
+// the offset must be acquired again from new samples
+void AP_RTC_RemoteClocks::restart_acquisition(Source &s)
+{
+    s.consistent = 0;
+    s.acquired = false;
+}
+
 void AP_RTC_RemoteClocks::handle_system_time(uint8_t sysid, uint8_t compid, uint64_t time_unix_usec, uint32_t time_boot_ms, uint32_t now_ms)
+{
+    // UTC minus boot time doesn't depend on when it is read
+    const AP_RTC &rtc = AP::rtc();
+    uint64_t utc_us, local_us;
+    const bool locked = rtc.gps_locked() && rtc.get_utc_and_local_usec(utc_us, local_us);
+    handle_system_time_at(sysid, compid, time_unix_usec, time_boot_ms, now_ms,
+                          locked, locked ? int64_t(utc_us) - int64_t(local_us) : 0);
+}
+
+void AP_RTC_RemoteClocks::handle_system_time_at(uint8_t sysid, uint8_t compid, uint64_t time_unix_usec, uint32_t time_boot_ms,
+                                                uint32_t now_ms, bool local_locked, int64_t local_offset_us)
 {
     WITH_SEMAPHORE(sem);
 
@@ -161,6 +179,18 @@ void AP_RTC_RemoteClocks::handle_system_time(uint8_t sysid, uint8_t compid, uint
 
     // the remote system does not know the time
     if (time_unix_usec == 0) {
+        return;
+    }
+
+    // a sample can only be judged against a clock that follows GPS time
+    if (!local_locked) {
+        return;
+    }
+
+    // a sample sent after it arrived comes from a remote clock running ahead of GPS time
+    const int64_t ahead_us = int64_t(time_unix_usec) - (int64_t(now_ms) * 1000 + local_offset_us);
+    if (ahead_us > int64_t(AP_RTC_REMOTE_CLOCK_TOLERANCE_MS) * 1000) {
+        restart_acquisition(*s);
         return;
     }
 
@@ -248,6 +278,13 @@ bool AP_RTC_RemoteClocks::remote_to_local_ms_at(uint8_t sysid, uint8_t compid, u
     if (local_us < 0) {
         return false;
     }
+
+    // a message can't arrive before it was sent, so an offset putting it in the future is wrong
+    if (local_us - int64_t(now_ms) * 1000 > int64_t(AP_RTC_REMOTE_CLOCK_TOLERANCE_MS) * 1000) {
+        restart_acquisition(*s);
+        return false;
+    }
+
     local_ms = uint32_t(local_us / 1000);
     return true;
 }
