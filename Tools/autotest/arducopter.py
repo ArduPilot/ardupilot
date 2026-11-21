@@ -6297,6 +6297,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         reset_times = []
         last = {}
         x_flips = []
+        x_cleared = None
         y_on = []
         y_off = []
         dfreader = self.dfreader_for_current_onboard_log()
@@ -6309,6 +6310,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if mtype == 'PARM':
                 if m.Name == 'SIM_FLOW_OFS_X' and m.Value != 0:
                     x_flips.append(t)
+                elif m.Name == 'SIM_FLOW_OFS_X' and x_flips and x_cleared is None:
+                    x_cleared = t
                 elif m.Name == 'SIM_FLOW_OFS_Y':
                     (y_on if m.Value != 0 else y_off).append(t)
             elif mtype == 'XKF1':
@@ -6333,6 +6336,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if early:
                 raise NotAchievedException("reset at %.1f s, inside the Y burst" % early[0])
         for (core, t) in reset_times:
+            # clearing the offset is a new lockout on the axis the last reset anchored to it, and that
+            # reset can fall as the vehicle disarms, with no XKF1 after it
+            if x_cleared is not None and t >= x_cleared:
+                continue
             # XKF1 is written before XKF7 in a frame, so step clear of the reset frame on both sides
             before = [v for (tv, v) in fwd[core] if tv < t - 0.05]
             after = [v for (tv, v) in fwd[core] if tv > t + 0.05]
