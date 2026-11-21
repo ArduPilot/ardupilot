@@ -995,7 +995,8 @@ void AP_GPS::update_instance(uint8_t instance)
 #endif
 
 #if AP_RTC_ENABLED
-    if (state[instance].status >= AP_GPS_FixType::FIX_3D) {
+    // the RTC follows one GPS, once per message, so it sees one receiver's time bias
+    if (result && (instance == rtc_instance) && (state[instance].status >= AP_GPS_FixType::FIX_3D)) {
         const uint64_t now = time_epoch_usec(instance);
         if (now != 0) {
             AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
@@ -1075,6 +1076,10 @@ void AP_GPS::update(void)
         }
     }
 
+#if AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
+    update_rtc_instance();
+#endif
+
 #if GPS_MAX_RECEIVERS > 1
 #if HAL_LOGGING_ENABLED
     const uint8_t old_primary = primary_instance;
@@ -1093,6 +1098,34 @@ void AP_GPS::update(void)
     AP_Notify::flags.gps_num_sats = state[primary_instance].num_sats;
 #endif
 }
+
+#if AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
+// choose the GPS that sets the RTC: the lowest latency one with a 3D fix.  It is
+// kept unless it loses its fix or another is clearly lower, so the RTC doesn't
+// follow receivers with different time biases in turn
+void AP_GPS::update_rtc_instance()
+{
+    // get_lag() always provides a lag, returning false when it is a default guess
+    float current_lag_s;
+    UNUSED_RESULT(get_lag(rtc_instance, current_lag_s));
+    const bool current_ok = (state[rtc_instance].status >= AP_GPS_FixType::FIX_3D);
+
+    uint8_t best = rtc_instance;
+    float best_lag_s = current_ok ? (current_lag_s - 0.02f) : FLT_MAX;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if ((i == rtc_instance) || (state[i].status < AP_GPS_FixType::FIX_3D)) {
+            continue;
+        }
+        float lag_s;
+        UNUSED_RESULT(get_lag(i, lag_s));
+        if (lag_s < best_lag_s) {
+            best = i;
+            best_lag_s = lag_s;
+        }
+    }
+    rtc_instance = best;
+}
+#endif  // AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
 
 #if GPS_MAX_RECEIVERS > 1
 uint8_t AP_GPS::fix_type_priority(AP_GPS_FixType status)

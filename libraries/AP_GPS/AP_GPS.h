@@ -693,6 +693,11 @@ private:
 
     /// primary GPS instance
     uint8_t primary_instance;
+    /// GPS instance that sets the RTC
+    uint8_t rtc_instance;
+#if GPS_MAX_RECEIVERS > 1
+    void update_rtc_instance();
+#endif
 
     /// number of GPS instances present
     uint8_t num_instances;
