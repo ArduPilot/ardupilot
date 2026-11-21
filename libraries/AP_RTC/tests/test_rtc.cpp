@@ -388,11 +388,19 @@ TEST(AP_RTC, set_utc_usec_priority)
     ASSERT_TRUE(AP::rtc().get_utc_usec(now));
     EXPECT_LT(now, t2);
 
-    // moving time backwards must be rejected, even from the same
-    // source:
+    // while armed, moving time backwards must be rejected, even from
+    // the same source:
+    hal.util->set_soft_armed(true);
     AP::rtc().set_utc_usec(t1 - 3600*1000000ULL, AP_RTC::SOURCE_GPS);
     ASSERT_TRUE(AP::rtc().get_utc_usec(now));
     EXPECT_GE(now, t1);
+    hal.util->set_soft_armed(false);
+
+    // while disarmed, the GPS steps a large error out in either direction:
+    AP::rtc().set_utc_usec(t1 - 3600*1000000ULL, AP_RTC::SOURCE_GPS);
+    ASSERT_TRUE(AP::rtc().get_utc_usec(now));
+    EXPECT_LT(now, t1);
+    EXPECT_NEAR(0, double(int64_t(now - (t1 - 3600*1000000ULL)))/1000, clock_slack_ms);
 
     // while armed, a same-source time is only slewed towards, never
     // stepped to...
@@ -552,10 +560,12 @@ TEST(AP_RTC, large_forward_error_steps_only_disarmed)
 }
 
 // a GPS time behind the clock is slewed to at the limited rate, never stepped back
-TEST(AP_RTC, never_steps_back)
+// while armed, a GPS time behind the clock is slewed to at the limited rate, never stepped back
+TEST(AP_RTC, never_steps_back_armed)
 {
     const ClockSim sim = start_sim(0.0);
     feed_gps(sim, 0.2, 60.0);
+    hal.util->set_soft_armed(true);
 
     uint64_t start, end;
     ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(60.0), start));
@@ -566,6 +576,36 @@ TEST(AP_RTC, never_steps_back)
     EXPECT_GE(double(end - start), 100.0e6 * (1.0 - 500.0e-6) - 1);
     EXPECT_LT(double(end - start), 100.0e6);
     EXPECT_FALSE(AP::rtc().gps_locked_at(sim.local_at(160.0)));
+    hal.util->set_soft_armed(false);
+}
+
+// while disarmed, a GPS time well behind the clock is stepped back to
+TEST(AP_RTC, disarmed_steps_back_to_gps)
+{
+    const ClockSim sim = start_sim(0.0);
+    feed_gps(sim, 0.2, 60.0);
+    const uint64_t gps_utc = sim.utc_at(60.2) - 1000000;
+    AP::rtc().set_utc_usec_at(gps_utc, AP_RTC::SOURCE_GPS, sim.local_at(60.2));
+    uint64_t now;
+    ASSERT_TRUE(AP::rtc().get_utc_usec_at(sim.local_at(60.2), now));
+    EXPECT_EQ(gps_utc, now);
+}
+
+// a clock set ahead by a worse source is stepped back to GPS time while disarmed
+TEST(AP_RTC, gps_replaces_time_ahead_while_disarmed)
+{
+    // a separate RTC, as the shared one has already been set by the GPS
+    AP_RTC fresh;
+    fresh.allowed_types.set((1U << AP_RTC::SOURCE_GPS) | (1U << AP_RTC::SOURCE_HW));
+    const uint64_t local_us = next_local_base_us();
+    const uint64_t gps_utc = day_time_to_utc_usec(next_test_day(), 12, 0, 0, 0);
+    fresh.set_utc_usec_at(gps_utc + 10000000, AP_RTC::SOURCE_HW, local_us);
+    ASSERT_EQ(AP_RTC::SOURCE_HW, fresh.get_source_type());
+    fresh.set_utc_usec_at(gps_utc, AP_RTC::SOURCE_GPS, local_us);
+    EXPECT_EQ(AP_RTC::SOURCE_GPS, fresh.get_source_type());
+    uint64_t now;
+    ASSERT_TRUE(fresh.get_utc_usec_at(local_us, now));
+    EXPECT_EQ(gps_utc, now);
 }
 
 // without GPS the clock runs on its learned trim, so the lock is held for 10 minutes

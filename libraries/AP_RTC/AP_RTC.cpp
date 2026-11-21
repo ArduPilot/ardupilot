@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_RTC::var_info[] = {
     AP_GROUPEND
 };
 
-// GPS time error above which a disarmed clock is stepped forward rather than slewed
+// GPS time error above which a disarmed clock is stepped rather than slewed
 static constexpr float RTC_STEP_THRESHOLD_S = 0.05;
 // largest clock rate trim, kept well above crystal tolerances
 static constexpr float RTC_RATE_MAX = 500.0e-6;
@@ -129,20 +129,22 @@ void AP_RTC::set_utc_usec_at(uint64_t time_utc_usec, source_type type, uint64_t 
         const uint64_t clock_utc = have_time ? utc_at(local_us) : 0;
         const bool forward = !have_time || (time_utc_usec >= clock_utc);
 
-        if (slewing_source) {
-            if (!armed && (time_utc_usec >= clock_utc + uint64_t(RTC_STEP_THRESHOLD_S * 1.0e6))) {
-                step_to(time_utc_usec, local_us);
-                changed = true;
-            } else {
-                slew_towards(time_utc_usec, local_us);
-            }
-        } else if (forward) {
+        // while disarmed a large error from the GPS is stepped out in either
+        // direction; the GPS is the only source trusted to move time backwards
+        const int64_t gps_err_us = int64_t(time_utc_usec - clock_utc);
+        const int64_t step_threshold_us = int64_t(RTC_STEP_THRESHOLD_S * 1.0e6);
+        const bool gps_step = (type == SOURCE_GPS) && have_time && !armed &&
+                              ((gps_err_us >= step_threshold_us) || (gps_err_us <= -step_threshold_us));
+
+        if (slewing_source && !gps_step) {
+            slew_towards(time_utc_usec, local_us);
+        } else if (forward || gps_step) {
             step_to(time_utc_usec, local_us);
             rtc_source_type = type;
             changed = true;
         } else if (type == SOURCE_GPS) {
             // the GPS is better than the source that set this clock, but the
-            // clock is ahead of it.  Time can't go backwards, so slew to it
+            // clock is ahead of it.  Time can't go backwards while armed, so slew to it
             rtc_source_type = SOURCE_GPS;
             gps_samples = 0;
             gps_lock = false;
