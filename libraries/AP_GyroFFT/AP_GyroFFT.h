@@ -24,11 +24,13 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include <Filter/LowPassFilter.h>
 #include <Filter/FilterWithBuffer.h>
 
 #define DEBUG_FFT   0
+
+class AP_InertialSensor;
 
 // a library that leverages the HAL DSP support to perform FFT analysis on gyro samples
 class AP_GyroFFT
@@ -221,9 +223,7 @@ private:
     // whether analysis can be run again or not
     bool start_analysis();
     // return samples available in the gyro window
-    uint16_t get_available_samples(uint8_t axis) {
-        return _sample_mode == 0 ?_ins->get_raw_gyro_window(axis).available() : _downsampled_gyro_data[axis].available();
-    }
+    uint16_t get_available_samples(uint8_t axis);
     void update_parameters(bool force);
     // semaphore for access to shared FFT data
     HAL_Semaphore _sem;
@@ -333,7 +333,7 @@ private:
     // maximum frequency of the detection window
     AP_Int16 _fft_max_hz;
     // size of the FFT window
-    AP_Int16 _window_size;
+    AP_UInt16 _window_size;
     // percentage overlap of FFT windows
     AP_Float _window_overlap;
     // overall enablement of the feature
@@ -357,7 +357,7 @@ private:
     // number of output frames to retain for averaging
     AP_Int8 _num_frames;
     // mask of IMUs to record gyro frames after the filter bank
-    AP_Int32 _options;
+    AP_UInt32 _options;
     AP_InertialSensor* _ins;
 #if DEBUG_FFT
     uint32_t _last_output_ms;

@@ -88,15 +88,15 @@ SIM_SERVO_SPEED 0.06
 LOG_BITMASK      65535
 
 # default PID params for position and velocity-controlled modes
-LOIT_MAX_POS_X        0.15
-LOIT_MAX_POS_Y        0.15
-LOIT_MAX_POS_YAW      0.3
-LOIT_MAX_POS_Z        0.15
+LOIT_MAX_POSX         0.15
+LOIT_MAX_POSY         0.15
+LOIT_MAX_POSYAW       0.3
+LOIT_MAX_POSZ         0.15
 
-LOIT_MAX_VEL_X        0.2
-LOIT_MAX_VEL_Y        0.2
-LOIT_MAX_VEL_YAW      0.4
-LOIT_MAX_VEL_Z        0.2
+LOIT_MAX_VELX         0.2
+LOIT_MAX_VELY         0.2
+LOIT_MAX_VELYAW       0.4
+LOIT_MAX_VELZ         0.2
 
 LOIT_VELX_D          1.0
 LOIT_VELX_FF         0.0
@@ -128,11 +128,11 @@ LOIT_POSX_I          0.05
 LOIT_POSX_IMAX       0.1
 LOIT_POSX_P          1.0
 
-LOIT_POSXY_D          0.0
-LOIT_POSXY_FF         0.0
-LOIT_POSXY_I          0.05
-LOIT_POSXY_IMAX       0.1
-LOIT_POSXY_P          1.0
+LOIT_POSY_D           0.0
+LOIT_POSY_FF          0.0
+LOIT_POSY_I           0.05
+LOIT_POSY_IMAX        0.1
+LOIT_POSY_P           1.0
 
 LOIT_POSYAW_D         0.0
 LOIT_POSYAW_FF        0.0

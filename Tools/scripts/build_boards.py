@@ -13,8 +13,6 @@ Starting in the ardupilot directory.
 ~/ardupilot $ python Tools/scripts/build_boards.py --all-boards --all-vehicles --parallel-copies=4
 '''
 
-from __future__ import annotations
-
 import argparse
 import copy
 import os

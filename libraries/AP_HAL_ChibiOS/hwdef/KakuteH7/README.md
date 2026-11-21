@@ -5,7 +5,7 @@ The KakuteH7 is a flight controller produced by [Holybro](http://www.holybro.com
 ## Features
 
 - STM32H743 microcontroller
-- MPU6000 IMU
+- MPU6000, ICM42688, BMI270 or LSM6DSV IMU
 - BMP280 barometer
 - microSD card slot
 - AT7456E OSD

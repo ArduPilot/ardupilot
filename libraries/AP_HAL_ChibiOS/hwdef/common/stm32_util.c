@@ -360,6 +360,7 @@ iomode_t palReadLineMode(ioline_t line)
     ioportid_t port = PAL_PORT(line);
     uint8_t pad = PAL_PAD(line);
     iomode_t ret = 0;
+    const syssts_t sts = chSysGetStatusAndLockX();
     ret |= (port->MODER >> (pad*2)) & 0x3;
     ret |= ((port->OTYPER >> pad)&1) << 2;
     ret |= ((port->OSPEEDR >> (pad*2))&3) << 3;
@@ -369,6 +370,7 @@ iomode_t palReadLineMode(ioline_t line)
     } else {
         ret |= ((port->AFRH >> ((pad-8)*4))&0xF) << 7;
     }
+    chSysRestoreStatusX(sts);
     return ret;
 }
 
@@ -379,10 +381,24 @@ void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
 {
     ioportid_t port = PAL_PORT(line);
     uint8_t pad = PAL_PAD(line);
+    const syssts_t sts = chSysGetStatusAndLockX();
     port->PUPDR = (port->PUPDR & ~(3<<(pad*2))) | (pp<<(pad*2));
+    chSysRestoreStatusX(sts);
 }
 
 #endif // F7, H7, F4
+
+/*
+  set the mode of a pin. palSetLineMode() does an unlocked
+  read-modify-write of the port mode registers, which can corrupt the
+  mode of other pins on the same port if called concurrently
+ */
+void stm32_set_line_mode(ioline_t line, iomode_t mode)
+{
+    const syssts_t sts = chSysGetStatusAndLockX();
+    palSetLineMode(line, mode);
+    chSysRestoreStatusX(sts);
+}
 
 void stm32_cacheBufferInvalidate(const void *p, size_t size)
 {

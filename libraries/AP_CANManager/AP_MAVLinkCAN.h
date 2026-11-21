@@ -48,7 +48,7 @@ private:
      */
     struct {
         mavlink_channel_t chan;
-        uint8_t system_id;
+        uint32_t system_id;
         uint8_t component_id;
         uint8_t frame_counter;
         uint32_t last_callback_enable_ms;

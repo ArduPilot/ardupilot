@@ -66,7 +66,7 @@ const AP_Param::GroupInfo SlungPayloadSim::var_info[] = {
     // @Param: SYSID
     // @DisplayName: Slung Payload MAVLink system ID
     // @Description: Slung Payload MAVLink system id to distinguish it from others on the same network
-    // @Range: 0 255
+    // @Range: 0 4294967295
     // @User: Advanced
     AP_GROUPINFO("SYSID",   5, SlungPayloadSim,  sys_id, 2),
 
@@ -157,7 +157,7 @@ void SlungPayloadSim::send_report(void)
 
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
-            sys_id.get(),
+            sys_id,
             component_id,
             &mav_status,
             &msg,

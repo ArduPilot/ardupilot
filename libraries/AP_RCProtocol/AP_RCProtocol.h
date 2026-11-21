@@ -293,7 +293,8 @@ private:
     bool detect_async_protocol(rcprotocol_t protocol);
 
     enum rcprotocol_t _detected_protocol = NONE;
-    uint16_t _disabled_for_pulses;
+    uint32_t _disabled_for_pulses;
+    static_assert(NONE <= 32, "_disabled_for_pulses needs more bits");
     bool _detected_with_bytes;
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input;
@@ -307,6 +308,9 @@ private:
         bool opened;
         uint32_t last_config_change_ms;
         uint8_t config_num;
+#if AP_RCPROTOCOL_CRSF_ENABLED && (defined(STM32F4) || defined(STM32F7))
+        uint32_t crsf_dma_warning_ms;
+#endif
     } added;
 
     // allowed RC protocols mask (first bit means "all")

@@ -237,7 +237,7 @@ CPPWARN = -Wall -Wextra -Wundef -Werror
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = $(ENV_UDEFS) $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\" \
+UDEFS = $(ENV_UDEFS) $(FATFS_FLAGS) \
         -DHAL_MAX_STACK_FRAME_SIZE=$(HAL_MAX_STACK_FRAME_SIZE)
 
 ifeq ($(ENABLE_ASSERTS),yes)
@@ -268,6 +268,9 @@ endif
 
 # List all user directories here
 UINCDIR =
+
+USE_COPT += $(PICOLIBC_C_INCLUDE_FLAGS)
+USE_CPPOPT += $(PICOLIBC_CXX_INCLUDE_FLAGS)
 
 # List the user directory to look for the libraries here
 ULIBDIR =

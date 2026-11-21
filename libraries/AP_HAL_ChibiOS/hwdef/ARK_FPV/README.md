@@ -13,7 +13,7 @@
 
 ### Sensors
 
-- Invensense IIM-42653 Industrial IMU with heater resistor
+- Invensense IIM-42653 (hwrev 0) or ST LSM6DSV32X (hwrev 1) IMU with heater resistor
 - Bosch BMP390 Barometer
 - ST IIS2MDC Magnetometer
 

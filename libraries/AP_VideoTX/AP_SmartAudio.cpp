@@ -593,16 +593,27 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
         update_vtx_settings(settings);
         break;
 
-    case SMARTAUDIO_RSP_GET_SETTINGS_V21:
-        if (buffer_length < sizeof(SettingsExtendedResponseFrame)) {
+    case SMARTAUDIO_RSP_GET_SETTINGS_V21: {
+        // The power level list is variable length. num_power_levels is the
+        // final power-level index, followed by the frame CRC.
+        const SettingsExtendedResponseFrame *frame =
+            (const SettingsExtendedResponseFrame *)buffer;
+        const uint8_t fixed_response_length = sizeof(frame->settings) + 2U;
+        if (buffer_length < fixed_response_length) {
+            return false;
+        }
+        const uint16_t response_length =
+            fixed_response_length + uint16_t(frame->num_power_levels) + 1U /* level */ + 1U /* CRC */;
+        if (buffer_length < response_length) {
             return false;
         }
         _protocol_version = SMARTAUDIO_SPEC_PROTOCOL_v21;
-        unpack_settings(&settings, (const SettingsExtendedResponseFrame *)buffer);
+        unpack_settings(&settings, frame);
         settings.version = SMARTAUDIO_SPEC_PROTOCOL_v21;
         print_settings(&settings);
         update_vtx_settings(settings);
         break;
+    }
 
     case SMARTAUDIO_RSP_SET_FREQUENCY: {
         if (buffer_length < sizeof(U16ResponseFrame)) {

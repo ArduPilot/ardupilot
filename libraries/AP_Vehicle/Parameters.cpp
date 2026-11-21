@@ -3,7 +3,11 @@
 #if AP_VEHICLE_ENABLED
 
 #include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS_config.h>
 #include <StorageManager/StorageManager.h>
+#if HAL_GCS_ENABLED
+#include <GCS_MAVLink/GCS.h>
+#endif
 
 void AP_Vehicle::load_parameters(AP_Int16 &format_version, const uint16_t expected_format_version)
 {
@@ -23,6 +27,12 @@ void AP_Vehicle::load_parameters(AP_Int16 &format_version, const uint16_t expect
 
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
+
+#if HAL_GCS_ENABLED
+    // Widen saved MAV_ IDs before vehicle rename tables can restore stale
+    // SYSID_THISMAV/SYSID_MYGCS values over the user's newer MAV_ settings.
+    gcs().convert_parameters();
+#endif
 }
 
 #endif  // AP_VEHICLE_ENABLED

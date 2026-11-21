@@ -158,7 +158,7 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
     }
 
-#if MODE_GUIDED_ENABLED && AP_SCRIPTING_ENABLED
+#if MODE_GUIDED_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     // Check registered custom modes
     for (uint8_t i = 0; i < ARRAY_SIZE(mode_guided_custom); i++) {
         if ((mode_guided_custom[i] != nullptr) && (mode_guided_custom[i]->mode_number() == mode)) {
@@ -510,6 +510,11 @@ void Copter::update_flight_mode()
     pos_control->set_reset_handling_method(flightmode->move_vehicle_on_ekf_reset() ? AC_PosControl::EKFResetMethod::MoveVehicle : AC_PosControl::EKFResetMethod::MoveTarget);
 
     flightmode->run();
+
+    // hand this loop's gain scales and sysid inputs to the rate thread as soon as they are complete
+    if (using_rate_thread) {
+        attitude_control->record_rate_modifiers();
+    }
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
@@ -577,31 +582,25 @@ void Mode::get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_o
 // transform pilot's roll or pitch input into a desired velocity
 Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 {
-    Vector2f vel_ne_ms;
-
     if (!rc().has_valid_input()) {
-        return vel_ne_ms;
+        return Vector2f();
     }
     // fetch roll and pitch inputs
-    float roll_out_norm = channel_roll->norm_input_dz();
-    float pitch_out_norm = channel_pitch->norm_input_dz();
+    float roll_norm = channel_roll->norm_input_dz();
+    float pitch_norm = channel_pitch->norm_input_dz();
+    if (is_zero(roll_norm) && is_zero(pitch_norm)) {
+        return Vector2f();
+    }
+
+    // map the stick square onto a circle of radius vel_max
+    const float scale = vel_max * MAX(fabsf(roll_norm), fabsf(pitch_norm)) / norm(roll_norm, pitch_norm);
+    roll_norm *= scale;
+    pitch_norm *= scale;
 
     // apply SIMPLE mode transform to pilot inputs
-    apply_simple_mode(roll_out_norm, pitch_out_norm);
+    apply_simple_mode(roll_norm, pitch_norm);
 
-    // convert roll and pitch inputs into velocity in NE frame
-    vel_ne_ms = Vector2f(-pitch_out_norm, roll_out_norm);
-    if (vel_ne_ms.is_zero()) {
-        return vel_ne_ms;
-    }
-    vel_ne_ms = copter.ahrs.body_to_earth2D(vel_ne_ms);
-
-    // Transform square input range to circular output
-    // vel_scalar is the vector to the edge of the +- 1.0 square in the direction of the current input
-    Vector2f vel_scalar = vel_ne_ms / MAX(fabsf(vel_ne_ms.x), fabsf(vel_ne_ms.y));
-    // We scale the output by the ratio of the distance to the square to the unit circle and multiply by vel_max
-    vel_ne_ms *= vel_max / vel_scalar.length();
-    return vel_ne_ms;
+    return copter.ahrs.body_to_earth2D(Vector2f(-pitch_norm, roll_norm));
 }
 
 bool Mode::_TakeOff::triggered_ms(const float target_climb_rate_ms) const
@@ -969,6 +968,40 @@ void Mode::precland_run()
 float Mode::throttle_hover() const
 {
     return motors->get_throttle_hover();
+}
+
+// get_wp - convenience wrapper returning only the destination Location of the
+// setpoint reported by get_nav_target()
+bool Mode::get_wp(Location &loc) const
+{
+    NavTarget target;
+    if (!get_nav_target(target) || !target.has_position()) {
+        return false;
+    }
+    loc = target.loc;
+    return true;
+}
+
+// get_wpnav_target - fills target from wp_nav, for the modes that navigate
+// using it. Reports the destination only: the path velocity and
+// acceleration describe the current point on the leg, not the destination,
+// so they are left ignored. The destination is a Location because that is
+// what object avoidance produces.
+bool Mode::get_wpnav_target(NavTarget &target, bool oa_destination) const
+{
+    if (oa_destination) {
+        if (!wp_nav->get_oa_wp_destination(target.loc)) {
+            return false;
+        }
+    } else if (!wp_nav->get_wp_destination_loc(target.loc)) {
+        return false;
+    }
+
+    target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
+                          POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                          POSITION_TARGET_TYPEMASK_Z_IGNORE);
+
+    return true;
 }
 
 // transform pilot's manual throttle input to make hover throttle mid stick

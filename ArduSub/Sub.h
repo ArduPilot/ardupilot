@@ -41,7 +41,6 @@
 #include <AP_Logger/AP_Logger.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>         // ArduPilot Mega Magnetometer Library
-#include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>         // Mission command library
 #include <AC_AttitudeControl/AC_AttitudeControl_Sub.h> // Attitude control library
@@ -95,7 +94,7 @@
 
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -122,10 +121,6 @@ public:
     friend class ModeMotordetect;
 
     Sub(void);
-
-protected:
-
-    bool should_zero_rc_outputs_on_reboot() const override { return true; }
 
 private:
 
@@ -404,7 +399,7 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
 #if HAL_LOGGING_ENABLED
     // methods for AP_Vehicle:
-    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const AP_UInt32 &get_log_bitmask() override { return g.log_bitmask; }
     const struct LogStructure *get_log_structures() const override {
         return log_structure;
     }
@@ -417,7 +412,7 @@ private:
     void Log_Write_Data(LogDataID id, int16_t value);
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
-    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target_neu_cm, const Vector3f& vel_target_neu_cms);
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target_neu_cm, const Vector3f& vel_target_neu_cms, const Vector3f& acc_target_neu_cmss);
     void Log_Write_Vehicle_Startup_Messages();
 #endif
     void load_parameters(void) override;
@@ -558,7 +553,6 @@ private:
 
     uint16_t get_pilot_speed_dn() const;
 
-    void convert_old_parameters(void);
 
 #if LEAKDETECTOR_MAX_INSTANCES > 0
     void update_leak_pins();
@@ -621,9 +615,9 @@ private:
     AutoSubMode auto_mode;   // controls which auto controller is run
     GuidedSubMode guided_mode;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     ScriptButton script_buttons[4];
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 public:
     void mainloop_failsafe_check();
@@ -635,18 +629,21 @@ public:
         return _singleton;
     }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // For Lua scripting, so index is 1..4, not 0..3
     bool is_button_pressed(uint8_t index);
 
     // For Lua scripting, so index is 1..4, not 0..3
     uint8_t get_and_clear_button_count(uint8_t index);
 
+    // Set targets in GUIDED mode
+    bool set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) override;
+
 #if AP_RANGEFINDER_ENABLED
     float get_rangefinder_target_cm() const WARN_IF_UNUSED { return mode_surftrak.get_rangefinder_target_cm(); }
     bool set_rangefinder_target_cm(float new_target_cm) { return mode_surftrak.set_rangefinder_target_cm(new_target_cm); }
 #endif // AP_RANGEFINDER_ENABLED
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 };
 
 extern const AP_HAL::HAL& hal;

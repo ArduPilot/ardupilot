@@ -124,8 +124,8 @@ void I2CBus::set_bus_to_floating(uint8_t busidx)
         const struct I2CInfo &info = I2CD[busidx];
         const ioline_t sda_line = GPIO::resolve_alt_config(info.sda_line, PERIPH_TYPE::I2C_SDA, info.instance);
         const ioline_t scl_line = GPIO::resolve_alt_config(info.scl_line, PERIPH_TYPE::I2C_SCL, info.instance);
-        palSetLineMode(sda_line, PAL_MODE_INPUT);
-        palSetLineMode(scl_line, PAL_MODE_INPUT);
+        stm32_set_line_mode(sda_line, PAL_MODE_INPUT);
+        stm32_set_line_mode(scl_line, PAL_MODE_INPUT);
     }
 }
 
@@ -168,12 +168,12 @@ void I2CBus::clear_bus(uint8_t busidx)
         return;
     }
     const iomode_t mode_saved = palReadLineMode(scl_line);
-    palSetLineMode(scl_line, PAL_MODE_OUTPUT_PUSHPULL);
+    stm32_set_line_mode(scl_line, PAL_MODE_OUTPUT_PUSHPULL);
     for(uint8_t j = 0; j < 20; j++) {
-        palToggleLine(scl_line);
+        stm32_toggle_line(scl_line);
         hal.scheduler->delay_microseconds(10);
     }
-    palSetLineMode(scl_line, mode_saved);
+    stm32_set_line_mode(scl_line, mode_saved);
 #endif
 }
 
@@ -189,9 +189,9 @@ uint8_t I2CBus::read_sda(uint8_t busidx)
         return 0;
     }
     const iomode_t mode_saved = palReadLineMode(sda_line);
-    palSetLineMode(sda_line, PAL_MODE_INPUT);
+    stm32_set_line_mode(sda_line, PAL_MODE_INPUT);
     uint8_t ret = palReadLine(sda_line);
-    palSetLineMode(sda_line, mode_saved);
+    stm32_set_line_mode(sda_line, mode_saved);
     return ret;
 }
 #endif

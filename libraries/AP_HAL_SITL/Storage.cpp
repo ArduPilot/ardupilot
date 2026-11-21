@@ -120,11 +120,9 @@ void Storage::_storage_open(void)
 }
 
 /*
-  mark some lines as dirty. Note that there is no attempt to avoid
-  the race condition between this code and the _timer_tick() code
-  below, which both update _dirty_mask. If we lose the race then the
-  result is that a line is written more than once, but it won't result
-  in a line not being written.
+  Mark lines dirty while holding _sem. The buffer update and dirty-bit
+  changes must be serialized with flushing so a concurrent write cannot
+  be lost when _timer_tick() takes a snapshot and clears its dirty bit.
 */
 void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
@@ -141,6 +139,7 @@ void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 
 void Storage::read_block(void *dst, uint16_t loc, size_t n)
 {
+    WITH_SEMAPHORE(_sem);
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
     }
@@ -150,6 +149,7 @@ void Storage::read_block(void *dst, uint16_t loc, size_t n)
 
 void Storage::write_block(uint16_t loc, const void *src, size_t n)
 {
+    WITH_SEMAPHORE(_sem);
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
     }
@@ -162,57 +162,68 @@ void Storage::write_block(uint16_t loc, const void *src, size_t n)
 
 void Storage::_timer_tick(void)
 {
-    if (_initialisedType == StorageBackend::None) {
-        return;
-    }
-    if (_dirty_mask.empty()) {
-        _last_empty_ms = AP_HAL::millis();
-        return;
-    }
-
-    // write out the first dirty line. We don't write more
-    // than one to keep the latency of this call to a minimum
+    // Serialize flushes without blocking buffer access during backend IO.
+    WITH_SEMAPHORE(_timer_sem);
+    uint8_t snapshot[STORAGE_LINE_SIZE];
     uint16_t i;
-    for (i=0; i<STORAGE_NUM_LINES; i++) {
-        if (_dirty_mask.get(i)) {
-            break;
-        }
-    }
-    if (i == STORAGE_NUM_LINES) {
-        // this shouldn't be possible
-        return;
-    }
-
-#if STORAGE_USE_FRAM
-        if (fram.write(STORAGE_LINE_SIZE*i, &_buffer[STORAGE_LINE_SIZE*i], STORAGE_LINE_SIZE)) {
-            _dirty_mask.clear(i);
+    StorageBackend backend;
+    {
+        WITH_SEMAPHORE(_sem);
+        backend = _initialisedType;
+        if (backend == StorageBackend::None) {
             return;
         }
-#endif
-
-#if STORAGE_USE_POSIX
-    if (hal.get_storage_posix_enabled()) {
-        if (log_fd != -1) {
-            const off_t offset = STORAGE_LINE_SIZE*i;
-            if (lseek(log_fd, offset, SEEK_SET) != offset) {
-                return;
-            }
-            if (write(log_fd, &_buffer[offset], STORAGE_LINE_SIZE) != STORAGE_LINE_SIZE) {
-                return;
-            }
-            _dirty_mask.clear(i);
+        if (_dirty_mask.empty()) {
+            _last_empty_ms = AP_HAL::millis();
             return;
         }
-    }
-#endif
 
+        // Write out one dirty line per tick.
+        for (i=0; i<STORAGE_NUM_LINES; i++) {
+            if (_dirty_mask.get(i)) {
+                break;
+            }
+        }
+        if (i == STORAGE_NUM_LINES) {
+            return;
+        }
+
+        memcpy(snapshot, &_buffer[STORAGE_LINE_SIZE*i], sizeof(snapshot));
 #if STORAGE_USE_FLASH
-    if (hal.get_storage_flash_enabled()) {
-        // save to storage backend
-        _flash_write(i);
-        return;
-    }
+        if (backend == StorageBackend::Flash) {
+            // Compaction and error recovery may write the whole storage image.
+            memcpy(_flash_buffer, _buffer, sizeof(_buffer));
+        }
 #endif
+        // A concurrent write must queue the line again, even while IO is pending.
+        _dirty_mask.clear(i);
+    }
+
+    bool written = false;
+    switch (backend) {
+#if STORAGE_USE_FRAM
+    case StorageBackend::FRAM:
+        written = fram.write(STORAGE_LINE_SIZE*i, snapshot, sizeof(snapshot));
+        break;
+#endif
+#if STORAGE_USE_POSIX
+    case StorageBackend::SDCard:
+        written = log_fd != -1 &&
+            pwrite(log_fd, snapshot, sizeof(snapshot), STORAGE_LINE_SIZE*i) == sizeof(snapshot);
+        break;
+#endif
+#if STORAGE_USE_FLASH
+    case StorageBackend::Flash:
+        written = _flash.write(STORAGE_LINE_SIZE*i, STORAGE_LINE_SIZE);
+        break;
+#endif
+    default:
+        break;
+    }
+    if (!written) {
+        WITH_SEMAPHORE(_sem);
+        _dirty_mask.set(i);
+    }
 }
 
 #if STORAGE_USE_FLASH
@@ -225,19 +236,8 @@ void Storage::_flash_load(void)
     if (!_flash.init()) {
         AP_HAL::panic("unable to init flash storage");
     }
+    memcpy(_buffer, _flash_buffer, sizeof(_buffer));
 }
-
-/*
-  write one storage line. This also updates _dirty_mask. 
-*/
-void Storage::_flash_write(uint16_t line)
-{
-    if (_flash.write(line*STORAGE_LINE_SIZE, STORAGE_LINE_SIZE)) {
-        // mark the line clean
-        _dirty_mask.clear(line);
-    }
-}
-
 
 /*
   emulate writing to flash
@@ -382,6 +382,7 @@ bool Storage::_flash_erase_ok(void)
  */
 bool Storage::healthy(void)
 {
+    WITH_SEMAPHORE(_sem);
     if (_initialisedType == StorageBackend::None) {
         return false;
     }
@@ -393,9 +394,11 @@ bool Storage::healthy(void)
  */
 bool Storage::get_storage_ptr(void *&ptr, size_t &size)
 {
+    WITH_SEMAPHORE(_sem);
     if (_initialisedType==StorageBackend::None) {
         return false;
     }
+    // The caller receives a live buffer, not a snapshot protected by _sem.
     ptr = _buffer;
     size = sizeof(_buffer);
     return true;

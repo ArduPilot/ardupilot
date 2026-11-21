@@ -68,8 +68,22 @@ void AP_Periph_FW::can_battery_update(void)
 
         uint8_t percentage = 0;
         if (battery_lib.capacity_remaining_pct(percentage, i)) {
-            pkt.state_of_charge_pct = percentage;
+            pkt.state_of_charge_pct = constrain_uint8(percentage, 0, 100);
         }
+
+        // populate charging state flags
+        switch (battery_lib.get_charging_state(i)) {
+        case AP_BattMonitor::ChargingState::CHARGING:
+            pkt.status_flags |= UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATUS_FLAG_CHARGING;
+            break;
+        case AP_BattMonitor::ChargingState::DISCHARGING:
+            pkt.status_flags |= UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATUS_FLAG_IN_USE;
+            break;
+        case AP_BattMonitor::ChargingState::UNKNOWN:
+        case AP_BattMonitor::ChargingState::IDLE:
+            break;
+        }
+
         pkt.model_instance_id = i+1;
 
 #if !defined(HAL_PERIPH_BATTERY_SKIP_NAME)

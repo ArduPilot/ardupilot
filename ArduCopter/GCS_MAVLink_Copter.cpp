@@ -4,6 +4,7 @@
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_EFI/AP_EFI_config.h>
 
+// returns the MAVLink vehicle type, using quadrotor or helicopter instead of generic
 MAV_TYPE GCS_Copter::frame_type() const
 {
     /*
@@ -26,6 +27,7 @@ MAV_TYPE GCS_Copter::frame_type() const
     return mav_type;
 }
 
+// returns the HEARTBEAT base mode flags
 uint8_t GCS_MAVLINK_Copter::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
@@ -59,11 +61,13 @@ uint8_t GCS_MAVLINK_Copter::base_mode() const
     return _base_mode;
 }
 
+// returns the current flight mode number as the HEARTBEAT custom mode
 uint32_t GCS_Copter::custom_mode() const
 {
     return (uint32_t)copter.flightmode->mode_number();
 }
 
+// returns critical on any failsafe, standby when landed, boot until initialised and active otherwise
 MAV_STATE GCS_MAVLINK_Copter::vehicle_system_status() const
 {
     // set system as critical if any failsafe have triggered
@@ -83,6 +87,7 @@ MAV_STATE GCS_MAVLINK_Copter::vehicle_system_status() const
 }
 
 
+// sends ATTITUDE_TARGET with the attitude controller target attitude, body rates and throttle
 void GCS_MAVLINK_Copter::send_attitude_target()
 {
     const Quaternion quat  = copter.attitude_control->get_attitude_target_quat();
@@ -106,11 +111,19 @@ void GCS_MAVLINK_Copter::send_attitude_target()
         thrust);                // Collective thrust, normalized to 0 .. 1
 }
 
-bool GCS_MAVLINK_Copter::get_target_location(Location &target) const
+// returns the navigation setpoint commanded by the current flight mode
+bool GCS_MAVLINK_Copter::get_nav_target(NavTarget &target) const
 {
-    return copter.flightmode->get_wp(target);
+    return copter.flightmode->get_nav_target(target);
 }
 
+// returns the destination of the current flight mode
+bool GCS_MAVLINK_Copter::get_target_location(Location &loc) const
+{
+    return copter.flightmode->get_wp(loc);
+}
+
+// sends POSITION_TARGET_LOCAL_NED with the Guided target, only while in a Guided mode
 void GCS_MAVLINK_Copter::send_position_target_local_ned()
 {
 #if MODE_GUIDED_ENABLED
@@ -175,6 +188,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
 #endif
 }
 
+// sends NAV_CONTROLLER_OUTPUT with the target attitude and the current mode's bearing, distance and errors
 void GCS_MAVLINK_Copter::send_nav_controller_output() const
 {
     if (!copter.ap.initialised) {
@@ -189,11 +203,12 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
         degrees(targets_rad.z),
         flightmode->wp_bearing_deg(),
         MIN(flightmode->wp_distance_m(), UINT16_MAX),
-        copter.pos_control->get_pos_error_D_m(),
+        -copter.pos_control->get_pos_error_D_m(),
         0,
         flightmode->crosstrack_error_m());
 }
 
+// returns the VFR_HUD airspeed from an airspeed sensor, the EKF wind estimate or ground speed, in that order
 float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
 {
 #if AP_AIRSPEED_ENABLED
@@ -215,6 +230,7 @@ float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
     return AP::gps().ground_speed();
 }
 
+// returns the VFR_HUD throttle output as a percentage
 int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
 {
     if (copter.motors == nullptr) {
@@ -285,6 +301,7 @@ void GCS_MAVLINK_Copter::send_winch_status() const
 }
 #endif
 
+// returns true once the vehicle has finished initialising
 bool GCS_Copter::vehicle_initialised() const {
     return copter.ap.initialised;
 }
@@ -325,6 +342,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 
 
 #if MODE_AUTO_ENABLED
+// returns paused while Auto is paused, otherwise the mission's own state
 MISSION_STATE GCS_MAVLINK_Copter::mission_state(const class AP_Mission &mission) const
 {
     if (copter.mode_auto.paused()) {
@@ -334,6 +352,7 @@ MISSION_STATE GCS_MAVLINK_Copter::mission_state(const class AP_Mission &mission)
 }
 #endif  // MODE_AUTO_ENABLED
 
+// sets the Guided destination or yaw from a guided request sent as a mission item
 bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
 #if MODE_AUTO_ENABLED
@@ -343,6 +362,7 @@ bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 #endif
 }
 
+// passes received packets to MAVLink ADSB avoidance when enabled, before normal handling
 void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
                                         const mavlink_message_t &msg)
 {
@@ -356,6 +376,7 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
+// returns true once parameters can be sent to the GCS
 bool GCS_MAVLINK_Copter::params_ready() const
 {
     if (AP_BoardConfig::in_config_error()) {
@@ -368,6 +389,7 @@ bool GCS_MAVLINK_Copter::params_ready() const
     return copter.ap.initialised_params;
 }
 
+// sends the banner text with the frame and motor type added
 void GCS_MAVLINK_Copter::send_banner()
 {
     GCS_MAVLINK::send_banner();
@@ -380,6 +402,7 @@ void GCS_MAVLINK_Copter::send_banner()
     send_text(MAV_SEVERITY_INFO, "%s", frame_and_type_string);
 }
 
+// counts COMMAND_ACKs so compassmot can stop when the GCS acknowledges, then handles them normally
 void GCS_MAVLINK_Copter::handle_command_ack(const mavlink_message_t &msg)
 {
     copter.command_ack_counter++;
@@ -396,6 +419,7 @@ void GCS_MAVLINK_Copter::handle_landing_target(const mavlink_landing_target_t &p
 #endif
 }
 
+// runs compassmot calibration, passing all other preflight calibrations on
 MAV_RESULT GCS_MAVLINK_Copter::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     if (packet.y == 1) {
@@ -407,6 +431,7 @@ MAV_RESULT GCS_MAVLINK_Copter::_handle_command_preflight_calibration(const mavli
 }
 
 
+// points the vehicle at the region of interest
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_do_set_roi(const Location &roi_loc)
 {
     if (!roi_loc.check_latlng()) {
@@ -416,6 +441,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_do_set_roi(const Location &roi_loc
     return MAV_RESULT_ACCEPTED;
 }
 
+// rejects a reboot while ESC calibration on the next boot is set to auto
 MAV_RESULT GCS_MAVLINK_Copter::handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     // reject reboot if user has also specified they want the "Auto" ESC calibration on next reboot
@@ -428,6 +454,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_preflight_reboot(const mavlink_command_int
     return GCS_MAVLINK::handle_preflight_reboot(packet, msg);
 }
 
+// flies to the requested location in Guided, switching to Guided if the change mode flag is set
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
 {
 #if MODE_GUIDED_ENABLED
@@ -467,6 +494,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
 #endif
 }
 
+// handles Copter specific COMMAND_INT commands, passing the rest on
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch(packet.command) {
@@ -557,9 +585,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 }
 
 #if HAL_MOUNT_ENABLED
+// yaws the vehicle for DO_MOUNT_CONTROL when the mount has no pan control
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
+#if AP_MAVLINK_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
         // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
         if (((MAV_MOUNT_MODE)packet.z == MAV_MOUNT_MODE_MAVLINK_TARGETING) &&
@@ -570,6 +600,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
             copter.flightmode->auto_yaw.set_yaw_angle_offset_deg(packet.param3);
         }
         break;
+#endif  // AP_MAVLINK_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     default:
         break;
     }
@@ -577,6 +608,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
 }
 #endif
 
+// takes off to the requested altitude above home
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet)
 {
     if (packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT) {
@@ -599,18 +631,20 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
 }
 
 #if AP_MAVLINK_COMMAND_LONG_ENABLED
-bool GCS_MAVLINK_Copter::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const
+// returns true for commands that are only accepted as COMMAND_INT
+bool GCS_MAVLINK_Copter::command_int_only(MAV_CMD command) const
 {
-    if (packet_command == MAV_CMD_NAV_TAKEOFF ||
-        packet_command == MAV_CMD_NAV_VTOL_TAKEOFF) {
-        frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    switch (command) {
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
         return true;
+    default:
+        return false;
     }
-    return GCS_MAVLINK::mav_frame_for_command_long(frame, packet_command);
 }
 #endif
 
 
+// sets a fixed yaw target
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_CONDITION_YAW(const mavlink_command_int_t &packet)
 {
         // param1 : target angle [0-360]
@@ -630,6 +664,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_CONDITION_YAW(const mavlink_comman
         return MAV_RESULT_FAILED;
 }
 
+// changes the horizontal, climb or descent speed of the current mode
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command_int_t &packet)
 {
     if (!is_positive(packet.param2)) {
@@ -662,6 +697,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_comm
 }
 
 #if MODE_AUTO_ENABLED
+// switches to Auto and starts or resumes the mission
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet)
 {
         if (!is_zero(packet.param1) || !is_zero(packet.param2)) {
@@ -682,6 +718,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_MISSION_START(const mavlink_comman
 
 
 #if HAL_PARACHUTE_ENABLED
+// enables, disables or releases the parachute
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_int_t &packet)
 {
         // configure or release parachute
@@ -701,6 +738,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_PARACHUTE(const mavlink_command
 }
 #endif
 
+// starts a motor test
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet)
 {
         // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
@@ -718,6 +756,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_comman
 }
 
 #if AP_WINCH_ENABLED
+// relaxes the winch or sets its length or rate
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_WINCH(const mavlink_command_int_t &packet)
 {
         // param1 : winch number (ignored)
@@ -744,6 +783,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_WINCH(const mavlink_command_int
 #endif  // AP_WINCH_ENABLED
 
 #if AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
+// Solo Fly button click, switches to Loiter or AltHold if Loiter is not available
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_CLICK(const mavlink_command_int_t &packet)
 {
         if (copter.failsafe.radio) {
@@ -757,6 +797,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_CLICK(const mavlink_c
         return MAV_RESULT_ACCEPTED;
 }
 
+// Solo Fly button hold, arms when disarmed, takes off when landed and lands when flying
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_HOLD(const mavlink_command_int_t &packet)
 {
         if (copter.failsafe.radio) {
@@ -778,6 +819,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_HOLD(const mavlink_co
         return MAV_RESULT_ACCEPTED;
 }
 
+// Solo Pause button click, disarms when landed, otherwise brakes unless a Guided shot is running
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(const mavlink_command_int_t &packet)
 {
         if (copter.failsafe.radio) {
@@ -812,6 +854,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(const mavlink
 }
 #endif  // AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
 
+// pauses or resumes the current flight mode
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_command_int_t &packet)
 {
     // requested pause
@@ -889,6 +932,7 @@ bool GCS_MAVLINK_Copter::sane_vel_or_acc_vector(const Vector3f &vec) const
 #endif
 
 #if MODE_GUIDED_ENABLED
+// sets the Guided attitude, body rate and climb rate or thrust target from SET_ATTITUDE_TARGET
 void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_message_t &msg)
 {
     // decode packet
@@ -965,6 +1009,7 @@ void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_messag
             climb_rate_ms_or_thrust, use_thrust);
 }
 
+// sets the Guided position, velocity or acceleration target from SET_POSITION_TARGET_LOCAL_NED
 void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavlink_message_t &msg)
 {
     // decode packet
@@ -977,10 +1022,15 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     }
 
     // check for supported coordinate frames
-    if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
-        packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
-        packet.coordinate_frame != MAV_FRAME_BODY_NED &&
-        packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
+    switch (packet.coordinate_frame) {
+    case MAV_FRAME_LOCAL_NED:
+    case MAV_FRAME_LOCAL_OFFSET_NED:
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+    case MAV_FRAME_BODY_NED:  // deprecated in favour of FRD
+    case MAV_FRAME_BODY_OFFSET_NED:  // deprecated in favour of FRD
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        break;
+    default:
         // unsupported coordinate frame
         copter.mode_guided.hold_position();
         return;
@@ -1000,20 +1050,35 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
         return;
     }
 
+#if !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-unreachable"
+#endif
+
     // prepare position
     Vector3p pos_ned_m;
     if (!pos_ignore) {
         // convert to m
         pos_ned_m = Vector3p{packet.x, packet.y, packet.z};
         // rotate to earth-frame if necessary
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-            packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+        switch (packet.coordinate_frame) {
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_NED:
+        case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
             pos_ned_m.xy() = copter.ahrs.body_to_earth2D_p(pos_ned_m.xy());
+            break;
+        default:
+            break;
         }
         // add body offset if necessary
-        if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
-            packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-            packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+        switch (packet.coordinate_frame) {
+        case MAV_FRAME_LOCAL_OFFSET_NED:
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_NED:
+        case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        {
             Vector3p rel_pos_ned_m;
             if (!AP::ahrs().get_relative_position_NED_origin(rel_pos_ned_m)) {
                 // need position estimate to calculate target position
@@ -1021,6 +1086,10 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
                 return;
             }
             pos_ned_m += rel_pos_ned_m;
+            break;
+        }
+        default:
+            break;
         }
     }
 
@@ -1034,8 +1103,15 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
             return;
         }
         // rotate to earth-frame if necessary
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+        switch (packet.coordinate_frame) {
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_NED:
+        case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
             vel_ned_ms.xy() = copter.ahrs.body_to_earth2D(vel_ned_ms.xy());
+            break;
+        default:
+            break;
         }
     }
 
@@ -1044,8 +1120,15 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     if (!acc_ignore) {
         accel_ned_mss = Vector3f{packet.afx, packet.afy, packet.afz};
         // rotate to earth-frame if necessary
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+        switch (packet.coordinate_frame) {
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_NED:
+        case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
             accel_ned_mss.xy() = copter.ahrs.body_to_earth2D(accel_ned_mss.xy());
+            break;
+        default:
+            break;
         }
     }
 
@@ -1055,11 +1138,24 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     float yaw_rate_rads = 0.0f;
     if (!yaw_ignore) {
         yaw_rad = packet.yaw;
-        yaw_relative = packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED;
+        switch (packet.coordinate_frame) {
+#if AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+        case MAV_FRAME_BODY_NED:
+        case MAV_FRAME_BODY_OFFSET_NED:
+#endif  // AP_MAVLINK_MAV_FRAMES_BODY_NED_ENABLED
+            yaw_relative = true;
+            break;
+        default:
+            break;
+        }
     }
     if (!yaw_rate_ignore) {
         yaw_rate_rads = packet.yaw_rate;
     }
+
+#if !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
     // send request
     if (!pos_ignore && !vel_ignore) {
@@ -1076,6 +1172,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     }
 }
 
+// sets the Guided position, velocity or acceleration target from SET_POSITION_TARGET_GLOBAL_INT
 void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mavlink_message_t &msg)
 {
     // decode packet
@@ -1176,6 +1273,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
 }
 #endif  // MODE_GUIDED_ENABLED
 
+// handles Copter specific messages, passing the rest on
 void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
 {
 
@@ -1203,6 +1301,7 @@ void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
     }
 }
 
+// terminates the flight by disarming unless the advanced failsafe handles it
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_int_t &packet) {
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     if (GCS_MAVLINK::handle_flight_termination(packet) == MAV_RESULT_ACCEPTED) {
@@ -1217,6 +1316,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_i
     return MAV_RESULT_FAILED;
 }
 
+// returns the VFR_HUD altitude, relative to home if the compatibility option is set
 float GCS_MAVLINK_Copter::vfr_hud_alt() const
 {
     if (copter.g2.dev_options.get() & DevOptionVFR_HUDRelativeAlt) {
@@ -1227,9 +1327,13 @@ float GCS_MAVLINK_Copter::vfr_hud_alt() const
     return GCS_MAVLINK::vfr_hud_alt();
 }
 
+// returns the MAVLink protocol capabilities Copter supports
 uint64_t GCS_MAVLINK_Copter::capabilities() const
 {
-    return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+    return (
+#if AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
+            MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+#endif  // AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
             MAV_PROTOCOL_CAPABILITY_MISSION_INT |
             MAV_PROTOCOL_CAPABILITY_COMMAND_INT |
             MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
@@ -1242,6 +1346,7 @@ uint64_t GCS_MAVLINK_Copter::capabilities() const
             GCS_MAVLINK::capabilities());
 }
 
+// returns whether the vehicle is on the ground, taking off, in the air or landing
 MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
 {
     if (copter.ap.land_complete) {
@@ -1256,6 +1361,7 @@ MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
     return MAV_LANDED_STATE_IN_AIR;
 }
 
+// sends WIND when the EKF is estimating wind
 void GCS_MAVLINK_Copter::send_wind() const
 {
     Vector3f airspeed_vec_bf;
@@ -1276,6 +1382,7 @@ void GCS_MAVLINK_Copter::send_wind() const
 }
 
 #if HAL_HIGH_LATENCY2_ENABLED
+// returns the HIGH_LATENCY2 target altitude in metres
 int16_t GCS_MAVLINK_Copter::high_latency_target_altitude() const
 {
     AP_AHRS &ahrs = AP::ahrs();
@@ -1290,6 +1397,7 @@ int16_t GCS_MAVLINK_Copter::high_latency_target_altitude() const
     
 }
 
+// returns the HIGH_LATENCY2 bearing to the waypoint in units of 2 degrees
 uint8_t GCS_MAVLINK_Copter::high_latency_tgt_heading() const
 {
     if (copter.ap.initialised) {
@@ -1301,6 +1409,7 @@ uint8_t GCS_MAVLINK_Copter::high_latency_tgt_heading() const
     return 0;     
 }
     
+// returns the HIGH_LATENCY2 distance to the waypoint in decametres
 uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist_dam() const
 {
     if (copter.ap.initialised) {
@@ -1310,6 +1419,7 @@ uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist_dam() const
     return 0;
 }
 
+// returns the HIGH_LATENCY2 target speed in units of 0.2 m/s
 uint8_t GCS_MAVLINK_Copter::high_latency_tgt_airspeed() const
 {
     if (copter.ap.initialised) {
@@ -1319,6 +1429,7 @@ uint8_t GCS_MAVLINK_Copter::high_latency_tgt_airspeed() const
     return 0;  
 }
 
+// returns the HIGH_LATENCY2 wind speed in units of 0.2 m/s
 uint8_t GCS_MAVLINK_Copter::high_latency_wind_speed() const
 {
     Vector3f airspeed_vec_bf;
@@ -1333,6 +1444,7 @@ uint8_t GCS_MAVLINK_Copter::high_latency_wind_speed() const
     return 0; 
 }
 
+// returns the HIGH_LATENCY2 wind direction in units of 2 degrees
 uint8_t GCS_MAVLINK_Copter::high_latency_wind_direction() const
 {
     Vector3f airspeed_vec_bf;
@@ -1431,7 +1543,7 @@ uint8_t GCS_MAVLINK_Copter::send_available_mode(uint8_t index) const
     const uint8_t base_mode_count = ARRAY_SIZE(modes);
     uint8_t mode_count = base_mode_count;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     for (uint8_t i = 0; i < ARRAY_SIZE(copter.mode_guided_custom); i++) {
         if (copter.mode_guided_custom[i] != nullptr) {
             mode_count += 1;
@@ -1457,7 +1569,7 @@ uint8_t GCS_MAVLINK_Copter::send_available_mode(uint8_t index) const
         enabled = modes[index_zero]->enabled();
 
     } else {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
         const uint8_t custom_index = index_zero - base_mode_count;
         if (copter.mode_guided_custom[custom_index] == nullptr) {
             // Invalid index, should not happen

@@ -92,16 +92,20 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
     case MAV_CMD_DO_SET_ROI_NONE:           // 197
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:                // 201
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
         // point the vehicle and camera at a region of interest (ROI)
         // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
         do_roi(cmd);
         break;
 
+#if AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
+#endif  // AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
 
 #if NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 222  accept guided mode limits
@@ -191,8 +195,12 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
+#if AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
+#endif  // AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_GUIDED_LIMITS:
         return true;

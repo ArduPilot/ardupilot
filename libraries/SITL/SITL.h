@@ -175,6 +175,7 @@ public:
 
     enum class GPSOptions : uint32_t {
         UBX_IS_F9P = 1U << 0,
+        UBX_NO_BACKUP = 1U << 1,
     };
 
     struct sitl_fdm state;
@@ -208,6 +209,23 @@ public:
     AP_Int8 mag_fail[HAL_COMPASS_MAX_SENSORS];   // fail magnetometer, 1 for no data, 2 for freeze
     AP_Int8 mag_save_ids;
 
+    // apply the transformation a simulated compass applies to a vector
+    // after SIM_MAGn_OFS has been subtracted from it: the orientations,
+    // the board trim and the scale factor.  Shared with the simulated
+    // sensors so that they and get_mag_offsets_for_devid() cannot drift apart.
+    void mag_sensor_transform(uint8_t instance, Vector3f &v) const;
+
+    // return the offsets a perfectly-calibrated compass instance would
+    // end up with, in milligauss.  SIM_MAGn_OFS is subtracted from the
+    // field before the sensor transformation above is applied, so the
+    // offset the compass wants back is that same transformation applied
+    // to SIM_MAGn_OFS.  This depends only on parameters, so it needs no
+    // field data and no updating.
+    // the caller has a compass priority index, which is not a
+    // simulated-sensor index once COMPASS_PRIO*_ID reorders things;
+    // take the device id so the two cannot be confused
+    bool get_mag_offsets_for_devid(uint32_t devid, Vector3f &offsets) const;
+
     AP_Float sonar_glitch;// probability between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
     AP_Float sonar_scale; // meters per volt
@@ -217,7 +235,7 @@ public:
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier
-    AP_Int32 engine_fail; // mask of engine/motor servo outputs to fail
+    AP_UInt32 engine_fail; // mask of engine/motor servo outputs to fail
 
     // initial offset on GPS lat/lon, used to shift origin
     AP_Float gps_init_lat_ofs;
@@ -233,7 +251,7 @@ public:
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
     AP_Int8  float_exception; // enable floating point exception checks
-    AP_Int32 can_servo_mask; // mask of servos/escs coming from CAN
+    AP_UInt32 can_servo_mask; // mask of servos/escs coming from CAN
 
 #if HAL_NUM_CAN_IFACES
     enum class CANTransport : uint8_t {
@@ -247,6 +265,8 @@ public:
     AP_Int8  flow_enable; // enable simulated optflow
     AP_Int16 flow_rate; // optflow data rate (Hz)
     AP_Int8  flow_delay; // optflow data delay
+    AP_Float flow_offset_x; // optflow rate offset (rad/sec) added on x axis, for fault injection
+    AP_Float flow_offset_y; // optflow rate offset (rad/sec) added on y axis, for fault injection
     AP_Int8  terrain_enable; // enable using terrain for height
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
@@ -257,7 +277,7 @@ public:
     AP_Int8  imu_count; // number of simulated IMUs to create
     AP_Int32 loop_delay; // extra delay to add to every loop
     AP_Float mag_scaling[MAX_CONNECTED_MAGS]; // scaling factor
-    AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
+    AP_UInt32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
     AP_Float buoyancy; // submarine buoyancy in Newtons
     AP_Int16 loop_rate_hz;
     AP_Int16 loop_time_jitter_us;
@@ -293,6 +313,8 @@ public:
         AP_Float wcof_yn;
         AP_Float wcof_zp;
         AP_Float wcof_zn;
+
+        AP_Float ground_effect_alt_err; // rotor downwash baro altitude error in metres (0 disables)
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
@@ -346,9 +368,11 @@ public:
         AP_Vector3f vel_err; // Velocity error offsets in NED (x = N, y = E, z = D)
         AP_Int8 jam; // jamming simulation enable
         AP_Float heading_offset; // heading offset in degrees
-        AP_Int32 options; // GPS options bitmask
+        AP_UInt32 options; // GPS options bitmask
         AP_Int8 fix_type; // GPS fix type
         AP_Float noise_horizontal; // horizontal noise radius in meters
+        AP_Vector3f vel_glitch; // glitch offsets in NED velocity (m/s)
+        AP_Int8 ubx_model; // see enum SITL::GPS_UBlox::Model
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
@@ -368,7 +392,7 @@ public:
         AP_Int8 fail;         // trigger vicon failure
         AP_Int16 yaw;         // vicon local yaw in degrees
         AP_Int16 yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
-        AP_Int8 type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
+        AP_UInt8 type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
         AP_Vector3f vel_glitch;   // velocity glitch in m/s in vicon's local frame
         AP_Int16 rate_hz;     // vicon data rate in Hz
         AP_Int8 quality;      // odometry quality [-1,100]
@@ -530,6 +554,7 @@ public:
 
     uint16_t irlock_port;
     uint16_t rcin_port;
+    const char *rcin_path = nullptr;
 
     time_t start_time_UTC;
 

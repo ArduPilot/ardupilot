@@ -28,9 +28,6 @@ void Blimp::init_ardupilot()
 
     barometer.init();
 
-    // setup telem slots with serial ports
-    gcs().setup_uarts();
-
     init_rc_in();               // sets up rc channels from radio
 
     // allocate the motors class
@@ -46,8 +43,6 @@ void Blimp::init_ardupilot()
     AP_Param::invalidate_count();
 
     // initialise rc channels including setting mode
-    // PARAMETER_CONVERSION - Added: Sep-2021 for ArduPilot-4.2
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
     // sets up motors and output to escs
@@ -156,19 +151,19 @@ bool Blimp::ekf_has_absolute_position() const
 
     // if disarmed we accept a predicted horizontal position
     if (!motors->armed()) {
-        if (ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
+        if (ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
             return true;
         }
-        if (ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
+        if (ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
             return true;
         }
         return false;
     }
     // once armed we require a good absolute position and EKF must not be in const_pos_mode
-    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+    if (ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE)) {
         return false;
     }
-    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS);
+    return ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_ABS);
 }
 
 // ekf_has_relative_position - returns true if the EKF can provide a position estimate relative to it's starting position
@@ -187,12 +182,12 @@ bool Blimp::ekf_has_relative_position() const
 
     // if disarmed we accept a predicted horizontal relative position
     if (!motors->armed()) {
-        return ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
+        return ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
     }
-    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+    if (ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE)) {
         return false;
     }
-    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_REL);
+    return ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_REL);
 }
 
 // returns true if the ekf has a good altitude estimate (required for modes which do AltHold)
@@ -204,10 +199,10 @@ bool Blimp::ekf_alt_ok() const
     }
 
     // require both vertical velocity and position
-    if (!ahrs.has_status(AP_AHRS::Status::VERT_VEL)) {
+    if (!ahrs.configured_backend_has_status(AP_AHRS::Status::VERT_VEL)) {
         return false;
     }
-    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
+    if (!ahrs.configured_backend_has_status(AP_AHRS::Status::VERT_POS)) {
         return false;
     }
 

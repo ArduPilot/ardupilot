@@ -5,6 +5,12 @@
 /********************************************************************************/
 bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 {
+    if (control_mode == &mode_auto &&
+        AP_Mission::is_nav_cmd(cmd) &&
+        mission.get_prev_nav_cmd_index() != cmd.index) {
+        reset_alt_offset();
+    }
+
     // default to non-VTOL loiter
     auto_state.vtol_loiter = false;
 
@@ -83,7 +89,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        set_mode(mode_rtl, ModeReason::MISSION_CMD);
+        if (!set_mode(mode_rtl, ModeReason::MISSION_CMD)) {
+            // unable to enter RTL, allow the vehicle to try the next command
+            return false;
+        }
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
@@ -158,23 +167,25 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
         if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
-            if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                camera_mount.set_mode_to_default();
-            }
+            camera_mount.clear_roi_target();
         } else {
             // set mount's target location
             camera_mount.set_roi_target(cmd.content.location);
         }
         break;
 
+#if AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
         // point the camera to a specified angle
         camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
         break;
-#endif
+#endif  // AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
+#endif  // HAL_MOUNT_ENABLED
 
 #if HAL_QUADPLANE_ENABLED
     case MAV_CMD_DO_VTOL_TRANSITION:
@@ -191,7 +202,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         do_nav_script_time(cmd);
         break;
@@ -297,7 +308,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         return verify_nav_script_time(cmd);
 #endif
@@ -316,8 +327,12 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
+#if AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
+#endif  // AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_VTOL_TRANSITION:
     case MAV_CMD_DO_ENGINE_CONTROL:
         return true;
@@ -660,7 +675,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // see if the user has specified a maximum distance to waypoint
     // If override with p3 - then this is not used as it will overfly badly
     if (g.waypoint_max_radius > 0 &&
-        auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
+        auto_state.wp_distance > g.waypoint_max_radius) {
         if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
             if (cmd_passby == 0) {
@@ -1046,8 +1061,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 void Plane::exit_mission_callback()
 {
-    if (control_mode == &mode_auto) {
-        set_mode(mode_rtl, ModeReason::MISSION_END);
+    if (control_mode == &mode_auto && set_mode(mode_rtl, ModeReason::MISSION_END)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
 }
@@ -1206,7 +1220,7 @@ float Plane::get_wp_radius() const
     return g.waypoint_radius;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 /*
   support for scripted navigation, with verify operation for completion
  */
@@ -1325,7 +1339,7 @@ bool Plane::nav_scripting_enable(uint8_t mode)
    }
    return nav_scripting.enabled;
 }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 /*
   return true if this is a LAND command

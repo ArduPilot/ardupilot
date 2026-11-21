@@ -79,12 +79,14 @@ function install_mavproxy() {
         pushd /tmp
           git clone https://github.com/ardupilot/MAVProxy --depth 1
           pushd MAVProxy
-            python3 -m pip install --progress-bar off --cache-dir /tmp/pip-cache --user --force .
+            python3 -m pip install --progress-bar off --cache-dir /tmp/pip-cache --user --force --no-deps .
           popd
         popd
+        # MAVProxy's core dependencies only; its map3d ones (vtk,
+        # opencv-python, matplotlib, ...) are ~270MB that autotest
+        # never imports.  pymavlink comes from our submodule
+        python3 -m pip install --progress-bar off --cache-dir /tmp/pip-cache --user defusedxml pyserial numpy pynmeagps
         mavproxy_installed=1
-        # now uninstall the version of pymavlink pulled in by MAVProxy deps:
-        python3 -m pip uninstall -y pymavlink --cache-dir /tmp/pip-cache
     fi
     if [ "$CI" = "true" ]; then
       echo "::endgroup::"
@@ -113,7 +115,7 @@ function run_autotest() {
     if [ $c_compiler == "clang" ]; then
         w="$w --check-c-compiler=clang --check-cxx-compiler=clang++"
     fi
-    if [ "$NAME" == "Rover" ]; then
+    if [ "$BVEHICLE" == "build.Rover" ]; then
         w="$w --enable-math-check-indexes"
     fi
     if [ "x$CI_BUILD_DEBUG" != "x" ]; then
@@ -125,7 +127,20 @@ function run_autotest() {
     if [ "$NAME" == "Examples" ]; then
         w="$w --speedup=5 --timeout=14400 --debug --no-clean"
     fi
-    Tools/autotest/autotest.py --show-test-timings --junit --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
+    # options for autotest itself rather than for waf configure
+    ao=""
+    if [ "$NAME" == "Unit Tests ASAN" ]; then
+        # autotest puts --asan and --debug on the waf configure line
+        # itself, and needs to see the option to know to build and run
+        # only the sitl tests: --asan is implemented for that board alone
+        ao="--asan"
+    fi
+    if [ "$NAME" == "Examples ASAN" ]; then
+        # tells run.examples to collect sanitizer reports.  No configure
+        # happens for this target, so this does not select a compiler
+        ao="--asan"
+    fi
+    Tools/autotest/autotest.py --show-test-timings --junit $ao --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
 
@@ -164,6 +179,14 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Copter" "build.Copter" "test.CopterTests2b"
         continue
     fi
+    if [ "$t" == "sitltest-copter-tests2c" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2c"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests2d" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2d"
+        continue
+    fi
     if [ "$t" == "sitltest-can" ]; then
         echo "Building SITL Periph GPS"
         $waf configure --board sitl
@@ -184,8 +207,34 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
         continue
     fi
-    if [ "$t" == "sitltest-quadplane" ]; then
-        run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
+    if [ "$t" == "sitltest-plane-last_letter" ]; then
+        # last_letter is an external simulator, shipped as a release tarball
+        # rather than built here. The github workflow unpacks it and exports
+        # LAST_LETTER_SITL_BIN. Fail fast and legibly if the binary is absent:
+        # SITL forks and execs it, and a failed exec only shows up as a
+        # heartbeat timeout in autotest 20 s later, with no hint of the cause.
+        if [ -n "${LAST_LETTER_SITL_BIN:-}" ]; then
+            if [ ! -x "${LAST_LETTER_SITL_BIN}" ]; then
+                echo "LAST_LETTER_SITL_BIN=${LAST_LETTER_SITL_BIN} is not an executable file"
+                exit 1
+            fi
+        elif ! command -v last_letter_ardupilot >/dev/null; then
+            echo "last_letter_ardupilot not found; set LAST_LETTER_SITL_BIN or put it on PATH"
+            exit 1
+        fi
+        run_autotest "Plane" "build.Plane" "test.LastLetterPlane"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1a" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1b" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1b"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1c" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1c"
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then
@@ -221,10 +270,22 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "unit-tests-asan" ]; then
+        run_autotest "Unit Tests ASAN" "build.unit_tests" "run.unit_tests"
+        continue
+    fi
+
     if [ "$t" == "examples" ]; then
         ./waf configure --board=sitl --debug
         ./waf examples
         run_autotest "Examples" "--no-clean" "run.examples"
+        continue
+    fi
+
+    if [ "$t" == "examples-asan" ]; then
+        ./waf configure --board=sitl --debug --asan
+        ./waf examples
+        run_autotest "Examples ASAN" "--no-clean" "run.examples"
         continue
     fi
 
@@ -385,6 +446,17 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "mavlink-deprecations" ]; then
+        echo "Building CubeOrangePlus without WIP/deprecated/superseded MAVLink messages"
+        $waf configure --board CubeOrangePlus \
+             --extra-hwdef=Tools/autotest/mavlink-deprecations.hwdef
+        $waf clean
+        $waf copter plane rover sub antennatracker blimp
+        # heli shares objects with copter, so build it separately:
+        $waf heli
+        continue
+    fi
+
     if [ "$t" == "SOHW" ]; then
         echo "Building CubeOrange-SOHW"
         Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board CubeOrange --vehicle copter --simclass MultiCopter
@@ -470,6 +542,14 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "replay" ]; then
         echo "Building replay"
         $waf configure --board sitl --debug --disable-scripting
+
+        $waf replay
+
+        # boards without double-precision hardware run a
+        # single-precision EKF; Replay must be built the same way to
+        # reproduce their logs
+        echo "Building single-precision-EKF replay"
+        $waf configure --board sitl --debug --disable-scripting --ekf-single
 
         $waf replay
         echo "Building AP_DAL standalone test"
@@ -591,6 +671,7 @@ for t in $CI_BUILD_TARGET; do
         for v in Rover Tracker Copter Plane Sub Blimp; do
             python3 Tools/autotest/logger_metadata/parse.py --vehicle $v
         done
+        python3 Tools/scripts/decode_devid.py --dump-json /dev/null --dump-json5 /dev/null
         continue
     fi
 
@@ -607,6 +688,18 @@ for t in $CI_BUILD_TARGET; do
 
         if [[ $t == "linux" ]]; then
             $waf check
+            (
+                storage_test_dir=$(mktemp -d -p /dev/shm)
+                trap 'rm -rf "$storage_test_dir"' EXIT
+                storage_test_runner=()
+                if (( EUID == 0 )); then
+                    # Container root cannot necessarily create realtime threads.
+                    chown nobody "$storage_test_dir"
+                    storage_test_runner=(runuser -u nobody --)
+                fi
+                "${storage_test_runner[@]}" timeout --kill-after=5 120 \
+                    build/linux/examples/StorageRace --storage-directory "$storage_test_dir"
+            )
         fi
         continue
     fi

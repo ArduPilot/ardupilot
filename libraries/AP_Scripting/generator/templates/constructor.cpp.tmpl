@@ -1,0 +1,9 @@
+
+int lua_new_$identifier(lua_State *L) {
+    static bool warned = false;
+    if (!warned && userdata_zero_arg_check(L)) {
+        warned = true;
+    }
+    new_$identifier(L);
+    return 1;
+}

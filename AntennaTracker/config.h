@@ -3,10 +3,7 @@
 
 #include "defines.h"
 
-#ifndef MAV_SYSTEM_ID
- // use 2 for antenna tracker by default
- # define MAV_SYSTEM_ID          2
-#endif
+#include <GCS_MAVLink/GCS_config.h>
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -63,5 +60,5 @@
 #endif
 
 #ifndef AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED
-#define AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED 1
+#define AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
 #endif

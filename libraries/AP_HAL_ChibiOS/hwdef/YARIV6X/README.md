@@ -79,7 +79,7 @@ All UARTs have DMA capability
 
 ## PWM Output
 
-The YARI V6X supports up to 16 PWM outputs (M1-8 and A1-8). All 16 outputs support all normal PWM output formats. All outputs support DShot and BiDir DShot, except A7 and A8 which only support PWM.
+The YARI V6X supports up to 16 PWM outputs (M1-8 and A1-8). All 16 outputs support all normal PWM output formats. All outputs support DShot, except A7 and A8 which only support PWM. A1-A6 and M1-M4 support BiDir DShot. DShot on M1-M8 requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller.
 
 The 8 FMU PWM outputs (A1-8) are in 4 groups:
 

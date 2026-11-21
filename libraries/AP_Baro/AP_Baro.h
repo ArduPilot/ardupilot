@@ -229,7 +229,7 @@ public:
     // check if an option is set
     bool option_enabled(const Options option) const
     {
-        return (uint16_t(_options.get()) & uint16_t(option)) != 0;
+        return (_options & uint16_t(option)) != 0;
     }
 
 private:
@@ -298,7 +298,7 @@ private:
         bool healthy;                   // true if sensor is healthy
         bool alt_ok;                    // true if calculated altitude is ok
         bool calibrated;                // true if calculated calibrated successfully
-        AP_Int32 bus_id;
+        AP_UInt32 bus_id;
 #if HAL_BARO_WIND_COMP_ENABLED
         WindCoeff wind_coeff;
         Vector3f dynamic_pressure;      // calculated dynamic pressure
@@ -356,13 +356,13 @@ private:
 #endif  // AP_BARO_LPS2XH_ENABLED
 
     AP_Int8                            _filter_range;  // valid value range from mean value
-    AP_Int32                           _baro_probe_ext;
+    AP_UInt32                          _baro_probe_ext;
 
 #ifndef HAL_BUILD_AP_PERIPH
     AP_Float                           _alt_error_max;
 #endif
 
-    AP_Int16                           _options;
+    AP_UInt16                          _options;
 
     // semaphore for API access from threads
     HAL_Semaphore                      _rsem;

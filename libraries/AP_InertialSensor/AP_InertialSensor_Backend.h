@@ -104,6 +104,9 @@ public:
     // if the backend polling rate is the same as the sample rate or higher, return raw sample rate
     // override and return the backend rate in Hz if it is lower than the sample rate
     virtual uint16_t get_gyro_backend_rate_hz() const {
+        if (gyro_instance >= INS_MAX_INSTANCES) {
+            return 0;
+        }
         return _gyro_raw_sample_rate(gyro_instance);
     }
 
@@ -190,9 +193,10 @@ protected:
     //Default Clip Limit
     float _clip_limit = (16.0f - 0.5f) * GRAVITY_MSS;
 
-    // instance numbers of accel and gyro data
-    uint8_t gyro_instance;
-    uint8_t accel_instance;
+    // instance numbers of accel and gyro data. INS_MAX_INSTANCES means
+    // registration failed and this backend owns no frontend instance
+    uint8_t gyro_instance = INS_MAX_INSTANCES;
+    uint8_t accel_instance = INS_MAX_INSTANCES;
     bool is_primary = true;
     uint32_t last_primary_update_us;
 
@@ -203,7 +207,8 @@ protected:
     void _publish_gyro(uint8_t instance, const Vector3f &gyro) __RAMFUNC__; /* front end */
 
     // apply notch and lowpass gyro filters and sample for FFT
-    void apply_gyro_filters(const uint8_t instance, const Vector3f &gyro);
+    // returns this sample filtered, which _gyro_filtered skips when decimating for the rate loop
+    Vector3f apply_gyro_filters(const uint8_t instance, const Vector3f &gyro);
     void save_gyro_window(const uint8_t instance, const Vector3f &gyro, uint8_t phase);
 
     // this should be called every time a new gyro raw sample is
@@ -357,7 +362,7 @@ protected:
 
     // if fast sampling is enabled, the rate to use in kHz
     uint8_t get_fast_sampling_rate() const {
-        return (1 << uint8_t(_imu._fast_sampling_rate));
+        return (1 << _imu._fast_sampling_rate);
     }
 
     // called by subclass when data is received from the sensor, thus

@@ -417,13 +417,8 @@ bool AP_Arming::barometer_checks(bool report)
 bool AP_Arming::airspeed_checks(bool report)
 {
     if (check_enabled(Check::AIRSPEED)) {
-        const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-        if (airspeed == nullptr) {
-            // not an airspeed capable vehicle
-            return true;
-        }
         char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
-        if (!airspeed->arming_checks(sizeof(buffer), buffer)) {
+        if (!AP::airspeed().arming_checks(sizeof(buffer), buffer)) {
             check_failed(Check::AIRSPEED, report, "Airspeed: %s", buffer);
             return false;
         }
@@ -811,7 +806,7 @@ bool AP_Arming::hardware_safety_check(bool report)
 
       // check if safety switch has been pushed
       if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-          check_failed(Check::SWITCH, report, "Hardware safety switch");
+          check_failed(Check::SWITCH, report, "Safety Switch");
           return false;
       }
     }
@@ -834,16 +829,8 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
         return true;
     }
 
-    bool check_passed = true;
-    // ensure all rc channels have different functions
-    if (rc().duplicate_options_exist()) {
-        check_failed(Check::PARAMETERS, true, "Duplicate Aux Switch Options");
-        check_passed = false;
-    }
-    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
-        check_failed(Check::PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
-        check_passed = false;
-    }
+    // not skippable via the PARAMETERS check bit
+    bool check_passed = rc_option_checks(true);
     {
         if (!rc().option_is_enabled(RC_Channels::Option::ARMING_SKIP_CHECK_RPY)) {
             const struct {
@@ -882,6 +869,25 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
                 }
             }
         }
+    }
+    return check_passed;
+}
+
+// check RCn_OPTION configuration, independent of RC input
+bool AP_Arming::rc_option_checks(bool report)
+{
+    if (!check_enabled(Check::RC)) {
+        return true;
+    }
+    bool check_passed = true;
+    // ensure all rc channels have different functions
+    if (rc().duplicate_options_exist()) {
+        check_failed(Check::PARAMETERS, report, "Duplicate Aux Switch Options");
+        check_passed = false;
+    }
+    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
+        check_failed(Check::PARAMETERS, report, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
+        check_passed = false;
     }
     return check_passed;
 }
@@ -1184,7 +1190,7 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
         const AP_Scripting *scripting = AP_Scripting::get_singleton();
         if ((scripting != nullptr) && !scripting->arming_checks(sizeof(buffer), buffer)) {
             check_failed(Check::SYSTEM, report, "%s", buffer);
@@ -1675,6 +1681,18 @@ bool AP_Arming::serial_protocol_checks(bool display_failure)
     return true;
 }
 
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+// Check for a pending power off
+bool AP_Arming::poweroff_checks(bool display_failure) const
+{
+    if (AP::vehicle()->poweroff_pending()) {
+        check_failed(display_failure, "Power off pending");
+        return false;
+    }
+    return true;
+}
+#endif  // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+
 //Check for estop
 bool AP_Arming::estop_checks(bool display_failure)
 {
@@ -1731,6 +1749,7 @@ bool AP_Arming::pre_arm_checks(bool report)
 #endif
 #if AP_RC_CHANNEL_ENABLED
         &  manual_transmitter_checks(report)
+        &  rc_option_checks(report)
 #endif
 #if AP_MISSION_ENABLED
         &  mission_checks(report)
@@ -1781,6 +1800,9 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
         & crashdump_checks(report)
 #endif
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+        &  poweroff_checks(report)
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
         &  serial_protocol_checks(report)
         &  estop_checks(report);
 
@@ -1884,6 +1906,9 @@ bool AP_Arming::mandatory_checks(bool report)
 #endif
     ret &= rc_in_calibration_check(report);
     ret &= serial_protocol_checks(report);
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+    ret &= poweroff_checks(report);
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
     return ret;
 }
 
@@ -1996,6 +2021,15 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
         hal.rcout->force_safety_on();
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // save any compass offsets the EKF has learned
+    // EKF3 holds the learned field until the next arm so it is still available after landing.
+    // EKF2 does not so this must be done before the vehicle calls hal.util->set_soft_armed(false)
+    // because once EKF2 sees onGround it clears finalInflightMagInit and stops handing out
+    // learned offsets.
+    AP::compass().save_ekf_learned_offsets();
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT *fft = AP::fft();

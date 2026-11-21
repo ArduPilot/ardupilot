@@ -29,6 +29,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -426,7 +427,8 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     battery.get_mavlink_fault_bitmask(instance));   // fault_bitmask
 }
 
-// returns true if all battery instances were reported
+// sends the next reportable battery instance, round-robin; returns false
+// if there was no space for it, so the same instance is retried
 bool GCS_MAVLINK::send_battery_status()
 {
     const AP_BattMonitor &battery = AP::battery();
@@ -903,8 +905,8 @@ bool GCS_MAVLINK::last_txbuf_is_greater(uint8_t txbuf_limit)
 
 void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 {
-    mavlink_radio_t packet;
-    mavlink_msg_radio_decode(&msg, &packet);
+    mavlink_radio_status_t packet;
+    mavlink_msg_radio_status_decode(&msg, &packet);
 
     const uint32_t now = AP_HAL::millis();
 
@@ -954,33 +956,44 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 #endif
 }
 
+#if AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
 void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
     mavlink_mission_item_int_t mission_item_int;
-    bool send_mission_item_warning = false;
-    if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
-        mavlink_mission_item_t mission_item;
-        mavlink_msg_mission_item_decode(&msg, &mission_item);
+
+    mavlink_mission_item_t mission_item;
+    mavlink_msg_mission_item_decode(&msg, &mission_item);
 #if AP_MISSION_ENABLED
-        MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
-        if (ret != MAV_MISSION_ACCEPTED) {
-            const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
-            send_mission_ack(msg, type, ret);
-            return;
-        }
-#else
-        // No mission library, so we can't convert from MISSION_ITEM
-        // to MISSION_ITEM_INT.  Since we shouldn't be receiving fence
-        // or rally items via MISSION_ITEM, we don't need to work hard
-        // here, just fail:
-        const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item.mission_type;
-        send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
+    MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
+    if (ret != MAV_MISSION_ACCEPTED) {
+        const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
+        send_mission_ack(msg, type, ret);
         return;
-#endif
-        send_mission_item_warning = true;
-    } else {
-        mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
     }
+#else
+    // No mission library, so we can't convert from MISSION_ITEM
+    // to MISSION_ITEM_INT.  Since we shouldn't be receiving fence
+    // or rally items via MISSION_ITEM, we don't need to work hard
+    // here, just fail:
+    const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item.mission_type;
+    send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
+    return;
+#endif
+
+    handle_mission_item_int(msg, mission_item_int, true);
+}
+#endif  // AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
+
+void GCS_MAVLINK::handle_mission_item_int(const mavlink_message_t &msg)
+{
+    mavlink_mission_item_int_t mission_item_int;
+    mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
+
+    handle_mission_item_int(msg, mission_item_int, false);
+}
+
+void GCS_MAVLINK::handle_mission_item_int(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int, bool send_mission_item_warning)
+{
     const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
 
 #if AP_MISSION_ENABLED
@@ -1020,9 +1033,13 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
         return;
     }
 
+#if AP_MISSION_ENABLED && AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
+    // only MISSION_ITEM, which needs AP_Mission to convert it, asks
+    // for this warning
     if (send_mission_item_warning) {
         prot->send_mission_item_warning();
     }
+#endif
 
     if (!prot->receiving) {
         send_mission_ack(msg, type, MAV_MISSION_ERROR);
@@ -1474,7 +1491,7 @@ bool GCS_MAVLINK_InProgress::conclude(MAV_RESULT result)
     return true;
 }
 
-GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint8_t sysid, uint8_t compid, mavlink_channel_t chan)
+GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan)
 {
     // we can't have two outstanding tasks for the same command from
     // the same mavlink node or the result is ambiguous:
@@ -1520,8 +1537,7 @@ void GCS_MAVLINK_InProgress::check_tasks()
             break;
         case Type::AIRSPEED_CAL: {
 #if AP_AIRSPEED_ENABLED
-            const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-            switch (airspeed->get_calibration_state()) {
+            switch (AP::airspeed().get_calibration_state()) {
             case AP_Airspeed::CalibrationState::NOT_STARTED:
             case AP_Airspeed::CalibrationState::NOT_REQUIRED_ZERO_OFFSET:
                 // we shouldn't get here
@@ -1855,7 +1871,7 @@ void GCS_MAVLINK::send_message(enum ap_message id)
 
 // Plane only enables follow when scripting is enabled:
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AP_MAVLINK_FOLLOW_HANDLING_ENABLED (AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED)
+#define AP_MAVLINK_FOLLOW_HANDLING_ENABLED (AP_EXTERNAL_BINDING_ENABLED && AP_FOLLOW_ENABLED)
 #elif APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_COPTER_OR_HELI
 #define AP_MAVLINK_FOLLOW_HANDLING_ENABLED AP_FOLLOW_ENABLED
 #else
@@ -1900,14 +1916,14 @@ void GCS_MAVLINK::raw_packetReceived(uint8_t framing_status,
         handle_mount_message(msg);
 #endif
     }
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     {
         AP_Scripting *scripting = AP_Scripting::get_singleton();
         if (scripting != nullptr) {
             scripting->handle_message(msg, chan);
         }
     }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_SCRIPTING_LUA_ENABLED
 
 #if AP_MAVLINK_FOLLOW_HANDLING_ENABLED
     {
@@ -1931,6 +1947,10 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     // do absolutely nothing if we are locked
     if (locked()) {
         return;
+    }
+
+    if (!_port->is_owned_by_current_thread()) {
+        _port->begin(0);
     }
 
     // receive new packets
@@ -1983,7 +2003,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             hal.util->persistent_data.last_mavlink_msgid = 0;
 
         }
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
         if (framing == MAVLINK_FRAMING_BAD_CRC) {
             // This may be a valid message that we don't know the crc extra for, pass it to scripting which might
             AP_Scripting *scripting = AP_Scripting::get_singleton();
@@ -1991,7 +2011,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
                 scripting->handle_message(msg, chan);
             }
         }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_SCRIPTING_LUA_ENABLED
 
         if (parsed_packet || i % 100 == 0) {
             // make sure we don't spend too much time parsing mavlink messages
@@ -2006,10 +2026,12 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     // send a timesync message every 10 seconds; this is for data
     // collection purposes
 #if HAL_HIGH_LATENCY2_ENABLED
-    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private() && !is_high_latency_link) {
+    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private() && !is_high_latency_link &&
+        !option_enabled(Option::UNICAST)) {
 #else
-    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private()) {
-#endif
+    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private() &&
+        !option_enabled(Option::UNICAST)) {
+#endif // HAL_HIGH_LATENCY2_ENABLED
         if (HAVE_PAYLOAD_SPACE(chan, TIMESYNC)) {
             send_timesync();
             _timesync_request.last_sent_ms = tnow;
@@ -2406,12 +2428,11 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
 
     float press_diff = 0; // pascal
 #if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr &&
-        airspeed->enabled(instance)) {
-        press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
+    const AP_Airspeed &airspeed = AP::airspeed();
+    if (airspeed.enabled(instance)) {
+        press_diff = airspeed.get_differential_pressure(instance) * 0.01f;
         float temp;
-        if (airspeed->get_temperature(instance,temp)) {
+        if (airspeed.get_temperature(instance,temp)) {
             temperature_press_diff = temp * 100;
             if (temperature_press_diff == 0) {
                 // don't send zero as that is the value for 'no data'
@@ -2453,27 +2474,24 @@ void GCS_MAVLINK::send_scaled_pressure3()
 #if AP_AIRSPEED_ENABLED
 void GCS_MAVLINK::send_airspeed()
 {
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed == nullptr) {
-        return;
-    }
+    const AP_Airspeed &airspeed = AP::airspeed();
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         // Try and send the next sensor
         const uint8_t index = (last_airspeed_idx + 1 + i) % AIRSPEED_MAX_SENSORS;
-        if (!airspeed->enabled(index)) {
+        if (!airspeed.enabled(index)) {
             continue;
         }
 
         float temperature_float;
         int16_t temperature = INT16_MAX;
-        if (airspeed->get_temperature(index, temperature_float)) {
+        if (airspeed.get_temperature(index, temperature_float)) {
             temperature = int16_t(temperature_float * 100);
         }
 
         uint8_t flags = 0;
         // Set unhealthy flag
-        if (!airspeed->healthy(index)) {
+        if (!airspeed.healthy(index)) {
             flags |= AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_UNHEALTHY;
         }
 
@@ -2487,8 +2505,8 @@ void GCS_MAVLINK::send_airspeed()
 
         // Assemble message and send
         const mavlink_airspeed_t msg {
-            airspeed    : airspeed->get_airspeed(index),
-            raw_press   : airspeed->get_differential_pressure(index),
+            airspeed    : airspeed.get_airspeed(index),
+            raw_press   : airspeed.get_differential_pressure(index),
             temperature : temperature,
             id          : index,
             flags       : flags
@@ -2733,7 +2751,13 @@ void GCS_MAVLINK::service_statustext(void)
 void GCS::send_message(enum ap_message id)
 {
     for (uint8_t i=0; i<num_gcs(); i++) {
-        chan(i)->send_message(id);
+        GCS_MAVLINK &link = *chan(i);
+        // Event-driven broadcasts obey the same quiet default as streams.
+        // Explicit requests use GCS_MAVLINK::send_message() on their own link.
+        if (link.is_unicast() && id != MSG_HEARTBEAT) {
+            continue;
+        }
+        link.send_message(id);
     }
 }
 
@@ -2881,6 +2905,7 @@ void GCS::setup_uarts()
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
+#if AP_MAVLINK_MSG_SET_MODE_ENABLED
 /*
   handle a SET_MODE MAVLink message
  */
@@ -2894,6 +2919,7 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
 
     _set_mode_common(_base_mode, _custom_mode);
 }
+#endif  // AP_MAVLINK_MSG_SET_MODE_ENABLED
 
 /*
   code common to both SET_MODE mavlink message and command long set_mode msg
@@ -3460,9 +3486,9 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
 float GCS_MAVLINK::vfr_hud_airspeed() const
 {
 #if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr && airspeed->healthy()) {
-        return airspeed->get_airspeed();
+    const AP_Airspeed &airspeed = AP::airspeed();
+    if (airspeed.healthy()) {
+        return airspeed.get_airspeed();
     }
 #endif
 
@@ -3531,113 +3557,11 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
         is_equal(packet.param2, 24.0f) &&
         is_equal(packet.param3, 71.0f)) {
 #if AP_MAVLINK_FAILURE_CREATION_ENABLED
-        if (is_equal(packet.param4, 93.0f)) {
-            // this is a magic sequence to force the main loop to
-            // lockup. This is for testing the stm32 watchdog
-            // functionality
-            while (true) {
-                send_text(MAV_SEVERITY_WARNING,"entering lockup");
-                hal.scheduler->delay(250);
-            }
+        const MAV_RESULT result = handle_crash_trigger(packet);
+        if (result != MAV_RESULT_UNSUPPORTED) {
+            return result;
         }
-        if (is_equal(packet.param4, 94.0f)) {
-            // the following text is unlikely to make it out...
-            send_text(MAV_SEVERITY_WARNING,"dereferencing a bad thing");
-
-#if CONFIG_HAL_BOARD != HAL_BOARD_ESP32
-// esp32 can't do this bit, skip it, return an error
-            void *foo = (void*)0xE000ED38;
-
-            typedef void (*fptr)();
-            fptr gptr = (fptr) (void *) foo;
-            gptr();
 #endif
-            return MAV_RESULT_FAILED;
-        }
-        if (is_equal(packet.param4, 95.0f)) {
-            // the following text is unlikely to make it out...
-            send_text(MAV_SEVERITY_WARNING,"calling AP_HAL::panic(...)");
-
-            AP_HAL::panic("panicing");
-
-            // keep calm and carry on
-        }
-        if (is_equal(packet.param4, 96.0f)) {
-            // deliberately corrupt parameter storage
-            send_text(MAV_SEVERITY_WARNING,"wiping parameter storage header");
-            StorageAccess param_storage{StorageManager::StorageParam};
-            uint8_t zeros[40] {};
-            param_storage.write_block(0, zeros, sizeof(zeros));
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 97.0f)) {
-            // create a really long loop
-            send_text(MAV_SEVERITY_WARNING,"Creating long loop");
-            // 250ms:
-            for (uint8_t i=0; i<250; i++) {
-                hal.scheduler->delay_microseconds(1000);
-            }
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 98.0f)) {
-            send_text(MAV_SEVERITY_WARNING,"Creating internal error");
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 100.0f)) {
-            send_text(MAV_SEVERITY_WARNING,"Creating mutex deadlock");
-            hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::deadlock_sem, void));
-            while (!_deadlock_sem.taken) {
-                hal.scheduler->delay(1);
-            }
-            WITH_SEMAPHORE(_deadlock_sem.sem);
-            send_text(MAV_SEVERITY_WARNING,"deadlock passed");
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 101.0f)) {
-            // the capital-U and ~ here are actually important for
-            // testing a MissionPlanner bug!
-            AP_BoardConfig::config_error("YOU~RE WELCOME!");
-        }
-        if (is_equal(packet.param4, 102.0f)) {
-            // attempt to write to address 0x5 (in the bottom 1kB on H7)
-            // which we either memory-protect or check for
-            // non-zeroness.  We don't want to use 0x0 as that *even
-            // more magic*.  So choose an offset which looks like
-            // we're dereferencing nullptr:
-            uint8_t *foo = (uint8_t*)0x05;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#if !defined(__clang__)  // avoid -Wunknown-warning-option
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-            *foo = 0xab;
-#pragma GCC diagnostic pop
-
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 103.0f)) {
-            // attempt to read from address 0x5 (in the bottom 1kB on
-            // H7) which we either memory-protect or check for
-            // non-zeroness.  We don't want to use 0x0 as that *even
-            // more magic*.  So choose an offset which looks like
-            // we're dereferencing nullptr:
-            uint8_t *foo = (uint8_t*)0x05;
-
-            // we use send_text here to ensure we don't get elided.
-            // String is kept short for space reasons.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#if !defined(__clang__)  // avoid -Wunknown-warning-option
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-            send_text(MAV_SEVERITY_INFO, "x: %u", (unsigned)*foo);
-#pragma GCC diagnostic pop
-
-            return MAV_RESULT_ACCEPTED;
-        }
-#endif  // AP_MAVLINK_FAILURE_CREATION_ENABLED
 
 #if HAL_ENABLE_DFU_BOOT
         if (is_equal(packet.param4, 99.0f)) {
@@ -3667,7 +3591,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
     }
 #endif
 
-    // refuse reboot when armed:
+    // refuse reboot or shutdown when armed:
     if (hal.util->get_soft_armed()) {
         /// but allow it if forced:
         const uint32_t magic_force_reboot_value = 20190226;
@@ -3676,11 +3600,15 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
         }
     }
 
+    bool supported_reboot_action = reboot || reboot_to_bootloader;
 #if AP_REBOOT_MASS_STORAGE_ENABLED
-    const bool supported_reboot_action = reboot || reboot_to_bootloader || reboot_to_mass_storage;
-#else
-    const bool supported_reboot_action = reboot || reboot_to_bootloader;
-#endif
+    supported_reboot_action |= reboot_to_mass_storage;
+#endif // AP_REBOOT_MASS_STORAGE_ENABLED
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+    const bool shutdown = is_equal(packet.param1, static_cast<float>(REBOOT_SHUTDOWN_ACTION_SHUTDOWN));
+    supported_reboot_action |= shutdown;
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+
     if (!supported_reboot_action) {
         // param1 must select a supported reboot action
         return MAV_RESULT_UNSUPPORTED;
@@ -3705,6 +3633,13 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
     }
 #endif
 
+#if AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+    if (shutdown) {
+        AP::vehicle()->poweroff_start();
+        return MAV_RESULT_ACCEPTED;
+    }
+#endif // AP_POWEROFF_ENABLED && AP_VEHICLE_ENABLED
+
     // send ack before we reboot
     mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED,
                                  0, 0,
@@ -3719,19 +3654,6 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 
     return MAV_RESULT_FAILED;
 }
-
-#if AP_MAVLINK_FAILURE_CREATION_ENABLED
-/*
-  take a semaphore and do not release it, triggering a deadlock
- */
-void GCS_MAVLINK::deadlock_sem(void)
-{
-    if (!_deadlock_sem.taken) {
-        _deadlock_sem.taken = true;
-        _deadlock_sem.sem.take_blocking();
-    }
-}
-#endif
 
 /*
   handle a flight termination request
@@ -3779,13 +3701,6 @@ uint64_t GCS_MAVLINK::timesync_receive_timestamp_ns() const
     return ret*1000LL;
 }
 
-uint64_t GCS_MAVLINK::timesync_timestamp_ns() const
-{
-    // we add in our own system id try to ensure we only consider
-    // responses to our own timesync request messages
-    return AP_HAL::micros64()*1000LL + mavlink_system.sysid;
-}
-
 /*
   return a timesync request
   Sends back ts1 as received, and tc1 is the local timestamp in usec
@@ -3811,7 +3726,9 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
 #endif
 
 #if HAL_LOGGING_ENABLED
-        const uint64_t round_trip_time_us = (timesync_receive_timestamp_ns() - _timesync_request.sent_ts1)*0.001f;
+        const uint64_t receive_time_ns = timesync_receive_timestamp_ns();
+        const uint64_t round_trip_time_us = receive_time_ns > _timesync_request.sent_time_ns ?
+            (receive_time_ns - _timesync_request.sent_time_ns) * 0.001f : 0;
         AP_Logger *logger = AP_Logger::get_singleton();
         if (logger != nullptr) {
             AP::logger().Write(
@@ -3819,7 +3736,7 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
                 "TimeUS,SysID,RTT",
                 "s-s",
                 "F-F",
-                "QBQ",
+                "QIQ",
                 AP_HAL::micros64(),
                 msg.sysid,
                 round_trip_time_us
@@ -3854,7 +3771,12 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
  */
 void GCS_MAVLINK::send_timesync()
 {
-    _timesync_request.sent_ts1 = timesync_timestamp_ns();
+    _timesync_request.sent_time_ns = AP_HAL::micros64() * 1000ULL;
+    // Keep the request cookie separate from elapsed time, including if MAV_SYSID changes before the reply.
+    // Limit the ID offset to less than one microsecond. IDs with the same remainder
+    // can still collide if sent at the same microsecond timestamp, so this reduces
+    // broadcast reply ambiguity without guaranteeing uniqueness.
+    _timesync_request.sent_ts1 = _timesync_request.sent_time_ns + (mavlink_system.sysid % 1000U);
     mavlink_msg_timesync_send(
         chan,
         0,
@@ -3873,10 +3795,10 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
     mavlink_statustext_t packet;
     mavlink_msg_statustext_decode(&msg, &packet);
 
-    const uint8_t max_prefix_len = 14;
+    const uint8_t max_prefix_len = sizeof("SRC=4294967295/255:");
     const uint8_t text_len = MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+max_prefix_len;
     if (msg.sysid != statustext_chunking.last_src_system ||
-        msg.compid != statustext_chunking.last_src_system ||
+        msg.compid != statustext_chunking.last_src_component ||
         packet.id != statustext_chunking.last_id) {
         statustext_chunking.last_src_system = msg.sysid;
         statustext_chunking.last_src_component = msg.compid;
@@ -3884,26 +3806,32 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
         statustext_chunking.msg_id = AP::logger().get_MSG_id();
     }
 
-    uint8_t offset = 0;
     char text[text_len] = {};
-    if (packet.chunk_seq == 0) {
-        // prefix with origin information
-        if (gcs().sysid_is_gcs(msg.sysid)) {
-            strncpy(text, "GCS:", ARRAY_SIZE(text));
-            offset = strlen(text);
-        } else {
-            offset = hal.util->snprintf(text,
-                                        max_prefix_len,
-                                        "SRC=%u/%u:",
-                                        msg.sysid,
-                                        msg.compid);
-            offset = MIN(offset, max_prefix_len);
+    uint8_t offset;
+    if (gcs().sysid_is_gcs(msg.sysid)) {
+        strncpy(text, "GCS:", ARRAY_SIZE(text));
+        offset = strlen(text);
+    } else {
+        offset = hal.util->snprintf(text, max_prefix_len, "SRC=%u/%u:",
+                                    (unsigned)msg.sysid, msg.compid);
+    }
+
+    uint16_t log_chunk_seq = packet.chunk_seq;
+    if (offset > sizeof(log_MSG::msg) - MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN) {
+        // A wide source prefix and a full payload do not fit in one MSG.
+        // Reserve chunk zero for the prefix, including for later packets.
+        if (packet.chunk_seq == 0) {
+            logger->Write_MessageChunk(statustext_chunking.msg_id, text, 0);
         }
+        log_chunk_seq++;
+        offset = 0;
+    } else if (packet.chunk_seq != 0) {
+        offset = 0;
     }
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
-
-    logger->Write_MessageChunk(statustext_chunking.msg_id, text, packet.chunk_seq);
+    text[offset + MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = '\0';
+    logger->Write_MessageChunk(statustext_chunking.msg_id, text, log_chunk_seq);
 #endif
 }
 
@@ -3922,7 +3850,7 @@ void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
     mavlink_msg_named_value_float_decode(&msg, &p);
     char s[11] {};
     strncpy(s, p.name, sizeof(s)-1);
-    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfBB",
+    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfIB",
                   AP_HAL::micros64(),
                   p.time_boot_ms,
                   s,
@@ -4392,6 +4320,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_HEARTBEAT: {
         handle_heartbeat(msg);
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
+        if (AP::camera() != nullptr) {
+            AP::camera()->handle_message(chan, msg);
+        }
+#endif // AP_CAMERA_MAVLINKCAMV2_ENABLED
         break;
     }
 
@@ -4448,6 +4381,22 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
     case MAVLINK_MSG_ID_GOPRO_HEARTBEAT: // heartbeat from a GoPro in Solo gimbal
     case MAVLINK_MSG_ID_CAMERA_INFORMATION:
+    case MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS:
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
+    case MAVLINK_MSG_ID_CAMERA_SETTINGS:
+    case MAVLINK_MSG_ID_STORAGE_INFORMATION:
+    case MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED:
+    case MAVLINK_MSG_ID_CAMERA_FOV_STATUS:
+    case MAVLINK_MSG_ID_PARAM_EXT_VALUE:
+    case MAVLINK_MSG_ID_PARAM_EXT_ACK:
+    case MAVLINK_MSG_ID_CAMERA_THERMAL_RANGE:
+    case MAVLINK_MSG_ID_CAMERA_TRACKING_IMAGE_STATUS:
+    case MAVLINK_MSG_ID_CAMERA_TRACKING_GEO_STATUS:
+    case MAVLINK_MSG_ID_VIDEO_STREAM_STATUS:
+#endif // AP_CAMERA_MAVLINKCAMV2_ENABLED
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    case MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION:
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
         {
             AP_Camera *camera = AP::camera();
             if (camera == nullptr) {
@@ -4458,9 +4407,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
+#if AP_MAVLINK_MSG_SET_MODE_ENABLED
     case MAVLINK_MSG_ID_SET_MODE:
         handle_set_mode(msg);
         break;
+#endif  // AP_MAVLINK_MSG_SET_MODE_ENABLED
 
 #if AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
@@ -4472,7 +4423,9 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
     case MAVLINK_MSG_ID_MISSION_COUNT:
     case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:
+#if AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
     case MAVLINK_MSG_ID_MISSION_ITEM:
+#endif  // AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
     case MAVLINK_MSG_ID_MISSION_REQUEST:
@@ -4739,10 +4692,15 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
         break;
     }
 
+#if AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
     // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
-    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
         handle_mission_item(msg);
+        break;
+#endif  // AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
+
+    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
+        handle_mission_item_int(msg);
         break;
 
     // read an individual command from EEPROM and send it to the GCS
@@ -4915,13 +4873,13 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
 
 #if AP_AIRSPEED_ENABLED
 
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr && airspeed->enabled()) {
+    AP_Airspeed &airspeed = AP::airspeed();
+    if (airspeed.enabled()) {
         GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_PREFLIGHT_CALIBRATION, GCS_MAVLINK_InProgress::Type::AIRSPEED_CAL, msg.sysid, msg.compid, chan);
         if (task == nullptr) {
             return MAV_RESULT_TEMPORARILY_REJECTED;
         }
-        airspeed->calibrate(false);
+        airspeed.calibrate(false);
         return MAV_RESULT_IN_PROGRESS;
     }
 #endif
@@ -5327,7 +5285,9 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
 {
     switch(command) {
     case MAV_CMD_DO_SET_HOME:
+#if AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
+#endif  // AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI_LOCATION:
     // case MAV_CMD_NAV_TAKEOFF:  // technically yes, but we don't do lat/lng
     // case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -5341,6 +5301,20 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     return false;
 }
 
+// Accepted camera command ACKs identify the selected FC-owned camera.
+// A rejected command keeps the protocol meaning of result_param2.
+template <typename Packet>
+static uint8_t camera_command_result_param2(const Packet &packet, MAV_RESULT result)
+{
+#if AP_CAMERA_ENABLED
+    const AP_Camera *camera = AP::camera();
+    if (result == MAV_RESULT_ACCEPTED && camera != nullptr) {
+        return camera->get_camera_device_id(AP_Camera::command_camera_id(packet));
+    }
+#endif  // AP_CAMERA_ENABLED
+    return 0;
+}
+
 #if AP_MAVLINK_COMMAND_LONG_ENABLED
 // when conveyed via COMMAND_LONG, a command doesn't come with an
 // explicit frame.  When conveying a location they do have an assumed
@@ -5352,7 +5326,9 @@ bool GCS_MAVLINK::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_co
         MAV_FRAME frame;
     } frame_map[] {
         { MAV_CMD_FIXED_MAG_CAL_YAW, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+#if AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
         { MAV_CMD_DO_SET_ROI, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+#endif  // AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
         { MAV_CMD_DO_SET_ROI_LOCATION, MAV_FRAME_GLOBAL_RELATIVE_ALT },
         { MAV_CMD_DO_SET_HOME, MAV_FRAME_GLOBAL },
     };
@@ -5371,13 +5347,28 @@ bool GCS_MAVLINK::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_co
 
 MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
+    if (command_int_only((MAV_CMD)packet.command)) {
+        return MAV_RESULT_COMMAND_INT_ONLY;
+    }
+
     MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
     if (command_long_stores_location((MAV_CMD)packet.command)) {
-        // we must be able to supply a frame for the location:
+        // we must be able to supply a frame for the location; if we
+        // can't then the command must be sent as a COMMAND_INT:
         if (!mav_frame_for_command_long(frame, (MAV_CMD)packet.command)) {
-            return MAV_RESULT_UNSUPPORTED;
+            return MAV_RESULT_COMMAND_INT_ONLY;
         }
     }
+
+#if AP_CAMERA_ENABLED
+    // the camera selector in param5 becomes int32 x below, so a fractional or
+    // out-of-range value must be rejected here where it is still a float
+    if (packet.command == MAV_CMD_CAMERA_TRACK_RECTANGLE && !isnan(packet.param5) &&
+        (!isfinite(packet.param5) || packet.param5 < 0 || packet.param5 > 255 ||
+         packet.param5 > floorf(packet.param5))) {
+        return MAV_RESULT_DENIED;
+    }
+#endif  // AP_CAMERA_ENABLED
 
     // convert and run the command
     mavlink_command_int_t command_int;
@@ -5426,7 +5417,7 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     mavlink_command_long_t packet;
     mavlink_msg_command_long_decode(&msg, &packet);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     AP_Scripting *scripting = AP_Scripting::get_singleton();
     if (scripting != nullptr && scripting->is_handling_command(packet.command)) {
         // Scripting has registered to receive this command, do not procces it internaly
@@ -5440,7 +5431,7 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result,
-                                 0, 0,
+                                 0, camera_command_result_param2(packet, result),
                                  msg.sysid,
                                  msg.compid);
 
@@ -5448,7 +5439,10 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     // log the packet:
     mavlink_command_int_t packet_int;
     convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
-    AP::logger().Write_Command(packet_int, msg.sysid, msg.compid, result, true);
+    uint32_t target_system;
+    mavlink_msg_get_target_system(&msg, &packet.target_system, &target_system);
+    AP::logger().Write_Command(packet_int, target_system,
+                               msg.sysid, msg.compid, result, true);
 #endif
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
@@ -5557,9 +5551,19 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_int_t &
 #if AP_AHRS_POSITION_RESET_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavlink_command_int_t &packet)
 {
-    if ((packet.frame != MAV_FRAME_GLOBAL && packet.frame != MAV_FRAME_GLOBAL_INT) ||
-        !isnan(packet.z)) {
-        // we only support global frame without altitude
+    switch (packet.frame) {
+    case MAV_FRAME_GLOBAL:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
+    case MAV_FRAME_GLOBAL_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
+        break;
+    default:
+        // we only support the global frame
+        return MAV_RESULT_DENIED;
+    }
+
+    if (!isnan(packet.z)) {
+        // we only support positions without altitude
         return MAV_RESULT_DENIED;
     }
 
@@ -5601,11 +5605,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &packet)
 {
-    // be aware that this method is called for both MAV_CMD_DO_SET_ROI
-    // and MAV_CMD_DO_SET_ROI_LOCATION.  If you intend to support any
-    // of the extra fields in the former then you will need to split
-    // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
-    // support the extra fields).
+    // Legacy MAV_CMD_DO_SET_ROI: param1 is an ROI mode, not a mount selector.
 
     // param1 : /* Region of interest mode (not used)*/
     // param2 : /* MISSION index/ target ID (not used)*/
@@ -5619,6 +5619,31 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
         return MAV_RESULT_DENIED;
     }
     return handle_command_do_set_roi(roi_loc);
+}
+
+// Handle the mount selector for ROI_LOCATION and ROI_NONE. Keep the legacy
+// vehicle-yaw behaviour for an unspecified selector; explicitly addressed ROI
+// must only change the selected mount, including on Copter and Sub.
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const mavlink_command_int_t &packet)
+{
+    if (isinf(packet.param1)) {
+        return MAV_RESULT_DENIED;
+    }
+    Location roi_loc;
+    if (packet.command == MAV_CMD_DO_SET_ROI_LOCATION &&
+        (!location_from_command_t(packet, roi_loc) || !roi_loc.check_latlng())) {
+        return MAV_RESULT_DENIED;
+    }
+    if (isnan(packet.param1) || is_zero(packet.param1)) {
+        return handle_command_do_set_roi(roi_loc);
+    }
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount != nullptr) {
+        return mount->handle_command_do_set_roi(packet, roi_loc);
+    }
+#endif  // HAL_MOUNT_ENABLED
+    return MAV_RESULT_UNSUPPORTED;
 }
 
 #if AP_FILESYSTEM_FORMAT_ENABLED
@@ -5667,8 +5692,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
     }
 
     // param1: sysid of target to follow
-    if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-        follow->set_target_sysid((uint8_t)packet.param1);
+    if ((packet.param1 > 0) && (packet.param1 <= AP_FLOAT_INT_MAX)) {
+        follow->set_target_sysid(uint32_t(packet.param1));
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_DENIED;
@@ -5771,19 +5796,23 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_camera(packet);
 #endif
 
-    case MAV_CMD_DO_SET_ROI_NONE: {
-        const Location zero_loc;
-        return handle_command_do_set_roi(zero_loc);
-    }
-
-    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_SET_ROI_LOCATION:
+        return handle_command_do_set_roi_location(packet);
+
+#if AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
+    case MAV_CMD_DO_SET_ROI:
         return handle_command_do_set_roi(packet);
+#endif  // AP_MAVLINK_MAV_CMD_DO_SET_ROI_ENABLED
 
 #if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_SET_ROI_SYSID:
+#if AP_MAVLINK_MAV_CMD_DO_MOUNT_CONFIGURE_ENABLED
     case MAV_CMD_DO_MOUNT_CONFIGURE:
+#endif  // AP_MAVLINK_MAV_CMD_DO_MOUNT_CONFIGURE_ENABLED
+#if AP_MAVLINK_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
+#endif  // AP_MAVLINK_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
     case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
         return handle_command_mount(packet, msg);
@@ -5867,7 +5896,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_run_prearm_checks(packet);
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     case MAV_CMD_SCRIPTING:
         {
             AP_Scripting *scripting = AP_Scripting::get_singleton();
@@ -5876,7 +5905,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
             }
             return scripting->handle_command_int_packet(packet);
         }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_SCRIPTING_LUA_ENABLED
 
 #if AP_AHRS_ENABLED
     case MAV_CMD_SET_EKF_SOURCE_SET:
@@ -5898,8 +5927,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_SET_MESSAGE_INTERVAL:
         return handle_command_set_message_interval(packet);
 
+#if AP_MAVLINK_MAV_CMD_GET_MESSAGE_INTERVAL_ENABLED
     case MAV_CMD_GET_MESSAGE_INTERVAL:
         return handle_command_get_message_interval(packet);
+#endif  // AP_MAVLINK_MAV_CMD_GET_MESSAGE_INTERVAL_ENABLED
 
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);
@@ -5919,7 +5950,7 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     mavlink_command_int_t packet;
     mavlink_msg_command_int_decode(&msg, &packet);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     AP_Scripting *scripting = AP_Scripting::get_singleton();
     if (scripting != nullptr && scripting->is_handling_command(packet.command)) {
         // Scripting has registered to receive this command, do not procces it internaly
@@ -5933,12 +5964,15 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result,
-                                 0, 0,
+                                 0, camera_command_result_param2(packet, result),
                                  msg.sysid,
                                  msg.compid);
 
 #if HAL_LOGGING_ENABLED
-    AP::logger().Write_Command(packet, msg.sysid, msg.compid, result);
+    uint32_t target_system;
+    mavlink_msg_get_target_system(&msg, &packet.target_system, &target_system);
+    AP::logger().Write_Command(packet, target_system,
+                               msg.sysid, msg.compid, result);
 #endif
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
@@ -6347,7 +6381,7 @@ void GCS_MAVLINK::send_gimbal_manager_status() const
 }
 #endif
 
-void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc)
+void GCS_MAVLINK::send_set_position_target_global_int(uint32_t target_system, uint8_t target_component, const Location& loc)
 {
 
     const uint16_t type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE | \
@@ -6377,38 +6411,47 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
 
 void GCS_MAVLINK::send_position_target_global_int()
 {
-    Location target;
-    if (!get_target_location(target)) {
-        return;
+    NavTarget target;
+    if (!get_nav_target(target)) {
+        // vehicles that report only a destination implement get_target_location
+        // instead; report that as a position-only setpoint
+        if (!get_target_location(target.loc)) {
+            return;
+        }
+        target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
+                              POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                              POSITION_TARGET_TYPEMASK_Z_IGNORE);
     }
-    if (!target.initialised()) {
-        return;
-    }
-    float alt_amsl_m;
-    if (!target.get_alt_m(Location::AltFrame::ABSOLUTE, alt_amsl_m)) {
-        return;
-    }
+
+    // ArduPilot has long set the undefined top nibble of the mask on this
+    // message; keep doing so here (POSITION_TARGET_LOCAL_NED never has)
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
-    static constexpr uint16_t TYPE_MASK =
-        POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
-        POSITION_TARGET_TYPEMASK_VZ_IGNORE | POSITION_TARGET_TYPEMASK_AX_IGNORE |
-        POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-        POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE |
-        POSITION_TARGET_TYPEMASK_LAST_BYTE;
+    const uint16_t type_mask = target.type_mask | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+
+    // this message is only sent when the target has a position; a consumer
+    // that does not honour type_mask would otherwise plot a lat/lng of zero
+    const Location &loc = target.loc;
+    float alt_amsl_m;
+    if (!target.has_position() ||
+        !loc.initialised() ||
+        !loc.get_alt_m(Location::AltFrame::ABSOLUTE, alt_amsl_m)) {
+        return;
+    }
+
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
         MAV_FRAME_GLOBAL, // targets are always global altitude
-        TYPE_MASK, // ignore everything except the x/y/z components
-        target.lat, // latitude as 1e7
-        target.lng, // longitude as 1e7
+        type_mask, // which of the dimensions below are actually being commanded
+        loc.lat, // latitude as 1e7
+        loc.lng, // longitude as 1e7
         alt_amsl_m, // altitude AMSL in metres
-        0.0f, // vx
-        0.0f, // vy
-        0.0f, // vz
-        0.0f, // afx
-        0.0f, // afy
-        0.0f, // afz
+        target.vel_ned_ms.x, // vx in m/s
+        target.vel_ned_ms.y, // vy in m/s
+        target.vel_ned_ms.z, // vz in m/s NED frame
+        target.accel_ned_mss.x, // afx in m/s/s
+        target.accel_ned_mss.y, // afy in m/s/s
+        target.accel_ned_mss.z, // afz in m/s/s NED frame
         0.0f, // yaw
         0.0f); // yaw_rate
 }
@@ -6476,7 +6519,7 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
     // get estimator flags
     uint16_t est_status_flags = 0;
     nav_filter_status nav_filt_status;
-    if (ahrs.get_filter_status(nav_filt_status)) {
+    if (ahrs.get_filter_status_for_configured_backend(nav_filt_status)) {
         est_status_flags = (uint16_t)(nav_filt_status.value & 0xFFFF);
     }
 
@@ -6705,7 +6748,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 #if AP_BATTERY_ENABLED
     case MSG_BATTERY_STATUS:
-        send_battery_status();
+        ret = send_battery_status();
         break;
 #endif // AP_BATTERY_ENABLED
 
@@ -7310,6 +7353,12 @@ void GCS_MAVLINK::initialise_message_intervals_from_config_files()
 
 void GCS_MAVLINK::initialise_message_intervals_from_streamrates()
 {
+    if (option_enabled(Option::UNICAST)) {
+        // Devices request the messages they need instead of receiving the
+        // normal GCS streams. Keep heartbeat for identifying this vehicle.
+        set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
+        return;
+    }
 #if HAL_HIGH_LATENCY2_ENABLED
     if (!is_high_latency_link) {
         // this is O(n^2), but it's once at boot and across a 10-entry list...
@@ -7340,7 +7389,7 @@ bool GCS_MAVLINK::get_default_interval_for_ap_message(const ap_message id, uint1
 #if HAL_HIGH_LATENCY2_ENABLED
     if (id == MSG_HIGH_LATENCY2) {
         // handle HL2 requests as a special case because HL2 is not "streamed"
-        interval = 5000;
+        interval = option_enabled(Option::UNICAST) ? 0 : 5000;
         return true;
     }
 #endif
@@ -7353,6 +7402,13 @@ bool GCS_MAVLINK::get_default_interval_for_ap_message(const ap_message id, uint1
         return true;
     }
 #endif
+
+    if (option_enabled(Option::UNICAST)) {
+        // Resetting a requested message to its default must not enable a
+        // normal stream on a unicast link.
+        interval = 0;
+        return true;
+    }
 
     // find which stream this ap_message is in
     for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {
@@ -7430,43 +7486,53 @@ void GCS::update_passthru(void)
 
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
+    AP_HAL::UARTDriver *port1 = nullptr;
+    AP_HAL::UARTDriver *port2 = nullptr;
     uint32_t baud1, baud2;
-    bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
-                                                    baud1, baud2);
+    uint16_t options1, options2;
+    bool enabled = AP::serialmanager().get_passthru(port1, port2, _passthru.timeout_s,
+                                                    baud1, baud2, options1, options2);
     if (enabled && !_passthru.enabled) {
+        _passthru.port1 = port1;
+        _passthru.port2 = port2;
         _passthru.start_ms = now;
         _passthru.last_ms = 0;
         _passthru.enabled = true;
         _passthru.last_port1_data_ms = now;
         _passthru.baud1 = baud1;
         _passthru.baud2 = baud2;
-        _passthru.parity1 = _passthru.port1->get_parity();
-        _passthru.parity2 = _passthru.port2->get_parity();
+        _passthru.orig_baud1 = baud1;
+        _passthru.orig_baud2 = baud2;
+        _passthru.orig_parity1 = _passthru.port1->get_parity();
+        _passthru.orig_parity2 = _passthru.port2->get_parity();
+        _passthru.options1 = options1;
+        _passthru.options2 = options2;
+        _passthru.ports_set_up = false;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru enabled");
         if (!_passthru.timer_installed) {
             _passthru.timer_installed = true;
             hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&GCS::passthru_timer, void));
         }
-    } else if (!enabled && _passthru.enabled) {
+    } else if (_passthru.enabled &&
+               (!enabled || port1 != _passthru.port1 || port2 != _passthru.port2)) {
+        // disabled, or SERIAL_PASS1/2 changed: finish with the ports in use,
+        // a session on new ports starts on the next update
         _passthru.enabled = false;
         _passthru.port1->lock_port(0, 0);
         _passthru.port2->lock_port(0, 0);
-        // Restore original baudrates
-        if (_passthru.baud1 != baud1) {
+        // Restore original baudrates and port ownership
+        if (_passthru.baud1 != _passthru.orig_baud1) {
             _passthru.port1->end();
-            _passthru.port1->begin(baud1);
         }
-        if (_passthru.baud2 != baud2) {
+        _passthru.port1->begin(_passthru.orig_baud1);
+        if (_passthru.baud2 != _passthru.orig_baud2) {
             _passthru.port2->end();
-            _passthru.port2->begin(baud2);
         }
-        // Restore original parity
-        if (_passthru.parity1 != _passthru.port1->get_parity()) {
-            _passthru.port1->configure_parity(_passthru.parity1);
-        }
-        if (_passthru.parity2 != _passthru.port2->get_parity()) {
-            _passthru.port2->configure_parity(_passthru.parity2);
-        }
+        _passthru.port2->begin(_passthru.orig_baud2);
+        // begin() resets hardware parity without updating get_parity().
+        _passthru.port1->configure_parity(_passthru.orig_parity1);
+        _passthru.port2->configure_parity(_passthru.orig_parity2);
+        restore_passthru_line_settings();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru disabled");
     } else if (enabled &&
                _passthru.timeout_s &&
@@ -7476,23 +7542,47 @@ void GCS::update_passthru(void)
         _passthru.port1->lock_port(0, 0);
         _passthru.port2->lock_port(0, 0);
         AP::serialmanager().disable_passthru();
-        // Restore original baudrates
-        if (_passthru.baud1 != baud1) {
+        // Restore original baudrates and port ownership
+        if (_passthru.baud1 != _passthru.orig_baud1) {
             _passthru.port1->end();
-            _passthru.port1->begin(baud1);
         }
-        if (_passthru.baud2 != baud2) {
+        _passthru.port1->begin(_passthru.orig_baud1);
+        if (_passthru.baud2 != _passthru.orig_baud2) {
             _passthru.port2->end();
-            _passthru.port2->begin(baud2);
         }
-        // Restore original parity
-        if (_passthru.parity1 != _passthru.port1->get_parity()) {
-            _passthru.port1->configure_parity(_passthru.parity1);
-        }
-        if (_passthru.parity2 != _passthru.port2->get_parity()) {
-            _passthru.port2->configure_parity(_passthru.parity2);
-        }
+        _passthru.port2->begin(_passthru.orig_baud2);
+        // begin() resets hardware parity without updating get_parity().
+        _passthru.port1->configure_parity(_passthru.orig_parity1);
+        _passthru.port2->configure_parity(_passthru.orig_parity2);
+        restore_passthru_line_settings();
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Passthru timed out");
+    }
+}
+
+/*
+  put back the options and stop bits the ports had when passthrough took them,
+  as a protocol that has been detected doesn't set them again
+ */
+void GCS::restore_passthru_line_settings()
+{
+    if (!_passthru.ports_set_up) {
+        // passthrough ended before it took the ports: nothing was changed
+        return;
+    }
+    _passthru.ports_set_up = false;
+    // stop bits first: on ChibiOS their restart uses the saved port config,
+    // which set_options() doesn't update for half-duplex
+    if (_passthru.stop_bits1 != _passthru.port1->get_stop_bits()) {
+        _passthru.port1->set_stop_bits(_passthru.stop_bits1);
+    }
+    if (_passthru.stop_bits2 != _passthru.port2->get_stop_bits()) {
+        _passthru.port2->set_stop_bits(_passthru.stop_bits2);
+    }
+    if (_passthru.start_options1 != _passthru.port1->get_options()) {
+        _passthru.port1->set_options(_passthru.start_options1);
+    }
+    if (_passthru.start_options2 != _passthru.port2->get_options()) {
+        _passthru.port2->set_options(_passthru.start_options2);
     }
 }
 
@@ -7513,9 +7603,6 @@ void GCS::passthru_timer(void)
             // delay for 1s so the reply for the SERIAL_PASS2 param set can be seen by GCS
             return;
         }
-        _passthru.start_ms = 0;
-        _passthru.port1->begin(_passthru.baud1);
-        _passthru.port2->begin(_passthru.baud2);
     }
 
     // while pass-thru is enabled lock both ports. They remain
@@ -7524,34 +7611,74 @@ void GCS::passthru_timer(void)
     _passthru.port1->lock_port(lock_key, lock_key);
     _passthru.port2->lock_port(lock_key, lock_key);
 
+    if (_passthru.start_ms != 0) {
+        _passthru.start_ms = 0;
+        // the parity, options and stop bits to put back when passthrough ends,
+        // saved now rather than when it was enabled, as RC input may have
+        // detected a protocol since
+        _passthru.orig_parity1 = _passthru.port1->get_parity();
+        _passthru.orig_parity2 = _passthru.port2->get_parity();
+        _passthru.start_options1 = _passthru.port1->get_options();
+        _passthru.start_options2 = _passthru.port2->get_options();
+        _passthru.stop_bits1 = _passthru.port1->get_stop_bits();
+        _passthru.stop_bits2 = _passthru.port2->get_stop_bits();
+        _passthru.ports_set_up = true;
+        // the ports' other users, such as RC input searching for a protocol,
+        // may have left a different inversion, parity or stop bits, so go
+        // back to the configured options with no parity and one stop bit. A
+        // USB host's parity is set below if one port is USB. Being locked,
+        // the line settings can only be changed with the key
+        if (_passthru.port1->get_options() != _passthru.options1) {
+            _passthru.port1->set_options_locked(_passthru.options1, lock_key);
+        }
+        if (_passthru.port2->get_options() != _passthru.options2) {
+            _passthru.port2->set_options_locked(_passthru.options2, lock_key);
+        }
+        // Lock before changing ownership so MAVLink cannot reclaim either port.
+        _passthru.port1->begin_locked(_passthru.baud1, 0, 0, lock_key);
+        _passthru.port2->begin_locked(_passthru.baud2, 0, 0, lock_key);
+        // set after begin(): on ChibiOS a stop bit change restarts the port,
+        // which needs the baud rate a never opened port only gets from
+        // begin(), and begin() may drop the parity without get_parity()
+        // knowing
+        _passthru.port1->set_stop_bits_locked(1, lock_key);
+        _passthru.port2->set_stop_bits_locked(1, lock_key);
+        _passthru.port1->configure_parity_locked(0, lock_key);
+        _passthru.port2->configure_parity_locked(0, lock_key);
+    }
+
     // Check for requested Baud rates and parity over USB
     uint32_t baud = _passthru.port1->get_usb_baud();
     uint8_t parity = _passthru.port1->get_usb_parity();
     if (baud != 0) { // port1 is USB
-        if (_passthru.baud2 != baud) {
+        const bool baud_changed = _passthru.baud2 != baud;
+        if (baud_changed) {
             _passthru.baud2 = baud;
             _passthru.port2->end();
             _passthru.port2->begin_locked(baud, 0, 0, lock_key);
         }
 
-        if (_passthru.parity2 != parity) {
-            _passthru.parity2 = parity;
-            _passthru.port2->configure_parity(parity);
+        // compare with the port's parity, not what we last set, so a change
+        // that got in as passthrough took the port is put right
+        if (baud_changed || _passthru.port2->get_parity() != parity) {
+            _passthru.port2->configure_parity_locked(parity, lock_key);
         }
     }
 
     baud = _passthru.port2->get_usb_baud();
     parity = _passthru.port2->get_usb_parity();
     if (baud != 0) { // port2 is USB
-        if (_passthru.baud1 != baud) {
+        const bool baud_changed = _passthru.baud1 != baud;
+        if (baud_changed) {
             _passthru.baud1 = baud;
             _passthru.port1->end();
             _passthru.port1->begin_locked(baud, 0, 0, lock_key);
         }
 
-        if (_passthru.parity1 != parity) {
-            _passthru.parity1 = parity;
-            _passthru.port1->configure_parity(parity);
+        // compare with the port's parity, not what we last set, so a change
+        // that got in as passthrough took the port is put right
+        if (baud_changed || _passthru.port1->get_parity() != parity) {
+            _passthru.port1->configure_parity_locked(parity, lock_key);
         }
     }
 
@@ -7575,15 +7702,21 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
 {
     switch (coordinate_frame) {
     case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
     case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         frame = Location::AltFrame::ABOVE_HOME;
         return true;
     case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
     case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         frame = Location::AltFrame::ABOVE_TERRAIN;
         return true;
     case MAV_FRAME_GLOBAL:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
     case MAV_FRAME_GLOBAL_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         frame = Location::AltFrame::ABSOLUTE;
         return true;
     default:
@@ -7596,7 +7729,14 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
 
 uint64_t GCS_MAVLINK::capabilities() const
 {
-    uint64_t ret = MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+    uint64_t ret =
+#if AP_MAVLINK_PROTOCOL_CAPABILITY_PARAM_FLOAT_ENABLED
+        MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+#else
+        // PARAM_FLOAT is deprecated in favour of this, which describes
+        // how ArduPilot sends parameter values
+        MAV_PROTOCOL_CAPABILITY_PARAM_ENCODE_C_CAST |
+#endif  // AP_MAVLINK_PROTOCOL_CAPABILITY_PARAM_FLOAT_ENABLED
         MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION;
 
     const auto mavlink_protocol = uartstate->get_protocol();
@@ -7661,7 +7801,9 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
     mavlink_manual_control_t packet;
     mavlink_msg_manual_control_decode(&msg, &packet);
 
-    if (packet.target != gcs().sysid_this_mav()) {
+    uint32_t target_system;
+    if (!mavlink_msg_get_target_system(&msg, &packet.target, &target_system) ||
+        target_system != gcs().sysid_this_mav()) {
         return; // only accept control aimed at us
     }
 
@@ -7792,9 +7934,9 @@ int8_t GCS_MAVLINK::high_latency_air_temperature() const
 {
 #if AP_AIRSPEED_ENABLED
     // return units are degC
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    const AP_Airspeed &airspeed = AP::airspeed();
     float air_temperature;
-    if (airspeed != nullptr && airspeed->enabled() && airspeed->get_temperature(air_temperature)) {
+    if (airspeed.enabled() && airspeed.get_temperature(air_temperature)) {
         return air_temperature;
     }
 #endif

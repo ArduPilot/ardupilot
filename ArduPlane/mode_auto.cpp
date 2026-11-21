@@ -71,7 +71,7 @@ void ModeAuto::update()
     if (plane.mission.state() != AP_Mission::MISSION_RUNNING) {
         // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
         // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
-        plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END);
+        IGNORE_RETURN(plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END));
         gcs().send_text(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }
@@ -109,7 +109,7 @@ void ModeAuto::update()
         } else {
             plane.calc_throttle();
         }
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     } else if (nav_cmd_id == MAV_CMD_NAV_SCRIPT_TIME) {
         // NAV_SCRIPTING has a desired roll and pitch rate and desired throttle
         plane.nav_roll_cd = ahrs.roll_sensor;
@@ -137,7 +137,7 @@ void ModeAuto::navigate()
 
 bool ModeAuto::does_auto_navigation() const
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
    return (!plane.nav_scripting_active());
 #endif
    return true;
@@ -145,7 +145,7 @@ bool ModeAuto::does_auto_navigation() const
 
 bool ModeAuto::does_auto_throttle() const
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
    return (!plane.nav_scripting_active());
 #endif
    return true;

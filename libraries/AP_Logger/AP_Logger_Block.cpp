@@ -42,25 +42,33 @@ void AP_Logger_Block::Init(void)
         // reserve space for version in last sector
         df_NumPages -= df_PagePerBlock;
 
-        // determine and limit file backend buffersize
-        uint32_t bufsize = _front._params.file_bufsize;
-        if (bufsize > 64) {
-            bufsize = 64;
-        }
+        // determine buffersize.  LOG_FILE_BUFSIZE is an AP_Int16 and its
+        // documented 4-200 range is metadata only, so constrain it here:
+        // nothing else stops a negative or oversized value reaching the
+        // allocation as a very large uint32_t.
+        uint32_t bufsize = constrain_int16(_front._params.file_bufsize, 4, 200);
         bufsize *= 1024;
 
-        // If we can't allocate the full size, try to reduce it until we can allocate it
-        while (!writebuf.set_size(bufsize) && bufsize >= df_PageSize * df_PagePerBlock) {
-            DEV_PRINTF("AP_Logger_Block: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
-            bufsize >>= 1;
-        }
-
-        if (!writebuf.get_size()) {
+        // If we can't allocate the full size, take the largest we can.
+        // set_size_best() steps down by 3/4 rather than halving, so a
+        // board short of memory lands near what is actually available
+        // instead of skipping past it.  It will go all the way down to a
+        // single byte, but a page is only written once a page's worth is
+        // buffered and the reserved-space checks in
+        // _WritePrioritisedBlock() starve everything else in a tiny
+        // buffer, so don't go below the parameter's 4KB minimum or two
+        // pages, whichever is larger.
+        const uint32_t min_bufsize = MAX(4096U, 2U * df_PageSize);
+        if (!writebuf.set_size_best(bufsize) || writebuf.get_size() < min_bufsize) {
+            writebuf.set_size(0);
             DEV_PRINTF("Out of memory for logging\n");
             return;
         }
 
-        DEV_PRINTF("AP_Logger_Block: buffer size=%u\n", (unsigned)bufsize);
+        if (writebuf.get_size() != bufsize) {
+            DEV_PRINTF("AP_Logger_Block: reduced buffer %u/%u\n", (unsigned)writebuf.get_size(), (unsigned)bufsize);
+        }
+        DEV_PRINTF("AP_Logger_Block: buffer size=%u\n", (unsigned)writebuf.get_size());
         _initialised = true;
     }
 

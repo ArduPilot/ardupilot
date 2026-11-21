@@ -8,11 +8,9 @@
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/RCOutput_Tap.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
-#include <AP_Module/AP_Module.h>
 
 #include "AnalogIn_ADS1115.h"
 #include "AnalogIn_IIO.h"
@@ -24,7 +22,6 @@
 #include "RCInput_AioPRU.h"
 #include "RCInput_PRU.h"
 #include "RCInput_RPI.h"
-#include "RCInput_SoloLink.h"
 #include "RCInput_UDP.h"
 #include "RCInput_Multi.h"
 #include "RCInput_ZYNQ.h"
@@ -170,8 +167,6 @@ static RCInput_ZYNQ rcinDriver;
 static RCInput_UDP  rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 static RCInput_Multi rcinDriver{2, NEW_NOTHROW RCInput_RCProtocol("/dev/uart-sbus", "/dev/uart-sumd"), NEW_NOTHROW RCInput_UDP()};
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-static RCInput_SoloLink rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PILOTPI
 static RCInput_RCProtocol rcinDriver{"/dev/ttyAMA0", NULL};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_VNAV || \
@@ -219,8 +214,6 @@ static RCOutput_Bebop rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_BEBOP_BL
 static RCOutput_Disco rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_DISCO_BLDC_I2C_BUS, HAL_RCOUT_DISCO_BLDC_I2C_ADDR));
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
 static RCOutput_Sysfs rcoutDriver(0, 0, 14);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-static ap::RCOutput_Tap rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
 static RCOutput_Sysfs rcoutDriver(0, 0, 15);
 #elif  CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
@@ -328,11 +321,6 @@ void _usage(void)
     printf("\tcustom storage path:\n");
     printf("\t                   --storage-directory /var/APM/storage\n");
     printf("\t                   -s /var/APM/storage\n");
-#if AP_MODULE_SUPPORTED
-    printf("\tmodule support:\n");
-    printf("\t                   --module-directory %s\n", AP_MODULE_DEFAULT_DIRECTORY);
-    printf("\t                   -M %s\n", AP_MODULE_DEFAULT_DIRECTORY);
-#endif
     printf("\tcpu affinity:\n");
     printf("\t                   --cpu-affinity 1 (single cpu) or 1,3 (multiple cpus) or 1-3 (range of cpus)\n");
     printf("\t                   -c 1 (single cpu) or 1,3 (multiple cpus) or 1-3 (range of cpus)\n");
@@ -340,10 +328,6 @@ void _usage(void)
 
 void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
-#if AP_MODULE_SUPPORTED
-    const char *module_path = AP_MODULE_DEFAULT_DIRECTORY;
-#endif
-
     enum long_options {
         CMDLINE_SERIAL0 = 1, // must be in 0-9 order and numbered consecutively
         CMDLINE_SERIAL1,
@@ -382,14 +366,13 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
         {"storage-directory",   true,  0, 's'},
-        {"module-directory",    true,  0, 'M'},
         {"defaults",            true,  0, 'd'},
         {"cpu-affinity",        true,  0, 'c'},
         {"help",                false,  0, 'h'},
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:G:H:I:J:l:t:s:he:SM:c:",
+    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:G:H:I:J:l:t:s:he:Sc:",
                     options);
 
     /*
@@ -438,11 +421,6 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         case 's':
             utilInstance.set_custom_storage_directory(gopt.optarg);
             break;
-#if AP_MODULE_SUPPORTED
-        case 'M':
-            module_path = gopt.optarg;
-            break;
-#endif
         case 'd':
             utilInstance.set_custom_defaults_path(gopt.optarg);
             break;
@@ -482,20 +460,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     // order of scheduler initialize and setup on Linux.
     scheduler->set_system_initialized();
 
-    // possibly load external modules
-#if AP_MODULE_SUPPORTED
-    if (module_path != nullptr) {
-        AP_Module::init(module_path);
-    }
-#endif
-
-#if AP_MODULE_SUPPORTED
-    AP_Module::call_hook_setup_start();
-#endif
     callbacks->setup();
-#if AP_MODULE_SUPPORTED
-    AP_Module::call_hook_setup_complete();
-#endif
 
     setup_signal_handlers();
 

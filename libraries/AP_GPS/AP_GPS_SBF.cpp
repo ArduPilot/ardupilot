@@ -182,7 +182,7 @@ AP_GPS_SBF::read(void)
                                 if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
                                     targetGA = "MultiAntenna";
                                 }
-                                if (asprintf(&config_string, "sga, %s\n", targetGA)) {
+                                if (asprintf(&config_string, "sga, %s\n", targetGA) == -1) {
                                   config_string = nullptr;
                                 }
                                 break;
@@ -533,6 +533,9 @@ AP_GPS_SBF::process_message(void)
                 break;
             case 8: // moving rtk float
                 state.status = AP_GPS_FixType::RTK_FLOAT;
+                break;
+            case 10: // PPP
+                state.status = AP_GPS_FixType::PPP;
                 break;
         }
         

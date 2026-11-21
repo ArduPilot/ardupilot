@@ -15,7 +15,7 @@
 
 #include "AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 
 #include "lua_scripts.h"
 #include <AP_HAL/AP_HAL.h>
@@ -48,7 +48,7 @@ static const char *get_error_object_message(lua_State *L) {
     return m;
 }
 
-lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP_Int8 &debug_options)
+lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP_UInt8 &debug_options)
     : _vm_steps(vm_steps),
       _debug_options(debug_options)
 {
@@ -669,4 +669,4 @@ uint32_t lua_scripts::get_running_checksum()
     return running_checksum;
 }
 
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_SCRIPTING_LUA_ENABLED

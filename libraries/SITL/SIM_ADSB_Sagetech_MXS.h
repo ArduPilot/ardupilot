@@ -330,7 +330,7 @@ private:
             uint8_t payload_length;
         } preamble;
     } msg;
-    uint8_t buflen;
+    uint16_t buflen;  // the buffer is longer than 255 bytes
 
     // called when there is a message in the buffer which should be
     // handled.  If they return true then an ACK is sent.
@@ -382,7 +382,7 @@ private:
     // n-bytes payload
     // 1-byte checksum (sum of all previous bytes in packet % 256
 
-    void move_preamble_in_buffer(uint8_t search_start_pos=0);
+    void move_preamble_in_buffer(uint16_t search_start_pos=0);
 
     enum class InputState {
         WANT_START_BYTE = 56,

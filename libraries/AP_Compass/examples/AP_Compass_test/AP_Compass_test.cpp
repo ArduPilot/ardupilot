@@ -48,7 +48,7 @@ static AP_SerialManager serial_manager;
 
 #if HAL_LOGGING_ENABLED
 static AP_Logger logger;
-AP_Int32 logger_bitmask;
+AP_UInt32 logger_bitmask;
 static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES
 };

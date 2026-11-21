@@ -402,7 +402,7 @@ void AP_ADSB::update(const AP_ADSB::Loc &loc)
             // invalid, reset it to default
             out_state.cfg.squawk_octal_param.set(ADSB_SQUAWK_OCTAL_DEFAULT);
         }
-        out_state.cfg.squawk_octal = (uint16_t)out_state.cfg.squawk_octal_param;
+        out_state.cfg.squawk_octal = out_state.cfg.squawk_octal_param;
     }
 
     // ensure it's positive 24bit but allow -1

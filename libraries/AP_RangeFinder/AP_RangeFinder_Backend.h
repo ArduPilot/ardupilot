@@ -39,7 +39,7 @@ public:
 
     virtual void handle_msg(const mavlink_message_t &msg) { return; }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     void get_state(RangeFinder::RangeFinder_State &state_arg);
 
     // Returns false if scripting backing hasn't been setup.

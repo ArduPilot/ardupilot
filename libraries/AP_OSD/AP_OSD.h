@@ -416,7 +416,9 @@ public:
 
     AP_OSD_ParamSetting() {};
     AP_OSD_ParamSetting(uint8_t param_number);
-    AP_OSD_ParamSetting(const Initializer& initializer);
+
+    // set the defaults from a compact static initializer structure
+    void set_defaults(const Initializer& initializer);
 
     // initialize the setting from the configured information
     void update();
@@ -565,8 +567,8 @@ public:
 
     AP_Int8 osd_type;
     AP_Int8 osd_type2; // additional backend active in parallel
-    AP_Int8 font_num;
-    AP_Int32 options;
+    AP_UInt8 font_num;
+    AP_UInt32 options;
 
 #if OSD_ENABLED
     AP_Int8 rc_channel;
@@ -657,7 +659,7 @@ public:
     void enable() {
         _disable = false;
     }
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     AP_OSD_Backend *scripting_get_backend() {
         // set the override under the semaphore so the OSD thread sees a
         // consistent value; the scripting binding takes it again for the call
@@ -668,12 +670,12 @@ public:
     }
     void draw_screen() {
         if (scripting_override) {
-            update_osd();
+            update_osd(false);
         }
     }
     bool display_disabled() const { return _disable; }
     uint8_t get_screen() const { return current_screen; }
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
     AP_OSD_AbstractScreen& get_screen(uint8_t idx) {
 #if OSD_PARAM_ENABLED
@@ -713,7 +715,8 @@ public:
 private:
     void osd_thread();
 #if OSD_ENABLED
-    void update_osd();
+    // false leaves _backends[0], the backend scripting draws to, for the script's flush()
+    void update_osd(bool flush_scripting_backend = true);
     void update_stats();
     void update_current_screen();
     void next_screen();
@@ -735,11 +738,11 @@ private:
     AP_OSD_Backend *_backends[OSD_MAX_INSTANCES];
     uint8_t _backend_count;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // bool for scripting override and counter to timeout override
     bool scripting_override;
     uint8_t override_count;
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
     static AP_OSD *_singleton;
     // multi-thread access support
     HAL_Semaphore _sem;

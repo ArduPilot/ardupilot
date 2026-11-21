@@ -140,7 +140,7 @@ public:
 
     // Telemetry control
     //
-    AP_Int16 sysid_target;
+    AP_UInt32 sysid_target;
 
     AP_Float yaw_slew_time;
     AP_Float pitch_slew_time;
@@ -166,16 +166,16 @@ public:
     AP_Int16 distance_min;          // target's must be at least this distance from tracker to be tracked
     AP_Int16 pitch_min;
     AP_Int16 pitch_max;
-    AP_Int16 gcs_pid_mask;
+    AP_UInt16 gcs_pid_mask;
     AP_Int8  initial_mode;
     AP_Int8 disarm_pwm;
-    AP_Int8 auto_opts;
+    AP_UInt8 auto_opts;
 
     // Waypoints
     //
     AP_Int8 command_total; // 1 if HOME is set
 
-    AP_Int32 log_bitmask;
+    AP_UInt32 log_bitmask;
 
     // AC_PID controllers
     AC_PID         pidPitch2Srv;

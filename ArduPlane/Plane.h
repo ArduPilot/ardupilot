@@ -35,7 +35,6 @@
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor Library
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <SRV_Channel/SRV_Channel.h>
@@ -112,9 +111,14 @@
 #include "defines.h"
 #include "mode.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
+
+#include <AP_CustomControl/AP_CustomControl_config.h>
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+#include <AP_CustomControl/AP_CustomControl.h>                  // Custom control library
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
 
 #include "RC_Channel_Plane.h"     // RC Channel Library
 #include "Parameters.h"
@@ -177,6 +181,7 @@ public:
 #if MODE_AUTOLAND_ENABLED
     friend class ModeAutoLand;
 #endif
+    friend class ModeGlide;
 #if AP_EXTERNAL_CONTROL_ENABLED
     friend class AP_ExternalControl_Plane;
 #endif
@@ -246,6 +251,10 @@ private:
     AP_PitchController pitchController{aparm};
     AP_YawController yawController{aparm};
     AP_SteerController steerController{};
+
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    AP_CustomControl custom_control{aparm};
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
 
     // Training mode
     bool training_manual_roll;  // user has manual roll control
@@ -331,6 +340,7 @@ private:
 #if HAL_SOARING_ENABLED
     ModeThermal mode_thermal;
 #endif
+    ModeGlide mode_glide;
 
 #if AP_QUICKTUNE_ENABLED
     AP_Quicktune quicktune;
@@ -555,7 +565,7 @@ private:
         bool rotation_complete;
     } auto_state;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // support for scripting nav commands, with verify
     struct {
         bool enabled;
@@ -910,6 +920,7 @@ private:
     int32_t adjusted_altitude_cm(void);
     int32_t adjusted_relative_altitude_cm(void);
     float mission_alt_offset(void);
+    void reset_alt_offset(bool force = false);
     float height_above_target(void);
     float lookahead_adjustment(void);
     void fix_terrain_WP(Location &loc, uint32_t linenum);
@@ -945,7 +956,7 @@ private:
 #if HAL_LOGGING_ENABLED
 
     // methods for AP_Vehicle:
-    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const AP_UInt32 &get_log_bitmask() override { return g.log_bitmask; }
     const struct LogStructure *get_log_structures() const override {
         return log_structure;
     }
@@ -1028,7 +1039,7 @@ private:
     */
     bool in_auto_mission_id(uint16_t command) const;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // nav scripting support
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_script_time(const AP_Mission::Mission_Command& cmd);
@@ -1044,7 +1055,7 @@ private:
     void update_current_loc(void);
 
     // set home location and store it persistently:
-    bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
+    bool set_home_persistently(const Location &loc, bool lock=false) WARN_IF_UNUSED;
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
 
@@ -1141,9 +1152,9 @@ private:
 
     // system.cpp
     __INITFUNC__ void init_ardupilot() override;
-    bool set_mode(Mode& new_mode, const ModeReason reason);
-    bool set_mode(const uint8_t mode, const ModeReason reason) override;
-    bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
+    bool set_mode(Mode& new_mode, const ModeReason reason) WARN_IF_UNUSED;
+    bool set_mode(const uint8_t mode, const ModeReason reason) override WARN_IF_UNUSED;
+    bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason) WARN_IF_UNUSED;
     void check_long_failsafe();
     void check_short_rc_failsafe();
     void startup_INS(void);
@@ -1165,6 +1176,10 @@ private:
     void landing_gear_update(void);
     bool check_takeoff_timeout(void);
     bool check_takeoff_timeout_level_off(void);
+
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    void run_custom_controller();
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
@@ -1227,7 +1242,7 @@ private:
     float get_adjusted_throttle_input(bool no_deadzone=false) const;
     bool reverse_thrust_enabled(UseReverseThrust use_reverse_thrust_option) const;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // support for NAV_SCRIPT_TIME mission command
     bool nav_scripting_active(void);
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
@@ -1317,10 +1332,10 @@ public:
     void failsafe_check(void);
     bool is_landing() const override;
     bool is_taking_off() const override;
-#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
     bool set_target_location(const Location& target_loc) override;
-#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
-#if AP_SCRIPTING_ENABLED
+#endif //AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
     bool set_velocity_match(const Vector2f &velocity_ne_ms) override;
@@ -1332,7 +1347,7 @@ public:
     // It's up to the Lua script to ensure the provided location makes sense
     bool set_crosstrack_start(const Location &new_start_location) override;
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
     bool tkoff_option_is_set(AP_FixedWing::TakeoffOption option) const {
         return (aparm.takeoff_options & int32_t(option)) != 0;

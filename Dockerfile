@@ -11,6 +11,7 @@ ARG SKIP_AP_GRAPHIC_ENV=1
 ARG SKIP_AP_COV_ENV=1
 ARG SKIP_AP_GIT_CHECK=1
 ARG DO_AP_STM_ENV=1
+ARG TARGETARCH
 
 WORKDIR /${USER_NAME}
 
@@ -46,7 +47,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 # Ensure Gradle uses a supported JDK (Ubuntu 24.04 defaults to Java 21, which
 # Gradle 7.6 does not support). This is only needed for the Docker build.
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-${TARGETARCH}
 ENV PATH="$JAVA_HOME/bin:$PATH"
 
 COPY Tools/environment_install/install-prereqs-ubuntu.sh /${USER_NAME}/Tools/environment_install/

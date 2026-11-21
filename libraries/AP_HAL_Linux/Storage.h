@@ -41,9 +41,11 @@ protected:
     int _storage_create(const char *dpath);
 
     int _fd;
-    volatile bool _initialised;
-    volatile uint32_t _dirty_mask;
+    bool _initialised;
+    uint32_t _dirty_mask;
     uint8_t _buffer[LINUX_STORAGE_SIZE];
+    HAL_Semaphore _sem;
+    HAL_Semaphore _timer_sem;
 };
 
 }

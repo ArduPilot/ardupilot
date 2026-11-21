@@ -72,16 +72,32 @@ case ${RELEASE_DISTRIBUTOR} in
     linuxmint)
         # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
         case ${RELEASE_CODENAME} in
-            zena | wilma | xia)
+            zara)     ;&
+            zena)     ;&
+            wilma)    ;&
+            xia)      ;&
+            _LISTENDA)
                 RELEASE_CODENAME='noble'
                 ;;
-            vanessa | vera | victoria | virginia)
+            vanessa)  ;&
+            vera)     ;&
+            victoria) ;&
+            virginia) ;&
+            _LISTENDB)
                 RELEASE_CODENAME='jammy'
                 ;;
-            una | uma | ulyssa | ulyana)
+            una)      ;&
+            uma)      ;&
+            ulyssa)   ;&
+            ulyana)   ;&
+            _LISTENDC)
                 RELEASE_CODENAME='focal'
                 ;;
-            tricia | tina | tessa | tara)
+            tricia)   ;&
+            tina)     ;&
+            tessa)    ;&
+            tara)     ;&
+            _LISTENDD)
                 RELEASE_CODENAME='bionic'
                 ;;
             elsie)
@@ -104,19 +120,22 @@ case "${RELEASE_CODENAME}" in
     groovy)   ;&
     lunar)    ;&
     mantic)   ;&
-    oracular)
+    bullseye) ;&
+    oracular) ;&
+    plucky)   ;&
+    questing) ;&
+    _LISTENDA)
         echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
         exit 1
         ;;
 
     bookworm) ;&
     trixie)   ;&
-    bullseye) ;&
+    forky)    ;&
     jammy)    ;&
     noble)    ;&
-    plucky)   ;&
-    questing) ;&
-    resolute)
+    resolute) ;&
+    _LISTENDB)
         echo "${RELEASE_CODENAME} is supported"
         ;;
 
@@ -126,7 +145,8 @@ case "${RELEASE_CODENAME}" in
         ;;
 esac
 
-if [ ${RELEASE_CODENAME} == 'trixie' ]; then
+if false; then :
+elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITLFML_VERSION="2.6"
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
@@ -134,6 +154,11 @@ if [ ${RELEASE_CODENAME} == 'trixie' ]; then
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
+    PYTHON_V="python3"
+    PIP=pip3
+elif [ ${RELEASE_CODENAME} == 'forky' ]; then
+    SITLFML_VERSION="3.1"
+    SITLCFML_VERSION="3.0"
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
@@ -146,26 +171,11 @@ elif [ ${RELEASE_CODENAME} == 'noble' ]; then
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
-    PYTHON_V="python3"
-    PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'questing' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
-    PYTHON_V="python3"
-    PIP="python3 -m pip"
 elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITLFML_VERSION="3.0"
     SITLCFML_VERSION="3.0"
     PYTHON_V="python3"
     PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'bullseye' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
 else
     # We assume APT based system, so let's try with apt-cache first.
     SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
@@ -216,11 +226,11 @@ fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
 
-if [ ${RELEASE_CODENAME} == 'trixie' ] ||
+if false ||
+   [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+   [ ${RELEASE_CODENAME} == 'forky' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'plucky' ] ||
-   [ ${RELEASE_CODENAME} == 'questing' ] ||
    [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # on Ubuntu 23.04 Lunar (and presumably later releases), we install in venv, below
@@ -232,11 +242,11 @@ fi
 
 # add some packages required for commonly-used MAVProxy modules:
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-    if [ ${RELEASE_CODENAME} == 'trixie' ] ||
+    if false ||
+       [ ${RELEASE_CODENAME} == 'trixie' ] ||
        [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+       [ ${RELEASE_CODENAME} == 'forky' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'plucky' ] ||
-       [ ${RELEASE_CODENAME} == 'questing' ] ||
        [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
@@ -255,47 +265,50 @@ function install_arm_none_eabi_toolchain() {
     # GNU Tools for ARM Embedded Processors
     # (see https://launchpad.net/gcc-arm-embedded/)
     ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
-    case $(uname -m) in
+    ARM_ARCH=$(uname -m)
+    case $ARM_ARCH in
         x86_64)
-            if [ ! -d $OPT/$ARM_ROOT ]; then
-                (
-                    cd $OPT
-                    heading "Installing toolchain for STM32 Boards"
-                    echo "Installing toolchain for STM32 Boards"
-                    echo "Downloading from ArduPilot server"
-                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    echo "Installing..."
-                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    echo "... Cleaning"
-                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                )
-            fi
-            echo "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-            echo "Done!";;
-
+            ARM_SHA256="21134caa478bbf5352e239fbc6e2da3038f8d2207e089efc96c3b55f1edcd618"
+            ;;
         aarch64)
-            if [ ! -d $OPT/$ARM_ROOT ]; then
-                (
-                    cd $OPT
-                    heading "Installing toolchain for STM32 Boards"
-                    echo "Installing toolchain for STM32 Boards"
-                    echo "Downloading from ArduPilot server"
-                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    echo "Installing..."
-                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    echo "... Cleaning"
-                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                )
-            fi
-            echo "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-            echo "Done!";;
+            ARM_SHA256="343d8c812934fe5a904c73583a91edd812b1ac20636eb52de04135bb0f5cf36a"
+            ;;
+        *)
+            echo "No STM32 toolchain available for $ARM_ARCH, skipping"
+            DO_AP_STM_ENV=0
+            return
+            ;;
     esac
+    if [ ! -x "$OPT/$ARM_ROOT/bin/arm-none-eabi-gcc" ]; then
+        heading "Installing toolchain for STM32 Boards"
+        # extract into a staging dir so an interrupted install is retried on the next run
+        ARM_STAGING="$OPT/$ARM_ROOT.partial"
+        ARM_TARBALL="$ARM_ROOT-$ARM_ARCH-linux.tar.bz2"
+        sudo rm -rf "$ARM_STAGING"
+        sudo mkdir "$ARM_STAGING"
+        echo "Downloading from ArduPilot server"
+        # wget retries network errors itself, retry here on checksum mismatch
+        for ARM_ATTEMPT in 1 2 3; do
+            sudo wget --progress=dot:giga -O "$ARM_STAGING/$ARM_TARBALL" "https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL" &&
+                echo "$ARM_SHA256  $ARM_STAGING/$ARM_TARBALL" | sudo sha256sum -c - &&
+                break
+            if [ $ARM_ATTEMPT -eq 3 ]; then
+                sudo rm -rf "$ARM_STAGING"
+                heading "STM32 toolchain download failed or is corrupted (checksum mismatch). Please rerun this script."
+                exit 1
+            fi
+            echo "STM32 toolchain download failed, retrying ($ARM_ATTEMPT/3)"
+        done
+        echo "Installing..."
+        sudo tar xjf "$ARM_STAGING/$ARM_TARBALL" -C "$ARM_STAGING"
+        sudo rm -rf "$OPT/$ARM_ROOT"
+        sudo mv "$ARM_STAGING/$ARM_ROOT" "$OPT/$ARM_ROOT"
+        sudo rm -rf "$ARM_STAGING"
+    fi
+    echo "Registering STM32 Toolchain for ccache"
+    sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+    sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+    echo "Done!"
 }
 
 function maybe_prompt_user() {
@@ -316,17 +329,18 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ]; then
+if false; then :
+elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} != 'noble' ] &&
-     [ ${RELEASE_CODENAME} != 'plucky' ] &&
-     [ ${RELEASE_CODENAME} != 'questing' ] &&
+elif [ ${RELEASE_CODENAME} == 'forky' ]; then
+    SITL_PKGS+=" libpython3-stdlib" # for argparse
+elif true &&
+     [ ${RELEASE_CODENAME} != 'noble' ] &&
      [ ${RELEASE_CODENAME} != 'resolute' ] &&
      true; then
     if apt-cache search python-argparse | grep argp; then
@@ -338,20 +352,16 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
-    SITL_PKGS+=" libjpeg62-turbo-dev"
+  if false; then :
   elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
+  elif [ ${RELEASE_CODENAME} == 'forky' ]; then
+    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
+    # see below
   elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'questing' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
@@ -368,7 +378,11 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng12-0 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
 
-  if [ ${RELEASE_CODENAME} == 'trixie' ]; then
+  if false; then :
+  elif false ||
+       [ ${RELEASE_CODENAME} == 'trixie' ] ||
+       [ ${RELEASE_CODENAME} == 'forky' ] ||
+       false; then
       PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
@@ -376,16 +390,14 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'plucky' ] ||
-       [ ${RELEASE_CODENAME} == 'questing' ] ||
+  elif false ||
+       [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
       PYTHON_PKGS+=" wxpython opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ]; then
+  elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
@@ -434,11 +446,11 @@ ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
-if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+if false ||
+     [ ${RELEASE_CODENAME} == 'bookworm' ] ||
      [ ${RELEASE_CODENAME} == 'trixie' ] ||
+     [ ${RELEASE_CODENAME} == 'forky' ] ||
      [ ${RELEASE_CODENAME} == 'noble' ] ||
-     [ ${RELEASE_CODENAME} == 'plucky' ] ||
-     [ ${RELEASE_CODENAME} == 'questing' ] ||
      [ ${RELEASE_CODENAME} == 'resolute' ] ||
      false; then
     $APT_GET install python3-venv
@@ -485,11 +497,11 @@ if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
 fi
 
-if [ ${RELEASE_CODENAME} == 'trixie' ] ||
+if false ||
+   [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+   [ ${RELEASE_CODENAME} == 'forky' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'plucky' ] ||
-   [ ${RELEASE_CODENAME} == 'questing' ] ||
    [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # must do this ahead of wxPython pip3 run :-/
@@ -522,15 +534,6 @@ for PACKAGE in $PYTHON_PKGS; do
         time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
     fi
 done
-
-# somehow Plucky really wants Pillow reinstalled or MAVProxy's map
-# won't load (version mismatch between "Core" and "Pillow")
-if false || \
-        [ ${RELEASE_CODENAME} == 'plucky' ] || \
-        [ ${RELEASE_CODENAME} == 'questing' ] || \
-        false; then
-    $PIP install --force-reinstall pillow
-fi
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1

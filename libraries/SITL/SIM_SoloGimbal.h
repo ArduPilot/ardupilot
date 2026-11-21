@@ -38,15 +38,15 @@ namespace SITL {
 class SoloGimbal {
 public:
 
-    // target_port is the vehicle's MAVLink port the gimbal connects back
-    // to (SERIAL2).  It is offset by the SITL instance number, so it must
-    // be supplied rather than hard-coded.
-    SoloGimbal(uint16_t _target_port = 5762) : target_port(_target_port) {}
+    // endpoint for the vehicle's SERIAL1 MAVLink connection
+    explicit SoloGimbal(uint16_t _target_port) : target_path(nullptr), target_port(_target_port) {}
+    explicit SoloGimbal(const char *_target_path) : target_path(_target_path), target_port(0) {}
     void update(const Aircraft &aicraft);
 
 private:
 
     const char *target_address = "127.0.0.1";
+    const char *const target_path;
     const uint16_t target_port;
 
     // physic simulation of gimbal:
@@ -62,7 +62,7 @@ private:
     uint32_t last_heartbeat_ms;
     bool seen_heartbeat;
     bool seen_gimbal_control;
-    uint8_t vehicle_system_id;
+    uint32_t vehicle_system_id;
     uint8_t vehicle_component_id;
 
     SocketAPM_native mav_socket{false};
@@ -88,4 +88,3 @@ private:
 }  // namespace SITL
 
 #endif  // AP_SIM_SOLOGIMBAL_ENABLED
-

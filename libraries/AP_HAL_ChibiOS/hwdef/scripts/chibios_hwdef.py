@@ -686,6 +686,25 @@ class ChibiOSHWDef(hwdef.HWDef):
                     self.error("Badly formed config value %s (got %s)" % (name, ret))
         return ret
 
+    def get_boolean_define(self, name):
+        '''return an explicit boolean hwdef define, or None if absent'''
+        if name in self.build_option_defines:
+            value = str(self.build_option_defines[name])
+        else:
+            value = None
+            for line in reversed(self.alllines):
+                fields = self.split_line(line, posix=False)
+                if len(fields) >= 3 and fields[0] == 'define' and fields[1] == name:
+                    value = fields[2]
+                    break
+        if value is None:
+            return None
+        if value in ('1', 'TRUE'):
+            return True
+        if value in ('0', 'FALSE'):
+            return False
+        self.error("define %s must be a boolean value" % name)
+
     def get_mcu_config(self, name, required=False):
         '''get a value from the mcu dictionary'''
         lib = self.get_mcu_lib(self.mcu_type)
@@ -986,7 +1005,6 @@ class ChibiOSHWDef(hwdef.HWDef):
 
     def write_mcu_config(self, f):
         '''write MCU config defines'''
-        f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % os.path.basename(os.path.dirname(self.hwdef[0])))
         f.write('// MCU type (ChibiOS define)\n')
         f.write('#define %s_MCUCONF\n' % self.get_config('MCU'))
         mcu_subtype = self.get_config('MCU', 1)
@@ -1132,7 +1150,7 @@ class ChibiOSHWDef(hwdef.HWDef):
                     using_chibios_can = True
                 if d.split()[1] == 'AP_REBOOT_MASS_STORAGE_ENABLED':
                     continue
-                f.write('#define %s\n' % d[7:])
+                f.write(self.define_line(d))
 
         if self.intdefines.get('AP_NETWORKING_ENABLED', 0) == 1:
             self.enable_networking(f)
@@ -1305,6 +1323,8 @@ class ChibiOSHWDef(hwdef.HWDef):
         for v in build_info.keys():
             self.build_flags.append('%s=%s' % (v, build_info[v]))
 
+        heap_enabled = self.get_boolean_define('CH_CFG_USE_HEAP')
+
         # setup for bootloader build
         if self.is_bootloader_fw():
             f.write('''
@@ -1373,6 +1393,14 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define CH_CFG_USE_HEAP FALSE
 #endif
 ''')
+                if heap_enabled is None:
+                    heap_enabled = False
+        if heap_enabled is None:
+            # Match chconf.h when neither hwdef nor the bootloader defaults set CH_CFG_USE_HEAP.
+            heap_enabled = True
+        self.env_vars['CH_CFG_USE_HEAP'] = int(heap_enabled)
+        f.write('#define HAL_HEAP_ENABLED %u\n' % heap_enabled)
+
         if self.env_vars.get('ROMFS_UNCOMPRESSED', False):
             f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
 
@@ -2303,7 +2331,24 @@ INCLUDE common.ld
         '''write ADC config defines'''
         f.write('// ADC config\n')
         adc_chans = [[], [], []]
-        analogset = {252, 253, 254} # reserved values for VSENSE, VREF and VBAT in H7
+        analogset = set()
+
+        # If MCU monitoring is enabled add pins (from H7 reference manual)
+        defines = self.get_mcu_config('DEFINES', False)
+        mcu_monitoring = defines and defines.get('HAL_WITH_MCU_MONITORING') == '1'
+        if mcu_monitoring:
+            # VBAT4
+            adc_chans[2].append((17, 252, "1", "H7 Internal VBAT4", ""))
+            analogset.add(252)
+
+            # VSENSE
+            adc_chans[2].append((18, 253, "1", "H7 Internal VSENSE", ""))
+            analogset.add(253)
+
+            # VREFINT
+            adc_chans[2].append((19, 254, "1", "H7 Internal VREFINT", ""))
+            analogset.add(254)
+
         for label in self.bylabel:
             p = self.bylabel[label]
             if not p.type.startswith('ADC'):
@@ -2361,13 +2406,17 @@ INCLUDE common.ld
         if vdd[-1] == 'U':
             vdd = vdd[:-1]
         vdd = float(vdd) * 0.01
-        f.write('#define HAL_ANALOG_PINS \\\n')
-        for (chan, analog, scale, label, portpin) in adc_chans[0]:
-            scale_str = '%.2f/4096' % vdd
-            if scale is not None and scale != '1':
-                scale_str = scale + '*' + scale_str
-            f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' %
-                    (chan, analog, scale_str,  portpin, label))
+        if len(adc_chans[0]) > 0:
+            f.write('#define HAL_ANALOG_PINS \\\n')
+            for (chan, analog, scale, label, portpin) in adc_chans[0]:
+                scale_str = '%.2f/4096' % vdd
+                if scale is not None and scale != '1':
+                    scale_str = scale + '*' + scale_str
+                f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' %
+                        (chan, analog, scale_str,  portpin, label))
+        else:
+            f.write('#define STM32_ADC_USE_ADC12 FALSE\n')
+
         f.write('\n\n')
         if len(adc_chans[1]) > 0:
             f.write('#define STM32_ADC_SAMPLES_SIZE 32\n')
@@ -3201,6 +3250,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.process_hwdefs()
 
         self.validate_periph_defines()
+        # after validate_periph_defines(), which checks the board's own
+        # defines only, as it did before build options were applied
+        self.apply_build_option_defines()
 
         if "MCU" not in self.config:
             self.error("Missing MCU type in config")

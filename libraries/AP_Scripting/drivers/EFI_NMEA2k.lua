@@ -51,24 +51,6 @@ end
 --]]
 local EFI_2K_CANDRV = bind_add_param('CANDRV',  2, 0)   -- CAN driver number
 
---[[
-  // @Param: EFI_2K_OPTIONS
-  // @DisplayName: NMEA 2000 options
-  // @Description: NMEA 2000 driver options
-  // @Bitmask: 0:EnableLogging
-  // @User: Standard
---]]
-EFI_2K_OPTIONS = bind_add_param("OPTIONS", 3, 0)
-
-local OPTION_LOGGING = (1<<0)
-
---[[
-   return true if an option is enabled
---]]
-local function option_enabled(option)
-   return (EFI_2K_OPTIONS:get() & option) ~= 0
-end
-
 -- Register for the CAN drivers
 local CAN_BUF_LEN = 25
 local can_driver = nil
@@ -106,19 +88,7 @@ local PGN_TABLE = {
 
 NMEA_2000.set_PGN_table(PGN_TABLE)
 
-local frame_count = 0
 local state = {}
-
-local function log_frame(frame)
-   local id = frame:id()
-   logger:write("CANF",'Id,DLC,FC,B0,B1,B2,B3,B4,B5,B6,B7','IBIBBBBBBBB',
-                id,
-                frame:dlc(),
-                frame_count,
-                frame:data(0), frame:data(1), frame:data(2), frame:data(3),
-                frame:data(4), frame:data(5), frame:data(6), frame:data(7))
-   frame_count = frame_count + 1
-end
 
 --[[
    parse the higher rate engine data, giving RPM and pressure
@@ -176,9 +146,6 @@ function update()
       local frame = can_driver:read_frame()
       if not frame then
          break
-      end
-      if option_enabled(OPTION_LOGGING) then
-         log_frame(frame)
       end
       pgn, data = NMEA_2000.parse(frame)
       if pgn then

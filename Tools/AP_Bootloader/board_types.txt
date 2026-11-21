@@ -360,13 +360,24 @@ AP_HW_CORVON_V6                      1230
 
 
 # IDs 1231-1240 reserved for YARI Robotics
+AP_HW_YARIV6S                        1233
 AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
 AP_HW_YARI_RTK_GNSS                  1236
+AP_HW_DAKEFPVF405WING                1237
+
+# FlyingRC
+AP_HW_FLYINGRCH7DPRO                 1242
 
 AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
+
+# IDs 1251-1260 reserved for Simplifly
+AP_HW_SIMPLIFLY_NEO                  1251
+
+AP_HW_LEVIA_H7                       1268
+
 
 AP_HW_GPILOT_P1						 1275
 
@@ -389,7 +400,13 @@ AP_HW_FlysparkF4                     1361
 
 # IDs 1362-1369 reserved for SparkNavi
 AP_HW_SPARKNAVI_BLUE                 1362
-AP_HW_SPARKNAVI_BLUE2                1363
+AP_HW_SPARKNAVI_BLUEv2               1363
+AP_HW_SPARKNAVI_F405                 1364
+AP_HW_SPARKNAVI_H743_R45             1365
+AP_HW_SPARKNAVI_ETH                  1366
+
+# IDs 1380-1389 reserved for Skandavel Dynamics
+AP_HW_Kao1                           1380
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
@@ -407,6 +424,7 @@ AP_HW_RadiolinkPIX6                  1410
 
 AP_HW_JHEMCU-H743HD                  1411
 AP_HW_JHEMCUF405PRO                  1412
+AP_HW_DCD_FC                       1413
 
 AP_HW_TRITIUM_EAH743                 1415
 
@@ -426,6 +444,7 @@ AP_HW_BCUBEF745V2                    1511
 
 AP_HW_HGLRCF405V4                    1524
 AP_HW_HGLRC_H743_EVO                 1525
+AP_HW_HGLRC_H743_PRO                 1526
 
 AP_HW_F4BY_F427                      1530
 AP_HW_F4BY_H743                      1531
@@ -474,14 +493,23 @@ AP_HW_AET-H743-Basic                 2024
 
 AP_HW_BOTWINGF405                    2501
 
+AP_HW_AET-H743-AIR-Por               2508
 AP_HW_AET-H743-AIR                   2509
 AP_HW_AET-U7                         2510
 AP_HW_AET-AT405A                     2511
 AP_HW_AET-405-Mini                   2512
 
+AP_HW_INDIH743                       2513
+
 AP_HW_SakuraRC-H743                  2714
 
 AP_HW_SkyRukh_Surge_H7               2815
+
+# IDs 2850-2859 reserved for BlueBerry
+AP_HW_BlueBerryH743                  2850
+
+# IDs 3136-3145 reserved for MADpilot
+AP_HW_MADPILOT_H7                    3141
 
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
@@ -602,6 +630,7 @@ AP_HW_ZenFC_H743                     5740
 
 #IDs 5800-5809 reserved for Droneer
 AP_HW_DroneerF405                    5800
+AP_HW_DroneerX6                      5801
 
 #IDs 5810-5819 reserved for Brother Hobby
 AP_HW_BrotherHobbyH743               5810
@@ -612,6 +641,7 @@ AP_HW_VIMDRONES_BMS                  5820
 
 #IDs 5830 ~ 5839 reserved for CyberX
 AP_HW_CyberX-v10                     5830
+AP_HW_CyberX-Cube                    5831
 
 # IDs 5900-5904 reserved for NewBeeDrone PixNova
 AP_HW_NewBeeDrone_PixNova            5900
@@ -633,11 +663,18 @@ AP_HW_PixSurveyA2-IND                6104
 
 # IDs 6110 - 6119 for S-vehicle
 AP_HW_SVehicle-E2                    6110
+AP_HW_SVehicle-E2-mini               6111
 
 # IDs 6120-6129 reserved for Partizan Security s.r.o
 AP_HW_PILOTIX                          6120
 
+# IDs 6130-6139 reserved for Saolah
+AP_HW_Saolah743                      6130
+
 # IDs 6600-6699 reserved for Eagle Eye Drones
+
+# IDs 6700-6709 reserved for Avian Automata
+AP_HW_AVIANAUTOMATA_305AP            6700
 
 # IDs 6900-6909 reserved for Easy Aerial
 
@@ -674,9 +711,21 @@ AP_HW_SED_GPS                        7151
 AP_HW_SED_AirSpeed                   7152
 AP_HW_SED_UGNSS                      7153
 
+# IDs 7160-7169 reserved for Viima Aerospace
+AP_HW_Viima-WH7-v2                   7162
+AP_HW_Viima-WH7-v3                   7163
+
 # IDs 7170-7179 reserved for Tykho Electronics
 AP_HW_TYKHO_TLS7V2                   7170
 AP_HW_TYKHO_TLS7-Wing                7171
+
+# IDs 7180-7189 reserved for Raspberry Pi
+AP_HW_RPI_UAVFC                      7180
+AP_HW_RASPBERRYPI_PICO2              7181
+AP_HW_RASPBERRYPI_LAUREL             7182
+
+# IDs 7190-7199 reserved for AeroStem Technology
+AP_HW_AeroStemH743V1                 7190
 
 # please fill gaps in the above ranges rather than adding past ID #7199
 

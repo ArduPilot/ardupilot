@@ -22,6 +22,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_FixedWing.h>
 #include <Filter/AverageFilter.h>
+#include <Filter/LowPassFilter.h>
 
 class AP_Landing;
 class AP_TECS {
@@ -49,7 +50,6 @@ public:
                                int32_t EAS_dem_cm,
                                enum AP_FixedWing::FlightStage flight_stage,
                                float distance_beyond_land_wp,
-                               int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
                                float load_factor,
@@ -141,6 +141,9 @@ public:
     // it is applicable for one control cycle only
     void set_pitch_min(const float pitch_min);
 
+    // true if set_pitch_min() was called for the next control cycle
+    bool pitch_min_is_set() const { return _PITCHminf_ext_set; }
+
     // set maximum pitch override, in degrees.
     // it is applicable for one control cycle only
     void set_pitch_max(const float pitch_max);
@@ -210,7 +213,7 @@ private:
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
     AP_Float _maxSinkRate_approach;
-    AP_Int32 _options;
+    AP_UInt32 _options;
     AP_Float _flare_holdoff_hgt;
     AP_Float _hgt_dem_tconst;
 
@@ -379,6 +382,8 @@ private:
     // Maximum and minimum pitch limits, set externally, typically by the takeoff logic.
     float _PITCHmaxf_ext = 90.0f;
     float _PITCHminf_ext = -90.0f;
+    // True when set_pitch_min() was called since the last update of the pitch limits.
+    bool _PITCHminf_ext_set;
 
     // Maximum and minimum floating point pitch limits
     float _PITCHmaxf;
@@ -510,5 +515,5 @@ private:
     void _update_throttle_limits();
 
     // Update the allowable pitch range.
-    void _update_pitch_limits(const int32_t ptchMinCO_cd);
+    void _update_pitch_limits();
 };

@@ -40,6 +40,21 @@ using namespace ChibiOS;
 #define HAVE_USB_SERIAL
 #endif
 
+#ifdef HAVE_USB_SERIAL
+static bool usb_driver_active(SerialUSBDriver *driver)
+{
+#if AP_USB_DEBUG_ENABLED
+    if (driver == &SDU1 && usb_debug_active()) {
+        return usb_debug_configured();
+    }
+    if (driver->config == nullptr) {
+        return false;
+    }
+#endif
+    return driver->config->usbp->state == USB_ACTIVE;
+}
+#endif
+
 #if defined (STM32L4PLUS)
 #ifndef USART_CR1_RXNEIE
 #define USART_CR1_RXNEIE USART_CR1_RXNEIE_RXFNEIE
@@ -232,6 +247,11 @@ static int hal_console_vprintf(const char *fmt, va_list arg)
 
 void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
+#if AP_USB_DEBUG_ENABLED
+    if (sdef.is_usb && sdef.serial == (BaseSequentialStream *)&SDU2) {
+        return; // The debugger owns the second CDC interface.
+    }
+#endif
     if (b == 0 && txS == 0 && rxS == 0 && _tx_initialised && _rx_initialised) {
         // just changing port owner
         _uart_owner_thd = chThdGetSelfX();
@@ -500,7 +520,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     thread_init();
 
     // setup flow control
-    set_flow_control(_flow_control);
+    _set_flow_control(_flow_control);
 
     if (serial_num == 0 && _tx_initialised) {
 #ifndef HAL_STDOUT_SERIAL
@@ -651,8 +671,12 @@ void UARTDriver::_end()
 
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-
-        sduStop((SerialUSBDriver*)sdef.serial);
+#if AP_USB_DEBUG_ENABLED
+        if (!usb_debug_active())
+#endif
+        {
+            sduStop((SerialUSBDriver*)sdef.serial);
+        }
 #endif
     } else {
 #if HAL_USE_SERIAL == TRUE
@@ -668,8 +692,12 @@ void UARTDriver::_flush()
 {
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-
-        sduSOFHookI((SerialUSBDriver*)sdef.serial);
+#if AP_USB_DEBUG_ENABLED
+        if (!usb_debug_active())
+#endif
+        {
+            sduSOFHookI((SerialUSBDriver*)sdef.serial);
+        }
 #endif
     } else {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
@@ -718,7 +746,7 @@ uint32_t UARTDriver::_available()
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
 
-        if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
+        if (!usb_driver_active((SerialUSBDriver*)sdef.serial)) {
             return 0;
         }
 #endif
@@ -990,7 +1018,14 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
         if (sdef.is_usb) {
             ret = 0;
 #ifdef HAVE_USB_SERIAL
-            ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#if AP_USB_DEBUG_ENABLED
+            if (sdef.serial == (BaseSequentialStream *)&SDU1 && usb_debug_active()) {
+                ret = usb_debug_gcs_write(vec[i].data, vec[i].len);
+            } else
+#endif
+            {
+                ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+            }
 #endif
         } else {
 #if HAL_USE_SERIAL == TRUE
@@ -1079,7 +1114,7 @@ void UARTDriver::write_pending_bytes(void)
         if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
             // it doesn't look like hw flow control is working
             DEV_PRINTF("disabling flow control on serial %u\n", sdef.get_index());
-            set_flow_control(FLOW_CONTROL_DISABLE);
+            _set_flow_control(FLOW_CONTROL_DISABLE);
         }
     }
 }
@@ -1170,7 +1205,7 @@ void UARTDriver::_rx_timer_tick(void)
     // don't try IO on a disconnected USB port
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-        if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
+        if (!usb_driver_active((SerialUSBDriver*)sdef.serial)) {
             return;
         }
 #endif
@@ -1203,7 +1238,14 @@ void UARTDriver::read_bytes_NODMA()
         //Do a non-blocking read
         if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-            ret = chnReadTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#if AP_USB_DEBUG_ENABLED
+            if (sdef.serial == (BaseSequentialStream *)&SDU1 && usb_debug_active()) {
+                ret = usb_debug_gcs_read(vec[i].data, vec[i].len);
+            } else
+#endif
+            {
+                ret = chnReadTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+            }
 #endif
         } else {
 #if HAL_USE_SERIAL == TRUE
@@ -1261,7 +1303,7 @@ void UARTDriver::_tx_timer_tick(void)
     // don't try IO on a disconnected USB port
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-        if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
+        if (!usb_driver_active((SerialUSBDriver*)sdef.serial)) {
             return;
         }
 #endif
@@ -1289,7 +1331,7 @@ void UARTDriver::_tx_timer_tick(void)
 /*
   change flow control mode for port
  */
-void UARTDriver::set_flow_control(enum flow_control flowcontrol)
+void UARTDriver::_set_flow_control(enum flow_control flowcontrol)
 {
     if (sdef.is_usb) {
         // no hw flow control available
@@ -1307,7 +1349,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
     case FLOW_CONTROL_DISABLE:
         // force RTS active when flow disabled
         if (arts_line != 0) {
-            palSetLineMode(arts_line, 1);
+            stm32_set_line_mode(arts_line, 1);
             palClearLine(arts_line);
         }
         _rts_is_active = true;
@@ -1330,7 +1372,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
     case FLOW_CONTROL_ENABLE:
         // we do RTS in software as STM32 hardware RTS support toggles
         // the pin for every byte which loses a lot of bandwidth
-        palSetLineMode(arts_line, 1);
+        stm32_set_line_mode(arts_line, 1);
         palClearLine(arts_line);
         _rts_is_active = true;
         // enable hardware CTS support, disable RTS support as we do that in software
@@ -1351,7 +1393,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
 #if defined(USART_CR3_DEM)
         if (sdef.rts_alternative_function != UINT8_MAX) {
             // Hand over control of RTS pin to the UART driver
-            palSetLineMode(arts_line, PAL_MODE_ALTERNATE(sdef.rts_alternative_function));
+            stm32_set_line_mode(arts_line, PAL_MODE_ALTERNATE(sdef.rts_alternative_function));
 
             // Enable in driver, if not already set
             chSysLock();
@@ -1368,7 +1410,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
             // No hardware support for DEM mode or
             // No alternative function, RTS GPIO pin is not a conected to the UART peripheral
             // This is typicaly fine becaues we do software flow control.
-            set_flow_control(FLOW_CONTROL_DISABLE);
+            _set_flow_control(FLOW_CONTROL_DISABLE);
         }
         break;
     }
@@ -1400,6 +1442,12 @@ __RAMFUNC__ void UARTDriver::update_rts_line(void)
 bool UARTDriver::set_unbuffered_writes(bool on)
 {
     unbuffered_writes = on;
+#if AP_USB_DEBUG_ENABLED
+    // The CDC port reserved for the debugger never starts a UART worker.
+    if (uart_thread_ctx == nullptr) {
+        return true;
+    }
+#endif
     chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_UNBUFFERED);
     return true;
 }
@@ -1407,14 +1455,15 @@ bool UARTDriver::set_unbuffered_writes(bool on)
 /*
   setup parity
  */
-void UARTDriver::configure_parity(uint8_t v)
+void UARTDriver::_configure_parity(uint8_t v)
 {
     if (sdef.is_usb) {
         // not possible
         return;
     }
-    UARTDriver::parity = v;
 #if HAL_USE_SERIAL == TRUE
+    WITH_SEMAPHORE(_line_config_sem);
+
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
@@ -1467,18 +1516,25 @@ void UARTDriver::configure_parity(uint8_t v)
     }
 #endif
 #endif // HAL_USE_SERIAL
+
+    // record the parity once the port has it, under the lock, so that a
+    // change that was waiting for the lock and is applied last is also the
+    // one get_parity() reports
+    UARTDriver::parity = v;
 }
 
 /*
   set stop bits
  */
-void UARTDriver::set_stop_bits(int n)
+void UARTDriver::_set_stop_bits(int n)
 {
     if (sdef.is_usb) {
         // not possible
         return;
     }
 #if HAL_USE_SERIAL
+    WITH_SEMAPHORE(_line_config_sem);
+
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
@@ -1493,6 +1549,9 @@ void UARTDriver::set_stop_bits(int n)
         break;
     }
     sercfg.cr2 = _cr2_options;
+    // recorded under the lock, as parity is, so get_stop_bits() matches
+    // the line if another thread changes it at the same time
+    _stop_bits = n;
 
     sdStart((SerialDriver*)sdef.serial, &sercfg);
 #ifndef HAL_UART_NODMA
@@ -1559,13 +1618,18 @@ void UARTDriver::set_pushpull(uint16_t options)
 }
 
 // set optional features, return true on success
-bool UARTDriver::set_options(uint16_t options)
+bool UARTDriver::_set_options(uint16_t options)
 {
     if (sdef.is_usb) {
         // no options allowed on USB
         return (options == 0);
     }
     bool ret = true;
+
+#if HAL_USE_SERIAL == TRUE
+    // held from here so get_options() matches what the port is set to
+    WITH_SEMAPHORE(_line_config_sem);
+#endif
 
     _last_options = options;
 
@@ -1584,7 +1648,7 @@ bool UARTDriver::set_options(uint16_t options)
     acts_line = GPIO::resolve_alt_config(sdef.cts_line, PERIPH_TYPE::OTHER, sdef.instance);
 
     // Check flow control, might have to disable if RTS line is gone
-    set_flow_control(_flow_control);
+    _set_flow_control(_flow_control);
 
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     // F7 has built-in support for inversion in all uarts
@@ -1669,6 +1733,10 @@ bool UARTDriver::set_options(uint16_t options)
         ret = false;
     }
 #endif // STM32xx
+
+    // keep the config used when the port is restarted in step, so a later
+    // parity or stop bit change doesn't bring back the old inversion
+    sercfg.cr2 = _cr2_options;
 
     // both F4 and F7 can do half-duplex
     if (options & OPTION_HDPLEX) {
@@ -1770,7 +1838,7 @@ bool UARTDriver::set_CTS_pin(bool high)
         // we don't have a CTS pin on this UART
         return false;
     }
-    palSetLineMode(acts_line, 1);
+    stm32_set_line_mode(acts_line, 1);
     palWriteLine(acts_line, high?1:0);
     return true;
 }
@@ -1789,7 +1857,7 @@ bool UARTDriver::set_RTS_pin(bool high)
         // we don't have a RTS pin on this UART
         return false;
     }
-    palSetLineMode(arts_line, 1);
+    stm32_set_line_mode(arts_line, 1);
     palWriteLine(arts_line, high?1:0);
     return true;
 }
@@ -1828,11 +1896,31 @@ void usb_initialise(void)
 void UARTDriver::disable_rxtx(void) const
 {
     if (arx_line) {
-        palSetLineMode(arx_line, PAL_MODE_INPUT);
+        stm32_set_line_mode(arx_line, PAL_MODE_INPUT);
     }
     if (atx_line) {
-        palSetLineMode(atx_line, PAL_MODE_INPUT);
+        stm32_set_line_mode(atx_line, PAL_MODE_INPUT);
     }
 }
 
-#endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_USB_DEBUG_ENABLED
+void UARTDriver::usb_debug_lock(bool lock)
+{
+    // ChibiOS mutexes form one LIFO list per thread, across both USB ports.
+    for (uint8_t i = 0; i < ARRAY_SIZE(serial_drivers); i++) {
+        auto *driver = serial_drivers[lock ? i : ARRAY_SIZE(serial_drivers)-1-i];
+        if (driver == nullptr || !driver->sdef.is_usb) {
+            continue;
+        }
+        if (lock) {
+            driver->rx_sem.take_blocking();
+            driver->_write_mutex.take_blocking();
+        } else {
+            driver->_write_mutex.give();
+            driver->rx_sem.give();
+        }
+    }
+}
+#endif // AP_USB_DEBUG_ENABLED
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_HAL_UARTDRIVER_ENABLED

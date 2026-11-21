@@ -145,10 +145,8 @@ SUPPRESSIONS = [
     # DefaultIntervalsFromFiles::_num_intervals is not set by the constructor
     # but is reliably 0 because every instance is heap-allocated via
     # NEW_NOTHROW (calloc-zeroed).  We don't add a redundant initialiser just
-    # to satisfy the analyser.  The finding appears at both the read inside
-    # set() and the return inside num_intervals().
+    # to satisfy the analyser.  The finding appears at the read inside set().
     ('libraries/GCS_MAVLink/GCS_Common.cpp', {16: '5ae47b78289abe850dd5ac59ab903eb7', 17: '5ae47b78289abe850dd5ac59ab903eb7', 18: '5ae47b78289abe850dd5ac59ab903eb7', 19: '5ae47b78289abe850dd5ac59ab903eb7', 20: '5ae47b78289abe850dd5ac59ab903eb7'}, 'calloc-zeroed _num_intervals'),  # noqa:E501
-    ('libraries/GCS_MAVLink/GCS.h', {16: '5e3cf745a4560062f85f12a6699d4031', 17: '5e3cf745a4560062f85f12a6699d4031', 18: '5e3cf745a4560062f85f12a6699d4031', 19: '5e3cf745a4560062f85f12a6699d4031', 20: '5e3cf745a4560062f85f12a6699d4031'}, 'calloc-zeroed _num_intervals'),  # noqa:E501
 
     # update_node_status() reads node->last_log_ms; the node_status_log_data
     # constructor only initialises id, but nodes are heap-allocated via
@@ -212,13 +210,6 @@ SUPPRESSIONS = [
     # False positive (same sizeof-VLA imprecision as SPL06).
     ('libraries/SITL/SIM_PS_LightWare_SF45B.h', {14: '727a3c693086fc17de2df6605049bae9', 15: '727a3c693086fc17de2df6605049bae9', 16: '727a3c693086fc17de2df6605049bae9', 17: '727a3c693086fc17de2df6605049bae9', 18: '727a3c693086fc17de2df6605049bae9', 19: '727a3c693086fc17de2df6605049bae9', 20: '727a3c693086fc17de2df6605049bae9'}, 'sizeof(T) treated as symbolic zero'),  # noqa:E501
 
-    # GPS_UBlox::send_ubx() accumulates a checksum by iterating over buf for
-    # i < size.  The analyser models the uint16_t size parameter as possibly
-    # zero, concludes the loop may not run, and reports chk[0] as garbage on
-    # the next use.  Every caller passes sizeof(msg), a positive compile-time
-    # constant.  False positive (same sizeof symbolic-zero pattern as SPL06).
-    ('libraries/SITL/SIM_GPS_UBLOX.cpp', {14: '17e039c0f2fd5426d06d77711fcb8b1a', 15: '17e039c0f2fd5426d06d77711fcb8b1a', 16: '17e039c0f2fd5426d06d77711fcb8b1a', 17: '17e039c0f2fd5426d06d77711fcb8b1a', 18: '17e039c0f2fd5426d06d77711fcb8b1a', 19: '17e039c0f2fd5426d06d77711fcb8b1a', 20: '17e039c0f2fd5426d06d77711fcb8b1a'}, 'size=sizeof(msg) always >0'),  # noqa:E501
-
     # update() fills motor_pwm[] then calls escs_set_values(); pack_fast_throttle_command()
     # reads motor_values[0] unconditionally. The analyser treats _esc_count as
     # possibly 0, so it thinks the fill loop may not run and motor_values[0] is
@@ -256,4 +247,10 @@ SUPPRESSIONS = [
     # REMOVE this entry when that PR merges; until it is removed the
     # stale-suppression check will fail.
     ('libraries/AR_WPNav/AR_WPNav_OA.cpp', {14: '1b84540936de8ef0da729d004b6c7e11', 15: '1b84540936de8ef0da729d004b6c7e11', 16: '1b84540936de8ef0da729d004b6c7e11', 17: '1b84540936de8ef0da729d004b6c7e11', 18: '1b84540936de8ef0da729d004b6c7e11', 19: '1b84540936de8ef0da729d004b6c7e11', 20: '1b84540936de8ef0da729d004b6c7e11'}, 'fixed by #33899; remove entry when that merges'),  # noqa:E501
+
+    # find_grid_cache() must return a cache block. It can't be called when the
+    # cache is not allocated, and it never is called in such a case by existing
+    # code. If it is called, it will dereference a null pointer. As the
+    # signature requires a block be returned, this can't be prevented.
+    ('libraries/AP_Terrain/TerrainUtil.cpp', {14: '368c25f915284cfc1c73bf1152a3c8fe', 15: '368c25f915284cfc1c73bf1152a3c8fe', 16: '368c25f915284cfc1c73bf1152a3c8fe', 17: '368c25f915284cfc1c73bf1152a3c8fe', 18: '368c25f915284cfc1c73bf1152a3c8fe', 19: '368c25f915284cfc1c73bf1152a3c8fe', 20: '368c25f915284cfc1c73bf1152a3c8fe'}, "only possible when function misused"),  # noqa:E501
 ]

@@ -61,7 +61,10 @@ public:
     // called by the OSD thread once
     virtual void osd_thread_run_once() { return; }
 
-#if OSD_ENABLED && AP_SCRIPTING_ENABLED
+    // called by the OSD thread on every update, whether or not a script is drawing
+    virtual void osd_thread_update() { return; }
+
+#if OSD_ENABLED && AP_EXTERNAL_BINDING_ENABLED
     // passthrough OSD functions for use by scripting
     bool display_disabled() const { return _osd.display_disabled(); }
     uint8_t get_screen() const { return _osd.get_screen(); }
@@ -82,7 +85,7 @@ protected:
     // get font choice
     uint8_t get_font_num(void) const
     {
-        return (uint8_t)_osd.font_num.get();
+        return _osd.font_num;
     }
 
     //check option

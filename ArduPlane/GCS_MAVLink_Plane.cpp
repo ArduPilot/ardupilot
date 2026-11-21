@@ -49,6 +49,7 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
 #endif
 #endif  // HAL_QUADPLANE_ENABLED
     case Mode::Number::CRUISE:
+    case Mode::Number::GLIDE:
         _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
     case Mode::Number::AUTO:
@@ -80,12 +81,13 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
     }
 
-    if (plane.control_mode != &plane.mode_manual && plane.control_mode != &plane.mode_initializing) {
+    const bool init_mode = plane.control_mode == &plane.mode_initializing;
+    if (plane.control_mode != &plane.mode_manual && !init_mode) {
         // stabiliser of some form is enabled
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
-    if (plane.g.stick_mixing != StickMixing::NONE && plane.control_mode != &plane.mode_initializing) {
+    if (plane.g.stick_mixing != StickMixing::NONE && !init_mode && (plane.control_mode != &plane.mode_glide)) {
         if ((plane.g.stick_mixing != StickMixing::VTOL_YAW) || (plane.control_mode == &plane.mode_auto)) {
             // all modes except INITIALISING have some form of manual
             // override if stick mixing is enabled
@@ -94,7 +96,7 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
     }
 
     // we are armed if we are not initialising
-    if (plane.control_mode != &plane.mode_initializing && plane.arming.is_armed()) {
+    if (!init_mode && plane.arming.is_armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -430,17 +432,14 @@ void GCS_MAVLINK_Plane::send_hygrometer()
         return;
     }
 
-    const auto *airspeed = AP::airspeed();
-    if (airspeed == nullptr) {
-        return;
-    } 
+    const auto &airspeed = AP::airspeed();
     const uint32_t now = AP_HAL::millis();
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         uint8_t idx = (i+last_hygrometer_send_idx+1) % AIRSPEED_MAX_SENSORS;
         float temperature, humidity;
         uint32_t last_sample_ms;
-        if (!airspeed->get_hygrometer(idx, last_sample_ms, temperature, humidity)) {
+        if (!airspeed.get_hygrometer(idx, last_sample_ms, temperature, humidity)) {
             continue;
         }
         if (now - last_sample_ms > 2000) {
@@ -522,11 +521,8 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 
 bool Plane::set_home_to_current_location(bool _lock)
 {
-    if (!set_home_persistently(AP::gps().location())) {
+    if (!set_home_persistently(AP::gps().location(), _lock)) {
         return false;
-    }
-    if (_lock) {
-        AP::ahrs().lock_home();
     }
     if ((control_mode == &mode_rtl)
 #if HAL_QUADPLANE_ENABLED
@@ -540,11 +536,8 @@ bool Plane::set_home_to_current_location(bool _lock)
 }
 bool Plane::set_home(const Location& loc, bool _lock)
 {
-    if (!AP::ahrs().set_home(loc)) {
+    if (!ahrs.set_home(loc, _lock)) {
         return false;
-    }
-    if (_lock) {
-        AP::ahrs().lock_home();
     }
     if ((control_mode == &mode_rtl)
 #if HAL_QUADPLANE_ENABLED
@@ -587,7 +580,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     // location is valid load and set
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
         (plane.control_mode == &plane.mode_guided)) {
-        plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND)) {
+            // e.g. GUIDED blocked by FLTMODE_GCSBLOCK; don't touch the
+            // current mode's navigation target
+            return MAV_RESULT_FAILED;
+        }
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
 #endif
@@ -807,15 +804,21 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
             // first-item/last item not supported
             return MAV_RESULT_DENIED;
         }
-        plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
@@ -1156,7 +1159,10 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const ma
 
 uint64_t GCS_MAVLINK_Plane::capabilities() const
 {
-    return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+    return (
+#if AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
+            MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+#endif  // AP_MAVLINK_MSG_MISSION_ITEM_ENABLED
             MAV_PROTOCOL_CAPABILITY_COMMAND_INT |
             MAV_PROTOCOL_CAPABILITY_MISSION_INT |
             MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
@@ -1302,6 +1308,7 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
 #if MODE_AUTOLAND_ENABLED
         &plane.mode_autoland,
 #endif
+        &plane.mode_glide,
     };
 
     const uint8_t fw_mode_count = ARRAY_SIZE(fw_modes);

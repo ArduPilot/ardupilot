@@ -4,8 +4,6 @@ Base class for ArduPilot build scripts providing common utilities
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import copy
 import fnmatch
 import os

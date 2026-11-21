@@ -1,6 +1,6 @@
 #include "AP_Scripting/AP_Scripting_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 
 #include <limits>
 #include "script_button.h"
@@ -44,4 +44,4 @@ uint8_t ScriptButton::get_and_clear_count()
     return result;
 }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED

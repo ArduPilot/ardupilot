@@ -102,17 +102,6 @@ local EFI_H6K_TELEM_RT = bind_add_param('TELEM_RT', 4, 2)
 --]]
 local EFI_H6K_FUELTOT = bind_add_param('FUELTOT', 5, 20)
 
---[[
-  // @Param: EFI_H6K_OPTIONS
-  // @DisplayName: Halo6000 options
-  // @Description: Halo6000 options
-  // @Bitmask: 0:LogAllCanPackets
-  // @User: Standard
---]]
-local EFI_H6K_OPTIONS = bind_add_param('OPTIONS', 6, 0)
-
-local OPTION_LOGALLFRAMES = 0x01
-
 if EFI_H6K_ENABLE:get() == 0 then
    return
 end
@@ -130,21 +119,6 @@ end
 if not driver1 then
     gcs:send_text(0, string.format("EFI_H6K: Failed to load driver"))
     return
-end
-
-local frame_count = 0
-
---[[
-   frame logging - can be replayed with Tools/scripts/CAN/CAN_playback.py
---]]
-local function log_can_frame(frame)
-   logger.write("CANF",'Id,DLC,FC,B0,B1,B2,B3,B4,B5,B6,B7','IBIBBBBBBBB',
-                frame:id(),
-                frame:dlc(),
-                frame_count,
-                frame:data(0), frame:data(1), frame:data(2), frame:data(3),
-                frame:data(4), frame:data(5), frame:data(6), frame:data(7))
-   frame_count = frame_count + 1
 end
 
 --[[
@@ -181,10 +155,6 @@ local function engine_control()
             count = count + 1
             if not frame then
                 break
-            end
-
-            if EFI_H6K_OPTIONS:get() & OPTION_LOGALLFRAMES ~= 0 then
-               log_can_frame(frame)
             end
 
             -- All Frame IDs for this EFI Engine are in the 11-bit address space

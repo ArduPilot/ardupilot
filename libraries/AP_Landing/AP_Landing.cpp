@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
     // @Units: deg
     // @Range: -20 20
-    // @Increment: 10
+    // @Increment: 0.5
     // @User: Advanced
     AP_GROUPINFO("PITCH_DEG", 3, AP_Landing, pitch_deg, 0),
 
@@ -142,7 +142,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Landing options bitmask
     // @Description: Bitmask of options to use with landing.
-    // @Bitmask: 0: honor min throttle during landing flare,1: Increase Target landing airspeed constraint From Trim Airspeed to AIRSPEED_MAX
+    // @Bitmask: 0: honor min throttle during landing flare,1: Increase Target landing airspeed constraint From AIRSPEED_CRUISE to AIRSPEED_MAX
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
 

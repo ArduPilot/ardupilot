@@ -103,7 +103,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
     FailsafeAction desired_action = (FailsafeAction)action;
 
     // Conditions to deviate from BATT_FS_XXX_ACT parameter setting
-    if (should_disarm_on_failsafe()) {
+    if (should_disarm_on_failsafe() && desired_action != FailsafeAction::NONE) {
         // should immediately disarm when we're on the ground
         arming.disarm(AP_Arming::Method::BATTERYFAILSAFE);
         desired_action = FailsafeAction::NONE;
@@ -309,7 +309,7 @@ void Copter::failsafe_terrain_on_event()
 // check for gps glitch failsafe
 void Copter::gpsglitch_check()
 {
-    const bool gps_glitching = AP::ahrs().has_status(AP_AHRS::Status::GPS_GLITCHING);
+    const bool gps_glitching = AP::ahrs().configured_backend_has_status(AP_AHRS::Status::GPS_GLITCHING);
 
     // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
     if (ap.gps_glitching != gps_glitching) {
@@ -331,7 +331,7 @@ void Copter::failsafe_deadreckon_check()
     const char* dr_prefix_str = "Dead Reckoning";
 
     // get EKF filter status
-    const bool ekf_dead_reckoning = AP::ahrs().has_status(AP_AHRS::Status::DEAD_RECKONING);
+    const bool ekf_dead_reckoning = AP::ahrs().configured_backend_has_status(AP_AHRS::Status::DEAD_RECKONING);
 
     // alert user to start or stop of dead reckoning
     const uint32_t now_ms = AP_HAL::millis();

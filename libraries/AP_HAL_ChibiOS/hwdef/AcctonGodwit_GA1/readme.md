@@ -19,9 +19,11 @@ Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more informati
 ### **Sensors**
 
 - Bosch BMI088 (vibration isolated)
-- TDK InvenSense ICM-42688-P x 2 (one vibration isolated)
+- Two of ICM-42688-P / ICM-45686 / ICM-56686 / LSM6DSK320X (one vibration isolated)
 - TDK Barometric Pressure and Temperature Sensor CP-20100 x 2 (one vibration isolated)
 - PNI RM3100 Geomagnetic Sensor (vibration isolated)
+
+INS_ENABLE_MASK bits follow the IMU probe order, and a bit is only used by a probe that actually runs. The heated SPI2 IMU is probed as an ICM first (bit 0) and as an LSM6DSK320X second; the second probe is skipped if the first one detects a sensor. With an ICM on SPI2 and bit 0 set, bits 0-3 are SPI2, BMI088, SPI1 ICM and SPI1 LSM6DSK320X. If an LSM6DSK320X is fitted on SPI2, or bit 0 is cleared, the SPI2 LSM6DSK320X probe takes bit 1 and BMI088 and SPI1 move up one bit (bits 2-4). To disable the heated SPI2 IMU and keep the others, use a mask such as 0x1C.
 
 ### **Power**
 
@@ -78,7 +80,7 @@ Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more informati
 
 ## PWM Output
 
-PWM M1-M8 (IO Main PWM), A1-A8(FMU PWM). All these 16 support normal PWM output formats. FMU PWM A1-A6 can support DShot and B-Directional DShot. A1-A8(FMU PWM) are grouped as:
+PWM M1-M8 (IO Main PWM), A1-A8(FMU PWM). All these 16 support normal PWM output formats. FMU PWM A1-A6 can support DShot and B-Directional DShot. DShot on M1-M8 (IO Main PWM) requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller. A1-A8(FMU PWM) are grouped as:
 
 - Group 1: A1, A2, A3, A4
 - Group 2: A5, A6

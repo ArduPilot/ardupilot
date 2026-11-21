@@ -8,6 +8,7 @@
 
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
@@ -48,6 +49,9 @@ AP_GPS gps;
 AP_Baro baro;
 AP_ExternalAHRS ext_ahrs;
 AP_Logger logger;
+#if AP_AIRSPEED_ENABLED
+AP_Airspeed airspeed_sensor;
+#endif
 
 GCS_Dummy _gcs;
 

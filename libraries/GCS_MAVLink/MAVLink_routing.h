@@ -43,20 +43,20 @@ public:
       search for the first vehicle or component in the routing table with given mav_type and retrieve it's sysid, compid and channel
       returns true if a match is found
      */
-    bool find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel);
+    bool find_by_mavtype(uint8_t mavtype, uint32_t &sysid, uint8_t &compid, mavlink_channel_t &channel);
 
     /*
       search for the first vehicle or component in the routing table with given mav_type and component id and retrieve its sysid and channel
       returns true if a match is found
      */
-    bool find_by_mavtype_and_compid(uint8_t mavtype, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) const;
+    bool find_by_mavtype_and_compid(uint8_t mavtype, uint8_t compid, uint32_t &sysid, mavlink_channel_t &channel) const;
 
 private:
     // a simple linear routing table. We don't expect to have a lot of
     // routes, so a scalable structure isn't worthwhile yet.
     uint8_t num_routes;
     struct route {
-        uint8_t sysid;
+        uint32_t sysid;
         uint8_t compid;
         mavlink_channel_t channel;
         uint8_t mavtype;
@@ -69,7 +69,7 @@ private:
     void learn_route(GCS_MAVLINK &link, const mavlink_message_t &msg);
 
     // extract target sysid and compid from a message
-    void get_targets(const mavlink_message_t &msg, int16_t &sysid, int16_t &compid);
+    void get_targets(const mavlink_message_t &msg, int64_t &sysid, int16_t &compid);
 
     // special handling for heartbeat messages
     void handle_heartbeat(GCS_MAVLINK &link, const mavlink_message_t &msg);

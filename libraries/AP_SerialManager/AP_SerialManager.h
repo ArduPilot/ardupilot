@@ -185,9 +185,9 @@ public:
     // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
     int8_t find_portnum(enum SerialProtocol protocol, uint8_t instance) const;
 
-    // get the passthru ports if enabled
+    // get the passthru ports if enabled, with their configured baud rates and options
     bool get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
-                      uint32_t &baud1, uint32_t &baud2);
+                      uint32_t &baud1, uint32_t &baud2, uint16_t &options1, uint16_t &options2);
 
     // disable passthru by settings SERIAL_PASS2 to -1
     void disable_passthru(void);

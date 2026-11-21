@@ -455,7 +455,7 @@ public:
 
     /// Offset
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // Sets additional position, velocity, and acceleration offsets in meters (NED frame) for scripting.
     // Offsets are added to the controller’s internal target.
     // Used in LUA

@@ -210,8 +210,13 @@ IMU Invensense SPI:mpu6000_1 ROTATION_ROLL_180
 IMU Invensense SPI:mpu6000_2 ROTATION_ROLL_180_YAW_270
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
-# DPS310 integrated on I2C2 bus
+# ---------------- Barometer -----------------
+# All H7 boards have footprints for either DPS368 (DPS310 driver) or BMP390
+# (BMP388 driver) at I2C 0x76 on I2C2; only one is populated per build.
+# The DPS310 probe is inherited from the base hwdef; add the BMP388 probe
+# so either variant is detected at runtime.
 BARO DPS310 I2C:0:0x76
+BARO BMP388 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 

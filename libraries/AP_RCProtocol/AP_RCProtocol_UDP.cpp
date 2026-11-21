@@ -8,6 +8,9 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <SITL/SITL.h>
 
+#include <errno.h>
+#include <string.h>
+
 #if AP_RCPROTOCOL_FDM_ENABLED
 #include "AP_RCProtocol_FDM.h"
 #endif
@@ -43,11 +46,22 @@ bool AP_RCProtocol_UDP::init()
     if (sitl == nullptr) {
         return false;
     }
-    if (!rc_in.reuseaddress()) {
-        return false;
-    }
-    if (!rc_in.bind("0.0.0.0", sitl->rcin_port)) {
-        return false;
+    if (sitl->rcin_path != nullptr) {
+        if (!rc_in.bind_unix(sitl->rcin_path)) {
+            if (!init_error_reported) {
+                hal.console->printf("RCInput: failed to bind Unix domain socket %s: %s\n",
+                                    sitl->rcin_path, strerror(errno));
+                init_error_reported = true;
+            }
+            return false;
+        }
+    } else {
+        if (!rc_in.reuseaddress()) {
+            return false;
+        }
+        if (!rc_in.bind("0.0.0.0", sitl->rcin_port)) {
+            return false;
+        }
     }
     if (!rc_in.set_blocking(false)) {
         return false;

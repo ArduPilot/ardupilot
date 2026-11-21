@@ -13,7 +13,7 @@
 
 #include "AP_Proximity_Scripting.h"
 
-#if HAL_PROXIMITY_ENABLED && AP_SCRIPTING_ENABLED
+#if HAL_PROXIMITY_ENABLED && AP_EXTERNAL_BINDING_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
@@ -124,4 +124,4 @@ bool AP_Proximity_Scripting::update_virtual_boundary()
     return true;
 }
 
-#endif // HAL_PROXIMITY_ENABLED && AP_SCRIPTING_ENABLED
+#endif // HAL_PROXIMITY_ENABLED && AP_EXTERNAL_BINDING_ENABLED

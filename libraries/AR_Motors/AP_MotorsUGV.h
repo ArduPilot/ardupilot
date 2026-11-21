@@ -208,7 +208,7 @@ private:
 
     // parameters
     AP_Int8 _pwm_type;  // PWM output type
-    AP_Int8 _pwm_freq;  // PWM output freq for brushed motors
+    AP_UInt8 _pwm_freq;  // PWM output freq for brushed motors
     AP_Int8 _disarm_disable_pwm;    // disable PWM output while disarmed
     AP_Int16 _slew_rate; // slew rate expressed as a percentage / second
     AP_Int8 _throttle_min; // throttle minimum percentage

@@ -45,7 +45,7 @@ private:
     static HAL_Semaphore _driver_sem;
 
     // DroneCAN temperature ID to listen for
-    AP_Int32 _ID; 
+    AP_UInt32 _ID;
 
 };
 

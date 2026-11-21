@@ -150,7 +150,7 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: GPS Options
     // @Description: GPS Options bitmask
-    // @Bitmask: 0:UBlox GPS is F9P
+    // @Bitmask: 0:UBlox GPS is F9P, 1:UBlox receiver without flash loses its saved configuration on reboot
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
 
@@ -167,6 +167,21 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("HNSE",       20, GPSParms, noise_horizontal, 0),
+
+    // @Param: GLTV
+    // @DisplayName: GPS velocity glitch
+    // @Description: Glitch offsets of simulated GPS velocity in NED. The reported position also moves continuously with this velocity, so position and velocity stay consistent (e.g. to simulate GPS spoofing that drifts the position). The accumulated position offset is cleared when all three components are zero at a GPS update, so when changing axes set the new component before zeroing the old one
+    // @Units: m/s
+    // @Vector3Parameter: 1
+    // @User: Advanced
+    AP_GROUPINFO("GLTV",       21, GPSParms, vel_glitch, 0),
+
+    // @Param: UBXMDL
+    // @DisplayName: UBlox receiver model
+    // @Description: Which u-blox receiver to simulate. Simple outputs all messages and ignores configuration; the other models are configured by the autopilot through the UBX configuration protocol and output only the messages they have been configured to output
+    // @Values: 0:Simple, 1:u-blox 6 FW 7.03, 2:NEO-M8N FW 2.01, 3:M8 ROM CORE 3.01, 4:NEO-M8N SPG 3.01, 5:NEO-M9N SPG 4.04, 6:M10 ROM SPG 5.10
+    // @User: Advanced
+    AP_GROUPINFO("UBXMDL",    22, GPSParms, ubx_model, 0),
 
     AP_GROUPEND
 };
@@ -581,6 +596,25 @@ void GPS::update()
     d.latitude += glitch_offsets.x + degrees(lat_wander_m * earth_rad_inv);
     d.longitude += glitch_offsets.y + degrees(lon_wander_m * earth_rad_inv / cosine_of_lat);
     d.altitude += glitch_offsets.z;
+
+    // Applying GPS velocity glitch. The position moves continuously with the velocity offset,
+    // so reported position and velocity stay consistent (e.g. a spoofer drifting the position).
+    // The accumulated offset is cleared when the velocity glitch is set back to zero.
+    const Vector3f vel_glitch = params.vel_glitch;
+    if (vel_glitch.is_zero()) {
+        vel_glitch_pos_ofs.zero();
+    } else if (last_vel_glitch_ms != 0) {
+        vel_glitch_pos_ofs += vel_glitch * ((now_ms - last_vel_glitch_ms) * 0.001f);
+    }
+    last_vel_glitch_ms = now_ms;
+    if (!vel_glitch_pos_ofs.is_zero()) {
+        d.latitude += degrees(vel_glitch_pos_ofs.x * earth_rad_inv);
+        d.longitude += degrees(vel_glitch_pos_ofs.y * earth_rad_inv / cosine_of_lat);
+        d.altitude -= vel_glitch_pos_ofs.z;
+    }
+    d.speedN += vel_glitch.x;
+    d.speedE += vel_glitch.y;
+    d.speedD += vel_glitch.z;
 
     if (params.jam == 1) {
         simulate_jamming(d);

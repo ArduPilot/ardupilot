@@ -385,7 +385,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         goto failed;
     }
 
-#if !defined(__APPLE__) && !defined(__OpenBSD__)
+#if !defined(__APPLE__) && !defined(__OpenBSD__) && !defined(__EMSCRIPTEN__)
     pthread_setname_np(thread, name);
 #endif
 

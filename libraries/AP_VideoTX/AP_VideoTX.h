@@ -198,7 +198,7 @@ public:
     // a provider may only register if the user allows its type (VTX_TYPES)
     void set_provider_enabled(VTXType type) { if (is_type_enabled(type)) { _types |= type; } }
     // is this control transport allowed to manage the VTX
-    bool is_type_enabled(VTXType type) const { return (uint8_t(_types_allowed) & uint8_t(type)) != 0; }
+    bool is_type_enabled(VTXType type) const { return (_types_allowed & uint8_t(type)) != 0; }
 
     static AP_VideoTX *singleton;
 
@@ -223,14 +223,14 @@ private:
     uint8_t _current_channel;
 
     // vtx options
-    AP_Int16 _options;
+    AP_UInt16 _options;
     uint16_t _current_options;
 
     AP_Int8 _enabled;
     bool _current_enabled;
 
     // bitmask of VTXType control transports the user permits (VTX_TYPES)
-    AP_Int8 _types_allowed;
+    AP_UInt8 _types_allowed;
 
     bool _initialized;
     // when defaults have been configured

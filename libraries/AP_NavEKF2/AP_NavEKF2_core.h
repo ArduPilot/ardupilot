@@ -22,6 +22,11 @@
 
 #if !defined(HAL_DEBUG_BUILD) || !HAL_DEBUG_BUILD
     #pragma GCC optimize("O2")
+    #ifdef __NO_MATH_ERRNO__
+        // GCC 10 drops the build's -fno-math-errno at the pragma above and
+        // then will not inline helpers defined before it, such as sq()
+        #pragma GCC optimize("no-math-errno")
+    #endif
 #endif
 
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -183,12 +188,6 @@ public:
     // return estimated height above ground level
     // return false if ground height is not being estimated.
     bool getHAGL(float &HAGL) const;
-
-    // return the Euler roll, pitch and yaw angle in radians
-    void getEulerAngles(Vector3f &eulers) const;
-
-    // return the transformation matrix from XYZ (body) to NED axes
-    void getRotationBodyToNED(Matrix3f &mat) const;
 
     // return the quaternions defining the rotation from NED to XYZ (body) axes
     void getQuaternion(Quaternion &quat) const;

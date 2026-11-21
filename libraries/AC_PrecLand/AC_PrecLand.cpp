@@ -14,6 +14,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -291,7 +292,7 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     nav_filter_status status;
     if (!_ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt) ||
         !_ahrs.get_velocity_NED(curr_vel) ||
-        !_ahrs.get_filter_status(status)) {
+        !_ahrs.get_filter_status_for_configured_backend(status)) {
         inertial_data_newest.inertialNavVelocityValid = false;
     } else {
         inertial_data_newest.inertialNavVelocityValid = status.flags.horiz_vel;

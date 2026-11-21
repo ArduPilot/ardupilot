@@ -203,16 +203,16 @@ public:
     AP_Int16 servo_telem_msg_rate;
 #endif
 
-    AP_Int8 debug;
+    AP_UInt8 debug;
 
     AP_Int32 serial_number;
 
 #if HAL_LOGGING_ENABLED
-    AP_Int32        log_bitmask;
+    AP_UInt32       log_bitmask;
 #endif
 
 #if AP_PERIPH_BATTERY_ENABLED
-    AP_Int32 battery_hide_mask;
+    AP_UInt32 battery_hide_mask;
 #endif
 
 #if AP_PERIPH_EFI_ENABLED
@@ -225,7 +225,7 @@ public:
 #endif
 
 #if HAL_PERIPH_CAN_MIRROR
-    AP_Int8 can_mirror_ports;
+    AP_UInt8 can_mirror_ports;
 #endif // HAL_PERIPH_CAN_MIRROR
 
 #if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
@@ -243,7 +243,7 @@ public:
     static constexpr uint8_t can_fdmode = 0;
 #endif
 
-    AP_Int32 options;
+    AP_UInt32 options;
 
     AP_Int8 can_terminate[HAL_NUM_CAN_IFACES];
 

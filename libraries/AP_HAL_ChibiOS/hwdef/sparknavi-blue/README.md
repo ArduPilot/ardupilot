@@ -83,7 +83,7 @@ The SparkNavi Blue supports up to 14 PWM outputs.
 
 PWM1 to PWM8 outputs (labelled MAIN OUT are controlled by a dedicated STM32F103 IO controller. The remaining 6 outputs (labelled AUX OUT 1 to AUX OUT 6) are the "auxiliary" outputs. These are directly attached to the STM32H743 FMU controller.
 
-All 14 outputs support normal PWM and DShot output formats. PWM Outputs AUX 1 to AUX 6 support Bi-Directional DShot.
+All 14 outputs support normal PWM and DShot output formats. DShot on the MAIN OUT outputs (IO controller) requires [BRD_IO_DSHOT](https://ardupilot.org/copter/docs/parameters.html#brd-io-dshot-load-dshot-fw-on-io) to be set to 1, followed by a reboot, which loads the DShot firmware onto the IO controller. Doing so disables PPM, DSM, iBus, SUMD, SRXL and ST24 input on the IO controller's RC input pin. SBUS and FPort on that pin, and DSM receivers on the DSM port, continue to work. PWM Outputs AUX 1 to AUX 6 support Bi-Directional DShot.
 
 The 8 MAIN OUT outputs are in 3 groups:
 

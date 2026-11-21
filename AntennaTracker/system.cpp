@@ -13,12 +13,9 @@ void Tracker::init_ardupilot()
     // initialise battery
     battery.init();
 
-    // init baro before we start the GCS, so that the CLI baro test works
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.init();
 
-    // setup telem slots with serial ports
-    gcs().setup_uarts();
     // update_send so that if the first packet we receive happens to
     // be an arm message we don't trigger an internal error when we
     // try to initialise stream rates in the main loop.
@@ -46,8 +43,6 @@ void Tracker::init_ardupilot()
 #endif
 
     // initialise rc channels including setting mode
-    // PARAMETER_CONVERSION - Added: Sep-2021 for Tracker-4.5
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
     // initialise servos
@@ -125,8 +120,7 @@ bool Tracker::set_home_to_current_location(bool lock)
 bool Tracker::set_home(const Location &temp, bool lock)
 {
     // check EKF origin has been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
+    if (ahrs.has_origin()) {
         if (!ahrs.set_home(temp)) {
             return false;
         }
@@ -178,6 +172,8 @@ void Tracker::set_mode(Mode &newmode, const ModeReason reason)
         return;
     }
     mode = &newmode;
+
+    mode->enter();
 
     if (mode->requires_armed_servos()) {
         arm_servos();

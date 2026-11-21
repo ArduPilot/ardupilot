@@ -14,13 +14,16 @@ import vehicle_test_suite
 
 from arducopter import AutoTestCopter
 from pysim import vehicleinfo
+from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 
 
 class AutoTestHelicopter(AutoTestCopter):
 
-    sitl_start_loc = mavutil.location(40.072842, -105.230575, 1586, 0)     # Sparkfun AVC Location
+    sitl_start_loc = Location(40.072842, -105.230575, 1586, AltFrame.ABSOLUTE)  # Sparkfun AVC Location
+    sitl_start_heading_deg = 0
 
     def max_distance_from_startup_location_at_end_of_test(self):
         # this class inherits ArduCopter's tests but not its
@@ -42,6 +45,9 @@ class AutoTestHelicopter(AutoTestCopter):
 
     def sitl_start_location(self):
         return self.sitl_start_loc
+
+    def sitl_start_heading(self):
+        return self.sitl_start_heading_deg
 
     def is_heli(self):
         return True
@@ -86,8 +92,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameter("H_RSC_RUNUP_TIME", TARGET_RUNUP_TIME)
         self.progress("Initiate Runup by putting some throttle")
         tstart = self.get_sim_time()
-        self.set_rc(8, 2000)
-        self.set_rc(3, 1700)
+        self.set_rc_from_map({8: 2000, 3: 1700})
         self.progress("Collective threshold PWM %u" % coll)
         self.progress("Wait that collective PWM pass threshold value")
         servo = self.assert_receive_message(
@@ -96,12 +101,7 @@ class AutoTestHelicopter(AutoTestCopter):
         )
         runup_time = self.get_sim_time() - tstart
         self.progress("Collective is now at PWM %u" % servo.servo1_raw)
-        self.mav.wait_heartbeat()
         if runup_time < TARGET_RUNUP_TIME:
-            self.zero_throttle()
-            self.set_rc(8, 1000)
-            self.disarm_vehicle()
-            self.mav.wait_heartbeat()
             raise NotAchievedException("Takeoff initiated before runup time complete %u" % runup_time)
         self.progress("Runup time %u" % runup_time)
         self.zero_throttle()
@@ -504,8 +504,7 @@ class AutoTestHelicopter(AutoTestCopter):
     def StabilizeTakeOff(self):
         """Fly stabilize takeoff"""
         self.change_mode('STABILIZE')
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
+        self.set_rc_from_map({3: 1000, 8: 1000})
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_rc(8, 2000)
@@ -552,8 +551,7 @@ class AutoTestHelicopter(AutoTestCopter):
         })
         bail_out_time = self.get_parameter('H_RSC_AROT_RUNUP')
         self.change_mode('POSHOLD')
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
+        self.set_rc_from_map({3: 1000, 8: 1000})
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_rc(8, 2000)
@@ -674,8 +672,7 @@ class AutoTestHelicopter(AutoTestCopter):
                 self.reboot_sitl()
 
             self.change_mode('POSHOLD')
-            self.set_rc(3, 1000)
-            self.set_rc(8, 1000)
+            self.set_rc_from_map({3: 1000, 8: 1000})
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.set_rc(8, 2000)
@@ -692,8 +689,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.change_mode('STABILIZE')
 
             self.progress("Triggering manual autorotation by disabling interlock")
-            self.set_rc(3, 1000)
-            self.set_rc(8, 1000)
+            self.set_rc_from_map({3: 1000, 8: 1000})
 
             self.wait_statustext(r"RSC: In Autorotation", check_context=True)
 
@@ -727,8 +723,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.delay_sim_time(5, reason="power recovery to stabilise")
 
             # Initiate autorotation again
-            self.set_rc(3, 1000)
-            self.set_rc(8, 1000)
+            self.set_rc_from_map({3: 1000, 8: 1000})
 
             self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
                                  check_context=True,
@@ -789,7 +784,7 @@ class AutoTestHelicopter(AutoTestCopter):
         '''returns a mission which attempts to give the SCurve library
         indigestion.  The same destination is given several times.'''
 
-        wp2_loc = self.mav.location()
+        wp2_loc = self.get_location()
         wp2_offset_n = 20
         wp2_offset_e = 30
         self.location_offset_ne(wp2_loc, wp2_offset_n, wp2_offset_e)
@@ -811,7 +806,7 @@ class AutoTestHelicopter(AutoTestCopter):
             31.0000, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
-        wp5_loc = self.mav.location()
+        wp5_loc = self.get_location()
         wp5_offset_n = -20
         wp5_offset_e = 30
         self.location_offset_ne(wp5_loc, wp5_offset_n, wp5_offset_e)
@@ -855,7 +850,7 @@ class AutoTestHelicopter(AutoTestCopter):
         '''returns a mission which attempts to give the SCurve library
         indigestion.  The same destination is given several times but with differing altitudes.'''
 
-        wp2_loc = self.mav.location()
+        wp2_loc = self.get_location()
         wp2_offset_n = 20
         wp2_offset_e = 30
         self.location_offset_ne(wp2_loc, wp2_offset_n, wp2_offset_e)
@@ -881,7 +876,7 @@ class AutoTestHelicopter(AutoTestCopter):
         wp4 = copy.copy(wp2)
         wp4.alt = 31
 
-        wp5_loc = self.mav.location()
+        wp5_loc = self.get_location()
         wp5_offset_n = -20
         wp5_offset_e = 30
         self.location_offset_ne(wp5_loc, wp5_offset_n, wp5_offset_e)
@@ -1022,7 +1017,9 @@ class AutoTestHelicopter(AutoTestCopter):
         # so every later start_SITL() would come up at CMAC rather than
         # at the heli's own start location; put it back afterwards.
         self.context_preserve_attribute("sitl_start_loc")
-        self.sitl_start_loc = mavutil.location(-35.362881, 149.165222, 582.000000, 90.0)   # CMAC
+        self.context_preserve_attribute("sitl_start_heading_deg")
+        self.sitl_start_loc = Location(-35.362881, 149.165222, 582.000000, AltFrame.ABSOLUTE)   # CMAC
+        self.sitl_start_heading_deg = 90.0
         self.customise_SITL_commandline(["--home", "%s,%s,%s,%s"
                                          % (-35.362881, 149.165222, 582.000000, 90.0)])
 
@@ -1082,8 +1079,7 @@ class AutoTestHelicopter(AutoTestCopter):
                              "H_RSC_SETPOINT": SETPOINT,
                              "H_RSC_IDLE": IDLE,
                              "H_RSC_CLDWN_TIME": COOLDOWN_TIME})
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
+        self.set_rc_from_map({3: 1000, 8: 1000})
 
         self.progress("Starting turbine")
         self.wait_ready_to_arm()
@@ -1126,8 +1122,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameter("H_RSC_RAMP_TIME", RAMP_TIME)
         self.set_parameter("H_RSC_SETPOINT", 66)
         self.set_parameter("DISARM_DELAY", 0)
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1000)
+        self.set_rc_from_map({3: 1000, 8: 1000})
 
         # check that turbine start doesn't activate while disarmed
         self.progress("Checking Turbine Start doesn't activate while disarmed")
@@ -1143,16 +1138,14 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Checking Turbine Start doesn't activate while armed with interlock enabled")
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.set_rc(8, 2000)
-        self.set_rc(6, 2000)
+        self.set_rc_from_map({8: 2000, 6: 2000})
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
             servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
 
-        self.set_rc(8, 1000)
-        self.set_rc(6, 1000)
+        self.set_rc_from_map({8: 1000, 6: 1000})
         self.disarm_vehicle()
 
         # check that turbine start activates as designed (armed with interlock disabled)
@@ -1174,15 +1167,13 @@ class AutoTestHelicopter(AutoTestCopter):
 
         # check that turbine start will not reactivate after interlock enabled
         self.progress("Checking Turbine Start doesn't activate once interlock is enabled after start)")
-        self.set_rc(8, 2000)
-        self.set_rc(6, 2000)
+        self.set_rc_from_map({8: 2000, 6: 2000})
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
             servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
-        self.set_rc(6, 1000)
-        self.set_rc(8, 1000)
+        self.set_rc_from_map({6: 1000, 8: 1000})
         self.disarm_vehicle()
 
     def PIDNotches(self):
@@ -1393,8 +1384,7 @@ class AutoTestHelicopter(AutoTestCopter):
         tstart = self.get_sim_time()
         try:
             while self.get_sim_time_cached() - tstart < timeout:
-                self.wait_heartbeat()
-                if self.armed():
+                if self.armed(poll=False):
                     raise NotAchievedException("Stick-armed when it should not have")
         finally:
             self.set_output_to_trim(arming_channel)

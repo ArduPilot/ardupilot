@@ -12,7 +12,6 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    void convert_pid();
 
 private:
     AP_Float _roll_ff;

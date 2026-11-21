@@ -316,6 +316,8 @@ local function MAVLinkProcessor()
                     int_frame_conv = 3        -- MAV_FRAME_GLOBAL_RELATIVE_ALT
                 elseif (_mavresult.command ==  42006) then   -- MAV_CMD_FIXED_MAG_CAL_YAW
                     int_frame_conv = 3        -- MAV_FRAME_GLOBAL_RELATIVE_ALT
+                elseif (_mavresult.command ==  22) then   -- MAV_CMD_NAV_TAKEOFF
+                    int_frame_conv = 3        -- MAV_FRAME_GLOBAL_RELATIVE_ALT
                 end
                 local int_x = _mavresult.param5
                 local int_y = _mavresult.param6
@@ -336,7 +338,7 @@ local function MAVLinkProcessor()
                                                           x = int_x,
                                                           y = int_y,
                                                           z = _mavresult.param7,
-                                                          int_frame = int_frame_conv,
+                                                          frame = int_frame_conv,
                                                           current = 0,
                                                           autocontinue = 0 })
             elseif _mavresult.msgid == self.COMMAND_INT then

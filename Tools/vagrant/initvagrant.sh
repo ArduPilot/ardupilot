@@ -39,9 +39,8 @@ fi
 
 DASHDASHLOGIN=""
 if false ||
-     [ ${DISTRIBUTION_CODENAME} == 'oracular' ] ||
-     [ ${DISTRIBUTION_CODENAME} == 'plucky' ] ||
-     [ ${DISTRIBUTION_CODENAME} == 'questing' ] ||
+     [ ${DISTRIBUTION_CODENAME} != 'jammy' ] &&
+     [ ${DISTRIBUTION_CODENAME} != 'noble' ] ||
      false; then
     # we run out of space in tmpfs /tmp while compiling wxpython, so
     # do it elsewhere:
@@ -63,6 +62,9 @@ apt-get install -y valgrind
 
 # gdb support:
 apt-get install -y gdb
+
+# X forwarding support; resolute started to need this
+apt-get install -y xauth
 
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 

@@ -76,7 +76,7 @@ private:
     
     uint32_t last_heartbeat_ms;
     bool seen_heartbeat = false;
-    uint8_t vehicle_system_id;
+    uint32_t vehicle_system_id;
     uint8_t vehicle_component_id;
 
     struct {

@@ -101,6 +101,8 @@ enum class LogEvent : uint8_t {
     NOT_SURFACED = 164,
     BOTTOMED = 165,
     NOT_BOTTOMED = 166,
+
+    EKF_MAG_OFFSETS_SAVED = 167, // compass offsets learned by the EKF were saved on disarm
 };
 
 enum class LogDataID : uint8_t {
@@ -205,7 +207,7 @@ public:
     }
 
     // initialisation
-    void init(const AP_Int32 &log_bitmask, const struct LogStructure *structure, uint8_t num_types);
+    void init(const AP_UInt32 &log_bitmask, const struct LogStructure *structure, uint8_t num_types);
     void set_num_types(uint8_t num_types) { _num_types = num_types; }
 
     bool CardInserted(void);
@@ -261,7 +263,7 @@ public:
 #endif
     void Write_NamedValueFloat(const char *name, float value);
     void Write_Power(void);
-    void Write_Radio(const mavlink_radio_t &packet);
+    void Write_Radio(const mavlink_radio_status_t &packet);
     void Write_Message(const char *message);
     // support for multi-chunk messages:
     uint8_t get_MSG_id() {
@@ -271,14 +273,15 @@ public:
         }
         return ++MSG_id;
     }
-    void Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq);
+    void Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq);
 
     void Write_MessageF(const char *fmt, ...);
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
     void Write_EntireMission();
     void Write_Command(const mavlink_command_int_t &packet,
-                       uint8_t source_system,
+                       uint32_t target_system,
+                       uint32_t source_system,
                        uint8_t source_component,
                        MAV_RESULT result,
                        bool was_command_long=false);
@@ -347,19 +350,19 @@ public:
     // parameter support
     static const struct AP_Param::GroupInfo        var_info[];
     struct {
-        AP_Int8 backend_types;
+        AP_UInt8 backend_types;
         AP_Int16 file_bufsize; // in kilobytes
         AP_Int8 file_disarm_rot;
         AP_Enum<LogDisarmed> log_disarmed;
         AP_Int8 log_replay;
-        AP_Int8 mav_bufsize; // in kilobytes
+        AP_UInt8 mav_bufsize; // in kilobytes
         AP_Int16 file_timeout; // in seconds
         AP_Int16 min_MB_free;
         AP_Float file_ratemax;
         AP_Float mav_ratemax;
         AP_Float blk_ratemax;
         AP_Float disarm_ratemax;
-        AP_Int16 max_log_files;
+        AP_UInt16 max_log_files;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
@@ -445,7 +448,7 @@ private:
     #define LOGGER_MAX_BACKENDS 2
     uint8_t _next_backend;
     AP_Logger_Backend *backends[LOGGER_MAX_BACKENDS];
-    const AP_Int32 *_log_bitmask;
+    const AP_UInt32 *_log_bitmask;
 
     enum class Backend_Type : uint8_t {
         NONE       = 0,

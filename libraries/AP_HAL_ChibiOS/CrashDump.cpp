@@ -113,10 +113,11 @@ void CrashCatcher_DumpMemory(const void* pvMemory, CrashCatcherElementSizes elem
 
 void CrashCatcher_DumpStart(const CrashCatcherInfo* pInfo)
 {
+    // give the dump the full watchdog period to get started
+    stm32_watchdog_pat();
     // Record the fault info for watchdog
-    struct port_extctx* ctx = (struct port_extctx*)pInfo->sp;
     FaultType faultType = (FaultType)__get_IPSR();
-    save_fault_watchdog(__LINE__, faultType, pInfo->sp, ctx->lr_thd);
+    save_fault_watchdog(__LINE__, faultType, pInfo->sp, pInfo->lr);
 #if AP_CRASHDUMP_FLASH_ENABLED || CRASHDUMP_SD_ENABLED
     g_info = *pInfo;
 #endif

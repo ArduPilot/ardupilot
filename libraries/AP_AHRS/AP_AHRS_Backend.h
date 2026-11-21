@@ -23,11 +23,11 @@
 #include <AP_Math/AP_Math.h>
 #include <inttypes.h>
 #include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Common/Location.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include "AP_AHRS_config.h"
+#include <AP_Compass/AP_Compass_config.h>
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -52,6 +52,21 @@ public:
     CLASS_NO_COPY(AP_AHRS_Backend);
 
     virtual const char *shortname() const = 0;
+
+    // how an (equivalent) airspeed estimate was derived; also stored in
+    // the log so the source of the estimate can be told apart:
+    enum AirspeedEstimateType : uint8_t {
+        NO_NEW_ESTIMATE = 0,
+        AIRSPEED_SENSOR = 1,
+        DCM_SYNTHETIC = 2,
+        EKF3_SYNTHETIC = 3,
+        SIM = 4,
+        // transient placeholder: a backend with no synthetic airspeed of its
+        // own asks the frontend to fill the estimate from the DCM backend.
+        // Never published - the frontend replaces it with DCM_SYNTHETIC.
+        // TODO: remove once ExternalAHRS/EKF supply their own wind.
+        DCM_FALLBACK = 5,  // internal placeholder, never logged
+    };
 
     // structure to retrieve results from backends:
     struct Estimates {
@@ -99,6 +114,14 @@ public:
             return attitude_valid;
         }
 
+        // fill the euler angles and rotation matrix from the
+        // quaternion; backends call this after setting quaternion
+        // rather than supplying those representations themselves
+        void derive_attitude_from_quaternion(void) {
+            quaternion.to_euler(roll_rad, pitch_rad, yaw_rad);
+            quaternion.rotation_matrix(dcm_matrix);
+        }
+
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
 
@@ -110,6 +133,12 @@ public:
         // a ground velocity in meters/second, North/East/Down
         Vector3f velocity_NED;
         bool velocity_NED_valid;
+        // true if this backend has a ground-velocity source which is
+        // independent of airspeed (e.g. GPS or an external INS); such
+        // a velocity may be used for wind estimation or synthetic
+        // airspeed without circularity.  This may be true while
+        // velocity_NED_valid is false (e.g. DCM with a 2D GPS fix):
+        bool have_velocity_source;
         // return a ground velocity in meters/second, North/East/Down
         bool get_velocity_NED(Vector3f &vel) const WARN_IF_UNUSED {
             if (!velocity_NED_valid) {
@@ -180,9 +209,22 @@ public:
         Vector3f wind;
         bool wind_valid;
 
+        // an (equivalent) airspeed estimate published by this backend,
+        // and how it was derived.  airspeed_EAS_ok is false when the
+        // value is only a stale/dead-reckoned best guess.  airspeed_TAS
+        // is the same estimate scaled to true airspeed:
+        float airspeed_EAS;
+        bool airspeed_EAS_ok;
+        AirspeedEstimateType airspeed_estimate_type;
+        float airspeed_TAS;
+        bool airspeed_TAS_ok;
+
         /*
          * Sensor-related information
          */
+#if AP_AIRSPEED_ENABLED
+        uint8_t active_airspeed_index;
+#endif  // AP_AIRSPEED_ENABLED
 
         // configured_to_use_gps will be true if the estimator will
         // use GPS data in creating its estimate when the data is good
@@ -272,15 +314,27 @@ public:
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    virtual bool airspeed_EAS(float &airspeed_ret) const WARN_IF_UNUSED { return false; }
-    virtual bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const { return false; }
+#if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+    void set_external_wind_estimate(float speed, float direction);
+#endif
+
+    // populate results.airspeed_EAS / airspeed_EAS_ok /
+    // airspeed_estimate_type from this backend's own airspeed sensor and
+    // state.  Called once per update after get_results() has filled the
+    // rest of the estimates:
+    void fill_airspeed_estimate(Estimates &results);
+
+    // return an (equivalent) airspeed estimate from this backend's own
+    // sensor or cached wind-triangle value.  Used by DCM's internal
+    // groundspeed_vector() and by AP_AHRS::fallback_synthetic_airspeed_EAS();
+    // the published estimate goes via fill_airspeed_estimate() instead.
+    // have_velocity_source gates the synthetic (wind-triangle) estimate.
+    bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_TAS(float &airspeed_ret) const WARN_IF_UNUSED {
-        if (!airspeed_EAS(airspeed_ret)) {
+    bool airspeed_TAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED {
+        if (!airspeed_EAS(have_velocity_source, airspeed_ret)) {
             return false;
         }
         airspeed_ret *= get_EAS2TAS();
@@ -291,28 +345,6 @@ public:
     static float get_EAS2TAS(void);
     static float get_TAS2EAS(void) { return 1.0/get_EAS2TAS(); }
 
-    // return true if airspeed comes from an airspeed sensor, as
-    // opposed to an IMU estimate
-    static bool airspeed_sensor_enabled(void) {
-    #if AP_AIRSPEED_ENABLED
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
-    #else
-        return false;
-    #endif
-    }
-
-    // return true if airspeed comes from a specific airspeed sensor, as
-    // opposed to an IMU estimate
-    static bool airspeed_sensor_enabled(uint8_t airspeed_index) {
-    #if AP_AIRSPEED_ENABLED
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
-    #else
-        return false;
-    #endif
-    }
-
     virtual bool set_origin(const Location &loc) {
         return false;
     }
@@ -320,6 +352,16 @@ public:
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // return the compass offsets this backend has estimated for a
+    // compass instance, in body frame, milligauss; returns true if the
+    // offsets are valid.  Backends which do not estimate compass
+    // offsets need not override this.
+    virtual bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const {
+        return false;
+    }
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
@@ -331,6 +373,73 @@ public:
     virtual bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const {
         return false;
     }
+
+protected:
+
+#if AP_AIRSPEED_ENABLED
+    // returns the index of the primary airspeed sensor
+    static uint8_t primary_airspeed_index() {
+        return AP::airspeed().get_primary();
+    }
+#endif  // AP_AIRSPEED_ENABLED
+
+    // update our wind speed estimate.  velocity is a current velocity
+    // estimate in m/s in NED frame.  fuselageDirection is the vehicle's
+    // forward (fuselage) direction as a UNIT vector in the earth NED frame:
+    // the first column of the *trim-corrected* vehicle-body-to-NED rotation,
+    // e.g. DCM's _body_dcm_matrix.colx() - NOT the raw sensor-board
+    // _dcm_matrix.colx(), which with a non-zero AHRS_TRIM feeds the wind
+    // triangle the board direction rather than the fuselage direction.  For
+    // level flight it is the heading direction, tilted by pitch and unaffected
+    // by roll.  Must be a unit vector; not normalised here.
+    void estimate_wind(const Vector3f &velocity, const Vector3f &fuselageDirection);
+
+    // estimated wind in m/s
+    Vector3f _wind;
+
+    // last true-airspeed found via the wind triangle, used for
+    // dead-reckoning and synthetic airspeed:
+    float _last_airspeed_TAS;
+
+    // fill in a synthetic (non-sensor) EAS estimate for
+    // fill_airspeed_estimate().  The default has no air-data of its own: it
+    // returns DCM_FALLBACK, which the frontend fills in from the DCM backend
+    // (see AP_AHRS::fallback_synthetic_airspeed_EAS()).  Backends with their
+    // own synthetic airspeed (DCM, EKF3, SIM) override this:
+    virtual bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type);
+
+    // constrain an EAS estimate to the GPS ground speed +/- the wind
+    // limit, matching the constraint historically applied to both
+    // sensor and synthetic airspeed:
+    void constrain_airspeed_EAS_by_ground_speed(float &airspeed_ret) const;
+
+private:
+
+    // fill results.airspeed_EAS / airspeed_estimate_type from this
+    // backend's sensor or synthetic source; returns whether the estimate
+    // is valid.  fill_airspeed_estimate() wraps this and derives the TAS:
+    bool fill_airspeed_EAS_estimate(Estimates &results);
+
+#if AP_AIRSPEED_ENABLED
+    // fill results.airspeed_EAS from the active airspeed sensor if it should
+    // be used, applying the ground-speed constraint and tagging it
+    // AIRSPEED_SENSOR; returns false (for the synthetic to fill in) otherwise:
+    bool airspeed_from_sensor(Estimates &results) const;
+#endif
+
+    // fill airspeed_ret (unconstrained) from the primary airspeed sensor
+    // if usable, else the cached wind-triangle value; returns false when
+    // only the previous (dead-reckoned) estimate is available.  Used by
+    // airspeed_EAS():
+    bool get_unconstrained_airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const;
+
+    // support for wind estimation
+    Vector3f _last_fuse;
+    Vector3f _last_vel;
+    uint32_t _last_wind_time;
+
+    // time of last wind estimate update, used to rate-limit estimation:
+    uint32_t _last_wind_estimate_ms;
 };
 
 // Converts an upstream "something changed" key (an EKF reset

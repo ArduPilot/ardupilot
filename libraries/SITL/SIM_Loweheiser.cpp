@@ -82,7 +82,9 @@ void Loweheiser::handle_message(const mavlink_message_t &msg)
         mavlink_command_long_t pkt;
         mavlink_msg_command_long_decode(&msg, &pkt);
 
-        if (pkt.target_system != system_id ||
+        uint32_t target_system;
+        mavlink_msg_get_target_system(&msg, &pkt.target_system, &target_system);
+        if (target_system != system_id ||
             pkt.target_component != component_id) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Not for me");
             return;

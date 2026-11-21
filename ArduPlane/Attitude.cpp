@@ -112,8 +112,8 @@ bool Plane::stick_mixing_enabled(void)
         }
     }
 
-    if (failsafe.rc_failsafe && g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-        // don't do stick mixing in FBWA glide mode
+    // No stick mixing in glide mode
+    if (control_mode == &mode_glide) {
         return false;
     }
 
@@ -445,7 +445,7 @@ void Plane::stabilize()
     if (control_mode == &mode_training ||
             control_mode == &mode_manual) {
         plane.control_mode->run();
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     } else if (nav_scripting_active()) {
         // scripting is in control of roll and pitch rates and throttle
         const float speed_scaler = get_speed_scaler();
@@ -703,7 +703,7 @@ void Plane::apply_load_factor_roll_limits(void)
         // no roll limits when inverted
         return;
     }
-#if HAL_QUADPLANE_ENABLED
+#if AP_PLANE_TAILSITTER_ENABLED
     if (quadplane.tailsitter.active()) {
         // no limits while hovering
         return;

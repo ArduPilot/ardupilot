@@ -13,11 +13,13 @@ Also validates each new board directory:
     committed at Tools/bootloaders/<board>_bl.bin
   - defaults.parm does not set parameters that belong in hwdef.dat
 
+Also checks that no image added, modified or renamed with changes in a
+hwdef directory exceeds MAX_IMAGE_SIZE bytes.
+
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
+import ast
 import optparse
 import os
 import re
@@ -74,6 +76,47 @@ class TestNewBoards(BuildScriptBase):
 
         return ret
 
+    def get_added_or_modified_files(self) -> Set[str]:
+        '''returns the set of files added, modified, or renamed with changes
+        relative to the merge-base with master, as paths relative to the repo
+        root.  Files renamed without changes (R100) are not included.'''
+        current_commitish = self.find_current_git_branch_or_sha1()
+        merge_base = self.find_git_branch_merge_base(current_commitish, self.master_branch)
+        # pin the settings parse_name_status depends on so the result does
+        # not depend on the user's core.quotePath and diff.renames config
+        delta_files = self.run_git([
+            '-c', 'core.quotePath=true',
+            'diff',
+            '--name-status',
+            '--find-renames',
+            '--diff-filter=AMR',
+            f"{merge_base}",
+        ], show_output=False)
+        return self.parse_name_status(delta_files)
+
+    @staticmethod
+    def unquote_git_path(path: str) -> str:
+        '''undo git's C-style quoting of paths containing unusual characters
+        (e.g. non-ASCII).  -z and core.quotePath=false are no use here because
+        run_program() strips non-printable bytes from git's output.'''
+        if not path.startswith('"'):
+            return path
+        return ast.literal_eval('b' + path).decode('utf-8')
+
+    @classmethod
+    def parse_name_status(cls, output: str) -> Set[str]:
+        '''returns the new path of each entry in git diff --name-status
+        output, skipping files renamed without changes (R100)'''
+        ret = set()
+        for line in output.split("\n"):
+            parts = line.split("\t")
+            if len(parts) < 2:
+                continue
+            if parts[0] == 'R100':
+                continue
+            ret.add(cls.unquote_git_path(parts[-1]))
+        return ret
+
     def get_added_hwdef_paths(self) -> Set[str]:
         '''returns the newly added hwdef filepaths relative to the repo root.
         Only .dat files for both main and bootloader firmwares'''
@@ -125,11 +168,34 @@ class TestNewBoards(BuildScriptBase):
 
     BOOTLOADER_DIR = 'Tools/bootloaders'
 
+    IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg')
+    MAX_IMAGE_SIZE = 1024 * 1024
+
+    def check_image_sizes(self, filepaths: Set[str]) -> None:
+        '''No image added, modified or renamed with changes in a hwdef
+        directory may exceed MAX_IMAGE_SIZE bytes.'''
+        oversized = []
+        for filepath in sorted(filepaths):
+            if "/hwdef/" not in filepath:
+                continue
+            if not filepath.lower().endswith(self.IMAGE_EXTENSIONS):
+                continue
+            size = os.path.getsize(filepath)
+            if size > self.MAX_IMAGE_SIZE:
+                oversized.append(f"  {filepath} ({size} bytes)")
+        if oversized:
+            raise ValueError(
+                f"images must not exceed {self.MAX_IMAGE_SIZE} bytes (1MB); "
+                f"resize or recompress:\n" + "\n".join(oversized)
+            )
+
     def check_new_bootloader_binary(self, board_name: str, added_files: Set[str]) -> None:
         '''A board that introduces a new bootloader hwdef (hwdef-bl.dat) must also
         commit the matching prebuilt bootloader binary into Tools/bootloaders/.'''
         binary = f"{self.BOOTLOADER_DIR}/{board_name}_bl.bin"
-        if binary not in added_files:
+        # Existing boards may already ship a binary built outside this tree.
+        tracked_files = self.run_git(['ls-files', '--', binary], show_output=False).splitlines()
+        if binary not in added_files and binary not in tracked_files:
             raise ValueError(
                 f"new bootloader hwdef for board {board_name} requires its prebuilt "
                 f"bootloader binary to be committed at {binary}; build it with "
@@ -209,6 +275,8 @@ class TestNewBoards(BuildScriptBase):
         self.run_waf(["bootloader"], show_output=False)
 
     def run(self) -> None:
+        self.check_image_sizes(self.get_added_or_modified_files())
+
         added_files = self.get_added_files()
         hwdef_filepaths = self.get_added_hwdef_paths()
 
@@ -265,10 +333,16 @@ class TestNewBoards(BuildScriptBase):
                 continue
             checked_board_dirs.add(hwdef_dir)
 
+            # Adding a bootloader to an existing board does not introduce a
+            # new board directory or require new board documentation.
+            main_hwdef = os.path.join(hwdef_dir, 'hwdef.dat')
+            existing_board = os.path.exists(main_hwdef) and main_hwdef not in added_files
             # ODID variants are exempt from the README requirement entirely.
             # AP_Periph boards must ship a README but are not required to embed
             # an image.  All other boards require both a README and an image.
-            if self.is_odid_board(board):
+            if existing_board:
+                self.progress(f"README.md not required for existing board {board_name}")
+            elif self.is_odid_board(board):
                 self.progress(f"README.md not required for {board_name} (ODID)")
             else:
                 self.check_new_board_readme(
@@ -310,6 +384,11 @@ class TestNewBoards(BuildScriptBase):
             # Skip arms board - CI machine can't build it
             if board.toolchain == "arm-linux-gnueabihf":
                 self.progress(f"Skipping arm-linux board {board.name}")
+                continue
+
+            # Skip Emscripten boards - CI machine doesn't have the SDK
+            if board.toolchain == "emscripten":
+                self.progress(f"Skipping Emscripten board {board.name}")
                 continue
 
             self.progress(f"Building board {board.name}")

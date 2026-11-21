@@ -25,6 +25,11 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     bool     updated = false;           // have we updated the compensation vector at least once
     uint8_t  command_ack_start = command_ack_counter;
 
+    // the motor test owns the motor output while it runs
+    if (ap.motor_test) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
     // exit immediately if we are already in compassmot
     if (ap.compass_mot) {
         // ignore restart messages
@@ -123,7 +128,9 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     EXPECT_DELAY_MS(5000);
 
     // enable motors and pass through throttle
-    motors->output_min();  // output lowest possible value to motors
+    if (!using_rate_thread) {
+        motors->output_min();  // output lowest possible value to motors
+    }
     motors->armed(true);
     hal.util->set_soft_armed(true);
 
@@ -145,11 +152,10 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         // read radio input
         read_radio();
 
-        // pass through throttle to motors
-        auto &srv = AP::srv();
-        srv.cork();
-        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
-        srv.push();
+        // this loop blocks the main loop, so without the rate thread nothing else outputs
+        if (!using_rate_thread) {
+            motors_output();
+        }
 
         // read some compass values
         compass.read();
@@ -240,9 +246,11 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     }
 
     // stop motors
-    motors->output_min();
     motors->armed(false);
     hal.util->set_soft_armed(false);
+    if (!using_rate_thread) {
+        motors->output_min();
+    }
 
     // set and save motor compensation
     if (updated) {
@@ -273,4 +281,17 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
 
     return MAV_RESULT_ACCEPTED;
 #endif  // FRAME_CONFIG != HELI_FRAME
+}
+
+void Copter::compassmot_output()
+{
+#if FRAME_CONFIG != HELI_FRAME
+    // the flag is set before the motors are armed and cleared after they are disarmed
+    if (!motors->armed()) {
+        motors->output_min();
+        return;
+    }
+    // pass through throttle to motors
+    motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
+#endif
 }

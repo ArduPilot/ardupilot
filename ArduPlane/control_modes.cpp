@@ -98,7 +98,9 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
         ret = &mode_loiter_qland;
         break;
 #endif  // HAL_QUADPLANE_ENABLED
-
+    case Mode::Number::GLIDE:
+        ret = &mode_glide;
+        break;
     }
     return ret;
 }
@@ -119,7 +121,7 @@ void RC_Channel_Plane::mode_switch_changed(modeswitch_pos_t new_pos)
         return;
     }
 
-    plane.set_mode_by_number((Mode::Number)plane.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND);
+    IGNORE_RETURN(plane.set_mode_by_number((Mode::Number)plane.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND));
 }
 
 /*

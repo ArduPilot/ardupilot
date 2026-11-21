@@ -76,7 +76,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
     _RFRN.touchdown_expected = ahrs.get_touchdown_expected();
-    _RFRN.ahrs_airspeed_sensor_enabled = ahrs.airspeed_sensor_enabled(ahrs.get_active_airspeed_index());
+    _RFRN.vehicle_landed = ahrs.get_vehicle_landed();
     _RFRN.available_memory = hal.util->available_memory();
     _RFRN.ahrs_trim = ahrs.get_trim();
 #if AP_OPTICALFLOW_ENABLED
@@ -87,7 +87,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
     // update body conversion
-    _rotation_vehicle_body_to_autopilot_body = ahrs.get_rotation_vehicle_body_to_autopilot_body();
+    _quat_vehicle_body_to_autopilot_body = ahrs.get_quat_vehicle_body_to_autopilot_body();
 
     _ins.start_frame();
     _baro.start_frame();
@@ -150,8 +150,7 @@ void AP_DAL::init_sensors(void)
 #endif
 
 #if AP_AIRSPEED_ENABLED
-    auto *aspeed = AP::airspeed();
-    if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
+    if (AP::airspeed().get_num_sensors() > 0) {
         alloc_failed |= (_airspeed = NEW_NOTHROW AP_DAL_Airspeed) == nullptr;
     }
 #endif
@@ -201,6 +200,7 @@ void AP_DAL::log_event2(AP_DAL::Event event)
 void AP_DAL::log_SetOriginLLH2(const Location &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    end_frame();
     struct log_RSO2 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
@@ -235,6 +235,7 @@ void AP_DAL::log_event3(AP_DAL::Event event)
 void AP_DAL::log_SetOriginLLH3(const Location &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    end_frame();
     struct log_RSO3 pkt{
         lat            : loc.lat,
         lng            : loc.lng,
@@ -345,7 +346,7 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 }
 
 // log optical flow data
-void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
+void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride, float altMin)
 {
     end_frame();
 
@@ -356,6 +357,7 @@ void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawF
     _ROFH.msecFlowMeas = msecFlowMeas;
     _ROFH.posOffset = posOffset;
     _ROFH.heightOverride = heightOverride;
+    _ROFH.altMin = altMin;
     WRITE_REPLAY_BLOCK_IFCHANGED(ROFH, _ROFH, old);
 }
 
@@ -490,9 +492,9 @@ void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _ROFH = msg;
-    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
+    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride, msg.altMin);
 #if EK3_FEATURE_OPTFLOW_FUSION
-    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
+    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride, msg.altMin);
 #endif
 }
 

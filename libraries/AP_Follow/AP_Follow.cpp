@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _SYSID
     // @DisplayName: Follow target's mavlink system id
     // @Description: Follow target's mavlink system id. Zero means no target has been selected and following is inactive.
-    // @Range: 0 255
+    // @Range: 0 4294967295
     // @User: Standard
     AP_GROUPINFO("_SYSID", 3, AP_Follow, _sysid, 0),
 
@@ -158,7 +158,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: Follow options
     // @Description: Follow options bitmask
-    // @Values: 0:None,1: Mount Follows lead vehicle on mode enter
+    // @Bitmask: 0:Mount follows lead vehicle on mode enter
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, 0),
 
@@ -226,6 +226,15 @@ AP_Follow::AP_Follow() :
 {
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+// convert parameters. Must be called before anything reads FOLL_SYSID,
+// which includes mode entry at startup, so this is done from the vehicle's
+// load_parameters() rather than lazily on first use
+void AP_Follow::convert_params()
+{
+    // PARAMETER_CONVERSION - Added: Jul-2026 for ArduPilot-4.8 - 32 bit sysids
+    _sysid.convert_parameter_width(AP_PARAM_INT16);
 }
 
 
@@ -452,6 +461,14 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 // Retrieves the target's estimated global location including configured offsets, and estimated velocity,  for LUA bindings.
 bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned)
 {
+    Vector3f accel_ned_mss;
+    return get_target_location_vel_accel_ofs(loc, vel_ned, accel_ned_mss);
+}
+
+// Retrieves the target's estimated global location including configured offsets, in the
+// FOLL_ALT_TYPE frame, with the matching estimated velocity and acceleration.
+bool AP_Follow::get_target_location_vel_accel_ofs(Location &loc, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss)
+{
     WITH_SEMAPHORE(_follow_sem);
 
     if (!have_target()) {
@@ -461,7 +478,8 @@ bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &ve
         return false;
     }
 
-    vel_ned = _ofs_estimate_vel_ned_ms;
+    vel_ned_ms = _ofs_estimate_vel_ned_ms;
+    accel_ned_mss = _ofs_estimate_accel_ned_mss;
 
     // give the caller the frame FOLL_ALT_TYPE asks for
     return loc.change_alt_frame(_alt_type);
@@ -583,8 +601,8 @@ bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
         return false;
     }
 
-    // skip message if not from our target.  a _sysid of zero means no target
-    // has been selected, so no message is ever accepted
+    // skip message if not from our target.  a zero _sysid means no
+    // target has been selected, so no message is ever accepted
     if (msg.sysid != _sysid) {
         return false;
     }
@@ -971,12 +989,13 @@ bool AP_Follow::have_target_data(void) const
     }
 
     // no target system has been configured
-    if (_sysid == 0) {
+    const uint32_t target_sysid = _sysid;
+    if (target_sysid == 0) {
         return false;
     }
 
     // we have not yet accepted an update from the configured system
-    if (_sysid_of_data != _sysid) {
+    if (_sysid_of_data != target_sysid) {
         return false;
     }
 

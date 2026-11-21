@@ -106,9 +106,11 @@ int AP_Filesystem_Mission::close(int fd)
 /*
   packed format:
     file header:
-      uint16_t magic = 0x671b
+      uint16_t magic = 0x763d
       uint16_t data_type MAV_MISSION_TYPE_*
-      uint32_t total_items
+      uint16_t options
+      uint16_t start (first item number, 0 for full upload)
+      uint16_t num_items
 
     per-entry is mavlink packed item
  */
@@ -310,6 +312,13 @@ int32_t AP_Filesystem_Mission::write(int fd, const void *buf, uint32_t count)
         return -1;
     }
     r.last_op_ms = AP_HAL::millis();
+    const uint32_t max_file_size =
+        sizeof(struct header) + (uint32_t(UINT16_MAX) + 1U) *
+        MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN - 1U;
+    if (count > max_file_size || r.file_ofs > max_file_size - count) {
+        errno = EINVAL;
+        return -1;
+    }
     struct header hdr;
     if (r.file_ofs == 0 && count >= sizeof(hdr)) {
         // pre-expand the buffer to the full size when we get the header

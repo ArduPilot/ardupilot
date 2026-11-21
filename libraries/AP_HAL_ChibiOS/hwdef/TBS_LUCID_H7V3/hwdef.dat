@@ -70,12 +70,6 @@ undef PC6 PC7
 PC6 USART6_TX USART6 NODMA
 PC7 USART6_RX USART6 NODMA
 
-# ---------------- Barometer -------------------
-# FCAPV3 footprints either DPS368 (DPS310 driver, inherited) or BMP390
-# (BMP388 driver) at I2C 0x76 on I2C2; add the BMP388 probe so either variant
-# is detected at runtime.
-BARO BMP388 I2C:0:0x76
-
 # ---------------- Battery 2 scale -------------
 # Vbat2 uses a 200K:10K (21:1) divider per the FCAPV3 schematic; the base hwdef
 # inherits an 11:1 scale, so override it here for a correct reading.

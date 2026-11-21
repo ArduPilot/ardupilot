@@ -179,7 +179,7 @@ int8_t AP_VisualOdom::quality() const
     return _driver->quality();
 }
 
-#if HAL_GCS_ENABLED
+#if HAL_MAVLINK_BINDINGS_ENABLED
 // consume vision_position_delta mavlink messages
 void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &msg)
 {

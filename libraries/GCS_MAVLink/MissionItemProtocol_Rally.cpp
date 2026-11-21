@@ -73,18 +73,24 @@ MAV_MISSION_RESULT MissionItemProtocol_Rally::convert_MISSION_ITEM_INT_to_RallyL
 
     switch (cmd.frame) {
         case MAV_FRAME_GLOBAL:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         case MAV_FRAME_GLOBAL_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
             ret.alt_frame = uint8_t(Location::AltFrame::ABSOLUTE);
             break;
 
         case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
             ret.alt_frame = uint8_t(Location::AltFrame::ABOVE_HOME);
             break;
 
 #if AP_TERRAIN_AVAILABLE
         case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+#if AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
         case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+#endif  // AP_MAVLINK_GLOBAL_INT_FRAMES_ENABLED
             ret.alt_frame = uint8_t(Location::AltFrame::ABOVE_TERRAIN);
             break;
 #endif

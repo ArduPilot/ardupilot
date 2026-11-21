@@ -29,6 +29,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <utility>
 #include "AP_OpticalFlow.h"
 #include "AP_OpticalFlow_Pixart_SROM.h"

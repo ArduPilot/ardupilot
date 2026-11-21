@@ -21,11 +21,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 
-    // @Param: RST_SWITCH_CH
-    // @DisplayName: Reset Switch Channel
-    // @Description: RC channel to use to reset to last flight mode after geofence takeover.
-    // @User: Advanced
-    GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
+    // RST_SWITCH_CH was here
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial driving mode
@@ -108,14 +104,14 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range. Failsafe will be triggered when the throttle channel goes below the FS_THR_VALUE for FS_TIMEOUT seconds.
+    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range. Failsafe will be triggered when the throttle channel reaches the FS_THR_VALUE, or goes below it, for FS_TIMEOUT seconds.
     // @Values: 0:Disabled,1:Enabled,2:Enabled Continue with Mission in Auto
     // @User: Standard
     GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     FS_THR_ENABLED),
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on the throttle channel below which throttle failsafe triggers.
+    // @Description: The PWM level on the throttle channel at or below which throttle failsafe triggers.
     // @Range: 910 1100
     // @Increment: 1
     // @User: Standard
@@ -722,50 +718,6 @@ ParametersG2::ParametersG2(void)
   old object. This should be zero for top level parameters.
  */
 const AP_Param::ConversionInfo conversion_table[] = {
-    // PARAMETER_CONVERSION - Added: Oct-2013 for APMrover2-2.44
-    { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
-    { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
-    { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },
-    { Parameters::k_param_volt_div_ratio,     0,      AP_PARAM_FLOAT, "BATT_VOLT_MULT" },
-    { Parameters::k_param_curr_amp_per_volt,  0,      AP_PARAM_FLOAT, "BATT_AMP_PERVOLT" },
-    { Parameters::k_param_pack_capacity,      0,      AP_PARAM_INT32, "BATT_CAPACITY" },
-    // PARAMETER_CONVERSION - Added: Jan-2015 for APMrover2-2.49
-    { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
-    { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
-    { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
-    // PARAMETER_CONVERSION - Added: Aug-2017 for Rover-3.2
-    { Parameters::k_param_throttle_min_old,   0,      AP_PARAM_INT8,  "MOT_THR_MIN" },
-    { Parameters::k_param_throttle_max_old,   0,      AP_PARAM_INT8,  "MOT_THR_MAX" },
-    // PARAMETER_CONVERSION - Added: Apr-2019 for Rover-4.0
-    { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
-    // PARAMETER_CONVERSION - Added: May-2019 for Rover-4.0
-    { Parameters::k_param_waypoint_radius_old,    0,  AP_PARAM_FLOAT,  "WP_RADIUS" },
-    // PARAMETER_CONVERSION - Added: Dec-2021 for Rover-4.4
-    { Parameters::k_param_g2,               299,      AP_PARAM_INT16,  "WP_PIVOT_ANGLE" },
-    { Parameters::k_param_g2,               363,      AP_PARAM_INT16,  "WP_PIVOT_RATE" },
-    { Parameters::k_param_g2,               491,      AP_PARAM_FLOAT,  "WP_PIVOT_DELAY" },
-    // PARAMETER_CONVERSION - Added: May-2019 for Rover-4.0
-    { Parameters::k_param_g2,                32,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MIN" },
-    { Parameters::k_param_g2,                33,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MAX" },
-    { Parameters::k_param_g2,                34,      AP_PARAM_FLOAT,  "SAIL_ANGLE_IDEAL" },
-    { Parameters::k_param_g2,                35,      AP_PARAM_FLOAT,  "SAIL_HEEL_MAX" },
-    { Parameters::k_param_g2,                36,      AP_PARAM_FLOAT,  "SAIL_NO_GO_ANGLE" },
-    // PARAMETER_CONVERSION - Added: May-2021 for Rover-4.1
-    { Parameters::k_param_turn_max_g_old,     0,     AP_PARAM_FLOAT,  "ATC_TURN_MAX_G" },
-    // PARAMETER_CONVERSION - Added: Aug-2022 for Rover-4.4
-    { Parameters::k_param_g2,                82,     AP_PARAM_INT8 , "PRX1_TYPE" },
-    { Parameters::k_param_g2,               146,     AP_PARAM_INT8 , "PRX1_ORIENT" },
-    { Parameters::k_param_g2,               210,     AP_PARAM_INT16, "PRX1_YAW_CORR" },
-    { Parameters::k_param_g2,               274,     AP_PARAM_INT16, "PRX1_IGN_ANG1" },
-    { Parameters::k_param_g2,               338,     AP_PARAM_INT8,  "PRX1_IGN_WID1" },
-    { Parameters::k_param_g2,               402,     AP_PARAM_INT16, "PRX1_IGN_ANG2" },
-    { Parameters::k_param_g2,               466,     AP_PARAM_INT8,  "PRX1_IGN_WID2" },
-    { Parameters::k_param_g2,               530,     AP_PARAM_INT16, "PRX1_IGN_ANG3" },
-    { Parameters::k_param_g2,               594,     AP_PARAM_INT8,  "PRX1_IGN_WID3" },
-    { Parameters::k_param_g2,               658,     AP_PARAM_INT16, "PRX1_IGN_ANG4" },
-    { Parameters::k_param_g2,               722,     AP_PARAM_INT8,  "PRX1_IGN_WID4" },
-    { Parameters::k_param_g2,               1234,    AP_PARAM_FLOAT, "PRX1_MIN" },
-    { Parameters::k_param_g2,               1298,    AP_PARAM_FLOAT, "PRX1_MAX" },
     // PARAMETER_CONVERSION - Added: May-2024 for Rover-4.6
     { Parameters::k_param_g2,               113,     AP_PARAM_INT8, "TRQ1_TYPE" },
     { Parameters::k_param_g2,               177,     AP_PARAM_INT8, "TRQ1_ONOFF_PIN" },
@@ -792,46 +744,10 @@ void Rover::load_parameters(void)
         g2.crash_angle.set_default(30);
     }
 
-    SRV_Channels::upgrade_parameters();
-
-    // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
-    // PARAMETER_CONVERSION - Added: Jan-2019 for Rover-3.5
-    const AP_Param::ConversionInfo ch7_option_info = { Parameters::k_param_ch7_option, 0, AP_PARAM_INT8, "RC7_OPTION" };
-    AP_Int8 ch7_opt_old;
-    if (AP_Param::find_old_parameter(&ch7_option_info, &ch7_opt_old)) {
-        const uint8_t ch7_opt_map[] = {0,7,50,41,51,52,53,54,16,4,42,55,56};
-        const uint8_t ch7_opt_old_val = (uint8_t)ch7_opt_old.get();
-        if (ch7_opt_old_val < ARRAY_SIZE(ch7_opt_map)) {
-            AP_Param::set_default_by_name(ch7_option_info.new_name, ch7_opt_map[ch7_opt_old_val]);
-        }
-    }
-
-    // set AR_WPNav's WP_SPEED to be old WP_SPEED (if set) or CRUISE_SPEED (if set)
-    // PARAMETER_CONVERSION - Added: May-2019 for Rover-4.0
-    const AP_Param::ConversionInfo wp_speed_old_info = { Parameters::k_param_g2, 14, AP_PARAM_FLOAT, "WP_SPEED" };
-    const AP_Param::ConversionInfo cruise_speed_info = { Parameters::k_param_speed_cruise, 0, AP_PARAM_FLOAT, "WP_SPEED" };
-    AP_Float wp_speed_old;
-    if (AP_Param::find_old_parameter(&wp_speed_old_info, &wp_speed_old)) {
-        // old WP_SPEED parameter value was set so copy to new WP_SPEED
-        AP_Param::convert_old_parameter(&wp_speed_old_info, 1.0f);
-    } else {
-        // copy CRUISE_SPEED to new WP_SPEED
-        AP_Param::convert_old_parameter(&cruise_speed_info, 1.0f);
-    }
-
-    // attitude control FF and FILT parameter changes for Rover-3.6
-    // PARAMETER_CONVERSION - Added: Jul-2019 for Rover-4.0
-    const AP_Param::ConversionInfo ff_and_filt_conversion_info[] = {
-        { Parameters::k_param_g2, 24650, AP_PARAM_FLOAT, "ATC_STR_RAT_FLTE" },
-        { Parameters::k_param_g2, 28746, AP_PARAM_FLOAT, "ATC_STR_RAT_FF" },
-        { Parameters::k_param_g2, 24714, AP_PARAM_FLOAT, "ATC_SPEED_FLTE" },
-        { Parameters::k_param_g2, 28810, AP_PARAM_FLOAT, "ATC_SPEED_FF" },
-        { Parameters::k_param_g2, 25226, AP_PARAM_FLOAT, "ATC_BAL_FLTE" },
-        { Parameters::k_param_g2, 29322, AP_PARAM_FLOAT, "ATC_BAL_FF" },
-        { Parameters::k_param_g2, 25354, AP_PARAM_FLOAT, "ATC_SAIL_FLTE" },
-        { Parameters::k_param_g2, 29450, AP_PARAM_FLOAT, "ATC_SAIL_FF" },
-    };
-    AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[0], ARRAY_SIZE(ff_and_filt_conversion_info));
+#if AP_FOLLOW_ENABLED
+    // convert Follow parameters
+    g2.follow.convert_params();
+#endif
 
     // configure safety switch to allow stopping the motors while armed
 #if HAL_HAVE_SAFETY_SWITCH
@@ -841,23 +757,11 @@ void Rover::load_parameters(void)
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
-#if AP_AIRSPEED_ENABLED
-// PARAMETER_CONVERSION - Added: Jan-2022 for Rover-4.2
-        { &airspeed, airspeed.var_info, 37 },
-#endif
-#if AP_AIS_ENABLED
-// PARAMETER_CONVERSION - Added: Mar-2022 for Rover-4.4
-        { &ais, ais.var_info, 50 },
-#endif
-#if AP_FENCE_ENABLED
-// PARAMETER_CONVERSION - Added: Mar-2022 for Rover-4.4
-        { &fence, fence.var_info, 17 },
-#endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
         { &stats, stats.var_info, 1 },
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
         { &scripting, scripting.var_info, 41 },
 #endif

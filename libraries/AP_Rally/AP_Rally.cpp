@@ -68,7 +68,7 @@ AP_Rally::AP_Rally()
 // get a rally point from EEPROM
 bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
 {
-    if (i >= (uint8_t) _rally_point_total_count) {
+    if (i >= _rally_point_total_count) {
         return false;
     }
 
@@ -115,7 +115,7 @@ bool AP_Rally::append(const RallyLocation &loc)
 // save a rally point to EEPROM - this assumes that the RALLY_TOTAL param has been incremented beforehand, which is the case in Mission Planner
 bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc)
 {
-    if (i >= (uint8_t) _rally_point_total_count) {
+    if (i >= _rally_point_total_count) {
         return false;
     }
 
@@ -153,7 +153,7 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
 {
     float min_dis = -1;
 
-    for (uint8_t i = 0; i < (uint8_t) _rally_point_total_count; i++) {
+    for (uint8_t i = 0; i < _rally_point_total_count; i++) {
         RallyLocation next_rally;
         if (!get_rally_point_with_index(i, next_rally)) {
             continue;

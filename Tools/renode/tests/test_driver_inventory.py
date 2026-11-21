@@ -1,0 +1,450 @@
+#!/usr/bin/env python3
+
+# AP_FLAKE8_CLEAN
+
+"""Tests for the Renode peripheral-driver inventory."""
+
+import importlib.util
+import json
+import sys
+
+from pathlib import Path
+
+import pytest
+
+MODULE_PATH = Path(__file__).resolve().parents[1] / 'driver_inventory.py'
+sys.path.insert(0, str(MODULE_PATH.parent))
+import driver_catalog  # noqa: E402
+
+SPEC = importlib.util.spec_from_file_location('driver_inventory', MODULE_PATH)
+assert SPEC is not None and SPEC.loader is not None
+driver_inventory = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(driver_inventory)
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def test_live_catalog_is_consistent():
+    assert driver_inventory.validate_catalog(ROOT) == []
+    assert driver_inventory.validate_classifications(ROOT) == []
+    assert driver_inventory.validate_probe_profiles(ROOT) == []
+    assert driver_inventory.ATTACHABLE_DEVICES['ublox-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 230),
+        ('GPS{instance}_TYPE', 2),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['nmea-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 230),
+        ('GPS{instance}_TYPE', 5),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['sirf-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 38),
+        ('GPS{instance}_TYPE', 6),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['erb-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 230),
+        ('GPS{instance}_TYPE', 13),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['nova-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 19),
+        ('GPS{instance}_TYPE', 15),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['sbp-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 115),
+        ('GPS{instance}_TYPE', 8),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['sbp2-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 115),
+        ('GPS{instance}_TYPE', 8),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['sbf-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 230),
+        ('GPS{instance}_TYPE', 10),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['gsof-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 230),
+        ('GPS{instance}_TYPE', 11),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'benewake-rangefinder']['physics'] == {
+            'source': 'rangefinder',
+            'property': 'RangefinderIndex',
+            'count': 10,
+        }
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'benewake-tfmini-rangefinder']['model'] == 'Sensors.AP_Benewake'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'benewake-tf03-rangefinder']['model'] == 'Sensors.AP_Benewake'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'maxsonar-serial-rangefinder']['model'] == (
+            'Sensors.AP_MaxSonarSerial')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-rangefinder']['model'] == 'Sensors.AP_NMEARangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'gyus42v2-rangefinder']['model'] == 'Sensors.AP_GYUS42v2'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'lanbao-rangefinder']['model'] == 'Sensors.AP_LanbaoRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'teraranger-serial-rangefinder']['model'] == (
+            'Sensors.AP_TeraRangerSerial')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'usd1-rangefinder']['model'] == 'Sensors.AP_USD1Rangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nooploop-rangefinder']['model'] == 'Sensors.AP_NoopLoopRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nooploop-beacon']['model'] == 'Sensors.AP_NooploopBeacon'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-output']['model'] == 'Sensors.AP_NMEAOutputAnalyzer'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'ltm-output']['model'] == 'Sensors.AP_LTMOutputAnalyzer'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'devo-output']['model'] == 'Sensors.AP_DevoOutputAnalyzer'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'frsky-d-output']['model'] == 'Sensors.AP_FrSkyDOutputAnalyzer'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'jre-rangefinder']['model'] == 'Sensors.AP_JRERangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'ainstein-lrd1-rangefinder']['model'] == (
+            'Sensors.AP_AinsteinLRD1Rangefinder')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'rds02uf-rangefinder']['model'] == 'Sensors.AP_RDS02UFRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'dts6012m-rangefinder']['model'] == 'Sensors.AP_DTS6012MRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'blping-rangefinder']['model'] == 'Sensors.AP_BLPingRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'wasp-rangefinder']['model'] == 'Sensors.AP_WaspRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'lightware-grf-rangefinder']['model'] == (
+            'Sensors.AP_LightWareGRFRangefinder')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'leddarone-rangefinder']['model'] == 'Sensors.AP_LeddarOneRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'leddarvu8-rangefinder']['model'] == 'Sensors.AP_LeddarVu8Rangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'teraranger-tower-proximity']['model'] == (
+            'Sensors.AP_TeraRangerTowerProximity')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'teraranger-tower-evo-proximity']['model'] == (
+            'Sensors.AP_TeraRangerTowerEvoProximity')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'cygbot-d1-proximity']['model'] == 'Sensors.AP_CygbotD1Proximity'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'rplidar-a2-proximity']['model'] == 'Sensors.AP_RPLidarA2Proximity'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'lightware-sf40c-proximity']['model'] == (
+            'Sensors.AP_LightWareSF40CProximity')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'lightware-sf45b-proximity']['model'] == (
+            'Sensors.AP_LightWareSF45BProximity')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-airspeed']['model'] == 'Sensors.AP_NMEAAirspeed'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-wind-vane']['model'] == 'Sensors.AP_NMEAWindVane'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'cxof-optical-flow']['model'] == 'Sensors.AP_CXOF'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'upflow-optical-flow']['model'] == 'Sensors.AP_UPFLOW'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-ais-receiver']['model'] == 'Sensors.AP_AISReceiver'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'pozyx-beacon']['model'] == 'Sensors.AP_PozyxBeacon'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'marvelmind-beacon']['model'] == 'Sensors.AP_MarvelmindBeacon'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'ld06-proximity']['model'] == 'Sensors.AP_LD06Proximity'
+
+
+def test_parameter_recipes_resolve_for_hwdef_ports():
+    uart = {
+        'id': 'SERIAL4',
+        'name': 'SERIAL4 (UART7)',
+        'bus': 'uart',
+        'index': 4,
+    }
+    i2c = {
+        'id': 'I2C2',
+        'name': 'I2C2 (I2C1)',
+        'bus': 'i2c',
+        'index': 1,
+    }
+
+    assert driver_catalog.resolve_parameter_recipe(
+        'ublox-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 230),
+            ('GPS2_TYPE', 2),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'nmea-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 230),
+            ('GPS2_TYPE', 5),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'sirf-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 38),
+            ('GPS2_TYPE', 6),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'erb-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 230),
+            ('GPS2_TYPE', 13),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'nova-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 19),
+            ('GPS2_TYPE', 15),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'sbp-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 115),
+            ('GPS2_TYPE', 8),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'sbp2-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 115),
+            ('GPS2_TYPE', 8),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'sbf-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 230),
+            ('GPS2_TYPE', 10),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'gsof-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 230),
+            ('GPS2_TYPE', 11),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'maxsonar-serial-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 9),
+            ('RNGFND2_TYPE', 13),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'nmea-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 17),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'benewake-tfmini-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 20),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'benewake-tf03-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 27),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'gyus42v2-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 9),
+            ('RNGFND2_TYPE', 31),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'lanbao-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 26),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'teraranger-serial-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 35),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'usd1-rangefinder', uart, instance=2)[-1] == ('RNGFND2_TYPE', 11)
+    assert driver_catalog.resolve_parameter_recipe(
+        'nooploop-rangefinder', uart, instance=2)[-1] == (
+            'RNGFND2_TYPE', 37)
+    assert driver_catalog.resolve_parameter_recipe(
+        'jre-rangefinder', uart, instance=2)[-1] == ('RNGFND2_TYPE', 41)
+    assert driver_catalog.resolve_parameter_recipe(
+        'ainstein-lrd1-rangefinder', uart, instance=2)[-1] == (
+            'RNGFND2_TYPE', 42)
+    assert driver_catalog.resolve_parameter_recipe(
+        'rds02uf-rangefinder', uart, instance=2)[-1] == (
+            'RNGFND2_TYPE', 43)
+    assert driver_catalog.resolve_parameter_recipe(
+        'dts6012m-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 921),
+            ('RNGFND2_TYPE', 47),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'blping-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 23),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'ms4525-airspeed', i2c) == (
+            ('ARSPD_TYPE', 1),
+            ('ARSPD_BUS', '1'),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'asp5033-airspeed', i2c, instance=2) == (
+            ('ARSPD2_TYPE', 15),
+            ('ARSPD2_BUS', '1'),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'ina228-power-monitor', i2c, instance=2) == (
+            ('BATT2_MONITOR', 21),
+            ('BATT2_I2C_BUS', '1'),
+            ('BATT2_I2C_ADDR', 64),
+            ('BATT2_MAX_AMPS', 90),
+            ('BATT2_SHUNT', 0.0005),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'ina3221-power-monitor', i2c, instance=1) == (
+            ('BATT_MONITOR', 30),
+            ('BATT_I2C_BUS', '1'),
+            ('BATT_I2C_ADDR', 64),
+            ('BATT_CHANNEL', '1'),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'ina3221-power-monitor', i2c, instance=2) == (
+            ('BATT2_MONITOR', 30),
+            ('BATT2_I2C_BUS', '1'),
+            ('BATT2_I2C_ADDR', 64),
+            ('BATT2_CHANNEL', '2'),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'ina3221-power-monitor', i2c, instance=3) == (
+            ('BATT3_MONITOR', 30),
+            ('BATT3_I2C_BUS', '1'),
+            ('BATT3_I2C_ADDR', 64),
+            ('BATT3_CHANNEL', '3'),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'ist8310-compass', i2c) == ()
+
+
+def test_parameter_recipe_rejects_wrong_bus():
+    with pytest.raises(ValueError, match='cannot attach'):
+        driver_catalog.resolve_parameter_recipe(
+            'ublox-gps', {'id': 'I2C1', 'name': 'I2C1',
+                          'bus': 'i2c', 'index': 0})
+
+
+def test_live_inventory_finds_driver_families():
+    result = driver_inventory.inventory(ROOT)
+
+    assert 'GPS' in result['serial_protocols']
+    assert 'Rangefinder' in result['serial_protocols']
+    assert 'BMM350' in result['hwdef_i2c_probes']['compass']
+    assert 'BMP581' in result['hwdef_i2c_probes']['barometer']
+    assert 'BMI088' in result['hwdef_i2c_probes']['imu']
+    assert 'AP_UBlox' in result['renode_models']['uart']
+    assert 'AP_NMEAGPS' in result['renode_models']['uart']
+    assert 'AP_SIRFGPS' in result['renode_models']['uart']
+    assert 'AP_ERBGPS' in result['renode_models']['uart']
+    assert 'AP_NOVAGPS' in result['renode_models']['uart']
+    assert 'AP_SBPGPS' in result['renode_models']['uart']
+    assert 'AP_SBP2GPS' in result['renode_models']['uart']
+    assert 'AP_SBFGPS' in result['renode_models']['uart']
+    assert 'AP_GSOFGPS' in result['renode_models']['uart']
+    assert 'AP_IST8310' in result['renode_models']['i2c']
+    assert 'AP_BMP085' in result['renode_models']['i2c']
+    assert 'AP_I2CRegisterDevice' not in result['renode_models']['i2c']
+    assert result['catalog']['ublox-gps']['coverage'] == 'dynamic'
+    assert result['catalog']['ublox-gps']['parameters'][0] == (
+        'SERIAL{serial}_PROTOCOL', 5)
+    assert result['probe_profiles']['matekh743-navigation']['devices'][0][
+        'device'] == 'ublox-gps'
+    assert result['probe_profiles']['matekh743-rangefinders']['devices'][1][
+        'device'] == 'lightware-rangefinder'
+    assert result['probe_profiles'][
+        'matekh743-benewake-rangefinders']['devices'][2]['device'] == (
+            'benewake-tf03-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-ascii-rangefinders']['devices'][0]['device'] == (
+            'maxsonar-serial-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-binary-rangefinders']['devices'][2]['device'] == (
+            'teraranger-serial-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-radar-rangefinders']['devices'][4]['device'] == (
+            'rds02uf-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-command-rangefinders']['devices'][0]['assertions'][0] == (
+            'configuration')
+    assert result['probe_profiles'][
+        'matekh743-configured-rangefinders']['devices'][1]['device'] == (
+            'lightware-grf-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-polled-rangefinders']['devices'][0]['device'] == (
+            'leddarone-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-teraranger-proximity']['devices'][0]['device'] == (
+            'teraranger-tower-proximity')
+    assert result['probe_profiles'][
+        'matekh743-ld06-proximity']['devices'][0]['device'] == (
+            'ld06-proximity')
+    assert result['probe_profiles'][
+        'matekh743-nmea-airspeed']['devices'][0]['device'] == (
+            'nmea-airspeed')
+    assert result['probe_profiles'][
+        'matekh743-nmea-wind']['devices'][0]['device'] == 'nmea-wind-vane'
+    assert result['probe_profiles']['matekh743-airspeed']['devices'][0][
+        'device'] == 'ms4525-airspeed'
+    assert result['probe_profiles']['matekh743-airspeeds']['devices'][1][
+        'instance'] == 2
+    assert result['serial_protocol_classifications']['GPS'] == {
+        'kind': 'device',
+        'status': 'partial',
+    }
+    assert result['i2c_source_classifications'][
+        'AP_Airspeed/AP_Airspeed_MS4525.cpp'] == 'device'
+    assert result['i2c_source_classifications'][
+        'GCS_MAVLink/GCS_DeviceOp.cpp'] == 'service'
+    assert result['i2c_source_boundaries'][
+        'AP_ADC/AP_ADC_ADS1115.cpp']['scope'] == 'linux-hal'
+    assert result['i2c_source_boundaries'][
+        'AP_DAC/AP_DAC_MCP40D1x.cpp']['scope'] == 'ap-periph'
+    assert result['i2c_source_boundaries'][
+        'AP_InertialSensor/AP_InertialSensor_L3G4200D.cpp']['scope'] == (
+            'linux-example')
+    assert result['serial_source_classifications'][
+        'AP_GPS/AP_GPS_UBLOX.cpp'] == {
+            'role': 'device',
+            'family': 'gnss-ublox',
+        }
+    assert result['serial_source_classifications'][
+        'AP_GPS/AP_GPS.cpp']['role'] == 'frontend'
+    assert result['serial_source_classifications'][
+        'AP_RCTelemetry/AP_CRSF_Telem.cpp']['family'] == 'rc-crsf'
+
+
+def test_inventory_json_cli(capsys):
+    assert driver_inventory.main(['--root', str(ROOT), '--json']) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result['catalog_errors'] == []
+    assert result['classification_errors'] == []
+    assert len(result['serial_protocols']) > 40
+
+
+def test_catalog_check_cli(capsys):
+    assert driver_inventory.main(['--root', str(ROOT), '--check']) == 0
+    assert 'peripheral-driver inventory' in capsys.readouterr().out

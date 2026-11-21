@@ -92,6 +92,8 @@ struct log_RFRF {
 // @FieldValueEnum: EKT: AP_DAL::EKFType
 // @Field: Flags: bitmask of boolean state
 // @FieldBitmaskEnum: Flags: AP_DAL::RFRNFlags
+// @Field: Flags2: more bitmask boolean state
+// @FieldBitmaskEnum: Flags2: AP_DAL::RFRNFlags2
 struct log_RFRN {
     int32_t lat;
     int32_t lng;
@@ -104,11 +106,12 @@ struct log_RFRN {
     uint8_t armed:1;
     uint8_t unused:1;  // was get_compass_is_null
     uint8_t fly_forward:1;
-    uint8_t ahrs_airspeed_sensor_enabled:1;
+    uint8_t ahrs_airspeed_sensor_enabled_unused:1;
     uint8_t opticalflow_enabled:1;
     uint8_t wheelencoder_enabled:1;
     uint8_t takeoff_expected:1;
     uint8_t touchdown_expected:1;
+    uint8_t vehicle_landed:1;
     uint8_t _end;
 };
 
@@ -513,6 +516,10 @@ struct log_RVOH {
 // @Field: PZ: body-frame offset, Z-axis
 // @Field: HgtOvr: sensor height override
 // @Field: Qual: flow quality measurement
+// @Field: U1: unused1
+// @Field: U2: unused2
+// @Field: U3: unused3
+// @Field: AltMin: altitude above terrain below which the sensor cannot focus
 struct log_ROFH {
     Vector2f rawFlowRates;
     Vector2f rawGyroRates;
@@ -520,6 +527,10 @@ struct log_ROFH {
     Vector3f posOffset;
     float heightOverride;
     uint8_t rawFlowQuality;
+    uint8_t unused1;    // 3 bytes of padding so altMin is aligned
+    uint8_t unused2;
+    uint8_t unused3;
+    float altMin;
     uint8_t _end;
 };
 
@@ -646,7 +657,7 @@ struct log_RTER {
     { LOG_RFRF_MSG, RLOG_SIZE(RFRF),                          \
       "RFRF", "BB", "FTypes,Slow", "--", "--" }, \
     { LOG_RFRN_MSG, RLOG_SIZE(RFRN),                            \
-      "RFRN", "IIIfIfffBBB", "HLat,HLon,HAlt,E2T,AM,TX,TY,TZ,VC,EKT,Flags", "DUm-bddd---", "GGB--------" }, \
+      "RFRN", "IIIfIfffBBBB", "HLat,HLon,HAlt,E2T,AM,TX,TY,TZ,VC,EKT,Flags,Flags2", "DUm-bddd----", "GGB---------" }, \
     { LOG_REV2_MSG, RLOG_SIZE(REV2),                                   \
       "REV2", "B", "Event", "-", "-" }, \
     { LOG_RSO2_MSG, RLOG_SIZE(RSO2),                         \
@@ -697,7 +708,7 @@ struct log_RTER {
     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
       "RVOH", "fffIBB", "OX,OY,OZ,Del,H,Ena", "------", "------" }, \
     { LOG_ROFH_MSG, RLOG_SIZE(ROFH),                                   \
-      "ROFH", "ffffIffffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,HgtOvr,Qual", "----------", "----------" }, \
+      "ROFH", "ffffIffffBBBBf", "FX,FY,GX,GY,Tms,PX,PY,PZ,HgtOvr,Qual,U1,U2,U3,AltMin", "--------------", "--------------" }, \
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
       "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
     { LOG_RSLL_MSG, RLOG_SIZE(RSLL),                         \

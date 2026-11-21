@@ -1,0 +1,155 @@
+{
+    "folders": [
+        {
+            "name": "ArduPilot",
+            "path": ".."
+        }
+    ],
+    "extensions": {
+        "recommendations": [
+            "ms-vscode.cpptools"
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "USB: Attach",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder:ArduPilot}/${input:elf}",
+                "cwd": "${workspaceFolder:ArduPilot}",
+                "MIMode": "gdb",
+                "targetArchitecture": "arm",
+                "miDebuggerPath": "${input:gdb}",
+                "miDebuggerArgs": "-nx",
+                "miDebuggerServerAddress": "127.0.0.1:3333",
+                "launchCompleteCommand": "None",
+                "stopAtConnect": true,
+                "setupCommands": [
+                    {
+                        "text": "set remotetimeout 35"
+                    }
+                ],
+                "externalConsole": false,
+                "sourceFileMap": {},
+                "debugServerPath": "${input:python}",
+                "debugServerArgs": "\"${workspaceFolder:ArduPilot}/Tools/debug/gdb_usb.py\" \"${workspaceFolder:ArduPilot}/${input:elf}\" --port \"${input:port}\" --serve --timeout 30",
+                "serverStarted": "USB GDB server listening on",
+                "filterStdout": true,
+                "filterStderr": true,
+                "serverLaunchTimeout": 35000
+            },
+            {
+                "name": "USB: Reconnect to existing monitor",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder:ArduPilot}/${input:elf}",
+                "cwd": "${workspaceFolder:ArduPilot}",
+                "MIMode": "gdb",
+                "targetArchitecture": "arm",
+                "miDebuggerPath": "${input:gdb}",
+                "miDebuggerArgs": "-nx",
+                "miDebuggerServerAddress": "127.0.0.1:3333",
+                "launchCompleteCommand": "None",
+                "stopAtConnect": true,
+                "setupCommands": [
+                    {
+                        "text": "set remotetimeout 35"
+                    }
+                ],
+                "externalConsole": false,
+                "sourceFileMap": {},
+                "debugServerPath": "${input:python}",
+                "debugServerArgs": "\"${workspaceFolder:ArduPilot}/Tools/debug/gdb_usb.py\" \"${workspaceFolder:ArduPilot}/${input:elf}\" --port \"${input:port}\" --serve --timeout 30 --no-break",
+                "serverStarted": "USB GDB server listening on",
+                "filterStdout": true,
+                "filterStderr": true,
+                "serverLaunchTimeout": 35000
+            }
+        ],
+        "inputs": [
+            {
+                "id": "elf",
+                "type": "promptString",
+                "description": "Matching firmware ELF, relative to the ArduPilot folder (not .apj or .bin)",
+                "default": "build/CubeOrangePlus/bin/arduplane"
+            },
+            {
+                "id": "port",
+                "type": "promptString",
+                "description": "Second USB CDC port: /dev/serial/by-id/...-if02, /dev/cu.usbmodem..., or COM40"
+            },
+            {
+                "id": "python",
+                "type": "promptString",
+                "description": "Python executable with pyserial: python3 (Linux/macOS), py (Windows), or full path",
+                "default": "python3"
+            },
+            {
+                "id": "gdb",
+                "type": "promptString",
+                "description": "ARM GDB executable name or full path",
+                "default": "arm-none-eabi-gdb"
+            }
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "USB: List serial ports",
+                "type": "process",
+                "command": "${input:python}",
+                "args": [
+                    "-m",
+                    "serial.tools.list_ports",
+                    "-v"
+                ],
+                "problemMatcher": []
+            },
+            {
+                "label": "USB: Start bridge for WSL",
+                "type": "process",
+                "command": "${input:python}",
+                "args": [
+                    "${workspaceFolder:ArduPilot}/Tools/debug/gdb_usb.py",
+                    "${input:bridgeElf}",
+                    "--port",
+                    "${input:port}",
+                    "--serve",
+                    "--timeout",
+                    "300"
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder:ArduPilot}"
+                },
+                "isBackground": true,
+                "problemMatcher": [],
+                "presentation": {
+                    "reveal": "always",
+                    "panel": "dedicated"
+                }
+            }
+        ],
+        "inputs": [
+            {
+                "id": "python",
+                "type": "promptString",
+                "description": "Python executable with pyserial: python3 (Linux/macOS), py (Windows), or full path",
+                "default": "python3"
+            },
+            {
+                "id": "port",
+                "type": "promptString",
+                "description": "Second USB CDC port: /dev/serial/by-id/...-if02, /dev/cu.usbmodem..., or COM40"
+            },
+            {
+                "id": "bridgeElf",
+                "type": "promptString",
+                "description": "Matching ELF accessible to Windows: relative path, full path, or WSL UNC path",
+                "default": "build/CubeOrangePlus/bin/arduplane"
+            }
+        ]
+    }
+}

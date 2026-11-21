@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 def build(bld):
-    if not bld.env.ENABLE_DDS:
+    if not bld.env.OPTIONS.get('enable_DDS', False):
         return
 
     bld.ap_find_tests(

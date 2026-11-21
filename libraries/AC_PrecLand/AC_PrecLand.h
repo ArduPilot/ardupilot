@@ -211,7 +211,7 @@ private:
     AP_Int8                     _retry_behave;          // Action to do when trying a landing retry
     AP_Float                    _sensor_min_alt_m;      // PrecLand minimum height required for detecting target
     AP_Float                    _sensor_max_alt_m;      // PrecLand maximum height the sensor can detect target
-    AP_Int16                    _options;               // Bitmask for extra options
+    AP_UInt16                   _options;               // Bitmask for extra options
     AP_Enum<Rotation>           _orient;                // Orientation of camera/sensor
 
     uint32_t                    _last_update_ms;            // system time in millisecond when update was last called

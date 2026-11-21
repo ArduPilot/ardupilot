@@ -62,6 +62,10 @@ extern AP_IOMCU iomcu;
 // set the servo output for these channels as "GPIO", on a Pixhawk these would be FMU outputs 5/6
 #define RCOU_SERIAL_TIMING_DEBUG 0
 #define LED_THD_WA_SIZE 256
+// safety button input polarity: 0 = active-high, 1 = active-low
+#ifndef HAL_SAFETY_IN_ACTIVE_LOW
+#define HAL_SAFETY_IN_ACTIVE_LOW 0
+#endif
 #ifndef HAL_NO_LED_THREAD
 #if defined(HAL_NO_RCOUT_THREAD)
 #define HAL_NO_LED_THREAD 1
@@ -713,6 +717,11 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     if (chan >= max_channels) {
         return;
     }
+
+    if (outputs_frozen) {
+        return;
+    }
+
     last_sent[chan] = period_us;
 
 #if AP_SIM_ENABLED
@@ -784,6 +793,10 @@ void RCOutput::push_local(void)
             }
             if (outmask & (1UL<<chan)) {
                 uint32_t period_us = period[chan];
+
+                if (outputs_frozen) {
+                    period_us = 0;
+                }
 
                 if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                     // safety is on, overwride pwm
@@ -1384,6 +1397,50 @@ void RCOutput::push(void)
 #endif
 }
 
+// prepare the backend for reboot; there's no way back from this
+void RCOutput::prepare_for_reboot(void)
+{
+    outputs_frozen = true;
+
+#if AP_SIM_ENABLED
+    // write() returns above the point where it updates this, so the
+    // simulation's view of the outputs has to be zeroed here
+    memset(hal.simstate->pwm_output, 0, sizeof(hal.simstate->pwm_output));
+#endif
+
+#if HAL_WITH_IO_MCU
+    if (iomcu_enabled) {
+        /*
+          The IOMCU applies safety itself, in its pwm_out_update(), so
+          forcing safety on there is sticky in a way a write is not: a
+          thread which passed the test at the top of write() before the
+          freeze, and resumes after it, cannot then produce an output.
+          Channels in the IOMCU's ignore_safety mask, which is
+          BRD_SAFETY_MASK, are exempt from that and are covered only by
+          the zeros below.
+         */
+        iomcu.force_safety_on();
+
+        /*
+          The IOMCU keeps its own copy of the channel values, and
+          write() no longer reaches it.  Cork the loop: an uncorked
+          write_channel() pushes itself, the IOMCU thread runs above
+          this one, and its send is rate limited to one per 2ms, so
+          without this most of these zeros would be dropped and the
+          IOMCU would keep stale values for all but the first channel.
+         */
+        iomcu.cork();
+        for (uint8_t i=0; i<chan_offset; i++) {
+            iomcu.write_channel(i, 0);
+        }
+        iomcu.push();
+    }
+#endif
+
+    // apply the freeze now rather than waiting for somebody to push
+    push_local();
+}
+
 /*
   enable sbus output
  */
@@ -1494,6 +1551,12 @@ void RCOutput::dshot_send_groups(rcout_timer_t cycle_start_us, rcout_timer_t tim
 {
 #if HAL_DSHOT_ENABLED
     if (in_soft_serial()) {
+        return;
+    }
+
+    if (outputs_frozen) {
+        // outputs are frozen, send nothing.  This covers the queued
+        // command path as well, which does not look at period[]
         return;
     }
 
@@ -1692,6 +1755,11 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
             }
 #endif
             const uint32_t servo_chan_mask = 1U<<(chan+chan_offset);
+
+            if (outputs_frozen) {
+                // outputs are frozen, don't output anything
+                continue;
+            }
 
             if (safety_on && !(safety_mask & servo_chan_mask)) {
                 // safety is on, don't output anything
@@ -2237,8 +2305,8 @@ void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
         return;
     }
 #if RCOU_SERIAL_TIMING_DEBUG
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
 #endif
     uint16_t byteval = irq.bitmask | (((1U<<BYTE_BITS)-1) & ~((1U<<irq.nbits)-1));
     // we can accept a byte with a timeout if the last bit was 1
@@ -2310,7 +2378,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
     uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOWEST;
 #endif
     // assume GPIO mappings for PWM outputs start at 50
-    palSetLineMode(line, gpio_mode);
+    stm32_set_line_mode(line, gpio_mode);
 
     chVTObjectInit(&irq.serial_timeout);
     chEvtGetAndClearEvents(serial_event_mask);
@@ -2324,12 +2392,12 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
 
     if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, AP_HAL::GPIO::INTERRUPT_BOTH)) {
         chThdSetPriority(serial_priority);
-        palSetLineMode(line, serial_mode);
+        stm32_set_line_mode(line, serial_mode);
         return 0;
     }
 
 #if RCOU_SERIAL_TIMING_DEBUG
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
 #endif
 
     uint16_t i = 0;
@@ -2347,14 +2415,14 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
 
     chSysLock();
     palDisableLineEventI(line);
-    chEvtGetAndClearEvents(serial_event_mask);
-    chVTReset(&irq.serial_timeout);
-    palSetLineMode(line, serial_mode);
+    chEvtGetAndClearEventsI(serial_event_mask);
+    chVTResetI(&irq.serial_timeout);
+    stm32_set_line_mode(line, serial_mode);
     chSysUnlock();
     chThdSetPriority(serial_priority);
 
 #if RCOU_SERIAL_TIMING_DEBUG
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
 #endif
     return i;
 }
@@ -2368,7 +2436,7 @@ void RCOutput::serial_end(uint32_t chanmask)
     chanmask >>= chan_offset;
     // restore settings as best we can
     if (in_soft_serial()) {
-        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+        stm32_set_line_mode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
     }
     irq.waiter = nullptr;
     for (auto &group : pwm_group_list) {
@@ -2391,7 +2459,7 @@ void RCOutput::serial_reset(uint32_t chanmask)
     chanmask >>= chan_offset;
     // reset settings as best we can
     if (in_soft_serial()) {
-        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+        stm32_set_line_mode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
         dma_cancel(*serial_group);
         chEvtGetAndClearEvents(serial_event_mask);
         pwmStop(serial_group->pwm_drv);
@@ -2466,6 +2534,9 @@ void RCOutput::safety_update(void)
 #ifdef HAL_GPIO_PIN_SAFETY_IN
     // handle safety button
     bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_IN);
+#if HAL_SAFETY_IN_ACTIVE_LOW
+    safety_pressed = !safety_pressed;
+#endif
     if (safety_pressed) {
         AP_BoardConfig *brdconfig = AP_BoardConfig::get_singleton();
         if (safety_press_count < UINT8_MAX) {

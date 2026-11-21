@@ -228,11 +228,12 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: ALT_OFFSET
     // @DisplayName: Altitude offset
-    // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission
+    // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission. The offset resets to zero on reboot
     // @Units: m
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Advanced
+    // @Volatile: True
     GSCALAR(alt_offset, "ALT_OFFSET",                 0),
 
     // @Param: WP_RADIUS
@@ -405,7 +406,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_FAILSAFE
     // @DisplayName: Throttle and RC Failsafe Enable
-    // @Description: 0 disables the failsafe. 1 enables failsafe on loss of RC input. This is detected either by throttle values below THR_FS_VALUE, loss of receiver valid pulses/data, or by the FS bit in receivers that provide it, like SBUS. A programmable failsafe action will occur and RC inputs, if present, will be ignored. A value of 2 means that the RC inputs won't be used when RC failsafe is detected by any of the above methods, but it won't trigger an RC failsafe action.
+    // @Description: 0 disables the failsafe. 1 enables failsafe on loss of RC input. This is detected either by the throttle channel reaching THR_FS_VALUE (at or below it, or at or above it for a reversed throttle channel), loss of receiver valid pulses/data, or by the FS bit in receivers that provide it, like SBUS. A programmable failsafe action will occur and RC inputs, if present, will be ignored. A value of 2 means that the RC inputs won't be used when RC failsafe is detected by any of the above methods, but it won't trigger an RC failsafe action.
     // @Values: 0:Disabled,1:Enabled,2:EnabledNoFailsafe
     // @User: Standard
     GSCALAR(throttle_fs_enabled,    "THR_FAILSAFE",   int(ThrFailsafe::Enabled)),
@@ -413,7 +414,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_FS_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on the throttle input channel below which throttle failsafe triggers. Note that this should be well below the normal minimum for your throttle channel.
+    // @Description: The PWM level on the throttle input channel at or below which throttle failsafe triggers. Note that this should be well below the normal minimum for your throttle channel.
     // @Range: 925 2200
     // @Increment: 1
     // @User: Standard
@@ -437,14 +438,14 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_SHORT_ACTN
     // @DisplayName: Short failsafe action
-    // @Description: The action to take on a short failsafe event. A short failsafe event can be triggered instantly by loss of RC control or by throttle value (see THR_FS_VALUE). If in CIRCLE or RTL mode this parameter is ignored. A short failsafe event in stabilization and manual modes will cause a change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, a change to FBWA mode with zero throttle if FS_SHORT_ACTN is 2, and a change to FBWB mode if FS_SHORT_ACTN is 4. In all other modes (AUTO, GUIDED and LOITER) a short failsafe event will cause no mode change if FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1, will change to FBWA mode with zero throttle if set to 2, or will change to FBWB if set to 4. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe. This parameter only applies to failsafes during fixed wing modes. Quadplane modes will switch to QLAND unless Q_OPTIONS bit 5(QRTL) or 20(RTL) are set.
-    // @Values: 0:CIRCLE/no change(if already in AUTO|GUIDED|LOITER),1:CIRCLE,2:FBWA at zero throttle,3:Disable,4:FBWB
+    // @Description: The action to take on a short failsafe event. A short failsafe event can be triggered instantly by loss of RC control or by throttle value (see THR_FS_VALUE). If in CIRCLE or RTL mode this parameter is ignored. A short failsafe event in stabilization and manual modes will cause a change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, a change to Glide mode (zero throttle, wings level) if FS_SHORT_ACTN is 2, and a change to FBWB mode if FS_SHORT_ACTN is 4. In all other modes (AUTO, GUIDED and LOITER) a short failsafe event will cause no mode change if FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1, will change to Glide mode if set to 2, or will change to FBWB if set to 4. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe. This parameter only applies to failsafes during fixed wing modes. Quadplane modes will switch to QLAND unless Q_OPTIONS bit 5(QRTL) or 20(RTL) are set.
+    // @Values: 0:CIRCLE/no change(if already in AUTO|GUIDED|LOITER),1:CIRCLE,2:Glide,3:Disable,4:FBWB
     // @User: Standard
     GSCALAR(fs_action_short,        "FS_SHORT_ACTN",  FS_ACTION_SHORT_BESTGUESS),
 
     // @Param: FS_LONG_ACTN
     // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. If FS_LONG_ACTN is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). If FS_LONG_ACTN is set to 4 the aircraft will switch to mode AUTO with the current waypoint if it is not already in mode AUTO, unless it is in the middle of a landing sequence. If FS_LONG_ACTN is set to 5, will switch to AUTOLAND mode if possible, otherwise RTL mode. This parameter only applies to failsafes during fixed wing modes. Quadplane modes will switch to QLAND unless Q_OPTIONS bit 5 (QRTL) or 20(RTL) are set.
+    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to Glide mode (zero throttle, wings level) if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to Glide mode if FS_LONG_ACTN is set to 2. If FS_LONG_ACTN is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). If FS_LONG_ACTN is set to 4 the aircraft will switch to mode AUTO with the current waypoint if it is not already in mode AUTO, unless it is in the middle of a landing sequence. If FS_LONG_ACTN is set to 5, will switch to AUTOLAND mode if possible, otherwise RTL mode. This parameter only applies to failsafes during fixed wing modes. Quadplane modes will switch to QLAND unless Q_OPTIONS bit 5 (QRTL) or 20(RTL) are set.
     // @Values: 0:Continue,1:ReturnToLaunch,2:Glide,3:Deploy Parachute,4:Auto,5:AUTOLAND
     // @User: Standard
     GSCALAR(fs_action_long,         "FS_LONG_ACTN",   FS_ACTION_LONG_CONTINUE),
@@ -475,7 +476,32 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: FlightMode1
     // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand,26:AUTOLAND
+    // @Values: 0:Manual
+    // @Values: 1:CIRCLE
+    // @Values: 2:STABILIZE
+    // @Values: 3:TRAINING
+    // @Values: 4:ACRO
+    // @Values: 5:FBWA
+    // @Values: 6:FBWB
+    // @Values: 7:CRUISE
+    // @Values: 8:AUTOTUNE
+    // @Values: 10:Auto
+    // @Values: 11:RTL
+    // @Values: 12:Loiter
+    // @Values: 13:TAKEOFF
+    // @Values: 14:AVOID_ADSB
+    // @Values: 15:Guided
+    // @Values: 17:QSTABILIZE
+    // @Values: 18:QHOVER
+    // @Values: 19:QLOITER
+    // @Values: 20:QLAND
+    // @Values: 21:QRTL
+    // @Values: 22:QAUTOTUNE
+    // @Values: 23:QACRO
+    // @Values: 24:THERMAL
+    // @Values: 25:Loiter to QLand
+    // @Values: 26:AUTOLAND
+    // @Values: 27:Glide
     // @User: Standard
     GARRAY(flight_modes, 0,         "FLTMODE1",       FLIGHT_MODE_1),
 
@@ -987,6 +1013,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(_gcs,           "MAV",  GCS),
 #endif
 
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    // @Group: CP
+    // @Path: ../libraries/AP_CustomControl/AP_CustomControl.cpp
+    GOBJECT(custom_control, "CP", AP_CustomControl),
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
+
     AP_VAREND
 };
 
@@ -1058,9 +1090,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
     // @Bitmask: 0: Rudder mixing in direct flight modes only (Manual/Stabilize/Acro)
-    // @Bitmask: 1: Use centered throttle in Cruise or FBWB to indicate trim airspeed
+    // @Bitmask: 1: Use centered throttle in Cruise or FBWB to indicate AIRSPEED_CRUISE
     // @Bitmask: 2: Disable attitude check for takeoff arming
-    // @Bitmask: 3: Force target airspeed to trim airspeed in Cruise or FBWB
+    // @Bitmask: 3: Force target airspeed to AIRSPEED_CRUISE in Cruise or FBWB
     // @Bitmask: 4: Climb to RTL_ALTITUDE before turning for RTL
     // @Bitmask: 5: Enable yaw damper in acro mode
     // @Bitmask: 6: Suppress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.
@@ -1074,6 +1106,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 14: In AUTO - climb to next waypoint altitude immediately instead of linear climb
     // @Bitmask: 15: Enable autoflap in manual modes and use minimum of target and actual speed for flap setting
     // @Bitmask: 16: Enable full aerodynamic load factor-based roll limits when an airspeed sensor is enabled and AIRSPEED_STALL is set
+    // @Bitmask: 17: Reset ALT_OFFSET on flight mode or AUTO waypoint changes
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
@@ -1218,7 +1251,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16, 16: Servo 17, 17: Servo 18, 18: Servo 19, 19: Servo 20, 20: Servo 21, 21: Servo 22, 22: Servo 23, 23: Servo 24, 24: Servo 25, 25: Servo 26, 26: Servo 27, 27: Servo 28, 28: Servo 29, 29: Servo 30, 30: Servo 31, 31: Servo 32
      AP_GROUPINFO("ONESHOT_MASK", 32, ParametersG2, oneshot_mask, 0),
 
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_FOLLOW_ENABLED
     // @Group: FOLL
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 33, ParametersG2, AP_Follow),
@@ -1305,63 +1338,15 @@ ParametersG2::ParametersG2(void) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-/*
-  This is a conversion table from old parameter values to new
-  parameter names. The startup code looks for saved values of the old
-  parameters and will copy them across to the new parameters if the
-  new parameter does not yet have a saved value. It then saves the new
-  value.
-  
-  Note that this works even if the old parameter has been removed. It
-  relies on the old k_param index not being removed
-  
-  The second column below is the index in the var_info[] table for the
-  old object. This should be zero for top level parameters.
- */
-static const AP_Param::ConversionInfo conversion_table[] = {
-    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
-    { Parameters::k_param_fence_minalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MIN"},
-    { Parameters::k_param_fence_maxalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MAX"},
-    { Parameters::k_param_fence_retalt,       0,     AP_PARAM_INT16, "FENCE_RET_ALT"},
-    { Parameters::k_param_fence_ret_rally,    0,      AP_PARAM_INT8, "FENCE_RET_RALLY"},
-    { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
-};
-
-struct RCConversionInfo {
-    uint16_t old_key; // k_param_*
-    uint32_t old_group_element; // index in old object
-    RC_Channel::AUX_FUNC fun; // new function
-};
-
-static const RCConversionInfo rc_option_conversion[] = {
-    { Parameters::k_param_flapin_channel_old, 0, RC_Channel::AUX_FUNC::FLAP},
-    { Parameters::k_param_g2, 968, RC_Channel::AUX_FUNC::SOARING},
-#if AP_FENCE_ENABLED
-    { Parameters::k_param_fence_channel, 0, RC_Channel::AUX_FUNC::FENCE},
-#endif
-#if AP_MISSION_ENABLED
-    { Parameters::k_param_reset_mission_chan, 0, RC_Channel::AUX_FUNC::MISSION_RESET},
-#endif
-#if HAL_PARACHUTE_ENABLED
-    { Parameters::k_param_parachute_channel, 0, RC_Channel::AUX_FUNC::PARACHUTE_RELEASE},
-#endif
-    { Parameters::k_param_fbwa_tdrag_chan, 0, RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER},
-    { Parameters::k_param_reset_switch_chan, 0, RC_Channel::AUX_FUNC::MODE_SWITCH_RESET},
-};
-
 void Plane::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
-
-    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     // setup defaults in SRV_Channels
     g2.servo_channels.set_default_function(CH_1, SRV_Channel::k_aileron);
     g2.servo_channels.set_default_function(CH_2, SRV_Channel::k_elevator);
     g2.servo_channels.set_default_function(CH_3, SRV_Channel::k_throttle);
     g2.servo_channels.set_default_function(CH_4, SRV_Channel::k_rudder);
-        
-    SRV_Channels::upgrade_parameters();
 
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.enable) {
@@ -1372,150 +1357,13 @@ void Plane::load_parameters(void)
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
-    // Convert chan params to RCx_OPTION
-    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
-    for (uint8_t i=0; i<ARRAY_SIZE(rc_option_conversion); i++) {
-        AP_Int8 chan_param;
-        AP_Param::ConversionInfo info {rc_option_conversion[i].old_key, rc_option_conversion[i].old_group_element, AP_PARAM_INT8, nullptr};
-        if (AP_Param::find_old_parameter(&info, &chan_param) && chan_param.get() > 0) {
-            RC_Channel *chan = rc().channel(chan_param.get() - 1);
-            if (chan != nullptr && !chan->option.configured()) {
-                chan->option.set_and_save((int16_t)rc_option_conversion[i].fun); // save the new param
-            }
-        }
-    }
-
-
-// PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
-#if AP_FENCE_ENABLED
-    enum ap_var_type ptype_fence_type;
-    AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
-    if (fence_type_new && !fence_type_new->configured()) {
-        // If we find the new parameter and it hasn't been configured
-        // attempt to upgrade the altitude fences.
-        int8_t fence_type_new_val = AC_FENCE_TYPE_POLYGON;
-        AP_Int16 fence_alt_min_old;
-        AP_Param::ConversionInfo fence_alt_min_info_old = {
-            Parameters::k_param_fence_minalt,
-            0,
-            AP_PARAM_INT16,
-            nullptr
-        };
-        if (AP_Param::find_old_parameter(&fence_alt_min_info_old, &fence_alt_min_old)) {
-            if (fence_alt_min_old.configured()) {
-                //
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MIN;
-            }
-        }
-
-        AP_Int16 fence_alt_max_old;
-        AP_Param::ConversionInfo fence_alt_max_info_old = {
-            Parameters::k_param_fence_maxalt,
-            0,
-            AP_PARAM_INT16,
-            nullptr
-        };
-        if (AP_Param::find_old_parameter(&fence_alt_max_info_old, &fence_alt_max_old)) {
-            if (fence_alt_max_old.configured()) {
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MAX;
-            }
-        }
-
-        fence_type_new->set_and_save((int8_t)fence_type_new_val);
-    }
-
-    AP_Int8 fence_action_old;
-    AP_Param::ConversionInfo fence_action_info_old = {
-        Parameters::k_param_fence_action,
-        0,
-        AP_PARAM_INT8,
-        "FENCE_ACTION"
-    };
-    if (AP_Param::find_old_parameter(&fence_action_info_old, &fence_action_old)) {
-        enum ap_var_type ptype;
-        AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
-        AC_Fence::Action fence_action_new_val;
-        if (fence_action_new && !fence_action_new->configured()) {
-            switch(fence_action_old.get()) {
-                case 0: // FENCE_ACTION_NONE
-                case 2: // FENCE_ACTION_REPORT_ONLY
-                default:
-                    fence_action_new_val = AC_Fence::Action::REPORT_ONLY;
-                    break;
-                case 1: // FENCE_ACTION_GUIDED
-                    fence_action_new_val = AC_Fence::Action::GUIDED;
-                    break;
-                case 3: // FENCE_ACTION_GUIDED_THR_PASS
-                    fence_action_new_val = AC_Fence::Action::GUIDED_THROTTLE_PASS;
-                    break;
-                case 4: // FENCE_ACTION_RTL
-                    fence_action_new_val = AC_Fence::Action::RTL_AND_LAND;
-                    break;
-            }
-            fence_action_new->set_and_save((int8_t)fence_action_new_val);
-            
-            // Now upgrade the new fence enable at the same time
-            enum ap_var_type ptype_fence_enable;
-            AP_Int8 *fence_enable = (AP_Int8*)AP_Param::find("FENCE_ENABLE", &ptype_fence_enable);
-            // fences were used if there was a count, and the old fence action was not zero
-            AC_Fence *ap_fence = AP::fence();
-            bool fences_exist = false;
-            if (ap_fence) {
-                // If the fence library is present, attempt to read the fence count
-                fences_exist = ap_fence->polyfence().total_fence_count() > 0;
-            }
-            
-            bool fences_used = fence_action_old.get() != 0;
-            if (fence_enable && !fence_enable->configured()) {
-                // The fence enable parameter exists, so now set it accordingly
-                fence_enable->set_and_save(fences_exist && fences_used);
-            }
-        }
-    }
-#endif // AP_FENCE_ENABLED
-
-#if AP_TERRAIN_AVAILABLE
-    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
-    g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
+#if AP_EXTERNAL_BINDING_ENABLED && AP_FOLLOW_ENABLED
+    // convert Follow parameters
+    g2.follow.convert_params();
 #endif
-
-    // PARAMETER_CONVERSION - Added: Jun-2021 for ArduPlane-4.1
-    g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
 
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
     g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);
-
-#if AP_AIRSPEED_ENABLED
-    // PARAMETER_CONVERSION - Added: Jan-2022
-    {
-        const uint16_t old_key = g.k_param_airspeed;
-        const uint16_t old_index = 0;       // Old parameter index in the tree
-        AP_Param::convert_class(old_key, &airspeed, airspeed.var_info, old_index, true);
-    }
-#endif
-
-#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
-    if (!ins.harmonic_notches[1].params.enabled()) {
-        // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
-        const AP_Param::ConversionInfo notchfilt_conversion_info[] {
-            // PARAMETER_CONVERSION - Added: Apr-2022 for ArduPlane-4.2
-            { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
-            { Parameters::k_param_ins, 293, AP_PARAM_FLOAT, "INS_HNTC2_ATT" },
-            { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
-            { Parameters::k_param_ins, 421, AP_PARAM_FLOAT, "INS_HNTC2_BW" },
-        };
-        AP_Param::convert_old_parameters(&notchfilt_conversion_info[0], ARRAY_SIZE(notchfilt_conversion_info));
-        AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
-        AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
-    }
-#endif // HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
-#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-
-    // PARAMETER_CONVERSION - Added: Mar-2022
-#if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, true);
-#endif
 
     // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
@@ -1541,15 +1389,11 @@ void Plane::load_parameters(void)
     landing.convert_parameters();
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
-    // PARAMETER_CONVERSION - Added: Oct-2021
-#if HAL_EFI_ENABLED
-        { &efi, efi.var_info, 22 },
-#endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
         { &stats, stats.var_info, 5 },
 #endif
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_LUA_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
         { &scripting, scripting.var_info, 14 },
 #endif

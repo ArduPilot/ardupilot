@@ -372,7 +372,7 @@ struct PACKED log_XKQ {
 // @Field: SS: Source Set (primary=0/secondary=1/tertiary=2)
 // @Field: GPS_GTA: GPS good to align
 // @Field: GPS_CHK_WAIT: Waiting for GPS checks to pass
-// @Field: MAG_FUSION: Magnetometer fusion (0=not fusing/1=fuse yaw/2=fuse mag)
+// @Field: MAG_FUSION: Magnetometer fusion (0=not fusing/1=fuse yaw/2=fuse mag/3=fuse mag with yaw anchored)
 struct PACKED log_XKFS {
     LOG_PACKET_HEADER;
     uint64_t time_us;

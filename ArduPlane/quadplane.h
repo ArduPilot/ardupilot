@@ -1,10 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_QUADPLANE_ENABLED
-#define HAL_QUADPLANE_ENABLED 1
-#endif
+#include "config.h"
 
 #if HAL_QUADPLANE_ENABLED
 
@@ -132,6 +128,9 @@ public:
 
     // return desired forward throttle percentage
     float forward_throttle_pct();
+
+    // Functions related to weathervaneing
+    float scale_weathervane_output(float wv_out) const;
     float get_weathervane_yaw_rate_cds(void);
 
     // see if we are flying from vtol point of view
@@ -318,7 +317,7 @@ private:
             QLAND,
             QRTL
         };
-        AP_Int16 timeout;
+        AP_UInt16 timeout;
         AP_Enum<ACTION> action;
         bool warned;
     } transition_failure;
@@ -342,7 +341,10 @@ private:
     // QRTL start altitude, meters
     AP_Int16 qrtl_alt_m;
     AP_Int16 qrtl_alt_min_m;
-    
+
+    // QRTL pause time in seconds
+    AP_Float qrtl_pause_time;
+
     // alt to switch to QLAND_FINAL
     AP_Float land_final_alt_m;
     AP_Float vel_forward_alt_cutoff_m;
@@ -428,8 +430,6 @@ private:
 
     float q_fwd_throttle; // forward throttle used in q modes
     float q_fwd_pitch_lim_cd; // forward pitch limit applied when using q_fwd_throttle
-    float q_bck_pitch_lim_cd; // backward pitch limit applied when using Q_BCK_PIT_LIM
-    uint32_t q_pitch_limit_update_ms; // last time the backward pitch limit was updated
 
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
@@ -492,6 +492,7 @@ private:
         QPOS_AIRBRAKE,
         QPOS_POSITION1,
         QPOS_POSITION2,
+        QPOS_PAUSE,
         QPOS_LAND_DESCEND,
         QPOS_LAND_ABORT,
         QPOS_LAND_FINAL,
@@ -574,7 +575,7 @@ private:
     void set_alt_target_current(void);
 
     // additional options
-    AP_Int32 options;
+    AP_UInt32 options;
     enum class Option {
         LEVEL_TRANSITION=(1<<0),
         ALLOW_FW_TAKEOFF=(1<<1),
@@ -745,7 +746,7 @@ private:
         uint16_t counter;
 
         // Options parameter and helper
-        AP_Int32 options;
+        AP_UInt32 options;
         enum class Option {
             DISABLED = (1<<0),
             VTOL_ONLY = (1<<1),

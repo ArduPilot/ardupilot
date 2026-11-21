@@ -542,12 +542,15 @@ def configure(cfg):
     # Ubuntu releases: https://releases.ubuntu.com
     # also update `MIN_VER` in `./waf` and `target-version` in `pyproject.toml`
     cfg.load('python')
-    cfg.check_python_version(minver=(3, 9, 0))
+    cfg.check_python_version(minver=(3, 10, 0))
 
     cfg.load('ap_library')
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
+
+    if cfg.env.BOARD_CLASS in ('ChibiOS', 'SITL'):
+        cfg.load('picolibc')
 
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
@@ -628,6 +631,7 @@ def configure(cfg):
         else:
             cfg.end_msg('disabled', color='YELLOW')
 
+    cfg.get_board().configure_coverage(cfg)
     cfg.start_msg('Coverage build')
     if cfg.env.COVERAGE:
         cfg.end_msg('enabled')
@@ -676,7 +680,6 @@ def configure(cfg):
     # add in generated flags
     cfg.env.CXXFLAGS += ['-include', 'ap_config.h']
 
-    cfg.remove_target_list()
     _collect_autoconfig_files(cfg)
     if is_ci:
         print("::endgroup::")
@@ -999,6 +1002,11 @@ for name in (vehicles + ['bootloader','iofirmware','AP_Periph','replay']):
         program_group_list=name,
         doc='builds %s programs' % name,
     )
+
+ardupilotwaf.build_command('renode-physics',
+    targets='tool/renode-physics',
+    doc='builds the Renode physics sidecar (needs --board sitl)',
+)
 
 for program_group in ('all', 'bin', 'tool', 'examples', 'tests', 'benchmarks'):
     ardupilotwaf.build_command(program_group,

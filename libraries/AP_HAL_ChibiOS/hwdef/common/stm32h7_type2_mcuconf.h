@@ -173,7 +173,7 @@
 
 #define STM32_PLL3_DIVN_VALUE               192
 #define STM32_PLL3_DIVQ_VALUE               2
-#define STM32_PLL3_DIVR_VALUE               4
+#define STM32_PLL3_DIVR_VALUE               12
 #endif // clock selection
 
 /*
@@ -326,7 +326,9 @@
 #define STM32_ADC_SAMPLES_SIZE              16
 #endif
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
+#ifndef STM32_ADC_USE_ADC12
 #define STM32_ADC_USE_ADC12                 TRUE
+#endif
 #define STM32_ADC_ADC12_DMA_PRIORITY        2
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
 #define STM32_ADC_ADC12_IRQ_PRIORITY        5

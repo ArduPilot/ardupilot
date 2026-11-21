@@ -86,11 +86,8 @@ public:
     // return the average motor frequency in Hz for dynamic filtering
     float get_average_motor_frequency_hz(uint32_t servo_channel_mask) const { return get_average_motor_rpm(servo_channel_mask) * (1.0f / 60.0f); };
 
-    // return the average motor frequency in Hz for dynamic filtering
-    float get_average_motor_frequency_hz() const { return get_average_motor_frequency_hz(0xFFFFFFFF); }
-
-    // return all of the motor frequencies in Hz for dynamic filtering
-    uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const;
+    // return motor frequencies selected in mask in Hz for dynamic filtering
+    uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs, uint32_t servo_channel_mask) const;
 
     // get the number of ESCs that sent valid telemetry data in the last ESC_TELEM_DATA_TIMEOUT_MS
     uint8_t get_num_active_escs() const;
@@ -124,7 +121,7 @@ public:
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, const uint16_t data_mask);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     /*
       set RPM scale factor from script
      */
@@ -152,7 +149,7 @@ private:
     uint32_t _last_rpm_log_us[ESC_TELEM_MAX_ESCS];
     uint8_t next_idx;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // allow for scaling of RPMs via lua scripts
     float rpm_scale_factor[ESC_TELEM_MAX_ESCS];
     uint32_t rpm_scale_mask;

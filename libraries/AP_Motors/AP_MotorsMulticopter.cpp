@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORSMULTI_ENABLED
+
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -302,7 +306,7 @@ void AP_MotorsMulticopter::output()
 // update external limits from scripting
 void AP_MotorsMulticopter::update_external_limits()
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // merge external (scripting) limit flags into the internal limit state
     limit.roll |= external_limits.roll;
     limit.pitch |= external_limits.pitch;
@@ -1018,3 +1022,5 @@ int16_t AP_MotorsMulticopter::get_yaw_headroom() const
     return _yaw_headroom;
 }
 #endif
+
+#endif  // AP_MOTORSMULTI_ENABLED

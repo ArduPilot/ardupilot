@@ -294,6 +294,7 @@ class TestBuildOptions(object):
             'AP_COMPASS_LSM303D_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
             'AP_BARO_THST_COMP_ENABLED',  # compiler is optimising this symbol away
             'AP_GPS_DEBUG_LOGGING_ENABLED',  # must have a backend compiled in to be present
+            'AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED',  # must have a backend compiled in to be present
         ])
         if target.lower() != "copter":
             feature_define_whitelist.add('MODE_ALTHOLD_ENABLED')
@@ -310,6 +311,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_TEMPCALIBRATION_ENABLED')
             feature_define_whitelist.add('AC_PAYLOAD_PLACE_ENABLED')
             feature_define_whitelist.add('AP_AVOIDANCE_ENABLED')
+            feature_define_whitelist.add('AP_GROUNDEFFECT_ENABLED')
             feature_define_whitelist.add('AP_WINCH_ENABLED')
             feature_define_whitelist.add('AP_WINCH_DAIWA_ENABLED')
             feature_define_whitelist.add('AP_WINCH_PWM_ENABLED')
@@ -321,6 +323,8 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_COPTER_CUSTOMCONTROL_ENABLED')
             feature_define_whitelist.add('AP_RC_TRANSMITTER_TUNING_ENABLED')
             feature_define_whitelist.add('AP_AVOIDANCE_ALTHOLD_ENABLED')
+            feature_define_whitelist.add(r'AP_MOTORS_COAX_ENABLED')
+            feature_define_whitelist.add(r'AP_MOTORS_SINGLE_ENABLED')
 
         if target.lower() in ['antennatracker', 'blimp', 'sub', 'plane', 'copter']:
             # plane has a dependency for AP_Follow which is not
@@ -347,8 +351,13 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_PLANE_GLIDER_PULLUP_ENABLED')
             feature_define_whitelist.add('AP_QUICKTUNE_ENABLED')
             feature_define_whitelist.add('AP_PLANE_SYSTEMID_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_CUSTOMCONTROL_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_TAILSITTER_ENABLED')
+            feature_define_whitelist.add(r'AP_MOTORS_TAILSITTER_ENABLED')
 
         if target.lower() not in ["plane", "copter"]:
+            # only the Plane and Copter scripting bindings call set_throttle_factor:
+            feature_define_whitelist.add('AP_MOTORS_FRAME_SCRIPTING_MATRIX_ENABLED')
             feature_define_whitelist.add('HAL_ADSB_ENABLED')
             feature_define_whitelist.add('AP_LANDINGGEAR_ENABLED')
             # only Plane and Copter instantiate Parachute

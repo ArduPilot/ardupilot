@@ -60,7 +60,7 @@ bool AP_Airspeed_Backend::bus_is_configured(void) const
 
 void AP_Airspeed_Backend::set_bus_id(uint32_t id)
 {
-    frontend.param[instance].bus_id.set_and_save(int32_t(id));
+    frontend.param[instance].bus_id.set_and_save(id);
 }
 
 #endif  // AP_AIRSPEED_ENABLED

@@ -451,9 +451,9 @@ void AP_Spektrum_Telem::calc_airspeed()
 
     float speed = 0.0f;
 #if AP_AIRSPEED_ENABLED
-    const AP_Airspeed *airspeed = AP::airspeed();
-    if (airspeed && airspeed->healthy()) {
-        speed = roundf(airspeed->get_airspeed() * 3.6);
+    const AP_Airspeed &airspeed = AP::airspeed();
+    if (airspeed.healthy()) {
+        speed = roundf(airspeed.get_airspeed() * 3.6);
     } else {
         speed = roundf(AP::ahrs().groundspeed() * 3.6);
     }

@@ -1,4 +1,32 @@
-# setup rover for skid steering
-SERVO1_FUNCTION 73
-SERVO3_FUNCTION 74
-TURN_RADIUS     2
+# Webots BmwX5 (Ackermann car driven through the Webots driver library).
+# SIM_Webots sends servo1 as steering and servo3 as throttle; the controller
+# maps them to wbu_driver_set_steering_angle(+-0.7 rad, +ve = right) and
+# wbu_driver_set_cruising_speed(+-27 m/s); controllerArgs -sa/-ms change
+# those full-scale values.
+SERVO1_FUNCTION 26
+SERVO3_FUNCTION 70
+
+# speed: throttle maps linearly to commanded speed (100% = 27 m/s)
+CRUISE_SPEED    5
+CRUISE_THROTTLE 19
+WP_SPEED        5
+ATC_SPEED_P     0.05
+ATC_SPEED_I     0.02
+ATC_ACCEL_MAX   2
+ATC_DECEL_MAX   3
+
+# steering: wheelbase 2.995 m, max steer 0.7 rad -> min turn radius ~3.6 m.
+# Above MOT_SPD_SCA_BASE steering is scaled by base/speed, making
+# turn rate ~= 0.23*BASE*steering, so FF ~= 1/(0.23*BASE).
+MOT_SPD_SCA_BASE 4
+ATC_STR_RAT_FF  1.0
+ATC_STR_RAT_P   0.2
+ATC_STR_RAT_I   0.2
+ATC_STR_RAT_MAX 60
+ATC_TURN_MAX_G  0.3
+TURN_RADIUS     4
+
+# a car cannot pivot, so the arrival circle must be larger than its turning
+# circle or it will orbit the target point forever
+WP_RADIUS       4
+WP_PIVOT_ANGLE  0

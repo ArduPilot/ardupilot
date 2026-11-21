@@ -21,6 +21,7 @@
 #include <string.h>
 #include "AP_GPS_UBLOX_CFG_List.h"
 #include <AP_Common/AP_Common.h>
+#include "AP_HAL/utility/sparse-endian.h"
 #include <endian.h>
 
 

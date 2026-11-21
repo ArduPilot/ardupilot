@@ -59,7 +59,7 @@ private:
     AP_Int8 _type;             // type of AIS receiver
     AP_Int16 _max_list;        // maximum number of vessels to track at once
     AP_Int16 _time_out;        // time in seconds that a vessel will be dropped from the list
-    AP_Int16 _log_options;     // logging options bitmask
+    AP_UInt16 _log_options;     // logging options bitmask
 
     enum class AISType {
         NONE   = 0,

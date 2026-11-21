@@ -51,10 +51,11 @@ function update()
                 ack.result = result
                 ack.progress = 0
                 ack.result_param2 = 0
-                ack.target_system = parsed_msg.sysid
+                ack.target_system = 0 -- send_chan supplies the full target below
                 ack.target_component = parsed_msg.compid
 
-                mavlink:send_chan(chan, mavlink_msgs.encode("COMMAND_ACK", ack))
+                local msgid, payload = mavlink_msgs.encode("COMMAND_ACK", ack)
+                mavlink:send_chan(chan, msgid, payload, parsed_msg.sysid)
             end
         end
     end

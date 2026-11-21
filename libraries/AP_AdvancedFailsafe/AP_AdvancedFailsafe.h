@@ -170,7 +170,7 @@ private:
     // update maximum range check
     void max_range_update();
 
-    AP_Int16 options;
+    AP_UInt16 options;
     enum class Option {
         CONTINUE_AFTER_RECOVERED = (1U<<0),
         GCS_FS_ALL_AUTONOMOUS_MODES = (1U<<1),

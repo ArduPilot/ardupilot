@@ -77,9 +77,16 @@ static void mat_pivot(const T* A, T* pivot, uint16_t n)
     for(uint16_t i = 0;i < n; i++) {
         uint16_t max_j = i;
         for(uint16_t j=i;j<n;j++){
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wabsolute-value"
+#endif
             if(fabsF(A[j*n + i]) > fabsF(A[max_j*n + i])) {
                 max_j = j;
             }
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#pragma clang diagnostic pop
+#endif
         }
 
         if(max_j != i) {

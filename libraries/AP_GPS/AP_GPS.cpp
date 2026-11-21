@@ -82,6 +82,7 @@ const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57
 // right mode.
 const char AP_GPS::_initialisation_blob[] =
 #if AP_GPS_UBLOX_ENABLED
+    // enables NAV_SOL at rate 1 as well as setting 230400 baud
     UBLOX_SET_BINARY_230400
 #endif
 #if AP_GPS_SIRF_ENABLED
@@ -320,13 +321,6 @@ void AP_GPS::init()
 
     convert_parameters();
 
-    // Set new primary param based on old auto_switch use second option
-    // PARAMETER_CONVERSION - Added: Nov-2020 for ArduPilot-4.1
-    if ((_auto_switch.get() == 3) && !_primary.configured()) {
-        _primary.set_and_save(1);
-        _auto_switch.set_and_save(0);
-    }
-
     // search for serial ports with gps protocol
     const auto &serial_manager = AP::serialmanager();
     uint8_t uart_idx = 0;
@@ -366,31 +360,31 @@ void AP_GPS::convert_parameters()
     }
 
     // table parameters to convert without scaling
-    static const AP_Param::ConversionInfo conversion_info[] {
+    static const AP_Param::ConversionInfoNoKey conversion_info[] {
         // PARAMETER_CONVERSION - Added: Mar-2024 for ArduPilot-4.6
-        { k_param_gps_key, 0, AP_PARAM_INT8, "GPS1_TYPE" },
-        { k_param_gps_key, 1, AP_PARAM_INT8, "GPS2_TYPE" },
-        { k_param_gps_key, 10, AP_PARAM_INT8, "GPS1_GNSS_MODE" },
-        { k_param_gps_key, 12, AP_PARAM_INT8, "GPS2_GNSS_MODE" },
-        { k_param_gps_key, 14, AP_PARAM_INT16, "GPS1_RATE_MS" },
-        { k_param_gps_key, 15, AP_PARAM_INT16, "GPS2_RATE_MS" },
-        { k_param_gps_key, 16, AP_PARAM_VECTOR3F, "GPS1_POS" },
-        { k_param_gps_key, 17, AP_PARAM_VECTOR3F, "GPS2_POS" },
-        { k_param_gps_key, 18, AP_PARAM_INT16, "GPS1_DELAY_MS" },
-        { k_param_gps_key, 19, AP_PARAM_INT16, "GPS2_DELAY_MS" },
+        { 0, AP_PARAM_INT8, "GPS1_TYPE" },
+        { 1, AP_PARAM_INT8, "GPS2_TYPE" },
+        { 10, AP_PARAM_INT8, "GPS1_GNSS_MODE" },
+        { 12, AP_PARAM_INT8, "GPS2_GNSS_MODE" },
+        { 14, AP_PARAM_INT16, "GPS1_RATE_MS" },
+        { 15, AP_PARAM_INT16, "GPS2_RATE_MS" },
+        { 16, AP_PARAM_VECTOR3F, "GPS1_POS" },
+        { 17, AP_PARAM_VECTOR3F, "GPS2_POS" },
+        { 18, AP_PARAM_INT16, "GPS1_DELAY_MS" },
+        { 19, AP_PARAM_INT16, "GPS2_DELAY_MS" },
 #if AP_GPS_SBF_ENABLED
-        { k_param_gps_key, 23, AP_PARAM_INT8, "GPS1_COM_PORT" },
-        { k_param_gps_key, 24, AP_PARAM_INT8, "GPS2_COM_PORT" },
+        { 23, AP_PARAM_INT8, "GPS1_COM_PORT" },
+        { 24, AP_PARAM_INT8, "GPS2_COM_PORT" },
 #endif
 
 #if HAL_ENABLE_DRONECAN_DRIVERS
-        { k_param_gps_key, 28, AP_PARAM_INT32, "GPS1_CAN_NODEID" },
-        { k_param_gps_key, 29, AP_PARAM_INT32, "GPS2_CAN_NODEID" },
-        { k_param_gps_key, 30, AP_PARAM_INT32, "GPS1_CAN_OVRIDE" },
-        { k_param_gps_key, 31, AP_PARAM_INT32, "GPS2_CAN_OVRIDE" },
+        { 28, AP_PARAM_INT32, "GPS1_CAN_NODEID" },
+        { 29, AP_PARAM_INT32, "GPS2_CAN_NODEID" },
+        { 30, AP_PARAM_INT32, "GPS1_CAN_OVRIDE" },
+        { 31, AP_PARAM_INT32, "GPS2_CAN_OVRIDE" },
 #endif
     };
-    AP_Param::convert_old_parameters(conversion_info, ARRAY_SIZE(conversion_info));
+    AP_Param::convert_old_parameters(k_param_gps_key, conversion_info, ARRAY_SIZE(conversion_info));
 
 #if GPS_MOVING_BASELINE
     // convert old MovingBaseline parameters
@@ -525,6 +519,7 @@ void AP_GPS::send_blob_start(uint8_t instance)
 
 #if AP_GPS_UBLOX_ENABLED
     if (type == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
+        // enables NAV_SOL at rate 1 as well as setting 115200 baud
         static const char blob[] = UBLOX_SET_BINARY_115200;
         send_blob_start(instance, blob, sizeof(blob));
         return;
@@ -538,7 +533,8 @@ void AP_GPS::send_blob_start(uint8_t instance)
         // we use 460800 when doing moving baseline as we need
         // more bandwidth. We don't do this if using UART2, as
         // in that case the RTCMv3 data doesn't go over the
-        // link to the flight controller
+        // link to the flight controller.  This blob also enables
+        // NAV_SOL at rate 1
         static const char blob[] = UBLOX_SET_BINARY_460800;
         send_blob_start(instance, blob, sizeof(blob));
         return;
@@ -1098,10 +1094,26 @@ void AP_GPS::update(void)
 #endif
 }
 
+#if GPS_MAX_RECEIVERS > 1
+uint8_t AP_GPS::fix_type_priority(AP_GPS_FixType status)
+{
+    switch (status) {
+    case AP_GPS_FixType::PPP:
+        return 5;
+    case AP_GPS_FixType::RTK_FLOAT:
+        return 6;
+    case AP_GPS_FixType::RTK_FIXED:
+        return 7;
+    case AP_GPS_FixType::STATIC:
+        return 8;
+    default:
+        return uint8_t(status);
+    }
+}
+
 /*
   update primary GPS instance
  */
-#if GPS_MAX_RECEIVERS > 1
 void AP_GPS::update_primary(void)
 {
 #if AP_GPS_BLENDED_ENABLED
@@ -1177,7 +1189,7 @@ void AP_GPS::update_primary(void)
             // may be the old timestamp that triggered the loss of
             // blending
             const uint32_t delay_threshold = 400;
-            const bool higher_status = state[i].status > state[primary_instance].status;
+            const bool higher_status = fix_type_priority(state[i].status) > fix_type_priority(state[primary_instance].status);
             const bool old_data_primary = (now - state[primary_instance].last_gps_time_ms) > delay_threshold;
             const bool old_data = (now - state[i].last_gps_time_ms) > delay_threshold;
             const bool equal_status = state[i].status == state[primary_instance].status;
@@ -1219,7 +1231,7 @@ void AP_GPS::update_primary(void)
         if (i == primary_instance) {
             continue;
         }
-        if (state[i].status > state[primary_instance].status) {
+        if (fix_type_priority(state[i].status) > fix_type_priority(state[primary_instance].status)) {
             // we have a higher status lock, or primary is set to the blended GPS, change GPS
             primary_instance = i;
             _last_instance_swap_ms = now;

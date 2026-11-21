@@ -92,6 +92,41 @@ void loop(void)
         err_count++;
     }
 
+    // Target-bearing messages use a wide header only for IDs above 255.
+    const uint32_t message_ids[] = {
+        MAVLINK_MSG_ID_PARAM_SET, MAVLINK_MSG_ID_COMMAND_LONG, MAVLINK_MSG_ID_PING,
+    };
+    const uint32_t own_ids[] = {1, 100000, 0xFFFFFFFF};
+    const uint32_t saved_sysid = mavlink_system.sysid;
+    for (const uint32_t own_id : own_ids) {
+        mavlink_system.sysid = own_id;
+        const uint32_t targets[] = {0, own_id, own_id ^ 0x100, own_id ^ 1};
+        for (const uint32_t msgid : message_ids) {
+            const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
+            for (const uint32_t target : targets) {
+                msg = {};
+                msg.msgid = msgid;
+                _MAV_PAYLOAD_NON_CONST(&msg)[entry->target_system_ofs] = mavlink_msg_target_field(target);
+                _MAV_PAYLOAD_NON_CONST(&msg)[entry->target_component_ofs] = mavlink_system.compid;
+                mavlink_finalize_message_buffer_target(
+                    &msg, 70000, 7, &status, entry->min_msg_len,
+                    entry->max_msg_len, entry->crc_extra, target);
+                const bool expected = target == 0 || target == own_id;
+                if (routing.check_and_forward(MAVLINK_FRAMING_OK, *dummy_link, msg) != expected) {
+                    hal.console->printf("header target routing failed: msg=%u own=%u target=%u\n",
+                                        unsigned(msgid), unsigned(own_id), unsigned(target));
+                    err_count++;
+                }
+                if (GCS_MAVLINK::packet_overhead_chan(dummy_link->get_chan()) <
+                    mavlink_msg_get_send_buffer_length(&msg) - msg.len) {
+                    hal.console->printf("extended header space underestimated\n");
+                    err_count++;
+                }
+            }
+        }
+    }
+    mavlink_system.sysid = saved_sysid;
+
     if (err_count == 0) {
         hal.console->printf("All OK\n");
     }

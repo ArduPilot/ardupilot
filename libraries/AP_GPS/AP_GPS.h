@@ -66,6 +66,7 @@ class AP_GPS
     friend class AP_GPS_Backend;
     friend class AP_GPS_DroneCAN;
     friend class AP_GPS_UBLOX_CFGv2;
+    friend class AP_GPS_Test;
 
 public:
     AP_GPS();
@@ -635,8 +636,8 @@ protected:
     AP_Int8 _raw_data;
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
-    AP_Int8 _blend_mask;
-    AP_Int16 _driver_options;
+    AP_UInt8 _blend_mask;
+    AP_UInt16 _driver_options;
     AP_Int8 _primary;
 
     uint32_t _log_gps_bit = -1;
@@ -655,7 +656,7 @@ protected:
 
     // check if an option is set
     bool option_set(const DriverOptions option) const {
-        return (uint16_t(_driver_options.get()) & uint16_t(option)) != 0;
+        return (_driver_options & uint16_t(option)) != 0;
     }
 
 private:
@@ -787,6 +788,9 @@ private:
     bool needs_uart(GPS_Type type) const;
 
 #if GPS_MAX_RECEIVERS > 1
+    // Selection priority is independent of the protocol fix-type numbering.
+    static uint8_t fix_type_priority(AP_GPS_FixType status);
+
     /// Update primary instance
     void update_primary(void);
 #endif

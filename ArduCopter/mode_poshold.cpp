@@ -7,7 +7,7 @@
  *     PosHold tries to improve upon regular loiter by mixing the pilot input with the loiter controller
  */
 
-#define POSHOLD_SPEED_0                         10      // speed below which it is always safe to switch to loiter
+#define POSHOLD_SPEED_0_MS                      0.10    // speed (m/s) below which it is always safe to switch to loiter
 
 #define POSHOLD_BRAKE_TIME_ESTIMATE_MAX_MS      6000    // Maximum duration (ms) allowed for braking before transitioning to loiter
 #define POSHOLD_BRAKE_TO_LOITER_TIME_MS         1500    // Duration (ms) over which braking is blended into loiter control during BRAKE_TO_LOITER phase
@@ -234,7 +234,7 @@ void ModePosHold::run()
 
             // switch to BRAKE mode for next iteration if no pilot input
             if (is_zero(target_roll_rad) &&
-                (fabsf(pilot_roll_rad) < radians(2.0f * (float)g.poshold_brake_rate_degs))) {
+                (fabsf(pilot_roll_rad) < radians(0.02f * (float)g.poshold_brake_rate_degs))) {
                 // initialise BRAKE mode
                 roll_mode = RPMode::BRAKE;              // Set brake roll mode
                 brake.roll_rad = 0.0f;                  // initialise braking angle to zero
@@ -269,7 +269,7 @@ void ModePosHold::run()
                 const uint32_t brake_timeout_roll_ms = MIN(POSHOLD_BRAKE_TIME_ESTIMATE_MAX_MS, (1.5f * 1000.0f * (brake.angle_max_roll_rad / radians(g.poshold_brake_rate_degs))));
 
                 // if velocity is very low reduce braking time to 0.5 s
-                if ((fabsf(vel_right_ms) <= POSHOLD_SPEED_0) && (now_ms - brake.start_time_roll_ms > 500) && (brake_timeout_roll_ms > 500)) {
+                if ((fabsf(vel_right_ms) <= POSHOLD_SPEED_0_MS) && (now_ms - brake.start_time_roll_ms > 500) && (brake_timeout_roll_ms > 500)) {
                     brake.start_time_roll_ms = now_ms - brake_timeout_roll_ms + 500;
                 }
 
@@ -329,7 +329,7 @@ void ModePosHold::run()
             update_pilot_lean_angle_rad(pilot_pitch_rad, target_pitch_rad);
 
             // switch to BRAKE next iteration if no pilot input
-            if (is_zero(target_pitch_rad) && (fabsf(pilot_pitch_rad) < radians(2 * g.poshold_brake_rate_degs))) {
+            if (is_zero(target_pitch_rad) && (fabsf(pilot_pitch_rad) < radians(0.02f * (float)g.poshold_brake_rate_degs))) {
                 // initialise BRAKE mode
                 pitch_mode = RPMode::BRAKE;         // set brake pitch mode
                 brake.pitch_rad = 0.0f;             // initialise braking angle to zero
@@ -362,7 +362,7 @@ void ModePosHold::run()
                 const uint32_t brake_timeout_pitch_ms = MIN(POSHOLD_BRAKE_TIME_ESTIMATE_MAX_MS, (1.5 * 1000.0 * (brake.angle_max_pitch_rad / radians(g.poshold_brake_rate_degs))));
 
                 // if velocity is very low reduce braking time to 0.5 seconds
-                if ((fabsf(vel_fw_ms) <= POSHOLD_SPEED_0) && (now_ms - brake.start_time_pitch_ms > 500) && (brake_timeout_pitch_ms > 500)) {
+                if ((fabsf(vel_fw_ms) <= POSHOLD_SPEED_0_MS) && (now_ms - brake.start_time_pitch_ms > 500) && (brake_timeout_pitch_ms > 500)) {
                     brake.start_time_pitch_ms = now_ms - brake_timeout_pitch_ms + 500;
                 }
 

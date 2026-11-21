@@ -445,7 +445,7 @@ void AP_Airspeed::allocate()
 #endif  // AP_AIRSPEED_ASP5033_ENABLED
 #if AP_AIRSPEED_DRONECAN_ENABLED
         case TYPE_UAVCAN:
-            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, param[i].bus_id);
             break;
 #endif  // AP_AIRSPEED_DRONECAN_ENABLED
 #if AP_AIRSPEED_NMEA_ENABLED
@@ -1139,7 +1139,7 @@ void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
 
 bool AP_Airspeed::all_healthy(void) const { return false; }
 void AP_Airspeed::init(void) {};
-AP_Airspeed::AP_Airspeed() {}
+AP_Airspeed::AP_Airspeed() { _singleton = this; }
 
 #if AP_AIRSPEED_SCRIPTING_ENABLED
 AP_Airspeed_Backend *AP_Airspeed::get_backend(uint8_t id) const { return nullptr; }
@@ -1152,9 +1152,9 @@ AP_Airspeed *AP_Airspeed::_singleton;
 
 namespace AP {
 
-AP_Airspeed *airspeed()
+AP_Airspeed &airspeed()
 {
-    return AP_Airspeed::get_singleton();
+    return *AP_Airspeed::get_singleton();
 }
 
 };

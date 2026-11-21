@@ -173,10 +173,10 @@ void MissionItemProtocol::handle_mission_request_int(GCS_MAVLINK &_link,
         return;
     }
 
-    ret_packet.target_system = msg.sysid;
+    ret_packet.target_system = mavlink_msg_target_field(msg.sysid);
     ret_packet.target_component = msg.compid;
 
-    _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char*)&ret_packet);
+    _link.send_message_target(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char*)&ret_packet, msg.sysid);
 }
 
 #if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
@@ -196,7 +196,7 @@ void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
         return;
     }
 
-    item_int.target_system = msg.sysid;
+    item_int.target_system = mavlink_msg_target_field(msg.sysid);
     item_int.target_component = msg.compid;
 
     mavlink_mission_item_t ret_packet{};
@@ -212,7 +212,7 @@ void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
     }
 
     // buffer space is checked by send_message
-    _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM, (const char*)&ret_packet);
+    _link.send_message_target(MAVLINK_MSG_ID_MISSION_ITEM, (const char*)&ret_packet, msg.sysid);
 }
 #endif  // AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 
@@ -366,8 +366,13 @@ void MissionItemProtocol::queued_request_send()
         INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
+#if AP_MAVLINK_MSG_MISSION_REQUEST_SENDING_ENABLED
     CHECK_PAYLOAD_SIZE2_VOID(link->get_chan(), MISSION_REQUEST);
     mavlink_msg_mission_request_send(
+#else
+    CHECK_PAYLOAD_SIZE2_VOID(link->get_chan(), MISSION_REQUEST_INT);
+    mavlink_msg_mission_request_int_send(
+#endif  // AP_MAVLINK_MSG_MISSION_REQUEST_SENDING_ENABLED
         link->get_chan(),
         dest_sysid,
         dest_compid,

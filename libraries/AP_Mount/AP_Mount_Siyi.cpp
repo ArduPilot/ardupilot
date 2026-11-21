@@ -1005,7 +1005,7 @@ float AP_Mount_Siyi::get_camera_focal_length_mm() const
 }
 
 // send camera settings message to GCS
-void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
+void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     const uint8_t mode_id = (_config_info.record_status == RecordingStatus::ON) ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE;
     const float zoom_mult_max = get_zoom_mult_max();
@@ -1020,12 +1020,13 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         mode_id,            // camera mode (0:image, 1:video, 2:image survey)
         zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        camera_device_id);  // camera_device_id
 }
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
 // send camera thermal range message to GCS
-void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan) const
+void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     const uint32_t now_ms = AP_HAL::millis();
     bool timeout = now_ms - _thermal.last_update_ms > AP_MOUNT_SIYI_THERM_TIMEOUT_MS;
@@ -1035,7 +1036,7 @@ void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan) const
         chan,
         now_ms,             // time_boot_ms
         _instance + 1,      // video stream id (assume one-to-one mapping with camera id)
-        _instance + 1,      // camera device id
+        camera_device_id,   // camera device id
         timeout ? NaNf : _thermal.max_C,     // max in degC
         timeout ? NaNf : _thermal.max_pos.x, // max x position
         timeout ? NaNf : _thermal.max_pos.y, // max y position

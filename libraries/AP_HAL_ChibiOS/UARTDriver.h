@@ -21,6 +21,7 @@
 #include "AP_HAL_ChibiOS.h"
 #include "shared_dma.h"
 #include "Semaphores.h"
+#include "USB_Debug.h"
 
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
@@ -52,7 +53,6 @@ public:
     void _tx_timer_tick(void);
 
     // control optional features
-    bool set_options(uint16_t options) override;
     uint16_t get_options(void) const override;
 
     struct SerialDef {
@@ -88,14 +88,14 @@ public:
 
     bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
 
-    void set_flow_control(enum flow_control flow_control) override;
     enum flow_control get_flow_control(void) override { return _flow_control; }
 
     // allow for low latency writes
     bool set_unbuffered_writes(bool on) override;
 
-    void configure_parity(uint8_t v) override;
-    void set_stop_bits(int n) override;
+#if AP_USB_DEBUG_ENABLED
+    static void usb_debug_lock(bool lock);
+#endif
 
     /*
       software control of the CTS/RTS pins if available. Return false if
@@ -137,6 +137,11 @@ public:
       return true if this UART has DMA enabled on both RX and TX
      */
     bool is_dma_enabled() const override { return rx_dma_enabled && tx_dma_enabled; }
+
+    /*
+      return true if this UART has DMA enabled on RX
+     */
+    bool is_rx_dma_enabled() const override { return rx_dma_enabled; }
 
     /*
       check that the current thread owns the uart making certain operations possible
@@ -246,6 +251,11 @@ private:
     event_listener_t ev_listener;
     bool parity_enabled;
 #endif
+#if HAL_USE_SERIAL == TRUE
+    // held while the port's line settings (parity, stop bits and options)
+    // are changed, as these can be called from more than one thread
+    HAL_Semaphore _line_config_sem;
+#endif
 
 #ifndef HAL_UART_NODMA
     static void rx_irq_cb(void* sd);
@@ -287,6 +297,10 @@ protected:
     ssize_t _read(uint8_t *buffer, uint16_t count) override;
     uint32_t _available() override;
     bool _discard_input() override;
+    bool _set_options(uint16_t options) override;
+    void _set_flow_control(enum flow_control flow_control) override;
+    void _configure_parity(uint8_t v) override;
+    void _set_stop_bits(int n) override;
 
 #if HAL_UART_STATS_ENABLED
     // Getters for cumulative tx and rx counts

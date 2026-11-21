@@ -111,6 +111,7 @@ private:
 template <class T>
 class ObjectBuffer {
 public:
+#if HAL_HEAP_ENABLED
     ObjectBuffer(uint32_t _size = 0) {
         // we set size to 1 more than requested as the byte buffer
         // gives one less byte than requested. We round up to a full
@@ -119,6 +120,9 @@ public:
         buffer = NEW_NOTHROW ByteBuffer(((_size+1) * sizeof(T)));
         external_buf = false;
     }
+#else
+    ObjectBuffer(uint32_t _size = 0) = delete;
+#endif // HAL_HEAP_ENABLED
 
     ObjectBuffer(ByteBuffer *_buffer) :
     buffer(_buffer),
@@ -126,8 +130,11 @@ public:
     {}
 
     ~ObjectBuffer(void) {
-        if (!external_buf)
+#if HAL_HEAP_ENABLED
+        if (!external_buf) {
             delete buffer;
+        }
+#endif // HAL_HEAP_ENABLED
     }
 
     // return size of ringbuffer
@@ -283,6 +290,7 @@ private:
 template <class T>
 class ObjectBuffer_TS {
 public:
+#if HAL_HEAP_ENABLED
     ObjectBuffer_TS(uint32_t _size = 0) {
         // we set size to 1 more than requested as the byte buffer
         // gives one less byte than requested. We round up to a full
@@ -293,6 +301,9 @@ public:
     ~ObjectBuffer_TS(void) {
         delete buffer;
     }
+#else
+    ObjectBuffer_TS(uint32_t _size = 0) = delete;
+#endif // HAL_HEAP_ENABLED
 
     // return size of ringbuffer
     uint32_t get_size(void) {

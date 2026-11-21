@@ -17,6 +17,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Math/matrix3.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "AP_MotorsHeli_Swash.h"
 
@@ -107,6 +109,13 @@ void AP_MotorsHeli_Swash::configure()
     enable.set(_swash_type == SWASHPLATE_TYPE_H3);
 
     calculate_roll_pitch_collective_factors();
+
+    // Calculate the swash to servo matrix and its inverse.
+    Matrix3f swash_to_servo_matrix = Matrix3f(_collectiveFactor[0], _rollFactor[0], _pitchFactor[0],
+                                      _collectiveFactor[1], _rollFactor[1], _pitchFactor[1],
+                                      _collectiveFactor[2], _rollFactor[2], _pitchFactor[2]);
+    _valid_swash_conv_inverse = swash_to_servo_matrix.inverse(_servo_to_swash_matrix);
+
 }
 
 // CCPM Mixers - calculate mixing scale factors by swashplate type
@@ -226,11 +235,6 @@ void AP_MotorsHeli_Swash::add_servo_raw(uint8_t num, float roll, float pitch, fl
 void AP_MotorsHeli_Swash::calculate(float roll, float pitch, float collective)
 {
 
-    // Store inputs for logging, store col before col reversal to ensure logging comes out with the correct sign (+/-)
-    _roll_input = roll;
-    _pitch_input = pitch;
-    _collective_input_scaled = collective;
-
     // Collective control direction. Swash moves up for negative collective pitch, down for positive collective pitch
     if (_collective_direction == COLLECTIVE_DIRECTION_REVERSED) {
         collective = 1 - collective;
@@ -257,7 +261,7 @@ void AP_MotorsHeli_Swash::calculate(float roll, float pitch, float collective)
     }
 }
 
-// set_linear_servo_out - sets swashplate servo output to be linear
+// get_linear_servo_output - sets swashplate servo output to be linear
 float AP_MotorsHeli_Swash::get_linear_servo_output(float input) const
 {
 
@@ -265,6 +269,14 @@ float AP_MotorsHeli_Swash::get_linear_servo_output(float input) const
 
     //servo output is calculated by normalizing input to 50 deg arm rotation as full input for a linear throw
     return safe_asin(0.766044f * input) * 1.145916;
+
+}
+
+// get_linear_servo_input - gets swashplate servo input when linearization is enabled.  This is the inverse of get_linear_servo_output()
+float AP_MotorsHeli_Swash::get_linear_servo_input(float input) const
+{
+    //servo output is calculated by normalizing input to 50 deg arm rotation as full input for a linear throw
+    return sinf(input / 1.145916f) / 0.766044f;
 
 }
 
@@ -302,20 +314,64 @@ uint32_t AP_MotorsHeli_Swash::get_output_mask() const
 }
 
 #if HAL_LOGGING_ENABLED
-// Write SWSH log for this instance of swashplate
-void AP_MotorsHeli_Swash::write_log(float cyclic_scaler, float col_ang_min, float col_ang_max, int16_t col_min, int16_t col_max) const
+// get_actual_servo_input - retrieves the actual servo input for a swashplate servo.  This is the servo output pwm converted to a -1 to +1 range.
+bool AP_MotorsHeli_Swash::get_actual_servo_input(uint8_t chan, float &input) const
 {
-    // Calculate the collective contribution to blade pitch angle
-    // Swashplate receives the scaled collective value based on the col_min and col_max params. We have to reverse the scaling here to do the angle calculation.
-    float collective_scalar = ((float)(col_max-col_min))*1e-3;
-    collective_scalar = MAX(collective_scalar, 1e-3);
-    float _collective_input = (_collective_input_scaled - (float)(col_min - 1000)*1e-3) / collective_scalar;
-    float col = (col_ang_max - col_ang_min) * _collective_input + col_ang_min;
+    SRV_Channel::Function function = SRV_Channels::get_motor_function(chan);
+    uint16_t pwm;
+    if (!SRV_Channels::get_output_pwm_trimmed(function, pwm)) {
+        return false;
+    }
+    input = (float)(pwm - 1500) / 500.0f;
+    return true;
+}
 
-    // Calculate the cyclic contribution to blade pitch angle
-    float tcyc = norm(_roll_input, _pitch_input) * cyclic_scaler;
-    float pcyc = _pitch_input * cyclic_scaler;
-    float rcyc = _roll_input * cyclic_scaler;
+// Write SWSH log for this instance of swashplate
+void AP_MotorsHeli_Swash::write_log(float col_ang_min, float col_ang_max, float cyc_ang_max, int16_t col_min, int16_t col_max, int16_t cyc_max) const
+{
+
+    if (!_valid_swash_conv_inverse || !is_positive(cyc_ang_max) || !is_positive((float)(col_max - col_min)) || !is_positive((float)cyc_max)) {
+        // If the swash to servo matrix does not have a valid inverse, then we cannot convert the servo output to swashplate output for logging.
+        // If the cyclic angle is not positive, then we cannot convert the servo output to swashplate output for logging.
+        // If the collective range is not positive, then we cannot convert the servo output to swashplate output for logging.
+        // If the cyclic range is not positive, then we cannot convert the servo output to swashplate output for logging.
+        return;
+    }
+    // determine collective and cyclic blade pitch angle based on the swashplate output values.
+    float col_ang_per_pwm = (col_ang_max - col_ang_min)  / ((float)(col_max - col_min) * 1e-3);
+    float cyc_ang_per_pwm = cyc_ang_max / ((float)cyc_max / 4500.0f);
+    Vector3f servo_vector;
+    // only use first three servos for swashplate output calculations, even if a fourth servo is used for a four-servo swashplate.
+    for (uint8_t i = 0; i < 3; i++) {
+        if (_enabled[i]) {
+            // if linear servo is being used, then convert the servo output back to a the pre-linearized input for swashplate output calculations.
+            float servo_output;
+            if (!get_actual_servo_input(_motor_num[i], servo_output)) {
+                return;
+            }
+            if (_make_servo_linear) {
+                servo_output = get_linear_servo_input(servo_output);
+            }
+            // convert servo output from -1 to 1 to 0 to 1.
+            servo_vector[i] = (0.5f * (servo_output + 1.0f));
+            // correct for H1 swashplate type where the servo outputs are not mixed and the servo outputs are 0.5 at neutral.
+            if (_swash_type == SWASHPLATE_TYPE_H1 && (i == CH_1 || i == CH_2)) {
+                servo_vector[i] -= 0.5f;
+            }
+        }
+    }
+    // convert servo output to swashplate output using the inverse of the swash to servo matrix.
+    Vector3f swash_vector = _servo_to_swash_matrix * servo_vector;
+    float col = swash_vector.x;
+    if (_collective_direction == COLLECTIVE_DIRECTION_REVERSED) {
+        col = col_ang_per_pwm - (col + (col_min - 1000) * 1e-3) * col_ang_per_pwm + col_ang_min;
+    } else {
+        col = (col - (col_min - 1000) * 1e-3) * col_ang_per_pwm + col_ang_min;
+    }
+    // convert swashplate cyclic output to blade pitch angle contribution from cyclic
+    float rcyc = cyc_ang_per_pwm * swash_vector.y;
+    float pcyc = cyc_ang_per_pwm * swash_vector.z;
+    float tcyc = norm(rcyc, pcyc);
 
     // @LoggerMessage: SWSH
     // @Description: Helicopter swashplate logging

@@ -164,7 +164,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(auto_disarm_check,     10,     50,  27),
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
-    SCHED_TASK_CLASS(RC_Channels_Copter,   &copter.g2.rc_channels,      auto_trim_run,   10,  75,  30),
+    SCHED_TASK_CLASS(AHRSTrimming,       &copter.ahrs_trimming,       auto_run,        10,  75,  30),
 #endif
 #if AP_RANGEFINDER_ENABLED
     SCHED_TASK(read_rangefinder,      20,    100,  33),
@@ -270,10 +270,10 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
     log_bit = MASK_LOG_PM;
 }
 
-constexpr int8_t Copter::_failsafe_priorities[7];
+constexpr int8_t Copter::_failsafe_priorities[9];
 
 
-#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if MODE_GUIDED_ENABLED
 // set target location (for use by external control and scripting)
 bool Copter::set_target_location(const Location& target_loc)
@@ -301,9 +301,9 @@ bool Copter::start_takeoff(const float alt_m)
     return false;
 }
 #endif //MODE_GUIDED_ENABLED
-#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#endif //AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 #if MODE_GUIDED_ENABLED
 // set target position (for use by scripting)
 bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt)
@@ -557,7 +557,7 @@ bool Copter::update_target_location(const Location &old_loc, const Location &new
     return set_target_location(new_loc);
 }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 // returns true if vehicle is landing.
 bool Copter::is_landing() const
@@ -609,7 +609,9 @@ void Copter::throttle_loop()
 #endif
 
     // compensate for ground effect (if enabled)
+#if AP_GROUNDEFFECT_ENABLED
     update_ground_effect_detector();
+#endif
     update_ekf_terrain_height_stable();
 }
 

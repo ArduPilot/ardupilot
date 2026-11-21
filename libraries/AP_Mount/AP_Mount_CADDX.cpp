@@ -10,6 +10,7 @@
 #define SET_ATTITUDE_BUF_SIZE 10
 #define AXIS_MIN 0
 #define AXIS_MAX 4096
+#define LOCK_MODE_BOOT_HOLD_MS 5000 // send body-frame lock mode for this long after the first packet
 
 // update mount position - should be called periodically
 void AP_Mount_CADDX::update()
@@ -64,12 +65,19 @@ void AP_Mount_CADDX::send_target_angles(const MountAngleTarget& angle_target_rad
     // byte 2's lower 3 bits are mode
     // lower 5 bits are sensitivity but always left as zero
     uint8_t mode = 0; //start with axes in bf
+    // the gimbal appears not to act on a lock mode that is unchanged since its power-up, so hold body frame
+    // for a while after the first packet to give it a mode change once it has booted
+    const uint32_t now_ms = AP_HAL::millis();
+    if (_first_send_ms == 0) {
+        _first_send_ms = now_ms;
+    }
+    const bool boot_hold = (now_ms - _first_send_ms) < LOCK_MODE_BOOT_HOLD_MS;
     // CADDX yaw lock is not required and is duplication since we get yaw via get_bf_yaw, the gimbal accs would be fighting our yaw target potentially
     // but we need to reset roll and pitch locks to body frame if set by RP_LOCK aux switch or by FPV mnt option
-    if (angle_target_rad.pitch_is_ef) {
+    if (angle_target_rad.pitch_is_ef && !boot_hold) {
         mode |= (uint8_t)LockMode::PITCH_LOCK;
     }
-    if (angle_target_rad.roll_is_ef) {
+    if (angle_target_rad.roll_is_ef && !boot_hold) {
         mode |= (uint8_t)LockMode::ROLL_LOCK;
     }
     set_attitude_cmd_buf[2] = mode & 0x07;

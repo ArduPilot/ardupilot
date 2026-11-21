@@ -81,7 +81,25 @@ mavlink_system_t mavlink_system = {7,1};
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
 
-GCS_MAVLINK *GCS_MAVLINK::find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid) {
+void GCS_MAVLINK::send_message_target(uint32_t msgid, const char *pkt, uint32_t target_sysid)
+{
+    const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
+    if (entry == nullptr) {
+        return;
+    }
+    if (!check_payload_size(entry->max_msg_len)) {
+        return;
+    }
+    _mav_finalize_message_chan_send_target(chan,
+                                          entry->msgid,
+                                          pkt,
+                                          entry->min_msg_len,
+                                          entry->max_msg_len,
+                                          entry->crc_extra,
+                                          target_sysid);
+}
+
+GCS_MAVLINK *GCS_MAVLINK::find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint32_t &sysid) {
     mavlink_channel_t channel;
     if (!routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel)) {
         return nullptr;

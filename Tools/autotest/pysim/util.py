@@ -2,14 +2,14 @@
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import annotations
-
 import atexit
 import math
 import os
 import re
 import shlex
+import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -131,40 +131,19 @@ def waf_configure(board,
     for piece in pieces:
         cmd_configure.extend(piece)
 
-    configure_env = None
     if asan:
         cmd_configure.append('--asan')
         if not debug:
             cmd_configure.append('--debug')  # waf enforces this; be explicit
-        # Resolve the clang compiler. Honour CXX/CC if already set by the
-        # caller; otherwise search for a versioned clang++ by counting down
-        # from a high version number so we pick the newest one available.
-        # The unversioned 'clang++' is tried last as a fallback.
-        import shutil
-        cxx = os.environ.get('CXX')
-        if not cxx:
-            for ver in range(99, 13, -1):
-                candidate = 'clang++-%u' % ver
-                if shutil.which(candidate):
-                    cxx = candidate
-                    break
-            if not cxx and shutil.which('clang++'):
-                cxx = 'clang++'
-        cc = os.environ.get('CC')
-        if not cc:
-            # Derive cc from the cxx version we found so both compilers are
-            # from the same toolchain (e.g. clang++-19 → clang-19).
-            if cxx and cxx != 'clang++':
-                cc = cxx.replace('clang++', 'clang')
-            elif shutil.which('clang'):
-                cc = 'clang'
-        if not cxx or not cc:
-            raise RuntimeError("--asan requires clang; install clang or set CXX/CC environment variables")
-        configure_env = dict(os.environ)
-        configure_env['CXX'] = cxx
-        configure_env['CC'] = cc
+        # The compiler is left alone so that CXX/CC, if the caller has set
+        # them, reach waf as they would otherwise.  ASAN works with gcc as
+        # well as clang, and picking clang here would have a surprising
+        # side effect: AP_Networking_Config.h disables
+        # AP_NETWORKING_ENABLED for clang on linux, so choosing the
+        # compiler silently compiles all of the networking code out of
+        # every sanitizer build.
 
-    run_cmd(cmd_configure, directory=topdir(), checkfail=True, env=configure_env)
+    run_cmd(cmd_configure, directory=topdir(), checkfail=True)
 
 
 def waf_clean():
@@ -280,7 +259,8 @@ def build_SITL_frame(
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
                    ekf_single=False, postype_single=False, force_32bit=False, ubsan=False, ubsan_abort=False,
                    num_aux_imus=0, dronecan_tests=False,
-                   extra_configure_args: list | None = None):
+                   extra_configure_args: list | None = None,
+                   asan=False):
     if extra_configure_args is None:
         extra_configure_args = []
 
@@ -297,7 +277,8 @@ def build_examples(board, j=None, debug=False, clean=False, configure=True, math
                       ubsan=ubsan,
                       ubsan_abort=ubsan_abort,
                       extra_args=extra_configure_args,
-                      dronecan_tests=dronecan_tests)
+                      dronecan_tests=dronecan_tests,
+                      asan=asan)
 
     # then clean
     if clean:
@@ -391,11 +372,28 @@ def pexpect_close(p):
         ex = e
         pass
     if ex is None:
-        # give the process some time to go away
-        for i in range(20):
+        # give the process some time to go away.  SITL exits within a
+        # couple of milliseconds, so poll finely:
+        for i in range(100):
             if not p.isalive():
+                # the child is gone; pexpect's close() otherwise sleeps
+                # for delayafterclose waiting for it:
+                p.ptyproc.delayafterclose = 0
+                p.ptyproc.delayafterterminate = 0
                 break
-            time.sleep(0.05)
+            # MAVProxy's SIGTERM handler only sets a flag; its main
+            # thread is blocked reading stdin via readline, and that
+            # read is restarted once the handler returns (PEP 475), so
+            # the flag goes unnoticed until some input arrives.  Feed it
+            # a newline to release the read.  We do this each time
+            # around the loop as the first newline can arrive before the
+            # signal has been handled.  Other children do not read
+            # stdin, so this is harmless to them:
+            try:
+                p.send("\n")
+            except Exception:  # noqa: BLE001
+                pass
+            time.sleep(0.01)
     try:
         p.close()
     except Exception:  # noqa: BLE001
@@ -507,6 +505,73 @@ class PSpawnStdPrettyPrinter(object):
         pass
 
 
+def unix_domain_socket_path(serial, cwd=None):
+    if cwd is None:
+        cwd = os.getcwd()
+    return os.path.join(cwd, "APM-UDS-serial%u" % serial)
+
+
+def unix_domain_socket_serial_args():
+    ret = []
+    for serial in [0, 1, 2, 5, 6, 7, 8]:
+        path = "uds:APM-UDS-serial%u" % serial
+        if serial == 0:
+            path += ":wait"
+        ret.append("--serial%u=%s" % (serial, path))
+    return ret
+
+
+def unix_domain_socket_rcin_path(cwd=None, offset=0):
+    if cwd is None:
+        cwd = os.getcwd()
+    suffix = "" if offset == 0 else str(offset)
+    return os.path.join(cwd, "APM-UDS-rcin%s" % suffix)
+
+
+class UnixDatagramOutput(object):
+    '''a reconnecting Unix domain datagram output'''
+
+    def __init__(self, path):
+        if not path:
+            raise ValueError("Unix domain socket path must be specified")
+        self.path = path
+        self.port = None
+
+    def _connect(self):
+        port = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        try:
+            port.connect(self.path)
+            port.setblocking(False)
+        except OSError:
+            port.close()
+            return False
+        self.port = port
+        return True
+
+    def close(self):
+        if self.port is not None:
+            self.port.close()
+            self.port = None
+
+    def write(self, buf):
+        if self.port is None and not self._connect():
+            return 0
+        try:
+            return self.port.send(buf)
+        except BlockingIOError:
+            return 0
+        except OSError:
+            self.close()
+            return 0
+
+
+def sitl_rcin_connection(device):
+    if device.startswith("uds:"):
+        return UnixDatagramOutput(device[4:])
+    from pymavlink import mavutil
+    return mavutil.mavudp(device, input=False)
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -531,6 +596,7 @@ def start_SITL(binary,
                supplementary=False,
                stdout_prefix=None,
                asan=False,
+               unix_domain_socket=False,
                ):
     """Launch a SITL instance."""
 
@@ -652,8 +718,12 @@ def start_SITL(binary,
             cmd.extend(['--rate', str(sim_rate_hz)])
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
-        # somewhere for MAVProxy to connect to:
-        cmd.append('--serial1=tcp:2')
+        if unix_domain_socket:
+            cmd.extend(unix_domain_socket_serial_args())
+            cmd.append("--rc-in-port=uds:APM-UDS-rcin")
+        else:
+            # somewhere for MAVProxy to connect to:
+            cmd.append('--serial1=tcp:2')
         if enable_fgview:
             cmd.append("--enable-fgview")
 
@@ -729,9 +799,14 @@ def start_SITL(binary,
             # Append our options after any inherited ones so that our
             # log_path and verbosity=0 take precedence (last value wins).
             # verbosity=0 suppresses startup noise that would make the log
-            # non-empty even when no errors are detected.
-            our_opts = 'log_path=%s:symbolize=1:verbosity=0' % log_base
+            # non-empty even when no errors are detected, and
+            # print_suppressions=0 stops the summary of the leaks we
+            # deliberately ignore doing the same.
+            our_opts = 'log_path=%s:symbolize=1:verbosity=0:print_suppressions=0' % log_base
             spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
+            # stop llvm-symbolizer trying to fetch debug info over the
+            # network, which blocks for ~90 seconds a frame
+            spawn_env['DEBUGINFOD_URLS'] = ''
         child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd, env=spawn_env)
         pexpect_autoclose(child)
     if gdb or lldb:
@@ -762,12 +837,63 @@ def MAVProxy_version():
     return int(match.group(1)), int(match.group(2)), int(match.group(3))
 
 
+def mavproxy_python():
+    """return the interpreter which runs mavproxy_cmd(), as an argv list.
+
+    MAVPROXY_CMD can name a MAVProxy installed somewhere other than the
+    interpreter running the test suite - a virtualenv, say - so
+    importing MAVProxy here would answer questions about the wrong
+    MAVProxy.  Take the interpreter out of the script's shebang line
+    instead.  Returns None if it can't be worked out.
+    """
+    path = shutil.which(mavproxy_cmd())
+    if path is None:
+        return None
+    try:
+        with open(path, "rb") as f:
+            first_line = f.readline()
+    except OSError:
+        return None
+    if not first_line.startswith(b"#!"):
+        # not a script at all; a compiled wrapper, perhaps
+        return None
+    return shlex.split(first_line[2:].strip().decode("utf-8"))
+
+
+def MAVProxy_ftp_module_has_command(command):
+    """return True if MAVProxy's ftp module implements "ftp <command>".
+
+    Asks the MAVProxy which mavproxy_cmd() will run, not the one this
+    process happens to be able to import.  Returns None if that can't be
+    asked.
+    """
+    python = mavproxy_python()
+    if python is None:
+        return None
+    program = (
+        "from MAVProxy.modules import mavproxy_ftp;"
+        "print(hasattr(mavproxy_ftp.FTPModule, %s))" % repr("cmd_%s" % command)
+    )
+    try:
+        completed = subprocess.run(
+            python + ["-c", program],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if completed.returncode != 0:
+        return None
+    return completed.stdout.decode("ascii").strip() == "True"
+
+
 def start_MAVProxy_SITL(atype,
                         aircraft=None,
                         setup=False,
                         master=None,
                         options: list | None = None,
-                        sitl_rcin_port=5501,
+                        sitl_rcin_port: int | str = 5501,
                         pexpect_timeout=60,
                         logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
@@ -788,7 +914,11 @@ def start_MAVProxy_SITL(atype,
     cmd = []
     cmd.append(mavproxy_cmd())
     cmd.extend(['--master', master])
-    cmd.extend(['--sitl', "localhost:%u" % sitl_rcin_port])
+    if isinstance(sitl_rcin_port, int):
+        sitl_rcin_endpoint = "localhost:%u" % sitl_rcin_port
+    else:
+        sitl_rcin_endpoint = sitl_rcin_port
+    cmd.extend(['--sitl', sitl_rcin_endpoint])
     if setup:
         cmd.append('--setup')
     if aircraft is None:

@@ -52,7 +52,7 @@ public:
 
     AP_FixedWing aparm;
 
-    AP_Int32 unused_log_bitmask; // logging is magic for Replay; this is unused
+    AP_UInt32 unused_log_bitmask; // logging is magic for Replay; this is unused
     struct LogStructure log_structure[256] = {
     };
 
@@ -65,7 +65,7 @@ public:
 
 protected:
 
-    const AP_Int32 &get_log_bitmask() override { return unused_log_bitmask; }
+    const AP_UInt32 &get_log_bitmask() override { return unused_log_bitmask; }
     const struct LogStructure *get_log_structures() const override {
         return log_structure;
     }

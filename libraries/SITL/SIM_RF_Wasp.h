@@ -66,10 +66,11 @@ private:
     const struct {
         const char *name;
         char *value;
+        uint8_t value_size;
     } string_configs[3] {
-        { "FMT", config.format },
-        { "BAUD", config.baud },
-        { "LBE", config.lbe },
+        { "FMT", config.format, sizeof(config.format) },
+        { "BAUD", config.baud, sizeof(config.baud) },
+        { "LBE", config.lbe, sizeof(config.lbe) },
     };
     const struct {
         const char *name;

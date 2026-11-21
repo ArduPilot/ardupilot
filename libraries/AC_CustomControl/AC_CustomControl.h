@@ -67,7 +67,7 @@ protected:
     AP_MotorsMulticopter*& _motors;
 
     AP_Enum<CustomControlType> _controller_type;
-    AP_Int8 _custom_controller_mask;
+    AP_UInt8 _custom_controller_mask;
 
 private:
     AC_CustomControl_Backend *_backend;

@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include "AP_Motors_config.h"
+
+#if AP_MOTORS_FRAME_6DOF_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
@@ -62,8 +66,6 @@ protected:
     void add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float lat_fac, uint8_t testing_order);
 
     void output_armed_stabilizing() override;
-    void output_armed_stabilizing_vectored();
-    void output_armed_stabilizing_vectored_6dof();
 
     // Parameters
     AP_Int8             _motor_reverse[AP_MOTORS_MAX_NUM_MOTORS];
@@ -77,3 +79,5 @@ protected:
     float _output_limited = 1.0f;
     float _batt_current_last = 0.0f;
 };
+
+#endif  // AP_MOTORS_FRAME_6DOF_ENABLED

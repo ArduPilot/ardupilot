@@ -41,6 +41,7 @@
 
 typedef struct {
     uint32_t sp;
+    uint32_t lr;
     int isBKPT;
 } CrashCatcherInfo;
 

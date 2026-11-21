@@ -1,14 +1,28 @@
+# Webots tricopter, matching worlds/webots_two_tricopter.wbt
+#
+# The world's rotors are calibrated for a thrust-to-weight of about 2.2, so
+# hover sits near 45% throttle, and ardupilot_SITL_TRICOPTER.c linearises the
+# propeller curve.  Yaw comes from the tilting tail rotor; the world keeps the
+# propellers' own reaction torque negligible.  See tricopter.parm for why
+# ATC_RAT_YAW_P/D are set below -- the servo-driven yaw axis needs a lower P
+# than roll/pitch or a quad's reaction-torque yaw, not a higher one.
+
 MAV_SYSID        2
-FRAME_CLASS      7.000000
-FRAME_TYPE       0.000000
-ATC_ANG_PIT_P    1.0
-ATC_ANG_RLL_P    1.0
-ATC_ANG_YAW_P    0.5
-ATC_RAT_PIT_P    3.6
-ATC_RAT_RLL_P    3.6
-ATC_RAT_YAW_P    1.9
-ATC_RAT_YAW_I    0.05
-ATC_RAT_YAW_IMAX 0.50000 
+
+ATC_RAT_YAW_P    0.1
+ATC_RAT_YAW_D    0.01
+
+FRAME_CLASS      7
+FRAME_TYPE       0
+
+# MUST stay 0: the controller already linearises the propeller.
+MOT_THST_EXPO    0
+
+# true rotor speeds from Webots, via SIM_Webots.cpp -> AP_RPM SITL backend
+RPM1_TYPE        10
+
+ARMING_SKIPCHK   32
+
 SIM_WIND_DIR     90.0
 SIM_WIND_SPD     0.0
 SIM_WIND_TURB    0.0

@@ -1,0 +1,8 @@
+# Minimal Renode defaults for the Swift Navigation SBP2 GPS production-driver probe.
+ARMING_CHECK 0
+BATT_MONITOR 0
+BRD_SAFETY_DEFLT 0
+RC_PROTOCOLS 0
+GPS1_TYPE 8
+SERIAL3_PROTOCOL 5
+SERIAL3_BAUD 115

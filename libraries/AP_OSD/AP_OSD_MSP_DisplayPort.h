@@ -33,6 +33,9 @@ public:
     // used to initialize the uart in the correct thread
     void osd_thread_run_once() override;
 
+    // services the MSP link: only the thread that initialised the uart can read it
+    void osd_thread_update() override;
+
     // return a correction factor used to display angles correctly
     float get_aspect_ratio_correction() const override;
     
@@ -59,6 +62,9 @@ protected:
 private:
     void setup_defaults(void);
     char displayport_write_buffer[DISPLAYPORT_WRITE_BUFFER_MAX_LEN]; // terminator
+
+    uint8_t _canvas_cols = 30;
+    uint8_t _canvas_rows = 16;
 
     AP_MSP_Telem_Backend* _displayport;
 

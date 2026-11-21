@@ -644,7 +644,7 @@ AP_IBus_Telem::SensorValue AP_IBus_Telem::get_sensor_value(const uint8_t sensor_
 
 #if AP_AIRSPEED_ENABLED
     case IBUS_SENSOR_TYPE_SPEED:
-        value.uint16 = AP::airspeed()->get_airspeed();
+        value.uint16 = AP::airspeed().get_airspeed();
         break;
 #endif
 

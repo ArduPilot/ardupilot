@@ -168,7 +168,7 @@ private:
         NO_RUNNING_WHILE_DISARMED    = (1U << 3),
         CRANK_DIR_REVERSE            = (1U << 4),
     };
-    AP_Int16 options;
+    AP_UInt16 options;
 
     bool option_set(Options option) const {
         return (options & uint16_t(option)) != 0;

@@ -64,6 +64,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     FAST_TASK(ahrs_update),
     FAST_TASK(update_control_mode),
     FAST_TASK(stabilize),
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    FAST_TASK(run_custom_controller),
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
     FAST_TASK(set_servos),
     SCHED_TASK(read_radio,             50,    100,   6),
     SCHED_TASK(check_short_rc_failsafe,   50,    100,   9),
@@ -179,7 +182,7 @@ void Plane::ahrs_update()
     pitch_limit_min = aparm.pitch_limit_min;
 
     bool rotate_limits = true;
-#if HAL_QUADPLANE_ENABLED
+#if AP_PLANE_TAILSITTER_ENABLED
     if (quadplane.tailsitter.active()) {
         rotate_limits = false;
     }
@@ -205,7 +208,7 @@ void Plane::ahrs_update()
         quadplane.pos_control->update_estimates();  
     }
 #endif
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED && AP_FOLLOW_ENABLED
         g2.follow.update_estimates();
 #endif
 
@@ -413,6 +416,9 @@ void Plane::one_second_loop()
     rollController.set_notch_sample_rate(loop_rate);
     pitchController.set_notch_sample_rate(loop_rate);
     yawController.set_notch_sample_rate(loop_rate);
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    custom_control.set_notch_sample_rate(loop_rate);
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
 }
 
 void Plane::three_hz_loop()
@@ -625,7 +631,7 @@ void Plane::update_alt()
 
     update_flight_stage();
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (nav_scripting_active()) {
         // don't call TECS while we are in a trick
         return;
@@ -666,11 +672,17 @@ void Plane::update_alt()
             tecs_target_alt_cm = MAX(tecs_target_alt_cm, prev_WP_loc.alt - home.alt) + (g2.rtl_climb_min+10)*100;
         }
 
+        if ((flight_stage == AP_FixedWing::FlightStage::TAKEOFF ||
+             flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) &&
+            !TECS_controller.pitch_min_is_set()) {
+            // No code gave TECS a pitch minimum for this run. Give the takeoff value.
+            TECS_controller.set_pitch_min(0.01f * get_takeoff_pitch_min_cd());
+        }
+
         TECS_controller.update_pitch_throttle(tecs_target_alt_cm,
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  distance_beyond_land_wp,
-                                                 get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
                                                  aerodynamic_load_factor,
@@ -895,7 +907,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 // set target location (for use by external control and scripting)
 bool Plane::set_target_location(const Location &target_loc)
 {
@@ -913,9 +925,9 @@ bool Plane::set_target_location(const Location &target_loc)
     plane.set_guided_WP(loc);
     return true;
 }
-#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#endif //AP_EXTERNAL_BINDING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // get target location (for use by scripting)
 bool Plane::get_target_location(Location& target_loc)
 {
@@ -1003,7 +1015,7 @@ bool Plane::set_crosstrack_start(const Location &new_start_location)
     return true;
 }
 
-#endif // AP_SCRIPTING_ENABLED
+#endif // AP_EXTERNAL_BINDING_ENABLED
 
 // returns true if vehicle is landing.
 bool Plane::is_landing() const
@@ -1097,6 +1109,42 @@ void Plane::update_quicktune(void)
     quicktune.update(control_mode->supports_quicktune());
 }
 #endif
+
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+void Plane::run_custom_controller()
+{
+    // Provide necessary information.
+    custom_control.roll_target_deg = nav_roll_cd * 0.01f;
+    custom_control.pitch_target_deg = nav_pitch_cd * 0.01f;
+    custom_control.pitch_trim_deg = g.pitch_trim;
+    custom_control.is_flying = is_flying();
+    custom_control.ground_mode = ground_mode;
+    custom_control.flight_mode = get_mode();
+    custom_control.flight_stage = (uint8_t)flight_stage;
+
+    // Run the controller.
+    if (custom_control.update()) {
+        // Reset stock controllers as needed.
+        if (custom_control.needs_reset_roll()) {
+            rollController.reset_I();
+        }
+        if (custom_control.needs_reset_pitch()) {
+            pitchController.reset_I();
+        }
+        if (custom_control.needs_reset_yaw()) {
+            yawController.reset_I();
+            yawController.reset_rate_PID();
+        }
+        if (custom_control.needs_reset_steer()) {
+            plane.steer_state.locked_course = false;
+            plane.steer_state.locked_course_err = 0;
+        }
+        if (custom_control.needs_reset_throttle()) {
+            plane.TECS_controller.reset();
+        }
+    }
+}
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
 
 /*
   constructor for main Plane class

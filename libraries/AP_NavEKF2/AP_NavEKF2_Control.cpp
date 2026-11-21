@@ -38,7 +38,7 @@ void NavEKF2_core::controlFilterModes()
 uint8_t NavEKF2_core::effective_magCal(void) const
 {
     // force use of simple magnetic heading fusion for specified cores
-    if (frontend->_magMask & core_index) {
+    if (frontend->_magMask & (1U<<core_index)) {
         return 2;
     } else {
         return frontend->_magCal;
@@ -369,7 +369,8 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
 // return true if we should use the airspeed sensor
 bool NavEKF2_core::useAirspeed(void) const
 {
-    return dal.airspeed_sensor_enabled();
+    const auto *airspeed = dal.airspeed();
+    return airspeed != nullptr && airspeed->healthy() && airspeed->use();
 }
 
 // return true if we should use the range finder sensor

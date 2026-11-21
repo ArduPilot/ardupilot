@@ -88,10 +88,6 @@
  # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
 #endif
 
-#ifndef MAV_SYSTEM_ID
- # define MAV_SYSTEM_ID          1
-#endif
-
 // prearm GPS hdop check
 #ifndef GPS_HDOP_GOOD_DEFAULT
  # define GPS_HDOP_GOOD_DEFAULT         140     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
@@ -648,7 +644,8 @@
 #endif
 
 #ifndef TOY_MODE_ENABLED
-#define TOY_MODE_ENABLED 0
+// built in SITL so that it can be tested there
+#define TOY_MODE_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL && FRAME_CONFIG != HELI_FRAME && MODE_ALTHOLD_ENABLED)
 #endif
 
 #if TOY_MODE_ENABLED && FRAME_CONFIG == HELI_FRAME

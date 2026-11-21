@@ -66,7 +66,7 @@
 
 // allow for dynamically added tables when scripting enabled
 #ifndef AP_PARAM_DYNAMIC_ENABLED
-#define AP_PARAM_DYNAMIC_ENABLED AP_SCRIPTING_ENABLED
+#define AP_PARAM_DYNAMIC_ENABLED AP_EXTERNAL_BINDING_ENABLED
 #endif
 
 // maximum number of dynamically created tables (from scripts)
@@ -233,6 +233,16 @@ public:
     };
     struct ConversionInfo {
         uint16_t old_key; // k_param_*
+        uint32_t old_group_element; // index in old object
+        enum ap_var_type type; // AP_PARAM_*
+        const char *new_name;
+    };
+
+    // as ConversionInfo, but for tables where every entry shares an
+    // old key which is supplied separately - e.g. one found at runtime
+    // with find_top_level_key_by_pointer().  Keeping the key out of
+    // the table allows the table to be a compile-time constant.
+    struct ConversionInfoNoKey {
         uint32_t old_group_element; // index in old object
         enum ap_var_type type; // AP_PARAM_*
         const char *new_name;
@@ -477,6 +487,9 @@ public:
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
     // convert old vehicle parameters to new object parameters with scaling - assumes we use the same scaling factor for all values in the table
     static void         convert_old_parameters_scaled(const ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
+    // as above, for tables whose entries all share the old key old_key
+    static void         convert_old_parameters(uint16_t old_key, const ConversionInfoNoKey *conversion_table, uint8_t table_size, uint8_t flags=0);
+    static void         convert_old_parameters_scaled(uint16_t old_key, const ConversionInfoNoKey *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
 
     // convert an object which was stored in a vehicle's G2 into a new
     // object in AP_Vehicle.cpp:
@@ -779,7 +792,7 @@ private:
      */
     static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults);
     static bool count_param_defaults(const volatile char *ptr, int32_t length, uint16_t &count);
-    static bool read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx);
+    static bool read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx, bool &done_all);
 
     // load a defaults.parm using AP_FileSystem:
     static void load_defaults_file_from_filesystem(const char *filename, bool lastpass);
@@ -862,6 +875,7 @@ private:
         bool force_save;
     };
     static ObjectBuffer_TS<struct param_save> save_queue;
+    static HAL_Semaphore save_sem;
     static bool registered_save_handler;
 
     // background function for saving parameters
@@ -1095,6 +1109,16 @@ AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float, requires spec
 AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
+
+// unsigned types share the storage type of the signed type of the same size
+AP_PARAMDEF(uint8_t, UInt8, AP_PARAM_INT8);    // defines AP_UInt8
+AP_PARAMDEF(uint16_t, UInt16, AP_PARAM_INT16); // defines AP_UInt16
+AP_PARAMDEF(uint32_t, UInt32, AP_PARAM_INT32); // defines AP_UInt32
+
+// generic code accesses unsigned params via the signed type of the same size
+static_assert(sizeof(AP_UInt8) == sizeof(AP_Int8), "AP_UInt8 size");
+static_assert(sizeof(AP_UInt16) == sizeof(AP_Int16), "AP_UInt16 size");
+static_assert(sizeof(AP_UInt32) == sizeof(AP_Int32), "AP_UInt32 size");
 
 // declare a non-scalar type
 // this is used in AP_Math.h

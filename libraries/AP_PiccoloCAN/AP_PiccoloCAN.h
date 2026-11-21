@@ -128,13 +128,13 @@ private:
     } _ecu_info;
 
     // Piccolo CAN parameters
-    AP_Int32 _esc_bm;       //!< ESC selection bitmask
+    AP_UInt32 _esc_bm;       //!< ESC selection bitmask
     AP_Int16 _esc_hz;       //!< ESC update rate (Hz)
 
-    AP_Int32 _srv_bm;       //!< Servo selection bitmask
+    AP_UInt32 _srv_bm;       //!< Servo selection bitmask
     AP_Int16 _srv_hz;       //!< Servo update rate (Hz)
 
-    AP_Int16 _ecu_id;       //!< ECU Node ID
+    AP_UInt16 _ecu_id;       //!< ECU Node ID
     AP_Int16 _ecu_hz;       //!< ECU update rate (Hz)
 
 };

@@ -644,10 +644,7 @@ void AP_MSP_Telem_Backend::msp_handle_baro(const MSP::msp_baro_data_message_t &p
 #if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_message_t &pkt)
 {
-    auto *airspeed = AP::airspeed();
-    if (airspeed) {
-        airspeed->handle_msp(pkt);
-    }
+    AP::airspeed().handle_msp(pkt);
 }
 #endif
 
@@ -869,21 +866,27 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_status(sbuf_t *dst)
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_canvas(sbuf_t *dst)
 {
     // report the canvas matching the current screen's text resolution so an HD
-    // goggle sizes its OSD grid correctly (TXT_RES 0:30x16, 1:50x18, 2:60x22)
+    // goggle sizes its OSD grid correctly (TXT_RES 0:30x16, 1:50x18, 2:60x22, 3:53x20)
     struct PACKED {
         uint8_t cols;
         uint8_t rows;
     } canvas { 30, 16 };
-#if OSD_ENABLED
+#if OSD_ENABLED && HAL_WITH_MSP_DISPLAYPORT
     const AP_OSD *osd = AP::osd();
     const AP_MSP *msp = AP::msp();
     if (osd != nullptr && msp != nullptr) {
-        switch (osd->screen[msp->_msp_status.current_screen].get_txt_resolution()) {
+        // the MSP thread that tracks _msp_status.current_screen is not running
+        // when DisplayPort is the only MSP backend, so follow the OSD directly
+        const uint8_t screen = osd->is_readonly_screen() ? osd->get_current_screen() : msp->_msp_status.current_screen;
+        switch (osd->screen[screen].get_txt_resolution()) {
         case 1:
             canvas = { 50, 18 };
             break;
         case 2:
             canvas = { 60, 22 };
+            break;
+        case 3:
+            canvas = { 53, 20 };
             break;
         default:
             break;

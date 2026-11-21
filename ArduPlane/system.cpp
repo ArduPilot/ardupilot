@@ -12,16 +12,7 @@ void Plane::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    rollController.convert_pid();
-    pitchController.convert_pid();
-
     // initialise rc channels including setting mode
-    // PARAMETER_CONVERSION - Added: Sep-2021 for ArduPlane-4.2
-#if HAL_QUADPLANE_ENABLED
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, (quadplane.enabled() && quadplane.option_is_set(QuadPlane::Option::AIRMODE_UNUSED) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) ? RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE : RC_Channel::AUX_FUNC::ARMDISARM);
-#else
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
-#endif
     rc().init();
 
 #if AP_RELAY_ENABLED
@@ -49,9 +40,6 @@ void Plane::init_ardupilot()
 #if AP_RSSI_ENABLED
     rssi.init();
 #endif
-
-    // setup telem slots with serial ports
-    gcs().setup_uarts();
 
 
 #if OSD_ENABLED
@@ -104,7 +92,10 @@ void Plane::init_ardupilot()
 
     AP_Param::reload_defaults_file(true);
 
-    set_mode(mode_initializing, ModeReason::INITIALISED);
+    // ALT_OFFSET always starts at zero, independently of FLIGHT_OPTIONS.
+    reset_alt_offset(true);
+
+    IGNORE_RETURN(set_mode(mode_initializing, ModeReason::INITIALISED));
 
 #if (GROUND_START_DELAY > 0)
     gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
@@ -135,6 +126,10 @@ void Plane::init_ardupilot()
         );
 #endif
 
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    custom_control.init();
+#endif
+
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
     gcs().sysid_mygcs_seen(AP_HAL::millis());
@@ -148,7 +143,7 @@ void Plane::init_ardupilot()
     }
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
 
-    set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED);
+    IGNORE_RETURN(set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED));
 
     // set the correct flight mode
     // ---------------------------
@@ -232,10 +227,11 @@ bool Plane::gcs_mode_enabled(const Mode::Number mode_num) const
 #else
         0xFF,
 #endif // MODE_AUTOLAND_ENABLED
+        (uint8_t)Mode::Number::GLIDE,
     };
 
     // Place holders should mean that array is always the same size
-    static_assert(ARRAY_SIZE(mode_list) == 22, "mode_list placeholders incorrect");
+    static_assert(ARRAY_SIZE(mode_list) == 23, "mode_list placeholders incorrect");
 
     return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
 }
@@ -246,7 +242,7 @@ uint32_t Plane::get_available_mode_enabled_mask() const
     // plane does not enable or disable modes at run-time.
     // This means that the FLTMODE_GCSBLOCK param is the only way modes will be disabled at runtime.
     // Rather than tracking modes we can just track the param itself for changes.
-    return ~uint32_t(flight_mode_GCS_block);
+    return ~flight_mode_GCS_block;
 }
 
 bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
@@ -315,6 +311,10 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     const ModeReason  old_previous_mode_reason = previous_mode_reason;
     previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
+
+    // Apply the reset before mode entry so altitude targets use the new value,
+    // including when mode entry subsequently fails.
+    reset_alt_offset();
 
     // attempt to enter new mode
     if (!new_mode.enter()) {

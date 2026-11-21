@@ -4,8 +4,7 @@
 
 '''
  playback a set of CAN frames
- capture frames either using libraries/AP_Scripting/examples/CAN_logger.lua
- or the CAN_Pn_OPTIONS bit to enable CAN logging
+ capture frames by setting bit 0 of CAN_Pn_OPTIONS to enable CAN logging
 '''
 
 import dronecan
@@ -74,7 +73,7 @@ while True:
         first_tstamp = None
         continue
 
-    if getattr(m,'bus',0) != args.bus:
+    if getattr(m,'Bus',0) != args.bus:
         continue
 
     if node_filter is not None and (m.Id & 0x7F) not in node_filter:

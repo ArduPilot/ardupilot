@@ -1,5 +1,142 @@
 ArduPilot Rover Release Notes:
 ------------------------------------------------------------------
+Release 4.7.3 14-November-2026 / 4.7.3-beta1 13-Oct-2026
+
+Changes from 4.7.2
+
+1) Board specific changes
+
+- AEDROXH7 board updated for new pinout (@Aedrox-UAx, PR:34751)
+- SVehicle-E2-mini board support (@yannis-zhi, PR:33328)
+- TBS_LUCID_H7 variants support DPS368 or BMP390 baro (@andyp1per, PR:34431)
+- TBS_LUCID_H7_WING variant with MPU6000 IMUs (@andyp1per, PR:34629)
+
+2) Library/Driver changes
+
+- Aeron Systems PLX3 external AHRS driver (@VinayakPundhir, PR:33041, PR:34280)
+- BLHeli pass-through interrupt storm lockup and corruption fixed (@tridge, PR:34598)
+- CADDX gimbal holds body-frame lock mode for 5 seconds after first packet (@Hwurzburg, PR:34524)
+- Camera servo zoom and focus speeds configurable with CAMx_ZOM_RAT_MAX and CAMx_FOC_RAT_MAX parameters (@Williangalvani, PR:34428)
+- Inertial sensor logs every filtered gyro sample when the rate thread is decimating (@andyp1per, PR:34601)
+
+3) Copter specific fixes and minor enhancements
+
+- CONDITION_YAW with absolute angle fixed when WP_YAW_BEHAVIOR = 0 (@tzi4, PR:33942)
+- PosHold brake-entry threshold units fixed (@FurkanKY, PR:34624)
+- Vibration compensation throttle response fixed (@peterbarker, PR:34607)
+- Loiter coordinated turns disabled by default (@rmackay9, PR:34542)
+
+4) Sub specific changes
+
+- Joystick roll and pitch input scaling fixed (@ES-Alexander, PR:34551)
+
+------------------------------------------------------------------
+Release 4.7.2 11-October-2026 / 4.7.2-beta1 29-Sep-2026
+
+Changes from 4.7.1
+
+1) Board specific changes
+
+- CoreWing F405 Wing V2 and Wing Mini V2 boards (@MakeSomeFakeNews, PR:33717)
+- CUAV-X25-MEGA board support (@cuav-chen2, PR:33475)
+- GPilot P1 board support (@gokhan-iha, PR:33067)
+- KakuteH7 and KakuteH7Mini support LSM6DSV-family IMUs (@zebulon-86, PR:34092)
+- Lectron Pi5 board support (@lectronuser, PR:33423)
+- NWBLUE_PROH757 board support (@andyp1per, PR:33349)
+- Pixhawk6X supports LSM6DSV-family IMUs (@zebulon-86, PR:33758)
+- ZeroOneX6 and ZeroOneX6_Air support bmm350 internal compasses (@ZeroOne-Aero, PR:32541)
+
+2) Library/Driver changes
+
+- Analog Devices ADIS16607 IMU support (@cuav-chen2, PR:32109)
+- Baro: bmp581 read thrice to get corrected data (@peterbarker, PR:34265)
+- Baro: MS5837 BARO_DEVID devtype fixed (@Williangalvani, PR:34339)
+- BMP390 baro init performs soft reset to clear sensor config (@crvogt, PR:33813)
+- Follow discards target state when FOLL_SYSID changes (@lthall, PR:33891)
+- Follow loses automatic sysid detection (@lthall, PR:33937)
+- GCS_MAVLink: statustext chunk tracking compid comparison fixed (@masonzeng702550, PR:34295)
+- Harmonic Quintuple Notch fixed (@IamPete1, PR:33974)
+- IIS2MDC compass fixes and enable by default (@andyp1per, PR:33780)
+- InertialSensor: LSM6DSV IMU heater not being driven fixed (@RunnyCow, PR:34116)
+- Linux CAN bus regression fixed (@landswellsong, PR:34062)
+- Linux boards read multiple UDP packets per cycle (@landswellsong, PR:33828)
+- Logger: dBm unit added to log structure (@olliw42, PR:34320)
+- OSD uses correct yaw (@IamPete1, PR:34007)
+- QMC5883P enabled on 1M boards by default (@IamPete1, PR:34101)
+
+3) AHRS / EKF fixes
+
+- Drag fusion fixed when using GPS for yaw (@IamPete1, PR:34027)
+- Inertial sensor accel board rotation kept during gyro cal (@andyp1per, PR:33988)
+- Merge zeroRows and zeroCols into P-specific form (non-functional change, @tpwrules, PR:33132)
+- Optical flow terrain scale height sign fixed (@andyp1per, PR:34360)
+- Zero wind cross-covariances when treating wind as truth, fixes DeadReckoningNoAirspeed tests (@peterbarker, PR:33326)
+
+4) Sub specific changes
+
+- Guided mode supports acceleration targets (@clydemcqueen, PR:34298)
+
+5) Bug fixes and minor enhancements
+
+- Copter: PosHold brake-to-loiter speed threshold units fixed (@peterbarker, PR:34287)
+- ATC_RAT_YAW_NTF param units description fixed (@andyp1per, PR:34122)
+
+6) Tool changes
+
+- Cygwin build upgraded to use Python 3.12 (@tpwrules, PR:32586)
+- Debian Bullseye support removed because it is EOL (@khancyr, PR:34336)
+- Extend compiler warning suppression to include gcc 16.2 (@Williangalvani, PR:34058)
+- Remove now-unnecessary Python future dependency (@tpwrules, PR:32531)
+- ROS2/colcon: rosdep install fixed by skipping microxrcedds_agent key (@peterbarker, PR:34285)
+
+------------------------------------------------------------------
+Release 4.7.1 31-August-2026 / 4.7.1-beta1 17-August-2026
+
+Changes from 4.7.0
+
+1) Board specific changes
+
+- ARKV6S board added (@dakejahl, PR:33157)
+- CORVON_V5 board added (@holydust, PR:33593)
+- DAKEFPV boards add support for LSM6DSV and BMI270 IMUs (@engineer-dakefpv, PR:33984)
+- FlywooF405S-AIO and -HD boards support SPL06 barometer (@mbuzdalov, PR:33779)
+- KakuteH7-Wing boards support LSM6DSV IMU (@zebulon-86, PR:33761)
+- ORBITH743v2 board added (@orbittechnologyx, PR:33582)
+
+2) Plane specific changes
+
+- Q_P_JERK_NE/D renamed to Q_P_NE/D_JERK (@rmackay9, PR:33843)
+- Quadplane: In transition only set TECS throttle min in auto throttle modes (@IamPete1, PR:33972)
+
+3) Copter specific changes
+
+- Auto mode climbing Arc waypoint speed limits and velocity/acceleration fixed (@lthall, PR:33833)
+- Auto mode fix to continue past RTL if rtl-final-descent non-zero (@rmackay9, PR:33797)
+- Circle mode entry fixed when RC input present (@peterbarker, PR:33525)
+- PSC_JERK_NE/D renamed to PSC_NE/D_JERK (@rmackay9, PR:33843)
+- Simple mode fixed (@rmackay9, PR:33947)
+
+4) Library/Driver changes
+
+- AC_WPNAV: Use of uninitialised values avoided in m/cm conversion code (@peterbarker, PR:33715)
+- AP_Filesystem: Files without an End-Of-Line character get correctly read (@peterbarker, PR:33744)
+- AP_FlashStorage: Fix incorrect value of `current_sector` during init (@Juergen-Fahlbusch, PR:33640)
+- AP_Follow: Fix parameter ranges to include their defaults (@lthall, PR:33928)
+- AP_GPS: Unicore baseline correction in vertical component of Unicore reported baseline (@lthall, PR:33730)
+- AP_Mount: Fix AlexMos yaw angle scaling (@borischernov, PR:33785)
+- AP_NavEKF: Log per-core source set in XKFS (@mykhailopylyp, PR:33904)
+- AP_OSD: use Betaflight SYM_TOTAL_DISTANCE for DisplayPort distance icon (@coreyfarley, PR:33908)
+- AP_RangeFinder: TFMiniPlus: Small delay added to improve read reliability (@IamPete1, PR:33709)
+- ChibiOS: fix overdrive disabled on H7 boards clocked above 400MHz (@andyp1per, PR:33824)
+- GCS_MAVLink: Correction in diagnostics printing (@peterbarker, PR:33800)
+- IST8310 compass gets probed only if the driver is enabled (@peterbarker, PR:32696)
+- Topotek gimbal network connection handling is corrected (@peterbarker, PR:33803)
+
+5) Tool changes
+
+- build_options.py: Wrong dependecy for MAVLINK_SIGNING has been removed (@peterbarker, PR:33798)
+
+------------------------------------------------------------------
 Release 4.7.0 21-July-2026/ 4.7.0-beta8 13-July-2026
 
 Changes from 4.7.0-beta7

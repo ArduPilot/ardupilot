@@ -61,6 +61,8 @@ _sim_vehicle() {
   opts+=" --fresh-params"
   opts+=" --mcast"
   opts+=" --udp"
+  opts+=" --unix-domain-socket"
+  opts+=" --uds"
   opts+=" --osd"
   opts+=" --osdmsp"
   opts+=" --tonealarm"

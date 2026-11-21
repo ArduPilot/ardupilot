@@ -14,6 +14,8 @@
  */
 #pragma once
 
+#include "config.h"
+
 #include <AP_Param/AP_Param.h>
 #include "transition.h"
 #include <AP_Motors/AP_MotorsTailsitter.h>
@@ -94,24 +96,26 @@ public:
     AP_Int8 transition_angle_vtol;
     AP_Float transition_rate_vtol;
     AP_Float transition_throttle_vtol;
-    AP_Int8 input_type;
+    AP_UInt8 input_type;
     AP_Float vectored_forward_gain;
     AP_Float vectored_hover_gain;
     AP_Float vectored_hover_power;
     AP_Float throttle_scale_max;
     AP_Float gain_scaling_min;
     AP_Float max_roll_angle;
-    AP_Int16 motor_mask;
+    AP_UInt16 motor_mask;
     AP_Float scaling_speed_min;
     AP_Float scaling_speed_max;
-    AP_Int16 gain_scaling_mask;
+    AP_UInt16 gain_scaling_mask;
     AP_Float disk_loading;
     AP_Float VTOL_roll_scale;
     AP_Float VTOL_pitch_scale;
     AP_Float VTOL_yaw_scale;
     AP_Float disk_loading_min_outflow;
 
+#if AP_MOTORS_TAILSITTER_ENABLED
     AP_MotorsTailsitter* tailsitter_motors;
+#endif  // AP_MOTORS_TAILSITTER_ENABLED
 
 private:
 
@@ -133,6 +137,9 @@ private:
 
 
     bool setup_complete;
+
+    // true if Q_FRAME_CLASS is the dual-motor tailsitter frame (AP_MotorsTailsitter)
+    bool is_dual_motor_frame() const;
 
     // true when flying a tilt-vectored tailsitter
     bool _is_vectored;

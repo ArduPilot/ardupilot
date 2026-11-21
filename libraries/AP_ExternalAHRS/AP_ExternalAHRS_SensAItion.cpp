@@ -157,7 +157,9 @@ void AP_ExternalAHRS_SensAItion::get_filter_status(nav_filter_status &status) co
     if (healthy()) {
         WITH_SEMAPHORE(driver_state.semaphore);
         if (ins_mode_enabled && driver_state.last_alignment_status == 1) {
-            status.flags.attitude = true;
+            // alignment status comes in INS packets; attitude comes
+            // in separate AHRS packets:
+            status.flags.attitude = driver_state.last_quat_pkt_ms != 0;
             status.flags.horiz_pos_abs = true;
             status.flags.vert_pos = true;
             status.flags.horiz_vel = true;

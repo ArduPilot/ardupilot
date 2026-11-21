@@ -18,6 +18,16 @@
 
 // Param type template functions
 
+#if AP_PARAM_DEFAULTS_ENABLED
+// defaults are compared against the generic signed view of the value,
+// so unsigned types register the signed value of the same size
+template<typename T>
+static float default_as_float(const T &v) { return (float)v; }
+static float default_as_float(const uint8_t &v) { return (float)(int8_t)v; }
+static float default_as_float(const uint16_t &v) { return (float)(int16_t)v; }
+static float default_as_float(const uint32_t &v) { return (float)(int32_t)v; }
+#endif
+
 // set a parameter that is an ENABLE param
 template<typename T, ap_var_type PT>
 void AP_ParamTBase<T, PT>::set_enable(const T &v) {
@@ -34,7 +44,7 @@ void AP_ParamTBase<T, PT>::set_enable(const T &v) {
 template<typename T, ap_var_type PT>
 void AP_ParamTBase<T, PT>::set_default(const T &v) {
 #if AP_PARAM_DEFAULTS_ENABLED
-    add_default(this, (float)v);
+    add_default(this, default_as_float(v));
 #endif
     if (!configured()) {
         set(v);
@@ -45,7 +55,7 @@ void AP_ParamTBase<T, PT>::set_default(const T &v) {
 template<typename T, ap_var_type PT>
 void AP_ParamTBase<T, PT>::set_and_default(const T &v) {
 #if AP_PARAM_DEFAULTS_ENABLED
-    add_default(this, (float)v);
+    add_default(this, default_as_float(v));
 #endif
     set(v);
 }
@@ -99,6 +109,9 @@ template class AP_ParamTBase<float, AP_PARAM_FLOAT>;
 template class AP_ParamTBase<int8_t, AP_PARAM_INT8>;
 template class AP_ParamTBase<int16_t, AP_PARAM_INT16>;
 template class AP_ParamTBase<int32_t, AP_PARAM_INT32>;
+template class AP_ParamTBase<uint8_t, AP_PARAM_INT8>;
+template class AP_ParamTBase<uint16_t, AP_PARAM_INT16>;
+template class AP_ParamTBase<uint32_t, AP_PARAM_INT32>;
 
 // Value setter - set value, tell GCS
 template<typename T, ap_var_type PT>

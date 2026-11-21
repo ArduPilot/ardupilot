@@ -303,35 +303,3 @@ float AP_PitchController::run_axis_rate_control(float desired_rate_degs, float s
 
     return run_rate_control(desired_rate_degs, scaler, disable_integrator, ground_mode);
 }
-
-/*
-  convert from old to new PIDs
-  this is a temporary conversion function during development
- */
-// PARAMETER_CONVERSION - Added: Apr-2021 for ArduPilot-4.1
-void AP_PitchController::convert_pid()
-{
-    AP_Float &ff = rate_pid.ff();
-    if (ff.configured()) {
-        return;
-    }
-
-    float old_ff=0, old_p=1.0, old_i=0.3, old_d=0.08;
-    int16_t old_imax = 3000;
-    bool have_old = AP_Param::get_param_by_index(this, 1, AP_PARAM_FLOAT, &old_p);
-    have_old |= AP_Param::get_param_by_index(this, 3, AP_PARAM_FLOAT, &old_i);
-    have_old |= AP_Param::get_param_by_index(this, 2, AP_PARAM_FLOAT, &old_d);
-    have_old |= AP_Param::get_param_by_index(this, 8, AP_PARAM_FLOAT, &old_ff);
-    have_old |= AP_Param::get_param_by_index(this, 7, AP_PARAM_FLOAT, &old_imax);
-    if (!have_old) {
-        // none of the old gains were set
-        return;
-    }
-
-    const float kp_ff = MAX((old_p - old_i * gains.tau) * gains.tau  - old_d, 0);
-    rate_pid.ff().set_and_save(old_ff + kp_ff);
-    rate_pid.kI().set_and_save_ifchanged(old_i * gains.tau);
-    rate_pid.kP().set_and_save_ifchanged(old_d);
-    rate_pid.kD().set_and_save_ifchanged(0);
-    rate_pid.kIMAX().set_and_save_ifchanged(old_imax/4500.0);
-}

@@ -132,7 +132,7 @@ void Copter::read_radio()
     set_failsafe_radio(true);
 }
 
-#define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values below failsafe_throttle_value
+#define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values at or below failsafe_throttle_value
 void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
@@ -142,7 +142,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
     }
 
     //check for low throttle value
-    if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
+    if (throttle_pwm <= g.failsafe_throttle_value) {
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
         if (failsafe.radio || !(rc().has_ever_seen_rc_input() || motors->armed())) {

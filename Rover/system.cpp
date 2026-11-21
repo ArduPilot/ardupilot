@@ -19,11 +19,7 @@ void Rover::init_ardupilot()
 
     g2.windvane.init(serial_manager);
 
-    // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
-
-    // setup telem slots with serial ports
-    gcs().setup_uarts();
 
 #if OSD_ENABLED
     osd.init();
@@ -134,9 +130,6 @@ void Rover::init_ardupilot()
     set_mode(*initial_mode, ModeReason::INITIALISED);
 
     // initialise rc channels
-    // PARAMETER_CONVERSION - Added: Sep-2021 for Rover-4.2
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
-    rc().convert_options(RC_Channel::AUX_FUNC::SAVE_TRIM, RC_Channel::AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC);
     rc().init();
 
     rover.g2.sailboat.init();

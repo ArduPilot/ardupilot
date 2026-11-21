@@ -63,7 +63,7 @@ bool AP_Baro_AUAV::init()
     dev->set_device_type(DEVTYPE_BARO_AUAV);
     set_bus_id(instance, dev->get_bus_id());
 
-    dev->register_periodic_callback(40000,
+    dev->register_periodic_callback(50000,
                                      FUNCTOR_BIND_MEMBER(&AP_Baro_AUAV::timer, void));
 
     return true;

@@ -60,7 +60,7 @@ def gcr_encode(value):
     new_value = 0
     for i in range(4):
         new_value |= (nibble_map[value & 0xF] << ((3-i) * 5))
-        value >> 4
+        value >>= 4
 
     return rll_encode(new_value)
 

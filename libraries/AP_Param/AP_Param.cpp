@@ -36,6 +36,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <stdio.h>
 #include <AP_ROMFS/AP_ROMFS.h>
+#include <AP_ROMFS/AP_ROMFS_config.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
@@ -116,6 +117,7 @@ uint16_t AP_Param::num_read_only;
 bool AP_Param::eeprom_full;
 
 ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
+HAL_Semaphore AP_Param::save_sem;
 bool AP_Param::registered_save_handler;
 
 bool AP_Param::done_all_default_params;
@@ -1301,7 +1303,12 @@ void AP_Param::save(bool force_save)
 void AP_Param::save_io_handler(void)
 {
     struct param_save p;
-    while (save_queue.pop(p)) {
+    while (true) {
+        // Cover the pop as well as the write so flush() cannot miss an in-flight save.
+        WITH_SEMAPHORE(save_sem);
+        if (!save_queue.pop(p)) {
+            break;
+        }
         p.param->save_sync(p.force_save, true);
     }
     if (hal.scheduler->is_system_initialized()) {
@@ -1316,7 +1323,11 @@ void AP_Param::save_io_handler(void)
 void AP_Param::flush(void)
 {
     uint16_t counter = 200; // 2 seconds max
-    while (counter-- && save_queue.available()) {
+    while (counter--) {
+        if (save_queue.available() == 0 && save_sem.take_nonblocking()) {
+            save_sem.give();
+            break;
+        }
         hal.scheduler->expect_delay_ms(10);
         hal.scheduler->delay(10);
         hal.scheduler->expect_delay_ms(0);
@@ -1627,7 +1638,7 @@ void AP_Param::reload_defaults_file(bool last_pass)
     if (default_file) {
 #if AP_FILESYSTEM_FILE_READING_ENABLED
         load_defaults_file_from_filesystem(default_file, last_pass);
-#elif defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#elif AP_ROMFS_ENABLED
         load_defaults_file_from_romfs(default_file, last_pass);
 #endif
     }
@@ -1662,7 +1673,7 @@ void AP_Param::load_defaults_file_from_filesystem(const char *default_file, bool
 }
 #endif  // AP_FILESYSTEM_FILE_READING_ENABLED
 
-#if defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#if AP_ROMFS_ENABLED
 void AP_Param::load_defaults_file_from_romfs(const char *default_file, bool last_pass)
 {
     const char *prefix = "@ROMFS/";
@@ -1685,7 +1696,7 @@ void AP_Param::load_defaults_file_from_romfs(const char *default_file, bool last
     AP_ROMFS::free(text);
 
 }
-#endif  // HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#endif  // AP_ROMFS_ENABLED
 
 /* 
    Load all variables from EEPROM for a particular object. This is
@@ -2080,6 +2091,31 @@ void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conver
     flush();
 }
 
+// convert old parameters to new object parameters, where every entry
+// in the table shares old_key
+void AP_Param::convert_old_parameters(uint16_t old_key, const struct ConversionInfoNoKey *conversion_table, uint8_t table_size, uint8_t flags)
+{
+    convert_old_parameters_scaled(old_key, conversion_table, table_size, 1.0f, flags);
+}
+
+// convert old parameters to new object parameters with scaling, where
+// every entry in the table shares old_key
+void AP_Param::convert_old_parameters_scaled(uint16_t old_key, const struct ConversionInfoNoKey *conversion_table, uint8_t table_size, float scaler, uint8_t flags)
+{
+    for (uint8_t i=0; i<table_size; i++) {
+        const ConversionInfo info {
+            old_key,
+            conversion_table[i].old_group_element,
+            conversion_table[i].type,
+            conversion_table[i].new_name
+        };
+        convert_old_parameter(&info, scaler, flags);
+    }
+    // we need to flush here to prevent a later set_default_by_name()
+    // causing a save to be done on a converted parameter
+    flush();
+}
+
 // move all parameters from a class to a new location
 // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
 void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
@@ -2374,7 +2410,8 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
     return true;
 }
 
-bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx)
+// done_all is cleared if any parameter in this file is not yet known
+bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx, bool &done_all)
 {
     // try opening the file both in the posix filesystem and using AP::FS
     int file_apfs = AP::FS().open(filename, O_RDONLY, true);
@@ -2383,7 +2420,6 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         return false;
     }
 
-    bool done_all = true;
     char line[100];
     while (AP::FS().fgets(line, sizeof(line), file_apfs)) {
         char *pname;
@@ -2423,8 +2459,6 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         }
     }
     AP::FS().close(file_apfs);
-
-    done_all_default_params = done_all;
 
     return true;
 }
@@ -2477,15 +2511,19 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
         AP_HAL::panic("AP_Param: Failed to allocate mutable string");
     }
     uint16_t idx = 0;
+    // all defaults are applied only if every parameter in EVERY file was found; taking the
+    // last file's result alone would skip the reload a later dynamic object needs
+    bool done_all = true;
     for (char *pname = strtok_r(mutable_filename, ",", &saveptr);
          pname != nullptr;
          pname = strtok_r(nullptr, ",", &saveptr)) {
-        if (!read_param_defaults_file(pname, last_pass, idx)) {
+        if (!read_param_defaults_file(pname, last_pass, idx, done_all)) {
             free(mutable_filename);
             return false;
         }
     }
     free(mutable_filename);
+    done_all_default_params = done_all;
 
     num_param_overrides = num_defaults;
 
@@ -2497,7 +2535,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 }
 #endif // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
 
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
 /*
   count the number of parameter defaults present in supplied string
  */
@@ -2627,7 +2665,7 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
     purge_defaults_list_overrides();
 #endif
 }
-#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || AP_ROMFS_ENABLED
 
 
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0

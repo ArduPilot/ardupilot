@@ -189,9 +189,9 @@ public:
 #if AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
         LightWare_GRF = 45,
 #endif // AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
-#if AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
+#if AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED
         BenewakeTFS20L = 46,
-#endif // AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
+#endif // AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED
 #if AP_RANGEFINDER_DTS6012M_ENABLED
         DTS6012M = 47,
 #endif // AP_RANGEFINDER_DTS6012M_ENABLED
@@ -289,13 +289,13 @@ public:
 
     // get rangefinder address (for AP_Periph CAN)
     uint8_t get_address(uint8_t id) const {
-        return id >= RANGEFINDER_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
+        return id >= RANGEFINDER_MAX_INSTANCES? 0 : params[id].address.get();
     }
 
     // methods to return a distance on a particular orientation from
     // any sensor which can current supply it
     int8_t signal_quality_pct_orient(enum Rotation orientation) const;
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // centimetre accessors - do not use, reduce use where possible
     uint16_t distance_cm_orient(enum Rotation orientation) const {
         return distance_orient(orientation) * 100.0;

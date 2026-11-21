@@ -1,22 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef INS_AUX_INSTANCES
-#define INS_AUX_INSTANCES 0
-#endif
-
-#ifndef INS_MAX_INSTANCES
-#define INS_MAX_INSTANCES (3+INS_AUX_INSTANCES)
-#endif
-
-#if INS_MAX_INSTANCES < 3 && INS_AUX_INSTANCES > 0
-#error "INS_AUX_INSTANCES must be zero if INS_MAX_INSTANCES is less than 3"
-#endif
-
-#if INS_MAX_INSTANCES > 3 && INS_AUX_INSTANCES == 0
-#error "INS_AUX_INSTANCES must be non-zero if INS_MAX_INSTANCES is greater than 3"
-#endif
+#include "AP_InertialSensor_config.h"
 
 #define INS_MAX_BACKENDS  2*INS_MAX_INSTANCES
 #define INS_MAX_NOTCHES 12
@@ -27,13 +12,11 @@
     #define INS_VIBRATION_CHECK_INSTANCES 1
   #endif
 #endif
-#define XYZ_AXIS_COUNT    3
 // The maximum we need to store is gyro-rate / loop-rate, worst case ArduCopter with BMI088 is 2000/400
 #define INS_MAX_GYRO_WINDOW_SAMPLES 8
 
 #define DEFAULT_IMU_LOG_BAT_MASK 0
 
-#include "AP_InertialSensor_config.h"
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 #ifndef HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
@@ -420,7 +403,7 @@ public:
         // Parameters
         AP_Int16 _required_count;
         uint16_t _real_required_count;
-        AP_Int8 _sensor_mask;
+        AP_UInt8 _sensor_mask;
         AP_Int8 _batch_options_mask;
 
         // Parameters controlling pushing data to AP_Logger:
@@ -432,7 +415,7 @@ public:
         // will loop back around to the first sensor after about
         // twenty seconds.
         AP_Int16 samples_per_msg;
-        AP_Int8 push_interval_ms;
+        AP_UInt8 push_interval_ms;
 
         // end Parameters
 
@@ -626,8 +609,8 @@ private:
 
     // IDs to uniquely identify each sensor: shall remain
     // the same across reboots
-    AP_Int32 _accel_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
-    AP_Int32 _gyro_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+    AP_UInt32 _accel_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+    AP_UInt32 _gyro_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
 
     // accelerometer scaling and offsets
     AP_Vector3f _accel_scale_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
@@ -700,13 +683,13 @@ private:
     INS_PARAM_WRAPPER(_use);
 
     // control enable of fast sampling
-    AP_Int8     _fast_sampling_mask;
+    AP_UInt8    _fast_sampling_mask;
 
     // control enable of fast sampling
-    AP_Int8     _fast_sampling_rate;
+    AP_UInt8    _fast_sampling_rate;
 
     // control enable of detected sensors
-    AP_Int8     _enable_mask;
+    AP_UInt8    _enable_mask;
     
     // board orientation from AHRS
     enum Rotation _board_orientation;
@@ -849,7 +832,7 @@ private:
     INS_PARAM_WRAPPER(caltemp_gyro);
     INS_PARAM_WRAPPER(tcal);
 
-    AP_Int32 tcal_options;
+    AP_UInt32 tcal_options;
     bool tcal_learning;
 #endif
 
@@ -860,7 +843,7 @@ private:
         POST_FILTER         = (1U<<2),
         PRE_AND_POST_FILTER = (1U<<3),
     };
-    AP_Int16 raw_logging_options;
+    AP_UInt16 raw_logging_options;
     bool raw_logging_option_set(RAW_LOGGING_OPTION option) const {
         return (raw_logging_options.get() & int32_t(option)) != 0;
     }

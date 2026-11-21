@@ -17,6 +17,10 @@
  */
 
 #include "CrashCatcher.h"
+#include "hwdef.h"
+#if AP_USB_DEBUG_ENABLED
+#define HardFault_Handler AP_HardFault_Handler
+#endif
 
     .text
     .syntax unified

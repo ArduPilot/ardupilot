@@ -2,7 +2,6 @@
 
 #include <hwdef.h>
 
-#define HAL_BOARD_NAME "SITL"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
 #define HAL_OS_SOCKETS 1
@@ -91,6 +90,10 @@
 
 #ifndef HAL_CAN_DRIVER_DEFAULT
 #define HAL_CAN_DRIVER_DEFAULT 0
+#endif
+
+#ifndef HAL_SITL_WASM_ENABLED
+#define HAL_SITL_WASM_ENABLED 0
 #endif
 
 #ifndef AP_UART_MONITOR_ENABLED

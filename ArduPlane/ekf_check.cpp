@@ -116,7 +116,7 @@ bool Plane::ekf_over_threshold()
     // A value above 1.0 means the EKF has rejected that sensor data
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
-    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
+    if (!ahrs.get_variances_for_configured_backend(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
         return false;
     };
 
@@ -165,10 +165,10 @@ void Plane::failsafe_ekf_event()
 
     if (quadplane.in_vtol_auto()) {
         // the pilot is not controlling via sticks so switch to QLAND
-        plane.set_mode(mode_qland, ModeReason::EKF_FAILSAFE);
+        IGNORE_RETURN(plane.set_mode(mode_qland, ModeReason::EKF_FAILSAFE));
     } else {
         // the pilot is controlling via sticks so fallback to QHOVER
-        plane.set_mode(mode_qhover, ModeReason::EKF_FAILSAFE);
+        IGNORE_RETURN(plane.set_mode(mode_qhover, ModeReason::EKF_FAILSAFE));
     }
 #endif
 }

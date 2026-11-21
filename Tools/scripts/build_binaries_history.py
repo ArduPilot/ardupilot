@@ -1,5 +1,5 @@
-import os
 import sqlite3
+import subprocess
 
 
 class BuildBinariesHistory():
@@ -25,10 +25,8 @@ class BuildBinariesHistory():
         c.commit()
 
     def sizes_for_file(self, filepath):
-        cmd = "size %s" % (filepath,)
-        stuff = os.popen(cmd).read()
-        lines = stuff.split("\n")
-        sizes = lines[1].split("\t")
+        output = subprocess.check_output(["size", "--", filepath], text=True)
+        sizes = output.splitlines()[1].split(maxsplit=3)
         text = int(sizes[0])
         data = int(sizes[1])
         bss = int(sizes[2])

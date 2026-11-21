@@ -19,7 +19,7 @@
 
 #include "UARTDriver.h"
 
-#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__EMSCRIPTEN__)
 #define USE_TERMIOS
 #endif
 
@@ -77,7 +77,7 @@ bool HALSITL::UARTDriver::set_speed(int speed) const
     return true;
 }
 
-void HALSITL::UARTDriver::configure_parity(uint8_t v)
+void HALSITL::UARTDriver::_configure_parity(uint8_t v)
 {
     if (_fd < 0) {
         return;
@@ -115,8 +115,9 @@ void HALSITL::UARTDriver::configure_parity(uint8_t v)
 #endif
 }
 
-void HALSITL::UARTDriver::set_stop_bits(int n)
+void HALSITL::UARTDriver::_set_stop_bits(int n)
 {
+    _stop_bits = n;
     if (_fd < 0) {
         return;
     }

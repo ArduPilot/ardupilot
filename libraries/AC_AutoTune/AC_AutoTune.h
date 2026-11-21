@@ -275,10 +275,12 @@ protected:
     uint32_t step_start_time_ms;    // start time of current tuning step (used for timeout checks)
     uint32_t step_timeout_ms;       // time limit of current autotune process
     uint32_t level_start_time_ms;   // start time of waiting for level
+    uint32_t level_wait_start_ms;   // start time of waiting for level, not moved by the yaw-slew deferrals
+    uint32_t last_yaw_slew_ms;      // last time the yaw target was away from desired_yaw_rad
     int8_t   success_counter;       // counter for tuning gains
-    float    start_angle;           // start angle
-    float    start_rate;            // start rate - parent and multi
-    float    test_accel_max_cdss;   // maximum acceleration variable
+    float    start_angle_rad;       // start angle in radians
+    float    start_rate_rads;       // start rate in radians/second - parent and multi
+    float    test_accel_max_radss;  // maximum acceleration variable in radians/second/second
     float    step_scaler;           // scaler to reduce maximum target step - parent and multi
 
     LowPassFilterFloat  rotation_rate_filt; // filtered rotation rate in radians/second
@@ -296,8 +298,8 @@ protected:
     float    tune_roll_rff, tune_pitch_rff, tune_yaw_rd, tune_yaw_rff;
 
     uint32_t last_announce_ms;
-    float   lean_angle;
-    float   rotation_rate;
+    float   lean_angle_rad;
+    float   rotation_rate_rads;
     float   desired_roll_rad, desired_pitch_rad, desired_yaw_rad;  // desired attitude target setpoints and test origins
 
     // heli specific variables
@@ -309,22 +311,22 @@ private:
     virtual bool position_ok();
 
     // methods subclasses must implement to specify max/min test angles:
-    virtual float target_angle_max_rp_cd() const = 0;
+    virtual float target_angle_max_rp_rad() const = 0;
 
     // methods subclasses must implement to specify max/min test angles:
-    virtual float target_angle_max_y_cd() const = 0;
+    virtual float target_angle_max_y_rad() const = 0;
 
     // methods subclasses must implement to specify max/min test angles:
-    virtual float target_angle_min_rp_cd() const = 0;
+    virtual float target_angle_min_rp_rad() const = 0;
 
     // methods subclasses must implement to specify max/min test angles:
-    virtual float target_angle_min_y_cd() const = 0;
+    virtual float target_angle_min_y_rad() const = 0;
 
     // methods subclasses must implement to specify max/min test angles:
-    virtual float angle_lim_max_rp_cd() const = 0;
+    virtual float angle_lim_max_rp_rad() const = 0;
 
     // methods subclasses must implement to specify max/min test angles:
-    virtual float angle_lim_neg_rpy_cd() const = 0;
+    virtual float angle_lim_neg_rpy_rad() const = 0;
 
     // initialise position controller
     bool init_position_controller();

@@ -37,7 +37,7 @@ public:
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
     virtual uint8_t get_mode() const override { return 0; }
 
-    AP_Int32 unused_log_bitmask; // logging is magic for Test; this is unused
+    AP_UInt32 unused_log_bitmask; // logging is magic for Test; this is unused
     struct LogStructure log_structure[256] = {
     };
 
@@ -45,7 +45,7 @@ protected:
 
 protected:
 
-    const AP_Int32 &get_log_bitmask() override { return unused_log_bitmask; }
+    const AP_UInt32 &get_log_bitmask() override { return unused_log_bitmask; }
     const struct LogStructure *get_log_structures() const override {
         return log_structure;
     }

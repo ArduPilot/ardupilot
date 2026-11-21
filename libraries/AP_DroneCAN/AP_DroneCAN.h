@@ -160,7 +160,7 @@ public:
 
     // check if a option is set
     bool option_is_set(Options option) const {
-        return (uint16_t(_options.get()) & uint16_t(option)) != 0;
+        return (_options & uint16_t(option)) != 0;
     }
 
     // check if a option is set and if it is then reset it to
@@ -186,7 +186,7 @@ public:
     Canard::Publisher<uavcan_equipment_hardpoint_Command> relay_hardpoint{canard_iface};
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     bool get_FlexDebug(uint8_t node_id, uint16_t msg_id, uint32_t &timestamp_us, dronecan_protocol_FlexDebug &msg) const;
 #endif
 
@@ -239,13 +239,13 @@ private:
     // UAVCAN parameters
     AP_Int8 _dronecan_node;
     AP_Int32 _servo_bm;
-    AP_Int32 _esc_bm;
+    AP_UInt32 _esc_bm;
     AP_Int8 _esc_offset;
     AP_Int16 _servo_rate_hz;
-    AP_Int16 _options;
+    AP_UInt16 _options;
     AP_Int16 _notify_state_hz;
     AP_Int16 _pool_size;
-    AP_Int32 _esc_rv;
+    AP_UInt32 _esc_rv;
 
     uint32_t *mem_pool;
 
@@ -388,7 +388,7 @@ private:
     Canard::Server<uavcan_protocol_GetNodeInfoRequest> node_info_server{canard_iface, node_info_req_cb};
     uavcan_protocol_GetNodeInfoResponse node_info_rsp;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     Canard::ObjCallback<AP_DroneCAN, dronecan_protocol_FlexDebug> FlexDebug_cb{this, &AP_DroneCAN::handle_FlexDebug};
     Canard::Subscriber<dronecan_protocol_FlexDebug> FlexDebug_listener{FlexDebug_cb, _driver_index};
 #endif
@@ -447,7 +447,7 @@ private:
     void handle_param_save_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_ExecuteOpcodeResponse& rsp);
     void handle_node_info_request(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoRequest& req);
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     void handle_FlexDebug(const CanardRxTransfer& transfer, const dronecan_protocol_FlexDebug& msg);
     struct FlexDebug {
         struct FlexDebug *next;

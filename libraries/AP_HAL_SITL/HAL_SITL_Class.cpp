@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -9,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -34,6 +36,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 #include <AP_HAL/SIMState.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 using namespace HALSITL;
 
@@ -172,7 +175,12 @@ static void sig_alrm(int signum)
 {
     static char env[] = "SITL_WATCHDOG_RESET=1";
     putenv(env);
-    printf("GOT SIGALRM\n");
+    // not printf: printf is not async-signal-safe, and this handler
+    // runs at an arbitrary point in the program - including inside
+    // stdio itself
+    static const char msg[] = "GOT SIGALRM\n";
+    IGNORE_RETURN(::write(2, msg, sizeof(msg)-1));
+    SocketAPM_native::cleanup_unix_paths();
     execv(new_argv[0], new_argv);
 }
 
@@ -249,7 +257,8 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 
     // form a new argv, removing problem parameters. This is used for reboot
     uint8_t new_argv_offset = 0;
-    for (uint8_t i=0; i<ARRAY_SIZE(new_argv) && i<argc; i++) {
+    // leave room for the nullptr that ends the list for execv()
+    for (uint8_t i=0; i<ARRAY_SIZE(new_argv)-1 && i<argc; i++) {
         if (!strcmp(argv[i], "-w")) {
             // don't wipe params on reboot
             continue;
@@ -319,8 +328,14 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 
 void HAL_SITL::actually_reboot()
 {
+#if HAL_SITL_WASM_ENABLED
+    // Emscripten cannot exec; terminate so the host can recreate the Worker.
+    abort();
+#else
+    SocketAPM_native::cleanup_unix_paths();
     execv(new_argv[0], new_argv);
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
+#endif
 }
 
 static HAL_SITL hal_sitl_inst;

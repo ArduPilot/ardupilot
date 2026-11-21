@@ -75,7 +75,7 @@ public:
 
     // parameter helper functions
     AP_Torqeedo::ConnectionType get_type() const { return (AP_Torqeedo::ConnectionType)_params.type.get(); }
-    bool option_enabled(AP_Torqeedo::options opt) const { return ((uint16_t)_params.options.get() & (uint16_t)opt) != 0; }
+    bool option_enabled(AP_Torqeedo::options opt) const { return (_params.options & (uint16_t)opt) != 0; }
 
     AP_Torqeedo_Params &_params;    // parameters for this backend
     uint8_t _instance;              // this instance's number

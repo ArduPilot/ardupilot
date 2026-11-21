@@ -51,10 +51,43 @@ return update, 1000   -- request "update" to be the first time 1000 milliseconds
 
 See the [code examples folder](https://github.com/ArduPilot/ardupilot/tree/master/libraries/AP_Scripting/examples)
 
+## MAVLink module upgrade for ArduPilot 4.8
+
+When upgrading to ArduPilot 4.8, replace `APM/scripts/modules/MAVLink` on the SD card
+with the firmware's matching `libraries/AP_Scripting/modules/MAVLink` directory.
+The internal message layout changed to support 32-bit system IDs. Older installed
+copies of `mavlink_msgs.lua` cannot decode this layout, even with system IDs below 256.
+Updating the firmware does not update the SD-card module files.
+
 ## Working with bindings
 
 Edit bindings.desc and rebuild. The waf build will automatically
 re-run the code generator.
+
+The generator uses Python's standard library, with no additional packages.
+To run it directly from the repository root:
+
+```bash
+python3 libraries/AP_Scripting/generator/generator.py \
+    -i libraries/AP_Scripting/generator/description/bindings.desc \
+    -o /tmp/lua_generated_bindings -d /tmp/generated_docs.lua
+```
+
+In `generator/`, `bindings_parser.py` reads descriptions into the dataclasses in
+`model.py`. `cpp.py` and `docs.py` render that model using the files in
+`templates/`. Templates use standard `string.Template` substitutions;
+loops, type conversions, and decisions stay in Python. Waf tracks both
+the Python files and templates as inputs, and `./waf scripting_docs` also
+generates the editable Lua documentation.
+
+Run the generator regression tests with:
+
+```bash
+python3 -m unittest discover -s libraries/AP_Scripting/generator/tests -v
+```
+
+The tests cover description parsing and diagnostics, output argument handling,
+documentation types, and Python module compatibility.
 
 ## Lua Source Code
 

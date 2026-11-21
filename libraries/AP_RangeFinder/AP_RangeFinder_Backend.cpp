@@ -122,7 +122,7 @@ bool AP_RangeFinder_Backend::should_power_down() const
     return frontend.estimated_terrain_height > params.powersave_range;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // get a copy of state structure
 void AP_RangeFinder_Backend::get_state(RangeFinder::RangeFinder_State &state_arg)
 {

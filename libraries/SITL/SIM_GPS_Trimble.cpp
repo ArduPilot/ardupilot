@@ -176,9 +176,10 @@ void GPS_Trimble::publish(const GPS_Data *d)
                 vel_flags,
                 gsof_pack_float(d->speed_2d()),
                 gsof_pack_float(d->ground_track_rad()),
-                // Trimble API has ambiguous direction here.
+                // Trimble API has ambiguous direction here; AP_GSOF
+                // treats it as positive-up.
                 // Intentionally narrow from double.
-                gsof_pack_float(static_cast<float>(d->speedD))
+                gsof_pack_float(static_cast<float>(-d->speedD))
             };
             static_assert(sizeof(gsof_vel) - (sizeof(gsof_vel::OUTPUT_RECORD_TYPE) + sizeof(gsof_vel::RECORD_LEN)) == GSOF_VEL_LEN, "Trimble size check failed");
 

@@ -1,0 +1,7 @@
+// STM32F412 AP_Periph base. The peripherals used by these boards are a
+// compatible subset of the F405 map, with 256 KiB of contiguous SRAM.
+
+using "Tools/renode/platforms/stm32f405_base.repl"
+
+sramExtension: Memory.MappedMemory @ sysbus 0x20020000
+    size: 0x20000

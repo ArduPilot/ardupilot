@@ -14,8 +14,22 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Mount_Params);
 
+    // mount modes.  Values match MAV_MOUNT_MODE so MAVLink and
+    // parameter values can be cast directly into this enumeration
+    // (checked by static asserts in AP_Mount_Backend.cpp)
+    enum class Mode : uint8_t {
+        RETRACT = 0,
+        NEUTRAL = 1,
+        MAVLINK_TARGETING = 2,
+        RC_TARGETING = 3,
+        GPS_POINT = 4,
+        SYSID_TARGET = 5,
+        HOME_LOCATION = 6,
+        WPNEXT_OFFSET = 7,
+    };
+
     AP_Int8     type;               // mount type (see Mount::Type enum)
-    AP_Int8     default_mode;       // default mode on startup and when control is returned from autopilot
+    AP_Enum<Mode> default_mode;     // default mode on startup and when control is returned from autopilot
     AP_Int16    rc_rate_max;        // Pilot rate control's maximum rate.  Set to zero to use angle control
     AP_Int16    roll_angle_min;     // roll angle min in degrees
     AP_Int16    roll_angle_max;     // roll angle max in degrees
@@ -29,7 +43,9 @@ public:
 
     AP_Float    roll_stb_lead;      // roll lead control gain (only used by servo backend)
     AP_Float    pitch_stb_lead;     // pitch lead control gain (only used by servo backend)
-    AP_Int8     sysid_default;      // target sysid for mount to follow
-    AP_Int32    dev_id;             // Device id taking into account bus
-    AP_Int8     options;            // mount options bitmask
+    AP_UInt32  sysid_default;      // target sysid for mount to follow
+    AP_UInt32   dev_id;             // Device id taking into account bus
+    AP_UInt8    options;            // mount options bitmask
+    AP_Int8     attitude_rate_hz;    // MAVLink vehicle attitude rate sent to gimbal
+    AP_Int8     target_rate_hz;      // MAVLink target rate sent to gimbal
 };

@@ -47,6 +47,10 @@ public:
         started = EKF3.InitialiseFilter();
     }
 
+    // EKF3 uses the magnitude of its own air-relative velocity, matching
+    // its historical synthetic airspeed:
+    bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
+
     bool get_origin(Location &ret) const override {
         return EKF3.getOriginLLH(ret);
     }
@@ -57,6 +61,12 @@ public:
     bool            use_compass() override {
         return EKF3.use_compass();
     }
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override {
+        return EKF3.getMagOffsets(mag_idx, magOffsets);
+    }
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
     void resetHeightDatum(void) override {
         EKF3.resetHeightDatum();

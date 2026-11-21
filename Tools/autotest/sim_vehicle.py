@@ -366,8 +366,6 @@ def run_gui(cmd_opts):
     default_vehicle = cmd_opts.vehicle
     if default_vehicle and default_vehicle in vinfo.options:
         available_vehicles = [default_vehicle]
-        if default_vehicle == 'ArduCopter' and 'Helicopter' in vinfo.options:
-            available_vehicles.append('Helicopter')
     else:
         available_vehicles = list(vinfo.options.keys())
 
@@ -857,17 +855,22 @@ def start_antenna_tracker(opts):
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
-    tracker_serial0 = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
+    if opts.unix_domain_socket:
+        tracker_serial0 = "uds:" + util.unix_domain_socket_path(0, vehicledir)
+    else:
+        tracker_serial0 = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
     binary_basedir = "build/sitl"
     exe = os.path.join(root_dir,
                        binary_basedir,
                        "bin/antennatracker")
-    run_in_terminal_window("AntennaTracker",
-                           ["nice",
-                            exe,
-                            "-I" + str(tracker_instance),
-                            "--model=tracker",
-                            "--home=" + ",".join([str(x) for x in tracker_home])])
+    cmd = ["nice",
+           exe,
+           "-I" + str(tracker_instance),
+           "--model=tracker",
+           "--home=" + ",".join([str(x) for x in tracker_home])]
+    if opts.unix_domain_socket:
+        cmd.extend(util.unix_domain_socket_serial_args())
+    run_in_terminal_window("AntennaTracker", cmd)
     os.chdir(oldpwd)
 
 
@@ -977,7 +980,12 @@ def start_vehicle(binary, opts, stuff, spawns=None):
     cmd.append(binary)
     if opts.wipe_eeprom:
         cmd.append("-w")
-    cmd.extend(["--model", stuff["model"]])
+    if opts.model is None and "frame" in stuff:
+        # SITL maps the frame to its model and default parameters
+        model = stuff["frame"]
+    else:
+        model = stuff["model"]
+    cmd.extend(["--model", model])
     cmd.extend(["--speedup", str(opts.speedup)])
     if opts.sysid is not None:
         cmd.extend(["--sysid", str(opts.sysid)])
@@ -985,16 +993,26 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--slave", str(opts.slave)])
     if opts.enable_fgview:
         cmd.extend(["--enable-fgview"])
+    if opts.unix_domain_socket:
+        cmd.extend(util.unix_domain_socket_serial_args())
+        cmd.append("--rc-in-port=uds:APM-UDS-rcin")
     if opts.sitl_instance_args:
         # this could be a lot better:
         cmd.extend(opts.sitl_instance_args)
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
     # the SITL binary resolves the per-frame default parameter files
-    # from its embedded vehicleinfo.json keyed by --model, so we no
-    # longer pass --defaults here. Use --add-param-file or --param to
+    # from its embedded vehicleinfo.json keyed by --model; only pass
+    # --defaults when it can't. Use --add-param-file or --param to
     # layer extra parameters on top of the embedded defaults.
     path = None
+    if vinfo.needs_defaults(stuff, frame_given, model):
+        paths = stuff["default_params_filename"]
+        if not isinstance(paths, list):
+            paths = [paths]
+        # absolute, as each instance runs from its own directory
+        path = ",".join([os.path.join(autotest_dir, x) for x in paths])
+        progress("Using defaults from (%s)" % (path,))
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")
         cmd.append("--set-storage-posix-enabled 0")
@@ -1091,9 +1109,9 @@ def start_mavproxy(opts, stuff):
     if under_cygwin():
         cmd.append("/usr/bin/cygstart")
         cmd.append("-w")
-        cmd.append("mavproxy.exe")
+        cmd.append(os.getenv('MAVPROXY_CMD', "mavproxy.exe"))
     else:
-        cmd.append("mavproxy.py")
+        cmd.append(util.mavproxy_cmd())
 
     if opts.valgrind:
         cmd.extend(['--retries', '10'])
@@ -1107,7 +1125,7 @@ def start_mavproxy(opts, stuff):
     # This is run before the loop so it only runs once
     wsl2_host_ip_str = wsl2_host_ip()
 
-    for i in instances:
+    for i, i_dir in zip(instances, instance_dir):
         if not opts.no_extra_ports:
             ports = [14550 + 10 * i]
             for port in ports:
@@ -1125,10 +1143,15 @@ def start_mavproxy(opts, stuff):
         if not opts.mcast:
             if opts.udp:
                 cmd.extend(["--master", ":" + str(5760 + 10 * i)])
+            elif opts.unix_domain_socket:
+                cmd.extend(["--master", "uds:" + util.unix_domain_socket_path(0, i_dir)])
             else:
                 cmd.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
         if stuff["sitl-port"] and not opts.no_rcin:
-            cmd.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
+            if opts.unix_domain_socket:
+                cmd.extend(["--sitl", "uds:" + util.unix_domain_socket_rcin_path(i_dir)])
+            else:
+                cmd.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -1506,6 +1529,10 @@ group_sim.add_option("", "--udp",
                      action="store_true",
                      default=False,
                      help="Use UDP on 127.0.0.1:5760")
+group_sim.add_option("--unix-domain-socket", "--uds",
+                     action="store_true",
+                     default=False,
+                     help="Use Unix domain sockets; each instance requires a separate working directory")
 group_sim.add_option("", "--osd",
                      action='store_true',
                      dest='OSD',
@@ -1741,6 +1768,10 @@ if cmd_opts.sysid and cmd_opts.auto_sysid:
     print("Cannot use auto-sysid together with sysid")
     sys.exit(1)
 
+if cmd_opts.unix_domain_socket and (cmd_opts.mcast or cmd_opts.udp):
+    print("Cannot use unix domain sockets together with multicast or UDP")
+    sys.exit(1)
+
 # magically determine vehicle type (if required):
 if cmd_opts.vehicle is None:
     cwd = os.getcwd()
@@ -1773,12 +1804,21 @@ You could also try changing directory to e.g. the ArduCopter subdirectory
     sys.exit(1)
 
 # determine frame options (e.g. build type might be "sitl")
+frame_given = cmd_opts.frame is not None
 if cmd_opts.frame is None:
     cmd_opts.frame = vinfo.options[cmd_opts.vehicle]["default_frame"]
+
+if cmd_opts.frame.startswith("gazebo") and cmd_opts.model is None:
+    print("Gazebo frames use the JSON backend: add --model JSON")
+    sys.exit(1)
 
 frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
                                       cmd_opts)
+# calibration is flagged external only so autotests skip it; SITL simulates it
+if frame_infos.get("external") and cmd_opts.model is None and cmd_opts.frame != "calibration":
+    print("WARNING: frame %s needs an external simulator and no --model was given, using model %s" %
+          (cmd_opts.frame, frame_infos["model"]))
 
 vehicle_dir = os.path.realpath(os.path.join(root_dir, cmd_opts.vehicle))
 if not os.path.exists(vehicle_dir):

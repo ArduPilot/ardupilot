@@ -6,12 +6,12 @@
  * Init and run calls for auto flight mode
  *
  * This file contains the implementation for Land, Waypoint navigation and Takeoff from Auto mode
- * Command execution code (i.e. command_logic.pde) should:
- *      a) switch to Auto flight mode with set_mode() function.  This will cause auto_init to be called
- *      b) call one of the three auto initialisation functions: auto_wp_start(), auto_takeoff_start(), auto_land_start()
- *      c) call one of the verify functions auto_wp_verify(), auto_takeoff_verify, auto_land_verify repeated to check if the command has completed
- * The main loop (i.e. fast loop) will call update_flight_modes() which will in turn call auto_run() which, based upon the auto_mode variable will call
- *      correct auto_wp_run, auto_takeoff_run or auto_land_run to actually implement the feature
+ * Command execution code should:
+ *      a) switch to Auto flight mode with set_mode() function.  This will cause init to be called
+ *      b) call one of the submode start functions, e.g. wp_start(), takeoff_start(), land_start()
+ *      c) call one of the verify functions, e.g. verify_nav_wp(), verify_takeoff(), verify_land(), repeatedly to check if the command has completed
+ * The main loop (i.e. fast loop) will call update_flight_mode() which will in turn call run() which, based upon the _mode submode will call
+ *      the correct wp_run, takeoff_run or land_run to actually implement the feature
  */
 
 /*
@@ -19,7 +19,7 @@
  *  Code in this file implements the navigation commands
  */
 
-// auto_init - initialise auto controller
+// init - initialise auto controller
 bool ModeAuto::init(bool ignore_checks)
 {
     auto_RTL = false;
@@ -30,10 +30,13 @@ bool ModeAuto::init(bool ignore_checks)
             return false;
         }
 
-        _mode = SubMode::LOITER;
+        // set _mode directly rather than via set_submode(): a stale NAV_ATTITUDE_TIME
+        // from a previous Auto session must not trigger an EKF failsafe recheck (and
+        // possible mode change) from inside init()
+        _mode = SubMode::STARTING;
 
         // stop ROI from carrying over from previous runs of the mission
-        // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
+        // To-Do: reset the yaw as part of wp_start when the previous command was not a wp command to remove the need for this special ROI check
         if (auto_yaw.mode() == AutoYaw::Mode::ROI) {
             auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
@@ -83,7 +86,7 @@ void ModeAuto::exit()
     auto_RTL = false;
 }
 
-// auto_run - runs the auto controller
+// run - runs the auto controller
 //      should be called at 100hz or more
 void ModeAuto::run()
 {
@@ -119,6 +122,11 @@ void ModeAuto::run()
     // call the correct auto controller
     switch (_mode) {
 
+    case SubMode::STARTING:
+        // hold position until the mission dispatches the first navigation submode
+        loiter_run();
+        break;
+
     case SubMode::TAKEOFF:
         takeoff_run();
         break;
@@ -138,9 +146,9 @@ void ModeAuto::run()
         rtl_run();
         break;
 
-    case SubMode::NAVGUIDED:
+    case SubMode::NAV_GUIDED:
     case SubMode::NAV_SCRIPT_TIME:
-#if AC_NAV_GUIDED || AP_SCRIPTING_ENABLED
+#if AC_NAV_GUIDED || AP_EXTERNAL_BINDING_ENABLED
         nav_guided_run();
 #endif
         break;
@@ -223,15 +231,16 @@ bool ModeAuto::allows_weathervaning() const
 }
 #endif
 
-// determine EKF reset handling method based on Guide submode
+// determine EKF reset handling method based on Auto submode
 bool ModeAuto::move_vehicle_on_ekf_reset() const
 {
-        // call the correct auto controller
+    // decide based on the current submode
     switch (_mode) {
+    case SubMode::STARTING:
     case SubMode::TAKEOFF:
     case SubMode::LAND:
     case SubMode::RTL:
-    case SubMode::NAVGUIDED:
+    case SubMode::NAV_GUIDED:
     case SubMode::LOITER:
     case SubMode::LOITER_TO_ALT:
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
@@ -336,7 +345,7 @@ bool ModeAuto::enter_auto_rtl(ModeReason reason)
 // lua scripts use this to retrieve the contents of the active command
 bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if (_mode == SubMode::NAV_SCRIPT_TIME) {
         id = nav_scripting.id;
         cmd = nav_scripting.command;
@@ -353,14 +362,14 @@ bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &a
 // lua scripts use this to indicate when they have complete the command
 void ModeAuto::nav_script_time_done(uint16_t id)
 {
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     if ((_mode == SubMode::NAV_SCRIPT_TIME) && (id == nav_scripting.id)) {
         nav_scripting.done = true;
     }
 #endif
 }
 
-// auto_loiter_start - initialises loitering in auto mode
+// loiter_start - initialises loitering in auto mode
 //  returns success/failure because this can be called by exit_mission
 bool ModeAuto::loiter_start()
 {
@@ -368,7 +377,6 @@ bool ModeAuto::loiter_start()
     if (!copter.position_ok()) {
         return false;
     }
-    _mode = SubMode::LOITER;
 
     // calculate stopping point
     Vector3p stopping_point_ned_m;
@@ -380,10 +388,13 @@ bool ModeAuto::loiter_start()
     // hold yaw at current heading
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
+    // set submode
+    set_submode(SubMode::LOITER);
+
     return true;
 }
 
-// auto_rtl_start - initialises RTL in AUTO flight mode
+// rtl_start - initialises RTL in AUTO flight mode
 void ModeAuto::rtl_start()
 {
     // call regular rtl flight mode initialisation and ask it to ignore checks
@@ -450,7 +461,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     set_submode(SubMode::TAKEOFF);
 }
 
-// auto_wp_start - initialises waypoint controller to implement flying to a particular destination
+// wp_start - initialises waypoint controller to implement flying to a particular destination
 bool ModeAuto::wp_start(const Location& dest_loc)
 {
     // init wpnav and set origin if transitioning from takeoff
@@ -490,7 +501,7 @@ bool ModeAuto::wp_start(const Location& dest_loc)
     return true;
 }
 
-// auto_land_start - initialises controller to implement a landing
+// land_start - initialises controller to implement a landing
 void ModeAuto::land_start()
 {
     // set horizontal speed and acceleration limits
@@ -577,7 +588,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     set_submode(SubMode::CIRCLE_MOVE_TO_EDGE);
 }
 
-// auto_circle_start - begin flying a circular orbit as an S-curve waypoint leg
+// circle_start - begin flying a circular orbit as an S-curve waypoint leg
 //   circle_movetoedge_start has already configured circle_nav with the center, radius and
 //   altitude frame; those are used here only as a parameter store.  CIRCLE_RATE is read only
 //   for the radius-0 panorama spin.
@@ -643,7 +654,7 @@ void ModeAuto::circle_start()
 }
 
 #if AC_NAV_GUIDED
-// auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
+// nav_guided_start - hand over control to external navigation controller in AUTO mode
 void ModeAuto::nav_guided_start()
 {
     // call regular guided flight mode initialisation
@@ -657,7 +668,7 @@ void ModeAuto::nav_guided_start()
     copter.mode_guided.limit_init_time_and_pos();
 
     // set submode
-    set_submode(SubMode::NAVGUIDED);
+    set_submode(SubMode::NAV_GUIDED);
 }
 #endif //AC_NAV_GUIDED
 
@@ -680,7 +691,7 @@ bool ModeAuto::is_taking_off() const
 }
 
 #if AC_PAYLOAD_PLACE_ENABLED
-// auto_payload_place_start - initialises controller to implement a placing
+// PayloadPlace::start_descent - initialise the position controllers for the payload place descent
 void PayloadPlace::start_descent()
 {
     auto *pos_control = copter.pos_control;
@@ -721,7 +732,7 @@ bool ModeAuto::use_pilot_yaw(void) const
         case SubMode::RTL:
             return copter.mode_rtl.use_pilot_yaw();
 #if AC_NAV_GUIDED
-        case SubMode::NAVGUIDED:
+        case SubMode::NAV_GUIDED:
             return copter.mode_guided.use_pilot_yaw();
 #endif
         default:
@@ -813,7 +824,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         do_nav_script_time(cmd);
         break;
@@ -851,18 +862,20 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
     case MAV_CMD_DO_SET_ROI_NONE:           // 197
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:                // 201
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
         // point the copter and camera at a region of interest (ROI)
         // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
         do_roi(cmd);
         break;
 
-#if HAL_MOUNT_ENABLED
+#if HAL_MOUNT_ENABLED && AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
-#endif
+#endif  // HAL_MOUNT_ENABLED && AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
 
 #if AC_NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
@@ -947,18 +960,18 @@ float ModeAuto::wp_bearing_deg() const
     return degrees(wp_nav->get_wp_bearing_to_destination_rad());
 }
 
-bool ModeAuto::get_wp(Location& destination) const
+bool ModeAuto::get_nav_target(NavTarget& target) const
 {
     switch (_mode) {
-    case SubMode::NAVGUIDED:
-        return copter.mode_guided.get_wp(destination);
+    case SubMode::NAV_GUIDED:
+        return copter.mode_guided.get_nav_target(target);
     case SubMode::WP:
     case SubMode::CIRCLE_MOVE_TO_EDGE:
     case SubMode::CIRCLE:
         // the orbit and the move-to-edge leg are wp_nav legs like WP
-        return wp_nav->get_oa_wp_destination(destination);
+        return get_wpnav_target(target, true);
     case SubMode::RTL:
-        return copter.mode_rtl.get_wp(destination);
+        return copter.mode_rtl.get_nav_target(target);
     default:
         return false;
     }
@@ -1041,7 +1054,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         cmd_complete = verify_nav_delay(cmd);
         break;
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         cmd_complete = verify_nav_script_time();
         break;
@@ -1071,10 +1084,12 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_DO_SET_ROI_NONE:
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
     case MAV_CMD_DO_SET_ROI:
-#if HAL_MOUNT_ENABLED
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_ENABLED
+#if HAL_MOUNT_ENABLED && AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
-#endif
+#endif  // HAL_MOUNT_ENABLED && AP_MISSION_MAV_CMD_DO_MOUNT_CONTROL_ENABLED
 #if AC_NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:
 #endif
@@ -1107,7 +1122,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 }
 
 // takeoff_run - takeoff in auto mode
-//      called by auto_run at 100hz or more
+//      called by run at 100hz or more
 void ModeAuto::takeoff_run()
 {
     // if the user doesn't want to raise the throttle we can set it automatically
@@ -1118,8 +1133,8 @@ void ModeAuto::takeoff_run()
     auto_takeoff.run();
 }
 
-// auto_wp_run - runs the auto waypoint controller
-//      called by auto_run at 100hz or more
+// wp_run - runs the auto waypoint controller
+//      called by run at 100hz or more
 void ModeAuto::wp_run()
 {
     // if not armed set throttle to zero and exit immediately
@@ -1142,8 +1157,8 @@ void ModeAuto::wp_run()
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
-// auto_land_run - lands in auto mode
-//      called by auto_run at 100hz or more
+// land_run - lands in auto mode
+//      called by run at 100hz or more
 void ModeAuto::land_run()
 {
 
@@ -1160,48 +1175,34 @@ void ModeAuto::land_run()
     land_run_normal_or_precland();
 }
 
-// auto_rtl_run - rtl in AUTO flight mode
-//      called by auto_run at 100hz or more
+// rtl_run - rtl in AUTO flight mode
+//      called by run at 100hz or more
 void ModeAuto::rtl_run()
 {
     // call regular rtl flight mode run function
     copter.mode_rtl.run(false);
 }
 
-#if AC_NAV_GUIDED || AP_SCRIPTING_ENABLED
-// auto_nav_guided_run - allows control by external navigation controller
-//      called by auto_run at 100hz or more
+#if AC_NAV_GUIDED || AP_EXTERNAL_BINDING_ENABLED
+// nav_guided_run - allows control by external navigation controller
+//      called by run at 100hz or more
 void ModeAuto::nav_guided_run()
 {
     // call regular guided flight mode run function
     copter.mode_guided.run();
 }
-#endif  // AC_NAV_GUIDED || AP_SCRIPTING_ENABLED
+#endif  // AC_NAV_GUIDED || AP_EXTERNAL_BINDING_ENABLED
 
-// auto_loiter_run - loiter in AUTO flight mode
-//      called by auto_run at 100hz or more
+// loiter_run - loiter in AUTO flight mode
+//      called by run at 100hz or more
 void ModeAuto::loiter_run()
 {
-    // if not armed set throttle to zero and exit immediately
-    if (is_disarmed_or_landed()) {
-        make_safe_ground_handling();
-        return;
-    }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-    // run waypoint and z-axis position controller
-    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
-
-    pos_control->D_update_controller();
-
-    // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    // loiter runs the same waypoint controller as wp_run
+    wp_run();
 }
 
-// auto_loiter_run - loiter to altitude in AUTO flight mode
-//      called by auto_run at 100hz or more
+// loiter_to_alt_run - loiter to altitude in AUTO flight mode
+//      called by run at 100hz or more
 void ModeAuto::loiter_to_alt_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
@@ -1297,8 +1298,8 @@ void ModeAuto::nav_attitude_time_run()
 }
 
 #if AC_PAYLOAD_PLACE_ENABLED
-// auto_payload_place_run - places an object in auto mode
-//      called by auto_run at 100hz or more
+// PayloadPlace::run - places an object in auto mode
+//      called by run at 100hz or more
 void PayloadPlace::run()
 {
     const char* prefix_str = "PayloadPlace:";
@@ -1550,6 +1551,11 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
 // returns false if the location cannot be determined which only happens if the terrain data is unavailable
 bool ModeAuto::get_loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& loc) const
 {
+    if (!AP_Mission::cmd_has_location(cmd.id)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return false;
+    }
+
     loc = cmd.content.location;
 
     // use current lat, lon if zero
@@ -1693,7 +1699,7 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
-        state = State::FlyToLocation;
+        land_state = LandState::FlyToLocation;
 
         // calculate default location used when alt is zero
         Location default_loc = copter.current_loc;
@@ -1712,7 +1718,7 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
         }
     } else {
         // set landing state
-        state = State::Descending;
+        land_state = LandState::Descending;
 
         // initialise landing controller
         land_start();
@@ -1892,9 +1898,11 @@ bool ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const
         return false;
     }
 
-    // if there is no delay at the end of this segment get next nav command
+    // Only location-bearing commands can be used as the next spline control point.
     AP_Mission::Mission_Command temp_cmd;
-    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
+    if (cmd.p1 == 0 &&
+        mission.get_next_nav_cmd(cmd.index+1, temp_cmd) &&
+        AP_Mission::cmd_has_location(temp_cmd.id)) {
         if (!get_loc_from_cmd(temp_cmd, dest_loc, next_dest_loc)) {
             return false;
         }
@@ -1947,7 +1955,7 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // start accepting position, velocity and acceleration targets from lua scripts
 void ModeAuto::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
 {
@@ -2152,19 +2160,19 @@ bool ModeAuto::verify_land()
 {
     bool retval = false;
 
-    switch (state) {
-        case State::FlyToLocation:
+    switch (land_state) {
+        case LandState::FlyToLocation:
             // check if we've reached the location
             if (copter.wp_nav->reached_wp_destination()) {
                 // initialise landing controller
                 land_start();
 
                 // advance to next state
-                state = State::Descending;
+                land_state = LandState::Descending;
             }
             break;
 
-        case State::Descending:
+        case LandState::Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
             retval = copter.ap.land_complete && (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE);
             if (retval && !mission.continue_after_land_check_for_takeoff() && copter.motors->armed()) {
@@ -2254,23 +2262,7 @@ bool ModeAuto::verify_loiter_to_alt() const
 // do_RTL should have been called once first to initialise all variables
 bool ModeAuto::verify_RTL()
 {
-    // return immediately if RTL's current state has not completed
-    if (!copter.mode_rtl.state_complete()) {
-        return false;
-    }
-
-    switch (copter.mode_rtl.state()) {
-        case ModeRTL::SubMode::FINAL_DESCENT:
-            return true;
-        case ModeRTL::SubMode::LAND:
-            // if landing ensure motors have spooled down
-            return motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE;
-        default:
-            break;
-    }
-
-    // RTL has not completed
-    return false;
+    return copter.mode_rtl.is_complete();
 }
 
 /********************************************************************************/
@@ -2415,7 +2407,7 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
 // check if verify_nav_script_time command has completed
 bool ModeAuto::verify_nav_script_time()
 {

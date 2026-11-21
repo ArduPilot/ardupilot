@@ -215,7 +215,7 @@ public:
     const char* get_text() const { return _send_text; }
     uint32_t get_text_updated_millis() const {return _send_text_updated_millis; }
  
-#if AP_SCRIPTING_ENABLED
+#if AP_EXTERNAL_BINDING_ENABLED
     // send text to the display using scripting
     void send_text_scripting(const char *str, uint8_t r);
     void release_text_scripting(uint8_t r);
@@ -245,11 +245,11 @@ private:
     // parameters
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
-    AP_Int8 _buzzer_type;
+    AP_UInt8 _buzzer_type;
     AP_Int8 _display_type;
     AP_Int8 _oreo_theme;
     AP_Int8 _buzzer_pin;
-    AP_Int32 _led_type;
+    AP_UInt32 _led_type;
     AP_Int8 _buzzer_level;
     AP_Int8 _buzzer_volume;
     AP_Int8 _led_len;

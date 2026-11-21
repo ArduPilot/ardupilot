@@ -104,7 +104,7 @@ private:
     void send_position_cmd();
     uint8_t last_sent_index;
 
-    AP_Int32 bitmask;
+    AP_UInt32 bitmask;
     AP_Int16 range;
     bool initialised;
 

@@ -77,7 +77,7 @@ public:
     void write_log();
 
     AP_Int8 enable;
-    AP_Int16 tilt_mask;
+    AP_UInt16 tilt_mask;
     AP_Int16 max_rate_up_dps;
     AP_Int16 max_rate_down_dps;
     AP_Int8  max_angle_deg;

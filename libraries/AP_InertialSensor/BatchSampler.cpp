@@ -121,7 +121,7 @@ void AP_InertialSensor::BatchSampler::rotate_to_next_sensor()
         // should not have been called
         return;
     }
-    if ((1U<<instance) > (uint8_t)_sensor_mask) {
+    if ((1U<<instance) > _sensor_mask) {
         // should only ever happen if user resets _sensor_mask
         instance = 0;
         post_filter = false;

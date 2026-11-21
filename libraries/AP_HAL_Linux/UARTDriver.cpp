@@ -414,7 +414,7 @@ void UARTDriver::_timer_tick(void)
     _in_timer = false;
 }
 
-void UARTDriver::configure_parity(uint8_t v) {
+void UARTDriver::_configure_parity(uint8_t v) {
     UARTDriver::parity = v;
     _device->set_parity(v);
 }

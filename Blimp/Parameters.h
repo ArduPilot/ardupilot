@@ -199,7 +199,7 @@ public:
     AP_Int16        format_version;
 
     AP_Float        throttle_filt;
-    AP_Int16        throttle_behavior;
+    AP_UInt16       throttle_behavior;
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
@@ -207,7 +207,7 @@ public:
     // Throttle
     //
     AP_Int8         failsafe_throttle;
-    AP_Int16        failsafe_throttle_value;
+    AP_UInt16       failsafe_throttle_value;
     AP_Int16        throttle_deadzone;
 
     // Flight modes
@@ -218,13 +218,13 @@ public:
 
     // Misc
     //
-    AP_Int32        log_bitmask;
+    AP_UInt32       log_bitmask;
     AP_Int8         disarm_delay;
 
     AP_Int8         fs_ekf_action;
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
-    AP_Int16        gcs_pid_mask;
+    AP_UInt16       gcs_pid_mask;
 
     AP_Float        wp_accel;
     AP_Float        wp_vel;
@@ -258,7 +258,7 @@ public:
     AP_Float wp_navalt_min;
 
     // developer options
-    AP_Int32 dev_options;
+    AP_UInt32 dev_options;
 
     // acro exponent parameters
     AP_Float acro_y_expo;
@@ -282,7 +282,7 @@ public:
     AP_Int8 fs_vibe_enabled;
 
     // Failsafe options bitmask #36
-    AP_Int32 fs_options;
+    AP_UInt32 fs_options;
 
     AP_Float fs_gcs_timeout;
 };
