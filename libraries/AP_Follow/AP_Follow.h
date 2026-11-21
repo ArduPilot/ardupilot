@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AC_PID/AC_P.h>
 #include <AP_RTC/JitterCorrection.h>
+#include <AP_RTC/AP_RTC_config.h>
 
 //==============================================================================
 // AP_Follow Class
@@ -183,6 +184,20 @@ private:
     // Checks whether the current estimate should be reset based on position and velocity errors.
     bool estimate_error_too_large() const;
 
+    // Position error above which the estimate is reset, for a given acceleration limit.
+    float reset_pos_thresh_m(float accel_max_mss) const;
+
+    // Returns the local time a target sample was taken, from its remote timestamp.
+    uint32_t sample_time_ms(const mavlink_message_t &msg, uint32_t remote_ms);
+
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+    // Returns true if moving the latest sample's time earlier by step_s moves it less than half the reset threshold.
+    bool sample_time_step_small(float step_s) const;
+
+    // Tracks the clock of the component supplying target data; sysid 0 stops tracking.
+    void update_clock_registration(uint8_t sysid, uint8_t compid);
+#endif
+
     // Projects the last received target position and velocity forward by dt seconds at constant acceleration.
     void project_target(float dt, Vector3f &delta_pos_m, Vector3f &delta_vel_ms) const;
 
@@ -255,6 +270,12 @@ private:
     float       _bearing_to_target_deg;         // Bearing to target from vehicle (degrees, 0 = North)
     bool        _offsets_were_zero;             // True if initial offset was zero before being initialized
     bool        _using_follow_target;           // True if FOLLOW_TARGET messages are being used instead of GLOBAL_POSITION_INT
+
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+    bool        _sample_time_from_clock;        // True if the latest sample was timed from the target's GPS-disciplined clock
+    uint8_t     _clock_sysid;                   // sysid whose clock is registered for sample timing, 0 = none
+    uint8_t     _clock_compid;                  // compid whose clock is registered for sample timing
+#endif
 
     HAL_Semaphore   _follow_sem;                // semaphore for multi-thread use of update_estimates and LUA calls
 

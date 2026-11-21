@@ -37,6 +37,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_RTC/AP_RTC.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -47,6 +48,7 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_FOLLOW_TIMEOUT          3     // position estimate timeout in seconds
 #define AP_FOLLOW_ESTIMATE_TIMEOUT_MS 10000 // discard the target estimate if we have not heard from the target in 10 seconds
+#define AP_FOLLOW_SAMPLE_TIME_TOLERANCE_MS 5 // millisecond rounding allowed when checking a sample time from the target's clock
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
@@ -525,6 +527,13 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
     // the LUA accessors read this state from the scripting thread
     WITH_SEMAPHORE(_follow_sem);
 
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+    // stop tracking the clock of a system we no longer follow
+    if ((_clock_sysid != 0) && (!_enabled || (_clock_sysid != _sysid))) {
+        update_clock_registration(0, 0);
+    }
+#endif
+
     // FOLL_SYSID no longer matches the system that supplied the data we hold. Forget the old
     // target's message type and update time. This must run before the switch below, which
     // consults _using_follow_target to decide whether GLOBAL_POSITION_INT is still wanted.
@@ -616,9 +625,8 @@ bool AP_Follow::estimate_error_too_large() const
 {
     const float timeout_sec = _timeout;
 
-    // Calculate position thresholds based on maximum acceleration then deceleration for the timeout duration
-    const float pos_thresh_horiz_m = _accel_max_ne_mss.get() * sq(timeout_sec * 0.5);
-    const float pos_thresh_vert_m  = _accel_max_d_mss.get()  * sq(timeout_sec * 0.5);
+    const float pos_thresh_horiz_m = reset_pos_thresh_m(_accel_max_ne_mss.get());
+    const float pos_thresh_vert_m  = reset_pos_thresh_m(_accel_max_d_mss.get());
 
     // Calculate velocity thresholds using the new helper function
     const float vel_thresh_horiz_ms = calc_max_velocity_change(_accel_max_ne_mss.get(), _jerk_max_ne_msss.get(), timeout_sec);
@@ -648,6 +656,106 @@ bool AP_Follow::estimate_error_too_large() const
 
     return pos_horiz_bad || vel_horiz_bad || pos_vert_bad || vel_vert_bad;
 }
+
+// Position error above which the estimate is reset: maximum acceleration then deceleration for the timeout duration.
+float AP_Follow::reset_pos_thresh_m(float accel_max_mss) const
+{
+    return accel_max_mss * sq(_timeout * 0.5);
+}
+
+// Returns the local time a target sample was taken, from its remote timestamp.
+// JitterCorrection treats the shortest link delay it has seen as zero, and hides a
+// sustained queueing delay. When the target's clock offset is known from GPS time the
+// sample time includes the whole link delay, and JitterCorrection is the fallback.
+uint32_t AP_Follow::sample_time_ms(const mavlink_message_t &msg, uint32_t remote_ms)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // never earlier than the true sample time, because the link delay is never below its shortest
+    const uint32_t jitter_ms = _jitter.correct_offboard_timestamp_msec(remote_ms, now_ms);
+
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+    update_clock_registration(msg.sysid, msg.compid);
+
+    uint32_t sample_ms = jitter_ms;
+    bool from_clock = false;
+    uint32_t clock_ms = 0;
+    if (AP::rtc().remote_clocks().remote_to_local_ms(msg.sysid, msg.compid, remote_ms, clock_ms)) {
+        // allow millisecond rounding to put the sample just after the jitter time or now
+        const int32_t lead_ms = int32_t(jitter_ms - clock_ms);
+        if ((int32_t(clock_ms - now_ms) > 0) && (int32_t(clock_ms - now_ms) <= AP_FOLLOW_SAMPLE_TIME_TOLERANCE_MS)) {
+            clock_ms = now_ms;
+        }
+        const int32_t age_ms = int32_t(now_ms - clock_ms);
+        const bool plausible = (lead_ms >= -AP_FOLLOW_SAMPLE_TIME_TOLERANCE_MS) &&
+                               (age_ms >= 0) &&
+                               (age_ms <= int32_t(_timeout * 1000.0f));
+        // the first sample timed from the clock moves the target by its velocity times the
+        // delay JitterCorrection was hiding, so only switch while that won't reset the estimate
+        if (plausible && (_sample_time_from_clock || !_estimate_valid || sample_time_step_small(lead_ms * 0.001f))) {
+            sample_ms = clock_ms;
+            from_clock = true;
+        }
+    }
+    _sample_time_from_clock = from_clock;
+
+#if HAL_LOGGING_ENABLED
+    // @LoggerMessage: FTIM
+    // @Description: Follow target sample timing
+    // @Field: TimeUS: Time since system startup
+    // @Field: Rem: sample timestamp in the target's boot time
+    // @Field: Jit: sample time from JitterCorrection
+    // @Field: Clk: sample time from the target's GPS-disciplined clock, 0 if unavailable
+    // @Field: Src: sample time source used, 0 = JitterCorrection, 1 = target clock
+    // @Field: Age: age of the sample when received
+    AP::logger().Write("FTIM", "TimeUS,Rem,Jit,Clk,Src,Age",
+                       "ssss-s", "FCCC-C", "QIIIBi",
+                       AP_HAL::micros64(),
+                       remote_ms,
+                       jitter_ms,
+                       clock_ms,
+                       uint8_t(from_clock),
+                       int32_t(now_ms - sample_ms));
+#endif
+
+    return sample_ms;
+#else
+    (void)msg;
+    return jitter_ms;
+#endif  // AP_RTC_REMOTE_CLOCKS_ENABLED
+}
+
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+// Returns true if moving the latest sample's time earlier by step_s moves it less than half the reset threshold.
+bool AP_Follow::sample_time_step_small(float step_s) const
+{
+    Vector3f step_pos_m;
+    Vector3f step_vel_ms;
+    project_target(step_s, step_pos_m, step_vel_ms);
+    return (step_pos_m.xy().length() < 0.5 * reset_pos_thresh_m(_accel_max_ne_mss.get())) &&
+           (fabsf(step_pos_m.z) < 0.5 * reset_pos_thresh_m(_accel_max_d_mss.get()));
+}
+
+// Tracks the clock of the component supplying target data; sysid 0 stops tracking.
+void AP_Follow::update_clock_registration(uint8_t sysid, uint8_t compid)
+{
+    if ((sysid == _clock_sysid) && (compid == _clock_compid)) {
+        return;
+    }
+    AP_RTC_RemoteClocks &clocks = AP::rtc().remote_clocks();
+    if (_clock_sysid != 0) {
+        clocks.unregister_source(_clock_sysid, _clock_compid);
+    }
+    _clock_sysid = 0;
+    _clock_compid = 0;
+    _sample_time_from_clock = false;
+    // a full table leaves the clock unregistered, and the next sample tries again
+    if ((sysid != 0) && clocks.register_source(sysid, compid)) {
+        _clock_sysid = sysid;
+        _clock_compid = compid;
+    }
+}
+#endif  // AP_RTC_REMOTE_CLOCKS_ENABLED
 
 // Projects the last received target position and velocity forward by dt seconds at constant acceleration.
 void AP_Follow::project_target(float dt, Vector3f &delta_pos_m, Vector3f &delta_vel_ms) const
@@ -747,8 +855,7 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
     // target acceleration not available in GLOBAL_POSITION_INT
     _target_accel_ned_mss.zero();
 
-    // apply jitter-corrected timestamp to this update
-    _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
+    _last_location_update_ms = sample_time_ms(msg, packet.time_boot_ms);
 
     return true;
 }
@@ -837,8 +944,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
         _target_accel_ned_mss.zero();
     }
 
-    // apply jitter-corrected timestamp to this update
-    _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
+    _last_location_update_ms = sample_time_ms(msg, packet.timestamp);
 
     // prefer FOLLOW_TARGET over GLOBAL_POSITION_INT from now on
     _using_follow_target = true;
