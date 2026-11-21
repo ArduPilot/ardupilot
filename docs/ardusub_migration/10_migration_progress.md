@@ -22,6 +22,12 @@
 
 M1 reference baseline: complete. M2 native build and software-test runtime: complete; physical sensor and output paths are unverified. The generic Linux board has no default IMU and an `Empty::RCOutput` driver. `integration/vehicle_defaults.json` and `integration/atal_sensor_defaults.parm` preserve editable provisional ROS defaults; `integration/check_layout.py` validates the geometry's six-axis rank and unique mapping to upstream Vectored-6DOF factors. The non-actuating A50 velocity bridge has passed a native synthetic EKF chain replay with bottom-lock loss and recovery; real A50 and navigation readiness remain unverified. No actuator driver, firmware change or real vehicle operation has been performed. Physical actuator interface remains absent.
 
+## 2026-11-21 software continuation
+
+- Committed an isolated eight-channel command guard and frame encoder. C++ and Python checks cover frame CRC, sequence overflow, replay, malformed/partial commands, 250 ms stale-command fault, neutral outputs, reset, and explicit re-arm. No serial, GPIO, firmware flashing or actuator path was used. The existing deployed firmware still lacks these rules.
+- Added a local read-only MAVLink `/api/state` and `/api/health` adapter that can feed the eventual dashboard. Unit and UDP loopback tests passed for heartbeat, attitude, pressure and freshness mapping. The existing UI and its control/mission/camera functions have not been ported.
+- Mapped the ROS 2 nodes that must remain outside the ArduSub runtime and the candidate high-level gate-guidance path in `11_ros_dashboard_coexistence.md`. The old `control_system.launch.py` is not a companion launch because it starts competing controllers and an ESP32 bridge.
+
 ## Next evidence
 
 Verify Xsens timing and estimator input health with a real sensor; calibrate/zero the water-pressure sensor at the surface and check its measured medium; then test the A50 over actual altitude/rate changes and bottom-lock loss. Decide how to handle documented ROS-versus-ArduSub saturation and PWM differences before implementing a gated ESP32 output path. Keep physical output disabled during development.
