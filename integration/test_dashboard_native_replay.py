@@ -1,17 +1,27 @@
 #!/usr/bin/env python3
-"""Prove a second native ArduSub MAVLink link feeds read-only dashboard state."""
+"""Prove native ArduSub telemetry reaches the local dashboard HTTP service."""
 
+import json
 import os
 import pty
 import signal
+import socket
 import struct
 import subprocess
+import sys
 import tempfile
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
-from dashboard_telemetry import DashboardTelemetry
 from test_xsens_native_startup import BINARY, ROOT, data_item, mavutil, packet
+
+
+def unused_port(socktype):
+    with socket.socket(socket.AF_INET, socktype) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
 
 
 def main():
@@ -20,8 +30,15 @@ def main():
     with tempfile.TemporaryDirectory(prefix="atal-dashboard-") as directory:
         xsens_master, xsens_slave = pty.openpty()
         depth_master, depth_slave = pty.openpty()
-        dashboard_link = mavutil.mavlink_connection("udpin:127.0.0.1:0")
-        dashboard_port = dashboard_link.port.getsockname()[1]
+        dashboard_port = unused_port(socket.SOCK_DGRAM)
+        http_port = unused_port(socket.SOCK_STREAM)
+        dashboard = subprocess.Popen(
+            [sys.executable, str(ROOT / "integration/dashboard_api.py"),
+             "--mavlink", f"udpin:127.0.0.1:{dashboard_port}",
+             "--http-port", str(http_port)],
+            cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
         gcs_link = mavutil.mavlink_connection("udpin:127.0.0.1:0")
         gcs_port = gcs_link.port.getsockname()[1]
         defaults = Path(directory) / "defaults.parm"
@@ -45,15 +62,15 @@ def main():
             cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
-        telemetry = DashboardTelemetry()
         imu = (data_item(0x2014, struct.pack(">4f", 1, 0, 0, 0))
                + data_item(0x8020, struct.pack(">3f", 0.1, 0.2, 0.3))
                + data_item(0x4020, struct.pack(">3f", 1, 2, -9.81)))
         counter = 0
         last_depth = 0.0
+        state = None
         try:
             deadline = time.monotonic() + 10
-            while time.monotonic() < deadline and process.poll() is None:
+            while time.monotonic() < deadline and process.poll() is None and dashboard.poll() is None:
                 now = time.monotonic()
                 os.write(xsens_master, packet(0x36, imu +
                          data_item(0x1020, counter.to_bytes(2, "big"))))
@@ -61,15 +78,19 @@ def main():
                 if now - last_depth > 0.05:
                     os.write(depth_master, b"DEPTH:1025.50,23.40,1.2500\n")
                     last_depth = now
-                while (msg := dashboard_link.recv_match(blocking=False)) is not None:
-                    telemetry.ingest(msg)
-                state = telemetry.snapshot()
-                if state["link_alive"] and state["imu_alive"] and state["pressure_alive"]:
-                    assert abs(state["pressure_mbar"] - 1025.5) < 0.2
-                    print("Native ArduSub serial3 → dashboard telemetry passed")
-                    return
+                try:
+                    with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/api/state", timeout=0.2) as response:
+                        state = json.load(response)
+                    if state["link_alive"] and state["imu_alive"] and state["pressure_alive"]:
+                        assert abs(state["pressure_mbar"] - 1025.5) < 0.2
+                        with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/", timeout=0.2) as response:
+                            assert b"Vehicle telemetry" in response.read()
+                        print("Native ArduSub serial3 → dashboard HTTP view passed")
+                        return
+                except (urllib.error.URLError, TimeoutError):
+                    pass
                 time.sleep(0.01)
-            raise AssertionError(f"Dashboard telemetry incomplete: {telemetry.snapshot()}; process={process.poll()}")
+            raise AssertionError(f"Dashboard HTTP telemetry incomplete: {state}; process={process.poll()}, api={dashboard.poll()}")
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -78,7 +99,9 @@ def main():
                 except subprocess.TimeoutExpired:
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
-            dashboard_link.close()
+            if dashboard.poll() is None:
+                os.killpg(dashboard.pid, signal.SIGTERM)
+                dashboard.wait(timeout=2)
             gcs_link.close()
             for fd in (xsens_master, xsens_slave, depth_master, depth_slave):
                 os.close(fd)
