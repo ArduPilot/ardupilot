@@ -6,6 +6,8 @@ import struct
 
 from pathlib import Path
 
+import pytest
+
 
 def load_chibios(monkeypatch):
     root = Path(__file__).resolve().parents[3]
@@ -47,3 +49,29 @@ def test_add_elf_load_segment(tmp_path, monkeypatch):
     assert struct.unpack_from('<IIIIIIII', result, 84) == (
         1, section_offset, address, address, section_size, section_size, 4, 1)
     assert result[section_offset:section_offset + section_size] == b'sign'
+
+
+def test_find_app_descriptor_ignores_magic_collision(monkeypatch):
+    chibios = load_chibios(monkeypatch)
+    descriptor = b'12345678'
+    collision = descriptor + bytes(range(1, 17))
+    marker = descriptor + bytes(16)
+    image = collision + b'padding' + marker + b'trailer'
+
+    assert chibios.find_app_descriptor(image, descriptor) == len(collision) + len(b'padding')
+
+
+def test_find_app_descriptor_does_not_accept_magic_alone(monkeypatch):
+    chibios = load_chibios(monkeypatch)
+    descriptor = b'12345678'
+
+    assert chibios.find_app_descriptor(descriptor + bytes(range(1, 17)), descriptor) == -1
+
+
+def test_find_app_descriptor_rejects_multiple_markers(monkeypatch):
+    chibios = load_chibios(monkeypatch)
+    descriptor = b'12345678'
+    marker = descriptor + bytes(16)
+
+    with pytest.raises(chibios.Errors.WafError, match="multiple zero-initialized"):
+        chibios.find_app_descriptor(marker + marker, descriptor)
