@@ -24409,7 +24409,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_current_waypoint(1, timeout=10)
 
-        # a return path with only a located DO_LAND_START still joins at it
+        # a return path whose only located command is a DO_LAND_START has no
+        # track, so DO_RETURN_PATH_START is refused, and Auto RTL falls back
+        # to the landing sequence
         self.change_mode('GUIDED')
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
@@ -24417,8 +24419,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (mavutil.mavlink.MAV_CMD_DO_LAND_START, 50, 0, 0),    # 3
             (mavutil.mavlink.MAV_CMD_NAV_LAND, 50, 0, 0),         # 4
         ])
-        self.run_cmd(cmd_return_path_start)
-        self.assert_mode_is('AUTO_RTL')
+        self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_mode_is('GUIDED')
+        self.change_mode('AUTO_RTL')
         self.wait_current_waypoint(4, timeout=10)
 
         # a leg end with a zero latitude and longitude is flown at the current
