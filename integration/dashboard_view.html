@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ATAL · Vehicle telemetry</title>
+  <style>
+    :root { color-scheme: dark; --bg: #091420; --panel: #112334; --line: #294358; --text: #e7f3f5; --muted: #9db3bf; --cyan: #51c9db; --green: #6ed6a4; --amber: #ffc878; --red: #ff8b83; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, sans-serif; }
+    main { max-width: 1320px; margin: auto; padding: 28px clamp(16px, 3vw, 48px) 56px; }
+    header { display: flex; align-items: start; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); padding-bottom: 22px; }
+    .eyebrow { color: var(--cyan); font: 700 12px/1.2 ui-monospace, monospace; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { font: 700 clamp(30px, 4vw, 52px)/1.05 system-ui, sans-serif; letter-spacing: -.045em; margin: 10px 0 8px; }
+    header p { color: var(--muted); margin: 0; }
+    .connection { min-width: 210px; text-align: right; padding-top: 4px; }
+    .connection strong { display: block; font: 700 15px ui-monospace, monospace; }
+    .connection small { color: var(--muted); }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--red); margin-right: 9px; }
+    .dot.live { background: var(--green); box-shadow: 0 0 0 4px #6ed6a423; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr); gap: 16px; margin-top: 24px; }
+    .card { border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 22px; min-width: 0; }
+    .card h2 { color: var(--muted); font: 700 12px ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 18px; }
+    .horizon { position: relative; overflow: hidden; height: 285px; border-radius: 10px; border: 1px solid #3c6677; background: #173c52; }
+    .horizon::before { content: ""; position: absolute; inset: -100% -50%; background: linear-gradient(#286078 0 50%, #805c42 50% 100%); transform: translateY(var(--pitch, 0px)) rotate(var(--roll, 0deg)); transition: transform .3s ease; }
+    .horizon::after { content: ""; position: absolute; top: 50%; left: 12%; right: 12%; height: 2px; background: #fff8; transform: translateY(-50%); }
+    .horizon:not(.live)::after { content: "ATTITUDE UNAVAILABLE"; z-index: 2; inset: 0; height: auto; display: grid; place-items: center; background: #091420c9; color: var(--amber); font: 700 12px ui-monospace, monospace; letter-spacing: .12em; transform: none; }
+    .reticle { position: absolute; z-index: 1; inset: 50% auto auto 50%; width: 82px; height: 36px; transform: translate(-50%, -50%); border-left: 3px solid white; border-right: 3px solid white; border-bottom: 3px solid white; border-radius: 0 0 12px 12px; }
+    .readings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+    .reading { border-top: 1px solid var(--line); padding-top: 12px; }
+    .reading span, .metric span { display: block; color: var(--muted); font-size: 13px; }
+    .reading strong { font: 650 clamp(22px, 2.4vw, 32px) ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .metric { border-bottom: 1px solid var(--line); padding: 0 0 15px; }
+    .metric strong { display: block; font: 650 clamp(23px, 2.6vw, 34px) ui-monospace, monospace; font-variant-numeric: tabular-nums; margin-top: 6px; }
+    .metric em { font-size: 13px; color: var(--muted); font-style: normal; }
+    .status-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .badge { border: 1px solid var(--line); border-radius: 99px; padding: 6px 11px; font: 650 12px ui-monospace, monospace; color: var(--muted); }
+    .badge.good { border-color: #4f9c7b; color: var(--green); }
+    .badge.warn { border-color: #9c744c; color: var(--amber); }
+    .badge.danger { border-color: #9e5753; color: var(--red); }
+    .wide { grid-column: 1 / -1; }
+    .thrusters { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
+    .thruster { background: #0c1b29; border: 1px solid var(--line); border-radius: 9px; padding: 12px 9px; min-width: 0; }
+    .thruster span { color: var(--muted); font: 700 12px ui-monospace, monospace; }
+    .thruster strong { display: block; margin-top: 8px; font: 650 18px ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .thruster i { display: block; height: 3px; margin-top: 13px; background: var(--line); border-radius: 2px; overflow: hidden; }
+    .thruster i::after { content: ""; display: block; width: var(--level, 50%); height: 100%; background: var(--cyan); }
+    .note { color: var(--muted); font-size: 13px; margin: 12px 0 0; }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .thrusters { grid-template-columns: repeat(4, minmax(0, 1fr)); } .wide { grid-column: auto; } }
+    @media (max-width: 500px) { header { display: block; } .connection { text-align: left; margin-top: 20px; } .card { padding: 16px; } .horizon { height: 220px; } .thrusters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (prefers-reduced-motion: reduce) { .horizon::before { transition: none; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><div class="eyebrow">AUV–IITK / ATAL</div><h1>Vehicle telemetry</h1><p>ArduSub live view · read only</p></div>
+    <div class="connection" role="status" aria-live="polite"><strong><span class="dot" id="link-dot"></span><span id="link-status">Connecting</span></strong><small id="sample-age">Waiting for telemetry</small></div>
+  </header>
+  <div class="grid">
+    <section class="card" aria-labelledby="attitude-title"><h2 id="attitude-title">Attitude / body frame</h2><div class="horizon" id="horizon" role="img" aria-label="Attitude horizon"><div class="reticle"></div></div><div class="readings"><div class="reading"><span>Roll</span><strong id="roll">—</strong></div><div class="reading"><span>Pitch</span><strong id="pitch">—</strong></div><div class="reading"><span>Heading</span><strong id="yaw">—</strong></div></div></section>
+    <section class="card" aria-labelledby="environment-title"><h2 id="environment-title">Water / motion</h2><div class="metric-grid"><div class="metric"><span>Pressure</span><strong id="pressure">—</strong><em>mbar</em></div><div class="metric"><span>Water temperature</span><strong id="temperature">—</strong><em>°C</em></div><div class="metric"><span>Estimated depth</span><strong id="depth">—</strong><em>m · local position</em></div><div class="metric"><span>Forward velocity</span><strong id="velocity">—</strong><em>m/s · body frame</em></div></div><div class="status-row"><span class="badge" id="arm">Arming unknown</span><span class="badge" id="imu">IMU waiting</span><span class="badge" id="pressure-health">Pressure waiting</span><span class="badge" id="output-health">Output waiting</span></div></section>
+    <section class="card wide" aria-labelledby="thruster-title"><h2 id="thruster-title">Motor output / SERVO channels 1–8</h2><div class="thrusters" id="thrusters"></div><p class="note">Values are reported PWM in microseconds. Channel order is provisional until vehicle wiring is checked.</p></section>
+  </div>
+</main>
+<script>
+  const byId = id => document.getElementById(id);
+  const thrusters = byId('thrusters');
+  let hadLink = false;
+  for (let i = 1; i <= 8; i++) {
+    const box = document.createElement('div');
+    box.className = 'thruster';
+    box.innerHTML = `<span>CH ${i}</span><strong>—</strong><i></i>`;
+    thrusters.append(box);
+  }
+  const number = (value, digits = 1) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
+  const setBadge = (id, label, tone) => { const el = byId(id); el.textContent = label; el.className = 'badge ' + tone; };
+  function render(s) {
+    if (s.link_alive) hadLink = true;
+    byId('link-status').textContent = s.link_alive ? 'Telemetry live' : hadLink ? 'Telemetry lost' : 'Waiting for telemetry';
+    byId('link-dot').classList.toggle('live', s.link_alive);
+    byId('sample-age').textContent = s.imu_alive ? `Attitude sample ${number(s.imu_age, 1)} s old` : 'Attitude data unavailable';
+    for (const key of ['roll', 'pitch', 'yaw']) byId(key).textContent = s.imu_alive ? `${number(s[key])}°` : '—';
+    byId('horizon').style.setProperty('--roll', s.imu_alive ? `${-s.roll}deg` : '0deg');
+    byId('horizon').style.setProperty('--pitch', s.imu_alive ? `${Math.max(-45, Math.min(45, s.pitch)) * 2}px` : '0px');
+    byId('horizon').classList.toggle('live', s.imu_alive);
+    byId('horizon').setAttribute('aria-label', s.imu_alive ? `Roll ${number(s.roll)} degrees, pitch ${number(s.pitch)} degrees` : 'Attitude unavailable');
+    byId('pressure').textContent = s.pressure_alive ? number(s.pressure_mbar, 1) : '—';
+    byId('temperature').textContent = s.pressure_alive ? number(s.water_temp, 1) : '—';
+    byId('depth').textContent = s.link_alive ? number(s.depth_m, 2) : '—';
+    byId('velocity').textContent = s.imu_alive ? number(s.vel_fwd, 2) : '—';
+    setBadge('arm', !s.armed_known ? 'Arming unknown' : s.armed ? 'Armed' : 'Disarmed', !s.armed_known ? 'warn' : s.armed ? 'danger' : 'good');
+    setBadge('imu', s.imu_alive ? 'IMU live' : 'IMU stale', s.imu_alive ? 'good' : 'warn');
+    setBadge('pressure-health', s.pressure_alive ? 'Pressure live' : 'Pressure stale', s.pressure_alive ? 'good' : 'warn');
+    setBadge('output-health', s.output_alive ? 'Output live' : 'Output stale', s.output_alive ? 'good' : 'warn');
+    [...thrusters.children].forEach((box, i) => {
+      const value = s.output_alive ? s.pwm[i] : null;
+      box.querySelector('strong').textContent = value == null ? '—' : value;
+      box.style.setProperty('--level', value == null ? '0%' : `${Math.max(0, Math.min(100, (value - 1100) / 8))}%`);
+    });
+  }
+  async function refresh() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    try {
+      const response = await fetch('/api/state', { signal: controller.signal, cache: 'no-store' });
+      if (!response.ok) throw Error('Telemetry request failed');
+      render(await response.json());
+    } catch (_) {
+      render({ link_alive: false, imu_alive: false, pressure_alive: false, output_alive: false, armed_known: false, pwm: [] });
+      byId('link-status').textContent = 'Connection error';
+    } finally {
+      clearTimeout(timeout);
+      setTimeout(refresh, 500);
+    }
+  }
+  refresh();
+</script>
+</body>
+</html>

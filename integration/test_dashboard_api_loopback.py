@@ -49,7 +49,10 @@ def main():
                 if state["link_alive"] and state["imu_alive"] and state["pressure_alive"]:
                     assert abs(state["pressure_mbar"] - 1025.5) < 0.2
                     assert abs(state["roll"] - 5.72958) < 0.01
-                    print("Dashboard API HTTP + MAVLink loopback passed")
+                    with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/", timeout=0.5) as response:
+                        page = response.read().decode("utf-8")
+                    assert "Vehicle telemetry" in page and "Motor output / SERVO channels" in page
+                    print("Dashboard view and API HTTP + MAVLink loopback passed")
                     return
             except (urllib.error.URLError, TimeoutError):
                 pass

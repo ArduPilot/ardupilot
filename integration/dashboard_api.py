@@ -6,8 +6,9 @@ python3 integration/dashboard_api.py --mavlink udpin:127.0.0.1:14650
 
 import argparse
 import threading
+from pathlib import Path
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_file
 from pymavlink import mavutil
 
 from dashboard_telemetry import DashboardTelemetry
@@ -15,6 +16,10 @@ from dashboard_telemetry import DashboardTelemetry
 
 def make_app(telemetry, lock):
     app = Flask(__name__)
+
+    @app.get("/")
+    def dashboard():
+        return send_file(Path(__file__).with_name("dashboard_view.html"))
 
     @app.get("/api/state")
     def state():
