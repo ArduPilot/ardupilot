@@ -2786,6 +2786,79 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "Fence test failed to reach home (%fm distance) - "
             "timed out after %u seconds" % (home_distance, timeout,))
 
+    def FenceActionAutoRTL(self):
+        '''Test FENCE_ACTION 9: Auto RTL, else RTL, else Land'''
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 2,        # circle
+            "FENCE_RADIUS": 100,
+            "FENCE_ACTION": 9,
+            "FENCE_OPTIONS": 1,     # disable mode change until breach cleared
+            "AVOID_ENABLE": 0,
+            "AUTO_OPTIONS": 3,
+        })
+
+        alt = 10
+        mission = [
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),        # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, alt),     # 2
+            (mavutil.mavlink.MAV_CMD_DO_LAND_START, 0, 0, alt),      # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, alt),      # 4
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),  # 5
+        ]
+
+        def fly_loiter_into_fence(want_mode):
+            self.takeoff(alt, mode="LOITER")
+            self.progress("Flying north until the fence is breached")
+            self.set_rc(2, 1100)
+            self.wait_mode(want_mode, timeout=60)
+            self.set_rc(2, 1500)
+
+        def assert_mode_change_locked(mode="AUTO_RTL"):
+            self.progress("Mode change must be refused during fence recovery")
+            self.run_cmd_do_set_mode("LOITER", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is(mode)
+            self.progress("Re-selecting the current mode must not release the lock")
+            self.run_cmd_do_set_mode(mode)
+            self.run_cmd_do_set_mode("LOITER", want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is(mode)
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.poll_home_position(quiet=False)
+
+        self.start_subtest("No landing sequence: falls back to RTL")
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        fly_loiter_into_fence("RTL")
+        assert_mode_change_locked("RTL")
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.end_subtest("No landing sequence: falls back to RTL")
+
+        self.start_subtest("Breach in LOITER enters AUTO_RTL")
+        self.upload_simple_relhome_mission(mission)
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        fly_loiter_into_fence("AUTO_RTL")
+        self.assert_current_waypoint(4)
+        assert_mode_change_locked()
+        self.progress("DO_LAND_START must not release the lock")
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_LAND_START)
+        assert_mode_change_locked()
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.end_subtest("Breach in LOITER enters AUTO_RTL")
+
+        self.start_subtest("Breach in AUTO enters AUTO_RTL")
+        self.start_flying_simple_relhome_mission(mission)
+        self.wait_current_waypoint(2)
+        self.wait_mode("AUTO_RTL", timeout=60)
+        self.assert_current_waypoint(4)
+        assert_mode_change_locked()
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.end_subtest("Breach in AUTO enters AUTO_RTL")
+
     # MaxAltFence - fly up until you hit the fence ceiling
     def max_alt_fence_frame(self, frame, alt, expected_breach_alt, terrain=0):
         self.start_subtest("Test Max Alt Fence in frame %u" % frame)
@@ -21145,6 +21218,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ThrowDoubleDrop,
             self.HorizontalFence,
             self.FenceTypeChangeTakesEffect,
+            self.FenceActionAutoRTL,
             self.MaxAltFence,
             self.ModeAltHold,
             self.OpticalFlow,
