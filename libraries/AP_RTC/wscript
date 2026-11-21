@@ -1,0 +1,3 @@
+# the remote clock drift fit needs double precision
+def configure(cfg):
+    cfg.env.DOUBLE_PRECISION_SOURCES['AP_RTC'] = ['AP_RTC_RemoteClocks.cpp']
