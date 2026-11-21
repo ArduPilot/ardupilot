@@ -21,7 +21,6 @@
 #if AP_COMPASS_IST8310_ENABLED
 
 #include <stdio.h>
-#include <utility>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -78,15 +77,11 @@ static const int16_t IST8310_MIN_VAL_Z  = -IST8310_MAX_VAL_Z;
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_IST8310::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_IST8310::probe(AP_HAL::Device &dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-
-    AP_Compass_IST8310 *sensor = NEW_NOTHROW AP_Compass_IST8310(std::move(dev), force_external, rotation);
+    AP_Compass_IST8310 *sensor = NEW_NOTHROW AP_Compass_IST8310(dev, force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -95,10 +90,10 @@ AP_Compass_Backend *AP_Compass_IST8310::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev
     return sensor;
 }
 
-AP_Compass_IST8310::AP_Compass_IST8310(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_IST8310::AP_Compass_IST8310(AP_HAL::Device &dev,
                                        bool force_external,
                                        enum Rotation rotation)
-    : _dev(std::move(dev))
+    : _dev(&dev)
     , _rotation(rotation)
     , _force_external(force_external)
 {

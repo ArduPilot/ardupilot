@@ -18,8 +18,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#include <utility>
-
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 
@@ -107,14 +105,11 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_BMM350::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_BMM350::probe(AP_HAL::Device &dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-    AP_Compass_BMM350 *sensor = NEW_NOTHROW AP_Compass_BMM350(std::move(dev), force_external, rotation);
+    AP_Compass_BMM350 *sensor = NEW_NOTHROW AP_Compass_BMM350(dev, force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -123,10 +118,10 @@ AP_Compass_Backend *AP_Compass_BMM350::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
     return sensor;
 }
 
-AP_Compass_BMM350::AP_Compass_BMM350(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_BMM350::AP_Compass_BMM350(AP_HAL::Device &dev,
                                        bool force_external,
                                        enum Rotation rotation)
-    : _dev(std::move(dev))
+    : _dev(&dev)
     , _force_external(force_external)
     , _rotation(rotation)
 {

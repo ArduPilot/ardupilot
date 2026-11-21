@@ -1024,6 +1024,10 @@ bool Compass::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
 /*
   macro to add a backend with check for too many backends or compass
   instances. We don't try to start more than the maximum allowed
+
+  several callers assume this method will not fail if the driver has
+  not been disabled.  If you add extra return-early clauses here check
+  all callers.
  */
 void Compass::add_backend(Compass::DriverType driver_type, AP_Compass_Backend *backend)
 {
@@ -1042,7 +1046,7 @@ void Compass::add_backend(Compass::DriverType driver_type, AP_Compass_Backend *b
     _backends[_backend_count++] = backend;
 }
 
-#define GET_I2C_DEVICE(bus, address) _i2c_sensor_is_registered(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
+#define GET_I2C_DEVICE_PTR(bus, address) _i2c_sensor_is_registered(bus, address)?nullptr:hal.i2c_mgr->get_device_ptr(bus, address)
 
 /*
   look for compasses on external i2c buses
@@ -1496,6 +1500,25 @@ void Compass::probe_ak8963_via_mpu9250(uint8_t imu_instance, Rotation rotation)
     auto *backend = AP_Compass_AK8963::probe_mpu9250(imu_instance, rotation);
     add_backend(DRIVER_AK8963, backend);  // add_backend does nullptr check
 }
+void Compass::probe_ak8963_via_mpu9250(uint8_t i2c_bus, uint8_t ak8963_addr, Rotation rotation)
+{
+    if (!_driver_enabled(DRIVER_AK8963)) {
+        return;
+    }
+    auto *dev = GET_I2C_DEVICE_PTR(i2c_bus, ak8963_addr);
+    if (dev == nullptr) {
+        return;
+    }
+    auto *backend = AP_Compass_AK8963::probe_mpu9250(
+        *dev,
+        rotation
+    );
+    if (backend == nullptr) {
+        delete dev;
+        return;
+    }
+    add_backend(DRIVER_AK8963, backend);
+}
 #endif  // AP_COMPASS_AK8963_ENABLED
 
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
@@ -1504,14 +1527,28 @@ void Compass::probe_ak09916_via_icm20948(uint8_t i2c_bus, uint8_t ak09916_addr, 
     if (!_driver_enabled(DRIVER_ICM20948)) {
         return;
     }
+    auto *ak09916_dev = GET_I2C_DEVICE_PTR(i2c_bus, ak09916_addr);
+    auto *icm20948_dev = GET_I2C_DEVICE_PTR(i2c_bus, icm20948_addr);
+    if (ak09916_dev == nullptr || icm20948_dev == nullptr) {
+        delete ak09916_dev;
+        delete icm20948_dev;
+        return;
+    }
     auto *backend = AP_Compass_AK09916::probe_ICM20948(
-        GET_I2C_DEVICE(i2c_bus, ak09916_addr),
-        GET_I2C_DEVICE(i2c_bus, icm20948_addr),
+        *ak09916_dev,
+        *icm20948_dev,
         external,
         rotation
         );
+    // the ICM20948 device is only used while probing (to put the
+    // ICM20948 into bypass mode); the backend keeps only the AK09916 one
+    delete icm20948_dev;
+    if (backend == nullptr) {
+        delete ak09916_dev;
+        return;
+    }
 
-    add_backend(DRIVER_ICM20948, backend);  // add_backend does nullptr check
+    add_backend(DRIVER_ICM20948, backend);
 }
 
 void Compass::probe_ak09916_via_icm20948(uint8_t ins_instance, Rotation rotation)
@@ -1525,6 +1562,17 @@ void Compass::probe_ak09916_via_icm20948(uint8_t ins_instance, Rotation rotation
     add_backend(DRIVER_AK09916, backend);
 }
 
+void Compass::probe_ak09916_via_icm20948_i2c(uint8_t ins_instance, Rotation rotation)
+{
+    if (!_driver_enabled(DRIVER_AK09916)) {
+        return;
+    }
+
+    auto *backend = AP_Compass_AK09916::probe_ICM20948_I2C(ins_instance, rotation);
+
+    add_backend(DRIVER_AK09916, backend);
+}
+
 #endif  // #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
 
 void Compass::probe_i2c_dev(DriverType driver_type, probe_i2c_dev_probefn_t probefn, uint8_t i2c_bus, uint8_t i2c_addr, bool external, Rotation rotation)
@@ -1532,13 +1580,41 @@ void Compass::probe_i2c_dev(DriverType driver_type, probe_i2c_dev_probefn_t prob
     if (!_driver_enabled(driver_type)) {
         return;
     }
+    auto *dev = GET_I2C_DEVICE_PTR(i2c_bus, i2c_addr);
+    if (dev == nullptr) {
+        return;
+    }
     auto *backend = probefn(
-        GET_I2C_DEVICE(i2c_bus, i2c_addr),
+        *dev,
         external,
         rotation
         );
+    if (backend == nullptr) {
+        delete dev;
+        return;
+    }
 
-    add_backend(driver_type, backend);  // add_backend does nullptr check
+    add_backend(driver_type, backend);
+}
+
+// short-lived method which expects a probe function that doesn't
+// offer the ability to specify the compass as external:
+void Compass::probe_i2c_dev(DriverType driver_type, probe_i2c_dev_noexternal_probefn_t probefn, uint8_t i2c_bus, uint8_t i2c_addr, Rotation rotation)
+{
+    if (!_driver_enabled(driver_type)) {
+        return;
+    }
+    auto *dev = GET_I2C_DEVICE_PTR(i2c_bus, i2c_addr);
+    if (dev == nullptr) {
+        return;
+    }
+    auto *backend = probefn(*dev, rotation);
+    if (backend == nullptr) {
+        delete dev;
+        return;
+    }
+
+    add_backend(driver_type, backend);
 }
 
 void Compass::probe_spi_dev(DriverType driver_type, probe_spi_dev_probefn_t probefn, const char *name, bool external, Rotation rotation)
@@ -1546,21 +1622,37 @@ void Compass::probe_spi_dev(DriverType driver_type, probe_spi_dev_probefn_t prob
     if (!_driver_enabled(driver_type)) {
         return;
     }
-    auto *backend = probefn(hal.spi->get_device(name), external, rotation);
+    auto *dev = hal.spi->get_device_ptr(name);
+    if (dev == nullptr) {
+        return;
+    }
+    auto *backend = probefn(*dev, external, rotation);
+    if (backend == nullptr) {
+        delete dev;
+        return;
+    }
 
-    add_backend(driver_type, backend);  // add_backend does nullptr check
+    add_backend(driver_type, backend);
 }
 
-// short-lived method which expectes a probe function that doesn't
+// short-lived method which expects a probe function that doesn't
 // offer the ability to specify an external rotation:
 void Compass::probe_spi_dev(DriverType driver_type, probe_spi_dev_noexternal_probefn_t probefn, const char *name, Rotation rotation)
 {
     if (!_driver_enabled(driver_type)) {
         return;
     }
-    auto *backend = probefn(hal.spi->get_device(name), rotation);
+    auto *dev = hal.spi->get_device_ptr(name);
+    if (dev == nullptr) {
+        return;
+    }
+    auto *backend = probefn(*dev, rotation);
+    if (backend == nullptr) {
+        delete dev;
+        return;
+    }
 
-    add_backend(driver_type, backend);  // add_backend does nullptr check
+    add_backend(driver_type, backend);
 }
 
 #if AP_COMPASS_DRONECAN_ENABLED

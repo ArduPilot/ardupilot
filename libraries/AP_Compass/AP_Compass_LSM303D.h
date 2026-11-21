@@ -15,7 +15,7 @@
 class AP_Compass_LSM303D : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::Device &dev,
                                      enum Rotation rotation);
 
     static constexpr const char *name = "LSM303D";
@@ -25,7 +25,7 @@ public:
     virtual ~AP_Compass_LSM303D() { }
 
 private:
-    AP_Compass_LSM303D(AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Compass_LSM303D(AP_HAL::Device &dev);
 
     bool init(enum Rotation rotation);
     uint8_t _register_read(uint8_t reg);
@@ -43,7 +43,7 @@ private:
     bool _mag_set_samplerate(uint16_t frequency);
 
     AP_HAL::DigitalSource *_drdy_pin_m;
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 
     float _mag_range_scale;
     int16_t _mag_x;

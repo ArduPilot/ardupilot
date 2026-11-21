@@ -22,7 +22,6 @@
 #if AP_COMPASS_QMC5883L_ENABLED
 
 #include <stdio.h>
-#include <utility>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -57,15 +56,11 @@
 #define QMC5883L_REG_ID 0x0D
 #define QMC5883_ID_VAL 0xFF
 
-AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::Device &dev,
                                                bool force_external,
                                                enum Rotation rotation)
 {
-    if (!dev) {
-        return nullptr;
-    }
-
-    AP_Compass_QMC5883L *sensor = NEW_NOTHROW AP_Compass_QMC5883L(std::move(dev),force_external,rotation);
+    AP_Compass_QMC5883L *sensor = NEW_NOTHROW AP_Compass_QMC5883L(dev, force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -74,10 +69,10 @@ AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::OwnPtr<AP_HAL::Device> de
     return sensor;
 }
 
-AP_Compass_QMC5883L::AP_Compass_QMC5883L(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_QMC5883L::AP_Compass_QMC5883L(AP_HAL::Device &dev,
                                          bool force_external,
                                          enum Rotation rotation)
-    : _dev(std::move(dev))
+    : _dev(&dev)
     , _rotation(rotation)
 	, _force_external(force_external)
 {

@@ -34,18 +34,18 @@
 class AP_Compass_BMM350 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::Device &dev,
                                      bool force_external,
                                      enum Rotation rotation);
 
     static constexpr const char *name = "BMM350";
 
 private:
-    AP_Compass_BMM350(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    AP_Compass_BMM350(AP_HAL::Device &dev,
                        bool force_external,
                        enum Rotation rotation);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 
     /**
      * @brief BMM350 offset/sensitivity coefficient structure
