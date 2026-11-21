@@ -594,18 +594,21 @@ TEST(AP_RTC, disarmed_steps_back_to_gps)
 // a clock set ahead by a worse source is stepped back to GPS time while disarmed
 TEST(AP_RTC, gps_replaces_time_ahead_while_disarmed)
 {
-    // a separate RTC, as the shared one has already been set by the GPS
-    AP_RTC fresh;
-    fresh.allowed_types.set((1U << AP_RTC::SOURCE_GPS) | (1U << AP_RTC::SOURCE_HW));
+    // a separate RTC, as the shared one has already been set by the GPS.  It is
+    // allocated with NEW_NOTHROW so it starts zeroed, like the static one
+    AP_RTC *fresh = NEW_NOTHROW AP_RTC;
+    ASSERT_NE(nullptr, fresh);
+    fresh->allowed_types.set((1U << AP_RTC::SOURCE_GPS) | (1U << AP_RTC::SOURCE_HW));
     const uint64_t local_us = next_local_base_us();
     const uint64_t gps_utc = day_time_to_utc_usec(next_test_day(), 12, 0, 0, 0);
-    fresh.set_utc_usec_at(gps_utc + 10000000, AP_RTC::SOURCE_HW, local_us);
-    ASSERT_EQ(AP_RTC::SOURCE_HW, fresh.get_source_type());
-    fresh.set_utc_usec_at(gps_utc, AP_RTC::SOURCE_GPS, local_us);
-    EXPECT_EQ(AP_RTC::SOURCE_GPS, fresh.get_source_type());
+    fresh->set_utc_usec_at(gps_utc + 10000000, AP_RTC::SOURCE_HW, local_us);
+    ASSERT_EQ(AP_RTC::SOURCE_HW, fresh->get_source_type());
+    fresh->set_utc_usec_at(gps_utc, AP_RTC::SOURCE_GPS, local_us);
+    EXPECT_EQ(AP_RTC::SOURCE_GPS, fresh->get_source_type());
     uint64_t now;
-    ASSERT_TRUE(fresh.get_utc_usec_at(local_us, now));
+    ASSERT_TRUE(fresh->get_utc_usec_at(local_us, now));
     EXPECT_EQ(gps_utc, now);
+    delete fresh;
 }
 
 // without GPS the clock runs on its learned trim, so the lock is held for 10 minutes
