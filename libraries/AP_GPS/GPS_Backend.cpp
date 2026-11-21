@@ -243,7 +243,8 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // get the time the packet arrived on the UART
         uint64_t uart_us;
-        if (_last_pps_time_us != 0 && (state.status >= AP_GPS_FixType::FIX_2D)) {
+        _corrected_time_from_pps = (_last_pps_time_us != 0 && (state.status >= AP_GPS_FixType::FIX_2D));
+        if (_corrected_time_from_pps) {
             // pps is only reliable when we have some sort of GPS fix
             uart_us = _last_pps_time_us;
             _last_pps_time_us = 0;

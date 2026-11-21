@@ -1000,10 +1000,12 @@ void AP_GPS::update_instance(uint8_t instance)
         const uint64_t fix_time_usec = time_epoch_usec(instance);
         if (fix_time_usec != 0) {
             // the fix's time is given to when its message arrived, but it was measured
-            // the receiver's lag earlier.  get_lag() always provides a lag, returning
-            // false when it is a default guess
-            float lag_s;
-            UNUSED_RESULT(get_lag(instance, lag_s));
+            // the receiver's lag earlier, unless it is given to the PPS edge.  get_lag()
+            // always provides a lag, returning false when it is a default guess
+            float lag_s = 0;
+            if (!drivers[instance]->corrected_time_from_pps()) {
+                UNUSED_RESULT(get_lag(instance, lag_s));
+            }
             AP::rtc().set_utc_usec(fix_time_usec + uint64_t(lag_s * 1.0e6f), AP_RTC::SOURCE_GPS);
         }
     }
