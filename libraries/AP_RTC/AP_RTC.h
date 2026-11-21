@@ -5,6 +5,7 @@
 #if AP_RTC_ENABLED
 
 #include <AP_Param/AP_Param.h>
+#include "AP_RTC_RemoteClocks.h"
 
 #include <stdint.h>
 
@@ -83,9 +84,18 @@ public:
     // emit an RTC message to the onboard logs
     void Log_RTC();
 
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+    // clock offsets of other MAVLink components
+    AP_RTC_RemoteClocks &remote_clocks() { return _remote_clocks; }
+#endif
+
 private:
 
     static AP_RTC *_singleton;
+
+#if AP_RTC_REMOTE_CLOCKS_ENABLED
+    AP_RTC_RemoteClocks _remote_clocks;
+#endif
     mutable HAL_Semaphore rsem;
 
     source_type rtc_source_type = SOURCE_NONE;
