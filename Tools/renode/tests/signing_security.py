@@ -83,6 +83,21 @@ def build_signed_copter(board, private_key, extra_hwdef=None,
     return destination
 
 
+def build_unsigned_copter(board, extra_hwdef, artifact_name):
+    configure_and_build(
+        board, 'copter', '--extra-hwdef', str(extra_hwdef))
+    destination = OUTPUT / artifact_name
+    shutil.copyfile(ROOT / 'build' / board / 'bin' / 'arducopter.apj', destination)
+    return destination
+
+
+def check_embedded_bootloader(candidate):
+    firmware = (ROOT / 'build' / 'CubeOrangePlus' / 'bin' /
+                'arducopter.bin').read_bytes()
+    if firmware.count(candidate.read_bytes()) != 1:
+        raise AssertionError('embedded bootloader changed during application build')
+
+
 def generate_dialect():
     output = OUTPUT / 'ardupilotmega_security'
     run_checked([
@@ -125,6 +140,7 @@ class RenodeBoard:
         self.uart_port = free_port()
         self.monitor_port = free_port()
         state_dir = OUTPUT / name
+        self.state_dir = state_dir
         log_path = OUTPUT / ('%s.log' % name)
         command = [
             sys.executable, ROOT / 'Tools' / 'renode' / 'run.py', board,
@@ -211,6 +227,29 @@ class RenodeBoard:
             lambda message: message.sequence == sequence and
             message.operation == operation)
 
+    def pause(self):
+        monitor = socket.create_connection(
+            ('127.0.0.1', self.monitor_port), timeout=5)
+        monitor.settimeout(1)
+        try:
+            try:
+                monitor.recv(4096)
+            except socket.timeout:
+                pass
+            monitor.sendall(b'pause\n')
+            deadline = time.monotonic() + 10
+            response = b''
+            while time.monotonic() < deadline:
+                try:
+                    response += monitor.recv(4096)
+                except socket.timeout:
+                    continue
+                if b'Pausing emulation' in response:
+                    return
+            raise TimeoutError('timed out pausing Renode')
+        finally:
+            monitor.close()
+
     def close(self):
         if self.sock is not None:
             self.sock.close()
@@ -296,6 +335,32 @@ def test_matching_bootloader(dialect, renode, firmware, bootloader, timeout):
             raise AssertionError('bootloader with the same trust set was rejected')
 
 
+def test_uncompressed_bootloader_update(dialect, renode, firmware,
+                                        bootloader, candidate, timeout):
+    with RenodeBoard(
+            dialect, renode, 'CubeOrangePlus', firmware, bootloader,
+            'cubeorangeplus-uncompressed-bootloader-update', timeout) as board:
+        board.mav.command_int_send(
+            1, 1, dialect.MAV_FRAME_GLOBAL, dialect.MAV_CMD_FLASH_BOOTLOADER,
+            0, 0, 0, 0, 0, 0, 290876, 0, 0)
+        reply = board.wait_message(
+            'COMMAND_ACK', timeout,
+            lambda message: message.command == dialect.MAV_CMD_FLASH_BOOTLOADER)
+        if reply.result != MAV_RESULT_ACCEPTED:
+            raise AssertionError('uncompressed bootloader update was rejected')
+        board.pause()
+        state_dir = board.state_dir
+        candidate_data = candidate.read_bytes()
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            flash = (state_dir / 'flash.img').read_bytes()
+            if flash[:len(candidate_data)] == candidate_data:
+                break
+            time.sleep(0.1)
+        else:
+            raise AssertionError('uncompressed bootloader update corrupted flash')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--renode', required=True)
@@ -335,6 +400,23 @@ def main():
         test_matching_bootloader(
             dialect, args.renode, matching_firmware,
             cubeorange_bootloader, args.timeout)
+
+        cubeorangeplus_base = build_bootloader('CubeOrangePlus')
+        cubeorangeplus_base_copy = OUTPUT / 'CubeOrangePlus-base_bl.bin'
+        shutil.copyfile(cubeorangeplus_base, cubeorangeplus_base_copy)
+        provision_bootloader(
+            cubeorangeplus_base_copy, public_a_path, candidate_path)
+        extra_hwdef.write_text(
+            'USE_BOOTLOADER_FROM_BOARD %s\n'
+            'env ROMFS_UNCOMPRESSED True\n' % candidate_name)
+        cubeorangeplus_firmware = build_unsigned_copter(
+            'CubeOrangePlus', extra_hwdef,
+            'CubeOrangePlus-unsigned-transition-arducopter.apj')
+        check_embedded_bootloader(candidate_path)
+        test_uncompressed_bootloader_update(
+            dialect, args.renode, cubeorangeplus_firmware,
+            ROOT / 'Tools' / 'bootloaders' / 'CubeOrangePlus_bl.bin',
+            candidate_path, args.timeout)
     finally:
         candidate_path.unlink(missing_ok=True)
 
