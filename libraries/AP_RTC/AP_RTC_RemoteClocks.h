@@ -62,6 +62,7 @@ private:
         // remote boot time, fitted by exponentially weighted least squares.
         // t is seconds of remote boot time since anchor_boot_ms, y is
         // microseconds of offset relative to anchor_offset_us
+        int64_t newest_offset_us;   // offset of the newest fitted sample
         int64_t anchor_offset_us;
         uint32_t anchor_boot_ms;
         uint32_t fit_boot_ms;       // remote boot time of the latest fitted sample

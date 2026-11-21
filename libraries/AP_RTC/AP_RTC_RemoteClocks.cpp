@@ -11,9 +11,14 @@
 static constexpr int64_t OFFSET_CONSISTENT_US = 5000;
 // consecutive consistent offset samples before the offset is acquired
 static constexpr uint8_t OFFSET_ACQUIRE_SAMPLES = 3;
-// an acquired offset is held this long after its last sample; the fitted
-// drift keeps the extrapolated offset within a few milliseconds
+// an acquired offset is held this long after its last sample once its drift
+// is fitted; the fitted drift keeps the extrapolated offset within a few milliseconds
 static constexpr uint32_t OFFSET_HOLD_MS = 600000;
+// until then the newest sample is held without drift for this long, which
+// crystal drift of up to 50ppm moves by at most 3 milliseconds
+static constexpr uint32_t OFFSET_SHORT_HOLD_MS = 60000;
+// samples spanning this long fit the drift well enough to extrapolate it
+static constexpr int32_t FIT_MIN_SPAN_MS = 120000;
 // at acquisition a GPS fix report must be this recent, allowing 0.2Hz reports
 static constexpr uint32_t GPS_FIX_TIMEOUT_MS = 15000;
 // a boot time further behind the latest than this is a reboot; smaller
@@ -95,6 +100,7 @@ void AP_RTC_RemoteClocks::note_boot(Source &s, uint32_t boot_ms)
 
 void AP_RTC_RemoteClocks::restart_fit(Source &s, int64_t sample_us, uint32_t boot_ms)
 {
+    s.newest_offset_us = sample_us;
     s.anchor_offset_us = sample_us;
     s.anchor_boot_ms = boot_ms;
     s.fit_boot_ms = boot_ms;
@@ -120,6 +126,7 @@ void AP_RTC_RemoteClocks::add_to_fit(Source &s, int64_t sample_us, uint32_t boot
     s.stt = s.stt * decay + t * t;
     s.sty = s.sty * decay + t * y;
     s.fit_boot_ms = boot_ms;
+    s.newest_offset_us = sample_us;
 
     const double det = s.sw * s.stt - s.st * s.st;
     if (det > 1.0e-6 * s.sw * s.stt) {
@@ -176,9 +183,9 @@ void AP_RTC_RemoteClocks::handle_system_time(uint8_t sysid, uint8_t compid, uint
             // a sample no newer than the fit, arriving late over a slower link, adds nothing
             if (int32_t(time_boot_ms - s->fit_boot_ms) > 0) {
                 add_to_fit(*s, sample_us, time_boot_ms);
-            }
-            if (s->consistent < UINT8_MAX) {
-                s->consistent++;
+                if (s->consistent < UINT8_MAX) {
+                    s->consistent++;
+                }
             }
         }
     }
@@ -232,11 +239,15 @@ bool AP_RTC_RemoteClocks::remote_to_local_ms_at(uint8_t sysid, uint8_t compid, u
 
     note_boot(*s, remote_boot_ms);
 
-    if (!s->acquired || (now_ms - s->last_rx_ms) > OFFSET_HOLD_MS) {
+    // the drift is only extrapolated once it is fitted over a long enough span
+    const bool drift_fitted = int32_t(s->fit_boot_ms - s->anchor_boot_ms) >= FIT_MIN_SPAN_MS;
+    const uint32_t hold_ms = drift_fitted ? OFFSET_HOLD_MS : OFFSET_SHORT_HOLD_MS;
+    if (!s->acquired || (now_ms - s->last_rx_ms) > hold_ms) {
         return false;
     }
+    const int64_t offset_us = drift_fitted ? offset_at(*s, remote_boot_ms) : s->newest_offset_us;
 
-    const int64_t local_us = int64_t(remote_boot_ms) * 1000 + offset_at(*s, remote_boot_ms) - local_offset_us;
+    const int64_t local_us = int64_t(remote_boot_ms) * 1000 + offset_us - local_offset_us;
     if (local_us < 0) {
         return false;
     }

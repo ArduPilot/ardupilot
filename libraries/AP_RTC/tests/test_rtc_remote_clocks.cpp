@@ -147,7 +147,7 @@ TEST(AP_RTC_RemoteClocks, acquisition_requires_gps_fix)
 
     // once acquired, a lost or missing fix report does not drop the offset
     clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 0, now_ms);
-    EXPECT_TRUE(convert(clocks, target.boot_ms(now_ms + 300000), now_ms + 300000, local_ms));
+    EXPECT_TRUE(convert(clocks, target.boot_ms(now_ms + 50000), now_ms + 50000, local_ms));
 }
 
 TEST(AP_RTC_RemoteClocks, acquisition_rejects_stale_gps_fix)
@@ -165,12 +165,17 @@ TEST(AP_RTC_RemoteClocks, acquisition_rejects_stale_gps_fix)
     EXPECT_FALSE(convert(clocks, target.boot_ms(now_ms), now_ms, local_ms));
 }
 
+// once the drift is fitted over two minutes the offset is held for 10 minutes
 TEST(AP_RTC_RemoteClocks, offset_held_for_10_minutes)
 {
     AP_RTC_RemoteClocks clocks;
     ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
     uint32_t now_ms = START_MS;
-    acquire(clocks, now_ms);
+    clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
+    for (uint8_t i=0; i<25; i++) {
+        target.send_time(clocks, now_ms);
+        now_ms += 5000;
+    }
     const uint32_t last_rx_ms = now_ms - 5000;
     uint32_t local_ms;
     for (uint32_t t = now_ms; t <= last_rx_ms + 600000; t += 60000) {
@@ -179,6 +184,43 @@ TEST(AP_RTC_RemoteClocks, offset_held_for_10_minutes)
     }
     EXPECT_TRUE(convert(clocks, target.boot_ms(last_rx_ms + 600000), last_rx_ms + 600000, local_ms));
     EXPECT_FALSE(convert(clocks, target.boot_ms(last_rx_ms + 600001), last_rx_ms + 600001, local_ms));
+}
+
+// before the drift is fitted the newest sample is held without drift, for a minute
+TEST(AP_RTC_RemoteClocks, short_fit_held_for_a_minute)
+{
+    const Remote drifting { TARGET_SYSID, TARGET_COMPID, target.boot_start_ms, 50.0e-6 };
+    AP_RTC_RemoteClocks clocks;
+    ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
+    uint32_t now_ms = START_MS;
+    clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
+    for (uint8_t i=0; i<3; i++) {
+        drifting.send_time(clocks, now_ms);
+        now_ms += 5000;
+    }
+    const uint32_t last_rx_ms = now_ms - 5000;
+    uint32_t local_ms;
+    ASSERT_TRUE(convert(clocks, drifting.boot_ms(last_rx_ms + 59000), last_rx_ms + 59000, local_ms));
+    EXPECT_NEAR(double(last_rx_ms + 59000), double(local_ms), 3.0);
+    EXPECT_TRUE(convert(clocks, drifting.boot_ms(last_rx_ms + 60000), last_rx_ms + 60000, local_ms));
+    EXPECT_FALSE(convert(clocks, drifting.boot_ms(last_rx_ms + 60001), last_rx_ms + 60001, local_ms));
+}
+
+// copies of samples arriving late over a second link don't count towards acquisition
+TEST(AP_RTC_RemoteClocks, late_copies_do_not_acquire)
+{
+    AP_RTC_RemoteClocks clocks;
+    ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
+    uint32_t now_ms = START_MS;
+    clocks.handle_gps_fix(TARGET_SYSID, TARGET_COMPID, 3, now_ms);
+    target.send_time(clocks, now_ms);
+    target.send_time(clocks, now_ms + 5000);
+    target.send_time(clocks, now_ms, 0, now_ms + 7000);
+    target.send_time(clocks, now_ms + 5000, 0, now_ms + 8000);
+    uint32_t local_ms;
+    EXPECT_FALSE(convert(clocks, target.boot_ms(now_ms + 8000), now_ms + 8000, local_ms));
+    target.send_time(clocks, now_ms + 10000);
+    EXPECT_TRUE(convert(clocks, target.boot_ms(now_ms + 10000), now_ms + 10000, local_ms));
 }
 
 TEST(AP_RTC_RemoteClocks, reboot_resets_until_reacquired)
