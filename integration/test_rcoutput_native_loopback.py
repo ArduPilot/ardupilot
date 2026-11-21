@@ -3,6 +3,7 @@
 
 import os
 import pty
+import sys
 import signal
 import socket
 import struct
@@ -11,10 +12,11 @@ import tempfile
 import time
 from pathlib import Path
 
-from test_xsens_native_startup import BINARY, HWDEF, ROOT, data_item, packet
+from test_xsens_native_startup import BINARY, HWDEF, ROOT, data_item, mavutil, packet
 
 
 def main():
+    active = "--active" in sys.argv[1:]
     if not BINARY.is_file() or "#define HAL_ATAL_RCOUT_LOOPBACK_ENABLED 1" not in HWDEF.read_text():
         raise SystemExit("Build with integration/atal_loopback_output.hwdef first")
     receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -29,10 +31,14 @@ def main():
             "SERIAL1_PROTOCOL 36\nSERIAL1_BAUD 115\n"
             "SERIAL2_PROTOCOL 51\nSERIAL2_BAUD 115\n"
             "BARO_SPEC_GRAV 1.0\n"
+            + ("ARMING_CHECK 0\n" if active else "")
             + (ROOT / "integration/atal_motor_defaults.parm").read_text()
         )
+        connection = mavutil.mavlink_connection("udpin:127.0.0.1:0")
+        telemetry_port = connection.port.getsockname()[1]
         process = subprocess.Popen(
-            [str(BINARY), "--serial1", os.ttyname(xsens_slave),
+            [str(BINARY), "--serial0", f"udp:127.0.0.1:{telemetry_port}",
+             "--serial1", os.ttyname(xsens_slave),
              "--serial2", os.ttyname(depth_slave), "--defaults", str(defaults),
              "--log-directory", directory, "--storage-directory", directory,
              "--terrain-directory", directory],
@@ -46,27 +52,51 @@ def main():
         )
         count = 0
         seen = 0
+        arm_requested = False
+        disarm_requested = False
         try:
-            deadline = time.monotonic() + 8
+            deadline = time.monotonic() + (12 if active else 8)
             while time.monotonic() < deadline and process.poll() is None:
                 os.write(xsens_master, packet(0x36, payload + data_item(0x1020, count.to_bytes(2, "big"))))
                 os.write(depth_master, b"DEPTH:1025.50,23.40,1.2500\n")
+                message = connection.recv_match(blocking=False)
+                if active and seen >= 10 and message is not None and not arm_requested:
+                    connection.mav.command_long_send(
+                        1, 1, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                        0, 1, 0, 0, 0, 0, 0, 0,
+                    )
+                    arm_requested = True
+                if active and arm_requested and not disarm_requested:
+                    connection.mav.manual_control_send(1, 500, 0, 500, 0, 0)
                 count = (count + 1) & 0xFFFF
                 try:
                     frame = receiver.recv(256).decode("ascii")
                 except socket.timeout:
                     continue
                 fields = frame.split(",")
-                if len(fields) != 19 or fields[:3] != ["ATAL_RCOUT", "1", "0"]:
-                    raise SystemExit(f"Invalid or armed RCOutput frame: {frame!r}")
+                if len(fields) != 19 or fields[:2] != ["ATAL_RCOUT", "1"]:
+                    raise SystemExit(f"Invalid RCOutput frame: {frame!r}")
+                if fields[2] not in ("0", "1") or (fields[2] == "1" and not active):
+                    raise SystemExit(f"Unexpected arming state in RCOutput frame: {frame!r}")
                 values = [int(value) for value in fields[3:]]
                 if any(value < 0 or value > 2100 for value in values):
                     raise SystemExit(f"Invalid RCOutput values: {values}")
                 seen += 1
-                if seen >= 10 and any(values[:8]):
+                if active and fields[2] == "1" and not disarm_requested:
+                    if (values[0] > 1500 and values[1] > 1500 and
+                            values[2] < 1500 and values[3] < 1500):
+                        connection.mav.command_long_send(
+                            1, 1, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                            0, 0, 0, 0, 0, 0, 0, 0,
+                        )
+                        disarm_requested = True
+                if active and disarm_requested and fields[2] == "0" and values[:8] == [1500] * 8:
+                    print("Observed native mixer response and neutral output after disarm on localhost")
+                    return
+                if not active and seen >= 10 and any(values[:8]):
                     print(f"Observed {seen} disarmed native RCOutput frames on localhost; motor channels={values[:8]}")
                     return
-            raise SystemExit(f"No populated RCOutput stream; frames={seen}, process={process.poll()}")
+            raise SystemExit(f"No expected RCOutput stream; frames={seen}, arm_requested={arm_requested}, disarm_requested={disarm_requested}, process={process.poll()}")
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -76,6 +106,7 @@ def main():
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
             receiver.close()
+            connection.close()
             for fd in (xsens_master, xsens_slave, depth_master, depth_slave):
                 os.close(fd)
 

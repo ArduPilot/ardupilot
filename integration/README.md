@@ -47,6 +47,7 @@ Build the optional Linux profile and run the virtual sensor replay:
 ./waf configure --board=linux --extra-hwdef integration/atal_loopback_output.hwdef
 ./waf sub -j4
 python3 integration/test_rcoutput_native_loopback.py
+python3 integration/test_rcoutput_native_loopback.py --active
 ```
 
-`RCOutput_ATAL_Loopback` sends the raw 16 `SERVO` channel values and ArduSub soft-armed state as `ATAL_RCOUT,1,armed,ch1,...,ch16` UDP datagrams to `127.0.0.1:14660`. The test verifies that native ArduSub produces populated, disarmed motor channels with virtual Xsens and Bar30 data. `atal_motor_defaults.parm` explicitly assigns `SERVO1_FUNCTION=33` through `SERVO8_FUNCTION=40`; `check_layout.py` checks these assignments. The datagrams are an observation format, not ESP32 actuator commands. There is no listener that drives ESCs, and neither an armed mixer result nor physical actuator path has been validated.
+`RCOutput_ATAL_Loopback` sends the raw 16 `SERVO` channel values and ArduSub soft-armed state as `ATAL_RCOUT,1,armed,ch1,...,ch16` UDP datagrams to `127.0.0.1:14660`. The first test verifies neutral, disarmed motor channels with virtual Xsens and Bar30 data. The `--active` run sets `ARMING_CHECK=0` only in its temporary parameter file, sends a MAVLink arm and forward command, checks the native mixer response, then verifies neutral output after disarm. This test profile is software only and cannot demonstrate safe vehicle arming. `atal_motor_defaults.parm` explicitly assigns `SERVO1_FUNCTION=33` through `SERVO8_FUNCTION=40`; `check_layout.py` checks these assignments. The datagrams are an observation format, not ESP32 actuator commands. There is no listener that drives ESCs, and the physical actuator path has not been validated.
