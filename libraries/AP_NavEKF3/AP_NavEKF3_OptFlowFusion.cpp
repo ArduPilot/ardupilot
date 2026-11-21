@@ -1046,10 +1046,14 @@ bool NavEKF3_core::flowResetHeight(FlowResetHeight &resetHgt) const
 // velocity reset scales by, which the lockout recovery needs whether or not the AGL KF runs
 bool NavEKF3_core::flowLockoutRecoveryConfigured() const
 {
+#if AP_RANGEFINDER_ENABLED
     const auto *rng = dal.rangefinder();
     return (frontend->_flowUse == FLOW_USE_NAV) &&
            frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index) &&
            (rng != nullptr) && rng->has_orientation(ROTATION_PITCH_270);
+#else
+    return false;
+#endif
 }
 
 // Whether the range under a flow sample is fit to scale a velocity reset to it, and if not why not.
