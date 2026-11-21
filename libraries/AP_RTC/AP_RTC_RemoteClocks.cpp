@@ -21,9 +21,6 @@ static constexpr uint32_t OFFSET_SHORT_HOLD_MS = 60000;
 static constexpr int32_t FIT_MIN_SPAN_MS = 120000;
 // at acquisition a GPS fix report must be this recent, allowing 0.2Hz reports
 static constexpr uint32_t GPS_FIX_TIMEOUT_MS = 15000;
-// a boot time further behind the latest than this is a reboot; smaller
-// steps back are messages arriving late over a slower link
-static constexpr int32_t REBOOT_ALLOWANCE_MS = 10000;
 // time constant of the offset drift fit
 static constexpr double FIT_TC_S = 600.0;
 // boot clock crystal error limit, microseconds per second
@@ -88,7 +85,7 @@ void AP_RTC_RemoteClocks::note_boot(Source &s, uint32_t boot_ms)
 {
     if (s.have_boot) {
         const int32_t change_ms = int32_t(boot_ms - s.latest_boot_ms);
-        if (change_ms < -REBOOT_ALLOWANCE_MS) {
+        if (change_ms < -int32_t(AP_RTC_REMOTE_REBOOT_ALLOWANCE_MS)) {
             reset(s);
         } else if (change_ms <= 0) {
             return;

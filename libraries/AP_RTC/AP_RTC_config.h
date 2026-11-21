@@ -18,3 +18,15 @@
 #ifndef AP_RTC_REMOTE_CLOCKS_MAX
 #define AP_RTC_REMOTE_CLOCKS_MAX 4
 #endif
+
+// a remote boot time further back than this is a reboot; smaller steps back
+// are messages arriving late over a slower link
+#ifndef AP_RTC_REMOTE_REBOOT_ALLOWANCE_MS
+#define AP_RTC_REMOTE_REBOOT_ALLOWANCE_MS 10000
+#endif
+
+// the most a correctly converted remote time can appear to be in the future:
+// the GPS lock error of this clock plus millisecond rounding
+#ifndef AP_RTC_REMOTE_CLOCK_TOLERANCE_MS
+#define AP_RTC_REMOTE_CLOCK_TOLERANCE_MS 20
+#endif
