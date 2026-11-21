@@ -48,8 +48,6 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_FOLLOW_TIMEOUT          3     // position estimate timeout in seconds
 #define AP_FOLLOW_ESTIMATE_TIMEOUT_MS 10000 // discard the target estimate if we have not heard from the target in 10 seconds
-#define AP_FOLLOW_SAMPLE_TIME_TOLERANCE_MS 5 // millisecond rounding allowed when checking a sample time from the target's clock
-#define AP_FOLLOW_REBOOT_ALLOWANCE_MS 10000 // a target timestamp further back than this is a reboot, not a late message over a second link
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
@@ -666,7 +664,7 @@ bool AP_Follow::accept_sample_time(const mavlink_message_t &msg, uint32_t remote
 {
     if ((_last_location_update_ms != 0) && (_sysid_of_data == msg.sysid) && (_last_sample_msgid == msg.msgid)) {
         const int32_t change_ms = int32_t(remote_ms - _last_sample_remote_ms);
-        if ((change_ms <= 0) && (change_ms >= -AP_FOLLOW_REBOOT_ALLOWANCE_MS)) {
+        if ((change_ms <= 0) && (change_ms >= -int32_t(AP_RTC_REMOTE_REBOOT_ALLOWANCE_MS))) {
             return false;
         }
     }
@@ -694,15 +692,14 @@ uint32_t AP_Follow::sample_time_ms(const mavlink_message_t &msg, uint32_t remote
     bool from_clock = false;
     uint32_t clock_ms = 0;
     if (AP::rtc().remote_clocks().remote_to_local_ms(msg.sysid, msg.compid, remote_ms, clock_ms)) {
-        // allow millisecond rounding to put the sample just after the jitter time or now
-        const int32_t lead_ms = int32_t(jitter_ms - clock_ms);
-        if ((int32_t(clock_ms - now_ms) > 0) && (int32_t(clock_ms - now_ms) <= AP_FOLLOW_SAMPLE_TIME_TOLERANCE_MS)) {
+        // the remote clocks reject times further after now than the tolerance; rounding and
+        // clock error can still put a sample just after now or the jitter time
+        if (int32_t(clock_ms - now_ms) > 0) {
             clock_ms = now_ms;
         }
-        const int32_t age_ms = int32_t(now_ms - clock_ms);
-        const bool plausible = (lead_ms >= -AP_FOLLOW_SAMPLE_TIME_TOLERANCE_MS) &&
-                               (age_ms >= 0) &&
-                               (age_ms <= int32_t(_timeout * 1000.0f));
+        const int32_t lead_ms = int32_t(jitter_ms - clock_ms);
+        const bool plausible = (lead_ms >= -int32_t(AP_RTC_REMOTE_CLOCK_TOLERANCE_MS)) &&
+                               (int32_t(now_ms - clock_ms) <= int32_t(_timeout * 1000.0f));
         // the first sample timed from the clock moves the target by its velocity times the
         // delay JitterCorrection was hiding; estimate_error_too_large() decides if that resets
         if (plausible) {
