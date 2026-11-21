@@ -199,7 +199,12 @@ void
 AP_GPS_GSOF::update_raw_data_logging()
 {
     const int8_t raw_data = gps._raw_data;
-    if (raw_data == 0) {
+    if (raw_data == RAW_DATA_IGNORE) {
+        // if the user has turned logging off at runtime, stop what we started
+        if (logging_state_known && logging_requested) {
+            logging_requested = false;
+            requestLogging(false);
+        }
         return;
     }
     if (!validate_raw_data(raw_data)) {
