@@ -2,6 +2,14 @@
 # Derived motor permutation is documented in docs/ardusub_migration/06_thruster_allocation.md.
 # These settings do not enable an actuator port; do not use for commissioning.
 FRAME_CONFIG 2
+SERVO1_FUNCTION 33
+SERVO2_FUNCTION 34
+SERVO3_FUNCTION 35
+SERVO4_FUNCTION 36
+SERVO5_FUNCTION 37
+SERVO6_FUNCTION 38
+SERVO7_FUNCTION 39
+SERVO8_FUNCTION 40
 MOT_PWM_MIN 1300
 MOT_PWM_MAX 1700
 MOT_1_DIRECTION -1

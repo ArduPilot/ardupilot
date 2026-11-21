@@ -111,6 +111,9 @@ def check_motor_defaults(resolved, actuators, source):
         name = f"MOT_{number}_DIRECTION"
         if params.get(name) != str(item["MOT_DIRECTION"]):
             raise ValueError(f"{name} does not match vehicle_defaults.json")
+        function = f"SERVO{number}_FUNCTION"
+        if params.get(function) != str(32 + number):
+            raise ValueError(f"{function} must assign ArduSub motor {number}")
 
 
 def main():

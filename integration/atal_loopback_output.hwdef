@@ -1,0 +1,2 @@
+# Software-only RCOutput observer. Packets are UDP to 127.0.0.1:14660.
+define HAL_ATAL_RCOUT_LOOPBACK_ENABLED 1

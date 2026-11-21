@@ -9,7 +9,7 @@ This directory contains provisional values copied from the read-only ROS 2 `ATAL
 | Bar30 serial rate and water density | `vehicle_defaults.json` (`bar30`) and `atal_sensor_defaults.parm` (`SERIAL2_BAUD`, `BARO_SPEC_GRAV`); choose the actual serial device when launching | `test_depth_native_replay.py`, then surface-zero/calibration check |
 | Thruster factors, numbering, polarity, GPIOs, PWM limits | `vehicle_defaults.json` (`actuators`) and matching `atal_motor_defaults.parm` | `check_layout.py` and `simulate_allocation.py` |
 
-The JSON is an editable bridge/audit input, not an automatic ArduSub parameter loader. Keep matching ArduSub `.parm` values in sync. The Xsens and Bar30 `offset_m_frd` fields are recorded placeholders; no native correction currently consumes them. The A50 bridge does consume its mount rotation and lever arm from JSON. `atal_dvl_ekf_replay.parm` selects MAVLink VisualOdom and EKF3 external horizontal velocity for **virtual-sensor tests only**; it supplies no global position or yaw. The measured Xsens and A50 rotations/offsets remain identity/zero placeholders. `actuators.enabled` remains `false`, and the generic Linux build uses `Empty::RCOutput`.
+The JSON is an editable bridge/audit input, not an automatic ArduSub parameter loader. Keep matching ArduSub `.parm` values in sync. The Xsens and Bar30 `offset_m_frd` fields are recorded placeholders; no native correction currently consumes them. The A50 bridge does consume its mount rotation and lever arm from JSON. `atal_dvl_ekf_replay.parm` selects MAVLink VisualOdom and EKF3 external horizontal velocity for **virtual-sensor tests only**; it supplies no global position or yaw. The measured Xsens and A50 rotations/offsets remain identity/zero placeholders. `actuators.enabled` remains `false`. The ordinary generic Linux build uses `Empty::RCOutput`; the opt-in localhost observer below captures ArduSub output for software checks.
 
 After edits, run from the repository root:
 
@@ -38,3 +38,15 @@ Run `g++ -std=c++11 -Wall -Wextra -Werror -I integration integration/test_actuat
 `python3 integration/test_dashboard_native_replay.py` proves a separate native `SERIAL3_PROTOCOL=2` MAVLink stream can feed the dashboard adapter while `SERIAL0` remains available to another consumer. The replay sets `SR3_EXTRA1`, `SR3_EXTRA2`, and `SR3_RAW_SENS` in a temporary parameter file and uses virtual Xsens/depth inputs. For a real deployment, put the matching stream configuration in the deployment parameters, choose an unoccupied serial link, and verify source system ID and rate. The replay does not establish the full dashboard UI or physical vehicle readiness.
 
 `python3 integration/test_dashboard_api_loopback.py` starts the actual local HTTP service, sends synthetic MAVLink from autopilot system/component 1/1 over UDP, and verifies `/api/state` receives it. It opens only loopback sockets.
+
+## Native motor output observer
+
+Build the optional Linux profile and run the virtual sensor replay:
+
+```bash
+./waf configure --board=linux --extra-hwdef integration/atal_loopback_output.hwdef
+./waf sub -j4
+python3 integration/test_rcoutput_native_loopback.py
+```
+
+`RCOutput_ATAL_Loopback` sends the raw 16 `SERVO` channel values and ArduSub soft-armed state as `ATAL_RCOUT,1,armed,ch1,...,ch16` UDP datagrams to `127.0.0.1:14660`. The test verifies that native ArduSub produces populated, disarmed motor channels with virtual Xsens and Bar30 data. `atal_motor_defaults.parm` explicitly assigns `SERVO1_FUNCTION=33` through `SERVO8_FUNCTION=40`; `check_layout.py` checks these assignments. The datagrams are an observation format, not ESP32 actuator commands. There is no listener that drives ESCs, and neither an armed mixer result nor physical actuator path has been validated.

@@ -36,6 +36,7 @@
 #include "RCOutput_Sysfs.h"
 #include "RCOutput_ZYNQ.h"
 #include "RCOutput_RPI.h"
+#include "RCOutput_ATAL_Loopback.h"
 #include "SPIDevice.h"
 #include "SPIUARTDriver.h"
 #include "Scheduler.h"
@@ -228,6 +229,8 @@ static RCOutput_Multi rcoutDriver{2, &rcoutPcaDriver, &rcoutSysfsDriver};
 static RCOutput_Sysfs rcoutDriver(0, 0, 7);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RPI
 static RCOutput_RPI rcoutDriver;
+#elif HAL_ATAL_RCOUT_LOOPBACK_ENABLED && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
+static RCOutput_ATAL_Loopback rcoutDriver;
 #else
 static Empty::RCOutput rcoutDriver;
 #endif
