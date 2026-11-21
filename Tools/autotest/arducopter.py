@@ -15108,7 +15108,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         rebooted_err = median(estimate_errors(windows['rebooted'], 10))
         self.progress("rebooted: estimate median error %.2f m" % rebooted_err)
         if rebooted_err < 0.5 * target_speed * 1.0:
-            raise NotAchievedException("rebooted estimate only %.1f m behind; the test no longer shows the delay" % rebooted_err)
+            raise NotAchievedException(
+                "rebooted estimate only %.1f m behind; the test no longer shows the delay" % rebooted_err)
 
         # the reacquired clock is used even though the 1 s delay is still present
         assert_source('reacquired', 20, 1)
