@@ -584,4 +584,17 @@ TEST(AP_RTC, lock_held_without_gps)
     EXPECT_NEAR(0.0, (int64_t(now) - int64_t(sim.utc_at(1200.0))) * 1.0e-6, 0.005);
 }
 
+// the lock is gained below 2 ms of error but only lost above 20 ms
+TEST(AP_RTC, lock_hysteresis)
+{
+    for (const int64_t jump_us : { 10000, 25000 }) {
+        SCOPED_TRACE(jump_us);
+        const ClockSim sim = start_sim(0.0);
+        feed_gps(sim, 0.2, 300.0);
+        ASSERT_TRUE(AP::rtc().gps_locked_at(sim.local_at(300.0)));
+        feed_gps(sim, 300.2, 310.0, jump_us);
+        EXPECT_EQ(jump_us < 20000, AP::rtc().gps_locked_at(sim.local_at(310.0)));
+    }
+}
+
 AP_GTEST_MAIN()

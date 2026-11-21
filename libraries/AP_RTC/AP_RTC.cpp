@@ -55,6 +55,8 @@ static constexpr float RTC_DRIFT_TC_S = 300.0;
 static constexpr uint64_t RTC_TRIM_HOLD_US = 2000000;
 // gps_locked() requirements
 static constexpr float RTC_LOCK_ERR_S = 0.002;
+// a locked clock stays locked until its filtered error exceeds this
+static constexpr float RTC_UNLOCK_ERR_S = 0.02;
 static constexpr uint8_t RTC_LOCK_SAMPLES = 10;
 // the lock is held this long after the last GPS sample; the clock runs on
 // its learned rate trim meanwhile, so it stays within a few milliseconds
@@ -143,6 +145,7 @@ void AP_RTC::set_utc_usec_at(uint64_t time_utc_usec, source_type type, uint64_t 
             // clock is ahead of it.  Time can't go backwards, so slew to it
             rtc_source_type = SOURCE_GPS;
             gps_samples = 0;
+            gps_lock = false;
             last_gps_local_us = local_us;
             slew_towards(time_utc_usec, local_us);
             changed = true;
@@ -231,6 +234,7 @@ void AP_RTC::step_to(uint64_t time_utc_usec, uint64_t local_us)
     rate = drift;
     err_filt_s = 0;
     gps_samples = 0;
+    gps_lock = false;
     last_gps_local_us = local_us;
 }
 
@@ -255,6 +259,13 @@ void AP_RTC::slew_towards(uint64_t time_utc_usec, uint64_t local_us)
 
     if (gps_samples < UINT8_MAX) {
         gps_samples++;
+    }
+
+    // latch the lock, with hysteresis so noise near the threshold doesn't toggle it
+    if (!gps_lock && (gps_samples >= RTC_LOCK_SAMPLES) && (fabsf(err_filt_s) < RTC_LOCK_ERR_S)) {
+        gps_lock = true;
+    } else if (gps_lock && (fabsf(err_filt_s) > RTC_UNLOCK_ERR_S)) {
+        gps_lock = false;
     }
     last_gps_local_us = local_us;
 }
@@ -297,8 +308,7 @@ bool AP_RTC::gps_locked_at(uint64_t local_us) const
 {
     WITH_SEMAPHORE(rsem);
     return (rtc_source_type == SOURCE_GPS) &&
-           (gps_samples >= RTC_LOCK_SAMPLES) &&
-           (fabsf(err_filt_s) < RTC_LOCK_ERR_S) &&
+           gps_lock &&
            (local_us - last_gps_local_us < RTC_LOCK_TIMEOUT_US);
 }
 

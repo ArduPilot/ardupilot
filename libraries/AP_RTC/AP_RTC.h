@@ -108,6 +108,7 @@ private:
     float drift;                // integrated rate trim, the local crystal error (fraction)
     float err_filt_s;           // filtered GPS minus clock error
     uint8_t gps_samples;        // GPS samples since the last step, saturating
+    bool gps_lock;              // following GPS time closely, latched with hysteresis
     uint64_t last_gps_local_us;
     uint64_t last_slew_side_effects_us;
 #if AP_RTC_LOGGING_ENABLED
