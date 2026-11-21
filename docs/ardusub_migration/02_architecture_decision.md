@@ -1,6 +1,6 @@
 # Architecture decision (development architecture)
 
-Status: selected architecture for development, not approved for physical deployment. Based on reference commit `9eadb1a92a9635c706c2f5ec6710167a6ab512e7` and official ArduPilot checkout `4ca1bc74fc088242931054cac963cdfd91589b51`. The native Linux `sub` target builds and starts with empty RC output; real sensor/estimator integration is still missing.
+Status: selected architecture for development, not approved for physical deployment. Based on reference commit `9eadb1a92a9635c706c2f5ec6710167a6ab512e7` and official ArduPilot checkout `4ca1bc74fc088242931054cac963cdfd91589b51`. The native Linux `sub` target builds and runs with empty RC output. Synthetic Xsens/Bar30 and DVL-to-EKF replays pass; physical sensor timing, calibration and navigation readiness are still unverified.
 
 ## Options
 
