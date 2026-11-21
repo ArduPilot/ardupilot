@@ -925,6 +925,9 @@ private:
     // check if command is a landing type command.  Asside the obvious, MAV_CMD_DO_PARACHUTE is considered a type of landing
     bool is_landing_type_cmd(uint16_t id) const;
 
+    // true if start_id is at or before index with no takeoff in between
+    bool start_item_before(uint16_t index, uint16_t start_id) const;
+
     // approximate the distance travelled to get to a landing.  DO_JUMP commands are observed in look forward.
     bool distance_to_landing(uint16_t index, float &tot_distance,Location current_loc);
 

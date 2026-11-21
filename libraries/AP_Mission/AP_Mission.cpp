@@ -798,16 +798,37 @@ bool AP_Mission::restart_current_nav_cmd()
         restart_index = _rejoin_leg_end_index;
     }
 
-    // set_current_cmd clears these flags, but restarting the current
-    // command does not leave a landing sequence or return path
+    // set_current_cmd clears the landing sequence and return path flags.  Restarting
+    // the current command does not leave either, so a flag is kept while the edited
+    // mission still has its start item before the restarted command
     const bool in_landing_sequence = _flags.in_landing_sequence;
     const bool in_return_path = _flags.in_return_path;
     if (!set_current_cmd(restart_index)) {
         return false;
     }
-    _flags.in_landing_sequence |= in_landing_sequence;
-    _flags.in_return_path |= in_return_path;
+    if (in_landing_sequence && start_item_before(_nav_cmd.index, MAV_CMD_DO_LAND_START)) {
+        _flags.in_landing_sequence = true;
+    }
+    if (in_return_path && start_item_before(_nav_cmd.index, MAV_CMD_DO_RETURN_PATH_START)) {
+        _flags.in_return_path = true;
+    }
     return true;
+}
+
+// true if start_id is at or before index with no takeoff in between, which
+// clears the flag it sets.  Only the mission order is searched, not DO_JUMPs
+bool AP_Mission::start_item_before(uint16_t index, uint16_t start_id) const
+{
+    for (uint16_t i = index; i > 0; i--) {
+        const uint16_t id = get_command_id(i);
+        if (id == start_id) {
+            return true;
+        }
+        if (is_takeoff_type_cmd(id)) {
+            return false;
+        }
+    }
+    return false;
 }
 
 // returns false on any issue at all.
