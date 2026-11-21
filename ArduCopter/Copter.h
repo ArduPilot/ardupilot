@@ -951,6 +951,7 @@ private:
 #endif
     // called when an attempt to change into a mode is unsuccessful:
     void mode_change_failed(const Mode *mode, const char *reason);
+    bool mode_change_checks_passed(const Mode *new_flightmode, bool ignore_checks, ModeReason reason);
     uint8_t get_mode() const override { return (uint8_t)flightmode->mode_number(); }
     bool current_mode_requires_mission() const override;
     void update_flight_mode();
@@ -958,6 +959,7 @@ private:
 
     // Check if this mode can be entered from the GCS
     bool gcs_mode_enabled(const Mode::Number mode_num);
+    bool gcs_mode_change_allowed(const Mode::Number mode, const ModeReason reason);
 
     // Return mask of enabled modes, order does not matter, its just for tracking changes
     uint32_t get_available_mode_enabled_mask() const override;

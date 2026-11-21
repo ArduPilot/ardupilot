@@ -659,6 +659,7 @@ private:
 
     // Enter auto rtl pseudo mode
     bool enter_auto_rtl(ModeReason reason);
+    bool auto_rtl_entry_allowed(ModeReason reason);
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
