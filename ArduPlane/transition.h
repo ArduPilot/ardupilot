@@ -38,6 +38,9 @@ public:
 
     virtual bool active_frwd() const = 0;
 
+    // true if the VTOL motors are holding the vehicle up while waiting for airspeed
+    virtual bool in_airspeed_wait() const { return false; }
+
     virtual bool show_vtol_view() const = 0;
 
     virtual void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd) {};
@@ -89,6 +92,8 @@ public:
     void restart() override { transition_state = State::AIRSPEED_WAIT; }
 
     uint8_t get_log_transition_state() const override { return static_cast<uint8_t>(transition_state); }
+
+    bool in_airspeed_wait() const override { return transition_state == State::AIRSPEED_WAIT; }
 
     bool active_frwd() const override;
 
