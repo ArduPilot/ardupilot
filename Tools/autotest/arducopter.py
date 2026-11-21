@@ -23276,6 +23276,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 ek2_origin.altitude != ek3_origin.altitude):
             raise NotAchievedException("Did not get matching EK2 and EK3 origins")
 
+    def EKF2YawAt90Degrees(self):
+        """EKF2 must still fuse yaw, and so take up GPS, facing exactly west"""
+        if self.sitl_start_heading() not in (90, 270):
+            raise ValueError("start heading must be 90 or 270 for this test")
+        self.set_parameters({
+            'EK2_ENABLE': 1,
+            'AHRS_EKF_TYPE': 2,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        # with the declination already known when EKF2 aligns its
+        # yaw, the yaw is exactly the start heading (SITL's compass
+        # has no noise).  Before the fix, EKF2 fused no yaw within
+        # 0.06 degrees of +-90 degrees, so never learned its yaw gyro
+        # bias, and never started using GPS
+        declination = self.get_parameter('COMPASS_DEC')
+        # the automatic declination is set but not saved, so it must
+        # be changed for setting it to be sent and saved
+        self.set_parameters({
+            'COMPASS_AUTODEC': 0,
+            'COMPASS_DEC': 0,
+        })
+        self.set_parameter('COMPASS_DEC', declination)
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("EKF2 IMU0 is using GPS", timeout=60, check_context=True)
+        self.wait_statustext("EKF2 IMU1 is using GPS", timeout=60, check_context=True)
+
     def CommonOriginExternalAHRS(self):
         '''ensure an ExternalAHRS origin is shared into EKF2 and EKF3'''
         # Run an ExternalAHRS (MicroStrain7, which supplies GPS) alongside
@@ -25800,6 +25828,7 @@ return update, 1000
             self.GuidedWeatherVane,
             self.LoggingFormat,
             self.CommonOrigin,
+            self.EKF2YawAt90Degrees,
             self.RC_OPTIONS_1_FS_THR_ENABLE_0,
             self.CompassLearnCopyFromEKFAffinity,
             self.CompassLearnDisabledDoesNotSave,
