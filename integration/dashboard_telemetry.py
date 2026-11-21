@@ -14,6 +14,7 @@ class DashboardTelemetry:
         self._heartbeat_at = None
         self._attitude_at = None
         self._pressure_at = None
+        self._position_at = None
         self._servo_at = None
         self._state = {
             "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
@@ -57,6 +58,7 @@ class DashboardTelemetry:
                 return
             s["pos_n"], s["pos_e"] = float(msg.x), float(msg.y)
             s["depth_m"] = float(msg.z)  # NED z is positive downward
+            self._position_at = now
             if self._attitude_at is not None and now - self._attitude_at < 2.5:
                 yaw = math.radians(s["yaw"])
                 s["vel_fwd"] = math.cos(yaw) * msg.vx + math.sin(yaw) * msg.vy
@@ -82,6 +84,12 @@ class DashboardTelemetry:
         s["imu_age"] = now - self._attitude_at if self._attitude_at is not None else None
         s["imu_alive"] = s["imu_age"] is not None and s["imu_age"] < 2.5
         s["pressure_alive"] = self._pressure_at is not None and now - self._pressure_at < 2.5
+        s["position_alive"] = self._position_at is not None and now - self._position_at < 2.5
+        if not s["position_alive"]:
+            for key in ("pos_n", "pos_e", "depth_m", "vel_fwd", "vel_lat", "vel_z"):
+                s[key] = None
+        elif not s["imu_alive"]:
+            s["vel_fwd"] = s["vel_lat"] = None
         s["output_alive"] = self._servo_at is not None and now - self._servo_at < 2.5
         s["source"] = "ardusub_mavlink"
         return s

@@ -56,9 +56,19 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.assertAlmostEqual(snapshot["vel_fwd"], 1)
         self.assertAlmostEqual(snapshot["vel_lat"], 0, places=6)
         self.assertEqual(snapshot["depth_m"], 3)
+        self.assertTrue(snapshot["position_alive"])
         self.telemetry.ingest(Message("LOCAL_POSITION_NED", x=1, y=2, z=float("nan"),
                                       vx=3, vy=4, vz=5))
         self.assertEqual(self.telemetry.snapshot()["depth_m"], 3)
+        self.time[0] = 2.6
+        self.telemetry.ingest(Message("HEARTBEAT", base_mode=0))
+        self.telemetry.ingest(Message("ATTITUDE", roll=0, pitch=0, yaw=0,
+                                      rollspeed=0, pitchspeed=0, yawspeed=0))
+        stale = self.telemetry.snapshot()
+        self.assertTrue(stale["link_alive"])
+        self.assertFalse(stale["position_alive"])
+        self.assertIsNone(stale["depth_m"])
+        self.assertIsNone(stale["vel_fwd"])
 
     def test_api_is_read_only(self):
         client = make_app(self.telemetry, threading.Lock()).test_client()

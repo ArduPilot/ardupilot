@@ -33,7 +33,7 @@ def make_app(telemetry, lock):
         with lock:
             snapshot = telemetry.snapshot()
         return jsonify({key: snapshot[key] for key in (
-            "link_alive", "imu_alive", "pressure_alive", "armed_known", "source"
+            "link_alive", "imu_alive", "pressure_alive", "position_alive", "armed_known", "source"
         )})
 
     @app.get("/api/stream")

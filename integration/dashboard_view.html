@@ -60,7 +60,7 @@
   </header>
   <div class="grid">
     <section class="card" aria-labelledby="attitude-title"><h2 id="attitude-title">Attitude / body frame</h2><div class="horizon" id="horizon" role="img" aria-label="Attitude horizon"><div class="reticle"></div></div><div class="readings"><div class="reading"><span>Roll</span><strong id="roll">—</strong></div><div class="reading"><span>Pitch</span><strong id="pitch">—</strong></div><div class="reading"><span>Heading</span><strong id="yaw">—</strong></div></div></section>
-    <section class="card" aria-labelledby="environment-title"><h2 id="environment-title">Water / motion</h2><div class="metric-grid"><div class="metric"><span>Pressure</span><strong id="pressure">—</strong><em>mbar</em></div><div class="metric"><span>Water temperature</span><strong id="temperature">—</strong><em>°C</em></div><div class="metric"><span>Estimated depth</span><strong id="depth">—</strong><em>m · local position</em></div><div class="metric"><span>Forward velocity</span><strong id="velocity">—</strong><em>m/s · body frame</em></div></div><div class="status-row"><span class="badge" id="arm">Arming unknown</span><span class="badge" id="imu">IMU waiting</span><span class="badge" id="pressure-health">Pressure waiting</span><span class="badge" id="output-health">Output waiting</span></div></section>
+    <section class="card" aria-labelledby="environment-title"><h2 id="environment-title">Water / motion</h2><div class="metric-grid"><div class="metric"><span>Pressure</span><strong id="pressure">—</strong><em>mbar</em></div><div class="metric"><span>Water temperature</span><strong id="temperature">—</strong><em>°C</em></div><div class="metric"><span>Estimated depth</span><strong id="depth">—</strong><em>m · local position</em></div><div class="metric"><span>Forward velocity</span><strong id="velocity">—</strong><em>m/s · body frame</em></div></div><div class="status-row"><span class="badge" id="arm">Arming unknown</span><span class="badge" id="imu">IMU waiting</span><span class="badge" id="pressure-health">Pressure waiting</span><span class="badge" id="position-health">Position waiting</span><span class="badge" id="output-health">Output waiting</span></div></section>
     <section class="card wide" aria-labelledby="thruster-title"><h2 id="thruster-title">Motor output / SERVO channels 1–8</h2><div class="thrusters" id="thrusters"></div><p class="note">Values are reported PWM in microseconds. Channel order is provisional until vehicle wiring is checked.</p></section>
   </div>
 </main>
@@ -88,11 +88,12 @@
     byId('horizon').setAttribute('aria-label', s.imu_alive ? `Roll ${number(s.roll)} degrees, pitch ${number(s.pitch)} degrees` : 'Attitude unavailable');
     byId('pressure').textContent = s.pressure_alive ? number(s.pressure_mbar, 1) : '—';
     byId('temperature').textContent = s.pressure_alive ? number(s.water_temp, 1) : '—';
-    byId('depth').textContent = s.link_alive ? number(s.depth_m, 2) : '—';
-    byId('velocity').textContent = s.imu_alive ? number(s.vel_fwd, 2) : '—';
+    byId('depth').textContent = s.position_alive ? number(s.depth_m, 2) : '—';
+    byId('velocity').textContent = s.position_alive && s.imu_alive ? number(s.vel_fwd, 2) : '—';
     setBadge('arm', !s.armed_known ? 'Arming unknown' : s.armed ? 'Armed' : 'Disarmed', !s.armed_known ? 'warn' : s.armed ? 'danger' : 'good');
     setBadge('imu', s.imu_alive ? 'IMU live' : 'IMU stale', s.imu_alive ? 'good' : 'warn');
     setBadge('pressure-health', s.pressure_alive ? 'Pressure live' : 'Pressure stale', s.pressure_alive ? 'good' : 'warn');
+    setBadge('position-health', s.position_alive ? 'Position live' : 'Position stale', s.position_alive ? 'good' : 'warn');
     setBadge('output-health', s.output_alive ? 'Output live' : 'Output stale', s.output_alive ? 'good' : 'warn');
     [...thrusters.children].forEach((box, i) => {
       const value = s.output_alive ? s.pwm[i] : null;
@@ -108,7 +109,7 @@
       if (!response.ok) throw Error('Telemetry request failed');
       render(await response.json());
     } catch (_) {
-      render({ link_alive: false, imu_alive: false, pressure_alive: false, output_alive: false, armed_known: false, pwm: [] });
+      render({ link_alive: false, imu_alive: false, pressure_alive: false, position_alive: false, output_alive: false, armed_known: false, pwm: [] });
       byId('link-status').textContent = 'Connection error';
     } finally {
       clearTimeout(timeout);
