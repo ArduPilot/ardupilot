@@ -24,3 +24,9 @@ python3 integration/test_dvl_native_chain.py
 ```
 
 The native replays require `build/linux/bin/ardusub` from `./waf configure --board=linux && ./waf sub -j4`. They create temporary loopback TCP/UDP links and pseudo-terminals; they do not open physical sensor or actuator ports. Read `docs/ardusub_migration/08_testing_and_validation.md` for each check's scope and outstanding hardware evidence.
+
+## Provisional actuator protocol
+
+`actuator_guard.h` is a platform-independent ESP32 command validator and state machine. `actuator_frames.py` encodes the matching host frames. Neither file is wired to ArduSub, serial, GPIO, or deployed firmware yet. Frames are complete ASCII lines without CR/LF: `A1,COMMAND,SESSION,SEQUENCE[,PWM1,...,PWM8],CRC`. `SESSION` is eight hex digits; `SEQUENCE` is a strictly increasing decimal uint32; PWM values are 1300–1700 µs in the provisional ROS motor order; `CRC` is four hex digits of CRC-16/CCITT-FALSE over the preceding bytes. The proposed MCU firmware must generate and expose a fresh session nonce on each boot, read complete bounded lines, call `tick()` even during USB silence, and apply `outputs()` only after validating the entire frame. Faults latch neutral until an explicit `RESET` followed by `ARM`. A separate physical actuator-power isolation mechanism is still required.
+
+Run `g++ -std=c++11 -Wall -Wextra -Werror -I integration integration/test_actuator_guard.cpp -o .atal-baseline/test_actuator_guard && .atal-baseline/test_actuator_guard` and `python3 -m unittest discover -s integration -p 'test_actuator_frames.py' -v` for software-only checks. These do not authorize attaching an ESC or flashing an ESP32.
