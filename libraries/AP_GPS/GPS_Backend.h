@@ -112,8 +112,9 @@ public:
     // return iTOW of last message, or zero if not supported
     uint32_t get_last_itow_ms(void) const;
 
-    // true if the corrected GPS time is referenced to the PPS edge, so to
-    // when the fix was measured rather than when its message arrived
+    // true if the corrected GPS time is referenced to the PPS edge, so to when
+    // the fix was measured rather than when its message arrived; set by the first
+    // PPS timed sample and cleared when the fix is lost
     bool corrected_time_from_pps(void) const { return _corrected_time_from_pps; }
 
     // check if an option is set
