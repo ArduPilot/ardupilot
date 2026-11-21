@@ -12,6 +12,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 
 #include "AP_Compass_Backend.h"
 #include "Compass_PerMotor.h"
@@ -239,11 +240,6 @@ public:
     float get_declination() const;
 
     bool auto_declination_enabled() const { return _auto_declination != 0; }
-
-    // set overall board orientation
-    void set_board_orientation(enum Rotation orientation) {
-        _board_orientation = orientation;
-    }
 
     // get overall board orientation
     enum Rotation get_board_orientation(void) const {
@@ -563,7 +559,10 @@ private:
     // settable parameters
     AP_Enum<LearnType> _learn;
 
-    // board orientation from AHRS
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+    // take the board orientation from AP_BoardConfig
+    void update_board_orientation();
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
     enum Rotation _board_orientation = ROTATION_NONE;
 
     // declination in radians

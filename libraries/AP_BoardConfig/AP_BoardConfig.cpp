@@ -635,6 +635,55 @@ bool AP_BoardConfig::safety_button_handle_pressed(uint8_t press_count)
     return true;
 }
 
+#if AP_BOARDCONFIG_ORIENTATION_ENABLED
+/*
+  return the orientation the board is mounted in, from
+  AHRS_ORIENTATION.
+
+  The parameter is found by name, so that this does not depend on
+  AP_AHRS having been constructed or initialised, and the sensor
+  libraries which call this do not depend on AHRS at all.
+
+  The value is held once the vehicle is armed, so that the rotation
+  applied to sensor data can not change under a flying vehicle.
+
+  There is no lock here.  Once the value is known only the main thread
+  stores it, and the first read - let through from whichever thread
+  makes it, as not every HAL counts setup() as the main thread - comes
+  from init.  Every caller today reads at loop rate on the main thread,
+  so nothing reaches this concurrently; a caller on another thread
+  would need these fields synchronised.
+ */
+enum Rotation AP_BoardConfig::get_orientation()
+{
+    if (orientation_known &&
+        (!hal.scheduler->in_main_thread() || hal.util->get_soft_armed())) {
+        return orientation;
+    }
+
+    if (!orientation_lookup_done) {
+        enum ap_var_type ptype;
+        AP_Param *p = AP_Param::find("AHRS_ORIENTATION", &ptype);
+        if (p != nullptr && ptype == AP_PARAM_INT8) {
+            orientation_param = (AP_Int8 *)p;
+        }
+        // set last: a thread which sees this set sees the pointer with
+        // it, and one which does not simply repeats the lookup, which
+        // gives the same answer
+        orientation_lookup_done = true;
+    }
+    if (orientation_param == nullptr) {
+        // no such parameter in this build
+        return orientation;
+    }
+
+    orientation = (enum Rotation)orientation_param->get();
+    orientation_known = true;
+
+    return orientation;
+}
+#endif  // AP_BOARDCONFIG_ORIENTATION_ENABLED
+
 namespace AP {
     AP_BoardConfig *boardConfig(void) {
         return AP_BoardConfig::get_singleton();
