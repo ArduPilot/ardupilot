@@ -1,5 +1,13 @@
 /*
   ArduPilot JSON parser
+
+  Parses a whole document into a tree of values allocated on the heap,
+  for files read once such as vehicleinfo.json or model definitions.
+
+  To read a fixed set of fields from a stream of packets, as from a
+  physics backend over UDP or a UART, use AP_JSON_FieldParser instead:
+  it parses bytes as they arrive into the caller's variables, with no
+  heap and a fixed state of under 800 bytes on a 32 bit target.
  */
 
 #pragma once
