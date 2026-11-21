@@ -787,16 +787,27 @@ bool AP_Mission::restart_current_nav_cmd()
         return false;
     }
 
+    uint16_t restart_index = _nav_cmd.index;
+
     // the rejoin point may no longer be on the edited leg so continue to the end of the leg
     if (_flags.rejoining_return_path) {
         // the leg end may have been removed by the mission change
         if (_rejoin_leg_end_index >= num_commands()) {
             return false;
         }
-        return set_current_cmd(_rejoin_leg_end_index);
+        restart_index = _rejoin_leg_end_index;
     }
 
-    return set_current_cmd(_nav_cmd.index);
+    // set_current_cmd clears these flags, but restarting the current
+    // command does not leave a landing sequence or return path
+    const bool in_landing_sequence = _flags.in_landing_sequence;
+    const bool in_return_path = _flags.in_return_path;
+    if (!set_current_cmd(restart_index)) {
+        return false;
+    }
+    _flags.in_landing_sequence |= in_landing_sequence;
+    _flags.in_return_path |= in_return_path;
+    return true;
 }
 
 // returns false on any issue at all.
