@@ -46,6 +46,10 @@
 #include "Util_RPI.h"
 #include "CANSocketIface.h"
 
+#ifndef HAL_ATAL_RCOUT_LOOPBACK_ENABLED
+#define HAL_ATAL_RCOUT_LOOPBACK_ENABLED 0
+#endif
+
 using namespace Linux;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
