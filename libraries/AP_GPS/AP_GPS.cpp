@@ -997,9 +997,14 @@ void AP_GPS::update_instance(uint8_t instance)
 #if AP_RTC_ENABLED
     // the RTC follows one GPS, once per message, so it sees one receiver's time bias
     if (result && (instance == rtc_instance) && (state[instance].status >= AP_GPS_FixType::FIX_3D)) {
-        const uint64_t now = time_epoch_usec(instance);
-        if (now != 0) {
-            AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
+        const uint64_t fix_time_usec = time_epoch_usec(instance);
+        if (fix_time_usec != 0) {
+            // the fix's time is given to when its message arrived, but it was measured
+            // the receiver's lag earlier.  get_lag() always provides a lag, returning
+            // false when it is a default guess
+            float lag_s;
+            UNUSED_RESULT(get_lag(instance, lag_s));
+            AP::rtc().set_utc_usec(fix_time_usec + uint64_t(lag_s * 1.0e6f), AP_RTC::SOURCE_GPS);
         }
     }
 #endif
