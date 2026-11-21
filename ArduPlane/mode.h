@@ -1110,4 +1110,14 @@ public:
     // true if throttle min/max limits should be applied
     bool use_throttle_limits() const override;
 
+protected:
+
+    bool _enter() override;
+
+private:
+
+#if HAL_QUADPLANE_ENABLED
+    // time the VTOL motors started holding a hover, 0 if not holding
+    uint32_t assist_start_ms;
+#endif
 };
