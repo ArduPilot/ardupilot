@@ -8,8 +8,9 @@ import time
 
 
 class DashboardTelemetry:
-    def __init__(self, now=time.monotonic):
+    def __init__(self, now=time.monotonic, system_id=1):
         self._now = now
+        self._system_id = system_id
         self._heartbeat_at = None
         self._attitude_at = None
         self._pressure_at = None
@@ -25,6 +26,10 @@ class DashboardTelemetry:
         }
 
     def ingest(self, msg):
+        if hasattr(msg, "get_srcSystem") and msg.get_srcSystem() != self._system_id:
+            return
+        if hasattr(msg, "get_srcComponent") and msg.get_srcComponent() != 1:
+            return
         kind = msg.get_type()
         now = self._now()
         s = self._state

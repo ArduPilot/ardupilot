@@ -35,9 +35,10 @@ def make_app(telemetry, lock):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mavlink", default="udpin:127.0.0.1:14650")
+    parser.add_argument("--system-id", type=int, default=1)
     parser.add_argument("--http-port", type=int, default=8088)
     args = parser.parse_args()
-    telemetry = DashboardTelemetry()
+    telemetry = DashboardTelemetry(system_id=args.system_id)
     lock = threading.Lock()
     link = mavutil.mavlink_connection(args.mavlink, autoreconnect=True)
 

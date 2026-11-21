@@ -7,12 +7,20 @@ from dashboard_telemetry import DashboardTelemetry
 
 
 class Message:
-    def __init__(self, kind, **fields):
+    def __init__(self, kind, source=1, component=1, **fields):
         self.kind = kind
+        self.source = source
+        self.component = component
         self.__dict__.update(fields)
 
     def get_type(self):
         return self.kind
+
+    def get_srcSystem(self):
+        return self.source
+
+    def get_srcComponent(self):
+        return self.component
 
 
 class DashboardTelemetryTests(unittest.TestCase):
@@ -21,6 +29,9 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.telemetry = DashboardTelemetry(now=lambda: self.time[0])
 
     def test_arm_status_and_freshness(self):
+        self.telemetry.ingest(Message("HEARTBEAT", source=255, base_mode=128))
+        self.telemetry.ingest(Message("HEARTBEAT", component=100, base_mode=128))
+        self.assertFalse(self.telemetry.snapshot()["armed_known"])
         self.telemetry.ingest(Message("HEARTBEAT", base_mode=128))
         self.telemetry.ingest(Message("ATTITUDE", roll=0.1, pitch=0, yaw=math.pi / 2,
                                       rollspeed=0.01, pitchspeed=0, yawspeed=0))
