@@ -206,6 +206,18 @@ flt_oper:
                 }
                 memset(buf, 0, sizeof(buf));
                 exp = ftoa_engine(value, (char *)buf, vtype, ndigs);
+                if (!(flags & FL_FLTFIX)) {
+                    /*
+                      ftoa_engine produces at most 8 digits. Pad the
+                      rest of the requested precision with zeros, as
+                      'f' format does, rather than emitting NULs
+                     */
+                    for (uint8_t i = 1; i <= prec + 1; i++) {
+                        if (buf[i] == 0) {
+                            buf[i] = '0';
+                        }
+                    }
+                }
                 vtype = buf[0];
 
                 sign = 0;
