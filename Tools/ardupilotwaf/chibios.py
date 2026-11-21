@@ -328,6 +328,17 @@ def add_elf_load_segment(elf_path, address, size):
     open(elf_path, 'wb').write(elf)
 
 
+def find_app_descriptor(img, descriptor):
+    """Find the single zero-initialized application descriptor."""
+    marker = descriptor + bytes(16)
+    offset = img.find(marker)
+    if offset == -1:
+        return -1
+    if img.find(marker, offset + 1) != -1:
+        raise Errors.WafError("multiple zero-initialized APP_DESCRIPTOR markers")
+    return offset
+
+
 class set_app_descriptor(Task.Task):
     '''setup app descriptor in bin file'''
     color='BLUE'
@@ -346,7 +357,7 @@ class set_app_descriptor(Task.Task):
         img = bytearray(open(bin_file, 'rb').read())
         extf_signature = None
         image_size = 0
-        offset = img.find(descriptor)
+        offset = find_app_descriptor(img, descriptor)
         if offset == -1:
             Logs.info("No APP_DESCRIPTOR found")
             return
@@ -392,8 +403,7 @@ class set_app_descriptor(Task.Task):
         open(bin_file, 'wb').write(img)
 
         elf_img = bytearray(open(elf_file,'rb').read())
-        zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
-        elf_ofs = elf_img.find(zero_descriptor)
+        elf_ofs = find_app_descriptor(elf_img, descriptor)
         if elf_ofs == -1:
             Logs.info("No APP_DESCRIPTOR found in elf file")
             return
@@ -422,7 +432,7 @@ class set_app_descriptor(Task.Task):
                 if ret != 0:
                     return ret
                 add_elf_load_segment(
-                    elf_out.abspath(), signature_address, len(extf_signature))
+                    elf_file, signature_address, len(extf_signature))
             finally:
                 os.unlink(signature_path)
 
