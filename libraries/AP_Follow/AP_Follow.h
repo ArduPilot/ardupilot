@@ -184,6 +184,9 @@ private:
     // Checks whether the current estimate should be reset based on position and velocity errors.
     bool estimate_error_too_large() const;
 
+    // Records the time of a target sample, returning false for a sample no newer than the last accepted one.
+    bool accept_sample_time(const mavlink_message_t &msg, uint32_t remote_ms);
+
     // Returns the local time a target sample was taken, from its remote timestamp.
     uint32_t sample_time_ms(const mavlink_message_t &msg, uint32_t remote_ms);
 
@@ -264,6 +267,9 @@ private:
     float       _bearing_to_target_deg;         // Bearing to target from vehicle (degrees, 0 = North)
     bool        _offsets_were_zero;             // True if initial offset was zero before being initialized
     bool        _using_follow_target;           // True if FOLLOW_TARGET messages are being used instead of GLOBAL_POSITION_INT
+
+    uint32_t    _last_sample_remote_ms;         // target timestamp of the last accepted sample
+    uint32_t    _last_sample_msgid;             // message type of the last accepted sample
 
 #if AP_RTC_REMOTE_CLOCKS_ENABLED
     uint8_t     _clock_sysid;                   // sysid whose clock is registered for sample timing, 0 = none
