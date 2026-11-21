@@ -1107,20 +1107,25 @@ void AP_GPS::update(void)
 }
 
 #if AP_RTC_ENABLED && GPS_MAX_RECEIVERS > 1
-// choose the GPS that sets the RTC: the lowest latency one with a 3D fix.  It is
-// kept unless it loses its fix or another is clearly lower, so the RTC doesn't
-// follow receivers with different time biases in turn
+// choose the GPS that sets the RTC: the lowest latency one with a 3D fix and the
+// GPS week.  It is kept unless it loses either or another is clearly lower, so the
+// RTC doesn't follow receivers with different time biases in turn
 void AP_GPS::update_rtc_instance()
 {
+    // a receiver without the week, such as GPS_INPUT without time, can't set the RTC
+    const auto can_set_rtc = [this](uint8_t i) {
+        return (state[i].status >= AP_GPS_FixType::FIX_3D) && (state[i].time_week != 0);
+    };
+
     // get_lag() always provides a lag, returning false when it is a default guess
     float current_lag_s;
     UNUSED_RESULT(get_lag(rtc_instance, current_lag_s));
-    const bool current_ok = (state[rtc_instance].status >= AP_GPS_FixType::FIX_3D);
+    const bool current_ok = can_set_rtc(rtc_instance);
 
     uint8_t best = rtc_instance;
     float best_lag_s = current_ok ? (current_lag_s - 0.02f) : FLT_MAX;
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if ((i == rtc_instance) || (state[i].status < AP_GPS_FixType::FIX_3D)) {
+        if ((i == rtc_instance) || !can_set_rtc(i)) {
             continue;
         }
         float lag_s;
