@@ -13,10 +13,12 @@ import time
 from pathlib import Path
 
 from test_xsens_native_startup import BINARY, HWDEF, ROOT, data_item, mavutil, packet
+from rcoutput_mapping import load_motor_order, motors_in_esp_order, parse_observation
 
 
 def main():
     active = "--active" in sys.argv[1:]
+    motor_order = load_motor_order()
     if not BINARY.is_file() or "#define HAL_ATAL_RCOUT_LOOPBACK_ENABLED 1" not in HWDEF.read_text():
         raise SystemExit("Build with integration/atal_loopback_output.hwdef first")
     receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -70,27 +72,26 @@ def main():
                     connection.mav.manual_control_send(1, 500, 0, 500, 0, 0)
                 count = (count + 1) & 0xFFFF
                 try:
-                    frame = receiver.recv(256).decode("ascii")
+                    frame = receiver.recv(256)
                 except socket.timeout:
                     continue
-                fields = frame.split(",")
-                if len(fields) != 19 or fields[:2] != ["ATAL_RCOUT", "1"]:
-                    raise SystemExit(f"Invalid RCOutput frame: {frame!r}")
-                if fields[2] not in ("0", "1") or (fields[2] == "1" and not active):
+                armed, values = parse_observation(frame)
+                if armed and not active:
                     raise SystemExit(f"Unexpected arming state in RCOutput frame: {frame!r}")
-                values = [int(value) for value in fields[3:]]
-                if any(value < 0 or value > 2100 for value in values):
-                    raise SystemExit(f"Invalid RCOutput values: {values}")
                 seen += 1
-                if active and fields[2] == "1" and not disarm_requested:
+                if active and armed and not disarm_requested:
                     if (values[0] > 1500 and values[1] > 1500 and
                             values[2] < 1500 and values[3] < 1500):
+                        mapped = motors_in_esp_order(values, motor_order)
+                        if not (mapped[5] > 1500 and mapped[6] > 1500 and
+                                mapped[0] < 1500 and mapped[2] < 1500):
+                            raise SystemExit(f"Invalid ESP32 motor permutation: {mapped}")
                         connection.mav.command_long_send(
                             1, 1, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                             0, 0, 0, 0, 0, 0, 0, 0,
                         )
                         disarm_requested = True
-                if active and disarm_requested and fields[2] == "0" and values[:8] == [1500] * 8:
+                if active and disarm_requested and not armed and values[:8] == (1500,) * 8:
                     print("Observed native mixer response and neutral output after disarm on localhost")
                     return
                 if not active and seen >= 10 and any(values[:8]):
