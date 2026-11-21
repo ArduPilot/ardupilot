@@ -1,4 +1,5 @@
 import math
+import json
 import threading
 import unittest
 
@@ -62,6 +63,11 @@ class DashboardTelemetryTests(unittest.TestCase):
     def test_api_is_read_only(self):
         client = make_app(self.telemetry, threading.Lock()).test_client()
         self.assertEqual(client.get("/api/state").json["source"], "ardusub_mavlink")
+        stream = client.get("/api/stream", buffered=False)
+        self.assertEqual(stream.mimetype, "text/event-stream")
+        event = next(iter(stream.response)).decode("utf-8")
+        self.assertEqual(json.loads(event.removeprefix("data: "))["source"], "ardusub_mavlink")
+        stream.close()
         self.assertEqual(client.post("/api/arm").status_code, 404)
         self.assertEqual(client.post("/api/state").status_code, 405)
 

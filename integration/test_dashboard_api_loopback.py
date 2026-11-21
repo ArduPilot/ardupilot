@@ -52,7 +52,10 @@ def main():
                     with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/", timeout=0.5) as response:
                         page = response.read().decode("utf-8")
                     assert "Vehicle telemetry" in page and "Motor output / SERVO channels" in page
-                    print("Dashboard view and API HTTP + MAVLink loopback passed")
+                    with urllib.request.urlopen(f"http://127.0.0.1:{http_port}/api/stream", timeout=0.5) as response:
+                        stream_state = json.loads(response.readline().removeprefix(b"data: "))
+                    assert stream_state["link_alive"] and stream_state["imu_alive"]
+                    print("Dashboard view, API and SSE + MAVLink loopback passed")
                     return
             except (urllib.error.URLError, TimeoutError):
                 pass

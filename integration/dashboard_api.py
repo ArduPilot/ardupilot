@@ -5,10 +5,12 @@ python3 integration/dashboard_api.py --mavlink udpin:127.0.0.1:14650
 """
 
 import argparse
+import json
 import threading
+import time
 from pathlib import Path
 
-from flask import Flask, jsonify, send_file
+from flask import Flask, Response, jsonify, send_file
 from pymavlink import mavutil
 
 from dashboard_telemetry import DashboardTelemetry
@@ -33,6 +35,22 @@ def make_app(telemetry, lock):
         return jsonify({key: snapshot[key] for key in (
             "link_alive", "imu_alive", "pressure_alive", "armed_known", "source"
         )})
+
+    @app.get("/api/stream")
+    def stream():
+        # The ROS dashboard already consumes this SSE route. Keep it read only:
+        # observing state must not become a vehicle deadman or command signal.
+        def events():
+            while True:
+                with lock:
+                    snapshot = telemetry.snapshot()
+                yield f"data: {json.dumps(snapshot)}\n\n"
+                time.sleep(0.1)
+
+        response = Response(events(), mimetype="text/event-stream")
+        response.headers["Cache-Control"] = "no-cache, no-transform"
+        response.headers["X-Accel-Buffering"] = "no"
+        return response
 
     return app
 
