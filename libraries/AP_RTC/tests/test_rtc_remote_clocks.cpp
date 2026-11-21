@@ -49,7 +49,8 @@ static const Remote target { TARGET_SYSID, TARGET_COMPID, START_MS - 1234567, 0.
 
 static bool convert(AP_RTC_RemoteClocks &clocks, uint32_t remote_boot_ms, uint32_t now_ms, uint32_t &local_ms)
 {
-    return clocks.remote_to_local_ms_at(TARGET_SYSID, TARGET_COMPID, remote_boot_ms, now_ms, local_utc_us(now_ms), local_ms);
+    return clocks.remote_to_local_ms_at(TARGET_SYSID, TARGET_COMPID, remote_boot_ms, uint64_t(now_ms) * 1000,
+                                        local_utc_us(now_ms), local_ms);
 }
 
 // three consistent samples and a GPS fix make the conversion available
@@ -453,6 +454,23 @@ TEST(AP_RTC_RemoteClocks, keyed_by_component)
     EXPECT_EQ(now_ms - 5000, local_ms);
 }
 
+// the conversion uses the local time to the microsecond, so a local time part
+// way through a millisecond does not round the result a millisecond early
+TEST(AP_RTC_RemoteClocks, conversion_exact_within_a_millisecond)
+{
+    AP_RTC_RemoteClocks clocks;
+    ASSERT_TRUE(clocks.register_source(TARGET_SYSID, TARGET_COMPID));
+    uint32_t now_ms = START_MS;
+    acquire(clocks, now_ms);
+
+    // a message sent exactly 9 ms before a local time 0.7 ms into now_ms
+    const uint64_t local_us = uint64_t(now_ms) * 1000 + 700;
+    uint32_t local_ms;
+    ASSERT_TRUE(clocks.remote_to_local_ms_at(TARGET_SYSID, TARGET_COMPID, target.boot_ms(now_ms - 9),
+                                             local_us, local_utc_us(now_ms) + 700, local_ms));
+    EXPECT_EQ(now_ms - 9, local_ms);
+}
+
 // our 32 bit boot time in milliseconds wraps after 49.7 days of uptime, and
 // samples and conversions either side of the wrap must still be consistent
 TEST(AP_RTC_RemoteClocks, local_boot_time_wrap)
@@ -479,12 +497,12 @@ TEST(AP_RTC_RemoteClocks, local_boot_time_wrap)
     // a message sent a second ago, after the wrap
     uint32_t local_ms;
     ASSERT_TRUE(clocks.remote_to_local_ms_at(TARGET_SYSID, TARGET_COMPID, target_boot_ms(t_ms - 1000),
-                                             uint32_t(t_ms), utc_us(t_ms), local_ms));
+                                             t_ms * 1000, utc_us(t_ms), local_ms));
     EXPECT_EQ(uint32_t(t_ms - 1000), local_ms);
 
     // a message sent just before the wrap
     ASSERT_TRUE(clocks.remote_to_local_ms_at(TARGET_SYSID, TARGET_COMPID, target_boot_ms(wrap_ms - 500),
-                                             uint32_t(t_ms), utc_us(t_ms), local_ms));
+                                             t_ms * 1000, utc_us(t_ms), local_ms));
     EXPECT_EQ(uint32_t(wrap_ms - 500), local_ms);
 }
 

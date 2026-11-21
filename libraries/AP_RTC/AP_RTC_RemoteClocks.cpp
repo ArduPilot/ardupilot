@@ -248,13 +248,15 @@ bool AP_RTC_RemoteClocks::remote_to_local_ms(uint8_t sysid, uint8_t compid, uint
         }
         return false;
     }
-    return remote_to_local_ms_at(sysid, compid, remote_boot_ms, uint32_t(local_us / 1000U), utc_us, local_ms);
+    return remote_to_local_ms_at(sysid, compid, remote_boot_ms, local_us, utc_us, local_ms);
 }
 
 bool AP_RTC_RemoteClocks::remote_to_local_ms_at(uint8_t sysid, uint8_t compid, uint32_t remote_boot_ms,
-                                                uint32_t now_ms, uint64_t local_utc_us, uint32_t &local_ms)
+                                                uint64_t local_us, uint64_t local_utc_us, uint32_t &local_ms)
 {
     WITH_SEMAPHORE(sem);
+
+    const uint32_t now_ms = uint32_t(local_us / 1000U);
 
     Source *s = find(sysid, compid);
     if (s == nullptr) {
@@ -271,8 +273,7 @@ bool AP_RTC_RemoteClocks::remote_to_local_ms_at(uint8_t sysid, uint8_t compid, u
     }
     const int64_t offset_us = drift_fitted ? offset_at(*s, remote_boot_ms) : s->newest_offset_us;
 
-    // when the message was sent relative to now, by the two GPS-disciplined clocks.
-    // Comparing UTC times keeps this correct when the 32 bit local time wraps
+    // when the message was sent relative to now, by the two GPS-disciplined clocks
     const int64_t sent_after_now_us = int64_t(remote_boot_ms) * 1000 + offset_us - int64_t(local_utc_us);
 
     // a message can't arrive before it was sent, so an offset putting it in the future is wrong
@@ -281,13 +282,14 @@ bool AP_RTC_RemoteClocks::remote_to_local_ms_at(uint8_t sysid, uint8_t compid, u
         return false;
     }
 
-    // round down to whole milliseconds, wrapping like AP_HAL::millis()
-    const int64_t local_us = int64_t(now_ms) * 1000 + sent_after_now_us;
-    int64_t local_ms64 = local_us / 1000;
-    if ((local_us % 1000) < 0) {
-        local_ms64--;
+    // a message sent before this system booted can't be converted
+    const int64_t sent_local_us = int64_t(local_us) + sent_after_now_us;
+    if (sent_local_us < 0) {
+        return false;
     }
-    local_ms = uint32_t(local_ms64);
+
+    // in milliseconds, wrapping like AP_HAL::millis()
+    local_ms = uint32_t(uint64_t(sent_local_us) / 1000U);
     return true;
 }
 
