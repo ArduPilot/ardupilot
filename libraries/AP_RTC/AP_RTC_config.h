@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Logger/AP_Logger_config.h>
+#include <AP_Follow/AP_Follow_config.h>
 
 #ifndef AP_RTC_ENABLED
 #define AP_RTC_ENABLED 1
@@ -11,8 +12,9 @@
 #define AP_RTC_LOGGING_ENABLED AP_RTC_ENABLED && HAL_LOGGING_ENABLED
 #endif
 
+// AP_Follow is the only user of the remote clocks
 #ifndef AP_RTC_REMOTE_CLOCKS_ENABLED
-#define AP_RTC_REMOTE_CLOCKS_ENABLED (AP_RTC_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
+#define AP_RTC_REMOTE_CLOCKS_ENABLED (AP_RTC_ENABLED && AP_FOLLOW_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
 #ifndef AP_RTC_REMOTE_CLOCKS_MAX
