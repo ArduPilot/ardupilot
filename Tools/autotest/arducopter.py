@@ -22656,6 +22656,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.drain_mav()
         self.assert_current_waypoint(4)
 
+        # editing the mission in the landing sequence keeps Auto RTL
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  750, 0, alt), # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, alt),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 260, 0, alt),  # 5
+        ])
+        self.delay_sim_time(2, reason="let the mission change be handled")
+        self.assert_mode_is('AUTO_RTL')
+        self.assert_current_waypoint(4)
+
         # Back to guided location
         self.change_mode('GUIDED')
         self.fly_guided_move_to(guided_loc)
@@ -22881,6 +22893,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('GUIDED')
         self.change_mode('AUTO')
         self.wait_current_waypoint(1, timeout=10)
+
+        # replacing the mission during the rejoin with one without a return path
+        # leaves Auto RTL, so a later Auto RTL request is not taken as a no-op
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 900, 0, alt),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, alt),   # 4
+        ])
+        self.wait_mode('AUTO', timeout=5)
+
+        # editing the restarted item into a takeoff leaves Auto RTL, as a takeoff
+        # clears the return path
+        self.change_mode('GUIDED')
+        self.upload_simple_relhome_mission(return_path_mission(800))
+        self.fly_guided_move_to(start_loc, timeout=120)
+        self.change_mode('AUTO_RTL')
+        self.wait_current_waypoint(3)
+        takeoff_mission = return_path_mission(800)
+        takeoff_mission[3] = (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt + 10)  # 4
+        self.upload_simple_relhome_mission(takeoff_mission)
+        self.wait_mode('AUTO', timeout=5)
 
         # a return path with only a located DO_LAND_START still joins at it
         self.change_mode('GUIDED')
