@@ -198,7 +198,9 @@ private:
         ZR10,
         ZR30,
         ZT6,
-        ZT30
+        ZT30,
+        MT11,
+        NV10,
     } _hardware_model;
 
     enum class HdrStatus : uint8_t {
@@ -331,6 +333,9 @@ private:
     // get thermal min/max if available at 5hz
     void request_thermal_minmax();
 #endif
+
+    // true if the gimbal has a laser rangefinder
+    bool has_rangefinder() const;
 
     // internal variables
     bool _got_hardware_id;                          // true once hardware id ha been received

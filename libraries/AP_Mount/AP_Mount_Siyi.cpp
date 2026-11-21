@@ -34,6 +34,8 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
         {{'7','8'}, "ZR30"},
         {{'8','3'}, "ZT6"},
         {{'7','A'}, "ZT30"},
+        {{'8','9'}, "MT11"},
+        {{'9','9'}, "NV10"},
 };
 
 // update mount position - should be called periodically
@@ -82,8 +84,8 @@ void AP_Mount_Siyi::update()
         _last_req_current_angle_rad_ms = now_ms;
     }
 
-    // request rangefinder distance from ZT30 at 10hz
-    if ((_hardware_model == HardwareModel::ZT30) && (now_ms - _last_rangefinder_req_ms > 100)) {
+    // request rangefinder distance at 10hz
+    if (has_rangefinder() && (now_ms - _last_rangefinder_req_ms > 100)) {
         request_rangefinder_distance();
         _last_rangefinder_req_ms = now_ms;
     }
@@ -506,6 +508,10 @@ void AP_Mount_Siyi::process_packet()
 
     case SiyiCommandId::READ_RANGEFINDER: {
         _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]);
+        if ((_hardware_model == HardwareModel::MT11) || (_hardware_model == HardwareModel::NV10)) {
+            // distance is reported in decimetres
+            _rangefinder_dist_m *= 0.1f;
+        }
         _last_rangefinder_dist_ms = AP_HAL::millis();
         break;
     }
@@ -787,6 +793,12 @@ float AP_Mount_Siyi::get_zoom_mult_max() const
     case HardwareModel::ZT30:
         // 30x hybrid zoom (optical + digital)
         return 30;
+    case HardwareModel::MT11:
+        // 165x hybrid zoom
+        return 165;
+    case HardwareModel::NV10:
+        // 100x hybrid zoom
+        return 100;
     }
     return 0;
 }
@@ -998,8 +1010,12 @@ float AP_Mount_Siyi::get_camera_focal_length_mm() const
     case HardwareModel::ZR10:
     case HardwareModel::ZR30:
     case HardwareModel::ZT30:
+    case HardwareModel::NV10:
         // focal length range from 5.15 ~ 47.38
         return 5.15;
+    case HardwareModel::MT11:
+        // zoom camera focal length range from 15 ~ 50
+        return 15;
     }
     return 0;
 }
@@ -1075,17 +1091,40 @@ const char* AP_Mount_Siyi::get_model_name() const
     return hardware_lookup_table[0].model_name;
 }
 
+// true if the gimbal has a laser rangefinder
+bool AP_Mount_Siyi::has_rangefinder() const
+{
+    switch (_hardware_model) {
+    case HardwareModel::UNKNOWN:
+    case HardwareModel::A2:
+    case HardwareModel::A8:
+    case HardwareModel::ZR10:
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT6:
+        return false;
+    case HardwareModel::ZT30:
+    case HardwareModel::MT11:
+    case HardwareModel::NV10:
+        return true;
+    }
+    return false;
+}
+
 // get rangefinder distance.  Returns true on success
 bool AP_Mount_Siyi::get_rangefinder_distance(float& distance_m) const
 {
-    // only supported on ZT30
-    if (_hardware_model != HardwareModel::ZT30) {
+    if (!has_rangefinder()) {
         return false;
     }
 
     // unhealthy if distance not received recently
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _last_rangefinder_dist_ms > AP_MOUNT_SIYI_TIMEOUT_MS) {
+        return false;
+    }
+
+    // MT11 and NV10 report zero if there is no valid reading
+    if (((_hardware_model == HardwareModel::MT11) || (_hardware_model == HardwareModel::NV10)) && is_zero(_rangefinder_dist_m)) {
         return false;
     }
 
@@ -1120,6 +1159,8 @@ void AP_Mount_Siyi::check_firmware_version() const
         case HardwareModel::ZR10:
         case HardwareModel::ZR30:
         case HardwareModel::ZT30:
+        case HardwareModel::MT11:
+        case HardwareModel::NV10:
             // TBD
             break;
 
